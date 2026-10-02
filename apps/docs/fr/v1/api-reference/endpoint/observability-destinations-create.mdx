@@ -1,0 +1,10 @@
+---
+title: "Créer une destination d’observabilité"
+sidebarTitle: "Créer la destination"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /observability/destinations"
+description: "Crée une destination webhook ou OpenTelemetry."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `settings:write`.</Note>
+
+L’objet `config` est en écriture seule et chiffré avant stockage. Les points de terminaison doivent utiliser des adresses HTTPS publiques.

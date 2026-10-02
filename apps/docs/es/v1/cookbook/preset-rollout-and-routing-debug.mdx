@@ -1,0 +1,111 @@
+---
+title: "Desplegar ajustes preestablecidos y depurar el enrutamiento"
+icon: "route"
+description: "Usa ajustes preestablecidos para unificar los valores predeterminados de prompts y enrutamiento; después, revisa los detalles de la solicitud para entender cómo la enrutó Phaseo."
+---
+
+Usa esta receta para reutilizar un ajuste preestablecido en varios servicios en vez de copiar por todas partes el mismo prompt, modelo y valores de enrutamiento.
+
+## Objetivo
+
+- Unificar los valores predeterminados de prompts y parámetros.
+- Limitar los proveedores disponibles durante un despliegue o por requisitos de cumplimiento.
+- Conservar suficiente contexto de la solicitud para explicar por qué se enrutó de esa manera.
+
+## 1. Crea el ajuste preestablecido
+
+En **Panel -> Configuración -> Ajustes preestablecidos**, crea un ajuste con:
+
+- Un nombre claro y un slug
+- Un prompt de sistema
+- Modelos aprobados
+- Preferencias de proveedores
+- Valores de parámetros predeterminados, como `temperature`
+
+Usa el slug del ajuste en el código que realiza las llamadas para reutilizar la misma política de solicitud en distintos entornos.
+
+## 2. Mantén pequeño el cuerpo de la solicitud
+
+La principal ventaja de los ajustes preestablecidos es que quien realiza la llamada ya no necesita repetir los mismos valores de enrutamiento y prompts en cada solicitud.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. Comprende qué cambia el ajuste preestablecido
+
+El ajuste preestablecido se aplica antes del enrutamiento de proveedores:
+
+- Los parámetros que falten en la solicitud se completan con el ajuste preestablecido
+- El prompt del ajuste preestablecido se antepone a la capa de sistema
+- las preferencias de proveedor reducen la lista de proveedores disponibles antes de ordenarla
+- Las restricciones de modelos se comprueban al principio en vez de cambiar la ruta en silencio
+
+## 4. Depura el resultado del enrutamiento
+
+Si una solicitud no se enruta como esperabas, ábrela en **Gateway -> Uso** y revisa:
+
+- Proveedores considerados
+- Candidatos ordenados
+- Factores de enrutamiento asociados a cada candidato
+- Bloqueos por políticas del espacio de trabajo o protecciones
+
+Es la forma más rápida de averiguar:
+
+- Por qué se omitió un proveedor
+- Por qué se bloqueó una solicitud
+- Por qué ganó un destino más barato o con menor latencia
+
+## 5. Patrón operativo
+
+Sigue este patrón de despliegue cuando cambies el comportamiento del enrutamiento:
+
+1. Crea un slug de ajuste preestablecido nuevo para la nueva política.
+2. Cambia una llamada de bajo riesgo al ajuste nuevo.
+3. Revisa los detalles de las solicitudes y las tendencias de actividad.
+4. Amplía el despliegue solo cuando los resultados del enrutamiento coincidan con lo esperado.
+
+## Guías relacionadas
+
+- [Ajustes preestablecidos](../guides/presets.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Gestión de errores](../api-reference/errors.mdx)

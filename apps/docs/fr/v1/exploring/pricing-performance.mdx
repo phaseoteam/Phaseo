@@ -1,0 +1,127 @@
+---
+title: "Mesurer les prix et les performances"
+description: "Comparez les prix des fournisseurs et les performances opérationnelles de Gateway sans considérer les données d’observation comme un benchmark contrôlé."
+icon: "chart-spline"
+---
+
+Utilisez ce guide pour comparer les coûts et la vitesse entre les routes, comprendre les métriques affichées par Phaseo et concevoir une étude de charge avant de déplacer le trafic de production.
+
+## Commencez par le besoin
+
+Choisissez la métrique correspondant à l’expérience utilisateur que vous souhaitez préserver.
+
+| Charge de travail | Commencez par | Pourquoi |
+| --- | --- | --- |
+| Chat, copilotes et voix | Gateway TTFT | Les utilisateurs remarquent à quelle vitesse une réponse utile commence. |
+| Réponses longues et génération de code | Output speed | Pour les réponses longues, la vitesse de génération soutenue est déterminante. |
+| Outils et workflows structurés | Gateway E2E | Le routage, les tentatives répétées et l’orchestration influent sur le résultat complet. |
+| Traitement par lots ou hors ligne | Coût et débit effectif | Un démarrage plus lent peut convenir lorsque le débit total et les dépenses comptent davantage. |
+
+Aucun score ne prouve à lui seul qu’un modèle est le meilleur choix pour toutes les charges de travail.
+
+## Comparer les tarifs
+
+Les grilles tarifaires des fournisseurs utilisent différentes unités : par jeton, par million de jetons, par image, par seconde, par minute ou par requête. Phaseo conserve l’unité d’origine et normalise les prix comparables pour le catalogue et le calculateur de tarifs.
+
+Pour les modèles textuels, comparez séparément les tarifs d’entrée, d’entrée en cache, d’écriture du cache, de raisonnement et de sortie, lorsqu’ils existent. Pour les modèles multimédias, gardez visible l’unité de facturation native : un tarif vidéo à la seconde ne doit pas être présenté comme un tarif par jeton.
+
+<Note>
+Les tarifs du catalogue permettent d’estimer une requête ; ils ne constituent pas un devis pour toutes les charges utiles possibles. Les niveaux du fournisseur, les offres régionales, les tarifs par lots, le comportement du cache et les compteurs propres à chaque requête peuvent modifier le montant final.
+</Note>
+
+Utilisez le [calculateur de tarifs](https://phaseo.app/tools/pricing-calculator) avec une charge utile représentative, puis vérifiez le montant facturé dans l’utilisation de Gateway après une requête de test.
+
+## Comprendre les métriques de performance
+
+Phaseo mesure le temps de traitement des requêtes acheminées par la passerelle.
+
+| Métrique | Définition |
+| --- | --- |
+| **Gateway TTFT** | Du début de la requête Gateway jusqu’à la première sortie générée contenant du contenu. |
+| **Provider TTFT** | De l’envoi au fournisseur sélectionné jusqu’à la première sortie générée contenant du contenu. |
+| **Provider duration** | De l’envoi au fournisseur sélectionné jusqu’à la réponse finale. |
+| **Gateway E2E** | Du début de la requête Gateway jusqu’à son achèvement. |
+| **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
+| **Effective throughput** | Nombre total de jetons en sortie divisé par la durée complète du fournisseur. |
+| **Output speed** | Nombre de jetons en sortie après le premier, divisé par le temps du fournisseur après le TTFT. |
+| **TPOT / ITL** | Temps moyen par jeton au niveau de la requête après la première sortie. |
+
+Le TTFT, la vitesse de sortie, le TPOT et l’ITL nécessitent une réponse en streaming dont la première sortie contient du contenu. Les trames du flux contenant uniquement des métadonnées ne sont pas prises en compte. Les réponses qui ne sont pas en streaming peuvent tout de même contribuer à la durée du fournisseur, au Gateway E2E et au débit effectif, sans attribuer un TTFT artificiel.
+
+La surcharge Phaseo isole le temps passé en dehors de l’appel au fournisseur sélectionné. Il peut inclure le traitement de Gateway, le routage, les nouvelles tentatives et les effets du réseau. Ce n’est pas une constante fixe de la plateforme : il faut l’interpréter comme une distribution sur une période définie.
+
+## Interpréter correctement les données opérationnelles
+
+Les pages de performance résument le trafic Gateway en temps réel. Il s’agit de mesures d’observation, pas de tests de benchmark contrôlés ni de propriétés intrinsèques d’un modèle.
+
+Les résultats peuvent varier en raison :
+
+- la sélection du fournisseur et de la route
+- l’emplacement d’exécution de Cloudflare et le chemin réseau
+- la file d’attente du fournisseur ou la charge régionale
+- la longueur du prompt et de la sortie
+- le comportement en streaming ou hors streaming
+- les nouvelles tentatives, les annulations et les appels d’outils
+- les mises à jour du modèle ou du fournisseur pendant la période choisie
+
+Les graphiques publics peuvent afficher des percentiles tels que P50, P90, P95 et P99. Pour la latence, une valeur plus basse est préférable. Pour le débit, une valeur plus élevée est préférable ; un percentile bas décrit donc la partie la plus lente de la distribution.
+
+Indiquez toujours à côté du résultat la période choisie, la route, la région, les filtres d’échantillon et le percentile. Ne comparez pas deux captures d’écran portant sur des périodes différentes comme s’il s’agissait de la même étude.
+
+## Mener une étude de charge reproductible
+
+Utilisez les données télémétriques publiques pour présélectionner les options, puis validez les finalistes avec vos propres prompts.
+
+1. Choisissez deux ou trois modèles routables dans la réponse par défaut de `GET /v1/models`.
+2. Créez un ensemble de prompts anonymisés représentatif de requêtes courtes, courantes et longues.
+3. Fixez l’endpoint, la région, le mode de streaming, les contraintes de fournisseur et le niveau de concurrence.
+4. Exécutez plusieurs requêtes pour chaque prompt au lieu de vous fier à un seul échantillon.
+5. Relevez l’identifiant de requête, le fournisseur sélectionné, la réussite ou l’erreur, les jetons de sortie, le Gateway TTFT, la durée du fournisseur, le Gateway E2E, la surcharge Phaseo et le coût.
+6. Comparez les distributions et les modes d’échec, puis conservez les résultats bruts avec la configuration du test.
+
+Exemple de schéma de résultat :
+
+```json
+{
+  "study_id": "support-summary-v1",
+  "model": "<verified-model-id>",
+  "endpoint": "responses",
+  "stream": true,
+  "region": "<execution-region>",
+  "request_id": "req_...",
+  "gateway_ttft_ms": 0,
+  "provider_duration_ms": 0,
+  "gateway_e2e_ms": 0,
+  "phaseo_overhead_ms": 0,
+  "output_tokens": 0,
+  "cost_usd": 0,
+  "status": "completed"
+}
+```
+
+Les valeurs nulles sont des espaces réservés. Ne publiez des valeurs mesurées qu’avec la définition de la charge de travail, le nombre d’échantillons, la période et l’autorisation de divulguer les données.
+
+## Ce que Phaseo ne prétend pas
+
+- La présence dans le catalogue ne signifie pas qu’un modèle est routable. Utilisez le filtre de disponibilité active par défaut.
+- Les données opérationnelles publiques ne garantissent ni la latence ni la disponibilité futures.
+- Un score de benchmark ne suffit pas à établir la qualité en production pour votre ensemble de prompts.
+- Un profil d’interface illustratif n’est pas une mesure réelle du modèle.
+- Ne publiez pas de citation, de logo ni de résultat de charge de travail client sans autorisation et justificatifs.
+
+## Étapes suivantes
+
+<Columns cols={2}>
+  <Card title="Vérifier la fiabilité et l’état" icon="shield-check" href="../developers/reliability-and-status.mdx">
+    Consultez les incidents, la routabilité actuelle des modèles, les définitions des métriques et le diagnostic des échecs.
+  </Card>
+  <Card title="Comparer les modèles" icon="scale" href="https://phaseo.app/compare">
+    Comparez côte à côte les tarifs, les métadonnées et les indicateurs de performance disponibles.
+  </Card>
+  <Card title="Examiner les routes des modèles" icon="route" href="../api-reference/endpoint/model-endpoints.mdx">
+    Examinez les routes des fournisseurs, les capacités, la disponibilité et les tarifs d’un modèle.
+  </Card>
+  <Card title="Examiner la méthodologie des benchmarks" icon="microscope" href="../research/benchmark-methodology.mdx">
+    Comprenez comment les sources et les scores de benchmark sont normalisés indépendamment des données télémétriques de Gateway.
+  </Card>
+</Columns>

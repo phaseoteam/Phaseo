@@ -1,0 +1,78 @@
+---
+icon: "messages-square"
+title: "चैट कम्प्लीशन"
+description: "TypeScript SDK से /chat/completions कॉल करें।"
+---
+
+**तरीका**: `client.generateText()` (पार्स किए गए हिस्सों को स्ट्रीम करने के लिए `client.streamChat()`).
+
+### उदाहरण
+```typescript
+const chat = await client.generateText({
+  model: "openai/gpt-4o-mini",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+  temperature: 0.5,
+});
+```
+
+### स्ट्रीमिंग
+```typescript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-4o-mini",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### मुख्य पैरामीटर
+- `model` (required): लक्ष्य मॉडल ID।
+- `messages` (required): `system|user|assistant|tool` भूमिकाओं वाले क्रमबद्ध संदेश; कंटेंट स्ट्रिंग या हिस्सों में हो सकता है।
+- सैंपलिंग: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
+- लंबाई/पेनल्टी: `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (`auto`/`none`/विशिष्ट टूल), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20)।
+- आउटपुट: `response_format` (json/text), `metadata` (पास-थ्रू ऑब्जेक्ट), `stream` (बूलियन), `service_tier`।
+- गेटवे के अतिरिक्त विकल्प: `usage` (उपयोग माँगने के लिए बूलियन), `meta` (मेटाडेटा ब्लॉक शामिल करने के लिए बूलियन)।
+
+### रिटर्न
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+या `stream: true` होने पर SSE फ़्रेम:
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

@@ -1,0 +1,11 @@
+---
+title: "Aprobar solicitud para unirse al espacio de trabajo"
+sidebarTitle: "Aprobar solicitud de acceso"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "Aprobar de forma atómica una solicitud de acceso pendiente."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `workspaces:write`.</Note>
+
+La aprobación valida la caducidad de la invitación y los usos restantes, aplica el rol de la invitación y registra la decisión en una sola transacción.
+

@@ -1,5 +1,5 @@
 import { ReactNode, Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelGatewayMetadata,
@@ -22,16 +22,16 @@ import { UseModelSheet } from "./UseModelSheet";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
-import { resolveModelDescription } from "@/lib/models/modelDescription";
+import { resolveLocalizedModelDescription } from "@/i18n/localized-model-description";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
 import {
-	FREE_ROUTER_DESCRIPTION,
 	FREE_ROUTER_MODEL_ID,
 	FREE_ROUTER_NAME,
 	FREE_ROUTER_ORGANISATION_ID,
 	isFreeRouterModelId,
 } from "@/lib/models/freeRouter";
+import { getLocale, getTranslations } from "next-intl/server";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -131,6 +131,9 @@ export default async function ModelDetailShell({
 	descriptionOverride,
 	showUnreleased = false,
 }: ModelDetailShellProps) {
+	const t = await getTranslations("Catalogue.models");
+	const tx = await getTranslations();
+	const locale = await getLocale();
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	const [header, modelOverview] = isFreeRouter
 		? [
@@ -164,9 +167,9 @@ export default async function ModelDetailShell({
 	const modelDescription = descriptionOverride !== undefined
 		? descriptionOverride
 		: isFreeRouter
-		? FREE_ROUTER_DESCRIPTION
+		? tx("Common.ui.publicModelCopy.freeRouterDescription")
 		: modelOverview
-		? resolveModelDescription(modelOverview)
+		? resolveLocalizedModelDescription(modelOverview, locale, tx)
 		: null;
 
 	const visibleTabKeys = getVisibleTabKeys(header.status);
@@ -227,7 +230,7 @@ export default async function ModelDetailShell({
 									<span>{header.name}</span>
 								</h1>
 								{includeHidden && header.hidden ? (
-									<Badge variant="secondary">Hidden</Badge>
+									<Badge variant="secondary">{t("hidden")}</Badge>
 								) : null}
 								{showUnreleased ? <UnreleasedBadge /> : null}
 							</div>
@@ -250,19 +253,19 @@ export default async function ModelDetailShell({
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 								<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
-									{isDecisionsModel ? "Open Decisions" : "Chat"}
+									{isDecisionsModel ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
 								</Link>
 							</Button>
 						) : null}
 						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />
-								Compare
+								{t("detail.actions.compare")}
 							</Link>
 						</Button> : null}
 						{canChat ? isDecisionsModel ? (
 							<Button asChild variant="default" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>Try Jev in Decisions</Link>
+								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>{t("detail.actions.tryJev")}</Link>
 							</Button>
 						) : <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>

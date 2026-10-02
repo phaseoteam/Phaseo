@@ -1,0 +1,36 @@
+---
+icon: "arrow-right-left"
+title: "翻訳"
+description: "PHP SDKで/audio/translationsを呼び出します。"
+---
+
+**メソッド**: `$client->generateTranslation(...)`または`$client->createTranslation(...)`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateTranslation([
+    'model' => 'openai/gpt-4o-translate',
+    'audio_url' => 'https://example.com/audio.mp3' // or 'audio_b64' for base64 data
+]);
+echo $response['text'] ?? '';
+```
+
+### 主なパラメーター
+
+-   `model`（必須）：翻訳に対応するモデルのID。
+-   `audio_url`または`audio_b64`（必須）：翻訳する音声データ。
+-   `prompt`：翻訳の参考となる任意のコンテキスト。
+-   `temperature`（0～2）：サンプリングのランダム性。
+-   `response_format`：`json`、`text`、`srt`、`verbose_json`など。
+
+### 戻り値
+
+AudioTranscriptionResponse

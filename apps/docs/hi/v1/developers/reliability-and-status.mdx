@@ -1,0 +1,98 @@
+---
+title: "Gateway की विश्वसनीयता और स्थिति जांचें"
+sidebarTitle: "विश्वसनीयता और स्थिति"
+description: "incidents देखें, मॉडल की routing स्थिति पक्का करें, Gateway metrics समझें और अपने workload के अनुसार Phaseo को validate करें।"
+icon: "shield-check"
+---
+
+इन तीन सवालों में से किसी का जवाब चाहिए तो यह गाइड इस्तेमाल करें: Phaseo स्वस्थ है या नहीं, मॉडल अभी route हो सकता है या नहीं, या route आपके ऐप के reliability लक्ष्य पर खरा उतरता है या नहीं।
+
+## सेवा की मौजूदा स्थिति जांचें
+
+1. मौजूदा और पिछली घटनाओं को देखने के लिए [Phaseo स्थिति पेज](https://status.phaseo.app) खोलें।
+2. कॉल करें `GET /v1/health` Gateway का एक न्यूनतम health check करने के लिए।
+3. एक अनुरोध विफल होने पर पूरे service को अनुपलब्ध मानने से पहले उसका request ID रखें और activity या generation record जांचें।
+
+```bash
+curl https://api.phaseo.app/v1/health
+```
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<Note>
+सार्वजनिक status page सेवा की स्थिति बताता है। Phaseo फिलहाल किसी contractual public uptime SLA का दावा नहीं करता।
+</Note>
+
+## मॉडल की routing स्थिति पक्की करें
+
+Phaseo catalog में Gateway के ज़रिए उपलब्ध मॉडलों से अधिक मॉडल हैं। Catalog में मॉडल होने का अर्थ है Phaseo उसे track करता है; इससे यह साबित नहीं होता कि public route मौजूद है।
+
+`GET /v1/models` डिफ़ॉल्ट रूप से केवल अभी route किए जा सकने वाले मॉडल लौटाता है:
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+`availability=all` का उपयोग केवल तभी करें जब आपको जान-बूझकर जल्द आने वाले या निष्क्रिय मैपिंग देखने हों। जब तक `availability_status` का मान `active` और `is_active_gateway` का मान `true` न हो, तब तक किसी प्रदाता रूट पर प्रोडक्शन ट्रैफ़िक न भेजें।
+
+| स्थिति | अर्थ |
+| --- | --- |
+| `active` | अभी कम-से-कम एक public Gateway route उपलब्ध है। |
+| `coming_soon` | Phaseo एक नियोजित या preview route track करता है, लेकिन वह public routing के लिए उपलब्ध नहीं है। |
+| `inactive` | ज्ञात route disabled, अनुपलब्ध, expired या किसी अन्य कारण से route नहीं किया जा सकता। |
+| `not_listed` | इस मॉडल के लिए अभी कोई Gateway provider mapping सूचीबद्ध नहीं है। |
+
+Availability का अर्थ हमेशा uptime, हर region में access या हर workspace के लिए समान commercial terms की गारंटी नहीं है।
+
+## प्रदर्शन मेट्रिक्स समझें
+
+Phaseo का प्रदर्शन डेटा अवलोकन पर आधारित है: यह नियंत्रित लैब बेंचमार्क के बजाय Gateway से रूट किए गए अनुरोधों का सार प्रस्तुत करता है।
+
+| मेट्रिक | परिभाषा |
+| --- | --- |
+| Gateway TTFT | Gateway अनुरोध शुरू होने से content वाली पहली generated output तक का समय। |
+| Provider TTFT | Provider को अनुरोध भेजने से content वाली पहली generated output तक का समय। |
+| प्रदाता अवधि | Provider को अनुरोध भेजने से अंतिम response तक का समय। |
+| Gateway E2E | Gateway अनुरोध शुरू होने से पूरा होने तक का समय। |
+| Phaseo का अतिरिक्त समय | Gateway E2E और provider duration के बीच शून्य या उससे अधिक का अंतर। |
+| प्रभावी थ्रूपुट | सभी output tokens को provider की कुल अवधि से भाग देने पर मिला मान। |
+| आउटपुट गति | पहले token के बाद के output tokens को TTFT के बाद के provider समय से भाग देने पर मिला मान। |
+
+TTFT और output speed के लिए streaming response का पहला output content वाला होना चाहिए। Non-streaming अनुरोध भी अवधि और effective throughput की माप में योगदान दे सकता है; उसके लिए TTFT गढ़ने की ज़रूरत नहीं।
+
+किसी भी मेट्रिक को समयावधि, रूट, क्षेत्र, स्ट्रीमिंग मोड और पर्सेंटाइल के साथ देखें। प्रदाता का लोड, प्रॉम्प्ट और आउटपुट की लंबाई, पुनः प्रयास तथा डेटा-परिवहन की परिस्थितियाँ परिणाम बदल सकती हैं।
+
+पूरी परिभाषा के लिए देखें [कीमत और प्रदर्शन](../exploring/pricing-performance.mdx) और [Phaseo latency और throughput कैसे मापता है](https://phaseo.app/how-phaseo-measures-latency-throughput).
+
+## अपने workload पर validate करें
+
+सार्वजनिक telemetry संकेत देती है, यह साबित नहीं करती कि route आपका production लक्ष्य पूरा करता है। Rollout से पहले छोटा और दोहराया जा सकने वाला अध्ययन करें:
+
+1. संवेदनशील production data हटाएं और representative prompt mix रखें।
+2. मॉडल ID, एंडपॉइंट, प्रदाता संबंधी सीमाएँ, क्षेत्र, स्ट्रीमिंग मोड और समवर्ती अनुरोधों की संख्या दर्ज करें।
+3. एक अनुरोध के बजाय distributions की तुलना के लिए पर्याप्त बार चलाएं।
+4. सफलता दर, Gateway TTFT, प्रदाता अवधि, Gateway E2E, आउटपुट टोकन और अंतिम लागत दर्ज करें।
+5. अमान्य कुंजियों और मॉडलों, दर सीमाओं तथा अनुपलब्ध प्रदाताओं की विफलताओं का परीक्षण करें।
+6. request IDs और सटीक time window सेव करें ताकि दूसरा engineer नतीजा दोहरा सके।
+
+अनुमति और documented method के बिना ग्राहक का नाम, quote, workload result या reliability percentage प्रकाशित न करें।
+
+## विफल अनुरोध की जांच करें
+
+- [सेवा की स्थिति](https://status.phaseo.app) देखें।
+- पुष्टि करें कि मॉडल अब भी `GET /v1/models` की डिफ़ॉल्ट प्रतिक्रिया में दिखता है।
+- इसमें HTTP status और error code देखें: [त्रुटि प्रबंधन](../api-reference/errors.mdx).
+- अस्थायी `429` और `5xx` त्रुटियों के लिए सीमित exponential backoff के साथ फिर से प्रयास करें।
+- [सहायता टीम](https://phaseo.app/help) से संपर्क करते समय अनुरोध ID नोट करें।
+
+## संबंधित गाइड
+
+- [मॉडल API](../api-reference/endpoint/models.mdx)
+- [मॉडल एंडपॉइंट](../api-reference/endpoint/model-endpoints.mdx)
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [अनुरोध दर की सीमाएँ](../api-reference/limits.mdx)

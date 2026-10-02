@@ -1,0 +1,31 @@
+---
+icon: "binary"
+title: "Vectores de incrustación"
+description: "Llama a /embeddings con el SDK de Ruby."
+---
+
+**Métodos**: `client.generate_embedding(...)` o `client.create_embedding(...)`.
+
+### Ejemplo
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+### Parámetros principales
+
+-   `model` (obligatorio): ID del modelo de embeddings (por ejemplo, `openai/text-embedding-3-large`).
+-   `input` (obligatorio): una cadena o una matriz de cadenas.
+-   `encoding_format`: `float` (predeterminado) o `base64`.
+-   `dimensions`: entero opcional para truncar la longitud del embedding (depende del modelo).
+-   `user`: etiqueta opcional para el usuario final.
+
+### Valor devuelto
+
+Carga de embeddings (JSON)

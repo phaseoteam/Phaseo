@@ -1,0 +1,87 @@
+---
+title: "Patch anwenden"
+description: "Lass Responses-Modelle geprüfte Patch-Operationen zurückgeben."
+icon: "file-pen-line"
+---
+
+Verwende `phaseo:apply_patch`, wenn ein Responses-Workflow Dateiänderungen als strukturierte Patch-Operationen zurückgeben soll. Phaseo prüft die Operation und gibt sie an deinen Client zurück; das Dateisystem oder Repository wird nicht verändert.
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## Anfrage
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## Aufbau der Operation
+
+Wenn das Modell das Tool aufruft, sendet es ein Operationsobjekt:
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+Unterstützte Operationstypen:
+
+| Typ | Erforderliche Felder |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## Tool-Ergebnis
+
+Phaseo gibt die geprüfte Operation an die Modellsitzung zurück:
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+Deine Anwendung ist weiterhin dafür verantwortlich, den Patch anzuwenden, ihn einem Nutzer zu zeigen, ihn abzulehnen oder das Modell um eine überarbeitete Operation zu bitten.
+
+## Nutzung und Preise
+
+Phaseo erfasst:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Preiskarten können dies über den Zähler `server_tool_apply_patch_requests` abrechnen.
+
+## Verwandte Seiten
+
+- [Server-Tools](./index.mdx)
+- [Responses-API](../../api-reference/endpoint/responses.mdx)

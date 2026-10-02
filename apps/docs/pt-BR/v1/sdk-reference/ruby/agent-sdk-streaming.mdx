@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "Transmissão"
+description: "Consuma fluxos de texto, raciocínio, itens e ciclo de vida de agentes Ruby."
+---
+
+`Agent#stream` retorna um `StreamResult` que pode ser percorrido novamente:
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+Use `reasoning_stream`, `item_stream` ou `full_stream` para obter outras projeções. O Ruby consome o fluxo do provedor de forma síncrona e depois disponibiliza sequências que outros consumidores podem percorrer novamente.
+
+Os valores de itens são atualmente hashes, não a união discriminada de itens do TypeScript.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Observabilidade e DevTools](./agent-sdk-observability.mdx)

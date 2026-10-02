@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行和可报告进度的 C# 工具。"
+---
+
+创建 `Tool` 记录并通过 `AgentSdk.DefineTool(...)` 传入。工具可包含：
+
+- 提供给模型的 JSON `Parameters`
+- `InputSchema`、`OutputSchema` 和 `EventSchema` 验证委托
+- 每个工具独立的 `Timeout` 和异步 `Execute` 委托
+- 无条件或有条件的审批
+- 用于交互式工作的 `OnToolCalled` 和 `OnResponseReceived`
+- 下一轮覆盖项和可恢复的工具错误处理
+
+使用 `RuntimeContext.EmitProgress` 报告初步结果，使用 `SetContext` 设置应用上下文，并使用 `CancellationToken` 处理中断敏感的依赖项。
+
+互不依赖的工具可通过 `ToolExecutionConfig` 并发运行。即使执行完成顺序不同，保存的工具结果消息仍会保留模型调用顺序。
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

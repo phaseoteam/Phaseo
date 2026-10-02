@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: ".NETエージェントの作業をステップ数、トークン数、コスト、時間、ツール、終了理由で制限します。"
+---
+
+`AgentDefinition.StopWhen` で停止ヘルパーを組み合わせます。
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` と `FinishReasonIs(...)` provide event-based limits. トークン数やコストの上限を使う場合も、使用量の報告に依存するため、ステップ数または実行時間の上限を設定してください。
+
+## 関連ページ
+
+- [動的なターン](./agent-sdk-dynamic-turns.mdx)
+- [Outputs と retries](./agent-sdk-run-controls.mdx)

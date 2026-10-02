@@ -1,0 +1,81 @@
+---
+title: "Diagnostiquer les requêtes de recherche Web"
+icon: "bug"
+description: "Vérifiez les requêtes de recherche Web, la prise en charge des fournisseurs ainsi que les résultats et citations renvoyés."
+---
+
+Utilisez cette recette lorsqu’une requête de recherche Web ne se comporte pas comme prévu et que vous souhaitez vérifier si Phaseo l’a acceptée, correctement routée et si elle a renvoyé des résultats propres.
+
+## 1. Indiquer clairement l’intention de recherche
+
+Ne vous fiez pas uniquement à la formulation du prompt. Ajoutez directement les paramètres de recherche à la requête afin que Phaseo sache que vous souhaitez utiliser la recherche Web.
+
+Vérifiez la présence de :
+
+- outils de recherche natifs dans `tools`
+- `web_search_options` lorsque le point de terminaison les accepte
+
+## 2. Confirmer qu’un fournisseur compatible était disponible
+
+Si la requête est bloquée ou routée autrement que prévu, consultez les détails suivants :
+
+- détails des fournisseurs candidats
+- détails d’activation des fournisseurs
+- explication du routage
+
+Vous saurez ainsi si la liste des fournisseurs a été réduite faute de prise en charge de la recherche.
+
+## 3. Examiner les compteurs d’utilisation
+
+Les requêtes utilisant la recherche qui aboutissent doivent afficher des compteurs associés, par exemple :
+
+- outils natifs de recherche Web demandés
+- résultats de recherche Web
+- citations
+
+C’est le moyen le plus rapide de confirmer que la requête a réellement utilisé la recherche.
+
+## 4. Examiner la section des résultats de recherche
+
+Pour les requêtes réussies, ouvrez la fenêtre des détails et recherchez la section d’observabilité de la recherche Web.
+
+Elle indique :
+
+- si la recherche native a été utilisée
+- le nombre de résultats normalisés
+- le nombre de citations normalisées
+- les enregistrements de résultats extraits
+- les enregistrements de citations extraits
+
+Utilisez-la pour comparer les fournisseurs sans lire les charges utiles brutes.
+
+## 5. Traiter ces cas séparément
+
+La recherche native et la vérification des capacités des fournisseurs sont actuellement disponibles. La planification d’une solution de repli à la recherche est distincte.
+
+Lors du diagnostic, distinguez ces cas :
+
+1. La requête de recherche native a été acceptée et routée.
+2. La requête a été acceptée, mais aucun fournisseur compatible n’est resté disponible.
+3. La requête a abouti, mais les citations sont faibles ou peu nombreuses.
+
+Ce sont des problèmes différents qui ne se diagnostiquent pas de la même manière.
+
+## 6. Éléments à comparer si les résultats sont incorrects
+
+Comparez les requêtes selon les critères suivants :
+
+- ID du modèle
+- fournisseur réellement sélectionné
+- options de recherche de la requête
+- nombre de résultats
+- nombre de citations
+- détails du routage
+
+Si la qualité varie selon le fournisseur, les journaux normalisés doivent le montrer.
+
+## Articles associés
+
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Exemples](../guides/examples.mdx)
+- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)

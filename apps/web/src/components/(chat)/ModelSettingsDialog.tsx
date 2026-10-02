@@ -2,6 +2,7 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { Logo } from "@/components/Logo";
@@ -186,6 +187,11 @@ export function ModelSettingsDialog({
     onApplyToAll,
     canApplyToAll = false,
 }: ModelSettingsDialogProps) {
+    const tUi = useTranslations("Common.ui");
+    const tRooms = useTranslations("Product.chatRooms");
+    const tRequest = useTranslations("Product.tools.request");
+    const tCopy = useTranslations("SettingsUI.chatGaps");
+    const tSettings = useTranslations("SettingsUI.strings");
     const format = useDisplayFormatters();
     const reduceMotion = useReducedMotion();
     const [modelPickerOpen, setModelPickerOpen] = useState(false);
@@ -365,12 +371,16 @@ export function ModelSettingsDialog({
     const selectedProvider = filteredProviderOptions.find((provider) => provider.id === providerValue);
     const selectedProviderLabel =
         providerValue === "auto"
-            ? "Auto (Gateway)"
+            ? tUi("select.autoGateway")
             : (filteredProviderOptions.find(
                   (provider) => provider.id === providerValue
-              )?.name ?? "Auto (Gateway)");
+              )?.name ?? tUi("select.autoGateway"));
+    const reasoningOptions = REASONING_OPTIONS.map((option) => ({
+        ...option,
+        label: tUi(`requestBuilder.${option.value === "xhigh" ? "extraHigh" : option.value}`),
+    }));
     const supportedReasoningOptions = reasoningSupport?.supportedValues.length
-        ? REASONING_OPTIONS.filter((option) =>
+        ? reasoningOptions.filter((option) =>
               reasoningSupport.supportedValues.includes(option.value)
           )
         : [];
@@ -380,8 +390,8 @@ export function ModelSettingsDialog({
                 option.value === (reasoningEffort ?? settings.reasoningEffort)
         );
     const reasoningStateLabel = settings.reasoningEnabled
-        ? (selectedReasoningOption?.label ?? "Select an effort")
-        : "Off";
+        ? (selectedReasoningOption?.label ?? tUi("modelSettingsDialog.selectEffort"))
+        : tUi("modelSettingsDialog.off");
     const availableServiceTierOptions = serviceTierOptions?.length
         ? serviceTierOptions
         : [{ value: "standard" as const, label: "Standard" }];
@@ -527,7 +537,7 @@ export function ModelSettingsDialog({
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                aria-label="Back to model settings"
+                                aria-label={tUi("accessibility.backToModelSettings")}
                                 onClick={() => {
                                     setModelPickerSearch("");
                                     setModelPickerOpen(false);
@@ -537,9 +547,9 @@ export function ModelSettingsDialog({
                                 <ArrowLeft className="h-4 w-4" />
                             </Button>
                             <div className="min-w-0">
-                                <DialogTitle>Choose model</DialogTitle>
+                                <DialogTitle>{tUi("modelSettingsDialog.chooseModel")}</DialogTitle>
                                 <DialogDescription>
-                                    Pick which selected model you are editing.
+                                    {tUi("modelSettingsDialog.chooseModelDescription")}
                                 </DialogDescription>
                             </div>
                         </div>
@@ -552,7 +562,7 @@ export function ModelSettingsDialog({
                                         onChange={(event) =>
                                             setModelPickerSearch(event.target.value)
                                         }
-                                        placeholder="Search models..."
+                                placeholder={tUi("accessibility.searchModels")}
                                         className="h-8 rounded-md bg-input/50 pl-8"
                                     />
                                 </div>
@@ -563,19 +573,19 @@ export function ModelSettingsDialog({
                             >
                                 {!modelPickerListReady ? (
                                     <div className="py-6 text-center text-sm text-muted-foreground">
-                                        Loading models...
+                                        {tUi("modelSettingsDialog.loadingModels")}
                                     </div>
                                 ) : null}
                                 {modelPickerListReady && !modelPickerHasResults ? (
                                     <div className="py-6 text-center text-sm text-muted-foreground">
-                                        No models found.
+                                        {tRooms("noModelsFound")}
                                     </div>
                                 ) : null}
                                 {modelPickerListReady && featuredModelChoices.length > 0 ? (
                                     <div className="pb-3">
                                         <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold text-foreground">
                                             <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
-                                            Featured
+                                            {tUi("modelSettingsDialog.featured")}
                                         </div>
                                         <div className="grid gap-0.5">
                                             {featuredModelChoices.map((choice) => (
@@ -664,11 +674,11 @@ export function ModelSettingsDialog({
                     >
                 <DialogHeader className="mb-3 space-y-1">
                     <DialogTitle>
-                        Model Settings
+                        {tUi("actions.modelSettings")}
                         {modelLabel ? ` - ${modelLabel}` : ""}
                     </DialogTitle>
                     <DialogDescription>
-                        Tune how this model responds in this chat.
+                        {tUi("modelSettingsDialog.description")}
                     </DialogDescription>
                 </DialogHeader>
                 <ScrollArea
@@ -678,7 +688,7 @@ export function ModelSettingsDialog({
                     <div className="grid gap-2">
                         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
                             <div className="grid flex-1 gap-1.5">
-                                <Label htmlFor="chat-display-name">Chat Display Name</Label>
+                                <Label htmlFor="chat-display-name">{tRooms("displayName")}</Label>
                                 <Input
                                     id="chat-display-name"
                                     value={textDraft.displayName}
@@ -686,12 +696,12 @@ export function ModelSettingsDialog({
                                         updateTextDraft("displayName", event.target.value)
                                     }
                                     onBlur={() => flushTextDraft("displayName")}
-                                    placeholder="Optional model alias for this chat"
+                                placeholder={tUi("accessibility.optionalModelAlias")}
                                 />
                             </div>
                             <div className="flex items-center justify-between gap-2 sm:justify-end sm:pb-1">
                                 <Label htmlFor="enable-model" className="text-sm">
-                                    Enabled
+                                    {tUi("chatComposer.enabled")}
                                 </Label>
                                 <Switch
                                     id="enable-model"
@@ -703,7 +713,7 @@ export function ModelSettingsDialog({
                             </div>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Model</Label>
+                            <Label>{tRooms("model")}</Label>
                             <Button
                                 type="button"
                                 variant="outline"
@@ -728,11 +738,11 @@ export function ModelSettingsDialog({
                                         <span className="truncate text-sm font-medium text-foreground">
                                             {selectedChoice?.label ??
                                                 modelLabel ??
-                                                "Current model"}
+                                                tUi("modelSettingsDialog.currentModel")}
                                         </span>
                                         <span className="truncate text-xs text-muted-foreground">
                                             {selectedChoice?.orgName ??
-                                                "Choose which model these settings edit"}
+                                                tUi("modelSettingsDialog.chooseModelSettings")}
                                         </span>
                                     </span>
                                 </span>
@@ -741,7 +751,7 @@ export function ModelSettingsDialog({
                         </div>
                         <div className="grid gap-1.5">
                             <div className="flex items-center justify-between gap-2">
-                                <Label htmlFor="reasoning-effort">Reasoning effort</Label>
+                                <Label htmlFor="reasoning-effort">{tUi("modelSettingsDialog.reasoningEffort")}</Label>
                                 <span className="text-xs text-muted-foreground">
                                     {reasoningStateLabel}
                                 </span>
@@ -762,7 +772,7 @@ export function ModelSettingsDialog({
                                     >
                                         <SelectValue
                                             className="min-w-0"
-                                            placeholder="Select an effort"
+                                            placeholder={tUi("modelSettingsDialog.selectEffort")}
                                         />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -776,14 +786,14 @@ export function ModelSettingsDialog({
                             ) : (
                                 <div className="rounded-md border border-border bg-muted/20 px-3 py-2">
                                     <p className="text-xs text-muted-foreground">
-                                        No enumerated effort values reported for this model.
+                                        {tUi("modelSettingsDialog.noEffortValues")}
                                     </p>
                                 </div>
                             )}
                             {reasoningSupport?.defaultValue ? (
                                 <p className="text-xs text-muted-foreground">
-                                    Gateway default:{" "}
-                                    {REASONING_OPTIONS.find(
+                                    {tUi("modelSettingsDialog.gatewayDefault")}{" "}
+                                    {reasoningOptions.find(
                                         (option) =>
                                             option.value === reasoningSupport.defaultValue,
                                     )?.label ?? reasoningSupport.defaultValue}
@@ -791,7 +801,7 @@ export function ModelSettingsDialog({
                             ) : null}
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Provider</Label>
+                            <Label>{tRooms("provider")}</Label>
                             <Select
                                 value={providerValue}
                                 onValueChange={(value) =>
@@ -801,7 +811,7 @@ export function ModelSettingsDialog({
                                 <SelectTrigger className="w-full min-w-0">
                                     <SelectValue
                                         className="min-w-0"
-                                        placeholder="Auto (Gateway)"
+                                placeholder={tUi("select.autoGateway")}
                                     >
                                         <span className="flex min-w-0 items-center gap-2">
                                             {selectedProvider && (
@@ -825,7 +835,7 @@ export function ModelSettingsDialog({
                                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                                 </svg>
                                             </span>
-                                            <span className="truncate">Auto (Gateway)</span>
+                                            <span className="truncate">{tUi("select.autoGateway")}</span>
                                         </div>
                                     </SelectItem>
                                     {filteredProviderOptions.map((provider) => (
@@ -851,7 +861,7 @@ export function ModelSettingsDialog({
                             </Select>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Service Tier</Label>
+                            <Label>{tCopy("copyServiceTier")}</Label>
                             <Select
                                 value={selectedServiceTier}
                                 disabled={availableServiceTierOptions.length <= 1 && selectedServiceTierAvailable}
@@ -882,12 +892,12 @@ export function ModelSettingsDialog({
                     <Separator />
                     <div className="grid gap-1.5">
                         <div className="flex items-center justify-between gap-3">
-                            <Label htmlFor="system-prompt">System Prompt</Label>
+                            <Label htmlFor="system-prompt">{tRooms("systemPrompt")}</Label>
                             <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                                 ~{format.number(estimatePromptTokenCount(settings.systemPrompt), {
                                     maximumFractionDigits: 0,
                                     notation: "standard",
-                                })} tokens
+                                })} {tSettings("tokens")}
                             </span>
                         </div>
                         <Textarea
@@ -904,10 +914,10 @@ export function ModelSettingsDialog({
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium">
-                                    Stream Responses
+                                    {tUi("modelSettingsDialog.streamResponses")}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Render answers as they arrive.
+                                    {tUi("modelSettingsDialog.streamResponsesDescription")}
                                 </p>
                             </div>
                             <Switch
@@ -922,14 +932,14 @@ export function ModelSettingsDialog({
                         <Accordion type="single" collapsible className="w-full">
                             <AccordionItem value="sampling" className="border-b-0">
                                 <AccordionTrigger>
-                                    <span>Sampling Parameters</span>
+                                     <span>{tUi("modelSettingsDialog.samplingParameters")}</span>
                                 </AccordionTrigger>
                                 <AccordionContent>
                                     <div className="grid min-w-0 gap-3 px-1 pt-2">
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label htmlFor="temperature">
-                                                    Temperature
+                                                     {tUi("chatComposer.temperature")}
                                                 </Label>
                                                 <Input
                                                     id="temperature"
@@ -982,7 +992,7 @@ export function ModelSettingsDialog({
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label htmlFor="max-output">
-                                                    Max output tokens
+                                                     {tRequest("maxOutputTokens")}
                                                 </Label>
                                                 <Input
                                                     id="max-output"
@@ -1032,7 +1042,7 @@ export function ModelSettingsDialog({
                                         </div>
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <Label htmlFor="top-p">Top P</Label>
+                                                 <Label htmlFor="top-p">{tRequest("topP")}</Label>
                                                 <Input
                                                     id="top-p"
                                                     className="h-8 w-24"
@@ -1083,7 +1093,7 @@ export function ModelSettingsDialog({
                                         </div>
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <Label htmlFor="top-k">Top K</Label>
+                                                 <Label htmlFor="top-k">{tUi("modelSettingsDialog.topK")}</Label>
                                                 <Input
                                                     id="top-k"
                                                     className="h-8 w-24"
@@ -1132,7 +1142,7 @@ export function ModelSettingsDialog({
                                         </div>
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <Label htmlFor="min-p">Min P</Label>
+                                                 <Label htmlFor="min-p">{tUi("modelSettingsDialog.minP")}</Label>
                                                 <Input
                                                     id="min-p"
                                                     className="h-8 w-24"
@@ -1183,7 +1193,7 @@ export function ModelSettingsDialog({
                                         </div>
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <Label htmlFor="top-a">Top A</Label>
+                                                 <Label htmlFor="top-a">{tUi("modelSettingsDialog.topA")}</Label>
                                                 <Input
                                                     id="top-a"
                                                     className="h-8 w-24"
@@ -1235,7 +1245,7 @@ export function ModelSettingsDialog({
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label htmlFor="frequency">
-                                                    Frequency penalty
+                                                     {tRequest("frequencyPenalty")}
                                                 </Label>
                                                 <Input
                                                     id="frequency"
@@ -1288,7 +1298,7 @@ export function ModelSettingsDialog({
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label htmlFor="presence">
-                                                    Presence penalty
+                                                     {tRequest("presencePenalty")}
                                                 </Label>
                                                 <Input
                                                     id="presence"
@@ -1341,7 +1351,7 @@ export function ModelSettingsDialog({
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Label htmlFor="repetition">
-                                                    Repetition penalty
+                                                     {tUi("modelSettingsDialog.repetitionPenalty")}
                                                 </Label>
                                                 <Input
                                                     id="repetition"
@@ -1393,13 +1403,13 @@ export function ModelSettingsDialog({
                                         </div>
                                         <div className="grid gap-2">
                                             <div className="flex items-center justify-between gap-2">
-                                                <Label htmlFor="seed">Seed</Label>
+                                                 <Label htmlFor="seed">{tRequest("seed")}</Label>
                                                 <Input
                                                     id="seed"
                                                     className="h-8 w-24"
                                                     type="number"
                                                     value={samplingDraft.seed}
-                                                    placeholder="Auto"
+                                                    placeholder={tUi("requestBuilder.auto")}
                                                     onChange={(event) =>
                                                         updateSamplingDraft(
                                                             "seed",
@@ -1433,26 +1443,25 @@ export function ModelSettingsDialog({
                                     disabled={!onReset}
                                 >
                                     <RotateCcw className="h-4 w-4" />
-                                    Reset
+                                    {tUi("modelSettingsDialog.reset")}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Reset model settings?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will restore this model to its default provider,
-                                        prompt, streaming, and sampling settings.
-                                    </AlertDialogDescription>
+                                <AlertDialogTitle>{tUi("modelSettingsDialog.resetConfirmTitle")}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    {tUi("modelSettingsDialog.resetConfirmDescription")}
+                                </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>{tRooms("cancel")}</AlertDialogCancel>
                                     <AlertDialogAction
                                         onClick={() => {
                                             onReset?.();
                                             setResetConfirmOpen(false);
                                         }}
                                     >
-                                        Reset settings
+                                        {tRooms("resetSettings")}
                                     </AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
@@ -1464,7 +1473,7 @@ export function ModelSettingsDialog({
                             onClick={onApplyToAll}
                             disabled={!canApplyToAll}
                         >
-                            Apply to all
+                            {tUi("modelSettingsDialog.applyToAll")}
                         </Button>
                     </div>
                     </ScrollArea>

@@ -1,0 +1,63 @@
+---
+title: "ワークフロー自動化"
+icon: "workflow"
+description: "Zapier、n8n、Pipedreamなどの自動化プラットフォームからPhaseoを使います。"
+---
+
+認証付きHTTPリクエストを送信できる自動化製品では、すでにPhaseoを利用できます。今後、マーケットプレイスのネイティブアプリで、より簡単に操作できるようになる可能性があります。
+
+## 共通リクエスト
+
+HTTP、Webhook、コードのいずれかのアクションで次の設定を使います。
+
+| 設定 | 値 |
+| --- | --- |
+| メソッド | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| ヘッダー | `Authorization: Bearer <PHASEO_API_KEY>` |
+| ヘッダー | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Phaseo APIキーはプラットフォームの認証情報またはシークレットストアに保存します。共有ワークフロー定義に直接記述しないでください。
+
+## Zapier
+
+**Webhooks by Zapier → Custom Request**を使います。
+
+1. `POST`を選択します。
+2. `https://api.phaseo.app/v1/responses`を入力します。
+3. Bearer認証とcontent-typeのヘッダーを追加します。
+4. 前のZapステップのフィールドを`input`に割り当てます。
+5. 機密情報を含まないデータでZapをテストします。
+
+PhaseoのZapierネイティブアプリがあれば、モデル選択、構造化出力アクション、Phaseo専用認証を追加できますが、Zapierの開発者プラットフォームで公開する必要があります。
+
+## n8n
+
+Bearer認証とJSONボディを設定した**HTTP Request**ノードを使います。構造化ワークフローデータを扱う場合は、n8n式で前段の項目を`input`フィールドに割り当てます。
+
+将来、n8nの公式コミュニティノードで、HTTPを手動設定せずにGenerate Response、List Models、Get Model Pricing、Create Embeddingなどを実行できるようになる可能性があります。
+
+## Pipedream
+
+HTTPリクエストまたはNode.jsコードのステップを使います。`PHASEO_API_KEY`はPipedreamのシークレットとして保存し、ステップの環境から読み込みます。
+
+## 本番環境での推奨事項
+
+- 自動化ごとに使用するGateway APIキーに支出上限を設定します。
+- 使用専用キーを自動化ごとに発行し、使用状況と失効を個別に管理します。
+- 後続ステップが機械可読なフィールドを必要とする場合は、構造化出力を使います。
+- `429`や再試行可能な`5xx`応答に対するリトライ処理を追加します。
+- モデルステップが再試行されたという理由だけで、冪等でない外部アクションを再実行しないでください。
+
+## 関連項目
+
+- [Responses](../../api-reference/endpoint/responses.mdx)
+- [構造化出力](../structured-outputs.mdx)
+- [エラー処理](../../api-reference/errors.mdx)

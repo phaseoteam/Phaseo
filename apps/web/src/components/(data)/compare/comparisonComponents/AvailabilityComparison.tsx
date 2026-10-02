@@ -1,3 +1,5 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import {
@@ -7,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ProviderLogo } from "../ProviderLogo";
 import { ProviderLogoName } from "../ProviderLogoName";
+import { useTranslations } from "next-intl";
 
 interface AvailabilityComparisonProps {
 	selectedModels: ExtendedModel[];
@@ -25,11 +28,12 @@ type AvailabilitySummary = {
 };
 
 function buildAvailabilitySummaries(
-	models: ExtendedModel[]
+	models: ExtendedModel[],
+	unknownProvider: string
 ): AvailabilitySummary[] {
 	return models.map((model) => {
 		const providerId = model.provider?.provider_id ?? model.provider?.name;
-		const providerName = model.provider?.name ?? providerId ?? "Unknown";
+		const providerName = model.provider?.name ?? providerId ?? unknownProvider;
 
 		const providerMap = new Map<string, string>();
 		(model.prices ?? []).forEach((price) => {
@@ -68,9 +72,10 @@ export default function AvailabilityComparison({
 	selectedModels,
 	hideHeader = false,
 }: AvailabilityComparisonProps) {
+	const t = useTranslations("Catalogue.compare");
 	if (!selectedModels || selectedModels.length === 0) return null;
 
-	const summaries = buildAvailabilitySummaries(selectedModels);
+	const summaries = buildAvailabilitySummaries(selectedModels, t("unknownProvider"));
 
 	const anyPricing = summaries.some((s) => s.providers.length > 0);
 	if (!anyPricing) return null;
@@ -80,13 +85,13 @@ export default function AvailabilityComparison({
 			{!hideHeader ? (
 				<header className="flex items-start justify-between gap-4">
 					<div className="space-y-1">
-						<h2 className="text-lg font-semibold">Availability</h2>
+						<h2 className="text-lg font-semibold">{t("availability")}</h2>
 						<p className="text-sm text-muted-foreground">
-							Providers that expose each model based on observed pricing data.
+							{t("availabilityDescription")}
 						</p>
 					</div>
 					<Badge variant="outline" className="text-xs">
-						From provider pricing data
+						{t("fromPricingData")}
 					</Badge>
 				</header>
 			) : null}
@@ -129,7 +134,7 @@ export default function AvailabilityComparison({
 						</div>
 						<div className="mt-3 space-y-2">
 							<span className="text-xs font-medium text-muted-foreground">
-								Providers
+								{t("availabilityProviders")}
 							</span>
 							{summary.providers.length ? (
 								<div className="flex flex-wrap items-center gap-2">

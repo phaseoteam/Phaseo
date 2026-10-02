@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import { fetchFrontendModelTimeline } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
@@ -58,28 +59,29 @@ const STYLES: Record<Kind, { border: string; text: string; dot: string }> = {
 	},
 };
 
-type Normalised =
-	| {
-			date: string;
-			type: Exclude<Kind, "version" | "default">;
-			label: string;
-			description: string;
-			modelId?: string;
-	  }
-	| {
-			date: string;
-			type: "version";
-			label: string;
-			description: "Previous version" | "Future version";
-			modelId?: string;
-	  }
-	| {
-			date: string;
-			type: "default";
-			label: string;
-			description: string;
-			modelId?: string;
-	  };
+type TimelineMessageKey =
+	| "modelAnnounced"
+	| "modelAnnouncedDescription"
+	| "modelReleased"
+	| "modelReleasedDescription"
+	| "modelDeprecated"
+	| "modelDeprecatedDescription"
+	| "modelRetired"
+	| "modelRetiredDescription"
+	| "event"
+	| "model"
+	| "previousVersion"
+	| "futureVersion";
+
+type Normalised = {
+	date: string;
+	type: Kind;
+	label: string;
+	description: string;
+	labelKey?: TimelineMessageKey;
+	descriptionKey?: TimelineMessageKey;
+	modelId?: string;
+};
 
 function normaliseEvents(raws: RawEvent[]): Normalised[] {
 	// Reference point for inferring previous/future if needed
@@ -110,35 +112,44 @@ function normaliseEvents(raws: RawEvent[]): Normalised[] {
 				return {
 					date: r.date,
 					type: "announced",
-					label: "Model Announced",
-					description: "Model first introduced to the public",
+					label: "",
+					labelKey: "modelAnnounced",
+					description: "",
+					descriptionKey: "modelAnnouncedDescription",
 				};
 			if (n === "released")
 				return {
 					date: r.date,
 					type: "released",
-					label: "Model Released",
-					description: "Model first made available to the public",
+					label: "",
+					labelKey: "modelReleased",
+					description: "",
+					descriptionKey: "modelReleasedDescription",
 				};
 			if (n === "deprecated")
 				return {
 					date: r.date,
 					type: "deprecated",
-					label: "Model Deprecated",
-					description: "Model no longer supported or maintained",
+					label: "",
+					labelKey: "modelDeprecated",
+					description: "",
+					descriptionKey: "modelDeprecatedDescription",
 				};
 			if (n === "retired")
 				return {
 					date: r.date,
 					type: "retired",
-					label: "Model Retired",
-					description: "Model no longer available or supported",
+					label: "",
+					labelKey: "modelRetired",
+					description: "",
+					descriptionKey: "modelRetiredDescription",
 				};
-			const label = r.eventName || "Model event";
+			const label = r.eventName || "";
 			return {
 				date: r.date,
 				type: "default",
 				label,
+				...(!r.eventName ? { labelKey: "event" as const } : {}),
 				description: r.description ?? label,
 			};
 		}
@@ -148,15 +159,19 @@ function normaliseEvents(raws: RawEvent[]): Normalised[] {
 			return {
 				date: r.date,
 				type: "deprecated",
-				label: "Model Deprecated",
-				description: "Model no longer supported or maintained",
+				label: "",
+				labelKey: "modelDeprecated",
+				description: "",
+				descriptionKey: "modelDeprecatedDescription",
 			};
 		if (t === "retired")
 			return {
 				date: r.date,
 				type: "retired",
-				label: "Model Retired",
-				description: "Model no longer available or supported",
+				label: "",
+				labelKey: "modelRetired",
+				description: "",
+				descriptionKey: "modelRetiredDescription",
 			};
 
 		// Version hops
@@ -171,20 +186,23 @@ function normaliseEvents(raws: RawEvent[]): Normalised[] {
 			return {
 				date: r.date,
 				type: "version",
-				label: r.modelName || r.modelId || "Model",
-				description: inferFuture
-					? "Future version"
-					: "Previous version",
+				label: r.modelName || r.modelId || "",
+				...(!r.modelName && !r.modelId ? { labelKey: "model" as const } : {}),
+				description: "",
+				descriptionKey: inferFuture ? "futureVersion" : "previousVersion",
 				modelId: r.modelId,
 			};
 		}
 
 		// Fallback
-		const label = r.eventName || r.modelName || r.modelId || "Event";
+		const label = r.eventName || r.modelName || r.modelId || "";
 		return {
 			date: r.date,
 			type: "default",
 			label,
+			...(!r.eventName && !r.modelName && !r.modelId
+				? { labelKey: "event" as const }
+				: {}),
 			description: r.description ?? label,
 			modelId: r.modelId,
 		};
@@ -201,6 +219,8 @@ export default async function ModelReleaseTimeline({
 	includeHidden?: boolean;
 }) {
 	// const modelId = (await params).modelId;
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.modelTimeline");
 	const modelTimeline = await fetchFrontendModelTimeline(modelId);
 
 	const events = modelTimeline?.events ?? [];
@@ -214,7 +234,7 @@ export default async function ModelReleaseTimeline({
 
 	return (
 		<div className="w-full mx-auto mb-8">
-			<h2 className="text-xl font-semibold mb-4">Model Timeline</h2>
+			<h2 className="text-xl font-semibold mb-4">{t("heading")}</h2>
 			<div className="space-y-6">
 				{timeline.map((ev, idx) => {
 					const s = STYLES[ev.type] ?? STYLES.default;
@@ -242,16 +262,16 @@ export default async function ModelReleaseTimeline({
 									{ev.type === "version" && ev.modelId ? (
 										<Link href={`/models/${ev.modelId}`}>
 											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
-												{ev.label}
+												{ev.labelKey ? t(ev.labelKey) : ev.label}
 											</span>
 										</Link>
 									) : (
-										ev.label
+									ev.labelKey ? t(ev.labelKey) : ev.label
 									)}
 								</div>
 
 								<div className="text-zinc-500 text-sm">
-									{ev.description}
+									{ev.descriptionKey ? t(ev.descriptionKey) : ev.description}
 								</div>
 							</CardContent>
 						</Card>

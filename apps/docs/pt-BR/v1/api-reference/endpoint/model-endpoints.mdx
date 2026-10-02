@@ -1,0 +1,63 @@
+---
+title: "Listar os recursos dos endpoints do modelo"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "Consultar as rotas de provedores, modalidades, parâmetros, disponibilidade e preços de um modelo."
+---
+
+Use este endpoint antes de enviar uma solicitação quando o aplicativo precisar confirmar a disponibilidade de uma combinação de modelo, provedor, endpoint e parâmetros.
+
+Para `openai/gpt-5.4-mini`, use:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Cada linha representa um recurso de provedor e endpoint. Ela inclui:
+
+- o ID canônico do recurso e o caminho público da API
+- o ID e o nome do provedor, além do slug do modelo do provedor
+- as modalidades de entrada e saída
+- os nomes dos parâmetros compatíveis e os detalhes estruturados
+- os estados do provedor, modelo, recurso, roteamento e disponibilidade
+- as datas de vigência quando a rota está programada ou limitada no tempo
+- um resumo de preços do endpoint
+
+## Incluir rotas planejadas e inativas
+
+O padrão `availability=active` retorna apenas linhas com rotas públicas. Use `availability=all` para consultar rotas futuras e inativas:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Não encaminhe tráfego de produção para uma linha a menos que `availability_status` seja `active` e `is_active_gateway` seja `true`.
+
+## Filtrar rotas
+
+Use filtros repetíveis ou separados por vírgulas para:
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+Por exemplo, isto retorna as rotas da OpenAI compatíveis com `temperature`:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## Endpoints relacionados
+
+- [Listar modelos](./models.mdx)
+- [Listar endpoints](./endpoints.mdx)
+

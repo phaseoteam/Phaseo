@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useTranslations } from "next-intl"
 import { CreditCard } from "lucide-react"
 import { Logo } from "@/components/Logo"
-import { editorOptionLabel } from "@/lib/models/editorOptions"
+
 import { Button } from "@/components/ui/button"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { SearchableSelect } from "@/components/ui/searchable-select"
@@ -36,9 +37,9 @@ interface SubscriptionPlansTabProps {
   ) => void
 }
 
-function formatPlanLabel(plan: PlanOption): string {
+function formatPlanLabel(plan: PlanOption, frequencyLabel: (value: string) => string): string {
   const name = plan.name?.trim() || plan.plan_id?.trim() || plan.plan_uuid
-  const frequency = plan.frequency?.trim()
+  const frequency = plan.frequency?.trim() ? frequencyLabel(plan.frequency.trim()) : null
   const price =
     typeof plan.price === "number" && Number.isFinite(plan.price)
       ? `${plan.price}${plan.currency ? ` ${plan.currency}` : ""}`
@@ -51,6 +52,13 @@ export default function SubscriptionPlansTab({
   modelId,
   onSubscriptionPlanModelsChange,
 }: SubscriptionPlansTabProps) {
+  const t = useTranslations("Common.ui.modelEditor")
+  const periodT = useTranslations("Catalogue.modelDetail.sections")
+  const pricingT = useTranslations("Common.ui.versionedPricing")
+  const frequencyLabel = (value: string) => {
+    const key = ({ monthly: "monthly", quarterly: "quarterly", yearly: "yearly", weekly: "weekly", daily: "daily", usage: "usageBased", custom: "customPricing" } as Record<string, string>)[value];
+    return key ? periodT(key as never) : value === "one-time" ? t("oneTime") : value;
+  }
   const [plans, setPlans] = useState<PlanOption[]>([])
   const [modelOrganisationId, setModelOrganisationId] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
@@ -165,7 +173,7 @@ export default function SubscriptionPlansTab({
       await createAdminSubscriptionPlan({ plan_uuid, plan_id: planId, name, frequency, price: newPlan.price ?? 0, currency, organisation_id: modelOrganisationId })
       setPlans((prev) =>
         [...prev, newPlan].sort((a, b) =>
-          formatPlanLabel(a).localeCompare(formatPlanLabel(b), undefined, {
+          formatPlanLabel(a, frequencyLabel).localeCompare(formatPlanLabel(b, frequencyLabel), undefined, {
             sensitivity: "base",
           })
         )
@@ -183,30 +191,30 @@ export default function SubscriptionPlansTab({
   return (
     <div className="space-y-4">
       <div>
-        <Label className="flex items-center gap-2 text-sm font-semibold"><CreditCard className="size-4" aria-hidden />Subscription Plans</Label>
+        <Label className="flex items-center gap-2 text-sm font-semibold"><CreditCard className="size-4" aria-hidden />{t("subscriptionPlansTitle")}</Label>
         <p className="text-xs text-muted-foreground">
-          Add plan membership or set its end date.
+          {t("planMembershipDescription")}
         </p>
       </div>
 
-      <SearchableSelect label="Add plan" placeholder="Find a subscription plan…" value="" options={plans.filter((plan) => !selectedRows[plan.plan_uuid]).map((plan) => ({ value: plan.plan_uuid, label: formatPlanLabel(plan), icon: plan.organisation_id ? <Logo id={plan.organisation_id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> : <CreditCard className="size-5 shrink-0 text-muted-foreground" /> }))} onValueChange={(value) => { const plan = plans.find((plan) => plan.plan_uuid === value); if (plan) togglePlan(plan, true); }} />
+      <SearchableSelect label={t("addPlan")} placeholder={t("findPlan")} value="" options={plans.filter((plan) => !selectedRows[plan.plan_uuid]).map((plan) => ({ value: plan.plan_uuid, label: formatPlanLabel(plan, frequencyLabel), icon: plan.organisation_id ? <Logo id={plan.organisation_id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> : <CreditCard className="size-5 shrink-0 text-muted-foreground" /> }))} onValueChange={(value) => { const plan = plans.find((plan) => plan.plan_uuid === value); if (plan) togglePlan(plan, true); }} />
       <div className="space-y-2 border-t pt-4">
         {selectedList.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No plan memberships yet.</p>
+          <p className="text-sm text-muted-foreground">{t("noPlanMemberships")}</p>
         ) : null}
         {plans.filter((plan) => selectedRows[plan.plan_uuid]).map((plan) => {
           const membership = selectedRows[plan.plan_uuid]
           return (
             <div key={plan.plan_uuid} className="flex flex-wrap items-center justify-between gap-3 border-b py-3 text-sm">
-              <span className="flex min-w-0 flex-1 items-center gap-3">{plan.organisation_id ? <Logo id={plan.organisation_id} alt="" width={24} height={24} className="size-6 shrink-0 object-contain" /> : <CreditCard className="size-5 shrink-0 text-muted-foreground" />}{formatPlanLabel(plan)}</span>
-              {membership ? <div className="flex flex-wrap items-center gap-2"><DatePickerInput value={membership.effective_to?.slice(0, 10) ?? ""} placeholder="No end date" onChange={(value) => setSelectedRows((rows) => ({ ...rows, [plan.plan_uuid]: { ...membership, effective_to: value ? `${value}T00:00:00Z` : null } }))} /><Button variant="ghost" disabled={Boolean(membership.effective_to)} onClick={() => togglePlan(plan, false)}>{membership.effective_to ? "End-dated" : "End now"}</Button></div> : <Button variant="outline" onClick={() => togglePlan(plan, true)}>Add</Button>}
+              <span className="flex min-w-0 flex-1 items-center gap-3">{plan.organisation_id ? <Logo id={plan.organisation_id} alt="" width={24} height={24} className="size-6 shrink-0 object-contain" /> : <CreditCard className="size-5 shrink-0 text-muted-foreground" />}{formatPlanLabel(plan, frequencyLabel)}</span>
+              {membership ? <div className="flex flex-wrap items-center gap-2"><DatePickerInput value={membership.effective_to?.slice(0, 10) ?? ""} placeholder={t("noEndDate")} onChange={(value) => setSelectedRows((rows) => ({ ...rows, [plan.plan_uuid]: { ...membership, effective_to: value ? `${value}T00:00:00Z` : null } }))} /><Button variant="ghost" disabled={Boolean(membership.effective_to)} onClick={() => togglePlan(plan, false)}>{membership.effective_to ? t("endDated") : t("endNow")}</Button></div> : <Button variant="outline" onClick={() => togglePlan(plan, true)}>{t("add")}</Button>}
             </div>
           )
         })}
       </div>
 
       <div className="space-y-2 border-t pt-4">
-        <Label className="text-sm font-semibold">Create and Attach Plan</Label>
+        <Label className="text-sm font-semibold">{t("createAndAttachPlan")}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           <Input
             value={newPlanId}
@@ -216,11 +224,11 @@ export default function SubscriptionPlansTab({
           <Input
             value={newPlanName}
             onChange={(event) => setNewPlanName(event.target.value)}
-            placeholder="Plan name"
+            placeholder={t("planName")}
           />
         </div>
         <div className="grid gap-2 sm:grid-cols-3">
-          <SearchableSelect label="Billing frequency" value={newPlanFrequency} options={["monthly", "quarterly", "yearly", "weekly", "daily", "one-time", "usage", "custom"].map((value) => ({ value, label: editorOptionLabel(value) }))} onValueChange={setNewPlanFrequency} />
+          <SearchableSelect label={t("billingFrequency")} value={newPlanFrequency} options={["monthly", "quarterly", "yearly", "weekly", "daily", "one-time", "usage", "custom"].map((value) => ({ value, label: frequencyLabel(value) }))} onValueChange={setNewPlanFrequency} />
           <Input
             value={newPlanPrice}
             onChange={(event) => setNewPlanPrice(event.target.value)}
@@ -228,7 +236,7 @@ export default function SubscriptionPlansTab({
             type="number"
             step="0.01"
           />
-          <SearchableSelect label="Currency" value={newPlanCurrency} options={["USD", "EUR", "GBP", "CAD", "AUD", "CNY", "JPY"].map((value) => ({ value, label: value }))} onValueChange={setNewPlanCurrency} />
+          <SearchableSelect label={pricingT("currency")} value={newPlanCurrency} options={["USD", "EUR", "GBP", "CAD", "AUD", "CNY", "JPY"].map((value) => ({ value, label: value }))} onValueChange={setNewPlanCurrency} />
         </div>
         <div className="flex justify-end">
           <Button
@@ -238,7 +246,7 @@ export default function SubscriptionPlansTab({
             onClick={handleCreatePlan}
             disabled={creatingPlan || !newPlanId.trim() || !newPlanName.trim()}
           >
-            {creatingPlan ? "Creating..." : "Create and attach"}
+            {creatingPlan ? t("creating") : t("createAndAttach")}
           </Button>
         </div>
       </div>

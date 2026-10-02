@@ -1,0 +1,231 @@
+---
+title: "Prompts de démarrage pour mini-applications"
+icon: "code"
+description: "Prompts à copier pour demander à des agents de programmation de créer de petites applications Phaseo avec HTTP brut, des SDK ou des runtimes d’agents."
+---
+
+Utilisez cette page pour fournir à un agent de programmation un prompt précis qui produit une petite application fonctionnelle, plutôt qu’un plan d’intégration vague.
+
+<Tip>
+Ces prompts sont axés sur le résultat et précisent la mise en œuvre afin de mieux fonctionner dans Cursor, Claude Code, Codex et les outils similaires.
+</Tip>
+
+## Comment utiliser ces prompts
+
+<Steps>
+  <Step title="Choisissez le point d’intégration">
+    Choisissez le prompt correspondant à la façon dont vous souhaitez que l’application appelle Phaseo :
+
+    - HTTP brut
+    - un SDK officiel
+    - Vercel AI SDK
+    - SDK Agent
+  </Step>
+  <Step title="Remplacez les variables entre crochets">
+    Renseignez des valeurs comme `[IDÉE D’APPLICATION]`, `[FRAMEWORK]`, `[MODÈLE]` et `[LANGUAGE]` avant de coller le prompt dans votre agent de programmation.
+  </Step>
+  <Step title="Demandez des vérifications, pas seulement du code">
+    Gardez les lignes de vérification dans le prompt. L’agent devra ainsi indiquer ce qu’il a réellement exécuté, ses hypothèses et ce qui reste à configurer manuellement.
+  </Step>
+</Steps>
+
+## Lots de prompts
+
+<AccordionGroup>
+  <Accordion title="Mini-app en HTTP brut" icon="globe">
+    <Prompt
+      description="Créez une petite application qui utilise **HTTP brut** avec Phaseo plutôt qu’un SDK."
+      icon="globe"
+      actions={["copy", "cursor"]}
+    >
+{`Vous mettez en œuvre une petite application de démonstration de qualité production avec Phaseo Gateway.
+
+Créez une mini-application avec [FRAMEWORK] pour [IDÉE D’APPLICATION].
+
+Exigences :
+- Utilisez des requêtes HTTP brutes, pas un SDK Phaseo.
+- Utilisez l’endpoint Phaseo [ENDPOINT].
+- Utilisez le modèle [MODÈLE].
+- Lisez la clé API depuis une variable d’environnement nommée PHASEO_API_KEY.
+- Gardez l’application volontairement petite : une page principale, une route ou un gestionnaire serveur et un style minimal.
+- Affichez la saisie utilisateur, l’état d’envoi de la requête, la sortie du modèle et tout état d’erreur du gateway.
+- Ajoutez un exemple de charge utile de requête dans les commentaires ou la documentation afin de faciliter l’audit ultérieur de l’intégration.
+
+Détails de mise en œuvre :
+- Utilisez fetch.
+- Laissez le corps de la requête explicite au lieu de masquer les champs derrière des abstractions.
+- Ajoutez une validation simple des entrées vides avant d’envoyer la requête API.
+- Gérez proprement les réponses autres que 200 et affichez leur corps lorsque c’est utile.
+- Gardez les secrets uniquement côté serveur.
+
+Livrables :
+- Le code de l’application.
+- Une courte section README expliquant comment l’exécuter.
+- Une entrée PHASEO_API_KEY dans .env.example.
+
+Vérification :
+- Lancez l’application localement si possible.
+- Vérifiez un parcours de requête réussi.
+- Indiquez précisément ce que vous avez vérifié, ce que vous n’avez pas pu vérifier et les hypothèses restantes.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Mini-application avec le SDK TypeScript" icon="file-code-2">
+    <Prompt
+      description="Créez une mini-application avec le **SDK TypeScript** et une intégration simple à examiner."
+      icon="file-code-2"
+      actions={["copy", "cursor"]}
+    >
+{`Vous créez une petite application basée sur le SDK TypeScript de Phaseo.
+
+Créez une mini-application avec [FRAMEWORK] pour [IDÉE D’APPLICATION].
+
+Exigences :
+- Utilisez @phaseo/sdk.
+- Utilisez le modèle [MODÈLE].
+- Privilégiez l’API Responses, sauf raison importante d’utiliser un autre endpoint.
+- Lisez la clé API depuis PHASEO_API_KEY.
+- Gardez le code concis et compréhensible pour une première intégration.
+- Affichez dans l’interface les états de chargement, de réussite et d’échec.
+
+Détails de mise en œuvre :
+- Utilisez un seul point d’intégration côté serveur plutôt que de répartir les appels au SDK dans de nombreux fichiers.
+- Gardez la structure de la requête explicite, notamment le modèle, l’entrée et les options importantes.
+- Incluez un exemple d’analyse de réponse qui extrait de manière sûre le texte final de l’assistant.
+- Ajoutez des commentaires uniquement là où la structure de réponse du SDK serait autrement difficile à comprendre.
+
+Livrables :
+- Code de l’application fonctionnel.
+- Instructions de configuration concises.
+- Une brève explication indiquant pourquoi le SDK TypeScript convient mieux que HTTP brut à cette mini-application.
+
+Vérification :
+- Lancez l’application si possible.
+- Effectuez une requête complète de bout en bout.
+- Indiquez précisément les fichiers modifiés et les étapes de configuration que l’utilisateur doit encore effectuer.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Mini-application avec le SDK Python" icon="snake">
+    <Prompt
+      description="Créez une petite application ou un service Python à l’aide du **SDK Python officiel**."
+      icon="snake"
+      actions={["copy", "cursor"]}
+    >
+{`Vous mettez en œuvre une petite application Python basée sur l’IA avec Phaseo Gateway.
+
+Créez une application [FRAMEWORK OU TYPE D’APPLICATION PYTHON] pour [IDÉE D’APPLICATION].
+
+Exigences :
+- Utilisez le SDK Python officiel phaseo.
+- Utilisez le modèle [MODÈLE].
+- Lisez les identifiants depuis PHASEO_API_KEY.
+- Gardez le code assez concis pour qu’un nouveau membre de l’équipe le comprenne rapidement.
+- Prévoyez un chemin de saisie utilisateur et un chemin de sortie du modèle.
+- Prévoyez une gestion claire des erreurs liées aux entrées non valides et aux échecs du gateway en amont.
+
+Détails de mise en œuvre :
+- Privilégiez un module d’intégration unique responsable de la création du client Phaseo.
+- Utilisez directement la structure de réponse du SDK au lieu de l’envelopper dans des abstractions superflues.
+- Si une sortie structurée est utile à l’application, utilisez-la et validez la structure renvoyée.
+- Ajoutez une courte section README indiquant les étapes d’installation et d’exécution.
+
+Livrables :
+- Code de l’application.
+- Toute mise à jour des dépendances.
+- Instructions d’utilisation concises.
+
+Vérification :
+- Exécutez la commande appropriée si possible.
+- Vérifiez un parcours de requête réussi ou expliquez pourquoi cela n’a pas été possible.
+- Signalez les variables d’environnement ou les services locaux que l’utilisateur doit encore configurer.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Mini-application avec le Vercel AI SDK" icon="code">
+    <Prompt
+      description="Créez une petite application qui utilise **Phaseo via le Vercel AI SDK**."
+      icon="code"
+      actions={["copy", "cursor"]}
+    >
+{`Vous créez une mini-application qui utilise Phaseo via le fournisseur Vercel AI SDK.
+
+Créez une application avec [FRAMEWORK] pour [IDÉE D’APPLICATION].
+
+Exigences :
+- Utilisez le fournisseur Vercel AI SDK de Phaseo.
+- Utilisez le modèle [MODÈLE].
+- Lisez la clé API Phaseo depuis PHASEO_API_KEY.
+- Gardez une expérience légère, centrée sur une tâche utilisateur bien définie.
+- Si l’application ressemble à un chat, prenez en charge la sortie en streaming ; sinon, expliquez pourquoi une réponse sans streaming est plus simple ici.
+
+Détails de mise en œuvre :
+- Gardez le branchement du fournisseur explicite.
+- Utilisez les primitives du AI SDK de façon standard et adaptée au framework.
+- Évitez toute gestion d’état supplémentaire inutile dans la première version.
+- Ajoutez une brève explication de la façon dont l’identifiant de modèle du fournisseur est choisi.
+
+Livrables :
+- Code de l’application.
+- Étapes de configuration.
+- Une brève note expliquant comment passer à un autre modèle par la suite.
+
+Vérification :
+- Lancez l’application si possible.
+- Vérifiez le parcours utilisateur principal.
+- Signalez séparément les éléments qui n’ont pas été vérifiés.`}
+    </Prompt>
+  </Accordion>
+
+  <Accordion title="Mini-application avec Agent SDK" icon="bot">
+    <Prompt
+      description="Créez une petite application avec le **Phaseo Agent SDK** et une boucle d’outils limitée."
+      icon="bot"
+      actions={["copy", "cursor"]}
+    >
+{`Vous créez une petite application agentique basée sur Phaseo Gateway.
+
+Créez une mini-application en [LANGUAGE] pour [IDÉE D’APPLICATION] avec le Phaseo Agent SDK.
+
+Exigences :
+- Utilisez le Phaseo Agent SDK pour [LANGUAGE].
+- Utilisez le modèle [MODÈLE].
+- N’incluez qu’un ou deux outils locaux déterministes.
+- Gardez la boucle d’outils limitée et facile à déboguer.
+- Lisez la clé API depuis PHASEO_API_KEY.
+- Affichez la sortie finale et, si nécessaire, l’activité des outils ou l’état intermédiaire du raisonnement.
+
+Détails de mise en œuvre :
+- Gardez la définition de l’agent à un seul endroit.
+- Gardez les définitions des outils concises et déterministes.
+- Évitez de créer un framework d’agents généraliste trop vaste pour la première version.
+- Ajoutez une note indiquant où l’état d’exécution serait enregistré si l’application devenait reprenable par la suite.
+
+Livrables :
+- Code de l’application.
+- Instructions de configuration.
+- Une brève explication indiquant pourquoi l’Agent SDK convient mieux qu’une complétion unique à ce workflow.
+
+Vérification :
+- Exécutez le parcours principal si possible.
+- Vérifiez une exécution complète de l’agent.
+- Signalez les hypothèses restantes, en particulier celles concernant l’environnement ou les dépendances des outils locaux.`}
+    </Prompt>
+  </Accordion>
+</AccordionGroup>
+
+## Comment améliorer ces prompts
+
+- Remplacez `[IDÉE D’APPLICATION]` par une tâche utilisateur précise, et non par une présentation générale du produit.
+- Remplacez `[MODÈLE]` par l’identifiant exact du modèle que l’agent doit utiliser.
+- Précisez si la sortie doit être du texte libre, du JSON strict, un chat ou un seul élément généré.
+- Indiquez le framework d’interface et la cible de déploiement si vous les connaissez.
+- Ajoutez une ou deux contraintes importantes, comme `fournisseurs de l’UE uniquement`, `utiliser le streaming` ou `garder tous les secrets côté serveur`.
+
+## Guides associés
+
+- [Démarrage rapide](../quickstart.mdx)
+- [Exemples](../guides/examples.mdx)
+- [Présentation du SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+- [Présentation du SDK Python](../sdk-reference/python/overview.mdx)
+- [Présentation d’Agent SDK](../sdk-reference/agent-sdk/overview.mdx)

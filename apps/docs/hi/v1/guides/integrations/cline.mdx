@@ -1,0 +1,75 @@
+---
+title: "Cline"
+icon: "/icons/brands/cline.svg"
+description: "Cline के OpenAI-संगत provider के ज़रिए इसे Phaseo से जोड़ें।"
+---
+
+अलग सत्र के लिए Phaseo CLI रनर चुनें, या CLI से समर्पित कुंजी बनाकर मौजूदा Cline इंस्टॉलेशन हाथ से सेट करें। Cline क्रेडेंशियल VS Code के सुरक्षित सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
+
+## Phaseo CLI से Cline चलाएँ
+
+Cline CLI के लिए Phaseo को एक सत्र का प्रदाता कॉन्फ़िगरेशन बनाने दें:
+
+```bash
+phaseo login
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+```
+
+सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल उपलब्ध कराने के लिए `--catalog all`, या इंस्टॉल और लॉन्च योजना देखने के लिए `--dry-run --json` इस्तेमाल करें। स्पष्ट कमांड रूप के लिए `phaseo run cline ...` इस्तेमाल करें। रनर अस्थायी Cline सेटिंग और डेटा निर्देशिका इस्तेमाल करता है, इसलिए मौजूदा Cline या VS Code सेटअप नहीं बदलता।
+
+## Phaseo CLI से क्रेडेंशियल बनाएँ
+
+```bash
+phaseo login
+phaseo setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## Cline को हाथ से सेट करें
+
+1. VS Code में Cline panel खोलें।
+2. Settings icon चुनें या chat box के नीचे provider चुनें।
+3. **OpenAI Compatible** चुनें।
+4. ये values दर्ज करें:
+
+| Cline field | मान |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | इस कमांड का आउटपुट `phaseo integrations credential cline` |
+| Model ID | `anthropic/claude-sonnet-4.6` या सेटअप में दिखाया गया मॉडल |
+
+5. Provider सेव करें। आपके version में **Verify** दिखे तो उसे चुनें।
+6. अगले task के लिए कॉन्फ़िगर किया गया model चुनें।
+
+## जाँचें
+
+Cline से `PHASEO_CLINE_OK` जवाब देने को कहें और Phaseo activity में request दिखाई देने की पुष्टि करें।
+
+## हटाएँ
+
+Cline में Phaseo provider हटाएँ या बदलें, फिर यह चलाएँ:
+
+```bash
+phaseo integrations remove cline
+```
+
+CLI VS Code के private extension storage को साफ़ नहीं कर सकती, लेकिन हटाने पर सहेजी गई key revoke हो जाती है।
+
+## समस्या निवारण
+
+### जाँच विफल होती है
+
+Base URL को `/v1` सहित ठीक वैसा ही रखें और नई प्राप्त key को quotes या whitespace के बिना paste करें।
+
+### मॉडल सूची खाली है
+
+Phaseo model ID स्वयं दर्ज करें। Model discovery ज़रूरी नहीं है।
+
+### चैट चलता है, लेकिन टूल विफल होते हैं
+
+Tool calling सपोर्ट वाला Phaseo model चुनें। Connectivity और model tool support अलग-अलग जाँच हैं।
+
+## संबंधित विषय
+
+- [OpenAI-संगत Cline configuration](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
+- [कोडिंग एजेंट](./coding-assistants.mdx)
+- [मॉडल](../../api-reference/endpoint/models.mdx)

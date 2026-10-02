@@ -1,0 +1,78 @@
+---
+title: "OpenAI GPT-5.4"
+description: "Aspectos clave para adoptar GPT-5.4, incluidos los controles de razonamiento, la visión y el uso del ordenador."
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.4
+
+Usa esta guía para incorporar `openai/gpt-5.4` de forma segura en producción.
+
+GPT-5.4 no cambia tanto el formato de las solicitudes como los controles de razonamiento, el manejo de imágenes y el uso de herramientas. A 10 de marzo de 2026, la documentación oficial de OpenAI destaca `reasoning.effort`, un mejor uso del ordenador y una entrada de imágenes de mayor fidelidad. No documenta un parámetro `phase` específico de GPT-5.4.
+
+## Inicio rápido de la migración
+
+1. Cambia el ID del modelo a `openai/gpt-5.4` sin modificar el resto de la solicitud.
+2. Elige y prueba el nivel de esfuerzo de razonamiento que se ajuste al presupuesto de latencia de la ruta.
+3. Vuelve a probar visión, salidas estructuradas y flujos de uso del ordenador cuando corresponda.
+4. Prueba GPT-5.4 gradualmente y conserva la ruta anterior como alternativa.
+
+## Novedades
+
+- `reasoning.effort` admite `none`, `low`, `medium`, `high` y `xhigh`.
+- GPT-5.4 introduce el detalle de imagen `original` para la percepción visual de máxima fidelidad.
+- La herramienta `computer` actualizada es la vía oficial para los flujos de uso del ordenador con GPT-5.4.
+- GPT-5.4 mejora el uso de herramientas en tareas de larga duración, el trabajo con contextos extensos y los flujos de documentos profesionales.
+
+## Qué cambiar en tu integración
+
+### 1. Revisa la configuración de razonamiento
+
+Si vienes de GPT-4.1 o de una versión anterior de GPT-5, no des por hecho que los valores predeterminados anteriores siguen siendo los mejores. Vuelve a probar cada ruta con el esfuerzo que corresponda a su presupuesto de latencia:
+
+- `none` o `low` para rutas de baja latencia
+- `medium` o `high` para la mayoría de las tareas estructuradas
+- `xhigh` para flujos de agentes o razonamiento profundo
+
+### 2. Revisa los flujos de visión
+
+Si tu flujo depende de capturas densas, documentos o localización de interfaces, prueba el nuevo nivel de detalle de imagen `original`. Afecta tanto a la fidelidad como al coste.
+
+### 3. Vuelve a comprobar las rutas de uso del ordenador
+
+Si migras tareas de automatización de navegador o escritorio, actualízalas a la ruta actual de la herramienta `computer` y vuelve a probar de principio a fin la finalización de los pasos.
+
+## Qué probar
+
+### Compatibilidad de prompts
+
+- prompts de sistema largos
+- prompts de extracción y clasificación
+- salidas sensibles al formato
+- prompts que antes requerían reintentos para mantener el objetivo
+
+### Herramientas y salidas estructuradas
+
+- cumplimiento de esquemas en cada nivel de esfuerzo
+- calidad de selección de herramientas
+- integridad de argumentos
+- estabilidad de los flujos de uso del ordenador en varios pasos
+
+### Visión y operaciones
+
+- comprensión de capturas y documentos con detalle `high` frente a `original`
+- latencia y uso de tokens con cargas realistas
+- tasa de reintentos y tiempos de espera
+- coste por tarea completada correctamente frente al modelo sustituido
+
+## Despliegue seguro
+
+1. Evalúa GPT-5.4 con los niveles de esfuerzo exactos que piensas usar.
+2. Si usas imágenes, prueba `original` por separado porque cambia la calidad y el coste.
+3. Ejecuta en paralelo los prompts de producción antes de cambiar la ruta predeterminada.
+4. Aumenta el tráfico gradualmente y conserva como alternativa un modelo OpenAI anterior u otro proveedor.
+
+## Fuentes
+
+- [Presentación de GPT-5.4](https://openai.com/index/introducing-gpt-5-4/)
+- [Documentación del modelo GPT-5.4](https://developers.openai.com/api/docs/models/gpt-5.4)

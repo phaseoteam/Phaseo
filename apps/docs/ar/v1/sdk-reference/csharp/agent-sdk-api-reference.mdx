@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "مرجع للأنواع والطرق الرئيسية في Agent SDK لـ C#."
+---
+
+| API | الغرض |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | تعريف وكيل |
+| `AgentSdk.DefineTool(...)` | تعريف أداة محلية أو يدوية |
+| `AgentSdk.CreateGatewayAgentClient(...)` | ربط جولات النموذج بـ Phaseo |
+| `Agent.Run(...)` | التشغيل حتى حالة نهائية أو الإيقاف المؤقت |
+| `Agent.Stream(...)` | التشغيل باستخدام تدفقات غير متزامنة قابلة لإعادة التشغيل |
+| `Agent.ContinueRun(...)` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `AgentStreamResult.GetResult()` | انتظار اكتمال التشغيل |
+| `AgentStreamResult.TextStream()` | قراءة تغييرات النص |
+| `AgentStreamResult.FullStream()` | قراءة جميع أحداث دورة الحياة |
+| `AgentStreamResult.Cancel()` | إلغاء التشغيل النشط |
+
+تشمل السجلات والواجهات المهمة `AgentDefinition` و`RunOptions` و`RunResult` و`RunRecord` و`RunStep` و`Tool` و`ToolDecision` و`ToolOutput` و`RuntimeContext` و`IStateAccessor` و`ModelRetryConfig` و`ToolExecutionConfig`.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [الأخطاء وتفاصيل البوابة](./agent-sdk-observability.mdx)

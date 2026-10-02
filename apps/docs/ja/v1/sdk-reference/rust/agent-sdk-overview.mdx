@@ -1,0 +1,50 @@
+---
+icon: "bot"
+title: "Rust Agent SDK"
+description: "phaseo-agent を使って、ツールを利用する同期エージェントを構築します。"
+---
+
+Rust アプリケーションで、上限付きのモデルループ、ローカルツール、承認、または再開可能な人によるレビューが必要な場合は、公開済みの [`phaseo-agent`](https://crates.io/crates/phaseo-agent) クレートを使用します。
+
+Rust Agent SDK は `phaseo` クライアントを基盤とし、Phaseo Responses API を通じてモデルのターンを実行します。
+
+## サポートされている機能
+
+| 機能 | Rust の対応状況 |
+| --- | --- |
+| ローカル実行可能ツール | 対応。モデル呼び出し順に同期実行 |
+| 外部ツールの出力 | 対応。`Tool::external(...)` と `ContinueOptions` を使用 |
+| ツールの承認 | 対応。ツール呼び出しの正確な ID を指定 |
+| 人によるレビュー | 対応。一時停止した実行状態をシリアライズ可能 |
+| モデルの再試行 | 対応。固定の待機時間で再試行 |
+| ライフサイクルイベント | 対応。コールバックベースの実行メソッドを使用 |
+| 使用量の集計 | 入力、出力、キャッシュ、合計トークン数。カスタムモデルクライアントが設定した場合はコストも含む |
+| 実行制限 | モデルステップの最大数 |
+| Gateway アダプター | `GatewayAgentClient` 経由の Responses API |
+| ストリーミング | 未対応 |
+| 非同期実行とキャンセル | 未対応 |
+| ローカルツールの並行実行 | 未対応 |
+| 実行時スキーマ検証 | JSON Schema はモデルに送信されます。ローカルの入出力は `serde_json::Value` です |
+| Devtools の記録 | 未対応 |
+
+<Note>
+Rust はサポート対象の同期ランタイムであり、TypeScript のストリーミングランタイムと機能が同等の移植版ではありません。このセクションでは `phaseo-agent 0.1` で提供される API のみを説明します。
+</Note>
+
+## 実行モデル
+
+1. 現在のメッセージとツール定義を `ModelClient` に送信する
+2. 利用可能なローカルツールを実行する
+3. 必要に応じて承認、外部出力、人によるレビューのために一時停止する
+4. 結果を追加し、完了するかステップ上限に達するまで続行する
+
+SDK は Phaseo がホストするサービスに実行を保存しません。プロセス再起動後も実行を維持する必要がある場合は、アプリケーションで `RunResult` を永続化してください。
+
+Gateway アダプター `0.1` は現在、Gateway の `cost_nanos` または `cost_cents` を `UsageSummary.cost` に反映しません。支出の確認には Agent SDK のコストフィールドではなく、Gateway のレスポンスまたは生成レコードを使用してください。
+
+<Columns cols={2}>
+  <Card title="Agent SDK をインストール" icon="package" href="./agent-sdk-installation.mdx">Rust の両方のクレートを追加し、API キーを設定します。</Card>
+  <Card title="最初のエージェントを構築" icon="play" href="./agent-sdk.mdx">Phaseo Gateway を通じてローカルツールループを実行します。</Card>
+  <Card title="ツールと承認" icon="wrench" href="./agent-sdk-tools.mdx">ローカル、外部、承認が必要なツールを追加します。</Card>
+  <Card title="Agent API リファレンス" icon="book-open" href="./agent-sdk-api-reference.mdx">Rust の構造体、trait、メソッドの詳細を確認します。</Card>
+</Columns>

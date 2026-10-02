@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -17,7 +18,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, ShieldAlert } from "lucide-react";
 import { deleteManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 export default function DeleteManagementKeyItem({
 	k,
@@ -36,6 +37,7 @@ export default function DeleteManagementKeyItem({
 	const setDialogOpen = onOpenChange ?? setOpen;
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
+	const t = useTranslations("SettingsUI");
 
 	async function onDelete(e?: React.FormEvent) {
 		e?.preventDefault();
@@ -44,11 +46,11 @@ export default function DeleteManagementKeyItem({
 		const promise = deleteManagementKeyAction(k.id, confirm);
 		try {
 			await toast.promise(promise, {
-				loading: `Deleting management API key...`,
-				success: `Management API key deleted`,
+					loading: t("keys.deletingKey"),
+					success: t("keys.deleted"),
 				error: (err) => {
 					return (
-						(err && (err as any).message) || "Failed to delete key"
+						localizedSettingsError(err, t, "Action failed", t("keys.failedDelete"))
 					);
 				},
 			});
@@ -75,7 +77,7 @@ export default function DeleteManagementKeyItem({
 						}} />}>
 
 						<Trash2 className="mr-2" />
-						Delete
+						{t("labels.delete")}
 
 				</DropdownMenuItem>
 			) : null}
@@ -84,34 +86,33 @@ export default function DeleteManagementKeyItem({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2 text-red-600">
 						<ShieldAlert className="h-5 w-5" />
-						Delete Management API Key
+						{t("keys.deleteApiKey")}
 					</DialogTitle>
 					<DialogDescription>
-						This action is permanent. This key has elevated privileges.
+						{t("strings.phraseThisActionIsPermanentThisKeyHasElevatedPrivileges" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onDelete} className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-sm">
-							To confirm, type the key name{" "}
-							<strong>{k.name}</strong> below.
+							{t("settingsPageCopy.confirmKeyName" as never, { name: k.name } as never)}
 						</p>
 						<Input
 							value={confirm}
 							onChange={(e) => setConfirm(e.target.value)}
-							placeholder="Type key name to confirm"
+							placeholder={t("keys.typeKeyName")}
 						/>
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
-							<Button variant="ghost">Cancel</Button>
+							<Button variant="ghost">{t("labels.cancel")}</Button>
 						</DialogClose>
 						<Button
 							type="submit"
 							variant="destructive"
 							disabled={loading || confirm !== k.name}
 						>
-							{loading ? "Deleting..." : "Delete Key"}
+							{loading ? t("keys.deletingKey") : t("keys.deleteKey")}
 						</Button>
 					</DialogFooter>
 				</form>

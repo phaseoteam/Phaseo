@@ -1,0 +1,49 @@
+---
+title: "Principios"
+description: "Los principios de producto que guían Phaseo Gateway, el enrutamiento, la observabilidad y los datos de modelos."
+icon: "scale"
+---
+
+Usa esta explicación para entender las decisiones de producto que hay detrás de Gateway y del catálogo de modelos.
+
+Phaseo se basa en unos pocos principios sencillos: mantener las integraciones portables, hacer visible el comportamiento de modelos y proveedores, y dar a los equipos suficiente control de enrutamiento para operar con seguridad en producción.
+
+## Apertura y transparencia
+
+Siempre que sea posible, los precios, la disponibilidad de proveedores, el comportamiento del enrutamiento y los datos de rendimiento deben estar visibles.
+
+Esto significa que Phaseo debe facilitar la respuesta a preguntas prácticas:
+
+- ¿qué proveedores pueden ofrecer este modelo?
+- ¿cuánto cuesta la solicitud?
+- ¿qué rapidez tuvo la ruta?
+- ¿qué cambió al actualizar un modelo o proveedor?
+
+## Una API para cada modelo
+
+Los proveedores de modelos no ofrecen API idénticas. Phaseo proporciona a tu aplicación una capa estable para distintos ecosistemas de proveedores, familias de modelos y modalidades.
+
+El objetivo no es ocultar todas las diferencias entre proveedores. Queremos mantener coherentes los flujos de trabajo habituales y dejar claro el comportamiento específico de cada proveedor cuando sea relevante.
+
+## Portabilidad y resiliencia
+
+Los sistemas de IA en producción deben resistir cambios de modelos, incidentes de proveedores, variaciones de precios y límites de cuenta.
+
+Phaseo facilita la portabilidad con rutas compatibles con los proveedores y aporta resiliencia mediante controles de enrutamiento y alternativas.
+
+## Observabilidad de forma predeterminada
+
+Todas las solicitudes de producción deberían ser más fáciles de depurar una vez realizadas.
+
+Phaseo registra el uso, la latencia, el coste, los detalles de los errores y los identificadores de las solicitudes. Así, los equipos pueden entender lo que ocurre sin tener que crear primero su propia capa de observabilidad.
+
+## Una comunidad respetuosa
+
+Phaseo ofrece documentación pública, datos de modelos, ejemplos y vías para contribuir. Los comentarios deben ser concretos, constructivos y útiles para quienes mantienen la plataforma y el catálogo.
+
+## Siguientes pasos
+
+- Empieza con la [Guía de inicio rápido](../quickstart.mdx).
+- Aprende sobre [enrutamiento y alternativas](./routing-and-fallbacks.mdx).
+- Consulta la [gestión de errores](../api-reference/errors.mdx).
+- Explora la [referencia de la API](../api-reference/introduction.mdx).

@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "Sorties et nouvelles tentatives"
+description: "Validez les sorties d’agents .NET et relancez les échecs ponctuels du modèle selon une limite définie."
+---
+
+Validez la sortie finale lorsque le code .NET en aval attend une valeur structurée. Traitez les échecs de validation comme des erreurs de contrat, et non comme des erreurs de transport temporaires.
+
+Configurez des tentatives limitées avec `ModelRetryConfig` :
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+L’étape terminée conserve le nombre final de tentatives du modèle. Les échecs d’outils locaux sont traités séparément et ne sont pas relancés comme des requêtes de modèle.
+
+`GatewayAgentClientOptions` regroupe les options de réponse structurée, de routage, de fournisseur, de raisonnement, de choix des outils, de cache de prompts et d’autres paramètres de requête.
+
+## À lire aussi
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)
+- [Erreurs et dépannage](./agent-sdk-observability.mdx)

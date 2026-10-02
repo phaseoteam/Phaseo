@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos"
+description: "Cambia el enrutamiento, las instrucciones, las herramientas y los parámetros de muestreo entre turnos de un agente PHP."
+---
+
+Los callbacks dinámicos recalculan los parámetros del modelo a partir del estado actual de la ejecución antes de cada solicitud al modelo.
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+Las herramientas dinámicas y los valores de muestreo pueden usar el mismo contexto del turno. Una herramienta también puede configurar `nextTurnParams` para modificar solo la solicitud inmediatamente posterior. Estas anulaciones se conservan cuando la ejecución se pausa para su aprobación y vencen después del siguiente turno.
+
+Usa callbacks dinámicos para las políticas que deban volver a calcularse en cada turno. Usa `nextTurnParams` para transferir un ajuste específico de una herramienta.

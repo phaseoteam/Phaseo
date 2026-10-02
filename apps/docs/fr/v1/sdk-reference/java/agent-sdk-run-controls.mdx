@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "Sorties et nouvelles tentatives"
+description: "Validez les sorties des agents Java et réessayez après des échecs transitoires du modèle, dans une limite définie."
+---
+
+Utilisez la validation de sortie finale lorsque le code Java en aval attend une valeur structurée plutôt qu’un texte de modèle non vérifié. Ajoutez un validateur final à la définition de l’agent et traitez les échecs de validation comme des erreurs de contrat.
+
+Utilisez `ModelRetryConfig` pour les échecs transitoires du modèle ou du fournisseur :
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+Le nombre de tentatives indique les essais supplémentaires après la première requête. Les étapes terminées conservent le nombre final de tentatives du modèle pour le débogage et la télémétrie.
+
+Utilisez `ToolExecutionConfig` séparément pour gérer la concurrence des outils locaux. Les nouvelles tentatives du modèle ne répètent pas les effets secondaires échoués à l’intérieur des outils.
+
+Vous pouvez fournir des options supplémentaires de l’API Responses via `GatewayOptions.requestOptions` ; l’adaptateur continue de gérer le modèle, l’entrée, les instructions et les outils de fonction locaux.
+
+## À lire aussi
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)
+- [Erreurs et dépannage](./agent-sdk-observability.mdx)

@@ -1,0 +1,49 @@
+---
+title: "Grundsätze"
+description: "Die Produktprinzipien hinter Phaseo Gateway, Routing, Observability und Modelldaten."
+icon: "scale"
+---
+
+Hier erfährst du, welche Produktentscheidungen hinter dem Gateway und dem Modellkatalog stehen.
+
+Phaseo folgt einigen einfachen Grundsätzen: Integrationen bleiben portabel, das Verhalten von Modellen und Anbietern wird sichtbar und Teams erhalten genügend Kontrolle über das Routing, um den Produktivbetrieb sicher zu gestalten.
+
+## Offenheit und Transparenz
+
+Preise, Verfügbarkeit von Anbietern, Routing-Verhalten und Leistungsdaten sollten überall dort sichtbar sein, wo es möglich ist.
+
+Phaseo soll dadurch praktische Fragen leichter beantworten:
+
+- Welche Anbieter können dieses Modell bereitstellen?
+- Was kostet die Anfrage?
+- Wie schnell war die Route?
+- Was hat sich durch ein Modell- oder Anbieter-Update geändert?
+
+## Eine API für jedes Modell
+
+Modellanbieter stellen keine einheitlichen APIs bereit. Phaseo bietet deiner Anwendung eine stabile Ebene über verschiedene Anbieter-Ökosysteme, Modellfamilien und Modalitäten hinweg.
+
+Das Ziel ist nicht, alle Unterschiede zwischen Anbietern zu verbergen. Gängige Abläufe sollen einheitlich bleiben und anbieterspezifisches Verhalten bei Bedarf klar erkennbar sein.
+
+## Portabilität und Ausfallsicherheit
+
+KI-Systeme im Produktivbetrieb müssen Modelländerungen, Anbieterausfälle, Preisschwankungen und kontobezogene Limits verkraften.
+
+Phaseo hält Integrationen durch anbieterverträgliche Routen portabel und macht sie mit Routing- und Fallback-Steuerung ausfallsicher.
+
+## Observability von Anfang an
+
+Jede Anfrage im Produktivbetrieb sollte sich im Nachhinein leichter debuggen lassen.
+
+Phaseo erfasst Nutzung, Latenz, Kosten, Fehlerdetails und Anfrage-IDs. So können Teams das Systemverhalten nachvollziehen, ohne zuerst eine eigene Observability-Ebene aufbauen zu müssen.
+
+## Respektvolle Community
+
+Phaseo bietet öffentliche Dokumentation, Modelldaten, Beispiele und Möglichkeiten zur Mitarbeit. Feedback sollte konkret, konstruktiv und für die Personen nützlich sein, die Plattform und Katalog betreuen.
+
+## Nächste Schritte
+
+- Starte mit dem [Schnellstart](../quickstart.mdx).
+- Lerne [Routing und Fallbacks](./routing-and-fallbacks.mdx) kennen.
+- Sieh dir die [Fehlerbehandlung](../api-reference/errors.mdx) an.
+- Entdecke die [API-Referenz](../api-reference/introduction.mdx).

@@ -8,6 +8,7 @@ import {
 	type ReactNode,
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useTranslations } from "next-intl";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -75,9 +76,10 @@ export function VirtualizedModelCatalog<T>({
 	onSelectItem,
 	renderItem,
 	estimateItemSize = 36,
-	emptyContent = "No models found.",
+	emptyContent,
 	maxHeightPx,
 }: VirtualizedModelCatalogProps<T>) {
+	const t = useTranslations("Product.chat.modelPicker");
 	const [scrollViewport, setScrollViewport] =
 		useState<HTMLDivElement | null>(null);
 	const rows = useMemo(
@@ -110,7 +112,11 @@ export function VirtualizedModelCatalog<T>({
 	}, [activeRowIndex, virtualizer]);
 
 	if (rows.length === 0) {
-		return <div className="py-6 text-center text-sm">{emptyContent}</div>;
+		return (
+			<div className="py-6 text-center text-sm">
+				{emptyContent ?? t("noModelsFound")}
+			</div>
+		);
 	}
 
 	return (
@@ -126,7 +132,7 @@ export function VirtualizedModelCatalog<T>({
 		>
 			<div
 				role="listbox"
-				aria-label="Suggestions"
+				aria-label={t("suggestions")}
 				className="relative w-full"
 				style={{ height: `${virtualizer.getTotalSize()}px` }}
 			>

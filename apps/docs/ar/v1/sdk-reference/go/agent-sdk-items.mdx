@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "عناصر البث"
+description: "استهلك أحداث النص والاستدلال والأدوات وعناصر المزوّد من عمليات تشغيل وكلاء Go."
+---
+
+يوفّر `Stream` تسلسل أحداث قابلًا لإعادة التشغيل لواجهات الوكلاء المباشرة. وتُعدّ تغييرات النص الأبسط للاستهلاك؛ كما يتضمن تدفق الأحداث الكامل الاستدلال وعناصر المزوّد وتقدّم الأدوات وتغييرات دورة الحياة والاستجابة النهائية.
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+يعرض Go عناصر المزوّد حاليًا عبر خريطة `details` العامة في `AgentEvent` بدل اتحاد أنواع مغلق. استخدم `event.Type` للتفرّع، وتحقق من بيانات العنصر عند حدود الواجهة، واحتفظ بمعالجة بديلة للأحداث غير المعروفة لضمان التوافق المستقبلي.
+</Note>
+
+يمكن إعادة تشغيل سجل الأحداث بعد اكتمال العملية، ما يتيح لمستهلكين منفصلين عرض النص وحفظ الأحداث وإنشاء خط زمني للتدقيق دون إرسال طلب آخر إلى النموذج.

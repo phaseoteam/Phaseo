@@ -1,0 +1,201 @@
+---
+title: "モデル一覧"
+sidebarTitle: "モデル一覧"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /models"
+description: "Phaseo Gateway で Gateway ネイティブモデルを確認します。現在ルーティングできないモデルの可用性情報も任意で取得できます。"
+---
+
+デフォルトでは、このエンドポイントは現在ルーティング可能なモデルのみを返します。`availability=all` を設定すると、既知だが現在利用できないモデルも含まれます。
+
+カタログのレスポンスは 5 分間キャッシュされ、キャッシュの再検証中はさらに 5 分間提供される場合があります。これは現在のカタログの JSON、RSS、Atom 表現に適用されます。リリースフィードには、より短い独自のポーリングキャッシュがあります。
+
+`GET /models/me` は、現在の呼び出し元に適用されるガードレールに基づくモデルの絞り込みに将来使用するための予約パスです。現在は `501 not implemented` を返すため、共通の Gateway カタログには `GET /models` を使用してください。
+
+## 便利なフィルター
+
+- `endpoints` では `chat.completions`、`responses`、`messages` などの公開名を指定します
+- `status` は `active`、`deprecated`、`retired` などのモデルのライフサイクルで絞り込みます
+- `provider` は `openai`、`anthropic`、`google_vertex` などの公開プロバイダー ID で絞り込みます
+- `provider_status` は `active`、`beta`、`alpha`、`not_ready` などのプロバイダーの展開段階で絞り込みます
+- `provider_routing_status` はプロバイダー単位のルーティング状態で絞り込みます
+- `model_routing_status` はモデル単位のルーティング状態で絞り込みます
+- `capability_status` は要求されたエンドポイントの対応付けに対するプロバイダー機能の状態で絞り込みます
+- `provider_availability_status` は `active`、`coming_soon`、`inactive` などのプロバイダー可用性で絞り込みます
+- `provider_availability_reason` は `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited` などのプロバイダー可用性の理由で絞り込みます
+- `organisation` は公開モデル ID のプレフィックスで絞り込みます。たとえば `anthropic/claude-3-haiku` の `anthropic` を指定します
+- `availability=active` がデフォルトです
+- `availability=all` は `coming_soon`、`inactive`、または一般公開のルーティング対象になっていないモデルやプロバイダーを含みます
+- `input_modalities` は `input_types` の別名です
+- `output_modalities` は `output_types` の別名です
+- `supported_parameters` は `params` の別名です
+
+モデルのエンドポイント契約を確認するには `GET /models/{author}/{slug}/endpoints` を呼び出します。レスポンスではプロバイダーのルートが分けられ、各行に公開パス、モダリティ、対応パラメーターの詳細、可用性、ルーティング状態、プロバイダー側モデルのスラッグ、料金の概要が含まれます。
+
+プロバイダーの各項目には、次の情報も含まれる場合があります。
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+
+### レスポンス
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "availability_mode": "all",
+  "limit": 50,
+  "offset": 0,
+  "total": 99,
+  "models": [
+    {
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
+      "status": "active",
+      "availability": {
+        "status": "coming_soon",
+        "provider_count": 1,
+        "active_provider_count": 0,
+        "inactive_provider_count": 0
+      },
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
+      "providers": [
+        {
+          "api_provider_id": "anthropic",
+          "api_provider_name": "Anthropic",
+          "provider_model_slug": "claude-3-haiku-20240307",
+          "is_active_gateway": false,
+          "availability_status": "coming_soon",
+          "availability_reason": "preview_only",
+          "provider_status": "beta",
+          "provider_routing_status": "active",
+          "model_routing_status": "active",
+          "capability_status": "coming_soon",
+          "effective_from": "2026-06-01T00:00:00Z",
+          "effective_to": null,
+          "endpoints": ["responses"],
+          "input_modalities": ["text"],
+          "output_modalities": ["text"],
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      ],
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "top_provider_id": null,
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": null,
+        "completion": null,
+        "request": null,
+        "image": null,
+        "input_cache_read": null,
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
+      },
+      "per_request_limits": null
+    }
+  ]
+}
+```
+
+`availability_reason` は、プロバイダーの項目が有効、プレビューのみ、または無効である理由を説明する単一のフィールドです。
+

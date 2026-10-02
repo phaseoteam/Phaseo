@@ -1,0 +1,80 @@
+---
+title: "اتخاذ قرار"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "قيّم أسئلة ذات أنواع محددة بناءً على حالة التطبيق باستخدام نماذج القرار المدعومة."
+---
+
+استخدم `POST /v1/decisions` عندما يحتاج تطبيقك إلى إجابات منظّمة يمكن للكود استهلاكها مباشرةً. تشمل النماذج المدعومة TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`) وTogether Tev1 4B Experimental (`together/tev1-4b-experimental`) وRespan Span-01 (`respan/span-01:free` و`respan/span-01`).
+
+يتضمن الطلب:
+
+- `state`: سلسلة أو كائن أو مصفوفة تحتوي على المعلومات المطلوب تقييمها.
+- `questions`: خريطة للأسئلة المسماة. يضبط كل سؤال `type` على `noul` أو `choice` أو `score` ويتضمن `instructions`؛ وتعتمد الأنواع المدعومة على النموذج المحدد.
+- `model`: معرّف نموذج Phaseo. استخدم `typesafe/jev-1.13.0` لـ Jev 1.13، أو `typesafe/jev-latest` لمتابعة أحدث إصدار من Jev.
+
+يدعم Liquid D1 (`liquid-ai/d1:free`، والمتاح أيضًا باسم `liquid-ai/d1`) وPerplexity Decider 27B (`perplexity/decider-27b`) أنواع الأسئلة الثلاثة. D1 مجاني خلال الوصول المبكر التجريبي. تبلغ تكلفة Decider ‏0.04 دولار لكل مليون رمز إدخال، بما فيها رموز الصور؛ ورموز الإخراج مجانية. أضف بيانات اعتماد لمزود Perplexity في Phaseo لاستخدام Decider. تستخدم حالته المصورة عناوين URL لبيانات base64 بصيغ PNG أو JPEG أو WebP؛ ولا يدعم عناوين الصور البعيدة. يقبل كل سؤال اختيار ما يصل إلى 255 خيارًا، وكل سؤال تقييم ما يصل إلى 10 مستويات. تحقّق من توفر النموذج قبل استدعاء أي منهما.
+
+في Respan Span-01، يجب أن تكون `state` مقطع محادثة يتضمن مصفوفة `input` للرسائل السابقة ورسالة مساعد `output`. يدعم Span-01 أسئلة `noul` فقط. إجابة `noul` هي احتمال وجود السلوك؛ وتتضمن `probabilities` أيضًا احتمالات غيابه وتعذّر ملاحظته.
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` هو نموذج Lite المجاني ذو الحد اليومي؛ ويطابقه Phaseo مع معرّف نموذج API الخاص بـ Respan وهو `span-01-free`. يطابق `respan/span-01` المعرّف `span-01-pro`، وتفرض Respan عليه 0.02 دولار لكل مليون رمز إدخال؛ ورموز الإخراج مجانية. Span-01 في مرحلة الوصول المبكر، لذا يجب أن تفعّل Respan الوصول لمؤسستك. أضف مفتاح API الخاص بك لدى Respan كبيانات اعتماد لمزود Respan في Phaseo قبل استدعاء هذه النماذج.
+
+تستخدم الإجابات المفاتيح نفسها الموجودة في `questions`. تتضمن إجابات `choice` الخيار المحدد والاحتمالات والثقة؛ وتتضمن إجابات `noul` احتمالًا من 0 إلى 1؛ وتتضمن إجابات `score` درجة مرجّحة بالاحتمالات ودليلًا توضيحيًا والاحتمالات والثقة.
+
+في مثال Respan، تبدو الاستجابة كما يلي:
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+يدعم Jev الجمع بين أنواع الأسئلة الثلاثة في طلب واحد؛ ويدعم Span-01 أسئلة `noul` فقط. راجع [البدء السريع](../../quickstart) لأمثلة جاهزة للنسخ في cURL وJavaScript وSDK TypeScript وSDK Python. تبلغ تكلفة Jev 1.13 ‏0.042 دولار لكل مليون رمز إدخال؛ ورموز الإخراج مجانية.
+
+لمعرفة دلالات الأسئلة لدى المزود الأصلي، راجع [مرجع API](https://docs.typesafe.ai/api) الخاص بـ TypeSafe.
+
+### قرارات الصور باستخدام Clef
+
+يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. لكل منهما نافذة سياق من 65,536 رمزًا. تبلغ تكلفة الإدخال 0.24 دولار أمريكي لكل مليون رمز في Clef و0.09 دولار أمريكي في Clef Flash.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+يمكنك أيضًا توفير سلسلة `data:image/png;base64,...` في `images`. يقبل Clef حتى أربع صور PNG أو JPEG أو WebP، على ألا تتجاوز كل صورة 4 MiB و16 ميغابكسل، وألا يتجاوز إجمالي بيانات الصور بعد فك الترميز 8 MiB وحجم جسم الطلب 13 MiB. الروابط البعيدة غير مدعومة. يتحقق Cloudflare من صيغ الصور وأبعادها. ترفض النماذج التي لا تدعم الصور طلبات الصور.
+
+يقبل Clef ما يصل إلى 64 سؤالًا، بمعرّفات تضم حتى 100 حرف أو رقم أو شرطة سفلية أو نقطة أو شرطة. تتطلب أسئلة الاختيار 2–255 خيارًا، وأسئلة الدرجة 2–10 مستويات. راجع [وثائق Clef](https://developers.cloudflare.com/workers-ai/models/clef/) من Cloudflare.

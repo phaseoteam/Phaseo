@@ -1,0 +1,67 @@
+---
+title: "Anthropic SDK"
+icon: "message-square"
+description: "Anthropic互換クライアントをPhaseoと組み合わせて使います。"
+---
+
+アプリ、エージェント、コーディングツールがClaude形式の`/v1/messages`リクエストを想定している場合は、Anthropic互換APIを使います。
+
+## TypeScript
+
+```bash
+npm install @anthropic-ai/sdk
+```
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app",
+});
+
+const message = await client.messages.create({
+	model: "anthropic/claude-sonnet-4.5",
+	max_tokens: 512,
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+
+console.log(message.content);
+```
+
+## Python
+
+```bash
+pip install anthropic
+```
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
+)
+
+message = client.messages.create(
+    model="anthropic/claude-sonnet-4.5",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(message.content)
+```
+
+## 注意事項
+
+- ルートホスト`https://api.phaseo.app`を指定します。Anthropicクライアントが`/v1/messages`を付加します。
+- エンドポイントの詳細は[Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)を参照してください。
+Phaseoが対応していればAnthropicネイティブのツール形式も使えますが、プロバイダーをまたぐサーバーツールにはPhaseoのツール名を使ってください。
+ストリーミングされたツールループに依存するワークフローは、本番展開の前にテストしてください。Anthropic互換クライアントはツールイベントの順序に厳格です。
+
+## 関連項目
+
+- [Claude Code](./claude-code.mdx)
+- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
+- [ツール呼び出し](../tool-calling.mdx)

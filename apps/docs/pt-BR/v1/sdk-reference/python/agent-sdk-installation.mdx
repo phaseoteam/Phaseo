@@ -1,0 +1,43 @@
+---
+icon: "package"
+title: "Instalação"
+description: "Instale e configure o Agent SDK Python do Phaseo."
+---
+
+O Agent SDK é publicado no PyPI como [`phaseo-agent-sdk`](https://pypi.org/project/phaseo-agent-sdk/).
+
+## Requisitos
+
+- Python 3.10 ou posterior
+- Uma chave de API do Phaseo
+
+## Instalação
+
+Instale o Agent SDK com o gerenciador de pacotes Python de sua preferência:
+
+<CodeGroup>
+
+    ```bash title="pip"
+    pip install phaseo-agent-sdk
+    ```
+
+    ```bash title="uv"
+    uv add phaseo-agent-sdk
+    ```
+
+</CodeGroup>
+
+O cliente principal `phaseo` é instalado automaticamente como dependência.
+
+## Ambiente
+
+Defina a chave de API do gateway antes de executar os exemplos:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## Próximos passos
+
+- [Visão geral](./agent-sdk-overview.mdx)
+- [Desenvolva com o Agent SDK](./agent-sdk.mdx)

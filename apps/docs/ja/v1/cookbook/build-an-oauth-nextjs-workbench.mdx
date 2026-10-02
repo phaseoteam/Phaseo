@@ -1,0 +1,193 @@
+---
+title: "OAuth対応のNext.jsワークベンチを構築する"
+icon: "key-round"
+description: "OAuthを使ったNext.jsの完全なサンプルを通じて、統合プロキシを備えたログイン済みGatewayアプリを作ります。"
+---
+
+ログイン、セッションベースのGatewayアクセス、複数のチャットルートが必要な場合にこのページを使います。
+
+**目標:** ログイン済みのワークベンチを実行し、保護されたサーバー側プロキシを1つ通してPhaseoへリクエストを送信します。
+
+**成果:** OAuthログイン、セッションベースのトークン、モデル検出、チャット、エンドポイントテスターを備えたローカルアプリを用意します。
+
+<Prompt
+  description="OAuthとPhaseo統合プロキシを備えた**ログイン機能付きNext.jsワークベンチ**を構築します。"
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`Phaseo Gatewayを使って、ログイン機能付きのNext.jsアプリを作成します。
+
+次の機能を持つワークベンチ型アプリを作成します。
+- OAuth 2.1 + PKCEによるログイン
+- セッションベースのトークン保存
+- サーバー上に統合Gatewayプロキシルートを1つ
+- モデル検出
+- Responses APIを使うチャットフローを1つ
+- Phaseoの他のエンドポイントも試せる汎用テスターを1つ
+
+要件:
+- Gatewayの認証情報とアクセストークンはサーバー側だけで管理します。
+- 安全のため、プロキシの許可リストを使います。
+- トークンの更新に対応します。
+- 過度に複雑にせず、理解しやすいワークベンチにします。
+- セットアップ、環境変数、実行手順を記載した短いREADMEを追加します。
+
+確認項目:
+- 可能であればアプリを実行します。
+- ローカル環境で可能な範囲までログインフローを確認します。
+- プロキシ経由のGatewayリクエストを少なくとも1つ確認します。
+- 検証した内容と、外部OAuth設定が必要な未確認事項を正確に報告します。`}
+</Prompt>
+
+## サンプルプロジェクト
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- リポジトリ内のパス: `examples/oauth-client-nextjs`
+
+## このアプリで扱う内容
+
+- OAuth 2.1 + PKCEログイン
+- セッションベースのトークン保存と更新
+- 制御ルートと生成ルートをまとめるプロキシ
+- モデル検出
+- を使ったチャットフロー `/responses`
+- 他のGatewayルート用の汎用エンドポイントテスター
+
+## このサンプルから始める場合
+
+次のような場合に使います。
+
+- エンドユーザーに委任アクセスでログインしてもらう
+- シンプルなチャットページ以上の機能が必要
+- 複数のPhaseoエンドポイントを1つの安全なサーバールートで扱いたい
+
+次の場合は別の例から始めます。
+
+- APIキーを使うシンプルなチャットUIだけが必要
+- まずスクリプトやCLIを作りたい
+
+## 主なファイル
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## この構成を採用している理由
+
+### 1. OAuthとGatewayのロジックを分離する
+
+アプリでは次の処理を分離します。
+
+- 認証開始とコールバックのロジック
+- 暗号化されたセッションの処理
+- トークン更新
+
+これによりAI統合コードがシンプルになり、ログインの問題もデバッグしやすくなります。
+
+### 2. 1つのプロキシルートでGateway呼び出しを処理する
+
+catch-allプロキシルートは次の処理を行います。
+
+- エンドポイント許可リストを確認する
+- 現在のBearerトークンを追加する
+- 必要に応じてトークンを更新する
+- リクエストとレスポンスの本文を転送する
+
+認証ロジックを各ルートに複製せず、複数のPhaseoエンドポイントを使いたい場合に適したパターンです。
+
+### 3. ダッシュボードを内部ワークベンチとしても使う
+
+ワークベンチページではチャット以外に次のこともできます。
+
+- モデルを検出する
+- を試す `/responses`
+- チャット以外のエンドポイントもテストする
+
+より洗練されたユーザー向けUIを作る前のオンボーディング、QA、内部デバッグに役立ちます。
+
+## 前提条件
+
+- - Node.jsと対応するパッケージマネージャー
+- - ローカルのコールバックURLを設定したOAuthクライアント
+- - 十分に強力なセッションシークレット
+
+## サンプルを実行する
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+次を設定します。
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+次に実行します。
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+次を開きます: `http://localhost:3000`.
+
+## 動作を確認する
+
+- ログイン後、設定したコールバックに戻り、セッションが作成されます。
+- ダッシュボードからプロキシ経由でモデルを検出できます。
+- アクセス用トークンをブラウザーに公開せずにResponses APIリクエストが完了します。
+- プロキシ許可リストにないエンドポイントは拒否されます。
+
+## 独自の用途に合わせる方法
+
+- - プロキシ許可リストを製品に必要なエンドポイントだけに絞る
+- - ユーザー向けの分かりやすいUIを上に構築しつつ、ワークベンチは内部用に残す
+- - 統合が安定したら汎用テスターを製品専用のフローに置き換える
+
+## 関連ガイド
+
+- [Next.jsでWebチャットアプリを作成する](./build-a-nextjs-web-chat-app.mdx)
+- [ミニアプリ用の開始プロンプト](./mini-app-starter-prompts.mdx)
+- [サンプル](../guides/examples.mdx)

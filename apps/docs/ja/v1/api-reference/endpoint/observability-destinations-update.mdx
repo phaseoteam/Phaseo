@@ -1,0 +1,11 @@
+---
+title: "オブザーバビリティの送信先を更新"
+sidebarTitle: "送信先を更新"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "送信先を更新 policy, filters, or credentials."
+---
+<Note>このエンドポイントには`settings:write`を持つ管理APIキーが必要です。</Note>
+
+既存の暗号化済み設定を保持するには`config`を省略してください。指定すると、送信先の設定がアトミックに置き換わります。
+

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
 
 import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
 
@@ -48,14 +49,14 @@ function getModelDetailsHref(modelId: string): string | null {
 	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(modelParts.join("/"))}`;
 }
 
-function maskedKeyPrefix(prefix: string | null | undefined): string {
+function maskedKeyPrefix(prefix: string | null | undefined, hiddenLabel: string): string {
 	const value = prefix?.trim();
-	return value ? `${value}••••••••` : "Key value hidden";
+	return value ? `${value}••••••••` : hiddenLabel;
 }
 
-function formatMilliseconds(value: number | null): string {
+function formatMilliseconds(value: number | null, locale: string): string {
 	return typeof value === "number" && Number.isFinite(value)
-		? `${Math.round(value).toLocaleString()} ms`
+		? new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value)
 		: "—";
 }
 
@@ -81,17 +82,26 @@ function throughputForRow(row: UsageUpstreamRequestRow): number | null {
 		: null;
 }
 
-function formatThroughput(row: UsageUpstreamRequestRow): string {
+function formatThroughput(row: UsageUpstreamRequestRow, locale: string): string {
 	const value = throughputForRow(row);
-	return value === null ? "—" : `${value.toFixed(value >= 100 ? 0 : 1)} tok/s`;
+	return value === null
+		? "—"
+		: new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 100 ? 0 : 1 }).format(value) + " tok/s";
 }
 
-function attemptLabel(row: UsageUpstreamRequestRow): string {
-	const attempt =
-		row.attempt_number ?? row.internal_attempt_number ?? row.sequence;
-	return row.attempt_count && row.attempt_count > 1
-		? `${attempt} of ${row.attempt_count}`
-		: String(attempt);
+function attemptLabel(
+	row: UsageUpstreamRequestRow,
+	locale: string,
+	translate: (key: string, values?: Record<string, string | number>) => string,
+): string {
+	const attempt = row.attempt_number ?? row.internal_attempt_number ?? row.sequence;
+	const count = row.attempt_count ?? 1;
+	const formattedAttempt = new Intl.NumberFormat(locale).format(attempt);
+	if (count <= 1) return formattedAttempt;
+	return translate("strings.upstreamAttemptRange", {
+		attempt: formattedAttempt,
+		count: new Intl.NumberFormat(locale).format(count),
+	});
 }
 
 function keySourceLabel(value: UsageUpstreamRequestRow["key_source"]): string {
@@ -100,8 +110,25 @@ function keySourceLabel(value: UsageUpstreamRequestRow["key_source"]): string {
 	return "—";
 }
 
-function jsonText(value: unknown): string {
-	if (value == null) return "No data captured.";
+function formatUpstreamOutcome(
+	outcome: string,
+	translate: (key: string) => string,
+): string {
+	switch (outcome.trim().toLowerCase()) {
+		case "success":
+		case "succeeded":
+			return translate("strings.upstreamOutcomeSuccess");
+		case "error":
+		case "failed":
+			return translate("strings.upstreamOutcomeError");
+		case "generation":
+			return translate("strings.upstreamOutcomeGeneration");
+		default:
+			return outcome;
+	}
+}
+function jsonText(value: unknown, emptyLabel: string): string {
+	if (value == null) return emptyLabel;
 	try {
 		return JSON.stringify(value, null, 2);
 	} catch {
@@ -126,12 +153,12 @@ function DetailField({
 	);
 }
 
-function PayloadSection({ title, value }: { title: string; value: unknown }) {
+function PayloadSection({ title, value, emptyLabel }: { title: string; value: unknown; emptyLabel: string }) {
 	return (
 		<section className="space-y-2">
 			<h3 className="text-sm font-semibold">{title}</h3>
 			<pre className="max-h-80 overflow-auto rounded-lg border border-border/70 bg-muted/25 p-3 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-words">
-				{jsonText(value)}
+				{jsonText(value, emptyLabel)}
 			</pre>
 		</section>
 	);
@@ -152,6 +179,9 @@ export default function UpstreamRequestsTable({
 	providerMetadata: Map<string, ProviderMetadataEntry>;
 	keys: Map<string, KeyMetadata>;
 }) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const translate = (key: string, values?: Record<string, string | number>) => t(key as never, values as never);
 	const [selected, setSelected] = React.useState<UpstreamGeneration | null>(
 		null,
 	);
@@ -163,13 +193,13 @@ export default function UpstreamRequestsTable({
 		<>
 			<ConfigurableLogTable
 				tableId="upstream"
-				label="upstream requests"
+				label={t("settingsPageMetadata.upstreamRequests" as never)}
 				definitions={UPSTREAM_COLUMNS}
 				rows={groupUpstreamGenerations(rows)}
 				rowKey={(row) => row.gateway_request_id || row.request_id}
 				settingsTargetId={settingsTargetId}
 				onRowClick={(row) => { setSelected(row); setInspectedAttemptId(null); }}
-				emptyMessage="No upstream requests in this period."
+				emptyMessage={t("strings.phraseNoUpstreamRequestsInThisPeriod" as never)}
 				renderCell={(row, column) => {
 					const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 					const model = modelMetadata.get(row.model_id);
@@ -191,7 +221,7 @@ export default function UpstreamRequestsTable({
 						case "date":
 							return (
 								<>
-									{formatWordyDateTime(row.created_at, { includeTime: true })}
+									{formatWordyDateTime(row.created_at, { includeTime: true, locale })}
 								</>
 							);
 						case "model":
@@ -212,7 +242,7 @@ export default function UpstreamRequestsTable({
 										}
 										rows={[
 											{
-												label: "Model ID",
+												label: t("strings.Model ID" as never),
 												value: (
 													<code className="font-mono text-[11px]">
 														{row.model_id}
@@ -283,7 +313,7 @@ export default function UpstreamRequestsTable({
 						case "attempts":
 							return row.totalAttempts;
 						case "latency":
-							return formatMilliseconds(row.request_latency_ms ?? null);
+							return formatMilliseconds(row.request_latency_ms ?? null, locale);
 					}
 				}}
 			/>
@@ -305,7 +335,7 @@ export default function UpstreamRequestsTable({
 									{inspected.provider
 										? (providerNames.get(inspected.provider) ??
 											inspected.provider)
-										: "Upstream request"}
+										: t("strings.upstreamRequestTitle" as never)}
 								</ProviderInspectorSheetTitle>
 								<ProviderInspectorSheetDescription className="font-mono text-xs">
 									{inspected.request_id}
@@ -314,14 +344,14 @@ export default function UpstreamRequestsTable({
 							<div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
 								<div className="grid grid-cols-2 gap-x-5">
 									<DetailField
-										label="Model"
+										label={t("strings.Model" as never)}
 										value={getModelDisplayName(
 											inspected.model_id,
 											modelMetadata,
 										)}
 									/>
 									<DetailField
-										label="Provider model"
+										label={t("strings.upstreamProviderModel" as never)}
 										value={
 											inspected.provider_model_slug ??
 											inspected.api_model_id ??
@@ -329,20 +359,20 @@ export default function UpstreamRequestsTable({
 										}
 									/>
 									<DetailField
-										label="Source"
+										label={t("strings.Source" as never)}
 										value={
 											inspected.client_source_name ??
 											inspected.client_source_id ??
-											"Direct HTTP"
+											t("strings.upstreamDirectHttp" as never)
 										}
 									/>
 									<DetailField
-										label="Status"
+										label={t("strings.Status" as never)}
 										value={inspected.status_code ?? inspected.outcome}
 									/>
-									<DetailField label="Attempt" value={attemptLabel(inspected)} />
+									<DetailField label={t("strings.upstreamAttempt" as never)} value={attemptLabel(inspected, locale, translate)} />
 									<DetailField
-										label="Key used"
+										label={t("strings.Key used" as never)}
 										value={
 											inspected.key_id
 												? (keys.get(inspected.key_id)?.name ??
@@ -351,30 +381,32 @@ export default function UpstreamRequestsTable({
 										}
 									/>
 									<DetailField
-										label="Key prefix"
+										label={t("strings.Key prefix" as never)}
 										value={maskedKeyPrefix(
 											inspected.key_id
 												? keys.get(inspected.key_id)?.prefix
 												: null,
+											t("strings.upstreamKeyValueHidden" as never),
 										)}
 									/>
 									<DetailField
-										label="Throughput"
-										value={formatThroughput(inspected)}
+										label={t("strings.Throughput" as never)}
+										value={formatThroughput(inspected, locale)}
 									/>
 									<DetailField
-										label="Latency"
+										label={t("strings.Latency" as never)}
 										value={formatMilliseconds(
 											inspected.latency_ms ?? inspected.duration_ms,
+											locale,
 										)}
 									/>
 									<DetailField
-										label="Total time"
-										value={formatMilliseconds(inspected.total_ms)}
+										label={t("strings.upstreamTotalTime" as never)}
+										value={formatMilliseconds(inspected.total_ms, locale)}
 									/>
-									<DetailField label="Outcome" value={inspected.outcome} />
+									<DetailField label={t("strings.Outcome" as never)} value={inspected.outcome} />
 									<DetailField
-										label="Finish reason"
+										label={t("strings.upstreamFinishReason" as never)}
 										value={
 											inspected.provider_finish_reason ??
 											inspected.finish_reason ??
@@ -387,26 +419,26 @@ export default function UpstreamRequestsTable({
 										<div className="font-medium">
 											{inspected.error_code ??
 												inspected.error_type ??
-												"Upstream error"}
+												t("strings.upstreamError" as never)}
 										</div>
 										<div className="mt-1">{inspected.error_message}</div>
 									</div>
 								) : null}
 								<section className="my-5 space-y-2">
-									<h3 className="text-sm font-semibold">Attempts</h3>
+									<h3 className="text-sm font-semibold">{t("usageGaps.copyAttempts")}</h3>
 									<Table>
 										<TableHeader>
 											<TableRow>
-												<TableHead>Attempt</TableHead>
-												<TableHead>Provider</TableHead>
-												<TableHead>Status</TableHead>
-												<TableHead>Latency</TableHead>
+												<TableHead>{t("usageGaps.copyAttempt")}</TableHead>
+												<TableHead>{t("usageGaps.copyProvider")}</TableHead>
+												<TableHead>{t("usageGaps.copyStatus")}</TableHead>
+												<TableHead>{t("usageGaps.copyLatency")}</TableHead>
 											</TableRow>
 										</TableHeader>
 										<TableBody>
 											{[...selected.attempts].reverse().map((attempt) => (
 												<TableRow key={attempt.id}>
-													<TableCell><button type="button" className="cursor-pointer underline underline-offset-4" aria-label={`Inspect attempt ${attempt.sequence}`} aria-pressed={inspected.id === attempt.id} onClick={() => setInspectedAttemptId(attempt.id)}>{attempt.sequence}</button></TableCell>
+													<TableCell><button type="button" className="cursor-pointer underline underline-offset-4" aria-label={t("usageGaps.inspectAttempt", { number: attempt.sequence })} aria-pressed={inspected.id === attempt.id} onClick={() => setInspectedAttemptId(attempt.id)}>{attempt.sequence}</button></TableCell>
 													<TableCell>
 														{attempt.provider
 															? (providerNames.get(attempt.provider) ??
@@ -418,7 +450,7 @@ export default function UpstreamRequestsTable({
 													</TableCell>
 													<TableCell>
 														{formatMilliseconds(
-															attempt.latency_ms ?? attempt.duration_ms,
+															attempt.latency_ms ?? attempt.duration_ms, locale,
 														)}
 													</TableCell>
 												</TableRow>
@@ -429,15 +461,15 @@ export default function UpstreamRequestsTable({
 								<Separator className="my-5" />
 								<div className="space-y-5">
 									<PayloadSection
-										title="Request payload"
-										value={inspected.request_payload}
+										title={t("strings.Request payload" as never)}
+										value={inspected.request_payload} emptyLabel={t("strings.upstreamNoDataCaptured" as never)}
 									/>
 									<PayloadSection
-										title="Response payload"
-										value={inspected.response_payload}
+										title={t("strings.Response payload" as never)}
+										value={inspected.response_payload} emptyLabel={t("strings.upstreamNoDataCaptured" as never)}
 									/>
-									<PayloadSection title="Usage" value={inspected.usage} />
-									<PayloadSection title="Metadata" value={inspected.metadata} />
+									<PayloadSection title={t("strings.Usage" as never)} value={inspected.usage} emptyLabel={t("strings.upstreamNoDataCaptured" as never)} />
+									<PayloadSection title={t("strings.Metadata" as never)} value={inspected.metadata} emptyLabel={t("strings.upstreamNoDataCaptured" as never)} />
 								</div>
 							</div>
 						</>

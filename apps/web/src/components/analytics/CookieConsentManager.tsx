@@ -14,7 +14,20 @@ import {
 } from "@/lib/cookieConsent"
 
 type CookieConsentManagerProps = {
+  copy: CookieConsentCopy
   gaMeasurementId?: string
+}
+
+export type CookieConsentCopy = {
+  accept: string
+  acceptedTitle: string
+  bodyAfterPrivacy: string
+  bodyBeforePrivacy: string
+  decline: string
+  declinedTitle: string
+  feedbackMessage: string
+  privacyPolicy: string
+  title: string
 }
 
 declare global {
@@ -54,6 +67,7 @@ function applyGaConsent(consent: AnalyticsConsent, gaMeasurementId?: string) {
 }
 
 export function CookieConsentManager({
+  copy,
   gaMeasurementId,
 }: CookieConsentManagerProps) {
   const [consent, setConsent] = useState<AnalyticsConsent | null | "pending">("pending")
@@ -110,15 +124,15 @@ export function CookieConsentManager({
     applyGaConsent(next, gaMeasurementId)
     if (next === "accepted") {
       setFeedback({
-        title: "Thanks for helping us improve your experience.",
-        message: "This can always be changed in Settings.",
+        title: copy.acceptedTitle,
+        message: copy.feedbackMessage,
       })
       return
     }
 
     setFeedback({
-      title: "Analytics cookies declined.",
-      message: "This can always be changed in Settings.",
+      title: copy.declinedTitle,
+      message: copy.feedbackMessage,
     })
   }
 
@@ -145,15 +159,14 @@ export function CookieConsentManager({
       {consent === null ? (
         <div className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950">
           <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Cookie Preferences
+            {copy.title}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-            We use analytics cookies to measure traffic and improve Phaseo.
-            You can change your mind anytime in Settings, and read more in our{" "}
+            {copy.bodyBeforePrivacy}{" "}
             <Link className="underline" href="/privacy">
-              Privacy Policy
+              {copy.privacyPolicy}
             </Link>
-            .
+            {copy.bodyAfterPrivacy}
           </p>
           <div className="mt-4 flex items-center gap-3">
             <Button
@@ -161,10 +174,10 @@ export function CookieConsentManager({
               onClick={() => updateConsent("denied")}
               variant="outline"
             >
-              Decline
+              {copy.decline}
             </Button>
             <Button className="h-10 flex-1 px-3 text-sm" onClick={() => updateConsent("accepted")}>
-              Accept
+              {copy.accept}
             </Button>
           </div>
         </div>

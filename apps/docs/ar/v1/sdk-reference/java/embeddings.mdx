@@ -1,0 +1,24 @@
+---
+icon: "binary"
+title: "التضمينات"
+description: "استدعِ `/embeddings` باستخدام SDK Java."
+---
+
+**الطريقة**: `client.createEmbedding(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "google/gemini-embedding-001",
+  "input": "Vector search uses embeddings to compare meaning"
+}
+""";
+
+Object response = client.createEmbedding(body);
+System.out.println(String.valueOf(response));
+```
+

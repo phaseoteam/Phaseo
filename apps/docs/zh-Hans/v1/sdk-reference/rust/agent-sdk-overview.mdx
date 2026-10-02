@@ -1,0 +1,50 @@
+---
+icon: "bot"
+title: "Rust Agent SDK"
+description: "使用 phaseo-agent 构建可调用工具的同步代理。"
+---
+
+当 Rust 应用需要有步数上限的模型循环、本地工具、审批或可恢复的人工审核时，请使用已发布的 [`phaseo-agent`](https://crates.io/crates/phaseo-agent) crate。
+
+Rust Agent SDK 基于 `phaseo` 客户端构建，并通过 Phaseo Responses API 执行模型轮次。
+
+## 支持的功能
+
+| 功能 | Rust 支持情况 |
+| --- | --- |
+| 本地可执行工具 | 支持；按照模型调用顺序同步执行 |
+| 外部工具输出 | 支持；通过 `Tool::external(...)` 和 `ContinueOptions` |
+| 工具审批 | 支持；按工具调用的确切 ID 执行 |
+| 人工审核 | 支持；暂停的运行状态可序列化 |
+| 模型重试 | 支持；使用固定的重试等待时间 |
+| 生命周期事件 | 支持；通过基于回调的运行方法 |
+| 使用量汇总 | 输入、输出、缓存和总 token 数；自定义模型客户端填充时也包含费用 |
+| 运行限制 | 模型步骤数上限 |
+| Gateway 适配器 | 通过 `GatewayAgentClient` 使用 Responses API |
+| 流式传输 | 暂不支持 |
+| 异步执行与取消 | 暂不支持 |
+| 并发本地工具 | 暂不支持 |
+| 运行时模式验证 | JSON Schema 会发送给模型；本地输入和输出为 `serde_json::Value` |
+| Devtools 捕获 | 暂不支持 |
+
+<Note>
+Rust 是受支持的同步运行时，并非与 TypeScript 流式运行时功能对等的移植版本。本节仅介绍 `phaseo-agent 0.1` 已发布的 API。
+</Note>
+
+## 运行时模型
+
+1. 将当前消息和工具定义发送给 `ModelClient`
+2. 执行可用的本地工具
+3. 必要时暂停运行以等待审批、外部工具输出或人工审核
+4. 追加结果并继续，直到完成或达到步骤上限
+
+SDK 不会将运行状态存储在 Phaseo 托管的服务中。如果运行需要在进程重启后继续，请在应用中持久化 `RunResult`。
+
+Gateway 适配器 `0.1` 当前不会将 Gateway 的 `cost_nanos` 或 `cost_cents` 映射到 `UsageSummary.cost`。如需查看支出，请使用 Gateway 响应或生成记录，而不是 Agent SDK 的费用字段。
+
+<Columns cols={2}>
+  <Card title="安装 Agent SDK" icon="package" href="./agent-sdk-installation.mdx">添加两个 Rust crate 并配置 API 密钥。</Card>
+  <Card title="构建你的第一个代理" icon="play" href="./agent-sdk.mdx">通过 Phaseo Gateway 运行本地工具循环。</Card>
+  <Card title="工具与审批" icon="wrench" href="./agent-sdk-tools.mdx">添加本地、外部以及需要审批的工具。</Card>
+  <Card title="Agent API 参考" icon="book-open" href="./agent-sdk-api-reference.mdx">查看准确的 Rust 结构体、trait 和方法。</Card>
+</Columns>

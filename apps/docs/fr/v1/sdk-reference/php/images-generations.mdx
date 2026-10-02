@@ -1,0 +1,42 @@
+---
+icon: "image"
+title: "Génération d’images"
+description: "Appelez /images/generations avec le SDK PHP."
+---
+
+**Méthode** : `$client->generateImage(...)`
+
+### Exemple
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+    'response_format' => 'url'
+]);
+echo $response['data'][0]['url'] ?? '';
+```
+
+### Paramètres principaux
+
+- `model` (obligatoire) : identifiant d’un modèle compatible avec les images (par exemple, `openai/gpt-image-1`).
+- `prompt` (obligatoire) : texte de la consigne.
+- `n` (1–10) : nombre d’images à générer.
+- `size` : par exemple, `1024x1024`, `1024x1792` ou `1792x1024`.
+- `quality` : `standard` ou `hd` (selon le modèle).
+- `style` : par exemple, `vivid` ou `natural` (selon le modèle).
+- `response_format` : `url` ou `b64_json`.
+- `user` : étiquette facultative de l’utilisateur final pour le suivi de la sécurité et des abus.
+
+### Valeur renvoyée
+
+ImageGenerationResponse

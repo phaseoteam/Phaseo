@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import {
 	PUBLIC_DATA_ROUTE_ROOTS,
@@ -8,6 +9,7 @@ import {
 } from "@/lib/publicDataRoutes";
 
 export default function PublicDataFeedbackGate() {
+	const t = useTranslations("Common.ui.localisationGaps");
 	const pathname = usePathname();
 
 	if (!isPublicDataPathname(pathname)) return null;
@@ -27,21 +29,21 @@ export default function PublicDataFeedbackGate() {
 						id="public-data-feedback-heading"
 						className="text-sm font-semibold text-foreground"
 					>
-						Help keep public data accurate
+						{t("feedbackHeading")}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						See something missing, incorrect, or out of date? Tell us about this page.
+						{t("feedbackDescription")}
 					</p>
 				</div>
 				<ProductFeedbackButton
-					label="Report a data issue"
-					title="Report a data issue"
-					submitLabel="Send report"
-					successMessage="Report sent — thank you."
+					label={t("reportDataIssue")}
+					title={t("reportDataIssue")}
+					submitLabel={t("sendReport")}
+					successMessage={t("reportSent")}
 					defaultCategory="issue"
 					defaultReason="incorrect_data"
 					surface="public_data_report"
-					prompt="Tell us what looks incorrect, missing, or out of date on this public data page."
+					prompt={t("feedbackPrompt")}
 					context={{ page_root: pageRoot ?? null }}
 				/>
 			</div>

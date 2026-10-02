@@ -1,0 +1,10 @@
+---
+title: "Mettre à jour les paramètres de l’espace de travail"
+sidebarTitle: "Mettre à jour les paramètres"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /settings"
+description: "Met à jour les valeurs par défaut de routage, de fournisseur, de confidentialité et de Gateway de l’espace de travail."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `settings:write`.</Note>
+
+Les modifications de routage et de politique fournisseur actualisent les caches Gateway concernés et sont consignées dans le journal d’audit de l’espace de travail.

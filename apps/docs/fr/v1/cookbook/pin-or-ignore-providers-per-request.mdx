@@ -1,0 +1,214 @@
+---
+title: "Définir ou ignorer des fournisseurs pour une requête"
+icon: "pin"
+description: "Utilisez les paramètres fournisseur d’une requête pour définir un ordre de préférence, limiter les options ou exclure un fournisseur."
+---
+
+Utilisez cette recette lorsqu’une requête doit privilégier une route fournisseur précise sans modifier les paramètres de routage par défaut de tout l’espace de travail.
+
+## Objectif
+
+- Essayez les fournisseurs dans l’ordre souhaité.
+- Limitez une requête à un sous-ensemble de fournisseurs approuvés.
+- Ignorez temporairement un fournisseur sans modifier les presets.
+
+## 1. Essayez les fournisseurs dans un ordre précis
+
+Utilisez `provider.order` lorsque vous connaissez déjà l’ordre de routes souhaité.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Les fournisseurs indiqués passent en tête de la liste des candidats, avant les autres options admissibles.
+
+## 2. Limitez la requête à un sous-ensemble fixe de fournisseurs
+
+Utilisez `provider.only` lorsque la requête doit rester dans une courte liste d’autorisation.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+La requête reste dans ce groupe de fournisseurs, puis le mode de classement choisi s’applique à ce sous-ensemble.
+
+## 3. Excluez un fournisseur des options
+
+Utilisez `provider.ignore` pour ignorer un fournisseur dans une requête ou lors d’un déploiement de courte durée.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Cette option est utile lorsque :
+
+- un fournisseur est dégradé
+- vous validez une autre route fournisseur
+- vous souhaitez comparer les résultats du routage sans modifier un preset
+
+## 4. Combinez les paramètres avec précaution
+
+Vous pouvez combiner ces paramètres, mais gardez une intention simple :
+
+- utilisez `order` pour exprimer une préférence
+- utilisez `only` pour imposer l’ensemble des candidats
+- utilisez `ignore` pour exclure un fournisseur
+
+Un exemple concret combine :
+
+- `only` pour limiter la requête à `google-vertex` et `google-vertex-eu`
+- `order` pour privilégier `google-vertex-eu` en premier
+- `sort: "latency"` pour classer les options de cet ensemble autorisé
+
+## 5. Quand intégrer ces règles dans un preset
+
+Si les mêmes règles fournisseur apparaissent dans plusieurs services, cessez de les recopier dans chaque requête et placez-les plutôt dans un preset.
+
+Utilisez le routage au niveau de la requête lorsque la dérogation est :
+
+- temporaire
+- propre à l’appelant
+- liée à un parcours utilisateur
+
+## Guides associés
+
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Déployer des presets et déboguer le routage](./preset-rollout-and-routing-debug.mdx)

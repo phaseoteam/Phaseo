@@ -1,0 +1,71 @@
+---
+title: "Gateway API का अवलोकन"
+sidebarTitle: "अवलोकन"
+description: "Phaseo Gateway का बेस URL, प्रमाणीकरण और endpoint परिवार।"
+icon: "map"
+---
+
+एंडपॉइंट संदर्भ खोलने से पहले सही API पथ खोजने के लिए इस पृष्ठ का उपयोग करें। Phaseo Gateway के सभी एंडपॉइंट एक ही बेस URL साझा करते हैं और Bearer प्रमाणीकरण का उपयोग करते हैं।
+
+## अपना रास्ता चुनें
+
+| अगर आप चाहते हैं | यहाँ से शुरू करें |
+| --- | --- |
+| अपना पहला अनुरोध भेजना | [क्विकस्टार्ट](../quickstart.mdx) |
+| टेक्स्ट जनरेट करना या टूल उपयोग करना | `POST /responses` |
+| प्रकारयुक्त निर्णय लेना | [`POST /decisions`](./endpoint/decisions) |
+| मौजूदा OpenAI-संगत चैट एकीकरण बनाए रखना | `POST /chat/completions` |
+| मॉडल और प्रदाता देखना | `GET /models` और `GET /providers` |
+| संगीत बनाना या फ़ाइलें प्रबंधित करना | `POST /music/generations` और `POST /files` |
+| वीडियो बनाना (बीटा) | [`POST /videos`](./endpoint/video-create) |
+| बैच भेजना या परिणाम डाउनलोड करना (बीटा) | [`POST /batches`](./endpoint/batches-create) और [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+
+## बेस URL
+
+प्रोडक्शन बेस URL:
+
+```http
+https://api.phaseo.app/v1
+```
+
+इस reference के सभी endpoint path उसी `/v1` base URL के सापेक्ष हैं।
+
+## OpenAPI
+
+API को Postman, Hoppscotch या SDK जनरेटर में आयात करने के लिए OpenAPI फ़ाइल का उपयोग करें।
+
+<Card
+  title="Phaseo Gateway OpenAPI"
+  icon="list-bullet"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
+>
+  स्पेसिफ़िकेशन फ़ाइल देखें
+</Card>
+
+दस्तावेज़ और SDK यही विनिर्देश इस्तेमाल करते हैं। Video, Batch और Decisions एंडपॉइंट **बीटा** हैं; कार्यक्षेत्र पूर्वावलोकन पहुँच आवश्यक हो सकती है।
+## प्रमाणीकरण
+
+इन्फ़रेंस के लिए मानक Gateway API कुंजी और प्रशासन के लिए उचित अनुमतियों वाली प्रबंधन API कुंजी इस्तेमाल करें। [प्रमाणीकरण](../developers/authentication.mdx) और [प्रबंधन API कुंजियाँ](../developers/management-api-keys.mdx) देखें।
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+प्रमाणीकरण विफल होने पर API `401` लौटाती है।
+
+## API संसाधन
+
+| संसाधन | काम |
+| --- | --- |
+| इन्फ़रेंस | टेक्स्ट, छवियाँ, ऑडियो और एम्बेडिंग बनाएँ; निर्णय, पुनः क्रमांकन, मॉडरेशन या सामग्री पार्स करें। [Responses](./endpoint/responses.mdx) या [Decisions](./endpoint/decisions.mdx) से शुरू करें। |
+| असिंक्रोनस काम और फ़ाइलें | [वीडियो](./endpoint/video-create.mdx) या [बैच](./endpoint/batches-create.mdx) काम भेजें, फ़ाइल स्थानांतरित करें और वेबहुक सेट करें। |
+| मॉडल और कीमत | [मॉडल](./endpoint/models.mdx), प्रदाता विकल्प और [अनुमानित लागत](./endpoint/pricing-calculate.mdx) जानें। |
+| रूटिंग और नीतियाँ | प्रीसेट, प्रदाता क्रेडेंशियल, निजी मॉडल और [गार्डरेल](./endpoint/guardrails.mdx) सेट करें। |
+| उपयोग और निगरानी | [लॉग](./endpoint/logs-list.mdx), गतिविधि, विश्लेषण, मूल्यांकन और सेवा स्थिति देखें। |
+| कार्यक्षेत्र प्रबंधन | [कार्यक्षेत्र](./endpoint/workspaces-list.mdx), कुंजियाँ, बजट, पहचान और एकीकरण सँभालें। |
+
+## बिलिंग और रेट लिमिट
+
+- [अनुरोध सीमा गाइड](./limits.mdx) से प्रदाता थ्रॉटलिंग और लागू पहुँच नीतियाँ सँभालें।
+- भुगतान वाले अनुरोधों के लिए preflight credit check पास करने लायक wallet balance चाहिए।
+- `:free` वाले मुफ़्त मॉडल के लिए जमा किए गए credits की ज़रूरत नहीं।

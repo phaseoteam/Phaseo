@@ -16,6 +16,7 @@ import {
 	readableForegroundForAccent,
 	type DisplayDateValue,
 	type DisplayPreferences,
+	type DisplayFormattingPreferences,
 } from "@/lib/displayPreferences";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import type { SettingsPreferencesInitialData } from "@/lib/fetchers/internal/settingsTypes";
@@ -26,12 +27,13 @@ const STORAGE_KEY = "phaseo-display-preferences-v1";
 type DisplayPreferencesContextValue = {
 	isHydrated: boolean;
 	preferences: DisplayPreferences;
+	formattingPreferences: DisplayFormattingPreferences;
 	setPreferences: (preferences: DisplayPreferences) => void;
 };
 
 const DisplayPreferencesContext = React.createContext<DisplayPreferencesContextValue | null>(null);
 
-export function DisplayPreferencesProvider({ children }: { children: React.ReactNode }) {
+export function DisplayPreferencesProvider({ children, locale }: { children: React.ReactNode; locale: string }) {
 	const [preferences, setPreferencesState] = React.useState<DisplayPreferences>(
 		DEFAULT_DISPLAY_PREFERENCES,
 	);
@@ -96,9 +98,13 @@ export function DisplayPreferencesProvider({ children }: { children: React.React
 		}
 	}, []);
 
+	const formattingPreferences = React.useMemo<DisplayFormattingPreferences>(
+		() => preferences.locale === "system" ? { ...preferences, locale } : preferences,
+		[preferences, locale],
+	);
 	const value = React.useMemo(
-		() => ({ isHydrated, preferences, setPreferences }),
-		[isHydrated, preferences, setPreferences],
+		() => ({ isHydrated, preferences, formattingPreferences, setPreferences }),
+		[isHydrated, preferences, formattingPreferences, setPreferences],
 	);
 
 	React.useEffect(() => {
@@ -135,7 +141,7 @@ export function useDisplayPreferences() {
 }
 
 export function useDisplayFormatters() {
-	const { preferences } = useDisplayPreferences();
+	const { formattingPreferences: preferences } = useDisplayPreferences();
 
 	return React.useMemo(() => ({
 		calendarDate: (value: DisplayDateValue, fallback?: string) =>

@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "Ferramentas"
+description: "Defina ferramentas Ruby validadas, sujeitas a aprovação, manuais e que geram progresso."
+---
+
+Crie valores `PhaseoAgentSdk::Tool` e passe-os por `define_tool`. As ferramentas podem incluir:
+
+- `parameters` JSON exibidos ao modelo
+- callbacks de validação `input_schema`, `output_schema` e `event_schema`
+- `timeout_ms` e um callback `execute`
+- `require_approval` booleano ou chamável
+- `on_tool_called` e `on_response_received` para trabalho interativo
+- `next_turn_params` e `on_error: "return-to-model"`
+
+Use `runtime.emit_progress` para resultados preliminares e `set_context` para o contexto da aplicação. Threads limitadas podem executar ferramentas independentes em paralelo, enquanto os resultados salvos permanecem na ordem das chamadas do modelo.
+
+## Relacionados
+
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

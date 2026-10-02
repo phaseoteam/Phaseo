@@ -1,0 +1,87 @@
+---
+title: "Cursor"
+icon: "/icons/brands/cursor.svg"
+description: "通过 OpenAI API 密钥和 Base URL 覆盖设置将 Cursor 连接到 Phaseo。"
+---
+
+本指南介绍如何通过 Phaseo 路由受支持的 Cursor 聊天模型。使用 Phaseo CLI 创建和撤销专用密钥，然后在 Cursor 中完成设置；也可使用自己的 Phaseo 密钥并遵循相同的手动设置。
+
+## 使用 Phaseo CLI 设置
+
+```bash
+phaseo login
+phaseo cursor --model openai/gpt-5.6-terra
+```
+
+设置过程会创建一个永不过期的 `Phaseo CLI: Cursor API Key`，并显示以下设置。它不会编辑 Cursor 的私有凭据存储。
+
+## 配置 Cursor
+
+1. 打开 **Cursor Settings**。
+2. 选择 **Models**。
+3. 找到 **OpenAI API Key** 部分并启用。
+4. 复制专用密钥：
+
+```bash
+phaseo integrations credential cursor
+```
+
+5. 将密钥粘贴到 Cursor 的 OpenAI API 密钥字段中。
+6. 启用 **Override OpenAI Base URL**。
+7. 输入 `https://api.phaseo.app/v1`，末尾不要加斜杠。
+8. 添加或启用要使用的 Phaseo 模型。
+
+| Cursor 字段 | 值 |
+| --- | --- |
+| OpenAI API Key | `phaseo integrations credential cursor` 的输出 |
+| Override OpenAI Base URL | `https://api.phaseo.app/v1` |
+| Model | Cursor 的 Model 字段支持的 Phaseo 模型 ID |
+
+Cursor 当前的自定义供应商设置是全局的，而非针对单个供应商。模型名称会转发到已配置的端点；启用的 API 密钥和 Base URL 决定请求的发送位置。
+
+<Warning>
+Cursor 目前会广泛应用 OpenAI Base URL 覆盖设置。如果启用 Phaseo 后 Cursor 托管模型无法使用，请在切回这些模型前关闭该覆盖。Cursor 也可能拒绝与内置模型名称冲突或不符合 OpenAI 系列路由规则的自定义 ID。
+</Warning>
+
+## 验证
+
+1. 保持 Phaseo 密钥和 Base URL 覆盖处于启用状态。
+2. 在 Cursor 的模型选择器中选择已配置的模型。
+3. 开始新的聊天，并让它回复 `PHASEO_CURSOR_OK`。
+4. 确认请求显示在 Phaseo 活动记录或日志中。
+
+Cursor 的标准聊天路径是此处关注的兼容目标。使用 Cursor 专用模型的功能（如 Tab 补全）仍可能使用 Cursor 自身的基础设施。
+
+## 移除
+
+先在 **Cursor Settings → Models** 中停用 OpenAI API 密钥和 Base URL 覆盖，然后撤销 Phaseo 专用密钥：
+
+```bash
+phaseo integrations remove cursor
+```
+
+移除操作无法自动清除 Cursor 的安全凭据存储。如果密钥仍显示为已配置，请在 Cursor 的 Models 设置中删除。
+
+## 故障排查
+
+### Cursor 托管模型无法使用
+
+选择 Cursor 托管模型前，请关闭 **Override OpenAI Base URL**。Cursor 目前不会按模型隔离自定义 Base URL。
+
+### 模型被拒绝
+
+尝试使用 Cursor 接受的 OpenAI 系列自定义 Phaseo 模型。Cursor 可能拒绝与内置目录冲突的 ID，部分版本也可能不接受带供应商前缀的模型 ID。
+
+### 未显示 Verify 按钮
+
+某些 Cursor 版本会直接保存密钥，不提供单独的 Verify 操作。输入密钥和 Base URL 后，通过新聊天进行测试。
+
+### 身份验证失败
+
+再次运行 `phaseo integrations credential cursor`，替换 Cursor 中保存的值，并确保 Base URL 完全为 `https://api.phaseo.app/v1`。
+
+## 相关内容
+
+- [Cursor API 密钥文档](https://docs.cursor.com/settings/api-keys)
+- [编程智能体](./coding-assistants.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

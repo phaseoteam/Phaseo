@@ -1,0 +1,127 @@
+---
+title: "SKILL.md でコーディングエージェントを設定する"
+icon: "file-code"
+description: "SDK と SKILL.md ファイルを組み合わせて、ローカルのコーディングエージェントが Phaseo 連携を一貫して利用できるようにします。"
+---
+
+このガイドは、Gateway SDK を使って社内ツール、CLI、コーディングエージェントのワークフローを構築するチームを対象としています。
+
+<Visibility for="humans">
+<Note>
+スキルを一から作成せず、再利用可能なものを使う場合は、[phaseoteam/skills](https://github.com/phaseoteam/skills) から Phaseo の公開スキルをインストールします。
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+その後、プロジェクト固有の指示はローカルの `SKILL.md` に記述します。
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+再利用可能な Phaseo スキルは [phaseoteam/skills](https://github.com/phaseoteam/skills) にあります。次のコマンドで先にインストールします。
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+次に、リポジトリの `SKILL.md` にプロジェクト固有の指示を追加します。
+</Note>
+</Visibility>
+
+基本的な考え方はシンプルです。
+
+- SDK の設定をリポジトリ内に保持する
+- プロジェクトで期待されるリクエスト方法をエージェントに教える `SKILL.md` を追加する
+- セットアップ時にそのファイルを参照するようエージェントへ伝え、リクエストの形式を統一する
+
+## 1. SDK をインストールする
+
+TypeScript または JavaScript の場合：
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk
+```
+
+```bash bun
+bun add @phaseo/sdk
+```
+
+</CodeGroup>
+
+Python の場合：
+
+```bash
+pip install phaseo
+```
+
+## 2. プロジェクト専用のスキルファイルを追加する
+
+リポジトリのルート、またはチームで使用しているエージェントスキルの場所に `SKILL.md` を作成します。
+
+```md
+# Phaseo Gateway
+
+- Use `https://api.phaseo.app/v1` as the gateway base URL.
+- Read the API key from `PHASEO_API_KEY`.
+- Prefer the Responses API for new text integrations.
+- Use preset slugs when the repository defines shared request defaults.
+- Log request ids and model ids for debugging.
+- For async video jobs, store the returned id and poll status until terminal.
+```
+
+## 3. 最初の連携は小さく保つ
+
+コーディングエージェントでは、大きなラッパーより小さなリクエスト用ヘルパーのほうが再利用しやすくなります。
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+次に、各インターフェイスに明確な呼び出し経路を 1 つずつ用意します。
+
+- テキスト生成
+- 非同期動画
+- 埋め込み
+- 画像生成
+
+## 4. スキルに含める内容
+
+エージェントの時間を最も浪費する疑問に、`SKILL.md` で答えられるようにします。
+
+- 優先するエンドポイントの種類
+- 認証情報を保持する環境変数
+- 許可されているモデル ID またはプリセットのスラッグ
+- リクエスト ID の記録方法
+- 非同期ジョブの追跡方法
+
+## 5. 推奨するリポジトリ構成
+
+- SDK ヘルパーをまとめた共有モジュール
+- 連携コードの隣、またはリポジトリのルートに置く `SKILL.md`
+- 主要なエンドポイントごとの短い例
+- リクエストログとエラー処理に関する説明
+
+人もコーディングエージェントも、同じ運用上の入り口を利用できます。
+
+## 関連ガイド
+
+- [Codex](../guides/integrations/codex.mdx)
+- [AI SDK 連携](../guides/integrations/ai-sdk.mdx)
+- [例](../guides/examples.mdx)
+

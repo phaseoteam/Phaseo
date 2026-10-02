@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "क्रमिक आउटपुट"
+description: "Text, reasoning, tool activity और complete agent events stream करें।"
+---
+
+Run जारी रहते हुए agent response या tool activity दिखाने के लिए `stream()` उपयोग करें। यह streaming model client के साथ `run()` वाली ही resumable state machine शुरू करता है।
+
+## टेक्स्ट स्ट्रीम करें
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## एक से अधिक स्थानों पर परिणाम पढ़ें
+
+Stream consumers replayable हैं, इसलिए rendering, telemetry और persistence code एक ही run को साथ में consume कर सकते हैं:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## स्ट्रीम चुनें
+
+- `getTextStream()` answer text देता है।
+- Model उपलब्ध कराए तो `getReasoningStream()` reasoning updates देता है।
+- `getItemsStream()` संदेशों, तर्क-विचार, टूल गतिविधि, त्रुटियों और अंतिम आउटपुट को टाइप्ड `AgentItem<TOutput>` मानों के रूप में देता है।
+- `getToolStream()` tool activity देता है।
+- `getFullStream()` complete runtime events देता है।
+
+Run रोकने के लिए `cancel()` उपयोग करें। Local tools को उनके runtime signal के जरिए cancellation मिलता है।
+
+## टूल की प्रगति स्ट्रीम करें
+
+Async generators वाले tools preliminary results प्रकाशित कर सकते हैं। वे full stream में `tool.preliminary_result` events के रूप में दिखते हैं और completed step से जुड़े रहते हैं।
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## संबंधित गाइड
+
+- [टूल परिभाषित करें और चलाएँ](./agent-sdk-tools.mdx)
+- [टाइप किए गए आइटम के साथ काम करें](./agent-sdk-items.mdx)
+- [लाइफसाइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [टिकाऊ एजेंट लूप बनाएँ](../../cookbook/agent-sdk-durable-loop.mdx)

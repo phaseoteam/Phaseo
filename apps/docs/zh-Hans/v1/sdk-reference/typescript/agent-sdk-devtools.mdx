@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "开发工具"
+description: "在开发和调试时记录本地 Agent SDK 运行。"
+---
+
+开发期间可使用 Agent SDK DevTools 捕获运行记录，在本地保存输入、步骤、工具、输出、耗时和网关关联 ID。
+
+## 为单次运行启用捕获
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+默认情况下，文件会写入当前工作目录下的 `.phaseo-devtools`。
+
+## 配置输出目录
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+本地开发进程也可以设置 `PHASEO_DEVTOOLS=true`，并可选设置 `PHASEO_DEVTOOLS_DIR`。
+
+## 捕获的信息
+
+每条 `agent.run` 或 `agent.continue` 记录都包含：
+
+- Agent 和运行 ID
+- 运行状态和耗时
+- 输入和应用上下文
+- 可用时包含模型和提供方详情
+- 网关请求 ID 和原生响应 ID
+- 步骤数和工具数
+- 已完成的运行状态、消息、步骤和输出
+- 运行抛出异常时的结构化失败详情
+
+<Warning>
+Agent 输入、消息、工具结果和应用上下文可能包含敏感数据。请勿将 DevTools 目录纳入源代码管理，并对其应用与其他开发日志相同的访问控制。
+</Warning>
+
+## 相关指南
+
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [错误与故障排查](./agent-sdk-events-and-errors.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)

@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "Dateien"
+description: "Verwende das C#-SDK zum Hochladen von Dateien, Abrufen von Metadaten und Auslesen des Dateiinhalts."
+---
+
+**Methoden**: `client.UploadFile()`, `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+### Beispiel
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()` ist im SDK verfügbar, aber `GET /files` gibt mit dem gemeinsam genutzten Gateway-Schlüssel derzeit `file_list_not_supported_with_shared_gateway_key` zurück
+Speichere die IDs hochgeladener Dateien und rufe sie direkt ab.
+</Note>

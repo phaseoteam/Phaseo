@@ -37,6 +37,8 @@ import {
 	COMING_SOON_DESTINATIONS,
 	type DestinationId,
 } from "@/components/(gateway)/settings/observability/destinationCatalog";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type ConfiguredDestination = {
 	id: string;
@@ -64,6 +66,8 @@ function defaultConnectionStatus(destination: ConfiguredDestination) {
 }
 
 export default function BroadcastSettingsClient(props: BroadcastSettingsClientProps) {
+	const t = useTranslations("SettingsUI");
+	const tUi = useTranslations("Common.ui");
 	const { configuredDestinations, teamName } = props;
 	const router = useRouter();
 	const availableDestinations = Array.isArray(AVAILABLE_DESTINATIONS)
@@ -106,8 +110,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 					router.refresh();
 				}
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : "Action failed";
+				const message = localizedSettingsError(error, t, "Action failed");
 				toast.error(message);
 			} finally {
 				setPendingDestinationId(null);
@@ -119,7 +122,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 		<div className="space-y-5">
 			{configuredDestinations.length > 0 ? (
 				<div className="space-y-1">
-					<p className="text-sm font-medium text-muted-foreground">Configured Destinations</p>
+					<p className="text-sm font-medium text-muted-foreground">{t("strings.Configured Destinations" as never)}</p>
 					<div className="rounded-md border border-border/60">
 						{configuredDestinations.map((destination) => {
 							const definition = destinationById.get(destination.destinationId as DestinationId);
@@ -163,7 +166,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 									</div>
 
 									<div className="text-xs text-muted-foreground">
-										Sampling: {formatSamplingRate(destination.samplingRate)}
+										{t("broadcastControls.sampling")}: {formatSamplingRate(destination.samplingRate)}
 									</div>
 
 									<div>
@@ -186,12 +189,12 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 																	destination.id,
 																);
 															setStatus(destination.id, result.status);
-															if (result.ok) toast.success("Connection status refreshed");
-															else toast.error("Could not refresh connection status");
+															if (result.ok) toast.success(t("broadcastControls.connectionStatusRefreshed"));
+															else toast.error(t("broadcastControls.connectionStatusRefreshFailed"));
 														}, { refreshAfter: false })
 													}
 												>
-													Refresh Connection Status
+													{tUi("actions.refreshConnectionStatus")}
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>
@@ -207,7 +210,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													}
 												>
 													<SendHorizontal className="mr-2 h-3.5 w-3.5" />
-													Send Sample Trace
+													{tUi("actions.sendSampleTrace")}
 												</DropdownMenuItem>
 												<DropdownMenuItem
 													onClick={() =>
@@ -215,23 +218,25 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 															if (destination.enabled) {
 																await disableBroadcastDestinationAction(destination.id);
 																setStatus(destination.id, "Disabled");
-																toast.success("Connection disabled");
+										toast.success(t("strings.Connection disabled" as never));
 															} else {
 																await enableBroadcastDestinationAction(destination.id);
 																setStatus(destination.id, "Unknown");
-																toast.success("Connection enabled");
+										toast.success(t("strings.Connection enabled" as never));
 															}
 														})
 													}
 												>
-													{destination.enabled ? "Disable Connection" : "Enable Connection"}
+											{destination.enabled
+												? tUi("actions.disableConnection")
+												: tUi("actions.enableConnection")}
 												</DropdownMenuItem>
 												<DropdownMenuSeparator />
 												<DropdownMenuItem
 													className="text-destructive focus:text-destructive"
 													onClick={() => setDeleteTarget(destination)}
 												>
-													Delete Destination
+												{tUi("actions.deleteDestination")}
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
@@ -244,7 +249,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 			) : null}
 
 			<div className="space-y-1">
-				<p className="text-sm font-medium text-muted-foreground">Available</p>
+				<p className="text-sm font-medium text-muted-foreground">{t("strings.Available" as never)}</p>
 				<div className="rounded-md border border-border/60">
 					{availableDestinations.map((destination) => (
 						<Link
@@ -277,7 +282,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 							</div>
 							<div className="inline-flex items-center gap-1 text-xs font-medium text-white">
 								<Plus className="h-3.5 w-3.5" />
-								Add Destination
+									{t("broadcastControls.addDestination")}
 							</div>
 						</Link>
 					))}
@@ -285,7 +290,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 			</div>
 
 			<div className="space-y-1">
-				<p className="text-sm font-medium text-muted-foreground">Coming Soon</p>
+				<p className="text-sm font-medium text-muted-foreground">{t("strings.Coming Soon" as never)}</p>
 				<div className="rounded-md border border-border/60">
 					{comingSoonDestinations.map((provider) => (
 						<div
@@ -314,7 +319,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								</div>
 								<p className="text-sm font-medium">{provider.label}</p>
 							</div>
-							<Badge variant="outline">Coming Soon</Badge>
+							<Badge variant="outline">{t("strings.Coming Soon" as never)}</Badge>
 						</div>
 					))}
 				</div>
@@ -328,13 +333,13 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 			>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Delete destination?</AlertDialogTitle>
+						<AlertDialogTitle>{t("strings.Delete destination?" as never)}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This permanently removes the destination connection and its key/rule mappings.
+							{t("broadcastControls.deleteDestinationDescription")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{t("labels.cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 							onClick={(event) => {
@@ -343,12 +348,12 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								if (!target) return;
 								runAction(target.id, async () => {
 									await deleteBroadcastDestinationAction(target.id);
-									toast.success("Destination deleted");
+						toast.success(t("strings.Destination deleted" as never));
 									setDeleteTarget(null);
 								});
 							}}
 						>
-							Delete
+							{t("labels.delete")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

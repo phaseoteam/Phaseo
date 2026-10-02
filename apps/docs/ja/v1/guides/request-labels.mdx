@@ -1,0 +1,42 @@
+---
+title: "リクエストラベル"
+description: "コードで定義したチーム、機能、環境にゲートウェイリクエストを割り当て、ラベルごとに支出を集計します。"
+icon: "tags"
+---
+
+アプリケーションコードでAPIキーやアプリケーションより詳細な、安定したコスト分類が必要な場合にリクエストラベルを使います。ラベルはリクエスト監査に記録され、モデルへのリクエストを変更せずに分析でフィルターできます。
+
+## ラベルを送信する
+
+`X-Phaseo-Metadata`を最大32個の一意なキーと値のラベルを含むJSONオブジェクトに設定します。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+TypeScript SDKとPython SDKはカスタムヘッダーを受け付けるため、同じヘッダーをクライアントで設定できます。ラベルがプロバイダーに転送されることはありません。
+
+## 支出を分類する
+
+分析エンドポイントで`label_key`と`label_value`を指定します。
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+レスポンスはフィルターなしの分析と同じグループ化された支出形式を使いますが、指定したラベルの組み合わせに一致するリクエストだけを含みます。
+
+## 仕様
+
+- キーに使用できるのは英字、数字、`_`、`.`、`:`、`-`のみで、最大64文字です。
+- 値は最大256文字の文字列です。
+- 1件のリクエストに指定できるラベルは最大32個で、ヘッダーの上限は8KiBです。
+- キーの重複やメタデータの形式が不正な場合は、`400 invalid_request`で拒否されます。
+- ラベルにプロンプト、秘密情報、メールアドレスなどの個人データを含めないでください。

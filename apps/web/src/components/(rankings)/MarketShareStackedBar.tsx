@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -25,11 +26,13 @@ type MarketShareStackedBarProps = {
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
 const TOP_SERIES = 10;
 
-function formatPercent(value: number) {
+function formatPercent(value: number, locale: string, lessThanOneLabel: string) {
 	if (!Number.isFinite(value)) return "--";
-	if (value === 0) return "0%";
-	if (value < 1) return "<1%";
-	return `${Math.round(value)}%`;
+	if (value > 0 && value < 1) return lessThanOneLabel;
+	return new Intl.NumberFormat(locale, {
+		style: "percent",
+		maximumFractionDigits: 0,
+	}).format(value / 100);
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -48,9 +51,11 @@ export function MarketShareStackedBar({
 	metric = "requests",
 	normalizeToPercent = false,
 }: MarketShareStackedBarProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatBucketLabel = (value: string) => format.calendarDate(value, value);
-	const formatNumber = (value: number) => metric === "tokens" ? formatRoundedCount(value) : Number.isFinite(value)
+	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number, _locale?: string) => metric === "tokens" ? formatRoundedCount(value, locale) : Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -58,9 +63,11 @@ export function MarketShareStackedBar({
 
 	if (!data.length) {
 		return (
-			<EmptyChartPreview
-				title={`No ${dimension} market share data yet`}
-				description="Market share appears once usage is recorded for this period."
+				<EmptyChartPreview
+					title={t("marketShareEmptyTitle", {
+						dimension: t(`marketShareDimension.${dimension === "organization" ? "organisation" : "provider"}`),
+					})}
+					description={t("marketShareEmptyDescription")}
 				heightClassName="h-[360px]"
 			/>
 		);
@@ -85,7 +92,7 @@ export function MarketShareStackedBar({
 		const entry =
 			bucketMap.get(bucketTs) ??
 			({
-				bucket: formatBucketLabel(row.bucket),
+				bucket: formatBucketLabel(row.bucket, locale),
 				bucketTs,
 			} as Record<string, number> & { bucket: string; bucketTs: number });
 
@@ -101,9 +108,11 @@ export function MarketShareStackedBar({
 
 	if (!sortedGroups.length) {
 		return (
-			<EmptyChartPreview
-				title={`No ${dimension} market share data yet`}
-				description="Market share appears once usage is recorded for this period."
+				<EmptyChartPreview
+					title={t("marketShareEmptyTitle", {
+						dimension: t(`marketShareDimension.${dimension === "organization" ? "organisation" : "provider"}`),
+					})}
+					description={t("marketShareEmptyDescription")}
 				heightClassName="h-[360px]"
 			/>
 		);
@@ -120,7 +129,7 @@ export function MarketShareStackedBar({
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
 			bucketMap.set(ts, {
-				bucket: formatBucketLabel(new Date(ts).toISOString()),
+				bucket: formatBucketLabel(new Date(ts).toISOString(), locale),
 				bucketTs: ts,
 			} as Record<string, number> & { bucket: string; bucketTs: number });
 			bucketTotals.set(ts, bucketTotals.get(ts) ?? 0);
@@ -218,8 +227,8 @@ export function MarketShareStackedBar({
 				<YAxis
 					tickFormatter={(value) =>
 						normalizeToPercent
-							? formatPercent(Number(value))
-							: metric === "tokens" ? formatCompactAxisTick(Number(value)) : formatNumber(Number(value))
+							? formatPercent(Number(value), locale, t("lessThanOnePercent"))
+							: metric === "tokens" ? formatCompactAxisTick(Number(value), locale) : formatNumber(Number(value), locale)
 					}
 					width={60}
 					tickLine={false}
@@ -286,8 +295,8 @@ export function MarketShareStackedBar({
 												</span>
 												<span className="whitespace-nowrap pl-3 font-medium tabular-nums">
 													{normalizeToPercent
-														? `${formatPercent(val)} · ${formatNumber(rawValue)}`
-														: formatNumber(val)}
+									? `${formatPercent(val, locale, t("lessThanOnePercent"))} · ${formatNumber(rawValue, locale)}`
+									: formatNumber(val, locale)}
 												</span>
 											</div>
 										);

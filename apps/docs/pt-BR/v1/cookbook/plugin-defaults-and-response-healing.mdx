@@ -1,0 +1,173 @@
+---
+title: "Defina padrões de plugins para fluxos de trabalho com JSON estruturado"
+icon: "puzzle"
+description: "Use políticas de plugins do workspace, de presets e por solicitação para manter a correção de respostas consistente."
+---
+
+Use este guia quando solicitações com saída estruturada precisarem de uma política de plugins estável, em vez de configurações diferentes a cada solicitação.
+
+## 1. Entenda a precedência
+
+A política de plugins do gateway é resolvida nesta ordem:
+
+1. padrões do workspace
+2. padrões de presets
+3. plugins por solicitação
+
+Camadas com prioridade menor podem substituir as de prioridade maior, a menos que o padrão do workspace esteja explicitamente bloqueado.
+
+## 2. Defina o padrão do workspace
+
+Use as configurações de roteamento quando um workspace precisar habilitar por padrão a correção de respostas para solicitações com JSON estruturado.
+
+Este é o lugar certo para definir:
+
+- padrões operacionais abrangentes
+- comportamento compartilhado das chaves de API
+- prevenção de divergências entre serviços
+
+## 3. Bloqueie a política quando ela não puder ser negociada
+
+Se um workspace precisar manter a correção de respostas sempre habilitada, bloqueie esse padrão.
+
+Com um padrão de workspace bloqueado:
+
+- presets não podem desabilitá-lo
+- o corpo das solicitações não pode desabilitá-lo
+- os logs continuam mostrando se o plugin foi aplicado, ignorado ou falhou
+
+## 4. Use presets para padrões específicos do fluxo de trabalho
+
+Presets são a camada certa quando uma família de solicitações precisa incluir:
+
+- configurações de saída estruturada
+- padrões do plugin de correção de respostas
+
+Essa camada também pode escolher o modo de correção:
+
+- `safe` para uma limpeza sintática limitada
+- `strict` para um comportamento que apenas remove as delimitações externas
+
+Assim, o corpo da solicitação fica menor e o roteamento e o comportamento da saída podem ser reutilizados com mais facilidade entre serviços.
+
+## 5. Substitua a configuração por solicitação somente quando o workspace permitir
+
+Se o padrão do workspace não estiver bloqueado, uma solicitação ainda poderá substituir diretamente a configuração do plugin:
+
+## Exemplo de solicitação
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+## 6. Verifique o comportamento nos logs
+
+Após uma solicitação, inspecione a visualização de detalhes e confirme:
+
+- `plugin_executions` inclui `response-healing`
+- o status é um destes:
+  - `applied`
+  - `skipped`
+  - `failed`
+- o modo efetivo do plugin está visível
+- erros de validação aparecem quando a validação do esquema rejeita um possível conteúdo corrigido
+
+## 7. O que fazer quando o comportamento varia entre serviços
+
+Se dois serviços se comportarem de forma diferente, compare:
+
+- as configurações de roteamento do workspace
+- os padrões de plugins dos presets
+- `plugins` por solicitação
+- se o padrão do workspace está bloqueado
+
+Não investigue isso como um problema de qualidade do modelo antes de confirmar que essas camadas de política estão iguais.
+
+## Conteúdo relacionado
+
+- [Recupere JSON estruturado malformado](./response-healing-for-structured-json.mdx)
+- [Use cache de respostas com presets](./response-caching-with-presets.mdx)
+- [Agent SDK de TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

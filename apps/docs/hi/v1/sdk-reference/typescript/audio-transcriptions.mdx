@@ -1,0 +1,33 @@
+---
+icon: "mic"
+title: "STT (वाणी से पाठ)"
+description: "TypeScript SDK के साथ /audio/transcriptions call करें।"
+---
+
+**Method**: `client.generateTranscription()`।
+
+### उदाहरण
+```typescript
+const transcript = await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+  language: "en",
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): transcription-सक्षम model ID।
+- `file` (ज़रूरी): audio data (URL, base64 या binary)।
+- `language`: भाषा code का hint (जैसे `en`)।
+- `prompt`: accuracy बढ़ाने के लिए optional context।
+- `temperature` (0–2): sampling randomness।
+- `response_format`: `json`, `text`, `srt`, `verbose_json` आदि।
+
+### लौटाया गया मान
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

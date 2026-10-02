@@ -1,0 +1,12 @@
+---
+title: "Réordonner des documents"
+sidebarTitle: "Réordonner des documents"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /rerank"
+description: "Classer des documents selon leur pertinence par rapport à une requête à l’aide d’un modèle de reclassement pris en charge."
+---
+
+Utilisez ce point de terminaison pour réordonner les documents candidats avant de les transmettre à une étape de recherche, de récupération ou de génération.
+
+Vérifiez le modèle avec `GET /v1/models` avant le déploiement. La réponse par défaut ne contient que les modèles ayant une route Gateway publique.
+

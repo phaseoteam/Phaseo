@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "الحالة والموافقة"
+description: "أوقِف وكلاء Python مؤقتًا لانتظار قرارات بشرية، ثم تابِع الحالة التي يديرها التطبيق."
+---
+
+استخدم `human_review` كنقطة تحقق عامة. وتضع الأدوات التي تتطلب موافقة والأدوات اليدوية معرّفات الاستدعاء الدقيقة في `paused.run.pause.pending_tool_calls`.
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+قدّم `rejections` لرفض الاستدعاءات أو `human_input` لإيقاف المراجعة العامة. تُطابق القرارات بمعرّف الاستدعاء لا باسم الأداة.
+
+نفّذ `AgentStateAccessor.load(run_id)` و`save(result)` عندما يلزم استمرار عمليات التشغيل بعد الطلبات أو إعادة تشغيل العملية. عندها يمكن للمتابعة تحميل الحالة باستخدام `run_id`.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

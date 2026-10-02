@@ -1,0 +1,55 @@
+---
+icon: "package"
+title: "Rust Agent SDK इंस्टॉलेशन"
+description: "phaseo-agent install करें और इसका Phaseo Gateway client configure करें।"
+---
+
+## आवश्यकताएँ
+
+- Rust 1.86 या नया
+- Phaseo Gateway API key
+
+## इंस्टॉल करें
+
+```toml
+[dependencies]
+phaseo = "0.1"
+phaseo-agent = "0.1"
+serde_json = "1"
+```
+
+या चलाएँ:
+
+```bash
+cargo add phaseo@0.1 phaseo-agent@0.1 serde_json
+```
+
+## प्रमाणीकरण कॉन्फ़िगर करें
+
+`create_gateway_agent_client(...)` और `GatewayAgentClient::from_env(...)`, `PHASEO_API_KEY` पढ़ते हैं:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+Underlying `phaseo` client optional `PHASEO_BASE_URL` भी स्वीकार करता है।
+
+## इंस्टॉलेशन की पुष्टि करें
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+## आगे क्या करें
+
+- [अपना पहला Rust एजेंट बनाएँ](./agent-sdk.mdx)
+- [टूल और अनुमोदन](./agent-sdk-tools.mdx)
+- [Agent API संदर्भ](./agent-sdk-api-reference.mdx)

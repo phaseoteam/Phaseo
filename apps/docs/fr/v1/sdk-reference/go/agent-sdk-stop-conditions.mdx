@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Conditions d’arrêt"
+description: "Limitez le travail des agents Go par nombre d’étapes, jetons, coût, durée, outils ou motif de fin."
+---
+
+`MaxSteps` constitue une limite de sécurité utile. `StopWhen` ajoute des limites produit combinables, évaluées au fil de l’exécution.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+D’autres helpers incluent `HasToolCall("publish_report")` et `FinishReasonIs("content_filter")`. Vous pouvez également fournir une condition `StopCondition` personnalisée lorsque la décision dépend du contexte de l’application.
+
+Lorsqu’une condition est remplie, inspectez `result.Run.StopReason`, les totaux d’utilisation normalisés et la dernière étape terminée. L’arrêt est un résultat borné réussi, sauf si votre application choisit de traiter ce motif comme une erreur.

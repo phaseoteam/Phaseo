@@ -3,10 +3,12 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 
 type SocialProviderId = "google" | "github" | "gitlab";
 type LastAuthProvider = SocialProviderId | "email";
@@ -39,22 +41,26 @@ function OAuthSubmitButton({
 	isLastUsed?: boolean;
 }) {
 	const { pending } = useFormStatus();
+	const t = useTranslations("Auth.shared");
+
 	return (
 		<Button
 			type="submit"
 			variant="outline"
-			aria-label={`Continue with ${meta.label}`}
+			aria-label={t("providerContinue", { provider: meta.label })}
 			className="relative h-12 w-full justify-center gap-2 px-2"
 			disabled={pending}
 		>
 			{isLastUsed ? (
 				<span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium leading-none text-muted-foreground shadow-sm">
-					Last Used
+					{t("lastUsed")}
 				</span>
 			) : null}
 			<span className="flex items-center justify-center">
 				{pending ? (
-					<Spinner aria-label={`Opening ${meta.label}`} />
+					<Spinner
+						aria-label={t("providerOpening", { provider: meta.label })}
+					/>
 				) : meta.logoId ? (
 					<Logo
 						id={meta.logoId}
@@ -67,7 +73,7 @@ function OAuthSubmitButton({
 						{meta.light ? (
 							<Image
 								src={meta.light}
-								alt={`${meta.label} logo`}
+								alt={t("providerLogoAlt", { provider: meta.label })}
 								width={18}
 								height={18}
 								className="h-[18px] w-[18px] shrink-0 dark:hidden"
@@ -76,7 +82,7 @@ function OAuthSubmitButton({
 						{(meta.dark ?? meta.light) ? (
 							<Image
 								src={meta.dark ?? meta.light!}
-								alt={`${meta.label} logo`}
+								alt={t("providerLogoAlt", { provider: meta.label })}
 								width={18}
 								height={18}
 								className="hidden h-[18px] w-[18px] shrink-0 dark:block"
@@ -94,8 +100,10 @@ function OAuthSubmitButton({
 
 export default function OAuthButtons({
 	returnUrl,
+	locale = defaultLocale,
 }: {
 	returnUrl?: string;
+	locale?: PublicLocale;
 }) {
 	const [lastUsedProvider, setLastUsedProvider] =
 		useState<LastAuthProvider | null>(null);
@@ -137,6 +145,7 @@ export default function OAuthButtons({
 						>
 							<input type="hidden" name="authFlow" value="signin" />
 							<input type="hidden" name="provider" value={id} />
+							<input type="hidden" name="locale" value={locale} />
 							{returnUrl ? (
 								<input type="hidden" name="returnUrl" value={returnUrl} />
 							) : null}

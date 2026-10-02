@@ -1,0 +1,45 @@
+---
+icon: "message-square"
+title: "Complétions de chat"
+description: "Envoyez des requêtes Chat Completions compatibles avec OpenAI avec le SDK Rust."
+---
+
+Utilisez `chat_completions(...)` lorsqu’une intégration existante emploie déjà des charges utiles Chat Completions basées sur des messages.
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+Pour les nouvelles intégrations, privilégiez l’[API Responses](./responses.mdx). Elle propose un modèle de requête unique pour le texte, les entrées multimodales, les outils et des éléments de sortie plus riches.
+
+## À lire aussi
+
+- [Référence de l’API Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- [Référence de l’API Rust](./api-reference.mdx)

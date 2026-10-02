@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "Padrões de chamadas de ferramentas"
+description: "Ciclos confiáveis de chamadas de ferramentas para endpoints de chat completions e responses."
+---
+
+Use estes padrões para manter os ciclos de chamadas de ferramentas determinísticos e fáceis de depurar.
+
+## Padrão 1: ciclo de Chat Completions
+
+1. Envie a mensagem do usuário e as definições das ferramentas.
+2. Se `finish_reason` for `tool_calls`, execute cada chamada de ferramenta.
+3. Envie os resultados das ferramentas de volta como mensagens `role: "tool"`.
+4. Leia a resposta final do assistente.
+
+### Solicitação (continuação)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Padrão 2: ciclo de Responses
+
+Em `/v1/responses`, as chamadas de ferramentas do modelo aparecem como itens de saída do tipo `function_call`.
+Em seguida, envie uma solicitação de acompanhamento com itens de entrada `function_call_output`.
+
+### Solicitação (acompanhamento)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## Escolher um endpoint
+
+- Prefira `/v1/chat/completions` se você já usa ciclos de mensagens no estilo OpenAI.
+- Prefira `/v1/responses` se a sua aplicação usa a API Responses como padrão.
+- Use `/v1/messages` se a sua aplicação for baseada em Anthropic.
+

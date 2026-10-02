@@ -1,0 +1,36 @@
+---
+title: "वाणी बनाएँ"
+sidebarTitle: "वाणी बनाएँ"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "निर्दिष्ट आवाज़ और फ़ॉर्मैट का उपयोग करके टेक्स्ट से TTS ऑडियो बनाएँ।"
+---
+
+## आवाज़ मैपिंग
+
+`voice` को आंतरिक एलियास मैप के ज़रिए प्रदाता के अनुसार सामान्यीकृत किया जाता है:
+
+- `openai`: आम आवाज़ें (उदाहरण के लिए `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): मानक पहले से बनी आवाज़ें:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: आम सार्वजनिक शुरुआती आवाज़ें मैप की जाती हैं (उदाहरण के लिए `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+`eleven-labs/eleven-v4` और `eleven-labs/eleven-v4-turbo` के लिए कस्टम क्लोन सहित ElevenLabs वॉइस लाइब्रेरी की कोई भी 20-अक्षर वाली आईडी दें। आवश्यकतानुसार `config.elevenlabs.voice_settings.stability` और `similarity_boost` सेट करें। Eleven v4 में `speed` या `voice_settings.style` समर्थित नहीं हैं।
+
+यदि दिया गया `voice` रूट के प्रदाता/मॉडल संयोजन के लिए मान्य नहीं है, तो अनुरोध `param: "voice"` के साथ `400 invalid_request_error` लौटाता है।
+
+## प्रदाता ओवरराइड
+
+आप अब भी प्रदाता-विशिष्ट आवाज़ सेटिंग दे सकते हैं:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+पोर्टेबिलिटी के लिए शीर्ष-स्तरीय `voice` को डिफ़ॉल्ट रखें।
+
+## आवाज़ के नमूने
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Google TTS आवाज़ के उदाहरण: [Gemini के टेक्स्ट-टू-स्पीच दस्तावेज़](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- ElevenLabs आवाज़ लाइब्रेरी: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

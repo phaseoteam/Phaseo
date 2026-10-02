@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "./PrivateSettingsQuery";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogTrigger,
@@ -55,6 +56,7 @@ export default function CreateTeamInviteDialog({
 	defaultWorkspaceId?: string;
 }) {
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
 	const isWorkspaceLocked = teams.length === 1;
 	const preferredTeamId = useMemo(() => {
 		if (!teams?.length) return undefined;
@@ -104,7 +106,7 @@ export default function CreateTeamInviteDialog({
 				router.refresh();
 			});
 		} catch {
-			toast.error("Failed to create invite");
+			toast.error(t("teams.failedCreateInvite"));
 		} finally {
 			setLoading(false);
 		}
@@ -115,23 +117,23 @@ export default function CreateTeamInviteDialog({
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm" className="select-none">
 					<Link className="h-4 w-4" />
-					Create Invite
+						{t("teams.createInviteButton")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Create Workspace Invite</DialogTitle>
+					<DialogTitle>{t("teams.createInvite")}</DialogTitle>
 					<DialogDescription>
-						Create an invite code to share with your workspace.
+						{t("teams.createInviteDescription")}
 					</DialogDescription>
 				</DialogHeader>
 
 				{!generatedCode ? (
 					<form onSubmit={onCreate} className="space-y-2">
-						<label className="block text-sm">Workspace</label>
+						<label className="block text-sm">{t("teams.workspace")}</label>
 						{isWorkspaceLocked ? (
 							<div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
-								{teams[0]?.name ?? "Selected workspace"}
+								{teams[0]?.name ?? t("teams.selectedWorkspace")}
 							</div>
 						) : (
 							<DropdownMenu>
@@ -143,7 +145,7 @@ export default function CreateTeamInviteDialog({
 											? teams.find(
 													(x) => x.id === selectedTeam
 										)?.name
-											: "Select a workspace"}
+											: t("teams.selectWorkspace")}
 
 								</DropdownMenuTrigger>
 								<DropdownMenuContent>
@@ -160,7 +162,7 @@ export default function CreateTeamInviteDialog({
 						)}
 
 						<label className="block text-sm">
-							Role for invitees
+							{t("teams.roleForInvitees")}
 						</label>
 						<DropdownMenu>
 							<DropdownMenuTrigger render={<Button
@@ -168,20 +170,20 @@ export default function CreateTeamInviteDialog({
 									className="w-full justify-between" />}>
 
 									{role === "admin"
-										? "Admin"
-										: "Member"}
+										? t("teams.adminRole")
+										: t("teams.memberRole")}
 
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="start">
 								<DropdownMenuItem
 									onClick={() => setRole("admin")}
 								>
-									Admin
+									{t("teams.adminRole")}
 								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={() => setRole("member")}
 								>
-									Member
+									{t("teams.memberRole")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -189,7 +191,7 @@ export default function CreateTeamInviteDialog({
 						<div className="grid grid-cols-2 gap-2">
 							<div>
 								<label className="block text-sm">
-									Expires (days)
+									{t("teams.expiresDays")}
 								</label>
 								<Input
 									type="number"
@@ -206,7 +208,7 @@ export default function CreateTeamInviteDialog({
 							</div>
 							<div>
 								<label className="block text-sm">
-									Max uses (optional)
+									{t("teams.maxUsesOptional")}
 								</label>
 								<Input
 									type="number"
@@ -228,20 +230,20 @@ export default function CreateTeamInviteDialog({
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button type="button" variant="ghost">
-									Cancel
+									{t("labels.cancel")}
 								</Button>
 							</DialogClose>
 							<Button
 								type="submit"
 								disabled={loading || !selectedTeam}
 							>
-								{loading ? "Creating..." : "Create Invite"}
+							{loading ? t("teams.creatingInvite") : t("teams.createInviteButton")}
 							</Button>
 						</DialogFooter>
 					</form>
 				) : (
 					<div className="space-y-4">
-						<div className="text-sm">Share this code:</div>
+						<div className="text-sm">{t("teams.shareCode")}</div>
 						<div className="flex items-center gap-2">
 							<Input
 								value={generatedCode}
@@ -253,12 +255,12 @@ export default function CreateTeamInviteDialog({
 								size="default"
 								variant="outline"
 								className="mr-2"
-								aria-label="Copy invite code"
+								aria-label={t("teams.copyInviteCode")}
 							/>
 						</div>
 						<DialogFooter>
 							<DialogClose asChild>
-								<Button>Done</Button>
+								<Button>{t("labels.done")}</Button>
 							</DialogClose>
 						</DialogFooter>
 					</div>

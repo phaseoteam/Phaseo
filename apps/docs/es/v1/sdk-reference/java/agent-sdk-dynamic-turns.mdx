@@ -1,0 +1,24 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos"
+description: "Cambia la configuración del modelo y las herramientas entre turnos de agentes Java."
+---
+
+Usa callbacks dinámicos cuando los turnos posteriores deban responder al contexto de la aplicación, a resultados de herramientas anteriores o al número de turnos completados.
+
+Los valores dinámicos pueden seleccionar:
+
+- el modelo o los modelos alternativos
+- las instrucciones
+- la temperatura, top-p y el máximo de tokens de salida
+- la lista de herramientas para la siguiente solicitud al modelo
+
+Las herramientas pueden actualizar el contexto de la aplicación mediante `RuntimeContext` y devolver `NextTurnParams` para la solicitud inmediatamente posterior. Las anulaciones del siguiente turno se guardan con el estado pausado, por lo que la aprobación no descarta las decisiones de enrutamiento o muestreo de una herramienta.
+
+Mantén serializables el contexto y los valores del siguiente turno si es posible que la ejecución se vuelva a cargar mediante `StateAccessor`.
+
+## Relacionado
+
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Condiciones de detención](./agent-sdk-stop-conditions.mdx)

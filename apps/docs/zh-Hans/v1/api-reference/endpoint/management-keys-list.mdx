@@ -1,0 +1,10 @@
+---
+title: "列出管理密钥"
+sidebarTitle: "列出管理密钥"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "列出已认证工作区的管理密钥元数据。"
+---
+<Note>此端点需要所有者或管理员身份以及 `management_keys:read` 权限。</Note>
+
+响应不会包含原始密钥值。使用 `limit` 和 `offset` 对结果分页。

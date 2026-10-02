@@ -1,3 +1,4 @@
+import { DisplayMoneyMessage } from "./DisplayMoneyMessage";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -5,6 +6,7 @@ import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
 import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
@@ -29,6 +31,7 @@ interface Props {
 }
 
 export default async function TierOverview({ workspaceId }: Props) {
+	const t = await getTranslations("SettingsUI.credits");
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 	let teamTier: "basic" | "enterprise" = "basic";
@@ -51,10 +54,10 @@ export default async function TierOverview({ workspaceId }: Props) {
 	const enterpriseThreshold = 10000;
 	const isEnterprise = teamTier === "enterprise";
 	const currentTier = HIDE_ENTERPRISE_REFERENCES
-		? "Standard"
+		? t("standard")
 		: isEnterprise
-			? "Enterprise"
-			: "Basic";
+			? t("enterprise")
+			: t("basic");
 	const currentFee = 5.0;
 	const savingsRate = 0;
 
@@ -73,7 +76,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center justify-between">
-						<span>Current Tier</span>
+						<span>{t("currentTier")}</span>
 						<Badge
 							variant={isEnterprise ? "default" : "secondary"}
 							className={cn(
@@ -89,7 +92,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 				<CardContent className="space-y-4">
 					{/* Fee Rate */}
 					<div className="flex items-baseline justify-between">
-						<span className="text-sm text-muted-foreground">Credit Top-Up Fee</span>
+						<span className="text-sm text-muted-foreground">{t("topUpFee")}</span>
 						<div className="flex items-baseline gap-1">
 							<span className="text-3xl font-bold">{currentFee}%</span>
 							{savingsRate > 0 && (
@@ -103,7 +106,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 					{/* Last Month Spend */}
 					<div className="flex items-baseline justify-between">
 						<span className="text-sm text-muted-foreground">
-							Last Month Spend
+							{t("lastMonthSpend")}
 						</span>
 						<span className="font-semibold">{money(lastMonth)}</span>
 					</div>
@@ -113,7 +116,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 						<div className="space-y-2">
 							<div className="flex items-baseline justify-between text-sm">
 								<span className="text-muted-foreground">
-									{HIDE_ENTERPRISE_REFERENCES ? "Progress this month" : "Progress to Enterprise"}
+									{t("progressThisMonth")}
 								</span>
 								<span className="font-medium">{progressPct.toFixed(0)}%</span>
 							</div>
@@ -122,17 +125,15 @@ export default async function TierOverview({ workspaceId }: Props) {
 								{remainingToEnterprise > 0 ? (
 									HIDE_ENTERPRISE_REFERENCES ? (
 										<>
-											Spend {money(remainingToEnterprise)} more this month to
-											reach the next threshold
+											{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={remainingToEnterprise} />}
 										</>
 									) : (
 										<>
-											Spend {money(remainingToEnterprise)} more this month to
-											unlock Enterprise tier
+											{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={remainingToEnterprise} />}
 										</>
 									)
 								) : (
-									<>{HIDE_ENTERPRISE_REFERENCES ? "Threshold reached for this month." : "Eligible for Enterprise tier now."}</>
+										<>{t("thresholdReached")}</>
 								)}
 							</p>
 						</div>
@@ -144,7 +145,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 							<div className="flex items-center gap-2 text-sm">
 								<Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
 								<span className="font-medium text-emerald-900 dark:text-emerald-100">
-									Saving ~{money(estimatedSavings)} this month vs Basic
+									{<DisplayMoneyMessage messageKey={"savingVsBasic"} amount={estimatedSavings} />}
 								</span>
 							</div>
 						</div>
@@ -155,7 +156,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 						href="https://phaseo.app"
 						className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
 					>
-						<span>Learn about pricing</span>
+						<span>{t("learnPricing")}</span>
 						<ExternalLink className="h-3 w-3" />
 					</Link>
 				</CardContent>
@@ -164,13 +165,13 @@ export default async function TierOverview({ workspaceId }: Props) {
 			{/* Spending Trends Card */}
 			<Card>
 				<CardHeader>
-					<CardTitle>Spending Trends</CardTitle>
+					<CardTitle>{t("spendingTrends")}</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{/* This Month */}
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-muted-foreground">This Month</span>
+							<span className="text-sm text-muted-foreground">{t("thisMonth")}</span>
 							<span className="text-2xl font-bold">{money(mtd)}</span>
 						</div>
 						{lastMonth > 0 && (
@@ -180,7 +181,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 										<TrendingUp className="h-3 w-3 text-emerald-600" />
 										<span className="text-emerald-600 dark:text-emerald-400">
 											+{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											vs last month
+											{t("vsLastMonth")}
 										</span>
 									</>
 								) : mtd < lastMonth ? (
@@ -188,12 +189,12 @@ export default async function TierOverview({ workspaceId }: Props) {
 										<TrendingDown className="h-3 w-3 text-orange-600" />
 										<span className="text-orange-600 dark:text-orange-400">
 											{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											vs last month
+											{t("vsLastMonth")}
 										</span>
 									</>
 								) : (
 									<span className="text-muted-foreground">
-										Same as last month
+									{t("sameAsLastMonth")}
 									</span>
 								)}
 							</div>
@@ -203,7 +204,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 					{/* Last Month */}
 					<div className="space-y-1">
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-muted-foreground">Last Month</span>
+							<span className="text-sm text-muted-foreground">{t("lastMonth")}</span>
 							<span className="font-semibold">{money(lastMonth)}</span>
 						</div>
 					</div>
@@ -211,8 +212,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 					{/* Tier Explanation */}
 					<div className="rounded-lg border bg-muted/50 p-3">
 						<p className="text-sm text-muted-foreground">
-							<strong>How pricing works:</strong> Your usage updates monthly and
-							the displayed fee is applied when purchasing credits.
+							<strong>{t("pricingWorks")}</strong> {t("pricingExplanation")}
 						</p>
 					</div>
 
@@ -220,9 +220,7 @@ export default async function TierOverview({ workspaceId }: Props) {
 					{!HIDE_ENTERPRISE_REFERENCES && isEnterprise && mtd < enterpriseThreshold && (
 						<div className="rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-900 dark:bg-orange-950/30">
 							<p className="text-sm text-orange-900 dark:text-orange-100">
-								<strong>Heads up:</strong> Your spending is below $10k this
-								month. You will keep Enterprise tier status with a 3-month grace
-								period.
+								<strong>{t("headsUp")}</strong> {t("spendingBelowThreshold")}
 							</p>
 						</div>
 					)}

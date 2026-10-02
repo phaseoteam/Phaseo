@@ -11,6 +11,7 @@ import {
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MessageSquare, Pin } from "lucide-react";
 import type { ChatThread } from "@/lib/indexeddb/chats";
+import { useTranslations } from "next-intl";
 
 type ChatSearchDialogProps = {
     open: boolean;
@@ -25,15 +26,16 @@ export function ChatSearchDialog({
     threads,
     onSelectThread,
 }: ChatSearchDialogProps) {
+	const t = useTranslations("Product.chat");
     return (
         <CommandDialog open={open} onOpenChange={onOpenChange}>
             <DialogHeader className="sr-only">
-                <DialogTitle>Search chats</DialogTitle>
+                <DialogTitle>{t("searchChats")}</DialogTitle>
             </DialogHeader>
-            <CommandInput placeholder="Search chats..." />
+            <CommandInput placeholder={t("searchChatsPlaceholder")} />
             <CommandList>
-                <CommandEmpty>No chats found.</CommandEmpty>
-                <CommandGroup heading="Chats">
+                <CommandEmpty>{t("noChatsFound")}</CommandEmpty>
+                <CommandGroup heading={t("chats")}>
                     {threads.map((thread) => (
                         <CommandItem
                             key={thread.id}

@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗通知に対応するPythonツールを定義します。"
+---
+
+`AgentTool`値を作成し、`define_tool(...)`に渡します。ツールには次の項目を定義できます。
+
+- モデルに提示するJSONの`parameters`
+- 呼び出し可能な`input_schema`、`output_schema`、`event_schema`バリデーター
+- `timeout_ms`と`execute(input, runtime)`
+- 真偽値または呼び出し可能な`require_approval`
+- インタラクティブな処理向けの`on_tool_called`と`on_response_received`
+- `next_turn_params`と`on_error="return-to-model"`
+
+暫定結果を通知するには`runtime.emit_progress(value)`を、後続ターンで最新のアプリケーションコンテキストが必要な場合は`runtime.set_context(value)`を呼び出します。
+
+独立したツールには`AgentToolExecutionConfig(tool_concurrency=...)`を使います。実行が重なっても、保存された結果はモデル呼び出し順を保ちます。
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

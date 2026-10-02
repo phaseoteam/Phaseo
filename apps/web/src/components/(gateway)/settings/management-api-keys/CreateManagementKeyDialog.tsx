@@ -24,6 +24,8 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 const KEY_TEMPLATES = [
 	{
@@ -59,6 +61,7 @@ export default function CreateManagementKeyDialog({
 	currentWorkspaceId?: string | null;
 	workspaces?: Array<{ id: string | null; name: string }>;
 }) {
+	const t = useTranslations("SettingsUI");
 	const resolveInitialWorkspaceId = React.useCallback(() => {
 		const normalizedCurrent = String(currentWorkspaceId ?? "").trim();
 		if (normalizedCurrent) return normalizedCurrent;
@@ -110,7 +113,7 @@ export default function CreateManagementKeyDialog({
 			setPlainKey(null);
 			setLoading(false);
 			toast.error(
-				"Missing workspace context. Select a workspace in the header and try again.",
+				t("strings.phraseMissingWorkspaceContextSelectAWorkspaceInTheHeaderAndTryAgain" as never),
 			);
 			return;
 		}
@@ -125,11 +128,14 @@ export default function CreateManagementKeyDialog({
 			});
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();
-		} catch (err: any) {
-			const message =
-				err?.message ??
-				"Could not create management API key right now. Please try again.";
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(
+				localizedSettingsError(
+					err,
+					t,
+					"Could not create management API key right now. Please try again.",
+				),
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -161,7 +167,7 @@ export default function CreateManagementKeyDialog({
 					className="flex items-center"
 				>
 					<Plus className="h-4 w-4" />
-					Create Key
+					{t("keys.createKey")}
 				</Button>
 			</DialogTrigger>
 
@@ -169,14 +175,14 @@ export default function CreateManagementKeyDialog({
 				<DialogHeader className="gap-2">
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Create Management API Key
+						{t("strings.Create Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						Choose the minimum access this management API key needs.
+						{t("strings.phraseChooseTheMinimumAccessThisManagementAPIKeyNeeds" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
-						The key is shown only once and grants elevated privileges.
-						Store it securely.
+						{t("keys.keyShownOnce")} <strong>{t("strings.once" as never)}</strong>{" "}
+						{t("strings.phraseAndGrantsElevatedPrivilegesStoreItSecurely" as never)}
 					</p>
 				</DialogHeader>
 
@@ -192,7 +198,7 @@ export default function CreateManagementKeyDialog({
 										<span>
 											{workspaces.find(
 												(workspace) => workspace.id === selectedWorkspaceId
-											)?.name || "Personal"}
+										)?.name || t("labels.personal")}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
 
@@ -219,11 +225,11 @@ export default function CreateManagementKeyDialog({
 						<Input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="Key name (e.g. production management)"
+							placeholder={t("strings.phraseKeyNameEGProductionManagement" as never)}
 						/>
 						<div className="space-y-2">
 							<label id="management-key-template-label" className="text-sm font-medium">
-								Access template
+								{t("strings.Access template" as never)}
 							</label>
 							<div
 								id="management-key-template"
@@ -240,12 +246,12 @@ export default function CreateManagementKeyDialog({
 										aria-pressed={template === option.value}
 										onClick={() => setTemplate(option.value)}
 									>
-										{option.label}
+										{option.label === "All" ? t("strings.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
 									</Button>
 								))}
 							</div>
 							<p className="text-xs text-muted-foreground">
-								{KEY_TEMPLATES.find((option) => option.value === template)?.description}
+								{template === "read-only" ? t("keys.readOnlyDescription") : template === "read-write" ? t("keys.readWriteDescription") : t("keys.fullControlDescription")}
 							</p>
 						</div>
 						<div className="space-y-2">
@@ -253,10 +259,10 @@ export default function CreateManagementKeyDialog({
 								type="datetime-local"
 								value={expiresAtLocal}
 								onChange={(e) => setExpiresAtLocal(e.target.value)}
-								placeholder="Optional expiry"
+							placeholder={t("keys.optionalExpiry")}
 							/>
 							<p className="text-xs text-muted-foreground">
-								Optional. Leave blank to keep this management key active until you revoke or pause it.
+								{t("strings.phraseOptionalLeaveBlankToKeepThisManagementKeyActiveUntilYouRevokeOrPauseIt" as never)}
 							</p>
 						</div>
 						<DialogFooter>
@@ -266,11 +272,11 @@ export default function CreateManagementKeyDialog({
 									variant="ghost"
 									onClick={onClose}
 								>
-									Cancel
+									{t("labels.cancel")}
 								</Button>
 							</DialogClose>
 							<Button type="submit" disabled={!canCreate}>
-								{loading ? "Creating..." : "Create Key"}
+								{loading ? t("labels.creating") : t("keys.createKey")}
 							</Button>
 						</DialogFooter>
 					</form>
@@ -280,18 +286,17 @@ export default function CreateManagementKeyDialog({
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">
-							This key will not be shown again and grants elevated privileges.
-							Keep it secret.
+							{t("strings.phraseThisKeyWillNotBeShownAgainAndGrantsElevatedPrivilegesKeepThisCodeSecretAtAllTimes" as never)}
 						</p>
 						<SecretRevealActions
 							secret={plainKey}
-							name={name || "AI Stats management API key"}
+							name={name || t("strings.AI Stats management API key" as never)}
 							kind="management-key"
 							enableTest={false}
 						/>
 						<DialogFooter className="pt-1">
 							<DialogClose asChild>
-								<Button onClick={onClose}>Done</Button>
+								<Button onClick={onClose}>{t("labels.done")}</Button>
 							</DialogClose>
 						</DialogFooter>
 					</div>

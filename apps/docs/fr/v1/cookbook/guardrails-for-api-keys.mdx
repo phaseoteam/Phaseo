@@ -1,0 +1,100 @@
+---
+title: "Déployer des garde-fous sur les clés d’API"
+icon: "shield-check"
+description: "Appliquez des garde-fous aux clés d’API, testez leur application avant le déploiement et vérifiez les blocages, masquages et alertes dans l’activité."
+---
+
+Utilisez ce guide si vous devez protéger une ou plusieurs clés d’API à l’aide de limites de budget, de restrictions de routage, de vérifications contre l’injection de prompt ou de règles sur les informations sensibles.
+
+## 1. Créer le garde-fou dans l’espace de travail
+
+Créez d’abord les garde-fous au niveau de l’espace de travail afin de pouvoir réutiliser la même politique sur plusieurs clés.
+
+Pour commencer :
+
+- ajoutez les restrictions de modèles et de fournisseurs avant les contrôles de contenu
+- limitez le premier déploiement à une seule clé ou à un seul environnement
+- choisissez un nom qui décrit le résultat de la politique, pas le nom de l’équipe
+
+## 2. Associer le garde-fou à une clé d’API
+
+Dans les paramètres de la clé d’API, associez le garde-fou à la clé qui doit appliquer la politique.
+
+Procédez dans cet ordre :
+
+1. commencez par une clé de test ou à faible risque
+2. si possible, associez un seul garde-fou à la fois
+3. vérifiez que la fenêtre des détails de la clé affiche le garde-fou appliqué
+
+## 3. Définir la politique de budget et les restrictions de routage
+
+Combinaison courante :
+
+- limite de coût quotidienne
+- liste de blocage des fournisseurs considérés comme peu fiables
+- liste d’autorisation des modèles exacts de production qui doivent rester routables
+
+Utilisez l’aperçu en direct de l’éditeur de garde-fous pour vérifier :
+
+- quels fournisseurs restent autorisés
+- quels modèles sont bloqués
+- si `Only allow` restreint davantage que prévu
+
+## 4. Ajouter des règles contre l’injection de prompt et sur les informations sensibles
+
+Pour un déploiement pratique :
+
+- commencez par `flag` ou `redact` pour l’injection de prompt
+- passez à `block` uniquement après avoir examiné les faux positifs
+- utilisez d’abord des règles déterministes pour les informations sensibles :
+  - adresse e-mail
+  - numéro de téléphone
+  - numéro de sécurité sociale américain (SSN)
+  - carte de crédit
+  - adresse IP
+
+Si vous avez besoin de motifs personnalisés, ajoutez-les en tant que règles regex explicites et testez-les dans le champ d’aperçu avant l’enregistrement.
+
+## 5. Tester la politique avant un déploiement à grande échelle
+
+Dans l’aperçu du garde-fou, testez :
+
+- une entrée sans risque
+- une entrée clairement interdite
+- un prompt réaliste, proche de ceux utilisés en production
+
+Vérifiez :
+
+- le texte de masquage attendu
+- le comportement de blocage et d’autorisation
+- l’absence de détection accidentelle dans du contenu sans rapport
+
+## 6. Vérifier l’application dans l’activité et les journaux
+
+Après avoir envoyé de vraies requêtes avec la clé protégée, vérifiez :
+
+- le panneau **Application des garde-fous** sur la page d’activité
+- les fenêtres de détail des requêtes bloquées ou dont le contenu a été masqué
+- l’activité des garde-fous par clé dans la fenêtre des détails de la clé d’API
+
+Vous devriez voir :
+
+- le nombre de blocages
+- le nombre de contenus masqués
+- le nombre d’alertes
+- les détails du garde-fou et du détecteur concernés lorsqu’une règle s’est appliquée
+
+## 7. Étendre le déploiement en toute sécurité
+
+Lorsque la première clé fonctionne comme prévu :
+
+1. associez le même garde-fou à d’autres clés
+2. renforcez les actions de `flag` vers `redact` ou `block`
+3. activez la détection plus lente des noms et des adresses uniquement si le coût en latence est acceptable
+
+## Guides associés
+
+- [Préréglages](../guides/presets.mdx)
+- [Guide de démarrage rapide](../quickstart.mdx)
+- [Agents de programmation avec `SKILL.md`](./coding-agents-skill-md.mdx)
+

@@ -1,0 +1,19 @@
+---
+icon: "music"
+title: "TTS（音声合成）"
+description: "Python SDKで/audio/speechを呼び出します。"
+---
+
+**メソッド**: `client.generate_speech()`
+
+```python
+result = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+print(result)
+```
+

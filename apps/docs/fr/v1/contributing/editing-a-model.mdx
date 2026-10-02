@@ -1,0 +1,25 @@
+---
+icon: "brain-circuit"
+title: "Signaler une mise à jour de modèle"
+description: "Demandez des corrections ou des ajouts aux métadonnées, capacités, disponibilités et tarifs des modèles."
+---
+
+Ouvrez une issue GitHub pour corriger un modèle ou demander une entrée manquante. Vous n’avez pas besoin de modifier le JSON ni de configurer le dépôt.
+
+## Signaler une correction
+
+1. Copiez l’URL de la page Phaseo du modèle ou son identifiant.
+2. [Signalez une information incorrecte](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), en décrivant la valeur actuelle et la correction proposée.
+3. Joignez une documentation officielle, une annonce de sortie ou une autre source vérifiable.
+
+Pour les tarifs, précisez le fournisseur, la devise, l’unité de facturation, le niveau concerné et la date d’entrée en vigueur. Pour les scores d’évaluation, suivez [Soumettre des scores](../research/submitting-scores.mdx).
+
+## Demander un modèle manquant
+
+[Ouvrez une demande de données](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) avec le nom du modèle, l’organisation, le lien officiel, la date de sortie et les capacités connues. Un modèle peut figurer au catalogue avant de disposer d’une route Gateway prise en charge.
+
+## Après l’envoi
+
+Les responsables examinent les preuves et mettent à jour la base de données via l’éditeur interne. Suivez les questions et la publication dans l’issue. Les instantanés JSON quotidiens exportent le catalogue ; les modifications des fichiers JSON archivés ne mettent pas à jour le site en production.
+
+Les administrateurs peuvent modifier les enregistrements dans [Données internes](https://phaseo.app/internal/data) et examiner les tarifs proposés dans [Mises à jour des fournisseurs](https://phaseo.app/internal/data/imports). Ces pages nécessitent un accès administrateur.

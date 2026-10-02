@@ -1,9 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import { Building2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
 import { PasskeySignInButton } from "./PasskeySignInButton";
 import { Button } from "@/components/ui/button";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
+import {
+	buildLocalizedAuthPath,
+	withAuthLocale,
+} from "@/lib/auth/localized-paths";
 
 type SignupNotice = "check-email" | null;
 
@@ -12,24 +20,28 @@ export function Login({
 	authError = null,
 	returnUrl,
 	ssoEnabled = false,
+	locale = defaultLocale,
 }: {
 	signupNotice?: SignupNotice;
 	authError?: "auth-failed" | null;
 	returnUrl?: string;
 	ssoEnabled?: boolean;
+	locale?: PublicLocale;
 }) {
+	const t = useTranslations("Auth.signIn");
 	const signupNoticeText =
 		signupNotice === "check-email"
-			? "If an account exists for that email, check your inbox for next steps."
+			? t("signupNotice")
 			: null;
-	const authErrorText = authError === "auth-failed" ? "Invalid email or password. Please try again." : null;
+	const authErrorText =
+		authError === "auth-failed" ? t("invalidCredentials") : null;
 
 	return (
 		<div className="flex flex-col gap-5">
 			<div className="flex flex-col items-center gap-1.5 text-center">
-				<h1 className="text-2xl font-bold">Welcome back</h1>
+				<h1 className="text-2xl font-bold">{t("heading")}</h1>
 				<p className="text-sm text-muted-foreground">
-					Sign in to your Phaseo account
+					{t("description")}
 				</p>
 			</div>
 
@@ -49,24 +61,34 @@ export function Login({
 			) : null}
 
 			<div className="grid gap-2.5">
-				<OAuthButtons returnUrl={returnUrl} />
+				<OAuthButtons returnUrl={returnUrl} locale={locale} />
 				<div className={ssoEnabled ? "grid grid-cols-2 gap-2.5" : "grid"}>
-					<PasskeySignInButton returnUrl={returnUrl} compact={ssoEnabled} />
-					{ssoEnabled ? <Button asChild variant="outline" className="h-11 w-full">
-						<Link
-							href={
-								returnUrl
-									? `/sign-in/enterprise?returnUrl=${encodeURIComponent(returnUrl)}`
-									: "/sign-in/enterprise"
-							}
-						>
-							<Building2 className="mr-2 h-4 w-4" aria-hidden="true" />
-							SSO
-						</Link>
-					</Button> : null}
+					<PasskeySignInButton
+						returnUrl={returnUrl}
+						compact={ssoEnabled}
+						locale={locale}
+					/>
+					{ssoEnabled ? (
+						<Button asChild variant="outline" className="h-11 w-full">
+							<Link
+								href={withAuthLocale(
+									buildLocalizedAuthPath(defaultLocale, "/sign-in/enterprise", {
+										returnUrl,
+									}),
+									locale,
+								)}
+							>
+								<Building2
+									className="me-2 h-4 w-4"
+									aria-hidden="true"
+								/>
+								{t("sso")}
+							</Link>
+						</Button>
+					) : null}
 				</div>
 			</div>
-			<EmailPassword returnUrl={returnUrl} />
+			<EmailPassword returnUrl={returnUrl} locale={locale} />
 		</div>
 	);
 }

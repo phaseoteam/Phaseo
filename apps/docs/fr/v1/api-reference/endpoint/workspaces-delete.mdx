@@ -1,0 +1,10 @@
+---
+title: "Supprimer un espace de travail"
+sidebarTitle: "Supprimer l’espace de travail"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /workspaces/{id}"
+description: "Supprime un espace de travail par ID ou slug."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion. Les clés API Gateway standard ne sont pas acceptées.</Note>
+
+L’espace de travail par défaut ne peut pas être supprimé. Les espaces de travail ayant des clés API actives doivent d’abord être nettoyés.

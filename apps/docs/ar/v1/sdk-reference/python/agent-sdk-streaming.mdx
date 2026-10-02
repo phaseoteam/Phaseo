@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "البث"
+description: "بث النص والاستدلال والعناصر والأدوات وأحداث دورة الحياة لوكلاء Python."
+---
+
+ينفّذ `Agent.stream(...)` آلة الحالات نفسها التي ينفّذها `run(...)` ويعيد `AgentStreamResult` يمكن إعادة قراءته:
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+استخدم `reasoning_stream()` أو `item_stream()` أو `tool_stream()` أو `full_stream()` للحصول على طرق عرض أخرى. عناصر Python حاليًا قواميس وليست اتحادًا مميّزًا أصليًا.
+
+استدعِ `cancel()` لإيقاف تدفق النموذج النشط وتمرير الإلغاء إلى أعمال بيئة التشغيل المحلية.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

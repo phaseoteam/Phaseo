@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "استخدام PHP SDK"
+description: "أساليب wrapper المدعومة حاليًا في PHP SDK."
+---
+
+## الإعداد
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+```
+
+## إكمالات المحادثة
+
+```php
+$chat = $client->generateText([
+  'model' => 'openai/gpt-5-nano',
+  'messages' => [
+    ['role' => 'user', 'content' => 'Hello']
+  ],
+]);
+```
+
+## Responses
+
+```php
+$response = $client->generateResponse([
+  'model' => 'openai/gpt-5-nano',
+  'input' => 'Reply with: php sdk works',
+]);
+```
+
+## الصور
+
+```php
+$image = $client->generateImage([
+  'model' => 'openai/gpt-image-1',
+  'prompt' => 'A lighthouse at golden hour',
+]);
+
+$edit = $client->generateImageEdit([
+  'model' => 'openai/gpt-image-1',
+  'prompt' => 'Make it sunset',
+  'image' => 'data:image/png;base64,...',
+]);
+```
+
+## الصوت
+
+```php
+$transcript = $client->generateTranscription([
+  'model' => 'openai/gpt-4o-transcribe',
+  'audio_b64' => 'base64-audio',
+]);
+
+$translation = $client->generateTranslation([
+  'model' => 'openai/gpt-4o-transcribe',
+  'audio_b64' => 'base64-audio',
+]);
+```
+
+## التضمينات والإشراف
+
+```php
+$embedding = $client->generateEmbedding([
+  'model' => 'openai/text-embedding-3-large',
+  'input' => 'Sample text',
+]);
+
+$moderation = $client->generateModeration([
+  'model' => 'openai/omni-moderation-latest',
+  'input' => 'Some text to check',
+]);
+```
+
+## النماذج والحالة
+
+```php
+$models = $client->listModels(['limit' => 10]);
+$health = $client->health();
+```

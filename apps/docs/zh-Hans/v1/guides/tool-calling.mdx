@@ -1,0 +1,293 @@
+---
+title: "## 工具调用"
+description: "通过 Gateway 安全地使用由模型驱动的函数调用。"
+icon: "wrench"
+---
+
+工具调用让模型可以请求结构化操作（例如查询数据库、检查天气或调用内部 API），而不是猜测答案。
+
+Gateway 在以下文本端点支持工具 payload：
+
+- `/v1/chat/completions`（OpenAI 风格的 `tools` 和 `tool_calls`）
+- `/v1/responses`（响应s 风格的 `function_call` 输出项）
+- `/v1/messages`（Anthropic 风格的 `tool_use` 块）
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What is the weather in London?" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "get_weather",
+          "description": "Get current weather by city",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "city": { "type": "string" }
+            },
+            "required": ["city"]
+          }
+        }
+      }
+    ],
+    "tool_choice": {
+      "type": "function",
+      "function": { "name": "get_weather" }
+    },
+    "stream": false
+  }'
+```
+
+## 响应
+
+```json
+{
+  "id": "chatcmpl_...",
+  "object": "chat.completion",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\":\"London\"}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+运行工具，然后在下一个请求中返回工具结果，以便助手完成回复。
+
+## 内置服务器工具
+
+Gateway 目前提供以下内置服务器工具：
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+此工具在 Gateway 端运行，无需客户端执行器。Gateway 会将其改写为上游工具/函数调用，执行后再将结果传回模型处理流程。
+
+完整配置、用量和定价详情请参阅[服务器工具](./server-tools/index.mdx)。
+
+支持的请求格式：
+
+```json
+{
+  "tools": [
+    {
+      "type": "gateway:datetime",
+      "parameters": {
+        "timezones": ["Europe/London", "UTC"]
+      }
+    }
+  ]
+}
+```
+
+注意：
+
+- `parameters.timezones` 为可选项，一次调用最多可请求 5 个有效的 IANA 时区。
+- 结果包含 `timezones` 数组，其中为每个请求的时区提供 ISO 日期时间和解析后的时区。
+- 用量包含 `usage.server_tool_use.datetime_requests`。
+- 建议使用 `tool_choice: "auto"`，让模型自行决定何时调用。
+
+### 网页搜索示例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_search",
+      "parameters": {
+        "engine": "exa",
+        "max_results": 5,
+        "max_total_results": 15,
+        "search_context_size": "medium",
+        "max_characters": 2048,
+        "allowed_domains": ["arxiv.org", "nature.com"],
+        "include_highlights": true
+      }
+    }
+  ]
+}
+```
+
+注意：
+
+- 模型调用工具时会提供搜索查询。
+- `engine: "auto"` 使用托管的 Exa 搜索。配置对应提供商密钥后，`engine: "exa"`、`engine: "parallel"`、`engine: "firecrawl"` 和 `engine: "tinyfish"` 会运行托管的网关搜索。
+- TinyFish Search 支持本地化、分页的排序结果，在其公开计划中免费；需要时请在工具参数中使用 `language` 和 `page`。
+- 在 `phaseo:web_search` 中设置 `engine: "native"`，会根据请求接口转换为供应商原生网页搜索工具，例如 OpenAI 的 `web_search_preview` 或 Anthropic 的 `web_search_20250305`。
+- `max_results` 限制每次搜索调用的结果数；`max_total_results` 限制服务器工具循环中的累计结果数。
+- 如果所选引擎提供相应控制项，托管搜索支持 `allowed_domains` / `excluded_domains`、`search_context_size` 和 `max_characters`。
+- 用量包含 `usage.server_tool_use.web_search_requests`、`usage.server_tool_use.web_search_results` 和 `usage.server_tool_use.web_search_extra_results`。
+- 托管式 Exa 搜索可使用 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 计量项计费。
+
+### 网页抓取示例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "direct",
+        "max_chars": 12000,
+        "allowed_domains": ["docs.example.com"],
+        "blocked_domains": ["internal.example.com"]
+      }
+    }
+  ]
+}
+```
+
+注意：
+
+- 模型调用工具时会提供目标 `url`。
+- 仅支持 HTTP(S) URL 和文本类内容类型。
+- `engine: "auto"` 在 Anthropic Messages 接口上使用原生抓取；其他情况下，若配置了 `EXA_API_KEY` 则使用 Exa，否则使用 Gateway 直接 HTTP 抓取。
+- `engine: "direct"` 使用 Gateway 直接 HTTP 抓取。配置了 `EXA_API_KEY` 时，`engine: "exa"` 使用 Exa 提取内容。
+- 配置了 `PARALLEL_API_KEY` 时，`engine: "parallel"` 使用 Parallel Extract。配置了 `FIRECRAWL_API_KEY` 时，`engine: "firecrawl"` 使用 Firecrawl Scrape。
+- 在 Anthropic Messages 接口上，`engine: "native"` 会转换为 Anthropic 原生 `web_fetch_20260209` 工具。其他接口应使用 `engine: "direct"` 或托管式提取引擎。
+- 省略 `max_chars` 时，可以使用 `max_content_tokens` 作为按 token 限制抓取大小的别名。
+- `allowed_domains` 和 `blocked_domains` 用于限制可抓取的 URL。
+- HTML 内容会先转换为长度受限的纯文本，再注入模型处理流程。
+- 用量包含 `usage.server_tool_use.web_fetch_requests`。
+- 托管式网页抓取可按 `server_tool_web_fetch_requests` 计量器计费。提供商原生的抓取和搜索按 `native_web_fetch_requests` 与 `native_web_search_requests` 计费；模型价格卡可以覆盖提供商的内置默认值。
+
+Anthropic 原生抓取示例：
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["docs.example.com"]
+      }
+    }
+  ],
+  "tool_choice": "phaseo:web_fetch"
+}
+```
+
+### Advisor 示例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "reviewer",
+        "model": "claude-opus-5",
+        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+        "forward_transcript": true,
+        "max_uses": 2,
+        "max_completion_tokens": 1400,
+        "temperature": 0.2
+      }
+    }
+  ],
+  "tool_choice": "phaseo:advisor"
+}
+```
+
+注意：
+
+- Advisor 由 Gateway 管理，适用于受支持的文本模型。调用它的模型会收到 `phaseo_advisor` 工具或类似 `phaseo_advisor_reviewer` 的命名变体，随后 Gateway 执行 Advisor 请求。
+- `parameters.name` 为可选项。要公开多个 Advisor，请使用唯一名称；名称可以包含字母、数字、空格、下划线和连字符。
+- `parameters.model` 用于固定 Advisor 模型。省略时，工具调用可以提供 `model`；如果两者都未设置，Gateway 会回退到外层请求的模型。
+- `parameters.forward_transcript` 默认值为 `false`。如果要让 Advisor 接收当前对话记录，请将其设为 `true`。
+- 模型通常会在调用工具时提供 Advisor 的 `prompt`。如果 `forward_transcript` 为 `true` 且未提供 prompt，Gateway 可以仅使用对话记录调用 Advisor。`max_tokens` 作为 `max_completion_tokens` 的旧别名仍可使用。
+- 用量包含 `usage.server_tool_use.advisor_requests`。
+
+### 图像生成示例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:image_generation",
+      "parameters": {
+        "model": "openai/gpt-image-2",
+        "quality": "high",
+        "aspect_ratio": "16:9",
+        "output_format": "png"
+      }
+    }
+  ]
+}
+```
+
+注意：
+
+- 模型调用工具时会提供图像 `prompt`。`description` 也可作为 prompt 的别名。
+- `parameters.model` 用于固定图像模型。省略时，工具调用可以提供 `model`；如果两者都未设置，Phaseo 会使用默认图像模型。
+- 根据供应商响应，工具结果会包含 `imageUrl` 或 base64 图像数据。
+- 用量包含 `usage.server_tool_use.image_generation_requests`；图像模型的 token 用量会合并到父请求中。
+
+### 应用补丁示例
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:apply_patch"
+    }
+  ],
+  "tool_choice": "auto"
+}
+```
+
+注意：
+
+- Responses API 支持使用 `phaseo:apply_patch`。
+- Phaseo 会验证补丁操作，并在工具结果中返回。客户端可决定应用或拒绝补丁。
+- 支持的操作类型为 `create_file`、`update_file` 和 `delete_file`。
+- 用量包含 `usage.server_tool_use.apply_patch_requests`。
+
+## 流式传输行为
+
+工具调用请求也可以使用 `stream: true`。
+
+对于由 Gateway 管理的服务器工具，Gateway 可能会：
+
+- 展开上游工具调用轮次
+- 执行服务器工具
+- 继续模型处理流程
+- 向客户端重新发送合成流
+
+这样即使 Gateway 自行执行了部分工具循环，客户端接口仍可兼容流式传输。
+
+## 后续指南
+
+1. [## 工具调用 Patterns](./tool-calling-patterns.mdx)
+2. [## 工具调用 Safety and Validation](./tool-calling-safety.mdx)
+3. [结构化输出](./structured-outputs.mdx)

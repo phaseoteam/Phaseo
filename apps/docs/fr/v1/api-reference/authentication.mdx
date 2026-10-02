@@ -1,0 +1,57 @@
+---
+title: "Authentification"
+description: "Authentifiez les requêtes avec des clés API Bearer et gérez leur cycle de vie en toute sécurité."
+icon: "key"
+---
+
+Toutes les requêtes vers le Gateway nécessitent une clé API Bearer.
+
+Créez et gérez vos clés dans le tableau de bord Phaseo.
+
+<Note>
+Les appels aux modèles `:free` peuvent fonctionner sans crédit déposé. Les appels aux modèles payants nécessitent un solde disponible dans le portefeuille.
+</Note>
+
+## Utiliser une clé API
+
+Incluez votre clé API dans l’en-tête `Authorization` en utilisant le schéma `Bearer` :
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
+  }'
+```
+
+## Format et gestion des clés
+
+- Format de la clé : `phaseo_v1_sk_<kid>_<secret>`
+- Stockez les clés dans un gestionnaire de secrets, pas dans du code exécuté dans le navigateur.
+- Utilisez des clés distinctes par application et par environnement pour faciliter leur rotation en toute sécurité.
+
+## Clés de gestion
+
+Les clés API de gestion sont créées et administrées dans le tableau de bord Phaseo, et non via l’API publique.
+
+Utilisez-les pour les endpoints d’administration à privilèges élevés, comme [Crédits](./endpoint/credits.mdx) et [Activité](./endpoint/activity.mdx), ainsi que pour les futures API du plan de contrôle, notamment celles des garde-fous, des clés et des espaces de travail.
+
+## Échecs d’authentification
+
+- `401` : clé API absente, mal formée ou invalide.
+- `403` : la clé est valide, mais ne permet pas d’accéder à la fonctionnalité demandée.
+
+## Pages associées
+
+- [Limites](./limits.mdx)
+- [Erreurs et débogage](./errors.mdx)
+
+<Visibility for="agents">
+Si vous implémentez des flux d’authentification en tant qu’agent :
+
+- Utilisez les compétences du dépôt pour la gestion des secrets et la configuration de l’environnement.
+- N’intégrez jamais de clé API du Gateway dans du code livré au navigateur.
+- Préférez des jetons internes à courte durée de vie entre le frontend et votre backend ; les clés du Gateway doivent rester côté serveur.
+</Visibility>

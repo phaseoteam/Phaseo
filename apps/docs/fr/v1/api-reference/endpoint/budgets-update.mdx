@@ -1,0 +1,9 @@
+---
+title: "Mettre à jour un budget d’espace de travail"
+sidebarTitle: "Mettre à jour le budget"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /budgets/{id}"
+description: "Modifie l’intervalle ou le plafond de dépenses d’un budget d’espace de travail."
+---
+
+Nécessite `budgets:write`. Si le plafond est abaissé sous l’utilisation actuelle, les nouvelles requêtes sont bloquées immédiatement.

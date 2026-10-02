@@ -1,0 +1,65 @@
+---
+title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
+description: "Conecta Roo Code a Phaseo mediante un perfil OpenAI compatible."
+---
+
+Usa Phaseo CLI para crear una clave dedicada y configura manualmente el perfil del proveedor en Roo Code. Roo Code guarda las credenciales en el almacenamiento de secretos de VS Code, por lo que la introducción final se realiza en la interfaz de la extensión.
+
+## Configura con Phaseo CLI
+
+```bash
+phaseo login
+phaseo roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Configura Roo Code manualmente
+
+1. Abre Roo Code en VS Code.
+2. Abre **Settings** y luego **Providers**.
+3. Crea un perfil de configuración del proveedor y elige **OpenAI Compatible**.
+4. Introduce estos valores:
+
+| Campo de Roo Code | Valor |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | Salida de `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` o el modelo que indique la configuración |
+
+5. Guarda el perfil y actívalo.
+
+Las etiquetas de los campos pueden variar ligeramente entre versiones, pero el perfil necesita el endpoint, la clave y el ID de modelo exacto.
+
+## Verificar
+
+Pide a Roo Code que responda `PHASEO_ROO_OK` y confirma que la solicitud aparezca en la actividad de Phaseo.
+
+## Eliminar
+
+Elimina el perfil de Phaseo o cambia de perfil y luego ejecuta:
+
+```bash
+phaseo integrations remove roo-code
+```
+
+La CLI no puede eliminar valores del almacenamiento privado de extensiones de VS Code, pero al quitarla se revoca la clave.
+
+## Solución de problemas
+
+### Falla la autenticación
+
+Vuelve a obtener la clave con `phaseo integrations credential roo-code`. Asegúrate de que la URL base termine en `/v1`.
+
+### Roo Code no encuentra el modelo
+
+Introduce manualmente el ID exacto del modelo Phaseo, incluido el prefijo del proveedor.
+
+### El chat funciona, pero las herramientas fallan
+
+Cambia a un modelo compatible con llamadas a herramientas.
+
+## Contenido relacionado
+
+- [Proveedores de modelos de Roo Code](https://docs.roocode.com/providers/)
+- [Agentes de programación](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

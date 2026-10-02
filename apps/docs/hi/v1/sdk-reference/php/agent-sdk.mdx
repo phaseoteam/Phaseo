@@ -1,0 +1,52 @@
+---
+icon: "blocks"
+title: "उपयोग"
+description: "PHP Agent SDK से tool loops, human review, retries और resumable agents चलाएँ।"
+---
+
+## रनटाइम तैयार करें
+
+Agent SDK package अभी Packagist पर नहीं है। [सोर्स से इंस्टॉल करने के निर्देश](./agent-sdk-installation.mdx) का पालन करें।
+
+## त्वरित शुरुआत
+
+```php
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "quickstart-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Answer concisely and helpfully."
+));
+
+$result = $agent->run(
+    input: "Give me one fun fact about cURL.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## इसमें क्या शामिल है
+
+- `AgentSdk::createAgent(...)`
+- `AgentSdk::defineTool(...)`
+- `AgentSdk::createGatewayAgentClient(...)`
+- Phaseo `responses` API पर सीमित टूल लूप
+
+## उन्नत रनटाइम
+
+PHP में सत्यापन और अनुमोदन फ़ंक्शन, HITL और मैन्युअल टूल, प्रगति, फिर से संभाली जा सकने वाली त्रुटियाँ, दोबारा पढ़े जा सकने वाले इटरेटर, स्टॉप हेल्पर, डायनामिक टर्न, संग्रहीत अगले-टर्न पैरामीटर, सामान्यीकृत उपयोग/लागत और `StateAccessor` का समर्थन है।
+
+## स्ट्रीमिंग और रद्द करना
+
+`Agent::stream(...)` और `Agent::continueStream(...)` लौटाए गए इटरेटर को पढ़ते समय Fiber के माध्यम से Gateway की Responses SSE स्ट्रीम चलाते हैं। फिर से पढ़े जा सकने वाले परिणामों के लिए `textStream()`, `reasoningStream()`, `itemStream()` या `fullStream()` का उपयोग करें। Fiber रोकने और जनरेटर बंद करने के लिए `cancel()` कॉल करें। पूरे हुए चरणों में अनुरोध ID, प्रदाता मेटाडेटा, समाप्ति कारण, चेतावनियाँ, उपयोग और लागत सुरक्षित रहती हैं।
+
+## संबंधित गाइड
+
+- [Agent SDK का अवलोकन](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

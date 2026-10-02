@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	memo,
 	useEffect,
@@ -248,10 +249,13 @@ function providerStatusPriority(status: string): number {
 	return providerStatusOrderIndex.get(status) ?? providerStatusOrderIndex.size + 1;
 }
 
-function formatProviderStatusLabel(status: string): string {
+function formatProviderStatusLabel(
+	status: string,
+	labels: Record<string, string>,
+): string {
 	const normalized = normalizeProviderStatus(status);
-	const mapped = PROVIDER_STATUS_META[normalized];
-	if (mapped) return mapped.label;
+	const localized = labels[normalized];
+	if (localized) return localized;
 	return normalized
 		.replace(/_/g, " ")
 		.replace(/\b\w/g, (char) => char.toUpperCase());
@@ -500,6 +504,22 @@ function ModelCardImpl({
 	showOrganisationPrefix?: boolean;
 	contentPaddingClassName?: string;
 }) {
+	const tAuditCopy = useTranslations();
+	const t = useTranslations("Catalogue.models");
+	const tDetail = useTranslations("Catalogue.modelDetail");
+	const tProviderStatus = useTranslations(
+		"Catalogue.modelDetail.providerTable.statuses",
+	);
+	const providerStatusLabels: Record<string, string> = {
+		active: tProviderStatus("active"),
+		inactive: tProviderStatus("inactive"),
+		disabled: tProviderStatus("disabled"),
+		coming_soon: tProviderStatus("comingSoon"),
+		internal_testing: tProviderStatus("internalTesting"),
+		rate_limited: tProviderStatus("rateLimited"),
+		degraded: tProviderStatus("degraded"),
+		external: tProviderStatus("external"),
+	};
 	const format = useDisplayFormatters();
 	const modelSlug = model.model_id;
 	const modelHref =
@@ -727,27 +747,27 @@ function ModelCardImpl({
 	const fromPriceSummary = explicitFromPrice ?? fallbackFromPrice;
 	const priceSummary =
 		isFreeDisplayModel
-			? "Free"
+			? t("free")
 			: structuredPriceSummary
 				? structuredPriceSummary
 				: fromPriceSummary;
-	const priceLabel = structuredPriceSummary || isTextModel ? "Pricing" : "From:";
+	const priceLabel = structuredPriceSummary || isTextModel ? t("pricing") : t("from");
 	const fallbackInputLabel =
 		primaryInputKey === "image"
-			? "Image Inputs"
+			? t("imageInputs")
 			: primaryInputKey === "audio"
-				? "Audio Input"
+				? t("audioInput")
 				: primaryInputKey === "video"
-					? "Video Input"
-					: "Input";
+					? t("videoInput")
+					: t("input");
 	const fallbackOutputLabel =
 		primaryOutputKey === "image"
-			? "Output Images (from)"
+			? t("outputImagesFrom")
 			: primaryOutputKey === "audio"
-				? "Audio Output"
+				? t("audioOutput")
 				: primaryOutputKey === "video"
-					? "Video Output (from)"
-					: "Output";
+					? t("videoOutputFrom")
+					: t("output");
 	const fallbackInputUnit =
 		normalizeFromPriceUnit(model.lowest_from_price_unit) ??
 		inferPriceUnitFromModality(primaryInputKey);
@@ -766,7 +786,7 @@ function ModelCardImpl({
 	const standardPricingRows = [
 		{
 			id: "input",
-			label: String(model.lowest_standard_input_price_label ?? "").trim() || "Input",
+			label: String(model.lowest_standard_input_price_label ?? "").trim() || t("input"),
 			value: formatPriceWithUnit(
 				model.lowest_standard_input_price,
 				model.lowest_standard_input_price_unit,
@@ -776,7 +796,7 @@ function ModelCardImpl({
 		{
 			id: "output",
 			label:
-				String(model.lowest_standard_output_price_label ?? "").trim() || "Output",
+				String(model.lowest_standard_output_price_label ?? "").trim() || t("output"),
 			value: formatPriceWithUnit(
 				model.lowest_standard_output_price,
 				model.lowest_standard_output_price_unit,
@@ -861,7 +881,7 @@ function ModelCardImpl({
 		pricingDetailRows = [
 			{
 				id: "summary",
-				label: "Pricing",
+			label: t("pricing"),
 				value: priceSummary,
 			},
 		];
@@ -978,7 +998,11 @@ function ModelCardImpl({
 							{model.organisation_logo_url ? <Avatar className="size-full rounded-md after:rounded-md"><AvatarImage src={model.organisation_logo_url} alt={`${model.organisation_name ?? "Workspace"} logo`} className="rounded-md object-cover" /><AvatarFallback className="rounded-md">{(model.organisation_name ?? "W").slice(0, 2).toUpperCase()}</AvatarFallback></Avatar> : <div className="w-6 h-6 relative">
 								<Logo
 									id={model.organisation_id}
-									alt={model.organisation_name || "Provider Logo"}
+									alt={tDetail("availabilityLabels.providerLogo", {
+										provider:
+											model.organisation_name ||
+											tDetail("availabilityLabels.unknownProvider"),
+										})}
 									className="object-contain"
 									fill
 								/>
@@ -1028,7 +1052,7 @@ function ModelCardImpl({
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent side="top">
-										{copied ? "Copied" : "Copy Model ID"}
+										{copied ? tAuditCopy("Catalogue.common.copied") : tAuditCopy("Common.ui.actions.copyModelId")}
 									</TooltipContent>
 								</Tooltip>
 							) : null}
@@ -1043,7 +1067,7 @@ function ModelCardImpl({
 							href={modelHref}
 							prefetch={false}
 							scroll
-							aria-label={`Open ${safeModelDisplayName}`}
+							aria-label={t("viewDetails")}
 							className="group/open"
 						>
 							<ArrowUpRight
@@ -1059,7 +1083,7 @@ function ModelCardImpl({
 				</div>
 
 				<div className="grid gap-2 text-xs md:grid-cols-3">
-					<ModelCardScrollRail ariaLabel="Model summary" className="md:col-span-3">
+					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
 						{priceSummary ? (
 							pricingDetailRows.length > 0 ? (
@@ -1183,7 +1207,7 @@ function ModelCardImpl({
 																					className="flex items-baseline justify-between gap-3"
 																				>
 																					<div className="text-muted-foreground">
-																						{item.detail ?? "Standard"}
+																						{item.detail ?? tAuditCopy("Catalogue.models.detail.quickstart.tierStandard")}
 																					</div>
 																					<div className="shrink-0 text-muted-foreground">
 																						{item.value}
@@ -1251,7 +1275,7 @@ function ModelCardImpl({
 										data-no-row-nav="true"
 										className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
 									>
-										<span className="text-muted-foreground">Providers</span>
+										<span className="text-muted-foreground">{t("providers")}</span>
 										<span className="font-medium text-foreground tabular-nums">
 											{format.number(activeProviders)}/{format.number(providerCount)}
 										</span>
@@ -1260,7 +1284,7 @@ function ModelCardImpl({
 								<HoverCardContent align="start" className="w-72 p-3">
 									<div className="space-y-2">
 										<div className="text-xs font-medium text-foreground">
-											Provider Support
+										{tDetail("providerTable.heading")}
 										</div>
 										<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
 											<div className="space-y-1 pr-2">
@@ -1300,7 +1324,7 @@ function ModelCardImpl({
 															<span
 																className={cn("h-1.5 w-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
 															/>
-															{formatProviderStatusLabel(provider.status)}
+															{formatProviderStatusLabel(provider.status, providerStatusLabels)}
 														</span>
 													</div>
 												))}
@@ -1311,7 +1335,7 @@ function ModelCardImpl({
 							</HoverCard>
 						) : (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Providers</span>
+								<span className="text-muted-foreground">{t("providers")}</span>
 								<span className="font-medium text-foreground tabular-nums">
 									{format.number(activeProviders)}/{format.number(providerCount)}
 								</span>
@@ -1319,15 +1343,15 @@ function ModelCardImpl({
 						)}
 						{maxContextLength ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Context</span>
+								<span className="text-muted-foreground">{t("filtersUi.contextLength")}</span>
 								<span className="font-medium text-foreground tabular-nums">
-									{`${format.number(maxContextLength, { maximumFractionDigits: 2 })} tokens`}
+									{t("tokenCountDisplay", { count: format.number(maxContextLength, { maximumFractionDigits: 2 }) })}
 								</span>
 							</div>
 						) : null}
 						{routerRequests30d !== null ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Requests (30d)</span>
+								<span className="text-muted-foreground">{t("freeRouter.requests30d")}</span>
 								<span className="font-medium tabular-nums text-foreground">
 									{format.number(routerRequests30d)}
 								</span>
@@ -1335,7 +1359,7 @@ function ModelCardImpl({
 						) : null}
 						{routerSpend30d ? (
 							<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
-								<span className="text-muted-foreground">Spend (30d)</span>
+								<span className="text-muted-foreground">{t("freeRouter.spend30d")}</span>
 								<span className="font-medium tabular-nums text-foreground">
 									{routerSpend30d}
 								</span>
@@ -1347,9 +1371,9 @@ function ModelCardImpl({
 					<div className="min-w-0 space-y-1 md:col-span-3">
 						<div className="flex items-center gap-2 min-w-0">
 							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
-								Input
+								{t("input")}
 							</span>
-							<ModelCardScrollRail ariaLabel="Input modalities" className="flex-1">
+							<ModelCardScrollRail ariaLabel={t("filtersUi.inputModalities")} className="flex-1">
 								<div className="flex w-max min-w-full items-center gap-1 pb-px [&>*]:shrink-0">
 								{inputModalityDisplay.visible.length > 0 ? (
 									<>
@@ -1371,7 +1395,7 @@ function ModelCardImpl({
 										})}
 										{inputModalityDisplay.hiddenCount > 0 ? (
 											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
-												+{inputModalityDisplay.hiddenCount} others
+												{t("othersCount", { count: inputModalityDisplay.hiddenCount })}
 											</span>
 										) : null}
 									</>
@@ -1383,9 +1407,9 @@ function ModelCardImpl({
 						</div>
 						<div className="flex items-center gap-2 min-w-0">
 							<span className="w-11 shrink-0 text-[11px] text-muted-foreground">
-								Output
+								{t("output")}
 							</span>
-							<ModelCardScrollRail ariaLabel="Output modalities" className="flex-1">
+							<ModelCardScrollRail ariaLabel={t("filtersUi.outputModalities")} className="flex-1">
 								<div className="flex w-max min-w-full items-center gap-1 pb-px [&>*]:shrink-0">
 								{outputModalityDisplay.visible.length > 0 ? (
 									<>
@@ -1407,7 +1431,7 @@ function ModelCardImpl({
 										})}
 										{outputModalityDisplay.hiddenCount > 0 ? (
 											<span className="inline-flex items-center rounded-md border border-border/60 bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground">
-												+{outputModalityDisplay.hiddenCount} others
+												{t("othersCount", { count: outputModalityDisplay.hiddenCount })}
 											</span>
 										) : null}
 									</>
@@ -1421,7 +1445,7 @@ function ModelCardImpl({
 				</div>
 
 				<div className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
-					<span className="truncate">{model.primary_date ? format.calendarDate(model.primary_date) : "Date unknown"}</span>
+					<span className="truncate">{model.primary_date ? format.calendarDate(model.primary_date) : tAuditCopy("Common.ui.auditCopy.dateUnknown")}</span>
 					<div className="shrink-0">
 						<Tooltip>
 							<TooltipTrigger asChild>

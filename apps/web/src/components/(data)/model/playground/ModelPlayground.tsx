@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { LocalizedRequestError, localizedRequestErrorMessage } from "@/i18n/localized-request-error";
 import { Streamdown } from "streamdown";
 import {
 	Clapperboard,
@@ -103,7 +105,6 @@ type PlaygroundMode =
 
 type ModeConfig = {
 	mode: PlaygroundMode;
-	label: string;
 };
 
 type PlaygroundCodeSnippet = {
@@ -115,10 +116,24 @@ type PlaygroundCodeSnippet = {
 		| "Anthropic SDK"
 		| "HTTP"
 		| "Raw";
-	description: string;
 	lang: ShikiLang;
 	installCommand?: string;
 	code: string;
+};
+
+type PlaygroundErrorMessages = {
+	insufficientCredits: string;
+	signInRequired: string;
+	accessDenied: string;
+	modelNotFound: string;
+	rateLimitReached: string;
+	gatewayUnavailable: string;
+	temporaryServerIssue: string;
+	requestFailed: string;
+	requestFailedStatus: (status: number) => string;
+	requestFailedCode: (status: number, code: string) => string;
+	musicGenerationFailed: string;
+	videoGenerationFailed: string;
 };
 
 const CODE_CATEGORY_ORDER: PlaygroundCodeSnippet["category"][] = [
@@ -130,14 +145,14 @@ const CODE_CATEGORY_ORDER: PlaygroundCodeSnippet["category"][] = [
 ];
 
 const MODE_CONFIGS: ModeConfig[] = [
-	{ mode: "text", label: "Text" },
-	{ mode: "tts", label: "TTS" },
-	{ mode: "music", label: "Music" },
-	{ mode: "audio", label: "Audio" },
-	{ mode: "image", label: "Image" },
-	{ mode: "video", label: "Video" },
-	{ mode: "embeddings", label: "Embeddings" },
-	{ mode: "moderation", label: "Moderation" },
+	{ mode: "text" },
+	{ mode: "tts" },
+	{ mode: "music" },
+	{ mode: "audio" },
+	{ mode: "image" },
+	{ mode: "video" },
+	{ mode: "embeddings" },
+	{ mode: "moderation" },
 ];
 
 const TTS_CAPABILITY_HINTS = ["audio.speech", "audio.generate"];
@@ -341,25 +356,9 @@ function extractMusicResourceId(payload: unknown): string | null {
 	return null;
 }
 
-function extractMusicErrorMessage(payload: unknown): string | null {
-	if (!payload || typeof payload !== "object") return null;
-	const record = payload as Record<string, unknown>;
-	if (typeof record.error === "string" && record.error.trim()) return record.error.trim();
-	if (
-		record.error &&
-		typeof record.error === "object" &&
-		typeof (record.error as Record<string, unknown>).message === "string"
-	) {
-		const message = String((record.error as Record<string, unknown>).message).trim();
-		if (message) return message;
-	}
-	if (typeof record.message === "string" && record.message.trim()) return record.message.trim();
-	if (typeof record.detail === "string" && record.detail.trim()) return record.detail.trim();
-	return null;
-}
-
 async function pollMusicGeneration(
 	resourceId: string,
+	errorMessages: PlaygroundErrorMessages,
 	signal?: AbortSignal,
 ): Promise<{
 	payload: unknown;
@@ -376,6 +375,9 @@ async function pollMusicGeneration(
 			`/api/chat/audio?action=music&resourceId=${encodeURIComponent(resourceId)}`,
 			{ method: "GET", signal },
 		);
+		if (!response.ok) {
+			throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
+		}
 		const rawText = await response.text();
 		let payload: unknown = null;
 		if (rawText.trim()) {
@@ -387,20 +389,13 @@ async function pollMusicGeneration(
 		}
 		latestPayload = payload;
 		const urls = extractGenerationUrls(payload);
-		if (!response.ok) {
-			const message =
-				extractMusicErrorMessage(payload) ||
-				rawText.trim() ||
-				`Music status request failed (${response.status}).`;
-			throw new Error(message);
-		}
 		if (urls.length > 0) {
 			return { payload, urls, status: "completed" };
 		}
 		const status = extractMusicStatus(payload);
 		latestStatus = status;
 		if (status === "failed") {
-			throw new Error(extractMusicErrorMessage(payload) ?? "Music generation failed.");
+			throw new LocalizedRequestError(errorMessages.musicGenerationFailed);
 		}
 		if (status === "completed") {
 			return { payload, urls: [], status };
@@ -474,6 +469,7 @@ async function parseApiPayload(response: Response): Promise<unknown> {
 
 async function fetchVideoContentObjectUrl(
 	resourceId: string,
+	errorMessages: PlaygroundErrorMessages,
 	signal?: AbortSignal,
 ): Promise<string | null> {
 	const response = await fetchChatWebApi(
@@ -484,7 +480,7 @@ async function fetchVideoContentObjectUrl(
 		},
 	);
 	if (!response.ok) {
-		throw new Error(await readErrorMessage(response));
+		throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 	}
 	const blob = await response.blob();
 	if (!blob.size) return null;
@@ -493,6 +489,7 @@ async function fetchVideoContentObjectUrl(
 
 async function pollVideoGeneration(
 	resourceId: string,
+	errorMessages: PlaygroundErrorMessages,
 	signal?: AbortSignal,
 ): Promise<{
 	payload: unknown;
@@ -516,7 +513,7 @@ async function pollVideoGeneration(
 		const payload = await parseApiPayload(response);
 		latestPayload = payload;
 		if (!response.ok) {
-			throw new Error(await readErrorMessage(response));
+			throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 		}
 		const urls = extractGenerationUrls(payload);
 		if (urls.length > 0) {
@@ -525,12 +522,14 @@ async function pollVideoGeneration(
 		const status = extractVideoStatus(payload);
 		latestStatus = status;
 		if (status === "failed") {
-			throw new Error(
-				extractMusicErrorMessage(payload) ?? "Video generation failed.",
-			);
+			throw new LocalizedRequestError(errorMessages.videoGenerationFailed);
 		}
 		if (status === "completed") {
-			const objectUrl = await fetchVideoContentObjectUrl(resourceId, signal);
+			const objectUrl = await fetchVideoContentObjectUrl(
+				resourceId,
+				errorMessages,
+				signal,
+			);
 			return {
 				payload,
 				urls: objectUrl ? [objectUrl] : [],
@@ -634,6 +633,7 @@ function buildFriendlyPlaygroundError(args: {
 	message: string | null;
 	code: string | null;
 	type: string | null;
+	errorMessages: PlaygroundErrorMessages;
 }): string | null {
 	const haystack = `${args.code ?? ""} ${args.type ?? ""} ${args.message ?? ""}`
 		.toLowerCase()
@@ -651,19 +651,19 @@ function buildFriendlyPlaygroundError(args: {
 		haystack.includes("wallet balance") ||
 		haystack.includes("payment_required");
 	if (isCreditRelated) {
-		return "Insufficient credits for this request. Add credits in Billing and try again.";
+		return args.errorMessages.insufficientCredits;
 	}
 
 	if (args.status === 401 || haystack.includes("unauthorized")) {
-		return "Sign in to use the playground, then try again.";
+		return args.errorMessages.signInRequired;
 	}
 
 	if (args.status === 403) {
-		return "This request is not permitted for your current team or key. Check model access and permissions.";
+		return args.errorMessages.accessDenied;
 	}
 
 	if (args.status === 404) {
-		return "The model or endpoint was not found. Try another model.";
+		return args.errorMessages.modelNotFound;
 	}
 
 	const isRateLimitRelated =
@@ -673,7 +673,7 @@ function buildFriendlyPlaygroundError(args: {
 		haystack.includes("too many requests") ||
 		haystack.includes("quota exceeded");
 	if (isRateLimitRelated) {
-		return "Rate limit reached. Wait a moment and retry.";
+		return args.errorMessages.rateLimitReached;
 	}
 
 	const isGatewayUnavailable =
@@ -683,17 +683,20 @@ function buildFriendlyPlaygroundError(args: {
 		haystack.includes("gateway_unreachable") ||
 		haystack.includes("gateway unavailable");
 	if (isGatewayUnavailable) {
-		return "The gateway is temporarily unavailable. Please retry shortly.";
+		return args.errorMessages.gatewayUnavailable;
 	}
 
 	if (args.status >= 500) {
-		return "Temporary server issue. Please retry.";
+		return args.errorMessages.temporaryServerIssue;
 	}
 
 	return null;
 }
 
-async function readErrorMessage(response: Response): Promise<string> {
+async function readErrorMessage(
+	response: Response,
+	errorMessages: PlaygroundErrorMessages,
+): Promise<string> {
 	const status = response.status;
 	const contentType = response.headers.get("content-type") ?? "";
 	if (contentType.includes("application/json")) {
@@ -705,21 +708,24 @@ async function readErrorMessage(response: Response): Promise<string> {
 				message: parsedError.message,
 				code: parsedError.code,
 				type: parsedError.type,
+				errorMessages,
 			});
 			if (friendly) {
-				return mergeFriendlyMessage(friendly, parsedError.message);
+				return mergeFriendlyMessage(friendly, parsedError.code);
 			}
-			if (parsedError.message) return parsedError.message;
-			if (parsedError.code) return `Request failed (${status}): ${parsedError.code}.`;
-			return `Request failed (${status}).`;
+			if (parsedError.code) {
+				return errorMessages.requestFailedCode(status, parsedError.code);
+			}
+			return errorMessages.requestFailedStatus(status);
 		} catch {
 			const fallback = buildFriendlyPlaygroundError({
 				status,
 				message: null,
 				code: null,
 				type: null,
+				errorMessages,
 			});
-			return fallback ?? `Request failed (${status}).`;
+			return fallback ?? errorMessages.requestFailedStatus(status);
 		}
 	}
 
@@ -734,12 +740,14 @@ async function readErrorMessage(response: Response): Promise<string> {
 				message: parsedError.message,
 				code: parsedError.code,
 				type: parsedError.type,
+				errorMessages,
 			});
 			if (friendly) {
-				return mergeFriendlyMessage(friendly, parsedError.message);
+				return mergeFriendlyMessage(friendly, parsedError.code);
 			}
-			if (parsedError.message) return parsedError.message;
-			if (parsedError.code) return `Request failed (${status}): ${parsedError.code}.`;
+			if (parsedError.code) {
+				return errorMessages.requestFailedCode(status, parsedError.code);
+			}
 		}
 
 		const friendlyFromText = buildFriendlyPlaygroundError({
@@ -747,9 +755,10 @@ async function readErrorMessage(response: Response): Promise<string> {
 			message: text,
 			code: null,
 			type: null,
+			errorMessages,
 		});
 		if (friendlyFromText) return friendlyFromText;
-		return text;
+		return errorMessages.requestFailed;
 	}
 
 	const fallback = buildFriendlyPlaygroundError({
@@ -757,8 +766,9 @@ async function readErrorMessage(response: Response): Promise<string> {
 		message: null,
 		code: null,
 		type: null,
+		errorMessages,
 	});
-	return fallback ?? `Request failed (${status}).`;
+	return fallback ?? errorMessages.requestFailedStatus(status);
 }
 
 function normalizeAudioMimeType(value: unknown): string {
@@ -825,7 +835,6 @@ function buildPlaygroundCodeSnippets({
 			id: "raw-curl",
 			label: "cURL",
 			category: "Raw",
-			description: "Lowest-level HTTP request against the gateway.",
 			lang: "bash",
 			code: `# 1) Set your key
 export PHASEO_API_KEY="phaseo_v1_sk_..."
@@ -840,7 +849,6 @@ curl -s ${endpointUrl} \\
 			id: "typescript-fetch",
 			label: "TypeScript",
 			category: "HTTP",
-			description: "OpenAI-compatible call using native fetch in TS/Node.",
 			lang: "ts",
 			code: `const apiKey = process.env.PHASEO_API_KEY;
 
@@ -862,7 +870,6 @@ console.log(data);`,
 			id: "javascript-fetch",
 			label: "JavaScript",
 			category: "HTTP",
-			description: "OpenAI-compatible call using native fetch in JavaScript.",
 			lang: "js",
 			code: `const apiKey = process.env.PHASEO_API_KEY;
 
@@ -884,7 +891,6 @@ console.log(data);`,
 			id: "python-requests",
 			label: "Python",
 			category: "HTTP",
-			description: "OpenAI-compatible call using Python requests.",
 			lang: "python",
 			code: `import os
 import requests
@@ -908,7 +914,6 @@ print(response.json())`,
 			id: "rust-reqwest",
 			label: "Rust",
 			category: "HTTP",
-			description: "OpenAI-compatible call using reqwest.",
 			lang: "rust",
 			installCommand: "cargo add reqwest tokio",
 			code: `#[tokio::main]
@@ -938,7 +943,6 @@ ${payloadJson}
 			id: "go-net-http",
 			label: "Go",
 			category: "HTTP",
-			description: "OpenAI-compatible call using Go's standard HTTP client.",
 			lang: "go",
 			code: `package main
 
@@ -975,7 +979,6 @@ func main() {
 			id: "csharp-http-client",
 			label: "C#",
 			category: "HTTP",
-			description: "OpenAI-compatible call using .NET HttpClient.",
 			lang: "csharp",
 			code: `using System.Net.Http.Headers;
 using System.Text;
@@ -998,7 +1001,6 @@ Console.WriteLine(body);`,
 			id: "java-http-client",
 			label: "Java",
 			category: "HTTP",
-			description: "OpenAI-compatible call using Java HttpClient.",
 			lang: "java",
 			code: `import java.net.URI;
 import java.net.http.HttpClient;
@@ -1030,7 +1032,6 @@ ${payloadJson}
 			id: "php-curl",
 			label: "PHP",
 			category: "HTTP",
-			description: "OpenAI-compatible call using PHP cURL.",
 			lang: "php",
 			code: `<?php
 $apiKey = getenv("PHASEO_API_KEY");
@@ -1061,7 +1062,6 @@ echo $response . PHP_EOL;`,
 			id: "ruby-net-http",
 			label: "Ruby",
 			category: "HTTP",
-			description: "OpenAI-compatible call using Ruby Net::HTTP.",
 			lang: "ruby",
 			code: `require "net/http"
 require "uri"
@@ -1084,7 +1084,6 @@ puts response.body`,
 			id: "openai-node",
 			label: "TypeScript",
 			category: "OpenAI SDK",
-			description: "OpenAI JavaScript SDK pointed at Phaseo Gateway.",
 			lang: "ts",
 			installCommand: "npm install openai",
 			code: `import OpenAI from "openai";
@@ -1104,7 +1103,6 @@ console.log(response);`,
 			id: "openai-javascript",
 			label: "JavaScript",
 			category: "OpenAI SDK",
-			description: "OpenAI JavaScript SDK (CommonJS) for Phaseo Gateway.",
 			lang: "js",
 			installCommand: "npm install openai",
 			code: `const OpenAI = require("openai");
@@ -1124,7 +1122,6 @@ console.log(response);`,
 			id: "openai-python",
 			label: "Python",
 			category: "OpenAI SDK",
-			description: "OpenAI Python SDK pointed at Phaseo Gateway.",
 			lang: "python",
 			installCommand: "pip install openai",
 			code: `import os
@@ -1144,7 +1141,6 @@ print(response)`,
 			id: "openai-csharp",
 			label: "C#",
 			category: "OpenAI SDK",
-			description: "OpenAI .NET SDK configured to use Phaseo Gateway.",
 			lang: "csharp",
 			installCommand: "dotnet add package OpenAI",
 			code: `using OpenAI;
@@ -1169,7 +1165,6 @@ Console.WriteLine(result.Value.OutputText);`,
 			id: "openai-go",
 			label: "Go",
 			category: "OpenAI SDK",
-			description: "OpenAI Go SDK configured to use Phaseo Gateway.",
 			lang: "go",
 			installCommand: "go get github.com/openai/openai-go",
 			code: `package main
@@ -1206,7 +1201,6 @@ func main() {
 			id: "openai-java",
 			label: "Java",
 			category: "OpenAI SDK",
-			description: "OpenAI Java SDK configured for Phaseo Gateway.",
 			lang: "java",
 			installCommand: "./mvnw dependency:get -Dartifact=com.openai:openai-java:latest.release",
 			code: `import com.openai.client.OpenAIClient;
@@ -1235,7 +1229,6 @@ public class Main {
 			id: "anthropic-node",
 			label: "TypeScript",
 			category: "Anthropic SDK",
-			description: "Anthropic JavaScript SDK configured to use Phaseo Gateway.",
 			lang: "ts",
 			installCommand: "npm install @anthropic-ai/sdk",
 			code: `import Anthropic from "@anthropic-ai/sdk";
@@ -1257,7 +1250,6 @@ console.log(response);`,
 			id: "anthropic-javascript",
 			label: "JavaScript",
 			category: "Anthropic SDK",
-			description: "Anthropic JavaScript SDK (CommonJS) for Phaseo Gateway.",
 			lang: "js",
 			installCommand: "npm install @anthropic-ai/sdk",
 			code: `const Anthropic = require("@anthropic-ai/sdk");
@@ -1279,7 +1271,6 @@ console.log(response);`,
 			id: "anthropic-python",
 			label: "Python",
 			category: "Anthropic SDK",
-			description: "Anthropic Python SDK configured to use Phaseo Gateway.",
 			lang: "python",
 			installCommand: "pip install anthropic",
 			code: `import os
@@ -1302,7 +1293,6 @@ print(response)`,
 			id: "phaseo-typescript",
 			label: "TypeScript",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for TypeScript.",
 			lang: "ts",
 			installCommand: "npm install @phaseo/sdk",
 			code: `import Phaseo from "@phaseo/sdk";
@@ -1321,7 +1311,6 @@ console.log(response);`,
 			id: "phaseo-python",
 			label: "Python",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for Python.",
 			lang: "python",
 			installCommand: "pip install phaseo",
 			code: `import os
@@ -1338,7 +1327,6 @@ print(response)`,
 			id: "phaseo-go",
 			label: "Go",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for Go.",
 			lang: "go",
 			installCommand:
 				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest",
@@ -1375,7 +1363,6 @@ func main() {
 			id: "phaseo-csharp",
 			label: "C#",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for C#.",
 			lang: "csharp",
 			installCommand: "dotnet add package Phaseo.Sdk",
 			code: `using System.Collections.Generic;
@@ -1402,7 +1389,6 @@ Console.WriteLine(JsonSerializer.Serialize(response, new JsonSerializerOptions
 			id: "phaseo-php",
 			label: "PHP",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for PHP.",
 			lang: "php",
 			installCommand: "composer require phaseo/sdk",
 			code: `<?php
@@ -1429,7 +1415,6 @@ echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), PHP_EOL
 			id: "phaseo-ruby",
 			label: "Ruby",
 			category: "Phaseo SDK",
-			description: "Official Phaseo SDK for Ruby.",
 			lang: "ruby",
 			installCommand: "gem install phaseo_sdk",
 			code: `require "json"
@@ -1483,13 +1468,64 @@ export default function ModelPlayground({
 	gatewayModels = [],
 	primaryModelIdentifierByEndpoint = {},
 }: ModelPlaygroundProps) {
+	const t = useTranslations("Catalogue.models.detail.playground");
+	const errorMessages: PlaygroundErrorMessages = {
+		insufficientCredits: t("errors.insufficientCredits"),
+		signInRequired: t("errors.signInRequired"),
+		accessDenied: t("errors.accessDenied"),
+		modelNotFound: t("errors.modelNotFound"),
+		rateLimitReached: t("errors.rateLimitReached"),
+		gatewayUnavailable: t("errors.gatewayUnavailable"),
+		temporaryServerIssue: t("errors.temporaryServerIssue"),
+		requestFailed: t("errors.requestFailed"),
+		requestFailedStatus: (status) => t("errors.requestFailedStatus", { status }),
+		requestFailedCode: (status, code) =>
+			t("errors.requestFailedCode", { status, code }),
+		musicGenerationFailed: t("errors.musicGenerationFailed"),
+		videoGenerationFailed: t("errors.videoGenerationFailed"),
+	};
+	const getModeLabel = (targetMode: PlaygroundMode): string => {
+		switch (targetMode) {
+			case "text":
+				return t("modes.text");
+			case "tts":
+				return t("modes.tts");
+			case "music":
+				return t("modes.music");
+			case "audio":
+				return t("modes.audio");
+			case "image":
+				return t("modes.image");
+			case "video":
+				return t("modes.video");
+			case "embeddings":
+				return t("modes.embeddings");
+			case "moderation":
+				return t("modes.moderation");
+		}
+	};
+	const getSnippetDescription = (snippet: PlaygroundCodeSnippet): string => {
+		const values = { language: snippet.label };
+		switch (snippet.category) {
+			case "Phaseo SDK":
+				return t("snippetDescriptions.phaseoSdk", values);
+			case "OpenAI SDK":
+				return t("snippetDescriptions.openAiSdk", values);
+			case "Anthropic SDK":
+				return t("snippetDescriptions.anthropicSdk", values);
+			case "HTTP":
+				return t("snippetDescriptions.http", values);
+			case "Raw":
+				return t("snippetDescriptions.rawHttp");
+		}
+	};
 	const format = useDisplayFormatters();
 	const formatDuration = (ms: number) => `${format.number(ms / 1000, { maximumFractionDigits: 1, notation: "standard" })}s`;
 	const formatTokens = (totalTokens: number | null) => totalTokens == null
-		? "N/A tokens"
-		: `${format.number(Math.round(totalTokens))} tokens`;
+		? t("metrics.tokensUnavailable")
+		: t("metrics.tokenCount", { count: Math.round(totalTokens) });
 	const formatThroughput = (tokensPerSecond: number | null) => tokensPerSecond == null
-		? "N/A tok/s"
+		? "—"
 		: `${format.number(tokensPerSecond, { maximumFractionDigits: 1, notation: "standard" })} tok/s`;
 	const [mode, setMode] = useState<PlaygroundMode>("text");
 	const [prompt, setPrompt] = useState("");
@@ -1860,7 +1896,7 @@ export default function ModelPlayground({
 			});
 
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -1964,13 +2000,11 @@ export default function ModelPlayground({
 				totalCostUsd,
 			});
 			if (!streamingText.trim()) {
-				setResponseText("Request completed.");
+				setResponseText(t("states.requestCompleted"));
 			}
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "Request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, errorMessages.requestFailed);
 			setError(message);
 		} finally {
 			setIsGenerating(false);
@@ -2024,7 +2058,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -2051,6 +2085,7 @@ export default function ModelPlayground({
 						musicPollControllerRef.current = pollController;
 						const polled = await pollMusicGeneration(
 							resourceId,
+							errorMessages,
 							pollController.signal,
 						);
 						if (musicPollControllerRef.current === pollController) {
@@ -2066,10 +2101,13 @@ export default function ModelPlayground({
 							nextAudioUrl = polledUrls[0] ?? null;
 						}
 						if (!nextAudioUrl && polled.status === "completed") {
-							nextAudioText = "Music generation completed with no playable URL.";
+							nextAudioText = t("states.generationNoPlayableOutput", {
+								type: getModeLabel("music"),
+							});
 						} else if (!nextAudioUrl && polled.status !== "failed") {
-							nextAudioText =
-								"Music generation is still in progress. Please try again shortly.";
+							nextAudioText = t("states.generationStillInProgress", {
+								type: getModeLabel("music"),
+							});
 						}
 					}
 				}
@@ -2090,10 +2128,9 @@ export default function ModelPlayground({
 				nextAudioUrl = URL.createObjectURL(normalizedBlob);
 			}
 			if (!nextAudioUrl && !nextAudioText) {
-				nextAudioText =
-					action === "music"
-						? "Music request completed."
-						: "Audio request completed.";
+				nextAudioText = t("states.requestCompletedForType", {
+					type: getModeLabel(action === "music" ? "music" : "audio"),
+				});
 			}
 			if (!isMountedRef.current) return;
 			setAudioResponseUrl(nextAudioUrl);
@@ -2126,11 +2163,9 @@ export default function ModelPlayground({
 				return;
 			}
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: action === "music"
-						? "Music request failed. Please try again."
-						: "Audio request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
+						type: getModeLabel(action === "music" ? "music" : "audio"),
+					}));
 			if (!isMountedRef.current) return;
 			setAudioError(message);
 		} finally {
@@ -2169,7 +2204,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -2181,13 +2216,18 @@ export default function ModelPlayground({
 			setImageResponseUrls(urls);
 			setImageResponseText(
 				text ||
-					(urls.length ? "" : JSON.stringify(payload, null, 2) || "Image request completed."),
+					(urls.length
+						? ""
+						: JSON.stringify(payload, null, 2) ||
+							t("states.requestCompletedForType", {
+								type: getModeLabel("image"),
+							})),
 			);
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "Image request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
+						type: getModeLabel("image"),
+					}));
 			setImageError(message);
 		} finally {
 			setImageIsGenerating(false);
@@ -2229,7 +2269,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			let payload = await parseApiPayload(response);
@@ -2242,6 +2282,7 @@ export default function ModelPlayground({
 					videoPollControllerRef.current = pollController;
 					const polled = await pollVideoGeneration(
 						resourceId,
+						errorMessages,
 						pollController.signal,
 					);
 					if (videoPollControllerRef.current === pollController) {
@@ -2250,11 +2291,13 @@ export default function ModelPlayground({
 					payload = polled.payload;
 					urls = polled.urls;
 					if (!urls.length && polled.status === "completed") {
-						nextVideoText =
-							"Video generation completed with no playable output URL.";
+						nextVideoText = t("states.generationNoPlayableOutput", {
+							type: getModeLabel("video"),
+						});
 					} else if (!urls.length && polled.status !== "failed") {
-						nextVideoText =
-							"Video generation is still in progress. Please try again shortly.";
+						nextVideoText = t("states.generationStillInProgress", {
+							type: getModeLabel("video"),
+						});
 					}
 				}
 			}
@@ -2264,7 +2307,12 @@ export default function ModelPlayground({
 			setVideoResponseText(
 				text ||
 					nextVideoText ||
-					(urls.length ? "" : JSON.stringify(payload, null, 2) || "Video request completed."),
+					(urls.length
+						? ""
+						: JSON.stringify(payload, null, 2) ||
+							t("states.requestCompletedForType", {
+								type: getModeLabel("video"),
+							})),
 			);
 		} catch (requestError) {
 			if (
@@ -2274,9 +2322,9 @@ export default function ModelPlayground({
 				return;
 			}
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "Video request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
+						type: getModeLabel("video"),
+					}));
 			if (!isMountedRef.current) return;
 			setVideoError(message);
 		} finally {
@@ -2329,7 +2377,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const payload = await response.json();
@@ -2337,9 +2385,9 @@ export default function ModelPlayground({
 			setEmbeddingsRawResponse(JSON.stringify(payload, null, 2));
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "Embeddings request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
+						type: getModeLabel("embeddings"),
+					}));
 			setEmbeddingsError(message);
 		} finally {
 			setEmbeddingsIsGenerating(false);
@@ -2374,7 +2422,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const payload = await response.json();
@@ -2382,9 +2430,9 @@ export default function ModelPlayground({
 			setModerationRawResponse(JSON.stringify(payload, null, 2));
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: "Moderation request failed. Please try again.";
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
+						type: getModeLabel("moderation"),
+					}));
 			setModerationError(message);
 		} finally {
 			setModerationIsGenerating(false);
@@ -2528,7 +2576,7 @@ export default function ModelPlayground({
 		<div className="flex min-h-[320px] flex-col justify-between rounded-md border border-black/20 bg-black/[0.03] p-4 dark:border-white/20 dark:bg-white/[0.05]">
 			<div className="space-y-2">
 				<p className="text-sm font-medium text-black dark:text-white">
-					Generation failed
+					{t("states.generationFailed")}
 				</p>
 				<p className="text-sm leading-6 text-black/70 dark:text-white/70">
 					{message}
@@ -2542,7 +2590,7 @@ export default function ModelPlayground({
 					className="h-9 bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 				>
 					<RotateCcw className="h-4 w-4" />
-					Retry
+					{t("actions.retry")}
 				</Button>
 				<Button
 					type="button"
@@ -2552,7 +2600,7 @@ export default function ModelPlayground({
 					className="h-9 border-black/20 bg-transparent text-black hover:bg-black/5 dark:border-white/20 dark:text-white dark:hover:bg-white/10"
 				>
 					<Trash2 className="h-4 w-4" />
-					Delete
+					{t("actions.delete")}
 				</Button>
 			</div>
 		</div>
@@ -2590,9 +2638,11 @@ export default function ModelPlayground({
 			return (
 				<div className="rounded-xl border border-black/15 bg-black/[0.02] p-6 dark:border-white/20 dark:bg-white/[0.03]">
 					<div className="space-y-2">
-						<h3 className="text-base font-semibold">No Compatible Endpoint</h3>
+						<h3 className="text-base font-semibold">
+							{t("states.noCompatibleEndpoint")}
+						</h3>
 						<p className="text-sm text-black/70 dark:text-white/70">
-							No active {mode} endpoint is currently available for this model.
+							{t("states.noActiveEndpoint", { mode: getModeLabel(mode) })}
 						</p>
 					</div>
 				</div>
@@ -2602,20 +2652,20 @@ export default function ModelPlayground({
 		if (isAudioGenerationMode) {
 			const audioPromptPlaceholder =
 				mode === "music"
-					? "Describe the track you want to generate. Add style, mood, instruments, or lyrics..."
+					? t("placeholders.music")
 					: mode === "tts"
-						? "Enter text to convert to speech..."
-						: "Enter text to generate audio...";
+						? t("placeholders.speech")
+						: t("placeholders.audio");
 			const audioGenerateLabel =
 				mode === "music"
-					? "Generate Music"
+					? t("actions.generateMusic")
 					: mode === "tts"
-						? "Generate Speech"
-						: "Generate Audio";
+						? t("actions.generateSpeech")
+						: t("actions.generateAudio");
 			const emptyAudioLabel =
 				mode === "music"
-					? "Generated music appears here."
-					: "Audio output appears here.";
+					? t("outputs.music")
+					: t("outputs.audio");
 			return (
 				<div className="grid gap-6 md:grid-cols-2">
 					<div className="flex min-h-[440px] flex-col gap-3">
@@ -2639,7 +2689,7 @@ export default function ModelPlayground({
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{audioIsGenerating ? "Generating..." : audioGenerateLabel}
+							{audioIsGenerating ? t("actions.generating") : audioGenerateLabel}
 						</Button>
 						{audioError ? (
 							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
@@ -2684,7 +2734,7 @@ export default function ModelPlayground({
 							value={imagePrompt}
 							onChange={(event) => setImagePrompt(event.target.value)}
 							onKeyDown={handleImagePromptKeyDown}
-							placeholder="Describe the image you want to generate..."
+							placeholder={t("placeholders.image")}
 							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 						/>
 						<Button
@@ -2694,7 +2744,9 @@ export default function ModelPlayground({
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{imageIsGenerating ? "Generating..." : "Generate Image"}
+							{imageIsGenerating
+								? t("actions.generating")
+								: t("actions.generateImage")}
 						</Button>
 					</div>
 
@@ -2711,7 +2763,7 @@ export default function ModelPlayground({
 									>
 										<img
 											src={url}
-											alt={`Generated image ${index + 1}`}
+											alt={t("outputs.generatedImageAlt", { number: index + 1 })}
 											className="h-full w-full object-cover"
 										/>
 									</a>
@@ -2723,7 +2775,11 @@ export default function ModelPlayground({
 							</div>
 						) : showImageFailureState ? (
 							renderFailurePanel({
-								message: imageError ?? "Image request failed. Please try again.",
+								message:
+									imageError ??
+									t("errors.requestFailedForType", {
+										type: getModeLabel("image"),
+									}),
 								onRetry: () => {
 									void handleGenerateImage();
 								},
@@ -2733,7 +2789,7 @@ export default function ModelPlayground({
 						) : showImageThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyImageResponse ? (
-							renderEmptyPanel("Generated images appear here.")
+							renderEmptyPanel(t("outputs.images"))
 						) : null}
 					</div>
 				</div>
@@ -2748,7 +2804,7 @@ export default function ModelPlayground({
 							value={videoPrompt}
 							onChange={(event) => setVideoPrompt(event.target.value)}
 							onKeyDown={handleVideoPromptKeyDown}
-							placeholder="Describe the video you want to generate..."
+							placeholder={t("placeholders.video")}
 							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 						/>
 						<Button
@@ -2758,7 +2814,9 @@ export default function ModelPlayground({
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{videoIsGenerating ? "Generating..." : "Generate Video"}
+							{videoIsGenerating
+								? t("actions.generating")
+								: t("actions.generateVideo")}
 						</Button>
 					</div>
 
@@ -2778,7 +2836,7 @@ export default function ModelPlayground({
 											rel="noreferrer"
 											className="text-xs text-black/70 underline dark:text-white/70"
 										>
-											Open video {index + 1}
+											{t("actions.openVideo", { number: index + 1 })}
 										</a>
 									</div>
 								))}
@@ -2789,7 +2847,11 @@ export default function ModelPlayground({
 							</div>
 						) : showVideoFailureState ? (
 							renderFailurePanel({
-								message: videoError ?? "Video request failed. Please try again.",
+								message:
+									videoError ??
+									t("errors.requestFailedForType", {
+										type: getModeLabel("video"),
+									}),
 								onRetry: () => {
 									void handleGenerateVideo();
 								},
@@ -2799,7 +2861,7 @@ export default function ModelPlayground({
 						) : showVideoThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyVideoResponse ? (
-							renderEmptyPanel("Generated videos appear here.")
+							renderEmptyPanel(t("outputs.videos"))
 						) : null}
 					</div>
 				</div>
@@ -2814,7 +2876,7 @@ export default function ModelPlayground({
 							value={embeddingsPrompt}
 							onChange={(event) => setEmbeddingsPrompt(event.target.value)}
 							onKeyDown={handleEmbeddingsPromptKeyDown}
-							placeholder="Enter text to embed..."
+							placeholder={t("placeholders.embeddings")}
 							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 						/>
 						<Button
@@ -2828,7 +2890,9 @@ export default function ModelPlayground({
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{embeddingsIsGenerating ? "Generating..." : "Generate Embeddings"}
+							{embeddingsIsGenerating
+								? t("actions.generating")
+								: t("actions.generateEmbeddings")}
 						</Button>
 						{embeddingsError ? (
 							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
@@ -2841,11 +2905,11 @@ export default function ModelPlayground({
 						{embeddingsVectors.length ? (
 							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
 								<p>
-									<span className="font-medium">Vectors:</span>{" "}
+									<span className="font-medium">{t("embeddingResults.vectors")}:</span>{" "}
 									{format.number(embeddingsVectors.length)}
 								</p>
 								<p>
-									<span className="font-medium">Dimensions:</span>{" "}
+									<span className="font-medium">{t("embeddingResults.dimensions")}:</span>{" "}
 									{format.number(embeddingsFirstVector?.length ?? 0)}
 								</p>
 								{embeddingsFirstVector ? (
@@ -2866,7 +2930,7 @@ export default function ModelPlayground({
 						) : showEmbeddingsThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyEmbeddingsResponse ? (
-							renderEmptyPanel("Embedding output appears here.")
+							renderEmptyPanel(t("outputs.embeddings"))
 						) : null}
 					</div>
 				</div>
@@ -2886,7 +2950,7 @@ export default function ModelPlayground({
 							value={moderationPrompt}
 							onChange={(event) => setModerationPrompt(event.target.value)}
 							onKeyDown={handleModerationPromptKeyDown}
-							placeholder="Enter text to moderate..."
+							placeholder={t("placeholders.moderation")}
 							className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 						/>
 						<Button
@@ -2900,7 +2964,9 @@ export default function ModelPlayground({
 							className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 						>
 							<Sparkles className="h-4 w-4" />
-							{moderationIsGenerating ? "Generating..." : "Run Moderation"}
+							{moderationIsGenerating
+								? t("actions.generating")
+								: t("actions.runModeration")}
 						</Button>
 						{moderationError ? (
 							<p className="rounded-md border border-black/20 bg-black/5 px-3 py-2 text-sm text-black dark:border-white/20 dark:bg-white/10 dark:text-white">
@@ -2913,14 +2979,20 @@ export default function ModelPlayground({
 						{moderationResult ? (
 							<div className="space-y-2 rounded-md border border-black/15 bg-black/[0.02] p-3 text-sm dark:border-white/20 dark:bg-white/[0.03]">
 								<p>
-									<span className="font-medium">Flagged:</span>{" "}
-									{moderationResult.flagged ? "Yes" : "No"}
+										<span className="font-medium">
+											{t("moderationResults.flagged")}:
+										</span>{" "}
+										{moderationResult.flagged
+										? t("moderationResults.yes")
+										: t("moderationResults.no")}
 								</p>
 								<p>
-									<span className="font-medium">Flagged categories:</span>{" "}
+										<span className="font-medium">
+											{t("moderationResults.flaggedCategories")}:
+										</span>{" "}
 									{flaggedCategories.length
 										? flaggedCategories.join(", ")
-										: "None"}
+										: t("moderationResults.none")}
 								</p>
 							</div>
 						) : null}
@@ -2931,7 +3003,7 @@ export default function ModelPlayground({
 						) : showModerationThinkingState ? (
 							renderThinkingPanel()
 						) : showEmptyModerationResponse ? (
-							renderEmptyPanel("Moderation output appears here.")
+							renderEmptyPanel(t("outputs.moderation"))
 						) : null}
 					</div>
 				</div>
@@ -2946,10 +3018,10 @@ export default function ModelPlayground({
 			<div className="flex flex-wrap items-center gap-3 border-b border-black/10 pb-3 dark:border-white/15">
 				<div className="mr-auto min-w-0">
 					<h2 className="truncate text-2xl font-semibold tracking-tight">
-						Try {modelName}
+						{t("title", { modelName })}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Test this model directly in the playground.
+						{t("description")}
 					</p>
 				</div>
 				<div className="max-w-full overflow-x-auto">
@@ -2969,7 +3041,7 @@ export default function ModelPlayground({
 									aria-pressed={isActive}
 								>
 									{renderModeIcon(config.mode)}
-									{config.label}
+										{getModeLabel(config.mode)}
 								</button>
 							);
 						})}
@@ -3013,13 +3085,13 @@ export default function ModelPlayground({
 							variant="outline"
 							size="icon"
 							onClick={() => setIsCodeDialogOpen(true)}
-							aria-label="Get code"
+							aria-label={t("actions.getCode")}
 							className="h-9 w-9 shrink-0 border-black/30 bg-white text-black hover:bg-zinc-100 dark:border-white/30 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
 						>
 							<Code2 className="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent side="top">Get code</TooltipContent>
+					<TooltipContent side="top">{t("actions.getCode")}</TooltipContent>
 				</Tooltip>
 			</div>
 
@@ -3032,7 +3104,7 @@ export default function ModelPlayground({
 								value={prompt}
 								onChange={(event) => setPrompt(event.target.value)}
 								onKeyDown={handlePromptKeyDown}
-								placeholder="Enter your message..."
+								placeholder={t("placeholders.message")}
 								className="min-h-[320px] resize-none border-black/20 bg-white text-base text-black placeholder:text-black/45 focus-visible:ring-black/40 dark:border-white/25 dark:bg-black dark:text-white dark:placeholder:text-white/50 dark:focus-visible:ring-white/40"
 							/>
 							<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -3044,7 +3116,7 @@ export default function ModelPlayground({
 								>
 									<Link href={chatHref}>
 										<MessageSquare className="h-4 w-4" />
-										Open in Playground
+										{t("actions.openPlayground")}
 									</Link>
 								</Button>
 								<Button
@@ -3054,7 +3126,9 @@ export default function ModelPlayground({
 									className="h-11 w-full bg-black text-white hover:bg-zinc-800 disabled:bg-zinc-500 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
 								>
 									<Sparkles className="h-4 w-4" />
-									{isGenerating ? "Generating..." : "Generate"}
+										{isGenerating
+											? t("actions.generating")
+											: t("actions.generate")}
 								</Button>
 							</div>
 							{error ? (
@@ -3090,7 +3164,7 @@ export default function ModelPlayground({
 							) : showEmptyResponse ? (
 								<div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center text-sm text-black/55 dark:text-white/60">
 									<TerminalSquare className="h-10 w-10" />
-									<p>Response output appears here.</p>
+									<p>{t("outputs.response")}</p>
 								</div>
 							) : null}
 						</div>
@@ -3106,10 +3180,9 @@ export default function ModelPlayground({
 				<DialogContent className="h-[100dvh] max-h-[100dvh] w-screen max-w-none overflow-hidden rounded-none p-0 sm:h-auto sm:max-h-[90vh] sm:w-[96vw] sm:max-w-6xl sm:rounded-lg">
 					<div className="flex h-full max-h-[100dvh] flex-col sm:max-h-[90vh]">
 						<DialogHeader className="border-b border-black/10 p-4 pr-12 sm:p-5 sm:pr-12 dark:border-white/15">
-							<DialogTitle>Get Code</DialogTitle>
+							<DialogTitle>{t("actions.getCode")}</DialogTitle>
 							<DialogDescription>
-								Ready-to-copy snippets for {modelName} across raw HTTP,
-								OpenAI SDK, and Phaseo SDK integrations.
+								{t("codeDialogDescription", { modelName })}
 							</DialogDescription>
 						</DialogHeader>
 
@@ -3159,7 +3232,9 @@ export default function ModelPlayground({
 														{logoId ? (
 															<Logo
 																id={logoId}
-																alt={`${snippet.label} icon`}
+													alt={t("snippetIconAlt", {
+														snippet: snippet.label,
+													})}
 																width={14}
 																height={14}
 																className="object-contain"
@@ -3184,14 +3259,14 @@ export default function ModelPlayground({
 												{selectedCodeSnippet.category}
 											</p>
 											<p className="text-sm text-black/70 dark:text-white/70">
-												{selectedCodeSnippet.description}
+												{getSnippetDescription(selectedCodeSnippet)}
 											</p>
 										</div>
 
 										{selectedCodeSnippet.installCommand ? (
 											<div className="space-y-2">
 												<p className="text-xs font-medium text-black/70 dark:text-white/70">
-													Install
+													{t("actions.install")}
 												</p>
 												<CodeBlock
 													code={selectedCodeSnippet.installCommand}
@@ -3203,7 +3278,7 @@ export default function ModelPlayground({
 
 										<div className="space-y-2">
 											<p className="text-xs font-medium text-black/70 dark:text-white/70">
-												Usage
+												{t("actions.usage")}
 											</p>
 											<CodeBlock
 												code={selectedCodeSnippet.code}

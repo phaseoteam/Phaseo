@@ -1,0 +1,51 @@
+---
+icon: "package"
+title: "安装"
+description: "安装并配置 Phaseo TypeScript Agent SDK。"
+---
+
+Agent SDK 以 [`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk) 的名称发布在 npm 上。
+
+## 要求
+
+- 使用 npm、pnpm、Yarn 或 Bun 的 TypeScript 或 JavaScript 项目
+- Phaseo API 密钥
+
+## 安装
+
+使用你偏好的包管理器安装 Agent SDK：
+
+<CodeGroup>
+
+    ```bash title="npm"
+    npm install @phaseo/agent-sdk
+    ```
+
+    ```bash title="pnpm"
+    pnpm add @phaseo/agent-sdk
+    ```
+
+    ```bash title="yarn"
+    yarn add @phaseo/agent-sdk
+    ```
+
+    ```bash title="bun"
+    bun add @phaseo/agent-sdk
+    ```
+
+</CodeGroup>
+
+核心包 `@phaseo/sdk` 会作为依赖项自动安装。
+
+## 环境
+
+运行示例前，请先设置网关 API 密钥：
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 下一步
+
+- [概览](./agent-sdk-overview.mdx)
+- [使用 Agent SDK 构建](./agent-sdk.mdx)

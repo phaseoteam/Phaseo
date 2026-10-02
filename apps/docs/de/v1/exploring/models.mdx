@@ -1,0 +1,120 @@
+---
+title: "Modelle kennenlernen"
+description: "Erfahre, wie du die auf Phaseo aufgeführten KI-Modelle durchsuchen, vergleichen und verstehen kannst."
+sidebarTitle: "Modelle"
+icon: "brain"
+---
+
+Phaseo pflegt einen umfangreichen offenen Katalog für Text-, Bild-, Audio-, Video-, Embedding- und weitere KI-Modelle.
+
+Jede Modellseite enthält detaillierte technische und kommerzielle Informationen, damit du Modelle bewerten, vergleichen und das passende Modell auswählen kannst.
+
+<Info>
+Der Katalog ist umfangreicher als Gateway. Standardmäßig zeigt die Seite „Modelle“ nur Modelle mit einer aktiven Gateway-Route. Wähle einen anderen Gateway-Status nur aus, wenn du gezielt kommende oder inaktive Katalogeinträge ansehen möchtest.
+</Info>
+
+---
+
+## Inhalte einer Modellseite
+
+Jede Modellseite bei Phaseo enthält folgende wichtige Bereiche:
+
+| Bereich | Beschreibung |
+| --- | --- |
+| **Übersicht** | Anbieter, Veröffentlichungsdatum, Modelltyp (Chat, Code, Embedding, Bild usw.) und Kurzbeschreibung. |
+| **Familie** | Verwandte Modelle und ihre Beziehungen. |
+| **Zeitachse** | Veröffentlichungshistorie und wichtige Aktualisierungen im Zeitverlauf. |
+| **Benchmarks** | Leistungsergebnisse aus verschiedenen Benchmarks zum Vergleich ähnlicher Modelle. |
+| **Verfügbarkeit** | Unterscheidet aktive Gateway-Routen von kommenden, inaktiven und externen Anbieterangeboten. |
+| **Preise** | Detaillierte Preise in USD, vereinheitlicht für einfache Vergleiche und Kostenschätzungen. |
+| **Gateway** | Direkte Links und Schnellstarts, wenn eine öffentliche Gateway-Route verfügbar ist. |
+| **Leistung** | Beobachtete Latenz, Durchsatz und Erfolgsdaten gerouteter Gateway-Anfragen, sofern genügend Daten vorliegen. |
+
+## Katalogmodelle und routbare Modelle
+
+Verwende diese Begriffe einheitlich:
+
+| Begriff | Bedeutung |
+| --- | --- |
+| Katalogmodell | Phaseo erfasst Metadaten zum Modell. Eine öffentliche Route muss nicht vorhanden sein. |
+| Routbares Modell | Mindestens eine Anbieterroute ist aktuell auf Phaseo Gateway aktiv. |
+| Externes Angebot | Phaseo erfasst ein Anbieterangebot, das nicht über Gateway ausgeführt wird. |
+
+Für die programmatische Suche gibt `GET /v1/models` standardmäßig nur routbare Modelle zurück. Setze `availability=all`, um den vollständigen Katalog anzuzeigen.
+
+---
+
+## Beispiel einer Modellseite
+
+So könnten die Daten eines Modells in Phaseo aussehen:
+
+![GPT-5-Modellseite](../../../images/gemini-3-page.png)
+
+---
+
+## Modelle vergleichen
+
+Vergleiche Modelle anhand von Leistung, Preisen und Funktionen nebeneinander.
+Phaseo hebt Unterschiede automatisch hervor und sortiert Modelle nach verschiedenen Benchmark-Durchschnittswerten.
+
+<Columns cols={2}>
+	<Card
+		title="Modelle vergleichen"
+		icon="scale"
+		href="./pricing-performance.mdx"
+	>
+		Analysiere den Zielkonflikt zwischen Kosten und Leistung, um das passende Modell für deinen Workload zu wählen.
+	</Card>
+	<Card
+		title="Benchmarks ansehen"
+		icon="chart-column-increasing"
+		href="./benchmarks.mdx"
+	>
+		Erfahre, wie Benchmark-Ergebnisse ermittelt und vereinheitlicht werden.
+	</Card>
+</Columns>
+
+---
+
+## Modelle nach Kriterien finden
+
+Nutze Filter und Tags in der Phaseo-Oberfläche, um passende Modelle zu finden:
+
+- **Nach Anbieter:** „Alle Anthropic-Modelle anzeigen.“
+- **Nach Funktion:** „Modelle mit Unterstützung für strukturierte JSON-Antworten auflisten.“
+- **Nach Benchmark:** „Die 10 besten Modelle auf GPQA.“
+- **Nach Preis:** „Modelle unter 0,01 USD pro 1.000 Tokens.“
+- **Nach Veröffentlichungsdatum:** „Kürzlich veröffentlichte Modelle.“
+
+Kombiniere Filter, um genau das zu finden, was du brauchst.
+
+---
+
+## Modellaktualisierungen beitragen
+
+KI entwickelt sich schnell. Phaseo ist deshalb auf Beiträge angewiesen, damit Modelldaten aktuell bleiben.
+Erstelle ein GitHub-Issue, um eine Korrektur zu melden, fehlende Benchmarks einzureichen oder neue Metadaten anzufordern. Füge die Modellseite und offizielle Quellen hinzu; bestätigte Änderungen werden im Datenbankeditor übernommen.
+
+<Card
+	title="Modelldaten beitragen"
+	icon="github"
+	href="../contributing/editing-a-model.mdx"
+	horizontal
+>
+	Erfahre, wie du eine Modellkorrektur meldest oder einen fehlenden Eintrag anforderst.
+</Card>
+
+---
+
+## Nächste Schritte
+
+Jetzt, da du weißt, wie Modelle aufgebaut sind, kannst du die **Organisationen** kennenlernen, die sie entwickeln.
+
+<Card
+	title="Organisationen kennenlernen"
+	icon="building"
+	href="./organisations.mdx"
+	horizontal
+>
+	Entdecke die Unternehmen und Forschungsteams hinter den einzelnen Modellen.
+</Card>

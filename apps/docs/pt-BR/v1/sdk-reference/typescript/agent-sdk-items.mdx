@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "Trabalhar com itens"
+description: "Exiba mensagens tipadas, raciocínio, atividade de ferramentas, erros e saídas finais."
+---
+
+Use itens para criar uma linha do tempo estruturada do agente sem analisar eventos específicos de provedores. Execuções em streaming e concluídas expõem o mesmo contrato ordenado `AgentItem<TOutput>`.
+
+## Tipos de item
+
+`AgentItem<TOutput>` é uma união discriminada:
+
+| tipo | Campos importantes | Representa |
+| --- | --- | --- |
+| `message` | `role`, `content` | Texto do assistente ou da conversa |
+| `reasoning` | `text` | Raciocínio fornecido pelo modelo |
+| `tool_call` | `toolCallId`, `name`, `input` | Uma chamada de ferramenta proposta |
+| `tool_result` | `toolCallId`, `name`, `output` | Uma chamada de ferramenta concluída |
+| `error` | `message`, detalhes opcionais da ferramenta | Um erro do provedor ou da ferramenta |
+| `output` | `value` | A saída final analisada do agente |
+
+## Renderizar uma linha do tempo em streaming
+
+O TypeScript determina o tipo de cada item a partir da propriedade `type`:
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## Ler os itens após a conclusão
+
+O resultado concluído contém os mesmos formatos de item, na mesma ordem:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+Isso permite exibir a atividade em tempo real e reconstruir a mesma linha do tempo depois usando o estado persistido da execução.
+
+## Acessar dados específicos do provedor
+
+A saída do provedor é normalizada em tipos portáveis de item. Quando uma integração ainda precisa de um campo específico do provedor, os itens normalizados mantêm o payload original em `rawProviderItem`.
+
+Sempre que possível, mantenha a lógica do produto nos campos portáveis. Trate `rawProviderItem` como alternativa para integrações específicas do provedor, não como o contrato padrão do aplicativo.
+
+## Guias relacionados
+
+- [Transmissão contínua](./agent-sdk-streaming.mdx)
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Hooks do ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

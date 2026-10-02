@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { ExternalLink } from "lucide-react";
 import { ArtificialAnalysisOverview } from "./ArtificialAnalysisOverview";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
@@ -121,13 +122,14 @@ function getCategoryColor(category: string): string {
 	return colors[Math.abs(hash) % colors.length];
 }
 
-export default function BenchmarkOverview({
+export default async function BenchmarkOverview({
 	benchmark,
 	artificialAnalysisRankings = [],
 }: {
 	benchmark: BenchmarkPage;
 	artificialAnalysisRankings?: PublicBenchmarkRanking[];
 }) {
+	const t = await getTranslations("Catalogue.benchmarks");
 	if (isArtificialAnalysisBenchmark(benchmark.id)) return <ArtificialAnalysisOverview benchmark={benchmark} rankings={artificialAnalysisRankings} />;
 	if (isEpochCapabilitiesIndex(benchmark.id)) return <EpochCapabilitiesOverview benchmark={benchmark} />;
 	const results = benchmark.results ?? [];
@@ -244,7 +246,7 @@ export default function BenchmarkOverview({
 					<div className="flex flex-wrap items-center gap-2">
 						{benchmark.type ? (
 							<Badge variant="outline">
-								Type: {benchmark.type}
+								{t("typeLabel")}: {benchmark.type}
 							</Badge>
 						) : null}
 						{renderCategories()}
@@ -265,7 +267,7 @@ export default function BenchmarkOverview({
 								target="_blank"
 								rel="noopener noreferrer"
 							>
-								View benchmark source
+								{t("viewSource")}
 								<ExternalLink className="ml-2 h-4 w-4" />
 							</Link>
 						</Button>

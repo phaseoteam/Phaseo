@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { ModelPricingHistoryRule } from "@/lib/fetchers/models/getModelPricingHistoryRules";
 import type { ModelUsageDailyBreakdownRow } from "@/lib/fetchers/models/getModelUsageDailyBreakdown";
@@ -34,6 +35,7 @@ export default function ModelPricingInsightsClient({
 	effectivePricingRows: ModelEffectivePricingDailyRow[];
 	showPageHeader?: boolean;
 }) {
+	const tPricing = useTranslations("Catalogue.modelDetail.pricing");
 	const [providerView, setProviderView] = useState<string | null>(null);
 	useEffect(() => subscribeProviderView(modelId, setProviderView), [modelId]);
 	const visibleProviders = useMemo(() => {
@@ -71,10 +73,9 @@ export default function ModelPricingInsightsClient({
 			{showPageHeader ? (
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div className="space-y-1">
-						<h1 className="text-2xl font-semibold tracking-tight">Pricing</h1>
+						<h1 className="text-2xl font-semibold tracking-tight">{tPricing("title")}</h1>
 						<p className="text-sm text-muted-foreground">
-							List price is the headline provider rate per million tokens. Effective
-							price is weighted by observed gateway traffic over the last 30 days.
+							{tPricing("overviewDescription")}
 						</p>
 					</div>
 					{availablePlans.length > 1 ? (

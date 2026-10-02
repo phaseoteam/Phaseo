@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { DisplayNumber, DisplayTimestamp } from "@/components/display/DisplayValue";
 import { fetchFrontendFreeRouterOverview } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -34,19 +35,26 @@ function CostNanos({ value }: { value: number }) {
 	);
 }
 
-function formatModality(value: string): string {
-	return value
-		.replace(/_/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
+function formatModality(value: string, labels: Record<string, string>): string {
+	const key = value.trim().toLowerCase().replace(/[_-]/g, "");
+	return labels[key] ?? value.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function ModelModalityBadges({ values }: { values: string[] }) {
-	if (!values.length) return <span className="text-xs text-muted-foreground">Unknown</span>;
+function ModelModalityBadges({
+	values,
+	unknownLabel,
+	modalityLabels,
+}: {
+	values: string[];
+	unknownLabel: string;
+	modalityLabels: Record<string, string>;
+}) {
+	if (!values.length) return <span className="text-xs text-muted-foreground">{unknownLabel}</span>;
 	return (
 		<div className="flex flex-wrap gap-1">
 			{values.map((value) => (
 				<Badge key={value} variant="outline" className="text-[11px] font-normal">
-					{formatModality(value)}
+					{formatModality(value, modalityLabels)}
 				</Badge>
 			))}
 		</div>
@@ -74,61 +82,81 @@ function SummaryMetric({
 }
 
 export default async function FreeRouterOverview() {
+	const t = await getTranslations("Catalogue.models.freeRouter");
+	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
+	const locale = await getLocale();
 	const overview = await fetchFrontendFreeRouterOverview();
+	const modalityLabels = {
+		text: tMetadata("modalityText"),
+		image: tMetadata("modalityImage"),
+		video: tMetadata("modalityVideo"),
+		audio: tMetadata("modalityAudio"),
+		speech: tMetadata("modalitySpeech"),
+		audiospeech: tMetadata("modalitySpeech"),
+		audiotts: tMetadata("modalitySpeech"),
+		transcription: tMetadata("modalityTranscription"),
+		audiostt: tMetadata("modalityTranscription"),
+		audiomusic: tMetadata("modalityMusic"),
+		embedding: tMetadata("modalityEmbeddings"),
+		embeddings: tMetadata("modalityEmbeddings"),
+		moderation: tMetadata("modalityModeration"),
+		moderations: tMetadata("modalityModeration"),
+	};
 
 	return (
 		<div className="space-y-8">
 			<section className="space-y-3">
 				<div className="space-y-1">
-					<h2 className="text-xl font-semibold tracking-tight">Free model pool</h2>
+					<h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
 					<p className="text-sm text-muted-foreground">
-						These are the currently eligible models behind{" "}
-						<span className="font-mono text-foreground">{FREE_ROUTER_MODEL_ID}</span>.
-						Usage below is counted only when requests were made through the router itself.
+						{t.rich("description", {
+							routerId: FREE_ROUTER_MODEL_ID,
+							code: (chunks) => <span className="font-mono text-foreground">{chunks}</span>,
+						})}
 					</p>
 				</div>
 				<div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 					<SummaryMetric
-						label="Eligible models"
+						label={t("eligibleModels")}
 						value={<DisplayNumber value={overview.summary.eligibleModels} />}
-						description="Canonical models currently reachable via the free router."
+						description={t("eligibleModelsDescription")}
 					/>
 					<SummaryMetric
-						label="Eligible providers"
+						label={t("eligibleProviders")}
 						value={<DisplayNumber value={overview.summary.eligibleProviders} />}
-						description="Active provider/model routes contributing to the free pool."
+						description={t("eligibleProvidersDescription")}
 					/>
 					<SummaryMetric
-						label="Requests (30d)"
+						label={t("requests30d")}
 						value={<DisplayNumber value={overview.summary.routedRequests30d} />}
-						description="Requests that entered through the router in the last 30 days."
+						description={t("requestsDescription")}
 					/>
 					<SummaryMetric
-						label="Spend (30d)"
+						label={t("spend30d")}
 						value={<CostNanos value={overview.summary.totalCostNanos30d} />}
-						description="Billed spend on router traffic over the last 30 days."
+						description={t("spendDescription")}
 					/>
 				</div>
 			</section>
 
 			<section className="space-y-3 border-t border-border/60 pt-6">
 				<div className="space-y-1">
-					<h2 className="text-xl font-semibold tracking-tight">Eligible models</h2>
+					<h2 className="text-xl font-semibold tracking-tight">{t("eligibleModelsTitle")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Usage is grouped by canonical model and shows the active free API model ID when it is unambiguous.
+						{t("eligibleModelsTableDescription")}
 					</p>
 				</div>
 				{overview.models.length > 0 ? (
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Model</TableHead>
-								<TableHead>Providers</TableHead>
-								<TableHead>Input</TableHead>
-								<TableHead>Output</TableHead>
-								<TableHead className="text-right">Requests (30d)</TableHead>
-								<TableHead className="text-right">Spend (30d)</TableHead>
-								<TableHead className="text-right">Last routed</TableHead>
+								<TableHead>{t("model")}</TableHead>
+								<TableHead>{t("providers")}</TableHead>
+								<TableHead>{tMetadata("input")}</TableHead>
+								<TableHead>{tMetadata("output")}</TableHead>
+								<TableHead className="text-right">{t("requests30d")}</TableHead>
+								<TableHead className="text-right">{t("spend30d")}</TableHead>
+								<TableHead className="text-right">{t("lastRouted")}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -149,19 +177,19 @@ export default async function FreeRouterOverview() {
 										<Badge variant="outline">{model.providerCount}</Badge>
 									</TableCell>
 									<TableCell>
-										<ModelModalityBadges values={model.inputModalities} />
+										<ModelModalityBadges values={model.inputModalities} unknownLabel={t("unknown")} modalityLabels={modalityLabels} />
 									</TableCell>
 									<TableCell>
-										<ModelModalityBadges values={model.outputModalities} />
+										<ModelModalityBadges values={model.outputModalities} unknownLabel={t("unknown")} modalityLabels={modalityLabels} />
 									</TableCell>
-									<TableCell className="text-right font-mono">
-										<DisplayNumber value={model.usage.requests30d} />
-									</TableCell>
-									<TableCell className="text-right font-mono">
-										<CostNanos value={model.usage.totalCostNanos30d} />
+					<TableCell className="text-right font-mono">
+						{<DisplayNumber value={model.usage.requests30d} />}
+					</TableCell>
+					<TableCell className="text-right font-mono">
+						{<CostNanos value={model.usage.totalCostNanos30d} />}
 									</TableCell>
 									<TableCell className="text-right text-sm text-muted-foreground">
-										<DisplayTimestamp value={model.usage.lastRoutedAt} fallback="Never" />
+										{<DisplayTimestamp value={model.usage.lastRoutedAt} fallback={t("never")} />}
 									</TableCell>
 								</TableRow>
 							))}
@@ -170,9 +198,9 @@ export default async function FreeRouterOverview() {
 				) : (
 					<Empty className="rounded-lg border p-8">
 						<EmptyHeader>
-							<EmptyTitle>No eligible free models right now</EmptyTitle>
+							<EmptyTitle>{t("noEligibleTitle")}</EmptyTitle>
 							<EmptyDescription>
-								The free router currently has no active eligible models for normal text routing.
+								{t("noEligibleDescription")}
 							</EmptyDescription>
 						</EmptyHeader>
 					</Empty>

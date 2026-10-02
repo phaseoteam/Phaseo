@@ -1,0 +1,96 @@
+---
+title: "LiteLLM से माइग्रेट करें"
+sidebarTitle: "LiteLLM"
+description: "ऐप के मौजूदा OpenAI-संगत अनुरोध पथ को बनाए रखते हुए LiteLLM प्रॉक्सी को Phaseo से बदलें।"
+icon: "blocks"
+---
+
+अगर आपका ऐप OpenAI-संगत क्लाइंट से LiteLLM प्रॉक्सी को कॉल करता है, तो इस गाइड का उपयोग करें। पहले प्रॉक्सी सीमा बदलें, फिर aliases, रूटिंग नियम और साझा डिफ़ॉल्ट को सोच-समझकर मैप करें।
+
+## क्या बदलेगा
+
+| सेटिंग | पहले | बाद में |
+| --- | --- | --- |
+| बेस URL | आपका LiteLLM प्रॉक्सी | `https://api.phaseo.app/v1` |
+| API कुंजी | LiteLLM प्रॉक्सी कुंजी | `PHASEO_API_KEY` |
+| मॉडल aliases | LiteLLM कॉन्फ़िगरेशन | Phaseo मॉडल ID या ऐप aliases |
+| रूटिंग डिफ़ॉल्ट | LiteLLM कॉन्फ़िगरेशन | Phaseo presets और रूटिंग सेटिंग |
+
+<Steps>
+<Step title="प्रॉक्सी कॉन्फ़िगरेशन की सूची बनाएं">
+
+मौजूदा LiteLLM डिप्लॉयमेंट में उपयोग किए जाने वाले सभी मॉडल aliases, fallbacks, प्रोवाइडर नियम, retry नीतियां, बजट, callbacks और पर्यावरण चर सूचीबद्ध करें। पहचानें कि कौन-सी सेटिंग साझा नीति है और कौन-सी केवल एक ऐप के लिए है।
+
+</Step>
+
+<Step title="प्रॉक्सी endpoint बदलें">
+
+OpenAI-संगत अनुरोध कोड बनाए रखें और केवल बेस URL तथा कुंजी बदलें।
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Aliases और रूटिंग नियम मैप करें">
+
+हर प्रोडक्शन मॉडल को `GET /v1/models` से सत्यापित करें। अगर कॉल करने वाले आंतरिक aliases पर निर्भर हैं, तो हर अनुरोध संपादित करने के बजाय ऐप की एक सीमा पर उन्हें सामान्य प्रारूप में बदलें।
+
+दोबारा उपयोग होने वाले प्रॉम्प्ट, पैरामीटर और प्रोवाइडर प्रतिबंधों को [Presets](../guides/presets.mdx) में ले जाएं। प्रोवाइडर क्रम और fallbacks को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
+
+</Step>
+
+<Step title="प्रोडक्शन वर्कफ़्लो की जांच करें">
+
+स्ट्रीमिंग, टूल, संरचित आउटपुट, retries, त्रुटि मैपिंग और LiteLLM डिप्लॉयमेंट में callbacks से संभाली जाने वाली ऑब्ज़र्वेबिलिटी का परीक्षण करें। ट्रैफ़िक धीरे-धीरे बदलने से पहले विलंबता, आउटपुट, टोकन उपयोग और लागत की तुलना करें।
+
+</Step>
+</Steps>
+
+## माइग्रेशन चेकलिस्ट
+
+- LiteLLM URL, कुंजियां और डिप्लॉयमेंट निर्भरताएं दर्ज की गई हैं।
+- हर प्रोडक्शन मॉडल और alias का Phaseo मैपिंग स्पष्ट है।
+- साझा डिफ़ॉल्ट presets या ऐप की एक सीमा पर ले जाए गए हैं।
+- इस्तेमाल होने पर स्ट्रीमिंग, टूल और संरचित आउटपुट staging में पास होते हैं।
+- ज़रूरी callbacks और टेलीमेट्री का विकल्प तय है।
+- रोलबैक अब भी केवल endpoint और कुंजी की सेटिंग बदलने तक सीमित है।
+
+## अगले चरण
+
+- [Presets](../guides/presets.mdx)
+- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)

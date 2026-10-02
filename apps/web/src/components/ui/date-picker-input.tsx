@@ -1,6 +1,8 @@
 "use client"
 
 import { CalendarIcon } from "lucide-react"
+import { arSA, de, enGB, enUS, es, fr, hi, ja, ptBR, zhCN } from "date-fns/locale"
+import { useLocale, useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -29,6 +31,20 @@ function formatDateInput(date: Date): string {
   return `${year}-${month}-${day}`
 }
 
+const DATE_PICKER_LOCALES = {
+  "ar-SA": arSA,
+  "de-DE": de,
+  "en-GB": enGB,
+  "en-US": enUS,
+  "en-XA": enUS,
+  "es-ES": es,
+  "fr-FR": fr,
+  hi,
+  ja,
+  "pt-BR": ptBR,
+  "zh-Hans": zhCN,
+} as const
+
 interface DatePickerInputProps {
   id?: string
   value: string
@@ -43,11 +59,13 @@ export function DatePickerInput({
   id,
   value,
   onChange,
-  placeholder = "Pick a date",
+  placeholder,
   name,
   disabled = false,
   className,
 }: DatePickerInputProps) {
+  const locale = useLocale()
+  const t = useTranslations("Common.ui.datePicker")
   const format = useDisplayFormatters()
   const selected = parseDateInput(value)
 
@@ -67,12 +85,13 @@ export function DatePickerInput({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {value ? format.calendarDate(`${value}T00:00:00.000Z`, value) : placeholder}
+            {value ? format.calendarDate(`${value}T00:00:00.000Z`, value) : placeholder ?? t("pickDate")}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <Calendar
             mode="single"
+            locale={DATE_PICKER_LOCALES[locale as keyof typeof DATE_PICKER_LOCALES] ?? enUS}
             selected={selected}
             onSelect={(date) => onChange(date ? formatDateInput(date) : "")}
             className="rounded-lg border"

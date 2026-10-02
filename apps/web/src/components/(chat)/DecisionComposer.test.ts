@@ -1,11 +1,19 @@
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { createElement, type ReactNode } from "react";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import { englishSettingsUiMessages } from "@/i18n/default-messages";
+import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import {
 	DecisionComposer,
 	createDefaultDecisionDraft,
 	serializeDecisionDraft,
 	validateDecisionDraft,
 } from "./DecisionComposer";
+
+function renderToStaticMarkup(children: ReactNode) {
+	const providerProps = { locale: "en-GB" as const, timeZone: "UTC", messages: { SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }, children };
+	return renderMarkup(createElement(NextIntlClientProvider, providerProps));
+}
 
 describe("DecisionComposer draft helpers", () => {
 	it("starts score mode with one empty level numbered from zero", () => {

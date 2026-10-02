@@ -1,23 +1,25 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
-	{ href: "/models", label: "Models" },
-	{ href: "/chat", label: "Chat" },
-	{ href: "/compare", label: "Compare" },
-	{ href: "/apps", label: "Apps" },
-	{ href: "/rankings", label: "Rankings" },
-];
+	{ href: "/models", key: "models" },
+	{ href: "/chat", key: "chat" },
+	{ href: "/compare", key: "compare" },
+	{ href: "/api-providers", key: "providers" },
+	{ href: "/apps", key: "apps" },
+	{ href: "/rankings", key: "rankings" },
+] as const;
 
 export default function MainNav() {
 	const pathname = usePathname() ?? "/";
+	const t = useTranslations("Common.nav");
 
 	return (
 		<nav className="flex items-center gap-1 xl:gap-1.5">
-			{LINKS.map(({ href, label }) => {
+			{LINKS.map(({ href, key }) => {
 				const isActive = pathname === href || pathname.startsWith(href + "/");
 
 				return (
@@ -33,11 +35,10 @@ export default function MainNav() {
 							isActive && "bg-zinc-100/90 text-foreground dark:bg-zinc-900/70"
 						)}
 					>
-						{label}
+						{t(key)}
 					</Link>
 				);
 			})}
 		</nav>
 	);
 }
-

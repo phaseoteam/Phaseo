@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+
 import {
 	Card,
 	CardContent,
@@ -33,15 +35,18 @@ export default function OpenVsClosedCard({
 }: {
 	data?: Array<{ date: string; open: number; closed: number }>;
 }) {
+	const tCopy = useTranslations("Site.landingGaps");
+	const locale = useLocale();
+
 	return (
 		<Card className="border-none bg-white/70 shadow-sm ring-1 ring-inset ring-zinc-200/60 backdrop-blur-sm dark:bg-zinc-950/60 dark:ring-zinc-800/60">
 			<CardHeader className="pb-2">
 				<CardTitle className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-					Open Source vs Proprietary
-				</CardTitle>
+{tCopy("copy085")}
+</CardTitle>
 				<CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-					Share of new releases crossing our prominence threshold
-				</CardDescription>
+{tCopy("copy086")}
+</CardDescription>
 			</CardHeader>
 			<CardContent className="h-48">
 				<ResponsiveContainer width="100%" height="100%">
@@ -49,6 +54,7 @@ export default function OpenVsClosedCard({
 						<XAxis dataKey="date" hide />
 						<YAxis hide />
 						<Tooltip
+							labelFormatter={(label) => { const value = String(label); const date = new Date(`${value}-01T00:00:00Z`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date); }}
 							cursor={{ strokeDasharray: "3 3" }}
 							contentStyle={{
 								backgroundColor: "rgba(24, 24, 27, 0.92)",
@@ -65,7 +71,7 @@ export default function OpenVsClosedCard({
 								const numericValue =
 									typeof value === "number" ? value : Number(value ?? 0);
 								return [
-									`${Math.round(numericValue * 100)}% share`,
+									tCopy("copy095", { share: new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(numericValue) }),
 									String(name ?? ""),
 								];
 							}}
@@ -84,7 +90,7 @@ export default function OpenVsClosedCard({
 						<Area
 							type="monotone"
 							dataKey="open"
-							name="Open Source"
+							name={tCopy("copy087")}
 							stackId="1"
 							stroke="#22c55e"
 							fill="url(#openFill)"
@@ -93,7 +99,7 @@ export default function OpenVsClosedCard({
 						<Area
 							type="monotone"
 							dataKey="closed"
-							name="Proprietary"
+							name={tCopy("copy088")}
 							stackId="1"
 							stroke="#f97316"
 							fill="url(#closedFill)"

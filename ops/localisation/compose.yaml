@@ -1,0 +1,73 @@
+name: phaseo-localisation
+
+services:
+  cache:
+    image: valkey/valkey:9.1.1
+    command: ["valkey-server", "--save", "60", "1", "--loglevel", "warning"]
+    restart: unless-stopped
+    read_only: true
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  database:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    env_file:
+      - ${WEBLATE_ENV_FILE:-.env}
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    tmpfs:
+      - /var/run/postgresql
+      - /tmp
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready --username=$${POSTGRES_USER} --dbname=$${POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  weblate:
+    image: weblate/weblate:2026.8.1.0
+    restart: unless-stopped
+    env_file:
+      - ${WEBLATE_ENV_FILE:-.env}
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    depends_on:
+      cache:
+        condition: service_healthy
+      database:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEBLATE_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - weblate-data:/app/data
+      - weblate-cache:/app/cache
+
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password
+
+volumes:
+  postgres-data:
+  valkey-data:
+  weblate-cache:
+  weblate-data:

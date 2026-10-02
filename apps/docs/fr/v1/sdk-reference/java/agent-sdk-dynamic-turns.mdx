@@ -1,0 +1,24 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez les paramètres du modèle et les outils entre les tours des agents Java."
+---
+
+Utilisez des callbacks dynamiques lorsque les tours suivants doivent tenir compte du contexte de l’application, des résultats d’outils précédents ou du nombre de tours terminés.
+
+Les valeurs dynamiques peuvent sélectionner :
+
+- le modèle ou les modèles de secours
+- les instructions
+- la température, top-p et le nombre maximal de jetons de sortie
+- la liste d’outils pour la prochaine requête au modèle
+
+Les outils peuvent mettre à jour le contexte de l’application via `RuntimeContext` et renvoyer `NextTurnParams` pour la requête suivante uniquement. Les remplacements du tour suivant sont enregistrés avec l’état en pause : l’approbation ne supprime donc pas les décisions de routage ou d’échantillonnage d’un outil.
+
+Veillez à ce que le contexte et les valeurs du tour suivant soient sérialisables si l’exécution peut être rechargée via `StateAccessor`.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)

@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "Code oder Dokumentation beitragen"
+description: "Phaseo lokal einrichten, eine gezielte Änderung prüfen und einen Pull Request öffnen."
+---
+
+Verwenden Sie diesen Ablauf für Code- und Dokumentationsänderungen. Für Modell-, Anbieter-, Preis-, Organisations- oder Benchmark-Datensätze [erstellen Sie stattdessen ein Katalog-Issue](./overview.mdx); eine lokale Einrichtung ist nicht erforderlich.
+
+## Ihren Fork einrichten
+
+Installieren Sie Git, Node.js ab 22.12 und pnpm. Erstellen Sie einen Fork des [Phaseo-Repositorys](https://github.com/phaseoteam/Phaseo), klonen Sie ihn und erstellen Sie eine neue Branch:
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## Die Änderung umsetzen und ansehen
+
+Die [Repositorystruktur](./repo-structure.mdx) zeigt die passende Anwendung oder das Paket. Bei reinen Markdown-Änderungen können Sie auch den GitHub-Dateieditor verwenden und dort einen Pull Request öffnen.
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+Befolgen Sie die zutreffenden `AGENTS.md`-Anweisungen. Bewahren Sie Geheimnisse in lokalen Umgebungsdateien auf und nehmen Sie sie nicht in Commits auf. Lokale App-Vorschauen können konfigurierte Backenddienste und eine normale Anmeldung erfordern.
+
+## Ihre Änderungen prüfen
+
+Führen Sie die für die geänderten Dateien passenden Prüfungen aus. Für Dokumentation:
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+Für Webänderungen:
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+Führen Sie bei Rendering- oder Routingänderungen einen Produktionsbuild aus. API-, SDK- und Schemaänderungen erfordern die entsprechenden Tests und Generierungsschritte. Siehe den [Beitragsleitfaden](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) im Stammverzeichnis.
+
+## Einen Pull Request öffnen
+
+Stagen Sie nur die geänderten Dateien, verwenden Sie eine aussagekräftige Commitnachricht und pushen Sie Ihre Branch:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Öffnen Sie einen Pull Request aus Ihrem Fork. Beschreiben Sie das Problem, die Änderungen und bestandene Prüfungen. Verlinken Sie zugehörige Issues und fügen Sie bei sichtbaren UI-Änderungen Screenshots hinzu. Bearbeiten Sie Reviewfeedback vor dem Merge; Änderungen sind nach Abschluss der entsprechenden Bereitstellung verfügbar.
+
+Befolgen Sie den [Verhaltenskodex](../community/code-of-conduct.mdx). Besprechen Sie größere oder unklare Änderungen vor dem Schreiben von Code.

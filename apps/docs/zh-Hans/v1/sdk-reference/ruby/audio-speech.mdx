@@ -1,0 +1,31 @@
+---
+icon: "music"
+title: "TTS（文字转语音）"
+description: "使用 Ruby SDK 调用 `/audio/speech`。"
+---
+
+**方法**：`client.generate_speech(...)` 或 `client.create_speech(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+### 主要参数
+- `model`（必填）：支持 TTS 的模型 ID。
+- `input`（必填）：要合成的文本。
+- `voice`：语音预设（因模型而异，例如 `alloy`）。
+- `format`：`mp3`、`wav`、`flac` 等。
+- `speed`：播放速度倍率（通常为 0.25–4）。
+
+### 返回值
+二进制音频数据
+

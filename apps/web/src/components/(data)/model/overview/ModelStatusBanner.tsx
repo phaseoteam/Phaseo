@@ -1,6 +1,7 @@
 import { AlertTriangle, Info, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface ModelStatusBannerProps {
 	status?: string | null;
@@ -13,6 +14,8 @@ export default function ModelStatusBanner({
 	status,
 	className,
 }: ModelStatusBannerProps) {
+	const t = useTranslations("Catalogue.models.detail.statusBanner");
+
 	if (status === "Rumoured") {
 		return (
 			<Alert
@@ -22,19 +25,20 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-				<AlertTitle>Rumoured Model</AlertTitle>
+				<AlertTitle>{t("rumouredTitle")}</AlertTitle>
 				<AlertDescription className="text-amber-900/90 dark:text-amber-100/90">
-					This model is rumoured to be coming soon. Any data here is subject
-					to change until the release is confirmed. Join our{" "}
-					<a
-						href={RUMOURED_DISCORD_LINK}
-						target="_blank"
-						rel="noreferrer"
-						className="font-medium underline underline-offset-4"
-					>
-						Discord
-					</a>{" "}
-					to be notified of new models and updates.
+					{t.rich("rumouredDescription", {
+						discord: (chunks) => (
+							<a
+								href={RUMOURED_DISCORD_LINK}
+								target="_blank"
+								rel="noreferrer"
+								className="font-medium underline underline-offset-4"
+							>
+								{chunks}
+							</a>
+						),
+					})}
 				</AlertDescription>
 			</Alert>
 		);
@@ -49,10 +53,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<Info className="h-4 w-4 text-sky-700 dark:text-sky-300" />
-				<AlertTitle>Announced Model</AlertTitle>
+				<AlertTitle>{t("announcedTitle")}</AlertTitle>
 				<AlertDescription className="text-sky-900/90 dark:text-sky-100/90">
-					This model has been announced, but not released. We await the full
-					release to make more information available.
+					{t("announcedDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -67,11 +70,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<Info className="h-4 w-4 text-violet-700 dark:text-violet-300" />
-				<AlertTitle>Withheld Model</AlertTitle>
+				<AlertTitle>{t("withheldTitle")}</AlertTitle>
 				<AlertDescription className="text-violet-900/90 dark:text-violet-100/90">
-					This model was announced with preliminary details but is currently
-					withheld and may never be released publicly. Information may change
-					at any time.
+					{t("withheldDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -86,10 +87,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<Info className="h-4 w-4 text-cyan-700 dark:text-cyan-300" />
-				<AlertTitle>Preview Model</AlertTitle>
+				<AlertTitle>{t("previewTitle")}</AlertTitle>
 				<AlertDescription className="text-cyan-900/90 dark:text-cyan-100/90">
-					This model is released as a preview. Availability, behaviour and pricing
-					may change before general availability.
+					{t("previewDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -104,11 +104,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<Info className="h-4 w-4 text-fuchsia-700 dark:text-fuchsia-300" />
-				<AlertTitle>Limited Access Model</AlertTitle>
+				<AlertTitle>{t("limitedAccessTitle")}</AlertTitle>
 				<AlertDescription className="text-fuchsia-900/90 dark:text-fuchsia-100/90">
-					This model is known to exist, but access is limited to selected
-					customers, trusted partners, or private preview programs. It is not
-					generally available through public routes.
+					{t("limitedAccessDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -123,11 +121,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-300" />
-				<AlertTitle>Deprecated Model</AlertTitle>
+				<AlertTitle>{t("deprecatedTitle")}</AlertTitle>
 				<AlertDescription className="text-orange-900/90 dark:text-orange-100/90">
-					This model has been marked deprecated. It is likely to be retired
-					soon. You should look to move off this model and onto a newer model
-					if you are using it.
+					{t("deprecatedDescription")}
 				</AlertDescription>
 			</Alert>
 		);
@@ -142,11 +138,9 @@ export default function ModelStatusBanner({
 				)}
 			>
 				<XCircle className="h-4 w-4 text-red-700 dark:text-red-300" />
-				<AlertTitle>Retired Model</AlertTitle>
+				<AlertTitle>{t("retiredTitle")}</AlertTitle>
 				<AlertDescription className="text-muted-foreground">
-					This model has reached end of life and can no longer be used. We keep
-					this page as an archive for historical metadata, benchmark context,
-					and any related subscription records.
+					{t("retiredDescription")}
 				</AlertDescription>
 			</Alert>
 		);

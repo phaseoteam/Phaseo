@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "Web Fetch サーバーツール"
+description: "リクエスト中にモデルが特定の URL を取得して読み込めるようにします。"
+---
+
+モデルが既知の URL を読む必要がある場合は、`phaseo:web_fetch` を使います。たとえば、ドキュメントページ、記事、変更履歴、PDF のようなテキストソースが対象です。
+
+モデルが取得するタイミングを判断して URL を指定し、サイズが制限されたページテキストをツールコンテキストとして受け取ります。
+
+## 動作のしくみ
+
+1. `{ "type": "phaseo:web_fetch" }` を `tools` に追加します。
+2. モデルが URL を取得する必要があるか判断します。
+3. Phaseo が設定済みのエンジンでコンテンツを取得して抽出します。
+4. 抽出されたテキスト、タイトル、URL、切り詰めに関するメタデータがモデルに返されます。
+5. モデルが最終応答を書き、必要に応じて追加の URL を取得します。
+
+## クイックスタート
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## 設定
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| パラメーター | 型 | 既定値 | 説明 |
+| --- | --- | --- | --- |
+| `engine` | string | インターフェースによって異なる | 取得エンジン: `auto`、`native`、`direct`、`exa`、`parallel`、`firecrawl`。 |
+| `max_chars` | integer | `12000` | モデルに返す抽出済みテキストの最大文字数。 |
+| `max_content_tokens` | integer | なし | `max_chars` を省略したときに使うトークン単位の別名。 |
+| `max_uses` | integer | `10` | サーバーツールのループ中に取得できる最大回数。 |
+| `allowed_domains` | string[] | なし | 取得元をこれらのドメインのみに制限します。 |
+| `blocked_domains` | string[] | なし | これらのドメインからの取得を拒否します。別名: `excluded_domains`。 |
+
+## エンジンの選択
+
+| エンジン | 動作 |
+| --- | --- |
+| `auto` | `/v1/messages` では Anthropic のネイティブ取得を使い、それ以外では設定済みなら Exa、そうでなければ Gateway の直接取得を使います。 |
+| `direct` | Gateway のランタイムから直接取得し、サイズを制限してテキストを抽出します。 |
+| `exa` | 設定されている場合は Exa のコンテンツ抽出を使います。 |
+| `parallel` | 設定されている場合は Parallel Extract を使います。 |
+| `firecrawl` | 設定されている場合は Firecrawl Scrape を使います。 |
+| `native` | `/v1/messages` で Anthropic ネイティブの `web_fetch_20260209` に変換します。他のインターフェースでは `direct` または管理エンジンを使ってください。 |
+
+HTTP(S) URL のみがサポートされています。Gateway の直接取得ではテキスト形式のコンテンツタイプを受け付け、HTML をプレーンテキストに変換してからモデルに返します。
+
+## Anthropic ネイティブ取得
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## ツールの結果
+
+管理対象の取得では、次のようなフィールドを含む JSON ツール結果が返ります。
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+モデルがページ全体を受け取ったと仮定する前に、`truncated` を確認してください。
+
+## 使用量と料金
+
+Web Fetch を呼び出すと、次の値が増えます。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+管理対象の取得料金では `server_tool_web_fetch_requests` を使う場合があります。モデルの料金カードにメーターが定義されている場合、プロバイダーのネイティブ取得使用量には `native_web_fetch_requests` が使われることがあります。
+
+## 関連ガイド
+
+- [Web Search](./web-search.mdx)
+- [サーバーツール](./index.mdx)
+- [Web Fetch を使って応答の根拠を示す](../../cookbook/tool-grounding-with-web-fetch.mdx)

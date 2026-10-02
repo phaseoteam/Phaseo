@@ -1,0 +1,10 @@
+---
+title: "वर्कस्पेस आमंत्रण बनाएं"
+sidebarTitle: "आमंत्रण बनाएं"
+badge: "बीटा"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "समय-सीमित वर्कस्पेस आमंत्रण बनाता है।"
+---
+<Note>इस एंडपॉइंट के लिए `workspaces:write` वाली प्रबंधन API कुंजी आवश्यक है।</Note>
+
+सादा `token` केवल एक बार लौटाया जाता है। इसे सुरक्षित रखें; बाद की सूची कार्रवाई में केवल preview मिलता है।

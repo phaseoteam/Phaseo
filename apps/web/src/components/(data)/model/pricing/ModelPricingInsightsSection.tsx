@@ -1,4 +1,5 @@
 import { CircleAlert } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import {
 	Empty,
 	EmptyContent,
@@ -66,6 +67,7 @@ export default async function ModelPricingInsightsSection({
 		"pending API release state"
 	);
 	const providersForDisplay = providers || [];
+	const tEmpty = await getTranslations("Catalogue.modelDetail.emptyStates");
 	const providerIds = Array.from(
 		new Set(providersForDisplay.map((provider) => provider.provider.api_provider_id)),
 	).sort((a, b) => a.localeCompare(b));
@@ -96,18 +98,17 @@ export default async function ModelPricingInsightsSection({
 						<EmptyMedia variant="icon">
 							<CircleAlert className="size-4" />
 						</EmptyMedia>
-						<EmptyTitle>{isPreview ? "No pricing history available yet" : "No pricing data available yet"}</EmptyTitle>
+						<EmptyTitle>{isPreview ? tEmpty("noHistoryTitle") : tEmpty("noPricingTitle")}</EmptyTitle>
 						<EmptyDescription>
 							{isPreview
-								? "Current submitted provider prices are shown in the provider table above."
-								: "No API pricing information is currently available for this model."}
+								? tEmpty("submittedPrices")
+								: tEmpty("noPricingDescription")}
 						</EmptyDescription>
 					</EmptyHeader>
 					<EmptyContent>
 						{!isPreview ? (
 							<EmptyDescription>
-								If you know providers we should integrate, please tell us on Discord
-								or open an issue on GitHub so we can add pricing data.
+								{tEmpty("suggestProviders")}
 							</EmptyDescription>
 						) : null}
 					</EmptyContent>

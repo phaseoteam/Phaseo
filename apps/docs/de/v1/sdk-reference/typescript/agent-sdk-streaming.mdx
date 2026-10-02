@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Stream Texte, Reasoning, Tool-Aktivitäten und vollständige Agent-Ereignisse."
+---
+
+Verwende `stream()`, wenn die Oberfläche die Antwort oder Tool-Aktivität des Agenten während des laufenden Prozesses anzeigen soll. Die Methode startet dieselbe fortsetzbare Zustandsmaschine wie `run()`, aber mit einem Streaming-Modellclient.
+
+## Text streamen
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## Ergebnis an mehreren Stellen lesen
+
+Stream-Consumer lassen sich wiedergeben. So können Rendering-, Telemetrie- und Persistenzcode denselben Lauf parallel verarbeiten:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## Stream auswählen
+
+- `getTextStream()` liefert den Antworttext.
+- `getReasoningStream()` liefert Reasoning-Updates, sofern das Modell sie bereitstellt.
+- `getItemsStream()` liefert typisierte `AgentItem<TOutput>`-Werte für Nachrichten, Reasoning, Tool-Aktivitäten, Fehler und Endausgaben.
+- `getToolStream()` liefert Tool-Aktivitäten.
+- `getFullStream()` liefert alle Laufzeitereignisse.
+
+Verwende `cancel()`, um den Lauf abzubrechen. Lokale Tools erhalten den Abbruch über ihr Laufzeitsignal.
+
+## Tool-Fortschritt streamen
+
+Tools, die als Async-Generator implementiert sind, können vorläufige Ergebnisse veröffentlichen. Sie erscheinen im vollständigen Stream als `tool.preliminary_result`-Ereignisse und bleiben dem abgeschlossenen Schritt zugeordnet.
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## Zugehörige Anleitungen
+
+- [Tools definieren und ausführen](./agent-sdk-tools.mdx)
+- [Mit typisierten Elementen arbeiten](./agent-sdk-items.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [Einen dauerhaften Agent-Loop erstellen](../../cookbook/agent-sdk-durable-loop.mdx)

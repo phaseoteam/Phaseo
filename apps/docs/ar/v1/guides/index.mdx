@@ -1,0 +1,66 @@
+---
+title: "الأدلة"
+description: "الإرشاد المناسب من Phaseo للإعداد الأولي وتطوير الميزات والتكاملات وعمليات الإنتاج."
+icon: "book-open"
+---
+
+ابدأ من هنا إذا كنت تعرف نوع العمل الذي تريد إنجازه وتبحث عن أسرع طريق إلى الدليل المناسب.
+
+## أول عملية تكامل
+
+إذا كان هذا أول تكامل لك مع Phaseo، فاتبع الخطوات التالية بالترتيب:
+
+1. [البدء السريع](../quickstart.mdx): أرسل طلبًا ناجحًا.
+2. [المصادقة](../developers/authentication.mdx): خزّن المفاتيح وأرسلها بأمان.
+3. [الأمثلة](./examples.mdx): انسخ أنماط الطلبات إلى تطبيقك.
+
+<Note>
+يمكنك استدعاء نماذج `:free` دون إيداع رصيد. أما النماذج المدفوعة فتتطلب رصيدًا متاحًا في المحفظة.
+</Note>
+
+## تطوير ميزات التطبيق
+
+استخدم هذه الأدلة بعد نجاح طلب أساسي، عندما تريد إضافة سلوكيات إلى المنتج.
+
+<Columns cols={2}>
+	<Card title="الوصفات" icon="chef-hat" href="../cookbook/index.mdx">
+		وصفات عملية للتوجيه المجاني والإعدادات المسبقة والمهام غير المتزامنة وإعداد وكلاء البرمجة.
+	</Card>
+	<Card title="التوجيه والبدائل الاحتياطية" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		تحكّم في ترتيب المزوّدين وسلوك التحويل عند الإخفاق ومفاضلات الموثوقية.
+	</Card>
+	<Card title="استدعاء الأدوات" icon="wrench" href="./tool-calling.mdx">
+		نفّذ أدوات الوظائف وفحوصات الأمان وحلقات الأدوات المستقرة.
+	</Card>
+	<Card title="أدوات الخادم" icon="sparkles" href="./server-tools/index.mdx">
+		استخدم أدوات التاريخ والوقت والبحث على الويب وجلب الصفحات وAdvisor التي تديرها Phaseo.
+	</Card>
+	<Card title="المخرجات المنظّمة" icon="braces" href="./structured-outputs.mdx">
+		استخدم المخططات للحصول على ردود متوقعة وقابلة للقراءة آليًا.
+	</Card>
+	<Card title="البث" icon="radio" href="./streaming.mdx">
+		قدّم ردودًا بزمن استجابة منخفض باستخدام SSE وضوابط مناسبة للإنتاج.
+	</Card>
+	<Card title="تخزين المطالبات مؤقتًا" icon="database-zap" href="./prompt-caching.mdx">
+		أعد استخدام سياق المطالبة الثابت عبر Chat Completions وResponses وAnthropic Messages.
+	</Card>
+</Columns>
+
+## التشغيل في بيئة الإنتاج
+
+استخدم هذه الأدلة عندما يصبح حجم الزيارات والموثوقية والأمان ودورة حياة المفاتيح أمورًا مهمة.
+
+<Columns cols={2}>
+	<Card title="معالجة الأخطاء" icon="triangle-alert" href="../api-reference/errors.mdx">
+		تتبّع الأخطاء حسب رمز الحالة وشكل الخطأ واستراتيجية إعادة المحاولة.
+	</Card>
+	<Card title="حدود المعدل" icon="gauge" href="../api-reference/limits.mdx">
+		خطط لمعدل النقل والتراجع التدريجي عند زيادة الحمل.
+	</Card>
+	<Card title="أفضل الممارسات" icon="shield-check" href="../developers/best-practices.mdx">
+		قائمة تحقق لتعزيز الموثوقية والأمان.
+	</Card>
+	<Card title="مفاتيح API للإدارة" icon="key-round" href="../developers/management-api-keys.mdx">
+		أتمت دورة حياة المفاتيح وعزل البيئات.
+	</Card>
+</Columns>

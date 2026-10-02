@@ -1,0 +1,139 @@
+---
+title: "प्रीसेट"
+description: "अपनी टीम के लिए Gateway कॉन्फ़िगरेशन को दोबारा उपयोग करने के लिए सेव करें।"
+icon: "sliders-horizontal"
+---
+
+प्रीसेट दोबारा इस्तेमाल किए जा सकने वाले कॉन्फ़िगरेशन हैं, जिनसे टीमें prompts, model preferences और routing defaults को मानकीकृत कर सकती हैं। इन्हें Phaseo dashboard में प्रबंधित करके टीम के साथ साझा किया जा सकता है।
+
+## क्विकस्टार्ट
+
+<Steps>
+<Step title="प्रीसेट बनाएँ">
+
+**डैशबोर्ड -> सेटिंग -> प्रीसेट** खोलें और `release-summary` जैसे स्पष्ट slug वाला प्रीसेट बनाएँ। केवल वे defaults जोड़ें जिन्हें callers के बीच साझा करना है।
+
+</Step>
+
+<Step title="अनुरोध में प्रीसेट का संदर्भ दें">
+
+Caller को user input पर ध्यान देने दें; prompt, parameters और routing के स्थिर defaults प्रीसेट से आएँ।
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+	  -d '{
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours."
+	  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+	  model: "@release-summary",
+	  input: "Generate a release summary for the last 24 hours.",
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response({
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours.",
+})
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="रूटिंग का परिणाम जाँचें">
+
+**Gateway -> उपयोग** में अनुरोध खोलें और पुष्टि करें कि कौन से defaults लागू हुए तथा किस provider ने उसे पूरा किया।
+
+</Step>
+</Steps>
+
+## प्रीसेट में क्या हो सकता है
+
+- ऐसा सिस्टम प्रॉम्प्ट जो हर अनुरोध से पहले जोड़ा जाए।
+- अनुमति-प्राप्त मॉडल या मॉडल परिवार।
+- रूटिंग प्राथमिकताओं के लिए प्रदाता की अनुमति/अनदेखी सूचियाँ।
+- `temperature`, `top_p`, `max_tokens` और मिलती-जुलती सेटिंग के डिफ़ॉल्ट पैरामीटर।
+- समर्थित मॉडल के लिए तर्क के वैकल्पिक डिफ़ॉल्ट।
+
+प्रीसेट नाम `@` से शुरू होते हैं, ताकि उन्हें आसानी से पहचाना जा सके।
+
+प्रीसेट को केवल request के `model` फ़ील्ड से बुलाएँ। Phaseo अलग `preset` request फ़ील्ड नहीं देता।
+
+- Private और workspace presets `@{slug}` उपयोग करते हैं और API key के workspace में resolve होते हैं।
+- Public presets `@{username}/{slug}` उपयोग करते हैं और किसी भी workspace से resolve हो सकते हैं। उदाहरण: `@octavia/release-summary`।
+
+Public publishing के लिए enabled public profile और username ज़रूरी हैं। Public slug का टकराव publisher के दायरे में रहता है, इसलिए दो publishers बिना भ्रम के एक ही slug उपयोग कर सकते हैं। Usernames वैश्विक स्तर पर unique होते हैं। Slugs छोटे अक्षरों में normalize होते हैं और इनमें अक्षर, अंक, hyphen, underscore, period और colon चल सकते हैं।
+
+## संस्करण और मार्केटप्लेस फ़ोर्क
+
+बदलाव सेव करने पर private draft अपडेट होता है। बदलाव तैयार होने पर **नया version प्रकाशित करें** चुनें; Phaseo immutable numbered release बनाता है और समीक्षा के लिए पुराने versions रखता है।
+
+Preset owners चुन सकते हैं कि release labels कैसे दिखें:
+
+- **क्रमिक:** `v1`, `v2`, `v3`।
+- **Semantic versioning:** स्पष्ट SemVer labels, जैसे `1.2.0`, `2.0.0-beta.1` या `1.4.2+build.7`।
+- **तारीख आधारित:** `YYYY.MM.DD`; एक ही तारीख़ पर कई releases हों तो numeric suffix, जैसे `2026.08.02.2`।
+
+Phaseo आंतरिक रूप से अलग monotonic release number रखता है, ताकि चुने गए public label format से स्वतंत्र chronology, upstream तुलना और lineage निश्चित रहें।
+
+Marketplace copies उसी सटीक upstream version पर pinned रहती हैं जिसे उन्होंने कॉपी किया था। Publisher update जारी करे, तो copy में सूचना दिखती है। उसे लागू करने पर केवल copy का draft अपडेट होता है; workspace owner समीक्षा करके स्पष्ट रूप से प्रकाशित कर सकता है, जबकि upstream author production behavior नहीं बदल सकता।
+
+Phaseo हर fork का immediate source और पूरी ancestry दोनों बनाए रखता है। इसलिए marketplace pages direct forks और सभी descendants में अंतर कर सकते हैं, भले ही किसी preset को कई बार कॉपी करके फिर से प्रकाशित किया गया हो।
+
+## प्रीसेट कैसे merge होते हैं
+
+Gateway context में अनुरोध प्रीसेट के साथ resolve हो, तो provider routing से पहले प्रीसेट लागू होता है:
+
+- Default parameters केवल request body में अनुपस्थित fields भरते हैं। Caller के पहले से दिए values को overwrite नहीं करते।
+- Request में पहले से system message हो, तो preset prompt उससे पहले जोड़ा जाता है। Anthropic-style `system` field हो, तो prompt उसी में जोड़ा जाता है।
+- प्रदाता की अनुमति/अनदेखी सूचियाँ चयन से पहले लागू होती हैं, इसलिए वे fallback pool घटाती हैं; वे केवल सजावटी लेबल नहीं हैं।
+- Preset की allowed-model सूची से बाहर के मॉडल वाले अनुरोध जल्दी reject होते हैं; उन्हें चुपचाप दूसरे मॉडल पर route नहीं किया जाता।
+
+इस तरह presets reusable request defaults और हल्के compatibility transforms का मुख्य सार्वजनिक तरीका हैं; हर caller को वही prompt या parameter logic दोहरानी नहीं पड़ती।
+
+## वर्तमान सार्वजनिक preset सुविधाएँ
+
+Dashboard में preset flow जानबूझकर request shaping के एक स्थिर और स्पष्ट उपसमूह तक सीमित है:
+
+- सिस्टम प्रॉम्प्ट जोड़ना
+- अनुमत मॉडल की सूचियाँ
+- प्रदाता की अनुमति/अनदेखी से जुड़ी रूटिंग सीमाएँ
+- डिकोडिंग और जनरेशन के डिफ़ॉल्ट
+- तर्क के डिफ़ॉल्ट
+
+अधिक जटिल caller-specific transforms चाहिए, तो उन्हें एक application boundary layer में रखें और टीम के साझा defaults के लिए presets का उपयोग करें।
+
+## प्रीसेट प्रबंधित करें
+
+**डैशबोर्ड -> सेटिंग -> प्रीसेट** में presets बनाएँ और प्रबंधित करें। जिन workflows में prompt, routing या caching behavior का अंतर महत्वपूर्ण हो, उनके लिए अलग slugs रखें।
+
+## प्रीसेट कब उपयोग करें
+
+- कई services में system prompts मानकीकृत करें।
+- compliance के लिए routing को स्वीकृत providers तक सीमित करें।
+- environments में default parameters एक जैसे रखें।
+- migration projects को prompt, routing और parameter defaults के लिए टिकाऊ स्थान दें, जबकि application code लगभग वैसा ही रहे।
+
+## संबंधित गाइड
+
+- [प्रीसेट पर प्रतिक्रिया लें](./preset-feedback.mdx)
+- [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
+- [इन्फ़रेंस पैरामीटर](./inference-parameters.mdx)
+- [फ़ीचर समानता मैट्रिक्स](../migration-guides/feature-parity-matrix.mdx)

@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/Logo";
@@ -95,6 +96,7 @@ export default function ProviderCatalogPreviewDetailClient({
 	policyNotice?: ReactNode;
 	accountQueryScope?: AccountQueryScope | null;
 }) {
+	const tx = useTranslations();
 	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const query = useQuery<AuthenticatedProviderCatalogPreview[]>({
 		queryKey: webQueryKeys.account.providerPreviews({ scope }),
@@ -113,14 +115,14 @@ export default function ProviderCatalogPreviewDetailClient({
 	if (query.error) {
 		return (
 			<main className="flex flex-1 items-center justify-center px-4 py-24">
-				<p className="text-sm text-muted-foreground">Model details could not be loaded. We’ll retry automatically.</p>
+				<p className="text-sm text-muted-foreground">{tx("Common.ui.publicModelCopy.modelDetailsRetry")}</p>
 			</main>
 		);
 	}
 	if (query.isPending && query.isFetching && !initialPreview) {
 		return (
 			<main className="flex flex-1 items-center justify-center px-4 py-24">
-				<p className="text-sm text-muted-foreground">Loading model details…</p>
+				<p className="text-sm text-muted-foreground">{tx("Common.ui.publicModelCopy.loadingModelDetails")}</p>
 			</main>
 		);
 	}

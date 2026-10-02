@@ -1,0 +1,10 @@
+---
+title: "创建工作区邀请"
+sidebarTitle: "创建邀请"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "创建有时限的工作区邀请。"
+---
+<Note>此端点需要具有 `workspaces:write` 权限的管理 API 密钥。</Note>
+
+明文 `token` 只会返回一次。请安全保存；之后的列表操作只返回预览。

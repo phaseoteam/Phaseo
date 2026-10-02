@@ -1,0 +1,64 @@
+---
+title: "Créer un agent de procédures opérationnelles en Go"
+icon: "clipboard-check"
+description: "Utilisez le SDK Agent Go pour combiner quelques outils locaux déterministes dans un cycle de dépannage limité."
+---
+
+Utilisez cette recette lorsqu’un service Go doit répondre à des questions opérationnelles à partir de son contexte local.
+
+## 1. Préparer les SDK
+
+<Note type="warning">Le module Go Agent SDK ne dispose pas encore d’une version publique. Suivez les [instructions d’installation depuis les sources](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+
+## 2. Définir de petits outils d’exécution
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. Créer l’agent
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. Exécuter un tour de dépannage limité
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## Quand utiliser cette recette
+
+- le workflow appartient à un seul service Go
+- le contexte complémentaire est déjà accessible par des appels locaux ou internes
+- vous souhaitez un cycle d’agent sans introduire pour l’instant un système de tâches plus vaste
+
+## À lire aussi
+
+- [SDK Agent Go](../sdk-reference/go/agent-sdk.mdx)
+- [Ancrer les extractions avec web fetch](./tool-grounding-with-web-fetch.mdx)

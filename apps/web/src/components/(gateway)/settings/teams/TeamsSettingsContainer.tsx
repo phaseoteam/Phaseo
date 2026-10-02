@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 
 import CreateTeamInviteDialog from "@/components/(gateway)/settings/CreateTeamInviteDialog";
@@ -46,6 +47,7 @@ export default function TeamsSettingsContainer({
 	sampleMembersPreview = false,
 	tab = "members",
 }: Props) {
+	const t = useTranslations("SettingsUI");
 	const activeWorkspaceId =
 		initialTeamId && teams.some((team) => team.id === initialTeamId)
 			? initialTeamId
@@ -57,10 +59,10 @@ export default function TeamsSettingsContainer({
 	);
 	const pageDescription =
 		tab === "settings"
-			? "Manage this workspace's details and security."
+			? t("settingsCopy.teams.workspaceSettingsDescription")
 			: tab === "access"
-				? "Review join requests and workspace invitations."
-				: "Manage the people in this workspace.";
+				? t("settingsCopy.teams.workspaceAccessDescription")
+				: t("settingsCopy.teams.workspaceMembersDescription");
 	const canInvite = Boolean(
 		canManageActiveTeam && activeTeam && tab !== "settings",
 	);
@@ -73,7 +75,7 @@ export default function TeamsSettingsContainer({
 			{hideTitle ? null : (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<SettingsPageHeader
-						title={activeTeam?.name ?? "Workspace settings"}
+						title={activeTeam?.name ?? t("settingsCopy.teams.workspaceSettingsTitle")}
 						description={pageDescription}
 						className="min-w-0 flex-1"
 					/>
@@ -82,7 +84,7 @@ export default function TeamsSettingsContainer({
 							{tab === "members" ? (
 								<Button asChild variant="ghost" size="sm">
 									<Link href={accessHref}>
-										Manage Invites
+										{t("settingsCopy.teams.manageInvites")}
 										<ArrowRight className="size-3.5" />
 									</Link>
 								</Button>

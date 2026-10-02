@@ -1,0 +1,46 @@
+---
+icon: "shield-check"
+title: "工具调用安全与校验"
+description: "校验工具参数、加强执行安全，并避免模型执行不安全操作。"
+---
+
+将模型生成的工具参数视为不可信输入。
+
+## 安全检查清单
+
+- 工具 Schema 应精简且明确。
+- 执行工具前先校验解析后的参数。
+- 使用工具名称白名单；拒绝未知工具。
+- 为外部调用添加超时和重试。
+- 记录调用 ID、工具名称和校验失败信息。
+
+## 请求校验示例（TypeScript + Zod）
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## 失败处理策略
+
+如果校验失败：
+
+1. 不要执行工具。
+2. 在下一轮模型请求中返回受控错误信息。
+3. 让模型使用修正后的参数重试。
+
+## 流式传输说明
+
+流式工具调用取决于模型和提供商的支持。请先累积所有参数增量，再解析、验证或执行调用。参阅[流式传输](./streaming.mdx)。

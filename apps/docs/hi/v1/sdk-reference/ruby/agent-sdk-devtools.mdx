@@ -1,0 +1,21 @@
+---
+icon: "chart-spline"
+title: "डेवलपर टूल"
+description: "Ruby Agent SDK रन को स्थानीय रूप से Phaseo DevTools इवेंट फ़ॉर्मेट में कैप्चर करें।"
+---
+
+टूल टाइमलाइन, अनुमति इंटरफ़ेस और रन इंस्पेक्टर बनाते समय DevTools कैप्चर चालू करें।
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(
+    directory: ".phaseo-devtools"
+  )
+)
+```
+
+हर रन और कंटिन्यूएशन स्थिति, उपयोग, मॉडल प्रयास, टूल कॉल, पॉज़, अनुरोध मेटाडेटा और त्रुटियों वाला संरचित JSONL लिखता है।
+
+स्थानीय कैप्चर डेवलपमेंट के लिए है, प्रोडक्शन ऑडिट स्टोर नहीं। ऐप के अनुसार डेटा छिपाने, एक्सेस कंट्रोल, एन्क्रिप्शन और रिटेंशन लागू करें।

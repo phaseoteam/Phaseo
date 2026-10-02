@@ -1,0 +1,32 @@
+---
+icon: "music"
+title: "TTS (टेक्स्ट से वाणी)"
+description: "C# SDK से `/audio/speech` कॉल करें।"
+---
+
+**मेथड**: `client.CreateSpeech(...)`
+
+### उदाहरण
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3"
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): TTS-सक्षम मॉडल ID।
+- `input` (ज़रूरी): संश्लेषित किया जाने वाला टेक्स्ट।
+- `voice`: आवाज़ प्रीसेट (मॉडल पर निर्भर, जैसे `alloy`)।
+- `format`: `mp3`, `wav`, `flac` आदि।
+- `speed`: प्लेबैक गति का गुणक (आमतौर पर 0.25–4)।
+
+### रिटर्न वैल्यू
+बाइनरी ऑडियो डेटा
+

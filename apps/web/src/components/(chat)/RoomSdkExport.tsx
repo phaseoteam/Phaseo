@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
@@ -62,6 +63,7 @@ const shikiLanguages: Record<Integration["language"], BundledLanguage> = {
 };
 
 function IntegrationMark({ language, isAgent }: Pick<Integration, "language" | "isAgent">) {
+
   return (
     <span className="relative flex size-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background shadow-xs">
       {language === "bash" ? <Terminal className="size-4 text-foreground" aria-hidden /> : <Logo id={language} alt="" width={18} height={18} className="size-4.5" />}
@@ -75,6 +77,7 @@ function IntegrationMark({ language, isAgent }: Pick<Integration, "language" | "
 }
 
 export function RoomSdkExport({ request: requestOverride }: { request?: SdkRequest | null } = {}) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
   const liveRequest = useSyncExternalStore(sdkExportStore.subscribe, sdkExportStore.get, () => null);
   const request = requestOverride === undefined ? liveRequest : requestOverride;
   const pathname = usePathname();
@@ -91,6 +94,22 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
 
   if (!request) return null;
 
+  const localizeReason = (reason: string | null): string | null => {
+    if (!reason) return null;
+    if (reason.startsWith("Messages cannot preserve ")) return tCopy("messagesControls", { controls: reason.slice("Messages cannot preserve ".length) });
+    const messages: Record<string, string> = {
+      "Available for text requests": tCopy("textRequestsOnly"),
+      "Define function tool handlers to create an agent starter": tCopy("agentHandlers"),
+      "Add an input to use the Agent SDK": tCopy("agentInput"),
+      "Protocol switching requires text-only messages": tCopy("protocolText"),
+      "Protocol switching requires standard text roles": tCopy("protocolRoles"),
+      "Add text input to switch protocols": tCopy("protocolInput"),
+      "Protocol switching cannot safely convert function tools": tCopy("protocolFunctions"),
+      "Protocol switching cannot safely convert these tools": tCopy("protocolTools"),
+      "Protocol switching cannot safely convert tool_choice": tCopy("protocolToolChoice"),
+    };
+    return messages[reason] ?? reason;
+  };
   const sourceProtocol = textProtocolForRequest(request);
   const requestedProtocol = protocol ?? sourceProtocol;
   const requestedProtocolReason = requestedProtocol ? protocolSwitchSupportReason(request, requestedProtocol) : null;
@@ -109,8 +128,8 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
   const copyCode = () => {
     const generation = ++copyGeneration.current;
     void navigator.clipboard.writeText(code).then(
-      () => { if (copyGeneration.current === generation) setNotice("Copied"); },
-      () => { if (copyGeneration.current === generation) setNotice("Could not copy. Select the code below."); },
+      () => { if (copyGeneration.current === generation) setNotice(tCopy("copyCopied")); },
+      () => { if (copyGeneration.current === generation) setNotice(tCopy("clipboardFailed")); },
     );
   };
 
@@ -118,9 +137,9 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
     <Dialog>
       <Tooltip>
         <TooltipTrigger asChild>
-          <DialogTrigger asChild><Button variant="ghost" size="icon" aria-label="Get code"><Code className="size-4" /></Button></DialogTrigger>
+          <DialogTrigger asChild><Button variant="ghost" size="icon" aria-label={tCopy("getCode")}><Code className="size-4" /></Button></DialogTrigger>
         </TooltipTrigger>
-        <TooltipContent>Get code</TooltipContent>
+        <TooltipContent>{tCopy("getCode")}</TooltipContent>
       </Tooltip>
 
       <DialogContent className="max-h-[92vh] gap-0 overflow-hidden p-0 sm:max-w-6xl">
@@ -128,8 +147,8 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
           <div className="flex items-center gap-3">
             <span className="flex size-9 items-center justify-center rounded-lg border border-border/70 bg-muted/40"><Logo id="phaseo" alt="Phaseo" width={20} height={20} className="size-5" /></span>
             <div className="min-w-0">
-              <DialogTitle>Request samples</DialogTitle>
-              <DialogDescription className="mt-0.5">Run this request with HTTP, a Phaseo SDK, or an Agent SDK.</DialogDescription>
+              <DialogTitle>{tCopy("requestSamples")}</DialogTitle>
+              <DialogDescription className="mt-0.5">{tCopy("requestSamplesHelp")}</DialogDescription>
             </div>
           </div>
         </DialogHeader>
@@ -141,7 +160,7 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
             className="max-h-[34vh] border-b border-border/70 bg-muted/20 sm:max-h-[calc(92vh-5rem)] sm:border-r sm:border-b-0"
             viewportClassName="p-3"
           >
-            <div role="tablist" aria-label="Request sample integration" className="min-w-0 space-y-3">
+            <div role="tablist" aria-label={tCopy("sampleIntegration")} className="min-w-0 space-y-3">
               {(["HTTP", "SDK", "Agent SDK"] as const).map((group) => (
                 <div key={group}>
                   <div className="mb-1 flex items-center gap-1.5 px-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
@@ -149,7 +168,7 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
                   </div>
                   <div className={cn("grid gap-1", group !== "HTTP" && "grid-cols-2 sm:grid-cols-1")}>
                     {integrations.filter((integration) => integration.group === group).map((integration) => {
-                      const unavailableReason = integration.isAgent ? agentSupport : null;
+                      const unavailableReason = localizeReason(integration.isAgent ? agentSupport : null);
                       const selected = integration.id === activeIntegration.id;
                       return (
                         <button key={integration.id} type="button" role="tab" aria-selected={selected} aria-controls="request-sample-panel"
@@ -175,10 +194,10 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
             <div className="min-w-0">
               {sourceProtocol && (
               <div className="mb-4 flex flex-wrap items-center gap-2">
-                <span className="mr-1 text-xs font-medium text-muted-foreground">API shape</span>
-                <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5" aria-label="Text API shape">
+                <span className="mr-1 text-xs font-medium text-muted-foreground">{tCopy("apiShape")}</span>
+                <div className="inline-flex rounded-md border border-border bg-muted/30 p-0.5" aria-label={tCopy("textApiShape")}>
                   {protocolOptions.map((option) => {
-                    const unavailableReason = protocolSwitchSupportReason(request, option.id);
+                    const unavailableReason = localizeReason(protocolSwitchSupportReason(request, option.id));
                     const disabled = Boolean(unavailableReason && option.id !== sourceProtocol);
                     return <button key={option.id} type="button" aria-pressed={activeProtocol === option.id} disabled={disabled} title={disabled ? unavailableReason ?? undefined : undefined} onClick={() => setProtocol(option.id)} className={cn("rounded-sm px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40", activeProtocol === option.id ? "bg-background text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground")}>{option.label}</button>;
                   })}
@@ -193,15 +212,15 @@ export function RoomSdkExport({ request: requestOverride }: { request?: SdkReque
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <span role="status" className="text-xs text-muted-foreground">{notice}</span>
-                <Tooltip><TooltipTrigger asChild><Button type="button" variant={wrap ? "secondary" : "outline"} size="icon-sm" aria-label="Wrap code" aria-pressed={wrap} onClick={() => setWrap(value => !value)}><WrapText className="size-3.5" /></Button></TooltipTrigger><TooltipContent>{wrap ? "Disable word wrap" : "Wrap long lines"}</TooltipContent></Tooltip>
-                <Button type="button" variant="outline" size="sm" onClick={copyCode}>{notice === "Copied" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{notice === "Copied" ? "Copied" : "Copy"}</Button>
+                <Tooltip><TooltipTrigger asChild><Button type="button" variant={wrap ? "secondary" : "outline"} size="icon-sm" aria-label={tCopy("wrapCode")} aria-pressed={wrap} onClick={() => setWrap(value => !value)}><WrapText className="size-3.5" /></Button></TooltipTrigger><TooltipContent>{wrap ? tCopy("wrapDisabled") : tCopy("wrapLong")}</TooltipContent></Tooltip>
+                <Button type="button" variant="outline" size="sm" onClick={copyCode}>{notice === tCopy("copyCopied") ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{notice === tCopy("copyCopied") ? tCopy("copyCopied") : tCopy("copyCopy")}</Button>
               </div>
               </div>
               <ScrollArea
                 scrollBarOrientation="both"
                 className="h-[45vh] rounded-md border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950 sm:h-[59vh]"
                 viewportClassName="rounded-md"
-                aria-label={`${activeIntegration.title} ${activeIntegration.group} request sample`}
+                aria-label={tCopy("requestSampleLabel", { language: activeIntegration.title, integration: activeIntegration.group })}
               >
                 <CodeBlock code={code} language={shikiLanguages[activeIntegration.language]} showLineNumbers tabIndex={0}
                   aria-label={`${activeIntegration.title} ${activeIntegration.group} request sample`}

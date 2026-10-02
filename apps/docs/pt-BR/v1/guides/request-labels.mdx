@@ -1,0 +1,42 @@
+---
+title: "Rótulos de solicitação"
+description: "Associe solicitações do gateway a equipes, recursos ou ambientes definidos no código e divida os gastos por rótulo."
+icon: "tags"
+---
+
+Use rótulos de solicitação quando o código da aplicação precisar de uma dimensão de custo estável e mais específica que uma chave de API ou aplicação. Os rótulos são registrados na auditoria da solicitação e podem ser filtrados nas análises sem alterar a solicitação ao modelo.
+
+## Enviar rótulos
+
+Defina `X-Phaseo-Metadata` como um objeto JSON com até 32 pares exclusivos de chave e valor:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Os SDKs de TypeScript e Python aceitam cabeçalhos personalizados, então o mesmo cabeçalho pode ser configurado no cliente. Os rótulos não são encaminhados aos provedores.
+
+## Dividir os gastos
+
+Use o endpoint de análise com `label_key` e `label_value`:
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+A resposta usa o mesmo formato de gastos agrupados das análises sem filtros, mas inclui apenas solicitações com esse par exato de rótulos.
+
+## Regras
+
+- As chaves aceitam letras, números, `_`, `.`, `:` ou `-` e têm limite de 64 caracteres.
+- Os valores são strings com até 256 caracteres.
+- Uma solicitação pode conter até 32 rótulos e o cabeçalho tem limite de 8 KiB.
+- Chaves duplicadas ou metadados malformados são rejeitados com `400 invalid_request`.
+- Não inclua prompts, segredos, endereços de e-mail ou outros dados pessoais nos rótulos.

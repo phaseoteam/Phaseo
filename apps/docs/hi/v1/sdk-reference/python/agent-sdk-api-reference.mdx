@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "Python Agent SDK की मुख्य classes, functions और methods देखें。"
+---
+
+| API | उद्देश्य |
+| --- | --- |
+| `create_agent(...)` | एजेंट तय करें |
+| `define_tool(...)` | स्थानीय या मैन्युअल टूल तय करें |
+| `create_gateway_agent_client(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `agent.run(...)` | पूरा होने या रुकने तक चलाएँ |
+| `agent.stream(...)` | दोबारा चलाए जा सकने वाले stream consumer के साथ चलाएँ |
+| `agent.continue_run(...)` | सहेजी या रुकी स्थिति जारी रखें |
+| `stream.result()` | पूरे हुए रन को पढ़ें |
+| `stream.text_stream()` | टेक्स्ट अंश पढ़ें |
+| `stream.full_stream()` | सभी इवेंट पढ़ें |
+| `stream.cancel()` | सक्रिय रन रद्द करें |
+
+महत्वपूर्ण types में `AgentTool`, `AgentToolDecision`, `AgentToolOutput`, `AgentRunResult`, `AgentStateAccessor`, `AgentModelRetryConfig` और `AgentToolExecutionConfig` शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

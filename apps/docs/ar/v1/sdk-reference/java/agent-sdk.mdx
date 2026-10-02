@@ -1,0 +1,62 @@
+---
+title: "الاستخدام"
+description: "عرّف الأدوات وشغّل وكيل Java واستأنفه بعد المراجعة البشرية."
+---
+
+## حلقة الأدوات
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## المراجعة البشرية
+
+أعِد `HumanReviewRequest` من `AgentDefinition.humanReview` لحفظ نقطة تحقق للتشغيل. احفظ `RunResult` المُعاد، واجمع القرار في التطبيق، ثم استدعِ `continueRun(...)` مع `humanInput`. لا يعتمد Agent SDK على حالة مستضافة مخفية.
+
+## خيارات Responses API
+
+مرّر حقول Responses API الإضافية عبر `GatewayOptions.requestOptions`. يطبّق المحوّل `model` و`input` و`instructions` وأدوات الوظائف المحلية التي يديرها الوكيل.
+
+## بيئة تشغيل متقدمة
+
+يدعم Java واجهات التحقق والموافقة، وأدوات التدخل البشري واليدوية، والتقدم، والأخطاء القابلة للاسترداد، والقيم القابلة لإعادة التشغيل، ومساعدات الإيقاف، والجولات الديناميكية، و`NextTurnParams` المحفوظة، والاستخدام والتكلفة الموحدين، و`StateAccessor`.
+
+## البث والإلغاء
+
+تستهلك `Agent.stream(...)` و`Agent.continueStream(...)` تدفق Responses SSE للبوابة. اقرأ `textStream()` أو `fullStream()` للحصول على نتائج قابلة لإعادة التشغيل، واستدعِ `cancel()` لمقاطعة العامل النشط وقراءة HTTP. تحتفظ الخطوات المكتملة بمعرّفات الطلب وبيانات مزود الخدمة الوصفية وأسباب الإنهاء والتحذيرات والاستخدام والتكلفة.
+
+## ذات صلة
+
+- [نظرة عامة على Agent SDK](../agent-sdk/overview.mdx)
+- [SDK عميل Java](./overview.mdx)

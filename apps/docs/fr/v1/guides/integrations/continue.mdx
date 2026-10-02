@@ -1,0 +1,73 @@
+---
+title: "Continue"
+icon: "/icons/brands/continue.svg"
+description: "Ajoutez Phaseo à Continue dans VS Code, JetBrains ou le CLI Continue."
+---
+
+Utilisez la CLI Phaseo pour créer une configuration Continue locale partagée par les extensions IDE et l’interface en ligne de commande `cn`, ou ajoutez manuellement les mêmes valeurs de modèle et de secret à votre configuration Continue existante.
+
+## Configurer avec la CLI Phaseo
+
+```bash
+phaseo login
+phaseo continue --model anthropic/claude-sonnet-4.6
+```
+
+Si `~/.continue/config.yaml` et `~/.continue/.env` ne sont pas utilisés, la configuration crée les deux fichiers :
+
+```yaml
+name: Phaseo
+version: 1.0.0
+schema: v1
+models:
+  - name: Phaseo
+    provider: openai
+    model: anthropic/claude-sonnet-4.6
+    apiBase: https://api.phaseo.app/v1
+    apiKey: ${{ secrets.PHASEO_API_KEY }}
+    useResponsesApi: false
+    roles: [chat, edit, apply]
+```
+
+La clé est stockée sous le nom `PHASEO_API_KEY` dans `~/.continue/.env`. `useResponsesApi: false` maintient les requêtes sur la route Chat Completions de Phaseo.
+
+<Warning>
+Le fichier `.env` global de Continue est en texte brut. Ne le validez jamais dans le dépôt. Les extensions IDE n’héritent pas des variables d’environnement habituelles du shell ; le CLI utilise donc le fichier de secrets documenté par Continue.
+</Warning>
+
+Si l’un des deux fichiers contient déjà votre configuration, le processus s’arrête sans l’écraser. Ajoutez l’entrée du modèle et `PHASEO_API_KEY=<dedicated key>` au fichier `.env` existant. Récupérez la clé avec `phaseo integrations credential continue`.
+
+## Vérifier
+
+Dans VS Code ou JetBrains, rechargez la fenêtre, ouvrez Continue, sélectionnez **Phaseo** et demandez-lui de répondre `PHASEO_CONTINUE_OK`.
+
+Pour le CLI Continue, exécutez `cn`. Utilisez `/config` si une autre configuration enregistrée est active, puis envoyez la même requête de test. Vérifiez qu’elle apparaît dans l’activité Phaseo.
+
+## Supprimer
+
+```bash
+phaseo integrations remove continue
+```
+
+La suppression révoque la clé et efface les deux fichiers uniquement s’ils contiennent encore le marqueur de propriété du CLI Phaseo. Les entrées fusionnées manuellement restent intactes.
+
+## Dépannage
+
+### Phaseo n’apparaît pas
+
+Rechargez l’IDE et vérifiez que `config.yaml` contient les champs obligatoires de premier niveau `name`, `version` et `schema`.
+
+### Continue signale un secret manquant
+
+Vérifiez que `~/.continue/.env` contient la clé renvoyée par `phaseo integrations credential continue`, puis redémarrez l’IDE.
+
+### Continue appelle l’API Responses
+
+Conservez `useResponsesApi: false` dans l’entrée du modèle Phaseo.
+
+## À lire aussi
+
+- [Configuration OpenAI compatible de Continue](https://docs.continue.dev/customize/model-providers/top-level/openai)
+- [Secrets locaux de Continue](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
+- [Agents de programmation](./coding-assistants.mdx)
+- [Modèles](../../api-reference/endpoint/models.mdx)

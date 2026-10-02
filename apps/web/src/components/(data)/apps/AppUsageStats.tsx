@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { DisplayNumber } from "@/components/display/DisplayValue";
+import { getTranslations } from "next-intl/server";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
 
@@ -23,6 +24,9 @@ export default async function AppUsageStats({
 	range?: RangeKey;
 }) {
 	const rows = await fetchFrontendAppUsage(appId, range);
+	const t = await getTranslations("Catalogue.appDetail");
+	const tRange = await getTranslations("Common.timeRange");
+	const rangeKeys = {"1h": "lastHour", "1d": "lastDay", "1w": "lastWeek", "4w": "lastFourWeeks", "1m": "lastMonth", "1y": "lastYear"} as const;
 
 	// Calculate current period stats
 	let currentRequests = 0;
@@ -45,17 +49,17 @@ export default async function AppUsageStats({
 
 	const stats = [
 		{
-			label: "Total Requests",
+			label: t("totalRequests"),
 			value: currentRequests,
 			options: undefined,
 		},
 		{
-			label: "Total Tokens",
+			label: t("totalTokens"),
 			value: currentTokens,
 			options: undefined,
 		},
 		{
-			label: "Avg Tokens/Request",
+			label: t("averageTokensPerRequest"),
 			value: currentRequests > 0 ? currentTokens / currentRequests : 0,
 			options: { maximumFractionDigits: 1 },
 		},
@@ -73,7 +77,7 @@ export default async function AppUsageStats({
 							<DisplayNumber value={stat.value} options={stat.options} />
 						</div>
 						<p className="text-xs text-muted-foreground mt-1">
-							{range} period
+							{t("rangePeriod", {range: tRange(rangeKeys[range])})}
 						</p>
 					</CardContent>
 				</Card>

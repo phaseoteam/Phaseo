@@ -37,6 +37,8 @@ export type DisplayPreferences = {
 	maskSensitiveData: boolean;
 };
 
+export type DisplayFormattingPreferences = Omit<DisplayPreferences, "locale"> & { locale: string };
+
 export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	locale: "system",
 	dateStyle: "medium",
@@ -134,15 +136,15 @@ export function normalizeDisplayPreferences(value: unknown): DisplayPreferences 
 	};
 }
 
-function localeFor(preferences: DisplayPreferences): string | undefined {
+function localeFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.locale === "system" ? undefined : preferences.locale;
 }
 
-function timeZoneFor(preferences: DisplayPreferences): string | undefined {
+function timeZoneFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.timeZone === "system" ? undefined : preferences.timeZone;
 }
 
-function hour12For(preferences: DisplayPreferences): boolean | undefined {
+function hour12For(preferences: DisplayFormattingPreferences): boolean | undefined {
 	if (preferences.hourCycle === "12h") return true;
 	if (preferences.hourCycle === "24h") return false;
 	return undefined;
@@ -158,7 +160,7 @@ export type DisplayDateValue = string | number | Date | null | undefined;
 
 export function formatDisplayDateParts(
 	value: DisplayDateValue,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	options: Intl.DateTimeFormatOptions,
 	fallback = "-",
 ): string {
@@ -173,7 +175,7 @@ export function formatDisplayDateParts(
 
 function formatIsoDate(
 	date: Date,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	timeZone = timeZoneFor(preferences),
 ): string {
 	const parts = new Intl.DateTimeFormat("en-CA", {
@@ -189,7 +191,7 @@ function formatIsoDate(
 
 export function formatDisplayDate(
 	value: string | number | Date | null | undefined,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	fallback = "-",
 ): string {
 	const date = parseDate(value);
@@ -203,7 +205,7 @@ export function formatDisplayDate(
 
 export function formatDisplayCalendarDate(
 	value: DisplayDateValue,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	fallback = "-",
 ): string {
 	const date = parseDate(value);
@@ -217,7 +219,7 @@ export function formatDisplayCalendarDate(
 
 export function formatDisplayTime(
 	value: string | number | Date | null | undefined,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	options?: { includeSeconds?: boolean },
 ): string {
 	const date = parseDate(value);
@@ -233,7 +235,7 @@ export function formatDisplayTime(
 
 export function formatDisplayDateTime(
 	value: string | number | Date | null | undefined,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	options?: { includeSeconds?: boolean },
 ): string {
 	const date = parseDate(value);
@@ -252,7 +254,7 @@ export function formatDisplayDateTime(
 export function formatDisplayDateTimeRange(
 	startValue: string | number | Date | null | undefined,
 	endValue: string | number | Date | null | undefined,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 ): string {
 	const start = parseDate(startValue);
 	const end = parseDate(endValue);
@@ -277,7 +279,7 @@ function relativeUnit(milliseconds: number): { unit: Intl.RelativeTimeFormatUnit
 
 export function formatDisplayTimestamp(
 	value: string | number | Date | null | undefined,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	referenceDate = new Date(),
 ): string {
 	const date = parseDate(value);
@@ -293,7 +295,7 @@ export function formatDisplayTimestamp(
 
 export function formatDisplayNumber(
 	value: number,
-	preferences: DisplayPreferences,
+	preferences: DisplayFormattingPreferences,
 	options?: Intl.NumberFormatOptions,
 ): string {
 	const notation = options?.notation ?? preferences.numberNotation;

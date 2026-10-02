@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+
 import {
 	Card,
 	CardContent,
@@ -33,6 +35,9 @@ export default function USvsChinaCard({
 }: {
 	data?: Array<{ date: string; us: number; china: number }>;
 }) {
+	const tCopy = useTranslations("Site.landingGaps");
+	const locale = useLocale();
+
 	const COLORS = {
 		us: "#6366f1",
 		china: "#f97316",
@@ -42,11 +47,11 @@ export default function USvsChinaCard({
 		<Card className="border-none bg-white/70 shadow-sm ring-1 ring-inset ring-zinc-200/60 backdrop-blur-sm dark:bg-zinc-950/60 dark:ring-zinc-800/60">
 			<CardHeader className="pb-2">
 				<CardTitle className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-					US vs China — Composite SOTA
-				</CardTitle>
+{tCopy("copy091")}
+</CardTitle>
 				<CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-					Share of top benchmark placements (percentage of tracked leaderboards)
-				</CardDescription>
+{tCopy("copy092")}
+</CardDescription>
 			</CardHeader>
 			<CardContent className="h-48">
 				<ResponsiveContainer width="100%" height="100%">
@@ -54,6 +59,7 @@ export default function USvsChinaCard({
 						<XAxis dataKey="date" hide />
 						<YAxis hide />
 						<Tooltip
+							labelFormatter={(label) => { const value = String(label); const date = new Date(`${value}-01T00:00:00Z`); return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(date); }}
 							cursor={{ strokeDasharray: "3 3" }}
 							contentStyle={{
 								backgroundColor: "rgba(24, 24, 27, 0.92)",
@@ -69,14 +75,14 @@ export default function USvsChinaCard({
 							formatter={(value, name) => {
 								const numericValue =
 									typeof value === "number" ? value : Number(value ?? 0);
-								return [`${Math.round(numericValue * 100)}%`, String(name ?? "")];
+								return [new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(numericValue), String(name ?? "")];
 							}}
 						/>
 						<Legend />
 						<Line
 							type="monotone"
 							dataKey="us"
-							name="United States"
+							name={tCopy("copy093")}
 							dot={false}
 							stroke={COLORS.us}
 							strokeWidth={2.5}
@@ -85,7 +91,7 @@ export default function USvsChinaCard({
 						<Line
 							type="monotone"
 							dataKey="china"
-							name="China"
+							name={tCopy("copy094")}
 							dot={false}
 							stroke={COLORS.china}
 							strokeWidth={2.5}

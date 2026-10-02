@@ -1,0 +1,59 @@
+---
+icon: "brain-circuit"
+title: "Modelos"
+description: "Liste modelos com o SDK para C#."
+---
+
+**Método**: `client.ListModels(...)`
+
+### Exemplo
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10"
+});
+```
+
+### Parâmetros
+- Filtros opcionais: `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit`, `offset`.
+- `provider_availability_reason` é útil com `availability = "all"` quando você quiser ver estados de liberação como `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` ou `soft_blocked`.
+- `capability_status` é útil com `availability = "all"` quando você quiser ver mapeamentos de endpoints não roteáveis, como `coming_soon` ou `internal_testing`.
+
+### Retorna
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

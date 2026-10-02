@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "Consulta de generación"
+description: "Llama a la consulta /generations con el SDK de Python."
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+Cuando se almacenan los detalles de la solicitud, el registro devuelto también incluye `replay_supported` y `replay_request`, que permiten volver a enviar la carga capturada al endpoint original.
+

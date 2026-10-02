@@ -1,118 +1,118 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { Card } from "@/components/ui/card";
 import { Check, Minus } from "lucide-react";
 
+export function CompareSection() {
+	const t = useTranslations("SettingsUI");
 const COMPARISON_DATA = [
 	{
-		capability: "Model Coverage",
-		description: "Number of models and providers supported",
+		capability: t("landingGaps.copyModelCoverage"),
+		description: t("landingGaps.coverageHelp"),
 		gateway: {
-			value: "300+ models, 30+ providers",
+			value: t("landingGaps.coverageBoth"),
 			highlight: true,
-			details: "Largest verified catalogue updated nightly",
+			details: t("landingGaps.verifiedCatalogue"),
 		},
 		openRouter: {
-			value: "300+ models",
+			value: t("landingGaps.coverageModels"),
 			highlight: false,
-			details: "Varies by provider availability",
+			details: t("landingGaps.providerAvailability"),
 		},
 		vercel: {
-			value: "Bring your own",
+			value: t("landingGaps.bringOwn"),
 			highlight: false,
-			details: "Manual adapter setup required",
+			details: t("landingGaps.manualAdapters"),
 		},
 	},
 	{
-		capability: "Modalities",
-		description: "Supported input and output types",
+		capability: t("landingGaps.copyModalities"),
+		description: t("landingGaps.modalitiesHelp"),
 		gateway: {
-			value: "Text, Vision, Audio, Video, Embeddings",
+			value: t("landingGaps.allModalities"),
 			highlight: true,
-			details: "First-class multimodal support",
+			details: t("landingGaps.multimodal"),
 		},
 		openRouter: {
-			value: "Text, Vision",
+			value: t("landingGaps.textVision"),
 			highlight: false,
-			details: "Limited modality support",
+			details: t("landingGaps.limitedModality"),
 		},
 		vercel: {
-			value: "Text, Vision",
+			value: t("landingGaps.textVision"),
 			highlight: false,
-			details: "Provider-dependent",
+			details: t("landingGaps.providerDependent"),
 		},
 	},
 	{
-		capability: "Routing Intelligence",
-		description: "How requests are distributed across providers",
+		capability: t("landingGaps.routingIntelligence"),
+		description: t("landingGaps.routingDistribution"),
 		gateway: {
-			value: "Latency, cost, error-aware",
+			value: t("landingGaps.routingAware"),
 			highlight: true,
-			details: "Deterministic fallbacks with circuit breakers",
+			details: t("landingGaps.circuitFallbacks"),
 		},
 		openRouter: {
-			value: "Priority ordering",
+			value: t("landingGaps.priorityOrder"),
 			highlight: false,
-			details: "Manual fallback configuration",
+			details: t("landingGaps.manualFallback"),
 		},
 		vercel: {
-			value: "Basic",
+			value: t("landingGaps.copyBasic"),
 			highlight: false,
-			details: "Limited multi-provider routing",
+			details: t("landingGaps.limitedRouting"),
 		},
 	},
 	{
-		capability: "Observability",
-		description: "Built-in monitoring and analytics",
+		capability: t("landingGaps.copyObservability"),
+		description: t("landingGaps.monitoringHelp"),
 		gateway: {
-			value: "Full-stack telemetry",
+			value: t("landingGaps.fullTelemetry"),
 			highlight: true,
-			details: "Live dashboards, alerts, cost tracking",
+			details: t("landingGaps.liveDashboards"),
 		},
 		openRouter: {
-			value: "Basic analytics",
+			value: t("landingGaps.basicAnalytics"),
 			highlight: false,
-			details: "Requests and spend only",
+			details: t("landingGaps.requestsSpend"),
 		},
 		vercel: {
-			value: "Self-managed",
+			value: t("landingGaps.selfManaged"),
 			highlight: false,
-			details: "Requires external tools",
+			details: t("landingGaps.externalTools"),
 		},
 	},
 	{
-		capability: "Pricing Model",
-		description: "Credit purchase fee structure",
+		capability: t("landingGaps.pricingModel"),
+		description: t("landingGaps.feeStructure"),
 		gateway: {
-			value: "5% top-up fee",
+			value: t("landingGaps.feeFive"),
 			highlight: true,
-			details: "Applied on credit purchases, not token requests",
+			details: t("landingGaps.purchaseNotTokens"),
 		},
 		openRouter: {
-			value: "5.5% flat",
+			value: t("landingGaps.flatFiveFive"),
 			highlight: false,
-			details: "Fixed rate for all usage",
+			details: t("landingGaps.fixedRate"),
 		},
 		vercel: {
-			value: "0% platform fee",
+			value: t("landingGaps.zeroFee"),
 			highlight: false,
-			details: "But limited routing capabilities",
+			details: t("landingGaps.butLimited"),
 		},
 	},
 ];
 
-export function CompareSection() {
+
 	return (
 		<section className="relative overflow-hidden py-12 sm:py-16">
 			<div className="relative mx-auto max-w-7xl px-6 lg:px-8">
 				<div className="mx-auto max-w-3xl text-center">
 					<h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-						How we compare
-					</h2>
+						{t("landingGaps.compareTitle")}</h2>
 					<p className="mt-4 text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Optimised routing and observability built in - no homegrown
-						adapters, no hidden markups.
-					</p>
+						{t("landingGaps.compareHelp")}</p>
 				</div>
 
 				<Card className="mt-10 overflow-hidden border-zinc-200/60 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
@@ -121,8 +121,7 @@ export function CompareSection() {
 							<thead>
 								<tr className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/70">
 									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-										Capability
-									</th>
+										{t("landingGaps.copyCapability")}</th>
 									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
 										Phaseo Gateway
 									</th>

@@ -9,6 +9,7 @@ import {
 	type ReactNode,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -73,7 +74,6 @@ import {
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
-import { featureLabels } from "@/lib/config/featureLabels";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
@@ -92,40 +92,40 @@ type OptionCount = {
 type TableSortOption = {
 	value: string;
 	direction: "asc" | "desc";
-	label: string;
-	triggerLabel: string;
+	labelKey: string;
+	triggerKey: string;
 };
 
 const TABLE_SORT_OPTIONS: TableSortOption[] = [
 	{
 		value: "added",
 		direction: "desc",
-		label: "Newest",
-		triggerLabel: "Newest",
+		labelKey: "sortNewest",
+		triggerKey: "triggerNewest",
 	},
 	{
 		value: "weeklyTokens",
 		direction: "desc",
-		label: "Most Popular (7d Tokens)",
-		triggerLabel: "Most Popular",
+		labelKey: "sortPopular",
+		triggerKey: "triggerPopular",
 	},
 	{
 		value: "inputPrice",
 		direction: "asc",
-		label: "Price: Low to High",
-		triggerLabel: "Lowest Price",
+		labelKey: "sortPriceLowHigh",
+		triggerKey: "triggerPriceLow",
 	},
 	{
 		value: "outputPrice",
 		direction: "desc",
-		label: "Price: High to Low",
-		triggerLabel: "Highest Price",
+		labelKey: "sortPriceHighLow",
+		triggerKey: "triggerPriceHigh",
 	},
 	{
 		value: "context",
 		direction: "desc",
-		label: "Context: High to Low",
-		triggerLabel: "Largest Context",
+		labelKey: "sortContextHighLow",
+		triggerKey: "triggerContext",
 	},
 ];
 
@@ -357,18 +357,6 @@ function toTitleCase(value: string): string {
 		.join(" ");
 }
 
-function formatStatusLabel(value: string): string {
-	const normalized = normalizeStatusFilterValue(value);
-	if (normalized === "active") return "Active On Gateway";
-	if (normalized === "coming_soon") return "Coming Soon";
-	if (normalized === "inactive") return "Not Active";
-	if (normalized === "deranked_lvl1") return "Deranked Level 1";
-	if (normalized === "deranked_lvl2") return "Deranked Level 2";
-	if (normalized === "deranked_lvl3") return "Deranked Level 3";
-	if (normalized === "disabled") return "Disabled";
-	return toTitleCase(normalized);
-}
-
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 	if (normalized.includes("decision")) return Scale;
@@ -425,6 +413,7 @@ function FilterCheckboxList({
 	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	const [expanded, setExpanded] = useState(false);
 	const canCollapse =
 		Number.isFinite(collapsedLimit) &&
@@ -439,7 +428,7 @@ function FilterCheckboxList({
 	return (
 		<div className="space-y-1.5">
 			{options.length === 0 ? (
-				<div className="px-2 text-xs text-muted-foreground">No options</div>
+				<div className="px-2 text-xs text-muted-foreground">{tFilters("noOptions")}</div>
 			) : (
 				visibleOptions.map((option) => {
 					const checked = selected.includes(option.value);
@@ -511,7 +500,9 @@ function FilterCheckboxList({
 					className="h-7 w-full justify-center text-xs"
 					onClick={() => setExpanded((current) => !current)}
 				>
-					{expanded ? "Show Less" : `Show More (${hiddenCount})`}
+					{expanded
+						? tFilters("showLess")
+						: tFilters("showMore", { count: hiddenCount })}
 				</Button>
 			) : null}
 		</div>
@@ -527,12 +518,12 @@ function getOptionCounts(
 		.filter((option) => option.count > 0);
 }
 
-function FilterLogo({ value, label }: { value: string; label: string }) {
+function FilterLogo({ value }: { value: string }) {
 	return (
 		<span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5">
 			<Logo
 				id={value}
-				alt={`${label} logo`}
+				alt=""
 				width={14}
 				height={14}
 				className="h-3.5 w-3.5 object-contain"
@@ -574,10 +565,12 @@ function OutputModalityButtonRow({
 	options,
 	selected,
 	onToggle,
+	labelForValue,
 }: {
 	options: OptionCount[];
 	selected: string[];
 	onToggle: (value: string) => void;
+	labelForValue: (value: string) => string;
 }) {
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 	const contentRef = useRef<HTMLDivElement | null>(null);
@@ -642,7 +635,7 @@ function OutputModalityButtonRow({
 				>
 					<Icon className="h-3.5 w-3.5" />
 				</span>
-				<span>{toTitleCase(option.value)}</span>
+				<span>{labelForValue(option.value)}</span>
 				<span
 					className={cn(
 						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
@@ -678,6 +671,102 @@ export default function ModelsTableDisplay({
 	allModalities,
 	allFeatures,
 }: ModelsTableDisplayProps) {
+	const t = useTranslations("Catalogue.models");
+	const tCountry = useTranslations("Catalogue.countryDetail");
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const translateModality = (value: string) => {
+		const keys: Record<string, string> = {
+			text: "modalityText",
+			image: "modalityImage",
+			video: "modalityVideo",
+			audio: "modalityAudio",
+			audio_tts: "modalitySpeech",
+			audio_stt: "modalityTranscription",
+			audio_music: "modalityMusic",
+			embeddings: "modalityEmbeddings",
+			moderations: "modalityModeration",
+			realtime: "modalityRealtime",
+			file: "modalityFile",
+			rerank: "modalityRerank",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		if (!key) return toTitleCase(value);
+		return ["modalityRealtime", "modalityFile", "modalityRerank"].includes(key)
+			? tFilters(key as never)
+			: tMetadata(key as never);
+	};
+	const translateRegion = (value: string) => {
+		const keys: Record<string, string> = {
+			jp: "regionJapan",
+			au: "regionAustralia",
+		};
+		const normalized = String(value ?? "").trim().toLowerCase();
+		return keys[normalized]
+			? tFilters(keys[normalized] as never)
+			: formatRegionLabel(value);
+	};
+	const translateTier = (value: string) => {
+		const keys: Record<string, string> = {
+			standard: "tierStandard",
+			free: "tierFree",
+			batch: "tierBatch",
+			flex: "tierFlex",
+			priority: "tierFast",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tQuickstart(key as never) : toTitleCase(value);
+	};
+	const translateFeature = (value: string) => {
+		const keys: Record<string, string> = {
+			reasoning: "featureReasoning",
+			tools: "featureTools",
+			structured_outputs: "featureStructuredOutputs",
+			web_search: "featureWebSearch",
+			free: "featureFree",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tFilters(key as never) : toTitleCase(value);
+	};
+	const translateStatus = (value: string) => {
+		const keys: Record<string, string> = {
+			active: "activeGateway",
+			coming_soon: "comingSoon",
+			inactive: "notActive",
+			not_active: "notActive",
+			deranked_lvl1: "statusDeranked1",
+			deranked_lvl2: "statusDeranked2",
+			deranked_lvl3: "statusDeranked3",
+			disabled: "statusDisabled",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tFilters(key as never) : toTitleCase(value);
+	};
+	const translateEndpoint = (value: string) => {
+		const keys: Record<string, string> = {
+			responses: "endpointResponses",
+			"chat/completions": "endpointChatCompletions",
+			messages: "endpointMessages",
+			completions: "endpointCompletions",
+			embeddings: "endpointEmbeddings",
+			"text/rerank": "endpointRerank",
+			rerank: "endpointRerank",
+			moderations: "endpointModerations",
+			"image/generate": "endpointImageGeneration",
+			"images/generations": "endpointImageGeneration",
+			"image/edit": "endpointImageEditing",
+			"images/edits": "endpointImageEditing",
+			"audio/speech": "endpointTextToSpeech",
+			"audio/transcription": "endpointTranscription",
+			"audio/transcriptions": "endpointTranscription",
+			"audio/translations": "endpointTranslation",
+			"audio/realtime": "endpointRealtime",
+			"video/generations": "endpointVideoGeneration",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tFilters(key as never) : value;
+	};
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
 		parse: (value) => value || "",
@@ -1049,10 +1138,12 @@ export default function ModelsTableDisplay({
 			new Map(
 				initialModelData.map((item) => [
 					item.organisationId ?? "",
-					item.organisationName ?? item.organisationId ?? "Unknown",
+					item.organisationName ??
+						item.organisationId ??
+						tCountry("unknownOrganisation"),
 				]),
 			),
-		[initialModelData],
+		[initialModelData, tCountry],
 	);
 	const yearOptions = useMemo(
 		() =>
@@ -1097,7 +1188,7 @@ export default function ModelsTableDisplay({
 		...(hasInteractedWithStatuses
 			? selectedStatuses.map((value) => ({
 					key: `status-${value}`,
-					label: `Status: ${formatStatusLabel(value)}`,
+					label: tFilters("filterStatus", { value: translateStatus(value) }),
 					onRemove: () => {
 						const next = without(selectedStatuses, value);
 						setSelectedStatuses(next);
@@ -1105,17 +1196,17 @@ export default function ModelsTableDisplay({
 					},
 				}))
 			: []),
-		...selectedInputModalities.map((value) => ({ key: `input-${value}`, label: `Input: ${toTitleCase(value)}`, onRemove: () => setSelectedInputModalities(without(selectedInputModalities, value)) })),
-		...selectedOutputModalities.map((value) => ({ key: `output-${value}`, label: `Output: ${toTitleCase(value)}`, onRemove: () => setSelectedOutputModalities(without(selectedOutputModalities, value)) })),
-		...selectedTiers.map((value) => ({ key: `tier-${value}`, label: `Tier: ${toTitleCase(value)}`, onRemove: () => setSelectedTiers(without(selectedTiers, value)) })),
-		...(selectedContextMin > 0 ? [{ key: "context", label: `Context: ${formatContextStop(selectedContextMin)}+`, onRemove: () => setSelectedContextMin(0) }] : []),
-		...selectedSupportedParameters.map((value) => ({ key: `parameter-${value}`, label: `Parameter: ${toTitleCase(value)}`, onRemove: () => setSelectedSupportedParameters(without(selectedSupportedParameters, value)) })),
-		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: `Provider: ${providerLabels.get(value) ?? value}`, onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
-		...selectedRegions.map((value) => ({ key: `region-${value}`, label: `Region: ${formatRegionLabel(value)}`, onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
-		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: `Creator: ${creatorLabels.get(value) ?? value}`, onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
-		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: featureLabels[value] ?? toTitleCase(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
-		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: `Endpoint: ${toTitleCase(value)}`, onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
-		...(yearSelected > 0 ? [{ key: "year", label: `Year: ${yearSelected}`, onRemove: () => setYearSelected(0) }] : []),
+		...selectedInputModalities.map((value) => ({ key: `input-${value}`, label: tFilters("filterInput", { value: translateModality(value) }), onRemove: () => setSelectedInputModalities(without(selectedInputModalities, value)) })),
+		...selectedOutputModalities.map((value) => ({ key: `output-${value}`, label: tFilters("filterOutput", { value: translateModality(value) }), onRemove: () => setSelectedOutputModalities(without(selectedOutputModalities, value)) })),
+		...selectedTiers.map((value) => ({ key: `tier-${value}`, label: tFilters("filterTier", { value: translateTier(value) }), onRemove: () => setSelectedTiers(without(selectedTiers, value)) })),
+		...(selectedContextMin > 0 ? [{ key: "context", label: tFilters("filterContext", { value: formatContextStop(selectedContextMin) }), onRemove: () => setSelectedContextMin(0) }] : []),
+		...selectedSupportedParameters.map((value) => ({ key: `parameter-${value}`, label: tFilters("filterParameter", { value: toTitleCase(value) }), onRemove: () => setSelectedSupportedParameters(without(selectedSupportedParameters, value)) })),
+		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value: providerLabels.get(value) ?? value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
+		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
+		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value: creatorLabels.get(value) ?? value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
+		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
+		...(yearSelected > 0 ? [{ key: "year", label: tFilters("filterYear", { value: yearSelected }), onRemove: () => setYearSelected(0) }] : []),
 	];
 
 	const buildHref = (path: string) => {
@@ -1190,7 +1281,7 @@ export default function ModelsTableDisplay({
 	const privateOnly = selectedTiers.includes("private");
 	const privateFilterButton = hasPrivateModels ? (
 		<Button type="button" size="sm" variant={privateOnly ? "default" : "outline"} className="h-8 gap-1.5 rounded-md" onClick={() => setSelectedTiers(privateOnly ? selectedTiers.filter((value) => value !== "private") : [...selectedTiers, "private"])} aria-pressed={privateOnly}>
-			<LockKeyhole className="h-3.5 w-3.5" />Private
+			<LockKeyhole className="h-3.5 w-3.5" />{tFilters("tierPrivate")}
 		</Button>
 	) : null;
 
@@ -1205,7 +1296,7 @@ export default function ModelsTableDisplay({
 			onClick={() => setMobileFiltersOpen(true)}
 		>
 			<SlidersHorizontal className="h-3.5 w-3.5" />
-			<span className={compact ? "sr-only" : undefined}>Filters</span>
+			<span className={compact ? "sr-only" : undefined}>{t("filters")}</span>
 			{activeFilterCount > 0 ? (
 				<span
 					className={cn(
@@ -1234,14 +1325,14 @@ export default function ModelsTableDisplay({
 					<Link
 						href={buildHref("/models")}
 						prefetch={false}
-						aria-label="Card view"
+						aria-label={t("cardView")}
 						aria-current={!isTable ? "page" : undefined}
 						className={viewSwitcherItemClass(!isTable, true)}
 					>
 						<GridIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">Card view</TooltipContent>
+				<TooltipContent side="top">{t("cardView")}</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
@@ -1249,14 +1340,14 @@ export default function ModelsTableDisplay({
 					<Link
 						href={buildHref("/models/table")}
 						prefetch={false}
-						aria-label="Table view"
+						aria-label={t("tableView")}
 						aria-current={isTable ? "page" : undefined}
 						className={viewSwitcherItemClass(isTable)}
 					>
 						<TableIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">Table view</TooltipContent>
+				<TooltipContent side="top">{t("tableView")}</TooltipContent>
 			</Tooltip>
 		</div>
 	);
@@ -1278,11 +1369,13 @@ export default function ModelsTableDisplay({
 					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
 					triggerClassName,
 				)}
-				aria-label="Sort models"
+				aria-label={tFilters("sortModels")}
 			>
 				<span className="flex min-w-0 items-center gap-2">
 					<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-					<span className="truncate">{selectedTableSort.triggerLabel}</span>
+					<span className="truncate">
+						{tFilters(selectedTableSort.triggerKey as never)}
+					</span>
 				</span>
 			</SelectTrigger>
 			<SelectContent
@@ -1295,7 +1388,7 @@ export default function ModelsTableDisplay({
 						key={`${option.value}:${option.direction}`}
 						value={`${option.value}:${option.direction}`}
 					>
-						{option.label}
+						{tFilters(option.labelKey as never)}
 					</SelectItem>
 				))}
 			</SelectContent>
@@ -1313,7 +1406,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Activity className="h-4 w-4 text-muted-foreground" />
-						Gateway Status
+						{tFilters("gatewayStatus")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1326,7 +1419,7 @@ export default function ModelsTableDisplay({
 								toggleInList(effectiveSelectedStatuses, value),
 							);
 						}}
-						labelForValue={formatStatusLabel}
+						labelForValue={translateStatus}
 						renderStart={({ value }) => {
 							const statusMeta = STATUS_FILTER_META[value];
 							if (!statusMeta) return null;
@@ -1348,7 +1441,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
-						Input Modalities
+						{tFilters("inputModalities")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1361,7 +1454,7 @@ export default function ModelsTableDisplay({
 							)
 						}
 						iconForValue={getModalityIcon}
-						labelForValue={toTitleCase}
+						labelForValue={translateModality}
 						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
@@ -1371,7 +1464,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Layers3 className="h-4 w-4 text-muted-foreground" />
-						Tier
+						{tFilters("tier")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1381,7 +1474,7 @@ export default function ModelsTableDisplay({
 						onToggle={(value) =>
 							setSelectedTiers(toggleInList(selectedTiers, value))
 						}
-						labelForValue={toTitleCase}
+						labelForValue={translateTier}
 						renderStart={({ value, checked }) => {
 							const tierMeta = getTierFilterMeta(value);
 							const TierIcon = tierMeta.icon;
@@ -1403,7 +1496,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Binary className="h-4 w-4 text-muted-foreground" />
-						Context Length
+						{tFilters("contextLength")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1421,14 +1514,14 @@ export default function ModelsTableDisplay({
 								);
 								setSelectedContextMin(CONTEXT_LENGTH_STOPS[clamped] ?? 0);
 							}}
-							aria-label="Minimum context length"
+							aria-label={tFilters("minimumContextLength")}
 						/>
 						<div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
-							<span>{formatContextStop(CONTEXT_LENGTH_STOPS[0])}</span>
+							<span>{tFilters("any")}</span>
 							<span>
 								{selectedContextMin > 0
-									? `Min ${formatContextStop(selectedContextMin)} tokens`
-									: "No minimum"}
+									? tFilters("minimumTokens", { count: formatContextStop(selectedContextMin) })
+									: tFilters("noMinimum")}
 							</span>
 							<span>
 								{formatContextStop(
@@ -1445,7 +1538,7 @@ export default function ModelsTableDisplay({
 									className="h-7 px-2 text-xs"
 									onClick={() => setSelectedContextMin(0)}
 								>
-									Reset
+									{tFilters("reset")}
 								</Button>
 							) : null}
 						</div>
@@ -1457,7 +1550,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-						Supported Parameters
+						{tFilters("supportedParameters")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1479,7 +1572,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Route className="h-4 w-4 text-muted-foreground" />
-						Providers
+						{tFilters("providers")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1490,8 +1583,8 @@ export default function ModelsTableDisplay({
 							setSelectedProviders(toggleInList(selectedProviders, value))
 						}
 						labelForValue={(value) => providerLabels.get(value) ?? value}
-						renderStart={({ value, label }) => (
-							<FilterLogo value={value} label={label} />
+						renderStart={({ value }) => (
+							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
 					/>
@@ -1502,7 +1595,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Globe2 className="h-4 w-4 text-muted-foreground" />
-						Region Routing
+						{tFilters("regionRouting")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1512,7 +1605,7 @@ export default function ModelsTableDisplay({
 						onToggle={(value) =>
 							setSelectedRegions(toggleInList(selectedRegions, value))
 						}
-						labelForValue={formatRegionLabel}
+						labelForValue={translateRegion}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1521,7 +1614,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<TypeIcon className="h-4 w-4 text-muted-foreground" />
-						Model Creators
+						{tFilters("modelCreators")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1532,8 +1625,8 @@ export default function ModelsTableDisplay({
 							setSelectedCreators(toggleInList(selectedCreators, value))
 						}
 						labelForValue={(value) => creatorLabels.get(value) ?? value}
-						renderStart={({ value, label }) => (
-							<FilterLogo value={value} label={label} />
+						renderStart={({ value }) => (
+							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
 					/>
@@ -1544,7 +1637,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
-						Features
+						{tFilters("features")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1554,7 +1647,7 @@ export default function ModelsTableDisplay({
 						onToggle={(value) =>
 							setSelectedFeatures(toggleInList(selectedFeatures, value))
 						}
-						labelForValue={(value) => featureLabels[value] ?? value}
+						labelForValue={translateFeature}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -1563,7 +1656,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Route className="h-4 w-4 text-muted-foreground" />
-						Endpoints
+						{tFilters("endpoints")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1573,7 +1666,7 @@ export default function ModelsTableDisplay({
 						onToggle={(value) =>
 							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
 						}
-						labelForValue={(value) => value}
+						labelForValue={translateEndpoint}
 						collapsedLimit={5}
 					/>
 				</AccordionContent>
@@ -1583,7 +1676,7 @@ export default function ModelsTableDisplay({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<CalendarDays className="h-4 w-4 text-muted-foreground" />
-						Year
+						{tFilters("year")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1620,7 +1713,7 @@ export default function ModelsTableDisplay({
 				>
 					<div className="md:hidden space-y-2">
 						<div className="flex items-center gap-2">
-							<h1 className="font-bold text-xl leading-8">Models</h1>
+							<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 						</div>
 
 						<div className="flex items-center gap-2">
@@ -1636,7 +1729,7 @@ export default function ModelsTableDisplay({
 						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 							<Input
-								placeholder="Search"
+								placeholder={t("searchPlaceholder")}
 								value={search}
 								onChange={(e) =>
 									setSearch(e.target.value || "", {
@@ -1653,14 +1746,14 @@ export default function ModelsTableDisplay({
 						<div className="hidden lg:block">
 							<div className="flex items-center justify-between gap-4">
 								<div className="flex h-8 min-w-0 shrink-0 items-center">
-									<h1 className="font-bold text-xl leading-8">Models</h1>
+									<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 								</div>
 
 								<div className="flex min-w-0 flex-1 items-center justify-end gap-3">
 									<div className="relative min-w-[15rem] max-w-[22rem] flex-1 2xl:max-w-[28rem]">
 										<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 										<Input
-											placeholder="Search"
+											placeholder={t("searchPlaceholder")}
 											value={search}
 											onChange={(e) =>
 												setSearch(e.target.value || "", {
@@ -1683,7 +1776,7 @@ export default function ModelsTableDisplay({
 
 						<div className="lg:hidden">
 							<div className="flex h-8 items-center justify-between gap-3">
-								<h1 className="font-bold text-xl leading-8">Models</h1>
+								<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 								<div className="flex shrink-0 items-center justify-end gap-2">
 									{privateFilterButton}
 									{filterButton()}
@@ -1696,7 +1789,7 @@ export default function ModelsTableDisplay({
 								<div className="relative min-w-0">
 									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 									<Input
-										placeholder="Search"
+									placeholder={t("searchPlaceholder")}
 										value={search}
 										onChange={(e) =>
 											setSearch(e.target.value || "", {
@@ -1720,6 +1813,7 @@ export default function ModelsTableDisplay({
 									toggleInList(selectedOutputModalities, value),
 								)
 							}
+							labelForValue={translateModality}
 						/>
 					</div>
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />
@@ -1743,8 +1837,8 @@ export default function ModelsTableDisplay({
 					<SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
 						<div className="flex items-start justify-between gap-3 pr-8">
 							<div>
-								<SheetTitle>Filters</SheetTitle>
-								<SheetDescription>Refine the models list.</SheetDescription>
+								<SheetTitle>{t("filters")}</SheetTitle>
+								<SheetDescription>{tFilters("refineModelsList")}</SheetDescription>
 							</div>
 							{activeFilterCount > 0 ? (
 								<Button
@@ -1754,7 +1848,7 @@ export default function ModelsTableDisplay({
 									className="h-8 px-2"
 									onClick={resetFilters}
 								>
-									Reset
+									{tFilters("reset")}
 								</Button>
 							) : null}
 						</div>

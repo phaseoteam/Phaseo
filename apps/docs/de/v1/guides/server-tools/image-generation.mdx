@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "Bildgenerierung"
+description: "Lass Modelle über ein Phaseo-Server-Tool Bilder erstellen."
+---
+
+Verwende `phaseo:image_generation`, wenn das Modell während seiner Antwort ein Bild erstellen soll. Phaseo stellt dem Modell ein verwaltetes Tool bereit, führt die Bildanfrage serverseitig aus und gibt das Ergebnis an den Modellablauf zurück.
+
+## Anfrage
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## Parameter
+
+| Parameter | Typ | Beschreibung |
+| --- | --- | --- |
+| `model` | string | Optionale ID eines bildfähigen Modells. Standardmäßig wird `openai/gpt-image-2` verwendet, wenn weder das Tool noch der Aufruf ein Modell angibt. |
+| `quality` | string | Optionaler Qualitätshinweis für den Provider, z. B. `low`, `medium` oder `high`. |
+| `size` | string | Optionaler Hinweis zur Bildgröße. |
+| `aspect_ratio` | string | Optionales Seitenverhältnis, z. B. `1:1`, `16:9` oder `9:16`. |
+| `background` | string | Optionaler Hinweis zum Hintergrundmodus. |
+| `output_format` | string | Optionales Ausgabeformat, z. B. `png`, `jpeg` oder `webp`. |
+| `output_compression` | integer | Optionaler Kompressionshinweis für den Provider. |
+| `moderation` | string | Optionaler Moderationshinweis für den Provider. |
+
+Das Modell übergibt beim Tool-Aufruf den endgültigen `prompt`. Die Tool-Parameter legen Standardwerte und Einschränkungen für diesen Aufruf fest.
+
+Der Tool-Aufruf kann statt `prompt` auch `description` senden. Aus Kompatibilitätsgründen mit modellgenerierten Bildbeschreibungen behandelt Phaseo `description` als Prompt-Alias.
+
+## Tool-Ergebnis
+
+Das Ergebnis wird im JSON-Format an das Modell zurückgegeben:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+Manche Provider geben stattdessen Bilddaten in Base64 zurück:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## Nutzung und Preise
+
+Die Nutzung der Bildgenerierung wird in der Gesamtnutzung der übergeordneten Antwort berücksichtigt, wenn das Bildmodell den Tokenverbrauch meldet. Phaseo erfasst außerdem:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Preiskarten können dies über den Zähler `server_tool_image_generation_requests` abrechnen. Die Nutzung des zugrunde liegenden Bildmodells kann zusätzlich nach dessen regulären Preisen berechnet werden.
+
+## Verwandte Seiten
+
+- [Server-Tools](./index.mdx)
+- [Tool-Aufrufe](../tool-calling.mdx)

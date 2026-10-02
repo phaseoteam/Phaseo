@@ -8,6 +8,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import {
   BrainIcon,
   ChevronDownIcon,
@@ -82,6 +83,7 @@ export type ChainOfThoughtHeaderProps = ComponentProps<
 export const ChainOfThoughtHeader = memo(
   ({ className, children, ...props }: ChainOfThoughtHeaderProps) => {
     const { isOpen, setIsOpen } = useChainOfThought();
+    const t = useTranslations("Product.chatRooms.aiElements");
 
     return (
       <Collapsible onOpenChange={setIsOpen} open={isOpen}>
@@ -94,7 +96,7 @@ export const ChainOfThoughtHeader = memo(
         >
           <BrainIcon className="size-4" />
           <span className="flex-1 text-left">
-            {children ?? "Chain of Thought"}
+            {children ?? t("chainOfThought")}
           </span>
           <ChevronDownIcon
             className={cn(

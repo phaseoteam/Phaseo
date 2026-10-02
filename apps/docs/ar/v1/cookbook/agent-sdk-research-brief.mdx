@@ -1,0 +1,163 @@
+---
+title: "البحث باستخدام المخرجات المنظّمة والبحث على الويب"
+icon: "telescope"
+description: "أنشئ وكيل TypeScript يستخدم البحث على الويب ويعيد JSON صارمًا عبر Agent SDK."
+---
+
+استخدم هذه الوصفة عندما يحتاج سير عمل الوكيل إلى:
+
+- التشغيل عبر TypeScript Agent SDK
+- الاعتماد على البحث المُدار على الويب
+- إرجاع JSON منظّم صارم
+- استعادة JSON غير السليم شبه الصالح بطريقة حتمية
+
+## 1. ثبّت حزم SDK
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. عرّف عقدًا ضيق النطاق للمخرجات
+
+اجعل نتيجة البحث الأولى صغيرة بما يكفي ليفحصها المشغّلون بسهولة في السجلات.
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. أنشئ الوكيل
+
+استخدم `parseOutput` ليعيد وقت التشغيل بيانات مكتوبة النوع بدلًا من نص خام.
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "phaseo/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. هيّئ محوّل Gateway مرة واحدة
+
+هذه هي النقاط المهمة:
+
+- يحدد `responseFormat` مخطط المخرجات بوضوح
+- يفعّل `plugins` إصلاح استجابات JSON شبه الصالحة
+- يتيح `gatewayTools` البحث المُدار على الويب للنموذج
+- يفرض `toolChoice` استخدام أداة البحث عندما ينبغي أن يستند سير العمل دائمًا إلى المصادر
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "phaseo:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. شغّل سير العمل
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. ما ينبغي التحقق منه في السجلات
+
+بعد نجاح التشغيل، افحص تفاصيل الطلب وتأكد مما يلي:
+
+- ظهور أدوات البحث الأصلية المطلوبة على الويب أو نشاط البحث المُدار
+- حفظ نتائج البحث والاستشهادات
+- ظهور `response-healing` ضمن تنفيذ الإضافة فقط عند الحاجة إلى الاستعادة
+- مطابقة المخرجات النهائية لمخطط JSON المطلوب
+
+## 7. متى تستخدم هذا النمط
+
+استخدم هذه الوصفة عندما:
+
+- يكون سير العمل بحثًا لمرة واحدة في الغالب، لا حلقة عميقة من الأدوات المحلية
+- ينبغي للنموذج الاستناد إلى المصادر قبل الإجابة
+- يحتاج المستدعون اللاحقون إلى JSON مكتوب النوع بدلًا من النثر
+
+لا تستخدم هذا النمط عندما:
+
+- يعرف سير العمل عناوين URL الدقيقة مسبقًا ويكفي `phaseo:web_fetch`
+- يحتاج الوكيل إلى أدوات محلية متقدمة أكثر من أدوات الموفّر الأصلية
+- يكون عقد المخرجات مرنًا لدرجة تجعل كلفة JSON الصارم أكبر من فائدته
+
+## أدلة ذات صلة
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [المخرجات المنظّمة](../guides/structured-outputs.mdx)
+- [التحقق من المخرجات المنظّمة](../guides/structured-outputs.mdx)
+- [تصحيح أخطاء طلبات البحث على الويب](./web-search-debugging.mdx)
+- [استعادة JSON منظّم غير سليم](./response-healing-for-structured-json.mdx)

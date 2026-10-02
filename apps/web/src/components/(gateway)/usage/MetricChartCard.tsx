@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Maximize2, TrendingUp, TrendingDown } from "lucide-react";
@@ -107,6 +108,7 @@ export default function MetricChartCard({
 	onClick,
 	metricType = "number",
 }: MetricChartCardProps) {
+	const t = useTranslations("SettingsUI");
 	const displayFormat = useDisplayFormatters();
 	const [activeSeriesKey, setActiveSeriesKey] = React.useState<string | null>(
 		null,
@@ -230,7 +232,7 @@ export default function MetricChartCard({
 				<div className="flex items-end justify-between gap-3 flex-wrap">
 					<div className="text-3xl font-bold">{format(currentValue)}</div>
 					<div className="text-sm text-muted-foreground">
-						Avg:{" "}
+						{t("strings.Avg" as never)}:{" "}
 						<span className="font-mono font-medium text-foreground">
 							{format(metricType === "currency" ? avgValue : Math.round(avgValue))}
 						</span>
@@ -309,9 +311,9 @@ export default function MetricChartCard({
 				</div>
 
 				<div className="mt-3 border-t pt-2 space-y-1.5">
-					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">Top Models</div>
+					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("strings.Top Models" as never)}</div>
 					{topSeriesRows.length === 0 ? (
-						<div className="text-xs text-muted-foreground">No usage yet.</div>
+						<div className="text-xs text-muted-foreground">{t("strings.phraseNoUsageYet" as never)}</div>
 					) : (
 						topSeriesRows.map((row: TopSeriesRow) => (
 							<div key={row.key} className="flex items-center gap-2 text-xs">
@@ -326,7 +328,7 @@ export default function MetricChartCard({
 									}}
 								/>
 								<span className="truncate text-muted-foreground">
-									{row.key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(row.key, modelMetadata)}
+									{row.key === OTHER_SERIES_KEY ? t("strings.Other" as never) : getModelDisplayName(row.key, modelMetadata)}
 								</span>
 								<span className="ml-auto font-mono text-foreground">{format(row.total)}</span>
 							</div>

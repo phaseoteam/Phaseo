@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "响应 Java 运行、模型、步骤、工具和检查点事件。"
+---
+
+在 `RunOptions` 中传入事件消费者，即可将 Agent 接入产品时间线、审计日志或遥测管道：
+
+```java
+event -> logger.info("{} {}", event.type(), event.runId())
+```
+
+事件类型包括：
+
+- 运行开始、恢复、等待人工处理、完成、取消和失败
+- 步骤开始、检查点、完成、取消和失败
+- 模型请求、完成和失败
+- 工具开始、初步进度、完成和失败
+
+回调应快速返回。将较慢的存储或网络操作排入运行循环之外的队列。
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

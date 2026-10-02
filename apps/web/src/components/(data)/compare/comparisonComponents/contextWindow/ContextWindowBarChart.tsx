@@ -17,6 +17,9 @@ interface ContextWindowBarChartProps {
 	chartData: { [key: string]: string | number | null }[];
 	models: { name: string; provider: string }[];
 	CustomTooltip: React.FC<any>;
+	locale: string;
+	inputLabel: string;
+	outputLabel: string;
 	barGap?: number;
 }
 
@@ -25,6 +28,9 @@ export default function ContextWindowBarChart({
 	chartData,
 	models,
 	CustomTooltip,
+	locale,
+	inputLabel,
+	outputLabel,
 	barGap = 32,
 }: ContextWindowBarChartProps) {
 	const format = useDisplayFormatters();
@@ -84,7 +90,7 @@ export default function ContextWindowBarChart({
 					tickLine={false}
 					domain={[0, niceMax]}
 					ticks={ticks}
-					tickFormatter={formatTokens}
+					tickFormatter={(value) => format.number(Number(value))}
 					allowDecimals={false}
 				/>
 				<YAxis
@@ -106,7 +112,7 @@ export default function ContextWindowBarChart({
 				/>
 				<Bar
 					dataKey="input"
-					name="Input Context"
+					name={inputLabel}
 					fill={COLORS.input}
 					barSize={36}
 					radius={[0, 10, 10, 0]}
@@ -114,7 +120,7 @@ export default function ContextWindowBarChart({
 				/>
 				<Bar
 					dataKey="output"
-					name="Output Context"
+					name={outputLabel}
 					fill={COLORS.output}
 					barSize={36}
 					radius={[0, 10, 10, 0]}

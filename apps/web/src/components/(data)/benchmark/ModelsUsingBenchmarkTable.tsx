@@ -1,7 +1,9 @@
 "use client";
+import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 
 import React from "react";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
@@ -23,29 +25,27 @@ interface ClientProps {
 	isLowerBetter: boolean;
 }
 
-const reportedDateFormatter = new Intl.DateTimeFormat("en-GB", {
-	day: "2-digit",
-	month: "short",
-	year: "numeric",
-});
-
-function formatReportedDate(value?: string | null) {
+function formatReportedDate(value: string | null | undefined, locale: string) {
 	if (!value) return "-";
 	const parsed = new Date(value);
 	if (Number.isNaN(parsed.getTime())) return "-";
-	return reportedDateFormatter.format(parsed);
+	return new Intl.DateTimeFormat(locale, {
+		day: "2-digit",
+		month: "short",
+		year: "numeric",
+	}).format(parsed);
 }
 
-function configurationLabel(result: any) {
+function configurationCode(result: any) {
 	const variant = typeof result?.variant === "string" ? result.variant : null;
-	if (variant === "none") return "Non-reasoning";
-	if (variant === "xhigh") return "Xhigh";
-	if (variant) return variant.charAt(0).toUpperCase() + variant.slice(1);
+
+
+	if (variant) return variant.toLowerCase();
 	const description = typeof result?.other_info === "string" ? result.other_info.split(";")[0] : "";
 	const detail = description.match(/\((.+)\)$/)?.[1] ?? "";
-	if (/max effort/i.test(detail)) return "Max";
+	if (/max effort/i.test(detail)) return "max";
 	const namedEffort = detail.match(/\b(none|low|medium|high|xhigh|max)\b/i)?.[1];
-	return namedEffort ? (namedEffort.toLowerCase() === "none" ? "Non-reasoning" : namedEffort.charAt(0).toUpperCase() + namedEffort.slice(1).toLowerCase()) : "Default";
+	return namedEffort?.toLowerCase() ?? "default";
 }
 
 export default function ModelsUsingBenchmarkClient({
@@ -54,6 +54,9 @@ export default function ModelsUsingBenchmarkClient({
 	benchmarkType,
 	isLowerBetter,
 }: ClientProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.benchmarks");
+	const tx = useTranslations();
 	const [openRows, setOpenRows] = React.useState<Record<string, boolean>>({});
 	const [search, setSearch] = React.useState("");
 	const [configuration, setConfiguration] = React.useState("all");
@@ -63,8 +66,8 @@ export default function ModelsUsingBenchmarkClient({
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmarkId);
 	const rankedLeaderboard = artificialAnalysis || epochCapabilitiesIndex;
 	const allArtificialAnalysisRows = models.flatMap((model) => (model.benchmark_results || []).map((result: any) => ({ model, result })));
-	const configurations = [...new Set(allArtificialAnalysisRows.map(({ result }) => configurationLabel(result)))].sort();
-	const artificialAnalysisRows = allArtificialAnalysisRows.filter(({ result }) => configuration === "all" || configurationLabel(result) === configuration).sort((left, right) => {
+	const configurations = [...new Set(allArtificialAnalysisRows.map(({ result }) => configurationCode(result)))].sort();
+	const artificialAnalysisRows = allArtificialAnalysisRows.filter(({ result }) => configuration === "all" || configurationCode(result) === configuration).sort((left, right) => {
 		const difference = Number(left.result.score) - Number(right.result.score);
 		return isLowerBetter ? difference : -difference;
 	}).map((row, index, rows) => ({
@@ -74,7 +77,7 @@ export default function ModelsUsingBenchmarkClient({
 	const visibleArtificialAnalysisRows = artificialAnalysisRows.filter(({ model }) => `${model.name} ${model.organisation?.display_name ?? ""}`.toLowerCase().includes(search.toLowerCase()));
 
 	function formatScoreDisplay(r: any) {
-		const rawScore = r?.score ?? "N/A";
+		const rawScore = r?.score ?? tx("Product.latency.nA" as never);
 		const isPercentage = resolveBenchmarkIsPercentage({
 			benchmarkType,
 			rawScore,
@@ -84,15 +87,16 @@ export default function ModelsUsingBenchmarkClient({
 			isPercentage
 		);
 		if (parsed !== null) {
-			if (isArtificialAnalysisBenchmark(benchmarkId)) return formatArtificialAnalysisScore(benchmarkId, parsed);
+			if (isArtificialAnalysisBenchmark(benchmarkId)) return formatArtificialAnalysisScore(benchmarkId, parsed, locale);
 			return formatBenchmarkScore({
 				value: parsed,
 				isPercentage,
 				fallback: rawScore,
+				locale,
 			});
 		}
-		if (rawScore !== "N/A" && typeof rawScore === "string") return rawScore;
-		return rawScore;
+		if (rawScore !== tx("Product.latency.nA" as never) && typeof rawScore === "string") return rawScore;
+		return tx("Catalogue.modelDetail.pricing.notAvailable" as never);
 	}
 
 	function sortResults(resultsArr: any[], isLowerBetter = false) {
@@ -130,11 +134,11 @@ export default function ModelsUsingBenchmarkClient({
 		<div className="space-y-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<h3 className="text-lg font-semibold">
-					Model Results
+					{t("tocModelResults")}
 				</h3>
 				<div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-					{artificialAnalysis ? <Select value={configuration} onValueChange={(value) => { setConfiguration(value); setLimit(25); }}><SelectTrigger aria-label="Filter Results by Configuration" className="sm:w-48"><SelectValue>{configuration === "all" ? "All Configurations" : configuration}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Configurations</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select> : null}
-					<Input aria-label="Search Benchmark Results" placeholder="Search Models" value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:w-64" />
+					{artificialAnalysis ? <Select value={configuration} onValueChange={(value) => { setConfiguration(value); setLimit(25); }}><SelectTrigger aria-label={tx("Common.ui.benchmarkChartCopy.filterResultsByConfiguration" as never)} className="sm:w-48"><SelectValue>{configuration === "all" ? tx("Catalogue.benchmarks.allConfigurations" as never) : localizedBenchmarkConfiguration(configuration, tx)}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">{tx("Catalogue.benchmarks.allConfigurations" as never)}</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{localizedBenchmarkConfiguration(value, tx)}</SelectItem>)}</SelectContent></Select> : null}
+					<Input aria-label={tx("Common.ui.benchmarkChartCopy.searchBenchmarkResults" as never)} placeholder={tx("Product.internalTools.dataEditor.searchModelsPlaceholder" as never)} value={search} onChange={(event) => { setSearch(event.target.value); setLimit(25); }} className="sm:w-64" />
 				</div>
 			</div>
 			{visibleArtificialAnalysisRows.length > 0 && rankedLeaderboard ? (
@@ -143,26 +147,26 @@ export default function ModelsUsingBenchmarkClient({
 						<table className="min-w-[580px] w-full text-sm">
 							<thead className="border-b bg-muted/40 text-xs text-muted-foreground">
 								<tr>
-									<th className="w-14 px-4 py-3 text-left font-medium">Rank</th>
-									<th className="px-3 py-3 text-left font-medium">Model</th>
-									<th className="w-24 px-3 py-3 text-right font-medium">Score</th>
-									<th className="w-32 px-3 py-3 text-left font-medium">Released</th>
-									<th className="w-14 px-3 py-3"><span className="sr-only">Source</span></th>
+									<th className="w-14 px-4 py-3 text-left font-medium">{tx("Site.homeQuickstart.rank" as never)}</th>
+									<th className="px-3 py-3 text-left font-medium">{tx("Common.ui.chatComposer.model" as never)}</th>
+									<th className="w-24 px-3 py-3 text-right font-medium">{tx("Common.ui.modelEditor.score" as never)}</th>
+									<th className="w-32 px-3 py-3 text-left font-medium">{tx("Common.ui.modelEditor.modelStatuses.released" as never)}</th>
+									<th className="w-14 px-3 py-3"><span className="sr-only">{tx("Common.ui.modelEditor.advanced.benchmarks.source" as never)}</span></th>
 								</tr>
 							</thead>
 							<tbody className="divide-y">
 								{visibleArtificialAnalysisRows.slice(0, limit).map(({ model, result, rank }, index) => {
-									const organisationLabel = model.organisation?.display_name || model.organisation?.name || "Unknown";
-									const configuration = configurationLabel(result);
+									const organisationLabel = model.organisation?.display_name || model.organisation?.name || tx("Common.status.unknown" as never);
+									const configuration = localizedBenchmarkConfiguration(configurationCode(result), tx);
 									return <tr key={result.id ?? `${model.id}-${configuration}-${index}`} className="transition-colors hover:bg-muted/25">
 											<td className="px-4 py-3 font-medium tabular-nums text-muted-foreground">{rank}</td>
 											<td className="px-3 py-3"><div className="flex items-center gap-3">
 												<span className="relative size-7 shrink-0 overflow-hidden rounded-md bg-muted"><Logo id={model.organisation?.organisation_id ?? model.id} alt="" fill className="object-contain p-1" /></span>
 												<div className="min-w-0"><Link href={`/models/${model.id}`} className="block truncate font-medium hover:underline">{model.name}{artificialAnalysis ? <span className="text-muted-foreground"> ({configuration})</span> : null}</Link><span className="block truncate text-xs text-muted-foreground">{organisationLabel}</span></div>
 											</div></td>
-											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}{epochCapabilitiesIndex && typeof result.other_info === "string" && result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i) ? <span className="block whitespace-nowrap text-[10px] font-normal text-muted-foreground">95% CI {result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[1]}–{result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[2]}</span> : null}</td>
-											<td className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date)}</td>
-											<td className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={`Open source for ${model.name} ${configuration}`}><ExternalLink /></a></Button> : null}</td>
+											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}{epochCapabilitiesIndex && typeof result.other_info === "string" && result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i) ? <span className="block whitespace-nowrap text-[10px] font-normal text-muted-foreground">{tx("Catalogue.benchmarks.confidenceInterval", { low: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[1]).toLocaleString(locale), high: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[2]).toLocaleString(locale) })}</span> : null}</td>
+											<td className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date, locale)}</td>
+											<td className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={tx("Common.ui.benchmarkChartCopy.openSourceForModelConfiguration", { model: model.name, configuration })}><ExternalLink /></a></Button> : null}</td>
 										</tr>
 									;
 								})}
@@ -176,20 +180,20 @@ export default function ModelsUsingBenchmarkClient({
 						<thead className="bg-zinc-100 dark:bg-zinc-800">
 							<tr>
 								<th className="px-4 py-2 text-left">
-									Organisation
+									{t("columnOrganization")}
 								</th>
-								<th className="px-4 py-2 text-left">Model</th>
+								<th className="px-4 py-2 text-left">{t("models")}</th>
 								<th className="px-4 py-2 text-left">
-									Reported
+									{t("columnReported")}
 								</th>
 								<th className="px-4 py-2 text-left">
-									Top Score
+									{t("columnTopScore")}
 								</th>
-								<th className="px-4 py-2 text-left">Info</th>
+								<th className="px-4 py-2 text-left">{t("columnInfo")}</th>
 								<th className="px-4 py-2 text-center">
-									Self Reported
+									{t("columnSelfReported")}
 								</th>
-								<th className="px-4 py-2 text-left">Source</th>
+								<th className="px-4 py-2 text-left">{t("columnSource")}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -213,7 +217,7 @@ export default function ModelsUsingBenchmarkClient({
 									model.organisation?.display_name ||
 									model.organisation?.name ||
 									model.organisation?.organisation_id ||
-									"Unknown";
+									tx("Common.status.unknown" as never);
 								const organisationTitle =
 									model.organisation?.display_name ??
 									model.organisation?.name ??
@@ -252,7 +256,7 @@ export default function ModelsUsingBenchmarkClient({
 																	model
 																		.organisation
 																		?.name ||
-																	"Organisation logo"
+												t("organizationLogoAlt")
 																}
 																width={24}
 																height={24}
@@ -300,8 +304,8 @@ export default function ModelsUsingBenchmarkClient({
 														}
 														aria-label={
 															isOpen
-																? "Hide scores"
-																: "Show scores"
+										? t("hideScores")
+										: t("showScores")
 														}
 													>
 														{isOpen ? (
@@ -322,10 +326,11 @@ export default function ModelsUsingBenchmarkClient({
 													</span>
 												</Link>
 											</td>
-											<td className="px-4 py-2 text-left">
-												{formatReportedDate(
-													model.reported_date
-												)}
+							<td className="px-4 py-2 text-left">
+								{formatReportedDate(
+									model.reported_date,
+									locale
+								)}
 											</td>
 											<td className="px-4 py-2 font-mono">
 												{top
@@ -343,7 +348,7 @@ export default function ModelsUsingBenchmarkClient({
 															: "rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200"
 													}
 												>
-													{anySelf ? "Yes" : "No"}
+									{anySelf ? t("yes") : t("no")}
 												</span>
 											</td>
 											<td className="px-4 py-2 text-left">
@@ -355,7 +360,7 @@ export default function ModelsUsingBenchmarkClient({
 														className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 													>
 														<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-															Source
+															{t("columnSource")}
 														</span>
 														<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 													</a>
@@ -401,13 +406,13 @@ export default function ModelsUsingBenchmarkClient({
 																}
 																title={
 																	item.is_self_reported
-																		? "Self-reported (may be less reliable)"
-																		: "Not self-reported (more reliable)"
+											? t("selfReportedTitle")
+											: t("notSelfReportedTitle")
 																}
 															>
 																{item.is_self_reported
-																	? "Yes"
-																	: "No"}
+											? t("yes")
+											: t("no")}
 															</span>
 														</td>
 														<td className="px-4 py-2">
@@ -421,7 +426,7 @@ export default function ModelsUsingBenchmarkClient({
 																	className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 																>
 																	<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-																		Source
+																		{t("columnSource")}
 																	</span>
 																	<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 																</a>
@@ -440,10 +445,10 @@ export default function ModelsUsingBenchmarkClient({
 				</div>
 			) : (
 				<p className="text-muted-foreground">
-					{search ? "No models match your search." : "No results available for this benchmark yet."}
+					{search ? t("noModelsMatchSearch") : t("noBenchmarkResults")}
 				</p>
 			)}
-			{(rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length) > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>Show more results ({limit} of {rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length})</Button> : null}
+			{(rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length) > limit ? <Button variant="outline" size="sm" onClick={() => setLimit((value) => value + 25)}>{tx("Common.ui.benchmarkChartCopy.showMoreResultsShownOfTotal", { shown: limit, total: rankedLeaderboard ? visibleArtificialAnalysisRows.length : filteredModels.length })}</Button> : null}
 		</div>
 	);
 }

@@ -1,5 +1,8 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Table,
@@ -28,35 +31,36 @@ type TopModelsProps = {
 
 const VARIANT_META: Record<
 	Required<TopModelsProps>["variant"],
-	{ title: string; column: string }
+	{ titleKey: string; columnKey: string }
 > = {
-	model: { title: "Top Models (by spend)", column: "Model" },
-	key: { title: "Top API Keys (by spend)", column: "API Key" },
+	model: { titleKey: "Top Models (by spend)", columnKey: "Model" },
+	key: { titleKey: "Top API Keys (by spend)", columnKey: "API Key" },
 };
 
 export default function TopModels({
 	rows,
 	variant = "model",
 }: TopModelsProps) {
+	const t = useTranslations("SettingsUI");
 	const meta = VARIANT_META[variant];
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{meta.title}</CardTitle>
+				<CardTitle>{t(settingsStringKey(meta.titleKey) as never)}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>{meta.column}</TableHead>
-							<TableHead className="text-right">Spend</TableHead>
+							<TableHead>{t(settingsStringKey(meta.columnKey) as never)}</TableHead>
+							<TableHead className="text-right">{t("strings.Spend" as never)}</TableHead>
 							<TableHead className="text-right">
-								Requests
+								{t("strings.Requests" as never)}
 							</TableHead>
-							<TableHead className="text-right">Tokens</TableHead>
+							<TableHead className="text-right">{t("strings.Tokens" as never)}</TableHead>
 							<TableHead className="text-right">
-								Avg Latency (ms)
+								{t("strings.Avg Latency (ms)" as never)}
 							</TableHead>
 						</TableRow>
 					</TableHeader>

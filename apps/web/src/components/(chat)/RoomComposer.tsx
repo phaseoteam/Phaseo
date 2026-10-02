@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { useTranslations } from "next-intl";
 import { Check, Plus, type LucideIcon } from "lucide-react";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export type RoomComposerTool = {
 };
 
 export function RoomComposerToolsMenu({ tools }: { tools: RoomComposerTool[] }) {
+	const t = useTranslations("Common.ui.accessibility");
 	if (tools.length === 0) return null;
 
 	return (
@@ -29,7 +31,7 @@ export function RoomComposerToolsMenu({ tools }: { tools: RoomComposerTool[] }) 
 					variant="ghost"
 					size="icon"
 					className="h-8 w-8"
-					aria-label="Open action menu"
+					aria-label={t("openActionMenu")}
 					data-chat-room-tools-trigger="true" />}>
 
 					<Plus className="h-4 w-4" />

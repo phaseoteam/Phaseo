@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "State और approval"
+description: "मानवीय निर्णय लेने और ऐप-प्रबंधित state से जारी रखने के लिए Go एजेंट रोकें।"
+---
+
+सामान्य checkpoint के लिए `HumanReview` उपयोग करें। approval-gated और manual tools सटीक call IDs को `Run.Pause.PendingToolCalls` में रखते हैं।
+
+`Agent.Continue(...)` से जारी रखें और यह दें:
+
+- `Approvals` या `Rejections` में `ToolDecision` entry
+- मैन्युअल काम के लिए `ToolOutput` entry
+- सामान्य समीक्षा विराम के लिए `HumanInput`
+- पिछला `RunResult` या `StateAccessor` के साथ `RunID`
+
+निर्णय सटीक call IDs उपयोग करते हैं, इसलिए एक ही tool की साथ हुई calls अलग रहती हैं। requests या restarts के बाद भी रन बनाए रखने के लिए `StateAccessor.Load(...)` और `Save(...)` लागू करें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

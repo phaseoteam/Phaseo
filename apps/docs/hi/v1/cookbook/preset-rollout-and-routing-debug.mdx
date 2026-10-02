@@ -1,0 +1,111 @@
+---
+title: "प्रीसेट रोलआउट करें और रूटिंग डीबग करें"
+icon: "route"
+description: "prompt और routing डिफ़ॉल्ट एकसमान करने के लिए प्रीसेट इस्तेमाल करें, फिर अनुरोध विवरण देखकर समझें कि Phaseo ने उसे कैसे रूट किया।"
+---
+
+हर जगह समान prompt, मॉडल और routing डिफ़ॉल्ट कॉपी करने के बजाय कई सेवाओं में एक प्रीसेट दोबारा इस्तेमाल करने के लिए यह रेसिपी अपनाएँ।
+
+## लक्ष्य
+
+- prompt और पैरामीटर के डिफ़ॉल्ट एकसमान करें।
+- रोलआउट या अनुपालन सीमाओं के लिए इस्तेमाल किए जा सकने वाले प्रदाताओं को सीमित करें।
+- अनुरोध के रूट होने का कारण समझाने के लिए पर्याप्त संदर्भ रखें।
+
+## 1. प्रीसेट बनाएँ
+
+**डैशबोर्ड -> सेटिंग -> प्रीसेट** में यह जानकारी देकर प्रीसेट बनाएँ:
+
+- स्पष्ट नाम और slug
+- system prompt
+- स्वीकृत मॉडल
+- प्रदाता प्राथमिकताएँ
+- `temperature` जैसे डिफ़ॉल्ट पैरामीटर मान
+
+कॉल करने वाले कोड में प्रीसेट slug इस्तेमाल करें, ताकि अलग-अलग परिवेशों में समान अनुरोध नीति दोबारा इस्तेमाल हो सके।
+
+## 2. अनुरोध बॉडी छोटा रखें
+
+प्रीसेट का मुख्य लाभ यह है कि कॉलर को हर अनुरोध में समान routing और prompt डिफ़ॉल्ट दोहराने की ज़रूरत नहीं होती।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. समझें कि प्रीसेट क्या बदलता है
+
+प्रदाता रूटिंग से पहले प्रीसेट लागू होता है:
+
+- अनुरोध में मौजूद न होने वाले पैरामीटर प्रीसेट से भरे जाते हैं
+- प्रीसेट prompt system layer के आगे जोड़ा जाता है
+- प्रदाता की प्राथमिकताएँ रैंकिंग से पहले उपलब्ध प्रदाताओं की सूची सीमित करती हैं
+- मॉडल प्रतिबंधों की शुरुआत में जाँच होती है; चुपचाप दूसरी रूट पर नहीं भेजा जाता
+
+## 4. रूटिंग परिणाम डीबग करें
+
+अनुरोध अपेक्षित तरीके से रूट न हो तो उसे **Gateway -> Usage** में खोलकर देखें:
+
+- विचार किए गए प्रदाता
+- रैंक किए गए उम्मीदवार
+- हर उम्मीदवार से जुड़े routing कारक
+- workspace नीति या guardrail के कारण हुए ब्लॉक
+
+इन सवालों के जवाब पाने का यह सबसे तेज़ तरीका है:
+
+- प्रदाता को क्यों छोड़ा गया
+- अनुरोध क्यों ब्लॉक हुआ
+- कम लागत या कम विलंबता वाला लक्ष्य रैंकिंग में क्यों जीता
+
+## 5. परिचालन पैटर्न
+
+रूटिंग व्यवहार बदलते समय यह रोलआउट पैटर्न अपनाएँ:
+
+1. नई नीति के लिए नया प्रीसेट slug बनाएँ।
+2. कम जोखिम वाले एक कॉलर को नए प्रीसेट पर ले जाएँ।
+3. अनुरोध विवरण और गतिविधि रुझान देखें।
+4. रूटिंग परिणाम अपेक्षा के अनुरूप होने के बाद ही रोलआउट बढ़ाएँ।
+
+## संबंधित गाइड
+
+- [प्रीसेट](../guides/presets.mdx)
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [त्रुटि प्रबंधन](../api-reference/errors.mdx)

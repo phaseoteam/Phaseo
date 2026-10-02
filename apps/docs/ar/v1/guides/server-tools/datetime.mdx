@@ -1,0 +1,84 @@
+---
+icon: "clock-3"
+title: "أداة التاريخ والوقت للخادم"
+description: "زوّد النماذج بالتاريخ والوقت الحاليين في منطقة زمنية واحدة أو أكثر."
+---
+
+استخدم `phaseo:datetime` عندما يعتمد الطلب على التاريخ الحالي أو يوم الأسبوع أو الوقت أو المنطقة الزمنية.
+
+يحدد النموذج وقت استدعاء الأداة. يعيد Phaseo المناطق الزمنية المحسومة والطوابع الزمنية الحالية إلى النموذج، ثم يكتب النموذج الإجابة النهائية.
+
+## البدء السريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What day of the week is it in Tokyo?" }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:datetime",
+        "parameters": {
+          "timezones": ["Asia/Tokyo", "UTC"]
+        }
+      }
+    ]
+  }'
+```
+
+## الإعدادات
+
+```json
+{
+  "type": "phaseo:datetime",
+  "parameters": {
+    "timezones": ["Europe/London", "UTC"]
+  }
+}
+```
+
+| المعلمة | النوع | القيمة الافتراضية | الوصف |
+| --- | --- | --- | --- |
+| `timezones` | string[] | `["UTC"]` | ما يصل إلى 5 أسماء مناطق زمنية من IANA لإرجاعها في استدعاء أداة واحد، مثل `["Europe/London", "UTC"]`. |
+
+## نتيجة الأداة
+
+تتضمن نتيجة الأداة إدخالًا لكل منطقة زمنية مطلوبة.
+
+```json
+{
+  "timezones": [
+    {
+      "timezone": "Europe/London",
+      "datetime": "2026-07-03T10:00:00.123+01:00"
+    },
+    {
+      "timezone": "UTC",
+      "datetime": "2026-07-03T09:00:00.123+00:00"
+    }
+  ]
+}
+```
+
+## الاستخدام
+
+تزيد استدعاءات Datetime القيمة التالية:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "datetime_requests": 1
+    }
+  }
+}
+```
+
+## صفحات ذات صلة
+
+- [أدوات الخادم](./index.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)

@@ -1,0 +1,33 @@
+---
+icon: "mic"
+title: "语音转文本（STT）"
+description: "使用 TypeScript SDK 调用 /audio/transcriptions。"
+---
+
+**方法**：`client.generateTranscription()`。
+
+### 示例
+```typescript
+const transcript = await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+  language: "en",
+});
+```
+
+### 关键参数
+- `model`（必填）：支持转录的模型 ID。
+- `file`（必填）：音频数据（URL、base64 或二进制）。
+- `language`：语言代码提示（例如 `en`）。
+- `prompt`：用于提高准确度的可选上下文。
+- `temperature`（0–2）：采样随机度。
+- `response_format`：`json`、`text`、`srt`、`verbose_json` 等。
+
+### 返回值
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

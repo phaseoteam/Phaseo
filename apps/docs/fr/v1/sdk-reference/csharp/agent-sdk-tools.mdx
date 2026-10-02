@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Outils"
+description: "Définissez des outils C# validés, soumis à approbation, manuels et capables de produire des événements de progression."
+---
+
+Créez des enregistrements `Tool` et transmettez-les via `AgentSdk.DefineTool(...)`. Un outil peut inclure :
+
+- des `Parameters` JSON présentés au modèle
+- des délégués de validation `InputSchema`, `OutputSchema` et `EventSchema`
+- un `Timeout` propre à chaque outil et un délégué asynchrone `Execute`
+- une approbation inconditionnelle ou conditionnelle
+- `OnToolCalled` et `OnResponseReceived` pour le travail interactif
+- des remplacements pour le tour suivant et une gestion récupérable des erreurs d’outils
+
+Utilisez `RuntimeContext.EmitProgress` pour communiquer les résultats préliminaires, `SetContext` pour le contexte de l’application et `CancellationToken` pour les dépendances compatibles avec l’annulation.
+
+Les outils indépendants peuvent s’exécuter en parallèle via `ToolExecutionConfig`. Les messages de résultat enregistrés conservent l’ordre des appels du modèle, même si les exécutions se terminent dans un ordre différent.
+
+## À lire aussi
+
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

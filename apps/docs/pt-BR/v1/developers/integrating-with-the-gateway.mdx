@@ -1,0 +1,231 @@
+---
+title: "Integração com o Gateway"
+description: "Conecte um aplicativo ao Phaseo Gateway, escolha um endpoint e prepare a integração para produção."
+sidebarTitle: "Integração com o Gateway"
+icon: "plug-zap"
+---
+
+Use este guia depois do início rápido, quando estiver pronto para usar o Phaseo em um recurso real do aplicativo.
+
+Ao final, você terá:
+- uma chave de API armazenada com segurança
+- um endpoint escolhido
+- uma solicitação funcionando no seu aplicativo
+- links para guias de produção sobre roteamento, SDKs e operações
+
+---
+
+## Antes de começar
+
+Antes de começar, verifique se você tem o seguinte:
+
+- Uma conta Phaseo com acesso ao Gateway.
+- Uma chave de API no [painel](https://phaseo.app/gateway/keys).
+- Um cliente HTTP, um SDK compatível com OpenAI ou o SDK Phaseo.
+- Um ID de modelo compatível, como `google/gemma-3-27b:free`, para começar sem gastar créditos.
+
+---
+
+## 1. Armazene a chave de API
+
+1. Abra **Gateway → Chaves de API** no painel da Phaseo.
+2. Crie uma chave com um nome que identifique o aplicativo e o ambiente.
+3. Armazene o valor em um gerenciador de segredos ou arquivo de ambiente local:
+
+```bash
+# .env
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+<Tip>
+Use chaves diferentes para desenvolvimento local, ambientes de prévia e produção. Isso facilita muito a rotação e a revisão do uso.
+</Tip>
+
+---
+
+## 2. Escolha o endpoint
+
+Escolha o endpoint que melhor corresponde ao que você precisa fazer:
+
+| Endpoint                 | Quando usar                                     |
+| ------------------------ | -------------------------------------------------- |
+| `/v1/responses`          | Novas integrações de texto, saídas estruturadas e fluxos com várias etapas. |
+| `/v1/chat/completions`   | Interfaces de chat, assistentes e integrações no estilo OpenAI. |
+| `/v1/messages`           | Integrações compatíveis com Anthropic.                         |
+| `/v1/decisions` | Decisões tipadas com base no estado da aplicação com Jev 1.13. |
+| `/v1/moderations`        | Verificações de segurança e políticas de conteúdo.                  |
+| `/v1/images/generations` | Geração de imagens a partir de prompts de texto.                |
+
+Consulte a [Referência da API](../api-reference/introduction.mdx) para ver a lista completa de parâmetros e respostas compatíveis.
+
+<Note>
+IDs de modelos gratuitos terminam em `:free` e podem ser usados sem depositar créditos. Chamadas a modelos pagos exigem saldo disponível na carteira.
+</Note>
+
+---
+
+## 3. Envie uma solicitação do aplicativo
+
+Comece com o formato de solicitação que provavelmente será mantido no seu app. Este exemplo usa Chat Completions, que funciona bem com clientes compatíveis com OpenAI.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemma-3-27b:free",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain the benefits of AI." }
+    ]
+  }'
+```
+
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "google/gemma-3-27b:free",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "Explain the benefits of AI." },
+  ],
+});
+
+console.log(response.choices[0]?.message?.content);
+```
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="google/gemma-3-27b:free",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain the benefits of AI."},
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+
+```go Go
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
+    "model": "google/gemma-3-27b:free",
+    "messages": []map[string]string{
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Explain the benefits of AI."},
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.ChatCompletions(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["messages"] = new object[]
+    {
+        new Dictionary<string, object> { ["role"] = "system", ["content"] = "You are a helpful assistant." },
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Explain the benefits of AI." }
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->chatCompletions([
+    'model' => 'google/gemma-3-27b:free',
+    'messages' => [
+        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+        ['role' => 'user', 'content' => 'Explain the benefits of AI.'],
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.chat_completions(
+  model: 'google/gemma-3-27b:free',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Explain the benefits of AI.' }
+  ]
+)
+
+puts response
+```
+</CodeGroup>
+
+---
+
+## 4. Configure os ambientes
+
+Armazene sua chave de API em variáveis de ambiente específicas para cada ambiente:
+
+```bash
+# .env.local
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+PHASEO_BASE_URL="https://api.phaseo.app/v1"
+```
+
+Ao fazer solicitações, envie a chave no cabeçalho `Authorization`:
+
+```http
+Authorization: Bearer $PHASEO_API_KEY
+```
+
+---
+
+## 5. Próximos passos para produção
+
+- Consulte [Autenticação](./authentication.mdx) para saber como gerenciar chaves e resolver erros comuns.
+- Conheça [roteamento e fallbacks](../guides/routing-and-fallbacks.mdx) antes de enviar tráfego relevante.
+- Veja os padrões completos de apps e scripts em [Exemplos](../guides/examples.mdx).
+- Consulte a [Referência do SDK](../sdk-reference/typescript/overview.mdx) para encontrar clientes específicos de cada linguagem.

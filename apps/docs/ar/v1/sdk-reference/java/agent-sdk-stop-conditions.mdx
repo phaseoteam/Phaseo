@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "شروط الإيقاف"
+description: "قيّد عمل وكلاء Java بعدد الخطوات أو الرموز أو التكلفة أو المدة أو الأدوات أو سبب الإنهاء."
+---
+
+اجمع دوال الإيقاف في `AgentDefinition.stopWhen`:
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+تشمل الأدوات المساعدة الأخرى `hasToolCall(...)` و`finishReasonIs(...)`. ويسجّل أول شرط مطابق سبب التوقف ويعيد تشغيلًا متوقفًا بدلًا من المتابعة بصمت.
+
+استخدم حدود التكلفة والرموز فقط إذا كان مسار النموذج المحدد يوفّر هذه المعلومات. واحتفظ دائمًا بحد للخطوات أو المدة كقيد احتياطي للتنفيذ.
+
+## مواضيع ذات صلة
+
+- [الخطوات الديناميكية](./agent-sdk-dynamic-turns.mdx)
+- [المخرجات وإعادة المحاولة](./agent-sdk-run-controls.mdx)

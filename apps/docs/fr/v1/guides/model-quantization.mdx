@@ -1,0 +1,38 @@
+---
+icon: "binary"
+title: "Quantification des modèles"
+description: "Présentation de la quantification et suite de la série de guides sur la quantification et les paramètres."
+---
+
+Cette page est le point de départ d’une série complète de guides sur la quantification et les paramètres d’inférence.
+
+Si vous choisissez des variantes de modèle (par exemple `BF16` ou `FP8`) ou réglez les paramètres de requête (`temperature`, `top_p`, budgets de jetons), commencez ici puis suivez les guides associés.
+
+## Qu’est-ce que la quantification ?
+
+La quantification représente les poids et les activations du modèle avec des nombres de précision réduite afin de diminuer l’utilisation de la mémoire et d’accélérer l’inférence.
+
+En général :
+
+- Précision élevée : meilleure qualité et stabilité, mais coût supérieur.
+- Précision réduite : meilleur débit et coût inférieur, mais risque accru pour la qualité.
+
+## Guides de la série
+
+1. [Formats de quantification](./quantization-formats.mdx)
+2. [Méthodes de quantification](./quantization-methods.mdx)
+3. [Choisir une stratégie de quantification](./quantization-selection.mdx)
+4. [Paramètres d’inférence](./inference-parameters.mdx)
+5. [Paramètres d’échantillonnage et de décodage](./sampling-and-decoding.mdx)
+6. [Contexte et budget de jetons](./context-and-token-budgeting.mdx)
+
+## Ordre recommandé
+
+1. Lisez d’abord les formats et les méthodes.
+2. Utilisez le guide de sélection pour choisir une première variante.
+3. Réglez les paramètres d’inférence à partir de cette configuration de référence.
+4. Finalisez les budgets de jetons à partir des traces de prompts de production.
+
+## Rappel pratique
+
+La quantification et le réglage des paramètres doivent toujours être validés avec vos prompts et critères d’acceptation réels, et pas uniquement avec des microbenchmarks synthétiques.

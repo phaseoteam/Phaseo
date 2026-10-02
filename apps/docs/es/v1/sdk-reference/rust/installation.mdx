@@ -1,0 +1,76 @@
+---
+icon: "package"
+title: "Instalación del SDK de Rust"
+description: "Instala phaseo desde crates.io y configura la autenticación de Phaseo Gateway."
+---
+
+Usa esta guía para añadir el cliente de Rust compatible y ponerlo a disposición de tu aplicación.
+
+## Requisitos
+
+- Rust 1.86 o posterior
+- una clave de API de Phaseo Gateway
+
+## Instalar
+
+Añade el cliente y la dependencia JSON:
+
+```toml
+[dependencies]
+phaseo = "0.1"
+serde_json = "1"
+```
+
+O ejecuta:
+
+```bash
+cargo add phaseo@0.1 serde_json
+```
+
+## Configurar tu clave de API
+
+`Phaseo::from_env()` lee `PHASEO_API_KEY`:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+PowerShell:
+
+```powershell
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+Mantén la clave en el servidor. No la incluyas al compilar un cliente de escritorio, móvil, navegador u otro cliente distribuido.
+
+## Verificar la instalación
+
+```rust
+use phaseo::Phaseo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _client = Phaseo::from_env()?;
+    println!("Phaseo Rust client configured");
+    Ok(())
+}
+```
+
+```bash
+cargo run
+```
+
+## Endpoints personalizados
+
+Define `PHASEO_BASE_URL` cuando quieras sustituir `https://api.phaseo.app/v1` por un endpoint de desarrollo o proxy:
+
+```bash
+export PHASEO_BASE_URL="http://localhost:8787/v1"
+```
+
+Los endpoints remotos deben usar HTTPS. Solo se acepta HTTP sin cifrar si el host analizado es exactamente `localhost` o una dirección IP de loopback.
+
+## Siguiente
+
+- [Enviar solicitudes](./usage.mdx)
+- [API Responses](./responses.mdx)
+- [Referencia de la API de Rust](./api-reference.mdx)

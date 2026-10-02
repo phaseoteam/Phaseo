@@ -1,0 +1,373 @@
+[
+  {
+    "reason": "Product, organisation, model, benchmark and programming-language proper names remain in their official spelling.",
+    "texts": [
+      "Phaseo",
+      "Phaseo CLI",
+      "Phaseo Gateway",
+      "GitHub",
+      "GitHub Sponsors",
+      "GitHub Sponsors bot",
+      "OpenAI",
+      "OpenAI API",
+      "OpenAI API (TTFT)",
+      "OpenRouter",
+      "LLMGateway",
+      "Vercel AI Gateway",
+      "Vercel AI SDK",
+      "Discord",
+      "Anthropic",
+      "Claude",
+      "Claude Fable 5.1",
+      "GPT 5.6 Luna",
+      "GPT 5.6 Terra",
+      "Groq",
+      "Cerebras",
+      "Novita",
+      "DeepSeek",
+      "Google Vertex AI",
+      "Scira AI",
+      "Cursor",
+      "Epoch AI",
+      "Epoch Capabilities Index",
+      "Artificial Analysis",
+      ": Artificial Analysis ↗",
+      "Hugging Face",
+      "arXiv",
+      "TypeSafe",
+      "cURL",
+      "TypeScript",
+      "JavaScript",
+      "Python",
+      "Rust",
+      "Go",
+      "C#",
+      "Java",
+      "PHP",
+      "Ruby",
+      "TypeScript SDK"
+    ]
+  },
+  {
+    "reason": "Exact standard protocol, format, service-mode, time-zone and SI-unit identifiers; these are technical notation, not prose.",
+    "texts": [
+      "API",
+      "AI",
+      "HTTP",
+      "OAuth",
+      "MFA",
+      "BYOK",
+      "+ (BYOC)",
+      "ZDR",
+      "TTFT",
+      "TTFT:",
+      "UTC",
+      "CSV",
+      "JSON",
+      "PDF",
+      "URL",
+      "GET",
+      "POST",
+      "PUT",
+      "ms",
+      "302 ms",
+      "tok/s",
+      "t/s"
+    ]
+  },
+  {
+    "reason": "Official support email addresses are contact values.",
+    "texts": [
+      "privacy@phaseo.app",
+      "support@phaseo.app"
+    ]
+  },
+  {
+    "reason": "Exact developer notation: ISO currency/region codes, boolean literals, identifier abbreviation, keyboard shortcut and syntax language label.",
+    "texts": [
+      "USD",
+      "ID:",
+      "EU",
+      "US",
+      "ERR",
+      "true",
+      "false",
+      "Ctrl ⇧ .",
+      "esc",
+      "bash",
+      "python",
+      "✓ OpenAI"
+    ]
+  },
+  {
+    "files": [
+      "src/app/[locale]/(auth)/activate/page.tsx"
+    ],
+    "texts": [
+      "?user_code=XXXX-XXXX"
+    ],
+    "reason": "OAuth device-flow query string example."
+  },
+  {
+    "files": [
+      "src/components/(chat)/rooms/settings/EmbeddingsModelSettingsDialog.tsx"
+    ],
+    "texts": [
+      "float",
+      "base64"
+    ],
+    "reason": "Embedding encoding_format enum values."
+  },
+  {
+    "files": [
+      "src/components/(chat)/rooms/settings/AudioModelSettingsDialog.tsx"
+    ],
+    "texts": [
+      "en",
+      "json",
+      "text",
+      "srt",
+      "vtt",
+      "verbose_json"
+    ],
+    "reason": "ISO language code example and audio response_format enum values."
+  },
+  {
+    "files": [
+      "src/components/(chat)/ChatConversationComposer.tsx"
+    ],
+    "texts": [
+      "docs.phaseo.app, github.com",
+      "reddit.com, example.com",
+      "docs.phaseo.app",
+      "internal.example.com",
+      "reviewer"
+    ],
+    "reason": "Domain allow/block list examples and technical tool identifier example."
+  },
+  {
+    "files": [
+      "src/components/(data)/providers/edit/ProviderForm.tsx",
+      "src/components/(data)/OrganisationForm.tsx"
+    ],
+    "texts": [
+      "US-CA",
+      "#0EA5E9"
+    ],
+    "reason": "ISO subdivision and CSS colour examples."
+  },
+  {
+    "files": [
+      "src/components/(data)/model/edit/tabs/BenchmarksTab.tsx",
+      "src/components/(data)/model/edit/tabs/SubscriptionPlansTab.tsx"
+    ],
+    "texts": [
+      "benchmark_id",
+      "plan_id"
+    ],
+    "reason": "Canonical database identifier examples."
+  },
+  {
+    "files": [
+      "src/app/[locale]/(dashboard)/internal/data/models/edit/[...modelId]/ModelLegacyEditor.tsx"
+    ],
+    "texts": [
+      "openai/model-latest"
+    ],
+    "reason": "Canonical model ID example."
+  },
+  {
+    "files": [
+      "src/app/[locale]/(dashboard)/internal/data/models/new/NewModelForm.tsx"
+    ],
+    "texts": [
+      "starter-monthly",
+      "monthly",
+      "gpt-4",
+      "organisation/model-id",
+      "benchmark_id",
+      "api_model_id"
+    ],
+    "reason": "Saved subscription interval, plan/model/benchmark/API identifier examples."
+  },
+  {
+    "files": [
+      "src/app/[locale]/(dashboard)/internal/credits/page.tsx",
+      "src/components/(gateway)/credits/RedeemCreditCodeCard.tsx"
+    ],
+    "texts": [
+      "ERRORS"
+    ],
+    "reason": "Example redemption code; codes are case-sensitive machine values."
+  },
+  {
+    "files": [
+      "src/app/[locale]/(dashboard)/internal/gateway-benchmark/GatewayBenchmarkClient.tsx"
+    ],
+    "texts": [
+      "ms |",
+      "/responses",
+      "/chat/completions"
+    ],
+    "reason": "SI unit notation and compared HTTP endpoint paths."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/account/ProviderCatalogManager.tsx"
+    ],
+    "texts": [
+      "publisher/model",
+      "chat.completions | temperature, max_tokens",
+      "input_text_tokens"
+    ],
+    "reason": "Canonical model, endpoint/parameter and meter identifier examples."
+  },
+  {
+    "files": [
+      "src/components/(data)/model/quickstart/CodeBlock.tsx"
+    ],
+    "texts": [
+      "bash"
+    ],
+    "reason": "Code syntax-language label."
+  },
+  {
+    "files": [
+      "src/components/(data)/model/pricing/ProviderRoutingHelp.tsx"
+    ],
+    "texts": [
+      "model"
+    ],
+    "reason": "JSON request parameter name, styled inline as code."
+  },
+  {
+    "files": [
+      "src/components/(data)/model/benchmarks/EpochCapabilitiesIndex.tsx"
+    ],
+    "texts": [
+      "Capabilities Index"
+    ],
+    "reason": "Short form of the branded Epoch Capabilities Index dataset name."
+  },
+  {
+    "files": [
+      "src/components/landingPage/Home/HomeQuickstartSection.tsx"
+    ],
+    "texts": [
+      "openai/gpt-oss-120b",
+      "anthropic/claude-fable-5.1"
+    ],
+    "reason": "Canonical API model identifier examples."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/account/AccountDangerZoneClient.tsx"
+    ],
+    "texts": [
+      "DELETE"
+    ],
+    "reason": "Required destructive-action confirmation token; changing it changes the protocol."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/presets/experiments/PresetFeedbackFilters.tsx"
+    ],
+    "texts": [
+      "user_tier",
+      "pro"
+    ],
+    "reason": "Technical metadata key and saved metadata value examples."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/account/ProviderOnboardingClient.tsx"
+    ],
+    "texts": [
+      "acme-inference",
+      "Europe/London"
+    ],
+    "reason": "Provider slug and IANA time zone examples."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/apps/EditAppDialog.tsx"
+    ],
+    "texts": [
+      "Acme Assistant"
+    ],
+    "reason": "Example user-chosen application proper name."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/authorized-apps/ReauthorizeDialog.tsx"
+    ],
+    "texts": [
+      "phaseo login"
+    ],
+    "reason": "CLI command displayed as code."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/notifications/NotificationDestinationsClient.tsx"
+    ],
+    "texts": [
+      "alex@company.com, 123e4567-e89b-12d3-a456-426614174000",
+      "alerts@company.com"
+    ],
+    "reason": "Email address and UUID destination examples."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/routing/AutoRoutingSettingsClient.tsx"
+    ],
+    "texts": [
+      "anthropic/*",
+      "{ \"model\": \"phaseo/auto\", \"input\": \"Your prompt\" }"
+    ],
+    "reason": "Wildcard model pattern and literal API JSON request example."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/routing/DynamicRoutesStudio.tsx"
+    ],
+    "texts": [
+      "customer.plan",
+      "x-region",
+      "input.priority"
+    ],
+    "reason": "Metadata/header/request-field identifier examples."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/private-models/PrivateModelEditor.tsx"
+    ],
+    "texts": [
+      "deployment-v4",
+      "Responses API"
+    ],
+    "reason": "Deployment identifier example and OpenAI API product name."
+  },
+  {
+    "files": [
+      "src/app/[locale]/(dashboard)/tools/latency-comparison/LatencyComparisonClient.tsx"
+    ],
+    "texts": [
+      "sk-..."
+    ],
+    "reason": "Secret API key prefix example."
+  },
+  {
+    "files": [
+      "src/components/tailwind-indicator.tsx"
+    ],
+    "texts": [
+      "xs",
+      "sm",
+      "md",
+      "lg",
+      "xl",
+      "2xl"
+    ],
+    "reason": "Developer breakpoint indicator values, matching Tailwind code identifiers."
+  }
+]

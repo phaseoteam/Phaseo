@@ -1,0 +1,98 @@
+---
+title: "प्रीसेट पर प्रतिक्रिया एकत्र करें"
+description: "Phaseo डैशबोर्ड में जवाबों की रेटिंग दर्ज करें और प्रीसेट की गुणवत्ता की तुलना करें।"
+icon: "message-square-more"
+---
+
+Preset Feedback आपके ऐप की रेटिंग को उस प्रीसेट से जोड़ता है जिसने जवाब बनाया। केवल विलंबता और लागत पर निर्भर रहने के बजाय, वास्तविक उपयोगकर्ता संकेतों से prompt और routing बदलावों की तुलना करें।
+
+<Note>
+Preset Feedback अभी Alpha में है। टीमें प्रोडक्शन AI जवाबों का मूल्यांकन कैसे करती हैं, इसके आधार पर हम API और डैशबोर्ड को बेहतर बना रहे हैं। इसे अधिक उपयोगी बनाने के सुझाव देने के लिए [Preset Feedback पेज](https://phaseo.app/settings/presets/experiments) पर **Feedback** बटन इस्तेमाल करें।
+</Note>
+
+## शुरू करने से पहले
+
+आपको चाहिए:
+
+- `feedback:write` क्षमता वाली Phaseo API कुंजी
+- Phaseo से मिला अनुरोध ID
+- उस प्रीसेट का UUID जिसका आप विश्लेषण करना चाहते हैं
+
+फ़ीडबैक दर्ज करते समय प्रीसेट ID शामिल करें। इससे इवेंट प्रीसेट तुलना और cohort विश्लेषण में दिखाई देगा।
+
+## रेटिंग दर्ज करें
+
+उपयोगकर्ता द्वारा जवाब रेट करने या ऐप द्वारा परिणाम तय करने के बाद फ़ीडबैक भेजें।
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+फ़ीडबैक इवेंट में कम-से-कम एक अनुरोध, सत्र, प्रीसेट या टेस्ट रन होना चाहिए। स्कोर वैकल्पिक है और `0` से `1` के बीच होना चाहिए।
+
+## रेटिंग चुनें
+
+आपने जो संकेत वास्तव में एकत्र किया है, उसके अनुसार रेटिंग चुनें:
+
+- उपयोगकर्ता की साधारण प्रतिक्रिया के लिए `thumbs_up` या `thumbs_down`
+- मूल्यांकित जवाबों के लिए `correct`, `partly_correct` या `incorrect`
+- परिचालन समस्याओं के लिए `bad_format`, `too_slow` या `too_expensive`
+- सुरक्षा परिणामों के लिए `unsafe` या `refused_incorrectly`
+- अन्य मान उपयुक्त न हों तो `not_helpful` या `other`
+
+हर संकेत को संख्यात्मक स्कोर में न बदलें। स्पष्ट रेटिंग से डैशबोर्ड तुलना समझाना आसान होता है।
+
+## प्रीसेट की तुलना करें
+
+[सेटिंग → प्रीसेट → Feedback](https://phaseo.app/settings/presets/experiments) खोलें और:
+
+- सकारात्मक, आंशिक और नकारात्मक रेटिंग की दरों की तुलना करें
+- एक बेसलाइन प्रीसेट चुनें
+- तारीख, रेटिंग और metadata dimensions के आधार पर फ़िल्टर करें
+- इवेंट के पीछे का अनुरोध, सत्र, टिप्पणियाँ और टैग देखें
+
+प्लान, डिप्लॉयमेंट, locale या ऐप सतह जैसे कम-cardinality मान `metadataDimensions` में रखें। मनमाना या उच्च-cardinality संदर्भ `metadata` में रखें।
+
+## API से फ़ीडबैक पढ़ें
+
+हाल के इवेंट सूचीबद्ध करें:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+सर्वर-साइड सारांश का अनुरोध करें:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+पढ़ने के लिए `feedback:read` ज़रूरी है। परिणाम प्रमाणित workspace और कॉल करने वाले को दिखने वाले प्रीसेट तक सीमित हैं।
+
+## अल्फ़ा की मौजूदा सीमाएँ
+
+डैशबोर्ड चुनी गई अवधि में मेल खाने वाली सबसे हाल की अधिकतम 10,000 फ़ीडबैक पंक्तियों का विश्लेषण करता है।
+प्रीसेट तुलना में स्पष्ट रेटिंग इस्तेमाल होती है; संख्यात्मक स्कोर सहायक जानकारी के रूप में दिखते हैं।
+टेस्ट-रन और कस्टम परिणाम इवेंट API उपलब्ध हैं, लेकिन उनके डैशबोर्ड वर्कफ़्लो अभी विकसित हो रहे हैं।
+
+## संबंधित गाइड
+
+- [प्रीसेट](./presets.mdx)
+- [प्रीसेट रोलआउट करें और रूटिंग डीबग करें](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [ऐप एट्रिब्यूशन](./app-attribution.mdx)

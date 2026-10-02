@@ -1,0 +1,14 @@
+---
+title: "列出端点"
+sidebarTitle: "列出端点"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /endpoints"
+description: "列出由能力数据支持的网关端点及其公共路径和模型/供应商覆盖情况。"
+---
+
+- `endpoints`：API 当前公开的规范端点 ID
+- `data`：包含 `public_path`、`collection`、`model_count` 和 `provider_count` 的端点记录
+- `sample_models`：公共目录中最近可见的模型 ID，最多 10 个
+
+如需查看某个模型按供应商和参数划分的详细信息，请使用[列出模型端点能力](./model-endpoints.mdx)。
+

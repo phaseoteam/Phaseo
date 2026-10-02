@@ -1,0 +1,18 @@
+---
+icon: "book-open"
+title: "C# SDK"
+description: "عميل .NET الرسمي لـ Phaseo Gateway."
+---
+
+ثبّت الحزمة المنشورة [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk) من NuGet.
+
+يوفّر الغلاف المحلي في `packages/sdk/sdk-csharp/Client.cs` حاليًا مساعدات عالية المستوى للمحادثة والاستجابات ورسائل Anthropic والصور والصوت والتضمينات والإشراف على المحتوى والملفات والدفعات والفيديو والتوليد والنماذج/المزوّدين/نقاط النهاية/المؤسسات/الأسعار، واكتشاف مفاتيح API وتعديلات دورة حياتها، ومساعدات دورة حياة مساحة العمل والمفتاح الحالي، وحساب الأسعار والنشاط/الأرصدة/التحليلات وفحوص الصحة والتحقق من دورة حياة النماذج وروابط WebSocket للمهام غير المتزامنة، عبر مساعدات مباشرة وكذلك `client.AsyncJobs.WebSocketUrl(...)`.
+
+يعرض `GetModelEndpointCapabilities(...)` بيانات وصفية مباشرة لمسارات المزودين. يصنّف `CheckModelParameters(...)` كل معلمة على أنها `supported` أو `partial` أو `unsupported` أو `unknown`، ويتحقق من القيم والنطاقات المعلنة، ويعرض المسارات التي تقبل مجموعة المعلمات كاملةً.
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("YOUR_KEY");
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "5" });
+```

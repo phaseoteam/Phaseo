@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "Outils de développement"
+description: "Capturez les exécutions du PHP Agent SDK au format d’événements local de Phaseo DevTools."
+---
+
+Activez la capture DevTools pendant que vous créez des chronologies d’outils, des interfaces d’approbation et des inspecteurs d’exécution.
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+Chaque exécution et reprise écrit un enregistrement JSONL structuré contenant le statut, l’utilisation, les tentatives de modèle, les appels d’outils, les pauses, les métadonnées de requête et les erreurs.
+
+La capture locale est une aide au développement, pas un registre d’audit de production. Avant de stocker des données sensibles, appliquez les règles propres à votre application en matière de masquage, de contrôle d’accès, de chiffrement et de conservation.

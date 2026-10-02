@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗通知に対応するC#ツールを定義します。"
+---
+
+`Tool`レコードを作成し、`AgentSdk.DefineTool(...)`に渡します。ツールには次の内容を含められます。
+
+- モデルに提示するJSONの`Parameters`
+- `InputSchema`、`OutputSchema`、`EventSchema`の検証デリゲート
+- ツールごとの`Timeout`と非同期`Execute`デリゲート
+- 無条件または条件付きの承認
+- インタラクティブな処理向けの`OnToolCalled`と`OnResponseReceived`
+- 次のターンへの上書きと回復可能なツールエラー処理
+
+暫定結果の通知には`RuntimeContext.EmitProgress`、アプリケーションコンテキストには`SetContext`、キャンセル可能な依存関係には`CancellationToken`を使います。
+
+`ToolExecutionConfig`を使うと、独立したツールを並列実行できます。実行完了の順序が異なっても、保存されたツール結果メッセージはモデル呼び出し順を保ちます。
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

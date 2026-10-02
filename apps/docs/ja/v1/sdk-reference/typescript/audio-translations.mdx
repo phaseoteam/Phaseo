@@ -1,0 +1,31 @@
+---
+icon: "arrow-right-left"
+title: "翻訳"
+description: "TypeScript SDKで /audio/translations を呼び出します。"
+---
+
+**メソッド**: `client.generateTranslation()`.
+
+### 例
+```typescript
+const translated = await client.generateTranslation({
+  model: "openai/gpt-4o-translate",
+  file: "data:audio/mp3;base64,...",
+});
+```
+
+### 主なパラメーター
+- `model` 必須: 翻訳に対応したモデルのID。
+- `file` 必須: 翻訳する音声データ。
+- `prompt`: 翻訳の参考にする任意のコンテキスト。
+- `temperature` (0–2): サンプリングのランダム性。
+- `response_format`: `json`, `text`, `srt`, `verbose_json`, など
+
+### 戻り値
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

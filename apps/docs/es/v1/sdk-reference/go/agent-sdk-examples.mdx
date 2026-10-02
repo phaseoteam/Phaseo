@@ -1,0 +1,34 @@
+---
+icon: "square-terminal"
+title: "Ejemplos"
+description: "Copia patrones de Go concretos para herramientas, aprobaciones, streaming y ejecuciones con límites."
+---
+
+## Despliegue con aprobación
+
+```go
+deploy := phaseoagent.Tool{
+  ID: "deploy",
+  Description: "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(runtime.Context, input)
+  },
+}
+```
+
+Ejecuta el agente y guarda el registro devuelto cuando su estado sea `waiting_for_human`. Continúalo con una decisión asociada al ID de la llamada de herramienta pendiente.
+
+## Enviar el flujo a una terminal
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() { fmt.Print(delta) }
+result, err := stream.Result()
+```
+
+## Limitar la investigación autónoma
+
+Combina `StepCountIs`, `MaxTokensUsed`, `MaxCost` y `MaxDuration` para que un agente de larga duración no supere el presupuesto del producto, aunque siga encontrando tareas útiles.
+
+Consulta [herramientas](./agent-sdk-tools.mdx), [estado y aprobación](./agent-sdk-state-and-approval.mdx) y [condiciones de detención](./agent-sdk-stop-conditions.mdx) para conocer todos los detalles.

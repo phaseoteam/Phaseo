@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "アイテムの操作"
+description: "型付きメッセージ、推論、ツールのアクティビティ、エラー、最終出力を表示します。"
+---
+
+プロバイダー固有のイベントを解析せずに、構造化されたエージェントのタイムラインを作成できます。ストリーミング中と完了後のどちらも、同じ順序付き契約 `AgentItem<TOutput>` を公開します。
+
+## アイテムの種類
+
+`AgentItem<TOutput>` は判別共用体です。
+
+| 種類 | 主なフィールド | 内容 |
+| --- | --- | --- |
+| `message` | `role`, `content` | アシスタントまたは会話のテキスト |
+| `reasoning` | `text` | モデルが提供する推論 |
+| `tool_call` | `toolCallId`, `name`, `input` | 提案されたツール呼び出し |
+| `tool_result` | `toolCallId`, `name`, `output` | 完了したツール呼び出し |
+| `error` | `message`、任意のツール詳細 | プロバイダーまたはツールのエラー |
+| `output` | `value` | 解析済みの最終エージェント出力 |
+
+## ストリーミングのタイムラインを表示する
+
+TypeScript は `type` プロパティに基づいて各アイテムの型を絞り込みます。
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## 完了後にアイテムを読む
+
+完了後の結果にも、同じ順序のアイテムが含まれます。
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+ライブのアクティビティを表示し、保存済みの実行状態から後で同じタイムラインを再構築できます。
+
+## プロバイダー固有のデータにアクセスする
+
+プロバイダーの出力は持ち運び可能なアイテム型に正規化されます。統合でプロバイダー固有のフィールドが必要な場合、正規化済みアイテムは元のペイロードを `rawProviderItem` に保持します。
+
+できる限り、製品ロジックでは共通フィールドを使用してください。`rawProviderItem` はプロバイダー固有の統合用の例外的な手段であり、アプリケーションの標準契約ではありません。
+
+## 関連ガイド
+
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [ツール](./agent-sdk-tools.mdx)
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)

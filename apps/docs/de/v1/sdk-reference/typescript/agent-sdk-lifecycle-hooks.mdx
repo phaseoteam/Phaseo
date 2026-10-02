@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Reagiere auf Ereignisse zu Lauf, Modell, Schritt, Tool und Checkpoint."
+---
+
+Verwende `onEvent`, um Produktoberflächen zu aktualisieren, Audit-Einträge zu schreiben oder Agent-Aktivitäten mit deiner vorhandenen Telemetrie zu verbinden.
+
+## Einen Lauf überwachen
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+Halte Event-Handler klein. Verschiebe langsame Netzwerk- oder Speicherzugriffe in die Queue deiner Anwendung, wenn sie den Lauf nicht verzögern sollen.
+
+## Ereignisgruppen
+
+| Gruppe | Ereignisse |
+| --- | --- |
+| Lauf | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| Schritt | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| Modell | `model.requested`, `model.completed`, `model.failed` |
+| Tool | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| Status | `checkpoint.saved` |
+
+`step.completed` wird ausgegeben, nachdem der abgeschlossene Schritt als Checkpoint gespeichert wurde. So können Persistenz- oder Telemetrie-Consumer das Ereignis als stabile Grenze behandeln.
+
+## Ereignisse für eine Produktoberfläche auswählen
+
+- Verwende Modell-Deltas aus dem [Datenstrom](./agent-sdk-streaming.mdx), um Antworttext live anzuzeigen.
+- Verwende Tool-Ereignisse für Tool-Aufrufkarten und Fortschrittsanzeigen.
+- Verwende `run.waiting_for_human`, um Freigabe- oder Eingabesteuerungen anzuzeigen.
+- Verwende abschließende Laufereignisse, um Ladezustände zu schließen und Ergebnisse zu protokollieren.
+
+## Zugehörige Anleitungen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Status und Freigabe](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

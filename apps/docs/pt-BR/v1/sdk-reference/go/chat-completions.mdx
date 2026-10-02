@@ -1,0 +1,35 @@
+---
+icon: "messages-square"
+title: "Conclusões de chat"
+description: "Chame /chat/completions usando o wrapper Go."
+---
+
+Use o método wrapper:
+
+- `client.GenerateText(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {
+      "role": "user",
+      "content": "Write a one-line haiku.",
+    },
+  },
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+O wrapper ainda não oferece streaming por meio de uma função dedicada.

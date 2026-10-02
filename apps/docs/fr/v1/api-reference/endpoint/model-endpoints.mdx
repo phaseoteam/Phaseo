@@ -1,0 +1,63 @@
+---
+title: "Lister les capacités des points de terminaison du modèle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "Examiner les routes de fournisseurs, modalités, paramètres, disponibilités et tarifs proposés pour un modèle."
+---
+
+Utilisez ce point de terminaison avant d’envoyer une requête si votre application doit vérifier la disponibilité d’une combinaison de modèle, fournisseur, point de terminaison et paramètres.
+
+Pour `openai/gpt-5.4-mini`, utilisez :
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Chaque ligne représente une capacité pour un fournisseur et un point de terminaison. Elle comprend :
+
+- l’identifiant de capacité canonique et le chemin API public
+- l’identifiant et le nom du fournisseur, ainsi que le slug de son modèle
+- les modalités d’entrée et de sortie
+- les noms des paramètres pris en charge et leurs détails structurés
+- les états du fournisseur, du modèle, de la capacité, du routage et de la disponibilité
+- les dates d’effet lorsque la route est planifiée ou limitée dans le temps
+- un récapitulatif des tarifs du point de terminaison
+
+## Inclure les routes planifiées et inactives
+
+La valeur par défaut `availability=active` ne renvoie que les lignes dont les routes sont accessibles au public. Utilisez `availability=all` pour examiner les routes à venir et inactives :
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+N’envoyez pas de trafic de production vers une ligne si `availability_status` n’est pas `active` et `is_active_gateway` n’est pas `true`.
+
+## Filtrer les routes
+
+Utilisez des filtres répétables ou séparés par des virgules pour :
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+Par exemple, cette requête renvoie les routes OpenAI qui prennent en charge `temperature` :
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## Points de terminaison associés
+
+- [Lister les modèles](./models.mdx)
+- [Lister les points de terminaison](./endpoints.mdx)
+

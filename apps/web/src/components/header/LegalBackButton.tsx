@@ -2,10 +2,12 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export default function LegalBackButton() {
 	const router = useRouter();
+	const t = useTranslations("Common.ui.actions");
 
 	function handleBack() {
 		if (window.history.length > 1) {
@@ -22,10 +24,10 @@ export default function LegalBackButton() {
 			size="sm"
 			onClick={handleBack}
 			className="h-8 gap-1.5 px-2.5 text-xs text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
-			aria-label="Go back"
+			aria-label={t("back")}
 		>
 			<ArrowLeft className="h-3.5 w-3.5" />
-			Back
+			{t("back")}
 		</Button>
 	);
 }

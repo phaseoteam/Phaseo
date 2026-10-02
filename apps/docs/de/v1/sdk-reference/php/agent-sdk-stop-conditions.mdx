@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Abbruchbedingungen"
+description: "Begrenze PHP-Agent-Läufe nach Schritten, Token, Kosten, Dauer, Tools oder Beendigungsgrund."
+---
+
+Kombiniere Stoppfunktionen, um Produktbudgets unabhängig von der Fortsetzungsentscheidung des Modells durchzusetzen.
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "bounded-research",
+    model: "openai/gpt-5.4-nano",
+    stopWhen: [
+        AgentSdk::stepCountIs(12),
+        AgentSdk::maxTokensUsed(40000),
+        AgentSdk::maxCost(2.50),
+        AgentSdk::maxDuration(120000),
+    ]
+));
+```
+
+Das SDK bietet außerdem Bedingungen für Tool-Aufrufe und Beendigungsgründe. Prüfe nach Abschluss `$result->run->stopReason` und den normalisierten Verbrauch, damit die Anwendung einen Budget-Stopp von einem normalen Modellende unterscheiden kann.
+
+Ein Stopp ist ein begrenztes Ergebnis und nicht automatisch eine Ausnahme. Entscheide, welche Stoppgründe dein Produkt als erfolgreich, wiederholbar oder für Nutzer sichtbar behandelt.

@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "البث"
+description: "بث نص الوكيل وأحداث دورة حياته باستخدام تسلسلات غير متزامنة قابلة لإعادة التكرار."
+---
+
+تنفّذ `Agent.Stream(...)` آلة الحالات نفسها التي تنفّذها `Run(...)`، وتعيد `AgentStreamResult`:
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+استخدم `FullStream()` للحصول على أحداث النموذج والأدوات والخطوات والتشغيل. ويمكن للمستهلكين إعادة قراءة التسلسل غير المتزامن المسجّل كلٌ على حدة. استدعِ `Cancel()` عندما يحتاج المنتج إلى إيقاف التشغيل النشط؛ إذ يُمرر الإلغاء إلى طلبات النموذج والأدوات المحلية.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

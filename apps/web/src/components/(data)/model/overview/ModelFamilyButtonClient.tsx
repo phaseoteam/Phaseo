@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Network, ChevronRight, ExternalLink, X } from "lucide-react";
+import { Network, ChevronRight, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,12 +30,13 @@ export default function ModelFamilyButtonClient({
 }) {
 	const [open, setOpen] = useState(false);
 	const router = useRouter();
+	const t = useTranslations("Catalogue.models.detail.familyPopover");
 
 	if (!family?.models?.length) return null;
 
 	const models = family.models;
 	const count = models.length;
-	const familyName = family.family_name ?? "Model";
+	const familyName = family.family_name ?? t("genericFamily");
 
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
@@ -46,14 +47,14 @@ export default function ModelFamilyButtonClient({
 							variant="outline"
 							size="icon"
 							className="p-2"
-							aria-label={`Show models in ${familyName} family`}
+							aria-label={t("showModels", { familyName })}
 						>
 							<Network className="h-4 w-4" />
 						</Button>
 					</PopoverTrigger>
 				</TooltipTrigger>
 				<TooltipContent className="text-xs">
-					View all models in the {familyName} family
+					{t("tooltip", { familyName })}
 				</TooltipContent>
 			</Tooltip>
 
@@ -68,13 +69,13 @@ export default function ModelFamilyButtonClient({
 						<div className="flex items-center gap-2 min-w-0">
 							<Network className="h-4 w-4 text-muted-foreground" />
 							<h3 className="text-sm font-semibold leading-none truncate">
-								{familyName} Family
+								{t("title", { familyName })}
 							</h3>
 							<Badge
 								variant="outline"
 								className="rounded-full px-2 py-0 text-[10px]"
 							>
-								{count} model{count > 1 ? "s" : ""}
+								{t("countBadge", { count })}
 							</Badge>
 						</div>
 						<Button
@@ -82,7 +83,7 @@ export default function ModelFamilyButtonClient({
 							size="icon"
 							className="h-7 w-7"
 							onClick={() => setOpen(false)}
-							aria-label="Close"
+							aria-label={t("close")}
 						>
 							<X className="h-4 w-4" />
 						</Button>
@@ -129,7 +130,7 @@ export default function ModelFamilyButtonClient({
 				{/* Footer */}
 				<div className="flex items-center justify-between gap-2 p-3 sm:p-4">
 					<div className="text-xs text-muted-foreground">
-						{count} model{count > 1 ? "s" : ""} in this family.
+						{t("countFooter", { count })}
 					</div>
 					{/* TODO: Add family pages */}
 					{/* <Link

@@ -1,0 +1,29 @@
+---
+icon: "image"
+title: "图像（AI SDK）"
+description: "使用 Vercel AI SDK 和 Phaseo 供应商生成图像。"
+---
+
+将 `generateImage` 与 `phaseo.imageModel(...)` 配合使用。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateImage } from "ai";
+
+const result = await generateImage({
+  model: phaseo.imageModel("openai/gpt-image-1"),
+  prompt: "A minimalist poster of a lighthouse at dawn.",
+  size: "1024x1024",
+});
+
+console.log(result.images[0].mediaType);
+console.log(result.images[0].uint8Array.length);
+console.log(result.providerMetadata);
+```
+
+## 说明
+
+- 可用的 `size` 值取决于所选模型。
+- 网关返回的 URL 图像会被规范化为 AI SDK 文件输出格式，因此应优先读取稳定字段 `uint8Array` 和 `mediaType`。
+- 对于确定性工作流，请将提示词、模型和参数一起保存。
+- 将返回的图像元数据与资源引用一起保存。

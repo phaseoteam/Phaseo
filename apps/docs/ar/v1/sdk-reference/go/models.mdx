@@ -1,0 +1,37 @@
+---
+icon: "brain-circuit"
+title: "النماذج"
+description: "اعرض النماذج باستخدام غلاف Go."
+---
+
+استخدم طريقة الغلاف:
+
+- `client.GetModels(ctx, query)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider": "anthropic",
+  "provider_status": "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status": "coming_soon,internal_testing",
+  "availability": "all",
+  "limit": "10",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(models)
+```
+
+تشمل مفاتيح الاستعلام المدعومة `provider` و`provider_status` و`provider_routing_status` و`model_routing_status` و`capability_status` و`provider_availability_status` و`provider_availability_reason` و`status` و`organisation` و`endpoints` و`input_types` و`output_types` و`params` و`availability` و`limit` و`offset`.
+
+استخدم `provider_availability_reason` مع `availability=all` لاسترداد حالات الإطلاق مثل `preview_only` و`provider_not_ready` و`gated` و`access_limited` و`region_limited` و`project_limited` و`paused` أو `soft_blocked`. واستخدم `capability_status` مع `availability=all` لاسترداد تعيينات نقاط النهاية غير القابلة للتوجيه مثل `coming_soon` أو `internal_testing`.
+

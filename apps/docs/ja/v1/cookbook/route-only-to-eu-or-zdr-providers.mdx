@@ -1,0 +1,126 @@
+---
+title: "EU または ZDR 対応プロバイダーのみにルーティングする"
+icon: "globe"
+description: "リクエストにデータ所在地とデータ保持ゼロの要件を設定し、条件に適合するプロバイダーのみにルーティングします。"
+---
+
+ワークスペース全体のポリシーを変更せずに、コンプライアンスやデータ処理の理由から特定のリクエストでプロバイダーを絞り込みたい場合は、このレシピを使います。
+
+## 目標
+
+- EU 内での実行を必須にする
+- EU 内のデータ所在地を必須にする
+- データ保持ゼロに対応するプロバイダーを必須にする
+
+## 1. リクエストにデータ所在地の要件を追加する
+
+プロバイダーの要件をリクエスト本文に直接設定します。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+このフローでリクエストに設定できるフィルター:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. ポリシーに必要な最小限のルールを使う
+
+ワークロードに本当に必要な条件だけを指定します。
+
+例:
+
+- 実行場所のみ:
+  - `required_execution_region: "eu"`
+- データの保存場所のみ:
+  - `required_data_region: "eu"`
+- ZDR 対応プロバイダーのみ:
+  - `require_zero_data_retention: true`
+
+## 3. 候補となるプロバイダーが減ることを考慮する
+
+これらのフィルターはプロバイダーの順位付けより前に適用されるため、プロバイダーが候補から完全に除外されることがあります。
+
+その結果:
+
+- より高価な地域別オファーにルーティングされることがあります。
+- プロバイダーの一覧が大幅に少なくなることがあります。
+- 条件を満たすプロバイダーがそのモデルにない場合、リクエストが失敗することがあります。
+
+## 4. 可能であれば、事前にモデルページを確認する
+
+リクエストを本番環境にデプロイする前に、モデルページのプロバイダーカードで次を確認します。
+
+- `OpenAI EU` や `Google Vertex EU` などの地域別オファー
+- ZDR の対応状況
+- プロバイダーのデータポリシーに関する説明と出典
+
+本番トラフィックに要件を適用する前に、少なくとも1つの適格なプロバイダーがあることを確認できます。
+
+## 5. ワークスペースのプライバシー設定を既定値として使う
+
+ポリシーをワークスペース内のすべてのリクエストに適用する場合、同じリクエストフィルターを繰り返す代わりに、**設定 -> プライバシー**で設定します。
+
+ルールが次の単位で適用される場合は、リクエストのフィールドを使います。
+
+- ワークフローごと
+- 顧客ごと
+- リクエストごと
+
+## 関連ガイド
+
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [プリセット](../guides/presets.mdx)

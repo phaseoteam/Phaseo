@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "أدوات التطوير"
+description: "سجّل عمليات تشغيل Agent SDK المحلية لأغراض التطوير وتصحيح الأخطاء."
+---
+
+أثناء التطوير، استخدم تسجيل DevTools في Agent SDK لحفظ مدخلات التشغيل وخطواته وأدواته ومخرجاته ومدته ومعرّفات ربط البوابة محليًا.
+
+## تفعيل التسجيل لعملية تشغيل واحدة
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+افتراضيًا، تُكتب الملفات في `.phaseo-devtools` ضمن دليل العمل الحالي.
+
+## إعداد مجلد الإخراج
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+يمكنك أيضًا ضبط `PHASEO_DEVTOOLS=true` و`PHASEO_DEVTOOLS_DIR` اختياريًا لعمليات التطوير المحلية.
+
+## المعلومات المسجلة
+
+يتضمن كل إدخال لـ `agent.run` أو `agent.continue` ما يلي:
+
+- معرّفات الوكيل والتشغيل
+- حالة التشغيل ومدته
+- الإدخال وسياق التطبيق
+- تفاصيل النموذج ومزود الخدمة عند توفرها
+- معرّفات طلب البوابة والاستجابة الأصلية
+- عدد الخطوات والأدوات
+- حالة التشغيل المكتملة والرسائل والخطوات والمخرجات
+- تفاصيل منظمة عن الإخفاق عند طرح استثناء أثناء التشغيل
+
+<Warning>
+قد تحتوي مدخلات الوكيل والرسائل ونتائج الأدوات وسياق التطبيق على بيانات حساسة. استثنِ مجلد DevTools من التحكم بالمصدر وطبّق عليه ضوابط الوصول نفسها المستخدمة لسجلات التطوير الأخرى.
+</Warning>
+
+## أدلة ذات صلة
+
+- [خطافات دورة الحياة](./agent-sdk-lifecycle-hooks.mdx)
+- [الأخطاء واستكشاف المشكلات وإصلاحها](./agent-sdk-events-and-errors.mdx)
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)

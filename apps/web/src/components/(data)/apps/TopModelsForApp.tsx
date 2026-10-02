@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendAppUsage } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Zap } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
@@ -12,7 +13,11 @@ export default async function TopModelsForApp({
 	appId: string;
 	range?: RangeKey;
 }) {
-	const rows = await fetchFrontendAppUsage(appId, range);
+	const locale = await getLocale();
+	const [rows, t] = await Promise.all([
+		fetchFrontendAppUsage(appId, range),
+		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
+	]);
 
 	// Aggregate by model
 	const modelAgg = new Map<string, {
@@ -45,10 +50,10 @@ export default async function TopModelsForApp({
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Top Models Used</CardTitle>
+					<CardTitle>{t("topModelsUsed")}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<p className="text-muted-foreground">No model usage data available for this time period.</p>
+					<p className="text-muted-foreground">{t("noModelUsageData")}</p>
 				</CardContent>
 			</Card>
 		);
@@ -57,9 +62,9 @@ export default async function TopModelsForApp({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Top Models Used</CardTitle>
+				<CardTitle>{t("topModelsUsed")}</CardTitle>
 				<p className="text-sm text-muted-foreground">
-					Models ranked by token consumption for this app
+					{t("modelsRankedByTokenConsumption")}
 				</p>
 			</CardHeader>
 			<CardContent>
@@ -73,14 +78,14 @@ export default async function TopModelsForApp({
 								<div>
 									<div className="font-medium">{model.model}</div>
 									<div className="text-sm text-muted-foreground">
-										{model.requests} requests
+										{new Intl.NumberFormat(locale).format(model.requests)} {t("requestsUnit")}
 									</div>
 								</div>
 							</div>
 							<div className="text-right">
 								<div className="flex items-center gap-1 text-sm">
 									<Zap className="h-3 w-3" />
-									<DisplayNumber value={model.tokens} /> tokens
+									<DisplayNumber value={model.tokens} /> {t("tokensUnit")}
 								</div>
 							</div>
 						</div>

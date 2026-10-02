@@ -1,0 +1,463 @@
+{
+	"help": {
+		"title": "सहायता केंद्र",
+		"description": "खाता एक्सेस, MFA सेटअप, बिलिंग, सुरक्षा और API एकीकरण की समस्याओं के लिए सहायता लेख देखें।",
+		"supportResources": "सहायता संसाधन",
+		"articleCount": "{count, plural, =0 {कोई लेख नहीं} one {# लेख} other {# लेख}}",
+		"viewAll": "{category} में सभी देखें",
+		"updated": "अपडेट किया गया {date}",
+		"moreIn": "{category} में और देखें"
+	},
+	"announcementComponents": {
+		"followPhaseo": "Phaseo को फ़ॉलो करें",
+		"followOn": "{platform} पर Phaseo को फ़ॉलो करें: {handle}",
+		"joinDiscord": "Discord से जुड़ें",
+		"getStartedTitle": "Phaseo के साथ बनाना शुरू करें",
+		"getStartedDescription": "Gateway key बनाएँ, quickstart का पालन करें या ट्रैफ़िक भेजने से पहले मॉडल की तुलना करें।",
+		"getGatewayKey": "Gateway key बनाएँ",
+		"readQuickstart": "Quickstart पढ़ें",
+		"browseModels": "मॉडल देखें",
+		"installCli": "CLI इंस्टॉल करें",
+		"updateCli": "CLI अपडेट करें",
+		"choosePackageManager": "अपना पैकेज मैनेजर चुनें, फिर कमांड कॉपी करें।",
+		"copyCommand": "{packageManager} कमांड कॉपी करें",
+		"incrementCounter": "गिनती बढ़ाएँ",
+		"decrementCounter": "गिनती घटाएँ"
+	},
+	"blog": {
+		"title": "Phaseo ब्लॉग",
+		"categories": {
+			"all": "सभी पोस्ट",
+			"announcements": "घोषणाएँ",
+			"guides": "गाइड",
+			"data": "डेटा"
+		},
+		"preview": "पूर्वावलोकन",
+		"onThisPage": "इस पृष्ठ पर",
+		"tableOfContents": "विषय-सूची",
+		"readPost": "लेख पढ़ें",
+		"showMore": "और दिखाएँ",
+		"pinned": "पिन की गई पोस्ट",
+		"recent": "सबसे हाल की",
+		"showAll": "सभी पोस्ट दिखाएँ",
+		"emptyTitle": "अभी कोई पोस्ट नहीं है।",
+		"emptyDescription": "नई अपडेट प्रकाशित होने पर यहाँ दिखाई देंगी।",
+		"emptyCategory": "इस श्रेणी में अभी कोई पोस्ट नहीं है।",
+		"back": "ब्लॉग पर वापस जाएँ",
+		"readingTime": "पढ़ने में {minutes} मिनट लगेंगे",
+		"latestFromBlog": "ब्लॉग की ताज़ा खबरें",
+		"noPublishedPosts": "अभी तक कोई ब्लॉग पोस्ट प्रकाशित नहीं हुई है।",
+		"fromJournal": "जर्नल से",
+		"journalDescription": "उत्पाद समाचार, मार्गदर्शिकाएँ और रिलीज़ नोट।",
+		"viewAllPosts": "सभी पोस्ट देखें",
+		"englishBodyNotice": "यह संपादकीय सामग्री अभी अंग्रेज़ी में उपलब्ध है। आसपास का इंटरफ़ेस अनुवादित है; अर्थ सुरक्षित रखने के लिए मूल लेख दिखाया गया है।"
+	},
+	"roadmap": {
+		"title": "Phaseo रोडमैप",
+		"description": "हम आगे क्या बना रहे हैं, उसका पारदर्शी विवरण। AI मॉडल डेटाबेस, गेटवे और एनालिटिक्स टूल के लिए आने वाली सुविधाओं और जारी किए गए माइलस्टोन को ट्रैक करें।",
+		"intro": "हम आगे क्या बना रहे हैं, उसका पारदर्शी विवरण। समय-सीमाएँ अनुमानित हैं और तेज़ी से रिलीज़ करने या प्रतिक्रिया शामिल करने पर बदल सकती हैं।",
+		"feedback": "कोई विचार है, गलती मिली है या किसी सुविधा को प्राथमिकता दिलाना चाहते हैं? हम हर बात पढ़ते हैं और तेज़ी से रिलीज़ करते हैं।",
+		"comingSoon": "जल्द आ रहा है",
+		"activeDevelopment": "यह पेज सक्रिय रूप से विकसित किया जा रहा है।",
+		"shippingFast": "हम तेज़ी से रिलीज़ कर रहे हैं। थोड़ी देर बाद फिर देखें या पूरा रोडमैप देखें।",
+		"viewRoadmap": "रोडमैप देखें",
+		"continuousImprovements": "लगातार सुधार आने वाले हैं",
+		"currentlyBuilt": "वर्तमान में बनाया जा रहा है",
+		"availableBeta": "बीटा में उपलब्ध",
+		"plannedFeature": "नियोजित सुविधा",
+		"seeRoadmapItem": "रोडमैप आइटम देखें",
+		"goHome": "गृहपृष्ठ जाएँ",
+		"giveFeedback": "प्रतिक्रिया दें",
+		"upcoming": "आगामी",
+		"shipped": "जारी किया गया",
+		"latestShipped": "नवीनतम रिलीज़",
+		"target": "लक्ष्य: {date}",
+		"continuous": "निरंतर",
+		"learnMore": "और जानें",
+		"nothingShipped": "अभी कुछ जारी नहीं हुआ है - जल्द फिर देखें।",
+		"shippedDate": "जारी किया गया: {date}",
+		"view": "देखें",
+		"status": {
+			"Planned": "योजनाबद्ध",
+			"In Progress": "प्रगति में",
+			"Beta": "बीटा",
+			"Shipped": "जारी किया गया",
+			"Ongoing": "जारी"
+		},
+		"milestones": {
+			"gateway": {
+				"title": "गेटवे कवरेज विस्तार",
+				"description": "बेहतर रूटिंग डिफ़ॉल्ट के साथ समर्थित प्रदाताओं, मॉडलों और मोडैलिटी का निरंतर विस्तार।"
+			},
+			"expanded-database": {
+				"title": "डेटाबेस कवरेज",
+				"description": "कैटलॉग में मॉडल, प्रदाता, मूल्य निर्धारण और रिलीज़ डेटा का निरंतर संग्रह और सत्यापन।"
+			},
+			"usage-limits": {
+				"title": "उपयोग सीमाएँ",
+				"description": "अनजाने में अधिक खर्च कम करने और टीम बजट लागू करने के लिए प्रति-कुंजी खर्च और उपयोग नियंत्रण।"
+			},
+			"guardrails": {
+				"title": "गार्डरेल्स",
+				"description": "गेटवे ट्रैफ़िक में विस्तृत सुरक्षा, नीति और मॉडरेशन नियंत्रण।"
+			},
+			"privacy-settings": {
+				"title": "गोपनीयता सेटिंग्स",
+				"description": "Phaseo Gateway का उपयोग करने वाली टीमों के लिए अधिक सूक्ष्म गोपनीयता और डेटा-रिटेंशन नियंत्रण।"
+			},
+			"provisioning-keys": {
+				"title": "प्रबंधन API कुंजियाँ",
+				"description": "उच्च-स्तरीय प्रबंधन क्रेडेंशियल बनाने और उनके पूरे जीवनचक्र को प्रबंधित करने की स्वचालित सुविधा।"
+			},
+			"presets": {
+				"title": "प्रीसेट मार्केटप्लेस",
+				"description": "प्रोडक्शन-तैयार प्रीसेट कॉन्फ़िगरेशन साझा करने, खोजने और एक क्लिक में अपनाने का बेहतर अनुभव।"
+			},
+			"anthropic-compatibility": {
+				"title": "Anthropic संगतता",
+				"description": "गेटवे के /messages एंडपॉइंट के ज़रिए Anthropic Messages API संगतता जारी की गई।"
+			},
+			"organisation-page": {
+				"title": "संगठन पृष्ठ",
+				"description": "जुड़े हुए मॉडल और मेटाडेटा वाले समर्पित संगठन पृष्ठ।"
+			},
+			"model-page": {
+				"title": "मॉडल पृष्ठ",
+				"description": "मूल्य निर्धारण, उपलब्धता और त्वरित शुरुआत की जानकारी वाले समर्पित मॉडल पृष्ठ।"
+			},
+			"benchmarks": {
+				"title": "बेंचमार्क पृष्ठ",
+				"description": "रैंक में बदलाव और प्रति-मॉडल प्रदर्शन तुलना वाले बेंचमार्क पृष्ठ।"
+			},
+			"api-providers": {
+				"title": "API प्रदाता पृष्ठ",
+				"description": "समर्थित मॉडल, मूल्य संदर्भ और क्षमता कवरेज वाले प्रदाता पृष्ठ।"
+			},
+			"latest-updates": {
+				"title": "नवीनतम अपडेट",
+				"description": "रिलीज़, घोषणाओं और डेटाबेस अपडेट के लिए एकल स्ट्रीम।"
+			},
+			"countries-pages": {
+				"title": "देश पृष्ठ",
+				"description": "संगठनों और मॉडल गतिविधि को जोड़ने वाले देश-स्तरीय दृश्य।"
+			},
+			"revamped-pricing-page": {
+				"title": "मूल्य संदर्भ नया रूप",
+				"description": "मॉडल और प्रदाता-केंद्रित नेविगेशन वाला अधिक स्पष्ट मूल्य संदर्भ अनुभव।"
+			},
+			"database-updates": {
+				"title": "डेटाबेस अपडेट फ़ीड",
+				"description": "डेटाबेस स्तर पर चल रहे बदलावों को दिखाने वाली विस्तृत अपडेट फ़ीड।"
+			},
+			"sources": {
+				"title": "इनलाइन स्रोत",
+				"description": "प्रासंगिक मॉडल और प्रदाता डेटा के साथ सीधे दिखाया गया स्रोत एट्रिब्यूशन।"
+			},
+			"compare": {
+				"title": "मॉडल तुलना",
+				"description": "मूल्य निर्धारण, क्षमताओं और प्रमुख मेटाडेटा के आधार पर साथ-साथ मॉडल तुलना।"
+			}
+		},
+		"expected": "अपेक्षित",
+		"developmentNotice": "यह पेज अभी सक्रिय विकास के अधीन है। हम इसे नियमित रूप से अपडेट करते हैं। आपके सुझावों का स्वागत है।"
+	},
+	"migrate": {
+		"title": "माइग्रेट करें",
+		"description": "OpenRouter, Vercel AI Gateway, Requesty, LLMGateway और OpenAI-संगत लाइब्रेरी से Phaseo Gateway पर जाने के लिए इंटरैक्टिव माइग्रेशन गाइड।",
+		"heading": "माइग्रेशन सहायक",
+		"intro": "अपना वर्तमान सेटअप चुनें और अपने लिए बनाई गई माइग्रेशन गाइड पाएँ।",
+		"ui": {
+			"breadcrumb": "ब्रेडक्रंब नेविगेशन",
+			"backToAllGuides": "सभी माइग्रेशन गाइड पर वापस जाएँ",
+			"readTime": "पढ़ने में {minutes} मिनट लगेंगे",
+			"updatedAt": "अपडेट की तारीख: {date}",
+			"tryPhaseo": "Phaseo आज़माएँ",
+			"comparePhaseoOpenRouter": "Phaseo और OpenRouter की तुलना करें",
+			"prerequisites": "ज़रूरी तैयारी",
+			"checklist": "जाँच सूची",
+			"validationSteps": "सत्यापन के चरण",
+			"faqHeading": "अक्सर पूछे जाने वाले सवाल",
+			"migrationResources": "माइग्रेशन संसाधन",
+			"openrouterCtaTitle": "क्या आप चाहते हैं कि हम आपका माइग्रेशन संभालें?",
+			"customMigrationCtaTitle": "क्या आपको अपने अनुसार माइग्रेशन बदलाव चाहिए?",
+			"openrouterCtaBody": "हमसे संपर्क करें। हम endpoint बदलने, मॉडल जाँचने और माइग्रेशन की समीक्षा सहित OpenRouter इंटीग्रेशन को Phaseo पर मुफ़्त में लाने में मदद करेंगे।",
+			"customMigrationCtaBody": "अपने मौजूदा SDK और भाषा के अनुसार पहले और बाद के कोड उदाहरण पाने के लिए इंटरैक्टिव सहायक का उपयोग करें।",
+			"getFreeMigrationHelp": "माइग्रेशन में मुफ़्त मदद पाएँ",
+			"openMigrationAssistant": "माइग्रेशन सहायक खोलें"
+		},
+		"agentPrompt": {
+			"codingAgents": "कोडिंग एजेंटों के लिए",
+			"title": "यह अपने कोडिंग एजेंट को दें",
+			"description": "जब आप OpenRouter को fallback के रूप में रखने के बजाय हटाना चाहते हों, तो यह पाठ अपने कोडिंग एजेंट में डालें। इसमें रखरखाव वाले कौशल का लिंक और माइग्रेशन पूरा होने की शर्त दी गई है।",
+			"copied": "कॉपी किया गया",
+			"copyPrompt": "प्रॉम्प्ट कॉपी करें",
+			"readSkill": "माइग्रेशन कौशल पढ़ें"
+		},
+		"englishBodyNotice": "यह माइग्रेशन गाइड अभी अंग्रेज़ी में उपलब्ध है। आसपास का इंटरफ़ेस अनुवादित है; तकनीकी सटीकता बनाए रखने के लिए मूल गाइड दिखाया गया है।",
+		"assistant": {
+			"stepLabel": "चरण {number}",
+			"sourceQuestion": "आप कहाँ से माइग्रेट कर रहे हैं?",
+			"chooseSource": "आगे बढ़ने के लिए स्रोत चुनें।",
+			"selectSourcePrompt": "अगले विकल्प देखने के लिए अपना मौजूदा स्रोत चुनें।",
+			"reviewChanges": "बदलावों की समीक्षा करें",
+			"split": "दो भागों में देखें",
+			"diff": "अंतर",
+			"startOver": "फिर से शुरू करें",
+			"beforeAndAfter": "पहले और बाद में",
+			"comparisonDescription": "अपने मौजूदा इंटीग्रेशन की Phaseo संस्करण से तुलना करें, या एकल दृश्य के लिए अंतर पर जाएँ।",
+			"before": "पहले",
+			"after": "बाद में",
+			"keyChanges": "मुख्य बदलाव",
+			"fullGuidePrompt": "अगर आप {source} से माइग्रेट कर रहे हैं, तो पूरी चरण-दर-चरण गाइड देखें।",
+			"readFullGuide": "पूरी गाइड पढ़ें",
+			"snippetNoSdk": "कोई SDK कॉन्फ़िगर नहीं है",
+			"sourceLabels": {
+				"compatibleLibraries": "OpenAI-संगत लाइब्रेरी",
+				"gettingStarted": "शुरुआत करें"
+			},
+			"sourceDescriptions": {
+				"openaiSdk": "आप अभी OpenAI के आधिकारिक SDK इस्तेमाल कर रहे हैं।",
+				"anthropicSdk": "आप Anthropic क्लाइंट लाइब्रेरी इस्तेमाल कर रहे हैं।",
+				"openrouter": "आप अनुरोधों को OpenRouter के ज़रिए रूट कर रहे हैं।",
+				"vercelAi": "आप Vercel AI Gateway या AI SDK प्रदाता स्टैक इस्तेमाल कर रहे हैं।",
+				"requesty": "आप Requesty को OpenAI-संगत गेटवे के रूप में इस्तेमाल कर रहे हैं।",
+				"llmGateway": "आप LLMGateway को OpenAI-संगत एंडपॉइंट के रूप में इस्तेमाल कर रहे हैं।",
+				"compatibleLibraries": "कोई भी OpenAI-संगत SDK या REST इंटीग्रेशन।",
+				"gettingStarted": "सबसे तेज़ तरीके से शुरुआत से सेटअप करें।"
+			},
+			"prompts": {
+				"openaiSdk": "आप कौन-सा OpenAI SDK इस्तेमाल कर रहे हैं?",
+				"anthropicSdk": "आप कौन-सा Anthropic SDK इस्तेमाल कर रहे हैं?",
+				"openrouter": "आप आज OpenRouter को कैसे कॉल करते हैं?",
+				"vercelAi": "आप आज Vercel से कैसे जुड़े हैं?",
+				"requesty": "आप आज Requesty को कैसे कॉल करते हैं?",
+				"llmGateway": "आप आज LLMGateway को कैसे कॉल करते हैं?",
+				"environment": "अपना वातावरण चुनें।",
+				"integration": "अपना पसंदीदा इंटीग्रेशन चुनें।"
+			},
+			"options": {
+				"keepOpenAiClient": "OpenAI क्लाइंट रखें और base URL बदलें।",
+				"keepAnthropicClient": "Anthropic क्लाइंट को बनाए रखें और base URL बदलें।",
+				"pointPythonSdk": "Python SDK को Phaseo पर भेजें।",
+				"switchRestToGateway": "REST कॉल को Gateway पर स्विच करें।",
+				"switchVercelProvider": "Vercel/OpenAI provider factory की जगह आधिकारिक Phaseo provider इस्तेमाल करें।",
+				"restAnyRuntime": "किसी भी रनटाइम में REST कॉल इस्तेमाल करें।",
+				"swapEnvironmentAndBaseUrl": "क्लाइंट रखें और environment variables तथा base URL बदलें।",
+				"openAiPythonSettings": "Phaseo के लिए OpenAI Python क्लाइंट सेटिंग इस्तेमाल करें।",
+				"switchRestToPhaseo": "REST कॉल को Phaseo Gateway पर स्विच करें।",
+				"openAiCompatibleConfiguration": "OpenAI SDK-संगत कॉन्फ़िगरेशन इस्तेमाल करें।",
+				"openAiPythonWithPhaseo": "Phaseo के साथ OpenAI Python क्लाइंट इस्तेमाल करें।",
+				"callGatewayDirectly": "Gateway को सीधे कॉल करें।",
+				"typedSdk": "सहायक सुविधाओं वाला पूरी तरह typed क्लाइंट।",
+				"asyncPythonSdk": "async-first Python क्लाइंट।",
+				"fastestRequest": "अनुरोध भेजने का सबसे तेज़ तरीका।"
+			},
+			"steps": {
+				"useApiKey": "अपनी Phaseo API key इस्तेमाल करें",
+				"createApiKey": "Phaseo डैशबोर्ड में key बनाएँ और उसे PHASEO_API_KEY के रूप में सहेजें।",
+				"setBaseUrlTitle": "base URL को Phaseo पर सेट करें",
+				"setBaseUrlDescription": "base URL को {baseUrl} पर सेट करें।",
+				"keepPayloadTitle": "अनुरोध का payload वैसा ही रखें",
+				"keepPayloadDescription": "मॉडल चयन और संदेश नहीं बदलेंगे।",
+				"authorizationHeaderTitle": "Authorization header भेजें",
+				"authorizationHeaderDescription": "हर अनुरोध में Authorization: Bearer <key> जोड़ें।"
+			},
+			"changeTitles": {
+				"useGatewayKey": "अपनी Phaseo Gateway key इस्तेमाल करें",
+				"routeThroughPhaseo": "अनुरोधों को Phaseo के ज़रिए रूट करें",
+				"updateModelIds": "मॉडल ID अपडेट करें",
+				"switchAiSdk": "Phaseo AI SDK provider पर स्विच करें"
+			},
+			"changes": {
+				"replaceOpenAiKey": "Phaseo डैशबोर्ड से PHASEO_API_KEY लेकर OPENAI_API_KEY की जगह इस्तेमाल करें।",
+				"replaceAnthropicKey": "Phaseo डैशबोर्ड से PHASEO_API_KEY लेकर ANTHROPIC_API_KEY की जगह इस्तेमाल करें।",
+				"setSdkKey": "SDK क्लाइंट के लिए Phaseo डैशबोर्ड से PHASEO_API_KEY सेट करें।",
+				"sendAuthorization": "हर अनुरोध पर Authorization: Bearer YOUR_API_KEY भेजें।",
+				"replaceVercelProvider": "Vercel OpenAI provider factory को @phaseo/ai-sdk-provider के createPhaseo(...) से बदलें।",
+				"routeBaseUrl": "ट्रैफ़िक Gateway से भेजने के लिए baseURL को {baseUrl} पर सेट करें।",
+				"routeBaseUrlPython": "ट्रैफ़िक Gateway से भेजने के लिए base_url को {baseUrl} पर सेट करें।",
+				"routeRest": "अनुरोध {endpoint} पर भेजें।",
+				"openAiModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की quickstart गाइड में देखें।",
+				"anthropicModelIds": "{modelId} जैसे Phaseo मॉडल ID इस्तेमाल करें। इन्हें हर मॉडल की quickstart गाइड में देखें।"
+			},
+			"docs": {
+				"apiReference": "API संदर्भ",
+				"apiReferenceDescription": "एंडपॉइंट, प्रमाणीकरण और त्रुटि प्रारूप।",
+				"quickstart": "त्वरित शुरुआत",
+				"quickstartDescription": "कुछ मिनटों में अपनी पहली Gateway कॉल करें।",
+				"toolCalling": "टूल कॉलिंग",
+				"toolCallingDescription": "टूल, tool_choice और फ़ंक्शन रूटिंग।",
+				"structuredOutputs": "संरचित आउटपुट",
+				"structuredOutputsDescription": "सीमाओं के साथ स्कीमा-निर्धारित प्रतिक्रियाएँ।",
+				"featureParity": "फ़ीचर समानता मैट्रिक्स",
+				"featureParityDescription": "सतह और प्रतिस्पर्धी के अनुसार Gateway माइग्रेशन समानता।",
+				"parityReview": "Gateway समानता समीक्षा",
+				"parityReviewDescription": "रिपॉज़िटरी पर आधारित सत्यापित और अभी खुले समानता क्षेत्रों की समीक्षा।"
+			},
+			"docsHeading": "दस्तावेज़"
+		}
+	},
+	"worksWith": {
+		"title": "Phaseo के साथ काम करता है",
+		"description": "Phaseo Gateway से बने ऐप्स और एकीकरण खोजें, जिनमें प्रोडक्शन टूल, ओपन-सोर्स प्रोजेक्ट और अलग-अलग वर्कफ़्लो व टीमों के सामुदायिक लॉन्च शामिल हैं।",
+		"intro": "Phaseo Gateway का उपयोग करने वाले ऐप्स, टूल और एकीकरण खोजें। टीमें रूटिंग, मूल्य निर्धारण और मॉडल एक्सेस के लिए Phaseo पर निर्माण कर सकती हैं, जबकि उपयोगकर्ता अपनी Phaseo API कुंजियाँ ला सकते हैं।",
+		"community": "समुदाय",
+		"submitApp": "अपना ऐप सबमिट करें",
+		"contribute": "Phaseo में योगदान दें",
+		"emptyTitle": "अभी कोई ऐप नहीं है",
+		"emptyDescription": "यह सूची सामुदायिक सबमिशन के लिए तैयार है। सबसे पहले अपना ऐप जोड़ें।",
+		"addApp": "अपना ऐप जोड़ें",
+		"added": "जोड़ा गया {date}",
+		"visitSite": "साइट पर जाएँ",
+		"setupDocs": "सेटअप दस्तावेज़",
+		"openSource": "ओपन सोर्स",
+		"contributing": "योगदान करना",
+		"contributingDescription": "नीचे दिए गए चरणों का पालन करके Works with Phaseo सूची में अपना ऐप जोड़ें।",
+		"requirements": "आवश्यकताएँ",
+		"tags": {
+			"chat": "चैट",
+			"coding": "कोडिंग",
+			"productivity": "उत्पादकता",
+			"creative": "रचनात्मक",
+			"research": "अनुसंधान",
+			"other": "अन्य"
+		},
+		"appLogoAlt": "{app} का लोगो",
+		"requirementModelAccess": "AI मॉडल का ऐक्सेस देने के लिए Phaseo का इस्तेमाल करें।",
+		"requirementBringOwnKey": "उपयोगकर्ताओं को अपनी Phaseo API कुंजी जोड़ने दें।",
+		"requirementPublicAccess": "ऐप को सार्वजनिक रूप से उपलब्ध रखें या सार्वजनिक लैंडिंग पेज दें।",
+		"requirementLogo": "लोगो की छवि शामिल करें।",
+		"howToSubmit": "ऐप कैसे जमा करें",
+		"forkRepository": "इस रिपॉज़िटरी का fork बनाएँ।",
+		"addCatalogEntry": "अपने ऐप की एंट्री यहाँ जोड़ें:",
+		"addLogo": "अपना लोगो यहाँ जोड़ें:",
+		"submitPullRequest": "Pull request सबमिट करें।",
+		"entryFormat": "एंट्री का प्रारूप",
+		"validTags": "मान्य टैग",
+		"questions": "सवाल?",
+		"questionHelp": "सवाल पूछने या सबमिशन में मदद लेने के लिए issue खोलें।",
+		"openDataRequest": "डेटा अनुरोध खोलें",
+		"forYourApp": "अपने ऐप के लिए।",
+		"includeAppDetails": "ऐप का नाम, छोटा विवरण, वेबसाइट, Phaseo इंटीग्रेशन गाइड और लोगो का लिंक शामिल करें।",
+		"includeCategories": "संबंधित श्रेणियाँ और ऐप ओपन सोर्स होने पर स्रोत रिपॉज़िटरी का लिंक जोड़ें।",
+		"trackPublication": "इश्यू में समीक्षा और प्रकाशन की प्रगति देखें।"
+	},
+	"acknowledgements": {
+		"title": "आभार",
+		"description": "वे ओपन-सोर्स प्रोजेक्ट, प्लेटफ़ॉर्म और डिज़ाइन कार्य जिन पर Phaseo निर्भर करता है और जिनसे सीखता है।",
+		"heading": "कई लोगों के काम से निर्मित।",
+		"intro": "Phaseo ओपन-सोर्स सॉफ़्टवेयर, विचारशील डिज़ाइन कार्य और भरोसेमंद इंफ़्रास्ट्रक्चर पर आधारित है। यह पृष्ठ उन प्रोजेक्ट और टीमों को पहचानता है जो हमारे निर्माण को महत्वपूर्ण रूप से आकार देते हैं।",
+		"thanks": "हर मेंटेनर, योगदानकर्ता, शोधकर्ता और डिज़ाइनर का धन्यवाद, जिनके काम से Phaseo संभव हुआ।",
+		"howUsed": "Phaseo इसका उपयोग कैसे करता है।",
+		"disclaimer": "यह एक अनुरक्षित उत्पाद आभार सूची है, पूर्ण सॉफ़्टवेयर बिल ऑफ़ मटेरियल्स या लाइसेंस नोटिस नहीं। पैकेज-स्तर के कॉपीराइट और लाइसेंस की शर्तें संबंधित प्रोजेक्ट के पास रहती हैं।",
+		"continue": "जारी रखें",
+		"review": "समीक्षा करें",
+		"accessibleStates": "सुलभ अवस्थाएँ",
+		"streamingResponse": "स्ट्रीमिंग प्रतिक्रिया",
+		"searchExample": "खोज उदाहरण",
+		"createdBy": "{name} द्वारा बनाया गया",
+		"reliableGateway": "एक विश्वसनीय गेटवे",
+		"routeByHealthPriceCapability": "स्थिति, कीमत और क्षमता के आधार पर रूट करें",
+		"orbWorking": "काम जारी है",
+		"orbSearching": "खोज जारी है",
+		"orbSolving": "हल किया जा रहा है",
+		"orbComposing": "उत्तर तैयार किया जा रहा है",
+		"orbLabel": "{state} ऑर्ब",
+		"groups": {
+			"interface": {
+				"label": "इंटरफ़ेस",
+				"description": "Phaseo के वेब अनुभव और इंटरैक्शन भाषा की बुनियाद।"
+			},
+			"aiExperience": {
+				"label": "AI अनुभव",
+				"description": "ऐसी परियोजनाएँ जो Phaseo को मॉडल आउटपुट स्ट्रीम, रेंडर और समझाने में मदद करती हैं।"
+			},
+			"platform": {
+				"label": "प्लेटफ़ॉर्म",
+				"description": "Phaseo को भरोसेमंद ढंग से चलाने में मदद करने वाला बुनियादी ढाँचा और सेवाएँ।"
+			},
+			"productIntelligence": {
+				"label": "उत्पाद विश्लेषण",
+				"description": "रिलीज़, विश्वसनीयता और उत्पाद के व्यवहार को समझने के लिए उपकरण।"
+			}
+		},
+		"items": {
+			"react": {
+				"description": "Phaseo के इंटरैक्टिव उत्पाद इंटरफ़ेस का आधार बनने वाला घोषणात्मक कंपोनेंट और स्थिति मॉडल।",
+				"usedFor": "चैट, मॉडल तुलना, सेटिंग्स, ऑब्ज़र्वेबिलिटी और स्थिति वाली सभी स्क्रीन React कंपोनेंट से बनती हैं।"
+			},
+			"nextjs": {
+				"description": "ऐसा एप्लिकेशन फ़्रेमवर्क जो सर्वर रेंडरिंग, रूटिंग, मेटाडेटा, कैशिंग और क्लाइंट इंटरैक्शन को जोड़ता है।",
+				"usedFor": "सार्वजनिक कैटलॉग, प्रमाणित वर्कस्पेस, API ब्रिज और यह पेज एक ही App Router एप्लिकेशन साझा करते हैं।"
+			},
+			"tailwind": {
+				"description": "यूटिलिटी-आधारित स्टाइलिंग सिस्टम जो दृश्य निर्णयों को उनसे प्रभावित कंपोनेंट के करीब रखता है।",
+				"usedFor": "रिस्पॉन्सिव लेआउट, टाइपोग्राफ़ी, रंग, मोशन और डार्क मोड साझा डिज़ाइन टोकन और यूटिलिटी से बनाए जाते हैं।"
+			},
+			"baseUi": {
+				"description": "खुले कंपोनेंट पैटर्न और सुलभ हेडलेस प्रिमिटिव, जो अंतिम दृश्य डिज़ाइन तय किए बिना मज़बूत व्यवहार देते हैं।",
+				"usedFor": "Phaseo के डायलॉग, मेनू, टूलटिप, बटन, चयनकर्ता और कीबोर्ड इंटरैक्शन इन्हीं आधारों पर बने हैं।"
+			},
+			"lucide": {
+				"description": "उत्पाद इंटरफ़ेस के लिए विस्तृत शब्दावली वाला सुसंगत और स्पष्ट आइकन परिवार।",
+				"usedFor": "जहाँ केवल पाठ असुविधाजनक हो, वहाँ आइकन नेविगेशन, मॉडल कार्रवाइयों, अनुरोध की स्थिति, सेटिंग्स और छोटे नियंत्रणों को स्पष्ट करते हैं।"
+			},
+			"thinkingOrbs": {
+				"description": "बारीकी से समायोजित Canvas ऐनिमेशन का परिवार, जो सामान्य स्पिनर पर निर्भर हुए बिना पृष्ठभूमि के काम की स्थिति दिखाता है।",
+				"usedFor": "Phaseo Chat भेजने और कतार में लगाने के दौरान काम की स्थिति, और सहायक के उत्तर तैयार करते समय लिखने की स्थिति दिखाता है।"
+			},
+			"streamdown": {
+				"description": "अधूरे पाठ के लिए बनाया गया Markdown रेंडरर, जो टोकन-दर-टोकन आता है।",
+				"usedFor": "जवाब स्ट्रीम होते समय Phaseo अंतिम दस्तावेज़ की प्रतीक्षा किए बिना शीर्षक, सूचियाँ, लिंक, कोड और गणित दिखा सकता है।"
+			},
+			"shiki": {
+				"description": "TextMate-संगत सिंटैक्स हाइलाइटर, जो संपादक-स्तर की ग्रामर सहायता के साथ कोड दिखाता है।",
+				"usedFor": "मॉडल के जवाबों में कोड अलग-अलग भाषाओं और थीम में पठनीय रहता है, तकनीकी तुलना और डिबगिंग के दौरान भी।"
+			},
+			"cloudflare": {
+				"description": "एज कंप्यूटिंग, स्थायी समन्वय, स्टोरेज, नेटवर्किंग और सुरक्षा वाला वैश्विक एप्लिकेशन प्लेटफ़ॉर्म।",
+				"usedFor": "Phaseo का गेटवे और सहायक API उपयोगकर्ताओं के करीब चलने तथा लंबे कार्यों का समन्वय करने के लिए Workers और संबंधित सेवाओं का उपयोग करते हैं।"
+			},
+			"supabase": {
+				"description": "प्रमाणीकरण, स्टोरेज, रीयल-टाइम क्षमताओं और डेवलपर टूल वाला Postgres प्लेटफ़ॉर्म।",
+				"usedFor": "Phaseo खाते की पहचान और वर्कस्पेस, उपयोग, क्रेडिट तथा गेटवे कॉन्फ़िगरेशन जैसे स्थायी रिलेशनल डेटा के लिए Supabase पर निर्भर है।"
+			},
+			"vercel": {
+				"description": "Next.js और आधुनिक वेब डिलीवरी के लिए अनुकूलित डिप्लॉयमेंट और एप्लिकेशन इन्फ्रास्ट्रक्चर।",
+				"usedFor": "Phaseo वेबसाइट Vercel पर बनाई, प्रीव्यू और सर्व की जाती है; निजी API इसे व्यापक प्लेटफ़ॉर्म से जोड़ते हैं।"
+			},
+			"hono": {
+				"description": "आधुनिक JavaScript रनटाइम के लिए बनाया गया छोटा, मानक-आधारित वेब फ़्रेमवर्क।",
+				"usedFor": "यह Phaseo के Cloudflare Workers API में रूटिंग, मिडलवेयर और टाइपयुक्त अनुरोध प्रबंधन देता है।"
+			},
+			"stripe": {
+				"description": "सुरक्षित चेकआउट, भुगतान विधियों, इनवॉइस और बिलिंग घटनाओं के लिए भुगतान इन्फ्रास्ट्रक्चर।",
+				"usedFor": "ग्राहक Phaseo क्रेडिट खरीदते और प्रबंधित करते हैं, तब Stripe वित्तीय लेनदेन संभालता है।"
+			},
+			"posthog": {
+				"description": "इवेंट, फ़नल, सेशन डायग्नोस्टिक्स और फ़ीचर व्यवहार को कवर करने वाला खुला उत्पाद एनालिटिक्स प्लेटफ़ॉर्म।",
+				"usedFor": "Phaseo विश्वसनीयता समझने और उपयोगकर्ता प्रवाह बेहतर करने के लिए मापे गए उत्पाद संकेतों का उपयोग करता है, अंतर्ज्ञान को प्रमाण नहीं मानता।"
+			},
+			"statsig": {
+				"description": "नियंत्रित उत्पाद डिलीवरी के लिए फ़ीचर प्रबंधन और प्रयोग का प्लेटफ़ॉर्म।",
+				"usedFor": "फ़ीचर गेट बदलावों को धीरे-धीरे शुरू करने, परिणामों की तुलना करने और रोलआउट अप्रत्याशित होने पर तेज़ी से सुधार करने देते हैं।"
+			}
+		}
+	},
+	"contribute": {
+		"title": "योगदान दें",
+		"description": "Phaseo का समर्थन करने वाले योगदानकर्ताओं और प्रायोजकों से मिलें, सामुदायिक प्रोफ़ाइल व योगदान इतिहास देखें और भाग लेने, प्रायोजित करने या प्लेटफ़ॉर्म को बेहतर बनाने के स्पष्ट तरीके खोजें।",
+		"heading": "योगदानकर्ता और प्रायोजक",
+		"intro": "हम सार्वजनिक रूप से निर्माण करते हैं। ये सूचियाँ Phaseo रिपॉज़िटरी में योगदान देने वाले सभी लोगों और GitHub Sponsors के ज़रिए इसके विकास को प्रायोजित करने वालों को दिखाती हैं। ये सभी शानदार लोग हैं!",
+		"contributors": "रिपॉज़िटरी योगदानकर्ता",
+		"contributorCount": "{count} योगदानकर्ता",
+		"sponsors": "प्रायोजक",
+		"listed": "{count} सूचीबद्ध",
+		"contributorExportPending": "योगदानकर्ताओं का डेटा अभी तैयार हो रहा है। निर्यात प्रक्रिया शुरू करें या कुछ समय बाद फिर देखें।",
+		"commitCount": "{count, plural, one {# कमिट} other {# कमिट}}",
+		"communityContributor": "समुदाय का योगदानकर्ता",
+		"sponsorListEmpty": "अभी तक किसी प्रायोजक का रिकॉर्ड नहीं है। समुदाय से जुड़ें, आपका नाम जल्द यहाँ दिखाई देगा!",
+		"viewProfile": "प्रोफ़ाइल देखें",
+		"linkUnavailable": "लिंक उपलब्ध नहीं है"
+	}
+}

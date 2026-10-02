@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { sanitizeReturnUrl } from "@/lib/auth/return-url";
+import type { PublicLocale } from "@/i18n/routing";
 
 export function stripTrailingSlash(value: string): string {
 	return value.replace(/\/+$/, "");
@@ -94,16 +95,21 @@ export async function resolveAuthOrigin(
 export function buildAuthCallbackUrl(
 	authOrigin: string,
 	returnUrl?: unknown,
+	locale?: PublicLocale,
 ): string {
 	const callbackUrl = new URL("/auth/callback", stripTrailingSlash(authOrigin));
 	const sanitizedReturnUrl = sanitizeReturnUrl(returnUrl, "/");
 	if (sanitizedReturnUrl !== "/") {
 		callbackUrl.searchParams.set("returnUrl", sanitizedReturnUrl);
 	}
+	if (locale) callbackUrl.searchParams.set("locale", locale);
 	return callbackUrl.toString();
 }
 
-export async function resolveAuthCallbackUrl(returnUrl?: unknown): Promise<string> {
+export async function resolveAuthCallbackUrl(
+	returnUrl?: unknown,
+	locale?: PublicLocale,
+): Promise<string> {
 	const authOrigin = await resolveAuthOrigin();
-	return buildAuthCallbackUrl(authOrigin, returnUrl);
+	return buildAuthCallbackUrl(authOrigin, returnUrl, locale);
 }

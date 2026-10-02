@@ -1,0 +1,50 @@
+---
+title: "创建响应"
+sidebarTitle: "创建响应"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /responses"
+---
+## 服务器工具
+
+`/v1/responses` 支持常规函数工具，以及以下由 Gateway 管理的服务器工具：
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+- `phaseo:apply_patch`
+
+### 日期和时间示例
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "stream": false,
+    "input": [
+      { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "Asia/Tokyo" }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
+```
+
+使用服务器工具时，usage 中会包含相应的 `usage.server_tool_use.*` 计数器。
+
+- `gateway:datetime` -> `datetime_requests`
+- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
+- `phaseo:web_fetch` -> `web_fetch_requests`
+- `phaseo:advisor` -> `advisor_requests`
+- `phaseo:image_generation` -> `image_generation_requests`
+- `phaseo:apply_patch` -> `apply_patch_requests`
+
+## 流式传输说明
+
+同样支持 `stream: true`。对于 Gateway 管理的服务器工具，Phaseo 可能会先处理上游工具调用轮次、继续循环，再重新发出合成流。

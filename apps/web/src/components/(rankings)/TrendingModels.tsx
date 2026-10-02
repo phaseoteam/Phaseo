@@ -10,6 +10,7 @@ import { TrendingUp, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { TrendingModel } from "@/lib/fetchers/rankings/getRankingsData";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface TrendingModelsProps {
@@ -17,12 +18,14 @@ interface TrendingModelsProps {
 }
 
 export function TrendingModels({ data }: TrendingModelsProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.rankings");
 	const format = useDisplayFormatters();
     if (!data.length) {
         return (
             <RankingsEmptyState
-                title="No trending data yet"
-                description="Trending models appear once weekly usage clears privacy thresholds."
+                title={t("trendingEmptyTitle")}
+                description={t("trendingEmptyDescription")}
             />
         );
     }
@@ -37,7 +40,7 @@ export function TrendingModels({ data }: TrendingModelsProps) {
             return (
                 <Badge variant="destructive" className="gap-1">
                     <Flame className="h-3 w-3" />
-                    Hot
+                    {t("hot")}
                 </Badge>
             );
         }
@@ -45,14 +48,14 @@ export function TrendingModels({ data }: TrendingModelsProps) {
             return (
                 <Badge variant="default" className="gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    Rising
+                    {t("rising")}
                 </Badge>
             );
         }
         return (
             <Badge variant="secondary" className="gap-1">
                 <TrendingUp className="h-3 w-3" />
-                Trending
+                {t("trendingBadge")}
             </Badge>
         );
     };
@@ -68,7 +71,7 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                         ? format.number((growth / previousWeek) * 100, {
                             maximumFractionDigits: 0,
                         })
-                        : "inf";
+                        : "∞";
 
                 return (
                     <Card key={`${model.model_id}-${model.provider}`} className="hover:shadow-md transition-shadow">
@@ -84,16 +87,16 @@ export function TrendingModels({ data }: TrendingModelsProps) {
                                     </p>
                                     <div className="flex items-center gap-3 mt-2 text-xs">
                                         <span className="text-green-600 font-medium">
-                                            +{growthPercent}% this week
+                                            {t("growthThisWeek", { growth: growthPercent })}
                                         </span>
                                         <span className="text-muted-foreground">
-                                            {formatRequests(currentWeek)} requests
+                                            {formatRequests(currentWeek)} {t("requestsLabel")}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-sm tabular-nums text-muted-foreground">
-                                        Velocity: {format.number(Number(model.velocity ?? 0), {
+                                        {t("velocityLabel")}: {format.number(Number(model.velocity ?? 0), {
                                             maximumFractionDigits: 0,
                                         })}
                                     </div>

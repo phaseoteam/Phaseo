@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Status und Genehmigung"
+description: "Pausiere Ruby-Agenten für menschliche Entscheidungen und setze den anwendungseigenen Zustand fort."
+---
+
+Verwende `human_review` für einen allgemeinen Prüfpunkt. Genehmigungspflichtige und manuelle Tools füllen `run.pause.pending_tool_calls` mit den exakten Aufruf-IDs.
+
+Setze den Lauf mit `Agent#continue_run` fort und übergib:
+
+- `ToolDecision`-Werte für Genehmigungen oder Ablehnungen
+- `ToolOutput`-Werte für manuelle Arbeit
+- `human_input` für eine allgemeine Prüfungspause
+- den vorherigen Lauf oder `run_id` mit einem State-Accessor
+
+Entscheidungen verwenden die exakten Aufruf-IDs, sodass gleichzeitige Aufrufe desselben Tools unterscheidbar bleiben. Ein kompatibles Zustandsobjekt implementiert `load(run_id)` und `save(result)`.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

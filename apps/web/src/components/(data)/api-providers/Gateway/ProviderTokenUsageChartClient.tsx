@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,11 +35,13 @@ export default function ProviderTokenUsageChartClient({
 	appPoints = [],
 	showLinkedTables = true,
 }: ProviderTokenUsageChartClientProps) {
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatCompact = (value: number) => Number.isFinite(value)
+	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
-	const formatBucketLabel = (value: string) =>
+	const formatBucketLabel = (value: string, _locale?: string) =>
 		format.calendarDate(`${value}T00:00:00.000Z`, value);
 	const [hoveredBucket, setHoveredBucket] = useState<string | null>(null);
 	const [hoveredModelId, setHoveredModelId] = useState<string | null>(null);
@@ -183,12 +186,12 @@ export default function ProviderTokenUsageChartClient({
 		return totals;
 	}, [appPoints]);
 	const aggregateRangeLabel = useMemo(() => {
-		if (!buckets.length) return "this period";
+		if (!buckets.length) return t("thisPeriod");
 		const first = buckets[0];
 		const last = buckets[buckets.length - 1];
-		if (first === last) return formatBucketLabel(first);
-		return `${formatBucketLabel(first)} - ${formatBucketLabel(last)}`;
-	}, [buckets]);
+		if (first === last) return formatBucketLabel(first, locale);
+		return `${formatBucketLabel(first, locale)} – ${formatBucketLabel(last, locale)}`;
+	}, [buckets, locale, t]);
 
 	const activeTotalTokens = useMemo(() => {
 		if (activeBucket) return totalTokensByBucket.get(activeBucket) ?? 0;
@@ -292,14 +295,14 @@ export default function ProviderTokenUsageChartClient({
 					<CartesianGrid vertical={false} className="stroke-muted" />
 					<XAxis
 						dataKey="bucket"
-						tickFormatter={(value) => formatBucketLabel(String(value))}
+						tickFormatter={(value) => formatBucketLabel(String(value), locale)}
 						tickLine={false}
 						axisLine={false}
 						minTickGap={24}
 						interval="preserveStartEnd"
 					/>
 					<YAxis
-						tickFormatter={(value) => formatCompact(Number(value))}
+						tickFormatter={(value) => formatCompact(Number(value), locale)}
 						tickLine={false}
 						axisLine={false}
 						width={56}
@@ -348,19 +351,19 @@ export default function ProviderTokenUsageChartClient({
 				<>
 						<div className="text-xs text-muted-foreground">
 							{activeBucket
-								? `Showing ${formatBucketLabel(activeBucket)} | Total ${formatCompact(activeTotalTokens)}${hoveredModelId ? ` | Hovering ${modelNameById.get(hoveredModelId) ?? hoveredModelId}` : ""}`
-								: `Showing ${aggregateRangeLabel} aggregate | Total ${formatCompact(activeTotalTokens)}`}
+							? t("chartDaySummary", { date: formatBucketLabel(activeBucket, locale), total: formatCompact(activeTotalTokens, locale), hovering: hoveredModelId ? t("chartHoveringModel", { model: modelNameById.get(hoveredModelId) ?? hoveredModelId }) : "" })
+							: t("chartPeriodSummary", { range: aggregateRangeLabel, total: formatCompact(activeTotalTokens, locale) })}
 						</div>
 
 					<div className="space-y-8">
 						<section id="top-models" className="scroll-mt-36 space-y-3">
-							<h3 className="text-xl font-semibold">Top Models</h3>
+							<h3 className="text-xl font-semibold">{t("topModels")}</h3>
 							<div className="overflow-x-auto">
 								<table className="w-full min-w-[480px] text-sm">
 									<thead>
 										<tr className="border-b border-border text-xs text-muted-foreground">
-											<th className="px-2 py-2 text-left font-medium">Model</th>
-											<th className="px-2 py-2 text-right font-medium">Tokens</th>
+											<th className="px-2 py-2 text-left font-medium">{t("modelLabel")}</th>
+											<th className="px-2 py-2 text-right font-medium">{t("tokensLabel")}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -405,8 +408,8 @@ export default function ProviderTokenUsageChartClient({
 													className="px-2 py-6 text-center text-xs text-muted-foreground"
 												>
 													{activeBucket
-														? "0 tokens for this day."
-														: "0 tokens in this period."}
+													? t("zeroTokensForDay")
+													: t("zeroTokensForPeriod")}
 												</td>
 											</tr>
 										)}
@@ -416,14 +419,14 @@ export default function ProviderTokenUsageChartClient({
 						</section>
 
 						<section id="top-apps" className="scroll-mt-36 space-y-3">
-							<h3 className="text-xl font-semibold">Top Apps</h3>
+							<h3 className="text-xl font-semibold">{t("topApps")}</h3>
 							<div className="overflow-x-auto">
 								<table className="w-full min-w-[560px] text-sm">
 									<thead>
 										<tr className="border-b border-border text-xs text-muted-foreground">
-											<th className="px-2 py-2 text-left font-medium">App</th>
-											<th className="px-2 py-2 text-right font-medium">Tokens</th>
-											<th className="px-2 py-2 text-right font-medium">Website</th>
+											<th className="px-2 py-2 text-left font-medium">{t("appLabel")}</th>
+											<th className="px-2 py-2 text-right font-medium">{t("tokensLabel")}</th>
+											<th className="px-2 py-2 text-right font-medium">{t("websiteLabel")}</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -464,7 +467,7 @@ export default function ProviderTokenUsageChartClient({
 																rel="noopener noreferrer"
 																className="text-xs font-medium text-foreground underline decoration-transparent underline-offset-2 transition-colors hover:text-primary hover:decoration-current"
 															>
-																Visit
+										{t("visitWebsite")}
 															</a>
 														) : (
 															<span className="text-xs text-muted-foreground">-</span>
@@ -479,8 +482,8 @@ export default function ProviderTokenUsageChartClient({
 													className="px-2 py-6 text-center text-xs text-muted-foreground"
 												>
 													{activeBucket
-														? "0 tokens for this day."
-														: "0 tokens in this period."}
+													? t("zeroTokensForDay")
+													: t("zeroTokensForPeriod")}
 												</td>
 											</tr>
 										)}

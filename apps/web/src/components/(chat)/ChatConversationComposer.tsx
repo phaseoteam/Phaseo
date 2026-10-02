@@ -108,6 +108,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type SendGateType = "auth" | null;
 
@@ -157,79 +158,52 @@ const DEFAULT_SERVER_TOOL_SET = new Set<ChatServerToolType>(
 const SERVER_TOOL_COMMANDS = [
 	{
 		id: "server-tool-web-search",
-		label: "Web Search",
 		toolType: "phaseo:web_search",
-		description: "Model-directed web searches",
 		keywords: ["server", "tool", "web", "search", "grounding", "current"],
 		icon: Search,
 	},
 	{
 		id: "server-tool-web-fetch",
-		label: "Web Fetch",
 		toolType: "phaseo:web_fetch",
-		description: "Fetch and read URLs",
 		keywords: ["server", "tool", "web", "fetch", "url", "page"],
 		icon: FileSearch,
 	},
 	{
 		id: "server-tool-image-generation",
-		label: "Image Generation",
 		toolType: "phaseo:image_generation",
-		description: "Create images mid-request",
 		keywords: ["server", "tool", "image", "generation", "create"],
 		icon: ImagePlus,
 	},
 	{
 		id: "server-tool-datetime",
-		label: "Datetime",
 		toolType: "gateway:datetime",
-		description: "Current date and time",
 		keywords: ["server", "tool", "datetime", "date", "time", "timezone"],
 		icon: CalendarClock,
 	},
 	{
 		id: "server-tool-fusion",
-		label: "Fusion",
 		toolType: "phaseo:fusion",
-		description: "Synthesize multiple model outputs",
 		keywords: ["server", "tool", "fusion", "synthesis", "combine"],
 		icon: Cpu,
 	},
 	{
 		id: "server-tool-advisor",
-		label: "Advisor",
 		toolType: "phaseo:advisor",
-		description: "Consult another model",
 		keywords: ["server", "tool", "advisor", "review", "second", "model"],
 		icon: ClipboardCheck,
 	},
 	{
 		id: "server-tool-sub-agent",
-		label: "Sub-agent",
 		toolType: "phaseo:subagent",
-		description: "Delegate focused work to another agent",
 		keywords: ["server", "tool", "sub", "agent", "delegate"],
 		icon: Bot,
 	},
 ] satisfies Array<{
 	id: string;
-	label: string;
 	toolType: ChatServerToolType;
-	description: string;
 	keywords: string[];
 	icon: LucideIcon;
 }>;
-
-const SERVER_TOOL_SETTING_LABELS: Record<ChatServerToolType, string> = {
-	"gateway:datetime": "Datetime",
-	"phaseo:web_search": "Web Search",
-	"phaseo:web_fetch": "Web Fetch",
-	"phaseo:advisor": "Advisor",
-	"phaseo:image_generation": "Image Generation",
-	"phaseo:apply_patch": "Apply Patch",
-	"phaseo:fusion": "Fusion",
-	"phaseo:subagent": "Sub-agent",
-};
 
 const WEB_SEARCH_ENGINE_OPTIONS = [
 	{ value: "auto", label: "Auto" },
@@ -315,95 +289,21 @@ const IMAGE_MODERATION_OPTIONS = [
 }>;
 
 const EVALUATION_PROMPTS = [
-	{
-		title: "Palindrome Quest",
-		description: "Find the next palindrome",
-		prompt:
-			"Find the smallest palindrome number greater than 12932. Explain your reasoning briefly.",
-	},
-	{
-		title: "Car Wash Test",
-		description: "Should you walk or drive?",
-		prompt:
-			"A person needs to go through a car wash. Should they walk through it or drive through it? Explain the safest and most sensible answer.",
-	},
-	{
-		title: "Personal Finance",
-		description: "Draft a portfolio proposal",
-		prompt:
-			"Draft a practical portfolio management proposal for a 35-year-old with moderate risk tolerance, a 20-year time horizon, and a preference for low-fee diversified funds.",
-	},
-	{
-		title: "9.9 vs 9.11",
-		description: "Which one is larger?",
-		prompt: "Which is bigger, 9.11 or 9.9? Explain your answer briefly.",
-	},
-	{
-		title: "The Missing Dollar",
-		description: "Classic money logic puzzle",
-		prompt:
-			"Three guests pay $30 for a room. The manager realizes it should cost $25 and gives $5 to the bellhop to return. The bellhop keeps $2 and gives $1 back to each guest. Each guest paid $9, totaling $27, plus the bellhop's $2 makes $29. Where is the missing dollar?",
-	},
-	{
-		title: "Career Development",
-		description: "Build a growth roadmap",
-		prompt:
-			"Create a 90-day professional growth roadmap for a mid-level software engineer who wants to become a technical lead.",
-	},
-	{
-		title: "Strawberry Test",
-		description: "How many r's are in the word?",
-		prompt:
-			"How many times does the letter r appear in the word strawberry? Think carefully and answer with one sentence.",
-	},
-	{
-		title: "Small Business Strategy",
-		description: "Plan an expansion",
-		prompt:
-			"Develop a concise expansion plan for a small local coffee shop that wants to add online ordering and corporate catering.",
-	},
-	{
-		title: "Poem Riddle",
-		description: "Compose a 13-line poem",
-		prompt:
-			"Compose a 13-line poem where the first letter of each line spells REASONINGTEST.",
-	},
-	{
-		title: "Alphabet Series",
-		description: "Find the next letter",
-		prompt:
-			"What is the next letter in this sequence: A, C, F, J, O, ? Explain the pattern briefly.",
-	},
-	{
-		title: "Healthy Lifestyle",
-		description: "Diet and exercise plan",
-		prompt:
-			"Design a balanced weekly diet and exercise regimen for a busy office worker with beginner fitness experience.",
-	},
-	{
-		title: "Anagram Challenge",
-		description: "Unscramble the letters",
-		prompt:
-			"Unscramble the letters 'TCAOR' into a common English word. If there is more than one possibility, list them and explain which is most likely.",
-	},
-	{
-		title: "Educational Advancement",
-		description: "Plan higher education",
-		prompt:
-			"Create a decision plan for someone choosing between a part-time master's degree, a professional certificate, and self-study.",
-	},
-	{
-		title: "Word Transformation",
-		description: "Change one letter at a time",
-		prompt:
-			"Transform COLD into WARM by changing one letter at a time, with every intermediate step being a valid English word.",
-	},
-	{
-		title: "JSON Only",
-		description: "Return a strict object",
-		prompt:
-			"Return only valid JSON with keys answer, confidence, and reasoning. The question is: which is larger, 9.11 or 9.9?",
-	},
+	{ id: "palindromeQuest" },
+	{ id: "carWashTest" },
+	{ id: "personalFinance" },
+	{ id: "numberComparison" },
+	{ id: "missingDollar" },
+	{ id: "careerDevelopment" },
+	{ id: "strawberryTest" },
+	{ id: "smallBusinessStrategy" },
+	{ id: "poemRiddle" },
+	{ id: "alphabetSeries" },
+	{ id: "healthyLifestyle" },
+	{ id: "anagramChallenge" },
+	{ id: "educationalAdvancement" },
+	{ id: "wordTransformation" },
+	{ id: "jsonOnly" },
 ];
 
 const PROMPT_SCROLL_COPIES = [0, 1, 2];
@@ -575,13 +475,15 @@ function RecordingWaveform({
 	bars: number[];
 	durationMs: number;
 }) {
+
+	const tUi = useTranslations("Common.ui");
 	return (
 		<div
 			role="status"
-			aria-label="Recording audio"
+			aria-label={tUi("accessibility.recordingAudio")}
 			className="order-1 flex min-h-9 w-full min-w-0 flex-1 items-center gap-2 px-2 sm:order-2"
 		>
-			<span className="sr-only">Recording audio</span>
+			<span className="sr-only">{tUi("accessibility.recordingAudio")}</span>
 			<div className="flex h-10 min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
 				{bars.map((height, index) => (
 					<span
@@ -615,6 +517,8 @@ function ComposerModelSelectField({
 	allowAuto?: boolean;
 	onChange: (value: string | undefined) => void;
 }) {
+
+	const tUi = useTranslations("Common.ui");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const selectedModel = options.find((option) => option.modelId === value);
@@ -687,7 +591,7 @@ function ComposerModelSelectField({
 							value={search}
 							onChange={(event) => setSearch(event.target.value)}
 							onKeyDown={(event) => event.stopPropagation()}
-							placeholder="Search models..."
+							placeholder={tUi("accessibility.searchModels")}
 							className="h-8 rounded-md bg-input/50 text-xs"
 						/>
 					</div>
@@ -740,9 +644,9 @@ function ComposerModelSelectField({
 									</button>
 								);
 							})}
-							{filteredOptions.length === 0 ? (
-								<div className="px-2 py-6 text-center text-xs text-muted-foreground">
-									No models found.
+			{filteredOptions.length === 0 ? (
+				<div className="px-2 py-6 text-center text-xs text-muted-foreground">
+					{tUi("chatComposer.noModelsFound")}
 								</div>
 							) : null}
 						</div>
@@ -764,13 +668,15 @@ function ComposerTimezoneSelectField({
 	options: Array<{ value: string; label: string }>;
 	onChange: (value: string | undefined) => void;
 }) {
+
+	const tUi = useTranslations("Common.ui");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const selectedOption =
 		value === "UTC"
 			? { value: "UTC", label: "UTC" }
 			: options.find((option) => option.value === value);
-	const selectedLabel = selectedOption?.label ?? "Auto";
+	const selectedLabel = selectedOption?.label ?? tUi("requestBuilder.auto");
 	const filteredOptions = useMemo(() => {
 		const query = search.trim().toLowerCase();
 		if (!query) return options;
@@ -809,7 +715,7 @@ function ComposerTimezoneSelectField({
 							value={search}
 							onChange={(event) => setSearch(event.target.value)}
 							onKeyDown={(event) => event.stopPropagation()}
-							placeholder="Search timezones..."
+							placeholder={tUi("accessibility.searchTimezones")}
 							className="h-8 rounded-md bg-input/50 text-xs"
 						/>
 					</div>
@@ -822,9 +728,9 @@ function ComposerTimezoneSelectField({
 							)}
 							onClick={() => handleSelect(undefined)}
 						>
-							<span className="min-w-0 flex-1 truncate">Auto</span>
+							<span className="min-w-0 flex-1 truncate">{tUi("requestBuilder.auto")}</span>
 							<span className="text-[11px] text-muted-foreground">
-								Browser + UTC
+								{tUi("chatComposer.browserUtc")}
 							</span>
 							{!value ? <Check className="size-3.5 shrink-0" /> : null}
 						</button>
@@ -868,7 +774,7 @@ function ComposerTimezoneSelectField({
 							})}
 							{filteredOptions.length === 0 ? (
 								<div className="px-2 py-6 text-center text-xs text-muted-foreground">
-									No timezones found.
+									{tUi("chatComposer.noTimezonesFound")}
 								</div>
 							) : null}
 						</div>
@@ -938,6 +844,110 @@ interface ChatConversationComposerProps {
 }
 
 export function ChatConversationComposer(props: ChatConversationComposerProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const t = useTranslations("Product.chat");
+	const tModelPicker = useTranslations("Product.chat.modelPicker");
+	const tUi = useTranslations("Common.ui");
+	const evaluationPromptLabels: Record<
+		string,
+		{ title: string; description: string; prompt: string }
+	> = {
+		palindromeQuest: {
+			title: t("evaluationPrompts.palindromeQuest.title"),
+			description: t("evaluationPrompts.palindromeQuest.description"),
+			prompt: t("evaluationPrompts.palindromeQuest.prompt"),
+		},
+		carWashTest: {
+			title: t("evaluationPrompts.carWashTest.title"),
+			description: t("evaluationPrompts.carWashTest.description"),
+			prompt: t("evaluationPrompts.carWashTest.prompt"),
+		},
+		personalFinance: {
+			title: t("evaluationPrompts.personalFinance.title"),
+			description: t("evaluationPrompts.personalFinance.description"),
+			prompt: t("evaluationPrompts.personalFinance.prompt"),
+		},
+		numberComparison: {
+			title: t("evaluationPrompts.numberComparison.title"),
+			description: t("evaluationPrompts.numberComparison.description"),
+			prompt: t("evaluationPrompts.numberComparison.prompt"),
+		},
+		missingDollar: {
+			title: t("evaluationPrompts.missingDollar.title"),
+			description: t("evaluationPrompts.missingDollar.description"),
+			prompt: t("evaluationPrompts.missingDollar.prompt"),
+		},
+		careerDevelopment: {
+			title: t("evaluationPrompts.careerDevelopment.title"),
+			description: t("evaluationPrompts.careerDevelopment.description"),
+			prompt: t("evaluationPrompts.careerDevelopment.prompt"),
+		},
+		strawberryTest: {
+			title: t("evaluationPrompts.strawberryTest.title"),
+			description: t("evaluationPrompts.strawberryTest.description"),
+			prompt: t("evaluationPrompts.strawberryTest.prompt"),
+		},
+		smallBusinessStrategy: {
+			title: t("evaluationPrompts.smallBusinessStrategy.title"),
+			description: t("evaluationPrompts.smallBusinessStrategy.description"),
+			prompt: t("evaluationPrompts.smallBusinessStrategy.prompt"),
+		},
+		poemRiddle: {
+			title: t("evaluationPrompts.poemRiddle.title"),
+			description: t("evaluationPrompts.poemRiddle.description"),
+			prompt: t("evaluationPrompts.poemRiddle.prompt"),
+		},
+		alphabetSeries: {
+			title: t("evaluationPrompts.alphabetSeries.title"),
+			description: t("evaluationPrompts.alphabetSeries.description"),
+			prompt: t("evaluationPrompts.alphabetSeries.prompt"),
+		},
+		healthyLifestyle: {
+			title: t("evaluationPrompts.healthyLifestyle.title"),
+			description: t("evaluationPrompts.healthyLifestyle.description"),
+			prompt: t("evaluationPrompts.healthyLifestyle.prompt"),
+		},
+		anagramChallenge: {
+			title: t("evaluationPrompts.anagramChallenge.title"),
+			description: t("evaluationPrompts.anagramChallenge.description"),
+			prompt: t("evaluationPrompts.anagramChallenge.prompt"),
+		},
+		educationalAdvancement: {
+			title: t("evaluationPrompts.educationalAdvancement.title"),
+			description: t("evaluationPrompts.educationalAdvancement.description"),
+			prompt: t("evaluationPrompts.educationalAdvancement.prompt"),
+		},
+		wordTransformation: {
+			title: t("evaluationPrompts.wordTransformation.title"),
+			description: t("evaluationPrompts.wordTransformation.description"),
+			prompt: t("evaluationPrompts.wordTransformation.prompt"),
+		},
+		jsonOnly: {
+			title: t("evaluationPrompts.jsonOnly.title"),
+			description: t("evaluationPrompts.jsonOnly.description"),
+			prompt: t("evaluationPrompts.jsonOnly.prompt"),
+		},
+	};
+	const serverToolLabels: Record<ChatServerToolType, string> = {
+		"gateway:datetime": tUi("chatComposer.dateTime"),
+		"phaseo:web_search": tUi("chatComposer.webSearch"),
+		"phaseo:web_fetch": tUi("chatComposer.webFetch"),
+		"phaseo:advisor": tUi("chatComposer.advisorTool"),
+		"phaseo:image_generation": tUi("chatComposer.imageGeneration"),
+		"phaseo:apply_patch": tUi("chatComposer.applyPatchTool"),
+		"phaseo:fusion": tUi("chatComposer.fusionTool"),
+		"phaseo:subagent": tUi("chatComposer.subAgentTool"),
+	};
+	const serverToolDescriptions: Record<ChatServerToolType, string> = {
+		"gateway:datetime": tUi("chatComposer.dateTimeDescription"),
+		"phaseo:web_search": tUi("chatComposer.webSearchDescription"),
+		"phaseo:web_fetch": tUi("chatComposer.webFetchDescription"),
+		"phaseo:advisor": tUi("chatComposer.advisorToolDescription"),
+		"phaseo:image_generation": tUi("chatComposer.imageGenerationDescription"),
+		"phaseo:apply_patch": tUi("chatComposer.applyPatchTool"),
+		"phaseo:fusion": tUi("chatComposer.fusionToolDescription"),
+		"phaseo:subagent": tUi("chatComposer.subAgentToolDescription"),
+	};
 	const format = useDisplayFormatters();
 	const {
 		sendGateType,
@@ -1165,8 +1175,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		if (defaultServerToolsDisabled) {
 			commands.push({
 				id: "tools",
-				label: "Tools changed",
-				description: "Datetime off",
+				label: tUi("chatComposer.toolsChanged"),
+				description: tUi("chatComposer.datetimeOff"),
 				keywords: ["tools", "server", "datetime", "disabled", "settings"],
 				icon: Settings2,
 			});
@@ -1174,8 +1184,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		for (const tool of activeCustomServerTools) {
 			commands.push({
 				id: tool.id,
-				label: tool.label,
-				description: tool.description,
+				label: serverToolLabels[tool.toolType],
+				description: serverToolDescriptions[tool.toolType],
 				keywords: tool.keywords,
 				icon: tool.icon,
 				serverToolType: tool.toolType,
@@ -1183,7 +1193,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			});
 		}
 		return commands;
-	}, [activeCustomServerTools, defaultServerToolsDisabled]);
+	}, [activeCustomServerTools, defaultServerToolsDisabled, serverToolDescriptions, serverToolLabels, tUi]);
 	const trimmedComposer = composer.trim();
 	const promptNeedsExpandedComposer =
 		trimmedComposer.length >= COMPOSER_EXPAND_PROMPT_LENGTH ||
@@ -1239,7 +1249,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		}>
 	>(
 		() => [
-			{ value: "none", label: "Default" },
+			{ value: "none", label: tCopy("copyDefault") },
 			...REASONING_OPTIONS
 				.filter((option) => option.value !== "none")
 				.map((option) => ({
@@ -1247,7 +1257,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					label: option.label,
 				})),
 		],
-		[],
+		[ tCopy],
 	);
 	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings
@@ -1399,6 +1409,33 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		return Number.isFinite(parsed) ? parsed : null;
 	}, []);
 
+	const localizeToolOptionLabel = (label: string) => {
+		switch (label) {
+			case "Auto":
+				return tUi("requestBuilder.auto");
+			case "Low":
+				return tUi("requestBuilder.low");
+			case "Medium":
+				return tUi("requestBuilder.medium");
+			case "High":
+				return tUi("requestBuilder.high");
+			case "Native":
+				return tUi("chatComposer.native");
+			case "Direct":
+				return tUi("chatComposer.direct");
+			case "Standard":
+				return tUi("chatComposer.standard");
+			case "Transparent":
+				return tUi("chatComposer.transparent");
+			case "Opaque":
+				return tUi("chatComposer.opaque");
+			case "Default":
+				return tUi("chatComposer.default");
+			default:
+				return label;
+		}
+	};
+
 	const renderSelectField = <T extends string,>({
 		label,
 		value,
@@ -1423,7 +1460,9 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						className="h-8 w-full rounded-lg border-border bg-muted px-2 text-xs text-foreground"
 					>
 						<SelectValue>
-							{selectedOption?.label ?? value}
+							{selectedOption
+								? localizeToolOptionLabel(selectedOption.label)
+								: value}
 						</SelectValue>
 					</SelectTrigger>
 					<SelectContent
@@ -1433,7 +1472,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					>
 						{options.map((option) => (
 							<SelectItem key={option.value} value={option.value}>
-								{option.label}
+								{localizeToolOptionLabel(option.label)}
 							</SelectItem>
 						))}
 					</SelectContent>
@@ -1615,43 +1654,44 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const commands: SlashCommand[] = [
 			{
 				id: "attach",
-				label: "Upload from device",
+				label: tUi("chatComposer.uploadFromDevice"),
 				keywords: ["attach", "attachment", "file", "upload"],
 				icon: Paperclip,
 				disabled: !isUnified,
 			},
 			{
 				id: "model",
-				label: "Model",
+				label: tUi("chatComposer.modelLabel"),
 				description:
 					selectedModelCount > 1
-						? selectedModelsHint ?? `${selectedModelCount} models selected`
+					? selectedModelsHint ??
+						tUi("chatComposer.modelsSelected", { count: selectedModelCount })
 						: selectedModelId || selectedModelLabel,
 				keywords: ["model", "models", "provider", "swap"],
 				icon: Cpu,
 			},
 			{
 				id: "reasoning",
-				label: "Reasoning",
+				label: tUi("chatComposer.reasoning"),
 				description:
 					reasoningOptions.find(
 						(option) => option.value === reasoningSelection,
-					)?.label ?? "Medium",
+					)?.label ?? tUi("requestBuilder.medium"),
 				keywords: ["reasoning", "think", "effort"],
 				icon: Brain,
 			},
 			{
 				id: "tools",
-				label: "Tools",
+				label: tUi("chatComposer.toolsLabel"),
 				description: [
-					enabledServerToolSet.has("phaseo:web_search")
-						? "Web Search on"
-						: "Web Search off",
+						enabledServerToolSet.has("phaseo:web_search")
+							? tUi("chatComposer.webSearchOn")
+							: tUi("chatComposer.webSearchOff"),
 					defaultServerToolsDisabled
-						? "Datetime off"
+						? tUi("chatComposer.datetimeOff")
 						: activeCustomServerTools.length > 0
-							? `${activeCustomServerTools.length} extra`
-							: "Datetime enabled",
+							? tUi("chatComposer.extraTools", { count: activeCustomServerTools.length })
+							: tUi("chatComposer.datetimeEnabled"),
 				].join(" - "),
 				keywords: ["tools", "api", "server", "context", "web", "search"],
 				icon: Settings2,
@@ -1672,6 +1712,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		selectedModelId,
 		selectedModelLabel,
 		selectedModelsHint,
+		tUi,
 	]);
 
 	const reasoningSlashCommands = useMemo<SlashCommand[]>(() => {
@@ -1713,7 +1754,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			return {
 				id: `model-${option.modelId}`,
 				label: option.label,
-				description: isBlocked ? "Blocked by Chat policy" : undefined,
+				description: isBlocked ? tCopy("blockedChat") : undefined,
 				keywords: [
 					"model",
 					"models",
@@ -1734,13 +1775,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const groups: ModelSlashGroup[] = [];
 		if (selectedOptions.length > 0) {
 			groups.push({
-				heading: "Selected",
+				heading: tModelPicker("selected"),
 				commands: selectedOptions.map(toCommand),
 			});
 		}
 		if (favoriteOptions.length > 0) {
 			groups.push({
-				heading: "Favourites",
+				heading: tModelPicker("favorites"),
 				commands: favoriteOptions.map(toCommand),
 			});
 		}
@@ -1751,7 +1792,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			});
 		}
 		return groups;
-	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds]);
+	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds, tModelPicker, tCopy]);
 
 	const modelSlashCommands = useMemo<SlashCommand[]>(
 		() => modelSlashGroups.flatMap((group) => group.commands),
@@ -1764,14 +1805,14 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				const selected = enabledServerToolSet.has(tool.toolType);
 				return {
 					id: tool.id,
-					label: tool.label,
+					label: serverToolLabels[tool.toolType],
 					description: DEFAULT_SERVER_TOOL_SET.has(tool.toolType)
 						? selected
-							? "Enabled by default"
-							: "Disabled"
+							? tUi("chatComposer.enabledByDefault")
+							: tUi("chatComposer.disabled")
 						: selected
-							? "Enabled - configure"
-							: "Configure",
+							? tUi("chatComposer.enabledConfigure")
+							: tUi("chatComposer.configure"),
 					keywords: tool.keywords,
 					icon: tool.icon,
 					disabled: !isUnified || !onServerToolsChange,
@@ -1779,7 +1820,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					serverToolType: tool.toolType,
 				};
 			}),
-		[enabledServerToolSet, isUnified, onServerToolsChange],
+		[enabledServerToolSet, isUnified, onServerToolsChange, serverToolLabels, tUi],
 	);
 
 	const activeSlashCommands = useMemo<SlashCommand[]>(() => {
@@ -1831,7 +1872,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		if (activeSlashSearchValue) {
 			return [
 				{
-					heading: `Results (${filteredSlashCommands.length})`,
+					heading: tModelPicker("results", { count: filteredSlashCommands.length }),
 					commands: filteredSlashCommands,
 				},
 			];
@@ -1842,6 +1883,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		filteredSlashCommands,
 		modelSlashGroups,
 		slashMenu,
+		tModelPicker,
 	]);
 
 	const renderServerToolSettings = () => {
@@ -1852,8 +1894,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const command = selectedServerToolCommand;
 		const Icon = command?.icon ?? Settings2;
 		const toolEnabled = enabledServerToolSet.has(toolType);
-		const toolLabel =
-			command?.label ?? SERVER_TOOL_SETTING_LABELS[toolType] ?? "Server Tool";
+		const toolLabel = serverToolLabels[toolType];
 		return (
 			<div className="grid gap-3 p-2">
 				<div className="flex items-start gap-2">
@@ -1869,7 +1910,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						}}
 					>
 						<ArrowLeft className="h-3.5 w-3.5" />
-						<span className="sr-only">Back to tools</span>
+						<span className="sr-only">{tUi("chatComposer.backToTools")}</span>
 					</Button>
 					<div className="min-w-0 flex-1">
 						<div className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -1877,7 +1918,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							<span>{toolLabel}</span>
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Configure this server tool for the current chat.
+							{tUi("chatComposer.configureServerTool")}
 						</div>
 					</div>
 					<label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
@@ -1886,20 +1927,19 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							checked={toolEnabled}
 							onCheckedChange={(checked) => setServerToolEnabled(toolType, checked)}
 						/>
-						<span>{toolEnabled ? "Enabled" : "Disabled"}</span>
+						<span>{toolEnabled ? tUi("chatComposer.enabled") : tUi("chatComposer.disabled")}</span>
 					</label>
 				</div>
 				{toolType === "gateway:datetime" ? (
 					<div className="grid gap-2">
 						<ComposerTimezoneSelectField
-							label="Timezone"
+							label={tUi("chatComposer.timezone")}
 							value={datetimeConfig.timezone}
 							options={timezoneOptions}
 							onChange={(timezone) => updateDatetimeConfig({ timezone })}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Auto includes the browser timezone and UTC. Pick a fixed
-							IANA timezone when a chat needs a specific region.
+							{tUi("chatComposer.timezoneHelp")}
 						</p>
 					</div>
 				) : null}
@@ -1907,20 +1947,20 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<div className="grid gap-2">
 						<div className="grid gap-2 sm:grid-cols-2">
 							{renderSelectField({
-								label: "Engine",
+								label: tUi("chatComposer.engine"),
 								value: webSearchConfig.engine ?? "auto",
 								options: WEB_SEARCH_ENGINE_OPTIONS,
 								onChange: (engine) => updateWebSearchConfig({ engine }),
 							})}
 							{renderSelectField({
-								label: "Context size",
+								label: tUi("chatComposer.contextSize"),
 								value: webSearchConfig.searchContextSize ?? "medium",
 								options: WEB_SEARCH_CONTEXT_OPTIONS,
 								onChange: (searchContextSize) =>
 									updateWebSearchConfig({ searchContextSize }),
 							})}
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Results per search</span>
+								<span>{tUi("chatComposer.resultsPerSearch")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -1931,12 +1971,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											maxResults: parseOptionalNumber(event.target.value),
 										})
 									}
-									placeholder="Default: 5"
+								placeholder={tUi("chatComposer.defaultValue", { value: 5 })}
 									className="h-8 rounded-lg text-xs"
 								/>
 							</label>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Total results</span>
+								<span>{tUi("chatComposer.totalResults")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -1949,13 +1989,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											),
 										})
 									}
-									placeholder="Default: 10"
+								placeholder={tUi("chatComposer.defaultValue", { value: 10 })}
 									className="h-8 rounded-lg text-xs"
 								/>
 							</label>
 						</div>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Max characters</span>
+							<span>{tUi("chatComposer.maxCharacters")}</span>
 							<Input
 								type="number"
 								min={1}
@@ -1966,12 +2006,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										maxCharacters: parseOptionalNumber(event.target.value),
 									})
 								}
-								placeholder="Engine default"
+							placeholder={tUi("chatComposer.defaultEngine")}
 								className="h-8 rounded-lg text-xs"
 							/>
 						</label>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Allowed domains</span>
+							<span>{tUi("chatComposer.allowedDomains")}</span>
 							<Input
 								value={webSearchConfig.allowedDomains ?? ""}
 								onChange={(event) =>
@@ -1984,7 +2024,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							/>
 						</label>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Excluded domains</span>
+							<span>{tUi("chatComposer.excludedDomains")}</span>
 							<Input
 								value={webSearchConfig.excludedDomains ?? ""}
 								onChange={(event) =>
@@ -1998,7 +2038,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</label>
 						<div className="grid gap-2 sm:grid-cols-2">
 							<label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-2.5 py-2 text-[11px] text-muted-foreground">
-								<span>Highlights</span>
+								<span>{tUi("chatComposer.highlights")}</span>
 								<Switch
 									size="sm"
 									checked={webSearchConfig.includeHighlights !== false}
@@ -2008,7 +2048,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-2.5 py-2 text-[11px] text-muted-foreground">
-								<span>Full text</span>
+								<span>{tUi("chatComposer.fullText")}</span>
 								<Switch
 									size="sm"
 									checked={webSearchConfig.includeText === true}
@@ -2023,13 +2063,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				{toolType === "phaseo:web_fetch" ? (
 					<div className="grid gap-2">
 						{renderSelectField({
-							label: "Engine",
+							label: tUi("chatComposer.engine"),
 							value: webFetchConfig.engine ?? "auto",
 							options: WEB_FETCH_ENGINE_OPTIONS,
 							onChange: (engine) => updateWebFetchConfig({ engine }),
 						})}
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Max characters</span>
+							<span>{tUi("chatComposer.maxCharacters")}</span>
 							<Input
 								type="number"
 								min={1}
@@ -2040,12 +2080,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										maxChars: parseOptionalNumber(event.target.value),
 									})
 								}
-								placeholder="Default: 12000"
+							placeholder={tUi("chatComposer.defaultValue", { value: 12000 })}
 								className="h-8 rounded-lg text-xs"
 							/>
 						</label>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Allowed domains</span>
+							<span>{tUi("chatComposer.allowedDomains")}</span>
 							<Input
 								value={webFetchConfig.allowedDomains ?? ""}
 								onChange={(event) =>
@@ -2058,7 +2098,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							/>
 						</label>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Blocked domains</span>
+							<span>{tUi("chatComposer.blockedDomains")}</span>
 							<Input
 								value={webFetchConfig.blockedDomains ?? ""}
 								onChange={(event) =>
@@ -2075,50 +2115,50 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				{toolType === "phaseo:image_generation" ? (
 					<div className="grid gap-2">
 						<ComposerModelSelectField
-							label="Image model"
+							label={tUi("chatComposer.imageModel")}
 							value={imageGenerationConfig.model}
 							options={imageGenerationModelOptions}
-							autoLabel="Choose image model"
+							autoLabel={tUi("chatComposer.chooseImageModel")}
 							allowAuto={false}
 							onChange={(model) => updateImageGenerationConfig({ model })}
 						/>
 						<div className="grid gap-2 sm:grid-cols-2">
 							{renderSelectField({
-								label: "Quality",
+								label: tUi("chatComposer.quality"),
 								value: imageGenerationConfig.quality ?? "auto",
 								options: IMAGE_QUALITY_OPTIONS,
 								onChange: (quality) =>
 									updateImageGenerationConfig({ quality }),
 							})}
 							{renderSelectField({
-								label: "Aspect ratio",
+								label: tUi("chatComposer.aspectRatio"),
 								value: imageGenerationConfig.aspectRatio ?? "auto",
 								options: IMAGE_ASPECT_RATIO_OPTIONS,
 								onChange: (aspectRatio) =>
 									updateImageGenerationConfig({ aspectRatio }),
 							})}
 							{renderSelectField({
-								label: "Size",
+								label: tUi("chatComposer.size"),
 								value: imageGenerationConfig.size ?? "auto",
 								options: IMAGE_SIZE_OPTIONS,
 								onChange: (size) => updateImageGenerationConfig({ size }),
 							})}
 							{renderSelectField({
-								label: "Background",
+								label: tUi("chatComposer.background"),
 								value: imageGenerationConfig.background ?? "auto",
 								options: IMAGE_BACKGROUND_OPTIONS,
 								onChange: (background) =>
 									updateImageGenerationConfig({ background }),
 							})}
 							{renderSelectField({
-								label: "Format",
+								label: tUi("chatComposer.format"),
 								value: imageGenerationConfig.outputFormat ?? "auto",
 								options: IMAGE_OUTPUT_FORMAT_OPTIONS,
 								onChange: (outputFormat) =>
 									updateImageGenerationConfig({ outputFormat }),
 							})}
 							{renderSelectField({
-								label: "Moderation",
+								label: tUi("chatComposer.moderation"),
 								value: imageGenerationConfig.moderation ?? "auto",
 								options: IMAGE_MODERATION_OPTIONS,
 								onChange: (moderation) =>
@@ -2126,7 +2166,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							})}
 						</div>
 						<label className="grid gap-1 text-[11px] text-muted-foreground">
-							<span>Output compression</span>
+							<span>{tUi("chatComposer.outputCompression")}</span>
 							<Input
 								type="number"
 								min={0}
@@ -2139,7 +2179,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										),
 									})
 								}
-								placeholder="Default (0-100)"
+							placeholder={tUi("chatComposer.defaultRange", { min: 0, max: 100 })}
 								className="h-8 rounded-lg text-xs"
 							/>
 						</label>
@@ -2179,7 +2219,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								onClick={addAdvisorConfig}
 							>
 								<Plus className="h-3.5 w-3.5" />
-								<span className="sr-only">Add advisor</span>
+								<span className="sr-only">{tUi("chatComposer.addAdvisor")}</span>
 							</Button>
 							<Button
 								type="button"
@@ -2190,15 +2230,15 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								onClick={removeAdvisorConfig}
 							>
 								<X className="h-3.5 w-3.5" />
-								<span className="sr-only">Remove advisor</span>
+								<span className="sr-only">{tUi("chatComposer.removeAdvisor")}</span>
 							</Button>
 						</div>
 						<label className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted px-2.5 py-2 text-[11px] text-muted-foreground">
 							<span>
 								<span className="block font-medium text-foreground">
-									Forward transcript
+									{tUi("chatComposer.forwardTranscript")}
 								</span>
-								<span>Share the conversation so far with the advisor.</span>
+								<span>{tUi("chatComposer.shareConversation")}</span>
 							</span>
 							<Switch
 								size="sm"
@@ -2211,7 +2251,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 						</label>
 						<div className="grid gap-2 sm:grid-cols-2">
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Name</span>
+								<span>{tUi("chatComposer.name")}</span>
 								<Input
 									value={advisorConfig.name ?? ""}
 									onChange={(event) =>
@@ -2224,15 +2264,15 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<ComposerModelSelectField
-								label="Model"
+								label={tUi("chatComposer.model")}
 								value={advisorConfig.model}
 								options={activeModelOptions}
-								autoLabel="Choose advisor model"
+								autoLabel={tUi("chatComposer.chooseAdvisorModel")}
 								allowAuto={false}
 								onChange={(model) => updateAdvisorConfig({ model })}
 							/>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Max uses</span>
+								<span>{tUi("chatComposer.maxUses")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -2247,7 +2287,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Max tokens</span>
+								<span>{tUi("chatComposer.maxTokens")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -2264,7 +2304,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Temperature</span>
+								<span>{tUi("chatComposer.temperature")}</span>
 								<Input
 									type="number"
 									step={0.1}
@@ -2275,12 +2315,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											temperature: parseOptionalNumber(event.target.value),
 										})
 									}
-									placeholder="Default"
+									placeholder={tUi("chatComposer.default")}
 									className="h-7 rounded-lg text-xs"
 								/>
 							</label>
 							{renderSelectField({
-								label: "Reasoning",
+								label: tUi("chatComposer.reasoning"),
 								value: advisorConfig.reasoningEffort ?? "none",
 								options: advisorReasoningOptions,
 								onChange: (reasoningEffort) =>
@@ -2288,7 +2328,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							})}
 						</div>
 						<label className="mt-2 grid gap-1 text-[11px] text-muted-foreground">
-							<span>Instructions</span>
+							<span>{tUi("chatComposer.instructions")}</span>
 							<Textarea
 								value={advisorConfig.instructions ?? ""}
 								onChange={(event) =>
@@ -2296,7 +2336,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										instructions: event.target.value || undefined,
 									})
 								}
-								placeholder="Review plans for correctness, missing edge cases, and implementation risk."
+								placeholder={tUi("chatComposer.advisorPlaceholder")}
 								className="min-h-16 resize-none rounded-lg border-transparent bg-input/50 px-2 py-1.5 text-xs"
 							/>
 						</label>
@@ -2306,14 +2346,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<div className="grid gap-2">
 						<div className="rounded-md border border-border bg-muted px-3 py-2 text-xs text-muted-foreground">
 							<span className="block font-medium text-foreground">
-								Fusion Settings
+								{tUi("chatComposer.fusionSettings")}
 							</span>
-							Run a small panel of models, then optionally use a judge model to
-							choose the strongest direction.
+							{tUi("chatComposer.fusionDescription")}
 						</div>
 						<div className="grid gap-2">
 							<span className="text-[11px] font-medium text-muted-foreground">
-								Analysis Models
+								{tUi("chatComposer.analysisModels")}
 							</span>
 							{(fusionModelIds.length ? fusionModelIds : [""]).map(
 								(modelId, index) => (
@@ -2325,7 +2364,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											label={`Analysis model ${index + 1}`}
 											value={modelId || undefined}
 											options={activeModelOptions}
-											autoLabel="Choose fusion model"
+											autoLabel={tUi("chatComposer.chooseFusionModel")}
 											allowAuto={false}
 											onChange={(model) => updateFusionModel(index, model)}
 										/>
@@ -2338,7 +2377,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											onClick={() => updateFusionModel(index, undefined)}
 										>
 											<X className="h-3.5 w-3.5" />
-											<span className="sr-only">Remove fusion model</span>
+											<span className="sr-only">{tUi("chatComposer.removeFusionModel")}</span>
 										</Button>
 									</div>
 								),
@@ -2352,20 +2391,20 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								onClick={addFusionModel}
 							>
 								<Plus className="h-3.5 w-3.5" />
-								Add model
+								{tUi("chatComposer.addModel")}
 							</Button>
 						</div>
 						<ComposerModelSelectField
-							label="Judge Model"
+							label={tUi("chatComposer.judgeModel")}
 							value={fusionConfig.judgeModel}
 							options={activeModelOptions}
-							autoLabel="Auto"
+							autoLabel={tUi("requestBuilder.auto")}
 							allowAuto
 							onChange={(judgeModel) => updateFusionConfig({ judgeModel })}
 						/>
 						<div className="grid gap-2">
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Max Tool Calls</span>
+								<span>{tUi("chatComposer.maxToolCalls")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -2375,7 +2414,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											maxUses: parseOptionalNumber(event.target.value),
 										})
 									}
-									placeholder="Default: 8"
+									placeholder={tUi("chatComposer.defaultValue", { value: 8 })}
 									className="h-7 rounded-lg text-xs"
 								/>
 							</label>
@@ -2386,15 +2425,15 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<>
 						<div className="grid gap-2 sm:grid-cols-2">
 							<ComposerModelSelectField
-								label="Worker model"
+								label={tUi("chatComposer.workerModel")}
 								value={subagentConfig.model}
 								options={activeModelOptions}
-								autoLabel="Choose worker model"
+								autoLabel={tUi("chatComposer.workerModel")}
 								allowAuto={false}
 								onChange={(model) => updateSubagentConfig({ model })}
 							/>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Max uses</span>
+								<span>{tUi("chatComposer.maxUses")}</span>
 								<Input
 									type="number"
 									min={1}
@@ -2409,7 +2448,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Max tokens</span>
+								<span>{tUi("chatComposer.maxTokens")}</span>
 								<Input
 									type="number"
 									min={1024}
@@ -2426,7 +2465,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								/>
 							</label>
 							<label className="grid gap-1 text-[11px] text-muted-foreground">
-								<span>Temperature</span>
+								<span>{tUi("chatComposer.temperature")}</span>
 								<Input
 									type="number"
 									step={0.1}
@@ -2438,12 +2477,12 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											temperature: parseOptionalNumber(event.target.value),
 										})
 									}
-									placeholder="Default"
+									placeholder={tUi("chatComposer.default")}
 									className="h-7 rounded-lg text-xs"
 								/>
 							</label>
 							{renderSelectField({
-								label: "Reasoning",
+								label: tUi("chatComposer.reasoning"),
 								value: subagentConfig.reasoningEffort ?? "none",
 								options: advisorReasoningOptions,
 								onChange: (reasoningEffort) =>
@@ -2451,7 +2490,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							})}
 						</div>
 						<label className="mt-2 grid gap-1 text-[11px] text-muted-foreground">
-							<span>Instructions</span>
+							<span>{tUi("chatComposer.instructions")}</span>
 							<Textarea
 								value={subagentConfig.instructions ?? ""}
 								onChange={(event) =>
@@ -2459,7 +2498,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										instructions: event.target.value || undefined,
 									})
 								}
-								placeholder="Return concise findings for the main model. Do not address the end user directly."
+								placeholder={tUi("chatComposer.subagentPlaceholder")}
 								className="min-h-16 resize-none rounded-lg border-transparent bg-input/50 px-2 py-1.5 text-xs"
 							/>
 						</label>
@@ -2612,7 +2651,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		const moveToMiddle = () => {
 			const segmentWidth = getSegmentWidth();
 			if (segmentWidth > 0) {
-				viewport.scrollLeft = segmentWidth;
+				const direction = getComputedStyle(viewport).direction === "rtl" ? -1 : 1;
+				viewport.scrollLeft = segmentWidth * direction;
 			}
 		};
 		const unlockAdjustment = () => {
@@ -2622,16 +2662,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			if (isAdjusting) return;
 			const segmentWidth = getSegmentWidth();
 			if (segmentWidth <= 0) return;
-			const left = viewport.scrollLeft;
+			const direction = getComputedStyle(viewport).direction === "rtl" ? -1 : 1;
+			const left = viewport.scrollLeft * direction;
 			if (left < segmentWidth * 0.35) {
 				isAdjusting = true;
-				viewport.scrollLeft = left + segmentWidth;
+				viewport.scrollLeft = (left + segmentWidth) * direction;
 				rafId = requestAnimationFrame(unlockAdjustment);
 				return;
 			}
 			if (left > segmentWidth * 1.65) {
 				isAdjusting = true;
-				viewport.scrollLeft = left - segmentWidth;
+				viewport.scrollLeft = (left - segmentWidth) * direction;
 				rafId = requestAnimationFrame(unlockAdjustment);
 			}
 		};
@@ -2776,13 +2817,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			aria-label={
 				hasSelectedModel
 					? isSending
-						? "Queue message"
-						: "Send message"
-					: "Choose a model to send"
+						? t("stop")
+						: t("send")
+				: t("selectModel")
 			}
 			aria-disabled={!canActivateSendButton}
 			data-chat-send-button="true"
-			title={showChooseModelTooltip ? "Choose a model" : undefined}
+			title={showChooseModelTooltip ? t("selectModel") : undefined}
 			className={cn(
 				canActivateSendButton
 					? "cursor-pointer border-transparent hover:brightness-95"
@@ -2808,7 +2849,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 				<ThinkingOrb
 					state="working"
 					size={20}
-					aria-label="Queue message"
+				aria-label={t("stop")}
 				/>
 			) : (
 				<SendHorizontal className="h-4 w-4" />
@@ -2818,10 +2859,10 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 
 	const renderAudioButton = () => {
 		const label = isRecording
-			? "Stop recording"
+			? t("stop")
 			: recordingSupported
-				? "Record audio"
-				: "Add audio file";
+				? t("record")
+				: t("addAudio");
 		const Icon = isRecording ? Square : recordingSupported ? Mic : AudioLines;
 
 		return (
@@ -2847,7 +2888,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent>
-					{isStartingRecording ? "Starting recording..." : label}
+					{isStartingRecording ? tCopy("startingRecording") : label}
 				</TooltipContent>
 			</Tooltip>
 		);
@@ -2880,7 +2921,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		<AttachmentGroup
 			tabIndex={0}
 			role="group"
-			aria-label="Attached files"
+							aria-label={tUi("accessibility.attachedFiles")}
 			className="-mx-4 w-[calc(100%+2rem)] px-4 pb-1 md:-mx-8 md:w-[calc(100%+4rem)] md:px-8"
 		>
 			{attachments.map((file, index) => {
@@ -2975,7 +3016,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 									prompt.content.trim() ||
 									(prompt.attachmentCount > 0
 										? `${prompt.attachmentCount} attachment${prompt.attachmentCount === 1 ? "" : "s"}`
-										: "Queued prompt");
+										: tCopy("queuedPrompt"));
 								return (
 									<div
 										key={prompt.id}
@@ -2997,7 +3038,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 									>
 										<button
 											type="button"
-											aria-label="Drag to reorder queued prompt"
+							aria-label={tUi("accessibility.dragToReorderQueuedPrompt")}
 											draggable={Boolean(onReorderQueuedPrompt)}
 											onDragStart={(event) =>
 												handleQueuedPromptDragStart(event, prompt.id)
@@ -3013,7 +3054,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										{onEditQueuedPrompt ? (
 											<button
 												type="button"
-												aria-label="Edit queued prompt"
+								aria-label={tUi("accessibility.editQueuedPrompt")}
 												onClick={() => onEditQueuedPrompt(prompt.id)}
 												className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 											>
@@ -3023,7 +3064,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										{onRemoveQueuedPrompt ? (
 											<button
 												type="button"
-												aria-label="Remove queued prompt"
+								aria-label={tUi("accessibility.removeQueuedPrompt")}
 												onClick={() => onRemoveQueuedPrompt(prompt.id)}
 												className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 											>
@@ -3042,19 +3083,19 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 							<Info className="mt-0.5 h-4 w-4 shrink-0" />
 							<div className="space-y-0.5">
 								<p className="font-medium">
-									Create an account to send messages.
+									{tUi("chatComposer.createAccountPrompt")}
 								</p>
 								<p className="text-xs opacity-90">
-									Sign up to start chatting in this playground.
+									{tUi("chatComposer.signUpPrompt")}
 								</p>
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
 							<Button asChild size="sm">
-								<Link href={`/sign-up?returnUrl=${encodeURIComponent(authReturnUrl)}`}>Create account</Link>
+								<Link href={`/sign-up?returnUrl=${encodeURIComponent(authReturnUrl)}`}>{tUi("chatComposer.createAccount")}</Link>
 							</Button>
 							<Button asChild variant="outline" size="sm">
-								<Link href={`/sign-in?returnUrl=${encodeURIComponent(authReturnUrl)}`}>Sign in</Link>
+								<Link href={`/sign-in?returnUrl=${encodeURIComponent(authReturnUrl)}`}>{tUi("chatComposer.signIn")}</Link>
 							</Button>
 						</div>
 					</div>
@@ -3065,7 +3106,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<ScrollArea
 						ref={promptScrollAreaRef}
 						className="-mx-4 w-[calc(100%+2rem)] whitespace-nowrap px-4 [mask-image:linear-gradient(90deg,transparent,black_1.25rem,black_calc(100%-1.25rem),transparent)] md:-mx-8 md:w-[calc(100%+4rem)] md:px-8 md:[mask-image:linear-gradient(90deg,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
-						aria-label="Prompt presets"
+						aria-label={tUi("accessibility.promptPresets")}
 					>
 						<div
 							className={cn(
@@ -3081,7 +3122,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								>
 									{EVALUATION_PROMPTS.map((item) => (
 										<button
-											key={`${item.title}-${copyIndex}`}
+											key={`${item.id}-${copyIndex}`}
 											type="button"
 											className={cn(
 												"group/card relative flex shrink-0 flex-col justify-center overflow-hidden border border-border/70 bg-card/95 text-left text-foreground shadow-sm shadow-black/[0.03] transition duration-200",
@@ -3091,9 +3132,11 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 													? "h-10 w-auto max-w-[13rem] rounded-full px-3 sm:max-w-[14.5rem]"
 													: "h-[4.25rem] w-[14.75rem] rounded-md px-4 sm:w-60",
 											)}
-											onClick={() =>
-												onSelectEvaluationPrompt(item.prompt)
-											}
+							onClick={() =>
+								onSelectEvaluationPrompt(
+									evaluationPromptLabels[item.id].prompt,
+								)
+							}
 											tabIndex={copyIndex === 1 ? 0 : -1}
 										>
 											<span
@@ -3104,11 +3147,11 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 														: "text-[13px] leading-5 sm:text-sm",
 												)}
 											>
-												{item.title}
+												{evaluationPromptLabels[item.id].title}
 											</span>
 											{!composerExpanded ? (
 												<span className="block truncate text-xs leading-4 text-muted-foreground">
-													{item.description}
+													{evaluationPromptLabels[item.id].description}
 												</span>
 											) : null}
 										</button>
@@ -3123,7 +3166,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					{slashMenuOpen ? (
 						<div
 							className="absolute right-0 bottom-full left-0 z-30 mb-2 overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-none"
-							aria-label="Chat commands"
+							aria-label={tUi("accessibility.chatCommands")}
 						>
 							{showSlashSearch ? (
 								<div className="border-b border-border/70 p-2">
@@ -3134,8 +3177,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											size="icon-sm"
 											className="h-6 w-6 shrink-0"
 											onClick={returnToMainSlashMenu}
-											aria-label="Back to chat actions"
-											title="Back to chat actions"
+											aria-label={tCopy("backActions")}
+											title={tCopy("backActions")}
 										>
 											<ArrowLeft className="h-3.5 w-3.5" />
 										</Button>
@@ -3148,13 +3191,13 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 												setCommandSearch(event.target.value)
 											}
 											onKeyDown={handleSlashNavigationKeyDown}
-											placeholder={
-												slashMenu === "model"
-													? "Search models..."
-													: slashMenu === "reasoning"
-														? "Search reasoning..."
-													: "Search tools..."
-											}
+							placeholder={
+								slashMenu === "model"
+									? tUi("accessibility.searchModels")
+									: slashMenu === "reasoning"
+										? tUi("chatComposer.searchReasoning")
+										: tUi("chatComposer.searchTools")
+							}
 											className="h-full min-w-0 flex-1 border-0 bg-transparent px-0 py-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0"
 										/>
 									</div>
@@ -3167,7 +3210,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 									event.stopPropagation();
 								}}
 							>
-								<div className="p-1" role="listbox" aria-label="Chat commands">
+								<div className="p-1" role="listbox" aria-label={tUi("accessibility.chatCommands")}>
 									{slashMenu === "tool-settings" ? (
 										renderServerToolSettings()
 									) : slashMenu === "model" ? (
@@ -3187,7 +3230,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											))
 										) : (
 											<div className="px-3 py-6 text-center text-sm text-muted-foreground">
-												No models found
+												{tUi("chatComposer.noModelsFound")}
 											</div>
 										)
 									) : filteredSlashCommands.length ? (
@@ -3196,7 +3239,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										)
 									) : (
 										<div className="px-3 py-6 text-center text-sm text-muted-foreground">
-											No commands found
+										{tUi("chatComposer.noCommandsFound")}
 										</div>
 									)}
 								</div>
@@ -3298,17 +3341,17 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										className="h-8 w-8"
 										onClick={isRecording ? undefined : toggleSlashCommandMenu}
 										disabled={isRecording}
-										aria-label="Open action menu"
+										aria-label={tUi("accessibility.openActionMenu")}
 									>
 										<Plus className="h-4 w-4" />
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent>Open actions</TooltipContent>
+								<TooltipContent>{tUi("accessibility.openActionMenu")}</TooltipContent>
 							</Tooltip>
 							{activeInlineTools.length > 0 ? (
 								<div
 									className="flex min-w-0 items-center gap-1"
-									aria-label="Active tools"
+									aria-label={tUi("accessibility.activeTools")}
 								>
 									{activeInlineTools.map((tool) => {
 										const Icon = tool.icon ?? Settings2;
@@ -3322,20 +3365,20 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 														size="icon"
 														className="h-8 w-8 rounded-full bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
 														onClick={() => runSlashCommand(tool)}
-														aria-label={
-															isManageAction
-																? "Manage tool settings"
-																: `Disable ${tool.label}`
-														}
+								aria-label={
+									isManageAction
+										? tUi("chatComposer.manageToolSettings")
+										: tUi("chatComposer.disableTool", { tool: tool.label })
+								}
 													>
 														<Icon className="h-3.5 w-3.5" />
 													</Button>
 												</TooltipTrigger>
-												<TooltipContent>
-													{isManageAction
-														? "Manage tool settings"
-														: `Disable ${tool.label}`}
-												</TooltipContent>
+							<TooltipContent>
+								{isManageAction
+									? tUi("chatComposer.manageToolSettings")
+									: tUi("chatComposer.disableTool", { tool: tool.label })}
+							</TooltipContent>
 											</Tooltip>
 										);
 									})}

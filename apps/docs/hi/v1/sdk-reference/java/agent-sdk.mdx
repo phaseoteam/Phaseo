@@ -1,0 +1,62 @@
+---
+title: "उपयोग"
+description: "Tools define करें, Java agent चलाएँ और human review के बाद resume करें।"
+---
+
+## टूल लूप
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## मानवीय समीक्षा
+
+Run checkpoint करने के लिए `AgentDefinition.humanReview` से `HumanReviewRequest` लौटाएँ। Returned `RunResult` persist करें, app में फैसला लें और फिर `humanInput` के साथ `continueRun(...)` call करें। Agent SDK किसी hidden hosted state पर निर्भर नहीं करता।
+
+## Responses API के विकल्प
+
+Responses API के अतिरिक्त फ़ील्ड `GatewayOptions.requestOptions` से दें। एडाप्टर एजेंट के `model`, `input`, `instructions` और स्थानीय फ़ंक्शन टूल लागू करता है। Adapter agent-owned `model`, `input`, `instructions` और local function tools लागू करता है।
+
+## उन्नत रनटाइम
+
+Java में सत्यापन और अनुमोदन इंटरफ़ेस, HITL और मैन्युअल टूल, प्रगति, फिर से संभाली जा सकने वाली त्रुटियाँ, दोबारा पढ़े जा सकने वाले इटरेबल, स्टॉप हेल्पर, डायनामिक टर्न, संग्रहीत `NextTurnParams`, सामान्यीकृत उपयोग/लागत और `StateAccessor` का समर्थन है।
+
+## स्ट्रीमिंग और रद्द करना
+
+`Agent.stream(...)` और `Agent.continueStream(...)` गेटवे की Responses SSE स्ट्रीम पढ़ते हैं। दोबारा पढ़े जा सकने वाले परिणामों के लिए `textStream()` या `fullStream()` पढ़ें; सक्रिय वर्कर और HTTP रीड रोकने के लिए `cancel()` कॉल करें। पूरे हुए चरणों में अनुरोध ID, प्रदाता मेटाडेटा, समाप्ति कारण, चेतावनियाँ, उपयोग और लागत सुरक्षित रहते हैं।
+
+## संबंधित गाइड
+
+- [Agent SDK का अवलोकन](../agent-sdk/overview.mdx)
+- [Java Client SDK](./overview.mdx)

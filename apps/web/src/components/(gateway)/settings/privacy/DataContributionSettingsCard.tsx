@@ -1,8 +1,13 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useMemo, useState, useTransition } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { BarChart3, Database, Percent, Plus, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,29 +31,28 @@ import {
 	setDataContributionClassifierEnabled,
 	updateDataContributionConsent,
 } from "@/app/(dashboard)/settings/privacy/actions";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_CATEGORIES = JSON.stringify({
 	product: ["support", "sales", "onboarding"],
 	operation: ["research", "content", "automation", "other"],
 }, null, 2);
 
+
 export function DataContributionSettingsCard({ initial }: { initial: DataContributionSettings }) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatMoney = (nanos: number) => format.number(nanos / 1_000_000_000, {
-		style: "currency",
-		currency: "USD",
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 4,
-		notation: "standard",
-	});
+	const formatMoney = (nanos: number) => format.number(nanos / 1_000_000_000, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4, notation: "standard" });
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const router = useRouter();
 	const [enabled, setEnabled] = useState(initial.enabled);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [pending, startTransition] = useTransition();
+	const discount = format.number(initial.discountBps / 100, { maximumFractionDigits: 2, notation: "standard" });
+	const sampleRate = format.number(initial.classifierSampleRateBps / 100, { maximumFractionDigits: 2, notation: "standard" });
 	const [name, setName] = useState("");
-	const [instructions, setInstructions] = useState("Classify the request by its business use case. Return only labels from the taxonomy.");
+	const [instructions, setInstructions] = useState(() => t("contributionCopy.defaultInstructions" as never));
 	const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
 
 	const categoryTotals = useMemo(() => {
@@ -65,10 +69,10 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 				await updateDataContributionConsent(next);
 				setEnabled(next);
 				setConfirmOpen(false);
-				toast.success(next ? "Data contribution enabled" : "Data contribution disabled");
+				 toast.success(next ? s("Data contribution enabled") : s("Data contribution disabled"));
 				router.refresh();
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : "Could not update data contribution");
+				 toast.error(localizedSettingsError(error, t, "Action failed", s("Could not update data contribution")));
 			}
 		});
 	}
@@ -80,10 +84,10 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 				await createDataContributionClassifier({ name, instructions, categories: parsed, serviceTier: "flex" });
 				setCreateOpen(false);
 				setName("");
-				toast.success("Classifier created");
+				 toast.success(s("Classifier created"));
 				router.refresh();
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : "Could not create classifier");
+				 toast.error(localizedSettingsError(error, t, "Action failed", s("Could not create classifier")));
 			}
 		});
 	}
@@ -93,35 +97,31 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 			<div className="grid gap-5 border-b bg-gradient-to-br from-emerald-500/10 via-background to-sky-500/10 p-5 lg:grid-cols-[1fr_auto] lg:items-start">
 				<div className="space-y-2">
 					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="text-base font-semibold">Contribute data, save {initial.discountBps / 100}%</h2>
-						<Badge variant={enabled ? "default" : "secondary"}>{enabled ? "Active" : "Opt in"}</Badge>
+						<h2 className="text-base font-semibold">{s("Contribute data, save")} {discount}%</h2>
+						<Badge variant={enabled ? "default" : "secondary"}>{enabled ? s("Active") : s("Opt in")}</Badge>
 					</div>
 					<p className="max-w-3xl text-sm leading-6 text-muted-foreground">
-						Every eligible non-BYOK request receives a {initial.discountBps / 100}% discount. Phaseo retains up to 100% of successful prompts and completions
-						after redacting secrets and personal information, in a dedicated private bucket for no more than 30 days.
-						Only {initial.classifierSampleRateBps / 100}% is currently selected for upstream classification.
-						Only aggregate task statistics appear here; raw content is never published.
+						{t("contributionCopy.summary", { discount, sampleRate })}
 					</p>
 				</div>
 				{enabled ? (
-					<Button variant="outline" disabled={pending} onClick={() => changeConsent(false)}>Disable contribution</Button>
+					<Button variant="outline" disabled={pending} onClick={() => changeConsent(false)}>{s("Disable contribution")}</Button>
 				) : (
 					<Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-						<DialogTrigger asChild><Button disabled={pending}>Review and enable</Button></DialogTrigger>
+						<DialogTrigger asChild><Button disabled={pending}>{s("Review and enable")}</Button></DialogTrigger>
 						<DialogContent>
 							<DialogHeader>
-								<DialogTitle>Enable discounted data contribution?</DialogTitle>
+								<DialogTitle>{s("Enable discounted data contribution?")}</DialogTitle>
 								<DialogDescription>
-									This is separate from private I/O logging and provider data policies. Up to 100% of successful,
-									non-BYOK prompts and completions will be redacted and retained for 30 days. Upstream classification is independently sampled.
+									{s("phraseThisIsSeparateFromPrivateIOLoggingAndProviderDataPoliciesUpTo100OfSuccessfulNonBYOKPromptsAndCompletionsWillBeRedactedAndRetainedFor30DaysUpstreamClassificationIsIndependentlySampled")}
 								</DialogDescription>
 							</DialogHeader>
 							<div className="rounded-lg border bg-muted/30 p-3 text-sm">
-								You can revoke consent at any time. Revocation stops new capture, removes the discount, and queues previously captured objects for deletion within 24 hours.
+								{s("phraseYouCanRevokeConsentAtAnyTimeRevocationStopsNewCaptureRemovesTheDiscountAndQueuesPreviouslyCapturedObjectsForDeletionWithin24Hours")}
 							</div>
 							<DialogFooter>
-								<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-								<Button disabled={pending} onClick={() => changeConsent(true)}>Enable and save {initial.discountBps / 100}%</Button>
+								<DialogClose asChild><Button variant="outline">{s("Cancel")}</Button></DialogClose>
+								<Button disabled={pending} onClick={() => changeConsent(true)}>{t("contributionCopy.enableAndSave", { discount })}</Button>
 							</DialogFooter>
 						</DialogContent>
 					</Dialog>
@@ -129,50 +129,50 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 			</div>
 
 			<div className="grid border-b sm:grid-cols-3">
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">Discount</div><div className="font-semibold">{initial.discountBps / 100}% per request</div></div></div>
-				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">Retained (30 days)</div><div className="font-semibold">{format.number(initial.contributions30d)} requests</div></div></div>
-				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">Discount earned</div><div className="font-semibold">{formatMoney(initial.discountNanos30d)}</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Percent className="size-4 text-emerald-600" /><div><div className="text-xs text-muted-foreground">{s("Discount")}</div><div className="font-semibold">{discount}% {s("per request")}</div></div></div>
+				<div className="flex items-center gap-3 border-b p-4 sm:border-b-0 sm:border-r"><Database className="size-4 text-sky-600" /><div><div className="text-xs text-muted-foreground">{s("Retained (30 days)")}</div><div className="font-semibold">{format.number(initial.contributions30d)} {s("requests")}</div></div></div>
+				<div className="flex items-center gap-3 p-4"><BarChart3 className="size-4 text-violet-600" /><div><div className="text-xs text-muted-foreground">{s("Discount earned")}</div><div className="font-semibold">{formatMoney(initial.discountNanos30d)}</div></div></div>
 			</div>
 
 			<div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,.8fr)]">
 				<div className="space-y-3">
 					<div className="flex items-center justify-between gap-3">
-						<div><h3 className="text-sm font-semibold">Classifiers</h3><p className="text-xs text-muted-foreground">Run asynchronously on a deterministic {initial.classifierSampleRateBps / 100}% upstream sample, using Flex by default.</p></div>
+						<div><h3 className="text-sm font-semibold">{s("Classifiers")}</h3><p className="text-xs text-muted-foreground">{s("phraseRunAsynchronouslyOnADeterministicUpstreamSampleUsingFlexByDefault")} ({sampleRate}%)</p></div>
 						<Dialog open={createOpen} onOpenChange={setCreateOpen}>
-							<DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="mr-1 size-4" />Custom classifier</Button></DialogTrigger>
+							<DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="mr-1 size-4" />{s("Custom classifier")}</Button></DialogTrigger>
 							<DialogContent className="sm:max-w-2xl">
-								<DialogHeader><DialogTitle>Create classifier</DialogTitle><DialogDescription>Define private labels for your own domain. The built-in task classifier remains the recommended baseline.</DialogDescription></DialogHeader>
+								<DialogHeader><DialogTitle>{s("Create classifier")}</DialogTitle><DialogDescription>{s("phraseDefinePrivateLabelsForYourOwnDomainTheBuiltInTaskClassifierRemainsTheRecommendedBaseline")}</DialogDescription></DialogHeader>
 								<div className="space-y-4">
-									<div className="space-y-1.5"><Label htmlFor="classifier-name">Name</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Customer intent" /></div>
-									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">Instructions</Label><textarea id="classifier-instructions" className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
-									<div className="space-y-1.5"><Label htmlFor="classifier-categories">Categories (JSON)</Label><textarea id="classifier-categories" className="min-h-44 w-full rounded-md border bg-background px-3 py-2 font-mono text-xs" value={categories} onChange={(event) => setCategories(event.target.value)} /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-name">{s("Name")}</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("contributionCopy.customerIntentPlaceholder")} /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">{s("Instructions")}</Label><textarea id="classifier-instructions" className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-categories">{s("Categories (JSON)")}</Label><textarea id="classifier-categories" className="min-h-44 w-full rounded-md border bg-background px-3 py-2 font-mono text-xs" value={categories} onChange={(event) => setCategories(event.target.value)} /></div>
 								</div>
-								<DialogFooter><DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose><Button disabled={pending || !name.trim()} onClick={createClassifier}>Create classifier</Button></DialogFooter>
+								<DialogFooter><DialogClose asChild><Button variant="outline">{s("Cancel")}</Button></DialogClose><Button disabled={pending || !name.trim()} onClick={createClassifier}>{s("Create classifier")}</Button></DialogFooter>
 							</DialogContent>
 						</Dialog>
 					</div>
 					<div className="divide-y rounded-lg border">
 						{initial.classifiers.map((classifier) => (
 							<div key={classifier.id} className="flex items-start justify-between gap-4 p-3">
-								<div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{classifier.name}</span><Badge variant="outline">{classifier.kind === "phaseo_task" ? "Starter" : "Custom"}</Badge><Badge variant="secondary">{classifier.service_tier}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{Object.values(classifier.categories).flat().length} labels · {classifier.model}</p></div>
+								<div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="text-sm font-medium">{classifier.name}</span><Badge variant="outline">{classifier.kind === "phaseo_task" ? t("contributionCopy.starter") : t("contributionCopy.custom")}</Badge><Badge variant="secondary">{classifier.service_tier}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{t("contributionCopy.labelCount" as never, { count: Object.values(classifier.categories).flat().length } as never)} · {classifier.model}</p></div>
 								<div className="flex items-center gap-2">
 									<Switch checked={classifier.enabled} disabled={pending || classifier.kind === "phaseo_task"} onCheckedChange={(next) => startTransition(async () => { await setDataContributionClassifierEnabled(classifier.id, next); router.refresh(); })} />
-									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={`Delete ${classifier.name}`} onClick={() => startTransition(async () => { await deleteDataContributionClassifier(classifier.id); toast.success("Classifier deleted"); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
+									{classifier.kind === "custom" ? <Button size="icon" variant="ghost" disabled={pending} aria-label={t("identity.deleteClassifier" as never, { name: classifier.name } as never)} onClick={() => startTransition(async () => { await deleteDataContributionClassifier(classifier.id); toast.success(s("Classifier deleted")); router.refresh(); })}><Trash2 className="size-4" /></Button> : null}
 								</div>
 							</div>
 						))}
-						{!initial.classifiers.length ? <div className="p-4 text-sm text-muted-foreground">Enable contribution to install the starter taxonomy.</div> : null}
+						{!initial.classifiers.length ? <div className="p-4 text-sm text-muted-foreground">{s("phraseEnableContributionToInstallTheStarterTaxonomy")}</div> : null}
 					</div>
 				</div>
 
 				<div className="space-y-3">
-					<div><h3 className="text-sm font-semibold">Top tasks</h3><p className="text-xs text-muted-foreground">Private classification rollups retained after raw I/O expires.</p></div>
+					<div><h3 className="text-sm font-semibold">{s("Top tasks")}</h3><p className="text-xs text-muted-foreground">{s("phrasePrivateClassificationRollupsRetainedAfterRawIOExpires")}</p></div>
 					<div className="space-y-2 rounded-lg border p-3">
 						{categoryTotals.map(([category, count]) => {
 							const max = categoryTotals[0]?.[1] ?? 1;
 							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{format.number(count)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
 						})}
-						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">Classifications will appear after sampled requests are processed.</p> : null}
+						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">{s("phraseClassificationsWillAppearAfterSampledRequestsAreProcessed")}</p> : null}
 					</div>
 				</div>
 			</div>

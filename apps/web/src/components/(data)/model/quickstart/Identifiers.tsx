@@ -5,6 +5,7 @@ import {
 	CardDescription,
 	CardContent,
 } from "@/components/ui/card";
+import { getTranslations } from "next-intl/server";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 
 interface IdentifiersProps {
@@ -12,7 +13,8 @@ interface IdentifiersProps {
 	aliases: string[];
 }
 
-export default function Identifiers({ modelId, aliases }: IdentifiersProps) {
+export default async function Identifiers({ modelId, aliases }: IdentifiersProps) {
+	const t = await getTranslations("Catalogue.models.detail.quickstart");
 	const normalizedAliases = Array.from(
 		new Set(
 			aliases
@@ -26,16 +28,17 @@ export default function Identifiers({ modelId, aliases }: IdentifiersProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Model identifiers</CardTitle>
+				<CardTitle>{t("modelIdentifiersTitle")}</CardTitle>
 				<CardDescription>
-					Use these identifiers in the <code>model</code> field when
-					sending requests to the gateway.
+					{t.rich("modelIdentifiersDescription", {
+						code: (chunks) => <code>{chunks}</code>,
+					})}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div>
 					<p className="text-xs font-semibold uppercase text-muted-foreground">
-						Primary model ID
+						{t("primaryModelId")}
 					</p>
 					<code className="mt-1 inline-flex rounded bg-muted px-3 py-1.5 text-sm font-mono select-all cursor-text">
 						{modelId}
@@ -44,7 +47,7 @@ export default function Identifiers({ modelId, aliases }: IdentifiersProps) {
 
 				<div>
 					<p className="text-xs font-semibold uppercase text-muted-foreground">
-						Aliases
+						{t("aliases")}
 					</p>
 					{hasAliases ? (
 						<div className="mt-2 flex flex-wrap gap-2">
@@ -60,7 +63,7 @@ export default function Identifiers({ modelId, aliases }: IdentifiersProps) {
 						</div>
 					) : (
 						<p className="mt-2 text-sm text-muted-foreground">
-							No aliases are currently configured for this model.
+							{t("noAliasesConfigured")}
 						</p>
 					)}
 				</div>

@@ -1,0 +1,14 @@
+---
+title: "Verificar a integridade do gateway"
+sidebarTitle: "Verificação de integridade"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /health"
+description: "Retornar um resumo básico da integridade do Phaseo Gateway."
+---
+
+Use este endpoint sem autenticação para verificar rapidamente a conectividade. Para ver incidentes atuais e o histórico, acesse a [página de status do Phaseo](https://status.phaseo.app).
+
+<Note>
+Uma resposta de integridade bem-sucedida não comprova que todas as rotas de provedores ou modelos estejam disponíveis. Use a resposta padrão de `GET /v1/models` para confirmar as rotas disponíveis no momento.
+</Note>
+

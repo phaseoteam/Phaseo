@@ -1,0 +1,140 @@
+---
+title: "Preajustes"
+description: "Guarda configuraciones reutilizables de Gateway para tu equipo."
+icon: "sliders-horizontal"
+---
+
+Los preajustes son configuraciones reutilizables que ayudan a los equipos a estandarizar prompts, preferencias de modelo y valores predeterminados de enrutamiento. Se administran en el panel de Phaseo y se pueden compartir con todo el equipo.
+
+## Inicio rápido
+
+<Steps>
+<Step title="Crea un preajuste">
+
+Abre **Panel -> Ajustes -> Preajustes** y crea uno con un slug claro, como `release-summary`. Añade solo los valores predeterminados que deban compartirse entre quienes realizan solicitudes.
+
+</Step>
+
+<Step title="Referencia el preajuste en una solicitud">
+
+Deja que quien realiza la solicitud se centre en los datos del usuario, mientras el preajuste aporta valores estables para el prompt, los parámetros y el enrutamiento.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+	  -d '{
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours."
+	  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+	  model: "@release-summary",
+	  input: "Generate a release summary for the last 24 hours.",
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response({
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours.",
+})
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Comprueba el resultado del enrutamiento">
+
+Abre la solicitud en **Gateway -> Uso** para confirmar qué valores predeterminados se aplicaron y qué proveedor la atendió.
+
+</Step>
+</Steps>
+
+## Qué puede incluir un preajuste
+
+- Un prompt de sistema que se antepone a cada solicitud.
+- Modelos o familias de modelos permitidos.
+- Listas de proveedores permitidos o ignorados para las preferencias de enrutamiento.
+- Parámetros predeterminados (temperature, top_p, max_tokens y otros similares).
+- Valores predeterminados de razonamiento opcionales para los modelos compatibles.
+
+Los nombres de los preajustes llevan el prefijo `@` para identificarlos fácilmente.
+
+Invoca un preajuste únicamente mediante el campo `model` de la solicitud. Phaseo no ofrece un campo `preset` independiente en la solicitud.
+
+- Los preajustes privados y del espacio de trabajo usan `@{slug}` y se resuelven dentro del espacio de trabajo de la clave de API.
+- Los preajustes públicos usan `@{username}/{slug}` y se pueden resolver desde cualquier espacio de trabajo. Por ejemplo, `@octavia/release-summary`.
+
+Para publicar un preajuste públicamente, se necesitan un perfil público habilitado y un nombre de usuario. Los conflictos de slug público se limitan a cada autor, así que dos autores pueden usar el mismo slug sin ambigüedad. Los nombres de usuario son únicos en toda la plataforma. Los slugs se convierten a minúsculas y admiten letras, números, guiones, guiones bajos, puntos y dos puntos.
+
+## Versiones y copias del marketplace
+
+Al guardar cambios se actualiza un borrador privado. Cuando estén listos, selecciona **Publicar versión nueva**. Phaseo crea una versión numerada e inmutable y conserva las versiones anteriores para que puedas revisarlas.
+
+Los propietarios de preajustes pueden elegir cómo se muestran las etiquetas de las versiones:
+
+- **Secuencial:** `v1`, `v2`, `v3`.
+- **Versionado semántico:** etiquetas SemVer explícitas, como `1.2.0`, `2.0.0-beta.1` o `1.4.2+build.7`.
+- **Por fecha:** `YYYY.MM.DD`, con un sufijo numérico si se publican varias versiones el mismo día, como `2026.08.02.2`.
+
+Phaseo mantiene internamente un número de versión monotónico independiente, para que la cronología, las comparaciones con la versión original y la genealogía sean deterministas sea cual sea la etiqueta pública elegida.
+
+Las copias del marketplace quedan fijadas en la versión exacta del original que copiaron. Cuando el autor publica una actualización, la copia muestra un aviso. Aplicarla solo actualiza el borrador de la copia; el propietario del espacio de trabajo puede revisarla y publicarla explícitamente sin que un autor externo cambie el comportamiento de producción.
+
+Phaseo conserva tanto el origen inmediato como todo el historial de cada bifurcación. Así, las páginas del marketplace pueden distinguir las copias directas de todos sus descendientes, incluso si un preajuste se ha copiado y vuelto a publicar varias veces.
+
+## Cómo se combinan los preajustes
+
+Cuando el contexto de Gateway resuelve una solicitud con un preajuste, este se aplica antes del enrutamiento al proveedor:
+
+- Los parámetros predeterminados solo rellenan los campos que faltan en el cuerpo de la solicitud; no sobrescriben los valores que ya proporcionó quien realiza la solicitud.
+- Si la solicitud ya contiene un mensaje de sistema, el prompt del preajuste se antepone a este. Si la solicitud usa un campo `system` al estilo de Anthropic, el prompt se antepone allí.
+- Las listas de proveedores permitidos e ignorados se aplican antes de seleccionar el proveedor, por lo que reducen el conjunto de alternativas en lugar de ser simples etiquetas decorativas.
+- Las solicitudes que no estén dentro de la lista de modelos permitidos del preajuste se rechazan pronto, no se redirigen silenciosamente.
+
+Así, los preajustes son la superficie pública principal para reutilizar valores predeterminados y hacer transformaciones de compatibilidad ligeras, sin obligar a cada consumidor a duplicar la misma lógica de prompts o parámetros.
+
+## Funciones públicas disponibles
+
+El flujo de preajustes del panel se limita intencionadamente a un subconjunto estable y explícito de ajustes de solicitudes:
+
+- inyección del prompt de sistema
+- listas de modelos permitidos
+- restricciones de enrutamiento con listas de proveedores permitidos o ignorados
+- valores predeterminados de decodificación y generación
+- valores predeterminados de razonamiento
+
+Si necesitas transformaciones más complejas específicas para quien realiza la solicitud, mantenlas en una única capa de la aplicación y usa los preajustes para almacenar los valores predeterminados reutilizables de todo el equipo.
+
+## Administrar preajustes
+
+Crea y administra preajustes en **Panel -> Ajustes -> Preajustes**. Usa slugs distintos cuando los flujos de trabajo necesiten diferencias importantes en los prompts, el enrutamiento o el almacenamiento en caché.
+
+## Cuándo usar preajustes
+
+- Estandarizar prompts de sistema en varios servicios.
+- Restringir el enrutamiento a proveedores aprobados para cumplir requisitos.
+- Mantener parámetros predeterminados coherentes entre entornos.
+- Dar a los proyectos de migración un lugar estable para guardar los valores predeterminados de prompts, enrutamiento y parámetros, mientras el código de la aplicación apenas cambia.
+
+## Guías relacionadas
+
+- [Recopilar comentarios sobre preajustes](./preset-feedback.mdx)
+- [Enrutamiento y alternativas](./routing-and-fallbacks.mdx)
+- [Parámetros de inferencia](./inference-parameters.mdx)
+- [Matriz de paridad de funciones](../migration-guides/feature-parity-matrix.mdx)
+

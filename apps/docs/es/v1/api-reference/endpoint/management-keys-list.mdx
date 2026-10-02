@@ -1,0 +1,10 @@
+---
+title: "Listar claves de gestión"
+sidebarTitle: "Listar claves de gestión"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "Muestra los metadatos de las claves de gestión del espacio de trabajo autenticado."
+---
+<Note>Este endpoint requiere una identidad de propietario o administrador y `management_keys:read`.</Note>
+
+Nunca se incluyen los valores sin procesar de las claves. Usa `limit` y `offset` para paginar los resultados.

@@ -1,0 +1,17 @@
+---
+icon: "image"
+title: "إنشاء الصور"
+description: "استدعِ /images/generations باستخدام Python SDK."
+---
+
+**الطريقة**: `client.generate_image()`
+
+```python
+result = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+})
+
+print(result)
+```
+

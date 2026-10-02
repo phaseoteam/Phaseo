@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
+import { useLocale, useTranslations } from "next-intl";
 
 type ContactMethod = {
 	key: string;
@@ -202,6 +203,8 @@ function MethodIcon({ method }: { method: ContactMethod }) {
 }
 
 function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
+	const locale = useLocale();
+	const t = useTranslations("Site.contact");
 	const format = useDisplayFormatters();
 	const [now, setNow] = useState<Date | null>(null);
 
@@ -235,11 +238,11 @@ function SupportTimeHint({ londonTimeLabel }: { londonTimeLabel?: string }) {
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span className="inline-flex w-fit items-center rounded-full border border-border/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-					Your time {localTimeLabel ?? "checking..."}
+				{t("yourTime", { time: localTimeLabel ?? t("checking") })}
 				</span>
 			</TooltipTrigger>
 			<TooltipContent>
-				Phaseo support time: {liveLondonTimeLabel}
+				{t("supportTime", { time: liveLondonTimeLabel })}
 			</TooltipContent>
 		</Tooltip>
 	);
@@ -262,6 +265,7 @@ function TawkSupportLauncher({
 	tierLabel?: string;
 	userEmail?: string | null;
 }) {
+	const t = useTranslations("Site.contact");
 	const [chatStatus, setChatStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
 	const isConfigured = Boolean(tawkPropertyId);
 	const canStartChat = isConfigured && supportIsOpen;
@@ -270,28 +274,30 @@ function TawkSupportLauncher({
 		: "";
 	const emailHref = useMemo(() => {
 		const subject = issueLabel
-			? `[Phaseo Support] ${issueLabel}`
-			: "[Phaseo Support] Support request";
+			? t("emailTemplate.subjectWithIssue", { issue: issueLabel })
+			: t("emailTemplate.subjectDefault");
 		const body = [
-			"Hi Phaseo team,",
+			t("emailTemplate.greeting"),
 			"",
-			"I need help with:",
+			t("emailTemplate.opening"),
 			"",
-			"Summary:",
+			t("emailTemplate.summary"),
 			"",
-			"Details:",
+			t("emailTemplate.details"),
 			"",
-			"Useful context:",
-			`- Issue type: ${issueLabel ?? "Not selected"}`,
-			`- Account email: ${userEmail ?? ""}`,
-			`- Workspace: ${defaultInternalId ?? ""}`,
-			`- Plan: ${tierLabel ?? ""}`,
-			"- Page URL:",
-			"- Request ID:",
-			"- Model ID / provider:",
-			"- Time observed:",
+			t("emailTemplate.usefulContext"),
+			t("emailTemplate.issueType", {
+				value: issueLabel ?? t("emailTemplate.notSelected"),
+			}),
+			t("emailTemplate.accountEmail", { value: userEmail ?? "" }),
+			t("emailTemplate.workspace", { value: defaultInternalId ?? "" }),
+			t("emailTemplate.plan", { value: tierLabel ?? "" }),
+			t("emailTemplate.pageUrl"),
+			t("emailTemplate.requestId"),
+			t("emailTemplate.modelProvider"),
+			t("emailTemplate.timeObserved"),
 			"",
-			"Attachments/screenshots:",
+			t("emailTemplate.attachments"),
 			"",
 		].join("\n");
 
@@ -355,23 +361,23 @@ function TawkSupportLauncher({
 		<div className="rounded-md border border-border/60 px-4 py-4">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<p className="text-sm font-medium">Live chat, ticket, or email</p>
+				<p className="text-sm font-medium">{t("liveChatTitle")}</p>
 					<p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-						Chat now, create a tracked support ticket, or open a prefilled email.
+						{t("liveChatDescription")}
 					</p>
 					{userEmail ? (
 						<p className="mt-2 text-xs text-muted-foreground">
-							Signed in as {userEmail}
+							{t("signedInAs", { email: userEmail })}
 						</p>
 					) : null}
 					{isConfigured ? null : (
 						<p className="mt-2 text-xs text-muted-foreground">
-							Live chat is not configured for this deployment.
+							{t("chatNotConfigured")}
 						</p>
 					)}
 					{isConfigured && !supportIsOpen ? (
 						<p className="mt-2 text-xs text-muted-foreground">
-							Live chat is available during support hours. Email is still open.
+							{t("chatOutsideHours")}
 						</p>
 					) : null}
 				</div>
@@ -384,34 +390,34 @@ function TawkSupportLauncher({
 							onClick={openChat}
 						>
 							{!supportIsOpen
-								? "Live chat offline"
+								? t("chatOffline")
 								: chatStatus === "loading"
-									? "Loading chat..."
-									: "Start live chat"}
+									? t("loadingChat")
+									: t("startLiveChat")}
 							<ArrowUpRight className="size-4" />
 						</Button>
 					) : (
 						<Button type="button" className="w-full" disabled>
-							Live chat unavailable
+							{t("chatUnavailable")}
 							<ArrowUpRight className="size-4" />
 						</Button>
 					)}
 					<Button asChild type="button" variant="outline" className="w-full">
 						<a href={TAWK_TICKET_URL} target="_blank" rel="noreferrer">
-							Create ticket
+							{t("createTicket")}
 							<ArrowUpRight className="size-4" />
 						</a>
 					</Button>
 					<Button asChild type="button" variant="outline" className="w-full">
 						<a href={emailHref}>
-							Send email
+							{t("sendEmail")}
 							<ArrowRight className="size-4" />
 						</a>
 					</Button>
 					{chatStatus === "error" ? (
 						<Button asChild type="button" variant="ghost" className="w-full">
 							<a href={directChatHref} target="_blank" rel="noreferrer">
-								Open chat in new tab
+								{t("openChatNewTab")}
 								<ArrowUpRight className="size-4" />
 							</a>
 						</Button>
@@ -434,9 +440,11 @@ export function ContactClient({
 	tawkPropertyId,
 	tawkWidgetId,
 }: ContactClientProps) {
-	const resolvedStatusLabel = statusLabel ?? "Support";
+	const t = useTranslations("Site.contact");
+	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
+	const resolvedStatusLabel = statusLabel ?? t("support");
 	const resolvedStatusTone = statusTone ?? "bg-amber-500 ring-amber-400/60";
-	const resolvedWaitText = waitText ?? "Support replies resume soon.";
+	const resolvedWaitText = waitText ?? t("repliesResumeSoon");
 	const statusDotClass =
 		resolvedStatusTone
 			.split(" ")
@@ -451,19 +459,37 @@ export function ContactClient({
 		() => ISSUE_OPTIONS.find((option) => option.value === issueValue),
 		[issueValue]
 	);
+	const localizedMethods = useMemo(
+		() => METHODS.map((method) => ({
+			...method,
+			title: translate(`methods.${method.key}.title`),
+			description: translate(`methods.${method.key}.description`),
+			cta: translate(`methods.${method.key}.cta`),
+		})),
+		[translate],
+	);
+	const localizedIssues = useMemo(
+		() => ISSUE_OPTIONS.map((option) => ({
+			...option,
+			label: translate(`issues.${option.value}.label`),
+			helper: translate(`issues.${option.value}.helper`),
+		})),
+		[translate],
+	);
+	const localizedSelectedIssue = localizedIssues.find((option) => option.value === issueValue);
 
 	const recommendedMethod = useMemo(() => {
 		if (!selectedIssue) return null;
 		return (
-			METHODS.find((method) => method.key === selectedIssue.recommendationKey) ??
+			localizedMethods.find((method) => method.key === selectedIssue.recommendationKey) ??
 			null
 		);
-	}, [selectedIssue]);
+	}, [localizedMethods, selectedIssue]);
 
 	const showTicketForm = recommendedMethod?.key === "support";
 	const otherMethods = useMemo(
-		() => METHODS.filter((method) => method.key !== recommendedMethod?.key),
-		[recommendedMethod]
+		() => localizedMethods.filter((method) => method.key !== recommendedMethod?.key),
+		[localizedMethods, recommendedMethod]
 	);
 
 	return (
@@ -472,18 +498,16 @@ export function ContactClient({
 			<header className="grid gap-8 border-b border-border/60 pb-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
 				<div className="max-w-3xl space-y-4">
 					<h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-						Contact Phaseo support
+						{t("title")}
 					</h1>
 					<p className="max-w-2xl text-base leading-7 text-muted-foreground">
-						Tell us what you need, and we will route you to the right place.
-						Private account issues become support tickets. Public bugs, feature
-						requests, and quick questions go to the channel that fits.
+						{t("intro")}
 					</p>
 					<div>
 						<ProductFeedbackButton
 							surface="support_page"
-							label="Send Product Feedback"
-							prompt="Tell us what should be clearer, faster, or more useful across Phaseo. For account or billing help, use the support options below."
+							label={t("sendFeedback")}
+							prompt={t("feedbackPrompt")}
 						/>
 					</div>
 				</div>
@@ -501,7 +525,7 @@ export function ContactClient({
 								className={cn("relative inline-flex size-2.5 rounded-full", statusDotClass)}
 							/>
 						</span>
-						Support {resolvedStatusLabel}
+						{t("support")} {resolvedStatusLabel}
 					</div>
 					<p className="mt-3 leading-6 text-muted-foreground">
 						{resolvedWaitText}
@@ -516,13 +540,13 @@ export function ContactClient({
 				<section aria-labelledby="support-router-title" className="space-y-5">
 					<div>
 						<p className="mb-2 text-xs font-medium text-muted-foreground">
-							Step 1
+								{t("stepOne")}
 						</p>
 						<h2 id="support-router-title" className="text-xl font-semibold">
-							What do you need help with?
+							{t("whatHelp")}
 						</h2>
 						<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-							Pick the closest option and we will show the next step below.
+							{t("pickClosest")}
 						</p>
 
 						<div className="mt-5 max-w-xl">
@@ -533,14 +557,14 @@ export function ContactClient({
 								}}
 							>
 								<SelectTrigger className="h-11 w-full rounded-md px-4">
-									{selectedIssue ? (
-										<span>{selectedIssue.label}</span>
+									{localizedSelectedIssue ? (
+										<span>{localizedSelectedIssue.label}</span>
 									) : (
-										<SelectValue placeholder="Choose an issue type" />
+											<SelectValue placeholder={t("chooseIssue")} />
 									)}
 								</SelectTrigger>
 								<SelectContent>
-									{ISSUE_OPTIONS.map((option) => (
+									{localizedIssues.map((option) => (
 										<SelectItem key={option.value} value={option.value}>
 											{option.label}
 										</SelectItem>
@@ -557,7 +581,7 @@ export function ContactClient({
 						<div className="space-y-6">
 							<div className="space-y-4">
 								<p className="text-xs font-medium text-muted-foreground">
-									Step 2
+									{t("stepTwo")}
 								</p>
 								<div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 									<div className="flex min-w-0 flex-col gap-3 sm:flex-row">
@@ -568,11 +592,11 @@ export function ContactClient({
 											<p className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-medium">
 												<CheckCircle2 className="size-4 shrink-0 text-emerald-500" />
 												<span className="min-w-0 break-words">
-													Recommended: {recommendedMethod.title}
+														{t("recommended", { method: recommendedMethod.title })}
 												</span>
 											</p>
 											<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-												{selectedIssue.helper}
+														{localizedSelectedIssue?.helper}
 											</p>
 										</div>
 									</div>
@@ -596,7 +620,7 @@ export function ContactClient({
 							{showTicketForm ? (
 								<TawkSupportLauncher
 											defaultInternalId={defaultInternalId}
-											issueLabel={selectedIssue.label}
+													issueLabel={localizedSelectedIssue?.label}
 											supportIsOpen={Boolean(isOpen)}
 											tawkPropertyId={tawkPropertyId}
 											tawkWidgetId={tawkWidgetId}
@@ -606,11 +630,10 @@ export function ContactClient({
 							) : (
 								<div className="rounded-md border border-border/60 px-4 py-4">
 									<p className="text-sm font-medium">
-										Prefer a private reply?
+										{t("privateReply")}
 									</p>
 									<p className="mt-1 text-sm leading-6 text-muted-foreground">
-										If this includes account details, billing information, request
-										IDs, or screenshots, choose a private support ticket instead.
+										{t("privateReplyBody")}
 									</p>
 									<Button
 										type="button"
@@ -618,7 +641,7 @@ export function ContactClient({
 										className="mt-4"
 										onClick={() => void setIssueParam("general")}
 									>
-										Switch to private ticket
+										{t("switchPrivate")}
 										<ArrowRight className="size-4" />
 									</Button>
 								</div>
@@ -629,9 +652,9 @@ export function ContactClient({
 				<section className="border-t border-border/60 pt-6">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<h2 className="text-sm font-medium">Other support methods</h2>
+							<h2 className="text-sm font-medium">{t("otherMethods")}</h2>
 							<p className="mt-1 text-sm text-muted-foreground">
-								Use another channel if it fits your issue better.
+								{t("otherMethodsBody")}
 							</p>
 						</div>
 					</div>

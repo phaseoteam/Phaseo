@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: ".NET एजेंट की विफलता, अमान्य tool data और बाधित रन की जाँच करें।"
+---
+
+विफल `RunResult` में सक्रिय चरण, पुनः प्रयासों की संख्या, अनुरोध ID, मूल response ID, प्रदाता मेटाडेटा और Gateway से उपलब्ध जानकारी बनी रहती है।
+
+पहले यह जाँचें:
+
+- process को `PHASEO_API_KEY` उपलब्ध है
+- tool ID अद्वितीय और स्थिर हैं
+- approval decisions सटीक tool-call IDs उपयोग करते हैं
+- request से control लौटाने से पहले paused state सहेजी जाती है
+- validators के side effects नहीं होते
+- cancellation token tools के अंदर उपयोग होने वाली dependencies तक पहुँचते हैं
+
+application telemetry के लिए lifecycle hook और रन को स्थानीय रूप से देखने के लिए DevTools उपयोग करें।
+
+## संबंधित विषय
+
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

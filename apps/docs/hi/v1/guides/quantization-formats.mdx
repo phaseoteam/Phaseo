@@ -1,0 +1,44 @@
+---
+icon: "binary"
+title: "क्वांटाइज़ेशन फ़ॉर्मैट"
+description: "BF16, FP16, FP8, FP4, INT8, INT4 और हर format का व्यावहारिक अर्थ।"
+---
+
+यह guide model variants और inference runtimes में दिखने वाले आम precision formats समझाती है।
+
+## त्वरित संदर्भ
+
+| Format | आम उपयोग | मुख्य लाभ | मुख्य जोखिम |
+| --- | --- | --- | --- |
+| `FP32` | Baseline/full precision | अधिकतम numerical stability | सबसे अधिक memory और compute cost |
+| `BF16` | Training और high-quality inference | `FP32` से बेहतर efficiency के साथ अच्छी quality | 8-bit/4-bit से अब भी भारी |
+| `FP16` | आम inference/training paths | अच्छी speed और कम memory usage | `BF16` से कम dynamic range |
+| `FP8` | Throughput-केंद्रित inference/training | Speed और memory में बड़ा लाभ | कठिन prompts पर quality में उल्लेखनीय गिरावट |
+| `FP4` | Aggressive efficiency modes | बहुत high density और कम cost | Output degradation का जोखिम अधिक |
+| `INT8` | व्यापक रूप से supported inference quantization | गुणवत्ता पर मध्यम असर के साथ अच्छी efficiency | कुछ models में calibration/sensitivity समस्याएँ |
+| `INT4` | Cost-sensitive deployment | बहुत कम memory और high throughput | Quality और robustness पर बड़ा trade-off |
+
+## `BF16` बनाम `FP16`
+
+- `BF16` बड़ा exponent range बनाए रखता है, जिससे stability बेहतर होती है।
+- `FP16` अब भी आम और अक्सर तेज़ है, लेकिन कुछ workloads में कम stable हो सकता है।
+- Quality-critical production paths में उपलब्ध होने पर `BF16` अक्सर अधिक सुरक्षित default है।
+
+## `FP8` और `FP4`
+
+- `FP8` आम तौर पर efficiency में अच्छा सुधार देता है और कई tasks के लिए उपयोगी quality बनाए रखता है।
+- `FP4` efficiency को और बढ़ाता है, लेकिन quality degradation की आशंका भी बढ़ती है (खासकर nuanced reasoning, लंबे contexts और strict structured outputs में)。
+
+## पूर्णांक फ़ॉर्मैट (`INT8` / `INT4`)
+
+- आम तौर पर inference throughput और memory के लिए optimize होते हैं।
+- Quality quantization method, calibration और model architecture पर काफ़ी निर्भर करती है।
+- आम तौर पर `INT8`, `INT4` की तुलना में सुरक्षित रूप से deploy करना आसान है।
+
+## मॉडल लेबल पढ़ें
+
+आपको इस तरह के labels दिख सकते हैं:
+
+- `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`
+
+Providers के बीच naming पूरी तरह standardized नहीं है। Variant के सटीक विवरण की पुष्टि हमेशा model/provider documentation में करें।

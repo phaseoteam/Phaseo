@@ -1,0 +1,78 @@
+---
+icon: "messages-square"
+title: "聊天补全"
+description: "使用 Python SDK 调用 /chat/completions。"
+---
+
+**方法**：`client.generate_text()`（使用 `client.stream_chat()` 流式传输已解析的分块）。
+
+### 示例
+```python
+chat = client.generate_text({
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "Write a limerick about lighthouses."},
+    ],
+    "temperature": 0.5,
+})
+```
+
+### 流式传输
+```python
+for chunk in client.stream_chat({
+    "model": "openai/gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Stream a story"}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+### 关键参数
+- `model`（必填）：目标模型 ID。
+- `messages`（必填）：按顺序排列的消息，角色为 `system|user|assistant|tool`；内容可以是文本或分段。
+- 采样：`temperature`（0–2）、`top_p`（0–1）、`top_k`（>=1）、`seed`（可选整数）。
+- 长度与惩罚：`max_output_tokens`（整数）、`presence_penalty` 和 `frequency_penalty`（-2 到 2）、`stop`（string|string[]）。
+- 工具：`tools`（定义）、`tool_choice`（auto/none/指定工具）、`max_tool_calls`（整数）、`parallel_tool_calls`（布尔值）。
+- Logprobs：`logprobs`（布尔值）、`top_logprobs`（0–20）。
+- 输出：`response_format`（json/text）、`metadata`（透传对象）、`stream`（布尔值）、`service_tier`。
+- 网关扩展项：`usage`（用于请求用量的布尔值）、`meta`（用于包含 meta 块的布尔值）。
+
+### 返回值
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+流式传输时的 SSE 行示例：
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

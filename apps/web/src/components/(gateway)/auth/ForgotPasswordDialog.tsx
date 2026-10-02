@@ -1,150 +1,220 @@
-'use client'
+"use client";
 
-import * as React from 'react'
+import * as React from "react";
+import { CheckCircle2, Loader2, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
-import { Loader2, Mail, CheckCircle2 } from 'lucide-react'
+	Dialog,
+	DialogContent,
+	DialogHeader,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ForgotPasswordDialogProps {
-    open: boolean
-    onOpenChange: (open: boolean) => void
-    onSubmit: (email: string) => Promise<{ success: boolean }>
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onSubmit: (email: string) => Promise<{ success: boolean }>;
+}
+
+interface ForgotPasswordContentProps {
+	email: string;
+	loading: boolean;
+	success: boolean;
+	readOnly?: boolean;
+	autoFocus?: boolean;
+	titleId?: string;
+	descriptionId?: string;
+	onEmailChange: (email: string) => void;
+	onCancel: () => void;
+	onClose: () => void;
+	onSubmit: React.FormEventHandler<HTMLFormElement>;
+}
+
+export function ForgotPasswordContent({
+	email,
+	loading,
+	success,
+	readOnly = false,
+	autoFocus = false,
+	titleId,
+	descriptionId,
+	onEmailChange,
+	onCancel,
+	onClose,
+	onSubmit,
+}: ForgotPasswordContentProps) {
+	const t = useTranslations("Auth.forgotPassword");
+	const generatedTitleId = React.useId();
+	const generatedDescriptionId = React.useId();
+	const resolvedTitleId = titleId ?? generatedTitleId;
+	const resolvedDescriptionId = descriptionId ?? generatedDescriptionId;
+
+	return !success ? (
+		<>
+			<DialogHeader>
+				<h2
+					id={resolvedTitleId}
+					className="flex items-center gap-2 font-heading text-base font-medium leading-none"
+				>
+					<Mail className="h-5 w-5" />
+					{t("title")}
+				</h2>
+				<p
+					id={resolvedDescriptionId}
+					className="text-sm text-muted-foreground"
+				>
+					{t("description")}
+				</p>
+			</DialogHeader>
+
+			<form onSubmit={onSubmit} className="space-y-4">
+				<div className="grid gap-2">
+					<Label htmlFor="reset-email">{t("emailLabel")}</Label>
+					<Input
+						id="reset-email"
+						type="email"
+						dir="ltr"
+						autoComplete="email"
+						autoCapitalize="none"
+						spellCheck={false}
+						placeholder={t("emailPlaceholder")}
+						value={email}
+						onChange={(event) => onEmailChange(event.target.value)}
+						autoFocus={autoFocus}
+						readOnly={readOnly}
+						disabled={loading}
+					/>
+				</div>
+
+				<div className="flex items-center justify-end gap-2 pt-2">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onCancel}
+						disabled={loading || readOnly}
+					>
+						{t("cancel")}
+					</Button>
+					<Button
+						type="submit"
+						disabled={!email || loading || readOnly}
+					>
+						{loading ? (
+							<>
+								<Loader2 className="me-2 h-4 w-4 animate-spin" />
+								{t("sending")}
+							</>
+						) : (
+							t("send")
+						)}
+					</Button>
+				</div>
+			</form>
+		</>
+	) : (
+		<>
+			<DialogHeader>
+				<h2
+					id={resolvedTitleId}
+					className="flex items-center gap-2 font-heading text-base font-medium leading-none"
+				>
+					<CheckCircle2 className="h-5 w-5 text-green-600" />
+					{t("successTitle")}
+				</h2>
+				<p
+					id={resolvedDescriptionId}
+					className="text-sm text-muted-foreground"
+				>
+					{t("successDescription", { email })}
+				</p>
+			</DialogHeader>
+
+			<div className="space-y-4 py-4">
+				<div className="rounded-lg border bg-muted/50 p-4">
+					<p className="text-sm text-muted-foreground">
+						<strong>{t("notReceived")}</strong>
+						<br />
+						{t("expiryHelp", { hours: 1 })}
+					</p>
+				</div>
+
+				<div className="flex justify-end">
+					<Button onClick={onClose} disabled={readOnly}>
+						{t("close")}
+					</Button>
+				</div>
+			</div>
+		</>
+	);
 }
 
 export function ForgotPasswordDialog({
-    open,
-    onOpenChange,
-    onSubmit,
+	open,
+	onOpenChange,
+	onSubmit,
 }: ForgotPasswordDialogProps) {
-    const [email, setEmail] = React.useState('')
-    const [loading, setLoading] = React.useState(false)
-    const [success, setSuccess] = React.useState(false)
+	const t = useTranslations("Auth.forgotPassword");
+	const [email, setEmail] = React.useState("");
+	const [loading, setLoading] = React.useState(false);
+	const [success, setSuccess] = React.useState(false);
+	const titleId = React.useId();
+	const descriptionId = React.useId();
 
-    // Reset state when dialog closes
-    React.useEffect(() => {
-        if (!open) {
-            setTimeout(() => {
-                setEmail('')
-                setLoading(false)
-                setSuccess(false)
-            }, 300)
-        }
-    }, [open])
+	React.useEffect(() => {
+		if (!open) {
+			const timeout = window.setTimeout(() => {
+				setEmail("");
+				setLoading(false);
+				setSuccess(false);
+			}, 300);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+			return () => window.clearTimeout(timeout);
+		}
+	}, [open]);
 
-        if (!email || !email.includes('@')) {
-            toast.error('Please enter a valid email address')
-            return
-        }
+	const handleSubmit = async (event: React.FormEvent) => {
+		event.preventDefault();
 
-        setLoading(true)
-        try {
-            await onSubmit(email)
-            setSuccess(true)
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to send reset email')
-        } finally {
-            setLoading(false)
-        }
-    }
+		if (!email || !email.includes("@")) {
+			toast.error(t("invalidEmail"));
+			return;
+		}
 
-    return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                {!success ? (
-                    <>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Mail className="h-5 w-5" />
-                                Reset your password
-                            </DialogTitle>
-                            <DialogDescription>
-                                Enter your email address and we'll send you a
-                                link to reset your password.
-                            </DialogDescription>
-                        </DialogHeader>
+		setLoading(true);
+		try {
+			await onSubmit(email);
+			setSuccess(true);
+		} catch {
+			toast.error(t("sendFailed"));
+		} finally {
+			setLoading(false);
+		}
+	};
 
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="reset-email">
-                                    Email address
-                                </Label>
-                                <Input
-                                    id="reset-email"
-                                    type="email"
-                                    placeholder="your.email@example.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    autoFocus
-                                    disabled={loading}
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => onOpenChange(false)}
-                                    disabled={loading}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={!email || loading}>
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Sending...
-                                        </>
-                                    ) : (
-                                        'Send reset link'
-                                    )}
-                                </Button>
-                            </div>
-                        </form>
-                    </>
-                ) : (
-                    <>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                Check your email
-                            </DialogTitle>
-                            <DialogDescription>
-                                If an account exists for {email}, you'll receive
-                                a password reset link shortly.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="space-y-4 py-4">
-                            <div className="rounded-lg border bg-muted/50 p-4">
-                                <p className="text-sm text-muted-foreground">
-                                    <strong>Didn't receive an email?</strong>
-                                    <br />
-                                    Check your spam folder or try again in a few
-                                    minutes. The link expires in 1 hour.
-                                </p>
-                            </div>
-
-                            <div className="flex justify-end">
-                                <Button onClick={() => onOpenChange(false)}>
-                                    Close
-                                </Button>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </DialogContent>
-        </Dialog>
-    )
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				className="sm:max-w-md"
+				aria-labelledby={titleId}
+				aria-describedby={descriptionId}
+				showCloseButton={false}
+			>
+				<ForgotPasswordContent
+					email={email}
+					loading={loading}
+					success={success}
+					autoFocus
+					titleId={titleId}
+					descriptionId={descriptionId}
+					onEmailChange={setEmail}
+					onCancel={() => onOpenChange(false)}
+					onClose={() => onOpenChange(false)}
+					onSubmit={handleSubmit}
+				/>
+			</DialogContent>
+		</Dialog>
+	);
 }

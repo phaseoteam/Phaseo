@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "Dynamische Durchläufe"
+description: "Ändere Modell, Anweisungen, Tools und Sampling-Einstellungen zwischen den Durchläufen eines Go-Agents."
+---
+
+Dynamische Turn-Callbacks ermöglichen es dem Routing, auf den Ausführungsstatus zu reagieren, ohne den Agent neu aufzubauen. Sie laufen vor jeder Modellanfrage und erhalten den Kontext des aktuellen Durchlaufs.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+Du kannst außerdem dynamische Tools sowie `Temperature`-, `MaxOutputTokens`- und `TopP`-Werte pro Durchlauf festlegen.
+
+## Den nächsten Durchlauf durch ein Tool beeinflussen
+
+Setze `NextTurn` bei einem Tool, um die unmittelbar folgende Modellanfrage zu ändern. Diese Überschreibungen werden im pausierten Zustand gespeichert, überstehen daher einen Freigabeschritt und laufen nach dem nächsten Durchlauf ab.
+
+Verwende dynamische Callbacks für Richtlinien, die bei jedem Durchlauf neu berechnet werden sollen. Nutze `NextTurn` für eine Übergabe durch ein bestimmtes Tool, etwa einen Modellwechsel nach der Untersuchung eines Repositorys.

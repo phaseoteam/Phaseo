@@ -1,0 +1,96 @@
+---
+title: "从 LiteLLM 迁移"
+sidebarTitle: "LiteLLM"
+description: "将 LiteLLM 代理替换为 Phaseo，同时保留应用当前使用的 OpenAI 兼容请求路径。"
+icon: "blocks"
+---
+
+如果应用通过兼容 OpenAI 的客户端调用 LiteLLM 代理，请使用本指南。先切换代理边界，再明确映射别名、路由规则和共享默认值。
+
+## 变更内容
+
+| 设置 | 之前 | 之后 |
+| --- | --- | --- |
+| 基础 URL | 你的 LiteLLM 代理 | `https://api.phaseo.app/v1` |
+| API 密钥 | LiteLLM 代理密钥 | `PHASEO_API_KEY` |
+| 模型别名 | LiteLLM 配置 | Phaseo 模型 ID 或应用别名 |
+| 路由默认值 | LiteLLM 配置 | Phaseo 预设和路由设置 |
+
+<Steps>
+<Step title="梳理代理配置">
+
+列出当前 LiteLLM 部署使用的所有模型别名、回退项、提供商规则、重试策略、预算、回调和环境变量。区分哪些设置属于共享策略，哪些只适用于单个应用。
+
+</Step>
+
+<Step title="替换代理端点">
+
+保留兼容 OpenAI 的请求代码，只更改基础 URL 和密钥。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="映射别名和路由规则">
+
+通过 `GET /v1/models` 验证每个生产模型。如果调用方依赖内部别名，请在应用的一个边界处统一转换，而不是逐个修改请求。
+
+将可复用的提示词、参数和提供商限制移到[预设](../guides/presets.mdx)中。通过[路由和回退](../guides/routing-and-fallbacks.mdx)配置提供商排序和回退项。
+
+</Step>
+
+<Step title="验证生产工作流">
+
+测试流式传输、工具、结构化输出、重试、错误映射，以及 LiteLLM 部署原先通过回调处理的可观测性。逐步切换流量前，比较延迟、输出、令牌用量和费用。
+
+</Step>
+</Steps>
+
+## 迁移检查清单
+
+- 已梳理 LiteLLM 的 URL、密钥和部署依赖项。
+- 每个生产模型和别名都已明确映射到 Phaseo。
+- 共享默认值已移至预设或应用的单一边界。
+- 在使用这些功能的情况下，流式传输、工具和结构化输出已在预发布环境通过。
+- 必需的回调和遥测数据已有明确的替代方案。
+- 回滚仍只需更改端点和密钥配置。
+
+## 后续步骤
+
+- [预设](../guides/presets.mdx)
+- [路由和回退](../guides/routing-and-fallbacks.mdx)
+- [可观测性](../guides/integrations/observability.mdx)

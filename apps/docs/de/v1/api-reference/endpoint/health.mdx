@@ -1,0 +1,14 @@
+---
+title: "Gateway-Status prüfen"
+sidebarTitle: "Statusprüfung"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /health"
+description: "Eine minimale Statusübersicht von Phaseo Gateway zurückgeben."
+---
+
+Verwende diesen nicht authentifizierten Endpunkt für eine einfache Erreichbarkeitsprüfung. Aktuelle Vorfälle und den Verlauf findest du auf der [Phaseo-Statusseite](https://status.phaseo.app).
+
+<Note>
+Eine erfolgreiche Statusantwort belegt nicht, dass alle Anbieter- oder Modellrouten verfügbar sind. Prüfe mit der Standardantwort von `GET /v1/models`, welche Routen aktuell erreichbar sind.
+</Note>
+

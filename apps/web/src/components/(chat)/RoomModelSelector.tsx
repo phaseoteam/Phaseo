@@ -2,6 +2,7 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -277,6 +278,7 @@ export function RoomModelSelector({
 	modelEnabledById,
 	onOpenModelSettingsForModel,
 }: RoomModelSelectorProps) {
+	const t = useTranslations("Product.chat.modelPicker");
 	const format = useDisplayFormatters();
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
@@ -406,7 +408,9 @@ export function RoomModelSelector({
 				</span>
 				{option.modelId.includes(":") ? (
 					<Badge {...getModelBadgeProps(option.modelId.split(":")[1])}>
-						{option.modelId.split(":")[1].replace(/^free$/, "Free")}
+						{option.modelId.split(":")[1].toLowerCase() === "free"
+							? t("freeBadge")
+							: option.modelId.split(":")[1]}
 					</Badge>
 				) : null}
 				{selectedModelIds.includes(option.modelId) ? (
@@ -417,7 +421,7 @@ export function RoomModelSelector({
 						variant="outline"
 						className="h-4 rounded-full border-dashed px-1.5 text-[10px] font-medium"
 					>
-						Coming soon
+						{t("comingSoon")}
 					</Badge>
 				) : null}
 			</div>
@@ -441,8 +445,8 @@ export function RoomModelSelector({
 					}}
 					aria-label={
 						favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
-							? `Remove ${option.label} from favorites`
-							: `Add ${option.label} to favorites`
+						? t("removeFromFavorites", { model: option.label })
+							: t("addToFavorites", { model: option.label })
 					}
 				>
 					<Star
@@ -494,7 +498,7 @@ export function RoomModelSelector({
 							event.stopPropagation();
 							onRemoveModel?.(modelId);
 						}}
-						aria-label={`Remove ${label}`}
+						aria-label={t("removeModel", { model: label })}
 					>
 						<X className="h-3.5 w-3.5" />
 					</button>
@@ -623,17 +627,17 @@ export function RoomModelSelector({
 					>
 						<Plus className="h-4 w-4" />
 						{selectedModelIds.length === 0 ? (
-							<span className="truncate text-xs">Add Model</span>
+							<span className="truncate text-xs">{t("addModel")}</span>
 						) : null}
 					</Button>
 				</ModelSelectorTrigger>
 				<ModelSelectorContent
-					title="Select a model"
+					title={t("title")}
 					className="w-[min(90vw,960px)] max-w-3xl"
 					commandProps={{ shouldFilter: false }}
 				>
 					<ModelSelectorInput
-						placeholder="Search models..."
+						placeholder={t("searchPlaceholder")}
 						value={searchValue}
 						onValueChange={setSearchValue}
 					/>
@@ -651,7 +655,7 @@ export function RoomModelSelector({
 									: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 							)}
 						>
-							Free
+							{t("freeFilter")}
 						</Button>
 						<Button
 							type="button"
@@ -666,14 +670,14 @@ export function RoomModelSelector({
 									: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 							)}
 						>
-							New
+							{t("newFilter")}
 						</Button>
 					</div>
 					<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
-						<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+						<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
 						{hasSearchValue ? (
 							<ModelSelectorGroup
-								heading={`Results (${rankedSearchResults.length})`}
+								heading={t("results", { count: rankedSearchResults.length })}
 								className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 							>
 								{rankedSearchResults.map(({ option }) => (
@@ -706,7 +710,7 @@ export function RoomModelSelector({
 						) : null}
 						{!hasSearchValue && favoriteActiveOptions.length > 0 ? (
 							<ModelSelectorGroup
-								heading="Favourites"
+								heading={t("favorites")}
 								className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 							>
 								{favoriteActiveOptions.map((option) => (
@@ -777,7 +781,7 @@ export function RoomModelSelector({
 								{groupedComingSoonOptions.map((group, index) => (
 									<ModelSelectorGroup
 										key={`coming-soon-${group.heading}-${index}`}
-										heading={`Coming soon · ${group.heading}`}
+										heading={t("comingSoonGroup", { month: group.heading })}
 										className="pb-2"
 									>
 										{group.items.map((option) => (

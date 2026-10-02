@@ -3,6 +3,7 @@ import PerformanceCardsClient, {
 	type MetricCardSummary,
 	type Trend,
 } from "./PerformanceCardsClient";
+import { getTranslations } from "next-intl/server";
 
 function calculateDelta(
 	data: Array<{
@@ -32,6 +33,7 @@ export default async function PerformanceCards({
 }: {
 	params?: Promise<{ apiProvider: string }> | { apiProvider: string };
 }) {
+	const t = await getTranslations("Catalogue.providers");
 	const resolvedParams = params ? await params : undefined;
 	const apiProvider = resolvedParams?.apiProvider ?? "";
 
@@ -54,25 +56,25 @@ export default async function PerformanceCards({
 		e2e: MetricCardSummary;
 	} = {
 		throughput: {
-			title: "Throughput",
+			title: t("throughputMetric"),
 			value: metrics.summary.avgThroughput,
 			delta: throughputDelta.value,
 			trend: throughputDelta.trend,
-			helpText: "Median throughput per day across all requests.",
+			helpText: t("medianThroughputHelp"),
 		},
 		latency: {
-			title: "Latency",
+			title: t("latencyMetric"),
 			value: metrics.summary.avgLatencyMs,
 			delta: latencyDelta.value,
 			trend: latencyDelta.trend,
-			helpText: "Median response latency per day across all requests.",
+			helpText: t("medianLatencyHelp"),
 		},
 		e2e: {
-			title: "E2E latency",
+			title: t("e2eLatencyMetric"),
 			value: metrics.summary.avgGenerationMs,
 			delta: e2eDelta.value,
 			trend: e2eDelta.trend,
-			helpText: "Median end-to-end latency per day across all requests.",
+			helpText: t("medianE2eLatencyHelp"),
 		},
 	};
 

@@ -1,0 +1,96 @@
+---
+icon: "activity"
+title: "イベント、再試行、エラー"
+description: "Rustエージェントの同期実行を監視し、モデルやツールの失敗を処理します。"
+---
+
+## ライフサイクルイベント
+
+`run_with_events(...)`または`continue_with_events(...)`を使うと、イベントを同期的に受け取れます。
+
+```rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!(
+        "{} run={} details={}",
+        event.event_type,
+        event.run_id,
+        event.details
+    );
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+現在、ランタイムは次のイベントを出力します。
+
+- `run.started`
+- `model.request.started`
+- `model.response.completed`
+- `tool.started`
+- `tool.completed`
+- `run.paused`
+- `run.resumed`
+- `run.completed`
+- `run.stopped`
+
+コールバックは実行スレッド上で動きます。処理を短くするか、別のコンポーネントに委譲してください。
+
+## モデルの再試行
+
+```rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new(
+    "resilient-agent",
+    "openai/gpt-6-astra",
+)
+.model_retries(2, Duration::from_millis(250));
+```
+
+`max_retries`は最初のリクエスト後の再試行回数です。`RunStep.model_attempts`には、モデルの応答に成功するまでの試行回数が記録されます。
+
+## 使用量
+
+`RunResult.usage`には次の値が集計されます。
+
+- `input_tokens`
+- `output_tokens`
+- `cached_tokens`
+- `total_tokens`
+- モデルクライアントが値を設定した場合の `cost`
+
+各`RunStep`にも、個別の使用量サマリー、リクエストID、プロバイダー、モデル、終了理由が含まれます。
+
+組み込みのGatewayアダプター`0.1`は、Gatewayの`cost_nanos`や`cost_cents`を`UsageSummary.cost`に割り当てません。正確な費用が必要な場合は、Gatewayのレスポンスまたは生成レコードを確認してください。
+
+## エラー
+
+ランタイムのすべての失敗には`AgentError`が使われます。
+
+```rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+Gatewayの`PhaseoError`は`AgentError`に変換されます。アプリケーションで元のGatewayステータスと本文が必要な場合は、`phaseo`クライアントを直接呼び出すか、これらのフィールドをエラー処理で保持する独自の`ModelClient`を実装してください。
+
+ローカルツール実行のエラーは、実行をすぐに終了せず、ツールの結果としてモデルに返されます。
+
+## ステップ数の上限
+
+`AgentDefinition::max_steps(...)`でモデルターン数の既定の上限を設定できます。特定の実行だけ変更するには次のようにします。
+
+```rust
+let mut options = RunOptions::new("Investigate this issue");
+options.max_steps = Some(4);
+```
+
+上限に達すると、`run.status`は`stopped`になり、`run.stop_reason`は`max_steps:<limit>`になります。

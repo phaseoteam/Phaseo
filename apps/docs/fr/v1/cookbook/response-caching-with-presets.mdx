@@ -1,0 +1,92 @@
+---
+title: "Mettre en cache les réponses avec des presets"
+icon: "database"
+description: "Associez les paramètres par défaut d’un preset à un cache déterministe pour accélérer les requêtes répétées de manière prévisible."
+---
+
+Utilisez cette recette si vous envoyez souvent les mêmes requêtes avec des prompts stables et souhaitez réduire la latence et le coût des inférences répétées.
+
+## 1. Commencer par un preset plutôt que par des requêtes ponctuelles
+
+Créez un preset pour stabiliser les éléments suivants :
+
+- modèle cible
+- préférences de fournisseur
+- température et autres paramètres de génération
+- paramètres de raisonnement
+- prompt système
+
+La requête reste ainsi stable et la clé de cache aussi.
+
+## 2. Activer le cache de réponses au niveau du preset
+
+Configurez :
+
+- `response_caching.enabled = true`
+- une valeur raisonnable de `ttl_seconds`
+
+Valeurs par défaut conseillées :
+
+- TTL court pour les prompts factuels qui changent rapidement
+- TTL plus long pour les sorties structurées stables
+
+## 3. Garder la requête déterministe
+
+Le cache de réponses est plus efficace lorsque les requêtes ne changent pas inutilement.
+
+Évitez de modifier :
+
+- la formulation du prompt système
+- la température
+- les remplacements de fournisseur
+- la configuration du raisonnement
+- les listes d’outils
+
+Si un appelant modifie constamment ces valeurs, attribuez-lui un autre preset au lieu d’empêcher les autres de réutiliser le cache.
+
+## 4. Vérifier le comportement du cache dans les détails de la requête
+
+Les détails des requêtes qui passent par le cache doivent afficher des informations à ce sujet.
+
+Vérifiez :
+
+- les succès ou échecs du cache
+- le comportement du TTL
+- le contexte du fournisseur lorsqu’une réponse en cache est renvoyée
+
+## 5. Associer le cache et le routage de manière réfléchie
+
+Modèles conseillés :
+
+1. utilisez un preset avec cache activé pour les sorties structurées déterministes
+2. utilisez un second preset sans cache pour les requêtes exploratoires ou à température plus élevée
+
+Vous éviterez ainsi de mélanger des flux incompatibles et garderez un cache pertinent.
+
+## 6. Rechercher la cause des échecs avant d’allonger le TTL
+
+Si vous vous attendez à des succès mais obtenez toujours des échecs, comparez :
+
+- le texte du prompt
+- l’ID du modèle
+- les options du fournisseur
+- le format de réponse
+- les outils et leur sélection
+- le slug et la configuration du preset
+
+Un TTL plus long ne corrigera pas une différence d’empreinte.
+
+## 7. Quand éviter le cache
+
+Ne l’activez pas par défaut pour :
+
+- les prompts qui dépendent d’informations externes en temps réel
+- les réponses propres à un utilisateur dont le contexte change rapidement
+- les requêtes avec des sorties d’outils variables
+- les générations très stochastiques pour lesquelles une reproduction exacte n’est pas souhaitable
+
+## Articles associés
+
+- [Déployer des presets et diagnostiquer le routage](./preset-rollout-and-routing-debug.mdx)
+- [Exemples](../guides/examples.mdx)
+- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)

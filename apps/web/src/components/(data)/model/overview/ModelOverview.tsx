@@ -6,12 +6,14 @@ import Modalities from "./Modalities";
 import OtherInfo from "./OtherInfo";
 import ModelLinks, { hasModelLinks } from "./ModelLinks";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
+import { getTranslations } from "next-intl/server";
 
 export interface ModelOverviewProps {
 	model: ModelOverviewPage;
 }
 
-export default function ModelOverview({ model }: ModelOverviewProps) {
+export default async function ModelOverview({ model }: ModelOverviewProps) {
+	const t = await getTranslations("Catalogue.models.detail.sections");
 	// Modalities logic: always show Text, Image, Audio, Video
 	const parseTypes = (types: any) => {
 		const normalizeType = (raw: unknown): string => {
@@ -61,7 +63,7 @@ export default function ModelOverview({ model }: ModelOverviewProps) {
 			{/* Links section (hidden when there are no links) */}
 			{hasModelLinks(model) && (
 				<div>
-					<h2 className="text-xl font-semibold mb-2">Links</h2>
+					<h2 className="text-xl font-semibold mb-2">{t("links")}</h2>
 					<ModelLinks model={model} />
 				</div>
 			)}

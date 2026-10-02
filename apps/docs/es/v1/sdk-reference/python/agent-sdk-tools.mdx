@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Herramientas"
+description: "Define herramientas de Python validadas, sujetas a aprobación, manuales y con generación de avances."
+---
+
+Cree valores `AgentTool` y páselos mediante `define_tool(...)`. Las herramientas pueden definir:
+
+- JSON `parameters` que se muestran al modelo
+- validadores invocables `input_schema`, `output_schema` y `event_schema`
+- `timeout_ms` y `execute(input, runtime)`
+- `require_approval` booleano o ejecutable
+- `on_tool_called` y `on_response_received` para trabajo interactivo
+- `next_turn_params` y `on_error="return-to-model"`
+
+Llama a `runtime.emit_progress(value)` para informar resultados preliminares y a `runtime.set_context(value)` cuando los siguientes turnos necesiten un contexto actualizado de la aplicación.
+
+Usa `AgentToolExecutionConfig(tool_concurrency=...)` para herramientas independientes. Los resultados guardados conservan el orden de las llamadas del modelo aunque las ejecuciones se solapen.
+
+## Relacionado
+
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Controles de ejecución](./agent-sdk-run-controls.mdx)

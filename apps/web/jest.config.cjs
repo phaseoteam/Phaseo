@@ -8,6 +8,9 @@ const customJestConfig = {
 	testEnvironment: "node",
 	testTimeout: 60000,
 	moduleNameMapper: {
+		"^@/app/\\(auth\\)/(.*)$": "<rootDir>/src/app/[locale]/(auth)/$1",
+		"^@/app/\\(dashboard\\)/(.*)$": "<rootDir>/src/app/[locale]/(dashboard)/$1",
+		"^@/app/\\(legal\\)/(.*)$": "<rootDir>/src/app/[locale]/(legal)/$1",
 		"^@/(.*)$": "<rootDir>/src/$1",
 	},
 	testPathIgnorePatterns: ["/node_modules/", "/.next/", "/tests/e2e/"],

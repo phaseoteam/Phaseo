@@ -294,7 +294,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/reviews/:runId/mode
 		}
 	}
 	const ownerLinks = await client.from("provider_account_links").select("workspace_id").eq("provider_slug", String(existing.data.provider_slug)).in("status", ["pending", "active"]);
-	if (!ownerLinks.error && ownerLinks.data?.length) await client.from("provider_catalog_events").insert(ownerLinks.data.map((row: any) => ({ provider_slug: existing.data.provider_slug, run_id: runId, workspace_id: row.workspace_id, event_type: `model_${parsed.data.decision}`, title: `Model ${parsed.data.decision.replace("_", " ")}`, message: parsed.data.decision === "approved" ? `${modelSlug} was approved and staged for endpoint checks.` : `${modelSlug}: ${parsed.data.reason}` })));
+	if (!ownerLinks.error && ownerLinks.data?.length) await client.from("provider_catalog_events").insert(ownerLinks.data.map((row: any) => ({ provider_slug: existing.data.provider_slug, run_id: runId, workspace_id: row.workspace_id, event_type: `model_${parsed.data.decision}`, payload: { modelSlug, decision: parsed.data.decision, reason: parsed.data.reason ?? null }, title: `Model ${parsed.data.decision.replace("_", " ")}`, message: parsed.data.decision === "approved" ? `${modelSlug} was approved and staged for endpoint checks.` : `${modelSlug}: ${parsed.data.reason}` })));
 	const decisions = await client.from("provider_catalog_sync_models").select("decision").eq("run_id", runId);
 	if (decisions.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const reviewStatus = aggregateReviewStatus((decisions.data ?? []).map((row) => String(row.decision)));

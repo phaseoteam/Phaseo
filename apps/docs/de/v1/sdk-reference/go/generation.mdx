@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "Generierungsabfrage"
+description: "Rufe gespeicherte Generierungen mit dem Go-SDK ab."
+---
+
+Verwende die Wrapper-Methodee:
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+Wenn Anfragedetails gespeichert wurden, enthält der zurückgegebene Eintrag außerdem `replay_supported` und `replay_request` damit du die erfasste Nutzlast erneut an den ursprünglichen Endpunkt senden kannst.
+

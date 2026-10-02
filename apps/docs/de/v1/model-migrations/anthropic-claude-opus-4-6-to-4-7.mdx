@@ -1,0 +1,89 @@
+---
+title: "Anthropic Claude Opus 4.7"
+description: "Wichtige Hinweise zur Einführung von Claude Opus 4.7, einschließlich adaptivem Denken, Sampling-Steuerung und Tokenverbrauch."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.7
+
+Mit diesem Leitfaden führen Sie `anthropic/claude-opus-4.7` sicher in der Produktion ein.
+
+Claude Opus 4.7 ändert das Anfrageformat. Unveränderte Muster aus 4.6 können deshalb fehlschlagen.
+
+## Neuerungen
+
+- Neue Aufwandsstufe: `xhigh` (Messages API).
+- Erweiterte Thinking-Budgets entfallen bei Opus 4.7; `thinking: { type: "enabled", budget_tokens: ... }` schlägt nun fehl.
+- Nicht standardmäßige Sampling-Parameter werden für dieses Modell nicht mehr unterstützt: `temperature`, `top_p` und `top_k`.
+- Thinking-Inhalte werden standardmäßig weggelassen und nur bei ausdrücklicher Aktivierung ausgegeben.
+- Der aktualisierte Tokenizer kann den Tokenverbrauch gegenüber Opus 4.6 erhöhen.
+
+## Kompatibilität von Phaseo Gateway
+
+Um Migrationsprobleme zu reduzieren, akzeptiert Phaseo alte Opus-4.6-Felder für Opus 4.7 und normalisiert sie vor der Weiterleitung:
+
+- `temperature`, `top_p` und `top_k` werden akzeptiert, aber entfernt.
+- Alte Thinking-Budgets werden nicht weitergeleitet.
+- Opus-4.7-Thinking wird immer als `thinking: { "type": "adaptive", "display": "summarized" }` gesendet.
+- `reasoning.effort` bleibt aktiv und wird `output_config.effort` zugeordnet; `xhigh` wird unterstützt.
+
+## Schnelleinstieg für die Migration
+
+### 1. Modell-ID aktualisieren
+
+Setzen Sie die Modell-ID auf `anthropic/claude-opus-4.7`.
+
+### 2. Adaptives Denken mit zusammengefasster Anzeige verwenden
+
+Verwenden Sie für Opus 4.7:
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+Vermeiden Sie alte Budgets für erweitertes Denken.
+
+### 3. Sampling-Steuerungen entfernen
+
+Senden Sie diese Werte nicht:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Passen Sie stattdessen Prompts und Anweisungen an.
+
+### 4. Aufwandsstufen neu abstimmen
+
+Wenn Sie Reasoning-Steuerungen nutzen, testen Sie erneut mit:
+
+- `output_config.effort = "high"` als Ausgangswert.
+- `output_config.effort = "xhigh"` für die anspruchsvollsten Programmier- und Agentenaufgaben.
+
+Bei OpenAI-kompatiblen Payloads wird `reasoning.effort` für Opus 4.7 demselben Wert von `output_config.effort` zugeordnet.
+
+### 5. Tokenlimits erneut prüfen
+
+Prüfen Sie wegen der geänderten Tokenisierung:
+
+- `max_tokens` / `max_output_tokens`
+- Zeitlimits
+- Kostenlimits und Warnungen
+
+## Was Sie testen sollten
+
+- Strenge Schema-Erfolgsrate mit Produktions-Prompts.
+- Lang laufende Tool-Workflows: Aufrufzahl, Abschlussrate und Latenz.
+- Qualitätsunterschiede zwischen `high` und `xhigh`.
+- Änderungen bei Tokenkosten für Ihre meistgenutzten Promptklassen.
+
+## Sicherer Rollout
+
+1. Stellen Sie die Änderungen am Anfrageformat bereit, bevor Sie Traffic umstellen.
+2. Führen Sie Opus 4.7 mit Ihrer Produktions-Evaluierungssuite aus.
+3. Testen Sie schrittweise und halten Sie den Rollback auf Opus 4.6 bereit.
+4. Erhöhen Sie den Traffic, sobald Qualität, Latenz und Kosten innerhalb Ihrer Zielwerte liegen.
+
+## Quellen
+
+- [Neuigkeiten zu Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Anthropic-Migrationsleitfaden](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Systemkarte zu Claude Opus 4.7 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

@@ -20,6 +20,7 @@ import {
 } from "@/components/ai-elements/model-selector";
 import type { ExtendedModel } from "@/data/types";
 import { ProviderLogo } from "./ProviderLogo";
+import { useLocale, useTranslations } from "next-intl";
 
 interface ModelComboboxProps {
 	models: ExtendedModel[];
@@ -96,11 +97,13 @@ export default function ModelCombobox({
 	open,
 	onOpenChange,
 	replaceTargetId,
-	labelWhenEmpty = "Select models",
-	labelWhenSelected = "Edit selected models",
+	labelWhenEmpty,
+	labelWhenSelected,
 	showSelectionCount = true,
 	className,
 }: ModelComboboxProps) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const getReleaseMonthLabel = React.useCallback(
 		(date: Date) => format.dateParts(date, {
@@ -143,7 +146,7 @@ export default function ModelCombobox({
 				: "unknown";
 			const monthLabel = releaseDate
 				? getReleaseMonthLabel(releaseDate)
-				: "Unknown release date";
+				: t("unknownReleaseDate");
 			const monthTimestamp = releaseDate
 				? Date.UTC(releaseDate.getUTCFullYear(), releaseDate.getUTCMonth(), 1)
 				: Number.NEGATIVE_INFINITY;
@@ -175,7 +178,7 @@ export default function ModelCombobox({
 					}),
 			}))
 			.sort((a, b) => b.monthTimestamp - a.monthTimestamp);
-	}, [getReleaseMonthLabel, models]);
+	}, [getReleaseMonthLabel, models, t]);
 
 	const filteredGroups = React.useMemo(() => {
 		const term = searchTerm.trim().toLowerCase();
@@ -269,16 +272,14 @@ export default function ModelCombobox({
 		if (activeReplaceTarget) {
 			if (modelId === activeReplaceTarget) return;
 			if (current.includes(modelId)) {
-				setSelectionNotice(
-					"That model is already selected. Choose another model to replace this slot."
-				);
+				setSelectionNotice(t("alreadySelected"));
 				return;
 			}
 			if (!available) {
 				setSelectionNotice(
 					selectionIncompatible
-						? "Your current selection mixes incompatible model types. Remove a model to continue."
-						: "This model doesn't share a compatible endpoint with the current selection."
+						? t("incompatibleSelection")
+						: t("noCompatibleEndpoint")
 				);
 				return;
 			}
@@ -298,20 +299,22 @@ export default function ModelCombobox({
 		if (!available) {
 			setSelectionNotice(
 				selectionIncompatible
-					? "Your current selection mixes incompatible model types. Remove a model to continue."
-					: "This model doesn't share a compatible endpoint with the current selection."
+					? t("incompatibleSelection")
+					: t("noCompatibleEndpoint")
 			);
 			return;
 		}
 		if (current.length >= MAX_SELECTION) {
-			setSelectionNotice("You can compare up to four models at a time.");
+			setSelectionNotice(t("selectionLimit"));
 			return;
 		}
 		setPendingSelection(Array.from(new Set([...current, modelId])).slice(0, MAX_SELECTION));
 	};
 
 	const buttonLabel =
-		selected.length > 0 ? labelWhenSelected : labelWhenEmpty;
+		selected.length > 0
+			? labelWhenSelected ?? t("editModels")
+			: labelWhenEmpty ?? t("selectModels");
 
 	return (
 		<ModelSelector open={dialogOpen} onOpenChange={handleOpenChange}>
@@ -338,24 +341,24 @@ export default function ModelCombobox({
 				</Button>
 			</ModelSelectorTrigger>
 			<ModelSelectorContent
-				title="Select models to compare"
+					title={t("pickerTitle")}
 				className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
 			>
 				<ModelSelectorInput
 					autoFocus
-					placeholder="Search models..."
+					placeholder={t("searchModels")}
 					value={searchTerm}
 					onValueChange={setSearchTerm}
 				/>
 				<div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-xs text-muted-foreground">
 					<span className="truncate">
 						{replaceTargetModel
-							? `Replace ${replaceTargetModel.name}`
-							: "Choose up to four compatible models"}
+							? t("replaceModel", { name: replaceTargetModel.name })
+							: t("chooseCompatibleModels")}
 					</span>
 					<span className="shrink-0 tabular-nums">
-						{pendingSelection.length}/{MAX_SELECTION} selected
+						{t("selectedCount", { count: pendingSelection.length })}
 					</span>
 				</div>
 				{selectionNotice ? (
@@ -364,7 +367,7 @@ export default function ModelCombobox({
 					</p>
 				) : null}
 				<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-2">
-					<ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+					<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
 					{filteredGroups.map((group) => (
 						<ModelSelectorGroup
 							key={group.monthKey}
@@ -412,7 +415,7 @@ export default function ModelCombobox({
 								>
 														<ProviderLogo
 															id={model.provider?.provider_id ?? "unknown"}
-															alt={model.provider?.name ?? "Unknown"}
+										alt={model.provider?.name ?? t("unknownProvider")}
 															size="xxs"
 															className="shrink-0"
 														/>
@@ -421,7 +424,7 @@ export default function ModelCombobox({
 								</div>
 								{!modelAvailable && !isSelected ? (
 									<span className="shrink-0 text-[10px] text-muted-foreground">
-										Incompatible
+										{t("incompatible")}
 									</span>
 								) : null}
 								{isSelected ? <Check className="size-4 shrink-0" /> : null}

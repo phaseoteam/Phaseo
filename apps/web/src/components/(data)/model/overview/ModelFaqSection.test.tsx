@@ -1,3 +1,6 @@
+import fs from "node:fs";
+import path from "node:path";
+import { createTranslator, NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
@@ -168,7 +171,6 @@ describe("ModelFaqSection", () => {
 		expect(html).toContain('aria-expanded="false"');
 		expect(html).toContain("grid-rows-[0fr]");
 		expect(html).toContain('href="#pricing"');
-		expect(html).toContain('href="/organisations/acme"');
 	});
 
 	it("does not repeat the model name and renders description markdown", () => {
@@ -394,5 +396,24 @@ describe("ModelFaqSection", () => {
 		);
 
 		expect(html).toContain("$0.50 per 1M tokens");
+	});
+});
+
+const locales = ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"] as const;
+describe("localized model FAQs", () => {
+	it.each(locales)("translates generated FAQ prose and schema in %s", (locale) => {
+		const messages = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, file + ".json"), "utf8"))]));
+		const faq = createTranslator({ locale, messages, namespace: "Catalogue.models.detail.faqContent" } as never);
+		const modalities = createTranslator({ locale, messages, namespace: "Common.ui.modelCreation.modalities" } as never);
+		const prices = createTranslator({ locale, messages, namespace: "Catalogue.modelDetail.pricing" } as never);
+		const html = renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" messages={messages}><ModelFaqSection model={{ ...model, description: null }} benchmarkCount={4} activeProviderCount={2} isGatewayActive pricing={pricing} gatewayMetadata={gatewayMetadata} locale={locale} translate={(key, values) => faq(key as never, values as never)} translateModality={(key) => modalities(key as never)} translatePricing={(key, values) => prices(key as never, values as never)} /></NextIntlClientProvider>);
+		expect(html).not.toContain("MISSING_MESSAGE");
+		expect(html).not.toContain("Catalogue.");
+		expect(html).toContain('href="/organisations/acme"');
+		if (locale !== "en-GB") {
+			expect(html).not.toContain("What is Alpha 1?");
+			expect(html).not.toContain("Alpha 1 is ");
+			expect(html).not.toContain("per 1M tokens");
+		}
 	});
 });

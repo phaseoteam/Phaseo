@@ -1,10 +1,11 @@
-import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { ArrowRight, Boxes, Coins, Route } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { fetchFrontendGatewayShowcase } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { formatGatewayMetricWindow } from "@/lib/fetchers/gateway/getMarketingMetrics";
+import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
@@ -23,6 +24,8 @@ export function ExperimentalGatewayShowcaseFallback() {
 }
 
 export default async function ExperimentalGatewayShowcase() {
+	const t = await getTranslations("SettingsUI");
+	const locale = await getLocale();
 	const { metrics, topModels: topModelsRes } =
 		await fetchFrontendGatewayShowcase({
 			topAppsLimit: 0,
@@ -40,7 +43,7 @@ export default async function ExperimentalGatewayShowcase() {
 					? modelId.split("/")[0]
 					: null;
 			const organisationName =
-				row.organisation_name ?? prefixOrganisation ?? "Unknown organisation";
+				row.organisation_name ?? prefixOrganisation ?? t("landingGaps.unknownOrganisation");
 
 			return {
 				key: modelId,
@@ -54,17 +57,17 @@ export default async function ExperimentalGatewayShowcase() {
 
 	const stats = [
 		{
-			label: `Tokens routed (${formatGatewayMetricWindow(metrics.summary.windowHours)})`,
-			value: `${formatRoundedCount(metrics.summary.tokensInWindow)}+`,
+			label: t("landingGaps.tokensWindow", { window: localizedGatewayMetricWindow(metrics.summary.windowHours, locale, t("landingGaps.selectedWindow")) }),
+			value: `${formatRoundedCount(metrics.summary.tokensInWindow, locale)}+`,
 			icon: Coins,
 		},
 		{
-			label: "Active models",
+			label: t("landingGaps.activeModels"),
 			value: <><DisplayNumber value={metrics.summary.supportedModels ?? 0} />+</>,
 			icon: Boxes,
 		},
 		{
-			label: "Supported providers",
+			label: t("landingGaps.copySupportedProviders"),
 			value: <><DisplayNumber value={metrics.summary.supportedProviders ?? 0} />+</>,
 			icon: Route,
 		},
@@ -76,21 +79,16 @@ export default async function ExperimentalGatewayShowcase() {
 				<div className="flex flex-col justify-between rounded-[1.9rem] border border-zinc-200/80 bg-white p-5 dark:border-zinc-800/80 dark:bg-zinc-900/55">
 					<div className="space-y-4">
 						<p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-zinc-500 dark:text-zinc-400">
-							Gateway snapshot
-						</p>
+							{t("landingGaps.snapshot")}</p>
 						<h2 className="max-w-md text-4xl font-semibold tracking-[-0.06em] text-zinc-950 dark:text-zinc-50">
-							Production telemetry, without the dashboard noise.
-						</h2>
+							{t("landingGaps.productionTelemetry")}</h2>
 						<p className="max-w-md text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-							The experimental landing page should still show the product doing real
-							work, but with fewer boxes and a cleaner hierarchy.
-						</p>
+							{t("landingGaps.experimentalHelp")}</p>
 					</div>
 					<div className="mt-6 flex flex-wrap gap-3">
 						<Button asChild className="h-11 rounded-full px-5 text-sm font-semibold">
 							<Link href="/">
-								Explore platform
-								<ArrowRight className="h-4 w-4" />
+								{t("landingGaps.explorePlatform")}<ArrowRight className="h-4 w-4" />
 							</Link>
 						</Button>
 						<Button
@@ -98,7 +96,7 @@ export default async function ExperimentalGatewayShowcase() {
 							variant="outline"
 							className="h-11 rounded-full px-5 text-sm font-semibold"
 						>
-							<Link href="/rankings">View live rankings</Link>
+							<Link href="/rankings">{t("landingGaps.liveRankings")}</Link>
 						</Button>
 					</div>
 				</div>
@@ -130,18 +128,15 @@ export default async function ExperimentalGatewayShowcase() {
 						<div className="flex items-center justify-between gap-3">
 							<div>
 								<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-									Most used models this week
-								</p>
+									{t("landingGaps.mostThisWeek")}</p>
 								<p className="text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-									A quick read on what is actually getting routed.
-								</p>
+									{t("landingGaps.quickRead")}</p>
 							</div>
 							<Link
 								href="/rankings"
 								className="text-sm font-semibold text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 							>
-								Rankings
-							</Link>
+								{t("landingGaps.copyRankings")}</Link>
 						</div>
 						<div className="mt-4 grid gap-3">
 							{topModels.map((model, index) => (
@@ -181,11 +176,10 @@ export default async function ExperimentalGatewayShowcase() {
 									</div>
 									<div className="text-right">
 										<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-											{formatRoundedCount(model.tokens)}
+											{formatRoundedCount(model.tokens, locale)}
 										</p>
 										<p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
-											tokens
-										</p>
+											{t("landingGaps.copyTokens")}</p>
 									</div>
 								</div>
 							))}

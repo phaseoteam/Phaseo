@@ -11,6 +11,7 @@ import {
 	type ReactNode,
 } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -67,7 +68,6 @@ import {
 	sortParser,
 	type ModelsSortOption,
 } from "@/app/(dashboard)/models/search-params";
-import { featureLabels } from "@/lib/config/featureLabels";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Accordion,
@@ -149,24 +149,24 @@ type FilterDimension =
 	| "creators"
 	| "years";
 
-const SORT_OPTION_LABELS: Record<ModelsSortOption, string> = {
-	newest: "Newest",
-	popular_week: "Most Popular (7d Tokens)",
-	price_low_to_high: "Price: Low to High",
-	price_high_to_low: "Price: High to Low",
-	context_high_to_low: "Context: High to Low",
-	throughput_high_to_low: "Throughput: High to Low",
-	latency_low_to_high: "Latency: Low to High",
+const SORT_OPTION_KEYS: Record<ModelsSortOption, string> = {
+	newest: "sortNewest",
+	popular_week: "sortPopular",
+	price_low_to_high: "sortPriceLowHigh",
+	price_high_to_low: "sortPriceHighLow",
+	context_high_to_low: "sortContextHighLow",
+	throughput_high_to_low: "sortThroughputHighLow",
+	latency_low_to_high: "sortLatencyLowHigh",
 };
 
-const SORT_TRIGGER_LABELS: Record<ModelsSortOption, string> = {
-	newest: "Newest",
-	popular_week: "Most Popular",
-	price_low_to_high: "Lowest Price",
-	price_high_to_low: "Highest Price",
-	context_high_to_low: "Largest Context",
-	throughput_high_to_low: "Fastest Throughput",
-	latency_low_to_high: "Lowest Latency",
+const SORT_TRIGGER_KEYS: Record<ModelsSortOption, string> = {
+	newest: "triggerNewest",
+	popular_week: "triggerPopular",
+	price_low_to_high: "triggerPriceLow",
+	price_high_to_low: "triggerPriceHigh",
+	context_high_to_low: "triggerContext",
+	throughput_high_to_low: "triggerThroughput",
+	latency_low_to_high: "triggerLatency",
 };
 
 const CONTEXT_LENGTH_STOPS = [
@@ -627,12 +627,12 @@ function getEndpointIcon(endpoint: string): LucideIcon {
 	return Route;
 }
 
-function FilterLogo({ value, label }: { value: string; label: string }) {
+function FilterLogo({ value }: { value: string }) {
 	return (
 		<span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border/60 bg-background p-0.5">
 			<Logo
 				id={value}
-				alt={`${label} logo`}
+				alt=""
 				width={14}
 				height={14}
 				className="h-3.5 w-3.5 object-contain"
@@ -648,6 +648,9 @@ function ModelsEmptyState({
 	hasActiveQuery: boolean;
 	onReset: () => void;
 }) {
+	const t = useTranslations("Catalogue.models");
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
+
 	return (
 		<div className="flex min-h-[22rem] items-center justify-center rounded-lg border border-dashed border-border/80 bg-muted/15 px-6 py-12 text-center">
 			<div className="flex max-w-sm flex-col items-center">
@@ -655,12 +658,12 @@ function ModelsEmptyState({
 					<SearchX className="h-5 w-5" />
 				</span>
 				<h2 className="mt-4 text-lg font-semibold tracking-tight">
-					No matching models
+					{t("noResults")}
 				</h2>
 				<p className="mt-1 text-sm text-muted-foreground">
 					{hasActiveQuery
-						? "Try broadening your filters or clearing the search query."
-						: "There are no models available for this view yet."}
+						? t("tryDifferent")
+						: t("noModelsAvailableForView")}
 				</p>
 				{hasActiveQuery ? (
 					<Button
@@ -670,7 +673,7 @@ function ModelsEmptyState({
 						onClick={onReset}
 					>
 						<RotateCcw className="h-3.5 w-3.5" />
-						Reset filters and search
+						{tFilters("resetFiltersAndSearch")}
 					</Button>
 				) : null}
 			</div>
@@ -701,6 +704,7 @@ function FilterCheckboxList({
 	toneForValue?: (value: string) => ReturnType<typeof getModalityTone>;
 	collapsedLimit?: number;
 }) {
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
 	const [expanded, setExpanded] = useState(false);
 
 	const canCollapse =
@@ -716,7 +720,7 @@ function FilterCheckboxList({
 	return (
 		<div className="space-y-1.5">
 			{options.length === 0 ? (
-				<div className="px-2 text-xs text-muted-foreground">No options</div>
+				<div className="px-2 text-xs text-muted-foreground">{tFilters("noOptions")}</div>
 			) : (
 				visibleOptions.map((option) => {
 					const checked = selected.includes(option.value);
@@ -788,7 +792,9 @@ function FilterCheckboxList({
 					className="h-7 w-full justify-center text-xs"
 					onClick={() => setExpanded((current) => !current)}
 				>
-					{expanded ? "Show Less" : `Show More (${hiddenCount})`}
+					{expanded
+						? tFilters("showLess")
+						: tFilters("showMore", { count: hiddenCount })}
 				</Button>
 			) : null}
 		</div>
@@ -871,10 +877,12 @@ function OutputModalityButtonRow({
 	options,
 	selected,
 	onToggle,
+	labelForValue,
 }: {
 	options: OptionCount[];
 	selected: string[];
 	onToggle: (value: string) => void;
+	labelForValue: (value: string) => string;
 }) {
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 	const contentRef = useRef<HTMLDivElement | null>(null);
@@ -940,7 +948,7 @@ function OutputModalityButtonRow({
 				>
 					<Icon className="h-3.5 w-3.5" />
 				</span>
-				<span>{toTitleCase(option.value)}</span>
+				<span>{labelForValue(option.value)}</span>
 				<span
 					className={cn(
 						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
@@ -991,6 +999,103 @@ function ModelsDisplayContent({
 }) {
 	const format = useDisplayFormatters();
 	const { models, facets } = modelsPageData;
+	const t = useTranslations("Catalogue.models");
+	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const translateModality = (value: string) => {
+		const keys: Record<string, string> = {
+			text: "modalityText",
+			image: "modalityImage",
+			video: "modalityVideo",
+			audio: "modalityAudio",
+			audio_tts: "modalitySpeech",
+			audio_stt: "modalityTranscription",
+			audio_music: "modalityMusic",
+			embeddings: "modalityEmbeddings",
+			moderations: "modalityModeration",
+		};
+		const filtersKeys: Record<string, string> = {
+			realtime: "modalityRealtime",
+			file: "modalityFile",
+			rerank: "modalityRerank",
+		};
+		const normalized = value.toLowerCase();
+		if (keys[normalized]) return tMetadata(keys[normalized] as never);
+		if (filtersKeys[normalized]) return tFilters(filtersKeys[normalized] as never);
+		return toTitleCase(value);
+	};
+	const translateRegion = (value: string) => {
+		const keys: Record<string, string> = {
+			jp: "regionJapan",
+			au: "regionAustralia",
+		};
+		const normalized = String(value ?? "").trim().toLowerCase();
+		return keys[normalized]
+			? tFilters(keys[normalized] as never)
+			: formatRegionLabel(value);
+	};
+	const translateEndpoint = (value: string) => {
+		const normalized = String(value ?? "").trim().toLowerCase();
+		const keys: Record<string, string> = {
+			responses: "endpointResponses",
+			"chat/completions": "endpointChatCompletions",
+			messages: "endpointMessages",
+			completions: "endpointCompletions",
+			embeddings: "endpointEmbeddings",
+			"text/rerank": "endpointRerank",
+			rerank: "endpointRerank",
+			moderations: "endpointModerations",
+			"image/generate": "endpointImageGeneration",
+			"images/generations": "endpointImageGeneration",
+			"image/edit": "endpointImageEditing",
+			"images/edits": "endpointImageEditing",
+			"audio/speech": "endpointTextToSpeech",
+			"audio/transcription": "endpointTranscription",
+			"audio/transcriptions": "endpointTranscription",
+			"audio/translations": "endpointTranslation",
+			"audio/realtime": "endpointRealtime",
+			"video/generations": "endpointVideoGeneration",
+		};
+		const key = keys[normalized];
+		return key ? tFilters(key as never) : formatEndpointLabel(value);
+	};
+	const translateTier = (value: string) => {
+		const keys: Record<string, string> = {
+			standard: "tierStandard",
+			free: "tierFree",
+			batch: "tierBatch",
+			flex: "tierFlex",
+			priority: "tierFast",
+		};
+		const key = keys[value.toLowerCase()];
+		return key ? tQuickstart(key as never) : toTitleCase(value);
+	};
+	const translateFeature = (value: string) => {
+		const keys: Record<string, string> = {
+			reasoning: "featureReasoning",
+			tools: "featureTools",
+			structured_outputs: "featureStructuredOutputs",
+			web_search: "featureWebSearch",
+			free: "featureFree",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tFilters(key as never) : toTitleCase(value);
+	};
+	const translateStatus = (value: string) => {
+		const keys: Record<string, string> = {
+			active: "activeGateway",
+			coming_soon: "comingSoon",
+			not_active: "notActive",
+			inactive: "notActive",
+			deranked_lvl1: "statusDeranked1",
+			deranked_lvl2: "statusDeranked2",
+			deranked_lvl3: "statusDeranked3",
+			disabled: "statusDisabled",
+		};
+		const key = keys[String(value ?? "").trim().toLowerCase()];
+		return key ? tFilters(key as never) : toTitleCase(value);
+	};
 	const [search, setSearch] = useQueryState("q", qParser);
 	const deferredSearch = useDeferredValue(search ?? "");
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -1692,13 +1797,6 @@ function ModelsDisplayContent({
 		setOpenFilterSections(sections);
 	};
 
-	const shownCountLabel = `${format.number(filteredModels.length, {
-		maximumFractionDigits: 0,
-		notation: "standard",
-	})} shown`;
-	const shownCountWithSearchLabel = search
-		? `${shownCountLabel} for "${search}"`
-		: shownCountLabel;
 	const hasActiveResultsQuery =
 		activeFilterCount > 0 || Boolean(String(search ?? "").trim());
 	const without = (values: string[], value: string) =>
@@ -1707,15 +1805,7 @@ function ModelsDisplayContent({
 		...(hasInteractedWithStatuses
 			? selectedStatuses.map((value) => ({
 					key: `status-${value}`,
-					label: value === "active"
-						? "Status: Active"
-						: value === "coming_soon"
-							? "Status: Coming Soon"
-							: value === "deprecated"
-								? "Status: Deprecated"
-								: value === "retired"
-									? "Status: Retired"
-									: "Status: Not Active",
+					label: tFilters("filterStatus", { value: translateStatus(value) }),
 					onRemove: () => {
 						const next = without(selectedStatuses, value);
 						setSelectedStatuses(next);
@@ -1723,17 +1813,17 @@ function ModelsDisplayContent({
 					},
 				}))
 			: []),
-		...selectedInputModalities.map((value) => ({ key: `input-${value}`, label: `Input: ${toTitleCase(value)}`, onRemove: () => setSelectedInputModalities(without(selectedInputModalities, value)) })),
-		...selectedOutputModalities.map((value) => ({ key: `output-${value}`, label: `Output: ${toTitleCase(value)}`, onRemove: () => setSelectedOutputModalities(without(selectedOutputModalities, value)) })),
-		...selectedTiers.map((value) => ({ key: `tier-${value}`, label: `Tier: ${toTitleCase(value)}`, onRemove: () => setSelectedTiers(without(selectedTiers, value)) })),
-		...(selectedContextMin > 0 ? [{ key: "context", label: `Context: ${formatContextStop(selectedContextMin)}+`, onRemove: () => setSelectedContextMin(0) }] : []),
-		...selectedSupportedParameters.map((value) => ({ key: `parameter-${value}`, label: `Parameter: ${toTitleCase(value)}`, onRemove: () => setSelectedSupportedParameters(without(selectedSupportedParameters, value)) })),
-		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: `Provider: ${value}`, onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
-		...selectedRegions.map((value) => ({ key: `region-${value}`, label: `Region: ${formatRegionLabel(value)}`, onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
-		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: `Creator: ${value}`, onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
-		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: featureLabels[value] ?? toTitleCase(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
-		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: `Endpoint: ${formatEndpointLabel(value)}`, onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
-		...selectedYears.map((value) => ({ key: `year-${value}`, label: `Year: ${value}`, onRemove: () => setSelectedYears(without(selectedYears, value)) })),
+		...selectedInputModalities.map((value) => ({ key: `input-${value}`, label: tFilters("filterInput", { value: translateModality(value) }), onRemove: () => setSelectedInputModalities(without(selectedInputModalities, value)) })),
+		...selectedOutputModalities.map((value) => ({ key: `output-${value}`, label: tFilters("filterOutput", { value: translateModality(value) }), onRemove: () => setSelectedOutputModalities(without(selectedOutputModalities, value)) })),
+		...selectedTiers.map((value) => ({ key: `tier-${value}`, label: tFilters("filterTier", { value: translateTier(value) }), onRemove: () => setSelectedTiers(without(selectedTiers, value)) })),
+		...(selectedContextMin > 0 ? [{ key: "context", label: tFilters("filterContext", { value: formatContextStop(selectedContextMin) }), onRemove: () => setSelectedContextMin(0) }] : []),
+		...selectedSupportedParameters.map((value) => ({ key: `parameter-${value}`, label: tFilters("filterParameter", { value: toTitleCase(value) }), onRemove: () => setSelectedSupportedParameters(without(selectedSupportedParameters, value)) })),
+		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
+		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
+		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
+		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
+		...selectedYears.map((value) => ({ key: `year-${value}`, label: tFilters("filterYear", { value }), onRemove: () => setSelectedYears(without(selectedYears, value)) })),
 	];
 
 	const filterButton = (compact = false) => (
@@ -1747,7 +1837,7 @@ function ModelsDisplayContent({
 			onClick={() => setMobileFiltersOpen(true)}
 		>
 			<SlidersHorizontal className="h-3.5 w-3.5" />
-			<span className={compact ? "sr-only" : undefined}>Filters</span>
+			<span className={compact ? "sr-only" : undefined}>{t("filters")}</span>
 			{activeFilterCount > 0 ? (
 				<span
 					className={cn(
@@ -1770,7 +1860,7 @@ function ModelsDisplayContent({
 			aria-pressed={privateOnly}
 		>
 			<LockKeyhole className="h-3.5 w-3.5" />
-			Private
+			{tFilters("tierPrivate")}
 		</Button>
 	) : null;
 
@@ -1789,14 +1879,14 @@ function ModelsDisplayContent({
 					<Link
 						href={buildHref("/models")}
 						prefetch={false}
-						aria-label="Card view"
+						aria-label={t("cardView")}
 						aria-current={!isTable ? "page" : undefined}
 						className={viewSwitcherItemClass(!isTable, true)}
 					>
 						<GridIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">Card view</TooltipContent>
+				<TooltipContent side="top">{t("cardView")}</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
@@ -1806,14 +1896,14 @@ function ModelsDisplayContent({
 							toTable: true,
 						})}
 						prefetch={false}
-						aria-label="Table view"
+						aria-label={t("tableView")}
 						aria-current={isTable ? "page" : undefined}
 						className={viewSwitcherItemClass(isTable)}
 					>
 						<TableIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">Table view</TooltipContent>
+				<TooltipContent side="top">{t("tableView")}</TooltipContent>
 			</Tooltip>
 		</div>
 	);
@@ -1831,11 +1921,11 @@ function ModelsDisplayContent({
 					"border border-border/70 bg-background shadow-xs hover:bg-muted/45 dark:border-border/70 dark:bg-background dark:hover:bg-muted/25",
 					triggerClassName,
 				)}
-				aria-label="Sort models"
+				aria-label={tFilters("sortModels")}
 			>
 				<span className="flex min-w-0 items-center gap-2">
 					<ArrowUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-					<span className="truncate">{SORT_TRIGGER_LABELS[selectedSort]}</span>
+					<span className="truncate">{tFilters(SORT_TRIGGER_KEYS[selectedSort] as never)}</span>
 				</span>
 			</SelectTrigger>
 			<SelectContent
@@ -1845,7 +1935,7 @@ function ModelsDisplayContent({
 			>
 				{MODELS_SORT_OPTIONS.map((option) => (
 					<SelectItem key={option} value={option}>
-						{SORT_OPTION_LABELS[option]}
+						{tFilters(SORT_OPTION_KEYS[option] as never)}
 					</SelectItem>
 				))}
 			</SelectContent>
@@ -1863,7 +1953,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Activity className="h-4 w-4 text-muted-foreground" />
-						Gateway Status
+						{tFilters("gatewayStatus")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1876,13 +1966,7 @@ function ModelsDisplayContent({
 								toggleInList(effectiveSelectedStatuses, value),
 							);
 						}}
-						labelForValue={(value) => {
-							if (value === "active") return "Active On Gateway";
-							if (value === "coming_soon") return "Coming Soon";
-							if (value === "deprecated") return "Deprecated";
-							if (value === "retired") return "Retired";
-							return "Not Active";
-						}}
+						labelForValue={translateStatus}
 						iconForValue={(value) => {
 							if (value === "active") return CircleCheck;
 							if (value === "coming_soon") return CalendarClock;
@@ -1898,7 +1982,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<ArrowDownCircle className="h-4 w-4 text-muted-foreground" />
-						Input Modalities
+						{tFilters("inputModalities")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1911,7 +1995,7 @@ function ModelsDisplayContent({
 							)
 						}
 						iconForValue={getModalityIcon}
-						labelForValue={toTitleCase}
+						labelForValue={translateModality}
 						toneForValue={getModalityTone}
 					/>
 				</AccordionContent>
@@ -1921,7 +2005,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Layers3 className="h-4 w-4 text-muted-foreground" />
-						Tier
+						{tFilters("tier")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1931,7 +2015,7 @@ function ModelsDisplayContent({
 						onToggle={(value) =>
 							setSelectedTiers(toggleInList(selectedTiers, value))
 						}
-						labelForValue={toTitleCase}
+						labelForValue={translateTier}
 						renderStart={({ value, checked }) => {
 							const tierMeta = getTierFilterMeta(value);
 							const TierIcon = tierMeta.icon;
@@ -1953,7 +2037,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Binary className="h-4 w-4 text-muted-foreground" />
-						Context Length
+						{tFilters("contextLength")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -1971,14 +2055,14 @@ function ModelsDisplayContent({
 								);
 								setSelectedContextMin(CONTEXT_LENGTH_STOPS[clamped] ?? 0);
 							}}
-							aria-label="Minimum context length"
+							aria-label={tFilters("minimumContextLength")}
 						/>
 						<div className="flex items-center justify-between text-[11px] text-muted-foreground tabular-nums">
-							<span>{formatContextStop(CONTEXT_LENGTH_STOPS[0])}</span>
+							<span>{tFilters("any")}</span>
 							<span>
 								{selectedContextMin > 0
-									? `Min ${formatContextStop(selectedContextMin)} tokens`
-									: "No minimum"}
+									? tFilters("minimumTokens", { count: formatContextStop(selectedContextMin) })
+									: tFilters("noMinimum")}
 							</span>
 							<span>
 								{formatContextStop(
@@ -1995,7 +2079,7 @@ function ModelsDisplayContent({
 									className="h-7 px-2 text-xs"
 									onClick={() => setSelectedContextMin(0)}
 								>
-									Reset
+									{tFilters("reset")}
 								</Button>
 							) : null}
 						</div>
@@ -2007,7 +2091,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-						Supported Parameters
+						{tFilters("supportedParameters")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2029,7 +2113,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Route className="h-4 w-4 text-muted-foreground" />
-						Providers
+						{tFilters("providers")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2040,8 +2124,8 @@ function ModelsDisplayContent({
 							setSelectedProviders(toggleInList(selectedProviders, value))
 						}
 						labelForValue={(value) => value}
-						renderStart={({ value, label }) => (
-							<FilterLogo value={value} label={label} />
+						renderStart={({ value }) => (
+							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
 					/>
@@ -2052,7 +2136,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Globe2 className="h-4 w-4 text-muted-foreground" />
-						Region Routing
+						{tFilters("regionRouting")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2062,7 +2146,7 @@ function ModelsDisplayContent({
 						onToggle={(value) =>
 							setSelectedRegions(toggleInList(selectedRegions, value))
 						}
-						labelForValue={formatRegionLabel}
+						labelForValue={translateRegion}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -2071,7 +2155,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<TypeIcon className="h-4 w-4 text-muted-foreground" />
-						Model Creators
+						{tFilters("modelCreators")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2082,8 +2166,8 @@ function ModelsDisplayContent({
 							setSelectedCreators(toggleInList(selectedCreators, value))
 						}
 						labelForValue={(value) => value}
-						renderStart={({ value, label }) => (
-							<FilterLogo value={value} label={label} />
+						renderStart={({ value }) => (
+							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
 					/>
@@ -2094,7 +2178,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
-						Features
+						{tFilters("features")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2104,7 +2188,7 @@ function ModelsDisplayContent({
 						onToggle={(value) =>
 							setSelectedFeatures(toggleInList(selectedFeatures, value))
 						}
-						labelForValue={(value) => featureLabels[value] ?? value}
+						labelForValue={translateFeature}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -2113,7 +2197,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<Route className="h-4 w-4 text-muted-foreground" />
-						Endpoints
+						{tFilters("endpoints")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2123,7 +2207,7 @@ function ModelsDisplayContent({
 						onToggle={(value) =>
 							setSelectedEndpoints(toggleInList(selectedEndpoints, value))
 						}
-						labelForValue={formatEndpointLabel}
+						labelForValue={translateEndpoint}
 						iconForValue={getEndpointIcon}
 						collapsedLimit={8}
 					/>
@@ -2134,7 +2218,7 @@ function ModelsDisplayContent({
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
 						<CalendarDays className="h-4 w-4 text-muted-foreground" />
-						Year
+						{tFilters("year")}
 					</span>
 				</AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation>
@@ -2166,7 +2250,7 @@ function ModelsDisplayContent({
 					<div className="md:hidden space-y-2">
 						{showPrimaryHeader ? (
 							<div className="flex items-center gap-2">
-								<h1 className="font-bold text-xl leading-8">Models</h1>
+								<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 							</div>
 						) : null}
 
@@ -2180,7 +2264,7 @@ function ModelsDisplayContent({
 						<div className="relative w-full">
 							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 							<Input
-								placeholder="Search"
+								placeholder={t("searchPlaceholder")}
 								value={search}
 								onChange={(e) =>
 									setSearch(e.target.value || null, {
@@ -2198,7 +2282,7 @@ function ModelsDisplayContent({
 							<div className="flex items-center justify-between gap-4">
 								<div className="flex h-8 min-w-0 shrink-0 items-center">
 									{showPrimaryHeader ? (
-										<h1 className="font-bold text-xl leading-8">Models</h1>
+										<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 									) : null}
 								</div>
 
@@ -2206,7 +2290,7 @@ function ModelsDisplayContent({
 									<div className="relative min-w-[15rem] max-w-[22rem] flex-1 2xl:max-w-[28rem]">
 										<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 										<Input
-											placeholder="Search"
+											placeholder={t("searchPlaceholder")}
 											value={search}
 											onChange={(e) =>
 												setSearch(e.target.value || null, {
@@ -2229,7 +2313,7 @@ function ModelsDisplayContent({
 						<div className="lg:hidden">
 							<div className="flex h-8 items-center justify-between gap-3">
 								{showPrimaryHeader ? (
-									<h1 className="font-bold text-xl leading-8">Models</h1>
+									<h1 className="font-bold text-xl leading-8">{t("title")}</h1>
 								) : (
 									<div />
 								)}
@@ -2244,7 +2328,7 @@ function ModelsDisplayContent({
 								<div className="relative min-w-0">
 									<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 									<Input
-										placeholder="Search"
+									placeholder={t("searchPlaceholder")}
 										value={search}
 										onChange={(e) =>
 											setSearch(e.target.value || null, {
@@ -2265,9 +2349,10 @@ function ModelsDisplayContent({
 							selected={selectedOutputModalities}
 							onToggle={(value) =>
 								setSelectedOutputModalities(
-									toggleInList(selectedOutputModalities, value),
+								toggleInList(selectedOutputModalities, value),
 								)
 							}
+							labelForValue={translateModality}
 						/>
 					</div>
 
@@ -2295,8 +2380,8 @@ function ModelsDisplayContent({
 						<DrawerHeader className="border-b border-border/70 px-4 py-3 !text-left">
 							<div className="flex items-start justify-between gap-3 pr-4">
 								<div className="text-left">
-									<DrawerTitle>Filters</DrawerTitle>
-									<DrawerDescription>Refine the models list.</DrawerDescription>
+										<DrawerTitle>{t("filters")}</DrawerTitle>
+									<DrawerDescription>{tFilters("refineModelsList")}</DrawerDescription>
 								</div>
 								{activeFilterCount > 0 ? (
 									<Button
@@ -2306,7 +2391,7 @@ function ModelsDisplayContent({
 										className="h-8 px-2"
 										onClick={resetFilters}
 									>
-										Reset
+										{tFilters("reset")}
 									</Button>
 								) : null}
 							</div>
@@ -2328,8 +2413,8 @@ function ModelsDisplayContent({
 						<SheetHeader className="border-b border-border/70 px-4 py-3 text-left">
 							<div className="flex items-start justify-between gap-3 pr-8">
 								<div>
-									<SheetTitle>Filters</SheetTitle>
-									<SheetDescription>Refine the models list.</SheetDescription>
+											<SheetTitle>{t("filters")}</SheetTitle>
+									<SheetDescription>{tFilters("refineModelsList")}</SheetDescription>
 								</div>
 								{activeFilterCount > 0 ? (
 									<Button
@@ -2339,7 +2424,7 @@ function ModelsDisplayContent({
 										className="h-8 px-2"
 										onClick={resetFilters}
 									>
-										Reset
+										{tFilters("reset")}
 									</Button>
 								) : null}
 							</div>
@@ -2364,7 +2449,7 @@ function ModelsDisplayContent({
 				)}
 			>
 				<SlidersHorizontal className="h-4 w-4" />
-				<span>Filters</span>
+				<span>{t("filters")}</span>
 				{activeFilterCount > 0 ? (
 					<span className="inline-flex min-w-5 items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-medium text-primary tabular-nums">
 						{activeFilterCount}

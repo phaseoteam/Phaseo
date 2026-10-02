@@ -1,0 +1,42 @@
+---
+icon: "blocks"
+title: "استدعاء الأدوات (AI SDK)"
+description: "استدعاء الدوال والأدوات باستخدام Vercel AI SDK ومزوّد Phaseo."
+---
+
+استخدم `tools` في `generateText` لتنفيذ الدوال بمعلمات محددة الأنواع.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+import { z } from "zod";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "What is 17 + 25? Use the calculator tool.",
+  tools: {
+    calculator: {
+      description: "Perform basic arithmetic",
+      parameters: z.object({
+        operation: z.enum(["add", "subtract", "multiply", "divide"]),
+        a: z.number(),
+        b: z.number(),
+      }),
+      execute: async ({ operation, a, b }) => {
+        if (operation === "add") return a + b;
+        if (operation === "subtract") return a - b;
+        if (operation === "multiply") return a * b;
+        return a / b;
+      },
+    },
+  },
+});
+
+console.log(result.text);
+```
+
+## ملاحظات
+
+- اجعل أوصاف الأدوات دقيقة ومعلماتها صارمة.
+- تحقّق من الآثار الجانبية الخارجية داخل `execute`.
+- أضف إعادة المحاولة والانتظار التصاعدي لواجهات أدوات المراحل اللاحقة عند الحاجة.

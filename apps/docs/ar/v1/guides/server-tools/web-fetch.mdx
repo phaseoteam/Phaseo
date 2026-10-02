@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "أداة الخادم Web Fetch"
+description: "اسمح للنماذج بجلب عناوين URL محددة وقراءتها أثناء الطلب."
+---
+
+استخدم `phaseo:web_fetch` عندما يحتاج النموذج إلى قراءة عنوان URL معروف، مثل صفحة توثيق أو مقالة أو سجل تغييرات أو مصدر نصي شبيه بملف PDF.
+
+يقرر النموذج متى يجلب الصفحة، ويقدّم عنوان URL، ثم يتلقى نصًا محدودًا من الصفحة ضمن سياق الأداة.
+
+## آلية العمل
+
+1. أضف `{ "type": "phaseo:web_fetch" }` إلى `tools`.
+2. يقرر النموذج ما إذا كان يحتاج إلى جلب عنوان URL.
+3. تجلب Phaseo المحتوى وتستخرجه باستخدام المحرك المحدد.
+4. يُعاد إلى النموذج النص المستخرج والعنوان وعنوان URL وبيانات الاقتطاع الوصفية.
+5. يكتب النموذج الرد النهائي ويمكنه جلب عناوين URL أخرى عند الحاجة.
+
+## بدء سريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## الإعداد
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| المعامل | النوع | القيمة الافتراضية | الوصف |
+| --- | --- | --- | --- |
+| `engine` | string | يعتمد على الواجهة | محرك الجلب: `auto` أو `native` أو `direct` أو `exa` أو `parallel` أو `firecrawl`. |
+| `max_chars` | integer | `12000` | الحد الأقصى لعدد الأحرف المستخرجة التي تُعاد إلى النموذج. |
+| `max_content_tokens` | integer | لا شيء | اسم بديل بوحدة الرموز يُستخدم عند عدم تحديد `max_chars`. |
+| `max_uses` | integer | `10` | الحد الأقصى لمرات الجلب خلال حلقة أداة الخادم. |
+| `allowed_domains` | string[] | لا شيء | السماح بالجلب من هذه النطاقات فقط. |
+| `blocked_domains` | string[] | لا شيء | رفض الجلب من هذه النطاقات. الاسم البديل: `excluded_domains`. |
+
+## اختيار المحرك
+
+| المحرك | السلوك |
+| --- | --- |
+| `auto` | يستخدم جلب Anthropic الأصلي على `/v1/messages`؛ وإلا يستخدم Exa إذا كان معدًا؛ وإلا يستخدم جلب Gateway المباشر. |
+| `direct` | يجلب مباشرة من بيئة تشغيل Gateway ويستخرج نصًا محدودًا. |
+| `exa` | يستخدم استخراج محتوى Exa عند إعداده. |
+| `parallel` | يستخدم Parallel Extract عند إعداده. |
+| `firecrawl` | يستخدم Firecrawl Scrape عند إعداده. |
+| `native` | يتحول إلى `web_fetch_20260209` الأصلي من Anthropic على `/v1/messages`. ينبغي للواجهات الأخرى استخدام `direct` أو محرك مُدار. |
+
+لا تُدعم إلا عناوين URL من نوع HTTP(S). يقبل الجلب المباشر من Gateway أنواع المحتوى النصية ويحوّل HTML إلى نص عادي قبل إعادته إلى النموذج.
+
+## جلب Anthropic الأصلي
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## نتيجة الأداة
+
+يعيد الجلب المُدار نتيجة JSON للأداة تتضمن حقولًا مثل:
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+تحقق من `truncated` قبل افتراض أن النموذج تلقى الصفحة كاملة.
+
+## الاستخدام والتسعير
+
+تزيد استدعاءات Web Fetch العداد التالي:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+قد يعتمد تسعير الجلب المُدار على `server_tool_web_fetch_requests`. وقد يستخدم جلب الموفّر الأصلي `native_web_fetch_requests` عندما تحدد بطاقة سعر النموذج هذا المقياس.
+
+## أدلة ذات صلة
+
+- [البحث على الويب](./web-search.mdx)
+- [أدوات الخادم](./index.mdx)
+- [إسناد الإجابات باستخدام Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)

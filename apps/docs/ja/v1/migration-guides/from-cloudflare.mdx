@@ -1,0 +1,95 @@
+---
+title: "Cloudflare AI Gateway からの移行"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "アプリケーションのリクエストフローを維持したまま、Cloudflare AI Gateway のルートを Phaseo に置き換えます。"
+icon: "/icons/brands/cloudflare.svg"
+---
+
+アプリケーションから Cloudflare AI Gateway 経由で OpenAI 互換リクエストを送信している場合は、このガイドを使ってください。まず Gateway の境界を切り替え、本番トラフィックに必要なルーティング、キャッシュ、可観測性だけを再構成します。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| Gateway URL | アカウントと Gateway 固有の Cloudflare URL | `https://api.phaseo.app/v1` |
+| 認証 | Cloudflare とプロバイダーの認証情報 | `PHASEO_API_KEY` |
+| ルーティングポリシー | Cloudflare Gateway の設定 | Phaseo のルーティング設定とプリセット |
+| リクエストの可視性 | Cloudflare Analytics | Phaseo のアクティビティとリクエスト詳細 |
+
+<Steps>
+<Step title="現在の Gateway 設定を洗い出す">
+
+Cloudflare Gateway の URL、プロバイダールート、カスタムヘッダー、キャッシュルール、再試行動作、アプリケーションが依存する分析機能を記録します。これにより、必要な動作と移行不要な設定を分けられます。
+
+</Step>
+
+<Step title="エンドポイントと認証情報を置き換える">
+
+可能な限りリクエストペイロードは変更せず、OpenAI 互換クライアントの接続先を更新します。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="ルーティングと共有デフォルトを再構成する">
+
+安定したプロバイダー制限、プロンプトの既定値、生成パラメーターを[プリセット](../guides/presets.mdx)に移します。プロバイダーの優先順位とフォールバックは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)で設定します。
+
+Cloudflare のキャッシュや分析設定は自動的には移行されません。それぞれの動作を Phaseo、アプリケーション、エッジレイヤーのどこに置くか明示的に決めてください。
+
+</Step>
+
+<Step title="切り替え前に検証する">
+
+必要に応じて、非ストリーミング、ストリーミング、エラー、ツール、構造化出力をテストします。トラフィックを段階的に移行する前に、レイテンシ、出力、トークン使用量、コストを比較してください。
+
+</Step>
+</Steps>
+
+## 移行チェックリスト
+
+- Cloudflare 固有の Gateway URL とヘッダーを削除した。
+- 本番モデルIDを `GET /v1/models` で確認した。
+- 必要なキャッシュ動作を意図的に再構成するか、廃止した。
+- チームに必要な可視性を Phaseo のアクティビティとリクエスト詳細で確認できる。
+- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
+
+## 次のステップ
+
+- [プリセット](../guides/presets.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [可観測性](../guides/integrations/observability.mdx)

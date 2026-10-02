@@ -1,0 +1,12 @@
+---
+title: "Lister les tarifs des modèles"
+sidebarTitle: "Lister les tarifs des modèles"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /pricing/models"
+description: "Lister les fiches tarifaires actuellement actives du catalogue exposées par la passerelle."
+---
+
+- `models` : une entrée par combinaison visible de fournisseur, modèle et point de terminaison
+- `meters` : les lignes de mesure actives de cette entrée, avec l’unité, sa taille, la devise et le prix unitaire
+- `display_name` : le nom public visible du modèle lorsque la règle tarifaire correspond à un modèle public canonique
+

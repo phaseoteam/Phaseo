@@ -1,0 +1,10 @@
+---
+title: "Atualizar rascunho da predefinição"
+sidebarTitle: "Atualizar predefinição"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /presets/{id}"
+description: "Atualiza os metadados e a configuração do rascunho de uma predefinição."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `presets:write`.</Note>
+
+Use `replace_config` para substituir toda a configuração do rascunho. Caso contrário, os campos de configuração enviados são mesclados no nível superior.

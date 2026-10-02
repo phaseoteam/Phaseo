@@ -1,0 +1,24 @@
+---
+title: "Java Agent SDK (em desenvolvimento)"
+description: "Conheça o runtime do Java Agent SDK, que ainda está em desenvolvimento."
+---
+
+<Note type="warning">
+  O Java Client SDK e o Agent SDK ainda estão em desenvolvimento e não estão disponíveis no Maven Central.
+</Note>
+
+O Java Agent SDK é um runtime composto somente por código-fonte e construído sobre o Java Client SDK. Ele oferece o mesmo contrato básico do TypeScript Agent SDK:
+
+- loops limitados de ferramentas com várias etapas
+- ferramentas concorrentes com timeouts por ferramenta
+- novas tentativas do modelo com espera progressiva
+- pausas para revisão humana e registros de execução retomáveis
+- eventos do ciclo de vida e captura JSONL do Phaseo DevTools
+- um adaptador de gateway baseado no Java Client SDK
+
+As execuções permanecem na sua aplicação. O Phaseo processa as solicitações ao modelo; seu serviço controla a persistência, as filas, a autorização e a interface de revisão.
+
+## Próximas etapas
+
+- [Instalação](./agent-sdk-installation.mdx)
+- [Uso](./agent-sdk.mdx)

@@ -1,0 +1,10 @@
+---
+title: "Quitar miembros del espacio de trabajo"
+sidebarTitle: "Quitar miembros"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/members/remove"
+description: "Quita del espacio de trabajo a los miembros que no sean propietarios."
+---
+Este endpoint requiere una clave de API de gestión con `workspaces:write` y el rol de propietario o administrador.
+
+No se puede quitar al propietario del espacio de trabajo.

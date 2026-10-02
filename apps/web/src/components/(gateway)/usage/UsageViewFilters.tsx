@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { useQueryState } from "nuqs";
 import {
@@ -66,31 +67,50 @@ const SOURCE_LANGUAGE_LABELS = {
 	csharp: "C#", cpp: "C++", php: "PHP", ruby: "Ruby", rust: "Rust",
 } as const;
 const SUPPORTED_CLIENT_SOURCES: ReadonlyArray<FilterOption> = [
-	{ value: "api", label: "Direct HTTP", group: "HTTP clients" },
-	{ value: "codex", label: "Codex", logoId: "codex", group: "Coding agents" },
-	{ value: "claude-code", label: "Claude Code", logoId: "claudecode", group: "Coding agents" },
-	...(["typescript", "python", "go", "java", "csharp", "cpp", "php", "ruby", "rust"] as const).map((language) => ({ value: `phaseo-${language}`, label: `Phaseo ${SOURCE_LANGUAGE_LABELS[language]} SDK`, logoId: "phaseo", group: "Phaseo SDKs" })),
-	...(["typescript", "python", "go", "java", "csharp", "php", "ruby", "rust"] as const).map((language) => ({ value: `phaseo-agent-${language}`, label: `Phaseo Agent ${SOURCE_LANGUAGE_LABELS[language]} SDK`, logoId: "phaseo", group: "Phaseo Agent SDKs" })),
-	{ value: "openai-typescript", label: "OpenAI TypeScript SDK", logoId: "openai", group: "Compatible SDKs" },
-	{ value: "openai-python", label: "OpenAI Python SDK", logoId: "openai", group: "Compatible SDKs" },
-	{ value: "anthropic-typescript", label: "Anthropic TypeScript SDK", logoId: "anthropic", group: "Compatible SDKs" },
-	{ value: "anthropic-python", label: "Anthropic Python SDK", logoId: "anthropic", group: "Compatible SDKs" },
-	{ value: "curl", label: "cURL", group: "HTTP clients" },
-	{ value: "httpie", label: "HTTPie", group: "HTTP clients" },
-	{ value: "postman", label: "Postman", group: "HTTP clients" },
-	{ value: "insomnia", label: "Insomnia", group: "HTTP clients" },
-	{ value: "axios", label: "Axios", group: "HTTP clients" },
-	{ value: "python-requests", label: "Python Requests", logoId: "python", group: "HTTP clients" },
+	{ value: "api", label: "Direct HTTP", group: "httpClients" },
+	{ value: "codex", label: "Codex", logoId: "codex", group: "codingAgents" },
+	{ value: "claude-code", label: "Claude Code", logoId: "claudecode", group: "codingAgents" },
+	...(["typescript", "python", "go", "java", "csharp", "cpp", "php", "ruby", "rust"] as const).map((language) => ({ value: `phaseo-${language}`, label: `Phaseo ${SOURCE_LANGUAGE_LABELS[language]} SDK`, logoId: "phaseo", group: "phaseoSdks" })),
+	...(["typescript", "python", "go", "java", "csharp", "php", "ruby", "rust"] as const).map((language) => ({ value: `phaseo-agent-${language}`, label: `Phaseo Agent ${SOURCE_LANGUAGE_LABELS[language]} SDK`, logoId: "phaseo", group: "phaseoAgentSdks" })),
+	{ value: "openai-typescript", label: "OpenAI TypeScript SDK", logoId: "openai", group: "compatibleSdks" },
+	{ value: "openai-python", label: "OpenAI Python SDK", logoId: "openai", group: "compatibleSdks" },
+	{ value: "anthropic-typescript", label: "Anthropic TypeScript SDK", logoId: "anthropic", group: "compatibleSdks" },
+	{ value: "anthropic-python", label: "Anthropic Python SDK", logoId: "anthropic", group: "compatibleSdks" },
+	{ value: "curl", label: "cURL", group: "httpClients" },
+	{ value: "httpie", label: "HTTPie", group: "httpClients" },
+	{ value: "postman", label: "Postman", group: "httpClients" },
+	{ value: "insomnia", label: "Insomnia", group: "httpClients" },
+	{ value: "axios", label: "Axios", group: "httpClients" },
+	{ value: "python-requests", label: "Python Requests", logoId: "python", group: "httpClients" },
 ];
 
-const OPERATOR_LABELS: Record<string, string> = {
-	is: "is",
-	is_not: "is not",
-	eq: "equals",
-	gte: "at least",
-	lte: "at most",
-	between: "between",
+const OPERATOR_MESSAGE_KEYS: Record<string, string> = {
+	is: "operators.is",
+	is_not: "operators.isNot",
+	eq: "operators.equals",
+	gte: "operators.atLeast",
+	lte: "operators.atMost",
+	between: "operators.between",
 };
+
+const SOURCE_GROUP_MESSAGE_KEYS: Record<string, string> = {
+	httpClients: "sourceGroups.httpClients",
+	codingAgents: "sourceGroups.codingAgents",
+	phaseoSdks: "sourceGroups.phaseoSdks",
+	phaseoAgentSdks: "sourceGroups.phaseoAgentSdks",
+	compatibleSdks: "sourceGroups.compatibleSdks",
+};
+
+function useUsageFilterText() {
+	const t = useTranslations("SettingsUI");
+	return React.useCallback((key: string, values?: Record<string, string>) => {
+		let message = t(`usageViewFilters.${key}` as never);
+		for (const [name, value] of Object.entries(values ?? {})) {
+			message = message.replace(`{${name}}`, value);
+		}
+		return message;
+	}, [t]);
+}
 
 function NumericFilterEditor({ label, initialValue, initialMax, initialOperator, onApply }: {
 	label: string;
@@ -99,6 +119,7 @@ function NumericFilterEditor({ label, initialValue, initialMax, initialOperator,
 	initialOperator: string;
 	onApply: (value: string, max: string, operator: string) => void;
 }) {
+	const text = useUsageFilterText();
 	const [value, setValue] = React.useState(initialValue);
 	const [max, setMax] = React.useState(initialMax);
 	const [operator, setOperator] = React.useState(initialOperator || "gte");
@@ -108,15 +129,15 @@ function NumericFilterEditor({ label, initialValue, initialMax, initialOperator,
 			<div className="grid grid-cols-2 gap-1 rounded-md bg-muted/40 p-1">
 				{["gte", "lte", "eq", "between"].map((item) => (
 					<button key={item} type="button" onClick={() => setOperator(item)} className={`h-8 rounded-md px-2 text-xs ${operator === item ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"}`}>
-						{OPERATOR_LABELS[item]}
+					{text(OPERATOR_MESSAGE_KEYS[item])}
 					</button>
 				))}
 			</div>
 			<div className="flex items-center gap-2">
-				<input inputMode="numeric" pattern="[0-9]*" value={value} onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={`${label} value`} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" />
-				{operator === "between" ? <><span className="text-xs text-muted-foreground">and</span><input inputMode="numeric" pattern="[0-9]*" value={max} onChange={(event) => setMax(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={`${label} maximum`} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" /></> : null}
+				<input inputMode="numeric" pattern="[0-9]*" value={value} onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("valueLabel", { filter: label })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" />
+				{operator === "between" ? <><span className="text-xs text-muted-foreground">{text("and")}</span><input inputMode="numeric" pattern="[0-9]*" value={max} onChange={(event) => setMax(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("maximumValueLabel", { filter: label })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" /></> : null}
 			</div>
-			<Button type="button" size="sm" className="w-full rounded-md" disabled={!valid} onClick={() => onApply(value, max, operator)}>Apply Filter</Button>
+			<Button type="button" size="sm" className="w-full rounded-md" disabled={!valid} onClick={() => onApply(value, max, operator)}>{text("applyFilter")}</Button>
 		</div>
 	);
 }
@@ -168,6 +189,7 @@ function FilterChip({
 	operatorOptions?: string[];
 	defaultOperator?: string;
 }) {
+	const text = useUsageFilterText();
 	const [operator, setOperator] = useQueryState(`${filterKey}_op`, {
 		defaultValue: defaultOperator,
 		shallow: false,
@@ -183,13 +205,13 @@ function FilterChip({
 			<Popover>
 				<PopoverTrigger asChild>
 					<button data-settings-segment type="button" className="inline-flex h-full appearance-none items-center rounded-none border-r border-border/70 px-2 text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:bg-muted focus-visible:outline-none focus-visible:ring-0">
-						{OPERATOR_LABELS[operator] ?? operator}
+						{OPERATOR_MESSAGE_KEYS[operator] ? text(OPERATOR_MESSAGE_KEYS[operator]) : operator}
 					</button>
 				</PopoverTrigger>
 				<PopoverContent align="start" className="w-36 gap-0 rounded-md p-1">
 					{operatorOptions.map((nextOperator) => (
 						<button key={nextOperator} type="button" onClick={() => void setOperator(nextOperator)} className="flex h-8 w-full items-center rounded-sm px-2 text-left text-xs hover:bg-muted">
-							<span className="flex-1">{OPERATOR_LABELS[nextOperator] ?? nextOperator}</span>
+							<span className="flex-1">{OPERATOR_MESSAGE_KEYS[nextOperator] ? text(OPERATOR_MESSAGE_KEYS[nextOperator]) : nextOperator}</span>
 							{operator === nextOperator ? <Check className="size-3.5" /> : null}
 						</button>
 					))}
@@ -205,10 +227,10 @@ function FilterChip({
 					</PopoverTrigger>
 					<PopoverContent side="bottom" align="start" sideOffset={6} className="w-[320px] gap-0 overflow-hidden rounded-md p-0">
 						<Command className="rounded-md">
-							<CommandInput placeholder={`Search ${label.toLowerCase()}…`} />
+							<CommandInput placeholder={text("searchWithinFilter", { filter: label })} />
 							<CommandList className="max-h-none overflow-hidden">
 								<ScrollArea className="h-[320px]" keepScrollbarMounted viewportClassName="pr-2">
-									<CommandEmpty>No matching options.</CommandEmpty>
+								<CommandEmpty>{text("noMatchingOptions")}</CommandEmpty>
 									<CommandGroup>
 										{valueOptions.map((option) => (
 											<CommandItem key={option.value} value={`${option.label} ${option.value}`} data-checked={activeValue === option.value} onSelect={() => { void onValueSelect(option.value); setValuePickerOpen(false); }}>
@@ -233,7 +255,7 @@ function FilterChip({
 					<span className="truncate">{value}</span>
 				</span>
 			)}
-			<button data-settings-segment type="button" onClick={onClear} className="inline-flex h-full appearance-none items-center rounded-l-none rounded-r-md border-l border-border/70 px-2 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label={`Clear ${label} filter`}>
+			<button data-settings-segment type="button" onClick={onClear} className="inline-flex h-full appearance-none items-center rounded-l-none rounded-r-md border-l border-border/70 px-2 text-muted-foreground hover:bg-muted hover:text-foreground" aria-label={text("clearFilter", { filter: label })}>
 				<X className="size-3" />
 			</button>
 		</div>
@@ -281,6 +303,7 @@ export default function UsageViewFilters({
 	sessionProviderIds?: string[];
 	lockJobKind?: boolean;
 }) {
+	const text = useUsageFilterText();
 	const [filtersPending, startFilterTransition] = React.useTransition();
 	const queryOptions = { shallow: false, startTransition: startFilterTransition } as const;
 	const [modelFilter, setModelFilter] = useQueryState("model", { ...queryOptions, defaultValue: "" });
@@ -421,7 +444,9 @@ export default function UsageViewFilters({
 		return [
 			...SUPPORTED_CLIENT_SOURCES.map((source) => ({
 				...source,
-				label: discoveredSources.get(source.value) ?? source.label,
+				label: source.value === "api"
+					? text("directHttp")
+					: discoveredSources.get(source.value) ?? source.label,
 			})),
 			...clientSources
 				.filter((source) => !supportedIds.has(source.id))
@@ -430,7 +455,7 @@ export default function UsageViewFilters({
 					label: source.name,
 				})),
 		];
-	}, [clientSources]);
+	}, [clientSources, text]);
 
 	const sessionAppOptions = React.useMemo(() => {
 		return sessionAppIds
@@ -465,27 +490,27 @@ export default function UsageViewFilters({
 	}, [providerMetadata, providerNames, sessionProviderIds]);
 
 	const statusOptions: FilterOption[] = [
-		{ value: "success", label: "Successful only" },
-		{ value: "error", label: "Errors only" },
+		{ value: "success", label: text("successfulOnly") },
+		{ value: "error", label: text("errorsOnly") },
 	];
 
 	const streamOptions: FilterOption[] = [
-		{ value: "streaming", label: "Streaming only" },
-		{ value: "non_streaming", label: "Non-streaming only" },
+		{ value: "streaming", label: text("streamingOnly") },
+		{ value: "non_streaming", label: text("nonStreamingOnly") },
 	];
 
 	const jobKindOptions: FilterOption[] = [
-		{ value: "video", label: "Video" },
-		{ value: "batch", label: "Batch" },
+		{ value: "video", label: text("video") },
+		{ value: "batch", label: text("batch") },
 	];
 
 	const jobStatusOptions: FilterOption[] = [
-		{ value: "pending", label: "Queued" },
-		{ value: "in_progress", label: "Processing" },
-		{ value: "completed", label: "Completed" },
-		{ value: "failed", label: "Failed" },
-		{ value: "cancelled", label: "Cancelled" },
-		{ value: "expired", label: "Expired" },
+		{ value: "pending", label: text("queued") },
+		{ value: "in_progress", label: text("processing") },
+		{ value: "completed", label: text("completed") },
+		{ value: "failed", label: text("failed") },
+		{ value: "cancelled", label: text("cancelled") },
+		{ value: "expired", label: text("expired") },
 	];
 	const editFilterValue = (filterId: string) => {
 		changeSelectedFilterType(filterId);
@@ -499,7 +524,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="model"
-					label="Model"
+					label={text("model")}
 					value={getModelDisplayName(modelFilter, modelMetadata)}
 					valueLogoId={modelMetadata.get(modelFilter)?.organisationId}
 					valueOptions={modelOptions}
@@ -513,7 +538,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="provider"
-					label="Provider"
+					label={text("provider")}
 					valueLogoId={providerFilter}
 					valueOptions={providerOptions}
 					activeValue={providerFilter}
@@ -531,7 +556,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="app"
-					label="App"
+					label={text("app")}
 					value={appMetadata.get(appFilter)?.title?.trim() || appFilter}
 					onValueClick={() => editFilterValue("app")}
 					onClear={() => setAppFilter("")}
@@ -542,7 +567,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="endpoint"
-					label="Endpoint"
+					label={text("endpoint")}
 					value={<code className="font-mono text-[11px]">{endpointFilter}</code>}
 					onValueClick={() => editFilterValue("endpoint")}
 					onClear={() => setEndpointFilter("")}
@@ -553,7 +578,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="finish-reason"
-					label="Finish"
+					label={text("finishReason")}
 					filterKey="finish"
 					value={finishReasonFilter}
 					onValueClick={() => editFilterValue("finish")}
@@ -565,11 +590,11 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="stream"
-					label="Stream"
+					label={text("stream")}
 					value={
 						streamFilter === "streaming"
-							? "Streaming only"
-							: "Non-streaming only"
+							? text("streamingOnly")
+							: text("nonStreamingOnly")
 					}
 					onValueClick={() => editFilterValue("stream")}
 					onClear={() => setStreamFilter("all")}
@@ -580,7 +605,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="error-code"
-					label="Error"
+					label={text("errorCode")}
 					filterKey="error"
 					value={<code className="font-mono text-[11px]">{errorCodeFilter}</code>}
 					onValueClick={() => editFilterValue("error")}
@@ -592,7 +617,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="status-code"
-					label="HTTP"
+					label={text("httpStatus")}
 					filterKey="http"
 					value={<code className="font-mono text-[11px]">{statusCodeFilter}</code>}
 					onValueClick={() => editFilterValue("http")}
@@ -606,15 +631,15 @@ export default function UsageViewFilters({
 				apiKeys.find((key) => key.id === keyFilter)?.prefix ||
 				keyFilter.slice(0, 8);
 			activeChips.push(
-				<FilterChip key="key" label="Key" value={keyLabel} onValueClick={() => editFilterValue("key")} onClear={() => setKeyFilter("")} />,
+				<FilterChip key="key" label={text("apiKey")} value={keyLabel} onValueClick={() => editFilterValue("key")} onClear={() => setKeyFilter("")} />,
 			);
 		}
 		if (statusFilter !== "all") {
 			activeChips.push(
 				<FilterChip
 					key="status"
-					label="Status"
-					value={statusFilter === "success" ? "Successful only" : "Errors only"}
+					label={text("status")}
+					value={statusFilter === "success" ? text("successfulOnly") : text("errorsOnly")}
 					onValueClick={() => editFilterValue("status")}
 					onClear={() => setStatusFilter("all")}
 				/>,
@@ -624,7 +649,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="req"
-					label="Req"
+					label={text("request")}
 					value={<code className="font-mono text-[11px]">{shortenIdentifier(requestFilter, 6)}</code>}
 					onClear={() => setRequestFilter("")}
 				/>,
@@ -634,7 +659,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="session"
-					label="Session"
+					label={text("session")}
 					value={<code className="font-mono text-[11px]">{shortenIdentifier(sessionFilter, 6)}</code>}
 					onClear={() => setSessionFilter("")}
 				/>,
@@ -644,7 +669,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="source"
-					label="Source"
+					label={text("source")}
 					value={clientSourceOptions.find((source) => source.value === sourceFilter)?.label ?? sourceFilter}
 					onValueClick={() => editFilterValue("source")}
 					onClear={() => setSourceFilter("")}
@@ -652,9 +677,9 @@ export default function UsageViewFilters({
 			);
 		}
 		for (const tokenFilter of [
-			{ key: "input_tokens", label: "Input Tokens", value: inputTokensFilter, max: inputTokensMax, operator: inputTokensOperator, clear: () => { void setInputTokensFilter(""); void setInputTokensMax(""); } },
-			{ key: "output_tokens", label: "Output Tokens", value: outputTokensFilter, max: outputTokensMax, operator: outputTokensOperator, clear: () => { void setOutputTokensFilter(""); void setOutputTokensMax(""); } },
-			{ key: "total_tokens", label: "Total Tokens", value: totalTokensFilter, max: totalTokensMax, operator: totalTokensOperator, clear: () => { void setTotalTokensFilter(""); void setTotalTokensMax(""); } },
+			{ key: "input_tokens", label: text("inputTokens"), value: inputTokensFilter, max: inputTokensMax, operator: inputTokensOperator, clear: () => { void setInputTokensFilter(""); void setInputTokensMax(""); } },
+			{ key: "output_tokens", label: text("outputTokens"), value: outputTokensFilter, max: outputTokensMax, operator: outputTokensOperator, clear: () => { void setOutputTokensFilter(""); void setOutputTokensMax(""); } },
+			{ key: "total_tokens", label: text("totalTokens"), value: totalTokensFilter, max: totalTokensMax, operator: totalTokensOperator, clear: () => { void setTotalTokensFilter(""); void setTotalTokensMax(""); } },
 		]) {
 			if (!tokenFilter.value) continue;
 			activeChips.push(
@@ -677,8 +702,8 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="job-kind"
-					label="Kind"
-					value={jobKindFilter === "video" ? "Video" : "Batch"}
+					label={text("kind")}
+					value={jobKindFilter === "video" ? text("video") : text("batch")}
 					onValueClick={() => editFilterValue("kind")}
 					onClear={() => setJobKindFilter("")}
 				/>,
@@ -688,7 +713,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="job-status"
-					label="Status"
+					label={text("status")}
 					value={jobStatusOptions.find((option) => option.value === jobStatusFilter)?.label ?? jobStatusFilter}
 					onValueClick={() => editFilterValue("status")}
 					onClear={() => setJobStatusFilter("")}
@@ -699,7 +724,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="job-provider"
-					label="Provider"
+					label={text("provider")}
 					valueLogoId={jobProviderFilter}
 					valueOptions={providerOptions}
 					activeValue={jobProviderFilter}
@@ -720,7 +745,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="session-app"
-					label="App"
+					label={text("app")}
 					value={appMetadata.get(sessionAppFilter)?.title?.trim() || sessionAppFilter}
 					onValueClick={() => editFilterValue("app")}
 					onClear={() => setSessionAppFilter("")}
@@ -731,7 +756,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="session-model"
-					label="Model"
+					label={text("model")}
 					value={getModelDisplayName(sessionModelFilter, modelMetadata)}
 					valueLogoId={modelMetadata.get(sessionModelFilter)?.organisationId}
 					valueOptions={sessionModelOptions}
@@ -745,7 +770,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="session-provider"
-					label="Provider"
+					label={text("provider")}
 					valueLogoId={sessionProviderFilter}
 					valueOptions={sessionProviderOptions}
 					activeValue={sessionProviderFilter}
@@ -763,7 +788,7 @@ export default function UsageViewFilters({
 			activeChips.push(
 				<FilterChip
 					key="session"
-					label="Session"
+					label={text("session")}
 					value={<code className="font-mono text-[11px]">{shortenIdentifier(sessionFilter, 6)}</code>}
 					onClear={() => setSessionFilter("")}
 				/>,
@@ -774,38 +799,38 @@ export default function UsageViewFilters({
 	type FilterPicker = { id: string; label: string; options: FilterOption[]; activeValue: string; onSelect: (value: string) => void | Promise<unknown>; kind?: "numeric"; maxValue?: string; operator?: string; onNumericApply?: (value: string, max: string, operator: string) => void };
 	const filterPickers: FilterPicker[] = view === "logs"
 		? [
-			{ id: "source", label: "Source", options: clientSourceOptions, activeValue: sourceFilter, onSelect: setSourceFilter },
-			{ id: "model", label: "Model", options: modelOptions, activeValue: modelFilter, onSelect: setModelFilter },
-			{ id: "provider", label: "Provider", options: providerOptions, activeValue: providerFilter, onSelect: setProviderFilter },
-			{ id: "app", label: "App", options: logAppOptions, activeValue: appFilter, onSelect: setAppFilter },
-			{ id: "endpoint", label: "Endpoint", options: endpointOptions, activeValue: endpointFilter, onSelect: setEndpointFilter },
-			{ id: "finish", label: "Finish Reason", options: finishReasonOptions, activeValue: finishReasonFilter, onSelect: setFinishReasonFilter },
-			{ id: "stream", label: "Stream", options: streamOptions, activeValue: streamFilter === "all" ? "" : streamFilter, onSelect: (value) => setStreamFilter(value || "all") },
-			{ id: "error", label: "Error Code", options: errorCodeOptions, activeValue: errorCodeFilter, onSelect: setErrorCodeFilter },
-			{ id: "http", label: "HTTP Status", options: statusCodeOptions, activeValue: statusCodeFilter, onSelect: setStatusCodeFilter },
-			{ id: "key", label: "API Key", options: keyOptions, activeValue: keyFilter, onSelect: setKeyFilter },
-			{ id: "status", label: "Status", options: statusOptions, activeValue: statusFilter === "all" ? "" : statusFilter, onSelect: (value) => setStatusFilter(value || "all") },
-			{ id: "input_tokens", label: "Input Tokens", kind: "numeric", options: [], activeValue: inputTokensFilter, maxValue: inputTokensMax, operator: inputTokensOperator, onSelect: setInputTokensFilter, onNumericApply: (value, max, operator) => { void setInputTokensFilter(value); void setInputTokensMax(max); void setInputTokensOperator(operator); setPickerOpen(false); } },
-			{ id: "output_tokens", label: "Output Tokens", kind: "numeric", options: [], activeValue: outputTokensFilter, maxValue: outputTokensMax, operator: outputTokensOperator, onSelect: setOutputTokensFilter, onNumericApply: (value, max, operator) => { void setOutputTokensFilter(value); void setOutputTokensMax(max); void setOutputTokensOperator(operator); setPickerOpen(false); } },
-			{ id: "total_tokens", label: "Total Tokens", kind: "numeric", options: [], activeValue: totalTokensFilter, maxValue: totalTokensMax, operator: totalTokensOperator, onSelect: setTotalTokensFilter, onNumericApply: (value, max, operator) => { void setTotalTokensFilter(value); void setTotalTokensMax(max); void setTotalTokensOperator(operator); setPickerOpen(false); } },
+			{ id: "source", label: text("source"), options: clientSourceOptions, activeValue: sourceFilter, onSelect: setSourceFilter },
+			{ id: "model", label: text("model"), options: modelOptions, activeValue: modelFilter, onSelect: setModelFilter },
+			{ id: "provider", label: text("provider"), options: providerOptions, activeValue: providerFilter, onSelect: setProviderFilter },
+			{ id: "app", label: text("app"), options: logAppOptions, activeValue: appFilter, onSelect: setAppFilter },
+			{ id: "endpoint", label: text("endpoint"), options: endpointOptions, activeValue: endpointFilter, onSelect: setEndpointFilter },
+			{ id: "finish", label: text("finishReason"), options: finishReasonOptions, activeValue: finishReasonFilter, onSelect: setFinishReasonFilter },
+			{ id: "stream", label: text("stream"), options: streamOptions, activeValue: streamFilter === "all" ? "" : streamFilter, onSelect: (value) => setStreamFilter(value || "all") },
+			{ id: "error", label: text("errorCode"), options: errorCodeOptions, activeValue: errorCodeFilter, onSelect: setErrorCodeFilter },
+			{ id: "http", label: text("httpStatus"), options: statusCodeOptions, activeValue: statusCodeFilter, onSelect: setStatusCodeFilter },
+			{ id: "key", label: text("apiKey"), options: keyOptions, activeValue: keyFilter, onSelect: setKeyFilter },
+			{ id: "status", label: text("status"), options: statusOptions, activeValue: statusFilter === "all" ? "" : statusFilter, onSelect: (value) => setStatusFilter(value || "all") },
+			{ id: "input_tokens", label: text("inputTokens"), kind: "numeric", options: [], activeValue: inputTokensFilter, maxValue: inputTokensMax, operator: inputTokensOperator, onSelect: setInputTokensFilter, onNumericApply: (value, max, operator) => { void setInputTokensFilter(value); void setInputTokensMax(max); void setInputTokensOperator(operator); setPickerOpen(false); } },
+			{ id: "output_tokens", label: text("outputTokens"), kind: "numeric", options: [], activeValue: outputTokensFilter, maxValue: outputTokensMax, operator: outputTokensOperator, onSelect: setOutputTokensFilter, onNumericApply: (value, max, operator) => { void setOutputTokensFilter(value); void setOutputTokensMax(max); void setOutputTokensOperator(operator); setPickerOpen(false); } },
+			{ id: "total_tokens", label: text("totalTokens"), kind: "numeric", options: [], activeValue: totalTokensFilter, maxValue: totalTokensMax, operator: totalTokensOperator, onSelect: setTotalTokensFilter, onNumericApply: (value, max, operator) => { void setTotalTokensFilter(value); void setTotalTokensMax(max); void setTotalTokensOperator(operator); setPickerOpen(false); } },
 		]
 		: view === "upstream"
 			? [
-				{ id: "model", label: "Model", options: modelOptions, activeValue: modelFilter, onSelect: setModelFilter },
-				{ id: "provider", label: "Provider", options: providerOptions, activeValue: providerFilter, onSelect: setProviderFilter },
-				{ id: "key", label: "API Key", options: keyOptions, activeValue: keyFilter, onSelect: setKeyFilter },
-				{ id: "status", label: "Status", options: statusOptions, activeValue: statusFilter === "all" ? "" : statusFilter, onSelect: (value) => setStatusFilter(value || "all") },
+				{ id: "model", label: text("model"), options: modelOptions, activeValue: modelFilter, onSelect: setModelFilter },
+				{ id: "provider", label: text("provider"), options: providerOptions, activeValue: providerFilter, onSelect: setProviderFilter },
+				{ id: "key", label: text("apiKey"), options: keyOptions, activeValue: keyFilter, onSelect: setKeyFilter },
+				{ id: "status", label: text("status"), options: statusOptions, activeValue: statusFilter === "all" ? "" : statusFilter, onSelect: (value) => setStatusFilter(value || "all") },
 			]
 			: view === "jobs"
 				? [
-					...(!lockJobKind ? [{ id: "kind", label: "Kind", options: jobKindOptions, activeValue: jobKindFilter, onSelect: setJobKindFilter }] : []),
-					{ id: "status", label: "Status", options: jobStatusOptions, activeValue: jobStatusFilter, onSelect: setJobStatusFilter },
-					{ id: "provider", label: "Provider", options: providerOptions, activeValue: jobProviderFilter, onSelect: setJobProviderFilter },
+					...(!lockJobKind ? [{ id: "kind", label: text("kind"), options: jobKindOptions, activeValue: jobKindFilter, onSelect: setJobKindFilter }] : []),
+					{ id: "status", label: text("status"), options: jobStatusOptions, activeValue: jobStatusFilter, onSelect: setJobStatusFilter },
+					{ id: "provider", label: text("provider"), options: providerOptions, activeValue: jobProviderFilter, onSelect: setJobProviderFilter },
 				]
 				: [
-					{ id: "app", label: "App", options: sessionAppOptions, activeValue: sessionAppFilter, onSelect: setSessionAppFilter },
-					{ id: "model", label: "Model", options: sessionModelOptions, activeValue: sessionModelFilter, onSelect: setSessionModelFilter },
-					{ id: "provider", label: "Provider", options: sessionProviderOptions, activeValue: sessionProviderFilter, onSelect: setSessionProviderFilter },
+					{ id: "app", label: text("app"), options: sessionAppOptions, activeValue: sessionAppFilter, onSelect: setSessionAppFilter },
+					{ id: "model", label: text("model"), options: sessionModelOptions, activeValue: sessionModelFilter, onSelect: setSessionModelFilter },
+					{ id: "provider", label: text("provider"), options: providerOptions, activeValue: sessionProviderFilter, onSelect: setSessionProviderFilter },
 				];
 	const selectedPicker = filterPickers.find((picker) => picker.id === selectedFilterType) ?? null;
 	const SelectedFilterIcon = selectedPicker ? (FILTER_ICONS[selectedPicker.id] ?? ListFilter) : null;
@@ -830,12 +855,12 @@ export default function UsageViewFilters({
 				<PopoverTrigger asChild>
 					<Button type="button" variant="outline" className="h-9 gap-2 rounded-md px-3 text-xs font-medium">
 						<ListFilter className="size-3.5" />
-						Add Filter
+						{text("addFilter")}
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent align="end" className="w-[320px] gap-0 overflow-hidden rounded-md! p-0">
 					<Command className="rounded-md!">
-						{selectedPicker?.kind !== "numeric" ? <CommandInput placeholder={selectedPicker ? `Search ${selectedPicker.label.toLowerCase()}…` : "Search filters…"} /> : null}
+						{selectedPicker?.kind !== "numeric" ? <CommandInput placeholder={selectedPicker ? text("searchWithinFilter", { filter: selectedPicker.label }) : text("searchFilters")} /> : null}
 						{selectedPicker ? (
 							<button type="button" onClick={() => changeSelectedFilterType(null)} className="mt-1 flex h-10 w-full shrink-0 items-center gap-2 rounded-md border-b border-border/70 px-3 text-left text-xs font-medium hover:bg-muted/60">
 								<ArrowLeft className="size-3.5" />
@@ -847,10 +872,10 @@ export default function UsageViewFilters({
 							{selectedPicker?.kind === "numeric" && selectedPicker.onNumericApply ? (
 								<NumericFilterEditor label={selectedPicker.label} initialValue={selectedPicker.activeValue} initialMax={selectedPicker.maxValue ?? ""} initialOperator={selectedPicker.operator ?? "gte"} onApply={selectedPicker.onNumericApply} />
 							) : <ScrollArea style={{ height: pickerListHeight }} viewportRef={pickerViewportRef} viewportClassName="pr-2">
-								<CommandEmpty>No matching {selectedPicker ? "options" : "filters"}.</CommandEmpty>
+								<CommandEmpty>{text(selectedPicker ? "noMatchingOptions" : "noMatchingFilters")}</CommandEmpty>
 								{selectedPicker ? (
 									(selectedOptionGroups.length ? selectedOptionGroups : [""]).map((group) => (
-										<CommandGroup key={group || "options"} heading={group || undefined}>
+						<CommandGroup key={group || "options"} heading={group ? (SOURCE_GROUP_MESSAGE_KEYS[group] ? text(SOURCE_GROUP_MESSAGE_KEYS[group]) : group) : undefined}>
 											{selectedPicker.options.filter((option) => (option.group ?? "") === group).map((option) => (
 												<CommandItem className="rounded-md" key={option.value} value={`${option.label} ${option.value}`} data-checked={selectedPicker.activeValue === option.value} onSelect={() => { void selectedPicker.onSelect(option.value); setPickerOpen(false); }}>
 													{option.logoId ? <Logo id={option.logoId} width={14} height={14} className="shrink-0 rounded-sm" /> : null}
@@ -859,7 +884,7 @@ export default function UsageViewFilters({
 											))}
 										</CommandGroup>
 									))
-								) : <CommandGroup heading="Filters">{filterPickers.map((picker) => {
+								) : <CommandGroup heading={text("filters")}>{filterPickers.map((picker) => {
 									const FilterIcon = FILTER_ICONS[picker.id] ?? ListFilter;
 									return <CommandItem className="rounded-md" key={picker.id} value={picker.label} onSelect={() => changeSelectedFilterType(picker.id)}>
 										<FilterIcon />
@@ -879,12 +904,12 @@ export default function UsageViewFilters({
 							{filtersPending ? (
 								<span className="ml-auto inline-flex h-7 items-center gap-2 px-2 text-xs text-muted-foreground" role="status" aria-live="polite">
 									<Loader2 className="size-3.5 animate-spin" />
-									Updating requests…
+									{text("updatingRequests")}
 								</span>
 							) : activeChips.length > 0 ? (
 								<>
-									<button type="button" className="ml-auto px-2 text-xs text-muted-foreground hover:text-foreground" onClick={clearAll}>Clear</button>
-									<button type="button" className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setPickerOpen(true)} aria-label="Add another filter"><Plus className="size-3.5" /></button>
+								<button type="button" className="ml-auto px-2 text-xs text-muted-foreground hover:text-foreground" onClick={clearAll}>{text("clearAll")}</button>
+								<button type="button" className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setPickerOpen(true)} aria-label={text("addAnotherFilter")}><Plus className="size-3.5" /></button>
 								</>
 							) : null}
 						</div>,

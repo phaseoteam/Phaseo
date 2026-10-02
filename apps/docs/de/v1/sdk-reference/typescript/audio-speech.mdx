@@ -1,0 +1,57 @@
+---
+icon: "music"
+title: "TTS (Text-zu-Sprache)"
+description: "Rufe /audio/speech mit dem TypeScript-SDK auf."
+---
+
+**Methode**: `client.generateSpeech()`.
+
+### Beispiel
+```typescript
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  response_format: "mp3",
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines TTS-fähigen Modells.
+- `input` (erforderlich): zu synthetisierender Text.
+- `voice`: vom Provider normalisierter Sprachalias (empfohlen) oder nativer Sprachwert des Providers.
+- `response_format`: `mp3`, `wav`, `flac` usw.
+- `speed`: Wiedergabegeschwindigkeit (typischerweise 0,25–4).
+
+Wenn `voice` für die geroutete Provider-Modell-Zuordnung ungültig ist, gibt die API `400` mit `param: "voice"` zurück.
+
+### Beispiele für Provider-Konfigurationen
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
+
+### Rückgabe
+Binäre Audiodaten (Blob)

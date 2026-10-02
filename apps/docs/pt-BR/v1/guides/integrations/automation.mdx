@@ -1,0 +1,63 @@
+---
+title: "Automação de fluxos de trabalho"
+icon: "workflow"
+description: "Use o Phaseo no Zapier, n8n, Pipedream e outras plataformas de automação."
+---
+
+O Phaseo já funciona em produtos de automação capazes de enviar solicitações HTTP autenticadas. Apps nativos de marketplace poderão oferecer uma experiência mais guiada no futuro.
+
+## Solicitação compartilhada
+
+Use estas configurações em uma ação HTTP, webhook ou de código:
+
+| Configuração | Valor |
+| --- | --- |
+| Método | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| Cabeçalho | `Authorization: Bearer <PHASEO_API_KEY>` |
+| Cabeçalho | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Armazene a chave de API do Phaseo no cofre de credenciais ou segredos da plataforma. Não a inclua diretamente em uma definição de fluxo de trabalho compartilhada.
+
+## Zapier
+
+Use a ação **Webhooks by Zapier → Custom Request**:
+
+1. Selecione `POST`.
+2. Informe `https://api.phaseo.app/v1/responses`.
+3. Adicione os cabeçalhos bearer e content-type.
+4. Mapeie campos das etapas anteriores do Zap em `input`.
+5. Teste o Zap com dados não confidenciais.
+
+Um app nativo do Phaseo para Zapier acrescentaria seleção de modelos, ações de saída estruturada e autenticação específica do Phaseo, mas exigiria publicação pela plataforma de desenvolvedores do Zapier.
+
+## n8n
+
+Use o nó **HTTP Request** com autenticação bearer e corpo JSON. Para dados estruturados do fluxo de trabalho, mapeie o item anterior no campo `input` com uma expressão do n8n.
+
+Um node comunitário oficial do n8n poderá oferecer operações como Generate Response, List Models, Get Model Pricing e Create Embedding sem configuração HTTP manual.
+
+## Pipedream
+
+Use uma etapa de solicitação HTTP ou de código Node.js. Armazene `PHASEO_API_KEY` como segredo do Pipedream e leia-o do ambiente da etapa.
+
+## Recomendações para produção
+
+- Defina um limite de gastos para a chave da Gateway API usada por cada automação.
+- Use uma chave própria para cada automação, mantendo isolados o uso e a revogação.
+- Use saídas estruturadas quando as etapas seguintes esperarem campos legíveis por máquina.
+- Adicione tratamento de novas tentativas para respostas `429` e erros `5xx` recuperáveis.
+- Evite repetir ações externas não idempotentes apenas porque uma etapa do modelo foi repetida.
+
+## Relacionados
+
+- [Respostas](../../api-reference/endpoint/responses.mdx)
+- [Saídas estruturadas](../structured-outputs.mdx)
+- [Tratamento de erros](../../api-reference/errors.mdx)

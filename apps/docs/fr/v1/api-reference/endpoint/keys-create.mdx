@@ -1,0 +1,13 @@
+---
+title: "Créer une clé API"
+sidebarTitle: "Créer une clé API"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /keys"
+description: "Créer une nouvelle clé API dans l’espace de travail authentifié."
+---
+<Note>
+Ce point de terminaison nécessite une clé API de gestion. Les clés API Gateway standard ne sont pas acceptées.
+</Note>
+
+La clé API en clair n’est renvoyée qu’une seule fois, lors de sa création. Les champs de compatibilité `limit`, `limit_reset` et `include_byok_in_limit` sont acceptés ; Phaseo traite actuellement `include_byok_in_limit` uniquement pour la compatibilité et exclut toujours BYOK de la limite de cette clé.
+

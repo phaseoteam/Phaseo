@@ -1,0 +1,18 @@
+---
+icon: "mic"
+title: "STT（音声認識）"
+description: "Python SDKで/audio/transcriptionsを呼び出します。"
+---
+
+**メソッド**: `client.generate_transcription()`
+
+```python
+result = client.generate_transcription({
+    "model": "openai/gpt-4o-transcribe",
+    "audio_b64": "base64-audio",
+    "language": "en",
+})
+
+print(result)
+```
+

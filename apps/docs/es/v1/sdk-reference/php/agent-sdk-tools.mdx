@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "Herramientas"
+description: "Define herramientas PHP validadas, sujetas a aprobación, manuales y capaces de informar sobre el progreso."
+---
+
+Crea valores `Tool` y pásalos mediante `AgentSdk::defineTool(...)`. Las herramientas pueden incluir:
+
+- JSON `parameters` que se muestran al modelo
+- funciones de validación `inputSchema`, `outputSchema` y `eventSchema`
+- `timeoutMs` y una devolución de llamada `execute`
+- `requireApproval` booleano o como devolución de llamada
+- `onToolCalled` y `onResponseReceived` para operaciones interactivas
+- `nextTurnParams` y `onError: "return-to-model"`
+
+Usa `RuntimeContext::$emitProgress` para los resultados preliminares y `$setContext` para el contexto de la aplicación.
+
+<Note>
+Las devoluciones de llamada de las herramientas se ejecutan de forma síncrona en el entorno PHP estándar. Por ello, la concurrencia y la interrupción dependen de las capacidades del proceso PHP que aloja el SDK.
+</Note>
+
+## Relacionado
+
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Controles de ejecución](./agent-sdk-run-controls.mdx)

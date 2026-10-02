@@ -1,0 +1,126 @@
+---
+title: "Enrutar solo a proveedores de la UE o con ZDR"
+icon: "globe"
+description: "Aplica requisitos de residencia y retención cero a una solicitud para que se enrute solo a ofertas de proveedores que los cumplan."
+---
+
+Usa esta receta cuando una solicitud necesite filtrar proveedores por motivos de cumplimiento o tratamiento de datos, sin cambiar la política de todo el espacio de trabajo.
+
+## Objetivo
+
+- Exigir que la ejecución se realice en la UE.
+- Exigir la residencia de los datos en la UE.
+- Exigir proveedores compatibles con la retención cero de datos.
+
+## 1. Añade los requisitos de residencia a la solicitud
+
+Define los requisitos del proveedor directamente en el cuerpo de la solicitud.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Filtros compatibles a nivel de solicitud para este flujo:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. Usa el conjunto de reglas más pequeño que cumpla la política
+
+Exige únicamente lo que necesite la carga de trabajo.
+
+Ejemplos:
+
+- solo ubicación de ejecución:
+  - `required_execution_region: "eu"`
+- solo ubicación de los datos:
+  - `required_data_region: "eu"`
+- solo proveedores compatibles con ZDR:
+  - `require_zero_data_retention: true`
+
+## 3. Ten en cuenta que se reducirá el conjunto de candidatos
+
+Estos filtros se aplican antes de ordenar los proveedores, por lo que pueden excluirlos por completo.
+
+Esto significa que:
+
+- la solicitud podría enrutarse a una oferta regional más cara
+- la lista de proveedores podría reducirse mucho
+- la solicitud podría fallar si ningún proveedor de ese modelo cumple los requisitos
+
+## 4. Comprueba la página del modelo antes de implementar, si es posible
+
+Antes de implementar la solicitud, revisa las tarjetas de proveedores de la página del modelo para comprobar:
+
+- las ofertas regionales, como `OpenAI EU` o `Google Vertex EU`
+- la compatibilidad con ZDR
+- las notas y fuentes sobre las políticas de datos de los proveedores
+
+Así podrás confirmar que existe al menos un proveedor apto antes de exigirlo en el tráfico de producción.
+
+## 5. Usa los ajustes de privacidad del espacio de trabajo como valores predeterminados
+
+Si la política debe aplicarse a todas las solicitudes de un espacio de trabajo, configúrala en **Configuración -> Privacidad** en vez de repetir los mismos filtros en cada solicitud.
+
+Usa los campos de la solicitud cuando la regla se aplique:
+
+- a un flujo de trabajo
+- a un cliente
+- a una solicitud
+
+## Guías relacionadas
+
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Ajustes predefinidos](../guides/presets.mdx)

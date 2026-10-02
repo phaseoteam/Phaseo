@@ -1,0 +1,136 @@
+---
+title: "Vercel AI Gateway からの移行"
+sidebarTitle: "Vercel AI Gateway"
+description: "Vercel AI Gateway のルーティングを Phaseo Gateway に切り替え、AI SDK または OpenAI 互換アプリケーションの動作を維持します。"
+icon: "/icons/brands/vercel.svg"
+---
+
+Vercel AI SDK または OpenAI 互換クライアント経由で Vercel AI Gateway をすでに利用している場合は、アプリのロジックをそのまま保ち、最初にプロバイダーとの接続部分だけを切り替えるのが安全です。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| Gateway URL | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| API キー | Vercel AI Gateway のキー | `PHASEO_API_KEY` |
+| AI SDK プロバイダー | 既存の設定 | AI SDK を直接使う場合は `@phaseo/ai-sdk-provider` |
+| アプリのフロー | 既存の生成ロジック | 最初の移行段階では変更しない |
+
+## 開始前の準備
+
+- 現在の Vercel AI Gateway のベース URL とキー設定。
+- ローカル、ステージング、本番の各環境で `PHASEO_API_KEY` を利用できること。
+- 非ストリーミング、ストリーミング、利用中のツール呼び出しを網羅する小規模なプロンプトセットまたは統合テスト。
+
+## 1) 現在の Gateway 接続箇所を記録する
+
+モデルプロバイダーや API クライアントを作成する共通箇所を見つけ、そこを移行ポイントにします。
+
+- プロバイダーまたはクライアントのファクトリーを特定します。
+- 本番で使用中のモデル ID を列挙します。
+- リトライ、タイムアウト、フォールバックの既定値を記録します。
+- edge とサーバーの両方で同じ設定変更が必要か確認します。
+- AI SDK の各呼び出しに埋め込まず、Gateway のプリセットにする共有プロンプトやパラメーターの既定値を特定します。
+
+## 2) エンドポイントとキーを切り替える
+
+多くの OpenAI 互換クライアントでは、ベース URL とキーを置き換えるだけで済みます。
+
+<CodeGroup>
+```typescript TypeScript
+// OpenAI-compatible client before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
+  baseURL: "https://ai-gateway.vercel.sh/v1",
+});
+```
+
+```typescript TypeScript
+// OpenAI-compatible client after
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```typescript TypeScript
+// Official Phaseo provider for the Vercel AI SDK
+import { generateText } from "ai";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const { text } = await generateText({
+  model: phaseo("openai/gpt-4.1-mini"),
+  prompt: "Generate a migration checklist.",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) 動作の同等性を確認する
+
+同じプロンプトセットを旧経路と新経路で実行し、レイテンシ、出力形式、トークン使用量を比較します。
+
+- 非ストリーミングのテキスト生成を確認します。
+- 本番と同じコード経路でストリーミングのチャンク処理を確認します。
+- アプリが依存している場合はツール呼び出しも確認します。
+- アプリのエラーマッピングに変更がないことを確認します。
+- ルーティングの既定値とプロバイダー制限は、各モデルファクトリーで再実装せず、[プリセット](../guides/presets.mdx) または[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)に移します。
+
+## 4) Vercel AI SDK と Gateway のチェックリスト
+
+トラフィックを増やす前に確認します。
+
+- ベース URL を `https://api.phaseo.app/v1` に更新した。
+- 以前 Vercel Gateway キーを使ったすべての実行環境に `PHASEO_API_KEY` を設定した。
+- Vercel AI SDK を直接使う場合、公式プロバイダー `@phaseo/ai-sdk-provider` を組み込んだ。
+- AI SDK の主要なテキスト生成経路がステージングで動作する。
+- アプリレベルのストリーミングテストが変更なしで通る。
+- 使用中のツール呼び出しと構造化出力を再確認した。
+- 小規模なプロンプトセットで旧経路と新経路の出力を比較した。
+- 設定変更または feature flag だけでロールバックできる。
+- 共有プロンプトとルーティングの既定値を適切な箇所でプリセットに移した。
+- `GET /v1/generations?id=<request_id>` で生成を照会できることを再確認した。`replay_supported=true` の場合、保存された `replay_request` から失敗したリクエストを再実行できます。
+
+## 5) 低リスクのリリース計画
+
+1. feature flag または段階的な割合指定でリリースします。
+2. 社内トラフィックか、ごく一部の本番トラフィックから始めます。
+3. レイテンシ、エラー率、トークン使用量とコストの変動を監視します。
+4. 少なくとも 1 回のリリース期間は両方の設定を利用できる状態にします。
+
+## 検証コマンド
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+その後：
+
+- アプリの主要なテキスト生成統合テストを実行します。
+- ステージングでストリーミングテストを実行します。
+- 完全に切り替える前に、主要なプロンプトの旧経路と新経路の出力を比較します。
+
+## 次のステップ
+
+- [OpenRouter からの移行](./from-openrouter.mdx)
+- [クイックスタート](../quickstart.mdx)
+- [サンプル](../guides/examples.mdx)

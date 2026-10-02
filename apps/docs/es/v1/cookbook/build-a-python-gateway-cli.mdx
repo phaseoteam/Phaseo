@@ -1,0 +1,117 @@
+---
+title: "Crea una CLI de gateway en Python"
+icon: "terminal"
+description: "Usa el ejemplo de inicio rápido de Python como guía completa para una CLI o integración de backend basada en Python."
+---
+
+Usa esta página si tu primera integración real con Phaseo está en Python y buscas un punto de partida práctico para una CLI, un worker o un servicio de backend.
+
+**Objetivo:** Ejecutar las rutas de control y generación de Phaseo desde una pequeña aplicación de línea de comandos en Python.
+
+**Resultado:** Una CLI con pocas dependencias que puedes adaptar a un worker, un script o una integración de backend.
+
+<Prompt
+  description="Crea una **CLI de gateway en Python** alrededor de las rutas de Phaseo."
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`Estás creando una CLI de Python o una integración de backend para Phaseo Gateway.
+
+Crea una pequeña aplicación de Python que:
+- lea PHASEO_API_KEY del entorno
+- admita un modo de prueba rápida de la ruta de control
+- admita un comando para generar texto
+- mantenga las dependencias al mínimo
+
+Requisitos:
+- Da preferencia a la biblioteca estándar de Python, salvo que haya un buen motivo para no hacerlo.
+- Explicita el contenido de las solicitudes.
+- Muestra mensajes claros de éxito y error.
+- Incluye uno o dos comandos útiles en vez de una CLI general enorme.
+- Añade un README breve con ejemplos.
+
+Entregables:
+- Código de la aplicación de Python
+- Comandos de uso sencillos
+- Un archivo .env.example o documentación equivalente de las variables de entorno
+
+Verificación:
+- Ejecuta la prueba rápida de la ruta si es posible.
+- Ejecuta una generación correcta de texto si es posible.
+- Indica con precisión qué has verificado y qué sigue sin verificarse.`}
+</Prompt>
+
+## Proyecto de ejemplo
+
+- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
+- Ruta local del repositorio: `examples/gateway-python-quickstart`
+
+## Qué hace esta aplicación
+
+- admite rutas de control como:
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- admite rutas de generación como:
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - y varios endpoints adicionales
+
+## Por qué sirve este ejemplo
+
+Te ofrece:
+
+- una referencia centrada en Python sin dependencias de terceros
+- datos de solicitudes y manejo de respuestas explícitos
+- un patrón práctico para workers, scripts y herramientas internas
+
+## Requisitos previos
+
+- Python 3
+- una clave de API de Phaseo
+
+## Ejecuta el ejemplo
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+Configura:
+
+- `PHASEO_API_KEY`
+
+Después, prueba:
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## Comprueba el resultado
+
+- El modo de prueba rápida confirma que se puede acceder a la API.
+- El comando Responses imprime `integration_ok`.
+- `--help` muestra los comandos disponibles sin enviar una solicitud.
+- Los errores de autenticación y de la API se muestran claramente en la terminal.
+
+## Qué revisar en el código
+
+- cómo se carga el entorno
+- cómo la CLI distribuye los comandos
+- cómo se construyen los distintos datos de las solicitudes
+- cómo se gestionan por separado las rutas asíncronas de vídeo y música y las rutas de texto de una sola respuesta
+
+## Adáptalo a tu caso
+
+- elimina los endpoints que tu servicio no necesite
+- usa una única función auxiliar para las solicitudes en vez de duplicar las cabeceras
+- pásate al SDK de Python si más adelante quieres un cliente de nivel superior
+
+## Guías relacionadas
+
+- [Prompts iniciales para miniaplicaciones](./mini-app-starter-prompts.mdx)
+- [Envía JSON estructurado desde Python](./sdk-python-presets-and-json.mdx)
+- [Ejemplos](../guides/examples.mdx)

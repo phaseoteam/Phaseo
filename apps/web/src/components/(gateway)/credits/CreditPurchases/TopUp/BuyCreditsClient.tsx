@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import CreditsPurchaseDialog from "@/components/(gateway)/credits/CreditPurchases/TopUp/CreditsPurchaseDialog";
@@ -26,6 +27,7 @@ export default function BuyCreditsClient({
 	embedded = false,
 	invoiceInviteStatus = "none",
 }: Props) {
+	const t = useTranslations("Site.pricing");
 	const [open, setOpen] = useState(false);
 	const isEnterpriseTier =
 		String(tierInfo?.current?.key ?? "").toLowerCase() === "enterprise";
@@ -34,21 +36,21 @@ export default function BuyCreditsClient({
 	if (embedded) {
 		return (
 			<div className="space-y-3">
-				<h3 className="text-base font-semibold">Buy Credits</h3>
+				<h3 className="text-base font-semibold">{t("buyCredits")}</h3>
 
 				<Button className="w-full" onClick={() => setOpen(true)}>
-					Add Credits
+					{t("addCredits")}
 				</Button>
 				<div className="grid grid-cols-2 gap-2">
 					<Button asChild variant="outline" className="w-full">
 						<Link href="/gateway/usage" className="inline-flex items-center justify-center gap-2">
-							View usage
+							{t("viewUsage")}
 							<ArrowUpRight className="h-4 w-4" />
 						</Link>
 					</Button>
 					<Button asChild variant="outline" className="w-full">
 						<Link href="/redeem" className="inline-flex items-center justify-center gap-2">
-							Got a code?
+							{t("gotACode")}
 							<Ticket className="h-4 w-4" />
 						</Link>
 					</Button>
@@ -57,30 +59,34 @@ export default function BuyCreditsClient({
 					{isEnterpriseTier ? (
 						isPreInvoiceInvited ? (
 							<>
-								You have been invited to setup invoiced billing.{" "}
-								<Link
-									href="/settings/credits/onboarding"
-									className="font-medium text-foreground underline-offset-4 hover:underline"
-								>
-									Get started here
-								</Link>
-								.
+								{t.rich("billingInviteMessageWithLink", {
+									link: (chunks) => (
+										<Link
+											href="/settings/credits/onboarding"
+											className="font-medium text-foreground underline-offset-4 hover:underline"
+										>
+											{chunks}
+										</Link>
+									),
+								})}
 							</>
 						) : (
 							<>
-								Invoiced billing is currently invite-only.{" "}
-								<Link
-									href="/contact"
-									className="font-medium text-foreground underline-offset-4 hover:underline"
-								>
-									Get in touch
-								</Link>{" "}
-								to request access.
+								{t.rich("billingInviteOnlyWithContact", {
+									link: (chunks) => (
+										<Link
+											href="/contact"
+											className="font-medium text-foreground underline-offset-4 hover:underline"
+										>
+											{chunks}
+										</Link>
+									),
+								})}
 							</>
 						)
 					) : (
 						<>
-							Invoiced billing is currently invite-only.
+							{t("billingInviteOnly")}
 						</>
 					)}
 				</div>
@@ -99,9 +105,9 @@ export default function BuyCreditsClient({
 	return (
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between pb-0">
-				<CardTitle>Buy Credits</CardTitle>
+							<CardTitle>{t("buyCredits")}</CardTitle>
 				<Link href="/gateway/usage">
-					<Badge variant={"outline"}>View Usage</Badge>
+					<Badge variant={"outline"}>{t("viewUsage")}</Badge>
 				</Link>
 			</CardHeader>
 
@@ -109,11 +115,11 @@ export default function BuyCreditsClient({
 
 			<CardContent>
 				<Button className="w-full" onClick={() => setOpen(true)}>
-					Add Credits
+					{t("addCredits")}
 				</Button>
 				<Button asChild variant="outline" className="mt-3 w-full">
 					<Link href="/redeem" className="inline-flex items-center justify-center gap-2">
-						Got a code?
+						{t("gotACode")}
 						<Ticket className="h-4 w-4" />
 					</Link>
 				</Button>

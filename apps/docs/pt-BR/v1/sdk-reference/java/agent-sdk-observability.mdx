@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "Erros e solução de problemas"
+description: "Diagnostique falhas de agentes Java, dados inválidos de ferramentas e execuções interrompidas."
+---
+
+Separe falhas de transporte e do gateway de dados inválidos de ferramentas ou de saída. Uma execução com falha mantém o status, a etapa ativa, a contagem de tentativas, o ID da solicitação, o ID de resposta nativo e os detalhes disponíveis do gateway.
+
+## Verificações comuns
+
+- Confirme se o processo Java tem acesso a `PHASEO_API_KEY`.
+- Dê a cada ferramenta um ID exclusivo e estável.
+- Forneça aprovações, rejeições e saídas manuais usando os IDs exatos das chamadas de ferramentas.
+- Persista um `RunResult` pausado antes de devolver o controle a outra solicitação ou worker.
+- Mantenha os validadores determinísticos e sem efeitos colaterais.
+- Trate exceções de cancelamento e timeout como terminais, a menos que a aplicação inicie explicitamente uma nova execução.
+
+Use hooks do ciclo de vida para a telemetria da aplicação e o DevTools para registrar execuções localmente, em vez de depender apenas da saída do console.
+
+## Relacionados
+
+- [Hooks de ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)

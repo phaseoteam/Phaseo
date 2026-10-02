@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "मुख्य C# Agent SDK types और methods का reference।"
+---
+
+| API | Purpose |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | एजेंट परिभाषित करें |
+| `AgentSdk.DefineTool(...)` | Local या manual tool परिभाषित करें |
+| `AgentSdk.CreateGatewayAgentClient(...)` | Model turns को Phaseo से connect करें |
+| `Agent.Run(...)` | Terminal या paused state तक चलाएँ |
+| `Agent.Stream(...)` | Replayable async streams के साथ चलाएँ |
+| `Agent.ContinueRun(...)` | Saved या paused state जारी रखें |
+| `AgentStreamResult.GetResult()` | Completed run की प्रतीक्षा करें |
+| `AgentStreamResult.TextStream()` | Text deltas पढ़ें |
+| `AgentStreamResult.FullStream()` | सभी lifecycle events पढ़ें |
+| `AgentStreamResult.Cancel()` | Active run cancel करें |
+
+महत्वपूर्ण records और interfaces में `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `IStateAccessor`, `ModelRetryConfig` और `ToolExecutionConfig` शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [त्रुटियाँ और गेटवे विवरण](./agent-sdk-observability.mdx)

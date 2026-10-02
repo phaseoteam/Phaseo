@@ -1,0 +1,28 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "C# SDKで`/moderations`を呼び出します。"
+---
+
+**メソッド**: `client.GenerateModeration(...)`または`client.CreateModeration(...)`
+
+### 例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation-latest",
+    ["input"] = "Text to classify"
+});
+```
+
+### 主なパラメーター
+- `model`（必須）: モデレーションモデルのID（例: `openai/omni-moderation-latest`）。
+- `input`（必須）: 文字列、またはコンテンツ項目（テキストまたは`image_url`）の配列。
+- 任意: `categories`/`severity`フィルター（対応している場合）と`user`タグ。
+
+### 戻り値
+`ModerationResponse`
+

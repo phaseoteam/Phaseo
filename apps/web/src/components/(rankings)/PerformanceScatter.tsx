@@ -6,6 +6,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
     ScatterChart,
@@ -39,15 +40,17 @@ export function PerformanceScatter({
     data,
     mode = "throughput",
 }: PerformanceScatterProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatCompact = (value: number) => Number.isFinite(value)
+	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
     if (!data.length) {
         return (
             <EmptyChartPreview
-                title="No performance data yet"
-                description="Performance metrics appear once enough requests are aggregated for a model."
+                title={t("notEnoughData")}
+                description={t("performanceDataEmptyDescription")}
                 heightClassName="h-[500px]"
             />
         );
@@ -59,9 +62,9 @@ export function PerformanceScatter({
             const latency = Number(row.median_latency_ms);
             const throughput = Number(row.median_throughput);
             const requests = Number(row.requests);
-            const modelName = row.model_name?.trim() || row.model_id || "Unknown model";
+            const modelName = row.model_name?.trim() || row.model_id || t("unknownModelLabel");
             const providerName =
-                row.provider_name?.trim() || row.provider || "Unknown provider";
+                row.provider_name?.trim() || row.provider || t("unknownProviderLabel");
 
             const yValue = mode === "throughput" ? throughput : latency;
 
@@ -106,8 +109,8 @@ export function PerformanceScatter({
     if (!chartData.length) {
         return (
             <EmptyChartPreview
-                title="No performance data yet"
-                description="Performance metrics appear once enough requests are aggregated for a model."
+                title={t("notEnoughData")}
+                description={t("performanceDataEmptyDescription")}
                 heightClassName="h-[500px]"
             />
         );
@@ -121,9 +124,9 @@ export function PerformanceScatter({
                     <XAxis
                         type="number"
                         dataKey="x"
-                        name="Cost per 1M tokens"
+                        name={t("costPerMillionTokensName")}
                         label={{
-                            value: "Cost per 1M Tokens ($)",
+                            value: t("costPerMillionTokensAxis"),
                             position: "bottom",
                             offset: 40,
                         }}
@@ -134,12 +137,12 @@ export function PerformanceScatter({
                     <YAxis
                         type="number"
                         dataKey="y"
-                        name={mode === "throughput" ? "Throughput" : "Latency"}
+                        name={mode === "throughput" ? t("throughput") : t("latency")}
                         label={{
                             value:
                                 mode === "throughput"
-                                    ? "Throughput (tokens/s)"
-                                    : "Latency P50 (ms)",
+                                    ? t("throughputAxis")
+                                    : t("latencyP50Column"),
                             angle: -90,
                             position: "left",
                             offset: 40,
@@ -220,21 +223,21 @@ export function PerformanceScatter({
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
-                                        <span className="text-muted-foreground">Cost</span>
+                                        <span className="text-muted-foreground">{t("costLabel")}</span>
                                         <span className="text-right tabular-nums">
-                                            ${point.cost.toFixed(2)}/1M
+                                            {t("costPerMillionTokensValue", { value: new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(point.cost) })}
                                         </span>
                                         <span className="text-muted-foreground">
-                                            {mode === "throughput" ? "Throughput" : "Latency"}
+                                            {mode === "throughput" ? t("throughput") : t("latency")}
                                         </span>
                                         <span className="text-right tabular-nums">
                                             {mode === "throughput"
-                                                ? `${point.throughput.toFixed(1)} tok/s`
-                                                : `${Math.round(point.latency)}ms`}
+                                                ? t("throughputValue", { value: new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(point.throughput) })
+                                                : t("latencyValue", { value: new Intl.NumberFormat(locale).format(Math.round(point.latency)) })}
                                         </span>
-                                        <span className="text-muted-foreground">Requests</span>
+                                        <span className="text-muted-foreground">{t("requestsLabel")}</span>
                                         <span className="text-right tabular-nums">
-                                            {formatCompact(point.requests)}
+                                            {formatCompact(point.requests, locale)}
                                         </span>
                                     </div>
                                 </div>

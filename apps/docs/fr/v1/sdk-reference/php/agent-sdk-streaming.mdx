@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Flux"
+description: "Consommez les flux de texte, de raisonnement, d’éléments et de cycle de vie des agents PHP."
+---
+
+`Agent::stream(...)` renvoie un `AgentStreamResult` :
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+Utilisez `reasoningStream()`, `itemStream()` ou `fullStream()` pour obtenir d’autres projections. Chaque itérable peut être relu après la consommation des événements du flux synchrone du fournisseur.
+
+Les valeurs d’élément PHP restent des tableaux et des objets génériques, et non l’union discriminée d’éléments de TypeScript.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

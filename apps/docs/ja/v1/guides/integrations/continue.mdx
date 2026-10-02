@@ -1,0 +1,73 @@
+---
+title: "Continue"
+icon: "/icons/brands/continue.svg"
+description: "VS Code、JetBrains、Continue CLIのContinueにPhaseoを追加します。"
+---
+
+Phaseo CLIでIDE拡張機能と`cn`コマンドラインで共有するローカルContinue設定を作成するか、同じモデルとシークレットの値を既存のContinue設定に手動で追加してください。
+
+## Phaseo CLIで設定する
+
+```bash
+phaseo login
+phaseo continue --model anthropic/claude-sonnet-4.6
+```
+
+`~/.continue/config.yaml`と`~/.continue/.env`が未使用の場合、セットアップ時に両方のファイルが作成されます。
+
+```yaml
+name: Phaseo
+version: 1.0.0
+schema: v1
+models:
+  - name: Phaseo
+    provider: openai
+    model: anthropic/claude-sonnet-4.6
+    apiBase: https://api.phaseo.app/v1
+    apiKey: ${{ secrets.PHASEO_API_KEY }}
+    useResponsesApi: false
+    roles: [chat, edit, apply]
+```
+
+キーは`~/.continue/.env`の`PHASEO_API_KEY`として保存されます。`useResponsesApi: false`により、リクエストはPhaseoのChat Completions経路を使います。
+
+<Warning>
+Continueのグローバル`.env`は平文です。リポジトリにコミットしないでください。IDE拡張機能は通常のシェル環境変数を引き継がないため、CLIはContinueが定めるシークレットファイルを使います。
+</Warning>
+
+いずれかのファイルに既存設定がある場合、上書きせずにセットアップを停止します。モデル項目を統合し、既存の`.env`に`PHASEO_API_KEY=<専用キー>`を追加してください。キーは`phaseo integrations credential continue`で取得できます。
+
+## 確認する
+
+VS CodeまたはJetBrainsでウィンドウを再読み込みし、Continueを開いて**Phaseo**を選び、`PHASEO_CONTINUE_OK`と返答するよう依頼します。
+
+Continue CLIでは`cn`を実行します。別の保存済み設定が有効な場合は`/config`を使い、同じテストリクエストを送信します。Phaseoのアクティビティに表示されることを確認してください。
+
+## 削除する
+
+```bash
+phaseo integrations remove continue
+```
+
+削除時にキーを失効し、両方のファイルにPhaseo CLIの所有者マーカーが残っている場合に限り削除します。手動で統合した項目はそのまま残します。
+
+## トラブルシューティング
+
+### Phaseoが表示されない
+
+IDEを再読み込みし、`config.yaml`にトップレベル必須項目の`name`、`version`、`schema`があることを確認します。
+
+### Continueでシークレットがないと表示される
+
+`~/.continue/.env`に`phaseo integrations credential continue`で取得したキーがあることを確認してから、IDEを再起動します。
+
+### ContinueがResponses APIを呼び出す
+
+Phaseoのモデル項目では`useResponsesApi: false`にします。
+
+## 関連項目
+
+- [ContinueのOpenAI互換設定](https://docs.continue.dev/customize/model-providers/top-level/openai)
+- [Continueのローカルシークレット](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
+- [コーディングエージェント](./coding-assistants.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)

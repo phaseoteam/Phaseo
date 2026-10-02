@@ -2,6 +2,7 @@
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogTrigger,
@@ -22,6 +23,7 @@ import {
 	DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import AcceptInviteDialog from "./AcceptInviteDialog";
 import { createTeamAction } from "@/app/(dashboard)/settings/teams/actions";
 
@@ -30,6 +32,7 @@ export default function CreateTeamDialog({
 }: {
 	currentUserId?: string;
 }) {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [acceptOpen, setAcceptOpen] = useState(false);
@@ -50,10 +53,8 @@ export default function CreateTeamDialog({
 			void invalidateSettings();
 			setOpen(false);
 			setName("");
-		} catch (err: any) {
-			const message =
-				err?.message ?? "Could not create workspace right now. Please try again.";
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(localizedSettingsError(err, t, "Action failed"));
 		} finally {
 			setLoading(false);
 		}
@@ -70,7 +71,7 @@ export default function CreateTeamDialog({
 						className="flex items-center !rounded-l-lg !rounded-r-none border-r-0"
 					>
 						<Plus className="h-4 w-4" />
-						<span className="mr-2 select-none">Create Workspace</span>
+							<span className="mr-2 select-none">{t("teams.createWorkspace")}</span>
 					</Button>
 				</DialogTrigger>
 				<DropdownMenu
@@ -97,7 +98,7 @@ export default function CreateTeamDialog({
 							onClick={() => setAcceptOpen(true)}
 							className="text-sm"
 						>
-							Got an invite code?
+							{t("teams.gotInviteCode")}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
@@ -112,21 +113,21 @@ export default function CreateTeamDialog({
 
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Create Workspace</DialogTitle>
+					<DialogTitle>{t("teams.createWorkspace")}</DialogTitle>
 					<DialogDescription>
-						Enter a name for your new workspace.
+						{t("teams.createWorkspaceDescription")}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onCreate} className="space-y-4">
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="Workspace Name"
+						placeholder={t("teams.workspaceName")}
 					/>
 					<DialogFooter>
 						<DialogClose asChild>
 							<Button type="button" variant="ghost">
-								Cancel
+								{t("labels.cancel")}
 							</Button>
 						</DialogClose>
 						{/* disabled until name has at least 2 chars or while loading */}
@@ -134,7 +135,7 @@ export default function CreateTeamDialog({
 							type="submit"
 							disabled={loading || name.trim().length < 2}
 						>
-							{loading ? "Creating..." : "Create"}
+							{loading ? t("labels.creating") : t("labels.create")}
 						</Button>
 					</DialogFooter>
 				</form>

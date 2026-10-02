@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Pause agentes C# para obter decisões humanas e continuar o estado gerenciado pela aplicação."
+---
+
+Use `AgentDefinition.HumanReview` para criar um ponto de revisão geral. Ferramentas que exigem aprovação ou são manuais preenchem `Run.Pause.PendingToolCalls` com os IDs exatos das chamadas.
+
+Continue com `Agent.ContinueRun(...)` e forneça:
+
+- registros `ToolDecision` em `Approvals` ou `Rejections`
+- registros `ToolOutput` para o trabalho concluído pela sua aplicação
+- `HumanInput` para uma pausa de revisão geral
+- o `RunResult` anterior ou `RunId` com um `IStateAccessor`
+
+As decisões são associadas ao ID da chamada, portanto chamadas simultâneas à mesma ferramenta continuam distintas.
+
+Implemente `IStateAccessor.Load(...)` e `Save(...)` se as execuções precisarem sobreviver a solicitações ou reinicializações do processo. O Phaseo não hospeda o estado de execução do Agent SDK.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

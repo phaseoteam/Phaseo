@@ -1,0 +1,83 @@
+---
+icon: "rocket"
+title: "Descripción general del Agent SDK"
+description: "Crea bucles de agente locales y reanudables sobre Phaseo Gateway con los lenguajes compatibles del Agent SDK."
+---
+
+Usa los Agent SDK de Phaseo cuando tu aplicación necesite algo más que una generación de una sola llamada:
+
+- bucles de herramientas con varios pasos
+- herramientas del entorno de ejecución local
+- turnos de modelo que usan el gateway
+- estado de ejecución reanudable que administra la aplicación
+- aprobaciones de llamadas exactas, herramientas con supervisión humana, herramientas manuales y continuación reanudable
+- validación en tiempo de ejecución, herramientas que informan del progreso y errores de herramientas recuperables
+- salida del modelo en streaming con consumidores de eventos que pueden reproducirse
+- configuración dinámica de turnos, condiciones de detención combinables y uso/coste normalizados
+- reintentos de modelos, tiempos de espera de herramientas, concurrencia de herramientas limitada y eventos del ciclo de vida
+- captura local con Phaseo Devtools
+- enrutamiento coherente de solicitudes en los mismos lenguajes que los SDK de cliente principales
+
+## Lenguajes compatibles
+
+Los lenguajes disponibles para Agent SDK coinciden con los SDK de cliente principales que se muestran en la guía rápida de Phaseo:
+
+- [TypeScript](../typescript/agent-sdk.mdx)
+- [Python](../python/agent-sdk.mdx)
+- [Go](../go/agent-sdk.mdx)
+- [C#](../csharp/agent-sdk.mdx)
+- [PHP](../php/agent-sdk.mdx)
+- [Ruby](../ruby/agent-sdk.mdx)
+- [Rust](../rust/agent-sdk.mdx)
+
+## Modelo común
+
+Cada Agent SDK mantiene el mismo modelo de ejecución:
+
+- definir un agente
+- definir cero o más herramientas locales
+- crear un cliente de modelos conectado al gateway
+- ejecutar un bucle limitado que utiliza la API `responses`
+- inspeccionar los eventos del ciclo de vida o un registro de Devtools
+- guardar la ejecución devuelta y reanudarla después de una decisión humana
+
+TypeScript es el diseño de API de referencia. Python, Go, C#, PHP y Ruby ofrecen el contrato más amplio compartido entre lenguajes mediante callbacks y primitivas propias de cada lenguaje para la concurrencia, los tiempos de espera y la cancelación. Rust es un entorno de ejecución síncrono compatible, con herramientas locales y externas, aprobaciones por ID exacto, revisión humana, reintentos de modelos, estado de ejecución serializable, callbacks del ciclo de vida y agregación de uso. Java y C++ siguen en desarrollo.
+
+<Note>
+  El Agent SDK de Rust se publica como `phaseo-agent`. Por ahora no incluye streaming, ejecución asíncrona, herramientas locales concurrentes, validación de esquemas en tiempo de ejecución ni captura de Devtools.
+</Note>
+
+## Contrato de capacidades entre lenguajes
+
+| Capacidad | TypeScript | Python | Go | C# | PHP | Ruby | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Herramientas ejecutables y errores de herramienta recuperables | Sí | Sí | Sí | Sí | Sí | Sí | Síncrono |
+| Aprobaciones por ID exacto, HITL y resultados manuales | Sí | Sí | Sí | Sí | Sí | Sí | Sí |
+| Progreso inicial de herramientas | Generador asíncrono | Iterador o callback | Callback | Callback | Callback | Callback | Aún no |
+| Streaming de modelos y consumidores reproducibles | Iterable asíncrono | Iterador | Canal | Enumerable asíncrono | Iterable | Enumerador | Aún no |
+| Condiciones de detención combinables | Sí | Sí | Sí | Sí | Sí | Sí | Límite de pasos |
+| Turnos dinámicos y contexto mutable | Sí | Sí | Sí | Sí | Sí | Sí | Modelo por ejecución, límite de pasos y contexto |
+| Estado de ejecución persistido por la aplicación | Sí | Sí | Sí | Sí | Sí | Sí | `RunResult` serializable |
+| Uso y coste normalizados | Sí | Sí | Sí | Sí | Sí | Sí | Tokens; coste con cliente personalizado solo en `0.1` |
+
+PHP y Ruby exponen los eventos de streaming de proveedores mediante sus API normales de iteración síncrona. No requieren un entorno de ejecución alojado ni un servicio de Phaseo en segundo plano.
+
+## SDK de cliente, Agent SDK y API
+
+| Uso | Elige | Qué administra |
+| --- | --- | --- |
+| Una solicitud de API o cobertura completa de los endpoints | SDK de cliente | Tipos de API generados y transporte |
+| Lógica de aplicación con herramientas y varios pasos | Agent SDK | Bucle local, herramientas, puntos de control, revisión, eventos y Devtools |
+| Transporte personalizado o un lenguaje no compatible | API directa | Gestión de solicitudes y respuestas HTTP |
+
+Los adaptadores del gateway de Agent SDK delegan los turnos de modelo al SDK de cliente correspondiente. Los lenguajes que tienen un hook `requestOptions` o equivalente pueden enviar campos adicionales de la API Responses mientras Agent SDK sigue administrando `model`, `input`, `instructions` y las herramientas de función locales. El adaptador Rust `0.1` envía actualmente los campos de agente normalizados sin un hook adicional de opciones de solicitud.
+
+## Recetas
+
+El recetario incluye flujos de trabajo con TypeScript y puntos de partida específicos para cada lenguaje:
+
+- [Crea un bucle de agente duradero](../../cookbook/agent-sdk-durable-loop.mdx)
+- [Investiga con búsqueda web mediante agentes](../../cookbook/agent-sdk-research-brief.mdx)
+- [Clasifica solicitudes de soporte con agentes basados en presets](../../cookbook/agent-sdk-support-triage.mdx)
+- [Revisa código con herramientas locales del entorno de ejecución](../../cookbook/agent-sdk-coding-review.mdx)
+- [Ejecuta herramientas locales en paralelo](../../cookbook/agent-sdk-parallel-tools.mdx)

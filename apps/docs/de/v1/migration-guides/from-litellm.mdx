@@ -1,0 +1,96 @@
+---
+title: "Von LiteLLM migrieren"
+sidebarTitle: "LiteLLM"
+description: "Ersetze einen LiteLLM-Proxy durch Phaseo und behalte den OpenAI-kompatiblen Request-Pfad deiner Anwendung bei."
+icon: "blocks"
+---
+
+Nutze diese Anleitung, wenn deine Anwendung über einen OpenAI-kompatiblen Client einen LiteLLM-Proxy aufruft. Ersetze zuerst den Proxy-Pfad und ordne anschließend Aliase, Routing-Regeln und gemeinsame Standardwerte gezielt zu.
+
+## Was sich ändert
+
+| Einstellung | Vorher | Nachher |
+| --- | --- | --- |
+| Basis-URL | Dein LiteLLM-Proxy | `https://api.phaseo.app/v1` |
+| API-Schlüssel | LiteLLM-Proxy-Schlüssel | `PHASEO_API_KEY` |
+| Modell-Aliase | LiteLLM-Konfiguration | Phaseo-Modell-IDs oder Anwendungs-Aliase |
+| Routing-Standards | LiteLLM-Konfiguration | Phaseo-Presets und Routing-Einstellungen |
+
+<Steps>
+<Step title="Erfasse die Proxy-Konfiguration">
+
+Liste alle Modell-Aliase, Fallbacks, Anbieterregeln, Wiederholungsrichtlinien, Budgets, Callbacks und Umgebungsvariablen auf, die deine aktuelle LiteLLM-Bereitstellung verwendet. Unterscheide gemeinsam genutzte Richtlinien von Einstellungen, die nur zu einer Anwendung gehören.
+
+</Step>
+
+<Step title="Ersetze den Proxy-Endpunkt">
+
+Behalte den OpenAI-kompatiblen Anfragecode bei und ändere Basis-URL und Schlüssel.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Ordne Aliase und Routing-Regeln zu">
+
+Prüfe jedes Produktionsmodell mit `GET /v1/models`. Wenn Aufrufer interne Aliase benötigen, normalisiere sie an einer zentralen Stelle in der Anwendung, statt jede Anfrage zu bearbeiten.
+
+Verschiebe wiederverwendbare Prompts, Parameter und Anbietereinschränkungen in [Presets](../guides/presets.mdx). Richte die Rangfolge der Anbieter und Fallbacks über [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx) ein.
+
+</Step>
+
+<Step title="Prüfe die Produktionsabläufe">
+
+Teste Streaming, Tools, strukturierte Ausgaben, Wiederholungen, Fehlerzuordnung und Callback-basierte Observability, die deine LiteLLM-Bereitstellung übernommen hat. Vergleiche Latenz, Ausgabe, Tokenverbrauch und Kosten, bevor du den Datenverkehr schrittweise umleitest.
+
+</Step>
+</Steps>
+
+## Migrations-Checkliste
+
+- LiteLLM-URLs, Schlüssel und Deployment-Abhängigkeiten wurden erfasst.
+- Jedes Produktionsmodell und jeder Alias hat eine ausdrückliche Phaseo-Zuordnung.
+- Gemeinsame Standards wurden in Presets oder an eine zentrale Anwendungsgrenze verschoben.
+- Streaming, Tools und strukturierte Ausgaben funktionieren in Staging, sofern sie verwendet werden.
+- Für benötigte Callbacks und Telemetrie gibt es einen geplanten Ersatz.
+- Ein Rollback erfordert weiterhin nur eine Änderung von Endpunkt und Schlüssel.
+
+## Nächste Schritte
+
+- [Presets](../guides/presets.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Observability](../guides/integrations/observability.mdx)

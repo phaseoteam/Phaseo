@@ -1,0 +1,63 @@
+---
+icon: "list-checks"
+title: "Liste de contrôle des fonctionnalités pour la migration"
+description: "Vérifiez les fonctionnalités Phaseo qui influencent généralement une migration de passerelle."
+---
+
+# Liste de contrôle des fonctionnalités pour la migration
+
+Utilisez cette liste pour déterminer quelles parties d’une intégration de passerelle existante peuvent être transférées sans changement et lesquelles doivent être validées explicitement. Dernière révision : 23 août 2026.
+
+## Compatibilité des requêtes principales
+
+| Fonctionnalité | Prise en charge par Phaseo | Action de migration |
+| --- | --- | --- |
+| Authentification compatible avec OpenAI | Prise en charge | Modifiez l’URL de base et la clé API, puis envoyez une requête authentifiée. |
+| Chat Completions | Prise en charge | Testez les requêtes standard, en streaming, avec appels d’outils et sorties structurées. |
+| Responses | Prise en charge | Testez les formats d’entrée, les événements de streaming, les outils et l’analyse des réponses. |
+| Anthropic Messages | Prise en charge | Vérifiez les en-têtes, prompts système et événements de streaming propres à Anthropic. |
+| Identifiants de modèle | Identifiants du catalogue Phaseo | Validez chaque identifiant de production avec `GET /v1/models` ; ne supposez pas que les alias correspondent. |
+| Endpoints d’embeddings, d’image et d’audio | Selon le modèle et le fournisseur | Vérifiez que le modèle prend en charge l’opération nécessaire avant la bascule. |
+
+## Contrôles de routage et de règles
+
+| Fonctionnalité | Prise en charge par Phaseo | Action de migration |
+| --- | --- | --- |
+| Ordre des fournisseurs | `provider.order` | Recréez uniquement les règles d’ordre encore nécessaires à la charge de travail. |
+| Listes d’autorisation et d’exclusion des fournisseurs | `provider.only` et `provider.ignore` | Validez les identifiants et confirmez qu’au moins une route reste disponible. |
+| Tri par prix, latence ou débit | `provider.sort` | Après le test, vérifiez le fournisseur sélectionné dans l’utilisation de Gateway. |
+| Conservation nulle des données | `provider.require_zero_data_retention` | Vérifiez qu’un fournisseur compatible avec le modèle existe avant d’imposer cette exigence. |
+| Exécution régionale et résidence des données | Champs de requête et paramètres de confidentialité par défaut de l’espace de travail | Testez le routage réussi et le cas d’échec sans fournisseur correspondant. |
+| Prompts et valeurs par défaut réutilisables | Préréglages | Déplacez la configuration partagée dans un préréglage au lieu de la dupliquer dans chaque client. |
+
+## Opérations et déploiement
+
+| Fonctionnalité | Prise en charge par Phaseo | Action de migration |
+| --- | --- | --- |
+| Attribution des requêtes | Identifiant, nom, URL et catégories de l’application | Conservez les en-têtes d’attribution pendant la migration et vérifiez le regroupement dans le tableau de bord. |
+| Détails des requêtes et fournisseurs | Utilisation de Gateway et enregistrements de génération | Comparez le fournisseur, la latence, l’utilisation des tokens et les tarifs avec des prompts représentatifs. |
+| Lots et tâches asynchrones | API de lots, fichiers, vidéos, webhooks et WebSocket | Validez les transitions d’état, la facturation finale, l’annulation et la récupération des résultats. |
+| Prise en charge de la relecture | Les enregistrements de génération exposent les métadonnées de relecture lorsqu’elles sont disponibles | Vérifiez que l’endpoint et le contenu d’origine peuvent être récupérés pour les requêtes échouées. |
+| Déploiement progressif | Répartition du trafic côté client ou infrastructure | Gardez le retour arrière limité à un changement d’URL de base et d’identifiants jusqu’à la stabilisation. |
+
+## Fonctionnalités qui nécessitent une validation propre à la charge de travail
+
+Ne considérez pas la compatibilité API comme une preuve que ces comportements sont identiques :
+
+- sélection automatique des fournisseurs et ordre des solutions de repli
+- affinité du cache de prompts et tarification du cache
+- champs de requête propres au fournisseur
+- métadonnées propres à la réponse
+- limites de débit et délai de nouvelle tentative
+- règles de conservation, de résidence des données et d’entraînement
+- disponibilité et prix exacts des modèles
+
+Exécutez des prompts et des scénarios d’échec proches de la production avant de transférer un volume de trafic important.
+
+## Guides associés
+
+- [Guides de migration](./index.mdx)
+- [Revue de préparation à la migration](./gateway-parity-review.mdx)
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Préréglages](../guides/presets.mdx)
+- [Attribution de l’application](../guides/app-attribution.mdx)

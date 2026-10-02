@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Info, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,17 +24,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
 import {
 	getProviderCredentialFormKind,
-	getProviderCredentialLabel,
 	getProviderKeyFormatExample,
-	getProviderKeyFormatHint,
-	getProviderKeyInputInstruction,
-	getProviderKeyOnboarding,
 	validateProviderKeyFormat,
 } from "@/lib/byok/providerKeyValidation";
+import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedProviderKeyInstruction, localizedProviderKeyOnboarding, localizedProviderKeyValidation, localizedProviderSubmissionError } from "@/i18n/byok-messages";
 
 import {
 	createByokKeyAction,
@@ -75,10 +74,10 @@ type AzureDeploymentForm = {
 	modelId: string;
 };
 
-function maskFromValue(v: string) {
+function maskFromValue(v: string, valueNotAvailable: string) {
 	const start = 6;
 	const end = 4;
-	if (!v) return "(value not available)";
+	if (!v) return valueNotAvailable;
 	if (v.length <= start + end) return "*".repeat(Math.max(6, v.length));
 	return `${v.slice(0, start)}${"*".repeat(Math.max(6, v.length - start - end))}${v.slice(-end)}`;
 }
@@ -96,7 +95,7 @@ function createEmptyAzureDeployment(): AzureDeploymentForm {
 export default function BYOKInputDialog({
 	providerId,
 	providerName,
-	triggerLabel = "Set key",
+	triggerLabel,
 	trigger,
 	disabled = false,
 	defaultAlwaysUse = false,
@@ -107,6 +106,8 @@ export default function BYOKInputDialog({
 	onSaved,
 	initial = null,
 }: Props) {
+	const t = useTranslations("SettingsUI");
+	const valueNotAvailable = t("strings.valueNotAvailable" as never);
 	const write = useSettingsWrite();
 	const activeProviderId = providerId ?? initial?.providerId ?? null;
 	const credentialFormKind = useMemo(
@@ -211,25 +212,26 @@ export default function BYOKInputDialog({
 
 	const formatCheck = useMemo(() => {
 		if (!submission.value) return null;
-		return validateProviderKeyFormat(activeProviderId, submission.value);
-	}, [activeProviderId, submission.value]);
+		const result = validateProviderKeyFormat(activeProviderId, submission.value);
+		return {...result, message: localizedProviderKeyValidation(result, activeProviderId, t)};
+	}, [activeProviderId, submission.value, t]);
 	const credentialCanSubmit = initial
 		? (submission.value === null && !submission.error) || (submission.value !== null && !submission.error && Boolean(formatCheck?.ok))
 		: submission.value !== null && !submission.error && Boolean(formatCheck?.ok);
 	const canSubmit = keyName.trim().length > 0 && credentialCanSubmit;
 	const credentialLabel = useMemo(
-		() => getProviderCredentialLabel(activeProviderId),
-		[activeProviderId],
+		() => localizedProviderCredentialLabel(activeProviderId, t),
+		[activeProviderId, t],
 	);
-	const formatHint = useMemo(() => getProviderKeyFormatHint(activeProviderId), [activeProviderId]);
+	const formatHint = useMemo(() => localizedProviderKeyHint(activeProviderId, t), [activeProviderId, t]);
 	const inputInstruction = useMemo(
-		() => getProviderKeyInputInstruction(activeProviderId),
-		[activeProviderId],
+		() => localizedProviderKeyInstruction(activeProviderId, t),
+		[activeProviderId, t],
 	);
 	const formatExample = useMemo(() => getProviderKeyFormatExample(activeProviderId), [activeProviderId]);
 	const onboarding = useMemo(
-		() => getProviderKeyOnboarding(activeProviderId, providerName),
-		[activeProviderId, providerName],
+		() => localizedProviderKeyOnboarding(activeProviderId, providerName, t),
+		[activeProviderId, providerName, t],
 	);
 	const providerModelsHref = activeProviderId
 		? `/api-providers/${encodeURIComponent(activeProviderId)}`
@@ -261,20 +263,20 @@ export default function BYOKInputDialog({
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (submission.error) {
-			toast.error(submission.error);
+			toast.error(localizedProviderSubmissionError(submission.error, t));
 			return;
 		}
 		const normalizedName = keyName.trim();
 		if (!normalizedName) {
-			toast.error("Key name is required");
+			toast.error(t("strings.Key name is required" as never));
 			return;
 		}
 		if (!initial && !submission.value) {
-			toast.error("Please provide a key value");
+			toast.error(t("strings.Please provide a key value" as never));
 			return;
 		}
 		if (!initial && !providerId) {
-			toast.error("Missing provider id");
+			toast.error(t("strings.Missing provider id" as never));
 			return;
 		}
 		if (submission.value && formatCheck && !formatCheck.ok) {
@@ -293,7 +295,7 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				}));
-				toast.success(submission.value ? "Key updated and replaced" : "Key updated");
+			toast.success(submission.value ? t("strings.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
 				await write(createByokKeyAction(
 					normalizedName,
@@ -304,14 +306,14 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				));
-				toast.success("Key saved");
+		toast.success(t("strings.Key saved" as never));
 			}
 			setOpen(false);
 			resetForm();
 			onSaved?.();
 		} catch (err: any) {
 			console.error(err);
-			toast.error(err?.message || "Failed to save key");
+			toast.error(localizedSettingsError(err, t, "Failed to save key"));
 		} finally {
 			setLoading(false);
 		}
@@ -320,17 +322,17 @@ export default function BYOKInputDialog({
 	const editor = (
 		<>
 			{embedded ? null : <DialogHeader>
-					<DialogTitle>{initial ? "Manage provider key" : "Set provider key"}</DialogTitle>
+					<DialogTitle>{initial ? t("finalSettingsCopy.manageProviderKey") : t("finalSettingsCopy.setProviderKey")}</DialogTitle>
 				</DialogHeader>}
 
 				<form onSubmit={onSave} className="grid gap-4">
 					<div className="grid gap-2">
-						<Label htmlFor={`byok-key-name-${initial?.id ?? activeProviderId ?? "new"}`}>Key name</Label>
+					<Label htmlFor={`byok-key-name-${initial?.id ?? activeProviderId ?? "new"}`}>{t("keys.keyName")}</Label>
 						<Input
 							id={`byok-key-name-${initial?.id ?? activeProviderId ?? "new"}`}
 							value={keyName}
 							onChange={(event) => setKeyName(event.target.value)}
-							placeholder="Production key"
+							placeholder={t("strings.Production key" as never)}
 						/>
 					</div>
 					{providerModelsHref ? (
@@ -341,22 +343,22 @@ export default function BYOKInputDialog({
 								rel="noreferrer"
 								className="underline underline-offset-2 hover:text-foreground"
 							>
-								View valid models
+								{t("settingsCopy.byok.viewValidModels")}
 							</Link>
 						</div>
 					) : null}
 
 					<div className="grid gap-2">
 						<div className="flex items-center justify-between gap-2">
-							<Label htmlFor="value">{initial ? `Replace ${credentialLabel} (optional)` : credentialLabel}</Label>
+							<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
 							<HoverCard>
 								<HoverCardTrigger asChild>
 									<span
 										className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-help select-none"
-										aria-label="Credential setup info"
+										aria-label={t("strings.Credential setup info" as never)}
 									>
 										<Info className="h-3.5 w-3.5" />
-										<span>Info</span>
+					<span>{t("strings.Info" as never)}</span>
 									</span>
 								</HoverCardTrigger>
 								<HoverCardContent align="end" className="max-w-sm">
@@ -364,7 +366,7 @@ export default function BYOKInputDialog({
 										<div>{onboarding.intro}</div>
 										{onboarding.docsUrl ? (
 											<div>
-												See{" "}
+												{t("settingsCopy.byok.docsPrefix")} {" "}
 												<Link
 													href={onboarding.docsUrl}
 													target={onboarding.docsUrl.startsWith("http") ? "_blank" : undefined}
@@ -373,7 +375,7 @@ export default function BYOKInputDialog({
 												>
 													{onboarding.docsLabel}
 												</Link>{" "}
-												for more information.
+												{t("settingsCopy.byok.docsSuffix")}
 											</div>
 										) : null}
 									</div>
@@ -385,15 +387,15 @@ export default function BYOKInputDialog({
 								{initial.prefix || initial.suffix
 									? `${initial.prefix ?? ""}${"*".repeat(6)}${initial.suffix ?? ""}`
 									: initial.value
-										? maskFromValue(initial.value)
-										: "(value not available)"}
+										? maskFromValue(initial.value, valueNotAvailable)
+										: valueNotAvailable}
 							</div>
 						) : null}
 
 						{credentialFormKind === "bedrock" ? (
 							<div className="space-y-3 rounded-md border p-3">
 								<div className="flex items-center justify-between gap-4">
-									<div className="text-sm font-medium">Use IAM credentials</div>
+					<div className="text-sm font-medium">{t("strings.Use IAM credentials" as never)}</div>
 									<Switch
 										checked={bedrockUseIam}
 										onCheckedChange={(checked: any) => setBedrockUseIam(Boolean(checked))}
@@ -404,17 +406,17 @@ export default function BYOKInputDialog({
 										<Input
 											value={bedrockAccessKeyId}
 											onChange={(e) => setBedrockAccessKeyId(e.target.value)}
-											placeholder="Access Key ID"
+										placeholder={t("strings.Access Key ID" as never)}
 										/>
 										<Input
 											value={bedrockSecretAccessKey}
 											onChange={(e) => setBedrockSecretAccessKey(e.target.value)}
-											placeholder="Secret Access Key"
+										placeholder={t("strings.Secret Access Key" as never)}
 										/>
 										<Input
 											value={bedrockRegion}
 											onChange={(e) => setBedrockRegion(e.target.value)}
-											placeholder="AWS Region (for example us-east-1)"
+										placeholder={t("strings.AWS Region (for example us-east-1)" as never)}
 										/>
 									</div>
 								) : (
@@ -422,12 +424,12 @@ export default function BYOKInputDialog({
 										type="password"
 										value={bedrockApiKey}
 										onChange={(e) => setBedrockApiKey(e.target.value)}
-										placeholder="Bedrock API key"
+									placeholder={t("strings.Bedrock API key" as never)}
 									/>
 								)}
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave all fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepAllCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -436,17 +438,17 @@ export default function BYOKInputDialog({
 								<Input
 									value={cloudflareAccountId}
 									onChange={(e) => setCloudflareAccountId(e.target.value)}
-									placeholder="Cloudflare Account ID"
+									placeholder={t("strings.Cloudflare Account ID" as never)}
 								/>
 								<Input
 									type="password"
 									value={cloudflareApiToken}
 									onChange={(e) => setCloudflareApiToken(e.target.value)}
-									placeholder="Cloudflare API Token"
+									placeholder={t("strings.Cloudflare API Token" as never)}
 								/>
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave both fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepBothCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -456,7 +458,7 @@ export default function BYOKInputDialog({
 									<div key={deployment.id} className="rounded-md border p-2 space-y-2">
 										<div className="flex items-center justify-between">
 											<div className="text-xs font-medium text-muted-foreground">
-												Deployment {idx + 1}
+												{t("settingsPageCopy.deploymentWithIndex", { index: idx + 1 })}
 											</div>
 											{azureDeployments.length > 1 ? (
 												<Button
@@ -484,7 +486,7 @@ export default function BYOKInputDialog({
 													),
 												)
 											}
-											placeholder="Phaseo model slug (for example openai/gpt-4o-mini)"
+											placeholder={t("strings.Phaseo model slug (for example openai/gpt-4o-mini)" as never)}
 										/>
 										<Input
 											value={deployment.endpointUrl}
@@ -497,7 +499,7 @@ export default function BYOKInputDialog({
 													),
 												)
 											}
-											placeholder="Azure Foundry endpoint URL"
+											placeholder={t("strings.Azure Foundry endpoint URL" as never)}
 										/>
 										<Input
 											type="password"
@@ -511,7 +513,7 @@ export default function BYOKInputDialog({
 													),
 												)
 											}
-											placeholder="Azure endpoint API key"
+										placeholder={t("strings.Azure endpoint API key" as never)}
 										/>
 										<Input
 											value={deployment.modelId}
@@ -524,7 +526,7 @@ export default function BYOKInputDialog({
 													),
 												)
 											}
-											placeholder="Model ID for this endpoint"
+										placeholder={t("strings.Model ID for this endpoint" as never)}
 										/>
 									</div>
 								))}
@@ -537,11 +539,11 @@ export default function BYOKInputDialog({
 									}
 								>
 									<Plus className="h-4 w-4 mr-1" />
-									Add deployment
+									{t("settingsCopy.byok.addDeployment")}
 								</Button>
 								{initial ? (
 									<p className="text-xs text-muted-foreground">
-										Leave all deployment fields blank to keep existing credentials.
+										{t("settingsCopy.byok.keepDeploymentCredentials")}
 									</p>
 								) : null}
 							</div>
@@ -556,7 +558,7 @@ export default function BYOKInputDialog({
 						)}
 						{formatCheck ? null : <p className="text-xs text-muted-foreground">{inputInstruction ?? formatHint}</p>}
 						{submission.error ? (
-							<p className="text-xs text-red-600">{submission.error}</p>
+							<p className="text-xs text-red-600">{localizedProviderSubmissionError(submission.error, t)}</p>
 						) : null}
 						{formatCheck ? (
 							<p
@@ -571,20 +573,20 @@ export default function BYOKInputDialog({
 					</div>
 
 					<div className="flex items-center justify-between gap-4 rounded-md border p-3">
-						<div className="text-sm font-medium">Enabled</div>
+					<div className="text-sm font-medium">{t("labels.enabled")}</div>
 						<Switch checked={enabled} onCheckedChange={(checked: any) => setEnabled(Boolean(checked))} />
 					</div>
 
 					{initial ? <div className="space-y-4 rounded-md border p-3">
 						<div>
-							<div className="text-sm font-medium">Key scope</div>
-							<p className="mt-0.5 text-xs text-muted-foreground">Leave a list empty to allow every option.</p>
+					<div className="text-sm font-medium">{t("strings.Key scope" as never)}</div>
+					<p className="mt-0.5 text-xs text-muted-foreground">{t("strings.phraseLeaveAListEmptyToAllowEveryOption" as never)}</p>
 						</div>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-2">
 								<div className="flex items-center justify-between text-xs font-medium">
-									<span>Models</span>
-									<span className="text-muted-foreground">{allowedModelSlugs.length ? `${allowedModelSlugs.length} selected` : "All"}</span>
+						<span>{t("strings.Models" as never)}</span>
+									<span className="text-muted-foreground">{allowedModelSlugs.length ? t("guardrailEditorCopy.selectedCount", { count: allowedModelSlugs.length }) : t("credits.All")}</span>
 								</div>
 								<ScrollArea className="h-36 rounded-md border p-2">
 									<div className="space-y-2 pr-2">
@@ -599,8 +601,8 @@ export default function BYOKInputDialog({
 							</div>
 							<div className="space-y-2">
 								<div className="flex items-center justify-between text-xs font-medium">
-									<span>Phaseo API keys</span>
-									<span className="text-muted-foreground">{allowedApiKeyIds.length ? `${allowedApiKeyIds.length} selected` : "All"}</span>
+						<span>{t("strings.Phaseo API keys" as never)}</span>
+									<span className="text-muted-foreground">{allowedApiKeyIds.length ? t("guardrailEditorCopy.selectedCount", { count: allowedApiKeyIds.length }) : t("credits.All")}</span>
 								</div>
 								<ScrollArea className="h-36 rounded-md border p-2">
 									<div className="space-y-2 pr-2">
@@ -609,7 +611,7 @@ export default function BYOKInputDialog({
 												<Checkbox checked={allowedApiKeyIds.includes(option.value)} onCheckedChange={(checked) => setAllowedApiKeyIds((current) => checked ? [...current, option.value] : current.filter((value) => value !== option.value))} />
 												<span className="truncate">{option.label}</span>
 											</label>
-										)) : <p className="text-xs text-muted-foreground">No API keys available.</p>}
+						)) : <p className="text-xs text-muted-foreground">{t("strings.No API keys available" as never)}.</p>}
 									</div>
 								</ScrollArea>
 							</div>
@@ -618,10 +620,10 @@ export default function BYOKInputDialog({
 
 					<DialogFooter className="gap-2">
 						<Button variant="outline" type="button" onClick={() => embedded ? onCancel?.() : setOpen(false)}>
-							Cancel
+							{t("settingsPageCopy.cancel")}
 						</Button>
 						<Button type="submit" disabled={loading || !canSubmit}>
-							{loading ? "Saving..." : "Save"}
+							{loading ? t("settingsPageCopy.saving") : t("settingsPageCopy.save")}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -638,7 +640,7 @@ export default function BYOKInputDialog({
 			<DialogTrigger asChild>
 				{trigger ? trigger : (
 					<Button variant="outline" size="sm" className="rounded-lg" disabled={disabled} onClick={() => setOpen(true)}>
-						{triggerLabel}
+						{triggerLabel ?? t("byokCredentialCopy.setKey")}
 					</Button>
 				)}
 			</DialogTrigger>

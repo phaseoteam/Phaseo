@@ -1,0 +1,46 @@
+---
+icon: "shield-check"
+title: "Sécurité et validation des appels d’outils"
+description: "Validez les arguments des outils, sécurisez leur exécution et évitez les actions non sûres du modèle."
+---
+
+Traitez les arguments d’outils générés par le modèle comme des entrées non fiables.
+
+## Liste de contrôle de sécurité
+
+- Gardez les schémas d’outils minimaux et explicites.
+- Validez les arguments analysés avant d’exécuter l’outil.
+- Autorisez uniquement les noms d’outils approuvés et rejetez les inconnus.
+- Ajoutez des délais d’attente et des tentatives répétées aux appels externes.
+- Consignez l’ID d’appel, le nom de l’outil et les échecs de validation.
+
+## Exemple de validation de requête (TypeScript + Zod)
+
+```typescript
+import { z } from "zod";
+
+const WeatherArgs = z.object({
+  city: z.string().min(1),
+});
+
+function executeToolCall(name: string, rawArgs: string) {
+  if (name !== "get_weather") {
+    throw new Error(`Unsupported tool: ${name}`);
+  }
+
+  const parsed = WeatherArgs.parse(JSON.parse(rawArgs));
+  return getWeather(parsed.city);
+}
+```
+
+## Stratégie en cas d’échec
+
+Si la validation échoue :
+
+1. N’exécutez pas l’outil.
+2. Renvoyez une erreur contrôlée au tour suivant du modèle.
+3. Demandez au modèle de réessayer avec des arguments corrigés.
+
+## Remarque sur le streaming
+
+Les appels d’outils en streaming dépendent du modèle et du fournisseur. Accumulez tous les fragments d’arguments avant d’analyser, de valider ou d’exécuter un appel. Consultez [Streaming](./streaming.mdx).

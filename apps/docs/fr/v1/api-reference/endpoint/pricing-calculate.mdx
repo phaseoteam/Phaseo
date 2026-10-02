@@ -1,0 +1,19 @@
+---
+title: "Calculer les tarifs"
+sidebarTitle: "Calculer les tarifs"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
+description: "Estimer le coût d’une charge utile d’utilisation précise pour un fournisseur, un modèle et un point de terminaison."
+---
+
+Calcule le tarif d’une charge utile d’utilisation selon les règles de tarification actives de la passerelle.
+
+Fournissez :
+
+- `provider` : identifiant du fournisseur, par exemple `openai`
+- `model` : identifiant du modèle routé
+- `endpoint` : famille de points de terminaison, par exemple `responses` ou `chat.completions`
+- `usage` : l’objet d’utilisation à tarifer, comme le nombre de jetons ou d’autres données de mesure
+
+Utilisez cette route si vous connaissez déjà le fournisseur, le modèle et le point de terminaison visés et souhaitez estimer le coût d’une utilisation précise. À l’inverse, `GET /pricing/models` répertorie les tarifs publics actuels du catalogue.
+

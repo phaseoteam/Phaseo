@@ -1,0 +1,26 @@
+---
+icon: "messages-square"
+title: "聊天补全"
+description: "使用 Java SDK 调用 `/chat/completions`。"
+---
+
+**方法**: `client.createChatCompletion(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Write a one-line haiku." }
+  ]
+}
+""";
+
+Object response = client.createChatCompletion(body);
+System.out.println(String.valueOf(response));
+```
+

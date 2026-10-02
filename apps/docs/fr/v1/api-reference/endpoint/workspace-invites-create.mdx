@@ -1,0 +1,10 @@
+---
+title: "Créer une invitation à l’espace de travail"
+sidebarTitle: "Créer l’invitation"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "Crée une invitation à durée limitée pour l’espace de travail."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `workspaces:write`.</Note>
+
+Le `token` en clair n’est renvoyé qu’une seule fois. Conservez-le en lieu sûr ; les appels de liste ultérieurs ne renvoient qu’un aperçu.

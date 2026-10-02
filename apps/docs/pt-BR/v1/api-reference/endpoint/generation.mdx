@@ -1,0 +1,23 @@
+---
+title: "Obter uma geração"
+sidebarTitle: "Obter uma geração"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /generations"
+---
+Busca o registro de auditoria armazenado para um `request_id` da sua equipe.
+
+Use:
+- `GET /v1/generations?id=<request_id>`
+
+Quando o gateway capturou todos os detalhes da solicitação dessa geração, a resposta também inclui:
+
+- `replay_supported`: indica se há um payload pronto para repetição
+- `replay_request`: o corpo da solicitação armazenado que pode ser enviado ao endpoint original para uma nova execução controlada
+
+Fluxo típico para repetir uma solicitação:
+
+1. Leia o registro da geração com `GET /v1/generations?id=<request_id>`.
+2. Verifique se `replay_supported === true`.
+3. Reenvie `replay_request` ao endpoint original indicado por `endpoint`, como `/v1/chat/completions` ou `/v1/responses`.
+
+

@@ -1,0 +1,13 @@
+---
+title: "Arbeitsbereichsanalysen abrufen"
+sidebarTitle: "Analysen abrufen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /analytics"
+description: "Gefilterte Summen für Kosten, Anfragen und Tokens des Arbeitsbereichs abrufen."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `analytics:read` erforderlich.</Note>
+
+Filtere nach Datum, Anfragebezeichnung, API-Schlüssel, Endnutzer, Modell, Anbieter, Endpunkt, Anmeldedatenquelle oder Ergebnis. Die Ergebnisse werden mit stabiler Paginierung nach Datum, Modell, Anbieter und Endpunkt gruppiert.
+
+Der Zeitraum ist auf die letzten 30 abgeschlossenen UTC-Tage und höchstens 10.000 Quellanfragen begrenzt.
+

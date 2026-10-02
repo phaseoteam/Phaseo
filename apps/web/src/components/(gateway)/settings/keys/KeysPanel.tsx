@@ -1,5 +1,8 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+import { localizedSettingsError } from "@/i18n/error-messages";
+
 import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -79,6 +82,8 @@ import {
 	updateApiKeyAction,
 } from "@/app/(dashboard)/settings/keys/actions";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { getKeyState, organiseKeys, type KeyState } from "./keyOrdering";
 type KeyDialogType = "details" | "edit" | "rotate" | "delete";
@@ -110,46 +115,36 @@ function KeyDialogMenuItem({
 }
 
 
-function stateMeta(state: KeyState) {
+function stateMeta(state: KeyState, t: ReturnType<typeof useTranslations<"SettingsUI">>) {
 	switch (state) {
 		case "active":
-			return { label: "Active", Icon: CheckCircle2, className: "text-emerald-600" };
+			return { label: t("labels.active"), Icon: CheckCircle2, className: "text-emerald-600" };
 		case "disabled":
-			return { label: "Disabled", Icon: Ban, className: "text-zinc-400" };
+			return { label: t("labels.disabled"), Icon: Ban, className: "text-zinc-400" };
 		case "limited":
-			return { label: "Limits Reached", Icon: OctagonAlert, className: "text-red-600" };
+			return { label: t("strings.Limits Reached" as never), Icon: OctagonAlert, className: "text-red-600" };
 		case "expired":
-			return { label: "Expired", Icon: Ban, className: "text-amber-600" };
+			return { label: t("labels.expired"), Icon: Ban, className: "text-amber-600" };
 	}
 }
 
-function formatLastUsed(v?: string | null) {
-	if (!v) return "Never";
-	const d = new Date(v);
-	if (Number.isNaN(d.getTime())) return "Never";
-	return d.toLocaleDateString();
-}
-
-function formatExpiry(v?: string | null) {
-	if (!v) return "No expiry";
-	const d = new Date(v);
-	if (Number.isNaN(d.getTime())) return "No expiry";
-	const days = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-	if (days <= 0) return "Expired";
-	return `${days}d`;
-}
-
-function fmtCompactInt(v: number) {
-	return new Intl.NumberFormat("en-US", { notation: "compact" }).format(v);
-}
-
-function fmtUsdFromNanos(v: number) {
-	const usd = v / NANOS_PER_USD;
-	return new Intl.NumberFormat("en-US", {
-		style: "currency",
-		currency: "USD",
-		maximumFractionDigits: usd < 10 ? 2 : 0,
-	}).format(usd);
+function useKeyRowDisplay() {
+ const t = useTranslations("SettingsUI");
+ const format = useDisplayFormatters();
+ return {
+  t,
+  formatLastUsed: (value?: string | null) => value && Number.isFinite(Date.parse(value)) ? format.calendarDate(value) : t("labels.never"),
+  formatExpiry: (value?: string | null) => {
+   if (!value || !Number.isFinite(Date.parse(value))) return t("labels.noExpiry");
+   const days = Math.ceil((Date.parse(value) - Date.now()) / 86_400_000);
+   return days <= 0 ? t("labels.expired") : format.number(days, { style: "unit", unit: "day", unitDisplay: "short", notation: "standard" });
+  },
+  fmtCompactInt: (value: number) => format.number(value),
+  fmtUsdFromNanos: (value: number) => {
+   const usd = value / NANOS_PER_USD;
+   return format.number(usd, { style: "currency", currency: "USD", maximumFractionDigits: usd < 10 ? 2 : 0, notation: "standard" });
+  },
+ };
 }
 
 function formatKeyReference(v?: string | null) {
@@ -164,11 +159,12 @@ function GuardrailSummary({
 	guardrails?: any[];
 	className?: string;
 }) {
+	const t = useTranslations("SettingsUI");
 	const items = Array.isArray(guardrails) ? guardrails : [];
 	if (items.length === 0) {
 		return (
 			<div className={`${className} text-[11px] text-muted-foreground`}>
-				No guardrails
+				{t("keys.noGuardrails")}
 			</div>
 		);
 	}
@@ -182,10 +178,10 @@ function GuardrailSummary({
 					className="max-w-full gap-1 text-[10px]"
 				>
 					<span className="truncate">
-						{guardrail.name ?? guardrail.id ?? "Guardrail"}
+						{guardrail.name ?? guardrail.id ?? t("headers.guardrail")}
 					</span>
 					{guardrail.enabled === false ? (
-						<span className="text-muted-foreground">(Off)</span>
+						<span className="text-muted-foreground">({t("labels.off")})</span>
 					) : null}
 				</Badge>
 			))}
@@ -372,6 +368,7 @@ const LimitPillStack = memo(function LimitPillStack({
 	state: KeyState;
 	metricLabel: "requests" | "spend";
 }) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<div className="flex min-w-0 flex-col gap-1">
 			{windows.map((window) => {
@@ -396,11 +393,11 @@ const LimitPillStack = memo(function LimitPillStack({
 							: tone === "ok"
 								? "bg-emerald-600"
 								: "bg-muted-foreground/40";
-				const value = clamped !== null ? `${Math.round(clamped)}%` : "No cap";
+				const value = clamped !== null ? `${Math.round(clamped)}%` : t("strings.No cap" as never);
 				const title =
 					metricLabel === "requests"
-						? `${window.name} requests`
-						: `${window.name} spend`;
+						? `${t(settingsStringKey(window.name) as never)} ${t("strings.requests" as never)}`
+						: `${t(settingsStringKey(window.name) as never)} ${t("strings.spend" as never)}`;
 				const resetText = formatResetCountdown(window.label);
 
 				return (
@@ -426,7 +423,7 @@ const LimitPillStack = memo(function LimitPillStack({
 										</div>
 									</div>
 									<div className="mt-1 text-muted-foreground">
-										Resets in {resetText}
+									{t("strings.Resets in {time}" as never, { time: resetText } as never)}
 									</div>
 								</div>
 								<div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -437,27 +434,27 @@ const LimitPillStack = memo(function LimitPillStack({
 								</div>
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between gap-4">
-										<span className="text-muted-foreground">Used</span>
+											<span className="text-muted-foreground">{t("labels.used")}</span>
 										<span className="font-mono font-medium tabular-nums">
 											{formatter(window.used)}
 										</span>
 									</div>
 									<div className="flex items-center justify-between gap-4">
-										<span className="text-muted-foreground">Limit</span>
+											<span className="text-muted-foreground">{t("labels.limit")}</span>
 										<span className="font-mono font-medium tabular-nums">
-											{window.limit > 0 ? formatter(window.limit) : "No cap"}
+											{window.limit > 0 ? formatter(window.limit) : t("strings.No cap" as never)}
 										</span>
 									</div>
 									{window.limit > 0 ? (
 										<div className="flex items-center justify-between gap-4">
-											<span className="text-muted-foreground">Remaining</span>
+													<span className="text-muted-foreground">{t("labels.remaining")}</span>
 											<span className="font-mono font-semibold tabular-nums text-foreground">
 												{formatter(remaining)}
 											</span>
 										</div>
 									) : null}
 									<div className="flex items-center justify-between gap-4 border-t pt-1.5">
-										<span className="text-muted-foreground">Reset</span>
+													<span className="text-muted-foreground">{t("labels.reset")}</span>
 										<span className="font-mono font-semibold tabular-nums text-foreground">
 											{resetText}
 										</span>
@@ -497,8 +494,9 @@ type KeyRowProps = {
 };
 
 const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelection, openKeyDialog, openDetailsFromRow, openDetailsFromKeyboard }: KeyRowProps) {
+	const { t, formatLastUsed, formatExpiry, fmtCompactInt, fmtUsdFromNanos } = useKeyRowDisplay();
 	const state = getKeyState(k);
-	const meta = useMemo(() => stateMeta(state), [state]);
+	const meta = useMemo(() => stateMeta(state, t), [state, t]);
 	const visuals = useMemo(() => getKeyUsageVisuals(k), [k]);
 	const keyId = String(k.id);
 
@@ -518,7 +516,7 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 					onCheckedChange={(checked) =>
 						toggleKeySelection(keyId, checked === true)
 					}
-					aria-label={`Select ${k.name}`}
+					aria-label={t("keys.search.select", { name: String(k.name ?? "") })}
 					className="mt-0.5"
 				/>
 			<div className="min-w-0">
@@ -540,30 +538,30 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 							variant="ghost"
 							size="icon"
 							className="h-8 w-8"
-							aria-label="Actions" />}>
+							aria-label={t("labels.actions")} />}>
 
 							<MoreVertical className="h-4 w-4" />
 
 					</DropdownMenuTrigger>
 				<DropdownMenuContent side="bottom" align="end" className="w-40 rounded-2xl">
 						<KeyDialogMenuItem
-							label="Details"
+							label={t("labels.details")}
 							Icon={Info}
 							onOpen={() => openKeyDialog("details", k)}
 						/>
 						<UsageItem k={k} />
 						<KeyDialogMenuItem
-							label="Edit"
+							label={t("labels.edit")}
 							Icon={Edit2}
 							onOpen={() => openKeyDialog("edit", k)}
 						/>
 						<KeyDialogMenuItem
-							label="Rotate"
+							label={t("keys.rotate")}
 							Icon={RefreshCw}
 							onOpen={() => openKeyDialog("rotate", k)}
 						/>
 						<KeyDialogMenuItem
-							label="Delete"
+							label={t("labels.delete")}
 							Icon={Trash2}
 							variant="destructive"
 							onOpen={() => openKeyDialog("delete", k)}
@@ -574,18 +572,18 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 
 			<div className="grid grid-cols-2 gap-3 text-xs">
 				<div>
-					<div className="text-muted-foreground">Last Used</div>
+					<div className="text-muted-foreground">{t("strings.Last Used" as never)}</div>
 					<div>{formatLastUsed(k.last_used_at)}</div>
 				</div>
 				<div>
-					<div className="text-muted-foreground">Expires</div>
+					<div className="text-muted-foreground">{t("strings.Expires" as never)}</div>
 					<div>{formatExpiry(k.expires_at)}</div>
 				</div>
 			</div>
 
 			<div className="space-y-1.5">
 				<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-					Requests
+					{t("strings.Requests" as never)}
 				</div>
 				<LimitPillStack
 					windows={visuals.requestWindows}
@@ -597,7 +595,7 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 
 			<div className="space-y-1.5">
 				<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-					Spend
+					{t("strings.Spend" as never)}
 				</div>
 				<LimitPillStack
 					windows={visuals.spendWindows}
@@ -611,8 +609,9 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 });
 
 const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelection, openKeyDialog, openDetailsFromRow, openDetailsFromKeyboard }: KeyRowProps) {
-		const state = getKeyState(k);
-		const meta = useMemo(() => stateMeta(state), [state]);
+		const { t, formatLastUsed, formatExpiry, fmtCompactInt, fmtUsdFromNanos } = useKeyRowDisplay();
+	const state = getKeyState(k);
+		const meta = useMemo(() => stateMeta(state, t), [state, t]);
 		const visuals = useMemo(() => getKeyUsageVisuals(k), [k]);
 		const keyId = String(k.id);
 
@@ -673,7 +672,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 						<DropdownMenuTrigger render={<Button
 								variant="ghost"
 								size="icon"
-								aria-label="Actions" />}>
+								aria-label={t("labels.actions")} />}>
 
 								<MoreVertical />
 
@@ -684,23 +683,23 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 					className="w-40 rounded-2xl"
 						>
 							<KeyDialogMenuItem
-								label="Details"
+								label={t("labels.details")}
 								Icon={Info}
 								onOpen={() => openKeyDialog("details", k)}
 							/>
 							<UsageItem k={k} />
 							<KeyDialogMenuItem
-								label="Edit"
+								label={t("labels.edit")}
 								Icon={Edit2}
 								onOpen={() => openKeyDialog("edit", k)}
 							/>
 							<KeyDialogMenuItem
-								label="Rotate"
+								label={t("keys.rotate")}
 								Icon={RefreshCw}
 								onOpen={() => openKeyDialog("rotate", k)}
 							/>
 							<KeyDialogMenuItem
-								label="Delete"
+								label={t("labels.delete")}
 								Icon={Trash2}
 								variant="destructive"
 								onOpen={() => openKeyDialog("delete", k)}
@@ -725,7 +724,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 						onCheckedChange={(checked) =>
 							toggleKeySelection(keyId, checked === true)
 						}
-						aria-label={`Select ${k.name}`}
+						aria-label={t("keys.search.select", { name: String(k.name ?? "") })}
 					/>
 				</TableCell>
  {content}
@@ -743,6 +742,7 @@ const getDesktopLayout = () => window.matchMedia(desktopQuery).matches;
 const getServerLayout = () => false;
 
 export default function KeysPanel({ teamsWithKeys }: any) {
+	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
  const desktop = useSyncExternalStore(subscribeToLayout, getDesktopLayout, getServerLayout);
 	const [filter, setFilter] = useQueryState("keyStatus", parseAsStringLiteral(["enabled", "disabled", "expired", "enabled-disabled", "enabled-expired", "disabled-expired", "all", "none"] as const).withDefault("enabled-disabled"));
@@ -842,10 +842,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			));
 			toast.promise(operation,
 				{
-					loading: paused ? "Pausing selected keys..." : "Activating selected keys...",
-					success: paused ? "Selected keys paused" : "Selected keys activated",
+					loading: paused ? t("strings.phrasePausingSelectedKeys" as never) : t("strings.phraseActivatingSelectedKeys" as never),
+					success: paused ? t("strings.Selected keys paused" as never) : t("strings.Selected keys activated" as never),
 					error: (error) =>
-						(error && (error as any).message) || "Failed to update selected keys",
+						localizedSettingsError(error, t, "Failed to update selected keys"),
 				}
 			);
 			await operation;
@@ -868,10 +868,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			));
 			toast.promise(operation,
 				{
-					loading: "Deleting selected keys...",
-					success: "Selected keys deleted",
+					loading: t("strings.phraseDeletingSelectedKeys" as never),
+					success: t("strings.Selected keys deleted" as never),
 					error: (error) =>
-						(error && (error as any).message) || "Failed to delete selected keys",
+						localizedSettingsError(error, t, "Failed to delete selected keys"),
 				}
 			);
 			await operation;
@@ -888,7 +888,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
  const selectedStatuses = filter === "all" ? [...statusOptions] : filter.split("-");
  const statusMenu = (
   <DropdownMenu>
-   <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-7" aria-label="Filter keys by status" />}>
+   <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="size-7" aria-label={t("keys.search.filterStatus")} />}>
     <Filter className={`size-3.5 ${filter !== "enabled-disabled" ? "text-primary" : "text-muted-foreground"}`} />
    </DropdownMenuTrigger>
    <DropdownMenuContent align="start">
@@ -900,7 +900,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
        void setFilter((next.length === 3 ? "all" : next.join("-") || "none") as typeof filter);
       }}>
       {status === "enabled" ? <CheckCircle2 className="text-emerald-600" /> : status === "expired" ? <OctagonAlert className="text-amber-600" /> : <Ban className="text-muted-foreground" />}
-      {status[0].toUpperCase() + status.slice(1)}
+      {t(`labels.${status}` as never)}
      </DropdownMenuCheckboxItem>
     ))}
    </DropdownMenuContent>
@@ -914,9 +914,9 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 					<EmptyMedia variant="icon">
 						<Key className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>No API keys yet</EmptyTitle>
+					<EmptyTitle>{t("strings.No API keys yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						Create your first key to start sending gateway requests.
+						{t("strings.phraseCreateYourFirstKeyToStartSendingGatewayRequests" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -929,11 +929,11 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			<div className="relative max-w-md">
 				<Search aria-hidden="true" className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
-					aria-label="Search API keys"
+					aria-label={t("keys.search.label")}
 					autoCapitalize="none"
 					autoComplete="off"
 					className={isRawKeySearch ? "pl-8 pr-24" : "pl-8 pr-9"}
-					placeholder="Search by name or paste a full key"
+					placeholder={t("keys.search.placeholder")}
 					spellCheck={false}
 					type={isRawKeySearch && !showRawKey ? "password" : "text"}
 					value={search}
@@ -946,23 +946,23 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 				/>
 				{normalizedSearch ? (
 					<div className="absolute right-0 top-0 flex h-full items-center">
-						{isRawKeySearch && rawLookupPending ? <Loader2 aria-label="Looking up API key" className="mr-1 size-4 animate-spin text-muted-foreground" /> : null}
+						{isRawKeySearch && rawLookupPending ? <Loader2 aria-label={t("keys.search.checking")} className="mr-1 size-4 animate-spin text-muted-foreground" /> : null}
 						{isRawKeySearch ? (
-							<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={showRawKey ? "Hide API key" : "Show API key"} aria-pressed={showRawKey} onClick={() => setShowRawKey((visible) => !visible)}>
+							<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={showRawKey ? t("keys.search.hide") : t("keys.search.show")} aria-pressed={showRawKey} onClick={() => setShowRawKey((visible) => !visible)}>
 								{showRawKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
 							</Button>
 						) : null}
-						<Button type="button" variant="ghost" size="icon" className="size-8" aria-label="Clear search" onClick={() => { setSearch(""); setShowRawKey(false); }}><X className="size-4" /></Button>
+						<Button type="button" variant="ghost" size="icon" className="size-8" aria-label={t("keys.search.clear")} onClick={() => { setSearch(""); setShowRawKey(false); }}><X className="size-4" /></Button>
 					</div>
 				) : null}
 			</div>
 
 			{someSelected ? (
-				<div role="region" aria-label="Selected key actions" className="fixed bottom-6 left-1/2 z-40 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 rounded-2xl border border-border/70 bg-popover px-3 py-2 text-popover-foreground shadow-xl">
+				<div role="region" aria-label={t("keys.search.selectedActions")} className="fixed bottom-6 left-1/2 z-40 flex w-max max-w-[calc(100vw-2rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-3 rounded-2xl border border-border/70 bg-popover px-3 py-2 text-popover-foreground shadow-xl">
 					<div className="text-sm" role="status" aria-live="polite">
 						<span className="font-medium">{selectedKeys.length}</span>{" "}
 						<span className="text-muted-foreground">
-							{selectedKeys.length === 1 ? "key selected" : "keys selected"}
+											{selectedKeys.length === 1 ? t("strings.key selected" as never) : t("strings.keys selected" as never)}
 						</span>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
@@ -974,7 +974,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							onClick={() => runBulkStatusUpdate(false)}
 						>
 							<CheckCircle2 className="h-4 w-4" />
-							Activate
+							{t("strings.Activate" as never)}
 						</Button>
 						<Button
 							type="button"
@@ -984,7 +984,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							onClick={() => runBulkStatusUpdate(true)}
 						>
 							<Ban className="h-4 w-4" />
-							Pause
+							{t("strings.Pause" as never)}
 						</Button>
 						<Button
 							type="button"
@@ -994,9 +994,9 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							onClick={() => setBulkDeleteOpen(true)}
 						>
 							<Trash2 className="h-4 w-4" />
-							Delete
+							{t("strings.Delete" as never)}
 						</Button>
-						<Button type="button" variant="ghost" size="icon" className="size-8" disabled={bulkBusy} aria-label="Clear selection" onClick={() => setSelectedIds(new Set())}>
+						<Button type="button" variant="ghost" size="icon" className="size-8" disabled={bulkBusy} aria-label={t("newMainSettingsCopy.clearSelection")} onClick={() => setSelectedIds(new Set())}>
 							<X className="size-4" />
 						</Button>
 					</div>
@@ -1013,17 +1013,17 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<EmptyMedia variant="icon">
 									<Key className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No matching keys</EmptyTitle>
+								<EmptyTitle className="text-base">{t("keys.search.empty")}</EmptyTitle>
  {statusMenu}
 								<EmptyDescription>
-									{normalizedSearch ? (rawLookupPending ? "Checking this API key…" : "Try another key name or full API key.") : filter === "all" ? "Create an API key to manage access and usage limits." : "Choose another status to see more keys."}
+									{normalizedSearch ? (rawLookupPending ? t("keys.search.checking") : t("keys.search.tryAnother")) : filter === "all" ? t("strings.phraseCreateAnAPIKeyToManageAccessAndUsageLimits" as never) : t("keys.search.chooseStatus")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
 					) : (
 						<div className="min-w-0 overflow-hidden rounded-lg border border-border/60 bg-card">
 							{!desktop ? <div className="divide-y divide-border/60 lg:hidden">
- <div className="flex items-center gap-2 px-3 py-1">Keys {statusMenu}</div>
+ <div className="flex items-center gap-2 px-3 py-1">{t("headers.apiKeys")} {statusMenu}</div>
 								{team.keys.map((k: any) => (
  <MobileKeyRow key={k.id} k={k} selected={selectedIds.has(String(k.id))}
  toggleKeySelection={toggleKeySelection} openKeyDialog={openKeyDialog}
@@ -1046,26 +1046,26 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 												onCheckedChange={(checked) =>
 													toggleAllKeys(checked === true)
 												}
-												aria-label="Select all filtered API keys"
+												aria-label={t("keys.search.selectAll")}
 											/>
 										</TableHead>
 										<TableHead className="w-[26%]">
 											<div className="flex items-center gap-2">
- <span>Key</span>
+ <span>{t("strings.Key" as never)}</span>
  {statusMenu}
 											<span className="ml-1 text-xs font-normal text-muted-foreground">
 												({team.keys.length})
 											</span>
  </div>
 										</TableHead>
-										<TableHead className="w-[16%]">Guardrails</TableHead>
-										<TableHead className="w-[16%]">Requests</TableHead>
-										<TableHead className="w-[16%]">Spend</TableHead>
+											<TableHead className="w-[16%]">{t("strings.Guardrails" as never)}</TableHead>
+											<TableHead className="w-[16%]">{t("strings.Requests" as never)}</TableHead>
+											<TableHead className="w-[16%]">{t("strings.Spend" as never)}</TableHead>
 										<TableHead className="w-[10%] whitespace-nowrap">
-											Last Used
+											{t("strings.Last Used" as never)}
 										</TableHead>
 										<TableHead className="w-[8%] whitespace-nowrap">
-											Expires
+											{t("strings.Expires" as never)}
 										</TableHead>
 										<TableHead className="w-[5%] text-right" />
 									</TableRow>
@@ -1135,11 +1135,12 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 		<Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Delete selected API keys?</DialogTitle>
+								<DialogTitle>{t("keys.deleteSelectedQuestion")}</DialogTitle>
 					<DialogDescription>
-						This will delete {selectedKeys.length}{" "}
-						{selectedKeys.length === 1 ? "key" : "keys"} and remove linked
-						guardrail assignments from those keys.
+						{t("strings.phraseThisWillDeleteCountUnitAndRemoveLinkedGuardrailAssignmentsFromThoseKeys" as never, {
+							count: selectedKeys.length,
+							unit: selectedKeys.length === 1 ? t("strings.key" as never) : t("strings.keys" as never),
+						} as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="max-h-40 space-y-1 overflow-y-auto rounded-lg border bg-muted/30 p-2 text-sm">
@@ -1150,7 +1151,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 					))}
 					{selectedKeys.length > 8 ? (
 						<div className="text-muted-foreground">
-							+{selectedKeys.length - 8} more
+							+{t("settingsPageCopy.moreKeys" as never, { count: selectedKeys.length - 8 } as never)}
 						</div>
 					) : null}
 				</div>
@@ -1161,7 +1162,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						disabled={bulkBusy}
 						onClick={() => setBulkDeleteOpen(false)}
 					>
-						Cancel
+												{t("strings.Cancel" as never)}
 					</Button>
 					<Button
 						type="button"
@@ -1169,7 +1170,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						disabled={bulkBusy || selectedKeys.length === 0}
 						onClick={runBulkDelete}
 					>
-						{bulkBusy ? "Deleting..." : "Delete selected"}
+										{bulkBusy ? t("strings.phraseDeleting" as never) : t("strings.Delete selected" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

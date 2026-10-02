@@ -1,0 +1,25 @@
+---
+icon: "rocket"
+title: "Descripción general"
+description: "Para qué sirve PHP Agent SDK y qué funcionalidades ofrece actualmente."
+---
+
+PHP Agent SDK es una máquina de estados local completa para agentes de Phaseo Gateway. Incluye reintentos, comprobaciones de tiempo de espera, revisión humana, estado reanudable, eventos del ciclo de vida y captura de DevTools. Los callbacks de herramientas se ejecutan de forma síncrona en el entorno estándar de PHP.
+
+Úsalo cuando necesites:
+
+- un ciclo ligero y acotado de herramientas
+- solicitudes `responses` respaldadas por la pasarela
+- control de la persistencia y la orquestación a cargo de la aplicación
+
+## Funciones incluidas
+
+- `AgentSdk::createAgent(...)`
+- `AgentSdk::defineTool(...)`
+- `AgentSdk::createGatewayAgentClient(...)`
+- un ciclo acotado de herramientas sobre la API `responses` de Phaseo
+
+## A continuación
+
+- [Instalación](./agent-sdk-installation.mdx)
+- [Uso](./agent-sdk.mdx)

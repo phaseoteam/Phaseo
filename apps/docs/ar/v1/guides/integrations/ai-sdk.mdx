@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "استخدم موفّر Phaseo الرسمي مع Vercel AI SDK."
+---
+
+تقدّم Phaseo موفّرًا رسميًا لـ Vercel AI SDK ضمن حزمة `@phaseo/ai-sdk-provider`.
+
+## التثبيت
+
+يكون AI SDK 7 وتنفيذ `ProviderV4` الأصلي من Phaseo الخيار الافتراضي للمشاريع الجديدة:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+تتبع حزمة Phaseo التي لا يتضمن اسمها رقم إصدار وسم `latest` في npm، ولذلك تختار إصدار الموفّر النشط المتوافق مع AI SDK 7. وتعلن الحزمة عن AI SDK 7 كاعتمادية نظيرة يثبّتها npm تلقائيًا.
+
+### إصدار الصيانة لـ AI SDK 6
+
+يستخدم AI SDK 6 عقد `ProviderV3` الأقدم. ثبّت إصدار التوافق ذي الوسم:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+يظل Phaseo provider 1.x قيد الصيانة ما دام AI SDK 7 هو الإصدار الحالي. وعندما يصبح AI SDK 8 مستقرًا، ستضع Phaseo علامة الإهمال على سلسلة 1.x في npm. ولن يؤدي ذلك إلى إزالة الإصدارات الحالية؛ وسيُعلن عن أي قرار لاحق بإنهاء الدعم بشكل منفصل.
+
+### التوافق مع AI SDK 5
+
+يقبل AI SDK 5 عقد `ProviderV2` الأقدم. ثبّت إصدار التوافق المخصص من Phaseo:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+إذا لم يثبّت مدير الحزم الاعتماديات النظيرة تلقائيًا، فثبّت الإصدار الرئيسي المطابق من `ai` بشكل منفصل (`ai@^7` أو `ai@^6` أو `ai@^5`).
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+تدعم سلسلة v5 إنشاء النصوص وبثّها والأدوات والمخرجات المنظّمة والتضمينات والصور والنسخ الصوتي وتوليد الكلام. تتوفر إعادة الترتيب المعيارية في عقود الموفّر الخاصة بـ AI SDK 6 و7.
+
+## الاستخدام الأساسي
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## الواجهات المدعومة في AI SDK 7
+
+ينفّذ Provider 2.x عقود v4 الأصلية في AI SDK 7 ويختبرها، وتشمل:
+
+- إنشاء النصوص وبثّها
+- إعدادات الاستدلال ومخرجاته المستقلة عن الموفّر
+- أدوات الوظائف القياسية ومدخلات الأدوات المبثوثة وتبادل نتائج الأدوات
+- المخرجات المنظّمة بتنسيقي JSON وJSON Schema
+- مدخلات الملفات النصية والصورية باستخدام تنسيق بيانات الملفات ذي العلامات في V7
+- مصادر الاستشهاد بعناوين URL
+- التضمينات وإنشاء الصور
+- إعادة الترتيب
+- النسخ الصوتي وتوليد الكلام
+- بيانات الموفّر الوصفية والاستخدام وترويسات الطلب وإشارات الإلغاء ومقاطع البث الخام
+
+استخدم معرّفات النماذج من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). وتعتمد الإمكانات الفردية أيضًا على النموذج المحدد والموفّر الأساسي.
+
+## إعادة الترتيب وحدود الإمكانات
+
+تتوفر إعادة الترتيب عبر المساعد `rerank()` في AI SDK و`phaseo.rerankingModel(modelId)`. لا تُعلن ميزات ProviderV4 التي تتطلب واجهات API من Phaseo غير متاحة حاليًا، ومنها رفع الملفات المُدارة ومراجعها والمهارات وتعريفات الأدوات ونتائجها واستجابات الموافقة التي ينفّذها الموفّر. تظل أدوات الوظائف التي ينفّذها التطبيق مستخدمة لمسار التنفيذ والموافقة المعتاد في AI SDK. وتُصدر الأجزاء غير المدعومة الخاصة بموفّر معين أو المطالبات المخصصة خطأً واضحًا بدل تجاهلها بصمت.
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

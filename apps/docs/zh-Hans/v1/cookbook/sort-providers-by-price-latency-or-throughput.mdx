@@ -1,0 +1,332 @@
+---
+title: "按价格、延迟或吞吐量排序提供商"
+icon: "arrow-down-up"
+description: "使用请求级提供商排序，为某个模型优先选择最便宜、最快或吞吐量最高的路由。"
+---
+
+当模型保持不变，但你希望网关为某个请求以不同方式排列提供商报价时，可以使用此方案。
+
+## 目标
+
+- 为某个请求优先选择最便宜的提供商。
+- 为交互式流程优先选择延迟最低的提供商。
+- 批量生成时优先选择吞吐量最高的提供商。
+
+## 1. 在请求中添加 `provider.sort`
+
+对于文本请求，请直接在 `provider` 对象中设置排序方式。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Give me one release-note bullet for the last deploy.",
+    "provider": {
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Give me one release-note bullet for the last deploy.",
+  provider: {
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Give me one release-note bullet for the last deploy.",
+        "provider": {
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Give me one release-note bullet for the last deploy.",
+    Provider: map[string]interface{}{
+      "sort": "price",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Give me one release-note bullet for the last deploy.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["sort"] = "price"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Give me one release-note bullet for the last deploy.',
+    'provider' => [
+        'sort' => 'price',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Give me one release-note bullet for the last deploy.',
+  provider: {
+    sort: 'price'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+此流程支持以下路由排序方式：
+
+- `price`
+- `latency`
+- `throughput`
+
+## 2. 选择适合工作负载的排序方式
+
+用法：
+
+- 当成本比尾延迟更重要时使用 `price`
+- 聊天、辅助工具和人工参与的工具使用 `latency`
+- 高并发生成或回填任务使用 `throughput`
+
+## 3. 了解网关的比较依据
+
+当你明确指定请求级排序时，网关会以确定性方式排列候选项，而不是使用常规的平衡加权随机排序。
+
+对于文本模型：
+
+- `price` 会在符合条件的提供商之间比较统一的价格基准
+- 如果存在通用文本计量项，网关会优先选择 `input_text_tokens` 和 `output_text_tokens` 匹配的提供商
+- `latency` 使用最新的提供商延迟数据
+- `throughput` 使用最新的吞吐量测量值
+
+## 4. 保持合理的的提供商范围
+
+必要时先缩小候选范围，再进行排序，效果会更好。
+
+例如，只在一组已批准的提供商中进行排序：
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the incident in one sentence.",
+    "provider": {
+      "only": ["google-vertex", "google-vertex-eu"],
+      "sort": "latency"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the incident in one sentence.",
+  provider: {
+    only: ["google-vertex", "google-vertex-eu"],
+    sort: "latency",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the incident in one sentence.",
+        "provider": {
+            "only": ["google-vertex", "google-vertex-eu"],
+            "sort": "latency",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Summarize the incident in one sentence.",
+    Provider: map[string]interface{}{
+      "only": []string{"google-vertex", "google-vertex-eu"},
+      "sort": "latency",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Summarize the incident in one sentence.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["only"] = new[] { "google-vertex", "google-vertex-eu" },
+        ["sort"] = "latency"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Summarize the incident in one sentence.',
+    'provider' => [
+        'only' => ['google-vertex', 'google-vertex-eu'],
+        'sort' => 'latency',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Summarize the incident in one sentence.',
+  provider: {
+    only: ['google-vertex', 'google-vertex-eu'],
+    sort: 'latency'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+## 5. 验证排序结果
+
+调试时，请在 **Gateway -> 用量** 中检查请求并查找：
+
+- 已考虑的提供商
+- 已排序的提供商
+- 价格、延迟或吞吐量的路由评分因素
+
+这样可以轻松确认网关是否按预期排序。
+
+## 相关指南
+
+- [路由和回退](../guides/routing-and-fallbacks.mdx)
+- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)

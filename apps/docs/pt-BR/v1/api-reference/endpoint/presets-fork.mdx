@@ -1,0 +1,10 @@
+---
+title: "Criar derivação de predefinição pública"
+sidebarTitle: "Derivar predefinição"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /presets/{id}/fork"
+description: "Deriva uma predefinição pública para o espaço de trabalho de gerenciamento."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `presets:write` e uma identidade de usuário associada.</Note>
+
+Omita `source_version_id` para derivar a versão ativa. A nova predefinição é privada e mantém a linhagem upstream.

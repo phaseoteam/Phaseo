@@ -354,7 +354,7 @@ export async function fetchFrontendModelPendingApiReleaseState(
 		})) ?? false;
 		return {
 			isPendingApiRelease: header?.status === "Available" && providers !== null && !hasActiveProvider,
-			modelName: header?.name ?? "This model",
+			modelName: header?.name ?? modelId,
 		};
 	}
 	return getModelPendingApiReleaseState(modelId, includeHidden);

@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "स्ट्रीमिंग"
+description: "Ruby एजेंट के टेक्स्ट, reasoning, item और lifecycle stream का उपयोग करें।"
+---
+
+`Agent#stream` दोबारा चलाया जा सकने वाला `StreamResult` लौटाता है:
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+अन्य projection के लिए `reasoning_stream`, `item_stream` या `full_stream` उपयोग करें। Ruby provider stream को synchronous रूप से पढ़ता है और फिर दूसरे consumer के लिए दोबारा चलाए जा सकने वाले sequence देता है।
+
+item वैल्यू अभी hash हैं; वे TypeScript का discriminated item union नहीं हैं।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

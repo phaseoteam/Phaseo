@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Abbruchbedingungen"
+description: "Begrenze .NET-Agent-Aufgaben nach Schritten, Tokens, Kosten, Dauer, Werkzeugen oder Abschlussgrund."
+---
+
+Kombiniere Stopp-Hilfsfunktionen in `AgentDefinition.StopWhen`:
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` und `FinishReasonIs(...)` provide event-based limits. Lege auch bei Token- oder Kostenlimits eine Schritt- oder Zeitgrenze fest, da diese von gemeldeten Nutzungsdaten abhängen.
+
+## Verwandte Themen
+
+- [Dynamische Gesprächsrunden](./agent-sdk-dynamic-turns.mdx)
+- [Outputs und retries](./agent-sdk-run-controls.mdx)

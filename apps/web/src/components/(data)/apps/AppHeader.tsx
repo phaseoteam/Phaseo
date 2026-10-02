@@ -2,16 +2,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
 import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 export default async function AppHeader({ appId }: { appId: string }) {
-	const app = await fetchFrontendAppDetails(appId);
+	const locale = await getLocale();
+	const [app, t] = await Promise.all([
+		fetchFrontendAppDetails(appId),
+		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
+	]);
 
 	if (!app) {
 		return (
 			<Card>
 				<CardContent className="p-6">
-					<p className="text-muted-foreground">App not found</p>
+					<p className="text-muted-foreground">{t("appNotFound")}</p>
 				</CardContent>
 			</Card>
 		);
@@ -22,7 +27,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 			{/* App Info Card */}
 			<Card>
 				<CardHeader className="pb-3">
-					<CardTitle className="text-lg">App Information</CardTitle>
+					<CardTitle className="text-lg">{t("appInformation")}</CardTitle>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-3">
@@ -36,17 +41,19 @@ export default async function AppHeader({ appId }: { appId: string }) {
 									className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
 								>
 									<ExternalLink className="h-3 w-3" />
-									Visit App
+									{t("visitApp")}
 								</a>
 							)}
 						</div>
 						<div className="flex items-center gap-2">
 							<Badge variant={app.is_active ? "default" : "secondary"}>
-								{app.is_active ? "Active" : "Inactive"}
+								{app.is_active ? t("active") : t("inactive")}
 							</Badge>
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Last seen: <DisplayDate value={app.last_seen} />
+							{t.rich("lastSeen", {
+								date: () => <DisplayDate value={app.last_seen} />,
+							})}
 						</div>
 					</div>
 				</CardContent>
@@ -57,7 +64,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				<CardHeader className="pb-3">
 					<CardTitle className="text-lg flex items-center gap-2">
 						<Activity className="h-4 w-4" />
-						Total Requests
+						{t("totalRequests")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -65,7 +72,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 						<DisplayNumber value={app.total_requests} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
-						All time successful requests
+						{t("allTimeSuccessfulRequests")}
 					</p>
 				</CardContent>
 			</Card>
@@ -75,7 +82,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				<CardHeader className="pb-3">
 					<CardTitle className="text-lg flex items-center gap-2">
 						<Zap className="h-4 w-4" />
-						Total Tokens
+						{t("totalTokens")}
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
@@ -83,7 +90,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 						<DisplayNumber value={app.total_tokens} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
-						Tokens consumed across all requests
+						{t("tokensConsumedAcrossRequests")}
 					</p>
 				</CardContent>
 			</Card>

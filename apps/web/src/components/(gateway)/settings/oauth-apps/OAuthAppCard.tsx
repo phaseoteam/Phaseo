@@ -6,13 +6,15 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Users, Activity } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { useLocale, useTranslations } from "next-intl";
 
 interface OAuthAppCardProps {
 	app: any;
 }
 
 export default function OAuthAppCard({ app }: OAuthAppCardProps) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const statusColor = {
 		active: "bg-emerald-500",
 		suspended: "bg-amber-500",
@@ -20,10 +22,10 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 	}[(app.status as string)] || "bg-gray-500";
 
 	const statusText = {
-		active: "Active",
-		suspended: "Suspended",
-		deleted: "Deleted",
-	}[(app.status as string)] || "Unknown";
+		active: t("labels.active"),
+		suspended: t("strings.Suspended" as never),
+		deleted: t("strings.Deleted" as never),
+	}[(app.status as string)] || t("strings.Unknown" as never);
 
 	return (
 		<Card className="flex flex-col hover:shadow-md transition-shadow">
@@ -60,11 +62,11 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 				<div className="grid grid-cols-2 gap-2 text-sm">
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Users className="size-4" />
-						<span>{app.active_authorizations || 0} users</span>
+						<span>{t("oauthCardCopy.usersCount" as never, { count: app.active_authorizations || 0 } as never)}</span>
 					</div>
 					<div className="flex items-center gap-2 text-muted-foreground">
 						<Activity className="size-4" />
-						<span>{app.requests_last_30d || 0} requests</span>
+						<span>{t("oauthCardCopy.requestsCount" as never, { count: app.requests_last_30d || 0 } as never)}</span>
 					</div>
 				</div>
 
@@ -76,19 +78,19 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 						className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						<ExternalLink className="size-3" />
-						<span>Visit website</span>
+						<span>{t("strings.Visit website" as never)}</span>
 					</a>
 				)}
 
 				<div className="text-xs text-muted-foreground pt-2">
-					Created {formatDistanceToNow(new Date(app.created_at), { addSuffix: true })}
+					{t("strings.Created" as never)} {formatRelativeTime(new Date(app.created_at), locale)}
 				</div>
 			</CardContent>
 
 			<CardFooter>
 				<Button variant="outline" size="sm" asChild className="w-full">
 					<Link href={`/settings/oauth-apps/${app.client_id}`}>
-						View Details
+						{t("strings.View Details" as never)}
 					</Link>
 				</Button>
 			</CardFooter>
@@ -96,3 +98,18 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 	);
 }
 
+function formatRelativeTime(date: Date, locale: string): string {
+	const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+	const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
+	const units: Array<[Intl.RelativeTimeFormatUnit, number]> = [
+		["year", 31_536_000],
+		["month", 2_592_000],
+		["day", 86_400],
+		["hour", 3_600],
+		["minute", 60],
+	];
+	for (const [unit, size] of units) {
+		if (Math.abs(seconds) >= size) return formatter.format(Math.round(seconds / size), unit);
+	}
+	return formatter.format(seconds, "second");
+}

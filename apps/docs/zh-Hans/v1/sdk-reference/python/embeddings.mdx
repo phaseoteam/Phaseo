@@ -1,0 +1,40 @@
+---
+icon: "binary"
+title: "嵌入"
+description: "使用 Python SDK 调用 /embeddings。"
+---
+
+**方法**：`client.generate_embedding()`。
+
+### 示例
+```python
+embedding = client.generate_embedding({
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+});
+```
+
+### 关键参数
+- `model`（必填）：嵌入模型 ID（例如 `openai/text-embedding-3-large`）。
+- `input`（必填）：字符串或字符串数组。
+- `encoding_format`：`float`（默认）或 `base64`。
+- `dimensions`：用于截短嵌入长度的可选整数（取决于模型）。
+- `user`：可选的终端用户标记。
+
+### 返回值
+嵌入数据（JSON）
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```

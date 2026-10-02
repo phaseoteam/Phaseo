@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Transmissão"
+description: "Transmita texto, raciocínio, itens, ferramentas e eventos do ciclo de vida de agentes Python."
+---
+
+`Agent.stream(...)` executa a mesma máquina de estados que `run(...)` e retorna um `AgentStreamResult` que pode ser percorrido novamente:
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+Use `reasoning_stream()`, `item_stream()`, `tool_stream()` ou `full_stream()` para obter outras projeções. Atualmente, os itens em Python são dicionários, não uma união discriminada nativa.
+
+Chame `cancel()` para interromper o fluxo ativo do modelo e propagar o cancelamento para o trabalho do runtime local.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Observabilidade e DevTools](./agent-sdk-observability.mdx)

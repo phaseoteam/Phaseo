@@ -1,0 +1,161 @@
+---
+title: "OpenAI GPT-5.6"
+description: "O que você precisa saber para adotar GPT-5.6 Sol, Terra ou Luna em cargas de trabalho de produção."
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.6
+
+Use este guia para adotar com segurança a família GPT-5.6 em produção.
+
+GPT-5.6 é a família GPT atual da OpenAI para fluxos de trabalho complexos em produção. No AI Stats, os IDs fixos das faixas correspondem aos IDs de modelo da OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` e `gpt-5.6-luna`.
+
+## Início rápido da migração
+
+1. Escolha o modelo fixo Sol, Terra ou Luna adequado à carga de trabalho.
+2. Troque somente o ID do modelo e mantenha o restante da solicitação estável.
+3. Teste novamente o esforço de raciocínio, as saídas estruturadas, as ferramentas, a latência e o custo por tarefa.
+4. Faça um canário da nova rota mantendo o modelo GPT-5 anterior como alternativa.
+
+## Escolha um modelo
+
+| Modelo | Use para | Nível de raciocínio |
+| --- | --- | --- |
+| `openai/gpt-5.6-sol` | Raciocínio de maior capacidade, programação agêntica, análise científica e trabalho profissional complexo | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | Trabalho diário equilibrado entre raciocínio, programação e fluxos de assistente | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | Cargas de trabalho GPT-5.6 sensíveis a latência e custo | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+
+O alias `gpt-5.6` da OpenAI direciona para `gpt-5.6-sol`. No AI Stats, use `openai/gpt-5.6` ou `openai/gpt-sol-latest` para escolher Sol como padrão e use os IDs fixos das faixas para controlar o roteamento.
+
+O AI Stats também acompanha aliases de faixa para o modelo mais recente de cada uma: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` e `openai/gpt-luna-latest`. Use os IDs fixos do GPT-5.6 para migrações controladas e os aliases somente quando quiser deliberadamente que futuras versões de Sol, Terra ou Luna avancem pela mesma rota.
+
+## Novidades
+
+- O GPT-5.6 adiciona a nova divisão Sol/Terra/Luna em vez de uma única rota GPT padrão.
+- As três faixas do GPT-5.6 oferecem suporte a `reasoning.effort: "max"` para o maior orçamento de raciocínio.
+- O GPT-5.6 oferece suporte a `reasoning.mode: "pro"` sem mudar para um slug de modelo Pro separado.
+- O GPT-5.6 adiciona controles de raciocínio persistentes por meio de `reasoning.context`.
+- O GPT-5.6 adiciona suporte beta a múltiplos agentes e Programmatic Tool Calling para fluxos elegíveis com muitas ferramentas.
+- O cache de prompts tem medidores separados para entrada sem cache, leitura de cache, gravação de cache e saída.
+- O cache explícito de prompts é compatível com `prompt_cache_options`; atualmente, a OpenAI recomenda `prompt_cache_options.ttl` em vez de `prompt_cache_retention`.
+
+## Atualize sua solicitação
+
+Comece trocando apenas o ID do modelo e mantenha o restante da solicitação estável.
+
+Os primeiros exemplos usam a estrutura `input` no estilo da API Responses. Se estiver migrando tráfego do Chat Completions, continue usando `messages` e o campo simples `reasoning_effort` quando a rota oferecer suporte.
+
+```json
+{
+  "model": "openai/gpt-5.6-terra",
+  "input": "Summarize the rollout risks in this migration plan.",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+Use o esforço `max` somente em rotas nas quais o orçamento extra de raciocínio compense a latência e o custo.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": "Review this multi-service incident report and propose a rollback plan.",
+  "reasoning": {
+    "effort": "max"
+  }
+}
+```
+
+Se a integração ainda envia o campo simples compatível com OpenAI, o AI Stats também aceita `reasoning_effort` quando a rota oferece suporte:
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Design a test plan for this agent workflow."
+    }
+  ],
+  "reasoning_effort": "max"
+}
+```
+
+## Revisar preços
+
+O catálogo registra os preços do GPT-5.6 por milhão de tokens.
+
+| Modelo | Entrada | Leitura do cache | Gravação do cache | Saída |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
+| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
+| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+
+Leituras de cache são cobradas separadamente das gravações. No catálogo atual, as leituras têm desconto de 90% em relação à entrada sem cache, enquanto as gravações custam 1,25 vez o preço da entrada sem cache.
+
+## Use o cache de prompts de forma deliberada
+
+Para contextos repetidos, mantenha a parte estável do prompt em blocos que possam ser armazenados em cache e deixe o texto específico da solicitação sem cache.
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Stable policy document...",
+          "cache_control": {
+            "type": "ephemeral",
+            "ttl": "1h"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Apply the policy to this new customer request."
+        }
+      ]
+    }
+  ],
+  "prompt_cache_options": {
+    "mode": "explicit",
+    "ttl": "24h"
+  }
+}
+```
+
+Use `cache_control` para indicar instruções de cache independentes do provedor ou pontos explícitos de interrupção. Use `prompt_cache_options` para passar diretamente o modo de cache e as opções TTL da OpenAI.
+
+## O que testar
+
+### Raciocínio e qualidade da saída
+
+- Sol, Terra e Luna nos níveis de esforço que você pretende oferecer aos usuários, incluindo `max` quando fluxos que priorizam qualidade justificarem seu uso
+- modo standard versus `reasoning.mode: "pro"` em tarefas difíceis nas quais a qualidade importa mais que a latência
+- saídas estruturadas e taxa de aprovação do esquema em cada nível de esforço
+- seleção de chamadas de ferramentas e qualidade dos argumentos
+
+### Custo e latência
+
+- latência em cada nível de esforço de raciocínio
+- crescimento de tokens de saída em relação à referência atual de produção
+- proporção entre leitura e gravação de cache em prompts repetidos
+- custo por tarefa bem-sucedida, não apenas o preço por token
+
+### Reversão
+
+- mantenha a rota anterior do GPT-5.x disponível como alternativa
+- mantenha `max` atrás de uma flag de configuração ou preset até validá-lo com prompts semelhantes aos de produção
+- monitore separadamente o volume de gravações e leituras de cache
+- coloque GPT-5.6 no roteamento padrão somente depois que suas avaliações confirmarem o sucesso das tarefas, o custo e a latência
+
+## Fontes
+
+- [Anúncio da prévia do OpenAI GPT-5.6](https://openai.com/index/previewing-gpt-5-6-sol/)
+- [Orientações de modelos do OpenAI GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
+- [Ficha do sistema da prévia do GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
+- [Guia do AI Stats sobre cache de prompts](../guides/prompt-caching.mdx)

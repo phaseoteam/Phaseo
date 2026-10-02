@@ -1,0 +1,43 @@
+---
+title: "Java SDK इंस्टॉलेशन (विकासाधीन)"
+description: "अभी विकासाधीन Java SDK को source से build करें।"
+---
+
+<Note type="warning">Java SDK अभी विकासाधीन है और Maven Central पर प्रकाशित नहीं हुआ है।</Note>
+
+## आवश्यकताएँ
+
+- Java 17+
+- Maven 3.8+
+
+## स्थानीय रूप से build करें
+
+```bash
+cd packages/sdk/sdk-java
+mvn -DskipTests package
+```
+
+इससे `target/sdk-java-0.0.0-local.jar` बनता है।
+
+## अपने प्रोजेक्ट में उपयोग करें
+
+Generated JAR को local Maven cache में install करें:
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=app.phaseo \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+इसके बाद इसे अपनी app की `pom.xml` में dependency के रूप में जोड़ें:
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
+```

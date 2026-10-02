@@ -1,0 +1,23 @@
+---
+title: "生成結果を取得"
+sidebarTitle: "生成結果を取得"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /generations"
+---
+チームに属する`request_id`の保存済み監査レコードを取得します。
+
+次を使用します。
+- `GET /v1/generations?id=<request_id>`
+
+ゲートウェイがその生成のリクエスト詳細をすべて記録している場合、レスポンスには次も含まれます。
+
+- `replay_supported`: 再実行可能なペイロードがあるかどうか
+- `replay_request`: 保存されたリクエスト本文。元のエンドポイントに送信して制御された再実行を行えます
+
+一般的な再実行手順:
+
+1. `GET /v1/generations?id=<request_id>`で生成レコードを読み取ります。
+2. `replay_supported === true`であることを確認します。
+3. `endpoint`が示す元のエンドポイント（例: `/v1/chat/completions`や`/v1/responses`）に`replay_request`を再送信します。
+
+

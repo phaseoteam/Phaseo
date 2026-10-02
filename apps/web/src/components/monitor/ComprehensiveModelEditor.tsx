@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState, useTransition, useEffect } from "react";
 import {
 	Dialog,
@@ -90,6 +91,26 @@ const STATUS_OPTIONS = [
 	"Retired",
 ];
 
+const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+	Rumoured: "rumoured",
+	Announced: "announced",
+	"Limited Access": "limitedAccess",
+	Withheld: "withheld",
+	Available: "available",
+	Deprecated: "deprecated",
+	Retired: "retired",
+};
+
+const MODALITY_TRANSLATION_KEYS: Record<string, string> = {
+	text: "text",
+	image: "image",
+	video: "video",
+	audio: "audio",
+	audio_stt: "audioStt",
+	audio_tts: "audioTts",
+	audio_music: "audioMusic",
+};
+
 const DETAIL_OPTIONS = [
 	"input_context_length",
 	"knowledge_cutoff",
@@ -109,11 +130,35 @@ const LINK_TYPES = [
 	"changelog",
 ];
 
+const LINK_TYPE_TRANSLATION_KEYS: Record<string, string> = {
+	documentation: "documentation",
+	blog: "blogPost",
+	paper: "researchPaper",
+	github: "github",
+	pricing: "pricingPage",
+	api: "apiReference",
+	announcement: "announcement",
+	changelog: "changelog",
+};
+
 export function ComprehensiveModelEditor({
 	model,
 	open,
 	onOpenChange,
 }: ComprehensiveModelEditorProps) {
+	const tUi = useTranslations("Common.ui");
+	const modalityLabel = (modality: string) => {
+		const key = MODALITY_TRANSLATION_KEYS[modality];
+		return key ? tUi(`modelCreation.modalities.${key}` as never) : modality;
+	};
+	const statusLabel = (status: string) => {
+		const key = STATUS_TRANSLATION_KEYS[status];
+		return key ? tUi(`modelEditor.modelStatuses.${key}` as never) : status;
+	};
+	const linkTypeLabel = (type: string) => {
+		const key = LINK_TYPE_TRANSLATION_KEYS[type];
+		return key ? tUi(`linkTypes.${key}` as never) : type;
+	};
 	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [error, setError] = useState<string | null>(null);
@@ -261,7 +306,7 @@ export function ComprehensiveModelEditor({
 						}))
 					);
 				} else {
-					setError(result.error || "Failed to load model data");
+					setError(tUi("modelEditor.advanced.errors.loadModel"));
 				}
 				setLoading(false);
 			});
@@ -306,7 +351,7 @@ export function ComprehensiveModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update model");
+				setError(tUi("modelEditor.advanced.errors.updateModel"));
 			}
 		});
 	};
@@ -325,7 +370,7 @@ export function ComprehensiveModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update details");
+				setError(tUi("modelEditor.advanced.errors.updateDetails"));
 			}
 		});
 	};
@@ -344,7 +389,7 @@ export function ComprehensiveModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update links");
+				setError(tUi("modelEditor.advanced.errors.updateLinks"));
 			}
 		});
 	};
@@ -363,7 +408,7 @@ export function ComprehensiveModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update aliases");
+				setError(tUi("modelEditor.advanced.errors.updateAliases"));
 			}
 		});
 	};
@@ -382,14 +427,14 @@ export function ComprehensiveModelEditor({
 				router.refresh();
 				setError(null);
 			} else {
-				setError(result.error || "Failed to update organization");
+				setError(tUi("modelEditor.advanced.errors.updateOrganization"));
 			}
 		});
 	};
 
 	const handleAddProviderModel = () => {
 		if (!model || !newProviderModelForm.providerId || !newProviderModelForm.apiModelId) {
-			setError("Provider and API Model ID are required");
+			setError(tUi("modelEditor.advanced.errors.providerRequired"));
 			return;
 		}
 
@@ -415,14 +460,14 @@ export function ComprehensiveModelEditor({
 				});
 				setError(null);
 			} else {
-				setError(result.error || "Failed to add provider model");
+				setError(tUi("modelEditor.advanced.errors.addProvider"));
 			}
 		});
 	};
 
 	const handleAddBenchmark = () => {
 		if (!model || !newBenchmarkForm.benchmarkId || !newBenchmarkForm.score) {
-			setError("Benchmark and score are required");
+			setError(tUi("modelEditor.advanced.errors.benchmarkRequired"));
 			return;
 		}
 
@@ -448,7 +493,7 @@ export function ComprehensiveModelEditor({
 				});
 				setError(null);
 			} else {
-				setError(result.error || "Failed to add benchmark");
+				setError(tUi("modelEditor.advanced.errors.addBenchmark"));
 			}
 		});
 	};
@@ -465,7 +510,7 @@ export function ComprehensiveModelEditor({
 				onOpenChange(false);
 				router.refresh();
 			} else {
-				setError(result.error || "Failed to delete model");
+				setError(tUi("modelEditor.advanced.errors.deleteModel"));
 			}
 		});
 	};
@@ -555,7 +600,7 @@ export function ComprehensiveModelEditor({
 				setEditingProviderId(null);
 				setEditProviderForm(null);
 			} else {
-				setError(result.error || "Failed to update provider model");
+				setError(tUi("modelEditor.advanced.errors.updateProvider"));
 			}
 		});
 	};
@@ -593,7 +638,7 @@ export function ComprehensiveModelEditor({
 				setEditingBenchmarkId(null);
 				setEditBenchmarkForm(null);
 			} else {
-				setError(result.error || "Failed to update benchmark");
+				setError(tUi("modelEditor.advanced.errors.updateBenchmark"));
 			}
 		});
 	};
@@ -606,10 +651,14 @@ export function ComprehensiveModelEditor({
 				<DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
 					<DialogHeader>
 						<DialogTitle className="text-lg sm:text-xl">
-							Edit Model: {model.modelName}
+							{tUi("modelEditor.advanced.editModel", {
+								modelName: model.modelName,
+							})}
 						</DialogTitle>
 						<DialogDescription className="text-sm">
-							Comprehensive model management - all data in one place
+							{tUi("modelEditor.advanced.description", {
+								modelName: model.modelName,
+							})}
 						</DialogDescription>
 					</DialogHeader>
 
@@ -622,36 +671,22 @@ export function ComprehensiveModelEditor({
 					{loading && (
 						<div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-md p-3 text-sm flex items-center gap-2">
 							<Loader2 className="h-4 w-4 animate-spin" />
-							Loading complete model data...
+										{tUi("auditDataTable.loading")}
 						</div>
 					)}
 
 					<Tabs defaultValue="basic" className="w-full">
 						<TabsList className="grid w-full grid-cols-4 sm:grid-cols-9 gap-1 h-auto flex-wrap">
-							<TabsTrigger value="basic" className="text-xs sm:text-sm">
-								Basic
-							</TabsTrigger>
-							<TabsTrigger value="dates" className="text-xs sm:text-sm">
-								Dates
-							</TabsTrigger>
+							<TabsTrigger value="basic" className="text-xs sm:text-sm">{tUi("editorTabs.basic")}</TabsTrigger>
+							<TabsTrigger value="dates" className="text-xs sm:text-sm">{tUi("editorTabs.dates")}</TabsTrigger>
 							<TabsTrigger value="modalities" className="text-xs sm:text-sm">
-								I/O
+								{tUi("modelEditor.modalities")}
 							</TabsTrigger>
-							<TabsTrigger value="details" className="text-xs sm:text-sm">
-								Details
-							</TabsTrigger>
-							<TabsTrigger value="links" className="text-xs sm:text-sm">
-								Links
-							</TabsTrigger>
-							<TabsTrigger value="aliases" className="text-xs sm:text-sm">
-								Aliases
-							</TabsTrigger>
-							<TabsTrigger value="providers" className="text-xs sm:text-sm">
-								Providers
-							</TabsTrigger>
-							<TabsTrigger value="benchmarks" className="text-xs sm:text-sm">
-								Benchmarks
-							</TabsTrigger>
+							<TabsTrigger value="details" className="text-xs sm:text-sm">{tUi("editorTabs.details")}</TabsTrigger>
+							<TabsTrigger value="links" className="text-xs sm:text-sm">{tUi("editorTabs.links")}</TabsTrigger>
+							<TabsTrigger value="aliases" className="text-xs sm:text-sm">{tUi("editorTabs.aliases")}</TabsTrigger>
+							<TabsTrigger value="providers" className="text-xs sm:text-sm">{tUi("editorTabs.providers")}</TabsTrigger>
+							<TabsTrigger value="benchmarks" className="text-xs sm:text-sm">{tUi("editorTabs.benchmarks")}</TabsTrigger>
 							<TabsTrigger value="danger" className="text-xs sm:text-sm">
 								⚠️
 							</TabsTrigger>
@@ -662,7 +697,7 @@ export function ComprehensiveModelEditor({
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								{/* Model ID (read-only) */}
 								<div className="space-y-2 sm:col-span-2">
-									<Label htmlFor="model-id">Model ID</Label>
+									<Label htmlFor="model-id">{tUi("modelCreation.modelId")}</Label>
 									<Input
 										id="model-id"
 										value={model.modelId}
@@ -670,24 +705,28 @@ export function ComprehensiveModelEditor({
 										className="bg-muted font-mono text-sm"
 									/>
 									<p className="text-xs text-muted-foreground">
-										Model ID cannot be changed
+										{tUi("modelEditor.advanced.modelIdReadOnly")}
 									</p>
 								</div>
 
 								{/* Name */}
 								<div className="space-y-2 sm:col-span-2">
-									<Label htmlFor="name">Display Name *</Label>
+									<Label htmlFor="name">
+										{tUi("modelCreation.displayName")} *
+									</Label>
 									<Input
 										id="name"
 										value={name}
 										onChange={(e) => setName(e.target.value)}
-										placeholder="e.g., GPT-4 Turbo"
+										placeholder={tUi("modelCreation.displayNameExample")}
 									/>
 								</div>
 
 								{/* Organization */}
 								<div className="space-y-2">
-									<Label htmlFor="organisation-select">Organization</Label>
+									<Label htmlFor="organisation-select">
+										{tUi("modelCreation.organization")}
+									</Label>
 									<Select
 										value={organisationId || "none"}
 										onValueChange={(value) =>
@@ -695,10 +734,10 @@ export function ComprehensiveModelEditor({
 										}
 									>
 										<SelectTrigger id="organisation-select">
-											<SelectValue placeholder="Select organization" />
+											<SelectValue placeholder={tUi("modelCreation.selectOrganization")} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="none">None</SelectItem>
+											<SelectItem value="none">{tUi("select.none")}</SelectItem>
 											{organisations.map((org) => (
 												<SelectItem key={org.id} value={org.id}>
 													{org.name}
@@ -710,15 +749,15 @@ export function ComprehensiveModelEditor({
 
 								{/* Status */}
 								<div className="space-y-2">
-									<Label htmlFor="status">Status</Label>
+									<Label htmlFor="status">{tUi("modelCreation.status")}</Label>
 									<Select value={status || "active"} onValueChange={setStatus}>
 										<SelectTrigger id="status">
-											<SelectValue placeholder="Select status" />
+											<SelectValue placeholder={tUi("modelCreation.selectStatus")} />
 										</SelectTrigger>
 										<SelectContent>
 											{STATUS_OPTIONS.map((opt) => (
 												<SelectItem key={opt} value={opt}>
-													{opt.charAt(0).toUpperCase() + opt.slice(1)}
+														{statusLabel(opt)}
 												</SelectItem>
 											))}
 										</SelectContent>
@@ -727,55 +766,60 @@ export function ComprehensiveModelEditor({
 
 								{/* License */}
 								<div className="space-y-2">
-									<Label htmlFor="license">License</Label>
+									<Label htmlFor="license">{tUi("modelEditor.license")}</Label>
 									<Input
 										id="license"
 										value={license}
 										onChange={(e) => setLicense(e.target.value)}
-										placeholder="e.g., MIT, Proprietary, Apache 2.0"
+										placeholder={tUi("modelEditor.licenseExample")}
 									/>
 								</div>
 
 								{/* Previous Model ID */}
-				<div className="space-y-2">
-					<Label htmlFor="previous-model">Previous Model ID</Label>
+								<div className="space-y-2">
+									<Label htmlFor="previous-model">{tUi("modelEditor.previousModel")}</Label>
 									<Input
 										id="previous-model"
 										value={previousModelId}
 										onChange={(e) => setPreviousModelId(e.target.value)}
-										placeholder="Model this supersedes"
+										placeholder={tUi("modelEditor.selectPreviousModel")}
 									/>
 				</div>
 
 				<div className="space-y-2">
-					<Label htmlFor="recommended-successor">Recommended Successor Model ID</Label>
+					<Label htmlFor="recommended-successor">{tUi("modelEditor.recommendedSuccessor")}</Label>
 					<Input
 						id="recommended-successor"
 						value={replacementModelId}
 						onChange={(e) => setReplacementModelId(e.target.value)}
-						placeholder="Shown in model deprecation notices"
+						placeholder={tUi("modelEditor.recommendedSuccessorDescription")}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Independent of lineage; used as the recommended migration target in notifications.
+						{tUi("modelEditor.successorNotificationHelp")}
 					</p>
 				</div>
 
 								{/* Hidden */}
-								<div className="flex items-center space-x-2 sm:col-span-2">
-									<Checkbox
-										id="hidden"
-										checked={hidden}
-										onCheckedChange={(checked) => setHidden(checked === true)}
-									/>
-									<Label htmlFor="hidden" className="cursor-pointer font-normal">
-										Hidden (model won't appear in public listings)
-									</Label>
+								<div className="space-y-2 sm:col-span-2">
+									<div className="flex items-center space-x-2">
+										<Checkbox
+											id="hidden"
+											checked={hidden}
+											onCheckedChange={(checked) => setHidden(checked === true)}
+										/>
+										<Label htmlFor="hidden" className="cursor-pointer font-normal">
+											{tUi("modelCreation.hidden")}
+										</Label>
+									</div>
+									<p className="pl-6 text-xs text-muted-foreground">
+										{tUi("modelCreation.hiddenDescription")}
+									</p>
 								</div>
 							</div>
 
 							<Button onClick={handleSaveBasic} disabled={isPending || !name}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Basic Info
+										{tUi("actions.save")}
 							</Button>
 						</TabsContent>
 
@@ -783,7 +827,9 @@ export function ComprehensiveModelEditor({
 						<TabsContent value="dates" className="space-y-4">
 							<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 								<div className="space-y-2">
-									<Label htmlFor="announcement-date">Announcement Date</Label>
+										<Label htmlFor="announcement-date">
+											{tUi("modelEditor.announcementDate")}
+										</Label>
 									<Input
 										id="announcement-date"
 										type="date"
@@ -791,12 +837,14 @@ export function ComprehensiveModelEditor({
 										onChange={(e) => setAnnouncementDate(e.target.value)}
 									/>
 									<p className="text-xs text-muted-foreground">
-										When the model was announced
+										{tUi("modelEditor.advanced.dates.announcement")}
 									</p>
 								</div>
 
 								<div className="space-y-2">
-									<Label htmlFor="release-date">Release Date</Label>
+										<Label htmlFor="release-date">
+											{tUi("modelCreation.releaseDate")}
+										</Label>
 									<Input
 										id="release-date"
 										type="date"
@@ -804,12 +852,14 @@ export function ComprehensiveModelEditor({
 										onChange={(e) => setReleaseDate(e.target.value)}
 									/>
 									<p className="text-xs text-muted-foreground">
-										When the model became available
+										{tUi("modelEditor.advanced.dates.release")}
 									</p>
 								</div>
 
 								<div className="space-y-2">
-									<Label htmlFor="deprecation-date">Deprecation Date</Label>
+										<Label htmlFor="deprecation-date">
+											{tUi("modelEditor.deprecationDate")}
+										</Label>
 									<Input
 										id="deprecation-date"
 										type="date"
@@ -817,12 +867,14 @@ export function ComprehensiveModelEditor({
 										onChange={(e) => setDeprecationDate(e.target.value)}
 									/>
 									<p className="text-xs text-muted-foreground">
-										When the model was marked as deprecated
+										{tUi("modelEditor.advanced.dates.deprecation")}
 									</p>
 								</div>
 
 								<div className="space-y-2">
-									<Label htmlFor="retirement-date">Retirement Date</Label>
+										<Label htmlFor="retirement-date">
+											{tUi("modelCreation.retirementDate")}
+										</Label>
 									<Input
 										id="retirement-date"
 										type="date"
@@ -830,14 +882,14 @@ export function ComprehensiveModelEditor({
 										onChange={(e) => setRetirementDate(e.target.value)}
 									/>
 									<p className="text-xs text-muted-foreground">
-										When the model will be/was shut down
+										{tUi("modelEditor.advanced.dates.retirement")}
 									</p>
 								</div>
 							</div>
 
 							<Button onClick={handleSaveBasic} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Dates
+								{tUi("actions.save")}
 							</Button>
 						</TabsContent>
 
@@ -845,7 +897,7 @@ export function ComprehensiveModelEditor({
 						<TabsContent value="modalities" className="space-y-4">
 							{/* Input Modalities */}
 							<div className="space-y-2">
-								<Label>Input Modalities</Label>
+				<Label>{tUi("modelCreation.inputModalities")}</Label>
 								<div className="flex flex-wrap gap-2">
 									{MODALITY_OPTIONS.map((modality) => (
 										<Badge
@@ -856,7 +908,7 @@ export function ComprehensiveModelEditor({
 											className="cursor-pointer"
 											onClick={() => toggleInputType(modality)}
 										>
-											{modality}
+							{modalityLabel(modality)}
 											{inputTypes.includes(modality) && (
 												<X className="ml-1 h-3 w-3" />
 											)}
@@ -864,13 +916,13 @@ export function ComprehensiveModelEditor({
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Click to toggle input modalities
+					{tUi("modelCreation.toggleInputModalities")}
 								</p>
 							</div>
 
 							{/* Output Modalities */}
 							<div className="space-y-2">
-								<Label>Output Modalities</Label>
+				<Label>{tUi("modelCreation.outputModalities")}</Label>
 								<div className="flex flex-wrap gap-2">
 									{MODALITY_OPTIONS.map((modality) => (
 										<Badge
@@ -881,7 +933,7 @@ export function ComprehensiveModelEditor({
 											className="cursor-pointer"
 											onClick={() => toggleOutputType(modality)}
 										>
-											{modality}
+							{modalityLabel(modality)}
 											{outputTypes.includes(modality) && (
 												<X className="ml-1 h-3 w-3" />
 											)}
@@ -889,20 +941,20 @@ export function ComprehensiveModelEditor({
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									Click to toggle output modalities
+					{tUi("modelCreation.toggleOutputModalities")}
 								</p>
 							</div>
 
 							<Button onClick={handleSaveBasic} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Modalities
+				{tUi("actions.save")}
 							</Button>
 						</TabsContent>
 
 						{/* DETAILS */}
 						<TabsContent value="details" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Add model details (context lengths, parameters, training tokens, etc.)
+				{tUi("modelEditor.advanced.detailsHelp")}
 							</p>
 
 							{details.map((detail, idx) => (
@@ -916,7 +968,7 @@ export function ComprehensiveModelEditor({
 										}}
 									>
 										<SelectTrigger>
-											<SelectValue placeholder="Select detail type" />
+										<SelectValue placeholder={tUi("select.detailType")} />
 										</SelectTrigger>
 										<SelectContent>
 											{DETAIL_OPTIONS.map((opt) => (
@@ -927,7 +979,7 @@ export function ComprehensiveModelEditor({
 										</SelectContent>
 									</Select>
 									<Input
-										placeholder={detail.name === "knowledge_cutoff" ? "YYYY-MM-DD" : "Value"}
+										placeholder={detail.name === "knowledge_cutoff" ? "YYYY-MM-DD" : tUi("versionedPricing.value")}
 										value={detail.value}
 										onChange={(e) => {
 											const newDetails = [...details];
@@ -935,9 +987,10 @@ export function ComprehensiveModelEditor({
 											setDetails(newDetails);
 										}}
 									/>
-									<Button
-										variant="ghost"
-										size="icon"
+										<Button
+											variant="ghost"
+											size="icon"
+											aria-label={tUi("actions.remove")}
 										onClick={() => {
 											setDetails(details.filter((_, i) => i !== idx));
 										}}
@@ -953,19 +1006,19 @@ export function ComprehensiveModelEditor({
 								onClick={() => setDetails([...details, { name: "", value: "" }])}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Detail
+				{tUi("modelEditor.advanced.addDetail")}
 							</Button>
 
 							<Button onClick={handleSaveDetails} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Details
+				{tUi("modelEditor.advanced.saveDetails")}
 							</Button>
 						</TabsContent>
 
 						{/* LINKS */}
 						<TabsContent value="links" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Add external links for documentation, blog posts, announcements, etc.
+				{tUi("modelEditor.advanced.linksHelp")}
 							</p>
 
 							{links.map((link, idx) => (
@@ -979,18 +1032,18 @@ export function ComprehensiveModelEditor({
 										}}
 									>
 										<SelectTrigger className="w-[180px]">
-											<SelectValue placeholder="Link type" />
+									<SelectValue placeholder={tUi("modelEditor.advanced.linkType")} />
 										</SelectTrigger>
 										<SelectContent>
 											{LINK_TYPES.map((type) => (
 												<SelectItem key={type} value={type}>
-													{type.charAt(0).toUpperCase() + type.slice(1)}
+									{linkTypeLabel(type)}
 												</SelectItem>
 											))}
 										</SelectContent>
 									</Select>
 									<Input
-										placeholder="URL"
+									placeholder={tUi("modelEditor.advanced.url")}
 										value={link.url}
 										onChange={(e) => {
 											const newLinks = [...links];
@@ -1001,6 +1054,7 @@ export function ComprehensiveModelEditor({
 									<Button
 										variant="ghost"
 										size="icon"
+										aria-label={tUi("actions.remove")}
 										onClick={() => {
 											setLinks(links.filter((_, i) => i !== idx));
 										}}
@@ -1018,25 +1072,25 @@ export function ComprehensiveModelEditor({
 								}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Link
+				{tUi("modelEditor.advanced.addLink")}
 							</Button>
 
 							<Button onClick={handleSaveLinks} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Links
+				{tUi("modelEditor.advanced.saveLinks")}
 							</Button>
 						</TabsContent>
 
 						{/* ALIASES */}
 						<TabsContent value="aliases" className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Manage alternative names/identifiers for this model
+				{tUi("modelEditor.advanced.aliasesHelp")}
 							</p>
 
 							{aliases.map((alias, idx) => (
 								<div key={idx} className="flex gap-2 items-center">
 									<Input
-										placeholder="Alias name"
+						placeholder={tUi("modelEditor.advanced.aliasName")}
 										value={alias.alias}
 										onChange={(e) => {
 											const newAliases = [...aliases];
@@ -1058,12 +1112,13 @@ export function ComprehensiveModelEditor({
 											htmlFor={`enabled-${idx}`}
 											className="cursor-pointer font-normal whitespace-nowrap"
 										>
-											Enabled
+							{tUi("modelEditor.advanced.enabled")}
 										</Label>
 									</div>
 									<Button
 										variant="ghost"
 										size="icon"
+										aria-label={tUi("actions.remove")}
 										onClick={() => {
 											setAliases(aliases.filter((_, i) => i !== idx));
 										}}
@@ -1081,12 +1136,12 @@ export function ComprehensiveModelEditor({
 								}
 							>
 								<Plus className="h-4 w-4 mr-2" />
-								Add Alias
+				{tUi("modelEditor.advanced.addAlias")}
 							</Button>
 
 							<Button onClick={handleSaveAliases} disabled={isPending}>
 								{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-								Save Aliases
+				{tUi("modelEditor.advanced.saveAliases")}
 							</Button>
 						</TabsContent>
 
@@ -1100,25 +1155,29 @@ export function ComprehensiveModelEditor({
 								<>
 									<div>
 										<h3 className="text-sm font-semibold mb-2">
-											Current Provider Offerings ({completeData?.provider_models.length || 0})
+											{tUi("modelEditor.advanced.providerOfferings", {
+												count: completeData?.provider_models.length || 0,
+											})}
 										</h3>
 										<div className="border rounded-md overflow-x-auto">
 											<Table>
 												<TableHeader>
 													<TableRow>
-														<TableHead>Provider</TableHead>
-														<TableHead>API Model ID</TableHead>
-														<TableHead>Active</TableHead>
-														<TableHead>Input</TableHead>
-														<TableHead>Output</TableHead>
-														<TableHead className="text-right">Actions</TableHead>
+									<TableHead>{tUi("versionedPricing.provider")}</TableHead>
+									<TableHead>{tUi("apiModelConflicts.apiModelId")}</TableHead>
+									<TableHead>{tUi("status.active")}</TableHead>
+									<TableHead>{tUi("select.input")}</TableHead>
+									<TableHead>{tUi("select.output")}</TableHead>
+									<TableHead className="text-right">
+										{tUi("auditDataTable.actions")}
+									</TableHead>
 													</TableRow>
 												</TableHeader>
 												<TableBody>
 													{!completeData?.provider_models || completeData.provider_models.length === 0 ? (
 														<TableRow>
 															<TableCell colSpan={6} className="text-center text-muted-foreground">
-																No provider offerings yet
+											{tUi("modelEditor.advanced.noProviderOfferings")}
 															</TableCell>
 														</TableRow>
 													) : (
@@ -1158,7 +1217,7 @@ export function ComprehensiveModelEditor({
 																						className="cursor-pointer text-xs"
 																						onClick={() => toggleEditProviderInputModality(mod)}
 																					>
-																						{mod}
+													{modalityLabel(mod)}
 																					</Badge>
 																				))}
 																			</div>
@@ -1176,7 +1235,7 @@ export function ComprehensiveModelEditor({
 																						className="cursor-pointer text-xs"
 																						onClick={() => toggleEditProviderOutputModality(mod)}
 																					>
-																						{mod}
+													{modalityLabel(mod)}
 																					</Badge>
 																				))}
 																			</div>
@@ -1192,7 +1251,7 @@ export function ComprehensiveModelEditor({
 																					{isPending ? (
 																						<Loader2 className="h-4 w-4 animate-spin" />
 																					) : (
-																						"Save"
+											tUi("actions.save")
 																					)}
 																				</Button>
 																				<Button
@@ -1203,7 +1262,7 @@ export function ComprehensiveModelEditor({
 																						setEditProviderForm(null);
 																					}}
 																				>
-																					Cancel
+										{tUi("modelEditor.advanced.cancel")}
 																				</Button>
 																			</div>
 																		</TableCell>
@@ -1221,16 +1280,16 @@ export function ComprehensiveModelEditor({
 																	</TableCell>
 																	<TableCell>
 																		{pm.is_active_gateway ? (
-																			<Badge variant="default" className="text-xs">Active</Badge>
+									<Badge variant="default" className="text-xs">{tUi("status.active")}</Badge>
 																		) : (
-																			<Badge variant="outline" className="text-xs">Inactive</Badge>
+									<Badge variant="outline" className="text-xs">{tUi("status.inactive")}</Badge>
 																		)}
 																	</TableCell>
 																	<TableCell>
 																		<div className="flex flex-wrap gap-1">
 																			{pm.input_modalities.slice(0, 2).map((mod) => (
 																				<Badge key={mod} variant="secondary" className="text-xs">
-																					{mod}
+											{modalityLabel(mod)}
 																				</Badge>
 																			))}
 																			{pm.input_modalities.length > 2 && (
@@ -1244,7 +1303,7 @@ export function ComprehensiveModelEditor({
 																		<div className="flex flex-wrap gap-1">
 																			{pm.output_modalities.slice(0, 2).map((mod) => (
 																				<Badge key={mod} variant="secondary" className="text-xs">
-																					{mod}
+											{modalityLabel(mod)}
 																				</Badge>
 																			))}
 																			{pm.output_modalities.length > 2 && (
@@ -1256,23 +1315,26 @@ export function ComprehensiveModelEditor({
 																	</TableCell>
 																	<TableCell className="text-right">
 																		<div className="flex items-center justify-end gap-1">
-																			<Button
-																				variant="ghost"
-																				size="sm"
-																				onClick={() => handleEditProvider(pm)}
-																				disabled={isPending || editingProviderId !== null}
+												<Button
+													variant="ghost"
+												size="sm"
+												onClick={() => handleEditProvider(pm)}
+													aria-label={tUi("actions.edit")}
+													disabled={isPending || editingProviderId !== null}
 																			>
 																				<Edit className="h-4 w-4" />
 																			</Button>
-																			<Link
-																				href={`/api-providers/${pm.provider_id}`}
+													<Link
+														href={`/api-providers/${pm.provider_id}`}
+														aria-label={tUi("actions.viewProviders")}
 																				className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 text-xs flex items-center gap-1 px-2"
 																			>
 																				<ExternalLink className="h-3 w-3" />
 																			</Link>
-																			<Button
-																				variant="ghost"
-																				size="sm"
+													<Button
+														variant="ghost"
+														size="sm"
+														aria-label={tUi("actions.delete")}
 																				onClick={() => {
 																					startTransition(async () => {
 																						const result = await deleteProviderModel(pm.provider_api_model_id);
@@ -1283,7 +1345,7 @@ export function ComprehensiveModelEditor({
 																								setCompleteData(refreshResult.data);
 																							}
 																						} else {
-																							setError(result.error || "Failed to delete");
+																	setError(tUi("modelEditor.advanced.errors.deleteProvider"));
 																						}
 																					});
 																				}}
@@ -1305,11 +1367,13 @@ export function ComprehensiveModelEditor({
 							)}
 
 							<div className="border-t pt-4">
-								<h3 className="text-sm font-semibold mb-3">Add Provider Offering</h3>
+										<h3 className="text-sm font-semibold mb-3">
+											{tUi("modelEditor.advanced.addProviderOffering")}
+										</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 										<div className="space-y-2">
-											<Label>Provider</Label>
+											<Label>{tUi("versionedPricing.provider")}</Label>
 											<Select
 												value={newProviderModelForm.providerId}
 												onValueChange={(value) =>
@@ -1320,7 +1384,7 @@ export function ComprehensiveModelEditor({
 												}
 											>
 												<SelectTrigger>
-													<SelectValue placeholder="Select provider" />
+												<SelectValue placeholder={tUi("select.provider")} />
 												</SelectTrigger>
 												<SelectContent>
 													{providers.map((p) => (
@@ -1333,9 +1397,9 @@ export function ComprehensiveModelEditor({
 										</div>
 
 										<div className="space-y-2">
-											<Label>API Model ID</Label>
+											<Label>{tUi("apiModelConflicts.apiModelId")}</Label>
 											<Input
-												placeholder="e.g., gpt-4-turbo"
+												placeholder={tUi("modelEditor.providerModelIdPlaceholder")}
 												value={newProviderModelForm.apiModelId}
 												onChange={(e) =>
 													setNewProviderModelForm((prev) => ({
@@ -1359,12 +1423,12 @@ export function ComprehensiveModelEditor({
 											}
 										/>
 										<Label htmlFor="active-gateway" className="cursor-pointer font-normal">
-											Active on Gateway
+											{tUi("modelEditor.activeOnGateway")}
 										</Label>
 									</div>
 
 									<div className="space-y-2">
-										<Label>Input Modalities</Label>
+											<Label>{tUi("modelCreation.inputModalities")}</Label>
 										<div className="flex flex-wrap gap-2">
 											{MODALITY_OPTIONS.map((modality) => (
 												<Badge
@@ -1377,7 +1441,7 @@ export function ComprehensiveModelEditor({
 													className="cursor-pointer text-xs"
 													onClick={() => toggleProviderInputModality(modality)}
 												>
-													{modality}
+												{modalityLabel(modality)}
 													{newProviderModelForm.inputModalities.includes(modality) && (
 														<X className="ml-1 h-3 w-3" />
 													)}
@@ -1387,7 +1451,7 @@ export function ComprehensiveModelEditor({
 									</div>
 
 									<div className="space-y-2">
-										<Label>Output Modalities</Label>
+											<Label>{tUi("modelCreation.outputModalities")}</Label>
 										<div className="flex flex-wrap gap-2">
 											{MODALITY_OPTIONS.map((modality) => (
 												<Badge
@@ -1400,7 +1464,7 @@ export function ComprehensiveModelEditor({
 													className="cursor-pointer text-xs"
 													onClick={() => toggleProviderOutputModality(modality)}
 												>
-													{modality}
+												{modalityLabel(modality)}
 													{newProviderModelForm.outputModalities.includes(modality) && (
 														<X className="ml-1 h-3 w-3" />
 													)}
@@ -1411,7 +1475,7 @@ export function ComprehensiveModelEditor({
 
 									<Button onClick={handleAddProviderModel} disabled={isPending}>
 										{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-										Add Provider Offering
+										{tUi("modelEditor.advanced.addProviderOffering")}
 									</Button>
 								</div>
 							</div>
@@ -1427,24 +1491,28 @@ export function ComprehensiveModelEditor({
 								<>
 									<div>
 										<h3 className="text-sm font-semibold mb-2">
-											Current Benchmarks ({completeData?.benchmarks.length || 0})
+											{tUi("modelEditor.advanced.benchmarks.title", {
+												count: completeData?.benchmarks.length || 0,
+											})}
 										</h3>
 										<div className="border rounded-md overflow-x-auto mb-4">
 											<Table>
 												<TableHeader>
 													<TableRow>
-														<TableHead>Benchmark</TableHead>
-														<TableHead>Score</TableHead>
-														<TableHead>Self-Reported</TableHead>
-														<TableHead>Source</TableHead>
-														<TableHead className="text-right">Actions</TableHead>
+									<TableHead>{tUi("benchmarkComparison.benchmark")}</TableHead>
+									<TableHead>{tUi("modelEditor.advanced.benchmarks.score")}</TableHead>
+									<TableHead>{tUi("benchmarkComparison.selfReported")}</TableHead>
+									<TableHead>{tUi("modelEditor.advanced.benchmarks.source")}</TableHead>
+									<TableHead className="text-right">
+										{tUi("auditDataTable.actions")}
+									</TableHead>
 													</TableRow>
 												</TableHeader>
 												<TableBody>
 													{!completeData?.benchmarks || completeData.benchmarks.length === 0 ? (
 														<TableRow>
 															<TableCell colSpan={5} className="text-center text-muted-foreground">
-																No benchmark results yet
+											{tUi("modelEditor.advanced.benchmarks.noResults")}
 															</TableCell>
 														</TableRow>
 													) : (
@@ -1467,7 +1535,7 @@ export function ComprehensiveModelEditor({
 																					})
 																				}
 																				className="w-24 h-8 text-sm"
-																				placeholder="Score"
+										placeholder={tUi("modelEditor.advanced.benchmarks.score")}
 																			/>
 																		</TableCell>
 																		<TableCell>
@@ -1504,9 +1572,9 @@ export function ComprehensiveModelEditor({
 																				>
 																					{isPending ? (
 																						<Loader2 className="h-4 w-4 animate-spin" />
-																					) : (
-																						"Save"
-																					)}
+											) : (
+												tUi("actions.save")
+											)}
 																				</Button>
 																				<Button
 																					variant="ghost"
@@ -1516,7 +1584,7 @@ export function ComprehensiveModelEditor({
 																						setEditBenchmarkForm(null);
 																					}}
 																				>
-																					Cancel
+														{tUi("modelEditor.advanced.cancel")}
 																				</Button>
 																			</div>
 																		</TableCell>
@@ -1534,9 +1602,13 @@ export function ComprehensiveModelEditor({
 																	</TableCell>
 																	<TableCell>
 																		{benchmark.is_self_reported ? (
-																			<Badge variant="secondary" className="text-xs">Self-reported</Badge>
+										<Badge variant="secondary" className="text-xs">
+											{tUi("benchmarkComparison.selfReported")}
+										</Badge>
 																		) : (
-																			<Badge variant="outline" className="text-xs">External</Badge>
+										<Badge variant="outline" className="text-xs">
+											{tUi("versionedPricing.external")}
+										</Badge>
 																		)}
 																	</TableCell>
 																	<TableCell>
@@ -1547,7 +1619,7 @@ export function ComprehensiveModelEditor({
 																				rel="noopener noreferrer"
 																				className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200 text-xs flex items-center gap-1"
 																			>
-																				Link <ExternalLink className="h-3 w-3" />
+									{tUi("modelEditor.advanced.benchmarks.sourceLink")} <ExternalLink className="h-3 w-3" />
 																			</a>
 																		) : (
 																			<span className="text-muted-foreground text-xs">-</span>
@@ -1555,17 +1627,19 @@ export function ComprehensiveModelEditor({
 																	</TableCell>
 																	<TableCell className="text-right">
 																		<div className="flex items-center justify-end gap-1">
-																			<Button
-																				variant="ghost"
-																				size="sm"
-																				onClick={() => handleEditBenchmark(benchmark)}
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={() => handleEditBenchmark(benchmark)}
+													aria-label={tUi("actions.edit")}
 																				disabled={isPending || editingBenchmarkId !== null}
 																			>
 																				<Edit className="h-4 w-4" />
 																			</Button>
-																			<Button
-																				variant="ghost"
-																				size="sm"
+											<Button
+												variant="ghost"
+												size="sm"
+												aria-label={tUi("actions.delete")}
 																				onClick={() => {
 																					startTransition(async () => {
 																						const result = await deleteBenchmarkResult(benchmark.id);
@@ -1576,7 +1650,7 @@ export function ComprehensiveModelEditor({
 																								setCompleteData(refreshResult.data);
 																							}
 																						} else {
-																							setError(result.error || "Failed to delete");
+											setError(tUi("modelEditor.advanced.errors.deleteBenchmark"));
 																						}
 																					});
 																				}}
@@ -1593,13 +1667,12 @@ export function ComprehensiveModelEditor({
 												</TableBody>
 											</Table>
 										</div>
-										<p className="text-sm text-muted-foreground">
-											View full details on the{" "}
-											<Link
+						<p className="text-sm text-muted-foreground">
+							<Link
 												href={`/models/${model.modelId}#benchmarks`}
 												className="text-blue-600 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 											>
-												model benchmarks page
+								{tUi("benchmarkComparison.viewBenchmarkPage")}
 											</Link>
 										</p>
 									</div>
@@ -1607,11 +1680,13 @@ export function ComprehensiveModelEditor({
 							)}
 
 							<div className="border-t pt-4">
-								<h3 className="text-sm font-semibold mb-3">Add Benchmark Result</h3>
+						<h3 className="text-sm font-semibold mb-3">
+							{tUi("modelEditor.advanced.benchmarks.addResult")}
+						</h3>
 								<div className="space-y-3">
 									<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 										<div className="space-y-2">
-											<Label>Benchmark</Label>
+										<Label>{tUi("benchmarkComparison.benchmark")}</Label>
 											<Select
 												value={newBenchmarkForm.benchmarkId}
 												onValueChange={(value) =>
@@ -1622,7 +1697,7 @@ export function ComprehensiveModelEditor({
 												}
 											>
 												<SelectTrigger>
-													<SelectValue placeholder="Select benchmark" />
+											<SelectValue placeholder={tUi("benchmarkComparison.selectBenchmark")} />
 												</SelectTrigger>
 												<SelectContent>
 													{benchmarks.map((b) => (
@@ -1635,9 +1710,9 @@ export function ComprehensiveModelEditor({
 										</div>
 
 										<div className="space-y-2">
-											<Label>Score</Label>
+										<Label>{tUi("modelEditor.advanced.benchmarks.score")}</Label>
 											<Input
-												placeholder="e.g., 89.5"
+											placeholder={tUi("modelEditor.advanced.benchmarks.score")}
 												value={newBenchmarkForm.score}
 												onChange={(e) =>
 													setNewBenchmarkForm((prev) => ({
@@ -1650,7 +1725,7 @@ export function ComprehensiveModelEditor({
 									</div>
 
 									<div className="space-y-2">
-										<Label>Source Link</Label>
+										<Label>{tUi("modelEditor.advanced.benchmarks.sourceLink")}</Label>
 										<Input
 											placeholder="https://..."
 											value={newBenchmarkForm.sourceLink}
@@ -1664,9 +1739,9 @@ export function ComprehensiveModelEditor({
 									</div>
 
 									<div className="space-y-2">
-										<Label>Additional Info</Label>
+										<Label>{tUi("modelEditor.advanced.benchmarks.additionalInfo")}</Label>
 										<Textarea
-											placeholder="Any additional context about this benchmark result"
+											placeholder={tUi("modelEditor.advanced.benchmarks.additionalInfoPlaceholder")}
 											value={newBenchmarkForm.otherInfo}
 											onChange={(e) =>
 												setNewBenchmarkForm((prev) => ({
@@ -1690,13 +1765,13 @@ export function ComprehensiveModelEditor({
 											}
 										/>
 										<Label htmlFor="self-reported" className="cursor-pointer font-normal">
-											Self-reported by model creator
+											{tUi("modelEditor.advanced.benchmarks.selfReportedBy")}
 										</Label>
 									</div>
 
 									<Button onClick={handleAddBenchmark} disabled={isPending}>
 										{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-										Add Benchmark Result
+						{tUi("modelEditor.advanced.benchmarks.addResult")}
 									</Button>
 								</div>
 							</div>
@@ -1706,11 +1781,10 @@ export function ComprehensiveModelEditor({
 						<TabsContent value="danger" className="space-y-4">
 							<div className="border border-red-200 rounded-lg p-4 bg-red-50">
 								<h3 className="text-lg font-semibold text-red-900 mb-2">
-									Danger Zone
+									{tUi("modelEditor.advanced.dangerZone")}
 								</h3>
 								<p className="text-sm text-red-800 mb-4">
-									These actions are irreversible. Please be certain before
-									proceeding.
+					{tUi("modelEditor.advanced.dangerZoneDescription")}
 								</p>
 
 								<Button
@@ -1719,7 +1793,7 @@ export function ComprehensiveModelEditor({
 									disabled={isPending}
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete Model
+					{tUi("modelEditor.advanced.deleteModel")}
 								</Button>
 							</div>
 						</TabsContent>
@@ -1730,20 +1804,22 @@ export function ComprehensiveModelEditor({
 			<AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogTitle>
+							{tUi("modelEditor.advanced.deleteConfirmationTitle")}
+						</AlertDialogTitle>
 						<AlertDialogDescription>
-							This will permanently delete <strong>{model.modelName}</strong> and
-							all associated data (provider models, pricing rules, benchmarks,
-							etc). This action cannot be undone.
+							{tUi("modelEditor.advanced.deleteConfirmationDescription", {
+								modelName: model.modelName,
+							})}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{tUi("modelEditor.advanced.cancel")}</AlertDialogCancel>
 						<AlertDialogAction
 							onClick={handleDeleteModel}
 							className="bg-red-600 hover:bg-red-700"
 						>
-							Delete Permanently
+							{tUi("modelEditor.advanced.deletePermanently")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

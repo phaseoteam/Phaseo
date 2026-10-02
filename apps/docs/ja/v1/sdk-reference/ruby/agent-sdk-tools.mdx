@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗通知に対応するRubyツールを定義します。"
+---
+
+`PhaseoAgentSdk::Tool`値を作成し、`define_tool`で渡します。ツールには次の内容を含められます。
+
+- モデルに提示するJSONの`parameters`
+- `input_schema`、`output_schema`、`event_schema`の検証コールバック
+- `timeout_ms`と`execute`コールバック
+- 真偽値または呼び出し可能な`require_approval`
+- インタラクティブな処理向けの`on_tool_called`と`on_response_received`
+- `next_turn_params`と`on_error: "return-to-model"`
+
+暫定結果には`runtime.emit_progress`、アプリケーションコンテキストには`set_context`を使います。スレッド数を制限して独立したツールを並列実行できますが、保存される結果はモデル呼び出し順を保ちます。
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

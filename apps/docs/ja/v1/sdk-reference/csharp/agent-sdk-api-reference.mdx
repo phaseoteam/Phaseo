@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "APIリファレンス"
+description: "C# Agent SDKの主要な型とメソッドを紹介します。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `AgentSdk.CreateAgent(...)` | エージェントを定義する |
+| `AgentSdk.DefineTool(...)` | ローカルまたは手動のツールを定義する |
+| `AgentSdk.CreateGatewayAgentClient(...)` | モデルターンをPhaseoに接続する |
+| `Agent.Run(...)` | 終了状態または一時停止状態まで実行する |
+| `Agent.Stream(...)` | 再生可能な非同期ストリームで実行する |
+| `Agent.ContinueRun(...)` | 保存済みまたは一時停止中の状態から続行する |
+| `AgentStreamResult.GetResult()` | 実行の完了を待つ |
+| `AgentStreamResult.TextStream()` | テキスト差分を読み取る |
+| `AgentStreamResult.FullStream()` | すべてのライフサイクルイベントを読み取る |
+| `AgentStreamResult.Cancel()` | 実行中の処理をキャンセルする |
+
+主なレコードとインターフェイスには、`AgentDefinition`、`RunOptions`、`RunResult`、`RunRecord`、`RunStep`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`IStateAccessor`、`ModelRetryConfig`、`ToolExecutionConfig`があります。
+
+## 関連項目
+
+- [最初のエージェントを作る](./agent-sdk.mdx)
+- [エラーとGatewayの詳細](./agent-sdk-observability.mdx)

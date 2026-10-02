@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "Sorties et nouvelles tentatives"
+description: "Validez les sorties finales, réessayez les requêtes au modèle et examinez les exécutions Go terminées."
+---
+
+Validez la sortie pour que la valeur renvoyée par l’agent respecte le contrat attendu par votre application. Les nouvelles tentatives du modèle s’appliquent aux requêtes échouées ; celles des outils doivent rester explicites dans leur implémentation et n’être utilisées que si elles sont sûres.
+
+## Configurer les nouvelles tentatives du modèle
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+Le journal d’exécution conserve le nombre de tentatives du modèle pour chaque étape. Une nouvelle tentative ne supprime pas les résultats des outils déjà terminés.
+
+## Valider le résultat final
+
+Définissez `OutputSchema` sur `AgentDefinition` lorsque le code en aval exige un résultat structuré. La validation s’exécute avant que le résultat soit marqué comme terminé ; une sortie invalide échoue donc à la frontière de l’agent plutôt que plus tard dans l’application.
+
+## Examiner le résultat
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+Utilisez les [conditions d’arrêt](./agent-sdk-stop-conditions.mdx) pour imposer des budgets et des limites strictes, et la page [erreurs et dépannage](./agent-sdk-observability.mdx) pour gérer les échecs.

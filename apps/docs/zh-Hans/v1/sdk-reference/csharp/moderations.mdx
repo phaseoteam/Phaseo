@@ -1,0 +1,28 @@
+---
+icon: "shield-check"
+title: "内容审核"
+description: "使用 C# SDK 调用 `/moderations`。"
+---
+
+**方法**：`client.GenerateModeration(...)` 或 `client.CreateModeration(...)`
+
+### 示例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation-latest",
+    ["input"] = "Text to classify"
+});
+```
+
+### 主要参数
+- `model`（必填）：内容审核模型 ID（例如 `openai/omni-moderation-latest`）。
+- `input`（必填）：字符串或内容项数组（文本或 `image_url`）。
+- 可选：`categories`/`severity` 筛选条件（受支持时）以及 `user` 标签。
+
+### 返回值
+`ModerationResponse`
+

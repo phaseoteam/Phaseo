@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "Uso do SDK Go"
+description: "Métodos wrapper atualmente compatíveis com o SDK Go."
+---
+
+## Configuração
+
+```go
+import (
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New("<API_KEY>", "https://api.phaseo.app/v1")
+ctx := context.Background()
+```
+
+## Conclusões de chat
+
+```go
+chatReq := phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Hello"},
+  },
+}
+chatResp, err := client.GenerateText(ctx, chatReq)
+```
+
+## Responses
+
+```go
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {"type": "input_text", "text": "Reply with: go sdk works"},
+  },
+}
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+```
+
+## Vetores de incorporação
+
+```go
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+```
+
+## Moderações
+
+```go
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "Some text to check",
+})
+```
+
+## Imagens e áudio
+
+```go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
+## Modelos
+
+```go
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
+```
+
+## Limites atuais
+
+O wrapper Go agora cobre chat, Responses, imagens, áudio, embeddings, moderações, modelos, provedores, lotes, arquivos, consulta de gerações, saúde e utilitários de vídeo. As operações geradas de nível mais baixo continuam disponíveis para endpoints que ainda não foram incorporados ao wrapper escrito à mão, mas os tipos de solicitação comuns são reexportados pelo pacote do wrapper.

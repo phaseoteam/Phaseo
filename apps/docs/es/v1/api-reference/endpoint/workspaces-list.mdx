@@ -1,0 +1,10 @@
+---
+title: "Listar espacios de trabajo"
+sidebarTitle: "Listar espacios de trabajo"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /workspaces"
+description: "Muestra los espacios de trabajo propiedad del titular de la clave de gestión autenticada."
+---
+<Note>Este endpoint requiere una clave de API de gestión. No se aceptan las claves de API estándar de la pasarela.</Note>
+
+Devuelve los espacios de trabajo visibles para el contexto de gestión autenticado, con paginación por `offset` y `limit`.

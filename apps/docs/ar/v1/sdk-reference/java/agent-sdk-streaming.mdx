@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "البث"
+description: "بث نصوص وأحداث وكلاء Java باستخدام مستهلكين يمكنهم إعادة قراءة التدفق."
+---
+
+تعيد `Agent.stream(...)` قيمة `StreamResult`:
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+يمكن إعادة قراءة `textStream()` و`fullStream()`، لذا تستطيع واجهة المنتج ورمز القياس عن بُعد استهلاك التشغيل نفسه كلٌ على حدة. استدعِ `cancel()` لمقاطعة عامل التدفق النشط.
+
+تظل أحداث العناصر في Java كائنات عامة، وليست الاتحاد المميّز `AgentItem` في TypeScript.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

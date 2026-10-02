@@ -1,9 +1,21 @@
 export function formatRelativeToNow(
     date: Date | number,
-    nowMs: number
+    nowMs: number,
+    locale?: string
 ): string {
     const targetDate = date instanceof Date ? date : new Date(date)
     const diffInSeconds = Math.floor((nowMs - targetDate.getTime()) / 1000)
+    if (locale) {
+        const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
+        if (diffInSeconds < 300) return formatter.format(0, "second")
+        const periods: Array<[number, number, Intl.RelativeTimeFormatUnit]> = [
+            [3600, 60, "minute"], [86400, 3600, "hour"],
+            [604800, 86400, "day"], [2419200, 604800, "week"],
+            [31536000, 2628000, "month"], [Infinity, 31536000, "year"],
+        ]
+        const [, seconds, unit] = periods.find(([limit]) => diffInSeconds < limit)!
+        return formatter.format(-Math.floor(diffInSeconds / seconds), unit)
+    }
 
     // Less than 5 minutes
     if (diffInSeconds < 300) {

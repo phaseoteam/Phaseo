@@ -20,6 +20,7 @@ import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
 import ModelSubscriptions from "@/components/(data)/model/pricing/ModelSubscriptions";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
+import { getLocale, getTranslations } from "next-intl/server";
 import { fetchFrontendModelPerformanceColos } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ModelUptimeDashboard from "@/components/(data)/models/ModelUptimeDashboard";
 import ModelActivityChart from "@/components/(data)/model/overview/ModelActivityChart";
@@ -204,28 +205,27 @@ function parseTypes(types: unknown): string[] {
 }
 
 const KNOWN_MODALITY_META = [
-	{ key: "text", label: "Text", icon: ALargeSmall },
-	{ key: "image", label: "Image", icon: ImageIcon },
-	{ key: "video", label: "Video", icon: Video },
-	{ key: "audio", label: "Audio", icon: Headphones },
-	{ key: "audio_tts", label: "Speech", icon: Speech },
-	{ key: "audio_stt", label: "Transcription", icon: Captions },
-	{ key: "audio_music", label: "Music", icon: Music4 },
-	{ key: "structured", label: "Structured state", icon: Braces },
-	{ key: "embeddings", label: "Embeddings", icon: Braces },
-	{ key: "moderations", label: "Moderation", icon: BadgeAlert },
-	{ key: "decisions", label: "Decisions", icon: Scale },
+	{ key: "text", translationKey: "modalityText", icon: ALargeSmall },
+	{ key: "image", translationKey: "modalityImage", icon: ImageIcon },
+	{ key: "video", translationKey: "modalityVideo", icon: Video },
+	{ key: "audio", translationKey: "modalityAudio", icon: Headphones },
+	{ key: "audio_tts", translationKey: "modalitySpeech", icon: Speech },
+	{ key: "audio_stt", translationKey: "modalityTranscription", icon: Captions },
+	{ key: "audio_music", translationKey: "modalityMusic", icon: Music4 },
+	{ key: "embeddings", translationKey: "modalityEmbeddings", icon: Braces },
+	{ key: "moderations", translationKey: "modalityModeration", icon: BadgeAlert },
+	{ key: "structured", translationKey: "modalityStructured", icon: Braces },
+	{ key: "decisions", translationKey: "modalityDecisions", icon: Scale },
 ];
 
-function formatTypeLabel(value: string): string {
-	if (value === "audio_stt") return "Transcription";
-	if (value === "audio_tts") return "Speech";
-	if (value === "audio_music") return "Music";
-	return value
-		.split(/[_\s-]+/)
-		.filter(Boolean)
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(" ");
+function formatTypeLabel(value: string, translateModality: (key: string) => string): string {
+	const keys: Record<string, string> = {
+		audio_stt: "audioStt", audio_tts: "audioTts", audio_music: "audioMusic",
+		file: "file", code: "code", vision: "vision", speech: "speech", multimodal: "multimodal",
+		embedding: "embedding", rerank: "rerank", moderation: "moderation",
+	};
+	const key = keys[value];
+	return key ? translateModality(key) : value;
 }
 
 export async function ModelProvidersSection({
@@ -345,11 +345,12 @@ export async function ModelPerformanceSection({
 	modelId,
 	includeHidden,
 	performancePromise,
-	description = "Hourly latency and throughput from the past seven days.",
-}: ModelSectionSharedProps &
+	}: ModelSectionSharedProps &
 	ModelPerformancePromiseProps & {
-	description?: string;
-}) {
+		description?: string;
+	}) {
+	const t = await getTranslations("Catalogue.models.detail");
+	const description = t("sections.performanceDescription");
 	const [performanceMetrics, pendingApiRelease, performanceColos] =
 		await Promise.all([
 		withOptionalSectionTimeout(
@@ -383,10 +384,10 @@ export async function ModelPerformanceSection({
 				/>
 			) : (
 				<div className="space-y-3">
-					<SectionHeader title="Performance" description={description} />
+					<SectionHeader title={t("navigation.performance")} description={description} />
 					{shouldShowPendingApiBanner ? (
 						<ModelPendingApiReleaseBanner
-							modelName={pendingApiRelease?.modelName ?? "This model"}
+							modelName={pendingApiRelease?.modelName ?? t("sections.thisModel")}
 							surface="performance"
 						/>
 					) : null}
@@ -417,6 +418,8 @@ export async function ModelAppsSection({
 	modelId,
 	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
+	const t = await getTranslations("Catalogue.models.detail");
+	const tApps = await getTranslations("Common.ui.apps");
 	const modelApps = await withOptionalSectionTimeout(
 		fetchFrontendModelApps(modelId),
 		[],
@@ -431,8 +434,8 @@ export async function ModelAppsSection({
 	return (
 		<Section id="apps">
 			<SectionHeader
-				title="Apps Using This Model"
-				description="Public apps observed in gateway usage for this model."
+				title={t("sections.appsTitle")}
+				description={t("sections.appsDescription")}
 			/>
 				<div className="grid gap-x-16 md:grid-cols-2">
 					{appColumns.map((column, columnIndex) => (
@@ -478,7 +481,7 @@ export async function ModelAppsSection({
 											) : null}
 										</div>
 										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
-											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> tokens
+											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> {tApps("tokens")}
 										</div>
 									</Link>
 								);
@@ -497,6 +500,7 @@ export async function ModelActivitySection({
 }: ModelSectionSharedProps & {
 	showHeading?: boolean;
 }) {
+	const t = await getTranslations("Catalogue.models.detail");
 	const usageRows = await withOptionalSectionTimeout(
 		fetchFrontendModelUsageDailyBreakdown({
 			modelId,
@@ -510,7 +514,7 @@ export async function ModelActivitySection({
 			modelId={modelId}
 			rows={usageRows}
 			showHeading={showHeading}
-			description="Token volume and request traffic for this model over time."
+			description={t("sections.activityChartDescription")}
 		/>
 	);
 }
@@ -528,6 +532,8 @@ export async function ModelQuickstartSection({
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
+	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
+
 	if (!isGatewayActive) {
 		return (
 			<Quickstart
@@ -602,7 +608,7 @@ export async function ModelQuickstartSection({
 				/>
 			) : (
 				<p className="text-sm text-muted-foreground">
-					Quickstart metadata is not available right now.
+					{emptyStateT("quickstartUnavailable")}
 				</p>
 			)}
 		</>
@@ -614,6 +620,8 @@ export async function ModelBenchmarksSection({
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
+	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
+	const t = await getTranslations("Catalogue.models.detail");
 	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
 		withOptionalSectionTimeout(
 			fetchFrontendModelBenchmarkHighlights(modelId),
@@ -697,15 +705,15 @@ export async function ModelBenchmarksSection({
 				<div className="space-y-3">
 					{shouldShowPendingApiBanner ? (
 						<ModelPendingApiReleaseBanner
-							modelName={pendingApiRelease?.modelName ?? "This model"}
+							modelName={pendingApiRelease?.modelName ?? t("sections.thisModel")}
 							surface="benchmarks"
 						/>
 					) : null}
 					<Empty className="rounded-lg border p-8">
 						<EmptyHeader>
-							<EmptyTitle>No benchmark data yet</EmptyTitle>
+							<EmptyTitle>{emptyStateT("noBenchmarkTitle")}</EmptyTitle>
 							<EmptyDescription>
-								No benchmark data is available for this model yet.
+								{emptyStateT("noBenchmarkDescription")}
 							</EmptyDescription>
 						</EmptyHeader>
 					</Empty>
@@ -720,6 +728,7 @@ export async function ModelLineageSection({
 	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model?: ModelOverviewPage | null }) {
+	const t = await getTranslations("Catalogue.models.detail.lineage");
 	const overview = model ?? (await fetchFrontendModelOverview(modelId));
 	const timeline = overview?.previous_model_id
 		? await withOptionalSectionTimeout(
@@ -748,17 +757,17 @@ export async function ModelLineageSection({
 		<Section id="family">
 			<div className="space-y-1">
 				<h2 className="text-xl font-semibold tracking-tight">
-					Parent and Family
+					{t("title")}
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Lineage pointers for previous and related models.
+					{t("description")}
 				</p>
 			</div>
 			{overview ? (
 				<div className="grid gap-3 md:grid-cols-2">
 					<div className="rounded-lg border border-border/70 px-4 py-3">
 						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Parent Model
+							{t("parentModel")}
 						</p>
 						{previousLineage ? (
 							<Link
@@ -769,31 +778,31 @@ export async function ModelLineageSection({
 							</Link>
 						) : (
 							<p className="text-sm text-muted-foreground">
-								No parent model recorded.
+								{t("noParent")}
 							</p>
 						)}
 					</div>
 					<div className="rounded-lg border border-border/70 px-4 py-3">
 						<p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Family
+							{t("family")}
 						</p>
 						{overview.family_id ? (
 							<Link
 								href={`/families/${overview.family_id}`}
 								className="text-sm font-semibold underline decoration-transparent hover:decoration-current"
 							>
-								View family graph
+								{t("viewFamilyGraph")}
 							</Link>
 						) : (
 							<p className="text-sm text-muted-foreground">
-								No family assigned.
+								{t("noFamily")}
 							</p>
 						)}
 					</div>
 				</div>
 			) : (
 				<p className="text-sm text-muted-foreground">
-					Lineage information is not available yet.
+				{t("unavailable")}
 				</p>
 			)}
 		</Section>
@@ -805,6 +814,9 @@ export async function ModelAboutSection({
 }: {
 	model: ModelOverviewPage;
 }) {
+	const t = await getTranslations("Catalogue.models.detail");
+	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
+	const tModalities = await getTranslations("Common.ui.modelCreation.modalities");
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
 	const inputTypeSet = new Set(inputTypes);
@@ -855,7 +867,7 @@ export async function ModelAboutSection({
 							)}
 						>
 							<Icon className={cn("h-3.5 w-3.5", tone.iconClassName)} />
-							{modality.label}
+							{tMetadata(modality.translationKey as never)}
 						</span>
 					)}
 				)}
@@ -869,13 +881,13 @@ export async function ModelAboutSection({
 								tone.badgeClassName,
 							)}
 						>
-							{formatTypeLabel(type)}
+							{formatTypeLabel(type, (key) => tModalities(key as never))}
 						</span>
 					);
 				})}
 				{hasAny ? null : (
 					<span className="text-sm font-medium text-muted-foreground">
-						Not listed
+						{t("sections.notListed")}
 					</span>
 				)}
 			</div>
@@ -900,12 +912,12 @@ export async function ModelAboutSection({
 					extraItems={[
 						{
 							key: "input_modalities",
-							label: "Input",
+							label: t("sections.input"),
 							value: renderModalityValue("Input"),
 						},
 						{
 							key: "output_modalities",
-							label: "Output",
+							label: t("sections.output"),
 							value: renderModalityValue("Output"),
 						},
 					]}
@@ -913,13 +925,13 @@ export async function ModelAboutSection({
 			</div>
 			{hasModelLinks(model) ? (
 				<div className="space-y-2">
-					<h3 className="text-base font-semibold">Links</h3>
+					<h3 className="text-base font-semibold">{t("sections.links")}</h3>
 					<ModelLinks model={model} />
 				</div>
 			) : null}
 			{hasLineage ? (
 				<div className="space-y-2">
-					<h3 className="text-base font-semibold">Related models</h3>
+					<h3 className="text-base font-semibold">{t("sections.relatedModels")}</h3>
 					{hasDirectionalLineage ? (
 						<div
 							className={cn(
@@ -934,7 +946,7 @@ export async function ModelAboutSection({
 							>
 								<ArrowLeft className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
 								<div className="min-w-0">
-									<p className="text-xs text-muted-foreground">Previous model</p>
+								<p className="text-xs text-muted-foreground">{t("sections.previousModel")}</p>
 									<p className="truncate text-sm font-semibold">{lineage.previous.modelName}</p>
 								</div>
 							</Link>
@@ -945,7 +957,7 @@ export async function ModelAboutSection({
 								className="group flex min-w-0 items-center justify-between gap-3 border-b border-border/70 px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/35 sm:rounded-lg sm:border sm:bg-card sm:hover:bg-muted/30"
 							>
 								<div className="min-w-0">
-									<p className="text-xs text-muted-foreground">Next model</p>
+								<p className="text-xs text-muted-foreground">{t("sections.nextModel")}</p>
 									<p className="truncate text-sm font-semibold">{lineage.next.modelName}</p>
 								</div>
 								<ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -958,7 +970,7 @@ export async function ModelAboutSection({
 							href={`/families/${model.family_id}`}
 							className="group flex min-w-0 items-center justify-between gap-3 rounded-lg border border-border/70 bg-card px-3 py-3 transition-colors hover:bg-muted/30"
 						>
-							<span className="truncate text-sm font-semibold">View model family</span>
+							<span className="truncate text-sm font-semibold">{t("sections.viewModelFamily")}</span>
 							<ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
 						</Link>
 					) : null}
@@ -973,7 +985,9 @@ export async function ModelCreatorModelsSection({
 	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model: ModelOverviewPage }) {
-	const creatorName = model.organisation?.name ?? "this creator";
+	const t = await getTranslations("Catalogue.models.detail");
+	const locale = await getLocale();
+	const creatorName = model.organisation?.name ?? t("sections.thisCreator");
 	const creatorModels = await withOptionalSectionTimeout(
 		fetchFrontendOrganisationModels(model.organisation_id),
 		[],
@@ -986,7 +1000,21 @@ export async function ModelCreatorModelsSection({
 				(b.primary_timestamp ?? 0) - (a.primary_timestamp ?? 0),
 		)
 		.slice(0, 9);
-
+	const providerPlaceholder = "\uE000";
+	const otherModelsHeading = t("sections.otherModelsFrom", {
+		provider: providerPlaceholder,
+	});
+	const providerPlaceholderIndex = otherModelsHeading.indexOf(providerPlaceholder);
+	const otherModelsHeadingBefore =
+		providerPlaceholderIndex === -1
+			? `${otherModelsHeading} `
+			: otherModelsHeading.slice(0, providerPlaceholderIndex);
+	const otherModelsHeadingAfter =
+		providerPlaceholderIndex === -1
+			? ""
+			: otherModelsHeading.slice(
+				providerPlaceholderIndex + providerPlaceholder.length,
+			);
 	return (
 		<Section id="other-models">
 			{otherModels.length > 0 ? (
@@ -996,7 +1024,7 @@ export async function ModelCreatorModelsSection({
 				>
 					<div className="mb-3 min-w-0 space-y-1">
 						<h2 className="text-xl font-semibold tracking-tight">
-							Other models from{" "}
+							{otherModelsHeadingBefore}
 							<Link
 								href={`/organisations/${model.organisation_id}`}
 								className="group/link inline-flex items-center no-underline"
@@ -1005,6 +1033,7 @@ export async function ModelCreatorModelsSection({
 									{creatorName}
 								</span>
 							</Link>
+							{otherModelsHeadingAfter}
 						</h2>
 					</div>
 					<div className="relative min-w-0 overflow-hidden sm:px-8">
@@ -1052,7 +1081,7 @@ export async function ModelCreatorModelsSection({
 			) : (
 				<div className="space-y-1">
 					<h2 className="text-xl font-semibold tracking-tight">
-						Other models from{" "}
+						{otherModelsHeadingBefore}
 						<Link
 							href={`/organisations/${model.organisation_id}`}
 							className="group inline-flex items-center no-underline"
@@ -1061,9 +1090,10 @@ export async function ModelCreatorModelsSection({
 								{creatorName}
 							</span>
 						</Link>
+						{otherModelsHeadingAfter}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						No additional models from this creator are available yet.
+						{t("sections.noAdditionalModels")}
 					</p>
 				</div>
 			)}
@@ -1260,66 +1290,67 @@ export function ModelCreatorModelsSkeleton() {
 	);
 }
 
-export function ModelOverviewSectionsSkeleton() {
+export async function ModelOverviewSectionsSkeleton() {
+	const t = await getTranslations("Catalogue.models.detail");
 	return (
 		<div className={MODEL_SECTION_STACK_CLASSNAME}>
 			<Section id="providers">
 				<SectionHeader
-					title="Providers"
-					description="API providers, route pricing, availability, and recent reliability signals."
+					title={t("navigation.providers")}
+					description={t("sections.providersDescription")}
 				/>
 				<ProvidersSectionSkeleton />
 			</Section>
 			<Section id="performance">
 				<SectionHeader
-					title="Performance"
-					description="Latency, throughput, and reliability signals from recent traffic."
+					title={t("navigation.performance")}
+					description={t("sections.performanceSummaryDescription")}
 				/>
 				<PerformanceSectionSkeleton />
 			</Section>
 			<Section id="pricing">
 				<SectionHeader
-					title="Pricing"
-					description="Effective prices over the last 30 days, with current provider list prices for context."
+					title={t("navigation.pricing")}
+					description={t("sections.pricingContextDescription")}
 				/>
 				<PricingSectionSkeleton />
 			</Section>
 			<Section id="benchmarks">
-				<SectionHeader title="Benchmarks" />
+				<SectionHeader title={t("navigation.benchmarks")} />
 				<BenchmarksSectionSkeleton />
 			</Section>
 			<Section id="activity">
 				<SectionHeader
-					title="Activity"
-					description="Daily gateway activity over the last 30 days, with current UTC-day pace projection."
+					title={t("navigation.activity")}
+					description={t("sections.activityDescription")}
 				/>
 				<ActivitySectionSkeleton />
 			</Section>
 			<Section id="apps">
 				<SectionHeader
-					title="Apps Using This Model"
-					description="Public apps observed in gateway usage for this model."
+						title={t("sections.appsTitle")}
+						description={t("sections.appsDescription")}
 				/>
 				<AppsSectionSkeleton />
 			</Section>
 			<Section id="uptime">
 				<SectionHeader
-					title="Model Uptime"
-					description="Uptime trend for this model over the last 24 hours."
+						title={t("sections.uptimeTitle")}
+						description={t("sections.uptimeDescription")}
 				/>
 				<UptimeSectionSkeleton />
 			</Section>
 			<Section id="about">
 				<SectionHeader
-					title="About"
-					description="Key dates, capabilities, and model metadata."
+						title={t("navigation.about")}
+						description={t("sections.aboutDescription")}
 				/>
 				<AboutSectionSkeleton />
 			</Section>
 			<Section id="subscriptions">
 				<SectionHeader
-					title="Subscriptions"
-					description="Commercial plans and bundled access that currently include this model."
+						title={t("navigation.subscriptions")}
+						description={t("sections.subscriptionsDescription")}
 				/>
 				<SubscriptionsSectionSkeleton />
 			</Section>
@@ -1327,7 +1358,7 @@ export function ModelOverviewSectionsSkeleton() {
 	);
 }
 
-export default function ModelOverviewSections({
+export default async function ModelOverviewSections({
 	modelId,
 	model,
 	includeHidden,
@@ -1342,6 +1373,8 @@ export default function ModelOverviewSections({
 	previewOffers = [],
 	showPreviewDetails = Boolean(model),
 }: ModelOverviewSectionsProps) {
+	const t = await getTranslations("Catalogue.models.detail");
+	const tOverview = await getTranslations("Catalogue.modelDetail.overview");
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
@@ -1352,7 +1385,7 @@ export default function ModelOverviewSections({
 			<div className={MODEL_SECTION_STACK_CLASSNAME}>
 				{showBenchmarks ? (
 					<Section id="benchmarks">
-						<SectionHeader title="Benchmarks" />
+						<SectionHeader title={t("navigation.benchmarks")} />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
 								modelId={modelId}
@@ -1371,8 +1404,8 @@ export default function ModelOverviewSections({
 						) : null}
 						<Section id="about">
 							<SectionHeader
-								title="About"
-								description="Archived dates, capabilities, links, and model metadata."
+								title={t("navigation.about")}
+								description={t("sections.archivedAboutDescription")}
 							/>
 							<Suspense fallback={<AboutSectionSkeleton />}>
 								<ModelAboutSection model={model!} />
@@ -1381,8 +1414,8 @@ export default function ModelOverviewSections({
 						{showPreviewDetails && previewOffers.length > 0 ? (
 							<Section id="provider-submissions">
 								<SectionHeader
-									title="Provider submissions"
-									description="Complete provider-supplied details for authorized internal review."
+									title={tOverview("providerSubmissions")}
+									description={tOverview("providerSubmissionsDescription")}
 								/>
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
@@ -1390,8 +1423,8 @@ export default function ModelOverviewSections({
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
-									title="Subscriptions"
-									description="Historical commercial plans and bundled access that listed this model."
+									title={t("navigation.subscriptions")}
+									description={t("sections.archivedSubscriptionsDescription")}
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
@@ -1422,14 +1455,14 @@ export default function ModelOverviewSections({
 								creatorOrganisationId={model?.organisation_id}
 								creatorOrganisationName={model?.organisation?.name}
 								previewOffers={previewOffers}
-								description="Provider listings and known route availability for this model."
+								description={t("sections.providerListingsDescription")}
 							/>
 						</Suspense>
 					</Section>
 				) : null}
 				{showBenchmarks ? (
 					<Section id="benchmarks">
-						<SectionHeader title="Benchmarks" />
+						<SectionHeader title={t("navigation.benchmarks")} />
 						<Suspense fallback={<BenchmarksSectionSkeleton />}>
 							<ModelBenchmarksSection
 								modelId={modelId}
@@ -1448,8 +1481,8 @@ export default function ModelOverviewSections({
 					<>
 						<Section id="about">
 							<SectionHeader
-								title="About"
-								description="Key dates, capabilities, and model metadata."
+								title={t("navigation.about")}
+								description={t("sections.aboutDescription")}
 							/>
 							<Suspense fallback={<AboutSectionSkeleton />}>
 								<ModelAboutSection model={model!} />
@@ -1458,8 +1491,8 @@ export default function ModelOverviewSections({
 						{showPreviewDetails && previewOffers.length > 0 ? (
 							<Section id="provider-submissions">
 								<SectionHeader
-									title="Provider submissions"
-									description="Complete provider-supplied details for authorized internal review."
+									title={tOverview("providerSubmissions")}
+									description={tOverview("providerSubmissionsDescription")}
 								/>
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
@@ -1467,8 +1500,8 @@ export default function ModelOverviewSections({
 						{showSubscriptions ? (
 							<Section id="subscriptions">
 								<SectionHeader
-									title="Subscriptions"
-									description="Commercial plans and bundled access that list this model."
+									title={t("navigation.subscriptions")}
+									description={t("sections.subscriptionsDescription")}
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
@@ -1499,7 +1532,7 @@ export default function ModelOverviewSections({
 							creatorOrganisationName={model?.organisation?.name}
 							providersOverride={privateProviders}
 							previewOffers={previewOffers}
-							description="API providers, route pricing, availability, and recent reliability signals."
+							description={t("sections.providersDescription")}
 						/>
 					</Suspense>
 				</Section>
@@ -1519,8 +1552,8 @@ export default function ModelOverviewSections({
 				</Suspense>
 			{!isPrivateModel ? <Section id="pricing">
 				<SectionHeader
-					title="Pricing"
-					description="Provider list prices, observed effective pricing, and recent route pricing history."
+					title={t("navigation.pricing")}
+					description={t("sections.pricingDescription")}
 				/>
 				<Suspense fallback={<PricingSectionSkeleton />}>
 					<ModelPricingInsightsOverviewSection
@@ -1532,7 +1565,7 @@ export default function ModelOverviewSections({
 			</Section> : null}
 			{showBenchmarks ? (
 				<Section id="benchmarks">
-					<SectionHeader title="Benchmarks" />
+					<SectionHeader title={t("navigation.benchmarks")} />
 					<Suspense fallback={<BenchmarksSectionSkeleton />}>
 						<ModelBenchmarksSection
 							modelId={modelId}
@@ -1555,8 +1588,8 @@ export default function ModelOverviewSections({
 				fallback={
 					<Section id="apps">
 						<SectionHeader
-							title="Apps Using This Model"
-							description="Public apps observed in gateway usage for this model."
+							title={t("sections.appsTitle")}
+							description={t("sections.appsDescription")}
 						/>
 						<AppsSectionSkeleton />
 					</Section>
@@ -1566,8 +1599,8 @@ export default function ModelOverviewSections({
 			</Suspense>
 			<Section id="uptime">
 				<SectionHeader
-					title="Model Uptime"
-					description="Uptime trend for this model over the last 24 hours."
+					title={t("sections.uptimeTitle")}
+					description={t("sections.uptimeDescription")}
 				/>
 				<Suspense fallback={<UptimeSectionSkeleton />}>
 					<ModelUptimeSection
@@ -1585,8 +1618,8 @@ export default function ModelOverviewSections({
 				<>
 					<Section id="about">
 						<SectionHeader
-							title="About"
-							description="Key dates, capabilities, and model metadata."
+							title={t("navigation.about")}
+							description={t("sections.aboutDescription")}
 						/>
 						<Suspense fallback={<AboutSectionSkeleton />}>
 								<ModelAboutSection model={model!} />
@@ -1595,8 +1628,8 @@ export default function ModelOverviewSections({
 					{showPreviewDetails && previewOffers.length > 0 ? (
 						<Section id="provider-submissions">
 							<SectionHeader
-								title="Provider submissions"
-								description="Complete provider-supplied details for authorized internal review."
+								title={tOverview("providerSubmissions")}
+								description={tOverview("providerSubmissionsDescription")}
 							/>
 							<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 						</Section>
@@ -1604,8 +1637,8 @@ export default function ModelOverviewSections({
 					{showSubscriptions ? (
 						<Section id="subscriptions">
 							<SectionHeader
-								title="Subscriptions"
-								description="Commercial plans and bundled access that currently include this model."
+								title={t("navigation.subscriptions")}
+								description={t("sections.subscriptionsDescription")}
 							/>
 							<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 								<ModelSubscriptionsSection

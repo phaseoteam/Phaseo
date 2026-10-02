@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "ストリーミング"
+description: "再生可能なコンシューマーでGoエージェントのテキストとイベントをストリーミングします。"
+---
+
+`Agent.Stream(...)`は再生可能な`StreamResult`を返します。
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+ライフサイクルイベントやプロバイダーイベントには`Events()`を使います。ストリームコンテキストと実行中のモデルリクエストをキャンセルするには`Cancel()`を呼び出します。
+
+GoにはTypeScriptと同じネイティブな型付きアイテムコンシューマーはまだありません。構造化されたプロダクトのタイムラインには、イベント列と完了済みの実行レコードを使います。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

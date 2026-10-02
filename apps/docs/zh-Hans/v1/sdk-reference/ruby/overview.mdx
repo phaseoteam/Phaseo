@@ -1,0 +1,46 @@
+---
+icon: "book-open"
+title: "Ruby SDK"
+description: "Phaseo 网关的官方 Ruby 客户端。"
+---
+
+从 RubyGems 安装已发布的 gem [`phaseo_sdk`](https://rubygems.org/gems/phaseo_sdk)。
+
+`packages/sdk/sdk-ruby/lib/index.rb` 中的本地封装目前提供以下方法：
+
+- `generate_text(...)`
+- `generate_response(...)`
+- `create_anthropic_message(...)`
+- `generate_image(...)`
+- `generate_image_edit(...)`
+- `generate_video(...)`, `get_video(...)`, `cancel_video(...)`, `delete_video(...)`, `list_video_models`, `list_videos(...)`
+- `generate_embedding(...)`
+- `generate_moderation(...)`
+- `generate_speech(...)`
+- `generate_transcription(...)`
+- `generate_translation(...)`
+- `create_batch(...)`, `retrieve_batch(...)`, `cancel_batch(...)`
+- `get_async_job_websocket_url(...)`, `batch_websocket_url(...)`, `video_websocket_url(...)`, `async_jobs.websocket_url(...)`
+- `list_files(...)`, `retrieve_file(...)`, `retrieve_file_content(...)`, `retrieve_video_content(...)`, `get_video_download_url(...)`, `upload_file(...)`
+- `list_models(...)`
+- `model_endpoint_capabilities(...)`, `check_model_parameters(...)`
+- `list_api_keys(...)`, `create_api_key(...)`, `update_api_key(...)`, `delete_api_key(...)`
+- `get_api_key(...)`
+- `list_workspaces(...)`, `get_workspace(...)`, `create_workspace(...)`, `update_workspace(...)`, `delete_workspace(...)`
+- `list_endpoints`
+- `list_organisations(...)`
+- `list_pricing_models(...)`
+- `calculate_pricing(...)`
+- `get_current_api_key`
+- `list_providers(...)`, `get_analytics(...)`, `get_credits(...)`, `get_activity(...)`
+- `get_generation(...)`
+- `health`, `healthz`
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: 'YOUR_KEY')
+models = client.list_models(limit: 5)
+```
+
+`check_model_parameters(...)` 使用提供商路由的实时元数据，突出显示不受支持或无效的值，并返回接受完整参数集的路由。

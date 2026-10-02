@@ -1,0 +1,95 @@
+---
+title: "Migrar desde Cloudflare AI Gateway"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "Sustituye una ruta de Cloudflare AI Gateway por Phaseo y conserva el flujo de solicitudes de tu aplicación."
+icon: "/icons/brands/cloudflare.svg"
+---
+
+Usa esta guía si tu aplicación ya envía solicitudes compatibles con OpenAI a través de Cloudflare AI Gateway. Cambia primero el límite del gateway y luego vuelve a crear solo el enrutamiento, el caché y la observabilidad que realmente necesita tu tráfico de producción.
+
+## Qué cambia
+
+| Configuración | Antes | Después |
+| --- | --- | --- |
+| URL de Gateway | URL de Cloudflare específica de la cuenta y el gateway | `https://api.phaseo.app/v1` |
+| Autenticación | Credenciales de Cloudflare y del proveedor | `PHASEO_API_KEY` |
+| Política de enrutamiento | Configuración de Cloudflare Gateway | Configuración de enrutamiento y preajustes de Phaseo |
+| Visibilidad de solicitudes | Analíticas de Cloudflare | Actividad y detalles de solicitudes de Phaseo |
+
+<Steps>
+<Step title="Inventaría la configuración actual del gateway">
+
+Registra la URL de Cloudflare Gateway, las rutas de proveedores, los encabezados personalizados, las reglas de caché, los reintentos y las analíticas de las que depende tu aplicación. Así podrás distinguir el comportamiento necesario de los ajustes que ya no tienes que migrar.
+
+</Step>
+
+<Step title="Sustituye el endpoint y las credenciales">
+
+Cuando sea posible, conserva el contenido de la solicitud y actualiza el cliente compatible con OpenAI para que use el nuevo gateway.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Vuelve a crear el enrutamiento y los valores predeterminados compartidos">
+
+Traslada las restricciones estables de proveedores, los valores predeterminados de los prompts y los parámetros de generación a [Preajustes](../guides/presets.mdx). Configura la clasificación de proveedores y el comportamiento alternativo mediante [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx).
+
+La configuración de caché y analíticas de Cloudflare no se transfiere automáticamente. Decide explícitamente si cada comportamiento debe estar en Phaseo, en tu aplicación o en tu capa perimetral.
+
+</Step>
+
+<Step title="Valida antes del cambio">
+
+Si corresponde, prueba respuestas sin streaming, streaming, errores, herramientas y salidas estructuradas. Compara la latencia, la salida, el uso de tokens y el coste antes de trasladar el tráfico gradualmente.
+
+</Step>
+</Steps>
+
+## Lista de comprobación de la migración
+
+- Se han eliminado las URL y los encabezados específicos de Cloudflare Gateway.
+- Los ID de modelos de producción se han verificado con `GET /v1/models`.
+- El comportamiento de caché necesario se ha recreado o retirado deliberadamente.
+- La actividad y los detalles de solicitudes proporcionan la visibilidad que necesita tu equipo.
+- La reversión sigue limitada a cambiar la configuración del endpoint y la clave.
+
+## Próximos pasos
+
+- [Preajustes](../guides/presets.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Observabilidad](../guides/integrations/observability.mdx)

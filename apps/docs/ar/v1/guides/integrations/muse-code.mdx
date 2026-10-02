@@ -1,0 +1,51 @@
+---
+title: "Muse Code"
+icon: "/icons/brands/meta.svg"
+description: "شغّل Muse Code عبر Phaseo Gateway باستخدام Phaseo CLI."
+---
+
+يمكن لـ Phaseo CLI تشغيل Muse Code بمفتاح مخصص للبوابة وإعدادات مؤقتة للمزود.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo muse --model meta/muse-spark-1.3 --
+```
+
+استخدم `--catalog all` لإتاحة جميع نماذج النص/الدردشة النشطة في Phaseo، أو `--dry-run --json` لمعاينة خطة التشغيل دون إنشاء مفتاح أو تشغيل Muse Code:
+
+```bash
+phaseo muse --catalog all --dry-run --json
+```
+
+استخدم `phaseo run muse ...` للصيغة الصريحة للأمر. ضع خيارات Muse Code بعد `--` حتى يتمكن Phaseo من معالجة خياراته أولًا.
+
+على الأنظمة الشبيهة بـ Unix، يعرض التشغيل التفاعلي الأول تثبيت Muse Code باستخدام مثبّت Meta. على Windows، ثبّت Muse Code بشكل منفصل وتحقق من `muse --version` واستخدم `--skip-install`.
+
+## التهيئة اليدوية
+
+يعتمد الإعداد العام لـ Muse Code على Model API وتدفق المصادقة الخاصين بـ Meta. لا توثّق Meta حاليًا إعدادًا دائمًا ومستقرًا لاستبدال هذه النقطة ببوابة خارجية متوافقة مع OpenAI، لذا فإن مشغّل Phaseo CLI هو الطريقة المدعومة لتوجيه Muse Code عبر Phaseo.
+
+إذا أردت استخدام نموذج Phaseo يدويًا من عميل آخر، فاستخدم [التكامل المتوافق مع OpenAI](./openai-sdk) مع `https://api.phaseo.app/v1` ومفتاح API لـ Phaseo. لا تنسخ إعدادات Muse المؤقتة الخاصة بالمشغّل إلى ملف Muse المعتاد؛ فهذه الملفات تفاصيل تنفيذية وتُحذف عند خروج المشغّل.
+
+## التحقق
+
+أرسل مطالبة قصيرة عبر البيئة التي تم تشغيلها، ثم تأكد من ظهور الطلب في نشاط Phaseo. يكتب المشغّل ملف `settings.json` داخل `XDG_CONFIG_HOME` مؤقت ويحذفه عند خروج Muse Code.
+
+## استكشاف الأخطاء وإصلاحها
+
+### Muse Code غير مثبت
+
+ثبّت Muse Code بشكل منفصل وتحقق من `muse --version` وأعد التشغيل باستخدام `--skip-install`.
+
+### النموذج غير مدرج
+
+استخدم `--catalog all` أو مرّر معرّف نموذج باستخدام `--model`. اكتشاف النماذج غير مطلوب لبوابة Phaseo.
+
+## روابط ذات صلة
+
+- [Phaseo CLI](./phaseo-cli)
+- [Meta Model API](https://ai.meta.com/llama)
+- [النماذج](../../api-reference/endpoint/models.mdx)
+- [النشاط](../../api-reference/endpoint/activity.mdx)

@@ -1,0 +1,37 @@
+---
+icon: "binary"
+title: "埋め込み"
+description: "PHP SDKで/embeddingsを呼び出します。"
+---
+
+**メソッド**: `$client->generateEmbedding(...)`または`$client->createEmbedding(...)`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+
+echo $response['data'][0]['embedding'][0] ?? '';
+```
+
+### 主なパラメーター
+
+-   `model`（必須）：埋め込みモデルのID（例：`openai/text-embedding-3-large`）。
+-   `input`（必須）：文字列または文字列の配列。
+-   `encoding_format`：`float`（デフォルト）または`base64`。
+-   `dimensions`：埋め込みの長さを切り詰めるための任意の整数（モデルに依存）。
+-   `user`：エンドユーザー用の任意のタグ。
+
+### 戻り値
+
+埋め込みペイロード（JSON）

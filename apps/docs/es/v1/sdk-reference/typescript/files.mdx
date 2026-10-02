@@ -1,0 +1,56 @@
+---
+icon: "files"
+title: "Archivos"
+description: "Llama a /files con el SDK de TypeScript."
+---
+
+**Métodos**: `client.uploadFile()`, `client.listFiles()`, `client.getFile()`, `client.getFileContent()`.
+
+### Ejemplo
+```typescript
+const uploaded = await client.uploadFile({ purpose: "batch", file: new Blob(["{}"]) });
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id);
+```
+
+<Note>
+`client.listFiles()` existe, pero `GET /files` actualmente devuelve `file_list_not_supported_with_shared_gateway_key`
+cuando se usa la clave compartida del gateway. Guarda el valor `uploaded.id` y recupera los archivos directamente.
+</Note>
+
+### Parámetros clave
+- `file` (obligatorio para subir): Blob/File/base64/cadena.
+- `purpose` (obligatorio para subir): por ejemplo, `batch`.
+
+### Devuelve
+`FileObject` (subir/obtener)
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```
+
+O `FileListResponse` (para listar cuando la clave del proveedor subyacente admita enumerar archivos)
+
+```json
+{
+  "data": [
+    {
+      "id": "file-123",
+      "object": "file",
+      "filename": "data.json",
+      "purpose": "batch",
+      "status": "processed",
+      "created_at": 1677610602,
+      "bytes": 123
+    }
+  ]
+}
+```

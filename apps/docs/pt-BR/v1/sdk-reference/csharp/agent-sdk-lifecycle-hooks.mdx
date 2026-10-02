@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "Hooks do ciclo de vida"
+description: "Reaja a eventos de execução .NET, modelo, etapa, ferramenta e checkpoint."
+---
+
+Pass `RunOptions.OnEvent` para atualizar uma linha do tempo do produto, um registro de auditoria ou um pipeline de telemetria.
+
+As famílias de eventos abrangem início, retomada e estados finais de execuções, solicitações de modelo, checkpoints de etapas, execução e progresso de ferramentas, espera por intervenção humana, cancelamentos e falhas.
+
+Mantenha o callback rápido. Coloque operações lentas de armazenamento ou rede em uma fila fora do loop do agente.
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## Relacionados
+
+- [Transmissão contínua](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

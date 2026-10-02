@@ -1,0 +1,129 @@
+---
+icon: "compass"
+title: "Python SDK 概览"
+description: "Phaseo Gateway API 的官方 Python 客户端"
+---
+
+从 PyPI 安装已发布的 [~phaseo~](https://pypi.org/project/phaseo/) 软件包。
+
+Phaseo Python SDK 提供同步客户端 `Phaseo` 和原生异步客户端 `AsyncPhaseo`。
+
+## 原生异步请求
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+解析后的文本事件使用 `async for event in client.responses.stream(request)`。
+原生 asyncio 取消会停止 HTTP 和轮询。资源命名空间涵盖文本、
+图像、音频、音乐、视频、批处理、文件、模型、嵌入、OCR、重排、解析、
+审核和决策；其他 HTTP 操作使用 `await client.request(...)`。
+注入的 HTTPX 客户端仍归调用方所有。
+
+两个客户端均支持 `with_options(timeout=30, max_retries=2)`，不会更改
+原始客户端。HTTPX 超时以秒为单位限制网络无活动时间。重试默认
+为零，仅适用于消耗响应前的 GET/HEAD，绝不适用于提交。
+`PhaseoHTTPError` 提供正文、代码、请求 ID、控制台追踪 URL 和重试延迟。
+
+升级时，将同步 JSON 请求对 `urllib.error.HTTPError` 的捕获
+改为 `PhaseoHTTPError`（或 `httpx.HTTPStatusError`），将连接错误捕获
+改为 `httpx.TransportError`。`error.status` 是 HTTP 状态；`error.code` 是
+API 错误代码。
+
+## 其他便捷功能
+
+任务资源提供带 `result`、`events` 和
+`to_dict` 的 `start` 和 `resume` 句柄。等待异步方法，并用 `async for` 遍历异步事件。
+仅视频和批处理支持远程取消。媒体使用
+`videos.stream_content(id)`，批处理使用 `batches.results(id)` 流式传输。同步助手
+`download_to(chunks, binary_file)` 不缓冲整个文件即可写入。
+文件上传接受字节、`Path` 对象、文件对象和 HTTPX 文件元组。
+
+`responses.parse(request, PydanticModel)` 验证完成的 JSON 输出；
+请明确配置服务器响应格式。`collect_stream` 和
+`collect_async_stream` 累积解析后的文本事件和使用量。
+`check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)` 同时检查单个可用提供商报价的已声明能力和标量
+约束。未知事实会使预检查失败。
+
+模型选择器和参数编辑器应使用实时端点元数据：
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+每个参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，
+附带匹配的提供商路由和用于行内高亮的约束问题。
+`client.models.capabilities(model_id)` 返回完整端点能力
+响应。`AsyncPhaseo` 提供相同的可等待方法。
+
+本地测试通过 `httpx.Client` 或
+`httpx.AsyncClient` 注入 `phaseo.testing.MockTransport`。意外请求在本地失败；调用 `assert_done()`
+确认使用了所有测试夹具。这些夹具不验证实时提供商行为。
+Phaseo 房间通过**获取代码**导出已提交请求的可运行代码。
+
+## 功能
+
+-   根据 OpenAPI 规范生成的类型化请求模型。
+-   内置辅助方法涵盖聊天、Responses、Messages、图像、音频、嵌入、审核、文件、批处理、生成及异步视频任务。
+-   文本、Responses 和 Messages 的流式辅助方法（~stream_*~ 迭代器）。
+- 控制平面辅助功能包括查询模型、端点和组织，发现并计算价格，管理 API 密钥与工作区的生命周期，检查当前密钥，以及查看健康状态、提供商、额度、活动和分析数据。
+
+## 快速示例
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
+```
+
+## 等待音乐、视频或批处理完成
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+视频使用 `videos.generate_and_wait(request, **options)`，批处理使用 `batches.create_and_wait(request, **options)`。同步助手只提交一次并返回完整完成响应，仅在需要时轮询。`JobFailedError.response` 保留失败、取消或过期的任务详情。已完成批处理仍可能包含失败的单独请求。
+
+每个资源支持 `wait(id, **options)`，可恢复现有任务并返回任何终止响应。音乐还提供直接调用的 `create(request)` 和 `retrieve(id)` 方法。
+
+选项为 `interval`（秒；默认 5，最小 0.25）、`timeout`（秒；默认 1800）、`on_poll` 和 `cancel_event`（`threading.Event`）。等待超时在提交返回后开始。同步客户端在请求和回调之间检查取消和期限；这些选项无法中断已进行中的 HTTP 调用。
+
+`JobTimeoutError` 和 `JobCancelledError` 保留 `job_id` 与 `last_response`。使用 `.wait(error.job_id)` 恢复。本地超时或取消不会取消远程任务，提交绝不会自动重试。这些助手不会为网关增加后台执行。
+## "包含内容"
+
+-   `Phaseo` 客户端
+-   `chat.completions.create(...)` and `responses.create(...)` 兼容辅助方法
+-   资源辅助方法，例如 `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   用于批处理和视频生命周期流的异步任务 WebSocket URL 辅助方法
+-   `client.batches.stream_results(batch_id)` 用于批处理 JSONL 字节块
+-   模型生命周期辅助方法，例如 `get_model_deprecation_info(...)` and `validate_model(...)`
+-   文本、Responses 和 Messages 的流式迭代器
+-   ~phaseo.models~ 中生成的请求/响应模型

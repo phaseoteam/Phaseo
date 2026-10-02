@@ -1,0 +1,67 @@
+---
+title: "CMS-Inhalte mit dem PHP Agent SDK prüfen"
+icon: "file-check"
+description: "Nutze das PHP Agent SDK, um ein lokales Content-Such-Tool in einen begrenzten Prüfablauf einzubinden."
+---
+
+Verwende dieses Rezept, wenn eine PHP-Anwendung oder ihr Admin-Backend Inhalte schnell prüfen soll, ohne die Orchestrierung an ein anderes System auszulagern.
+
+## 1. SDKs vorbereiten
+
+<Note type="warning">Das PHP Agent SDK ist noch nicht auf Packagist verfügbar. Folge der [Installationsanleitung aus dem Quellcode](../sdk-reference/php/agent-sdk-installation.mdx).</Note>
+
+## 2. Ein Tool zur Inhaltssuche definieren
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. Agent erstellen und ausführen
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## Wann dieses Rezept passt
+
+- die PHP-Anwendung die Inhaltsquelle bereits verwaltet
+- ein oder zwei lokale Tools ausreichen
+- du einen begrenzten Ablauf statt einer umfassenderen Orchestrierungsplattform möchtest
+
+## Weiterführende Themen
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [Fehlerhaftes strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)

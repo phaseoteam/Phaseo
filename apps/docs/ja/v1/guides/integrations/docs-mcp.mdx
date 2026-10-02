@@ -1,0 +1,120 @@
+---
+title: "ドキュメント MCP"
+icon: "plug-zap"
+description: "Phaseo ドキュメント MCP サーバーを Codex、Claude Code、Cursor、または VS Code に接続します。"
+---
+
+コーディングエージェントが古い学習データではなく最新のドキュメントを使って Phaseo の質問に回答できるよう、Phaseo ドキュメント MCP サーバーに接続します。
+
+この MCP サーバーは読み取り専用です。エージェントが作業中にドキュメントを検索し、ページ全体を読めるようにします。
+
+## サーバー URL
+
+`https://phaseo.app/docs/mcp`
+
+## 利用できる機能
+
+- Phaseo ドキュメント全体を対象とした最新の検索
+- エージェントが詳細を必要とするときに取得できるページ全文
+- ホストされている機能概要 [skill.md](https://phaseo.app/docs/skill.md)へのアクセス
+
+## Codex
+
+サーバーを追加します:
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+接続を確認します:
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+現在のプロジェクトにサーバーを追加します:
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+すべてのプロジェクトで使えるようにします:
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+接続を確認します:
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+ドキュメントのコンテキストメニューから Cursor に MCP サーバーをインストールするか、手動で追加します:
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+Phaseo ドキュメントサーバーを `opencode.json` に追加します:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+ドキュメントのコンテキストメニューから VS Code に MCP サーバーをインストールするか、手動で追加します:
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## 使う場面
+
+エージェントに次のことをさせたい場合は Docs MCP を使います。
+
+- コードを書く前に最新のリクエスト形式を調べる
+- モデルまたはプロバイダーがエンドポイントに対応しているか確認する
+- ルーティング、プリセット、ガードレール、または非同期ジョブの動作を確認する
+- エディターを離れずにドキュメントから例を取得する
+
+## プロンプトの例
+
+- `Phaseo ドキュメントで Responses のリクエスト形式を調べ、最小限の例を示してください。`
+- `このリクエストを変更する前に、Phaseo Docs MCP サーバーで provider.sort の動作を確認してください。`
+- `Phaseo のガードレールに関するドキュメントを探し、プロバイダーのルーティングに影響する部分を要約してください。`
+
+## 関連ガイド
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [クイックスタート](../../quickstart.mdx)
+- [API リファレンス](../../api-reference/introduction.mdx)

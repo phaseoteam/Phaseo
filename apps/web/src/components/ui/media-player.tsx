@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import {
 	Captions,
 	Download,
@@ -140,6 +141,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 		},
 		ref,
 	) {
+		const tMedia = useTranslations("Common.ui.media");
 		const rootRef = React.useRef<HTMLDivElement | null>(null);
 		const [mediaElement, setMediaElement] = React.useState<HTMLMediaElement | null>(
 			null,
@@ -188,7 +190,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				clearLoadingTimeout();
 				loadingTimeoutRef.current = window.setTimeout(() => {
 					setLoading(false);
-					setError("Media did not start loading. Source may be unavailable.");
+					setError(tMedia("mediaDidNotStart"));
 				}, 12000);
 			};
 
@@ -234,7 +236,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 			const onStalled = () => {
 				clearLoadingTimeout();
 				setLoading(false);
-				setError("Playback stalled. The audio source may have expired.");
+				setError(tMedia("playbackStalled"));
 			};
 			const onRateChange = () => setPlaybackRateState(mediaElement.playbackRate);
 			const onVolumeChange = () => {
@@ -253,8 +255,8 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				const code = (mediaElement as HTMLMediaElement).error?.code;
 				const message =
 					typeof code === "number"
-						? `Playback error (${code})`
-						: "Unable to load media";
+						? tMedia("playbackError", { code })
+						: tMedia("unableToLoadMedia");
 				setError(message);
 				setLoading(false);
 			};
@@ -297,7 +299,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 				mediaElement.removeEventListener("leavepictureinpicture", onLeavePiP);
 				clearLoadingTimeout();
 			};
-		}, [mediaElement, mutedProp, loopProp]);
+		}, [mediaElement, mutedProp, loopProp, tMedia]);
 
 		React.useEffect(() => {
 			return () => {
@@ -513,7 +515,7 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 							}}
 							className="h-full w-full max-h-[72vh] object-contain"
 						>
-							Your browser does not support the video tag.
+							{tMedia("unsupportedVideo")}
 						</video>
 					)}
 				</div>
@@ -605,6 +607,7 @@ function MediaPlayerError({ className }: React.HTMLAttributes<HTMLDivElement>) {
 function MediaPlayerVolumeIndicator({
 	className,
 }: React.HTMLAttributes<HTMLDivElement>) {
+	const tMedia = useTranslations("Common.ui.media");
 	const { muted, volume, volumeIndicatorVisible, theme } = useMediaPlayer();
 	if (!volumeIndicatorVisible) return null;
 	const percent = muted ? 0 : Math.round(volume * 100);
@@ -618,7 +621,7 @@ function MediaPlayerVolumeIndicator({
 				className,
 			)}
 		>
-			{percent === 0 ? "Muted" : `${percent}%`}
+			{percent === 0 ? tMedia("muted") : `${percent}%`}
 		</div>
 	);
 }
@@ -824,6 +827,7 @@ function MediaPlayerTime({ className }: { className?: string }) {
 }
 
 function MediaPlayerPlaybackSpeed({ className }: { className?: string }) {
+	const tMedia = useTranslations("Common.ui.media");
 	const { playbackRate, setPlaybackRate, theme } = useMediaPlayer();
 	return (
 		<label
@@ -833,7 +837,7 @@ function MediaPlayerPlaybackSpeed({ className }: { className?: string }) {
 				className,
 			)}
 		>
-			<span className="sr-only">Playback speed</span>
+			<span className="sr-only">{tMedia("playbackSpeed")}</span>
 			<select
 				value={String(playbackRate)}
 				onChange={(event) => setPlaybackRate(Number(event.target.value))}
@@ -1002,6 +1006,8 @@ function MediaPlayerSettings({
 	className,
 	showPiP = true,
 }: MediaPlayerSettingsProps) {
+	const tUi = useTranslations("Common.ui");
+	const tAccessibility = useTranslations("Common.ui.accessibility");
 	const {
 		playbackRate,
 		setPlaybackRate,
@@ -1018,6 +1024,7 @@ function MediaPlayerSettings({
 					type="button"
 					size="icon"
 					variant="ghost"
+					aria-label={tAccessibility("mediaSettings")}
 					className={cn(getControlButtonClass(theme), className)} />}>
 
 					<Settings2 className="h-4 w-4" />
@@ -1039,7 +1046,7 @@ function MediaPlayerSettings({
 						theme === "surface" ? "text-muted-foreground" : "text-white/70",
 					)}
 				>
-					Playback speed
+					{tUi("media.playbackSpeed")}
 				</div>
 				<DropdownMenuRadioGroup
 					value={String(playbackRate)}
@@ -1056,12 +1063,12 @@ function MediaPlayerSettings({
 				/>
 				<DropdownMenuItem onSelect={toggleLoop}>
 					<Repeat className="h-4 w-4" />
-					{loop ? "Disable loop" : "Enable loop"}
+					{loop ? tUi("media.disableLoop") : tUi("media.enableLoop")}
 				</DropdownMenuItem>
 				{mediaKind === "video" && showPiP ? (
 					<DropdownMenuItem onSelect={togglePiP}>
 						<MonitorUp className="h-4 w-4" />
-						Picture in Picture
+						{tUi("media.pictureInPicture")}
 					</DropdownMenuItem>
 				) : null}
 			</DropdownMenuContent>

@@ -1,0 +1,47 @@
+---
+icon: "settings-2"
+title: "क्वांटाइज़ेशन विधियाँ"
+description: "क्वांटाइज़ेशन विधियाँ numeric formats से कैसे अलग हैं और सही विधि चुनना क्यों ज़रूरी है।"
+---
+
+Numeric format (`FP8`, `INT8`, `INT4`) precision बताता है।
+
+Quantization method बताती है कि यह precision **कैसे** लागू की गई।
+
+## विधियाँ क्यों मायने रखती हैं
+
+दो `INT4` variants का व्यवहार काफ़ी अलग हो सकता है, क्योंकि विधि का चुनाव इन बातों को प्रभावित करता है:
+
+- शुद्धता बनाए रखना
+- रनटाइम संगतता
+- मेमोरी लेआउट और सर्विंग प्रदर्शन
+- कैलिब्रेशन की ज़रूरतें
+
+## आम विधि परिवार
+
+| विधि परिवार | आम उपयोग | टिप्पणियाँ |
+| --- | --- | --- |
+| `AWQ` | Activations के प्रति संवेदनशील weights को सुरक्षित रखती है | Inference quality और efficiency के व्यावहारिक संतुलन के लिए आम |
+| `GPTQ` | Error minimization के साथ post-training quantization | Compact local inference variants में लोकप्रिय |
+| `GGUF` | llama.cpp ecosystem में उपयोग होने वाला packaging format | अक्सर अलग-अलग quantization levels (`Q4`, `Q5` आदि) के साथ इस्तेमाल होता है |
+| `EXL2` | ExLlama ecosystem के aggressive low-bit variants | Architecture और runtime की सीमाओं के साथ high throughput पर केंद्रित |
+
+## विधि और format का उदाहरण
+
+`INT4` लक्ष्य precision है।  
+`AWQ INT4` और `GPTQ INT4` उस लक्ष्य को हासिल करने के अलग-अलग तरीके हैं।
+
+## व्यावहारिक सुझाव
+
+1. पहले ऐसा runtime चुनें जिसे आप भरोसेमंद तरीके से deploy कर सकें।
+2. उस runtime पर supported विधियों तक विकल्प सीमित करें।
+3. एक ही target precision के लिए कई quantization methods का benchmark करें।
+4. केवल औसत benchmark scores नहीं, failure modes भी track करें।
+
+## मूल्यांकन जाँच सूची
+
+- Structured output की शुद्धता
+- लंबे context में विश्वसनीयता
+- Tool calls की विश्वसनीयता
+- Safety और moderation का व्यवहार
+- Load के दौरान tail latency

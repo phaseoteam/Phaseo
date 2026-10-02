@@ -1,0 +1,29 @@
+---
+title: "Instalação do SDK de agentes Java (em desenvolvimento)"
+description: "Compile o SDK de agentes Java, ainda em desenvolvimento, a partir do código-fonte."
+---
+
+<Note type="warning">
+  O SDK de agentes Java ainda não foi publicado no Maven Central. Use este fluxo a partir do código-fonte apenas para avaliação.
+</Note>
+
+## Requisitos
+
+- Java 17 ou superior
+- Maven
+
+## Compilar a partir do código-fonte
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+Defina `PHASEO_API_KEY` no ambiente do aplicativo antes de executar um exemplo.
+
+## Próximos passos
+
+- [Visão geral](./agent-sdk-overview.mdx)
+- [Uso](./agent-sdk.mdx)
+

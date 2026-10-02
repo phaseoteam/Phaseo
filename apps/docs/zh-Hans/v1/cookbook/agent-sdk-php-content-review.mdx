@@ -1,0 +1,67 @@
+---
+title: "使用 PHP Agent SDK 审查 CMS 内容"
+icon: "file-check"
+description: "使用 PHP Agent SDK，将本地内容查询工具封装在范围明确的审核循环中。"
+---
+
+当 PHP 应用或管理后台需要快速审核内容、又不想把编排交给其他系统时，可使用此示例。
+
+## 1. 准备 SDK
+
+<Note type="warning">PHP Agent SDK 包尚未发布到 Packagist。请参阅[从源代码安装说明](../sdk-reference/php/agent-sdk-installation.mdx)。</Note>
+
+## 2. 定义内容查询工具
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. 创建并运行 Agent
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## 适用场景
+
+- PHP 应用已拥有内容数据源
+- 一两个本地工具就足够
+- 你想采用范围明确的循环，而不是更大的编排平台
+
+## 相关内容
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)

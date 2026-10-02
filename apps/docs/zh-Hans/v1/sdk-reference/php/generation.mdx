@@ -1,0 +1,75 @@
+---
+icon: "search-check"
+title: "查询生成记录"
+description: "调用 /generations 获取之前的生成记录。"
+---
+
+**方法**: `getGeneration()`
+
+### 示例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$record = $client->getGeneration('G-01ABC...');
+```
+
+### 参数
+
+- `id` （string，必填）：之前的调用返回的请求 ID。
+
+### 返回值
+
+生成记录（JSON）
+
+如果网关保存了完整的请求详情，返回的记录还会包含 `replay_supported` 和 `replay_request`，可将捕获的请求负载重新发送到原始端点，以便受控地重新运行。
+
+时间字段遵循网关的通用定义：
+
+- `latency_ms`: 如果有记录，则为首个 token 或首个输出字节/帧所需的时间
+- `generation_ms`: 如果有记录，则为延迟之后的生成时间
+
+```json
+{
+	"created_at": "2026-05-05T12:00:00.000Z",
+	"request_id": "G-01ABC123",
+	"team_id": "team-123",
+	"app_id": "app-123",
+	"endpoint": "chat/completions",
+	"model_id": "openai/gpt-4o-mini",
+	"provider": "openai",
+	"native_response_id": "chatcmpl-123",
+	"stream": false,
+	"byok": false,
+	"status_code": 200,
+	"success": true,
+	"error_code": null,
+	"error_message": null,
+	"latency_ms": 1500,
+	"generation_ms": 1400,
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 9,
+		"total_tokens": 18
+	},
+	"cost_nanos": 1000000,
+	"currency": "USD",
+	"pricing_lines": [],
+	"key_id": "key-123",
+	"throughput": null,
+	"replay_supported": true,
+	"replay_request": {
+		"model": "openai/gpt-4o-mini",
+		"messages": [
+			{ "role": "user", "content": "Say hello" }
+		]
+	}
+}
+```

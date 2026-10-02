@@ -1,0 +1,30 @@
+---
+icon: "brain-circuit"
+title: "النماذج"
+description: "اعرض /models باستخدام SDK Java."
+---
+
+**الطريقة**: `client.listModels(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+Object models = client.listModels(query);
+System.out.println(String.valueOf(models));
+```
+
+تشمل مفاتيح الاستعلام الشائعة `provider` و`provider_status` و`provider_routing_status` و`model_routing_status` و`capability_status` و`provider_availability_status` و`provider_availability_reason` و`status` و`organisation` و`endpoints` و`input_types` و`output_types` و`params` و`availability` و`limit` و`offset`.
+
+استخدم `provider_availability_reason` مع `availability=all` لاسترداد حالات الإطلاق مثل `preview_only` و`provider_not_ready` و`gated` و`access_limited` و`region_limited` و`project_limited` و`paused` أو `soft_blocked`. واستخدم `capability_status` مع `availability=all` لاسترداد تعيينات نقاط النهاية غير القابلة للتوجيه مثل `coming_soon` أو `internal_testing`.

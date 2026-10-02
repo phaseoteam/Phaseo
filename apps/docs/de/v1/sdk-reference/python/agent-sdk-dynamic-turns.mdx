@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere Python-Modelleinstellungen und Tools zwischen Agent-Turns."
+---
+
+Modell, Fallback-Modelle, Anweisungen, Temperatur, maximale Ausgabetokenzahl, Top-p und Tools können feste Werte oder Callbacks sein, die für jeden Turn ausgewertet werden.
+
+Verwende `runtime.set_context(value)`, wenn ein Tool Informationen ermittelt, die später benötigt werden. Verwende `next_turn_params` für eine Überschreibung, die nur für die unmittelbar folgende Modellanfrage gilt.
+
+Überschreibungen für den nächsten Turn werden zusammen mit dem pausierten Zustand gespeichert. Ein Genehmigungspunkt verwirft daher nicht die Routing- oder Sampling-Entscheidung.
+
+Halte den Kontext serialisierbar, wenn du `AgentStateAccessor` verwendest.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Stoppbedingungen](./agent-sdk-stop-conditions.mdx)

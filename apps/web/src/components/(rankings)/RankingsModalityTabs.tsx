@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { useTranslations } from "next-intl";
 
 type RankingsModalityItem = {
 	id: string;
@@ -23,16 +24,16 @@ type RankingsModalityItem = {
 };
 
 const ITEMS: RankingsModalityItem[] = [
-	{ id: "text", label: "Text", href: "/rankings", icon: TypeIcon },
-	{ id: "image", label: "Image", href: "/rankings/image", icon: ImageIcon },
-	{ id: "embeddings", label: "Embeddings", href: "/rankings/embeddings", icon: Binary },
-	{ id: "rerank", label: "Rerank", href: "/rankings/rerank", icon: ArrowUpDown },
-	{ id: "audio", label: "Audio", href: "/rankings/audio", icon: Headphones },
-	{ id: "video", label: "Video", href: "/rankings/video", icon: Video },
-	{ id: "speech", label: "Speech", href: "/rankings/speech", icon: Speech },
+	{ id: "text", label: "text", href: "/rankings", icon: TypeIcon },
+	{ id: "image", label: "image", href: "/rankings/image", icon: ImageIcon },
+	{ id: "embeddings", label: "embeddings", href: "/rankings/embeddings", icon: Binary },
+	{ id: "rerank", label: "rerank", href: "/rankings/rerank", icon: ArrowUpDown },
+	{ id: "audio", label: "audio", href: "/rankings/audio", icon: Headphones },
+	{ id: "video", label: "video", href: "/rankings/video", icon: Video },
+	{ id: "speech", label: "speech", href: "/rankings/speech", icon: Speech },
 	{
 		id: "transcription",
-		label: "Transcription",
+		label: "transcription",
 		href: "/rankings/transcription",
 		icon: Captions,
 	},
@@ -43,10 +44,12 @@ export function RankingsModalityTabs({
 }: {
 	currentModality: string;
 }) {
+	const t = useTranslations("Catalogue.rankings");
+
 	return (
 		<div className="w-full touch-pan-x overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
 			<nav
-				aria-label="Ranking modalities"
+				aria-label={t("modalityNavigation")}
 				className="flex min-w-max items-center gap-1.5 pr-4"
 			>
 				{ITEMS.map((item) => {
@@ -79,7 +82,7 @@ export function RankingsModalityTabs({
 							>
 								<Icon className="size-3.5" />
 							</span>
-							<span>{item.label}</span>
+							<span>{t(`modalityLabels.${item.label}` as never)}</span>
 						</Link>
 					);
 				})}

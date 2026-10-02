@@ -1,0 +1,163 @@
+---
+title: "Mit strukturierter Ausgabe und Websuche recherchieren"
+icon: "telescope"
+description: "Erstelle einen TypeScript-Agenten, der die Websuche nutzt und über das Agent-SDK striktes JSON zurückgibt."
+---
+
+Verwende dieses Rezept, wenn ein Agenten-Workflow Folgendes soll:
+
+- über das TypeScript Agent SDK ausgeführt werden
+- verwaltete Websuche nutzen
+- streng strukturiertes JSON zurückgeben
+- fast gültiges, fehlerhaftes JSON deterministisch wiederherstellen
+
+## 1. Die SDKs installieren
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. Einen eng gefassten Ausgabevertrag definieren
+
+Halte das erste Rechercheergebnis so klein, dass Betreiber es in den Protokollen leicht prüfen können.
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. Den Agenten erstellen
+
+Verwende `parseOutput`, damit die Laufzeit typisierte Daten statt Rohtext zurückgibt.
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "phaseo/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. Den Gateway-Adapter einmalig konfigurieren
+
+Darauf kommt es an:
+
+- `responseFormat` legt das Ausgabeschema ausdrücklich fest
+- `plugins` aktiviert die Reparatur fast gültiger JSON-Antworten
+- `gatewayTools` stellt dem Modell die verwaltete Websuche bereit
+- `toolChoice` erzwingt das Such-Tool, wenn sich der Workflow immer auf Quellen stützen soll
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "phaseo:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. Den Workflow ausführen
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. In den Protokollen prüfen
+
+Prüfe nach einem erfolgreichen Lauf die Anfragedetails und bestätige:
+
+- dass angeforderte native Websuch-Tools oder verwaltete Suchaktivität angezeigt werden
+- dass Suchergebnisse und Zitate gespeichert wurden
+- dass die Plugin-Ausführung `response-healing` nur bei tatsächlich nötiger Wiederherstellung zeigt
+- dass die endgültige Ausgabe dem angeforderten JSON-Schema entspricht
+
+## 7. Wann sich dieses Muster eignet
+
+Verwende dieses Rezept, wenn:
+
+- der Workflow hauptsächlich eine einmalige Recherche und keine umfangreiche lokale Tool-Schleife ist
+- das Modell vor der Antwort Quellen heranziehen soll
+- nachgelagerte Aufrufer typisiertes JSON statt Prosa benötigen
+
+Verwende dieses Muster nicht, wenn:
+
+- der Workflow die genauen URLs bereits kennt und `phaseo:web_fetch` genügt
+- der Agent mehr leistungsfähige lokale Tools als Anbieter-Tools benötigt
+- der Ausgabevertrag so offen ist, dass striktes JSON mehr Aufwand als Nutzen verursacht
+
+## Verwandte Anleitungen
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Strukturierte Ausgaben](../guides/structured-outputs.mdx)
+- [Strukturierte Ausgaben validieren](../guides/structured-outputs.mdx)
+- [Websuchanfragen untersuchen](./web-search-debugging.mdx)
+- [Fehlerhaftes strukturiertes JSON wiederherstellen](./response-healing-for-structured-json.mdx)

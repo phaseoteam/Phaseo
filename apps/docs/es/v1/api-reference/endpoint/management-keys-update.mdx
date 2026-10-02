@@ -1,0 +1,10 @@
+---
+title: "Actualizar clave de gestión"
+sidebarTitle: "Actualizar clave de gestión"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "Actualiza los ámbitos, límites, caducidad, nombre o estado de pausa de una clave de gestión."
+---
+<Note>Este endpoint requiere una identidad de propietario o administrador y `management_keys:write`.</Note>
+
+Quien realiza la llamada no puede conceder ámbitos que no tenga. Los campos omitidos conservan sus valores actuales.

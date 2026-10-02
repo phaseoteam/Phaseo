@@ -1,0 +1,71 @@
+---
+title: "Visão geral da API do Gateway"
+sidebarTitle: "Visão geral"
+description: "URL base, autenticação e famílias de endpoints do Phaseo Gateway."
+icon: "map"
+---
+
+Use esta página para encontrar o caminho de API correto antes de abrir a referência de um endpoint. Todos os endpoints do Phaseo Gateway compartilham uma URL base e usam autenticação Bearer.
+
+## Escolha o caminho
+
+| Se você quer | Comece por |
+| --- | --- |
+| Enviar sua primeira solicitação | [Início rápido](../quickstart.mdx) |
+| Gerar texto ou usar ferramentas | `POST /responses` |
+| Tomar decisões tipadas | [`POST /decisions`](./endpoint/decisions) |
+| Manter uma integração OpenAI compatível existente | `POST /chat/completions` |
+| Consultar modelos e provedores | `GET /models` e `GET /providers` |
+| Criar música ou gerenciar arquivos | `POST /music/generations` e `POST /files` |
+| Gerar vídeo (Beta) | [`POST /videos`](./endpoint/video-create) |
+| Enviar um lote ou baixar resultados (Beta) | [`POST /batches`](./endpoint/batches-create) e [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+
+## URL base
+
+URL base de produção:
+
+```http
+https://api.phaseo.app/v1
+```
+
+Todos os caminhos de endpoints desta referência são relativos à URL base `/v1`.
+
+## OpenAPI
+
+Use o arquivo OpenAPI para importar a API no Postman, Hoppscotch ou em um gerador de SDK.
+
+<Card
+  title="OpenAPI do Phaseo Gateway"
+  icon="list-bullet"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
+>
+  Ver o arquivo de especificação
+</Card>
+
+A documentação e os SDKs usam a mesma especificação. Os endpoints Video, Batch e Decisions são marcados como **Beta**; pode ser necessário acesso de prévia no espaço de trabalho.
+## Autenticação
+
+Use uma chave de API padrão do Gateway para inferência e uma chave de API de gerenciamento com permissões adequadas para administração. Veja [Autenticação](../developers/authentication.mdx) e [Chaves de API de gerenciamento](../developers/management-api-keys.mdx).
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+Se a autenticação falhar, a API retornará `401`.
+
+## Recursos da API
+
+| Recurso | Função |
+| --- | --- |
+| Inferência | Gere texto, imagens, áudio e embeddings; tome decisões, reordene, modere ou analise conteúdo. Comece com [Responses](./endpoint/responses.mdx) ou [Decisions](./endpoint/decisions.mdx). |
+| Tarefas assíncronas e arquivos | Envie tarefas de [vídeo](./endpoint/video-create.mdx) ou [lotes](./endpoint/batches-create.mdx), transfira arquivos e configure webhooks. |
+| Modelos e preços | Descubra [modelos](./endpoint/models.mdx), ofertas de provedores e [custos estimados](./endpoint/pricing-calculate.mdx). |
+| Roteamento e políticas | Configure predefinições, credenciais de provedores, modelos privados e [proteções](./endpoint/guardrails.mdx). |
+| Uso e monitoramento | Examine [logs](./endpoint/logs-list.mdx), atividade, análises, avaliações e saúde do serviço. |
+| Gerenciamento de espaços de trabalho | Gerencie [espaços de trabalho](./endpoint/workspaces-list.mdx), chaves, orçamentos, identidades e integrações. |
+
+## Cobrança e limites de taxa
+
+- Trate a limitação do provedor e as políticas de acesso aplicáveis com o [guia de limites](./limits.mdx).
+- Solicitações pagas exigem saldo suficiente na carteira para passar pela verificação prévia de créditos.
+- Modelos gratuitos com `:free` não exigem créditos depositados.

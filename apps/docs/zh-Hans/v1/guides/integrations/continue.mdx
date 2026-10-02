@@ -1,0 +1,73 @@
+---
+title: "Continue"
+icon: "/icons/brands/continue.svg"
+description: "在 VS Code、JetBrains 或 Continue CLI 的 Continue 中添加 Phaseo。"
+---
+
+使用 Phaseo CLI 创建由 IDE 扩展和 `cn` 命令行界面共享的本地 Continue 配置，或手动将相同的模型和密钥值添加到现有 Continue 配置。
+
+## 使用 Phaseo CLI 设置
+
+```bash
+phaseo login
+phaseo continue --model anthropic/claude-sonnet-4.6
+```
+
+如果 `~/.continue/config.yaml` 和 `~/.continue/.env` 尚未使用，设置过程会创建这两个文件：
+
+```yaml
+name: Phaseo
+version: 1.0.0
+schema: v1
+models:
+  - name: Phaseo
+    provider: openai
+    model: anthropic/claude-sonnet-4.6
+    apiBase: https://api.phaseo.app/v1
+    apiKey: ${{ secrets.PHASEO_API_KEY }}
+    useResponsesApi: false
+    roles: [chat, edit, apply]
+```
+
+密钥在 `~/.continue/.env` 中以 `PHASEO_API_KEY` 保存。`useResponsesApi: false` 可让请求继续走 Phaseo 的 Chat Completions 路径。
+
+<Warning>
+Continue 的全局 `.env` 文件以明文保存。切勿将其提交到代码库。IDE 扩展不会继承普通 shell 环境变量，因此 CLI 使用 Continue 文档指定的密钥文件。
+</Warning>
+
+如果任一文件已包含用户配置，设置过程会停止且不会覆盖。请合并模型条目，并将 `PHASEO_API_KEY=<dedicated key>` 添加到现有 `.env`。使用 `phaseo integrations credential continue` 获取密钥。
+
+## 验证
+
+在 VS Code 或 JetBrains 中重新加载窗口，打开 Continue，选择 **Phaseo**，并让它回复 `PHASEO_CONTINUE_OK`。
+
+对于 Continue CLI，运行 `cn`。如果当前启用了其他已保存配置，请使用 `/config`，然后发送相同的测试请求。确认请求出现在 Phaseo 活动记录中。
+
+## 移除
+
+```bash
+phaseo integrations remove continue
+```
+
+移除操作会撤销密钥；只有两个文件仍带有 Phaseo CLI 所有权标记时才会删除。手动合并的条目会保留。
+
+## 故障排查
+
+### 未显示 Phaseo
+
+重新加载 IDE，并检查 `config.yaml` 是否包含必需的顶层字段 `name`、`version` 和 `schema`。
+
+### Continue 提示缺少密钥
+
+确认 `~/.continue/.env` 中包含 `phaseo integrations credential continue` 返回的密钥，然后重启 IDE。
+
+### Continue 调用了 Responses API
+
+在 Phaseo 模型条目中保留 `useResponsesApi: false`。
+
+## 相关内容
+
+- [Continue OpenAI 兼容配置](https://docs.continue.dev/customize/model-providers/top-level/openai)
+- [Continue 本地密钥](https://docs.continue.dev/faqs#managing-local-secrets-and-environment-variables)
+- [编程智能体](./coding-assistants.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

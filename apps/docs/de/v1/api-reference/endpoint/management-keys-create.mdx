@@ -1,0 +1,11 @@
+---
+title: "Management-Schlüssel erstellen"
+sidebarTitle: "Management-Schlüssel erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /management-keys"
+description: "Einen bereichsgebundenen Management-Schlüssel zur Automatisierung der Steuerungsebene erstellen."
+---
+<Note>Für diesen Endpunkt sind eine Eigentümer- oder Administratoridentität und `management_keys:write` erforderlich.</Note>
+
+Wähle eine Berechtigungsvorlage oder gib eine Liste von Berechtigungsbereichen an. Der rohe Wert `key` wird nur in der Erstellungsantwort zurückgegeben und muss sofort serverseitig als Secret gespeichert werden.
+

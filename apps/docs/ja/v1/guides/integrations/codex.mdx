@@ -1,0 +1,75 @@
+---
+title: "Codex"
+icon: "/icons/brands/codex.svg"
+description: "Codex CLI、Codex App、Codex IDE 拡張機能で Phaseo Gateway をカスタムプロバイダーとして使用します。"
+---
+
+Codex は `config.toml` でカスタムモデルプロバイダーを設定できます。CLI、アプリ、IDE の使い方を変えずに、リクエストを Phaseo 経由でルーティングできます。
+
+作業中に Codex から最新の Phaseo ドキュメントも参照したい場合は、[Docs MCP](./docs-mcp.mdx) サーバーも追加してください。
+
+<Visibility for="humans">
+<Note>
+プロバイダー設定だけでなく、再利用可能なエージェントの設定も必要ですか？[`phaseoteam/skills`](https://github.com/phaseoteam/skills) から Phaseo の公開スキルをインストールしてください。
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+プロバイダー設定だけでなく、再利用可能なエージェントの設定も必要ですか？[`phaseoteam/skills`](https://github.com/phaseoteam/skills) から Phaseo の公開スキルをインストールしてください。
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+## Phaseo CLI で設定する
+
+```bash
+phaseo login
+phaseo codex --model openai/gpt-5.6-terra
+```
+
+まず Codex の公式リリースをインストールします。セットアップでは有効期限のない `Phaseo CLI: Codex API Key` を作成し、OS の資格情報ストアに保存して、Phaseo 専用プロファイルを書き込みます。Codex は CLI ヘルパー経由でキーを取得するため、`config.toml` に平文のキーは書き込まれません。
+
+### 次のコマンドで Codex を起動します。
+
+```bash
+codex --profile phaseo
+```
+
+同じPhaseo CLIの手順で、分離された一時的なプロバイダー設定を使って[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code)、[MiniMax Code](./minimax-code)も起動できます。
+## 手動設定
+
+ユーザー設定ファイル `~/.codex/config.toml` を作成または更新します。信頼できるプロジェクトでは、同じ設定をリポジトリ内の `.codex/config.toml` に置くこともできます。
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+Codex のカスタムプロバイダーは現在 Responses ワイヤープロトコルを使用します。`wire_api = "responses"` を維持するか、省略して既定値を使用してください。
+
+Codex App と IDE 拡張機能は同じ設定レイヤーを共有します。IDE 拡張機能では `Codex Settings > Open config.toml` から設定ファイルを開きます。
+
+## 確認
+
+- 起動前に [モデル](../../api-reference/endpoint/models.mdx) でモデル ID が存在することを確認します。
+- Codex の既定のフローには [Responses](../../api-reference/endpoint/responses.mdx) を使用します。
+
+## トラブルシューティング
+
+- `401 Unauthorized`: `phaseo whoami` を実行し、その後 `phaseo codex` を再実行します。
+- `model_not_found`: [モデル](../../api-reference/endpoint/models.mdx) から最新の ID を取得し、`model` を更新します。
+- プロバイダー固有の問題: フェイルオーバー動作については[ルーティングとフォールバック](../routing-and-fallbacks.mdx)を確認してください。

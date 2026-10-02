@@ -1,0 +1,13 @@
+---
+title: "C++ SDK（开发中）"
+description: "查看开发中的 C++ 头文件。"
+---
+
+<Note type="warning">
+  C++ SDK 仍在开发中，尚未通过包管理器提供。请仅使用源代码头文件进行评估。
+</Note>
+
+- 状态：开发中（尚未发布）。
+- 源代码位于 `packages/sdk/sdk-cpp`.
+- 生成的头文件位于 `packages/sdk/sdk-cpp/src/gen`.
+- `src/phaseo.hpp` 增加了实时模型能力获取和参数支持报告。预览版传输层返回原始 JSON，因此请先将响应反序列化为 `ModelEndpointCapabilities`，再进行检查。

@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "Contribuir código o documentación"
+description: "Configura Phaseo localmente, valida un cambio concreto y abre una solicitud de cambios."
+---
+
+Usa este flujo para cambios de código y documentación. Para registros de modelos, proveedores, precios, organizaciones o benchmarks, [envía una incidencia del catálogo](./overview.mdx); no necesitas configurar un entorno local.
+
+## Preparar tu bifurcación
+
+Instala Git, Node.js 22.12 o posterior y pnpm. Bifurca el [repositorio de Phaseo](https://github.com/phaseoteam/Phaseo), clona tu bifurcación y crea una rama nueva:
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## Realizar y previsualizar el cambio
+
+Consulta la [estructura del repositorio](./repo-structure.mdx) para encontrar la aplicación o paquete pertinente. Si solo editas Markdown, también puedes usar el editor de archivos de GitHub y abrir allí una solicitud de cambios.
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+Sigue las instrucciones pertinentes de `AGENTS.md`. Guarda los secretos en archivos de entorno locales y no los incluyas en commits. Las vistas previas locales de la aplicación pueden necesitar servicios de backend configurados y el inicio de sesión habitual.
+
+## Validar tus cambios
+
+Ejecuta las comprobaciones pertinentes para los archivos modificados. Para documentación:
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+Para cambios web:
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+Ejecuta una compilación de producción para cambios de renderizado o enrutamiento. Los cambios de API, SDK y esquemas necesitan sus pruebas y pasos de generación correspondientes. Consulta la [guía de contribución](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) de la raíz.
+
+## Abrir una solicitud de cambios
+
+Añade al área de preparación solo los archivos modificados, usa un mensaje de commit descriptivo y sube tu rama:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Abre una solicitud de cambios desde tu bifurcación. Explica el problema, los cambios y las comprobaciones que pasaron. Enlaza las incidencias relacionadas e incluye capturas para cambios visibles de la interfaz. Responde a la revisión antes de fusionar; los cambios estarán disponibles cuando termine el despliegue correspondiente.
+
+Sigue el [Código de conducta](../community/code-of-conduct.mdx). Para cambios grandes o inciertos, comenta la propuesta antes de escribir código.

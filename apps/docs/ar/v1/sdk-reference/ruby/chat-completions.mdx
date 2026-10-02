@@ -1,0 +1,36 @@
+---
+icon: "messages-square"
+title: "إكمالات المحادثة"
+description: "استدعِ /chat/completions باستخدام SDK Ruby."
+---
+
+**الطرق**: `client.generate_text(...)` و`client.create_chat_completion(...)`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+response = client.create_chat_completion(
+  "model" => "openai/gpt-4o-mini",
+  messages: [
+    { "role" => "user", "content" => "Write a limerick about lighthouses." }
+  ],
+  "temperature" => 0.5
+)
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف النموذج المستهدف.
+- `messages` (مطلوب): رسائل مرتبة بأدوار `user`/`system`/`assistant`/`tool`، ومحتواها نصّي.
+- أخذ العينات: `temperature` (0–2) و`top_p` (0–1) و`top_k` (>=1) و`seed` (عدد صحيح اختياري).
+- الطول/العقوبات: `max_output_tokens` (عدد صحيح) و`presence_penalty` و`frequency_penalty` (من -2 إلى 2) و`stop` (نص أو مصفوفة نصوص).
+- الأدوات: `tools` (تعريفات) و`tool_choice` (تلقائي/بلا/أداة محددة) و`max_tool_calls` (عدد صحيح) و`parallel_tool_calls` (قيمة منطقية).
+- الاحتمالات اللوغاريتمية: `logprobs` (قيمة منطقية) و`top_logprobs` (0–20).
+- المخرجات: `response_format` (json/text) و`metadata` (كائن يُمرّر كما هو) و`stream` (قيمة منطقية) و`service_tier`.
+- إضافات البوابة: `usage` (قيمة منطقية لطلب بيانات الاستخدام) و`meta` (قيمة منطقية لتضمين كتلة meta).
+
+### القيمة المعادة
+`ChatCompletionsResponse`
+

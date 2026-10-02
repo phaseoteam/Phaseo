@@ -1,0 +1,44 @@
+---
+icon: "binary"
+title: "Quantisierungsformate"
+description: "BF16, FP16, FP8, FP4, INT8, INT4 und was die einzelnen Formate in der Praxis bedeuten."
+---
+
+Diese Anleitung erklärt gängige Präzisionsformate, die bei Modellvarianten und Inferenzlaufzeiten vorkommen.
+
+## Kurzreferenz
+
+| Format | Typische Verwendung | Größter Vorteil | Größtes Risiko |
+| --- | --- | --- | --- |
+| `FP32` | Basiswert mit voller Präzision | Maximale numerische Stabilität | Höchster Speicher- und Rechenaufwand |
+| `BF16` | Training und hochwertige Inferenz | Hohe Qualität bei besserer Effizienz als `FP32` | Noch aufwendiger als 8-Bit und 4-Bit |
+| `FP16` | Gängige Inferenz- und Trainingspfade | Gute Geschwindigkeit und geringerer Speicherbedarf | Geringerer Dynamikbereich als `BF16` |
+| `FP8` | Durchsatzorientierte Inferenz und Training | Deutlich mehr Geschwindigkeit und weniger Speicherbedarf | Spürbarer Qualitätsverlust bei schwierigen Prompts |
+| `FP4` | Aggressive Effizienzmodi | Sehr hohe Dichte und niedrige Kosten | Höheres Risiko einer Qualitätsminderung der Ausgabe |
+| `INT8` | Weit verbreitete Inferenzquantisierung | Hohe Effizienz bei moderatem Qualitätseinfluss | Kalibrierungs- oder Sensitivitätsprobleme bei manchen Modellen |
+| `INT4` | Kostensensible Bereitstellung | Sehr geringer Speicherbedarf und hoher Durchsatz | Größere Einbußen bei Qualität und Robustheit |
+
+## `BF16` gegenüber `FP16`
+
+- `BF16` behält einen größeren Exponentenbereich bei und sorgt dadurch für mehr Stabilität.
+- `FP16` ist weiterhin verbreitet und oft schnell, kann bei manchen Workloads jedoch weniger stabil sein.
+- In qualitätskritischen Produktionspfaden ist `BF16` meist die sicherere Standardeinstellung, sofern verfügbar.
+
+## `FP8` und `FP4`
+
+- `FP8` steigert die Effizienz meist deutlich und erhält für viele Aufgaben eine brauchbare Qualität.
+- `FP4` steigert die Effizienz weiter, erhöht aber das Risiko von Qualitätseinbußen, besonders bei nuanciertem Reasoning, langen Kontexten und strikten strukturierten Ausgaben.
+
+## Ganzzahlige Formate (`INT8` / `INT4`)
+
+- Meist auf Inferenzdurchsatz und Speicherbedarf optimiert.
+- Die Qualität hängt stark von Quantisierungsmethode, Kalibrierung und Modellarchitektur ab.
+- `INT8` lässt sich in der Regel sicherer bereitstellen als `INT4`.
+
+## Modellbezeichnungen lesen
+
+Mögliche Bezeichnungen sind beispielsweise:
+
+- `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`
+
+Die Bezeichnungen sind nicht über alle Provider hinweg vollständig standardisiert. Prüfe genaue Varianten daher immer in der Modell- oder Provider-Dokumentation.

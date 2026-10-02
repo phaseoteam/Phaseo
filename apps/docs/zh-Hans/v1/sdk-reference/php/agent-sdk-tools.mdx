@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行且可报告进度的 PHP 工具。"
+---
+
+创建 `Tool` 值，并通过 `AgentSdk::defineTool(...)` 传入。工具可以包含：
+
+- 向模型展示的 JSON `parameters`
+- `inputSchema`、`outputSchema` 和 `eventSchema` 验证回调
+- `timeoutMs` 和 `execute` 回调
+- 布尔值或回调形式的 `requireApproval`
+- 用于交互式工作的 `onToolCalled` 和 `onResponseReceived`
+- `nextTurnParams` 和 `onError: "return-to-model"`
+
+使用 `RuntimeContext::$emitProgress` 发送初步结果，并使用 `$setContext` 设置应用上下文。
+
+<Note>
+工具回调在标准 PHP 运行时中同步执行。因此，并发和中断能力取决于承载 SDK 的 PHP 进程。
+</Note>
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

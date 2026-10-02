@@ -1,0 +1,10 @@
+---
+title: "更新管理密钥"
+sidebarTitle: "更新管理密钥"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "更新管理密钥的范围、限制、过期时间、名称或暂停状态。"
+---
+<Note>此端点需要所有者或管理员身份以及 `management_keys:write` 权限。</Note>
+
+调用者不能授予自己不具备的范围。未提供的字段会保留当前值。

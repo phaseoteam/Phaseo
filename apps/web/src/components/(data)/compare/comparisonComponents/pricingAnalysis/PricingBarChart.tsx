@@ -25,6 +25,10 @@ interface PricingBarChartProps {
 	data: PricingBarChartDatum[];
 	scaleMode: "linear" | "log";
 	CustomTooltip: React.FC<any>;
+	locale: string;
+	inputLabel: string;
+	outputLabel: string;
+	blendedLabel: string;
 }
 
 function getNiceMax(value: number): number {
@@ -88,6 +92,10 @@ export default function PricingBarChart({
 	data,
 	scaleMode,
 	CustomTooltip,
+	locale,
+	inputLabel,
+	outputLabel,
+	blendedLabel,
 }: PricingBarChartProps) {
 	const format = useDisplayFormatters();
 	const allVals = [
@@ -146,11 +154,11 @@ export default function PricingBarChart({
 					allowDecimals={false}
 				/>
 				<Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
-				<Bar dataKey="input" name="Input" fill="#0ea5e9" barSize={16} radius={[4, 4, 0, 0]} />
-				<Bar dataKey="output" name="Output" fill="#10b981" barSize={16} radius={[4, 4, 0, 0]} />
+				<Bar dataKey="input" name={inputLabel} fill="#0ea5e9" barSize={16} radius={[4, 4, 0, 0]} />
+				<Bar dataKey="output" name={outputLabel} fill="#10b981" barSize={16} radius={[4, 4, 0, 0]} />
 				<Bar
 					dataKey="blended"
-					name="Blended (90/10)"
+					name={blendedLabel}
 					fill="#f59e0b"
 					barSize={16}
 					radius={[4, 4, 0, 0]}

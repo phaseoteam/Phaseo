@@ -1,0 +1,14 @@
+---
+title: "エンドポイントを一覧表示"
+sidebarTitle: "エンドポイントを一覧表示"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /endpoints"
+description: "機能に基づくゲートウェイのエンドポイントを、公開パスとモデル・プロバイダーの対応状況とともに一覧表示します。"
+---
+
+- `endpoints`: APIが現在公開している正規のエンドポイントID
+- `data`: `public_path`、`collection`、`model_count`、`provider_count`を含むエンドポイントレコード
+- `sample_models`: 公開カタログで最近表示されたモデルID（最大10件）
+
+モデルごとのプロバイダーやパラメーターの詳細が必要な場合は、[モデルのエンドポイント機能を一覧表示](./model-endpoints.mdx)を使用してください。
+

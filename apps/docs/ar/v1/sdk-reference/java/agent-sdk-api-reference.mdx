@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "راجع السجلات والأساليب الرئيسية في Java Agent SDK."
+---
+
+| API | الغرض |
+| --- | --- |
+| `AgentSdk.createAgent(...)` | تعريف وكيل |
+| `AgentSdk.defineTool(...)` | تعريف أداة محلية أو يدوية |
+| `AgentSdk.createGatewayAgentClient(...)` | ربط جولات النموذج بـ Phaseo |
+| `Agent.run(...)` | التشغيل حتى الاكتمال أو الإيقاف المؤقت |
+| `Agent.stream(...)` | التشغيل باستخدام مستهلكي تدفق قابلين لإعادة الاستخدام |
+| `Agent.continueRun(...)` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `StreamResult.getResult()` | قراءة التشغيل المكتمل |
+| `StreamResult.textStream()` | قراءة أجزاء النص |
+| `StreamResult.fullStream()` | قراءة جميع الأحداث |
+| `StreamResult.cancel()` | إلغاء التشغيل النشط |
+
+تشمل السجلات والواجهات المهمة `AgentDefinition` و`RunOptions` و`RunResult` و`RunRecord` و`RunStep` و`Tool` و`ToolDecision` و`ToolOutput` و`RuntimeContext` و`StateAccessor` و`ModelRetryConfig` و`ToolExecutionConfig`.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

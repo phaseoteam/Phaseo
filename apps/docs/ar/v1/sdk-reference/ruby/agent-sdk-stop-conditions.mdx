@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "شروط الإيقاف"
+description: "قيّد عمليات وكلاء Ruby بعدد الخطوات أو الرموز أو التكلفة أو المدة أو الأدوات أو سبب الإنهاء."
+---
+
+اجمع دوال الإيقاف لإبقاء العمل المستقل ضمن ميزانيات التطبيق.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "bounded-research",
+  model: "openai/gpt-5.4-nano",
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(12),
+    PhaseoAgentSdk.max_tokens_used(40_000),
+    PhaseoAgentSdk.max_cost(2.50),
+    PhaseoAgentSdk.max_duration(120_000)
+  ]
+)
+```
+
+تتوفر أيضًا شروط لاستدعاءات الأدوات وأسباب الإنهاء. افحص `result.run.stop_reason` والاستخدام الموحد بعد الاكتمال للتمييز بين التوقف بسبب الميزانية والانتهاء الطبيعي للنموذج.
+
+يُعد التوقف نتيجة ضمن حد، وليس استثناءً تلقائيًا. حدّد الأسباب التي تُعد نجاحًا أو تستحق إعادة المحاولة أو تُعرض للمستخدم.

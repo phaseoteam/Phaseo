@@ -1,0 +1,94 @@
+---
+icon: "shapes"
+title: "Strukturierte Ausgaben"
+description: "Gib vorhersehbares JSON mit den Ausgabeformaten json_object oder json_schema zurück."
+---
+
+Mit strukturierten Ausgaben kannst du maschinenlesbares Format statt Freitext vorgeben.
+
+## Unterstützte Endpunkte
+
+Verwende strukturierte Ausgaben mit:
+
+- `/v1/chat/completions` mit `response_format`
+- `/v1/responses` mit `text.format`
+- `/v1/messages` kann weiterhin JSON-Text zurückgeben, verwendet aber nicht denselben `response_format`-Vertrag.
+
+## Anfrage
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## Antwort
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## Hinweise zum Vertrag
+
+- `response_format.type` muss `text`, `json_object` oder `json_schema` sein.
+- Füge bei `json_schema` ein Schemaobjekt ein (`response_format.json_schema.schema` bei Chat-ähnlichen Payloads oder `text.format.schema` bei Responses-ähnlichen Payloads).
+- Validiere das JSON auf deinem Server, bevor du es weiterverwendest.
+
+## Schema entwerfen
+
+Beginne mit einem kleinen Objekt, kennzeichne Pflichtfelder ausdrücklich und nutze Aufzählungen für bekannte Kategorien. Setze `additionalProperties: false`, um zusätzliche Schlüssel abzulehnen. Halte das angeforderte Schema und die Servervalidierung synchron und versioniere sie gemeinsam.
+
+## Ergebnis validieren
+
+Parse und validiere das vollständige Ergebnis vor der weiteren Nutzung. Dieses TypeScript-Beispiel verwendet Zod und entspricht dem Wetterschema oben:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+Behandle Ablehnungen, fehlende Inhalte und abgeschnittene Antworten vor dem Parsen. Bei fehlgeschlagener Validierung sind nur begrenzte Korrekturversuche zulässig; gib danach einen sicheren Fehler zurück. Erneute Generierungen können zusätzliche Kosten verursachen. Gültiges JSON belegt weder sachliche Richtigkeit noch die Erlaubnis zu einer Aktion.
+
+Erfasse Validierungsfehler nach Modell und Schemaversion. Prüfe deine Bewertungsfälle erneut, wenn sich eines davon ändert. Zur Wiederherstellung fehlerhaften JSONs siehe [Antwortreparatur](../cookbook/response-healing-for-structured-json.mdx).

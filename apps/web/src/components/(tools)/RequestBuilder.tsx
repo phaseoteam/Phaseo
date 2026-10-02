@@ -31,6 +31,7 @@ import {
 	PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import { Switch } from "@/components/ui/switch";
@@ -52,6 +53,8 @@ interface RequestBuilderProps {
 }
 
 export default function RequestBuilder({ models }: RequestBuilderProps) {
+	const t = useTranslations("Product.tools.request");
+	const tUi = useTranslations("Common.ui");
 	const initialModelId = models?.[0]?.modelId ?? "";
 
 	const [model, setModel] = useState<string>(initialModelId);
@@ -270,16 +273,16 @@ print(response.json()["choices"][0]["message"]["content"])`;
 
 	return (
 		<div className="container mx-auto px-4 py-8 sm:py-12">
-			<ToolPageHeader title="Request Builder" description="Build API requests interactively and generate code snippets in multiple languages." />
+			<ToolPageHeader title={t("title")} description={t("description")} />
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				<Card>
 					<CardHeader>
-						<CardTitle>Parameters</CardTitle>
+						<CardTitle>{t("configuration")}</CardTitle>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<div>
-							<Label htmlFor="model">Model</Label>
+							<Label htmlFor="model">{t("model")}</Label>
 							<Popover
 								open={modelPickerOpen}
 								onOpenChange={setModelPickerOpen}
@@ -298,9 +301,9 @@ print(response.json()["choices"][0]["message"]["content"])`;
                                         {selectedModel.modelId}
 											</span>
 										) : models?.length ? (
-											"Select model..."
+													t("selectModel")
 										) : (
-											"No active gateway models found"
+													t("noModels")
 										)}
 										<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 									</Button>
@@ -308,12 +311,12 @@ print(response.json()["choices"][0]["message"]["content"])`;
 								<PopoverContent className="w-[360px] p-0">
 									<Command>
 										<CommandInput
-											placeholder="Search models..."
+											placeholder={t("searchModels")}
 											className="h-9"
 										/>
 										<CommandList>
 											<CommandEmpty>
-												No models found.
+														{t("noModelsFound")}
 											</CommandEmpty>
                                 {groupedModels.map((group) => (
                                     <CommandGroup
@@ -426,13 +429,13 @@ print(response.json()["choices"][0]["message"]["content"])`;
 
 						<div>
 							<div className="flex items-center justify-between mb-2">
-								<Label>Messages</Label>
+								<Label>{t("messages")}</Label>
 								<Button
 									onClick={addMessage}
 									size="sm"
 									variant="outline"
 								>
-									Add Message
+									{t("addMessage")}
 								</Button>
 							</div>
 							<div className="space-y-4">
@@ -459,13 +462,13 @@ print(response.json()["choices"][0]["message"]["content"])`;
 												</SelectTrigger>
 												<SelectContent>
 													<SelectItem value="system">
-														System
+										{t("system")}
 													</SelectItem>
 													<SelectItem value="user">
-														User
+										{t("user")}
 													</SelectItem>
 													<SelectItem value="assistant">
-														Assistant
+										{t("assistant")}
 													</SelectItem>
 												</SelectContent>
 											</Select>
@@ -477,7 +480,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													size="sm"
 													variant="destructive"
 												>
-													Remove
+															{t("remove")}
 												</Button>
 											)}
 										</div>
@@ -491,7 +494,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													message.role
 												)
 											}
-											placeholder="Enter message content..."
+											placeholder={t("messagePlaceholder")}
 											rows={3}
 										/>
 									</div>
@@ -503,7 +506,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
 									<Label htmlFor="temperature">
-										Temperature
+										{t("temperature")}
 									</Label>
 									<Input
 										id="temperature"
@@ -521,7 +524,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 								</div>
 								<div>
 									<Label htmlFor="maxOutputTokens">
-										Max Output Tokens
+										{t("maxOutputTokens")}
 									</Label>
 									<Input
 										id="maxOutputTokens"
@@ -547,7 +550,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 							>
 								<AccordionItem value="advanced">
 									<AccordionTrigger className="px-4">
-										Advanced parameters
+										{t("advanced")}
 									</AccordionTrigger>
 									<AccordionContent className="px-4 space-y-4">
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -556,7 +559,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="presencePenalty"
 													className="mb-1 block"
 												>
-													Presence Penalty
+																	{t("presencePenalty")}
 												</Label>
 												<Input
 													id="presencePenalty"
@@ -585,7 +588,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="frequencyPenalty"
 													className="mb-1 block"
 												>
-													Frequency Penalty
+																	{t("frequencyPenalty")}
 												</Label>
 												<Input
 													id="frequencyPenalty"
@@ -617,7 +620,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="topP"
 													className="mb-1 block"
 												>
-													Top P
+																	{t("topP")}
 												</Label>
 												<Input
 													id="topP"
@@ -647,7 +650,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="seed"
 													className="mb-1 block"
 												>
-													Seed
+																	{t("seed")}
 												</Label>
 												<Input
 													id="seed"
@@ -672,7 +675,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="topLogprobs"
 													className="mb-1 block"
 												>
-													Top Logprobs
+																	{t("topLogprobs")}
 												</Label>
 												<Input
 													id="topLogprobs"
@@ -702,7 +705,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="stream"
 													className="mb-1 block"
 												>
-													Stream
+																	{t("stream")}
 												</Label>
 												<Switch
 													id="stream"
@@ -715,7 +718,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="logprobs"
 													className="mb-1 block"
 												>
-													Logprobs
+																	{t("logprobs")}
 												</Label>
 												<Switch
 													id="logprobs"
@@ -730,7 +733,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="meta"
 													className="mb-1 block"
 												>
-													Include Meta
+																	{t("includeMeta")}
 												</Label>
 												<Switch
 													id="meta"
@@ -743,7 +746,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="usage"
 													className="mb-1 block"
 												>
-													Include Usage
+																	{t("includeUsage")}
 												</Label>
 												<Switch
 													id="usage"
@@ -758,7 +761,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 												htmlFor="reasoningEffort"
 												className="mb-1 block"
 											>
-												Reasoning
+																{t("reasoning")}
 											</Label>
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 												<div>
@@ -766,7 +769,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 														htmlFor="reasoningEffort"
 														className="mb-1 block"
 													>
-														Effort
+																	{t("effort")}
 													</Label>
 													<Select
 														value={reasoningEffort}
@@ -783,20 +786,20 @@ print(response.json()["choices"][0]["message"]["content"])`;
 														}
 													>
 														<SelectTrigger id="reasoningEffort">
-															<SelectValue placeholder="None" />
+																		<SelectValue placeholder={t("none")} />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="minimal">
-																minimal
+										<SelectItem value="minimal">
+											{tUi("requestBuilder.minimal")}
 															</SelectItem>
-															<SelectItem value="low">
-																low
+										<SelectItem value="low">
+											{tUi("requestBuilder.low")}
 															</SelectItem>
-															<SelectItem value="medium">
-																medium
+										<SelectItem value="medium">
+											{tUi("requestBuilder.medium")}
 															</SelectItem>
-															<SelectItem value="high">
-																high
+										<SelectItem value="high">
+											{tUi("requestBuilder.high")}
 															</SelectItem>
 														</SelectContent>
 													</Select>
@@ -806,7 +809,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 														htmlFor="reasoningSummary"
 														className="mb-1 block"
 													>
-														Summary
+																	{t("summary")}
 													</Label>
 													<Select
 														value={reasoningSummary}
@@ -822,17 +825,17 @@ print(response.json()["choices"][0]["message"]["content"])`;
 														}
 													>
 														<SelectTrigger id="reasoningSummary">
-															<SelectValue placeholder="None" />
+																		<SelectValue placeholder={t("none")} />
 														</SelectTrigger>
 														<SelectContent>
-															<SelectItem value="auto">
-																auto
+										<SelectItem value="auto">
+											{tUi("requestBuilder.auto")}
 															</SelectItem>
-															<SelectItem value="concise">
-																concise
+										<SelectItem value="concise">
+											{tUi("requestBuilder.concise")}
 															</SelectItem>
-															<SelectItem value="detailed">
-																detailed
+										<SelectItem value="detailed">
+											{tUi("requestBuilder.detailed")}
 															</SelectItem>
 														</SelectContent>
 													</Select>
@@ -845,7 +848,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 													htmlFor="logitBias"
 													className="mb-1 block"
 												>
-													Logit Bias Entries
+																	{t("logitBiasEntries")}
 												</Label>
 												<Button
 													type="button"
@@ -863,14 +866,12 @@ print(response.json()["choices"][0]["message"]["content"])`;
 														)
 													}
 												>
-													Add entry
+																	{t("addEntry")}
 												</Button>
 											</div>
 											{logitBiasEntries.length === 0 ? (
 												<p className="text-xs text-muted-foreground">
-													Add per-token bias entries.
-													Each token key maps to a
-													bias value.
+															{t("biasHelp")}
 												</p>
 											) : (
 												<div className="space-y-3">
@@ -882,7 +883,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 															>
 																<div>
 																	<Label className="mb-1 block">
-																		Token
+																		{t("token")}
 																	</Label>
 																	<Input
 																		value={
@@ -918,7 +919,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 																</div>
 																<div>
 																	<Label className="mb-1 block">
-																		Bias
+																	{t("bias")}
 																	</Label>
 																	<Input
 																		type="number"
@@ -973,7 +974,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 																		)
 																	}
 																>
-																	Remove
+																			{t("remove")}
 																</Button>
 															</div>
 														)
@@ -990,7 +991,7 @@ print(response.json()["choices"][0]["message"]["content"])`;
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Generated Code</CardTitle>
+						<CardTitle>{t("generatedCode")}</CardTitle>
 					</CardHeader>
 					<CardContent>
 						<Tabs defaultValue="curl" className="w-full">

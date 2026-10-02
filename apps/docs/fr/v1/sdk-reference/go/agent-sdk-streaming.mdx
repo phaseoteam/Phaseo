@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Diffusion en continu"
+description: "Diffusez le texte et les événements d’agents Go avec des consommateurs capables de rejouer le flux."
+---
+
+`Agent.Stream(...)` renvoie un `StreamResult` rejouable :
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+Utilisez `Events()` pour les événements de cycle de vie et du fournisseur. Appelez `Cancel()` pour annuler le contexte du flux et la requête de modèle active.
+
+Go ne propose pas encore le même consommateur natif d’éléments typés que TypeScript ; utilisez la séquence d’événements et les enregistrements d’exécution terminés pour créer des chronologies produit structurées.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

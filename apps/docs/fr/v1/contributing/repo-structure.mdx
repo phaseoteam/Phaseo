@@ -1,0 +1,45 @@
+---
+icon: "folder-open"
+title: "Structure du dépôt"
+description: "Trouvez le code des applications Phaseo, la documentation, les SDK et les exports du catalogue."
+---
+
+Phaseo est un monorepo pnpm et Turborepo. Utilisez cette référence pour trouver les fichiers d’un changement de code ou de documentation. Pour les enregistrements du catalogue, [ouvrez un ticket](./overview.mdx).
+
+## Applications et packages
+
+| Chemin | Rôle |
+| --- | --- |
+| `apps/web` | Site Next.js 16, tableau de bord et éditeur interne du catalogue. |
+| `apps/web-api` | Lectures publiques du catalogue et API authentifiées de comptes et d’administration. |
+| `apps/api` | Routage de la passerelle et exécution des fournisseurs sur Cloudflare Workers. |
+| `apps/docs` | Documentation Mintlify ; pages MDX dans `v1`, navigation dans `docs.json`. |
+| `packages/data/catalog` | Schémas du catalogue, jeux de compatibilité et instantanés publics générés. |
+| `packages/sdk` | SDK TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust et C++. |
+| `supabase/migrations` | Migrations du schéma de base de données et des autorisations. |
+| `scripts` | Utilitaires de validation, génération des SDK et automatisation. |
+| `.github/workflows` | CI, déploiement, synchronisation du catalogue et planification des instantanés. |
+| `.changeset` | Métadonnées de publication des packages versionnés. |
+
+## Données du catalogue
+
+La base de données fait autorité pour les modèles, fournisseurs, organisations, prix, benchmarks et paramètres associés du catalogue. Les administrateurs gèrent les enregistrements via les [données internes](https://phaseo.app/internal/data). Les contributions publiques sont examinées via les tickets GitHub.
+
+- `packages/data/catalog/generated/database-v2` contient les instantanés publics quotidiens et l’index d’énumération des modèles généré utilisé par les outils OpenAPI et SDK.
+- `packages/data/catalog/src/data` contient des jeux de compatibilité archivés.
+- Modifier l’un ou l’autre répertoire ne met pas à jour les enregistrements du catalogue en ligne. L’ancien importateur JSON vers base de données a été retiré.
+
+Les changements de schéma et d’application utilisent toujours des migrations et des demandes de fusion. Les instantanés et artefacts SDK générés doivent être actualisés via leurs commandes de génération.
+
+## Automatisation du catalogue
+
+La synchronisation des fournisseurs place les prix proposés en attente de revue dans les [mises à jour des fournisseurs](https://phaseo.app/internal/data/imports). Les tâches de benchmarks et de cycle de vie des modèles utilisent la base de données. Les exports publics quotidiens produisent des demandes de fusion d’instantanés à examiner.
+
+Les enregistrements de catalogue seuls n’activent pas automatiquement le routage de la passerelle. Les changements de routes et de prix nécessitent la revue administrative appropriée.
+
+## Où commencer
+
+- [Signaler une mise à jour de modèle](./editing-a-model.mdx).
+- [Signaler une mise à jour d’organisation](./editing-an-organisation.mdx).
+- [Soumettre des scores de benchmarks](../research/submitting-scores.mdx).
+- [Contribuer au code ou à la documentation](./how-to-contribute.mdx).

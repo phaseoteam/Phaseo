@@ -1,0 +1,32 @@
+---
+title: "Phaseo 的工作方式"
+description: "集成 Phaseo 前，了解模型、提供商、路由和计费。"
+icon: "terminal"
+---
+
+Phaseo 通过一个 API 将应用的模型请求路由到提供商。应用选择模型和端点；工作区设置和请求控制决定哪些提供商可以处理请求。
+
+## 模型与提供商
+
+模型是生成输出的系统。提供商托管模型，并决定可用性、支持的参数、定价和性能。同一个模型可能有多个提供商报价。
+
+公开目录也包含当前无法通过 Gateway 使用的模型。在请求中使用 ID 前，请检查[模型可用性](../exploring/models.mdx)。
+
+## 请求与路由
+
+根据应用协议使用 [Responses、Chat Completions 或 Messages](../api-reference/introduction.mdx)。提供商能力仍有差异；共同端点并不意味着每个模型支持每个参数。
+
+[路由控制](../guides/routing-and-fallbacks.mdx)允许限制提供商并选择排序方式。回退仍受限制和可用容量约束，不能保证成功。
+
+## 计费与访问
+
+托管请求使用 Phaseo 工作区余额。`:free` 模型无需充值额度即可运行。使用提供商凭据（BYOK）时，适用提供商计费和账户限制；上线前请查看[定价和计费](../pricing/tiers.mdx)。
+
+[视频和批处理任务](../guides/async-video-and-batch.mdx)在处理完成之前返回任务。预览访问按工作区管理。轮询状态或接收 Webhook 更新，然后下载结果。
+
+## 构建集成
+
+- [快速入门](../quickstart.mdx)：发送第一个请求。
+- [集成 Gateway](./integrating-with-the-gateway.mdx)：将凭据保存在后端并配置应用。
+- [可靠性与状态](./reliability-and-status.mdx)：调查可用性和失败请求。
+- [请求日志与可观测性](../guides/integrations/observability.mdx)：查看使用量、延迟、费用和错误。

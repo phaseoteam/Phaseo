@@ -1,0 +1,81 @@
+---
+title: "Depurar solicitudes de búsqueda web"
+icon: "bug"
+description: "Verifica solicitudes de búsqueda web, confirma la compatibilidad del proveedor e inspecciona los resultados y las citas devueltos."
+---
+
+Usa esta receta cuando una solicitud de búsqueda web no se comporte como esperabas y quieras comprobar si Phaseo la aceptó, la enrutó correctamente y devolvió resultados limpios.
+
+## 1. Especifica claramente la intención de búsqueda
+
+No dependas solo de la redacción del prompt. Incluye la configuración de búsqueda directamente en la solicitud para que Phaseo sepa que quieres usar la búsqueda web.
+
+Comprueba que incluyes:
+
+- herramientas de búsqueda nativas en `tools`
+- `web_search_options` cuando el endpoint las admita
+
+## 2. Confirma que había un proveedor compatible
+
+Si la solicitud se bloquea o se enruta de forma distinta a la esperada, revisa estos datos de la solicitud:
+
+- detalles de los proveedores candidatos
+- detalles de la habilitación de proveedores
+- explicación del enrutamiento
+
+Así podrás saber si la lista de proveedores se redujo porque faltaba compatibilidad con la búsqueda.
+
+## 3. Inspecciona los contadores de uso
+
+Las solicitudes de búsqueda que finalizan correctamente deberían mostrar contadores de uso relacionados con la búsqueda, como:
+
+- herramientas nativas de búsqueda web solicitadas
+- resultados de búsqueda web
+- citas
+
+Son la señal más rápida de que la solicitud realmente utilizó la búsqueda.
+
+## 4. Inspecciona la sección de resultados
+
+En las solicitudes correctas, abre el diálogo de detalles y busca la sección de observabilidad de búsqueda web.
+
+Esta sección muestra:
+
+- si se utilizó la búsqueda nativa
+- cantidad de resultados normalizados
+- cantidad de citas normalizadas
+- registros de resultados extraídos
+- registros de citas extraídos
+
+Úsala para comparar el comportamiento de los proveedores sin leer las cargas sin procesar.
+
+## 5. Trata estos casos por separado
+
+Actualmente están disponibles la búsqueda nativa y la comprobación de compatibilidad del proveedor. La planificación de alternativas de búsqueda es independiente.
+
+Al depurar, distingue estos casos:
+
+1. La solicitud de búsqueda nativa se aceptó y enrutó.
+2. La solicitud se aceptó, pero no quedó ningún proveedor compatible.
+3. La solicitud se completó, pero devolvió citas escasas o de baja calidad.
+
+Son problemas distintos y no deben depurarse de la misma manera.
+
+## 6. Qué comparar cuando los resultados no son correctos
+
+Compara estas propiedades entre solicitudes:
+
+- ID del modelo
+- proveedor seleccionado realmente
+- opciones de búsqueda de la solicitud
+- cantidad de resultados
+- cantidad de citas
+- detalles del enrutamiento
+
+Si la calidad varía según el proveedor, los registros normalizados deberían dejarlo claro.
+
+## Relacionado
+
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Ejemplos](../guides/examples.mdx)
+- [SDK de TypeScript](../sdk-reference/typescript/overview.mdx)

@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "介绍采用 Claude Opus 4.6 时需要了解的结构化输出、自适应思考和预填充内容。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+使用本指南，在生产环境中安全采用 `anthropic/claude-opus-4.6`。
+
+迁移到 Claude Opus 4.6 不只是更换模型 ID。Anthropic 的迁移指南还涉及请求格式变化、移除 Beta 标志，以及对预填充内容更严格的处理。
+
+## 新功能
+
+- Claude 4.6 模型不再支持助手预填充内容，现在会返回 `400`。
+- 结构化输出从 `output_format` 改为 `output_config.format`。
+- 自适应思考现在通过 `output_config.effort` 配置。
+- 应移除过时的 Beta 请求头。
+- Opus 4.6 不再需要 `interleaved-thinking-2025-05-14` Beta 请求头。
+- Opus 4.6 在 Beta 阶段新增 100 万 token 上下文窗口，并改进长周期编程和代理任务。
+
+## 迁移快速入门
+
+### 1. 移除助手预填充内容
+
+如果你之前通过预先填充部分助手轮次来强制 JSON 格式或回复前缀，此方式在 4.6 中会失效。请改用：
+
+- 更清晰的系统指令
+- 用户或系统提示词中的示例
+- 通过 `output_config.format` 设置结构化输出
+
+### 2. 迁移结构化输出
+
+如果仍在发送 `output_format`，请将请求正文改为使用 `output_config.format`。
+
+### 3. 检查思考配置
+
+如果依赖旧版思考 Beta，请迁移到 `output_config` 中当前的 `effort` 设置，并重新测试对延迟敏感的路由。
+
+### 4. 移除过时的 Beta 标志
+
+检查 SDK 封装、中间件和 Gateway 预设中的硬编码 Beta 请求头。保留过时标志会在发布期间造成无谓错误。
+
+## 测试内容
+
+### 提示词行为
+
+- 长篇编程和重构提示词。
+- 多步骤研究或文档工作流。
+- 之前依赖助手预填充内容的提示词。
+- 如果计划使用 100 万 token Beta 窗口，请测试长上下文任务。
+
+### 接口约定和工具
+
+- 改用 `output_config.format` 后的 Schema 通过率。
+- 多步骤代理任务中的工具参数质量。
+- 模型拒答或重新格式化输出时的重试行为。
+- 代码审查和调试工作流中的回归处理。
+
+### 运维
+
+- 使用新思考设置时的中位数和 p95 延迟。
+- 长时间运行时的 token 用量。
+- 大上下文任务的超时率。
+- 在生产评估集上与 Opus 4.5 相比的成功率。
+
+## 安全发布
+
+1. 切换流量前，先移除预填充内容并迁移结构化输出配置。
+2. 使用重要的生产提示词对 Opus 4.6 进行影子测试。
+3. 保留 Opus 4.5 作为回退模型，逐步切换流量。
+4. 只有在 Schema 通过率、延迟和任务完成情况稳定后才扩大流量。
+
+## 来源
+
+- [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.6 发布介绍](https://www.anthropic.com/news/claude-opus-4-6)

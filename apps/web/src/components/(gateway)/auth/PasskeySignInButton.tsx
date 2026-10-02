@@ -2,17 +2,23 @@
 
 import { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
+import { withAuthLocale } from "@/lib/auth/localized-paths";
 
 export function PasskeySignInButton({
 	returnUrl,
 	compact = false,
+	locale = defaultLocale,
 }: {
 	returnUrl?: string;
 	compact?: boolean;
+	locale?: PublicLocale;
 }) {
+	const t = useTranslations("Auth.signIn");
 	const [pending, setPending] = useState(false);
 
 	async function signIn() {
@@ -31,20 +37,23 @@ export function PasskeySignInButton({
 			const mustVerifyMfa =
 				aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2";
 			const redirectPath = mustVerifyMfa
-				? safeReturnUrl === "/"
-					? "/auth/verify-mfa"
-					: `/auth/verify-mfa?returnUrl=${encodeURIComponent(safeReturnUrl)}`
+				? withAuthLocale(
+						safeReturnUrl === "/"
+							? "/auth/verify-mfa"
+							: `/auth/verify-mfa?returnUrl=${encodeURIComponent(safeReturnUrl)}`,
+						locale,
+					)
 				: safeReturnUrl;
 
 			window.location.assign(redirectPath);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Passkey sign-in failed";
+			const message = error instanceof Error ? error.message : "";
 			if (message.includes("passkey_disabled")) {
-				toast.error("Passkeys are not enabled for this environment yet.");
+				toast.error(t("passkeyUnavailable"));
 			} else if (message.toLowerCase().includes("cancel")) {
-				toast.message("Passkey sign-in cancelled.");
+				toast.message(t("passkeyCancelled"));
 			} else {
-				toast.error(message);
+				toast.error(t("passkeyFailed"));
 			}
 		} finally {
 			setPending(false);
@@ -52,9 +61,19 @@ export function PasskeySignInButton({
 	}
 
 	return (
-		<Button type="button" variant="outline" className="h-11 w-full" onClick={signIn} disabled={pending}>
-			{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <KeyRound className="mr-2 h-4 w-4" />}
-			{pending ? "Signing in..." : compact ? "Passkey" : "Sign in with a passkey"}
+		<Button
+			type="button"
+			variant="outline"
+			className="h-11 w-full"
+			onClick={signIn}
+			disabled={pending}
+		>
+			{pending ? (
+				<Loader2 className="me-2 h-4 w-4 animate-spin" />
+			) : (
+				<KeyRound className="me-2 h-4 w-4" />
+			)}
+			{pending ? t("pending") : compact ? t("passkey") : t("passkeySubmit")}
 		</Button>
 	);
 }

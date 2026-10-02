@@ -1,6 +1,6 @@
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { fetchAdminCatalogRecord, sendAdminModelAnnouncement } from "@/lib/fetchers/internal/fetchAdminCatalog";
-import { sendInternalModelAnnouncementAction, testInternalModelDiscoveryNotifierAction } from "./actions";
+import { sendInternalModelAnnouncementAction, testInternalModelDiscoveryNotifierAction } from "@/app/[locale]/(dashboard)/internal/model-discovery-notifier/actions";
 
 jest.mock("@/lib/fetchers/internal/fetchInternalAuthStatus", () => ({ fetchInternalAuthStatus: jest.fn() }));
 jest.mock("@/lib/fetchers/internal/fetchAdminCatalog", () => ({

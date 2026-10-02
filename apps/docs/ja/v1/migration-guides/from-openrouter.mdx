@@ -1,0 +1,209 @@
+---
+title: "OpenRouter から Phaseo への移行"
+sidebarTitle: "OpenRouter"
+description: "Gateway URL と API キーを切り替え、モデル ID を確認し、段階的なロールアウトを検証して、OpenRouter の代わりに Phaseo を使います。"
+icon: "arrow-right-left"
+---
+
+Phaseo は OpenAI 互換の OpenRouter 代替サービスです。OpenAI SDK または直接の HTTP 呼び出しで OpenRouter を利用している場合、通常はプロンプトやアプリのロジックを書き換えず、クライアント境界で移行できます。
+
+## 変更点
+
+| 設定 | OpenRouter | Phaseo |
+| --- | --- | --- |
+| ベース URL | `https://openrouter.ai/api/v1` | `https://api.phaseo.app/v1` |
+| API キー変数 | `OPENROUTER_API_KEY` | `PHASEO_API_KEY` |
+| 認証 | `Authorization: Bearer <key>` | `Authorization: Bearer <key>` |
+| リクエスト payload | OpenAI 互換 | 最初の移行では変更しない |
+| モデル ID | OpenRouter カタログ | `GET /v1/models` で各 ID を確認 |
+
+移行は次の 4 段階です。
+
+1. payload の形式を維持する。
+2. ベース URL と API キーの参照元を切り替える。
+3. モデル ID と OpenRouter 固有のヘッダーを確認する。
+4. トラフィックを段階的に移し、レイテンシ、出力、コストを比較する。
+
+## 開始前の準備
+
+- 現在の OpenRouter 統合コードとデプロイ設定へのアクセス。
+- 開発、ステージング、本番環境で `PHASEO_API_KEY` を利用できること。
+- 本番で使うモデル ID と代表的なプロンプトの短い一覧。
+
+## 1) OpenRouter の現在の使用箇所を洗い出す
+
+URL、キー、モデル ID、プロバイダー固有のヘッダーなど、OpenRouter に関する参照をすべて探します。
+
+- `openrouter.ai` のエンドポイントを検索します。
+- コード、CI、ホスティング環境変数から `OPENROUTER_API_KEY` を検索します。
+- `HTTP-Referer` や `X-Title` など OpenRouter 固有のヘッダーを検索します。
+- 有効なモデル ID とフォールバックのロジックを記録します。
+- アプリ内で重複させず Gateway のプリセットに移すべき、共有プロンプト、プロバイダー、パラメーターの既定値を特定します。
+
+## 2) ベース URL と認証情報を切り替える
+
+最初はリクエスト payload を変えずに、最適化の前に動作の同等性を確認します。
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: "https://openrouter.ai/api/v1",
+});
+
+const response = await before.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await after.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Summarize our migration plan." }],
+});
+```
+
+```bash cURL
+# Before
+curl -s "https://openrouter.ai/api/v1/chat/completions" \
+  -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+
+# After
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Say hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) モデル ID を検証し、OpenRouter 固有の動作を対応付ける
+
+以前のエイリアスがすべて有効だとは限りません。`/v1/models` を参照して本番モデル ID を確認します。標準の応答には現在公開ルーティング可能なモデルのみが含まれます。無効または提供予定の対応付けを調べる場合に限り `availability=all` を使います。
+
+<CodeGroup>
+```bash cURL
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data[0:10] | map(.id)'
+```
+</CodeGroup>
+
+- `Authorization: Bearer` の形式を維持します。
+- 呼び出し元アプリの識別に使う場合は `HTTP-Referer` と `X-Title` を維持します。Phaseo は小文字の `http-referer` と `x-title` も受け付けます。
+- OpenRouter 固有の応答フィールドに依存する呼び出し元がある場合は、1 つの互換レイヤーで対応します。
+- 許可・拒否プロバイダーリストやルーティング既定値は、呼び出し側に散在させず[プリセット](../guides/presets.mdx)と[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)に移します。
+
+OpenRouter のプロバイダー設定や応答専用フィールドを各呼び出しにコピーしないでください。差分を 1 つのアダプターにまとめれば、URL と認証情報の変更だけでロールバックできます。
+
+### プロバイダー制御を対応付ける
+
+| 既存フィールド | Phaseo フィールド | 備考 |
+| --- | --- | --- |
+| `provider.order` | `provider.order` | 優先順にプロバイダーを試します。 |
+| `provider.only` | `provider.only` | 承認済みの候補だけに制限します。 |
+| `provider.ignore` | `provider.ignore` | 対象からプロバイダーを除外します。 |
+| `provider.sort` | `provider.sort` | `price`、`latency`、`throughput` を指定できます。 |
+| `provider.zdr` | `provider.require_zero_data_retention` | データを保持しないルートを必須にします。 |
+
+地域制御が必要な場合、Phaseo は `provider.required_execution_region` と `provider.required_data_region` もサポートします。リクエスト全体は[プロバイダーを固定または除外する](../cookbook/pin-or-ignore-providers-per-request.mdx)と[EU または ZDR 対応プロバイダーのみにルーティングする](../cookbook/route-only-to-eu-or-zdr-providers.mdx)を参照してください。
+
+## 4) OpenRouter との同等性チェックリスト
+
+まとまったトラフィックを切り替える前に、次を確認します。
+
+- ベース URL を `https://api.phaseo.app/v1` に更新した。
+- すべての環境で `OPENROUTER_API_KEY` を `PHASEO_API_KEY` に置き換えた。
+- 本番のすべてのモデル ID を `/v1/models` で確認した。
+- `/v1/chat/completions` または `/v1/responses` で非ストリーミング要求を検証した。
+- 本番と同じアプリ統合経路でストリーミング要求を検証した。
+- `GET /v1/generations?id=<request_id>` を再確認した。`replay_supported=true` の場合、保存された `replay_request` から失敗した要求を再実行できます。
+- 実際のプロンプトでツール呼び出しと構造化出力を再確認した。
+- ステージングで無効なキーとモデルのエラーを確認した。
+- OpenRouter 固有のヘッダーや応答フィールドを削除、または明示的に正規化した。
+- 共有プロンプトやルーティングの既定値を必要に応じてプリセットに移した。
+
+### エージェント向け移行チェックリスト
+
+コーディングエージェントには、次の範囲を限定した手順を渡します。
+
+1. 実行コードとデプロイ設定から `openrouter.ai`、`OPENROUTER_API_KEY`、`sk-or-v1`、`HTTP-Referer`、`X-Title` を検索する。
+2. 秘密値をソース管理に追加せず、クライアント境界を `https://api.phaseo.app/v1` と `PHASEO_API_KEY` に変更する。
+3. `GET /v1/models` を照会し、旧モデルから新モデルへの対応表を記録する。
+4. OpenRouter 固有のルーティング設定や応答フィールドを、1 つの互換モジュールで調整する。
+5. 下記の health、models、通常要求、streaming、エラー経路を確認する。
+6. 変更ファイル、シークレット名の変更、モデル対応表、テスト結果、同等性の差、ロールバック方法を報告する。
+
+再利用可能な手順は、インベントリ、対応付け、検証、報告、ロールバックをまとめた[OpenRouter から Phaseo への移行ガイド](https://github.com/phaseoteam/Phaseo/tree/main/.agents/skills/openrouter-to-phaseo-migration)を参照してください。
+
+## 5) 安全に段階展開する
+
+開発環境、小規模な本番トラフィックの順に切り替え、メトリクスが安定してから全量を移行します。
+
+1. 最初は社内トラフィックだけで始めます。
+2. 本番の 5〜10% に増やし、品質、レイテンシ、コストを比較します。
+3. 同等性を確認できたら 100% に増やします。
+4. 切り替えが安定するまで、URL とキーだけで戻せるようにします。
+
+## 検証コマンド
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hello"}]}'
+```
+
+同じエンドポイントを使い、ストリーミングを個別にテストします。
+
+```bash
+curl -N "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"openai/gpt-4.1-mini","stream":true,"messages":[{"role":"user","content":"Reply with: stream works"}]}'
+```
+
+認証情報を露出させずに、無効なモデルをアプリが処理できることも確認します。
+
+```bash
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -d '{"model":"invalid/migration-test","messages":[{"role":"user","content":"test"}]}'
+```
+
+次に：
+
+- アプリの統合テスト経由でストリーミング要求を 1 件実行します。
+- 無効なキーまたはモデルの異常系テストを実行します。
+- 小さな基準プロンプトセットを再実行し、出力を比較します。
+
+## 次のステップ
+
+- [OpenRouter 連携の移行支援を無料で依頼する](https://phaseo.app/contact)
+- [OpenRouter 移行ガイドを開く](https://phaseo.app/migrate/openrouter)
+- [Phaseo と OpenRouter を比較する](https://phaseo.app/compare/openrouter)
+- [クイックスタート](../quickstart.mdx)
+- [API リファレンス：モデル](../api-reference/endpoint/models.mdx)
+- [サンプル](../guides/examples.mdx)
+- [エラー処理](../api-reference/errors.mdx)

@@ -1,0 +1,66 @@
+---
+title: "C# Agent SDKでチケットをトリアージする"
+icon: "ticket-check"
+description: "C# Agent SDKを使い、1つの.NETサービス内でローカルツールによるチケットのトリアージを行います。"
+---
+
+受信したサポートチケットを.NETサービスで分類または要約する場合に、このレシピを使います。
+
+## 1. SDKを準備する
+
+<Note type="warning">C# Agent SDKパッケージはまだNuGetで公開されていません。[ソースからのインストール手順](../sdk-reference/csharp/agent-sdk-installation.mdx)に従ってください。</Note>
+
+## 2. 内部検索ツールを定義する
+
+```csharp
+var loadTicket = AgentSdk.DefineTool(new Tool(
+    Id: "load-ticket",
+    Description: "Load one support ticket by id.",
+    Parameters: new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?>
+        {
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+        },
+        ["required"] = new[] { "ticketId" },
+    },
+    Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
+    {
+        ["ticketId"] = "T-1042",
+        ["severity"] = "medium",
+        ["summary"] = "Customer cannot find preset routing settings.",
+    })
+));
+```
+
+## 3. エージェントを作成して実行する
+
+```csharp
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "ticket-triage-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Use tools when helpful and answer with a short triage summary.",
+    Tools = new[] { loadTicket },
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Review ticket T-1042 and summarize the next action.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## このレシピが適する場面
+
+- ワークフローが1つのASP.NETサービスまたはワーカー内で完結する
+- ローカルランタイムがすでに社内チケットの状態を取得できる
+- キューや承認を追加する前に、範囲を絞ったエージェントループを試したい
+
+## 関連項目
+
+- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
+- [presetベースのエージェントでサポート依頼をトリアージする](./agent-sdk-support-triage.mdx)

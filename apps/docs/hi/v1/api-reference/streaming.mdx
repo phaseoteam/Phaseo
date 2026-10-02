@@ -1,0 +1,68 @@
+---
+title: "स्ट्रीमिंग"
+description: "मुख्य टेक्स्ट एंडपॉइंट पर SSE के ज़रिए मॉडल आउटपुट रियल टाइम में स्ट्रीम करें।"
+icon: "radio"
+---
+
+स्ट्रीमिंग से आपका UI पूरी प्रतिक्रिया की प्रतीक्षा किए बिना, बनते हुए टोकन दिखा सकता है।
+
+## समर्थित एंडपॉइंट
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## स्ट्रीमिंग चालू करें
+
+अनुरोध के मुख्य भाग में `stream: true` सेट करें।
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## SSE फ़्रेम का प्रारूप
+
+स्ट्रीम का डेटा SSE फ़्रेम के रूप में लौटाया जाता है:
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## स्ट्रीम के दौरान त्रुटियाँ संभालना
+
+- यदि स्ट्रीम शुरू होने से पहले अनुरोध विफल हो जाए, तो सामान्य JSON त्रुटि प्रतिक्रिया मिलती है।
+- यदि कुछ आउटपुट आने के बाद अनुरोध विफल हो, तो स्ट्रीम को अधूरा मानें और UI में retry का विकल्प दें।
+- सहायता और अनुरोधों को जोड़कर देखने के लिए, `generation_id` मौजूद हो तो उसे हमेशा लॉग करें।
+
+## रद्द करना
+
+रद्द करने के नियंत्रण (`AbortController` in JavaScript या backend workers में request timeout) का उपयोग करें, ताकि छोड़ी गई streams अनावश्यक क्षमता न लें।
+
+## ज्ञात सीमा
+
+Gateway की मौजूदा request-validation layer `stream: true` के साथ tool-calling को अस्वीकार करती है। Tool-calling loops के लिए non-streaming मोड का उपयोग करें।
+
+## संबंधित पृष्ठ
+
+- [Responses एंडपॉइंट](./endpoint/responses.mdx)
+- [Chat Completions एंडपॉइंट](./endpoint/chat-completions.mdx)
+- [Messages एंडपॉइंट](./endpoint/anthropic-messages.mdx)
+- [त्रुटियाँ और डीबगिंग](./errors.mdx)
+
+<Visibility for="agents">
+यदि आप agent के रूप में streaming लागू कर रहे हैं:
+
+- SSE parsing, retries और cancellation के लिए repository skills का उपयोग करें।
+- Provider-specific assumptions जोड़ने से पहले endpoint-specific schemas देखें।
+- क्रमिक आउटपुट दिखाने और अंतिम स्थिति सहेजने को अलग रखें।
+</Visibility>

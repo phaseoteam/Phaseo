@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗報告に対応したPHPツールを定義します。"
+---
+
+`Tool`値を作成し、`AgentSdk::defineTool(...)`に渡します。ツールには次の項目を含められます。
+
+- モデルに提示するJSON `parameters`
+- `inputSchema`、`outputSchema`、`eventSchema`の検証コールバック
+- `timeoutMs`と`execute`コールバック
+- boolean値またはコールバックの`requireApproval`
+- 対話型処理向けの`onToolCalled`と`onResponseReceived`
+- `nextTurnParams`と`onError: "return-to-model"`
+
+途中経過には`RuntimeContext::$emitProgress`を、アプリケーションのコンテキストには`$setContext`を使います。
+
+<Note>
+標準のPHPランタイムではツールのコールバックが同期的に実行されます。そのため、並行処理や中断の可否はSDKをホストするPHPプロセスの機能に依存します。
+</Note>
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

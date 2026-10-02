@@ -13,20 +13,20 @@ export function rebasePrice(price: string, oldQuantity: string, quantity: string
 	return String(Number((Number(price) * Number(quantity) / Number(oldQuantity)).toPrecision(12)));
 }
 
-export function formatPrice(price: string, currency: string) {
+export function formatPrice(price: string, currency: string, locale = "en", invalidPriceLabel = "Enter a price") {
 	const amount = Number(price);
-	if (!price.trim() || !Number.isFinite(amount)) return "Enter a price";
-	return new Intl.NumberFormat("en", { style: "currency", currency, maximumFractionDigits: 9 }).format(amount);
+	if (!price.trim() || !Number.isFinite(amount)) return invalidPriceLabel;
+	return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 9 }).format(amount);
 }
 
-export function validatePriceAmounts(meters: Array<{ price_usd: string; unit_quantity: string }>) {
-	if (!meters.length) throw new Error("Add at least one charge before saving.");
+export function validatePriceAmounts(meters: Array<{ price_usd: string; unit_quantity: string }>, errors = { empty: "Add at least one charge before saving.", price: "Enter a price of zero or more for every charge.", quantity: "Every billing quantity must be greater than zero." }) {
+	if (!meters.length) throw new Error(errors.empty);
 	for (const meter of meters) {
 		if (!meter.price_usd.trim() || !Number.isFinite(Number(meter.price_usd)) || Number(meter.price_usd) < 0) {
-			throw new Error("Enter a price of zero or more for every charge.");
+			throw new Error(errors.price);
 		}
 		if (!meter.unit_quantity.trim() || !Number.isFinite(Number(meter.unit_quantity)) || Number(meter.unit_quantity) <= 0) {
-			throw new Error("Every billing quantity must be greater than zero.");
+			throw new Error(errors.quantity);
 		}
 	}
 }

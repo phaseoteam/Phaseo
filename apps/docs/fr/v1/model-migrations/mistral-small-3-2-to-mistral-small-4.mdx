@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "À connaître pour adopter Mistral Small 4, notamment les contrôles de raisonnement et les champs de réponse normalisés."
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+Suivez ce guide pour adopter Mistral Small 4 via Phaseo Gateway en toute sécurité :
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## Nouveautés
+
+- Mistral Small 4 permet de contrôler le mode de raisonnement via `reasoning_effort`.
+- Gateway ne transmet que deux valeurs en amont pour cette route :
+  - `none` (raisonnement désactivé)
+  - `high` (raisonnement activé)
+- Gateway normalise les blocs de réflexion Mistral en champs de réponse standard :
+  - `message.content` pour le texte visible par l’utilisateur
+  - `message.reasoning_content` et `message.reasoning_details` pour le texte de raisonnement
+
+## Démarrage rapide de la migration
+
+Le raisonnement est désactivé par défaut pour cette route.
+
+Règles de correspondance Gateway :
+
+- Sans paramètre de raisonnement, Gateway envoie `reasoning_effort: "none"`.
+- Avec `reasoning.enabled: true`, Gateway envoie `reasoning_effort: "high"`.
+- Avec `reasoning.effort: "none"`, Gateway envoie `reasoning_effort: "none"`.
+- Toute autre valeur de `reasoning.effort` devient `reasoning_effort: "high"`.
+
+Utilisation recommandée :
+
+- `reasoning.effort: "none"` pour les tâches légères.
+- `reasoning.effort: "high"` pour un raisonnement approfondi.
+
+Exemple :
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## Traitement des réponses
+
+Mistral peut renvoyer plusieurs types de blocs de contenu dans un même message (par exemple `thinking` et `text`). Gateway les transforme en une structure stable :
+
+- Réponse finale visible par l’utilisateur dans `choices[0].message.content`.
+- Texte de raisonnement dans `choices[0].message.reasoning_content`.
+
+Vous pouvez ainsi conserver le comportement aval qui attend les champs de complétion de chat au format OpenAI.
+
+## Liste de contrôle du déploiement
+
+1. Mettez l’identifiant à jour vers `mistral/mistral-small-4-2026-03-16`.
+2. Vérifiez les contrôles de raisonnement avec `none` et `high` uniquement.
+3. Relancez les tests de qualité de sortie et de schéma pour les routes à effort élevé.
+4. Comparez latence et coût avec `none` et `high` avant la migration complète.

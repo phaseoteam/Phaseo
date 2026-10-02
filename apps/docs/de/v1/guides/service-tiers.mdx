@@ -1,0 +1,184 @@
+---
+title: "Service-Stufen"
+description: "So funktionieren die Preismodi Standard, Fast, Ultrafast, Flex und Batch in Phaseo Gateway."
+icon: "gauge"
+---
+
+Service-Stufen ermöglichen die Auswahl verschiedener Abrechnungs- und Bereitstellungsmodi, sofern der Provider sie unterstützt.
+
+Die Verfügbarkeit hängt vom Provider und Modell ab. Unterstützt das angefragte Modell eine Stufe nicht, leitet das Gateway die Anfrage nicht darüber.
+
+<Note type="warning">
+Service-Stufen sind derzeit nur für unterstützte Textmodelle bei unterstützten Providern verfügbar.
+</Note>
+
+`service_tier` wird auf allen drei Textanfrage-Schnittstellen unterstützt:
+
+- Anthropic-kompatible Messages unter `/v1/messages`
+- OpenAI-kompatible Chat Completions unter `/v1/chat/completions`
+- OpenAI-kompatible Responses unter `/v1/responses`
+
+## Übersicht der Stufen
+
+| Stufe | Anforderung | Typische Verwendung |
+| --- | --- | --- |
+| `Standard` | Standardverhalten. Kein zusätzliches Feld erforderlich. | Allgemeiner Produktionsverkehr. |
+| `Fast` | Setze `service_tier: "fast"` in der Anfrage. | Schnelleres oder bevorzugtes Routing, sofern unterstützt. OpenAI akzeptiert auch `priority`. |
+| `Ultrafast` | Setze `service_tier: "ultrafast"` in der Anfrage. | Routing mit höchster Geschwindigkeit, sofern unterstützt. |
+| `Flex` | Setze `service_tier: "flex"` in der Anfrage. | Kostengünstigeres Routing, sofern unterstützt. |
+| `Batch` | Verwende die Batch-API statt `service_tier`. | Große, aufgeschobene Arbeitslasten, bei denen Latenz weniger wichtig ist. |
+
+## API-Kompatibilität
+
+Verwende dasselbe Feld `service_tier` bei allen unterstützten synchronen Text-APIs:
+
+- [Anthropic-Messages-API-Referenz](../api-reference/endpoint/anthropic-messages.mdx)
+- [Chat-Completions-API-Referenz](../api-reference/endpoint/chat-completions.mdx)
+- [Responses-API-Referenz](../api-reference/endpoint/responses.mdx)
+- [Referenz für gemeinsame Parameter](../api-reference/parameters.mdx)
+
+Zulässige Werte für `service_tier` sind `standard`, `fast`, `ultrafast`, `priority`, `flex` und `batch`. Ohne `service_tier` gilt `Standard` als Standardverhalten. Phaseo verwendet `Fast` als kanonische Bezeichnung der Premium-Stufe. Auf OpenAI-Routen wird `priority` als providerkompatibler Alias mit demselben Routing und derselben Abrechnung akzeptiert. `Batch` wird über die Batch-API und nicht über synchrone Textanfragen verarbeitet.
+
+<Note>
+Phaseo ordnet die normalisierten Gateway-Werte intern den nativen Provider-Einstellungen zu. Eine Anthropic-Route kann beispielsweise vorgelagert native Anthropic-Felder für die Stufe erhalten; die Client-Anfrage verwendet weiterhin die hier aufgeführten Gateway-Werte.
+</Note>
+
+## Standard
+
+`Standard` ist der Standard-Routingmodus. Du musst `service_tier` nicht festlegen, um ihn zu verwenden.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report."
+}
+```
+
+## Fast
+
+Nutze `Fast`, wenn du das Premium- oder Prioritätsangebot des Providers nutzen möchtest. Phaseo verwendet `fast` als providerneutrale Bezeichnung. OpenAI nennt diesen Modus Fast und akzeptiert bei unterstützten Modellen `fast` und `priority`.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "fast"
+}
+```
+
+### Anthropic-Messages-Beispiel
+
+```json
+{
+  "model": "anthropic/claude-sonnet-4",
+  "max_tokens": 512,
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "fast"
+}
+```
+
+Beim Routing zu Anthropic ordnet Phaseo dies der passenden nativen Provider-Einstellung zu.
+
+### Mistral Priority und EU-Routing
+
+Mistral Priority Tier setzt ein dafür berechtigtes Mistral-Unternehmenskonto voraus. Phaseo ordnet
+`priority` dem automatischen Prioritätsmodus von Mistral zu und berechnet die von Mistral gemeldete Stufe.
+Fällt Mistral auf Standard zurück, gilt der Standardpreis.
+
+GLM 5.2 kann mit dem Angebot `mistral-eu` an den regionalen EU-Endpunkt von Mistral gebunden werden
+des Providers:
+
+```json
+{
+  "model": "z-ai/glm-5.2",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "priority",
+  "provider": {
+    "only": ["mistral-eu"],
+    "required_execution_region": "eu"
+  }
+}
+```
+
+Für regionale Inferenz bei Mistral fällt ein Preisaufschlag von 10 % an. Batch-Preise gibt es
+beim globalen Mistral-Angebot, aber Mistral unterstützt Batch nicht an regionalen Endpunkten.
+
+Phaseo erfasst die veröffentlichten Referenzpreise für Batch und Priority getrennt
+von der Verfügbarkeit zur Laufzeit. Ein Preis im Katalog bedeutet nicht, dass die Stufe
+geroutet werden kann: Priority bleibt deaktiviert, bis die konkrete Mistral-Route
+Priority-Unterstützung meldet. Batch muss die globale Mistral Batch API verwenden. Die Priority-Berechtigung
+hängt weiterhin vom Mistral-Konto und Modell ab.
+
+## Ultrafast
+
+Nutze `Ultrafast` für die höchste Geschwindigkeit, wenn Modell und Anbieter dies anbieten. Phaseo leitet nur an eine mit Ultrafast bepreiste oder dafür bestimmte Route weiter; ist diese Stufe nicht verfügbar, wird nicht auf Fast oder Standard ausgewichen.
+
+```json
+{
+  "model": "<model-id-with-ultrafast-pricing>",
+  "input": "Summarise this incident report.",
+  "service_tier": "ultrafast"
+}
+```
+## Flex
+
+Nutze `Flex`, wenn der Provider eine günstigere Service-Stufe anbietet und du die damit verbundenen Kompromisse akzeptierst.
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": "Summarise this incident report.",
+  "service_tier": "flex"
+}
+```
+
+### Chat-Completions-Beispiel
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+### Responses-Beispiel
+
+```json
+{
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+## Batch
+
+`batch` ist ein gültiger Stufenwert für die Batch-Ausführung. Synchrone Text-APIs lehnen `service_tier: "batch"` jedoch mit einem Validierungsfehler ab, der auf die Batch-API verweist.
+
+Nutze die Batch-API oder den Batch-Job-Workflow, denn diese Abrechnung gilt für aufgeschobene Batch-Ausführungen und nicht für normale synchrone Anfragen.
+
+## Hinweise
+
+- Die Unterstützung der Stufen hängt vom Provider und Modell ab.
+- Wenn Preisdaten vorliegen, zeigen die Preiskarten auf den Modellseiten die Tarife der jeweiligen Stufe.
+- Einige Provider bieten spezielle Upstream-Angebote an, die Phaseo im Katalog in eine einheitliche Stufenauswahl überführt.
+- Die für Clients sichtbaren `service_tier`-Werte sind über unterstützte Textoberflächen hinweg vereinheitlicht. Native Provider-Bezeichnungen werden im Gateway verarbeitet.
+
+## Verwandte Seiten
+
+- [Anthropic-Messages-API-Referenz](../api-reference/endpoint/anthropic-messages.mdx)
+- [Chat-Completions-API-Referenz](../api-reference/endpoint/chat-completions.mdx)
+- [Responses-API-Referenz](../api-reference/endpoint/responses.mdx)
+- [Parameter](../api-reference/parameters.mdx)
+- [Routing und Fallbacks](./routing-and-fallbacks.mdx)
+- [Chat Completions (TypeScript-SDK)](../sdk-reference/typescript/chat-completions.mdx)
+- [Responses (TypeScript-SDK)](../sdk-reference/typescript/responses.mdx)

@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "البث"
+description: "استهلك تدفقات النص والاستدلال والعناصر ودورة الحياة لوكلاء Ruby."
+---
+
+تعيد `Agent#stream` قيمة `StreamResult` يمكن إعادة قراءتها:
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+استخدم `reasoning_stream` أو `item_stream` أو `full_stream` للحصول على طرق عرض أخرى. يستهلك Ruby تدفق المزوّد بصورة متزامنة، ثم يوفّر تسلسلات يمكن للمستهلكين الآخرين إعادة قراءتها.
+
+قيم العناصر حاليًا عبارة عن تجزئات، وليست اتحاد العناصر المميّز في TypeScript.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

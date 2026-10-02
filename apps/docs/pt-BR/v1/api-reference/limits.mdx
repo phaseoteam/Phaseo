@@ -1,0 +1,29 @@
+---
+title: "Limites de requisições"
+description: "Gerencie restrições de taxa, cotas de provedores e tentativas limitadas."
+icon: "gauge"
+---
+
+Uma requisição pode ser limitada pelo provedor selecionado ou por uma política aplicável ao espaço de trabalho ou à chave. O roteamento e as alternativas podem reduzir falhas do provedor, mas uma requisição ainda pode retornar `429`.
+
+## Limites do provedor
+
+Requisições BYOK usam os limites da sua conta no provedor. Requisições gerenciadas usam capacidade compartilhada do provedor; essa capacidade não é uma cota individual do espaço de trabalho.
+
+O Phaseo encaminha um valor validado de `Retry-After` quando o provedor para o qual a requisição foi roteada o fornece. Respostas BYOK também podem incluir cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Esses cabeçalhos de cota são omitidos em requisições gerenciadas porque descrevem capacidade compartilhada do provedor. Outros cabeçalhos de origem não são encaminhados.
+
+## Gerenciar uma requisição limitada
+
+1. Inspecione o [código de erro](./errors.mdx) para distinguir uma restrição temporária do provedor de uma restrição de política ou orçamento que exija alterações de configuração.
+2. Respeite `Retry-After` quando estiver presente. Pode ser um intervalo em segundos ou uma data HTTP; valide o valor antes de agendar uma nova tentativa.
+3. Caso contrário, use espera exponencial com variação aleatória e um intervalo máximo.
+4. Limite as novas tentativas tanto pela quantidade quanto por um prazo total. Cancele o trabalho abandonado e libere o corpo de cada resposta com falha antes de tentar novamente.
+5. Reduza a concorrência se a restrição persistir.
+
+Não repita automaticamente o envio de um trabalho com resultado incerto nem ações de ferramentas já concluídas. Uma requisição pode ter chegado ao provedor mesmo que o cliente tenha perdido a resposta; novas tentativas podem duplicar trabalho e cobranças. Para um trabalho de vídeo ou em lote aceito, use seu endpoint de status em vez de enviá-lo novamente.
+
+## Monitorar restrições de taxa
+
+Acompanhe a frequência de `429` por endpoint e modelo e inspecione a frequência das alternativas nos logs de requisições. Compare os logs da sua aplicação com as [configurações de roteamento](../guides/routing-and-fallbacks.mdx) e as cotas da conta no provedor para tráfego BYOK.
+
+Consulte os [orçamentos](./endpoint/budgets-list.mdx) e as [proteções](./endpoint/guardrails.mdx) para os controles de gastos e acesso do espaço de trabalho.

@@ -1,0 +1,14 @@
+---
+title: "Lister les points de terminaison"
+sidebarTitle: "Lister les points de terminaison"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /endpoints"
+description: "Lister les points de terminaison de la passerelle adossés à des capacités, avec leurs chemins publics et la couverture des modèles et fournisseurs."
+---
+
+- `endpoints` : les identifiants canoniques des points de terminaison actuellement exposés par l’API
+- `data` : les enregistrements des points de terminaison avec `public_path`, `collection`, `model_count` et `provider_count`
+- `sample_models` : jusqu’à 10 identifiants récents de modèles visibles dans le catalogue public
+
+Consultez [Lister les capacités des points de terminaison d’un modèle](./model-endpoints.mdx) pour obtenir des détails par fournisseur et paramètre.
+

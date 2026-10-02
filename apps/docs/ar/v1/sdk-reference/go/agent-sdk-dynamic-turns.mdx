@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "الجولات الديناميكية"
+description: "غيّر النموذج والتعليمات والأدوات وإعدادات أخذ العينات بين جولات وكيل Go."
+---
+
+تتيح عمليات الاستدعاء للجولات الديناميكية للتوجيه التفاعل مع حالة التشغيل دون إعادة إنشاء الوكيل. وتعمل قبل كل طلب للنموذج وتتلقى سياق الجولة الحالية.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+يمكنك أيضًا إعداد الأدوات الديناميكية وقيم `Temperature` و`MaxOutputTokens` و`TopP` لكل جولة.
+
+## السماح لأداة بالتأثير في الجولة التالية
+
+اضبط `NextTurn` على أداة لتغيير طلب النموذج التالي مباشرةً. تُحفظ هذه التجاوزات في الحالة الموقوفة، لذا تبقى بعد نقطة موافقة وتنتهي بعد الجولة التالية.
+
+استخدم عمليات الاستدعاء الديناميكية للسياسات التي ينبغي إعادة حسابها في كل جولة. واستخدم `NextTurn` لتسليم خاص بأداة، مثل التبديل إلى نموذج آخر بعد فحص مستودع.

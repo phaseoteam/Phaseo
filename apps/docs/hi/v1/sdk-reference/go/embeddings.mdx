@@ -1,0 +1,30 @@
+---
+icon: "binary"
+title: "एम्बेडिंग"
+description: "Go wrapper से `/embeddings` कॉल करें।"
+---
+
+Wrapper मेथड का उपयोग करें:
+
+- `client.GenerateEmbedding(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "sample text",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+

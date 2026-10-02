@@ -1,0 +1,41 @@
+---
+icon: "image"
+title: "画像生成"
+description: "TypeScript SDKで/images/generationsを呼び出します。"
+---
+
+**メソッド**: `client.generateImage()`。
+
+### 例
+```typescript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+  response_format: "url",
+});
+```
+
+### 主なパラメーター
+- `model`（必須）：画像対応モデルのID（例：`openai/gpt-image-1`）。
+- `prompt`（必須）：指示文。
+- `n`（1～10）：生成する画像の数。
+- `size`：例：`1024x1024`、`1024x1792`、`1792x1024`。
+- `quality`：`standard`または`hd`（モデルに依存）。
+- `style`：例：`vivid`または`natural`（モデルに依存）。
+- `response_format`：`url`または`b64_json`。
+- `user`：安全性や不正利用の追跡に使う任意のエンドユーザータグ。
+
+### 戻り値
+`ImageGenerationResponse`
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```

@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "Utilisez le fournisseur officiel Phaseo pour Vercel AI SDK."
+---
+
+Phaseo propose un fournisseur officiel pour Vercel AI SDK dans le package `@phaseo/ai-sdk-provider`.
+
+## Installation
+
+AI SDK 7 et l’implémentation native `ProviderV4` de Phaseo sont les valeurs par défaut des nouveaux projets :
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+Le package Phaseo sans numéro de version suit le tag `latest` de npm et sélectionne donc la version active du fournisseur compatible avec AI SDK 7. Le package déclare AI SDK 7 comme dépendance peer, installée automatiquement par npm.
+
+### Branche de maintenance d’AI SDK 6
+
+AI SDK 6 utilise l’ancien contrat `ProviderV3`. Installez sa version de compatibilité balisée :
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+Phaseo provider 1.x restera en maintenance tant qu’AI SDK 7 sera la version actuelle. Lorsque AI SDK 8 sera stable, Phaseo marquera la branche 1.x comme obsolète sur npm. Cette dépréciation ne supprimera pas les versions existantes ; toute décision ultérieure de fin de support sera annoncée séparément.
+
+### Compatibilité avec AI SDK 5
+
+AI SDK 5 accepte l’ancien contrat `ProviderV2`. Installez la version de compatibilité dédiée de Phaseo :
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+Si votre gestionnaire de packages n’installe pas automatiquement les dépendances peer, installez séparément la version majeure correspondante de `ai` (`ai@^7`, `ai@^6` ou `ai@^5`).
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+La branche v5 prend en charge la génération et la diffusion de texte, les outils, la sortie structurée, les embeddings, les images, la transcription et la parole. Le reclassement standardisé est disponible dans les contrats fournisseur d’AI SDK 6 et 7.
+
+## Utilisation de base
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## Fonctionnalités prises en charge par AI SDK 7
+
+Provider 2.x implémente et teste les contrats natifs v4 d’AI SDK 7 pour :
+
+- la génération et la diffusion de texte
+- les paramètres de raisonnement indépendants du fournisseur et la sortie de raisonnement
+- les outils de fonction standard, les entrées d’outil diffusées et les échanges de résultats d’outil
+- la sortie structurée JSON et JSON Schema
+- les entrées de fichiers texte et image au format balisé des données de fichier de V7
+- les sources de citation d’URL
+- les embeddings et la génération d’images
+- le reclassement
+- la transcription et la génération vocale
+- les métadonnées du fournisseur, l’utilisation, les en-têtes de requête, les signaux d’annulation et les fragments bruts du flux
+
+Utilisez les identifiants de modèle du [point de terminaison des modèles](../../api-reference/endpoint/models.mdx). Les capacités disponibles dépendent aussi du modèle sélectionné et du fournisseur amont.
+
+## Reclassement et limites de compatibilité
+
+Le reclassement est accessible via l’assistant `rerank()` d’AI SDK et `phaseo.rerankingModel(modelId)`. Les capacités de ProviderV4 qui nécessitent des fonctionnalités de l’API Phaseo non exposées actuellement ne sont pas annoncées : téléversements et références de fichiers gérés, compétences, définitions ou résultats d’outils exécutés par le fournisseur, ou réponses d’approbation associées. Les outils de fonction exécutés par l’application continuent d’utiliser le flux normal d’exécution et d’approbation d’AI SDK. Les parties de prompt personnalisées ou propres à un fournisseur qui ne sont pas prises en charge renvoient une erreur explicite au lieu d’être ignorées silencieusement.
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

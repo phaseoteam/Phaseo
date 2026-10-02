@@ -1,0 +1,37 @@
+---
+icon: "brain-circuit"
+title: "Modèles"
+description: "Listez les modèles avec le wrapper Go."
+---
+
+Utilisez la méthode du wrapper :
+
+- `client.GetModels(ctx, query)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider": "anthropic",
+  "provider_status": "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status": "coming_soon,internal_testing",
+  "availability": "all",
+  "limit": "10",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(models)
+```
+
+Les clés de requête prises en charge comprennent `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit` et `offset`.
+
+Utilisez `provider_availability_reason` avec `availability=all` pour obtenir des états de déploiement comme `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` ou `soft_blocked`. Utilisez `capability_status` avec `availability=all` pour obtenir des correspondances d’endpoints non routables comme `coming_soon` ou `internal_testing`.
+

@@ -1,0 +1,23 @@
+---
+icon: "layers"
+title: "नतीजों और आइटम के साथ काम करना"
+description: "मैसेज, स्टेप, टूल और provider events से Java रन टाइमलाइन बनाएँ।"
+---
+
+`RunResult` को Java एजेंट का स्थायी परिणाम मानें। इसमें रन रिकॉर्ड, सहेजे गए मैसेज, स्टेप रिकॉर्ड, सामान्यीकृत usage और लागत, चेतावनियाँ, समाप्ति के कारण और अंतिम आउटपुट शामिल हैं।
+
+`StreamResult.fullStream()` में model, tool, step और run events के साथ provider-item events भी शामिल होते हैं। Java अभी provider items को सामान्य object के रूप में देता है, TypeScript के discriminated union `AgentItem` के रूप में नहीं।
+
+product timeline बनाने के लिए:
+
+1. रन सक्रिय रहने पर `textStream()` का टेक्स्ट दिखाएँ।
+2. tool lifecycle events से tool cards दिखाएँ।
+3. पूरा हुआ `RunResult` सहेजें।
+4. सहेजे गए मैसेज और स्टेप से अंतिम timeline दोबारा बनाएँ।
+
+provider-विशिष्ट item data को application adapter के पीछे रखें, ताकि provider format का बदलाव बाकी UI को प्रभावित न करे।
+
+## संबंधित विषय
+
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)

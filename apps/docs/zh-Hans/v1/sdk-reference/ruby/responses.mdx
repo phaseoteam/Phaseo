@@ -1,0 +1,35 @@
+---
+icon: "message-square"
+title: "响应"
+description: "使用 C# SDK 调用 Responses API。"
+---
+
+**方法**：`client.generate_response(...)`、`client.create_response(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+resp = client.create_response(
+  "model" => "openai/gpt-4.1",
+  "input" => [{ "role" => "user", "content" => [{ "type" => "input_text", "text" => "Summarise this text" }] }],
+  "temperature" => 0.7
+)
+```
+
+### 关键参数
+- `model`（必填）：目标模型 ID。
+- `input`（必填）：按顺序排列的输入项数组，例如消息和工具调用。
+- `temperature`（0–2）：值越高，随机性越强。
+- `top_p`（0–1）/ `top_k`（>=1）：核采样和前 k 个候选项采样控制。
+- `max_output_tokens`（整数）：每个响应生成令牌数的硬上限；使用 `max_output_tokens_per_message` 限制每条消息。
+- 工具：`tools`（定义）、`tool_choice`（自动/无/指定工具）、`max_tool_calls`（整数）、`parallel_tool_calls`（布尔值）。
+- 对数概率：`logprobs`（布尔值）、`top_logprobs`（0–20），用于返回每个令牌的对数概率。
+- 输出：`response_format`（json/text）、`service_tier`、`store`（布尔值）、`stream`（布尔值）。
+- 元数据：`metadata`（透传对象）、`reasoning`（用于设置推理力度的对象）。
+- 网关附加项：`usage`（布尔值，用于请求用量）、`meta`（布尔值，用于包含 meta 块）。
+
+### 返回值
+`ResponsesResponse`

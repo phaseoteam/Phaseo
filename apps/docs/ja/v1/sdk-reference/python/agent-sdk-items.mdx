@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "結果と項目の扱い"
+description: "メッセージ、ステップ、ツール、ストリーミング項目からPythonの実行タイムラインを構築します。"
+---
+
+`AgentRunResult`には、永続的な実行状態、メッセージ、ステップ、使用量とコスト、警告、終了理由、最終出力が含まれます。
+
+回答テキストには`text_stream()`、プロバイダーやランタイムの項目には`item_stream()`を使います。Pythonの項目は現在辞書形式であり、TypeScriptの判別可能なユニオン型`AgentItem`ではありません。
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+プロバイダー固有の辞書へのアクセスはアプリケーションアダプター1つにまとめ、完了した結果を保存して後で再構築できるようにします。
+
+## 関連項目
+
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)

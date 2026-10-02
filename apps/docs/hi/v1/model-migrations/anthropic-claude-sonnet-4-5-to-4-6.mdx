@@ -1,0 +1,69 @@
+---
+title: "Anthropic Claude Sonnet 4.6"
+description: "Coding, computer use और agent planning के लिए Claude Sonnet 4.6 अपनाने की जानकारी।"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Sonnet 4.6
+
+Production में `anthropic/claude-sonnet-4.6` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+
+Sonnet 4.6, Claude 4.6 family जैसा migration तरीका साझा करता है, लेकिन इसका performance profile इतना बदलता है कि prompts और routing के बारे में धारणाएँ फिर जाँचनी चाहिए।
+
+## नया क्या है
+
+- Claude 4.6 models assistant prefills सपोर्ट नहीं करते और `400` लौटाते हैं।
+- Structured output अब `output_format` के बजाय `output_config.format` इस्तेमाल करता है।
+- Adaptive thinking अब `output_config.effort` से सेट होती है।
+- पुराने beta headers हटाएँ।
+- Sonnet 4.6 कोडिंग, कंप्यूटर उपयोग, लंबे संदर्भ पर तर्क, एजेंट योजना और निर्देशों का पालन—इन सभी में बड़ा सुधार है।
+- Sonnet 4.6 beta में 1M-token context window जोड़ता है।
+
+## माइग्रेशन quickstart
+
+### 1. Assistant prefills का उपयोग बंद करें
+
+अगर Sonnet 4.5 prompts assistant turn की शुरुआत JSON prefix, XML tag या formatting stub से करते हैं, तो rollout से पहले यह तरीका हटाएँ।
+
+### 2. Structured-output config बदलें
+
+`output_format` को `output_config.format` से बदलें और schema या parser tests फिर चलाएँ।
+
+### 3. Effort और latency expectations फिर tune करें
+
+Interactive routes में 4.6 को default बनाने से पहले अलग-अलग `effort` levels benchmark करें। मॉडल अधिक सक्षम है, लेकिन सबसे अच्छा स्तर आपके latency budget पर निर्भर है।
+
+## क्या जाँचें
+
+### आउटपुट व्यवहार
+
+- फ़ॉर्मैटिंग पर निर्भर प्रॉम्प्ट में निर्देशों का पालन।
+- बहु-चरणीय कार्यों में एजेंट की योजना बनाने की गुणवत्ता।
+- कोडिंग, रीफ़ैक्टरिंग और समीक्षा के प्रॉम्प्ट।
+- लंबे संदर्भ से जानकारी निकालना और सारांश बनाना।
+
+### कॉन्ट्रैक्ट की स्थिरता
+
+- JSON और स्कीमा सत्यापन की सफलता दर।
+- tool arguments की पूर्णता।
+- समाप्ति कारणों और खाली आउटपुट को संभालना।
+- वे रूट जो स्थिर फ़ॉर्मैटिंग के लिए पहले से भरे प्रॉम्प्ट पर निर्भर थे।
+
+### प्रोडक्शन मेट्रिक्स
+
+- हर effort level पर latency।
+- Sonnet 4.5 की तुलना में task success।
+- timeout और retry rates।
+- सफल task की लागत।
+
+## सुरक्षित rollout
+
+1. प्रीफ़िल हटाएँ और संरचित-आउटपुट कॉन्फ़िगरेशन पहले अपडेट करें।
+2. मौजूदा प्रोडक्शन प्रॉम्प्ट सेट पर Sonnet 4.6 का मूल्यांकन करें।
+3. Sonnet 4.5 या किसी स्थिर रूट को फ़ॉलबैक रखते हुए ट्रैफ़िक को चरणबद्ध रूप से आज़माएँ।
+4. Quality और contract stability बनी रहने पर ही traffic बढ़ाएँ।
+
+## स्रोत
+
+- [Anthropic माइग्रेशन गाइड](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Sonnet 4.6 का परिचय](https://www.anthropic.com/news/claude-sonnet-4-6)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import {
 	CheckCheck,
@@ -66,6 +67,7 @@ type ChatSelectionToolbarProps = {
 };
 
 export function ChatSelectionToolbar({ onAction }: ChatSelectionToolbarProps) {
+	const t = useTranslations("Product.chat.selectionActions");
 	const [selection, setSelection] = useState<SelectionState | null>(null);
 	const [position, setPosition] = useState({ left: 0, top: 0 });
 	const selectingWithPointerRef = useRef(false);
@@ -142,25 +144,25 @@ export function ChatSelectionToolbar({ onAction }: ChatSelectionToolbarProps) {
 			ref={toolbarRef}
 			data-chat-selection-toolbar
 			role="toolbar"
-			aria-label="Actions for selected assistant text"
+			aria-label={t("ariaLabel")}
 			className="fixed z-50 flex max-w-[calc(100vw-1.5rem)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
 			style={{ left: position.left, top: position.top }}
 			onPointerDown={(event) => event.preventDefault()}
 		>
 			<Button size="xs" variant="ghost" onClick={() => applyAction("explain")}>
-				<MessageCircleQuestion /> Explain
+				<MessageCircleQuestion /> {t("explain")}
 			</Button>
 			<Button size="xs" variant="ghost" onClick={() => applyAction("improve")}>
-				<Sparkles /> Improve
+				<Sparkles /> {t("improve")}
 			</Button>
 			<Button size="xs" variant="ghost" onClick={() => applyAction("shorten")}>
-				<Scissors /> Shorten
+				<Scissors /> {t("shorten")}
 			</Button>
 			<Button size="xs" variant="ghost" onClick={() => applyAction("change-tone")}>
-				<SlidersHorizontal /> Change tone
+				<SlidersHorizontal /> {t("changeTone")}
 			</Button>
 			<Button size="xs" variant="ghost" onClick={() => applyAction("fix-grammar")}>
-				<CheckCheck /> Fix grammar
+				<CheckCheck /> {t("fixGrammar")}
 			</Button>
 		</div>,
 		document.body,

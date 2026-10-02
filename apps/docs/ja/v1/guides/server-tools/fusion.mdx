@@ -1,0 +1,69 @@
+---
+icon: "workflow"
+title: "Fusionサーバーツール"
+description: "複数の分析モデルを実行し、その結果をまとめます。"
+---
+
+複数の独立したモデルの視点が役立つ回答には、`phaseo:fusion`を使います。Phaseoは分析モデルを並列実行し、選択した分析モデルに各結果をまとめさせて、呼び出し元のモデルに返します。
+
+## Playgroundでの設定
+
+Playgroundのサーバーツールメニューでは、Fusionの次の項目を選べます。
+
+- リクエストを個別に検討する分析モデル
+- 分析結果を比較する任意の判定モデル
+- Fusionアドバイザーツールの最大ツール呼び出し回数
+
+メインモデルは同じツールループ内で名前付きアドバイザーを参照でき、最終回答の前にその結果を使えます。
+
+## APIの形式
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:fusion",
+      "parameters": {
+        "analysis_models": ["anthropic/claude-opus-5", "openai/gpt-5"],
+        "model": "google/gemini-pro-latest",
+        "instructions": "Reconcile disagreements and return concise synthesis guidance.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## Fusionを使う場面
+
+Fusionは次の用途に適しています。
+
+- 2つ目や3つ目のモデルが見落とした前提に気付く可能性のある計画上の判断
+- モデルによって証拠の評価が異なる研究結果の統合
+- 独立した批評が必要なコードやアーキテクチャのレビュー
+- わずかなレイテンシ増加を許容できる重要な回答
+
+レビューが1回だけ必要なら、代わりにAdvisorを1つ使います。
+
+## 使用量と料金
+
+Fusionの呼び出しごとに次の値が加算されます。
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "fusion_requests": 1
+    }
+  }
+}
+```
+
+アドバイザーモデルのトークンは合計使用量に含まれ、選択した各モデルの料金で課金されます。サーバーツールの料金には`server_tool_advisor_requests`メーターも使用できます。
+
+## 関連項目
+
+- [Advisor](./advisor.mdx)
+- [サブエージェント](./subagent.mdx)
+- [サーバーツール](./index.mdx)

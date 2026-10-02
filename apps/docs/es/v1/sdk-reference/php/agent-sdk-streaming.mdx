@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Transmisión"
+description: "Consume flujos de texto, razonamiento, elementos y ciclo de vida de agentes PHP."
+---
+
+`Agent::stream(...)` devuelve `AgentStreamResult`:
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+Usa `reasoningStream()`, `itemStream()` o `fullStream()` para obtener otras proyecciones. Cada iterable se puede volver a recorrer después de consumir los eventos del flujo síncrono del proveedor.
+
+Los valores de elementos de PHP siguen siendo arrays y objetos genéricos, no la unión de elementos discriminada de TypeScript.
+
+## Relacionado
+
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Observabilidad y DevTools](./agent-sdk-observability.mdx)

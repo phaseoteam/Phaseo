@@ -1,0 +1,90 @@
+---
+icon: "braces"
+title: "APIリファレンス"
+description: "TypeScript Agent SDKのエントリーポイント、メソッド、オプション、結果型を確認できます。"
+---
+
+Agent SDKの使い方を把握したうえで、正確な公開エントリーポイントやオプションを確認する場合に使います。
+
+## エントリーポイント
+
+| エクスポート | 用途 |
+| --- | --- |
+| `createAgent(definition)` | エージェントと既定のランタイム動作を定義する |
+| `defineTool(definition)` | 検証付きのローカルツール、手動ツール、承認が必要なツール、進捗を返すツールを定義する |
+| `tool(definition)` | `defineTool()`の短縮エイリアス |
+| `createGatewayAgentClient(options)` | Phaseo Gateway経由でモデルターンを実行する |
+| `createAgentDevtools(options)` | ローカルでの実行記録を有効にする |
+
+## エージェントのメソッド
+
+| メソッド | 戻り値 | 用途 |
+| --- | --- | --- |
+| `agent.run(options)` | `Promise<AgentRunResult>` | 完了、一時停止、停止、キャンセル、または失敗まで実行する |
+| `agent.stream(options)` | `AgentStreamResult` | 再生可能なストリームコンシューマーを使って同じループを開始する |
+| `agent.continueRun(options)` | `Promise<AgentRunResult>` | 保存済みまたは一時停止中の状態を判断や人間の入力で続行する |
+
+## ストリームコンシューマー
+
+| メソッド | 値 |
+| --- | --- |
+| `getResult()` | 完了した`AgentRunResult` |
+| `getText()` | 完全な最終テキスト |
+| `getTextStream()` | テキストの差分 |
+| `getReasoningStream()` | モデルから提供された場合の推論差分 |
+| `getItemsStream()` | 型付きの`AgentItem<TOutput>`値 |
+| `getToolStream()` | ツールのライフサイクルイベント |
+| `getFullStream()` | Agent SDKの完全なイベントストリーム |
+| `cancel(reason?)` | 実行中のランをキャンセルする |
+
+## 定義オプション
+
+`AgentDefinition`には次が含まれます。
+
+- `id`
+- `model`または`models`
+- `preset`
+- `instructions`
+- `tools`
+- `maxSteps`と`stopWhen`
+- `modelRetry`と`toolExecution`
+- `temperature`、`maxOutputTokens`、`topP`
+- `parseOutput`と`outputSchema`
+- `requireApproval`と`humanReview`
+
+モデル、指示、サンプリングの各フィールドには固定値または動的な値を指定できます。
+
+## 実行と再開のオプション
+
+`AgentRunOptions`では、入力、モデルクライアント、アプリケーションコンテキスト、任意の上書き、キャンセル、ライフサイクルフック、DevTools、アプリケーションが管理する状態アクセサーを指定します。
+
+`AgentContinueOptions`ではさらに次を指定できます。
+
+- 前回の`run`または`runId`
+- `humanInput`
+- 正確なツール呼び出しIDによる承認と拒否
+- 外部で生成された`toolOutputs`
+
+## 結果レコード
+
+`AgentRunResult`には次が含まれます。
+
+- `run`: 永続化された実行状態、コンテキスト、一時停止の詳細、停止理由
+- `steps`: 保存済みのモデルおよびツールのステップ記録
+- `stepResults`: 利用可能な場合は正規化されたステップ結果
+- `usage`: 累積トークン数と報告されたコスト
+- `output`: 解析済みの最終出力
+- `messages`: ループで使用された会話全体
+- `items`: 順序付きの型付きメッセージ、推論、ツールのアクティビティ、エラー、最終出力
+
+## エラー型
+
+- `AgentGatewayError` Gatewayまたは上流へのリクエストの失敗を表します。
+- `AgentSchemaValidationError` 無効なツール、進捗、または最終出力データを表します。
+
+## 関連ガイド
+
+- [最初のエージェントを作成する](./agent-sdk.mdx)
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [アイテムの操作](./agent-sdk-items.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-events-and-errors.mdx)

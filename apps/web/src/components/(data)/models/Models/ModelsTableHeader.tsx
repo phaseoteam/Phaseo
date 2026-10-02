@@ -26,6 +26,7 @@ import {
 import { featureLabels } from "@/lib/config/featureLabels";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];
@@ -35,20 +36,17 @@ interface ModelsTableHeaderProps {
 	allStatuses: string[];
 }
 
-function formatModalityLabel(value: string): string {
+function formatModalityLabel(
+	value: string,
+	labels: Record<string, string>,
+): string {
 	const normalized = String(value ?? "")
 		.trim()
 		.toLowerCase();
-	if (
-		normalized === "realtime" ||
-		normalized === "audio.realtime" ||
-		normalized === "audio/realtime"
-	) {
-		return "Real-time";
+	const localeKey = normalized.replace(/[./-]+/g, "_");
+	if (labels[normalized] ?? labels[localeKey]) {
+		return labels[normalized] ?? labels[localeKey];
 	}
-	if (normalized === "audio_stt") return "Transcription";
-	if (normalized === "audio_tts") return "Speech";
-	if (normalized === "audio_music") return "Music";
 	return value
 		.replace(/[_-]+/g, " ")
 		.trim()
@@ -62,8 +60,53 @@ export default function ModelsTableHeader({
 	allTiers,
 	allStatuses,
 }: ModelsTableHeaderProps) {
+	const t = useTranslations("Catalogue.models");
+	const tDetail = useTranslations("Catalogue.modelDetail");
 	const pathname = usePathname();
 	const isTable = pathname?.includes("/models/table");
+	const modalityLabels: Record<string, string> = {
+		realtime: t("filtersUi.modalityRealtime"),
+		audio_realtime: t("filtersUi.modalityRealtime"),
+		audio_stt: t("filtersUi.modalityTranscription"),
+		audio_tts: t("filtersUi.modalitySpeech"),
+		audio_music: t("filtersUi.modalityMusic"),
+		text: tDetail("sections.text"),
+		image: tDetail("sections.image"),
+		audio: tDetail("sections.audio"),
+		video: tDetail("sections.video"),
+		embedding: tDetail("sections.embedding"),
+		embeddings: tDetail("sections.embeddings"),
+		file: t("filtersUi.modalityFile"),
+		rerank: t("filtersUi.modalityRerank"),
+	};
+	const featureTranslationKeys: Record<string, string> = {
+		reasoning: t("filtersUi.featureReasoning"),
+		tools: t("filtersUi.featureTools"),
+		structured_outputs: t("filtersUi.featureStructuredOutputs"),
+		web_search: t("filtersUi.featureWebSearch"),
+		free: t("filtersUi.featureFree"),
+	};
+	const tierTranslationKeys: Record<string, string> = {
+		standard: t("filtersUi.tierStandard"),
+		batch: t("filtersUi.tierBatch"),
+		free: t("filtersUi.tierFree"),
+		flex: t("filtersUi.tierFlex"),
+		priority: t("filtersUi.tierPriority"),
+	};
+	const formatStatus = (value: string) => {
+		const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+		const statusLabels: Record<string, string> = {
+			active: t("filtersUi.activeGateway"),
+			coming_soon: t("filtersUi.comingSoon"),
+			inactive: t("filtersUi.notActive"),
+			not_active: t("filtersUi.notActive"),
+			deranked_lvl1: t("filtersUi.statusDeranked1"),
+			deranked_lvl2: t("filtersUi.statusDeranked2"),
+			deranked_lvl3: t("filtersUi.statusDeranked3"),
+			disabled: t("filtersUi.statusDisabled"),
+		};
+		return statusLabels[normalized] ?? value;
+	};
 
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -119,7 +162,7 @@ export default function ModelsTableHeader({
 		<>
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
 				<div className="flex items-center w-full md:w-auto">
-					<h1 className="font-bold text-xl mb-2 md:mb-0">Models</h1>
+					<h1 className="font-bold text-xl mb-2 md:mb-0">{t("title")}</h1>
 
 					{/* Mobile: tabs next to the title */}
 					<div className="ml-2 md:hidden">
@@ -135,13 +178,13 @@ export default function ModelsTableHeader({
 										<Link
 											href="/models"
 											prefetch={false}
-											aria-label="Card view"
+											aria-label={t("cardView")}
 										>
 											<GridIcon className="h-4 w-4" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">Card view</TooltipContent>
+								<TooltipContent side="top">{t("cardView")}</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -155,13 +198,13 @@ export default function ModelsTableHeader({
 										<Link
 											href="/models/table"
 											prefetch={false}
-											aria-label="Table view"
+											aria-label={t("tableView")}
 										>
 											<TableIcon className="h-4 w-4" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">Table view</TooltipContent>
+								<TooltipContent side="top">{t("tableView")}</TooltipContent>
 							</Tooltip>
 						</div>
 					</div>
@@ -170,7 +213,7 @@ export default function ModelsTableHeader({
 				<div className="relative w-full md:w-1/5">
 					<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
 					<Input
-						placeholder="Search models..."
+						placeholder={t("searchPlaceholder")}
 						value={search}
 						onChange={(e) =>
 							setSearch(e.target.value || "", {
@@ -192,7 +235,7 @@ export default function ModelsTableHeader({
 							<PopoverTrigger asChild>
 								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
-									Endpoint
+									{t("filtersUi.endpoints")}
 									{(selectedEndpoints.length > 0 ||
 										selectedStatuses.length > 0) && (
 										<Badge
@@ -207,7 +250,7 @@ export default function ModelsTableHeader({
 							<PopoverContent className="w-56">
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<h4 className="font-medium">Endpoints</h4>
+										<h4 className="font-medium">{t("filtersUi.endpoints")}</h4>
 										{allEndpoints.map((endpoint) => (
 											<div
 												key={endpoint}
@@ -239,7 +282,7 @@ export default function ModelsTableHeader({
 										))}
 									</div>
 									<div className="space-y-2">
-										<h4 className="font-medium">Status</h4>
+										<h4 className="font-medium">{t("filtersUi.status")}</h4>
 										{allStatuses.map((status) => (
 											<div key={status} className="flex items-center space-x-2">
 												<Checkbox
@@ -262,7 +305,7 @@ export default function ModelsTableHeader({
 													htmlFor={`status-${status}`}
 													className="text-sm capitalize"
 												>
-													{status}
+													{formatStatus(status)}
 												</label>
 											</div>
 										))}
@@ -276,7 +319,7 @@ export default function ModelsTableHeader({
 							<PopoverTrigger asChild>
 								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
-									Modalities
+									{t("filtersUi.modalities")}
 									{(selectedInputModalities.length > 0 ||
 										selectedOutputModalities.length > 0) && (
 										<Badge
@@ -292,7 +335,7 @@ export default function ModelsTableHeader({
 							<PopoverContent className="w-56">
 								<div className="space-y-4">
 									<div className="space-y-2">
-										<h4 className="font-medium">Input Modalities</h4>
+										<h4 className="font-medium">{t("filtersUi.inputModalities")}</h4>
 										{allModalities.map((modality) => (
 											<div
 												key={`input-${modality}`}
@@ -320,13 +363,13 @@ export default function ModelsTableHeader({
 													htmlFor={`input-modality-${modality}`}
 													className="text-sm"
 												>
-													{formatModalityLabel(modality)}
+													{formatModalityLabel(modality, modalityLabels)}
 												</label>
 											</div>
 										))}
 									</div>
 									<div className="space-y-2">
-										<h4 className="font-medium">Output Modalities</h4>
+										<h4 className="font-medium">{t("filtersUi.outputModalities")}</h4>
 										{allModalities.map((modality) => (
 											<div
 												key={`output-${modality}`}
@@ -354,7 +397,7 @@ export default function ModelsTableHeader({
 													htmlFor={`output-modality-${modality}`}
 													className="text-sm"
 												>
-													{formatModalityLabel(modality)}
+													{formatModalityLabel(modality, modalityLabels)}
 												</label>
 											</div>
 										))}
@@ -368,7 +411,7 @@ export default function ModelsTableHeader({
 							<PopoverTrigger asChild>
 								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
-									Features
+									{t("filtersUi.features")}
 									{selectedFeatures.length > 0 && (
 										<Badge
 											variant="secondary"
@@ -381,7 +424,7 @@ export default function ModelsTableHeader({
 							</PopoverTrigger>
 							<PopoverContent className="w-56">
 								<div className="space-y-2">
-									<h4 className="font-medium">Features</h4>
+										<h4 className="font-medium">{t("filtersUi.features")}</h4>
 									{allFeatures.map((feature) => (
 										<div key={feature} className="flex items-center space-x-2">
 											<Checkbox
@@ -398,7 +441,7 @@ export default function ModelsTableHeader({
 												}}
 											/>
 											<label htmlFor={`feature-${feature}`} className="text-sm">
-												{featureLabels[feature] ?? feature}
+												{featureTranslationKeys[feature] ?? featureLabels[feature] ?? feature}
 											</label>
 										</div>
 									))}
@@ -411,7 +454,7 @@ export default function ModelsTableHeader({
 							<PopoverTrigger asChild>
 								<Button variant="outline" size="sm" className="h-8">
 									<Filter className="h-4 w-4 mr-2" />
-									Tier
+									{t("filtersUi.tier")}
 									{!isDefaultTiers && (
 										<Badge
 											variant="secondary"
@@ -424,7 +467,7 @@ export default function ModelsTableHeader({
 							</PopoverTrigger>
 							<PopoverContent className="w-56">
 								<div className="space-y-2">
-									<h4 className="font-medium">Pricing Tiers</h4>
+										<h4 className="font-medium">{t("filtersUi.pricingTiers")}</h4>
 									{allTiers.map((tier) => {
 										const tierMeta = getTierFilterMeta(tier);
 										const TierIcon = tierMeta.icon;
@@ -455,7 +498,7 @@ export default function ModelsTableHeader({
 															checked && tierMeta.iconClassName,
 														)}
 													/>
-													{tier}
+													{tierTranslationKeys[tier.toLowerCase()] ?? tier}
 												</label>
 											</div>
 										);
@@ -486,7 +529,7 @@ export default function ModelsTableHeader({
 								}}
 								className="h-8"
 							>
-								Clear Filters
+								{t("filtersUi.clearFilters")}
 							</Button>
 						)}
 					</div>
@@ -505,13 +548,13 @@ export default function ModelsTableHeader({
 										<Link
 											href="/models"
 											prefetch={false}
-											aria-label="Card view"
+											aria-label={t("cardView")}
 										>
 											<GridIcon className="h-4 w-4" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">Card view</TooltipContent>
+								<TooltipContent side="top">{t("cardView")}</TooltipContent>
 							</Tooltip>
 
 							<Tooltip>
@@ -525,13 +568,13 @@ export default function ModelsTableHeader({
 										<Link
 											href="/models/table"
 											prefetch={false}
-											aria-label="Table view"
+											aria-label={t("tableView")}
 										>
 											<TableIcon className="h-4 w-4" />
 										</Link>
 									</Button>
 								</TooltipTrigger>
-								<TooltipContent side="top">Table view</TooltipContent>
+								<TooltipContent side="top">{t("tableView")}</TooltipContent>
 							</Tooltip>
 						</div>
 					</div>

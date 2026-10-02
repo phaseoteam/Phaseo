@@ -1,0 +1,282 @@
+---
+title: "Enrutamiento y alternativas"
+description: "Cómo Gateway selecciona proveedores y mantiene la fiabilidad de las solicitudes."
+icon: "git-branch"
+---
+
+Phaseo Gateway dirige cada solicitud a un proveedor que puede servir el modelo elegido. Si un proveedor responde con lentitud, limita la tasa o devuelve errores, Gateway puede intentar alternativas para que las solicitudes se completen.
+
+## Elige un modo de enrutamiento
+
+Empieza con `balanced`, salvo que un requisito de producción sea claramente más importante que los demás.
+
+| Modo | Úsalo cuando |
+| --- | --- |
+| `balanced` | Busques un equilibrio práctico entre precio, latencia, rendimiento y disponibilidad. |
+| `price` | Reducir el coste del proveedor sea más importante que minimizar el tiempo de respuesta. |
+| `latency` | La rapidez con que empieza la respuesta sea el requisito principal. |
+| `throughput` | Lo más importante sea mantener una alta velocidad de generación de tokens. |
+
+Configura el valor predeterminado del espacio de trabajo en **Panel -> Ajustes -> Enrutamiento**. Usa preajustes cuando un flujo de trabajo necesite una política de proveedor o modelo más específica que el valor predeterminado del espacio.
+
+### Sufijos de enrutamiento de modelos
+
+Añade un sufijo de enrutamiento cuando quieras que el propio ID del modelo determine el modo de optimización de esa solicitud:
+
+| Sufijo | Modo de enrutamiento |
+| --- | --- |
+| `:nitro` | `throughput` |
+| `:cheap` | `price` |
+| `:fast` | `latency` |
+
+Por ejemplo, `openai/gpt-5-mini:nitro` prioriza el rendimiento. Un sufijo reconocido tiene prioridad sobre `routing.mode` o `provider.sort` de la solicitud, y sobre los modos de enrutamiento del preajuste y del espacio de trabajo. Siguen aplicándose otras restricciones, como las listas de proveedores permitidos, los requisitos regionales, los guardrails y los límites máximos de precio.
+
+## Cómo funciona el enrutamiento
+
+- Envías una solicitud con un ID de modelo.
+- Gateway evalúa el estado, la latencia y las capacidades de los proveedores.
+- Selecciona un proveedor y ejecuta la solicitud.
+
+Para depurar el enrutamiento, consulta los resultados de las solicitudes en los registros de actividad y en los metadatos de la respuesta.
+
+## Selecciona un modelo con el enrutador automático
+
+El enrutamiento automático es una función alfa disponible actualmente solo para determinados espacios de trabajo.
+
+Usa `phaseo/auto` cuando el modelo deba adaptarse a la carga de trabajo. Phaseo parte de todos los modelos de texto aptos para producción, aplica las restricciones del espacio de trabajo y crea una lista breve específica para la carga:
+
+1. Abre **Panel -> Ajustes -> Enrutamiento -> Enrutamiento automático**.
+2. Elige si quieres optimizar el equilibrio entre rendimiento, calidad, coste o latencia.
+3. Selecciona un perfil de gasto Económico, Estándar, Premium o sin restricciones. Antes de puntuar, estos perfiles aplican límites fijos al precio de entrada y de salida.
+4. Si quieres, limita los modelos aptos con patrones como `anthropic/*`, `openai/gpt-5.*` o un ID de modelo exacto.
+5. Elige si Phaseo puede probar los modelos restantes según su clasificación después de un fallo recuperable.
+6. Guarda la configuración.
+
+Así, las aplicaciones pueden activar esta función sin copiar la política de enrutamiento del espacio de trabajo en cada solicitud:
+
+```json
+{
+  "model": "phaseo/auto",
+  "input": "Review this TypeScript function for correctness."
+}
+```
+
+La solicitud no puede cambiar el objetivo del espacio de trabajo, el perfil de gasto ni los patrones de modelos. Las solicitudes con un modelo fijo siguen omitiendo el enrutador automático.
+
+El objetivo cambia la importancia relativa de la calidad del modelo, la fiabilidad del proveedor, la latencia y el precio:
+
+| Objetivo | Úsalo cuando |
+| --- | --- |
+| `balanced` | Quieras un valor predeterminado práctico que tenga en cuenta las cuatro señales. |
+| `quality` | El rendimiento en las pruebas de referencia pertinentes sea lo más importante. |
+| `cost` | El menor precio estimado de los tokens de entrada y salida sea lo más importante. |
+| `latency` | Lo más importante sea reducir la latencia reciente del proveedor. |
+
+Los perfiles de gasto aplican límites estrictos de precio del nivel estándar, en USD por cada millón de tokens de texto:
+
+| Perfil de gasto | Precio máximo de entrada | Precio máximo de salida |
+| --- | ---: | ---: |
+| Económico | $0.10 | $0.50 |
+| Estándar | $0.30 | $1.50 |
+| Premium | $1 | $5 |
+| Cualquier precio | Sin límite | Sin límite |
+
+Los límites personalizados permiten fijar directamente los topes de entrada y salida. Los modelos sin precios estándar de texto conocidos no se incluyen en el conjunto de candidatos gestionados.
+
+En cada solicitud `phaseo/auto`, Phaseo crea una solicitud hija normal de Gateway a un modelo clasificador de bajo coste fijado. La solicitud hija usa el mismo espacio de trabajo y la misma identidad de facturación, aparece por separado en los registros y se etiqueta con `purpose=auto_routing_classifier` y el ID de la solicitud principal. El clasificador devuelve una combinación estructurada de tipos de carga de trabajo, una puntuación de complejidad y un valor de confianza; nunca selecciona directamente un modelo.
+
+Los datos firmes de la solicitud, como las herramientas y la salida estructurada, se incluyen como metadatos de confianza. Si la solicitud al clasificador falla, vence por tiempo de espera o devuelve datos no válidos, Phaseo recurre al clasificador local determinista de código, razonamiento, uso de herramientas, salida estructurada, traducción, resumen o uso general, en lugar de fallar la solicitud de generación.
+
+La complejidad del clasificador representa la capacidad mínima del modelo que probablemente permita obtener una respuesta aceptable y fiable. Phaseo aplica un margen de capacidad y combina la adecuación a las pruebas de referencia con el objetivo del espacio de trabajo, el precio, la latencia, el estado del proveedor y la fiabilidad. La solicitud del clasificador y la solicitud de generación seleccionada se contabilizan por separado mediante el flujo normal de Gateway.
+
+Antes de puntuar, todos los modelos permitidos deben superar las comprobaciones habituales de endpoint, modelo del espacio de trabajo, proveedor, privacidad, guardrails y disyuntor. A continuación, el enrutador combina las pruebas de referencia pertinentes del catálogo de Phaseo que no se basan en declaraciones de los propios proveedores con el estado actual de proveedores, la latencia y los precios. Si faltan datos operativos o de referencia, se consideran neutros; eso no amplía la lista de permitidos.
+
+El campo de respuesta `model` identifica el modelo seleccionado. Los detalles de la solicitud muestran la carga de trabajo, el objetivo, el modelo seleccionado, el orden de alternativas, las puntuaciones de los candidatos y de los factores, los IDs de las pruebas de referencia, las exclusiones y la versión del algoritmo. Los rastros de enrutamiento no contienen el contenido de la solicitud ni de la respuesta.
+
+Si las alternativas de modelo están habilitadas en el espacio de trabajo, Phaseo vuelve a intentarlo con los modelos restantes en orden de clasificación cuando recibe `429`, `500`, `502`, `503` o `504`. Cada alternativa vuelve a pasar por toda la política y el proceso de selección de proveedores. Los errores del cliente no cambian de modelo.
+
+Un modelo fijo seleccionado por una ruta dinámica asociada tiene prioridad. En ese caso, los detalles de la solicitud registran la anulación y desactivan las alternativas del enrutador automático para esa solicitud.
+
+<Warning>
+  Los perfiles de gasto y los patrones de modelos limitan la elegibilidad; no garantizan la calidad. Valida la combinación resultante de modelos con tus propias cargas de trabajo.
+</Warning>
+
+## Explica una decisión de enrutamiento
+
+Abre **Panel -> Ajustes -> Uso -> Registros de solicitudes**, selecciona una solicitud y despliega **Observabilidad del enrutamiento** en **Respuestas de proveedores**.
+
+El registro de solicitudes muestra:
+
+- todos los proveedores ordenados y su puntuación final
+- el proveedor que seleccionó Phaseo y los proveedores que intentó usar
+- los proveedores excluidos antes de la clasificación y el motivo registrado
+- los proveedores cuya posición bajó por su estado de despliegue o enrutamiento
+- las entradas, ponderaciones, contribuciones y multiplicadores usados para puntuar a cada proveedor
+
+Los factores de puntuación se muestran por separado del contexto registrado. Un factor de puntuación modifica el resultado final del modo de enrutamiento activo. El contexto registrado ayuda a explicar la decisión, pero no necesariamente afecta a la puntuación.
+
+En el modo `balanced`, Phaseo puntúa los proveedores aptos según su fiabilidad, latencia, latencia de cola, rendimiento, precio y adecuación de tokens. El cálculo mostrado explica cómo contribuyó cada factor a la puntuación final, en lugar de presentar todas las métricas registradas como si tuvieran la misma importancia.
+
+### Fiabilidad y disponibilidad del proveedor
+
+La muestra de fiabilidad es el valor que se usa para calcular la puntuación. Se calcula a partir de los resultados del proveedor; la tasa de éxito se muestra como contexto complementario.
+
+Estos resultados reducen la disponibilidad del proveedor:
+
+- fallos de autenticación (`401`)
+- fallos de pago (`402`)
+- respuestas de modelo no encontrado (`404`)
+- errores del servidor (`500` y superiores)
+- errores después de que empiece el flujo de respuesta
+- respuestas HTTP correctas que terminan con un motivo de error
+
+Estos resultados no reducen la disponibilidad del proveedor:
+
+- solicitudes incorrectas (`400`)
+- restricciones geográficas (`403`)
+- cargas útiles demasiado grandes (`413`)
+- límites de tasa (`429`)
+
+Las restricciones geográficas y los límites de tasa se registran por separado porque no indican que el proveedor no esté disponible.
+
+### Disponibilidad y privacidad de los rastros
+
+Los rastros de enrutamiento completos están disponibles para las solicitudes realizadas después de activar la observabilidad del enrutamiento. Las solicitudes anteriores pueden mostrar un rastro parcial o no mostrar detalles de enrutamiento.
+
+Los rastros de enrutamiento tienen límites y no contienen contenido. Incluyen los números y estados necesarios para explicar la selección del proveedor, pero no copian los prompts, los mensajes ni el contenido generado.
+
+## Elige un proveedor exacto en el ID del modelo
+
+Usa `<provider-id>:<canonical-model-id>` cuando una solicitud deba usar una combinación concreta de proveedor y modelo:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "input": "Hello"
+}
+```
+
+El calificador desactiva las alternativas entre proveedores para esa solicitud. Los sufijos del modelo siguen formando parte del ID canónico, incluso en identificadores como `baseten:google/gemma-4-26b-a4b:free`.
+
+Consulta [IDs de modelo con proveedor](./provider-qualified-models.mdx) para ver la sintaxis completa, la validación de rutas gratuitas, la precedencia del enrutamiento, los alias, los códigos de error y ejemplos de solicitudes.
+
+## Controla el enrutamiento y las alternativas
+
+Los controles públicos actuales de enrutamiento y alternativas son explícitos:
+
+### Los preajustes limitan el conjunto de alternativas
+
+En **Panel -> Ajustes -> Preajustes**, puedes definir:
+
+- modelos permitidos
+- listas de proveedores permitidos
+- listas de proveedores ignorados
+- comportamiento predeterminado de los prompts y los parámetros
+
+Estas restricciones se aplican antes de seleccionar un proveedor. Así, un preajuste puede limitar intencionadamente qué proveedores son aptos para reintentos y conmutación por error.
+
+### El modo de enrutamiento cambia el orden de los proveedores
+
+En **Panel -> Ajustes -> Enrutamiento**, los espacios de trabajo pueden ajustar cómo Gateway ordena los proveedores compatibles:
+
+- `balanced`
+- `price`
+- `latency`
+- `throughput`
+
+La misma página también ofrece controles de canales beta y alfa para introducir tráfico de vista previa deliberadamente, en lugar de que aparezca como un efecto secundario de enrutamiento sin seguimiento.
+
+### La alternativa de BYOK es explícita
+
+En **Panel -> Ajustes -> BYOK**, los equipos pueden elegir si una solicitud BYOK fallida puede recurrir a los créditos de Phaseo. Este es el control público actual para decidir si una solicitud debe completarse cuando falla una clave propia.
+
+### Las rutas dinámicas asignan políticas a las claves de API
+
+En **Panel -> Ajustes -> Enrutamiento**, crea una ruta dinámica cuando distintas claves de API o clases de solicitudes necesiten comportamientos de proveedor diferentes. Una ruta puede:
+
+- ramificarse según campos anidados del cuerpo de la solicitud, encabezados, metadatos personalizados, endpoint, modelo o ID de sesión
+- distribuir el tráfico por porcentaje para pruebas A/B y despliegues graduales
+- aplicar límites diarios, semanales o mensuales de solicitudes y costes usando los intervalos de uso de la clave autenticada
+- llamar a otro modelo y elegir su modo de enrutamiento, preferencia de proveedor y política de alternativas
+- activar afinidad consciente de la caché y de la sesión
+- asociarse a una o varias claves de API de inferencia
+
+Las condiciones tienen salidas verdaderas y falsas. Los nodos de tasa y presupuesto tienen salidas dentro del límite y excedido. La selección por porcentaje es determinista para una sesión o una clave de caché de prompts, por lo que el mismo diálogo almacenado en caché no cambia de rama de forma aleatoria durante un despliegue gradual.
+
+Al guardar, se crea una versión de borrador inmutable. Al desplegar una versión seleccionada, esa instantánea se copia a Gateway y se invalidan las cachés de políticas de las claves asociadas. Las versiones anteriores siguen disponibles para revertir cambios. Las recomendaciones operativas sobre el estado de los proveedores aparecen en **Análisis**, separadas del editor de flujos.
+
+Los metadatos personalizados están disponibles en las superficies de inferencia de texto compatibles con OpenAI:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "metadata": {
+	    "customer_plan": "pro",
+	    "workspace": "acme"
+  }
+}
+```
+
+## Comportamiento de las alternativas
+
+Si un proveedor devuelve errores o límites de tasa, Gateway puede volver a intentarlo o dirigir la solicitud a otro proveedor compatible con el mismo modelo. Aun así, deberías gestionar los errores `429` y `5xx` con retroceso exponencial.
+
+Los nodos de modelo de una ruta dinámica también pueden definir una lista ordenada de modelos alternativos. Phaseo primero agota los intentos con proveedores aptos para el modelo seleccionado. Si la respuesta resultante permite reintentar (`429`, `500`, `502`, `503` o `504`), Gateway vuelve a ejecutar todo el proceso de selección de políticas y proveedores para cada modelo alternativo, en orden. Los errores del cliente se devuelven inmediatamente y no cambian de modelo.
+
+Cada alternativa se vuelve a comprobar de forma independiente según las restricciones de modelo del espacio de trabajo, los guardrails, la política de proveedores, los precios y la compatibilidad de capacidades. Una ruta puede guardar hasta ocho modelos alternativos.
+
+Más información:
+
+- [Límites de tasa](../api-reference/limits.mdx)
+- [Gestión de errores](../api-reference/errors.mdx)
+
+## Afinidad de caché y de sesión
+
+El enrutamiento consciente de la caché está activado de forma predeterminada en los endpoints de generación de texto. Cuando un proveedor informa de una lectura real de la caché de prompts, Phaseo fija el contexto coincidente a ese proveedor durante 15 minutos, siempre que siga activo y permitido por la ruta, el preajuste, los guardrails y la política de solicitud vigentes.
+
+Si se incluye `session_id`, la afinidad de caché se vincula a la sesión en lugar de limitarse al contexto inicial. Phaseo la actualiza cuando observa otra lectura de caché y la conserva durante un máximo de 24 horas de actividad de la sesión. Los disyuntores y los filtros de políticas siempre tienen prioridad sobre la afinidad.
+
+Desactívala para una solicitud sin cambiar los valores predeterminados del espacio de trabajo o de la ruta dinámica:
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "provider": {
+    "cache_aware_routing": false
+  }
+}
+```
+
+Si quieres conservar la afinidad de caché del contexto, pero ignorar el identificador de sesión en una solicitud, usa:
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "routing": {
+    "session_affinity": false
+  }
+}
+```
+
+## Consideraciones sobre BYOK
+
+Usa BYOK si quieres el enrutamiento y la observabilidad de Phaseo, pero prefieres que el proveedor seleccionado facture el uso del modelo a tu propia cuenta.
+
+- Las primeras 250.000 solicitudes BYOK completadas de cada mes natural UTC no tienen comisión por servicio de Phaseo.
+- Después de esa franquicia, Phaseo cobra el 2,5 % del coste equivalente del proveedor.
+- Mantén al menos 1 $ de crédito de Phaseo. Esto cubre las alternativas gestionadas y el cobro de comisiones una vez superada la franquicia; el proveedor sigue facturando directamente a tu cuenta.
+- Siguen aplicándose las cuotas, la política de datos, el acceso a modelos y las restricciones de cuenta de tu proveedor.
+
+Las credenciales del proveedor se cifran con AES-256-GCM y se vinculan al espacio de trabajo y al proveedor antes de almacenarse. Limita cada clave a los modelos y las claves de API de Phaseo que la necesiten, y desactiva las alternativas gestionadas si una solicitud nunca debe usar créditos de Phaseo.
+
+## Qué registrar
+
+En cargas de trabajo de producción, registra los IDs de solicitud, los códigos de estado de respuesta y los IDs de modelo. Así podrás correlacionar los fallos y confirmar el comportamiento del enrutamiento al depurar.
+
+## Guías relacionadas
+
+- [Preajustes](./presets.mdx)
+- [Matriz de paridad de funciones](../migration-guides/feature-parity-matrix.mdx)
+

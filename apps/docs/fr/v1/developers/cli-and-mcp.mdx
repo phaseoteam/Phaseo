@@ -1,0 +1,103 @@
+---
+title: "CLI et MCP"
+description: "Utilisez la CLI Phaseo pour automatiser des tâches dans le terminal ou connectez le serveur MCP authentifié à des clients IA pour consulter les données Phaseo en lecture seule."
+icon: "square-terminal"
+---
+
+# CLI et MCP
+
+Utilisez Phaseo dans le terminal avec la CLI ou connectez un client IA via MCP. Les deux utilisent Phaseo OAuth, mais répondent à des besoins différents.
+
+| Interface | Idéal pour | Accès |
+| --- | --- | --- |
+| Phaseo CLI | Workflows dans le terminal, CI, administration et automatisation | Lecture et écriture, selon vos portées et le rôle de votre espace de travail |
+| Phaseo MCP | Données Phaseo en direct dans Codex, Claude, ChatGPT et d’autres clients MCP | Authentifié et en lecture seule |
+| Docs MCP | Consulter la documentation Phaseo actuelle pendant le développement | Documentation uniquement et en lecture seule |
+
+## Phaseo CLI
+
+Utilisez la CLI pour créer ou modifier des ressources Phaseo, automatiser un workflow ou consulter les données du compte depuis un shell.
+
+### Installer et se connecter
+
+```bash
+npm install -g @phaseo/cli
+phaseo login
+phaseo whoami
+```
+
+Par défaut, les terminaux interactifs utilisent OAuth dans le navigateur. Pour SSH, la CI et les environnements sans interface, utilisez l’autorisation par appareil :
+
+```bash
+phaseo login --device-code
+```
+
+### Workflows courants
+
+```bash
+phaseo models list --limit 20
+phaseo pricing models
+phaseo credits get
+phaseo workspaces list
+phaseo keys create --name "Local development"
+phaseo logs list --since 1h --status error --json
+```
+
+Utilisez `--json` lorsqu’un autre outil ou script a besoin d’une sortie structurée. Les valeurs secrètes ne sont affichées que par les commandes qui les créent ou les révèlent explicitement.
+
+<Card title="Guide de la CLI Phaseo" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
+	Consultez les options d’authentification, la gestion des clés, les espaces de travail, les garde-fous et le workflow complet des commandes.
+</Card>
+
+## Phaseo MCP
+
+Connectez le serveur MCP Phaseo pour qu’un client IA réponde à partir des données en direct sur les modèles, les prix, les fournisseurs, l’utilisation et les espaces de travail.
+
+### URL du serveur
+
+`https://mcp.phaseo.app/mcp`
+
+### Se connecter depuis Codex
+
+```bash
+codex mcp add phaseo --url https://mcp.phaseo.app/mcp
+codex mcp login phaseo
+```
+
+La commande de connexion ouvre Phaseo OAuth. Choisissez un espace de travail, approuvez les portées de lecture demandées et confirmez la connexion :
+
+```bash
+codex mcp list
+```
+
+Pour un autre client MCP, ajoutez la même URL comme serveur HTTP distant en streaming. Le client doit prendre en charge la découverte OAuth, le code d’autorisation avec S256 PKCE et le paramètre MCP `resource`.
+
+### Données accessibles via MCP
+
+- modèles, fournisseurs, organisations, familles d’endpoints et tarifs
+- crédits, activité, analyses, journaux de requêtes et métadonnées de génération
+- espaces de travail, membres, préréglages, paramètres et garde-fous
+- métadonnées des clés API, clés de gestion, applications OAuth et webhooks, sans valeurs secrètes
+
+MCP n’exécute pas d’inférence facturable, ne renvoie pas de secrets et ne modifie pas les ressources Phaseo. Utilisez le tableau de bord, la CLI ou l’API de gestion pour ces opérations.
+
+## Docs MCP
+
+Docs MCP est un endpoint distinct pour rechercher et consulter la documentation Phaseo. Il n’accède ni à votre compte ni à votre espace de travail.
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+Utilisez-le lorsqu’un assistant de programmation a besoin d’exemples API actuels, de conseils d’intégration ou de documentation sur les fonctionnalités.
+
+<Card title="Guide Docs MCP" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+	Connectez le serveur de documentation à Codex, Claude Code, Cursor, OpenCode ou VS Code.
+</Card>
+
+## Choisir la bonne interface
+
+- Utilisez la **CLI** pour créer des clés, modifier des paramètres, gérer des espaces de travail ou automatiser des tâches administratives.
+- Utilisez **Phaseo MCP** pour donner à un client IA un accès sécurisé aux données Phaseo en direct.
+- Utilisez **Docs MCP** pour donner à un assistant de programmation accès à la documentation Phaseo actuelle sans lui ouvrir votre compte.
+

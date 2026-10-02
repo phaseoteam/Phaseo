@@ -1,0 +1,59 @@
+---
+icon: "brain-circuit"
+title: "模型"
+description: "使用 C# SDK 列出模型。"
+---
+
+**方法**：`client.ListModels(...)`
+
+### 示例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10"
+});
+```
+
+### 参数
+- 可选筛选项：`provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`、`organisation`、`endpoints`、`input_types`、`output_types`、`params`、`availability`、`limit`、`offset`。
+- 如果要获取 `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused` 或 `soft_blocked` 等发布状态，可将 `provider_availability_reason` 与 `availability = "all"` 搭配使用。
+- 如果要获取 `coming_soon` 或 `internal_testing` 等不可路由的端点映射，可将 `capability_status` 与 `availability = "all"` 搭配使用。
+
+### 返回值
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

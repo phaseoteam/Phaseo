@@ -7,6 +7,7 @@ import { fetchPrivateUsageOperation, fetchPrivateUsageRequest } from "@/lib/quer
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import dynamic from "next/dynamic";
 import { useQueryState } from "nuqs";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -131,6 +132,7 @@ function RequestRowContextMenu({
 	modelId: string | null;
 	onInspect: () => void;
 }) {
+	const tUi = useTranslations("Common.ui");
 	const requestId = row.request_id?.trim() || null;
 	const sessionId = row.session_id?.trim() || null;
 	const nativeResponseId = row.native_response_id?.trim() || null;
@@ -142,9 +144,9 @@ function RequestRowContextMenu({
 	const copyValue = async (label: string, value: string) => {
 		try {
 			await navigator.clipboard.writeText(value);
-			toast.success(`${label} copied`);
+			toast.success(tUi("actions.copied", { label }));
 		} catch {
-			toast.error(`Failed to copy ${label.toLowerCase()}`);
+			toast.error(tUi("actions.copyFailed", { label }));
 		}
 	};
 
@@ -153,44 +155,44 @@ function RequestRowContextMenu({
 			{canInspect ? (
 				<ContextMenuItem className="rounded-md" onClick={onInspect}>
 					<PanelRightOpen />
-					Open Request Details
+					{tUi("actions.openRequestDetails")}
 				</ContextMenuItem>
 			) : null}
 			{canInspect && hasCopyAction ? <ContextMenuSeparator /> : null}
 			{requestId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Request ID", requestId)}
+					onClick={() => void copyValue(tUi("identifiers.requestId"), requestId)}
 				>
 					<Copy />
-					Copy Request ID
+					{tUi("actions.copyRequestId")}
 				</ContextMenuItem>
 			) : null}
 			{sessionId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Session ID", sessionId)}
+					onClick={() => void copyValue(tUi("identifiers.sessionId"), sessionId)}
 				>
 					<Copy />
-					Copy Session ID
+					{tUi("actions.copySessionId")}
 				</ContextMenuItem>
 			) : null}
 			{nativeResponseId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Native response ID", nativeResponseId)}
+					onClick={() => void copyValue(tUi("identifiers.nativeResponseId"), nativeResponseId)}
 				>
 					<Copy />
-					Copy Native Response ID
+					{tUi("actions.copyNativeResponseId")}
 				</ContextMenuItem>
 			) : null}
 			{resolvedModelId ? (
 				<ContextMenuItem
 					className="rounded-md"
-					onClick={() => void copyValue("Model ID", resolvedModelId)}
+					onClick={() => void copyValue(tUi("identifiers.modelId"), resolvedModelId)}
 				>
 					<Copy />
-					Copy Model ID
+					{tUi("actions.copyModelId")}
 				</ContextMenuItem>
 			) : null}
 		</ContextMenuContent>
@@ -208,9 +210,9 @@ function isInteractiveRowTarget(target: EventTarget | null): boolean {
 	);
 }
 
-function formatCost(nanos: number | null | undefined): string {
+function formatCost(nanos: number | null | undefined, locale: string): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
-	return `$${dollars.toFixed(5)}`;
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
 }
 
 function getModelDetailsHref(modelId: string | null): string | null {
@@ -263,7 +265,7 @@ function stopRowClick(event: React.MouseEvent<HTMLElement>) {
 	event.stopPropagation();
 }
 
-function getClientSource(row: RequestRow) {
+function getClientSource(row: RequestRow, directHttp: string) {
 	if (row.client_source_id) {
 		return {
 			id: row.client_source_id,
@@ -281,7 +283,7 @@ function getClientSource(row: RequestRow) {
 	if (!source || typeof source !== "object" || Array.isArray(source)) {
 		return {
 			id: "api",
-			name: "Direct HTTP",
+			name: directHttp,
 			version: null,
 			detection: "unknown",
 			kind: "api",
@@ -291,7 +293,7 @@ function getClientSource(row: RequestRow) {
 	if (!id) {
 		return {
 			id: "api",
-			name: "Direct HTTP",
+			name: directHttp,
 			version: null,
 			detection: "unknown",
 			kind: "api",
@@ -325,6 +327,9 @@ export default function UnifiedRequestsTable({
 	detailBasePath,
 	onExportRef,
 }: UnifiedRequestsTableProps) {
+	const tUi = useTranslations("Common.ui");
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
 	const queryClient = useQueryClient();
 	const privateQuery = usePrivateUsageRefresh();
 	const scope = privateQuery?.scope;
@@ -897,35 +902,35 @@ export default function UnifiedRequestsTable({
 					row.app_id ? appNames.get(row.app_id) : null,
 				);
 				const appLabel = appTitle ?? mappedAppName ?? "-";
-				const source = getClientSource(row);
+				const source = getClientSource(row, t("usageGaps.directHttp"));
 				const requestedModelId = getRequestedModelId(row);
 				const routedModelId = getRoutedModelId(row);
 				return {
-					Timestamp: new Date(row.created_at).toLocaleString(),
-					"Requested Model": getModelDisplayName(
+					[tUi("time.timestamp")]: new Date(row.created_at).toLocaleString(locale),
+					[tUi("requestsTable.requestedModel")]: getModelDisplayName(
 						requestedModelId,
 						resolvedModelMetadata,
 					),
-					"Requested Model ID": requestedModelId || "-",
-					"Routed Model": getModelDisplayName(
+					[tUi("requestsTable.requestedModelId")]: requestedModelId || "-",
+					[tUi("requestsTable.routedModel")]: getModelDisplayName(
 						routedModelId,
 						resolvedModelMetadata,
 					),
-					"Routed Model ID": routedModelId || "-",
-					Provider: providerLabel,
-					Source: source?.name ?? "Direct HTTP",
-					"Source ID": source?.id ?? "api",
-					"Source Type": source?.kind ?? "api",
-					"Source Version": source?.version ?? "-",
-					"Source Detection": source?.detection ?? "unknown",
-					App: appLabel,
-					Usage: usageSummary,
-					"Input Tokens": formatUsageNumber(inputTokens),
-					"Output Tokens": formatUsageNumber(outputTokens),
-					Cost: formatCost(row.cost_nanos),
-					"Generation (ms)": row.generation_ms || row.latency_ms || "-",
-					"Finish Reason": row.finish_reason || "-",
-					Status: row.success ? "Success" : "Error",
+					[tUi("requestsTable.routedModelId")]: routedModelId || "-",
+					[tUi("select.provider")]: providerLabel,
+					[tUi("requestsTable.source")]: source?.name ?? tUi("requestsTable.directHttp"),
+					[tUi("requestsTable.sourceId")]: source?.id ?? "api",
+					[tUi("requestsTable.sourceType")]: source?.kind ?? "api",
+					[tUi("requestsTable.sourceVersion")]: source?.version ?? "-",
+					[tUi("requestsTable.sourceDetection")]: source?.detection ?? tUi("requestsTable.unknown"),
+					[tUi("requestsTable.app")]: appLabel,
+					[tUi("metrics.usage")]: usageSummary,
+					[tUi("requestsTable.inputTokens")]: formatUsageNumber(inputTokens),
+					[tUi("requestsTable.outputTokens")]: formatUsageNumber(outputTokens),
+					[tUi("metrics.cost")]: formatCost(row.cost_nanos, locale),
+					[tUi("requestsTable.generationMs")]: row.generation_ms || row.latency_ms || "-",
+					[tUi("requestsTable.finishReason")]: row.finish_reason || "-",
+					[tUi("select.status")]: row.success ? tUi("status.success") : tUi("status.error"),
 				};
 			});
 
@@ -935,10 +940,10 @@ export default function UnifiedRequestsTable({
 			if (format === "csv") {
 				exportToCSV(exportData, filename);
 			} else {
-				exportToPDF(exportData, filename, "Gateway Requests");
+				exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
 			}
 		},
-		[data, appNames, providerNames, resolvedModelMetadata],
+		[data, appNames, providerNames, resolvedModelMetadata, resolvedProviderMetadata, tUi, t, locale],
 	);
 
 	// Expose export handler via ref
@@ -958,9 +963,9 @@ export default function UnifiedRequestsTable({
 				>
 					<Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
 					<div className="min-w-0">
-						<p className="font-medium text-foreground">Loading requests</p>
+						<p className="font-medium text-foreground">{tUi("requestsTable.loading")}</p>
 						<p className="truncate text-xs text-muted-foreground">
-							Searching the selected time range and applying your filters.
+							{tUi("requestsTable.loadingDescription")}
 						</p>
 					</div>
 				</div>
@@ -1035,8 +1040,7 @@ export default function UnifiedRequestsTable({
 										colSpan={visibleColumns.length}
 										className="py-10 text-center text-muted-foreground"
 									>
-										No requests found
-									</TableCell>
+										{t("usageGaps.copyNoRequestsFound")}</TableCell>
 								</TableRow>
 							) : (
 								<>
@@ -1069,7 +1073,7 @@ export default function UnifiedRequestsTable({
 											row.app_id ? appNames.get(row.app_id) : null,
 										);
 										const appLabel = row.app_id
-											? (appTitle ?? mappedAppName ?? "Unknown app")
+											? (appTitle ?? mappedAppName ?? t("usageGaps.unknownApp"))
 											: null;
 										const appHref = row.app_id
 											? `/apps/${encodeURIComponent(row.app_id)}`
@@ -1104,18 +1108,18 @@ export default function UnifiedRequestsTable({
 														className="mr-2 inline-flex align-middle"
 														title={
 															row.success
-																? "Success"
-																: `Error ${row.status_code ?? ""}`
+																? t("usageGaps.copySuccess")
+																: t("usageGaps.errorStatus", { status: row.status_code ?? "" })
 														}
 													>
 														{row.success ? (
 															<CheckCircle2
-																aria-label="Success"
+																aria-label={tUi("status.success")}
 																className="size-3.5 text-emerald-600"
 															/>
 														) : (
 															<XCircle
-																aria-label="Error"
+																aria-label={tUi("status.error")}
 																className="size-3.5 text-rose-600"
 															/>
 														)}
@@ -1125,6 +1129,7 @@ export default function UnifiedRequestsTable({
 															<span className="cursor-help underline underline-offset-2 decoration-dotted">
 																{formatWordyDateTime(row.created_at, {
 																	includeTime: true,
+												locale,
 																})}
 															</span>
 														</HoverCardTrigger>
@@ -1154,21 +1159,20 @@ export default function UnifiedRequestsTable({
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		Relative
+																		{tUi("time.relative")}
 																	</div>
 																	<div className="font-mono">
 																		{relativeNowMs
 																			? formatRelativeToNow(
 																					new Date(row.created_at),
-																					relativeNowMs,
+																					relativeNowMs, locale,
 																				)
 																			: "-"}
 																	</div>
 																</div>
 																<div className="grid grid-cols-[120px_1fr] gap-2">
 																	<div className="text-muted-foreground">
-																		Timestamp
-																	</div>
+																		{t("usageGaps.copyTimestamp")}</div>
 																	<div className="font-mono">
 																		{Math.floor(
 																			new Date(row.created_at).getTime() / 1000,
@@ -1213,7 +1217,7 @@ export default function UnifiedRequestsTable({
 																	}
 																	rows={[
 																		{
-																			label: "Model ID",
+																			label: t("usageGaps.copyModelID"),
 																			value: (
 																				<code className="font-mono text-[11px]">
 																					{routedModelId}
@@ -1223,7 +1227,7 @@ export default function UnifiedRequestsTable({
 																		...(routedModelMeta?.organisationName
 																			? [
 																					{
-																						label: "Organisation",
+																						label: t("usageGaps.copyOrganisation"),
 																						value:
 																							routedModelMeta.organisationName,
 																					},
@@ -1256,7 +1260,7 @@ export default function UnifiedRequestsTable({
 																	}
 																	rows={[
 																		{
-																			label: "Model ID",
+																			label: t("usageGaps.copyModelID"),
 																			value: (
 																				<code className="font-mono text-[11px]">
 																					{routedModelId}
@@ -1266,7 +1270,7 @@ export default function UnifiedRequestsTable({
 																		...(routedModelMeta?.organisationName
 																			? [
 																					{
-																						label: "Organisation",
+																						label: t("usageGaps.copyOrganisation"),
 																						value:
 																							routedModelMeta.organisationName,
 																					},
@@ -1308,7 +1312,7 @@ export default function UnifiedRequestsTable({
 																}
 																rows={[
 																	{
-																		label: "Provider ID",
+																		label: t("usageGaps.copyProviderID"),
 																		value: (
 																			<code className="font-mono text-[11px]">
 																				{row.provider}
@@ -1318,7 +1322,7 @@ export default function UnifiedRequestsTable({
 																	...(providerPolicyLabel
 																		? [
 																				{
-																					label: "Data policy",
+																					label: t("usageGaps.copyDataPolicy"),
 																					value: providerPolicyLabel,
 																				},
 																			]
@@ -1356,7 +1360,7 @@ export default function UnifiedRequestsTable({
 													<div className="flex min-h-5 items-center">
 														{row.app_id ? (
 															<UsageEntityHoverCard
-																title={appLabel ?? "Unknown app"}
+																title={appLabel ?? t("usageGaps.unknownApp")}
 																href={appHref}
 																visual={
 																	isPhaseoChatApp(row) ? (
@@ -1366,7 +1370,7 @@ export default function UnifiedRequestsTable({
 																			{row.app_image_url ? (
 																				<AvatarImage
 																					src={row.app_image_url}
-																					alt={appLabel ?? "App"}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
 																					className="object-cover"
 																				/>
 																			) : null}
@@ -1378,7 +1382,7 @@ export default function UnifiedRequestsTable({
 																}
 																rows={[
 																	{
-																		label: "App ID",
+																		label: t("usageGaps.copyAppID"),
 																		value: (
 																			<code className="font-mono text-[11px]">
 																				{row.app_id}
@@ -1386,10 +1390,10 @@ export default function UnifiedRequestsTable({
 																		),
 																	},
 																	{
-																		label: "Type",
+																		label: t("usageGaps.copyType"),
 																		value: isPhaseoChatApp(row)
 																			? "Phaseo Chat"
-																			: "Workspace app",
+																			: t("usageGaps.workspaceApp"),
 																	},
 																]}
 															>
@@ -1410,7 +1414,7 @@ export default function UnifiedRequestsTable({
 																			{row.app_image_url ? (
 																				<AvatarImage
 																					src={row.app_image_url}
-																					alt={appLabel ?? "App"}
+																					alt={appLabel ?? t("usageGaps.copyApp")}
 																					className="object-cover"
 																				/>
 																			) : null}
@@ -1465,7 +1469,7 @@ export default function UnifiedRequestsTable({
 													key="cost"
 													className="py-2 text-right font-mono text-xs"
 												>
-													{formatCost(row.cost_nanos)}
+													{formatCost(row.cost_nanos, locale)}
 												</TableCell>
 											),
 											speed: (
@@ -1514,7 +1518,7 @@ export default function UnifiedRequestsTable({
 														{apiKeys.find((key) => key.id === row.key_id)
 															?.name ||
 															(row.key_id
-																? "Key …" + row.key_id.slice(-8)
+																? t("usageGaps.keySuffix", { suffix: row.key_id.slice(-8) })
 																: "—")}
 													</span>
 												</TableCell>
@@ -1566,7 +1570,7 @@ export default function UnifiedRequestsTable({
 			{/* Pagination */}
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
-					<span>Rows per page</span>
+					<span>{tUi("requestsTable.rowsPerPage")}</span>
 					<Select
 						value={String(pageSize)}
 						onValueChange={(value) => {
@@ -1660,7 +1664,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="icon-sm"
 									disabled={!previousRequest}
-									aria-label="Open previous request"
+									aria-label={tUi("requestsTable.openPreviousRequest")}
 									onClick={() =>
 										previousRequest && handleRowClick(previousRequest)
 									}
@@ -1672,7 +1676,7 @@ export default function UnifiedRequestsTable({
 									variant="ghost"
 									size="icon-sm"
 									disabled={!nextRequest}
-									aria-label="Open next request"
+									aria-label={tUi("requestsTable.openNextRequest")}
 									onClick={() => nextRequest && handleRowClick(nextRequest)}
 								>
 									<ChevronRight className="size-4" />

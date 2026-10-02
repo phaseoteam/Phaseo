@@ -50,6 +50,7 @@ const publicKeys = {
 	all: () => [...root, "public"] as const,
 	status: () => [...publicKeys.all(), "status"] as const,
 	search: () => [...publicKeys.all(), "search"] as const,
+	documentationSearch: (locale: string) => [...publicKeys.all(), "documentation-search", locale] as const,
 	gatewayModels: () => [...publicKeys.all(), "gateway-models"] as const,
 	modelPerformance: (args: {
 		modelId: string;

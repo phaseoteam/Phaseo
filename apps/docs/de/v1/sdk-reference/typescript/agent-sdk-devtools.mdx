@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Erfasse lokale Agent-SDK-Läufe für Entwicklung und Fehlersuche."
+---
+
+Verwende während der Entwicklung die Agent-SDK-DevTools-Aufzeichnung, wenn du Eingaben, Schritte, Tools, Ausgaben, Zeitangaben und Gateway-Korrelations-IDs eines Laufs lokal speichern möchtest.
+
+## Aufzeichnung für einen Lauf aktivieren
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+Standardmäßig werden Dateien im aktuellen Arbeitsverzeichnis unter `.phaseo-devtools` gespeichert.
+
+## Ausgabeverzeichnis konfigurieren
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+Für lokale Entwicklungsprozesse kannst du auch `PHASEO_DEVTOOLS=true` und optional `PHASEO_DEVTOOLS_DIR` festlegen.
+
+## Erfasste Informationen
+
+Jeder Eintrag für `agent.run` oder `agent.continue` enthält:
+
+- Agent- und Lauf-IDs
+- Laufstatus und Dauer
+- Eingabe und Anwendungskontext
+- Modell- und Provider-Details, sofern verfügbar
+- Gateway-Request-ID und native Response-ID
+- Anzahl der Schritte und Tools
+- abgeschlossener Laufstatus, Nachrichten, Schritte und Ausgabe
+- strukturierte Fehlerdetails, wenn ein Lauf eine Exception auslöst
+
+<Warning>
+Agent-Eingaben, Nachrichten, Tool-Ergebnisse und Anwendungskontext können sensible Daten enthalten. Nimm das DevTools-Verzeichnis aus der Versionsverwaltung heraus und schütze es mit denselben Zugriffskontrollen wie andere Entwicklungslogs.
+</Warning>
+
+## Zugehörige Anleitungen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [Fehlerbehebung](./agent-sdk-events-and-errors.mdx)
+- [Status und Freigabe](./agent-sdk-state-and-approval.mdx)

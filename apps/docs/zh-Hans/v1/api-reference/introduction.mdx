@@ -1,0 +1,71 @@
+---
+title: "Gateway API 概览"
+sidebarTitle: "概览"
+description: "Phaseo Gateway 的基础 URL、身份验证方式和端点类别。"
+icon: "map"
+---
+
+打开端点参考页面之前，请先在此查找合适的 API 路径。所有 Phaseo Gateway 端点共用一个基础 URL，并使用 Bearer 身份验证。
+
+## 选择路径
+
+| 目标 | 从这里开始 |
+| --- | --- |
+| 发送第一个请求 | [快速入门](../quickstart.mdx) |
+| 生成文本或使用工具 | `POST /responses` |
+| 作出带类型的决策 | [`POST /decisions`](./endpoint/decisions) |
+| 保留现有的 OpenAI 兼容集成 | `POST /chat/completions` |
+| 浏览模型和提供商 | `GET /models` 和 `GET /providers` |
+| 创建音乐或管理文件 | `POST /music/generations` 和 `POST /files` |
+| 生成视频（测试版） | [`POST /videos`](./endpoint/video-create) |
+| 提交批处理或下载结果（测试版） | [`POST /batches`](./endpoint/batches-create) 和 [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+
+## 基础 URL
+
+生产环境基础 URL：
+
+```http
+https://api.phaseo.app/v1
+```
+
+本参考中的所有端点路径都相对于基础 URL `/v1`。
+
+## OpenAPI
+
+如果要将 API 导入 Postman、Hoppscotch 或 SDK 生成器，请使用 OpenAPI 文件。
+
+<Card
+  title="Phaseo Gateway OpenAPI"
+  icon="list-bullet"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
+>
+  查看规范文件
+</Card>
+
+文档和 SDK 使用同一规范。Video、Batch 和 Decisions 端点标记为**测试版**；可能需要工作区预览访问权限。
+## 身份验证
+
+推理使用标准 Gateway API 密钥，管理操作使用具有适当权限的管理 API 密钥。参阅[身份验证](../developers/authentication.mdx)和[管理 API 密钥](../developers/management-api-keys.mdx)。
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+如果身份验证失败，API 会返回 `401`。
+
+## API 资源
+
+| 资源 | 功能 |
+| --- | --- |
+| 推理 | 生成文本、图像、音频和嵌入；作出决策、重排、审核或解析内容。从 [Responses](./endpoint/responses.mdx) 或 [Decisions](./endpoint/decisions.mdx) 开始。 |
+| 异步任务与文件 | 提交[视频](./endpoint/video-create.mdx)或[批处理](./endpoint/batches-create.mdx)任务、传输文件并配置 Webhook。 |
+| 模型与定价 | 发现[模型](./endpoint/models.mdx)、提供商报价和[估算费用](./endpoint/pricing-calculate.mdx)。 |
+| 路由与策略 | 配置预设、提供商凭据、私有模型和[护栏](./endpoint/guardrails.mdx)。 |
+| 使用与监控 | 查看[日志](./endpoint/logs-list.mdx)、活动、分析、评估和服务状态。 |
+| 工作区管理 | 管理[工作区](./endpoint/workspaces-list.mdx)、密钥、预算、身份和集成。 |
+
+## 计费和速率限制
+
+- 使用[速率限制指南](./limits.mdx)处理提供商限流和适用的访问策略。
+- 付费请求需要钱包中有足够余额，才能通过预先的积分检查。
+- 带有 `:free` 的免费模型无需预存积分。

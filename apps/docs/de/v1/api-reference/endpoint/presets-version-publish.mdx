@@ -1,0 +1,11 @@
+---
+title: "Preset-Version veröffentlichen"
+sidebarTitle: "Version veröffentlichen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /presets/{id}/versions"
+description: "Den aktuellen Preset-Entwurf als unveränderliche Version veröffentlichen."
+---
+<Note>Für diesen Endpunkt sind ein Management-API-Schlüssel mit `presets:write` und eine zugehörige Benutzeridentität erforderlich.</Note>
+
+Die Versionierungsmethode des Presets bestimmt die Standardbezeichnung der Version. Presets mit SemVer können `version_label` explizit angeben.
+

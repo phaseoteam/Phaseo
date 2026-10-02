@@ -1,0 +1,33 @@
+---
+icon: "triangle-alert"
+title: "Errores y solución de problemas"
+description: "Gestiona errores de modelo, herramientas, validación, cancelación y continuación en agentes de Go."
+---
+
+Los fallos de los agentes suelen deberse a la solicitud al modelo, una herramienta local, la validación del esquema, una cancelación o una decisión humana incompleta. Mantén estos casos visibles en los registros y devuelve errores seguros a quienes llaman.
+
+## Recuperarse de errores de herramientas
+
+Configura `OnError: "return-to-model"` en una herramienta cuando el modelo pueda recuperarse razonablemente del fallo. El SDK convierte el error en un resultado de herramienta y permite que el siguiente turno elija otra acción. Mantén el comportamiento predeterminado de fallar la ejecución para los errores inseguros o irrecuperables.
+
+## Respetar la cancelación
+
+Pasa el contexto de la solicitud a `Run`, `Continue` o `Stream`. Al cancelarlo, se detiene el flujo del modelo y se impide que comiencen nuevas tareas de herramientas.
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Persist enough application state to retry or report the timeout.
+}
+```
+
+## Diagnosticar errores al continuar
+
+Cuando una ejecución espera a una persona, cada llamada pendiente necesita una aprobación, un rechazo o un resultado proporcionado externamente, asociado al ID de llamada de la herramienta. Guarda el registro completo de la ejecución devuelta; un mensaje humano por sí solo no sustituye esas decisiones.
+
+## Registrar contexto útil
+
+Registra el ID de ejecución, el índice del paso, el ID de solicitud, el proveedor, el modelo, el motivo de finalización, el ID de llamada de herramienta y el motivo de detención. Los hooks del ciclo de vida y DevTools muestran estos campos sin necesidad de registrar el transporte.

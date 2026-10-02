@@ -1,6 +1,9 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import TeamInviteDialog from "./TeamInviteDialog";
 import { Infinity } from "lucide-react";
@@ -56,6 +59,12 @@ export default function TeamsInvites({
 	currentUserId,
 	activeWorkspaceId: controlledActiveId,
 }: Props) {
+	const t = useTranslations("SettingsUI");
+	const s = React.useCallback(
+		(key: string, values?: Record<string, string>) =>
+			t(settingsStringKey(key) as never, values as never),
+		[t],
+	);
 	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
@@ -137,20 +146,20 @@ export default function TeamsInvites({
 		<Card className="h-full">
 			<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 				<div>
-					<CardTitle className="text-base">Invites</CardTitle>
+					<CardTitle className="text-base">{s("Invites")}</CardTitle>
 					<CardDescription>
-						View and manage invites for this workspace.
+						{s("phraseViewAndManageInvitesForThisWorkspace")}
 					</CardDescription>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					<Badge variant="outline">{counts.total} total</Badge>
-					<Badge variant="secondary">{counts.active} active</Badge>
+					<Badge variant="outline">{s("{count} total", { count: String(counts.total) })}</Badge>
+					<Badge variant="secondary">{s("{count} active", { count: String(counts.active) })}</Badge>
 					<Select
 						value={activeWorkspaceId}
 						onValueChange={(v) => setActiveTeamId(v)}
 					>
 						<SelectTrigger className="w-full sm:w-[200px]">
-							<SelectValue placeholder="Select workspace…" />
+							<SelectValue placeholder={s("Select workspace…")} />
 						</SelectTrigger>
 						<SelectContent>
 							{teams.map((t) => (
@@ -166,11 +175,11 @@ export default function TeamsInvites({
 			<CardContent>
 				{!activeTeam ? (
 					<div className="text-sm text-muted-foreground">
-						No workspaces available.
+						{s("phraseNoWorkspacesAvailable")}
 					</div>
 				) : activeInvites.length === 0 ? (
 					<div className="text-sm text-muted-foreground">
-						No invites for {activeTeam.name} yet.
+						{s("phraseNoInvitesForWorkspaceYet", { workspace: activeTeam.name })}
 					</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -190,13 +199,13 @@ export default function TeamsInvites({
 											<div className="flex items-center justify-between">
 												<div className="truncate">
 													<div className="truncate text-sm font-medium">
-														Created by{" "}
+														{s("Created by")}{" "}
 														{i.users
 															?.display_name ??
-															"Unknown"}
+															s("Unknown")}
 													</div>
 													<div className="text-xs text-muted-foreground">
-														Created{" "}
+														{s("Created")}{" "}
 														{format.date(i.created_at)}
 													</div>
 												</div>
@@ -212,7 +221,13 @@ export default function TeamsInvites({
 																: "outline"
 														}
 													>
-														{i.role}
+																{i.role === "owner"
+																	? s("Owner")
+																	: i.role === "admin"
+																		? s("Admin")
+																		: i.role === "member"
+																			? s("Member")
+																			: i.role}
 													</Badge>
 												</div>
 											</div>
@@ -220,13 +235,13 @@ export default function TeamsInvites({
 											<div className="mt-2 flex items-center justify-between text-xs">
 												<div className="text-muted-foreground">
 													{i.expires_at
-														? `Expires ${format.date(i.expires_at)}`
-														: "No expiry"}
+														? `${s("Expires")} ${format.date(i.expires_at)}`
+														: s("No expiry")}
 												</div>
 												<div className="flex items-center gap-2">
 													<div className="flex items-center gap-1 text-muted-foreground">
 														<span>
-															Uses:{" "}
+																	{s("Uses:")}{" "}
 															{i.uses_count ?? 0}
 														</span>
 														{i.max_uses ? (
@@ -249,7 +264,7 @@ export default function TeamsInvites({
 																: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300 border-rose-200")
 														}
 													>
-														{status}
+																{s(status)}
 													</Badge>
 												</div>
 											</div>

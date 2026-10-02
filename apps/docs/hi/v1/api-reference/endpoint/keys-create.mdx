@@ -1,0 +1,13 @@
+---
+title: "API कुंजी बनाएँ"
+sidebarTitle: "API कुंजी बनाएँ"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /keys"
+description: "प्रमाणित वर्कस्पेस में नई API कुंजी बनाएँ।"
+---
+<Note>
+इस एंडपॉइंट के लिए प्रबंधन API कुंजी आवश्यक है। मानक Gateway API कुंजियाँ स्वीकार नहीं की जातीं।
+</Note>
+
+बनाते समय सादी-पाठ API कुंजी केवल एक बार लौटाई जाती है। संगतता फ़ील्ड `limit`, `limit_reset` और `include_byok_in_limit` स्वीकार किए जाते हैं; Phaseo अभी `include_byok_in_limit` को केवल संगतता के लिए मानता है और इस कुंजी की सीमा में BYOK को हमेशा शामिल नहीं करता।
+

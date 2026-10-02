@@ -1,0 +1,16 @@
+---
+icon: "layers"
+title: "नतीजों और आइटम के साथ काम करना"
+description: "मैसेज, स्टेप, टूल और stream इवेंट से .NET रन टाइमलाइन बनाएँ।"
+---
+
+`RunResult` एजेंट का स्थायी परिणाम है। इसमें रन रिकॉर्ड, मैसेज, स्टेप, usage और लागत, चेतावनियाँ, समाप्ति के कारण और अंतिम आउटपुट शामिल हैं।
+
+लाइव जवाब टेक्स्ट के लिए `TextStream()` और मॉडल, टूल, स्टेप, रन तथा provider-item इवेंट के लिए `FullStream()` उपयोग करें। C# अभी provider items को सामान्य object के रूप में देता है, TypeScript के discriminated union `AgentItem` के रूप में नहीं।
+
+रन सक्रिय रहने पर lifecycle इवेंट से product timeline बनाएँ, फिर सहेजे गए मैसेज और स्टेप से अंतिम स्थिति दोबारा बनाएँ।
+
+## संबंधित विषय
+
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

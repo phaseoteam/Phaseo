@@ -1,0 +1,61 @@
+---
+title: "Metodologia de benchmark"
+description: "Saiba como a Phaseo coleta, normaliza e publica resultados de benchmark."
+icon: "clipboard-check"
+---
+
+Os benchmarks servem de base para comparar modelos e provedores. Esta página explica como os dados chegam à plataforma e como mantemos a consistência.
+
+---
+
+## Fontes de dados
+
+- **Lançamentos oficiais** — Anúncios de provedores, blogs técnicos e materiais de imprensa.
+- **Artigos acadêmicos** — Publicações revisadas por pares e preprints do arXiv com resultados reproduzíveis.
+- **Contribuições da comunidade** — Contribuições verificadas da comunidade Phaseo e de parceiros.
+
+Toda pontuação precisa incluir uma referência pública ou uma avaliação reproduzível antes de ser aceita.
+
+---
+
+## Normalização
+
+Padronizamos nomes, métricas e divisões dos benchmarks para tornar precisas as comparações entre modelos:
+
+1. Associe cada envio a um ID interno de benchmark.
+2. Converta as métricas informadas para uma escala canônica (por exemplo, porcentagens).
+3. Registre desvios, como variantes few-shot ou sistemas de avaliação personalizados.
+4. Execute uma validação automatizada para verificar se os campos e intervalos são coerentes.
+
+---
+
+## Frequência das atualizações
+
+- Semanalmente para conjuntos populares como MMLU, GSM8K e HumanEval.
+- Mensalmente para benchmarks de nicho ou emergentes.
+- Sob demanda, quando provedores ou membros da comunidade enviam avaliações de alta qualidade.
+
+Atualizações grandes geram entradas no changelog para que você possa acompanhar as mudanças históricas.
+
+---
+
+## Transparência e reprodutibilidade
+
+| Prática | Resultado |
+| --- | --- |
+| Link para fontes primárias | Os usuários podem verificar pontuações rapidamente. |
+| Acompanhar datas `last_updated` | Indica quando um benchmark pode precisar de revisão. |
+| Documentar a configuração da avaliação | Esclarece o formato do prompt, as janelas de contexto e a amostragem. |
+| Marcar pontuações revisadas por pessoas | Diferencia a validação manual dos processos automatizados. |
+
+---
+
+## Ciclo de feedback
+
+Se encontrar divergências ou dados ausentes:
+
+1.  Abra uma issue com as evidências descritas em [Enviar resultados de benchmarks](./submitting-scores.mdx).
+2.  Responda às perguntas de revisão na issue. Os mantenedores publicam correções verificadas pelo editor do banco de dados.
+3.  Entre em contato pelo Discord para coordenar pesquisas maiores.
+
+Analisamos todos os relatos e fornecemos atualizações de status enquanto o benchmark é verificado.

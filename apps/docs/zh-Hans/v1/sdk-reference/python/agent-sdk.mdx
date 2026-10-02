@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "用法"
+description: "使用 Python Agent SDK 运行工具循环、人工审核、重试和可恢复的智能体。"
+---
+
+## 准备运行时环境
+
+独立的软件包尚未发布到 PyPI。请按照[从源代码安装的说明](./agent-sdk-installation.mdx)操作。
+
+## 快速入门
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## 提供的功能
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- 重试、并发工具、超时和生命周期事件
+- 通过 `continue_run(...)` 暂停并等待人工审核
+- 可序列化状态和 Phaseo Devtools 捕获
+
+## 高级运行时
+
+Python 支持可调用 schema 和审批、HITL 与手动工具、进度跟踪、可恢复错误、可重放流、停止辅助方法、动态轮次、持久化的下一轮覆盖项、规范化用量与成本，以及由应用管理的状态访问器。
+
+## 流式传输与取消
+
+`agent.stream(...)` 和 `agent.continue_stream(...)` 使用网关的 Responses SSE 流。读取 `text_stream()`、`reasoning_stream()`、`item_stream()`、`tool_stream()` 或 `full_stream()`；调用 `cancel()` 关闭当前请求。已完成的步骤会保留请求 ID、供应商元数据、结束原因、警告、用量和成本。
+
+## 相关页面
+
+- [Agent SDK 概览](../agent-sdk/overview.mdx)
+- [TypeScript Agent SDK](../typescript/agent-sdk.mdx)

@@ -7,6 +7,12 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { getProviderTableDiscountBadge } from "./ProviderCard";
 import { buildProviderSections } from "./pricingHelpers";
 
+const discountLabels = {
+	discount: "Discount",
+	off: "Off",
+	upToDiscount: (percent: number) => `Up to ${percent}% off`,
+};
+
 // These Node tests exercise exported helpers, not nuqs's ESM browser hooks.
 jest.mock("nuqs", () => ({
 	parseAsString: {},
@@ -62,7 +68,7 @@ describe("provider service tier display names", () => {
 			},
 		} as unknown as ReturnType<typeof buildProviderSections>;
 
-		expect(getProviderTableDiscountBadge(sections)).toBe("33% Off");
+		expect(getProviderTableDiscountBadge(sections, discountLabels)).toBe("33% Off");
 	});
 
 	it("shows introductory character SKU discounts in provider rows", () => {
@@ -70,6 +76,6 @@ describe("provider service tier display names", () => {
 			mediaInputs: [{ mod: "text", price: 0.022, basePrice: 0.08, discountEndsAt: "2026-10-12T00:00:00.000Z" }],
 		} as unknown as ReturnType<typeof buildProviderSections>;
 
-		expect(getProviderTableDiscountBadge(sections)).toBe("73% Off");
+		expect(getProviderTableDiscountBadge(sections, discountLabels)).toBe("73% Off");
 	});
 });

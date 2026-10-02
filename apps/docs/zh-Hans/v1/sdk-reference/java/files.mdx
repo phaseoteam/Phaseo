@@ -1,0 +1,30 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 Java SDK 上传文件并获取文件元数据和内容。"
+---
+
+**方法**：`Phaseo#uploadFile(...)`、`Phaseo#listFiles(...)`、`Phaseo#retrieveFile(...)`、`Phaseo#retrieveFileContent(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
+
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
+
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+
+System.out.println(String.valueOf(file));
+System.out.println(new String(content));
+```
+
+<Note>
+SDK 已提供 `listFiles(...)`，但使用共享网关密钥时，`GET /files` 目前会返回 `file_list_not_supported_with_shared_gateway_key`。
+请保存已上传文件的 ID，并直接获取文件。
+</Note>

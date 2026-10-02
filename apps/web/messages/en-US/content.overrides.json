@@ -1,0 +1,18 @@
+{
+  "roadmap": {
+    "feedback": "Got an idea, found an error, or want to prioritize a feature? We read everything and ship fast.",
+    "milestones": {
+      "organisation-page": {
+        "title": "Organization Pages",
+        "description": "Dedicated organization pages with linked models and metadata."
+      },
+      "countries-pages": {
+        "description": "Country-level views that connect organizations and model activity."
+      }
+    }
+  },
+  "acknowledgements": {
+    "title": "Acknowledgments",
+    "disclaimer": "This is a maintained product acknowledgment, not an exhaustive software bill of materials or license notice. Package-level copyright and license terms remain with their respective projects."
+  }
+}

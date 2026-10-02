@@ -1,0 +1,33 @@
+---
+icon: "files"
+title: "फ़ाइलें"
+description: "File upload, metadata और file-content retrieval के लिए PHP SDK उपयोग करें।"
+---
+
+**Methods**: `uploadFile()`, `listFiles()`, `retrieveFile()`, `retrieveFileContent()`
+
+### उदाहरण
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
+
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+<Note>
+`listFiles()` SDK के ज़रिए उपलब्ध है, लेकिन shared gateway key पर `GET /files` अभी `file_list_not_supported_with_shared_gateway_key` लौटाता है
+Uploaded file IDs सहेजें और उन्हें सीधे retrieve करें।
+</Note>

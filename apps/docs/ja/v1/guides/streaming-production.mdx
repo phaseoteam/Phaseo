@@ -1,0 +1,52 @@
+---
+icon: "server-cog"
+title: "本番環境でのストリーミング"
+description: "堅牢なストリーミングUXと信頼性の高いバックエンドを実現する運用パターンです。"
+---
+
+プロトタイプから本番環境に移行する際は、次のパターンを使ってください。
+
+## 信頼性チェックリスト
+
+- クライアント側でタイムアウトとキャンセル制御を設定します。
+- `429`と`5xx`は指数バックオフで処理します。
+- 切断されたストリームは再試行できるものとして扱います。
+- 正確性が重要な場合は、完了後にのみ部分テキストを保存します。
+
+## ブラウザー／Nodeでのキャンセル例
+
+```typescript
+const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), 30_000);
+
+try {
+  const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "openai/gpt-5-nano",
+      messages: [{ role: "user", content: "Stream a short summary." }],
+      stream: true,
+    }),
+    signal: controller.signal,
+  });
+  // Parse SSE frames from response.body here.
+} finally {
+  clearTimeout(timeout);
+}
+```
+
+## UIの指針
+
+- トークンの差分を順次表示します。
+- `[DONE]`を受け取ったら「生成終了」の状態を明示します。
+- リプレイやデバッグに備え、ログにリクエストIDとモデルIDを記録します。
+
+## ストリーミングを使わない場合
+
+- 現在のリクエスト検証で拒否されるツール呼び出しフロー（`stream + tools`）。
+- ユーザーに表示する前にすべての検証を済ませる必要があるワークフロー。
+

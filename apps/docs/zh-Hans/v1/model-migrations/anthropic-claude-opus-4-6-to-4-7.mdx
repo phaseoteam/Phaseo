@@ -1,0 +1,89 @@
+---
+title: "Anthropic Claude Opus 4.7"
+description: "介绍采用 Claude Opus 4.7 时需要了解的自适应思考、采样控制和 token 用量。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.7
+
+使用本指南，在生产环境中安全采用 `anthropic/claude-opus-4.7`。
+
+Claude Opus 4.7 更改了请求格式；如果不更新，旧版 4.6 请求模式可能会直接失败。
+
+## 新功能
+
+- 新增强度级别：`xhigh`（Messages API）。
+- Opus 4.7 移除了扩展思考预算；`thinking: { type: "enabled", budget_tokens: ... }` 现在会失败。
+- 此模型不再支持非默认采样参数：`temperature`、`top_p` 和 `top_k`。
+- 默认不返回思考内容，除非你明确选择启用。
+- 新版 tokenizer 可能会增加相对于 Opus 4.6 的 token 用量。
+
+## Phaseo Gateway 兼容行为
+
+为减少迁移故障，Phaseo 会接受 Opus 4.7 的旧版 Opus 4.6 字段，并在上游发送前将其规范化：
+
+- 接受 `temperature`、`top_p` 和 `top_k`，但会移除。
+- 不会转发旧版思考预算。
+- Opus 4.7 的思考始终以 `thinking: { "type": "adaptive", "display": "summarized" }` 发送。
+- `reasoning.effort` 仍然有效，并映射到 `output_config.effort`（支持 `xhigh`）。
+
+## 迁移快速入门
+
+### 1. 更新模型 ID
+
+将模型 ID 设置为 `anthropic/claude-opus-4.7`。
+
+### 2. 使用摘要显示的自适应思考
+
+Opus 4.7 请使用：
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+不要再使用旧版扩展思考预算。
+
+### 3. 移除采样控制
+
+不要发送：
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+改为调整提示词和指令。
+
+### 4. 重新校准强度设置
+
+如果使用推理控制，请使用以下设置重新测试：
+
+- 以 `output_config.effort = "high"` 作为基准。
+- 对最复杂的编程和代理任务使用 `output_config.effort = "xhigh"`。
+
+通过 OpenAI 风格负载调用 Phaseo 时，`reasoning.effort` 会映射到 Opus 4.7 对应的 `output_config.effort`。
+
+### 5. 重新检查 token 上限
+
+由于 tokenizer 已更改，请检查：
+
+- `max_tokens` / `max_output_tokens`
+- 超时预算
+- 成本控制和告警
+
+## 测试内容
+
+- 使用生产提示词验证严格 Schema 输出通过率。
+- 长周期工具工作流（调用次数、完成率和延迟）。
+- `high` 与 `xhigh` 下的输出质量差异。
+- 高频提示词类别的 token 成本变化。
+
+## 安全发布
+
+1. 切换流量前，先发布请求格式变更。
+2. 使用生产评估集对 Opus 4.7 进行影子测试。
+3. 灰度切换，并保留回滚到 Opus 4.6 的能力。
+4. 只有在质量、延迟和成本差异符合目标后再扩大流量。
+
+## 来源
+
+- [Claude Opus 4.7 新功能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.7 系统卡 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

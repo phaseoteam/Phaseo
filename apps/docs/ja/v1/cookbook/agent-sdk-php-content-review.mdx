@@ -1,0 +1,67 @@
+---
+title: "PHP Agent SDKでCMSコンテンツをレビューする"
+icon: "file-check"
+description: "PHP Agent SDKを使って、ローカルのコンテンツ検索ツールを範囲の決まったレビューループに組み込みます。"
+---
+
+オーケストレーションを別のシステムに任せず、PHPアプリや管理画面でコンテンツをすばやくレビューしたい場合に、このレシピを使います。
+
+## 1. SDKを準備する
+
+<Note type="warning">PHP Agent SDKパッケージはまだPackagistで公開されていません。[ソースからのインストール手順](../sdk-reference/php/agent-sdk-installation.mdx)に従ってください。</Note>
+
+## 2. コンテンツ検索ツールを定義する
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. エージェントを作成して実行する
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## このレシピが適する場面
+
+- PHPアプリがすでにコンテンツのデータソースを管理している
+- ローカルツールが1つか2つあれば十分
+- 大規模なオーケストレーション基盤ではなく、範囲を絞ったループを使いたい
+
+## 関連項目
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [不正な構造化JSONを修復する](./response-healing-for-structured-json.mdx)

@@ -1,0 +1,193 @@
+---
+title: "Clasificar solicitudes de soporte con presets y fallos conscientes de las guardrails"
+icon: "life-buoy"
+description: "Ejecuta un agente de clasificación de soporte basado en presets que devuelve JSON estricto, pausa los casos de alto riesgo para revisarlos y mantiene visibles los fallos de guardrails."
+---
+
+Usa esta receta cuando un flujo de soporte deba:
+
+- heredar el enrutamiento y los valores predeterminados de prompts de un preset del panel
+- devolver una salida estructurada estricta
+- pausar los casos de riesgo para que los revise una persona
+- mantener visibles en los registros los fallos del gateway en lugar de ocultarlos en el código del agente
+
+## 1. Empieza con un preset
+
+Crea un preset como `support-triage` que defina:
+
+- el modelo enrutado predeterminado o el destino del router
+- las preferencias de proveedor
+- el prompt del sistema de soporte
+- los parámetros de decodificación estables
+
+Así, el código del agente se centra en controlar el flujo de trabajo en vez de duplicar las políticas de solicitud.
+
+## 2. Define un contrato acotado de clasificación
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+Mantén el formato de la primera salida lo bastante pequeño para que el equipo de operaciones pueda revisarlo rápidamente.
+
+## 3. Crea el agente basado en el preset
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+El SDK resuelve `preset: "support-triage"` en el formato de alias del gateway `@support-triage`.
+
+## 4. Configura el adaptador conectado al gateway
+
+Usa valores predeterminados del adaptador para los elementos que deben mantenerse fijos en cada ejecución de clasificación:
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. Ejecuta el flujo con reintentos limitados
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+Si la ejecución se pausa para revisión, reanúdala de forma explícita:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. Trata los fallos del gateway como eventos operativos
+
+No ocultes los fallos ignorándolos dentro de la cadena de callbacks del agente.
+
+En su lugar, captura `AgentGatewayError` de forma explícita:
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+Después:
+
+1. permite que el runtime guarde el estado `failed` de la ejecución y los pasos
+2. En rutas de recuperación posteriores, consulta `loaded.run.errorDetails` o `loaded.steps[n].errorDetails` cuando la excepción original ya no esté en memoria
+3. consulta los detalles de la solicitud para revisar:
+   - la aplicación de guardrails
+   - los detalles del enrutamiento
+   - la ejecución de plugins
+   - los ID de solicitud y los datos del proveedor
+
+Esto es especialmente importante cuando:
+
+- una guardrail bloquea la solicitud
+- la lista de modelos permitidos del preset rechaza el modelo solicitado
+- las credenciales del proveedor o los filtros de habilitación eliminan el conjunto de candidatos enrutados
+- response healing no consigue recuperar un JSON que cumpla el esquema
+
+## 7. Qué verificar
+
+Después de una ejecución correcta y otra de riesgo intencionado, confirma lo siguiente:
+
+- la vista de detalles de la solicitud muestra el destino definido por el preset
+- los casos de alto riesgo se pausan en `waiting_for_human`
+- los pasos de modelo reintentados persisten `modelAttempts`
+- los fallos de guardrails o del preset siguen visibles en los detalles de la solicitud y no quedan ocultos en las excepciones del agente
+
+## Guías relacionadas
+
+- [SDK de agentes para TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+- [Ajustes preestablecidos](../guides/presets.mdx)
+- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
+- [Validar salidas estructuradas](../guides/structured-outputs.mdx)
+- [Implementar presets y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+- [Recuperar JSON estructurado mal formado](./response-healing-for-structured-json.mdx)
+- [Crear un bucle de agente duradero en TypeScript](./agent-sdk-durable-loop.mdx)

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { parseAsString, useQueryStates } from "nuqs";
 import { Check, Tag, X } from "lucide-react";
 
@@ -21,6 +22,7 @@ import {
 import type { UsageLabelFacet } from "@/lib/fetchers/internal/settingsTypes";
 
 export default function RequestLabelFilter({ facets }: { facets: UsageLabelFacet[] }) {
+	const t = useTranslations("SettingsUI");
 	const [queryState, setQueryState] = useQueryStates({
 		label_key: parseAsString.withDefault(""),
 		label_value: parseAsString.withDefault(""),
@@ -43,18 +45,18 @@ export default function RequestLabelFilter({ facets }: { facets: UsageLabelFacet
 						variant={active ? "secondary" : "outline"}
 						size="sm"
 						className="h-8 max-w-[min(320px,50vw)] gap-1.5 rounded-md px-2 text-xs"
-						aria-label={active ? `Change label filter ${active.key} equals ${active.value}` : "Filter requests by label"}
+						aria-label={active ? `${t("strings.Change label filter" as never)} ${active.key} = ${active.value}` : t("strings.Filter requests by label" as never)}
 					>
 						<Tag className="size-3.5 shrink-0" />
-						<span className="truncate">{active ? `${active.key} = ${active.value}` : "Label"}</span>
+						<span className="truncate">{active ? `${active.key} = ${active.value}` : t("strings.Label" as never)}</span>
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent align="end" className="w-[340px] gap-0 overflow-hidden rounded-md p-0">
 					<Command>
-						<CommandInput placeholder="Search labels…" />
+						<CommandInput placeholder={t("strings.Search labels…" as never)} />
 						<CommandList className="max-h-[320px]">
-							<CommandEmpty>{facets.length ? "No matching labels." : "No request labels in this time range."}</CommandEmpty>
-							<CommandGroup heading="Request labels">
+							<CommandEmpty>{facets.length ? t("strings.phraseNoMatchingLabels" as never) : t("strings.phraseNoRequestLabelsInThisTimeRange" as never)}</CommandEmpty>
+							<CommandGroup heading={t("strings.Request labels" as never)}>
 								{facets.map((facet) => {
 									const selected = active?.key === facet.key && active.value === facet.value;
 									return (
@@ -85,7 +87,7 @@ export default function RequestLabelFilter({ facets }: { facets: UsageLabelFacet
 					type="button"
 					className="inline-flex size-8 items-center justify-center rounded-md border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground"
 					onClick={clear}
-					aria-label="Clear label filter"
+					aria-label={t("strings.Clear label filter" as never)}
 				>
 					<X className="size-3.5" />
 				</button>

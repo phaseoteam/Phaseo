@@ -1,0 +1,94 @@
+---
+icon: "waypoints"
+title: "टूल कॉलिंग पैटर्न"
+description: "Chat completions और responses endpoints के लिए भरोसेमंद tool-calling loops।"
+---
+
+Tool-calling loops को deterministic और debug करने योग्य रखने के लिए ये patterns अपनाएँ।
+
+## पैटर्न 1: Chat Completions चक्र
+
+1. User message और tool definitions भेजें।
+2. अगर `finish_reason` `tool_calls` हो, तो हर tool call execute करें।
+3. Tool outputs को `role: "tool"` messages के रूप में वापस भेजें।
+4. Assistant का final answer पढ़ें।
+
+### अनुरोध (आगे की कड़ी)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## पैटर्न 2: Responses चक्र
+
+`/v1/responses` में model tool calls `function_call` type के output items के रूप में दिखते हैं।
+फिर `function_call_output` input items के साथ follow-up request भेजें।
+
+### अनुरोध (अनुवर्ती)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## एंडपॉइंट चुनें
+
+- OpenAI-style message loops पहले से हों, तो `/v1/chat/completions` को प्राथमिकता दें।
+- App Responses API पर standardized हो, तो `/v1/responses` चुनें।
+- App Anthropic-native हो, तो `/v1/messages` उपयोग करें।

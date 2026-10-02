@@ -1,0 +1,32 @@
+---
+icon: "music"
+title: "TTS（テキストから音声へ）"
+description: "C# SDKで`/audio/speech`を呼び出します。"
+---
+
+**メソッド**: `client.CreateSpeech(...)`
+
+### 例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3"
+});
+```
+
+### 主なパラメーター
+- `model`（必須）: TTS対応モデルのID。
+- `input`（必須）: 音声に合成するテキスト。
+- `voice`: 音声のプリセット（モデルによって異なります。例: `alloy`）。
+- `format`: `mp3`、`wav`、`flac`など。
+- `speed`: 再生速度の倍率（通常は0.25～4）。
+
+### 戻り値
+バイナリー形式の音声データ
+

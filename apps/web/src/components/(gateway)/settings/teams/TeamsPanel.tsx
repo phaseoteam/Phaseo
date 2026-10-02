@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import TeamsMembers from "./members/TeamsMembers";
 import TeamsRequests from "./JoinRequests/TeamsRequests";
 import TeamsInvites from "./TeamsInvites";
@@ -33,6 +34,7 @@ export default function TeamsPanel({
 	personalTeamId,
 	manageableTeamIds,
 }: Props) {
+	const t = useTranslations("SettingsUI");
 	const manageableTeams = React.useMemo(() => {
 		if (!manageableTeamIds?.length) return [] as Team[];
 		const allowed = new Set(manageableTeamIds);
@@ -51,8 +53,7 @@ export default function TeamsPanel({
 	if (!teams.length) {
 		return (
 			<div className="rounded-md border bg-card p-6 text-sm text-muted-foreground">
-				No workspaces available yet. Create a workspace to manage members,
-				requests, and invites.
+				{t("settingsCopy.teams.noWorkspaces")}
 			</div>
 		);
 	}

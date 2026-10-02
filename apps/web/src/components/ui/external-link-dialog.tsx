@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { AlertTriangle } from "lucide-react";
 
 import {
@@ -30,6 +31,7 @@ export function ExternalLinkDialog({
 	external: explicitlyExternal,
 }: ExternalLinkDialogProps) {
 	const [isOpen, setIsOpen] = React.useState(false);
+	const t = useTranslations("Common.ui.externalLinkDialog");
 	const isExternal = explicitlyExternal ?? isExternalLink(href);
 
 	if (!isExternal) {
@@ -49,12 +51,10 @@ export function ExternalLinkDialog({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<AlertTriangle className="h-5 w-5 text-amber-500" />
-						External Link Warning
+						{t("title")}
 					</DialogTitle>
 					<DialogDescription>
-						You are about to leave our website. While we try to verify every link
-						on our website, we cannot guarantee the content or security of external
-						sites. You click at your own risk.
+						{t("description")}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="text-sm text-zinc-500 dark:text-zinc-400 break-all">
@@ -66,7 +66,7 @@ export function ExternalLinkDialog({
 						onClick={() => setIsOpen(false)}
 						className="flex-1 sm:flex-none"
 					>
-						Cancel
+						{t("cancel")}
 					</Button>
 					<Button
 						onClick={() => {
@@ -75,7 +75,7 @@ export function ExternalLinkDialog({
 						}}
 						className="flex-1 sm:flex-none"
 					>
-						Continue
+						{t("continue")}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -1,0 +1,14 @@
+---
+title: "Auditereignisse des Arbeitsbereichs auflisten"
+sidebarTitle: "Auditereignisse"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /audit-events"
+description: "Sicherheitsrelevante Änderungen an der Steuerungsebene des authentifizierten Arbeitsbereichs auflisten."
+---
+
+<Note>
+Für diesen Endpunkt ist die Management-Berechtigung `activity:read` erforderlich. OAuth-Aufrufer benötigen außerdem die Rolle „Eigentümer“ oder „Administrator“ des Arbeitsbereichs.
+</Note>
+
+Ereignisse enthalten ausschließlich bereinigte Metadaten. Zugangsdaten im Klartext, Zugangsdaten-Hashes, Autorisierungsheader, vollständige Berechtigungslisten und Anfrageinhalte werden nie zurückgegeben.
+

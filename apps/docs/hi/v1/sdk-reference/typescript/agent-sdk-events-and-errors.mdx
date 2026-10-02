@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समाधान"
+description: "Gateway failures, validation errors और failed agent runs संभालें।"
+---
+
+जब app को तय करना हो कि retry करना है, user से अलग input माँगना है या operator को request details दिखानी हैं, तब Agent SDK structured errors उपयोग करें।
+
+## गेटवे विफलताओं को संभालें
+
+Gateway failures को `AgentGatewayError` के रूप में rethrow किया जाता है:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Failed runs और steps में उपलब्ध होने पर gateway error details सुरक्षित रहते हैं।
+
+## स्कीमा विफलताओं को संभालें
+
+`AgentSchemaValidationError` अमान्य टूल इनपुट/आउटपुट, प्रगति घटनाओं या अंतिम आउटपुट की पहचान करता है। इन्हें अस्थायी मॉडल विफलताओं के बजाय अनुबंध विफलताएँ मानें।
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## विफल रन की जाँच करें
+
+Runtime failure को checkpoint कर सके, तो ये देखें:
+
+- `result.run.status`
+- `result.run.error`
+- latest step का `status`, `error` और `modelAttempts`
+- Gateway logs से correlate करने के लिए `requestId` और `nativeResponseId`
+
+## सामान्य जाँचें
+
+- Confirm करें कि server process को `PHASEO_API_KEY` उपलब्ध है।
+- हर tool को unique और stable `id` दें।
+- Approve, reject या manual output देते समय exact tool-call IDs का उपयोग करें।
+- Model retries सीमित रखें; validation और approval failures पर blindly retry न करें।
+- Browser या queue worker को control लौटाने से पहले paused run state persist करें।
+
+## संबंधित गाइड
+
+- [लाइफसाइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)

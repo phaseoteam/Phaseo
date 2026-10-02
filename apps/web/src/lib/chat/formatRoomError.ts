@@ -295,16 +295,42 @@ function parseJsonLike(raw: string): ParsedGatewayError | null {
 	return null;
 }
 
-function titleFromCode(code: string): string {
+export type RoomErrorTranslator = (
+	key: string,
+	values?: Record<string, string | number>,
+) => string;
+
+function roomErrorText(
+	translate: RoomErrorTranslator | undefined,
+	key: string,
+	fallback: string,
+	values?: Record<string, string | number>,
+): string {
+	return translate ? translate(`roomError.${key}`, values) : fallback;
+}
+
+function titleFromCode(
+	code: string,
+	translate?: RoomErrorTranslator,
+): string {
 	const normalized = code.trim().toLowerCase();
-	if (!normalized) return "Request failed";
+	if (!normalized) return translate ? translate("requestFailed") : "Request failed";
 	if (normalized === "unsupported_model_or_endpoint") {
-		return "Unsupported model or endpoint";
+		return roomErrorText(translate, "unsupportedModelOrEndpointTitle", "Unsupported model or endpoint");
 	}
-	if (normalized === "insufficient_funds") return "Insufficient funds";
-	if (normalized === "key_limit_exceeded") return "Key limit exceeded";
-	if (normalized === "validation_error") return "Validation error";
-	if (normalized === "rate_limited") return "Rate limited";
+	if (normalized === "insufficient_funds") {
+		return roomErrorText(translate, "insufficientFundsTitle", "Insufficient funds");
+	}
+	if (normalized === "key_limit_exceeded") {
+		return roomErrorText(translate, "keyLimitExceededTitle", "Key limit exceeded");
+	}
+	if (normalized === "validation_error") {
+		return roomErrorText(translate, "validationErrorTitle", "Validation error");
+	}
+	if (normalized === "rate_limited") {
+		return roomErrorText(translate, "rateLimitedTitle", "Rate limited");
+	}
+	if (translate) return normalized;
 	return normalized
 		.split("_")
 		.filter(Boolean)
@@ -312,7 +338,10 @@ function titleFromCode(code: string): string {
 		.join(" ");
 }
 
-function hintFromUnsupportedDiagnostics(payload: ParsedGatewayError): string | undefined {
+function hintFromUnsupportedDiagnostics(
+	payload: ParsedGatewayError,
+	translate?: RoomErrorTranslator,
+): string | undefined {
 	const diagnostics = payload.provider_candidate_diagnostics;
 	const providerEnablement = payload.provider_enablement;
 
@@ -321,15 +350,15 @@ function hintFromUnsupportedDiagnostics(payload: ParsedGatewayError): string | u
 		providerEnablement.dropped.length > 0 &&
 		providerEnablement.dropped.every((entry) => entry?.reason === "pricing_missing")
 	) {
-		return "A provider mapping exists for this endpoint, but pricing is not configured yet. Try another provider or model until pricing is enabled.";
+		return roomErrorText(translate, "pricingNotConfiguredHint", "A provider mapping exists for this endpoint, but pricing is not configured yet. Try another provider or model until pricing is enabled.");
 	}
 
 	if ((diagnostics?.totalProviders ?? 0) === 0) {
-		return "No provider is currently routable for this model in this room. Try provider Auto or choose a model that supports this endpoint.";
+		return roomErrorText(translate, "noProviderRoutableHint", "No provider is currently routable for this model in this room. Try provider Auto or choose a model that supports this endpoint.");
 	}
 
 	if ((diagnostics?.supportsEndpointCount ?? 0) === 0) {
-		return "This model is known in the gateway, but no provider currently supports this room endpoint. Try a model that matches the room type.";
+		return roomErrorText(translate, "noProviderSupportsEndpointHint", "This model is known in the gateway, but no provider currently supports this room endpoint. Try a model that matches the room type.");
 	}
 
 	if (
@@ -337,13 +366,16 @@ function hintFromUnsupportedDiagnostics(payload: ParsedGatewayError): string | u
 		Array.isArray(diagnostics?.droppedMissingAdapter) &&
 		diagnostics.droppedMissingAdapter.length > 0
 	) {
-		return "A provider mapping exists, but the gateway does not have an adapter for this endpoint yet.";
+		return roomErrorText(translate, "providerAdapterUnavailableHint", "A provider mapping exists, but the gateway does not have an adapter for this endpoint yet.");
 	}
 
-	return "Try provider Auto, then retry with a model that supports this room endpoint.";
+	return roomErrorText(translate, "tryAutoProviderHint", "Try provider Auto, then retry with a model that supports this room endpoint.");
 }
 
-function hintFromRoutingDiagnostics(payload: ParsedGatewayError): string | undefined {
+function hintFromRoutingDiagnostics(
+	payload: ParsedGatewayError,
+	translate?: RoomErrorTranslator,
+): string | undefined {
 	const stages = Array.isArray(payload.routing_diagnostics?.filterStages)
 		? payload.routing_diagnostics?.filterStages ?? []
 		: [];
@@ -368,7 +400,7 @@ function hintFromRoutingDiagnostics(payload: ParsedGatewayError): string | undef
 			(reason) => reason === "capability_status_internal_testing_requires_testing_mode"
 		)
 	) {
-		return "This model/provider mapping exists, but the endpoint is internal-testing only right now and is not publicly routable in this room.";
+		return roomErrorText(translate, "internalTestingOnlyHint", "This model/provider mapping exists, but the endpoint is internal-testing only right now and is not publicly routable in this room.");
 	}
 
 	if (
@@ -379,7 +411,7 @@ function hintFromRoutingDiagnostics(payload: ParsedGatewayError): string | undef
 				reason === "capability_status_disabled"
 		)
 	) {
-		return "This model/provider mapping is known in the gateway, but routing is currently disabled for this endpoint.";
+		return roomErrorText(translate, "routingDisabledHint", "This model/provider mapping is known in the gateway, but routing is currently disabled for this endpoint.");
 	}
 
 	if (
@@ -390,26 +422,51 @@ function hintFromRoutingDiagnostics(payload: ParsedGatewayError): string | undef
 				reason === "provider_status_not_ready"
 		)
 	) {
-		return "This provider exists for the model, but it is currently rollout-restricted for your workspace or channel.";
+		return roomErrorText(translate, "rolloutRestrictedHint", "This provider exists for the model, but it is currently rollout-restricted for your workspace or channel.");
 	}
 
 	if (reasons.every((reason) => reason === "breaker_open")) {
-		return "All matching providers are temporarily unhealthy or rate-protected right now. Retrying later may succeed.";
+		return roomErrorText(translate, "providersTemporarilyUnavailableHint", "All matching providers are temporarily unhealthy or rate-protected right now. Retrying later may succeed.");
 	}
 
 	return undefined;
 }
 
-function hintForGatewayError(payload: ParsedGatewayError): string | undefined {
+function hintForGatewayError(
+	payload: ParsedGatewayError,
+	translate?: RoomErrorTranslator,
+): string | undefined {
 	const structuredFailureHint = payload.provider_failure_diagnostics?.hint?.trim();
-	if (structuredFailureHint) return structuredFailureHint;
+	const structuredFailureCategory = payload.provider_failure_diagnostics?.category?.trim();
+	const structuredCategoryKeys: Record<string, string> = {
+		credentials_not_configured: "providerCredentialsNotConfiguredHint",
+		credentials_invalid_or_forbidden: "providerCredentialsRejectedHint",
+		provider_access_missing: "providerAccessMissingHint",
+		region_or_project_restriction: "providerRegionProjectRestrictionHint",
+		model_unavailable_for_endpoint: "providerModelUnavailableHint",
+		rate_limited: "providerRateLimitedHint",
+		server_error: "providerServerErrorHint",
+	};
+	const structuredCategoryKey = structuredFailureCategory
+		? structuredCategoryKeys[structuredFailureCategory]
+		: undefined;
+	if (structuredCategoryKey) {
+		return translate
+			? roomErrorText(translate, structuredCategoryKey, structuredFailureHint ?? "")
+			: structuredFailureHint;
+	}
+	if (structuredFailureHint) {
+		return translate
+			? roomErrorText(translate, "genericProviderFailureHint", "The provider could not complete the request. Check its configuration or try another provider.")
+			: structuredFailureHint;
+	}
 	const code = String(payload.error ?? "").trim().toLowerCase();
 	if (code === "key_limit_exceeded") {
 		const diagnostics = normalizeKeyLimitDiagnostics(payload as ParsedGatewayError & KeyLimitDiagnostics);
 		if (diagnostics?.metric === "soft_blocked") {
-			return "This API key is currently soft-blocked. Re-enable the key or adjust key controls before retrying.";
+			return roomErrorText(translate, "apiKeySoftBlockedHint", "This API key is currently soft-blocked. Re-enable the key or adjust key controls before retrying.");
 		}
-		const windowLabel =
+		const windowKey =
 			diagnostics?.window === "daily"
 				? "daily"
 				: diagnostics?.window === "weekly"
@@ -417,25 +474,50 @@ function hintForGatewayError(payload: ParsedGatewayError): string | undefined {
 					: diagnostics?.window === "monthly"
 						? "monthly"
 						: "configured";
-		const metricLabel =
+		const windowLabel = roomErrorText(
+			translate,
+			`limitWindows.${windowKey}`,
+			windowKey,
+		);
+		const metricKey =
 			diagnostics?.metric === "cost"
 				? "spend"
 				: diagnostics?.metric === "requests"
 					? "request"
 					: "usage";
+		const metricLabel = roomErrorText(
+			translate,
+			`limitMetrics.${metricKey}`,
+			metricKey,
+		);
 		if (
 			diagnostics &&
 			diagnostics.currentValue != null &&
 			diagnostics.limitValue != null
 		) {
-			return `This API key hit its ${windowLabel} ${metricLabel} limit (${diagnostics.currentValue}/${diagnostics.limitValue}). Wait for the reset window or raise the key limit.`;
+			return roomErrorText(
+				translate,
+				"apiKeyLimitReachedHint",
+				`This API key hit its ${windowLabel} ${metricLabel} limit (${diagnostics.currentValue}/${diagnostics.limitValue}). Wait for the reset window or raise the key limit.`,
+			{
+				window: windowLabel,
+				metric: metricLabel,
+				current: diagnostics.currentValue,
+				limit: diagnostics.limitValue,
+			},
+			);
 		}
-		return `This API key hit a ${windowLabel} limit. Wait for the reset window or raise the key limit.`;
+		return roomErrorText(
+			translate,
+			"apiKeyLimitReachedGenericHint",
+			`This API key hit a ${windowLabel} limit. Wait for the reset window or raise the key limit.`,
+			{ window: windowLabel },
+		);
 	}
 	if (code === "unsupported_model_or_endpoint") {
-		return hintFromUnsupportedDiagnostics(payload);
+		return hintFromUnsupportedDiagnostics(payload, translate);
 	}
-	const routingHint = hintFromRoutingDiagnostics(payload);
+	const routingHint = hintFromRoutingDiagnostics(payload, translate);
 	if (routingHint) return routingHint;
 	const statusCode =
 		typeof payload.status_code === "number" ? payload.status_code : null;
@@ -453,7 +535,7 @@ function hintForGatewayError(payload: ParsedGatewayError): string | undefined {
 			failureProviders.includes("google-ai-studio") ||
 			failureProviders.includes("google"));
 	if (appearsGoogleAuthIssue) {
-		return "Google Veo authentication failed. Verify the selected BYOK key (or gateway GOOGLE_AI_STUDIO_API_KEY), and ensure that key is valid for Gemini API access and not restricted by referrer/IP.";
+		return roomErrorText(translate, "googleVeoAuthenticationHint", "Google Veo authentication failed. Verify the selected BYOK key (or gateway GOOGLE_AI_STUDIO_API_KEY), and ensure that key is valid for Gemini API access and not restricted by referrer/IP.");
 	}
 	return undefined;
 }
@@ -825,16 +907,23 @@ function extractWorkspacePolicyFromValidationDetails(
 	return undefined;
 }
 
-export function formatRoomError(rawError: string): FormattedRoomError {
-	const fallbackMessage = rawError.trim() || "The request failed.";
+export function formatRoomError(
+	rawError: string,
+	translate?: RoomErrorTranslator,
+): FormattedRoomError {
+	const rawFallbackMessage = rawError.trim() || "The request failed.";
+	const fallbackMessage =
+		translate && /^(the )?request failed\.?$/i.test(rawFallbackMessage)
+			? translate("requestFailed")
+			: rawFallbackMessage;
 	const parsed = parseJsonLike(fallbackMessage);
 	if (!parsed) {
 		return {
-			title: "Request failed",
+			title: translate ? translate("requestFailed") : "Request failed",
 			message: fallbackMessage,
 		};
 	}
-	const title = titleFromCode(String(parsed.error ?? ""));
+	const title = titleFromCode(String(parsed.error ?? ""), translate);
 	const message =
 		(parsed.description && parsed.description.trim()) ||
 		(parsed.message && parsed.message.trim()) ||
@@ -842,7 +931,7 @@ export function formatRoomError(rawError: string): FormattedRoomError {
 	return {
 		title,
 		message,
-		hint: hintForGatewayError(parsed),
+		hint: hintForGatewayError(parsed, translate),
 		reason:
 			typeof parsed.reason === "string" && parsed.reason.trim()
 				? parsed.reason.trim()

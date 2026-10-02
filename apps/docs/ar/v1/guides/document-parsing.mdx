@@ -1,0 +1,78 @@
+---
+icon: "scan-text"
+title: "تحليل صور المستندات"
+description: "استخرج النص المرتب والجداول والصور وبيانات تخطيط الصفحات من صور المستندات باستخدام Cohere Parse v5.0."
+---
+
+استخدم نقطة النهاية Parse عندما تحتاج إلى أكثر من OCR عادي. فهي تحافظ على ترتيب الصفحات ويمكنها إرجاع Markdown أو كتل منظّمة من النصوص والصور والجداول.
+
+<Warning>
+  لا تقبل واجهة Parse العامة من Cohere حاليًا سوى عناوين URL للصور ومعرّفات URI لبيانات الصور بترميز base64. حوّل صفحات PDF إلى صور قبل إرسالها. يجب ألا يتجاوز حجم الصورة 20 ميغابايت أو 50 ميغابكسل أو 200 ميغابايت بعد فك الترميز.
+</Warning>
+
+## التحليل بصيغة Markdown
+
+يحافظ Markdown على ترتيب القراءة، ويضمّن الجداول بصيغة HTML، ويربط الصور المكتشفة ببياناتها الوصفية في الصفحة.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/parse \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere/parse-v5.0",
+    "document": {
+      "type": "image_url",
+      "image_url": "https://example.com/invoice.png"
+    },
+    "output_format": "markdown"
+  }'
+```
+
+```ts TypeScript
+const response = await fetch("https://api.phaseo.app/v1/parse", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "cohere/parse-v5.0",
+    document: {
+      type: "image_url",
+      image_url: "https://example.com/invoice.png",
+    },
+    output_format: "markdown",
+  }),
+});
+
+const parsed = await response.json();
+console.log(parsed.pages[0].markdown.content);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    json={
+        "model": "cohere/parse-v5.0",
+        "document": {
+            "type": "image_url",
+            "image_url": "https://example.com/invoice.png",
+        },
+        "output_format": "markdown",
+    },
+)
+response.raise_for_status()
+print(response.json()["pages"][0]["markdown"]["content"])
+```
+</CodeGroup>
+
+## إرجاع كتل منظّمة
+
+عيّن `output_format` إلى `blocks` لتلقّي مناطق مرتبة من النصوص والصور والجداول. تتضمن كتل الصور والجداول مربعات إحاطة بالبكسل وبصيغة موحّدة عند توفرها.
+
+يُحتسب استخدام Parse حسب الصفحة. يتضمن الرد بيانات Cohere الوصفية وقيمة `usage.input_pages` موحّدة عندما يبلّغ المزوّد عن الصفحات المفوترة. توفر Cohere حاليًا وصولًا مجانيًا مقيّد المعدل إلى API للتقييم، ولم تنشر بعد سعرًا للإنتاج لخدمة Parse.

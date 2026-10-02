@@ -1,8 +1,11 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React, { useState } from "react";
 import Image from "next/image";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
+import { useLocale } from "next-intl";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,20 +17,20 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ExternalLink, Calendar, Activity, AlertTriangle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, type Locale } from "date-fns";
+import { ar, de, enGB, enUS, es, fr, hi, ja, ptBR, zhCN } from "date-fns/locale";
 import RevokeDialog from "./RevokeDialog";
 import ReauthorizeDialog from "./ReauthorizeDialog";
-import { oauthScopeLabel } from "@/lib/oauth/scopes";
 import { groupConsentScopes } from "@/components/(gateway)/oauth/consentScopeGroups";
+import { scopePermissionFor, type ScopePermission, type ScopeTone } from "@/components/(gateway)/oauth/scopePermission";
 import { updateAuthorizationScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface AuthorizationCardProps {
 	authorization: any;
 	userId: string;
 }
-
-type ScopeTone = "identity" | "read" | "write" | "delete";
 
 function scopeTone(scope: string): ScopeTone {
 	if (["openid", "profile", "email"].includes(scope)) return "identity";
@@ -37,13 +40,40 @@ function scopeTone(scope: string): ScopeTone {
 }
 
 function scopeToneBadge(tone: ScopeTone) {
-	if (tone === "identity") return { label: "Identity", className: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300" };
-	if (tone === "delete") return { label: "Delete", className: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300" };
-	if (tone === "write") return { label: "Write", className: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300" };
-	return { label: "Read", className: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300" };
+	if (tone === "identity") return { className: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300" };
+	if (tone === "delete") return { className: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300" };
+	if (tone === "write") return { className: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300" };
+	return { className: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300" };
 }
 
 export default function AuthorizationCard({ authorization }: AuthorizationCardProps) {
+	const t = useTranslations("SettingsUI");
+	const consentT = useTranslations("Common.authFlows.oauthConsent");
+	const currentLocale = useLocale();
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const resources = consentT.raw("resources" as never) as Record<string, string>;
+	const groups = consentT.raw("groups" as never) as Record<string, { title: string; description: string }>;
+	const dateLocales: Record<string, Locale> = { ar: ar, "ar-SA": ar, de, "de-DE": de, enGB, "en-GB": enGB, enUS, "en-US": enUS, es, "es-ES": es, fr, "fr-FR": fr, hi, ja, ptBR, "pt-BR": ptBR, zhCN, "zh-Hans": zhCN, "en-XA": enGB };
+	const dateLocale = dateLocales[currentLocale] ?? enGB;
+	const toneLabel = (tone: ScopeTone) => {
+		if (tone === "identity") return consentT("toneIdentity");
+		if (tone === "delete") return consentT("toneDelete");
+		if (tone === "write") return consentT("toneWrite");
+		return consentT("toneRead");
+	};
+	const permissionCopy = (scope: string) => {
+		const permission: ScopePermission = scopePermissionFor(scope);
+		if (permission.action === "identity") return { label: consentT("identityPermissionLabel"), description: consentT("identityPermissionDescription") };
+		if (permission.action === "gateway") return { label: consentT("gatewayPermissionLabel"), description: consentT("gatewayPermissionDescription") };
+		if (permission.action === "unknown" || !permission.resourceKey) {
+			return { label: consentT("unknownPermissionLabel", { scope }), description: consentT("unknownPermissionDescription", { scope }) };
+		}
+		const resource = resources[permission.resourceKey] ?? scope;
+		if (permission.action === "read") return { label: consentT("readPermissionLabel", { resource }), description: consentT("readPermissionDescription", { resource }) };
+		if (permission.action === "manage") return { label: consentT("managePermissionLabel", { resource }), description: consentT("managePermissionDescription", { resource }) };
+		return { label: consentT("deletePermissionLabel", { resource }), description: consentT("deletePermissionDescription", { resource }) };
+	};
+	const groupCopy = (key: string) => groups[key] ?? { title: consentT("otherGroupTitle"), description: consentT("otherGroupDescription", { scope: key.replaceAll("other:", "") }) };
 	const isPhaseoCli = authorization.app_name === "Phaseo CLI";
 	const grantedScopes: string[] = Array.isArray(authorization.scopes)
 		? authorization.scopes.filter((scope: unknown): scope is string => typeof scope === "string")
@@ -81,10 +111,10 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 		);
 		setSavingScopes(false);
 		if (result.error) {
-			toast.error(result.error);
+			toast.error(consentT("updatePermissionsFailed"));
 			return;
 		}
-		toast.success("Permissions updated");
+	toast.success(s("Permissions updated"));
 		setEditingScopes(false);
 		router.refresh();
 	};
@@ -125,11 +155,11 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 								) : authorization.app_name}
 							</CardTitle>
 							<CardDescription className="mt-1 wrap-break-word">
-								{authorization.app_description || "No description provided"}
+								{authorization.app_description || s("No description provided")}
 							</CardDescription>
 							{authorization.app_is_identified === false && authorization.app_client_id && (
 								<p className="mt-1 break-all font-mono text-xs text-muted-foreground">
-									Client {authorization.app_client_id}
+									{s("Client")} {authorization.app_client_id}
 								</p>
 							)}
 						</div>
@@ -156,10 +186,10 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 					<AccordionItem value="permissions" className="border-0">
 						<AccordionTrigger className="gap-3 px-3 py-3 hover:bg-muted/40">
 							<div className="min-w-0 flex-1 text-left">
-								<div className="text-sm font-medium">Permissions</div>
+								<div className="text-sm font-medium">{s("Permissions")}</div>
 								<p className="mt-0.5 text-xs font-normal text-muted-foreground">
-									{scopeGroups.length} group{scopeGroups.length === 1 ? "" : "s"} /{" "}
-									{scopeGroups.reduce((total, group) => total + group.scopes.length, 0)} permissions
+									{scopeGroups.length} {s(scopeGroups.length === 1 ? "group" : "groups")} /{" "}
+									{scopeGroups.reduce((total, group) => total + group.scopes.length, 0)} {s("permissions")}
 								</p>
 							</div>
 						</AccordionTrigger>
@@ -167,21 +197,21 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 							<div className="mb-3 flex flex-col gap-2 rounded-md bg-muted/35 p-2.5 sm:flex-row sm:items-center sm:justify-between">
 								<p className="text-xs text-muted-foreground">
 									{editingScopes
-										? "Deselect permissions to reduce this app's access. New access requires authorization through the app."
-										: "You can reduce this app's access without revoking it entirely."}
+										? s("phraseDeselectPermissionsToReduceThisAppSAccessNewAccessRequiresAuthorizationThroughTheApp")
+										: s("phraseYouCanReduceThisAppSAccessWithoutRevokingItEntirely")}
 								</p>
 								{editingScopes ? (
 									<div className="flex shrink-0 gap-2">
 										<Button type="button" size="sm" variant="ghost" className="rounded-md" disabled={savingScopes} onClick={cancelScopeEditing}>
-											Cancel
+											{s("Cancel")}
 										</Button>
 										<Button type="button" size="sm" className="rounded-md" disabled={savingScopes || selectedScopes.length === 0 || !hasScopeChanges} onClick={saveScopes}>
-											{savingScopes ? "Saving..." : "Save changes"}
+										{savingScopes ? s("phraseSaving") : s("Save changes")}
 										</Button>
 									</div>
 								) : (
 									<Button type="button" size="sm" variant="outline" className="shrink-0 rounded-md" onClick={() => setEditingScopes(true)}>
-										Manage permissions
+											{consentT("managePermissions")}
 									</Button>
 								)}
 							</div>
@@ -192,12 +222,13 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 							>
 								{scopeGroups.map((group) => {
 									const tones = Array.from(new Set(group.scopes.map(scopeTone)));
+									const localizedGroup = groupCopy(group.key);
 									return (
 										<AccordionItem key={group.key} value={group.key} className="overflow-hidden rounded-md border">
 											<AccordionTrigger className="gap-3 px-3 py-2.5 hover:bg-muted/40">
 												<div className="min-w-0 flex-1 text-left">
 													<div className="flex flex-wrap items-center gap-1.5">
-														<span className="mr-0.5 truncate text-sm">{group.label}</span>
+												<span className="mr-0.5 truncate text-sm">{localizedGroup.title}</span>
 														<Badge variant="secondary" className="rounded-md font-normal">
 															{group.scopes.length}
 														</Badge>
@@ -205,13 +236,13 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 															const badge = scopeToneBadge(tone);
 															return (
 																<Badge key={tone} variant="outline" className={`${badge.className} rounded-md font-normal`}>
-																	{badge.label}
+																	{toneLabel(tone)}
 																</Badge>
 															);
 														})}
 													</div>
 													<p className="mt-0.5 line-clamp-2 text-xs font-normal text-muted-foreground">
-														{group.description}
+													{localizedGroup.description}
 													</p>
 												</div>
 											</AccordionTrigger>
@@ -225,13 +256,13 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 																<Checkbox
 																	checked={selectedScopes.includes(scope)}
 																	onCheckedChange={(checked) => toggleScope(scope, checked === true)}
-																	aria-label={`Allow ${oauthScopeLabel(scope)}`}
+															aria-label={consentT("allowPermission", { permission: permissionCopy(scope).label })}
 																/>
 															) : null}
-															<span className="min-w-0 break-words text-xs font-medium">{oauthScopeLabel(scope)}</span>
+														<span className="min-w-0 break-words text-xs font-medium">{permissionCopy(scope).label}</span>
 														</div>
 														<Badge variant="outline" className={`${badge.className} shrink-0 rounded-md font-normal`}>
-															{badge.label}
+															{toneLabel(scopeTone(scope))}
 														</Badge>
 													</>
 												);
@@ -259,22 +290,22 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 						<div className="flex items-start gap-2">
 							<AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-300" />
 							<div className="min-w-0 space-y-2">
-								<div className="text-sm font-medium text-amber-900 dark:text-amber-100">Additional permissions available</div>
+								<div className="text-sm font-medium text-amber-900 dark:text-amber-100">{s("Additional permissions available")}</div>
 								<p className="text-xs text-amber-800 dark:text-amber-200">
-									This app can now request more permissions. Your existing access has not changed; use Reauthorize above to start a new request from the app.
+													{consentT("additionalPermissionsDescription")}
 								</p>
 								<div className="space-y-2">
 									{additionalScopeGroups.map((group) => (
 										<div key={group.key} className="rounded-md border border-amber-300/70 p-2 dark:border-amber-800/70">
 											<div className="mb-1.5 text-xs font-medium text-amber-900 dark:text-amber-100">
-												{group.label}
+												{groupCopy(group.key).title}
 											</div>
 											<div className="flex flex-wrap gap-1.5">
 												{group.scopes.map((scope) => {
 													const badge = scopeToneBadge(scopeTone(scope));
 													return (
 														<Badge key={scope} variant="outline" className={`${badge.className} max-w-full rounded-md whitespace-normal break-words text-left text-xs font-normal`}>
-															{oauthScopeLabel(scope)} · {badge.label}
+															{permissionCopy(scope).label} · {toneLabel(scopeTone(scope))}
 														</Badge>
 													);
 												})}
@@ -290,7 +321,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 				{/* Metadata */}
 				<div className="grid grid-cols-3 gap-3 border-t pt-4 text-sm">
 					<div className="min-w-0">
-						<div className="mb-1 text-xs font-medium text-foreground">Team</div>
+								<div className="mb-1 text-xs font-medium text-foreground">{s("Team")}</div>
 						<div className="truncate text-xs text-muted-foreground" title={authorization.team_name}>
 							{authorization.team_name}
 						</div>
@@ -298,25 +329,27 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 					<div>
 						<div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
 							<Calendar className="size-3" />
-							<span>Authorized</span>
+							<span>{s("Authorized")}</span>
 						</div>
 						<div className="text-xs font-medium leading-snug">
-							{formatDistanceToNow(new Date(authorization.authorized_at), {
-								addSuffix: true,
+													{formatDistanceToNow(new Date(authorization.authorized_at), {
+														addSuffix: true,
+														locale: dateLocale,
 							})}
 						</div>
 					</div>
 					<div>
 						<div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
 							<Activity className="size-3" />
-							<span>Last Used</span>
+							<span>{s("Last Used")}</span>
 						</div>
 						<div className="text-xs font-medium leading-snug">
 							{authorization.last_used_at
-								? formatDistanceToNow(new Date(authorization.last_used_at), {
-										addSuffix: true,
+													? formatDistanceToNow(new Date(authorization.last_used_at), {
+																addSuffix: true,
+																locale: dateLocale,
 									})
-								: "Never"}
+								: t("labels.never")}
 						</div>
 					</div>
 				</div>

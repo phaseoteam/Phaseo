@@ -1,0 +1,66 @@
+---
+icon: "book-open"
+title: "引用说明"
+description: "如何在工作中注明使用了 Phaseo 的数据、基准测试和网关工具。"
+---
+
+Phaseo 汇总模型提供商和评估项目公开的信息及基准测试结果。
+如果你使用 Phaseo 查询、比较或监控模型，简单注明来源有助于其他人了解这个平台。
+
+---
+
+## 简短写法
+
+如果 Phaseo 对你有帮助，请在合适的位置（方法、脚注或致谢）添加链接：
+
+> 本文使用了 [Phaseo](https://phaseo.app) 的模型元数据和汇总基准测试结果。
+
+---
+
+## 建议引用格式（可选）
+
+如需更正式的引用，可以使用：
+
+```text
+Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+```
+
+BibTeX（可选）：
+
+```bibtex
+@misc{phaseo-2025,
+    title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
+    author = {{Phaseo Team}},
+    year   = {2025},
+    url    = {https://phaseo.app}
+}
+```
+
+---
+
+## 基准测试数据
+
+Phaseo **本身不运行基准测试**。我们展示并规范化由基准测试作者和模型提供商报告的分数。
+
+使用通过 Phaseo 获取的基准测试结果时：
+
+1. 将原始基准测试和论文作为主要来源引用。
+2. 也可以注明 Phaseo 是你获取或比较分数的平台。
+3. 请包含：
+
+- 基准测试名称和数据拆分（例如 `MMLU test`）。
+- 模型标识符和提供商。
+- 相关 Phaseo 页面或 API 的 URL。
+- 访问日期。
+
+示例文本：
+
+> 这些基准测试分数通过 Phaseo 获取（MMLU test 数据拆分），访问日期为 2025 年 3 月 3 日。模型：`openai-gpt-4o`；提供商：OpenAI。
+
+## Gateway 与工具
+
+描述集成时，可以将 Phaseo 介绍为网关层，而不是研究基准测试来源：
+
+> 我们使用 Phaseo Gateway，通过单个 API 统一访问 OpenAI、Anthropic 和 Google 模型。
+
+直接链接到 [API 参考](../api-reference/introduction.mdx)，方便读者了解详情。

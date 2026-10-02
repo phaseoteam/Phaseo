@@ -1,0 +1,33 @@
+---
+icon: "triangle-alert"
+title: "错误与故障排查"
+description: "处理 Go Agent 中的模型、工具、验证、取消和继续运行错误。"
+---
+
+Agent 失败通常来自模型请求、本地工具、模式验证、取消或未完成的人工决策。请在日志中保留这些路径的信息，并向调用方返回安全错误。
+
+## 从工具错误中恢复
+
+如果模型有可能从工具故障中恢复，请在工具上设置 `OnError: "return-to-model"`。SDK 会将错误转换为工具结果，让下一轮选择其他操作。对于不安全或无法恢复的故障，请保留默认的运行失败行为。
+
+## 遵循取消信号
+
+将请求上下文传递给 `Run`、`Continue` 或 `Stream`。取消该上下文会停止模型流式传输，并阻止启动新的工具任务。
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Persist enough application state to retry or report the timeout.
+}
+```
+
+## 排查继续运行时的错误
+
+运行等待人工处理时，每个待处理调用都需要一项与工具调用 ID 关联的批准、拒绝或外部提供的结果。请保存返回的完整运行记录；仅有人工消息不能替代这些决策。
+
+## 记录有用的上下文
+
+记录运行 ID、步骤索引、请求 ID、供应商、模型、完成原因、工具调用 ID 和停止原因。生命周期钩子和 DevTools 会提供这些字段，无需在传输层记录日志。

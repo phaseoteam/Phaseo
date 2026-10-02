@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
@@ -18,6 +19,7 @@ export default async function AppDetailShell({
 	app?: { id: string; title: string; url?: string | null; image_url?: string | null; slug?: string } | null;
 	tocItems?: ModelPageTocItem[];
 }) {
+	const t = await getTranslations("Product.appsDetail");
 	let appData = app;
 
 	if (!appData) {
@@ -29,11 +31,11 @@ export default async function AppDetailShell({
 					<div className="container mx-auto px-4 py-8">
 						<Card>
 							<CardHeader>
-								<CardTitle>App Not Found</CardTitle>
+								<CardTitle>{t("notFound")}</CardTitle>
 							</CardHeader>
 							<CardContent>
 								<p className="text-sm text-muted-foreground">
-									The app you&apos;re looking for doesn&apos;t exist.
+									{t("notFoundDescription")}
 								</p>
 							</CardContent>
 						</Card>
@@ -69,7 +71,7 @@ export default async function AppDetailShell({
 						/>
 						<div className="min-w-0">
 							<h1 className="truncate text-3xl font-bold tracking-tight">{appData.title}</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">Public usage trends and model distribution</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{t("publicUsageDescription")}</p>
 						</div>
 					</div>
 					{appData.url && appData.url !== "about:blank" ? (
@@ -80,7 +82,7 @@ export default async function AppDetailShell({
 								rel="noreferrer"
 								className="flex items-center gap-1"
 							>
-								Visit app
+								{t("visitApp")}
 								<ExternalLink className="h-4 w-4" />
 							</Link>
 						</Button>

@@ -1,0 +1,34 @@
+---
+icon: "package"
+title: "インストール"
+description: "Phaseo PHP Agent SDKをインストールして設定します。"
+---
+
+Agent SDKは [`phaseo/agent-sdk`](https://packagist.org/packages/phaseo/agent-sdk) として Packagist で公開されています。
+
+## 必要条件
+
+- PHP 8.1以降
+- Composer
+- Phaseo APIキー
+
+## インストール
+
+```bash
+composer require phaseo/agent-sdk
+```
+
+コアの `phaseo/sdk` パッケージは依存関係として自動的にインストールされます。
+
+## 環境変数
+
+例を実行する前に Gateway API キーを設定します:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 次のステップ
+
+- [概要](./agent-sdk-overview.mdx)
+- [Agent SDKで構築](./agent-sdk.mdx)

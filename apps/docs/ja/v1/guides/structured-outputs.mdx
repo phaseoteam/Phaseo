@@ -1,0 +1,94 @@
+---
+icon: "shapes"
+title: "構造化出力"
+description: "json_objectまたはjson_schemaの出力形式で、予測可能なJSONを返します。"
+---
+
+構造化出力を使うと、自由形式のテキストではなく機械可読な形式を指定できます。
+
+## 対応エンドポイント
+
+構造化出力は次のエンドポイントで使えます。
+
+- `response_format`を使う`/v1/chat/completions`
+- `text.format`を使う`/v1/responses`
+- `/v1/messages`もJSONテキストを返せますが、同じ`response_format`の仕様は使いません。
+
+## リクエスト
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## レスポンス
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## 仕様上の注意
+
+- `response_format.type`には`text`、`json_object`、`json_schema`を指定します。
+- `json_schema`ではスキーマオブジェクトを含めます（chat形式のペイロードでは`response_format.json_schema.schema`、Responses形式では`text.format.schema`）。
+- 後続処理に渡す前に、サーバー側でJSONを検証します。
+
+## スキーマを設計する
+
+小さなオブジェクトから始め、必須フィールドを明示し、既知のカテゴリには列挙型を使います。余分なキーを拒否する場合は`additionalProperties: false`を設定してください。リクエストのスキーマとサーバー側のバリデーターを同期し、一緒にバージョン管理します。
+
+## 結果を検証する
+
+後続処理で使う前に、結果全体を解析・検証してください。このTypeScriptの例はZodを使い、上記の天気スキーマに対応しています。
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+解析前に拒否、コンテンツの欠落、途中で切れた応答を処理してください。検証に失敗した場合は修正の再試行回数を制限し、その後は安全に失敗として返します。再生成には追加料金がかかる場合があります。有効なJSONでも、値の事実上の正確性や操作の許可は保証されません。
+
+検証失敗をモデルとスキーマのバージョン別に記録し、どちらかが変わったら評価ケースを再確認してください。不正なJSONの復旧については[応答修復](../cookbook/response-healing-for-structured-json.mdx)を参照してください。

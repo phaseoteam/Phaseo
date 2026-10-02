@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "按步骤数、token 数、费用、时长、工具或结束原因限制 .NET 代理工作。"
+---
+
+在 `AgentDefinition.StopWhen` 中组合停止辅助函数：
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` 和 `FinishReasonIs(...)` provide event-based limits. 即使设置了 token 或费用上限，也要限制步骤数或时长，因为前两者依赖于报告的用量。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [Outputs 和 retries](./agent-sdk-run-controls.mdx)

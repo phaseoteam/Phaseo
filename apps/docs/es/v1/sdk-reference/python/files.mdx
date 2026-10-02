@@ -1,0 +1,25 @@
+---
+icon: "files"
+title: "Archivos"
+description: "Llama a `/files` con el SDK de Python."
+---
+
+**Métodos**: `client.upload_file()`, `client.list_files()`, `client.get_file()`, `client.get_file_content()`.
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
+
+print(uploaded)
+print(file_obj)
+print(file_bytes[:20])
+```
+
+<Note>
+  `list_files()` está implementado en el SDK, pero `GET /files` actualmente devuelve `file_list_not_supported_with_shared_gateway_key`
+  con la clave compartida de la pasarela. Guarda los ID de los archivos subidos y recupéralos directamente.
+</Note>

@@ -1,0 +1,76 @@
+---
+icon: "package"
+title: "Rust SDK इंस्टॉल करें"
+description: "crates.io से phaseo इंस्टॉल करें और Phaseo Gateway प्रमाणीकरण कॉन्फ़िगर करें।"
+---
+
+इस गाइड से समर्थित Rust क्लाइंट जोड़ें और उसे अपने ऐप्लिकेशन के लिए उपलब्ध कराएँ।
+
+## आवश्यकताएँ
+
+- Rust 1.86 या नया
+- Phaseo Gateway API कुंजी
+
+## इंस्टॉल करें
+
+क्लाइंट और JSON निर्भरता जोड़ें:
+
+```toml
+[dependencies]
+phaseo = "0.1"
+serde_json = "1"
+```
+
+या यह चलाएँ:
+
+```bash
+cargo add phaseo@0.1 serde_json
+```
+
+## अपनी API कुंजी कॉन्फ़िगर करें
+
+`Phaseo::from_env()` `PHASEO_API_KEY` पढ़ता है:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+PowerShell:
+
+```powershell
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+कुंजी सर्वर पर रखें। इसे डेस्कटॉप, मोबाइल, ब्राउज़र या किसी अन्य वितरित क्लाइंट में कंपाइल न करें।
+
+## इंस्टॉलेशन सत्यापित करें
+
+```rust
+use phaseo::Phaseo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _client = Phaseo::from_env()?;
+    println!("Phaseo Rust client configured");
+    Ok(())
+}
+```
+
+```bash
+cargo run
+```
+
+## कस्टम एंडपॉइंट
+
+जब किसी डेवलपमेंट या प्रॉक्सी एंडपॉइंट को `https://api.phaseo.app/v1` की जगह इस्तेमाल करना हो, तो `PHASEO_BASE_URL` सेट करें:
+
+```bash
+export PHASEO_BASE_URL="http://localhost:8787/v1"
+```
+
+रिमोट एंडपॉइंट पर HTTPS होना चाहिए। सादा HTTP केवल तभी स्वीकार होता है जब पार्स किया गया होस्ट ठीक `localhost` या लूपबैक IP पता हो।
+
+## आगे
+
+- [अनुरोध भेजें](./usage.mdx)
+- [Responses API](./responses.mdx)
+- [Rust API संदर्भ](./api-reference.mdx)

@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "Wichtige Hinweise zu Mistral Small 4, einschließlich Reasoning-Steuerung und vereinheitlichter Antwortfelder."
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+Mit diesem Leitfaden führen Sie Mistral Small 4 über Phaseo Gateway sicher ein:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## Neuerungen
+
+- Mistral Small 4 bietet eine Steuerung des Reasoning-Modus über `reasoning_effort`.
+- Gateway sendet für diese Modellroute nur zwei Werte an den Anbieter:
+  - `none` (Reasoning aus)
+  - `high` (Reasoning an)
+- Gateway wandelt Mistral-Denkblöcke in standardisierte Antwortfelder um:
+  - `message.content` für den sichtbaren Antworttext
+  - `message.reasoning_content` und `message.reasoning_details` für Reasoning-Text
+
+## Schnelleinstieg für die Migration
+
+Reasoning ist für diese Route standardmäßig deaktiviert.
+
+Gateway-Zuordnungsregeln:
+
+- Ohne Reasoning-Steuerung sendet Gateway `reasoning_effort: "none"`.
+- Bei `reasoning.enabled: true` sendet Gateway `reasoning_effort: "high"`.
+- Bei `reasoning.effort: "none"` sendet Gateway `reasoning_effort: "none"`.
+- Jeder andere Wert von `reasoning.effort` wird zu `reasoning_effort: "high"`.
+
+Empfohlene Verwendung:
+
+- `reasoning.effort: "none"` für einfache Aufgaben.
+- `reasoning.effort: "high"` für tiefgehendes Reasoning.
+
+Beispiel:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## Hinweise zur Antwortverarbeitung
+
+Mistral kann gemischte Inhaltsblöcke für den Assistenten zurückgeben, etwa `thinking` und `text`. Gateway überführt diese in eine stabile Struktur:
+
+- Die finale, nutzersichtbare Antwort steht in `choices[0].message.content`.
+- Der Reasoning-Text steht in `choices[0].message.reasoning_content`.
+
+So bleibt das nachgelagerte Verhalten erhalten, das OpenAI-kompatible Chat-Completion-Felder erwartet.
+
+## Rollout-Checkliste
+
+1. Aktualisieren Sie die Modell-ID auf `mistral/mistral-small-4-2026-03-16`.
+2. Prüfen Sie Reasoning-Steuerungen ausschließlich mit `none` und `high`.
+3. Wiederholen Sie Qualitäts- und Schema-Tests für Routen mit hohem Aufwand.
+4. Vergleichen Sie Latenz und Kosten für `none` und `high`, bevor Sie vollständig umstellen.

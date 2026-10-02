@@ -1,0 +1,120 @@
+---
+title: "Conheça os modelos"
+description: "Aprenda a navegar, comparar e entender os modelos de IA listados no Phaseo."
+sidebarTitle: "Modelos"
+icon: "brain"
+---
+
+O Phaseo mantém um amplo catálogo aberto de modelos de IA para texto, imagem, áudio, vídeo, embeddings e outras modalidades.
+
+Cada página de modelo inclui informações técnicas e comerciais detalhadas para ajudar você a avaliar, comparar e escolher o modelo adequado às suas necessidades.
+
+<Info>
+O catálogo é mais amplo que o Gateway. Por padrão, a página Modelos mostra modelos com uma rota ativa no Gateway. Selecione outro status do Gateway somente quando quiser consultar itens futuros ou inativos do catálogo.
+</Info>
+
+---
+
+## O que você encontra em uma página de modelo
+
+Todas as páginas de modelo do Phaseo incluem estas seções principais:
+
+| Seção | Descrição |
+| --- | --- |
+| **Visão geral** | Provedor, data de lançamento, tipo de modelo (chat, código, embedding, imagem etc.) e uma breve descrição. |
+| **Família** | Modelos relacionados e suas relações. |
+| **Linha do tempo** | Histórico de lançamentos e principais atualizações ao longo do tempo. |
+| **Benchmarks** | Resultados de desempenho em vários benchmarks para comparar modelos semelhantes. |
+| **Disponibilidade** | Separa as rotas ativas do Gateway das futuras, inativas e das ofertas externas de provedores. |
+| **Preços** | Preços detalhados em USD, normalizados para facilitar a comparação e a estimativa de custo. |
+| **Gateway** | Links diretos e guias de início rápido quando há uma rota pública do Gateway. |
+| **Desempenho** | Latência, throughput e dados de sucesso observados em solicitações roteadas pelo Gateway, quando há dados suficientes. |
+
+## Modelos do catálogo e modelos roteáveis
+
+Use estes termos de forma consistente:
+
+| Termo | Significado |
+| --- | --- |
+| Modelo do catálogo | O Phaseo registra metadados do modelo. Pode não haver uma rota pública. |
+| Modelo roteável | Pelo menos uma rota de provedor está ativa no Phaseo Gateway. |
+| Oferta externa | O Phaseo registra uma oferta de provedor que não é executada pelo Gateway. |
+
+Para descobrir modelos por código, `GET /v1/models` retorna somente modelos roteáveis por padrão. Defina `availability=all` para consultar o catálogo mais amplo.
+
+---
+
+## Exemplo de página de modelo
+
+Veja um exemplo de como os dados de um modelo podem aparecer no Phaseo:
+
+![Página do modelo GPT-5](../../../images/gemini-3-page.png)
+
+---
+
+## Compare modelos
+
+Compare modelos lado a lado por desempenho, preço e recursos.
+O Phaseo destaca diferenças automaticamente e classifica os modelos com base em várias médias de benchmark.
+
+<Columns cols={2}>
+	<Card
+		title="Comparar modelos"
+		icon="scale"
+		href="./pricing-performance.mdx"
+	>
+		Analise a relação entre custo e desempenho para escolher o modelo certo para sua carga de trabalho.
+	</Card>
+	<Card
+		title="Ver benchmarks"
+		icon="chart-column-increasing"
+		href="./benchmarks.mdx"
+	>
+		Entenda como as pontuações dos benchmarks são coletadas e padronizadas.
+	</Card>
+</Columns>
+
+---
+
+## Encontre modelos por critérios
+
+Use filtros e tags na interface do Phaseo para localizar modelos que atendam às suas necessidades:
+
+- **Por provedor:** “Mostrar todos os modelos da Anthropic.”
+- **Por capacidade:** “Listar modelos compatíveis com respostas estruturadas em JSON.”
+- **Por benchmark:** “Os 10 melhores modelos no GPQA.”
+- **Por preço:** “Modelos que custam menos de US$ 0,01 por 1.000 tokens.”
+- **Por data de lançamento:** “Modelos lançados recentemente.”
+
+Combine os filtros para encontrar exatamente o que você precisa.
+
+---
+
+## Contribua com atualizações de modelos
+
+Como a IA evolui rapidamente, o Phaseo depende de contribuições para manter os dados dos modelos corretos.
+Abra uma issue no GitHub para informar uma correção, enviar benchmarks ausentes ou solicitar novos metadados. Inclua a página do modelo e fontes oficiais; os mantenedores aplicam as atualizações aprovadas pelo editor do banco de dados.
+
+<Card
+	title="Contribuir com dados de modelos"
+	icon="github"
+	href="../contributing/editing-a-model.mdx"
+	horizontal
+>
+	Saiba como informar uma correção de modelo ou solicitar uma entrada ausente.
+</Card>
+
+---
+
+## Próximas etapas
+
+Agora que você entende como os modelos são organizados, conheça as **organizações** que os desenvolvem.
+
+<Card
+	title="Conheça as organizações"
+	icon="building"
+	href="./organisations.mdx"
+	horizontal
+>
+	Descubra as empresas e equipes de pesquisa por trás de cada modelo.
+</Card>

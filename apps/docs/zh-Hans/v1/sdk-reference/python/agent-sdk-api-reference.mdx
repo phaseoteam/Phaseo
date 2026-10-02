@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "查阅 Python Agent SDK 的主要类、函数和方法。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `create_agent(...)` | 定义 Agent |
+| `define_tool(...)` | 定义本地或手动工具 |
+| `create_gateway_agent_client(...)` | 将模型轮次连接到 Phaseo |
+| `agent.run(...)` | 运行至结束或暂停状态 |
+| `agent.stream(...)` | 运行并提供可重放流消费者 |
+| `agent.continue_run(...)` | 继续已保存或暂停的状态 |
+| `stream.result()` | 读取已完成的运行结果 |
+| `stream.text_stream()` | 读取文本增量 |
+| `stream.full_stream()` | 读取所有事件 |
+| `stream.cancel()` | 取消当前运行 |
+
+重要类型包括 `AgentTool`、`AgentToolDecision`、`AgentToolOutput`、`AgentRunResult`、`AgentStateAccessor`、`AgentModelRetryConfig` 和 `AgentToolExecutionConfig`。
+
+## 相关内容
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

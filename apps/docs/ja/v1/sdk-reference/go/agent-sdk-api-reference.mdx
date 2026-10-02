@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "APIリファレンス"
+description: "Go Agent SDKの主な型とメソッドを参照できます。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `CreateAgent(...)` | エージェントを定義 |
+| `DefineTool(...)` | ローカルまたは手動のツールを定義 |
+| `CreateGatewayAgentClient(...)` | モデルのターンをPhaseoに接続 |
+| `Agent.Run(...)` | 完了または一時停止まで実行 |
+| `Agent.Stream(...)` | 再走査可能なストリームコンシューマーで実行 |
+| `Agent.Continue(...)` | 保存済みまたは一時停止中の状態から続行 |
+| `StreamResult.Result()` | 完了した実行結果を取得 |
+| `StreamResult.Text()` | テキストの差分を取得 |
+| `StreamResult.Events()` | すべてのイベントを取得 |
+| `StreamResult.Cancel()` | 実行中の処理をキャンセル |
+
+主な型には`AgentDefinition`、`RunOptions`、`RunResult`、`RunRecord`、`RunStep`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`StateAccessor`、`ModelRetryConfig`、`ToolExecutionConfig`があります。
+
+## 関連項目
+
+- [最初のエージェントを作成する](./agent-sdk.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

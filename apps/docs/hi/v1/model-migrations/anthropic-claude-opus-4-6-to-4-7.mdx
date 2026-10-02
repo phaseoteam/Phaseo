@@ -1,0 +1,89 @@
+---
+title: "Anthropic Claude Opus 4.7"
+description: "Claude Opus 4.7 अपनाने के लिए adaptive thinking, sampling controls और token usage की जानकारी।"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.7
+
+Production में `anthropic/claude-opus-4.7` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+
+Claude Opus 4.7 request format बदलता है। पुराने 4.6 patterns अपडेट न करने पर request पूरी तरह fail हो सकती है।
+
+## नया क्या है
+
+- नया effort level: `xhigh` (Messages API)।
+- Opus 4.7 में extended-thinking budgets हटा दिए गए हैं; `thinking: { type: "enabled", budget_tokens: ... }` अब fail होता है।
+- इस model पर non-default sampling params सपोर्ट नहीं हैं: `temperature`, `top_p` और `top_k`।
+- स्पष्ट रूप से opt in न करने पर thinking content शामिल नहीं होता।
+- नया tokenizer, Opus 4.6 के मुकाबले token usage बढ़ा सकता है।
+
+## Phaseo Gateway की संगतता
+
+Migration की समस्याएँ घटाने के लिए Phaseo, Opus 4.7 पर पुराने Opus 4.6 fields स्वीकार करता है और upstream भेजने से पहले उन्हें normalize करता है:
+
+- `temperature`, `top_p` और `top_k` स्वीकार होते हैं लेकिन हटा दिए जाते हैं।
+- पुराने thinking budgets आगे नहीं भेजे जाते।
+- Opus 4.7 thinking हमेशा `thinking: { "type": "adaptive", "display": "summarized" }` के रूप में भेजी जाती है।
+- `reasoning.effort` अब भी लागू होता है और `output_config.effort` से map होता है (`xhigh` समर्थित है)।
+
+## माइग्रेशन quickstart
+
+### 1. Model ID अपडेट करें
+
+Model ID को `anthropic/claude-opus-4.7` करें।
+
+### 2. Summarized display के साथ adaptive thinking अपनाएँ
+
+Opus 4.7 के लिए यह इस्तेमाल करें:
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+पुराने extended-thinking budgets न इस्तेमाल करें।
+
+### 3. Sampling controls हटाएँ
+
+ये न भेजें:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+इसके बजाय prompts और instructions tune करें।
+
+### 4. Effort controls की baseline फिर बनाएँ
+
+Reasoning controls इस्तेमाल करते हों तो इनसे दोबारा जाँचें:
+
+- baseline के रूप में `output_config.effort = "high"`।
+- सबसे कठिन coding/agent paths के लिए `output_config.effort = "xhigh"`।
+
+OpenAI-style payloads से Phaseo call करने पर Opus 4.7 में `reasoning.effort` उसी `output_config.effort` value पर map होता है।
+
+### 5. Token limits फिर जाँचें
+
+Tokenizer बदलने के कारण जाँचें:
+
+- `max_tokens` / `max_output_tokens`
+- timeout budgets
+- cost controls और alerts
+
+## क्या जाँचें
+
+- प्रोडक्शन प्रॉम्प्ट के साथ संरचित आउटपुट स्कीमा की सख्त पास दर।
+- लंबे टूल वर्कफ़्लो: कॉल की संख्या, पूर्णता दर और विलंब।
+- `high` बनाम `xhigh` पर output quality का अंतर।
+- सबसे ज़्यादा इस्तेमाल होने वाली prompt classes में token cost का अंतर।
+
+## सुरक्षित rollout
+
+1. Traffic बदलने से पहले request-format के बदलाव deploy करें।
+2. Production eval suite पर Opus 4.7 को shadow करें।
+3. Opus 4.6 पर rollback का विकल्प रखते हुए canary करें।
+4. Quality, latency और cost के बदलाव लक्ष्य में हों तभी rollout बढ़ाएँ।
+
+## स्रोत
+
+- [Claude Opus 4.7 में नया क्या है](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Anthropic माइग्रेशन गाइड](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.7 सिस्टम कार्ड (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

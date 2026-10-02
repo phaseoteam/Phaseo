@@ -1,0 +1,19 @@
+---
+title: "上传文件"
+sidebarTitle: "上传文件"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /files"
+description: "上传用于批处理的文件。网关会存储所有权元数据，以便同一工作区稍后检索该文件或其内容。"
+---
+
+保存返回的 `file_id`，并在以下接口中重复使用：
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+共享网关密钥目前不支持 `GET /v1/files`，因此应以上传响应中的文件 ID 为准。
+</Note>
+
+

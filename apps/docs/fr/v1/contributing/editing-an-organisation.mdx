@@ -1,0 +1,25 @@
+---
+icon: "building-2"
+title: "Signaler une mise à jour d’organisation"
+description: "Demandez des corrections ou des ajouts aux entreprises et aux organismes de recherche du catalogue."
+---
+
+Signalez les informations d’organisation manquantes ou obsolètes dans une issue GitHub. Les responsables examinent les preuves et appliquent les modifications approuvées dans l’éditeur de base de données.
+
+## Signaler une correction
+
+1. Copiez l’URL de la page Phaseo de l’organisation ou son identifiant.
+2. [Signalez une information incorrecte](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) en indiquant le champ concerné et la valeur proposée.
+3. Ajoutez un lien vers un site officiel, une annonce ou une autre source vérifiable.
+
+Les corrections courantes portent sur le nom, la description, le site web, la localisation et les relations avec les modèles ou les fournisseurs d’API.
+
+## Demander une organisation manquante
+
+[Ouvrez une demande de données](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) avec le nom de l’organisation, son site officiel et les liens pertinents vers les modèles ou fournisseurs.
+
+## Après l’envoi
+
+Suivez la revue et la publication dans l’issue. Une modification d’enregistrement du catalogue ne nécessite ni modification JSON ni pull request. Les fichiers JSON quotidiens sont des exports ; ils ne sont pas importés dans la base de données en production.
+
+Les administrateurs gèrent les organisations via l’[éditeur interne du catalogue](https://phaseo.app/internal/data), qui nécessite un accès administrateur.

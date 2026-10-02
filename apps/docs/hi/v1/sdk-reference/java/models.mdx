@@ -1,0 +1,30 @@
+---
+icon: "brain-circuit"
+title: "मॉडल"
+description: "Java SDK से /models सूची प्राप्त करें।"
+---
+
+**तरीका**: `client.listModels(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+Object models = client.listModels(query);
+System.out.println(String.valueOf(models));
+```
+
+आम query keys में `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit` और `offset` शामिल हैं।
+
+`preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` या `soft_blocked` जैसे rollout states पाने के लिए `availability=all` के साथ `provider_availability_reason` उपयोग करें। `coming_soon` या `internal_testing` जैसी non-routable endpoint mappings पाने के लिए `availability=all` के साथ `capability_status` उपयोग करें।

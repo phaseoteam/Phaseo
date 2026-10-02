@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks del ciclo de vida"
+description: "Responde a eventos de ejecución, modelo, pasos, herramientas y puntos de control de Java."
+---
+
+Pasa un consumidor de eventos en `RunOptions` para conectar un agente con la cronología del producto, el registro de auditoría o el canal de telemetría:
+
+```java
+event -> logger.info("{} {}", event.type(), event.runId())
+```
+
+Las familias de eventos abarcan:
+
+- inicio, reanudación, espera humana, finalización, cancelación y error de la ejecución
+- inicio, punto de control, finalización, cancelación y error de los pasos
+- solicitud, finalización y error del modelo
+- inicio, progreso preliminar, finalización y error de las herramientas
+
+Mantén rápido el callback. Encola las operaciones lentas de almacenamiento o red fuera del bucle de ejecución.
+
+## Relacionado
+
+- [Transmisión](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

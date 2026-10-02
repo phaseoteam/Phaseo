@@ -1,0 +1,108 @@
+---
+icon: "bot"
+title: "Subagent – Serverwerkzeug"
+description: "Das Hauptmodell kann gezielte Aufgaben an ein Hilfsmodell delegieren."
+---
+
+Verwende `phaseo:subagent`, wenn das Hauptmodell während derselben Anfrage eine eigenständige Aufgabe an ein kleineres oder schnelleres Hilfsmodell übergeben soll.
+
+Das Hauptmodell ruft das Subagent-Tool mit einer Aufgabenbeschreibung auf. Phaseo führt das Hilfsmodell serverseitig aus, gibt dessen Ergebnis als Tool-Kontext zurück und lässt das Hauptmodell die Antwort fertigstellen.
+
+## Schnellstart
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:subagent",
+        "parameters": {
+          "model": "openai/gpt-5-nano",
+          "instructions": "Return concise findings for the main model. Do not address the end user directly.",
+          "max_uses": 3,
+          "max_completion_tokens": 1200
+        }
+      }
+    ]
+  }'
+```
+
+## Parameter
+
+```json
+{
+  "type": "phaseo:subagent",
+  "parameters": {
+    "model": "openai/gpt-5-nano",
+    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
+    "max_uses": 3,
+    "max_completion_tokens": 1200,
+    "reasoning": { "effort": "low" },
+    "temperature": 0.2
+  }
+}
+```
+
+| Parameter | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-5-nano` | Aufzurufendes Hilfsmodell. |
+| `instructions` | string | konkrete Anweisungen für den Worker | Zusätzliche Anweisungen zum standardmäßigen Verhalten von Subagent. |
+| `max_uses` | integer | `10` | Maximale Anzahl von Subagent-Aufrufen innerhalb der Server-Tool-Schleife. |
+| `max_completion_tokens` | integer | Standardwert des Advisors | Maximale Ausgabetokens pro Antwort des Hilfsmodells. |
+| `max_tokens` | integer | Standardwert des Advisors | Veralteter Alias für `max_completion_tokens`. |
+| `reasoning` | object | Provider-Standardwert | Wird unterstützt, wird die Reasoning-Konfiguration an das Hilfsmodell weitergegeben. |
+| `temperature` | number | Provider-Standardwert | Sampling-Temperatur für den Aufruf des Hilfsmodells. |
+
+## Argumente des Tool-Aufrufs
+
+Das Modell ruft Subagent normalerweise mit `task_description` auf:
+
+```json
+{
+  "task_description": "Extract the three highest-risk migration steps from the supplied plan."
+}
+```
+
+Phaseo akzeptiert auch `task`, `prompt` oder `input` als Alias, wenn ein Modell einen leicht abweichenden Argumentnamen ausgibt.
+
+## Tool-Ergebnis
+
+Subagent gibt JSON als Tool-Ergebnis zurück:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-5-nano",
+  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+}
+```
+
+Kann die Anfrage an das Hilfsmodell nicht ausgeführt werden, gibt Phaseo beispielsweise diesen Tool-Fehler zurück: `subagent_invalid_request`, `subagent_max_uses_exceeded`, or `subagent_request_failed`.
+
+## Nutzung und Preise
+
+Subagent-Aufrufe erhöhen:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "subagent_requests": 1
+    }
+  }
+}
+```
+
+Die Tokens des Hilfsmodells zählen zur Gesamtnutzung und können zum Tarif des ausgewählten Modells berechnet werden.
+
+## Weiterführend
+
+- [Advisor](./advisor.mdx)
+- [Fusion](./fusion.mdx)
+- [Server-Tools](./index.mdx)

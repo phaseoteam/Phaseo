@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "出力と再試行"
+description: ".NETエージェントの出力を検証し、回数を制限してモデル障害を再試行します。"
+---
+
+後続の.NETコードが構造化値を想定している場合は、最終出力を検証します。検証失敗は一時的な通信障害ではなく、契約違反として扱います。
+
+`ModelRetryConfig`で再試行回数を制限します。
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+完了したステップには、モデルの最終試行回数が保持されます。ローカルツールの失敗は別途処理され、モデルリクエストとして再試行されません。
+
+`GatewayAgentClientOptions`には、構造化レスポンス、ルーティング、プロバイダー、推論、ツール選択、プロンプトキャッシュ、その他のリクエストオプションが含まれます。
+
+## 関連項目
+
+- [動的ターン](./agent-sdk-dynamic-turns.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-observability.mdx)

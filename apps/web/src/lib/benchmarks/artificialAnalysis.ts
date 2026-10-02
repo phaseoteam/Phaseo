@@ -46,18 +46,19 @@ export function artificialAnalysisChartColour(
 	return value && /^#[\da-f]{6}$/i.test(value) ? value : fallback;
 }
 
-export function formatArtificialAnalysisScore(id: string, score: number) {
-  return new Intl.NumberFormat("en-US", isArtificialAnalysisCostBenchmark(id)
+export function formatArtificialAnalysisScore(id: string, score: number, locale = "en-US") {
+  return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(id)
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }
-export function formatArtificialAnalysisValue(value: number) {
-	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+export function formatArtificialAnalysisValue(value: number, locale = "en-US") {
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
 }
 export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
 	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);
 }
-export function artificialAnalysisValueLabel(entry: PublicIntelligenceValueEntry) {
+export function artificialAnalysisValueLabel(entry: PublicIntelligenceValueEntry, resolveLabel?: (variant: string) => string) {
+	if (resolveLabel) return resolveLabel(entry.variant ?? "default");
 	const variant = entry.variant?.replace(/[-_]/g, " ") ?? "default";
 	return variant.replace(/\b\w/g, (character) => character.toUpperCase());
 }

@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "आउटपुट और पुनः प्रयास"
+description: "Final outputs validate करें, model requests retry करें और पूरी हुई Go runs देखें।"
+---
+
+Output validate करें ताकि agent का लौटाया गया value application के contract के अनुरूप रहे। Model retries विफल requests पर लागू होते हैं; tool retries implementation में स्पष्ट होने चाहिए और केवल सुरक्षित होने पर चलने चाहिए।
+
+## मॉडल के पुनः प्रयास कॉन्फ़िगर करें
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+Run record हर step के model attempts की संख्या बनाए रखता है। Retry से पहले पूरे हुए tool results नहीं हटते।
+
+## अंतिम परिणाम validate करें
+
+जब आगे के code को structured result चाहिए, तो `AgentDefinition` में `OutputSchema` सेट करें। Result को पूरा चिह्नित करने से पहले validation होता है, इसलिए invalid output application में बाद में नहीं, agent boundary पर विफल होता है।
+
+## परिणाम देखें
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+Budgets और hard limits के लिए [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx), और failures संभालने के लिए [त्रुटियाँ और समस्या-निवारण](./agent-sdk-observability.mdx) देखें।

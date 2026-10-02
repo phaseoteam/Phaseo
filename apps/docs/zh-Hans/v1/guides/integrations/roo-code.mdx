@@ -1,0 +1,65 @@
+---
+title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
+description: "通过 OpenAI 兼容配置将 Roo Code 连接到 Phaseo。"
+---
+
+使用 Phaseo CLI 创建专用密钥，然后手动配置 Roo Code 的提供商配置文件。Roo Code 将凭据保存在 VS Code 密钥存储中，因此最后的输入需在扩展界面中完成。
+
+## 使用 Phaseo CLI 设置
+
+```bash
+phaseo login
+phaseo roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## 手动配置 Roo Code
+
+1. 在 VS Code 中打开 Roo Code。
+2. 打开 **Settings**，然后打开 **Providers**。
+3. 创建供应商配置并选择 **OpenAI Compatible**。
+4. 输入以下值：
+
+| Roo Code 字段 | 值 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | 以下命令的输出 `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` 或设置过程中显示的模型 |
+
+5. 保存配置并将其设为活动配置。
+
+不同版本中的字段标签可能略有差异，但配置必须包含端点、密钥和准确的模型 ID。
+
+## 验证
+
+让 Roo Code 回复 `PHASEO_ROO_OK`，然后确认请求出现在 Phaseo 活动记录中。
+
+## 移除
+
+删除 Phaseo 配置或切换到其他配置，然后运行：
+
+```bash
+phaseo integrations remove roo-code
+```
+
+CLI 无法删除 VS Code 扩展私有存储中的值，但移除操作会撤销密钥。
+
+## 故障排除
+
+### 身份验证失败
+
+使用 `phaseo integrations credential roo-code` 重新获取密钥，并确保 Base URL 以 `/v1` 结尾。
+
+### Roo Code 找不到模型
+
+手动输入准确的 Phaseo 模型 ID，包括供应商前缀。
+
+### 聊天正常，但工具调用失败
+
+切换到支持工具调用的模型。
+
+## 相关内容
+
+- [Roo Code 模型供应商](https://docs.roocode.com/providers/)
+- [编程智能体](./coding-assistants.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

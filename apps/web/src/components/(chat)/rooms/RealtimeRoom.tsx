@@ -4,6 +4,8 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
 import {
@@ -73,6 +75,7 @@ type RealtimeProvider = "openai" | "xai" | "google";
 type SessionStatus = "idle" | "connecting" | "connected" | "ended" | "error";
 
 function PersonaLoadingPlaceholder({ className }: { className?: string }) {
+
 	return (
 		<div
 			className={cn(
@@ -94,6 +97,7 @@ function LightweightRealtimeOrb({
 	state: PersonaState;
 	className?: string;
 }) {
+
 	const isActive = state !== "asleep" && state !== "idle";
 	return (
 		<div
@@ -158,11 +162,7 @@ type RealtimeModel = {
 	defaultVoice: string;
 	voices: RealtimeVoiceOption[];
 	transport: "WebRTC" | "WebSocket";
-	billing:
-		| "Live duration + backend tokens"
-		| "OpenAI usage events"
-		| "xAI duration meter"
-		| "Google usage metadata";
+	billing: string;
 };
 
 type RealtimeSessionResponse = {
@@ -339,6 +339,36 @@ const XAI_GROK_VOICES: RealtimeVoiceOption[] = [
 	{ id: "zagan", label: "Zagan" },
 	{ id: "zenith", label: "Zenith" },
 ];
+
+const REALTIME_VOICE_DESCRIPTION_KEYS = {
+	Bright: "voiceDescriptions.bright",
+	Firm: "voiceDescriptions.firm",
+	"Easy-going": "voiceDescriptions.easyGoing",
+	Clear: "voiceDescriptions.clear",
+	Upbeat: "voiceDescriptions.upbeat",
+	Even: "voiceDescriptions.even",
+	Friendly: "voiceDescriptions.friendly",
+	Lively: "voiceDescriptions.lively",
+	Excitable: "voiceDescriptions.excitable",
+	Breezy: "voiceDescriptions.breezy",
+	Breathy: "voiceDescriptions.breathy",
+	Smooth: "voiceDescriptions.smooth",
+	Gravelly: "voiceDescriptions.gravelly",
+	Soft: "voiceDescriptions.soft",
+	Mature: "voiceDescriptions.mature",
+	Casual: "voiceDescriptions.casual",
+	Knowledgeable: "voiceDescriptions.knowledgeable",
+	Informative: "voiceDescriptions.informative",
+	Youthful: "voiceDescriptions.youthful",
+	Forward: "voiceDescriptions.forward",
+	Gentle: "voiceDescriptions.gentle",
+	Warm: "voiceDescriptions.warm",
+	"Energetic, upbeat": "voiceDescriptions.energeticUpbeat",
+	"Warm, friendly": "voiceDescriptions.warmFriendly",
+	"Authoritative, strong": "voiceDescriptions.authoritativeStrong",
+	"Confident, clear": "voiceDescriptions.confidentClear",
+	"Smooth, balanced": "voiceDescriptions.smoothBalanced",
+} as const;
 
 const REALTIME_MODELS: RealtimeModel[] = [
 	{
@@ -755,10 +785,10 @@ function formatDiagnosticDetail(value: unknown): string | undefined {
 	}
 }
 
-function getErrorMessage(value: unknown): string {
+function getErrorMessage(value: unknown, translate: (key: string) => string): string {
 	if (value instanceof Error && value.message.trim()) return value.message;
 	if (typeof value === "string" && value.trim()) return value.trim();
-	return "Realtime session failed.";
+	return translate("realtimeSessionFailed");
 }
 
 function isMicrophonePermissionError(value: unknown): boolean {
@@ -775,16 +805,20 @@ function isMicrophonePermissionError(value: unknown): boolean {
 	);
 }
 
-function getRealtimeStartupErrorMessage(value: unknown): string {
+function getRealtimeStartupErrorMessage(value: unknown, translate: (key: string) => string): string {
 	if (isMicrophonePermissionError(value)) {
-		return "Microphone permission is blocked. Allow microphone access for this site in the browser, then start the realtime session again.";
+		return translate("realtimeMicrophonePermissionBlocked");
 	}
-	return getErrorMessage(value);
+	return getErrorMessage(value, translate);
 }
 
-function getSessionErrorMessage(payload: unknown, status: number): string {
+function getSessionErrorMessage(
+	payload: unknown,
+	status: number,
+	translate: (key: string, values?: Record<string, string | number>) => string,
+): string {
 	if (!payload || typeof payload !== "object") {
-		return `Session request failed (${status}).`;
+		return translate("realtimeSessionRequestFailed", { status });
 	}
 	const record = payload as Record<string, unknown>;
 	for (const field of ["message", "description", "reason", "error"] as const) {
@@ -796,10 +830,10 @@ function getSessionErrorMessage(payload: unknown, status: number): string {
 		try {
 			return JSON.stringify(details);
 		} catch {
-			return `Session request failed (${status}).`;
+			return translate("realtimeSessionRequestFailed", { status });
 		}
 	}
-	return `Session request failed (${status}).`;
+	return translate("realtimeSessionRequestFailed", { status });
 }
 
 function describeRealtimeMessage(raw: MessageEvent | string) {
@@ -927,6 +961,7 @@ function StatCard({
 	label: string;
 	children: ReactNode;
 }) {
+
 	return (
 		<div className="min-w-0 rounded-md border border-border bg-muted/20 px-3 py-3">
 			<div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -962,6 +997,9 @@ function RealtimeModelSelector({
 	onSelectModel: (modelId: string) => void;
 	disabled: boolean;
 }) {
+
+	const t = useTranslations("Product.chatRooms");
+	const tModelPicker = useTranslations("Product.chat.modelPicker");
 	const format = useDisplayFormatters();
 	const [open, setOpen] = useState(false);
 	const [searchValue, setSearchValue] = useState("");
@@ -985,12 +1023,12 @@ function RealtimeModelSelector({
 	const groupedModels = useMemo(
 		() =>
 			normalizedSearch
-				? [{ heading: `Results (${filteredModels.length})`, items: filteredModels }]
+				? [{ heading: tModelPicker("results", { count: filteredModels.length }), items: filteredModels }]
 				: groupModelsByReleaseMonth(
 					filteredModels,
 					(date) => format.dateParts(date, { month: "long", year: "numeric", timeZone: "UTC" }),
 				),
-		[filteredModels, format, normalizedSearch],
+		[filteredModels, format, normalizedSearch, tModelPicker],
 	);
 
 	const handleOpenChange = (nextOpen: boolean) => {
@@ -1020,22 +1058,22 @@ function RealtimeModelSelector({
 					<span className="truncate text-xs">
 						{selectedModel
 							? getRealtimeModelDisplayName(selectedModel)
-							: "Select realtime model"}
+							: t("selectRealtimeModel")}
 					</span>
 				</Button>
 			</ModelSelectorTrigger>
 			<ModelSelectorContent
-				title="Select a realtime model"
+				title={t("selectRealtimeModel")}
 				className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
 			>
 				<ModelSelectorInput
-					placeholder="Search realtime models..."
+									placeholder={t("searchRealtimeModels")}
 					value={searchValue}
 					onValueChange={setSearchValue}
 				/>
 				<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
-					<ModelSelectorEmpty>No realtime models found.</ModelSelectorEmpty>
+									<ModelSelectorEmpty>{t("noRealtimeModels")}</ModelSelectorEmpty>
 					{groupedModels.map((group, index) => (
 						<ModelSelectorGroup
 							key={`${group.heading}-${index}`}
@@ -1099,6 +1137,13 @@ function RealtimeVoiceSelector({
 	onSelectVoice: (voiceId: string) => void;
 	disabled: boolean;
 }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const t = useTranslations("Product.chatRooms");
+	const localizeVoiceProfile = (description: string) => {
+		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
+		const [language, style, gender] = description.split(" · ");
+		return parts[language] && parts[style] && parts[gender] ? tCopy("voiceProfile", { language: parts[language], style: parts[style], gender: parts[gender] }) : description;
+	};
 	const selectedVoice =
 		voices.find((voice) => voice.id === selectedVoiceId) ?? voices[0] ?? null;
 	const [open, setOpen] = useState(false);
@@ -1111,6 +1156,11 @@ function RealtimeVoiceSelector({
 		<div className="space-y-1 p-1">
 			{voices.map((voice) => {
 				const selected = voice.id === selectedVoice?.id;
+				const descriptionKey = voice.description
+					? REALTIME_VOICE_DESCRIPTION_KEYS[
+							voice.description as keyof typeof REALTIME_VOICE_DESCRIPTION_KEYS
+						]
+					: undefined;
 				return (
 					<button
 						key={voice.id}
@@ -1131,7 +1181,7 @@ function RealtimeVoiceSelector({
 							</span>
 							{voice.description ? (
 								<span className="block text-xs leading-snug text-muted-foreground">
-									{voice.description}
+									{descriptionKey ? t(descriptionKey) : localizeVoiceProfile(voice.description)}
 								</span>
 							) : null}
 						</span>
@@ -1153,13 +1203,13 @@ function RealtimeVoiceSelector({
 					type="button"
 					variant="ghost"
 					disabled={disabled}
-					aria-label="Select realtime voice"
+							aria-label={t("selectRealtimeVoice")}
 					className="h-8 w-[156px] justify-between gap-1.5 px-2 text-xs font-normal shadow-none hover:bg-muted"
 				>
 					<span className="flex min-w-0 items-center gap-1.5">
 						<Volume2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
 						<span className="truncate">
-							{selectedVoice?.label ?? selectedVoice?.id ?? "Voice"}
+							{selectedVoice?.label ?? selectedVoice?.id ?? t("voice")}
 						</span>
 					</span>
 					<ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -1227,10 +1277,10 @@ function providerLabel(provider: RealtimeProvider): string {
 	return "Google";
 }
 
-function billingLabel(provider: RealtimeProvider): RealtimeModel["billing"] {
-	if (provider === "xai") return "xAI duration meter";
-	if (provider === "google") return "Google usage metadata";
-	return "OpenAI usage events";
+function billingLabel(provider: RealtimeProvider, translate: (key: string) => string): RealtimeModel["billing"] {
+	if (provider === "xai") return translate("realtimeBillingXai");
+	if (provider === "google") return translate("realtimeBillingGoogle");
+	return translate("realtimeBillingOpenAI");
 }
 
 function fallbackVoiceOptions(provider: RealtimeProvider): RealtimeVoiceOption[] {
@@ -1316,7 +1366,10 @@ function readRealtimeDefaultVoice(
 	return voices[0]?.id ?? fallbackDefaultVoice(provider);
 }
 
-function gatewayModelToRealtimeModel(model: GatewaySupportedModel): RealtimeModel | null {
+function gatewayModelToRealtimeModel(
+	model: GatewaySupportedModel,
+	translate: (key: string) => string,
+): RealtimeModel | null {
 	const provider = providerFromGatewayModel(model);
 	if (!provider) return null;
 	const params = realtimeCapabilityParams(model);
@@ -1339,7 +1392,7 @@ function gatewayModelToRealtimeModel(model: GatewaySupportedModel): RealtimeMode
 		defaultVoice: readRealtimeDefaultVoice(params, voices, provider),
 		voices,
 		transport: "WebSocket",
-		billing: billingLabel(provider),
+		billing: billingLabel(provider, translate),
 	};
 }
 
@@ -1357,9 +1410,12 @@ function compareRealtimeModelsByRelease(a: RealtimeModel, b: RealtimeModel): num
 	return a.label.localeCompare(b.label);
 }
 
-function buildRealtimeModels(models: GatewaySupportedModel[]): RealtimeModel[] {
+function buildRealtimeModels(
+	models: GatewaySupportedModel[],
+	translate: (key: string) => string,
+): RealtimeModel[] {
 	const mapped = filterModelsForRoom(models, "realtime")
-		.map(gatewayModelToRealtimeModel)
+		.map((model) => gatewayModelToRealtimeModel(model, translate))
 		.filter((model): model is RealtimeModel => Boolean(model));
 	const seen = new Set<string>();
 	const deduped = mapped.filter((model) => {
@@ -1375,11 +1431,17 @@ type RealtimeRoomProps = {
 };
 
 export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const t = useTranslations("Product.chatRooms");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatElapsedSeconds = (ms: number) =>
 		`${format.number(Math.floor(ms / 1000), { notation: "standard" })}s`;
 	const { toggleSidebar, state: sidebarState } = useSidebar();
-	const realtimeModels = useMemo(() => buildRealtimeModels(models), [models]);
+	const realtimeModels = useMemo(
+		() => buildRealtimeModels(models, (key) => t(key as never)),
+		[models, t],
+	);
 	const suggestedModels = useMemo(() => {
 		const ids = [
 			"openai:gpt-live-1",
@@ -1623,13 +1685,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const budgetRatio =
 		reservedBudgetUsd > 0 ? displayedCostUsd / reservedBudgetUsd : 0;
 	const costLabel =
-		ledger ? (ledger.final_cost_nanos != null ? "Final cost" : "Estimated cost") : billingSessionId ? "Estimated cost" : !selectedModel
+		ledger ? (ledger.final_cost_nanos != null ? tCopy("copyFinalCost") : tCopy("copyEstimatedCost")) : billingSessionId ? tCopy("copyEstimatedCost") : !selectedModel
 			? "Cost"
 			: selectedModel.provider === "xai"
-			? "Estimated cost"
+			? tCopy("copyEstimatedCost")
 			: selectedModel.provider === "google"
-				? "Usage cost"
-				: "Actual cost";
+				? tCopy("usageCost")
+				: tCopy("actualCost");
 
 	const currentUsagePayload = useCallback(
 		(): RealtimeUsageAggregate => ({
@@ -1674,7 +1736,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		const attempt = startupAttemptRef.current;
 		if (!navigator.mediaDevices?.getUserMedia) {
 			throw new Error(
-				"Microphone capture is not available in this browser context.",
+				t("realtimeMicrophoneUnavailable"),
 			);
 		}
 		try {
@@ -1688,7 +1750,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		} catch (error) {
 			throw error;
 		}
-	}, []);
+	}, [t]);
 
 	const persistCurrentUsage = useCallback(async (estimatedCostUsd?: number) => {
 		if (relaySessionRef.current) return;
@@ -1838,7 +1900,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				appendTextLine(lines, {
 					id: "system-finishing-response",
 					role: "system",
-					text: "Finishing the current assistant response before closing the session.",
+					text: t("realtimeFinishingResponse"),
 					final: true,
 				}),
 			);
@@ -1860,7 +1922,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				stopSession(true, terminalStatus);
 			}, PROVIDER_DRAIN_TIMEOUT_MS);
 		},
-		[addDiagnosticLog, lastEventType, status, stopInputCapture, stopSession],
+		[addDiagnosticLog, lastEventType, status, stopInputCapture, stopSession, t],
 	);
 
 	const requestGracefulBudgetStop = useCallback(() => {
@@ -1871,11 +1933,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			appendTextLine(lines, {
 				id: "system-budget-stop",
 				role: "system",
-				text: "The realtime credit hold is nearly exhausted. Asking the assistant to close the session.",
+				text: t("realtimeBudgetExhaustedWarning"),
 				final: true,
 			}),
 		);
-		toast.warning("Realtime budget nearly exhausted. Closing the session.");
+		toast.warning(t("realtimeBudgetExhaustedWarning"));
 
 		const dataChannel = dataChannelRef.current;
 		if (dataChannel?.readyState === "open") {
@@ -1922,7 +1984,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		budgetStopTimerRef.current = window.setTimeout(() => {
 			requestStopSession("expired");
 		}, 8000);
-	}, [requestStopSession, selectedModel?.provider]);
+	}, [requestStopSession, selectedModel?.provider, t]);
 
 	useEffect(() => {
 		if (!startedAt) return;
@@ -2112,7 +2174,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			if (type === "relay.upstream_error") {
 				addDiagnosticLog("Provider socket error", event, "error");
-				setError("Realtime provider socket failed.");
+				setError(t("realtimeSocketFailed"));
 				setStatus("error");
 				setPersonaState("asleep");
 				return;
@@ -2123,8 +2185,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				const providerLabel = getStringField(event, "provider") || provider;
 				const message =
 					phase === "setup"
-						? `${providerLabel} socket closed before setup completed.`
-						: `${providerLabel} socket closed.`;
+						? t("realtimeSocketFailed")
+						: t("realtimeSocketFailed");
 				addDiagnosticLog(
 					phase === "setup"
 						? "Provider socket closed before setup"
@@ -2148,7 +2210,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 					nonGoogleProviderError,
 					"error",
 				);
-				setError(formatDiagnosticDetail(nonGoogleProviderError) ?? "Realtime provider error.");
+				setError(formatDiagnosticDetail(nonGoogleProviderError) ?? t("realtimeSessionFailed"));
 				setStatus("error");
 				setPersonaState("asleep");
 			}
@@ -2443,16 +2505,17 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			playPcm16Audio,
 			selectedModel?.model,
 			updateGoogleCostFromUsage,
+			t,
 		],
 	);
 
 	const createSession = useCallback(async () => {
 		if (!selectedModel) {
-			throw new Error("Select a realtime model before starting.");
+			throw new Error(t("chooseRealtimeModel"));
 		}
 		const live = selectedModel.id === GPT_LIVE_MODEL.id;
 		if (live && (!Number.isInteger(liveSettings.max_output_tokens) || liveSettings.max_output_tokens < 16 || liveSettings.max_output_tokens > 32768)) {
-			throw new Error("Set the backend output limit between 16 and 32,768 tokens.");
+			throw new Error(tCopy("backendLimitError"));
 		}
 		const response = await fetchChatWebApi(`/api/chat/${live ? "live" : "realtime"}/session`, {
 			method: "POST",
@@ -2470,7 +2533,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		});
 		const payload = await response.json().catch(() => null);
 		if (!response.ok) {
-			throw new Error(getSessionErrorMessage(payload, response.status));
+			throw new Error(getSessionErrorMessage(payload, response.status, (key, values) => t(key as never, values as never)));
 		}
 		return payload as RealtimeSessionResponse;
 	}, [
@@ -2481,7 +2544,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		selectedModel,
 		selectedVoice,
 		usesGoogleExtendedThinking,
-	]);
+		t,
+	 tCopy]);
 
 	const startOpenAI = useCallback(
 		async (session: RealtimeSessionResponse) => {
@@ -2590,7 +2654,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			};
 
 			await new Promise<void>((resolve, reject) => {
-				ws.onerror = () => reject(new Error("xAI WebSocket failed to connect."));
+				ws.onerror = () => reject(new Error(t("realtimeSocketFailed")));
 				ws.onopen = () => resolve();
 			});
 
@@ -2639,6 +2703,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			markSessionConnected,
 			realtimeSystemPrompt,
 			startPcmInputStream,
+			t,
 		],
 	);
 
@@ -2698,7 +2763,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				if (rejectSetupComplete) {
 					rejectSetupComplete(
 						new Error(
-							event.reason || "Google Live socket closed before setup completed.",
+							event.reason || t("realtimeSetupTimeout"),
 						),
 					);
 					rejectSetupComplete = null;
@@ -2710,7 +2775,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				ws.onerror = (event) => {
 					console.error("[google-live:socket-error]", event);
 					addDiagnosticLog("Google socket error", event, "error");
-					reject(new Error("Google Live API WebSocket failed to connect."));
+					reject(new Error(t("realtimeSocketFailed")));
 				};
 				ws.onopen = () => {
 					addDiagnosticLog("Google socket open");
@@ -2720,7 +2785,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			setupCompleteTimer = window.setTimeout(() => {
 				rejectSetupComplete?.(
-					new Error("Google Live setup did not complete within 10 seconds."),
+					new Error(t("realtimeSetupTimeout")),
 				);
 				rejectSetupComplete = null;
 				resolveSetupComplete = null;
@@ -2844,6 +2909,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			googleThinkingLevel,
 			scheduleGoogleResponseTimeout,
 			startPcmInputStream,
+			t,
 		],
 	);
 
@@ -2857,20 +2923,20 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			let ready: () => void = () => undefined;
 			let failSetup: (error: Error) => void = () => undefined;
 			const setup = new Promise<void>((resolve, reject) => { ready = resolve; failSetup = reject; });
-			const setupTimer = window.setTimeout(() => failSetup(new Error("The provider did not accept the session within 15 seconds.")), 15_000);
+			const setupTimer = window.setTimeout(() => failSetup(new Error(tCopy("providerSetupTimeout"))), 15_000);
 
 			ws.onmessage = (message) => {
 				void parseRealtimeEvent(message).then((event) => {
 					if (event) {
 						if (webSocketRef.current !== ws) return;
 						if (event.type === "session.updated" || event.type === "session.started" || event.setupComplete) ready();
-						if (event.error || event.type === "relay.upstream_error") failSetup(new Error("The provider rejected the realtime session."));
+						if (event.error || event.type === "relay.upstream_error") failSetup(new Error(tCopy("providerSessionRejected")));
 						handleRealtimeEvent(event, session.provider);
 					}
 				});
 			};
 			ws.onclose = (event) => {
-				failSetup(new Error("The realtime connection closed before setup completed."));
+				failSetup(new Error(tCopy("connectionClosedBeforeSetup")));
 				if (webSocketRef.current !== ws) return;
 				if (liveSessionRef.current) {
 					stopInputCapture();
@@ -2890,7 +2956,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				setIsFinishing(false);
 			};
 
-			ws.onerror = () => failSetup(new Error("Realtime relay WebSocket failed to connect."));
+			ws.onerror = () => failSetup(new Error(t("realtimeSocketFailed")));
 			try { await setup; } catch (error) { ws.close(); throw error; }
 			finally { window.clearTimeout(setupTimer); }
 			if (ws.readyState !== WebSocket.OPEN || pendingStopStatusRef.current) return;
@@ -2963,6 +3029,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			addDiagnosticLog,
 			handleRealtimeEvent,
 			startPcmInputStream,
+			status,
+			t,
+			tCopy,
 			stopInputCapture,
 			completePendingStop,
 		],
@@ -2971,7 +3040,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const startSession = useCallback(async () => {
 		if (status === "connecting" || status === "connected") return;
 		if (!selectedModel) {
-			setError("Select a realtime model before starting.");
+			setError(t("chooseRealtimeModel"));
 			return;
 		}
 		setStatus("connecting");
@@ -3068,7 +3137,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		} catch (sessionError) {
 			if (attempt !== startupAttemptRef.current) return;
 			stopSession();
-			const message = getRealtimeStartupErrorMessage(sessionError);
+			const message = getRealtimeStartupErrorMessage(sessionError, (key) => t(key as never));
 			setStatus("error");
 			setPersonaState("asleep");
 			setError(message);
@@ -3086,19 +3155,20 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		selectedModel,
 		status,
 		stopSession,
+		t,
 		startPcmInputStream,
 	]);
 
 	const personaLabel =
 		personaState === "asleep"
-			? "Sleeping"
+			? t("personaAsleep")
 			: personaState === "listening"
-				? "Listening"
+				? t("personaListening")
 				: personaState === "thinking"
-					? "Thinking"
+					? t("personaThinking")
 					: personaState === "speaking"
-						? "Speaking"
-						: "Idle";
+						? t("personaSpeaking")
+						: t("personaIdle");
 	const sessionActive =
 		status === "connected" || status === "connecting" || isFinishing;
 	const canStartSession = Boolean(selectedModel) && !sessionActive;
@@ -3115,7 +3185,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									size="icon"
 									className="-ml-1 h-8 w-8"
 									onClick={toggleSidebar}
-									aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+									aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 								>
 									{sidebarState === "expanded" ? (
 										<PanelLeftClose className="h-4 w-4" />
@@ -3129,7 +3199,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								align="center"
 								sideOffset={8}
 							>
-								Toggle sidebar
+								{t("toggleSidebar")}
 							</TooltipContent>
 						</Tooltip>
 						<RealtimeModelSelector
@@ -3145,7 +3215,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 							disabled={sessionActive || !selectedModel}
 						/>
 						<Badge variant="outline" className="hidden text-[10px] uppercase sm:inline-flex">
-							Voice beta
+							{t("voiceBeta")}
 						</Badge>
 					</div>
 					<div className="flex items-center gap-1">
@@ -3157,13 +3227,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									variant="ghost"
 									size="icon"
 									className="h-8 w-8"
-									aria-label="Open realtime settings"
+									aria-label={t("realtimeSettings")}
 									onClick={() => setSettingsOpen(true)}
 								>
 									<Settings className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>Settings</TooltipContent>
+							<TooltipContent>{t("settings")}</TooltipContent>
 						</Tooltip>
 					</div>
 				</div>
@@ -3171,9 +3241,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			{selectedModel?.id === GPT_LIVE_MODEL.id && (
 				<div className="flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-2 text-sm">
-					<span>Backend model</span>
+					<span>{tCopy("backendModel")}</span>
 					<Select disabled={sessionActive} value={liveBackendModel} onValueChange={setLiveBackendModel}>
-						<SelectTrigger aria-label="Live backend model">
+						<SelectTrigger aria-label={tCopy("liveBackendModel")}>
 							<SelectValue>{liveBackendModel.endsWith("luna") ? "GPT 5.6 Luna" : "GPT 5.6 Terra"}</SelectValue>
 						</SelectTrigger>
 						<SelectContent>
@@ -3181,13 +3251,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 							<SelectItem value="openai/gpt-5.6-terra">GPT 5.6 Terra</SelectItem>
 						</SelectContent>
 					</Select>
-					<Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>Delegation settings</Button>
+					<Button variant="ghost" size="sm" onClick={() => setSettingsOpen(true)}>{tCopy("delegationSettings")}</Button>
 				</div>
 			)}
 
 			<section className="grid min-h-0 flex-1 grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
 				<div className="flex min-h-0 min-w-0 flex-col border-b border-border lg:border-b-0 lg:border-r">
-					<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": "Session overview", tabIndex: 0 }}>
+					<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": tCopy("sessionOverview"), tabIndex: 0 }}>
 					<div className="flex min-h-full flex-col items-center px-4 py-6">
 						{selectedModel ? (
 							<div className="my-auto flex w-full max-w-3xl shrink-0 flex-col items-center gap-5">
@@ -3227,12 +3297,12 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									<div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
 										<span className="font-medium text-foreground">{personaLabel}</span>
 										<span>{selectedModel.label}</span>
-										<span>Voice: {selectedVoice?.label ?? selectedVoice?.id}</span>
+										<span>{t("voice")}: {selectedVoice?.label ?? selectedVoice?.id}</span>
 									</div>
 								</div>
 
 								<div className="grid w-full gap-3 sm:grid-cols-2">
-									<StatCard icon={<Clock3 className="h-3.5 w-3.5" />} label="Time">
+									<StatCard icon={<Clock3 className="h-3.5 w-3.5" />} label={t("realtimeTime")}>
 										<span className="tabular-nums">{formatDuration(elapsedMs)}</span>
 										<span className="ml-2 text-sm font-normal text-muted-foreground">
 											({formatElapsedSeconds(elapsedMs)})
@@ -3244,7 +3314,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									>
 										<NumberFlow
 											value={displayedCostUsd}
-											locales="en-US"
+											locales={locale}
 											format={{
 												style: "currency",
 												currency: "USD",
@@ -3256,25 +3326,23 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								</div>
 
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <p className="text-sm text-muted-foreground">
-									$0.05/minute plus backend tokens. Voice: ${((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9).toFixed(4)}.
-									{" "}Backend: ${((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9).toFixed(4)}.
-									{" "}Tools: ${((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9).toFixed(4)}.
+									{tCopy("livePrice", { voice: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
 								</p>}
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
 								{billingSessionId && <p className="text-sm text-muted-foreground">
-									{billingReadFailed ? "Billing status is unavailable; displayed amounts may be out of date. " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? "Finalizing billing. " : ""}
-									{ledger?.status === "billing_unresolved" ? "Final usage is pending billing review. The remaining hold is retained. " : ""}
-									<a className="underline" href="/settings/usage/logs/realtime">View session billing and releases</a>
+									{billingReadFailed ? tCopy("billingUnavailable") + " " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? tCopy("finalizingBilling") + " " : ""}
+									{ledger?.status === "billing_unresolved" ? tCopy("reviewBilling") + " " : ""}
+									<Link className="underline" href="/settings/usage/logs/realtime">{tCopy("viewSessionBilling")}</Link>
 								</p>}
 								{sessionBilling ? (
 									<div className="grid w-full gap-3 sm:grid-cols-2">
 										<StatCard
 											icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
-											label="Currently held"
+											label={t("realtimeHeld")}
 										>
 											<NumberFlow
 												value={reservedBudgetUsd}
-												locales="en-US"
+												locales={locale}
 												format={{
 													style: "currency",
 													currency: "USD",
@@ -3285,11 +3353,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										</StatCard>
 										<StatCard
 											icon={<BadgeDollarSign className="h-3.5 w-3.5" />}
-											label={ledger?.final_cost_nanos != null ? "Released" : "Remaining budget"}
+											label={ledger?.final_cost_nanos != null ? t("realtimeReleased") : t("realtimeRemaining")}
 										>
 											<NumberFlow
 												value={ledger?.final_cost_nanos != null ? ledger.released_nanos / 1e9 : remainingBudgetUsd}
-												locales="en-US"
+												locales={locale}
 												format={{
 													style: "currency",
 													currency: "USD",
@@ -3306,8 +3374,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										<AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
 										<p>
 											{budgetState === "extension_needed"
-												? "This session is approaching the reserved credit hold. The production gateway should extend the hold now or prepare to close cleanly."
-												: "The reserved credit hold is nearly exhausted. The assistant has been asked to close the session before the transport stops."}
+												? t("realtimeBudgetExtensionWarning")
+												: t("realtimeBudgetExhaustedWarning")}
 										</p>
 									</div>
 								) : null}
@@ -3321,9 +3389,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 						) : (
 							<div className="my-auto w-full max-w-3xl shrink-0">
 								<div className="mb-5 text-center">
-									<p className="text-sm font-medium">Choose a realtime model</p>
+									<p className="text-sm font-medium">{t("chooseRealtimeModel")}</p>
 									<p className="mt-1 text-sm text-muted-foreground">
-										Start with one of these live voice models, or open the selector for the full list.
+										{t("liveVoiceModelPrompt")}
 									</p>
 								</div>
 								<div className="grid gap-3 md:grid-cols-3">
@@ -3350,7 +3418,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 												{model.label.replace(`${model.providerLabel} `, "")}
 											</p>
 											<p className="mt-2 text-xs text-muted-foreground">
-												{model.billing} / {model.voices.length} voices
+												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, (key) => t(key as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
 											</p>
 										</button>
 									))}
@@ -3372,7 +3440,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									disabled={isFinishing}
 								>
 									<Square className="h-4 w-4" />
-									{isFinishing ? "Finishing response" : "Stop session"}
+									{isFinishing ? tCopy("finishing") : tCopy("stopSession")}
 								</Button>
 							) : (
 								<Button
@@ -3382,7 +3450,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									disabled={!canStartSession}
 								>
 									<Mic className="h-4 w-4" />
-									{selectedModel ? "Start realtime session" : "Select a model to start"}
+									{selectedModel ? tCopy("startSession") : tCopy("selectModelStart")}
 								</Button>
 							)}
 							</RoomComposerSurface>
@@ -3392,16 +3460,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 				<aside className="flex min-h-0 flex-col bg-muted/10">
 					<div className="border-b border-border px-4 py-3">
-						<p className="text-sm font-medium">Live transcript</p>
+						<p className="text-sm font-medium">{t("liveTranscript")}</p>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Assistant transcript appears when the provider emits audio transcript
-							events.
+							{t("transcriptHelp")}
 						</p>
 					</div>
 					<div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
 						{transcript.length === 0 ? (
 							<p className="text-sm text-muted-foreground">
-								Start a session to see provider events.
+								{t("sessionEventsEmpty")}
 							</p>
 						) : (
 							transcript.map((line) => (
@@ -3428,15 +3495,15 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 					</div>
 					<div className="border-t border-border">
 						<div className="border-b border-border px-4 py-3">
-							<p className="text-sm font-medium">Realtime diagnostics</p>
+							<p className="text-sm font-medium">{t("realtimeDiagnostics")}</p>
 							<p className="mt-1 text-xs text-muted-foreground">
-								Newest provider and transport events.
+								{t("recentProviderEvents")}
 							</p>
 						</div>
 						<div className="max-h-64 space-y-2 overflow-y-auto px-4 py-3">
 							{diagnosticLogs.length === 0 ? (
 								<p className="text-xs text-muted-foreground">
-									No diagnostics yet.
+									{t("noDiagnostics")}
 								</p>
 							) : (
 								diagnosticLogs.map((log) => (
@@ -3528,6 +3595,8 @@ function RealtimeSettingsDialog({
 	thinkingLevel: GoogleThinkingLevel;
 	onThinkingLevelChange: (level: GoogleThinkingLevel) => void;
 }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const t = useTranslations("Product.chatRooms");
 	const orbOptions: Array<{
 		value: RealtimeOrbMode;
 		label: string;
@@ -3535,32 +3604,32 @@ function RealtimeSettingsDialog({
 	}> = [
 		{
 			value: "simple",
-			label: "Lightweight orb",
-			description: "CSS-based status visual. Fastest default.",
+			label: t("lightweightOrb"),
+			description: t("lightweightOrbDescription"),
 		},
 		{
 			value: "persona",
-			label: "Rich persona",
-			description: "Rive/WebGL animation. Looks best, costs more.",
+			label: t("richPersona"),
+			description: t("richPersonaDescription"),
 		},
 		{
 			value: "off",
-			label: "Off",
-			description: "No central visual.",
+			label: t("visualOff"),
+			description: t("noCentralVisual"),
 		},
 	];
 	const thinkingOptions: Array<{ value: GoogleThinkingLevel; label: string }> = [
-		{ value: "low", label: "Low" },
-		{ value: "medium", label: "Medium" },
-		{ value: "high", label: "High" },
+		{ value: "low", label: tCopy("copyLow") },
+		{ value: "medium", label: tCopy("copyMedium") },
+		{ value: "high", label: tCopy("copyHigh") },
 	];
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="overflow-hidden p-0 md:max-h-[440px] md:max-w-[680px]">
-				<DialogTitle className="sr-only">Realtime settings</DialogTitle>
+				<DialogTitle className="sr-only">{t("realtimeSettings")}</DialogTitle>
 				<DialogDescription className="sr-only">
-					Realtime display and session settings.
+					{t("realtimeSettingsDescription")}
 				</DialogDescription>
 				<div className="flex h-[min(440px,calc(100dvh-2rem))] flex-1 overflow-hidden">
 					<div className="hidden w-48 shrink-0 flex-col border-r border-border p-2 md:flex">
@@ -3570,7 +3639,7 @@ function RealtimeSettingsDialog({
 							className="w-full justify-start gap-2"
 						>
 							<Settings className="h-4 w-4" />
-							Model
+							{t("model")}
 						</Button>
 					</div>
 					<div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -3582,20 +3651,20 @@ function RealtimeSettingsDialog({
 								className="gap-2"
 							>
 								<Settings className="h-4 w-4" />
-								Model
+								{t("model")}
 							</Button>
 						</div>
-						<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": "Realtime settings content", tabIndex: 0 }}>
+						<ScrollArea className="min-h-0 flex-1" viewportClassName="overscroll-contain" viewportProps={{ role: "region", "aria-label": tCopy("realtimeSettingsContent"), tabIndex: 0 }}>
 							<div className="grid gap-4 p-4">
 								<div className="grid gap-1">
-									<p className="text-sm font-semibold text-foreground">Model</p>
+									<p className="text-sm font-semibold text-foreground">{t("model")}</p>
 									<p className="text-xs text-muted-foreground">
-										Applied when the next realtime session starts.
+										{t("appliesNextRealtimeSession")}
 									</p>
 								</div>
 								<div className="grid gap-2 rounded-lg border border-border bg-background p-3">
 									<div className="flex items-center justify-between gap-3">
-										<Label htmlFor="realtime-system-prompt">System prompt</Label>
+										<Label htmlFor="realtime-system-prompt">{t("systemPrompt")}</Label>
 										<Button
 											type="button"
 											variant="ghost"
@@ -3604,7 +3673,7 @@ function RealtimeSettingsDialog({
 											onClick={() => onSystemPromptChange("")}
 											disabled={!systemPrompt.trim()}
 										>
-											Reset
+											{t("reset")}
 										</Button>
 									</div>
 									<Textarea
@@ -3615,13 +3684,13 @@ function RealtimeSettingsDialog({
 										className="min-h-28 resize-none text-sm"
 									/>
 									<p className="text-xs text-muted-foreground">
-										{systemPrompt.trim() ? "Custom prompt" : defaultSystemPrompt}
+										{systemPrompt.trim() ? t("customPrompt") : defaultSystemPrompt}
 									</p>
 								</div>
 								{liveSettings ? <LiveSettings value={liveSettings} onChange={onLiveSettingsChange} /> : null}
 								{showThinkingLevel ? (
 									<div className="grid gap-2 rounded-lg border border-border bg-background p-3">
-										<Label>Reasoning level</Label>
+										<Label>{tCopy("reasoningLevel")}</Label>
 										<div className="grid grid-cols-3 gap-2">
 											{thinkingOptions.map((option) => (
 												<Button
@@ -3637,13 +3706,13 @@ function RealtimeSettingsDialog({
 									</div>
 								) : null}
 								<div className="grid gap-1">
-									<p className="text-sm font-semibold text-foreground">Display</p>
+									<p className="text-sm font-semibold text-foreground">{t("display")}</p>
 									<p className="text-xs text-muted-foreground">
-										Stored locally for this browser.
+										{t("storedLocallyForBrowser")}
 									</p>
 								</div>
 								<div className="grid gap-2 rounded-lg border border-border bg-background p-3">
-									<Label>Voice visual</Label>
+									<Label>{t("voiceVisual")}</Label>
 									<div className="grid gap-2">
 										{orbOptions.map((option) => (
 											<button

@@ -1,0 +1,63 @@
+---
+title: "Modell-Endpunktfunktionen auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "Anbieter-Routen, Modalitäten, Parameter, Verfügbarkeit und Preise eines Modells anzeigen."
+---
+
+Verwende diesen Endpunkt vor einer Anfrage, wenn deine Anwendung prüfen muss, ob eine bestimmte Kombination aus Modell, Anbieter, Endpunkt und Parametern verfügbar ist.
+
+Für `openai/gpt-5.4-mini` verwende:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Jede Zeile beschreibt eine Fähigkeit eines Anbieters und Endpunkts. Sie enthält:
+
+- die kanonische Fähigkeits-ID und den öffentlichen API-Pfad
+- Anbieter-ID und -Name sowie den Modell-Slug des Anbieters
+- Eingabe- und Ausgabemodalitäten
+- unterstützte Parameternamen und strukturierte Parameterdetails
+- Status von Anbieter, Modell, Fähigkeit, Routing und Verfügbarkeit
+- Gültigkeitsdaten, wenn die Route geplant oder zeitlich begrenzt ist
+- eine Preisübersicht des Endpunkts
+
+## Geplante und inaktive Routen einschließen
+
+Der Standardwert `availability=active` gibt nur öffentlich routbare Einträge zurück. Verwende `availability=all`, um demnächst verfügbare und inaktive Routen anzuzeigen:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Leite keinen Produktionsverkehr zu einem Eintrag, wenn `availability_status` nicht `active` und `is_active_gateway` nicht `true` ist.
+
+## Routen filtern
+
+Verwende wiederholbare oder durch Kommas getrennte Filter für:
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+Dieses Beispiel gibt etwa OpenAI-Routen zurück, die `temperature` unterstützen:
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## Verwandte Endpunkte
+
+- [Modelle auflisten](./models.mdx)
+- [Endpunkte auflisten](./endpoints.mdx)
+

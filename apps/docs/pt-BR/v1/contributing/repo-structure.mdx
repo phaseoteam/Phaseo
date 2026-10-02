@@ -1,0 +1,45 @@
+---
+icon: "folder-open"
+title: "Estrutura do repositório"
+description: "Encontre código de aplicações, documentação, SDKs e exportações do catálogo do Phaseo."
+---
+
+O Phaseo é um monorepo pnpm e Turborepo. Use esta referência para encontrar arquivos de uma alteração de código ou documentação. Para registros do catálogo, [abra uma issue](./overview.mdx).
+
+## Aplicações e pacotes
+
+| Caminho | Finalidade |
+| --- | --- |
+| `apps/web` | Site Next.js 16, painel e editor interno do catálogo. |
+| `apps/web-api` | Leituras públicas do catálogo e APIs autenticadas de contas e administração. |
+| `apps/api` | Roteamento do gateway e execução dos provedores em Cloudflare Workers. |
+| `apps/docs` | Documentação Mintlify; páginas MDX em `v1`, navegação em `docs.json`. |
+| `packages/data/catalog` | Esquemas do catálogo, fixtures de compatibilidade e snapshots públicos gerados. |
+| `packages/sdk` | SDKs de TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust e C++. |
+| `supabase/migrations` | Migrações de esquema do banco e permissões. |
+| `scripts` | Utilitários de validação, geração de SDK e automação. |
+| `.github/workflows` | CI, implantação, sincronização do catálogo e programação de snapshots. |
+| `.changeset` | Metadados de lançamento dos pacotes versionados. |
+
+## Dados do catálogo
+
+O banco de dados é a fonte de verdade de modelos, provedores, organizações, preços, benchmarks e configurações auxiliares do catálogo. Administradores gerenciam registros por [Dados internos](https://phaseo.app/internal/data). Contribuições públicas são revisadas por issues do GitHub.
+
+- `packages/data/catalog/generated/database-v2` contém snapshots públicos diários e o índice de enum de modelos gerado usado por ferramentas OpenAPI e SDK.
+- `packages/data/catalog/src/data` contém fixtures de compatibilidade arquivados.
+- Editar qualquer diretório não atualiza registros do catálogo ativo. O importador antigo de JSON para banco foi aposentado.
+
+Alterações de esquema e aplicações ainda usam migrações e solicitações de alteração. Snapshots e artefatos de SDK gerados devem ser atualizados por seus comandos de geração.
+
+## Automação do catálogo
+
+A sincronização de provedores coloca preços propostos na fila para revisão em [Atualizações de provedores](https://phaseo.app/internal/data/imports). Trabalhos de benchmarks e ciclo de vida de modelos usam o banco de dados. Exportações públicas diárias produzem solicitações de alteração de snapshots que podem ser revisadas.
+
+Registros apenas no catálogo não habilitam automaticamente o roteamento do gateway. Alterações de rotas e preços exigem a revisão administrativa apropriada.
+
+## Por onde começar
+
+- [Relatar atualização de modelo](./editing-a-model.mdx).
+- [Relatar atualização de organização](./editing-an-organisation.mdx).
+- [Enviar pontuações de benchmarks](../research/submitting-scores.mdx).
+- [Contribuir com código ou documentação](./how-to-contribute.mdx).

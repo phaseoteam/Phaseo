@@ -1,0 +1,64 @@
+---
+icon: "messages-square"
+title: "إكمال المحادثة"
+description: "استدعِ /chat/completions باستخدام SDK الخاص بـ C#."
+---
+
+**الطريقة**: `client.GenerateText(...)` أو `client.CreateChatCompletion(...)`
+
+### مثال
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses."
+        }
+    }
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف النموذج المستهدف.
+- `messages` (مطلوب): رسائل مرتبة بأدوار `system|user|assistant|tool`؛ ويمكن أن يكون المحتوى نصًا أو أجزاءً.
+- أخذ العينات: `temperature` (0–2) و`top_p` (0–1) و`top_k` (>=1) و`seed` (عدد صحيح اختياري).
+- الطول والعقوبات: `max_output_tokens` (عدد صحيح)، و`presence_penalty` و`frequency_penalty` (من -2 إلى 2)، و`stop` (string|string[]).
+- الأدوات: `tools` (تعريفات)، و`tool_choice` (auto/none/أداة محددة)، و`max_tool_calls` (عدد صحيح)، و`parallel_tool_calls` (قيمة منطقية).
+- احتمالات السجل: `logprobs` (قيمة منطقية)، و`top_logprobs` (0–20).
+- الإخراج: `response_format` (json/text)، و`meta` (كائن يُمرر كما هو)، و`stream` (قيمة منطقية)، و`service_tier`.
+- خيارات Gateway الإضافية: `usage` (قيمة منطقية لطلب الاستخدام)، و`meta` (قيمة منطقية لتضمين كتلة meta).
+
+### القيمة المعادة
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+

@@ -1,0 +1,69 @@
+---
+icon: "search-check"
+title: "生成履歴の取得"
+description: "/generationsを呼び出して過去の生成を取得します。"
+---
+
+**メソッド**：`client.GetGeneration(...)`
+
+### 例
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GetGeneration("G-01ABC...");
+```
+
+### パラメーター
+
+- `id`（string、必須）：以前の呼び出しで返されたリクエストID。
+
+### 戻り値
+
+生成レコード（JSON）
+
+ゲートウェイがリクエストの詳細をすべて保存している場合、返されるレコードには`replay_supported`と`replay_request`が含まれます。`replay_request`を元のエンドポイントに送信すると、制御された形で再実行できます。
+
+時間フィールドはゲートウェイ全体で共通の意味に従います。
+
+- `latency_ms`：記録されている場合、最初のトークンまたは出力バイト／フレームまでの時間
+- `generation_ms`：記録されている場合、レイテンシ後の生成時間
+
+```json
+{
+	"created_at": "2026-05-05T12:00:00.000Z",
+	"request_id": "G-01ABC123",
+	"team_id": "team-123",
+	"app_id": "app-123",
+	"endpoint": "chat/completions",
+	"model_id": "openai/gpt-4o-mini",
+	"provider": "openai",
+	"native_response_id": "chatcmpl-123",
+	"stream": false,
+	"byok": false,
+	"status_code": 200,
+	"success": true,
+	"error_code": null,
+	"error_message": null,
+	"latency_ms": 1500,
+	"generation_ms": 1400,
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 9,
+		"total_tokens": 18
+	},
+	"cost_nanos": 1000000,
+	"currency": "USD",
+	"pricing_lines": [],
+	"key_id": "key-123",
+	"throughput": null,
+	"replay_supported": true,
+	"replay_request": {
+		"model": "openai/gpt-4o-mini",
+		"messages": [
+			{ "role": "user", "content": "Say hello" }
+		]
+	}
+}
+```

@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "ファイル"
+description: "C# SDKでファイルのアップロード、メタデータの取得、内容の取得を行います。"
+---
+
+**メソッド**: `client.UploadFile()`、`client.ListFiles()`、`client.RetrieveFile()`、`client.RetrieveFileContent()`。
+
+### 例
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()`はSDKから呼び出せますが、共有Gatewayキーでは現在`GET /files`が`file_list_not_supported_with_shared_gateway_key`を返します
+アップロードしたファイルIDを保存し、個別に取得してください。
+</Note>

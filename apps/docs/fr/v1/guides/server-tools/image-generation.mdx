@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "Génération d’images"
+description: "Permettez aux modèles de créer des images grâce à un outil serveur Phaseo."
+---
+
+Utilisez `phaseo:image_generation` lorsque le modèle doit créer une image pendant sa réponse. Phaseo met un outil géré à sa disposition, exécute la requête d’image côté serveur et renvoie le résultat dans la boucle du modèle.
+
+## Requête
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## Paramètres
+
+| Paramètre | Type | Description |
+| --- | --- | --- |
+| `model` | string | ID facultatif d’un modèle compatible avec les images. La valeur par défaut est `openai/gpt-image-2` si ni l’outil ni l’appel ne précisent de modèle. |
+| `quality` | string | Indication de qualité facultative pour le fournisseur, par exemple `low`, `medium` ou `high`. |
+| `size` | string | Indication facultative de la taille de l’image. |
+| `aspect_ratio` | string | Rapport largeur/hauteur facultatif, par exemple `1:1`, `16:9` ou `9:16`. |
+| `background` | string | Indication facultative du mode d’arrière-plan. |
+| `output_format` | string | Format de sortie facultatif, par exemple `png`, `jpeg` ou `webp`. |
+| `output_compression` | integer | Indication facultative de compression pour le fournisseur. |
+| `moderation` | string | Indication facultative de modération pour le fournisseur. |
+
+Le modèle fournit le `prompt` final lorsqu’il appelle l’outil. Les paramètres de l’outil définissent les valeurs par défaut et les contraintes de cet appel.
+
+L’appel de l’outil peut également envoyer `description` à la place de `prompt`. Pour rester compatible avec les descriptions d’images générées par les modèles, Phaseo traite `description` comme un alias de prompt.
+
+## Résultat de l’outil
+
+Le résultat est renvoyé au modèle au format JSON :
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+Certains fournisseurs renvoient plutôt des données d’image en base64 :
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## Utilisation et tarification
+
+L’utilisation de la génération d’images est incluse dans l’utilisation de la réponse parente lorsque le modèle d’image indique une consommation de tokens. Phaseo enregistre également :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Les grilles tarifaires peuvent facturer cette utilisation avec le compteur `server_tool_image_generation_requests`. L’utilisation du modèle d’image sous-jacent peut également être facturée selon sa tarification habituelle.
+
+## Pages associées
+
+- [Outils serveur](./index.mdx)
+- [Appels d’outils](../tool-calling.mdx)

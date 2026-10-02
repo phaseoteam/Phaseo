@@ -1,0 +1,78 @@
+---
+icon: "messages-square"
+title: "Complétions de chat"
+description: "Appelez /chat/completions avec le SDK TypeScript."
+---
+
+**Méthode**: `client.generateText()` (diffusez les fragments analysés avec `client.streamChat()`).
+
+### Exemple
+```typescript
+const chat = await client.generateText({
+  model: "openai/gpt-4o-mini",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+  temperature: 0.5,
+});
+```
+
+### Diffusion en continu
+```typescript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-4o-mini",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### Paramètres principaux
+- `model` (required): ID du modèle cible.
+- `messages` (required): Messages ordonnés avec les rôles `system|user|assistant|tool` ; le contenu peut être une chaîne ou plusieurs parties.
+- Échantillonnage : `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, optional).
+- Longueur/pénalités : `max_output_tokens` (int), `presence_penalty` and `frequency_penalty` (-2 to 2), `stop` (string|string[]).
+- Outils : `tools` (définitions), `tool_choice` (`auto`/`none`/outil spécifique), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+- Logprobs : `logprobs` (bool), `top_logprobs` (0–20).
+- Sortie : `response_format` (json/text), `metadata` (object passthrough), `stream` (bool), `service_tier`.
+- Options Gateway supplémentaires : `usage` (bool pour demander les données d’utilisation), `meta` (bool pour inclure le bloc meta).
+
+### Réponse
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+Ou des trames SSE lorsque `stream: true` :
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

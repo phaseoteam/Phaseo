@@ -1,0 +1,10 @@
+---
+title: "ワークスペースを一覧表示"
+sidebarTitle: "ワークスペースを一覧表示"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /workspaces"
+description: "認証済み管理キーの所有者が所有するワークスペースを一覧表示します。"
+---
+<Note>このエンドポイントには管理APIキーが必要です。通常のGateway APIキーは使用できません。</Note>
+
+認証済みの管理コンテキストで表示可能なワークスペースを `offset` と `limit` でページ分割して返します。

@@ -412,7 +412,11 @@ jobs:
 
             - name: Web validation
               if: matrix.app == 'web'
-              run: pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
+              run: |
+                  pnpm run validate:i18n
+                  pnpm --filter @phaseo/web audit:i18n:ui
+                  pnpm --filter @phaseo/web test:i18n:ui-audit
+                  pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'

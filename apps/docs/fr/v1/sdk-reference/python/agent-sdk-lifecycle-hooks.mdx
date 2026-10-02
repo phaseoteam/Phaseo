@@ -1,0 +1,20 @@
+---
+icon: "radio-tower"
+title: "Hooks du cycle de vie"
+description: "Réagissez aux événements Python liés aux exécutions, aux modèles, aux étapes, aux outils et aux points de reprise."
+---
+
+Transmettez `on_event` pour mettre à jour les chronologies du produit, les journaux d’audit ou un système de télémétrie existant :
+
+```python
+def on_event(event):
+    logger.info("%s %s", event.type, event.run_id)
+```
+
+Les événements couvrent l’état des exécutions, les appels de modèles, les étapes, les points de reprise, l’exécution et la progression des outils, les attentes humaines, les annulations et les échecs. Gardez le callback rapide et placez les tâches lentes dans une file externe.
+
+## Pages associées
+
+- [Diffusion en continu](./agent-sdk-streaming.mdx)
+- [Outils de développement](./agent-sdk-devtools.mdx)
+

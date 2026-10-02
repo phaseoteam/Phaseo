@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "コードやドキュメントに貢献する"
+description: "Phaseoをローカルで設定し、対象を絞った変更を検証してプルリクエストを開きます。"
+---
+
+この手順はコードとドキュメントの変更に使います。モデル、プロバイダー、料金、組織、ベンチマークのレコードについては、代わりに[カタログのIssueを提出](./overview.mdx)してください。ローカル設定は不要です。
+
+## フォークを設定する
+
+Git、Node.js 22.12以降、pnpmをインストールします。[Phaseoリポジトリ](https://github.com/phaseoteam/Phaseo)をフォークし、そのフォークをクローンして新しいブランチを作成します。
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## 変更してプレビューする
+
+対象のアプリケーションやパッケージは[リポジトリ構成](./repo-structure.mdx)で確認します。Markdownだけの編集なら、GitHubのファイルエディターを使ってプルリクエストを開くこともできます。
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+該当する`AGENTS.md`の指示に従ってください。シークレットはローカルの環境ファイルに保存し、コミットに含めないでください。ローカルのアプリプレビューには、設定済みのバックエンドサービスと通常のログインが必要な場合があります。
+
+## 変更を検証する
+
+変更したファイルに適したチェックを実行します。ドキュメントの場合は次のとおりです。
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+Webの変更の場合は次のとおりです。
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+描画やルーティングの変更では本番ビルドを実行します。API、SDK、スキーマの変更には、それぞれ対応するテストと生成手順が必要です。ルートの[貢献ガイド](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md)を参照してください。
+
+## プルリクエストを開く
+
+変更したファイルだけをステージし、内容が分かるコミットメッセージを付けてブランチをプッシュします。
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+フォークからプルリクエストを開きます。問題、変更内容、通過したチェックを説明してください。関連するIssueをリンクし、見た目が変わるUI変更にはスクリーンショットを添付します。マージ前にレビューの指摘に対応してください。変更は該当するデプロイの完了後に公開されます。
+
+[行動規範](../community/code-of-conduct.mdx)に従ってください。大きな変更や不確かな変更では、コードを書く前に提案を相談してください。

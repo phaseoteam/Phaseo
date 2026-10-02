@@ -1,0 +1,40 @@
+---
+icon: "pencil"
+title: "Bildbearbeitung"
+description: "Rufe /images/edits mit dem TypeScript-SDK auf."
+---
+
+**Methode**: `client.generateImageEdit()`.
+
+### Beispiel
+```typescript
+const edited = await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+  mask: "data:image/png;base64,...",
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines bildbearbeitungsfähigen Modells.
+- `image` (erforderlich): Base64-Daten-URL oder URL des Ausgangsbilds.
+- `prompt`: optionale neue Bearbeitungsanweisung.
+- `mask`: optionale Maske (transparente Bereiche werden bearbeitet).
+- `n` (1–10): Anzahl der bearbeiteten Varianten.
+- `size`: z. B. `1024x1024`, `1024x1792` oder `1792x1024`.
+- `response_format`: `url` oder `b64_json`.
+- `user`: optionales Endnutzer-Tag.
+
+### Rückgabewert
+`ImageGenerationResponse`
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/edited_image.png"
+    }
+  ]
+}
+```

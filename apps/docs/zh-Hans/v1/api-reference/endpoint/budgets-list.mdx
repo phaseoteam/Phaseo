@@ -1,0 +1,12 @@
+---
+title: "列出工作区预算"
+sidebarTitle: "列出预算"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /budgets"
+description: "列出工作区已生效的支出上限、实时用量和剩余额度。"
+---
+
+需要 `budgets:read` 权限。OAuth 调用方必须具有工作区所有者或管理员角色。
+
+用量根据成功的网关请求计算。异步任务的预留额度在冻结期间也会计入，因此返回的剩余额度与实际执行的限制一致。
+

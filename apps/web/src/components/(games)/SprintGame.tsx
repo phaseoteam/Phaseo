@@ -17,6 +17,7 @@ import { checkPuzzle } from "@/lib/games/client";
 import type { ModelCandidate, SprintPuzzle } from "@/lib/games/types";
 import { cn } from "@/lib/utils";
 import { GameModelIdentity } from "./GameModelIdentity";
+import { useTranslations } from "next-intl";
 
 type SprintState = {
   found: ModelCandidate[];
@@ -29,6 +30,7 @@ const GAME_CARD_CLASS =
   "gap-3 rounded-lg py-3 [--card-spacing:--spacing(3)]";
 
 export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
+  const t = useTranslations("Product.games");
   const initial: SprintState = {
     found: [],
     startedAt: null,
@@ -88,7 +90,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <CardDescription>Today’s category</CardDescription>
+              <CardDescription>{t("todayCategory")}</CardDescription>
               <CardTitle className="mt-1 text-2xl">
                 {puzzle.category.label}
               </CardTitle>
@@ -110,7 +112,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
                 save(next);
               }}
             >
-              Start sprint
+              {t("startSprint")}
             </Button>
           ) : (
             <form
@@ -137,7 +139,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
                 onChange={(event) => setGuess(event.target.value)}
                 disabled={state.finished}
                 autoFocus
-                placeholder="Type an exact model name…"
+                placeholder={t("modelNamePlaceholder")}
                 className="h-10 rounded-lg"
               />
               <Button
@@ -146,7 +148,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
                 className="rounded-lg"
                 disabled={state.finished || !guess.trim()}
               >
-                Add
+                {t("add")}
               </Button>
             </form>
           )}
@@ -154,12 +156,11 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
       </Card>
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          <strong className="text-foreground">{state.found.length}</strong> of{" "}
-          {puzzle.totalAnswers} found
+          {t("foundCount", { found: state.found.length, total: puzzle.totalAnswers })}
         </div>
         {state.startedAt != null && !state.finished && (
           <Button variant="ghost" size="sm" className="rounded-lg" onClick={finish}>
-            Finish now
+          {t("finishNow")}
           </Button>
         )}
       </div>
@@ -180,10 +181,9 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
       {state.finished && (
         <Card className={GAME_CARD_CLASS}>
           <CardHeader>
-            <CardTitle>Sprint complete</CardTitle>
+            <CardTitle>{t("sprintComplete")}</CardTitle>
             <CardDescription>
-              You found {state.found.length} of {puzzle.totalAnswers}. The full
-              answer set is below.
+              {t("sprintResult", { found: state.found.length, total: puzzle.totalAnswers })}
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

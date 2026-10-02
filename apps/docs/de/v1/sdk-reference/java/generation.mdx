@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "Generierungsabfrage"
+description: "Rufe `/generations` auf, um einen früheren Generierungseintrag abzurufen."
+---
+
+**Methode**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+Wenn Anfragedetails gespeichert wurden, enthält der zurückgegebene Generierungseintrag auch `replay_supported` und `replay_request`. Damit kannst du den erfassten Payload erneut an den ursprünglichen Endpunkt senden.
+

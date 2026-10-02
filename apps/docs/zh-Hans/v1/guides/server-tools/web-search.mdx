@@ -1,0 +1,164 @@
+---
+icon: "search-check"
+title: "网页搜索服务器工具"
+description: "让模型在请求期间搜索网页。"
+---
+
+当模型需要最新信息或有来源支撑的信息时，使用 `phaseo:web_search`。模型会决定何时搜索、编写查询，并可在一次请求中多次搜索。
+
+Phaseo 会向模型返回 URL、标题、摘要片段、高亮内容以及可选的页面文本，帮助模型生成有依据的回复。
+
+<Note>
+TinyFish Search 可作为可选的托管搜索引擎使用。受支持的路由仍可通过 `engine: "native"` 使用提供商原生搜索。
+</Note>
+
+## 工作方式
+
+1. 将 `{ "type": "phaseo:web_search" }` 添加到 `tools`。
+2. 模型判断是否需要搜索，并发出查询。
+3. Phaseo 使用已配置的搜索引擎执行搜索。
+4. 搜索结果会作为工具上下文返回给模型。
+5. 模型生成最终回复，并可按需再次搜索。
+
+## 快速开始
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## 配置
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | 搜索引擎：`auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity` 或 `tinyfish`。 |
+| `max_results` | integer | `5` | 每次搜索调用返回的最大结果数。 |
+| `max_total_results` | integer | `10` | 服务器工具循环中的累计结果数上限。 |
+| `max_uses` | integer | `10` | 服务器工具循环中的最大搜索调用次数。 |
+| `search_context_size` | string | `medium` | 支持调整高亮内容范围的搜索引擎所用的上下文大小：`low`、`medium` 或 `high`。 |
+| `max_characters` | integer | engine default | 包含文本时每条结果的最大文本字符数。 |
+| `allowed_domains` | string[] | none | 仅返回这些域名的结果。别名：`include_domains`。 |
+| `excluded_domains` | string[] | none | 排除来自这些域名的结果。别名：`exclude_domains`。 |
+| `include_highlights` | boolean | `true` | 如果搜索引擎提供高亮或摘要片段，则将其包含在内。 |
+| `include_text` | boolean | `false` | 如果搜索引擎支持，则包含更完整的结果文本。 |
+| `user_location` | object | none | 支持本地化搜索的引擎可使用的可选位置提示。 |
+| `language` | 字符串 | 无 | TinyFish 语言提示，例如 `en`。 |
+| `page` | 整数 | `0` | TinyFish 结果页，范围为 `0` 到 `10`。 |
+
+## 搜索引擎选择
+
+| Engine | 行为 |
+| --- | --- |
+| `exa` | 托管式 Exa 搜索。Phaseo 必须已为网关运行时配置 Exa。 |
+| `auto` | 使用已配置的托管默认引擎，目前为 Exa。 |
+| `parallel` | 已配置时使用 Parallel 搜索。 |
+| `firecrawl` | 已配置时使用 Firecrawl 搜索。 |
+| `perplexity` | 已配置时使用 Perplexity 官方 Search API。支持排序结果、`search_context_size`、根据 `user_location.country` 进行区域搜索，以及允许或排除域名。 |
+| `tinyfish` | 配置 `TINYFISH_API_KEY` 时使用 TinyFish Search。支持本地化、分页的排序结果，并将 `allowed_domains` / `excluded_domains` 转换为搜索运算符。TinyFish Search 不提供页面全文；需要更完整内容时，请使用 `phaseo:web_fetch`。 |
+| `native` | 如果请求接口支持，会在调用上游模型之前将声明转换为供应商原生网页搜索工具。 |
+
+`engine: "native"` 只能用于工具声明。如果模型在已发出的网关搜索调用中传入 `engine: "native"`，Phaseo 会返回工具错误，因为必须在发送上游请求之前选择原生工具。
+
+## TinyFish Search
+
+在 Phaseo 网关运行时密钥中配置 `TINYFISH_API_KEY` 以启用引擎，然后在工具参数中选择它：
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` 提供语言区域提示，`page` 选择 `0` 到 `10` 的结果页。TinyFish 支持两种域名筛选列表；Phaseo 将其转换为搜索运算符。结果包含 URL、标题和摘要/高亮片段。模型需要更完整的结果文本时，请使用 `phaseo:web_fetch`。
+
+## 域名过滤
+
+如果答案必须来自一组受控来源，请使用 `allowed_domains`：
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+如果允许广泛搜索网页，但需要从结果中排除特定域名，请使用 `excluded_domains`。
+
+Perplexity 和 Firecrawl 在一次搜索调用中接受 `allowed_domains` 或 `excluded_domains`，不能同时使用两者。Perplexity 每个请求最多接受 20 个域名筛选条件，并将排除域名转换为其拒绝列表格式。 TinyFish 将两个数组转换为查询中的 `site:` 和 `-site:` 运算符。
+
+TinyFish Search 在其公开计划中免费，因此 Phaseo 不会对 `engine: "tinyfish"` 增加提供商使用费；正常的 Phaseo 请求和令牌定价仍然适用。
+
+## Responses API
+
+同一工具格式也适用于 `/v1/responses`：
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## 用量与定价
+
+网页搜索调用会增加以下计数：
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+托管搜索计费可使用 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results`。如果模型价格卡定义了该计量项，供应商原生搜索用量可使用 `native_web_search_requests`。
+
+## 相关内容
+
+- [网页抓取](./web-fetch.mdx)
+- [服务器工具](./index.mdx)
+- [通过网页搜索与抓取为回答提供依据](../../cookbook/tool-grounding-with-web-fetch.mdx)

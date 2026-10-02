@@ -1,0 +1,110 @@
+---
+title: "الانتقال من OpenAI SDK"
+sidebarTitle: "OpenAI SDK"
+description: "انقل تكامل OpenAI SDK الحالي إلى Phaseo عبر تغيير إعدادات العميل والتحقق من معرّفات النماذج واختبار مسارات العمل التي يستخدمها تطبيقك."
+icon: "/icons/brands/openai.svg"
+---
+
+استخدم هذا الدليل لنقل تكامل OpenAI SDK الحالي إلى Phaseo دون إعادة كتابة بقية التطبيق. ابدأ بعنوان URL الأساسي ومفتاح API، وأبقِ الطلب كما هو، ثم تحقّق من كل نموذج ونقطة نهاية قبل تحويل حركة الإنتاج.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL الأساسي | عنوان OpenAI الافتراضي | `https://api.phaseo.app/v1` |
+| مفتاح API | مفتاح OpenAI | `PHASEO_API_KEY` |
+| النموذج | اسم نموذج OpenAI | معرّف نموذج تُرجعه `GET /v1/models` |
+| رمز الطلب | استدعاء SDK الحالي | لا يتغير عادةً |
+
+<Steps>
+<Step title="إنشاء مفتاح API لـ Phaseo">
+
+أنشئ مفتاحًا في [مفاتيح Gateway](https://phaseo.app/gateway/keys)، ثم أضفه إلى كل بيئة تشغّل تطبيقك.
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+</Step>
+
+<Step title="توجيه العميل إلى Phaseo">
+
+أبقِ OpenAI SDK وغيّر بيانات الاعتماد وعنوان URL الأساسي فقط في البداية.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="openai/gpt-4.1-mini",
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="التحقق من معرّفات النماذج وتغطية نقاط النهاية">
+
+اعرض النماذج المتاحة عبر Phaseo بدل افتراض أن جميع الأسماء المستعارة السابقة ستظل تعمل كما هي.
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+تحقّق من كل مسارات الإنتاج التي تعتمد عليها، بما في ذلك البث والأدوات والمخرجات المنظّمة والصور والصوت والملفات والدفعات. استخدم [مرجع API](../api-reference/introduction.mdx) لتأكيد نقطة النهاية المناسبة.
+
+</Step>
+
+<Step title="الاختبار والإطلاق">
+
+شغّل الطلبات التمثيلية نفسها على الإعدادين القديم والجديد. قارن شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة قبل تحويل الحركة تدريجيًا.
+
+</Step>
+</Steps>
+
+## قائمة التحقق من الترحيل
+
+- تم ضبط مفتاح Phaseo في بيئات التطوير والتهيئة والإنتاج.
+- عنوان URL الأساسي للعميل هو `https://api.phaseo.app/v1`.
+- تظهر جميع معرّفات نماذج الإنتاج في `GET /v1/models`.
+- تنجح الطلبات المتدفقة وغير المتدفقة في بيئة التهيئة.
+- تنجح استدعاءات الأدوات والمخرجات المنظّمة إذا كان تطبيقك يستخدمها.
+- يظل التراجع مقتصرًا على تغيير المفتاح ونقطة النهاية في الإعدادات.
+
+## الخطوات التالية
+
+- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
+- [النماذج](../exploring/models.mdx)
+- [معالجة الأخطاء](../api-reference/errors.mdx)

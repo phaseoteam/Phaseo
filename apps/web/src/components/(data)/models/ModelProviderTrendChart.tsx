@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	CartesianGrid,
 	Line,
@@ -42,6 +43,7 @@ type ModelProviderTrendChartProps = {
 	metricInfoLabel?: string;
 	metricDescription?: string;
 	emptyMessage?: string;
+	metricAxisLabel?: string;
 	timeResolution?: "day" | "hour";
 	maxSeries?: number;
 	detailed?: boolean;
@@ -148,9 +150,9 @@ export function getHoverDateTextAnchor(
 }
 
 type MetricConfig = {
-	label: string;
-	description: string;
-	axisLabel: string;
+	labelKey: string;
+	descriptionKey: string;
+	axisLabelKey: string;
 	valueKey:
 		| "avgThroughput"
 		| "avgOutputSpeed"
@@ -165,57 +167,57 @@ type MetricConfig = {
 
 const METRICS: Record<MetricKey, MetricConfig> = {
 	throughput: {
-		label: "Throughput",
-		description: "Output tokens per second across the full selected-provider request, including time to first token.",
-		axisLabel: "Tokens / second",
+		labelKey: "throughput",
+		descriptionKey: "metricDescriptions.throughput",
+		axisLabelKey: "axisTokensPerSecond",
 		valueKey: "avgThroughput",
 	},
 	outputSpeed: {
-		label: "Output Speed",
-		description: "Output tokens per second after the first token arrives, excluding time to first token.",
-		axisLabel: "Tokens / second",
+		labelKey: "outputSpeed",
+		descriptionKey: "metricDescriptions.outputSpeed",
+		axisLabelKey: "axisTokensPerSecond",
 		valueKey: "avgOutputSpeed",
 	},
 	latency: {
-		label: "Latency",
-		description: "Time from the request entering Phaseo until the first content-bearing generated output reaches the gateway.",
-		axisLabel: "Milliseconds",
+		labelKey: "latency",
+		descriptionKey: "metricDescriptions.latency",
+		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgLatencyMs",
 	},
 	endToEnd: {
-		label: "End-to-End Latency",
-		description: "Total time from the request entering Phaseo until the complete response is returned.",
-		axisLabel: "Duration",
+		labelKey: "endToEndLatency",
+		descriptionKey: "metricDescriptions.endToEnd",
+		axisLabelKey: "axisDuration",
 		valueKey: "avgEndToEndMs",
 	},
 	generation: {
-		label: "Provider Duration",
-		description: "Time from sending the selected provider request until its final response completes.",
-		axisLabel: "Duration",
+		labelKey: "providerDuration",
+		descriptionKey: "metricDescriptions.generation",
+		axisLabelKey: "axisDuration",
 		valueKey: "avgGenerationMs",
 	},
 	overhead: {
-		label: "Phaseo Overhead",
-		description: "Gateway end-to-end duration minus the selected provider duration, including routing and response processing.",
-		axisLabel: "Milliseconds",
+		labelKey: "phaseoOverhead",
+		descriptionKey: "metricDescriptions.overhead",
+		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgPhaseoOverheadMs",
 	},
 	tpot: {
-		label: "TPOT",
-		description: "Time per output token after the first token. Lower values indicate faster token generation.",
-		axisLabel: "Milliseconds",
+		labelKey: "tpot",
+		descriptionKey: "metricDescriptions.tpot",
+		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgTpotMs",
 	},
 	itl: {
-		label: "ITL",
-		description: "Mean observed interval between successive content-bearing provider stream frames. Providers may batch multiple tokens into one frame.",
-		axisLabel: "Milliseconds",
+		labelKey: "itl",
+		descriptionKey: "metricDescriptions.itl",
+		axisLabelKey: "axisMilliseconds",
 		valueKey: "avgItlMs",
 	},
 	cachedInput: {
-		label: "Cached Input",
-		description: "Share of input tokens served from a provider cache. Only requests where the provider reports cache usage are included.",
-		axisLabel: "Cached input (%)",
+		labelKey: "cachedInput",
+		descriptionKey: "metricDescriptions.cachedInput",
+		axisLabelKey: "axisCachedInput",
 		valueKey: "cachedInputPct",
 	},
 };
@@ -243,10 +245,11 @@ function parseTimeBucket(value: string, resolution: "day" | "hour"): Date {
 export function formatPerformanceTimeHeading(
 	value: string,
 	resolution: "day" | "hour",
+	locale = "en-GB",
 ): string {
 	const date = parseTimeBucket(value, resolution);
 	if (!Number.isFinite(date.getTime())) return value;
-	return date.toLocaleString("en-GB", {
+	return date.toLocaleString(locale, {
 		day: "2-digit",
 		month: "short",
 		year: "numeric",
@@ -259,16 +262,17 @@ export function formatPerformanceTimeHeading(
 export function formatPerformanceTimeTick(
 	value: string,
 	resolution: "day" | "hour",
+	locale = "en-GB",
 ): string {
 	const date = parseTimeBucket(value, resolution);
 	if (!Number.isFinite(date.getTime())) return value;
-	const day = date.toLocaleDateString("en-GB", {
+	const day = date.toLocaleDateString(locale, {
 		day: "2-digit",
 		month: "short",
 		timeZone: "UTC",
 	});
 	if (resolution === "day") return day;
-	const hour = date.toLocaleTimeString("en-GB", {
+	const hour = date.toLocaleTimeString(locale, {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
@@ -309,10 +313,6 @@ function getPercentile(providerId: string): number | null {
 	return Number.isFinite(percentile) ? percentile : null;
 }
 
-function getPercentileDescription(percentile: number): string {
-	return `P${percentile} is the value at or below which ${percentile}% of recorded requests fall.`;
-}
-
 export default function ModelProviderTrendChart({
 	title,
 	data,
@@ -320,12 +320,16 @@ export default function ModelProviderTrendChart({
 	metricInfoLabel,
 	metricDescription,
 	emptyMessage,
+	metricAxisLabel,
 	timeResolution = "day",
 	maxSeries = 3,
 	detailed = false,
 	showHeader = true,
 	headerAction,
 }: ModelProviderTrendChartProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
 	const format = useDisplayFormatters();
 	const isPercentileData = data.some(
 		(point) => getPercentile(point.provider) != null,
@@ -341,7 +345,8 @@ export default function ModelProviderTrendChart({
 		activeTimeRef.current = time;
 		setActiveTime(time);
 	};
-	const metricConfig = METRICS[metric];
+	const metricDefinition = METRICS[metric];
+	const metricConfig = { ...metricDefinition, label: t(metricDefinition.labelKey as never), description: t(metricDefinition.descriptionKey as never), axisLabel: metricAxisLabel ?? t(metricDefinition.axisLabelKey as never) };
 	const formatMetricValue = (value: number | null) => {
 		if (value == null || !Number.isFinite(value)) return "-";
 		if (metric === "throughput" || metric === "outputSpeed") {
@@ -376,7 +381,7 @@ export default function ModelProviderTrendChart({
 			.reduce((map, point) => {
 				const existing = map.get(point.provider) ?? {
 					provider: point.provider,
-					name: point.providerName || point.provider,
+					name: point.provider === "model-aggregate" ? tx("Common.ui.publicModelCopy.modelWide") : point.provider === "all-providers" ? t("allProviders") : point.providerName || point.provider,
 					color: normalizeColor(point.providerColor),
 					requests: 0,
 				};
@@ -404,8 +409,8 @@ export default function ModelProviderTrendChart({
 	const seriesColumnLabel = providers.every((provider) =>
 		provider.provider.startsWith("percentile-"),
 	)
-		? "Percentile"
-		: "Provider";
+		? t("percentile")
+		: t("provider");
 	const filtered = observedData.filter((point) =>
 		providerIdSet.has(point.provider),
 	);
@@ -443,7 +448,7 @@ export default function ModelProviderTrendChart({
 	const activeRow = hoveredRow ?? latestRow;
 	const activeHeadingDate =
 		activeRow && typeof activeRow.time === "string"
-			? formatPerformanceTimeHeading(activeRow.time, timeResolution)
+			? formatPerformanceTimeHeading(activeRow.time, timeResolution, locale)
 			: "-";
 	const activeIndex =
 		activeRow && typeof activeRow.index === "number" ? activeRow.index : null;
@@ -535,7 +540,7 @@ export default function ModelProviderTrendChart({
 		return (
 			<div className="min-w-44 rounded-md border border-border/80 bg-popover/95 p-2 text-popover-foreground shadow-xl backdrop-blur-sm">
 				<p className="mb-1.5 text-[11px] font-medium text-muted-foreground">
-					{formatPerformanceTimeHeading(row.time, timeResolution)}
+					{formatPerformanceTimeHeading(row.time, timeResolution, locale)}
 				</p>
 				<div className="space-y-1">
 					{tooltipRows.map(({ provider, value }) => (
@@ -566,7 +571,7 @@ export default function ModelProviderTrendChart({
 					<ModelMetricInfo label={metricInfoLabel ?? metricConfig.label} description={metricDescription ?? metricConfig.description} />
 				</div>
 				<div className="flex flex-1 items-center justify-center rounded-md border border-dashed border-border px-4 text-center text-xs text-muted-foreground">
-					{emptyMessage ?? "This metric was not recorded for recent requests."}
+					{emptyMessage ?? t("metricNotRecorded")}
 				</div>
 			</div>
 		);
@@ -671,12 +676,13 @@ export default function ModelProviderTrendChart({
 								formatPerformanceTimeTick(
 									String(chartData[Math.round(Number(value))]?.time ?? ""),
 									timeResolution,
+									locale,
 								)
 							}
 							tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
 							tickLine={false}
 							axisLine={{ stroke: "var(--border)" }}
-							label={detailed ? { value: timeResolution === "hour" ? "Time (UTC)" : "Date", position: "insideBottom", offset: -18, fill: "var(--muted-foreground)", fontSize: 11 } : undefined}
+							label={detailed ? { value: timeResolution === "hour" ? t("timeUtc") : t("date"), position: "insideBottom", offset: -18, fill: "var(--muted-foreground)", fontSize: 11 } : undefined}
 						/>
 						<YAxis
 							hide={!detailed}
@@ -702,7 +708,7 @@ export default function ModelProviderTrendChart({
 								strokeDasharray="3 4"
 								strokeWidth={1}
 								label={!detailed && activeRow && typeof activeRow.time === "string" ? {
-									value: formatPerformanceTimeTick(activeRow.time, timeResolution),
+					value: formatPerformanceTimeTick(activeRow.time, timeResolution, locale),
 									position: "bottom",
 									offset: 7,
 									textAnchor: getHoverDateTextAnchor(activeIndex, chartData.length),
@@ -742,7 +748,7 @@ export default function ModelProviderTrendChart({
 				</div>
 			) : (
 				<div className="flex h-[148px] items-center justify-center rounded-md border border-dashed border-border px-4 text-center text-xs text-muted-foreground">
-					No {title.toLowerCase()} samples were recorded in this period.
+					{t("noMetricSamples", { metric: title } as never)}
 				</div>
 			)}
 			{detailed ? (
@@ -751,7 +757,7 @@ export default function ModelProviderTrendChart({
 					viewportClassName="min-h-0"
 					keepScrollbarMounted
 				>
-					<div role="table" aria-label={`${title} details`}>
+					<div role="table" aria-label={t("metricDetails", { metric: title } as never)}>
 						<div
 							role="row"
 							className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_repeat(3,minmax(5rem,0.35fr))] gap-3 border-b border-border/70 bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground"
@@ -771,7 +777,7 @@ export default function ModelProviderTrendChart({
 									direction={tableSort?.key === "minimum" ? tableSort.direction : null}
 									onClick={() => cycleTableSort("minimum")}
 								>
-									Min
+								{t("minimum")}
 								</TableSortButton>
 							</div>
 							<div role="columnheader">
@@ -780,7 +786,7 @@ export default function ModelProviderTrendChart({
 									direction={tableSort?.key === "maximum" ? tableSort.direction : null}
 									onClick={() => cycleTableSort("maximum")}
 								>
-									Max
+								{t("maximum")}
 								</TableSortButton>
 							</div>
 							<div role="columnheader">
@@ -789,7 +795,7 @@ export default function ModelProviderTrendChart({
 									direction={tableSort?.key === "average" ? tableSort.direction : null}
 									onClick={() => cycleTableSort("average")}
 								>
-									Avg
+								{t("averageShort")}
 								</TableSortButton>
 							</div>
 						</div>
@@ -819,9 +825,9 @@ export default function ModelProviderTrendChart({
 								{getPercentile(provider.provider) != null ? (
 									<ModelMetricInfo
 										label={provider.name}
-										description={getPercentileDescription(
-											getPercentile(provider.provider)!,
-										)}
+										description={t("percentileDescription", {
+											percentile: getPercentile(provider.provider)!,
+										} as never)}
 									/>
 								) : null}
 							</span>
@@ -873,7 +879,7 @@ export default function ModelProviderTrendChart({
 									formatMetricValue(provider.hoveredValue)
 								) : (
 									<>
-										<span className="text-muted-foreground">Avg </span>
+										<span className="text-muted-foreground">{t("averageShort")} </span>
 										{formatMetricValue(provider.average)}
 									</>
 								)}

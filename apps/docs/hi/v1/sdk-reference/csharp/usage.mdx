@@ -1,0 +1,67 @@
+---
+icon: "square-terminal"
+title: "C# SDK का उपयोग"
+description: "C# SDK में अभी supported wrapper methods।"
+---
+
+## सेटअप
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("<API_KEY>");
+```
+
+## Chat completions
+
+```csharp
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["messages"] = new[]
+  {
+    new Dictionary<string, object>
+    {
+      ["role"] = "user",
+      ["content"] = "Hello"
+    }
+  }
+});
+```
+
+## Responses
+
+```csharp
+var resp = await client.GenerateResponse(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["input"] = "Reply with: csharp sdk works"
+});
+```
+
+## इमेज
+
+```csharp
+var image = await client.GenerateImage(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-image-1",
+  ["prompt"] = "A lighthouse at golden hour"
+});
+```
+
+## मॉडरेशन
+
+```csharp
+var moderation = await client.GenerateModeration(new Dictionary<string, object>
+{
+  ["model"] = "openai/omni-moderation-latest",
+  ["input"] = "Some text to check"
+});
+```
+
+## मॉडल और स्वास्थ्य
+
+```csharp
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "10" });
+var health = await client.Health();
+```

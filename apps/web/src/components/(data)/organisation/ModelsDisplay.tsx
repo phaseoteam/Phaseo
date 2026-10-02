@@ -1,4 +1,5 @@
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
+import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import {
 	Megaphone,
@@ -41,6 +42,19 @@ export default function ModelsDisplay({
 	models,
 	showStatusHeadings = true,
 }: ModelsDisplayProps) {
+	const t = useTranslations("Catalogue.organisations");
+	const tStatus = useTranslations("Catalogue.families");
+	const statusLabels: Record<string, string> = {
+		Rumoured: tStatus("statusRumoured"),
+		Available: tStatus("statusAvailable"),
+		Announced: tStatus("statusAnnounced"),
+		Preview: tStatus("statusPreview"),
+		"Limited Access": tStatus("statusLimitedAccess"),
+		Withheld: tStatus("statusWithheld"),
+		Deprecated: tStatus("statusDeprecated"),
+		Retired: tStatus("statusRetired"),
+	};
+	const getStatusLabel = (status: string) => statusLabels[status] ?? t("unknownStatus");
 	if (!models || models.length === 0) {
 		return (
 			<Empty>
@@ -48,9 +62,9 @@ export default function ModelsDisplay({
 					<EmptyMedia variant="icon">
 						<Megaphone size={24} />
 					</EmptyMedia>
-					<EmptyTitle>No models found</EmptyTitle>
+					<EmptyTitle>{t("noModelsTitle")}</EmptyTitle>
 					<EmptyDescription>
-						There are no models to display for this lab.
+						{t("noModelsDescription")}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -124,7 +138,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-blue-100 text-blue-800 border border-blue-300 px-2 py-1 text-xs flex items-center gap-1 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 transition-colors hover:bg-blue-200 hover:border-blue-400 dark:hover:bg-blue-900 dark:hover:border-blue-500">
 					<Megaphone size={14} className="mr-1" />
-					Rumoured
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -132,7 +146,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-blue-100 text-blue-800 border border-blue-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900 dark:hover:text-blue-200 dark:hover:border-blue-700">
 					<Megaphone size={14} className="mr-1" />
-					Announced
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -140,7 +154,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-cyan-100 text-cyan-800 border border-cyan-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-cyan-200 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800 dark:hover:bg-cyan-900">
 					<Rocket size={14} className="mr-1" />
-					Preview
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -148,7 +162,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-violet-100 text-violet-800 border border-violet-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 dark:hover:bg-violet-900 dark:hover:text-violet-200 dark:hover:border-violet-700">
 					<ShieldAlert size={14} className="mr-1" />
-					Withheld
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -156,7 +170,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300 px-2 py-1 text-xs flex items-center gap-1 transition-colors hover:bg-fuchsia-200 dark:bg-fuchsia-950 dark:text-fuchsia-300 dark:border-fuchsia-800 dark:hover:bg-fuchsia-900 dark:hover:text-fuchsia-200 dark:hover:border-fuchsia-700">
 					<KeyRound size={14} className="mr-1" />
-					Limited Access
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -164,7 +178,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-green-100 text-green-800 border border-green-300 px-2 py-1 text-xs flex items-center gap-1 dark:bg-green-950 dark:text-green-300 dark:border-green-800 transition-colors hover:bg-green-200 hover;border-green-400 dark:hover:bg-green-900 dark:hover:border-green-500">
 					<Rocket size={14} className="mr-1" />
-					Available
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -172,7 +186,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-red-100 text-red-800 border border-red-300 px-2 py-1 text-xs flex items-center gap-1 dark:bg-red-950 dark:text-red-300 dark:border-red-800 transition-colors hover:bg-red-200 hover:border-red-400 dark:hover:bg-red-900 dark:hover:border-red-500">
 					<Ban size={14} className="mr-1" />
-					Deprecated
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -180,7 +194,7 @@ export default function ModelsDisplay({
 			return (
 				<Badge className="bg-zinc-300 text-zinc-800 border border-zinc-400 px-2 py-1 text-xs flex items-center gap-1 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-700 transition-colors hover:bg-zinc-400 hover:border-zinc-500 dark:hover:bg-zinc-800 dark:hover:border-zinc-500">
 					<Archive size={14} className="mr-1" />
-					Retired
+					{getStatusLabel(status)}
 				</Badge>
 			);
 		}
@@ -194,12 +208,11 @@ export default function ModelsDisplay({
 									size={14}
 									className="mr-1"
 								/>
-								Unknown Status
+								{t("unknownStatus")}
 							</Badge>
 						</TooltipTrigger>
 						<TooltipContent>
-							These models do not have a status recorded in the
-							database, so their lifecycle state is unknown.
+							{t("unknownStatusDescription")}
 						</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
@@ -216,7 +229,7 @@ export default function ModelsDisplay({
 				<div className="flex items-center gap-2 mb-3">
 					<SectionBadge status={title} />
 					<span className="text-base font-semibold">
-						{title} Models
+						{t("statusModels", { status: getStatusLabel(title) })}
 					</span>
 				</div>
 				<div className="grid grid-cols-1 divide-y divide-border/70 overflow-hidden rounded-lg border border-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:[&>*:nth-child(n+3)]:border-t sm:[&>*:nth-child(odd)]:border-l-0 2xl:grid-cols-3 2xl:[&>*:nth-child(n+3)]:border-t-0 2xl:[&>*:nth-child(n+4)]:border-t 2xl:[&>*:nth-child(odd)]:border-l 2xl:[&>*:nth-child(3n+1)]:border-l-0">

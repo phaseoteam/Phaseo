@@ -1,0 +1,69 @@
+---
+icon: "messages-square"
+title: "चैट कंप्लीशन"
+description: "PHP SDK के साथ /chat/completions को कॉल करें।"
+---
+
+**मेथड**: `generateText()`, `createChatCompletion()`
+
+### उदाहरण
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createChatCompletion([
+    'model' => 'openai/gpt-4o-mini',
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
+    'temperature' => 0.5
+]);
+echo $response['choices'][0]['message']['content'];
+```
+
+### मुख्य पैरामीटर
+
+- `model` (आवश्यक): लक्ष्य मॉडल ID।
+- `messages` (आवश्यक): `system|user|assistant|tool` भूमिकाओं वाले क्रमबद्ध संदेश; सामग्री MessageContent ऑब्जेक्ट के रूप में।
+- सैंपलिंग: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (int, वैकल्पिक)।
+- लंबाई और पेनल्टी: `max_output_tokens` (int), `presence_penalty` और `frequency_penalty` (-2 से 2), `stop` (string|string[])।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (auto/none/विशिष्ट टूल), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20)।
+- आउटपुट: `response_format` (json/text), meta ब्लॉक शामिल करने के लिए `meta` (bool), `stream` (bool), `service_tier`।
+- गेटवे के अतिरिक्त विकल्प: उपयोग माँगने के लिए `usage` (bool)।
+
+### रिटर्न
+
+ChatCompletionsResponse JSON ऑब्जेक्ट।
+
+```json
+{
+	"id": "chatcmpl-123",
+	"object": "chat.completion",
+	"created": 1677652288,
+	"model": "gpt-3.5-turbo-0125",
+	"choices": [
+		{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Hello there, how may I assist you today?"
+			},
+			"finish_reason": "stop"
+		}
+	],
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 12,
+		"total_tokens": 21
+	}
+}
+```

@@ -1,0 +1,19 @@
+---
+icon: "music"
+title: "TTS (टेक्स्ट से स्पीच)"
+description: "Python SDK से /audio/speech कॉल करें।"
+---
+
+**विधि**: `client.generate_speech()`
+
+```python
+result = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+print(result)
+```
+

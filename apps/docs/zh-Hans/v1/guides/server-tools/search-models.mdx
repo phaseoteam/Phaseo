@@ -1,0 +1,18 @@
+---
+icon: "list-filter"
+title: "模型搜索服务器工具"
+description: "让模型从 Phaseo 的实时目录中查找合适的模型。"
+---
+
+使用 `phaseo:search_models` 当调用模型需要根据当前目录元数据选择或推荐模型时使用。
+
+```json
+{
+  "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
+  "max_tool_calls": 10
+}
+```
+
+工具调用可按以下字段筛选： `query`, `input_modalities`, `output_modalities`, `series`, `provider`, 和 `required_params`. 结果包括模型 ID、模态、提供商、支持的参数和定价元数据。
+
+用量会记录在 `usage.server_tool_use.search_models_requests`.

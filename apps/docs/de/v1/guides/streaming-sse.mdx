@@ -1,0 +1,53 @@
+---
+icon: "radio-tower"
+title: "Streaming-SSE-Ereignisse"
+description: "Verstehe den Frame-Aufbau und verarbeite SSE-Streams zuverlässig."
+---
+
+Alle Streaming-Endpunkte verwenden SSE-ähnliche Frames:
+
+`data: <json-or-sentinel>`
+
+## Typische Frame-Abfolge
+
+1. Ein oder mehrere Fortschritts- oder Delta-Frames.
+2. Ein Abschluss-Frame mit endgültigem Status und Nutzungsdaten.
+3. Das Sentinel `data: [DONE]`.
+
+## Beispiel für einen JavaScript-Parser
+
+```typescript
+for await (const line of client.streamText({
+  model: "openai/gpt-5-nano",
+  messages: [{ role: "user", content: "Say hello." }],
+  stream: true,
+})) {
+  if (!line.startsWith("data:")) continue;
+  const payload = line.slice(5).trim();
+  if (payload === "[DONE]") break;
+  console.log(payload);
+}
+```
+
+## Beispiel für einen Python-Parser
+
+```python
+for line in client.stream_response({
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello.",
+    "stream": True,
+}):
+    if not line.startswith("data:"):
+        continue
+    payload = line[5:].strip()
+    if payload == "[DONE]":
+        break
+    print(payload)
+```
+
+## Hinweise zu den Endpunktformaten
+
+- `/v1/chat/completions`: Ereignisse in einzelnen Blöcken im Stil von `choices[].delta`.
+- `/v1/responses`: Responses-ähnliche Ereignisse für Ausgabe-Elemente und Deltas.
+- `/v1/messages`: Ereignisse im Anthropic-Stil (`message_start`, `content_block_delta`, `message_stop`).
+

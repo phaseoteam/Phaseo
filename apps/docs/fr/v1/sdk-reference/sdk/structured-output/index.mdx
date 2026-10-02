@@ -1,0 +1,31 @@
+---
+icon: "braces"
+title: "Sortie structurée (AI SDK)"
+description: "Générez des objets JSON validés par un schéma avec Phaseo et Vercel AI SDK."
+---
+
+Utilisez `generateObject` pour obtenir des sorties typées.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateObject } from "ai";
+import { z } from "zod";
+
+const { object } = await generateObject({
+  model: phaseo("openai/gpt-5-nano"),
+  schema: z.object({
+    title: z.string(),
+    priority: z.enum(["low", "medium", "high"]),
+    actions: z.array(z.string()),
+  }),
+  prompt: "Create a short incident follow-up plan.",
+});
+
+console.log(object);
+```
+
+## Remarques
+
+- Privilégiez les énumérations explicites et les champs obligatoires dans les schémas.
+- Veillez à ce que les prompts correspondent à la structure du schéma.
+- Gérez les erreurs d’analyse et de validation dans le code appelant.

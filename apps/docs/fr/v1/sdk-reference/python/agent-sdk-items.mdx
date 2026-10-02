@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "Résultats et éléments"
+description: "Créez des chronologies d’exécution Python à partir des messages, étapes, outils et éléments diffusés en flux."
+---
+
+`AgentRunResult` contient l’état durable de l’exécution, les messages, les étapes, l’utilisation et le coût, les avertissements, les motifs de fin et la sortie finale.
+
+Utilisez `text_stream()` pour le texte de réponse et `item_stream()` pour les éléments du fournisseur et de l’environnement d’exécution. Les éléments Python sont actuellement des dictionnaires, et non l’union discriminée `AgentItem` de TypeScript.
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+Regroupez l’accès aux dictionnaires propres aux fournisseurs dans un seul adaptateur applicatif, puis enregistrez le résultat terminé pour le reconstruire ultérieurement.
+
+## À lire aussi
+
+- [Flux](./agent-sdk-streaming.mdx)
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)

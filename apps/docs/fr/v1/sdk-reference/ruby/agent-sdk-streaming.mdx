@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "Flux"
+description: "Consommez les flux de texte, de raisonnement, d’éléments et de cycle de vie des agents Ruby."
+---
+
+`Agent#stream` renvoie un `StreamResult` qui peut être relu :
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+Utilisez `reasoning_stream`, `item_stream` ou `full_stream` pour obtenir d’autres projections. Ruby consomme le flux du fournisseur de façon synchrone, puis expose des séquences que d’autres consommateurs peuvent relire.
+
+Les valeurs d’élément sont actuellement des hashes, et non l’union discriminée d’éléments de TypeScript.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

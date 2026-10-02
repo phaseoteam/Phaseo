@@ -1,0 +1,12 @@
+---
+title: "Budgets des Arbeitsbereichs auflisten"
+sidebarTitle: "Budgets auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /budgets"
+description: "Durchgesetzte Ausgabenlimits des Arbeitsbereichs mit aktuellem Verbrauch und Restbetrag auflisten."
+---
+
+Erfordert `budgets:read`. OAuth-Aufrufer benötigen die Rolle „Eigentümer“ oder „Administrator“ des Arbeitsbereichs.
+
+Der Verbrauch wird anhand erfolgreicher Gateway-Anfragen berechnet. Reservierte asynchrone Aufgaben zählen während ihrer aktiven Reservierung mit, sodass der zurückgegebene Restbetrag dem durchgesetzten Limit entspricht.
+

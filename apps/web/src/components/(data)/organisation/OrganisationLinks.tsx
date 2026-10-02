@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { ExternalLink, Globe } from "lucide-react";
 import type { OrganisationOverview as OrganisationOverviewType } from "@/lib/fetchers/organisations/types";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
@@ -64,14 +65,14 @@ const getSocialIcon = (platform: string) => {
 			<>
 				<Image
 					src={`/social/${name}_light.svg`}
-					alt={platform}
+					alt=""
 					width={20}
 					height={20}
 					className="w-5 h-5 object-contain align-text-bottom dark:hidden"
 				/>
 				<Image
 					src={`/social/${name}_dark.svg`}
-					alt={platform}
+					alt=""
 					width={20}
 					height={20}
 					className="w-5 h-5 object-contain align-text-bottom hidden dark:inline"
@@ -82,7 +83,7 @@ const getSocialIcon = (platform: string) => {
 	return (
 		<Image
 			src={`/social/${name}.svg`}
-			alt={platform}
+			alt=""
 			width={20}
 			height={20}
 			className="w-5 h-5 object-contain align-text-bottom"
@@ -93,6 +94,7 @@ const getSocialIcon = (platform: string) => {
 export default function OrganisationLinks({
 	organisation,
 }: OrganisationLinksProps) {
+	const t = useTranslations("Catalogue.organisations");
 	if (
 		!organisation ||
 		!Array.isArray(organisation.organisation_links) ||
@@ -114,6 +116,7 @@ export default function OrganisationLinks({
 					})
 					.map((link, idx) => {
 						const normalizedPlatform = normalizePlatform(link.platform);
+						const platformLabel = normalizedPlatform === "website" ? t("websiteLabel") : displayPlatform(normalizedPlatform);
 						const safeUrl = normalizeHttpUrl(link.url);
 						if (!safeUrl) return null;
 						return (
@@ -122,14 +125,14 @@ export default function OrganisationLinks({
 								href={safeUrl}
 								target="_blank"
 								rel="noopener noreferrer"
-								aria-label={`Visit ${organisation.name} ${link.platform} page`}
+								aria-label={t("visitPlatformPage", { name: organisation.name, platform: platformLabel })}
 								className="group grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/35 sm:rounded-lg sm:border sm:bg-card sm:last:border-b sm:hover:bg-muted/30"
 							>
 								<div className="flex size-8 items-center justify-center rounded-md border border-border/70 bg-muted/20 text-muted-foreground">
 									{getSocialIcon(normalizedPlatform)}
 								</div>
 								<div className="min-w-0">
-									<div className="truncate text-sm font-medium">{displayPlatform(normalizedPlatform)}</div>
+									<div className="truncate text-sm font-medium">{platformLabel}</div>
 									<div className="mt-0.5 truncate font-mono text-xs text-muted-foreground">{displayUrl(safeUrl)}</div>
 								</div>
 								<ExternalLink className="size-3.5 text-muted-foreground transition-colors group-hover:text-foreground" />

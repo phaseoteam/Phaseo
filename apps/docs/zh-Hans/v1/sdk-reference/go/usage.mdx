@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "Go SDK 用法"
+description: "Go SDK 当前支持的包装方法。"
+---
+
+## 设置
+
+```go
+import (
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New("<API_KEY>", "https://api.phaseo.app/v1")
+ctx := context.Background()
+```
+
+## 聊天补全
+
+```go
+chatReq := phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Hello"},
+  },
+}
+chatResp, err := client.GenerateText(ctx, chatReq)
+```
+
+## Responses
+
+```go
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {"type": "input_text", "text": "Reply with: go sdk works"},
+  },
+}
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+```
+
+## 嵌入
+
+```go
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+```
+
+## 内容审核
+
+```go
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "Some text to check",
+})
+```
+
+## 图像与音频
+
+```go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
+## 模型
+
+```go
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
+```
+
+## 当前限制
+
+Go 包装层目前涵盖聊天、Responses、图像、音频、嵌入、内容审核、模型、提供商、批处理、文件、生成记录查询、健康检查和视频辅助功能。尚未封装到手写包装层的端点仍可使用较低层级的生成操作；常见请求类型也会从包装包中重新导出。

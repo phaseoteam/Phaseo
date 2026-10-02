@@ -1,0 +1,40 @@
+---
+title: "OpenAI के बंद किए जा रहे models और services"
+description: "AI Stats catalog में दर्ज OpenAI model और platform deprecation dates।"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI के बंद किए जा रहे मॉडल और सेवाएँ
+
+OpenAI अपने [API बंदी पृष्ठ](https://developers.openai.com/api/docs/deprecations) पर बंद होने की तारीखें और सुझाए गए विकल्प प्रकाशित करता है। इस पृष्ठ को माइग्रेशन जाँच-सूची की तरह इस्तेमाल करें, फिर प्रोडक्शन प्रॉम्प्ट, टूल, विलंब और लागत सीमा के साथ विकल्प की पुष्टि करें।
+
+## बंद किए जा रहे मॉडल
+
+| Model family | Deprecation date | Shutdown date | सुझाया गया replacement |
+| --- | --- | --- | --- |
+| `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe-diarize` | 26 अगस्त 2026 | 26 फ़रवरी 2027 | `openai/gpt-transcribe` या `openai/gpt-live-transcribe` |
+| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 20 जुलाई 2026 | 20 जनवरी 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini`, या `openai/gpt-audio-1.5` |
+| `gpt-4o-mini-transcribe-2025-03-20` | 20 जुलाई 2026 | 20 जनवरी 2027 | `openai/gpt-4o-mini-transcribe` |
+| GPT-5 और o3 के dated snapshots | 11 जून 2026 | 11 दिसंबर 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` या `openai/gpt-5.6-luna` |
+| `gpt-image-1-mini`, `gpt-image-1.5`, `chatgpt-image-latest` | 2 जून 2026 | 1 दिसंबर 2026 | `openai/gpt-image-2` |
+| GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini और o4-mini के पुराने snapshots | 22 अप्रैल 2026 | 23 अक्टूबर 2026 | OpenAI deprecations page पर model-specific recommendations देखें |
+| Sora 2 models | 24 मार्च 2026 | 24 सितंबर 2026 | कोई replacement घोषित नहीं |
+
+Catalog प्रभावित OpenAI model entries में lifecycle dates दर्ज करता है और जहाँ OpenAI नया model बताता है वहाँ replacement ID भी देता है। तारीखें OpenAI द्वारा नामित provider snapshots पर लागू होती हैं; catalog इन्हें canonical model ID से उपलब्ध करा सकता है।
+
+## प्लेटफ़ॉर्म पर बंद की जा रही सुविधाएँ
+
+OpenAI ऐसे product migrations भी बताता है जो model records नहीं हैं:
+
+- Reusable prompts 30 नवंबर 2026 को बंद होने वाले हैं। Prompt content को application code में ले जाएँ।
+- Evals platform 31 अक्टूबर 2026 को read-only होगा और 30 नवंबर 2026 को बंद होगा। OpenAI Promptfoo पर migrate करने की सलाह देता है।
+- Agent Builder 30 नवंबर 2026 को बंद होगा। Agents SDK या ChatGPT Workspace Agents पर migrate करें।
+
+## माइग्रेशन जाँच-सूची
+
+1. स्टेजिंग परिवेश में बंद किए जा रहे मॉडल या उत्पाद को बदलें।
+2. प्रतिनिधि मूल्यांकन फिर चलाएँ, विशेषकर संरचित आउटपुट, टूल कॉल, ऑडियो गुणवत्ता और लंबे संदर्भ वाले कार्यों के लिए।
+3. Production-जैसी concurrency पर latency और खर्च की तुलना करें।
+4. Shutdown date से पहले स्पष्ट rollback route के साथ replacement को canary करें।
+
+आधिकारिक तारीख़ों, पूरे स्नैपशॉट मैपिंग और एंडपॉइंट-विशिष्ट मार्गदर्शन के लिए [OpenAI API की सेवा-समापन जानकारी](https://developers.openai.com/api/docs/deprecations) देखें।

@@ -1,7 +1,10 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogContent,
@@ -14,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { acceptTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export default function AcceptInviteDialog({
 	currentUserId,
@@ -24,6 +28,8 @@ export default function AcceptInviteDialog({
 	open: boolean;
 	onOpenChange: (next: boolean) => void;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const [code, setCode] = useState("");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [loading, setLoading] = useState(false);
@@ -39,16 +45,16 @@ export default function AcceptInviteDialog({
 			const res = await acceptTeamInviteAction(code, currentUserId);
 			void invalidateSettings();
 			if (!res || !res.success)
-				throw new Error(res?.error || "Failed to submit request");
+				throw new Error(res?.error || s("Failed to submit request"));
 			setMessage(
 				res.requestId
-					? `Request submitted. ID: ${res.requestId}`
-					: "Request submitted."
+					? `${s("phraseRequestSubmittedID")} ${res.requestId}`
+					: s("phraseRequestSubmitted")
 			);
 			// close after a short delay
 			setTimeout(() => onOpenChange(false), 900);
-		} catch (err: any) {
-			setMessage(err?.message ?? "Could not submit request");
+		} catch (err: unknown) {
+			setMessage(localizedSettingsError(err, t, "Could not submit request"));
 		} finally {
 			setLoading(false);
 		}
@@ -58,9 +64,9 @@ export default function AcceptInviteDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Request to Join a Workspace</DialogTitle>
+					<DialogTitle>{s("Request to Join a Workspace")}</DialogTitle>
 					<DialogDescription>
-						Enter an invite code to request to join a workspace.
+						{s("phraseEnterAnInviteCodeToRequestToJoinAWorkspace")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -68,17 +74,17 @@ export default function AcceptInviteDialog({
 					<Input
 						value={code}
 						onChange={(e) => setCode(e.target.value)}
-						placeholder="Invite code"
+						placeholder={s("Invite code")}
 					/>
 					{message ? <div className="text-sm">{message}</div> : null}
 					<DialogFooter>
 						<DialogClose asChild>
 							<Button type="button" variant="ghost">
-								Cancel
+								{s("Cancel")}
 							</Button>
 						</DialogClose>
 						<Button type="submit" disabled={loading}>
-							{loading ? "Accepting..." : "Accept"}
+							{loading ? s("phraseAccepting") : s("Accept")}
 						</Button>
 					</DialogFooter>
 				</form>

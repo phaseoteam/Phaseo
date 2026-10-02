@@ -1,0 +1,104 @@
+---
+title: "تشغيل أدوات الوكيل المحلية بالتوازي"
+icon: "network"
+description: "حدّد تزامن الأدوات المحلية في TypeScript Agent SDK كي يجمع دور واحد من النموذج سياقات مستقلة دون تنفيذ كل استدعاء على التوالي."
+---
+
+استخدم هذه الوصفة عندما يستطيع دور واحد من الوكيل استدعاء عدة أدوات محلية مستقلة بأمان، وتريد تشغيلها بالتوازي مع الحفاظ على ترتيب نتائج محدد.
+
+## متى تستخدم ذلك
+
+استخدم `toolExecution.toolConcurrency` عندما:
+
+- يمكن للنموذج إصدار استدعاءات متعددة للأدوات المحلية في دور واحد
+- لا تعتمد هذه الأدوات على نتائج بعضها
+- يهدر التنفيذ المتسلسل وقت العاملين
+- تريد بقاء رسائل نتائج الأدوات المحفوظة بترتيب الاستدعاءات الأصلي
+
+لا تستخدم تزامنًا مرتفعًا إذا كانت إحدى الأدوات تعدّل حالة مشتركة أو كانت الأدوات اللاحقة تعتمد على نتائج سابقة.
+
+## مثال
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+```
+
+راجع النسخة المضمّنة في `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## ما يضمنه وقت التشغيل
+
+- يمكن للأدوات المحلية التنفيذ بالتوازي حتى حد `toolConcurrency` المُعدّ
+- تظل أحداث `tool.started` و`tool.completed` تصدر لكل أداة
+- تحافظ رسائل نتائج الأدوات المحفوظة على ترتيب استدعاءات الأدوات الأصلي
+- يظل حفظ نقطة التحقق جاريًا بعد اكتمال مرحلة الأدوات
+- تظل مهلات `timeoutMs` مطبقة على كل أداة
+
+## إرشادات التشغيل
+
+- ابدأ بقيمة تزامن صغيرة مثل `2` أو `3`
+- اجعل الأدوات المحلية قابلة للتكرار مع آثار جانبية محدودة
+- استخدم `timeoutMs` لمنع اعتماد متعطل من استهلاك جميع العاملين
+- أضف `store` فقط عندما يحتاج تطبيقك فعلًا إلى الاستئناف أو التنسيق عن بُعد
+
+## التحقق
+
+بعد تفعيل هذا النمط:
+
+- شغّل اختبارات حلقة الوكيل التي تغطي الأدوار متعددة الأدوات
+- تحقق من أن سير العمل ما زال ينتج رسائل نتائج الأدوات بالترتيب
+- تحقق من أن سجلات التشغيل ما زالت تعرض أحداث `tool.started` و`tool.completed` المتوقعة

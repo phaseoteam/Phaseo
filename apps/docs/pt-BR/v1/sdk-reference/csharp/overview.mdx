@@ -1,0 +1,18 @@
+---
+icon: "book-open"
+title: "C# SDK"
+description: "Cliente .NET oficial para o Phaseo Gateway."
+---
+
+Instale no NuGet o pacote publicado [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk).
+
+O wrapper local em `packages/sdk/sdk-csharp/Client.cs` oferece atualmente helpers de alto nível para chat, respostas, mensagens Anthropic, imagens, áudio, embeddings, moderação, arquivos, lotes, vídeos, gerações, modelos/provedores/endpoints/organizações/preços, descoberta de chaves de API e operações de ciclo de vida, helpers de ciclo de vida do workspace/chave atual, cálculo de preços, atividade/créditos/análises, verificações de integridade, validação do ciclo de vida de modelos e URLs de WebSocket de tarefas assíncronas, tanto por helpers diretos quanto por `client.AsyncJobs.WebSocketUrl(...)`.
+
+`GetModelEndpointCapabilities(...)` retorna metadados atuais das rotas de provedores. `CheckModelParameters(...)` classifica cada parâmetro como `supported`, `partial`, `unsupported` ou `unknown`, valida os valores e intervalos informados e retorna as rotas que aceitam o conjunto completo de parâmetros.
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("YOUR_KEY");
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "5" });
+```

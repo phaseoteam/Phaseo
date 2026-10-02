@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,12 +45,13 @@ export function ModerationModelSettingsDialog({
 	onUpdateParams,
 	onReset,
 }: ModerationModelSettingsDialogProps) {
+	const t = useTranslations("Product.chatRooms");
 	return (
 		<RoomModelSettingsShell
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Moderation model settings"
-			description="Configure moderation defaults for this model."
+			title={t("moderationSettings")}
+			description={t("moderationSettingsDescription")}
 			settings={settings}
 			modelChoices={modelChoices}
 			selectedModelId={selectedModelId}
@@ -60,7 +63,7 @@ export function ModerationModelSettingsDialog({
 		>
 			<div className="grid gap-3">
 				<div className="grid gap-1.5">
-					<Label htmlFor="score-threshold">Local flag threshold (0-1)</Label>
+					<Label htmlFor="score-threshold">{t("localFlagThreshold")}</Label>
 					<Input
 						id="score-threshold"
 						type="number"
@@ -79,8 +82,7 @@ export function ModerationModelSettingsDialog({
 					/>
 				</div>
 				<p className="text-xs text-muted-foreground">
-					If any category score meets this threshold, the entry is marked flagged in
-					the room UI.
+					{t("moderationThresholdHelp")}
 				</p>
 			</div>
 		</RoomModelSettingsShell>

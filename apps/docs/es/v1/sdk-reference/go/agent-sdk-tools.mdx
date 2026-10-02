@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "Herramientas"
+description: "Define herramientas de Go validadas, sujetas a aprobación, manuales y con generación de avances."
+---
+
+Crea valores `Tool` y pásalos mediante `DefineTool(...)`. Las herramientas pueden incluir:
+
+- JSON `Parameters` que se muestran al modelo
+- validadores `InputSchema`, `OutputSchema` y `EventSchema`
+- un `Timeout` y una función `Execute(input, RuntimeContext)`
+- `RequireApproval` incondicional o un predicado condicional `Approval`
+- `OnToolCalled` y `OnResponseReceived` para trabajo interactivo
+- anulaciones `NextTurn` y `OnError: "return-to-model"`
+
+Usa `RuntimeContext.EmitProgress`, `SetContext` y el contexto `context.Context` proporcionado. `ToolExecutionConfig{Concurrency: ...}` ejecuta herramientas independientes en paralelo y conserva el orden de los resultados.
+
+## Relacionado
+
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Controles de ejecución](./agent-sdk-run-controls.mdx)

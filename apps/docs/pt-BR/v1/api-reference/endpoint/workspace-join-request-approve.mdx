@@ -1,0 +1,11 @@
+---
+title: "Aprovar solicitação para entrar no espaço de trabalho"
+sidebarTitle: "Aprovar solicitação de entrada"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "Aprovar atomicamente uma solicitação de entrada pendente."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `workspaces:write`.</Note>
+
+A aprovação valida o vencimento do convite e os usos restantes, aplica a função do convite e registra a decisão em uma única transação.
+

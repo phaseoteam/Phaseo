@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "أنماط استدعاء الأدوات"
+description: "حلقات موثوقة لاستدعاء الأدوات عبر نقطتي النهاية chat completions وresponses."
+---
+
+استخدم هذه الأنماط لجعل حلقات استدعاء الأدوات حتمية وسهلة التصحيح.
+
+## النمط 1: حلقة Chat Completions
+
+1. أرسل رسالة المستخدم وتعريفات الأدوات.
+2. إذا كانت قيمة `finish_reason` هي `tool_calls`، فنفّذ كل استدعاء أداة.
+3. أرسل مخرجات الأدوات في رسائل باستخدام `role: "tool"`.
+4. اقرأ الرد النهائي للمساعد.
+
+### الطلب (متابعة)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## النمط 2: حلقة Responses
+
+في `/v1/responses`، تظهر استدعاءات الأدوات من النموذج كعناصر إخراج من النوع `function_call`.
+ثم أرسل طلب متابعة يتضمن عناصر إدخال `function_call_output`.
+
+### الطلب (متابعة)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## اختيار نقطة النهاية
+
+- فضّل `/v1/chat/completions` إذا كنت تستخدم بالفعل حلقات رسائل على نمط OpenAI.
+- فضّل `/v1/responses` إذا كان تطبيقك يعتمد واجهة Responses API معيارًا له.
+- استخدم `/v1/messages` إذا كان تطبيقك مبنيًا على Anthropic.
+

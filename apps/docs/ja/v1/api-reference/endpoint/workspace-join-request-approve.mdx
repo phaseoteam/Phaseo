@@ -1,0 +1,11 @@
+---
+title: "ワークスペースへの参加リクエストを承認"
+sidebarTitle: "参加リクエストを承認"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "保留中の参加リクエストをアトミックに承認します。"
+---
+<Note>このエンドポイントには`workspaces:write`を持つ管理APIキーが必要です。</Note>
+
+承認時に招待の有効期限と残り使用回数を検証し、招待ロールを適用して、1つのトランザクションで決定を記録します。
+

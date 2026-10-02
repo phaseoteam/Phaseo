@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "आउटपुट और रीट्राई"
+description: "अंतिम आउटपुट सत्यापित करें, अस्थायी मॉडल विफलताओं पर फिर प्रयास करें और प्रबंधित रूटिंग डिफ़ॉल्ट लागू करें।"
+---
+
+जब आपके ऐप्लिकेशन के बाकी हिस्से को मुक्त टेक्स्ट के बजाय टाइप किया हुआ मान चाहिए, तब आउटपुट पार्सिंग उपयोग करें। अस्थायी मॉडल विफलताओं के लिए सीमित रीट्राई जोड़ें और सत्यापन व नीति की विफलताओं को ऐप्लिकेशन के लिए स्पष्ट रहने दें।
+
+## टाइप किया हुआ आउटपुट पार्स करें
+
+`parseOutput` एजेंट लूप पूरा होने के बाद `parseOutput` अंतिम टेक्स्ट को बदलता है:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+मॉडल के व्यवहार को अधिक सख्त बनाने के लिए पार्सिंग को gateway client के संरचित उत्तर के साथ जोड़ें:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## मॉडल अनुरोधों पर फिर प्रयास करें
+
+यदि मौजूदा रन में अस्थायी मॉडल विफलता पर फिर प्रयास करना हो, तो `modelRetry` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` पहली अनुरोध के बाद के प्रयास गिनता है। अंतिम प्रयास संख्या चरण पर `modelAttempts` में सहेजी जाती है।
+
+## प्रबंधित रूटिंग डिफ़ॉल्ट उपयोग करें
+
+जब रूटिंग, prompt या पैरामीटर डिफ़ॉल्ट dashboard में रखने हों, तो `preset` उपयोग करें:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Gateway अडैप्टर `responseFormat`, `plugins`, `gatewayTools`, `toolChoice`, `webSearchOptions`, `providerOptions`, `promptCacheKey` और `includeMeta` भी भेज सकता है।
+
+## संबंधित गाइड
+
+- [बाद के मॉडल टर्न बदलें](./agent-sdk-dynamic-turns.mdx)
+- [एजेंट को सुरक्षित रूप से रोकें](./agent-sdk-stop-conditions.mdx)
+- [त्रुटियाँ संभालें](./agent-sdk-events-and-errors.mdx)

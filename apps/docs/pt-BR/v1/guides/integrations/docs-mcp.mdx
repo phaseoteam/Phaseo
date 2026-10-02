@@ -1,0 +1,120 @@
+---
+title: "MCP da documentação"
+icon: "plug-zap"
+description: "Conecte o servidor MCP da documentação do Phaseo ao Codex, Claude Code, Cursor ou VS Code."
+---
+
+Para que seu agente de programação responda a perguntas sobre o Phaseo usando a documentação atual, em vez de dados de treinamento desatualizados, conecte o servidor MCP da documentação do Phaseo.
+
+Este servidor MCP é somente leitura. Ele ajuda os agentes a pesquisar a documentação e ler páginas completas durante o trabalho.
+
+## URL do servidor
+
+`https://phaseo.app/docs/mcp`
+
+## O que ele oferece
+
+- Pesquisa atualizada em toda a documentação do Phaseo
+- Conteúdo completo das páginas quando um agente precisa de mais detalhes
+- Acesso ao resumo de recursos [skill.md](https://phaseo.app/docs/skill.md) hospedado
+
+## Codex
+
+Adicione o servidor:
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+Verifique:
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+Adicione o servidor ao projeto atual:
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+Disponibilize-o em todos os projetos:
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+Verifique:
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+Use o menu contextual da documentação para instalar o servidor MCP no Cursor ou adicione-o manualmente:
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+Adicione o servidor de documentação do Phaseo ao `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+Use o menu contextual da documentação para instalar o servidor MCP no VS Code ou adicione-o manualmente:
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## Quando usar
+
+Use o Docs MCP quando quiser que seu agente:
+
+- consulte o formato atual das solicitações antes de escrever código
+- confirme o suporte de um modelo ou provedor a um endpoint
+- confira o roteamento, as predefinições, as proteções ou o comportamento de trabalhos assíncronos
+- consulte exemplos da documentação sem sair do editor
+
+## Bons prompts
+
+- `Consulte na documentação do Phaseo o formato de solicitação de Responses e me dê um exemplo mínimo.`
+- `Antes de alterar esta solicitação, use o servidor Docs MCP do Phaseo para conferir como provider.sort funciona.`
+- `Encontre a documentação de guardrails do Phaseo e resuma os trechos que afetam o roteamento de provedores.`
+
+## Guias relacionados
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [Início rápido](../../quickstart.mdx)
+- [Referência da API](../../api-reference/introduction.mdx)

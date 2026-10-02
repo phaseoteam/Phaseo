@@ -25,6 +25,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { readGameState, writeGameState } from "./gameStorage";
 import { GameModelIdentity } from "./GameModelIdentity";
 import { SprintGame } from "./SprintGame";
@@ -48,39 +50,33 @@ import {
 const GAME_CARD_CLASS =
   "gap-3 rounded-lg py-3 [--card-spacing:--spacing(3)]";
 
-const GAME_INSTRUCTIONS: Record<GameKey, string> = {
-  modele:
-    "Choose a model, then use developer, origin, access, release, modality, provider and family clues to narrow the answer.",
-  pricele:
-    "Guess the model from its token prices. Arrows show whether the answer’s price is higher or lower.",
-  timeline:
-    "Reorder the five models from oldest to newest, then submit the sequence.",
-  "head-to-head":
-    "Choose the model that wins each catalogue comparison across five rounds.",
-  sprint:
-    "Name as many matching models as possible before the sixty-second timer expires.",
-};
-
 function GameHowTo({ game }: { game: GameKey }) {
-  return (
+	const t = useTranslations("Product.games");
+	const instructionKey = `${game.replace("-", "")}Instructions` as
+		| "modeleInstructions"
+		| "priceleInstructions"
+		| "timelineInstructions"
+		| "headToHeadInstructions"
+		| "sprintInstructions";
+	return (
     <aside className="mt-10 border-t border-border/70 pt-5 text-sm">
-      <h2 className="font-heading font-medium">How to play</h2>
+      <h2 className="font-heading font-medium">{t("howToPlay")}</h2>
       <p className="mt-1 max-w-3xl leading-6 text-muted-foreground">
-        {GAME_INSTRUCTIONS[game]}
+        {t(instructionKey)}
       </p>
       {game === "modele" ? (
         <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-2">
-            <span className="size-2.5 rounded-sm bg-emerald-500/70" /> Exact
+            <span className="size-2.5 rounded-sm bg-emerald-500/70" /> {t("exact")}
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="size-2.5 rounded-sm bg-amber-500/70" /> Partial
+            <span className="size-2.5 rounded-sm bg-amber-500/70" /> {t("partial")}
           </span>
-          <span>↑ ↓ The answer is higher or lower</span>
+          <span>{t("answerDirection")}</span>
         </div>
       ) : null}
       <p className="mt-3 text-xs text-muted-foreground/75">
-        Inspired by Wordle and the tradition of daily browser puzzles.
+        {t("inspiredBy")}
       </p>
     </aside>
   );
@@ -92,10 +88,18 @@ function GameScaffold({
   children,
 }: {
   game: GameKey;
-  date: string;
+  date?: string;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("Product.games");
+  const locale = useLocale();
   const info = GAME_INFO[game];
+  const dateLabel = date
+    ? new Intl.DateTimeFormat(locale, {
+        dateStyle: "medium",
+        timeZone: "UTC",
+      }).format(new Date(date.length === 10 ? `${date}T00:00:00Z` : date))
+    : t("today");
   return (
     <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-6xl [&_[data-slot=button]]:rounded-lg">
@@ -103,21 +107,21 @@ function GameScaffold({
           <Button asChild variant="ghost" className="rounded-lg">
             <Link href="/games">
               <ArrowLeft data-icon="inline-start" />
-              All games
+              {t("allGames")}
             </Link>
           </Button>
-          <Badge variant="outline">Daily · {date}</Badge>
+          <Badge variant="outline">{t("daily", { date: dateLabel })}</Badge>
         </div>
         <header className="mb-8 max-w-3xl">
           <h1 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">
-            {info.title}
+            {t(info.titleKey)}
           </h1>
           <p className="mt-3 text-base leading-7 text-muted-foreground">
-            {info.description}
+            {t(info.descriptionKey)}
           </p>
         </header>
         <nav
-          aria-label="Catalogue games"
+          aria-label={t("catalogueGames")}
           className="mb-8 flex gap-2 overflow-x-auto pb-2"
         >
           {GAME_KEYS.map((key) => (
@@ -128,7 +132,7 @@ function GameScaffold({
               variant={key === game ? "default" : "outline"}
               className="rounded-lg"
             >
-              <Link href={GAME_INFO[key].path}>{GAME_INFO[key].title}</Link>
+              <Link href={GAME_INFO[key].path}>{t(GAME_INFO[key].titleKey)}</Link>
             </Button>
           ))}
         </nav>
@@ -144,7 +148,7 @@ function ModelPicker({
   disabled,
   usedIds = [],
   onPick,
-  buttonLabel = "Guess",
+  buttonLabel,
 }: {
   candidates: ModelCandidate[];
   disabled?: boolean;
@@ -152,6 +156,7 @@ function ModelPicker({
   onPick: (candidate: ModelCandidate) => Promise<void>;
   buttonLabel?: string;
 }) {
+  const t = useTranslations("Product.games");
   const [value, setValue] = useState("");
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -200,7 +205,7 @@ function ModelPicker({
         size="lg"
         disabled={disabled || pending || !selected}
       >
-        {pending ? <Loader2 className="animate-spin" /> : buttonLabel}
+        {pending ? <Loader2 className="animate-spin" /> : buttonLabel ?? t("guess")}
       </Button>
     </form>
   );
@@ -217,37 +222,39 @@ function clueTone(match?: Match, direction?: Direction): string {
   return "bg-muted/40 ring-foreground/5 text-muted-foreground";
 }
 
-function valueText(value: unknown): string {
+function valueText(value: unknown, unknownLabel: string): string {
   if (Array.isArray(value))
     return value.map((item) => String(item).replaceAll("_", " ")).join(", ");
-  if (value == null || value === "") return "Unknown";
+  if (value == null || value === "") return unknownLabel;
   return String(value).replaceAll("_", " ");
 }
 
 function DirectionIcon({ direction }: { direction?: Direction }) {
+  const t = useTranslations("Product.games");
   if (direction === "higher")
-    return <ArrowUp className="size-3.5" aria-label="The answer is higher" />;
+    return <ArrowUp className="size-3.5" aria-label={t("answerHigher")} />;
   if (direction === "lower")
-    return <ArrowDown className="size-3.5" aria-label="The answer is lower" />;
+    return <ArrowDown className="size-3.5" aria-label={t("answerLower")} />;
   if (direction === "correct")
-    return <Check className="size-3.5" aria-label="Correct" />;
+    return <Check className="size-3.5" aria-label={t("correct")} />;
   return null;
 }
 
 const CLUE_LABELS: Record<string, string> = {
-  developer: "Developer",
-  country: "Origin",
-  access: "Access",
-  releaseYear: "Release",
-  inputModalities: "Input",
-  outputModalities: "Output",
-  providers: "Providers",
-  family: "Family",
+  developer: "clueDeveloper",
+  country: "clueOrigin",
+  access: "clueAccess",
+  releaseYear: "clueRelease",
+  inputModalities: "clueInput",
+  outputModalities: "clueOutput",
+  providers: "clueProviders",
+  family: "clueFamily",
 };
 
 type GuessState<T> = { guesses: T[]; answer: ModelCandidate | null };
 
 function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
+  const t = useTranslations("Product.games");
   const [state, setState] = useState<GuessState<ModeleResult>>(() =>
     readGameState("modele", puzzle.puzzleId, { guesses: [], answer: null })
   );
@@ -269,10 +276,9 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
     <div className="space-y-5">
       <Card className={GAME_CARD_CLASS}>
         <CardHeader>
-          <CardTitle>Guess today’s model</CardTitle>
+          <CardTitle>{t("guessTodayModel")}</CardTitle>
           <CardDescription>
-            Green is exact, amber is partial, and arrows point towards the
-            answer. “Origin” means the developer’s country.
+            {t("guessTodayDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -302,7 +308,7 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
         </CardContent>
       </Card>
       <div aria-live="polite" className="text-sm text-muted-foreground">
-        {state.guesses.length} / {puzzle.maxGuesses} guesses
+        {t("guesses", { count: state.guesses.length, max: puzzle.maxGuesses })}
       </div>
       {[...state.guesses].reverse().map((guess, reverseIndex) => (
         <Card key={guess.model.id} size="sm" className={GAME_CARD_CLASS}>
@@ -310,7 +316,7 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
             <CardTitle className="flex flex-wrap items-center justify-between gap-2">
               <GameModelIdentity model={guess.model} />
               <Badge variant="secondary" className="shrink-0">
-                Guess {state.guesses.length - reverseIndex}
+                {t("guessNumber", { number: state.guesses.length - reverseIndex })}
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -325,11 +331,11 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
                   )}
                 >
                   <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider opacity-70">
-                    {CLUE_LABELS[key] ?? key}
+                    {CLUE_LABELS[key] ? t(CLUE_LABELS[key] as never) : key}
                   </div>
                   <div className="flex items-center gap-1.5 text-sm font-medium capitalize">
                     <DirectionIcon direction={clue.direction} />
-                    {valueText(clue.value)}
+                    {valueText(clue.value, t("unknown"))}
                   </div>
                 </div>
               ))}
@@ -342,15 +348,15 @@ function ModeleGame({ puzzle }: { puzzle: ModelePuzzle }) {
           success={state.guesses.some((guess) => guess.correct)}
           title={
             state.guesses.some((guess) => guess.correct)
-              ? "You found it"
-              : "That was a tricky one"
+              ? t("youFoundIt")
+              : t("trickyOne")
           }
           answer={state.answer}
         />
       )}
       {finished && !state.answer && (
         <Button variant="outline" onClick={reveal}>
-          Reveal answer
+          {t("revealAnswer")}
         </Button>
       )}
     </div>
@@ -366,6 +372,7 @@ function ResultCard({
   title: string;
   answer?: ModelCandidate | null;
 }) {
+  const t = useTranslations("Product.games");
   return (
     <Card
       className={cn(
@@ -384,7 +391,7 @@ function ResultCard({
         </CardTitle>
         {answer && (
           <CardDescription className="flex items-center gap-2">
-            <span>The answer is</span>
+            <span>{t("theAnswerIs")}</span>
             <GameModelIdentity model={answer} compact />
           </CardDescription>
         )}
@@ -394,6 +401,8 @@ function ResultCard({
 }
 
 function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
+	const tAuditCopy = useTranslations();
+  const t = useTranslations("Product.games");
   const format = useDisplayFormatters();
   const formatPrice = (value: number) =>
     format.number(value, {
@@ -415,9 +424,9 @@ function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
     <div className="space-y-5">
       <Card className={GAME_CARD_CLASS}>
         <CardHeader>
-          <CardTitle>Follow the price</CardTitle>
+          <CardTitle>{t("followPrice")}</CardTitle>
           <CardDescription>
-            {puzzle.priceBasis}. Arrows point towards the answer’s price.
+            {t("priceDescription", { basis: puzzle.priceBasis })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -478,8 +487,8 @@ function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
           success={state.guesses.some((guess) => guess.correct)}
           title={
             state.guesses.some((guess) => guess.correct)
-              ? "Right on the money"
-              : "Price locked"
+              ? tAuditCopy("Common.ui.auditCopy.rightOnTheMoney")
+              : tAuditCopy("Common.ui.auditCopy.priceLocked")
           }
           answer={state.answer}
         />
@@ -496,6 +505,7 @@ type TimelineResult = {
 };
 
 function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
+  const t = useTranslations("Product.games");
   const initial = {
     order: puzzle.models,
     result: null as TimelineResult | null,
@@ -526,9 +536,9 @@ function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
     <div className="space-y-5">
       <Card className={GAME_CARD_CLASS}>
         <CardHeader>
-          <CardTitle>Oldest → newest</CardTitle>
+          <CardTitle>{t("oldestNewest")}</CardTitle>
           <CardDescription>
-            Move the five models into release order, then lock in your timeline.
+            {t("timelineDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -555,7 +565,7 @@ function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
                     variant="ghost"
                     disabled={index === 0}
                     onClick={() => move(index, -1)}
-                    aria-label={`Move ${model.name} earlier`}
+                    aria-label={t("moveEarlier", { name: model.name })}
                   >
                     <ChevronUp />
                   </Button>
@@ -564,7 +574,7 @@ function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
                     variant="ghost"
                     disabled={index === state.order.length - 1}
                     onClick={() => move(index, 1)}
-                    aria-label={`Move ${model.name} later`}
+                    aria-label={t("moveLater", { name: model.name })}
                   >
                     <ChevronDown />
                   </Button>
@@ -585,7 +595,7 @@ function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
                 save({ ...state, result });
               }}
             >
-              Lock in timeline
+              {t("lockTimeline")}
             </Button>
           )}
         </CardContent>
@@ -595,8 +605,8 @@ function TimelineGame({ puzzle }: { puzzle: TimelinePuzzle }) {
           success={state.result.correct}
           title={
             state.result.correct
-              ? "Perfect timeline"
-              : `${state.result.score} of 5 in the exact position`
+              ? t("perfectTimeline")
+              : t("exactPosition", { score: state.result.score })
           }
         />
       )}
@@ -618,6 +628,7 @@ type HeadResult = {
 };
 
 function HeadToHeadGame({ puzzle }: { puzzle: HeadToHeadPuzzle }) {
+  const t = useTranslations("Product.games");
   const initial = {
     answers: {} as Record<string, "left" | "right">,
     result: null as HeadResult | null,
@@ -637,7 +648,7 @@ function HeadToHeadGame({ puzzle }: { puzzle: HeadToHeadPuzzle }) {
           <Card key={round.id} className={GAME_CARD_CLASS}>
             <CardHeader>
               <CardDescription>
-                Round {index + 1} of {puzzle.rounds.length}
+                {t("roundOf", { current: index + 1, total: puzzle.rounds.length })}
               </CardDescription>
               <CardTitle>{round.label}</CardTitle>
             </CardHeader>
@@ -656,7 +667,7 @@ function HeadToHeadGame({ puzzle }: { puzzle: HeadToHeadPuzzle }) {
                 }
               />
               <div className="self-center text-xs font-semibold text-muted-foreground">
-                VS
+                {t("versus")}
               </div>
               <HeadChoice
                 candidate={round.right}
@@ -693,15 +704,15 @@ function HeadToHeadGame({ puzzle }: { puzzle: HeadToHeadPuzzle }) {
       >
         {state.result
           ? `${state.result.score} / ${puzzle.rounds.length}`
-          : "Reveal winners"}
+          : t("revealWinners")}
       </Button>
       {state.result && (
         <ResultCard
           success={state.result.score === puzzle.rounds.length}
           title={
             state.result.score === puzzle.rounds.length
-              ? "Clean sweep"
-              : `${state.result.score} of ${puzzle.rounds.length} correct`
+              ? t("cleanSweep")
+              : t("correctCount", { score: state.result.score, total: puzzle.rounds.length })
           }
         />
       )}
@@ -765,6 +776,7 @@ function PuzzleView({ puzzle }: { puzzle: DailyPuzzle }) {
 }
 
 export function GameExperience({ game }: { game: GameKey }) {
+  const t = useTranslations("Product.games");
   const [puzzle, setPuzzle] = useState<DailyPuzzle | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -782,19 +794,18 @@ export function GameExperience({ game }: { game: GameKey }) {
   }, [game]);
   if (error)
     return (
-      <GameScaffold game={game} date="Today">
+      <GameScaffold game={game}>
         <Card className={GAME_CARD_CLASS}>
           <CardHeader>
-            <CardTitle>Puzzle unavailable</CardTitle>
+            <CardTitle>{t("puzzleUnavailable")}</CardTitle>
             <CardDescription>
-              The catalogue service could not prepare today’s game. Try again in
-              a moment.
+              {t("puzzleUnavailableDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" onClick={() => window.location.reload()}>
               <RotateCcw />
-              Try again
+              {t("tryAgain")}
             </Button>
           </CardContent>
         </Card>
@@ -802,10 +813,10 @@ export function GameExperience({ game }: { game: GameKey }) {
     );
   if (!puzzle)
     return (
-      <GameScaffold game={game} date="Today">
+      <GameScaffold game={game}>
         <div className="flex min-h-64 items-center justify-center text-muted-foreground">
           <Loader2 className="mr-2 animate-spin" />
-          Preparing today’s puzzle…
+          {t("preparingPuzzle")}
         </div>
       </GameScaffold>
     );

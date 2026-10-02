@@ -1,0 +1,111 @@
+---
+icon: "compass"
+title: "Descripción general del SDK de TypeScript"
+description: "Cliente oficial de TypeScript para la API de Phaseo Gateway"
+---
+
+Instala desde npm el paquete publicado [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk).
+
+El SDK de TypeScript de Phaseo ofrece una forma cómoda y segura en cuanto a tipos de interactuar con la API de Phaseo Gateway. Basado en la especificación OpenAPI, brinda compatibilidad completa con TypeScript, tipos generados y una interfaz de cliente sencilla.
+
+## Funcionalidades
+
+-   **Seguridad de tipos**: compatibilidad completa con TypeScript y tipos generados a partir de la especificación OpenAPI
+-   **API sencilla**: cliente fácil de usar con una interfaz clara
+-   **Código generado**: generado automáticamente a partir de la especificación canónica de la API
+-   **Completo**: incluye todos los endpoints de Gateway API
+
+## Ejemplo rápido
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## Espera música, vídeos o lotes
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+Usa `videos.generateAndWait(request, options)` para vídeos y `batches.createAndWait(request, options)` para lotes. Estos asistentes envían una sola vez, devuelven una respuesta ya completada sin consultar o consultan la misma tarea hasta terminar. Devuelven la respuesta completa y lanzan `JobFailedError` con `response` si la tarea falla, se cancela o caduca. Un lote completado puede contener solicitudes individuales fallidas.
+
+Cada recurso también tiene `wait(id, options)`, que devuelve cualquier respuesta final, incluidos los fallos. Las opciones son `intervalMs` (predeterminado 5.000; mínimo 250), `timeoutMs` (predeterminado 1.800.000), `signal` y `onPoll`. El tiempo de espera comienza al retornar el envío; la solicitud HTTP inicial mantiene su propio límite. Los callbacks de progreso reciben la respuesta inicial y cada consulta.
+
+`JobTimeoutError` y `JobCancelledError` conservan `jobId` y `lastResponse` para reanudar con `.wait(error.jobId)`. Detener la espera cancela la consulta en curso, pero no el trabajo remoto. Los errores HTTP se propagan sin reenviar automáticamente. Estos asistentes del SDK no añaden ejecución en segundo plano al gateway.
+
+## Controles de solicitudes y diagnóstico
+
+Usa `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` para un
+cliente inmutable con controles en todos los recursos, streams y medios.
+Los límites de tiempo incluyen leer el cuerpo de la respuesta. Los reintentos son cero por defecto y se aplican
+solo a GET/HEAD, respetando `Retry-After`. Los envíos de pago nunca se reintentan.
+
+`responseMetadata(result)` muestra el ID de solicitud del gateway y la URL de seguimiento del panel.
+Los errores HTTP exponen `code`, `requestId`, `traceUrl`, `retryAfterMs`, cuerpo y cabeceras.
+
+## Asistentes de flujos de trabajo
+
+`music.start`, `videos.start` y `batches.start` devuelven identificadores con `result()`,
+`events()` y `toJSON()`. Guarda tipo e ID y reconstruye con `resume(id)`.
+`result()` rechaza fallos finales. Solo vídeo y lotes permiten cancelación remota.
+
+`videos.streamContent(id)` con `downloadTo(stream, writable)` transmite salidas
+grandes. `toFile(bytes, filename, contentType)` prepara las cargas.
+`batchResults(await client.batches.streamResults(id))` analiza JSONL de forma incremental;
+`matchBatchResult(row, inputsByCustomId)` conserva errores individuales e identidad de las entradas.
+
+`responses.parse(request, schema)` admite un analizador compatible con Zod y devuelve
+salida validada. Configura también el formato de salida estructurada del servidor en la solicitud.
+`collectStream(client.streamResponses(request))` acumula texto y uso.
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` comprueba las capacidades anunciadas y restricciones escalares en una
+oferta activa de proveedor. Los metadatos ausentes se informan como desconocidos. Nunca cambia
+el modelo ni elimina parámetros y no garantiza que un proveedor real acepte la solicitud.
+
+Para selectores de modelos y editores de parámetros, usa metadatos actuales de los endpoints:
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+Cada parámetro se marca como `supported`, `partial`, `unsupported` o `unknown`,
+con rutas de proveedores y problemas de restricciones para resaltado en línea.
+`client.models.capabilities(modelId)` devuelve la respuesta completa de capacidades
+del endpoint. Estas comprobaciones explícitas no añaden descubrimiento a las llamadas de generación.
+
+## Pruebas locales y exportaciones del sitio
+
+Importa `createMockTransport` y `jobFixtures` de `@phaseo/sdk/testing` para inyectar
+fixtures estrictas y ordenadas mediante `fetchImpl`. Llama a `mock.assertDone()` para comprobar
+que se realizaron todas las solicitudes esperadas. Las llamadas inesperadas fallan localmente sin acudir a la red.
+
+Tras enviar una solicitud en una sala de Phaseo, **Obtener código** exporta su modelo y
+ajustes como TypeScript o Python. **Ver solicitud** abre el seguimiento del panel si
+hay un ID de solicitud. Ejecuta el código exportado en el servidor con `PHASEO_API_KEY`.
+## Qué incluye
+
+-   Clase de cliente `Phaseo` para todas las interacciones con la API
+-   Ayudantes organizados por recurso, como `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   Ayudantes para descubrir modelos y consultar precios, como `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   Ayudantes para generar URL de WebSocket de trabajos asíncronos y seguir el ciclo de vida de lotes y vídeos
+-   `client.batches.streamResults(batchId, { signal })` para descargar JSONL de Anthropic en streaming
+-   Tipos generados para todos los objetos de solicitud y respuesta
+-   Cobertura completa de la API, incluidas las completaciones de chat, los modelos, los créditos y mucho más
+-   Definiciones de TypeScript para mejorar la experiencia de desarrollo

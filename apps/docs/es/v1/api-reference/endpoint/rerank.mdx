@@ -1,0 +1,12 @@
+---
+title: "Reordenar documentos"
+sidebarTitle: "Reordenar documentos"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /rerank"
+description: "Ordenar documentos según su relevancia para una consulta con un modelo de reordenamiento compatible."
+---
+
+Usa este endpoint para reordenar los documentos candidatos antes de pasarlos a una búsqueda, recuperación o paso de generación.
+
+Verifica el modelo en `GET /v1/models` antes del despliegue. La respuesta predeterminada solo contiene modelos con una ruta pública de Gateway.
+

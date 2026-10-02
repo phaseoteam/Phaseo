@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "生成履歴の検索"
+description: "`/generations` を呼び出して、以前の生成レコードを取得します。"
+---
+
+**メソッド**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+リクエストの詳細が保存されている場合、返される生成レコードには `replay_supported` と `replay_request` も含まれ、取得したペイロードを元のエンドポイントに再送できます。
+

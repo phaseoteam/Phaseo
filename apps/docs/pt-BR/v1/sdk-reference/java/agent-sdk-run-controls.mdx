@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "Saídas e novas tentativas"
+description: "Valide as saídas de agentes Java e repita falhas transitórias do modelo com um limite definido."
+---
+
+Use a validação da saída final quando o código Java seguinte espera um valor estruturado, em vez de texto do modelo sem validação. Adicione um validador final à definição do agente e trate falhas de validação como erros de contrato.
+
+Use `ModelRetryConfig` para falhas transitórias do modelo ou do provedor:
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+A contagem de tentativas registra as tentativas adicionais após a primeira solicitação. Etapas concluídas mantêm a contagem final de tentativas do modelo para depuração e telemetria.
+
+Use `ToolExecutionConfig` separadamente para controlar a concorrência de ferramentas locais. As novas tentativas do modelo não repetem efeitos colaterais com falha dentro das ferramentas.
+
+Opções adicionais da Responses API podem ser fornecidas por `GatewayOptions.requestOptions`; o adaptador continua responsável pelo modelo, pela entrada, pelas instruções e pelas ferramentas de função locais.
+
+## Conteúdo relacionado
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Condições de parada](./agent-sdk-stop-conditions.mdx)
+- [Erros e solução de problemas](./agent-sdk-observability.mdx)

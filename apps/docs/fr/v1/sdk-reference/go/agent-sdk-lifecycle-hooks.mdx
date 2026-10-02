@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks de cycle de vie"
+description: "Observez en temps réel les exécutions des agents Go, les tours du modèle, les outils, les pauses et la fin."
+---
+
+Définissez `OnEvent` dans `RunOptions` ou `ContinueOptions` pour recevoir des événements structurés du cycle de vie sans coupler l’application au transport du modèle.
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+Les catégories d’événements utiles incluent le démarrage, la fin et l’échec d’une exécution ; les tentatives du modèle ; les fragments de texte et de raisonnement en sortie ; le démarrage, la progression, la fin et l’échec des outils ; ainsi que les points de validation humaine.
+
+Gardez les gestionnaires rapides et non bloquants. Si le stockage peut prendre du temps, envoyez les événements vers votre propre file ou couche de télémétrie et masquez les entrées d’outil sensibles avant tout transfert externe.

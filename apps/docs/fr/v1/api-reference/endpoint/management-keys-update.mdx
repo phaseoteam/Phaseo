@@ -1,0 +1,10 @@
+---
+title: "Mettre à jour une clé de gestion"
+sidebarTitle: "Mettre à jour la clé de gestion"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "Met à jour les périmètres, limites, expiration, nom ou état de pause d’une clé de gestion."
+---
+<Note>Ce point de terminaison nécessite une identité de propriétaire ou d’administrateur et `management_keys:write`.</Note>
+
+L’appelant ne peut pas accorder des périmètres qu’il ne possède pas. Les champs omis conservent leur valeur actuelle.

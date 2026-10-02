@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Übertrage Agent-Text und Lifecycle-Ereignisse mit erneut durchlaufbaren asynchronen Enumerables."
+---
+
+`Agent.Stream(...)` verwendet dieselbe Zustandsmaschine wie `Run(...)` und gibt `AgentStreamResult` zurück:
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+Verwende `FullStream()` für Modell-, Tool-, Schritt- und Laufereignisse. Consumer können die aufgezeichnete asynchrone Sequenz unabhängig erneut durchlaufen. Rufe `Cancel()` auf, wenn das Produkt den aktiven Lauf stoppen soll; die Abbruchanforderung wird an Modellanfragen und lokale Tools weitergegeben.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

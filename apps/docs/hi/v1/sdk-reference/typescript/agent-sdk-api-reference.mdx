@@ -1,0 +1,90 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "TypeScript Agent SDK के एंट्री पॉइंट, मेथड, विकल्प और नतीजे के प्रकार देखें।"
+---
+
+Agent SDK वर्कफ़्लो समझने के बाद सही सार्वजनिक एंट्री पॉइंट या विकल्प ढूँढने के लिए यह पेज देखें।
+
+## एंट्री पॉइंट
+
+| एक्सपोर्ट | उद्देश्य |
+| --- | --- |
+| `createAgent(definition)` | एजेंट और उसका डिफ़ॉल्ट रनटाइम व्यवहार परिभाषित करें |
+| `defineTool(definition)` | मान्य लोकल, मैन्युअल, अनुमोदन-आधारित या प्रगति बताने वाला टूल परिभाषित करें |
+| `tool(definition)` | `defineTool()` का छोटा उपनाम |
+| `createGatewayAgentClient(options)` | Phaseo Gateway के ज़रिए मॉडल टर्न चलाएँ |
+| `createAgentDevtools(options)` | लोकल रन कैप्चर सक्षम करें |
+
+## एजेंट मेथड
+
+| मेथड | लौटाता है | उद्देश्य |
+| --- | --- | --- |
+| `agent.run(options)` | `Promise<AgentRunResult>` | पूरा होने, रुकने, बंद होने, रद्द होने या विफल होने तक चलाएँ |
+| `agent.stream(options)` | `AgentStreamResult` | दोबारा चलाए जा सकने वाले स्ट्रीम कंज़्यूमर के साथ वही लूप शुरू करें |
+| `agent.continueRun(options)` | `Promise<AgentRunResult>` | फ़ैसलों या मानवीय इनपुट के साथ सहेजी या रुकी हुई स्थिति जारी रखें |
+
+## स्ट्रीम कंज़्यूमर
+
+| मेथड | मान |
+| --- | --- |
+| `getResult()` | पूरा हुआ `AgentRunResult` |
+| `getText()` | पूरा अंतिम टेक्स्ट |
+| `getTextStream()` | टेक्स्ट के बदलाव |
+| `getReasoningStream()` | मॉडल द्वारा दिए गए रीजनिंग बदलाव |
+| `getItemsStream()` | टाइप किए गए `AgentItem<TOutput>` मान |
+| `getToolStream()` | टूल लाइफ़साइकल इवेंट |
+| `getFullStream()` | Agent SDK का पूरा इवेंट स्ट्रीम |
+| `cancel(reason?)` | सक्रिय रन रद्द करता है |
+
+## परिभाषा के विकल्प
+
+`AgentDefinition` में शामिल हैं:
+
+- `id`
+- `model` या `models`
+- `preset`
+- `instructions`
+- `tools`
+- `maxSteps` और `stopWhen`
+- `modelRetry` और `toolExecution`
+- `temperature`, `maxOutputTokens` और `topP`
+- `parseOutput` और `outputSchema`
+- `requireApproval` और `humanReview`
+
+मॉडल, निर्देश और सैंपलिंग फ़ील्ड में स्थिर या डायनामिक मान हो सकते हैं।
+
+## रन और जारी रखने के विकल्प
+
+`AgentRunOptions` इनपुट, मॉडल क्लाइंट, ऐप्लिकेशन संदर्भ, वैकल्पिक ओवरराइड, रद्द करना, लाइफ़साइकल हुक, DevTools और ऐप्लिकेशन-नियंत्रित स्थिति एक्सेसर देता है।
+
+`AgentContinueOptions` ये अतिरिक्त मान भी स्वीकार करता है:
+
+- पहला `run` या `runId`
+- `humanInput`
+- सटीक टूल-कॉल ID से अनुमोदन और अस्वीकृति
+- बाहरी रूप से बनाए गए `toolOutputs`
+
+## नतीजे के रिकॉर्ड
+
+`AgentRunResult` में शामिल हैं:
+
+- `run`: स्थायी रन स्थिति, संदर्भ, रोकने का विवरण और रुकने का कारण
+- `steps`: सहेजे गए मॉडल/टूल चरण रिकॉर्ड
+- `stepResults`: उपलब्ध होने पर सामान्यीकृत चरण नतीजे
+- `usage`: कुल टोकन और रिपोर्ट की गई लागत
+- `output`: पार्स किया गया अंतिम आउटपुट
+- `messages`: लूप में उपयोग की गई पूरी बातचीत
+- `items`: क्रमबद्ध टाइप संदेश, रीजनिंग, टूल गतिविधि, त्रुटियाँ और अंतिम आउटपुट
+
+## त्रुटि प्रकार
+
+- `AgentGatewayError` Gateway या अपस्ट्रीम अनुरोध की विफलताएँ बताता है।
+- `AgentSchemaValidationError` अमान्य टूल, प्रगति या अंतिम आउटपुट डेटा बताता है।
+
+## संबंधित गाइड
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [आइटम के साथ काम करें](./agent-sdk-items.mdx)
+- [त्रुटियाँ और समस्या निवारण](./agent-sdk-events-and-errors.mdx)

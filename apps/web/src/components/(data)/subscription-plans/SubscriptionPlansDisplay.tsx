@@ -7,13 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import type { SubscriptionPlanSummary } from "@/lib/fetchers/subscription-plans/types";
+import type { SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 interface SubscriptionPlansDisplayProps {
 	plans: SubscriptionPlanSummary[];
+	labels: SubscriptionPlansMessages;
 }
 
 export default function SubscriptionPlansDisplay({
 	plans,
+	labels,
 }: SubscriptionPlansDisplayProps) {
 	// State for filters
 	const [search, setSearch] = useQueryState("search", {
@@ -52,14 +55,14 @@ export default function SubscriptionPlansDisplay({
 			{/* Title and Search Bar Row */}
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
 				<h1 className="font-bold text-xl mb-2 md:mb-0">
-					Subscription Plans
+					{labels.title}
 				</h1>
 				<div className="flex-1 flex justify-end">
 					<div className="relative w-full max-w-xs">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
-							aria-label="Search subscription plans"
-							placeholder="Search plans..."
+							aria-label={labels.search}
+							placeholder={labels.search}
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 							className="w-full rounded-md bg-background pl-9"
@@ -75,13 +78,14 @@ export default function SubscriptionPlansDisplay({
 						<SubscriptionPlanCard
 							key={plan.plan_uuid}
 							plan={plan}
+							messages={labels.detail}
 						/>
 					))
 				) : (
 					<Empty className="col-span-full rounded-md border">
 						<EmptyHeader>
 							<EmptyMedia variant="icon" className="rounded-md"><Search aria-hidden="true" /></EmptyMedia>
-							<EmptyTitle>No subscription plans found</EmptyTitle>
+							<EmptyTitle>{labels.empty}</EmptyTitle>
 						</EmptyHeader>
 					</Empty>
 				)}

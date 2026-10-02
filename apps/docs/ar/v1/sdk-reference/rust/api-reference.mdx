@@ -1,0 +1,60 @@
+---
+icon: "braces"
+title: "مرجع API الخاص بـ Rust"
+description: "الأنواع والطرق العامة في phaseo 0.1."
+---
+
+تشرح هذه الصفحة واجهة API عالية المستوى المدعومة في [`phaseo 0.1`](https://docs.rs/phaseo/0.1.0/phaseo/).
+
+## `Phaseo`
+
+عميل متزامن ومصادق عليه للبوابة.
+
+| الطريقة | تُعيد | الغرض |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | ينشئ عميلًا بعنوان URL الأساسي للإنتاج. |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | يقرأ `PHASEO_API_KEY` و`PHASEO_BASE_URL` الاختياري. |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | يستبدل عنوان URL الأساسي. تتطلب عناوين URL البعيدة HTTPS، ويمكن لمضيفات loopback الدقيقة استخدام HTTP. |
+| `.with_header(name, value)` | `Phaseo` | يضيف ترويسة إلى الطلبات اللاحقة. |
+| `.responses(request)` | `Result<PhaseoResponse, PhaseoError>` | يرسل JSON بطريقة POST إلى `/responses`. |
+| `.chat_completions(request)` | `Result<PhaseoResponse, PhaseoError>` | يرسل JSON بطريقة POST إلى `/chat/completions`. |
+| `.post(path, request)` | `Result<PhaseoResponse, PhaseoError>` | يرسل JSON بطريقة POST إلى مسار آخر ضمن عنوان URL الأساسي المُعد. |
+
+جميع أجسام الطلبات من النوع `&serde_json::Value`.
+
+## `PhaseoResponse`
+
+| الحقل | النوع | المعنى |
+| --- | --- | --- |
+| `status` | `u16` | رمز حالة HTTP. |
+| `body` | `serde_json::Value` | استجابة JSON مُحللة، أو سلسلة JSON إذا لم تكن الاستجابة JSON صالحًا. |
+| `request_id` | `Option<String>` | ترويسة الاستجابة `x-request-id` عند وجودها. |
+
+## `PhaseoError`
+
+| الحقل | النوع | المعنى |
+| --- | --- | --- |
+| `message` | `String` | رسالة خطأ الإعداد أو النقل أو البوابة. |
+| `status` | `Option<u16>` | حالة HTTP للبوابة عند استلام استجابة. |
+| `body` | `Option<serde_json::Value>` | جسم خطأ البوابة المُحلل عند توفره. |
+
+ينفّذ `PhaseoError` الواجهتين `std::error::Error` و`Display`.
+
+## الوحدات المُنشأة
+
+يعرض crate أيضًا عميل OpenAPI المُنشأ:
+
+| الوحدة | الغرض |
+| --- | --- |
+| `phaseo::gen` | العميل المُنشأ كاملًا، ووحدات النماذج والعمليات. |
+| `phaseo::client` | إعادة تصدير `phaseo::gen::client`. |
+| `phaseo::models` | إعادة تصدير `phaseo::gen::models`. |
+| `phaseo::operations` | إعادة تصدير `phaseo::gen::operations`. |
+| `phaseo::model_ids` | معرّفات نماذج Phaseo المُنشأة. |
+
+تتبع أسماء العمليات وأنواعها المُنشأة مخرجات OpenAPI وقد تكون أقل مستوى من مساعدات `Phaseo`. فضّل الطرق عالية المستوى أعلاه لواجهتي Responses وChat Completions.
+
+## مراجع خارجية
+
+- [`phaseo` على crates.io](https://crates.io/crates/phaseo)
+- [`phaseo` على docs.rs](https://docs.rs/phaseo)

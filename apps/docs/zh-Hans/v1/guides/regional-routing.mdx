@@ -1,0 +1,207 @@
+---
+icon: "globe"
+title: "按区域路由文本请求"
+description: "将 Phaseo 文本生成限制为欧盟或美国的提供商路由。"
+---
+
+使用 Phaseo 区域端点，可将提供商执行和提供商数据处理限制在 Phaseo 文档说明的欧盟或美国路由内。你可以在 Chat Completions、Responses 和 Messages 中使用区域路由，无需更改模型 ID 或 API 密钥。
+
+<Warning>
+区域路由目前不提供端到端的数据驻留保证。Phaseo 会限制提供商选择，并使用靠近所选区域的 Cloudflare 放置提示，但共享的账户、计费、缓存和运营系统可能在该区域之外处理数据。
+</Warning>
+
+## 选择端点
+
+| 区域 | 基础 URL | 行为 |
+| --- | --- | --- |
+| 欧盟 | `https://eu.api.phaseo.app/v1` | 要求提供商路由的执行区域和数据区域均为欧盟 |
+| 美国 | `https://us.api.phaseo.app/v1` | 要求提供商路由的执行区域和数据区域均为美国 |
+| 全球 | `https://api.phaseo.app/v1` | 使用标准的全球路由策略 |
+
+区域主机名就是策略边界。请求无法通过冲突的 `required_execution_region` 或 `required_data_region` 值覆盖此策略。
+
+## 使用 Phaseo SDK
+
+创建客户端时设置 `region`。该客户端发出的每个受支持请求都会使用对应的区域基础 URL。
+
+<CodeGroup>
+```ts TypeScript
+import { Phaseo } from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+  region: "eu",
+});
+
+const response = await phaseo.responses.create({
+  model: "openai/gpt-5-mini",
+  input: "Summarize this note in one sentence.",
+});
+
+console.log(response.output_text);
+```
+
+```python Python
+import os
+from phaseo import Phaseo
+
+phaseo = Phaseo(
+    api_key=os.environ["PHASEO_API_KEY"],
+    region="eu",
+)
+
+response = phaseo.responses.create({
+    "model": "openai/gpt-5-mini",
+    "input": "Summarize this note in one sentence.",
+})
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+美国路由使用 `"us"`。全球路由可省略 `region`，或使用 `"global"`。SDK 会拒绝同时设置 `region` 和自定义 `baseUrl` 或 `base_url` 的配置，因为这两个选项会选择相互冲突的主机。
+
+## 使用 Chat Completions
+
+```bash
+curl https://eu.api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "messages": [
+      {"role": "user", "content": "Write a two-line status update."}
+    ]
+  }'
+```
+
+## 使用 Responses
+
+```bash
+curl https://eu.api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-mini",
+    "input": "Extract the three most important actions from this note."
+  }'
+```
+
+## 使用 Messages
+
+Messages 端点接受 Anthropic 请求格式，同时保留相同的区域提供商限制。
+
+```bash
+curl https://us.api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "anthropic-version: 2023-06-01" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [
+      {"role": "user", "content": "Summarize this incident report."}
+    ]
+  }'
+```
+
+## 支持的请求功能
+
+区域路由目前支持：
+
+- 文本输入和文本输出
+- 流式和非流式响应
+- 系统和开发者指令
+- 客户端定义的函数工具和自定义工具
+- 包含文本的工具结果
+- 模型支持时的结构化文本和 JSON 输出
+- 不与区域策略冲突的预设、提供商排序、回退和价格限制
+
+区域端点会拒绝：
+
+- 图片、音频、视频、文档、文件和附件
+- 非文本输出模态
+- 提供商托管的工具，例如网页搜索、文件搜索、代码执行、计算机操作和图像生成
+- 图像、音频、视频、嵌入、审核、批处理、文件、Webhook 和实时端点
+
+函数工具会在你的应用中执行，因此被允许。提供商托管的工具会被阻止，因为其执行位置可能不符合区域策略。
+
+## 发现区域内可用的模型
+
+通过用于生成的同一个区域主机名调用 `/v1/models`：
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+响应仅包含具有有效提供商路由的模型，且声明的执行区域和数据区域都包含所选区域。它只公布支持文本输入和输出的 Chat Completions、Responses 和 Messages。
+
+每个方案都包含其区域元数据：
+
+```json
+{
+  "provider": { "id": "example-eu", "name": "Example EU" },
+  "residency": {
+    "execution_regions": ["eu"],
+    "data_regions": ["eu"]
+  }
+}
+```
+
+欧盟、美国和全球端点的模型可用性可能不同。始终通过应用将要调用的端点发现模型。
+
+## 验证所选网关
+
+区域响应包含：
+
+```http
+X-Phaseo-Gateway-Region: eu
+```
+
+使用此响应头确认请求已到达预期的 Phaseo 部署。请求详情会记录所需执行区域、所需数据区域、所选提供商以及提供商声明的区域元数据。
+
+<Note>
+该响应头标识处理请求的 Phaseo 区域策略。它不能证明 Cloudflare 的执行驻留得到了保证。
+</Note>
+
+## 失败行为
+
+区域路由在无法满足策略时会停止处理。Phaseo 绝不会悄悄通过主机名所属区域之外的提供商重试请求。
+
+| 错误 | 含义 | 处理方式 |
+| --- | --- | --- |
+| `regional_endpoint_not_supported` | 区域 Workers 不提供该路径 | 使用三个受支持文本端点之一或全球 API |
+| `regional_non_text_content` | 请求包含媒体、文件或附件 | 删除非文本内容或使用全球 API |
+| `regional_non_text_output` | 请求要求非文本响应 | 请求文本输出或使用全球 API |
+| `regional_hosted_tool_not_supported` | 请求了提供商托管的工具 | 使用客户端定义的函数工具或全球 API |
+| `deployment_region_conflict` | 请求或预设指定了其他区域 | 删除冲突设置 |
+| 没有可用提供商路由 | 没有健康的提供商满足模型和区域策略要求 | 选择区域 `/v1/models` 端点返回的其他模型 |
+
+## 区域路由的保障范围
+
+对于已接受的生成请求，Phaseo 要求所选提供商路由同时声明：
+
+1. 在所选区域执行模型
+2. 在所选区域处理提示词和生成结果数据
+
+Phaseo 会在合并预设和动态路由规则后应用这些要求，因此这些功能无法削弱主机名策略。如果没有匹配的提供商，请求会在上游模型执行之前停止。
+
+## 当前限制
+
+此初始版本不保证请求的完整生命周期都位于所选区域内：
+
+- Cloudflare Workers 放置提示会选择靠近已配置云区域的位置，但不会建立合规边界。
+- Phaseo 的账户、身份验证、计费和请求元数据使用共享的 Supabase 基础设施。
+- Cloudflare KV 和 Worker 调用日志不绑定区域。
+- 提供商子请求由所选提供商端点约束，而非 Cloudflare 的放置设置。
+- 支持和运营访问不限于所选区域内的人员。
+
+只有在网关、存储、日志、提供商和运营路径都受到可强制执行的区域控制约束后，Phaseo 才会将该功能描述为端到端的数据驻留。
+
+## 相关指南
+
+- [路由与回退](./routing-and-fallbacks.mdx)
+- [指定提供商的模型](./provider-qualified-models.mdx)
+- [预设](./presets.mdx)
+- [工具调用](./tool-calling.mdx)

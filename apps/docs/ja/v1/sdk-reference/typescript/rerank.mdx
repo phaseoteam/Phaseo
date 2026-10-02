@@ -1,0 +1,26 @@
+---
+icon: "list-ordered"
+title: "ドキュメントの再ランキング"
+description: "TypeScript SDKを使って候補ドキュメントをクエリとの関連度順に並べ替えます。"
+---
+
+`client.rerank.create()`を使うと、クエリとの関連度に応じて候補ドキュメントを並べ替えられます。
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+本番環境で使用する前に、`GET /v1/models`でモデルIDを確認してください。

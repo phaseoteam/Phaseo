@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "مرجع لأهم فئات وطرق Ruby Agent SDK."
+---
+
+| API | الغرض |
+| --- | --- |
+| `PhaseoAgentSdk.create_agent(...)` | تعريف وكيل |
+| `PhaseoAgentSdk.define_tool(...)` | تعريف أداة محلية أو يدوية |
+| `PhaseoAgentSdk.create_gateway_agent_client(...)` | ربط خطوات النموذج بـPhaseo |
+| `Agent#run` | التشغيل حتى الاكتمال أو الإيقاف المؤقت |
+| `Agent#stream` | التشغيل باستخدام تسلسلات قابلة لإعادة القراءة |
+| `Agent#continue_run` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `StreamResult#result` | قراءة التشغيل المكتمل |
+| `StreamResult#text_stream` | قراءة أجزاء النص المتتابعة |
+| `StreamResult#full_stream` | قراءة جميع الأحداث |
+
+تشمل الفئات والقيم المهمة `Tool` و`ToolDecision` و`ToolOutput` و`RuntimeContext` و`RunResult` وإعداد إعادة المحاولة وإعداد تنفيذ الأدوات وأدوات الوصول إلى الحالة.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

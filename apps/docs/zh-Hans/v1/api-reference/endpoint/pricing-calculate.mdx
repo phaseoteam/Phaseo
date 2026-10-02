@@ -1,0 +1,19 @@
+---
+title: "计算价格"
+sidebarTitle: "计算价格"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
+description: "估算特定供应商/模型/端点用量载荷的费用。"
+---
+
+根据当前有效的网关定价规则计算所提供用量载荷的价格。
+
+请提供：
+
+- `provider`：供应商 ID，例如 `openai`
+- `model`：路由模型 ID
+- `endpoint`：端点类型，例如 `responses` 或 `chat.completions`
+- `usage`：要计价的用量对象，例如 token 数量或其他计量输入
+
+如果你已确定目标供应商/模型/端点，并希望估算特定用量载荷的账单，请使用此路由；`GET /pricing/models` 则用于列出当前公开的目录定价信息。
+

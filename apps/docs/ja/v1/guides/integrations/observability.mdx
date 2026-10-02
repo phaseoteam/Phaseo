@@ -1,0 +1,59 @@
+---
+title: "可観測性"
+icon: "activity"
+description: "Langfuse、LangSmith、OpenTelemetry などのツールで Phaseo のリクエストをトレースします。"
+---
+
+多くの可観測性ツールはモデルクライアントの上位で動作します。トレースの設定はそのままにして、下位にある OpenAI または Anthropic 互換クライアントの接続先を Phaseo に変更してください。
+
+## OpenAI SDK と Langfuse
+
+```bash
+pip install langfuse openai
+```
+
+```python
+import os
+from langfuse.openai import openai
+
+client = openai.OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.responses.create(
+    model="openai/gpt-5-nano",
+    input="Reply with only: ok",
+)
+```
+
+## LangChain と LangSmith
+
+[LangChain](./langchain.mdx) の設定を使い、通常の LangChain 環境変数で LangSmith を有効にします。
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY="your_langsmith_key"
+export PHASEO_API_KEY="your_phaseo_key"
+```
+
+## OpenTelemetry
+
+フレームワークが OpenTelemetry の span を出力する場合、Phaseo 専用の exporter は必要ありません。役立つリクエスト情報を自分で追加します。
+
+- モデルID
+- `responses` や `chat.completions` などのエンドポイント
+- レスポンスメタデータまたはログから取得した Phaseo リクエストID
+- レスポンスメタデータが有効な場合は選択されたプロバイダー
+
+## 注意点
+
+- Phaseo API キーを属性として可観測性ツールに送信しないでください。
+- 可観測性ライブラリが OpenAI SDK をラップする場合は、ラップされたクライアントの `base_url: "https://api.phaseo.app/v1"` を設定します。
+- LangChain のトレースでは、トレース用 callback と Phaseo の `ChatOpenAI` 設定を組み合わせてください。
+
+## 関連ページ
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [LangChain](./langchain.mdx)
+- [アクティビティ](../../api-reference/endpoint/activity.mdx)

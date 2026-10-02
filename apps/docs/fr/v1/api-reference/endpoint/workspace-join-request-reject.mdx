@@ -1,0 +1,10 @@
+---
+title: "Refuser une demande d’accès à l’espace de travail"
+sidebarTitle: "Refuser la demande d’accès"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/reject"
+description: "Refuse une demande d’accès à l’espace de travail en attente."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `workspaces:write`.</Note>
+
+Les décisions sont définitives et consignées dans le journal d’audit de l’espace de travail.

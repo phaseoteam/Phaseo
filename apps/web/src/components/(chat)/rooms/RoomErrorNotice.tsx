@@ -1,7 +1,8 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { useTranslations } from "next-intl";
+import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import { cn } from "@/lib/utils";
 
 type RoomErrorNoticeProps = {
@@ -10,7 +11,8 @@ type RoomErrorNoticeProps = {
 };
 
 export function RoomErrorNotice({ error, className }: RoomErrorNoticeProps) {
-	const formatted = formatRoomError(error);
+	const t = useTranslations("Product.chatRooms");
+	const formatted = formatRoomError(error, t as unknown as RoomErrorTranslator);
 	return (
 		<div
 			role="alert"
@@ -33,9 +35,9 @@ export function RoomErrorNotice({ error, className }: RoomErrorNoticeProps) {
 					) : null}
 					{formatted.statusCode || formatted.generationId ? (
 						<p className="text-[11px] text-muted-foreground">
-							{formatted.statusCode ? `Status ${formatted.statusCode}` : null}
+							{formatted.statusCode ? `${t("status")} ${formatted.statusCode}` : null}
 							{formatted.statusCode && formatted.generationId ? " · " : null}
-							{formatted.generationId ? <a className="underline underline-offset-4" href={`/settings/usage/logs/requests/${encodeURIComponent(formatted.generationId)}`} target="_blank" rel="noreferrer">View request</a> : null}
+							{formatted.generationId ? <a className="underline underline-offset-4" href={`/settings/usage/logs/requests/${encodeURIComponent(formatted.generationId)}`} target="_blank" rel="noreferrer">{t("viewRequest")}</a> : null}
 						</p>
 					) : null}
 				</div>

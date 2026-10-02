@@ -1,0 +1,57 @@
+---
+title: "身份验证"
+description: "使用 Bearer API 密钥验证请求，并安全地管理密钥生命周期。"
+icon: "key"
+---
+
+所有 Gateway 请求都需要 Bearer API 密钥。
+
+请在 Phaseo 控制台中创建和管理密钥。
+
+<Note>
+调用 `:free` 模型时无需预存额度。调用付费模型则需要可用的钱包余额。
+</Note>
+
+## 使用 API 密钥
+
+使用 `Bearer` 方案将 API 密钥放入 `Authorization` 标头：
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
+  }'
+```
+
+## 密钥格式与安全处理
+
+- 密钥格式：`phaseo_v1_sk_<kid>_<secret>`
+- 请将密钥存放在密钥管理器中，不要放入浏览器代码。
+- 为不同应用和环境使用不同的密钥，以便更安全地轮换。
+
+## 管理密钥
+
+管理 API 密钥在 Phaseo 控制台中创建和管理，不通过公共 API 创建。
+
+请将其用于需要较高权限的管理端点，例如[额度](./endpoint/credits.mdx)和[活动记录](./endpoint/activity.mdx)，以及未来的控制平面 API，例如防护规则、密钥管理和工作区管理。
+
+## 身份验证失败
+
+- `401`：API 密钥缺失、格式错误或无效。
+- `403`：密钥有效，但无权访问请求的功能。
+
+## 相关页面
+
+- [限额](./limits.mdx)
+- [错误与调试](./errors.mdx)
+
+<Visibility for="agents">
+如果你以智能体的身份实现身份验证流程：
+
+- 使用仓库技能处理密钥和环境配置。
+- 绝不要在发送给客户端的代码中放入 Gateway API 密钥。
+- 前端与后端之间优先使用短时有效的内部令牌；Gateway 密钥必须只保留在服务器端。
+</Visibility>

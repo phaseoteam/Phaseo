@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "रोकने की शर्तें"
+description: ".NET एजेंट के काम को स्टेप, टोकन, लागत, अवधि, टूल या समाप्ति कारण के आधार पर सीमित करें।"
+---
+
+`AgentDefinition.StopWhen` में स्टॉप हेल्पर को मिलाएँ:
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` और `FinishReasonIs(...)` provide event-based limits. टोकन या लागत सीमा के साथ भी स्टेप या अवधि की सीमा रखें, क्योंकि वे रिपोर्ट किए गए उपयोग पर निर्भर करती हैं।
+
+## संबंधित
+
+- [डायनामिक टर्न](./agent-sdk-dynamic-turns.mdx)
+- [आउटपुट और पुनः प्रयास](./agent-sdk-run-controls.mdx)

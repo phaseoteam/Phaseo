@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere Routing, Anweisungen, Tools und Sampling-Einstellungen zwischen den Turns eines Ruby-Agenten."
+---
+
+Aufrufbare Agent-Felder berechnen Anfrageparameter vor jedem Modell-Turn anhand des aktuellen Laufzustands neu.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+Dynamische Tools und Sampling-Werte können demselben Muster folgen. Ein Tool kann `next_turn_params` setzen, um nur die unmittelbar folgende Anfrage zu ändern. Diese Überschreibungen überstehen einen Genehmigungsprüfpunkt und laufen nach dem nächsten Turn ab.
+
+Verwende Callables für Richtlinien, die in jedem Turn neu berechnet werden sollen. Verwende `next_turn_params` für eine tool-spezifische Übergabe.

@@ -1,0 +1,66 @@
+---
+title: "C# Agent SDK से टिकट की प्राथमिक छँटाई करें"
+icon: "ticket-check"
+description: "एक .NET सेवा के भीतर स्थानीय टूल से टिकट वर्गीकृत करने के लिए C# Agent SDK उपयोग करें।"
+---
+
+.NET सेवा में आने वाले सहायता टिकटों को वर्गीकृत या संक्षेप करने के लिए यह रेसिपी उपयोग करें।
+
+## 1. SDK तैयार करें
+
+<Note type="warning">C# Agent SDK पैकेज अभी NuGet पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/csharp/agent-sdk-installation.mdx) देखें।</Note>
+
+## 2. आंतरिक लुकअप टूल तय करें
+
+```csharp
+var loadTicket = AgentSdk.DefineTool(new Tool(
+    Id: "load-ticket",
+    Description: "Load one support ticket by id.",
+    Parameters: new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?>
+        {
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+        },
+        ["required"] = new[] { "ticketId" },
+    },
+    Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
+    {
+        ["ticketId"] = "T-1042",
+        ["severity"] = "medium",
+        ["summary"] = "Customer cannot find preset routing settings.",
+    })
+));
+```
+
+## 3. एजेंट बनाएँ और चलाएँ
+
+```csharp
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "ticket-triage-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Use tools when helpful and answer with a short triage summary.",
+    Tools = new[] { loadTicket },
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Review ticket T-1042 and summarize the next action.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## यह रेसिपी कब उपयुक्त है
+
+- वर्कफ़्लो एक ASP.NET सेवा या worker के भीतर हो
+- आपका स्थानीय runtime पहले से आंतरिक टिकट की स्थिति ला सकता हो
+- queue या approval जोड़ने से पहले सीमित agent loop चाहिए
+
+## संबंधित विषय
+
+- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
+- [preset-आधारित एजेंट से सहायता अनुरोधों की छँटाई करें](./agent-sdk-support-triage.mdx)

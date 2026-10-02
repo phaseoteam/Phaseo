@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Ferramentas"
+description: "Defina ferramentas Java validadas, sujeitas a aprovação, manuais e que geram progresso."
+---
+
+`AgentSdk.Tool` oferece suporte a:
+
+- `parameters` JSON exibidos ao modelo
+- funções `Validator` para validar entradas, saídas e eventos de progresso
+- timeouts `Duration` por ferramenta
+- aprovação incondicional ou condicional
+- ferramentas manuais concluídas pela sua aplicação
+- progresso preliminar por meio de `RuntimeContext.emitProgress()`
+- tratamento de erros `fail-run` ou `return-to-model`
+- substituições para o próximo turno após a execução bem-sucedida da ferramenta
+
+Passe registros de ferramentas por `AgentSdk.defineTool(...)` e mantenha efeitos colaterais sujeitos à aprovação explícita ou à execução manual gerenciada pela aplicação.
+
+## Relacionados
+
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

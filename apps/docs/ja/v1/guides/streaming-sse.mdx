@@ -1,0 +1,53 @@
+---
+icon: "radio-tower"
+title: "ストリーミングSSEイベント"
+description: "フレーム構造を理解し、SSEストリームを安全に解析します。"
+---
+
+すべてのストリーミングエンドポイントはSSE形式のフレームを使います。
+
+`data: <json-or-sentinel>`
+
+## 一般的なフレームの流れ
+
+1. 1つ以上の進捗または差分フレーム。
+2. 最終ステータスと使用量を含む完了フレーム。
+3. `data: [DONE]`センチネル。
+
+## JavaScriptパーサーの例
+
+```typescript
+for await (const line of client.streamText({
+  model: "openai/gpt-5-nano",
+  messages: [{ role: "user", content: "Say hello." }],
+  stream: true,
+})) {
+  if (!line.startsWith("data:")) continue;
+  const payload = line.slice(5).trim();
+  if (payload === "[DONE]") break;
+  console.log(payload);
+}
+```
+
+## Pythonパーサーの例
+
+```python
+for line in client.stream_response({
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello.",
+    "stream": True,
+}):
+    if not line.startswith("data:"):
+        continue
+    payload = line[5:].strip()
+    if payload == "[DONE]":
+        break
+    print(payload)
+```
+
+## エンドポイント形式について
+
+- `/v1/chat/completions`：`choices[].delta`形式の分割イベント。
+- `/v1/responses`：Responses形式の出力アイテム／差分イベント。
+- `/v1/messages`：Anthropic形式のイベント（`message_start`、`content_block_delta`、`message_stop`）。
+

@@ -1,0 +1,93 @@
+---
+title: "Helicone AI Gateway से माइग्रेट करें"
+sidebarTitle: "Helicone"
+description: "OpenAI-संगत Helicone प्रॉक्सी इंटीग्रेशन को Phaseo पर माइग्रेट करें और अब ज़रूरी न रहे ऑब्ज़र्वेबिलिटी हेडर हटाएं।"
+icon: "activity"
+---
+
+अगर Helicone आपके ऐप और AI प्रोवाइडर के बीच काम करता है, तो इस गाइड का उपयोग करें। अनुरोध में मुख्य बदलाव आमतौर पर छोटा होता है, लेकिन ऑब्ज़र्वेबिलिटी का बदलाव भी एंडपॉइंट बदलने जितनी सावधानी से योजना बनाएं।
+
+## क्या बदलेगा
+
+| सेटिंग | पहले | बाद में |
+| --- | --- | --- |
+| बेस URL | Helicone प्रॉक्सी URL | `https://api.phaseo.app/v1` |
+| प्रमाणीकरण | प्रोवाइडर कुंजी और Helicone प्रमाणीकरण | `PHASEO_API_KEY` |
+| Helicone हेडर | अनुरोधों में जोड़े जाते हैं | हटाए जाते हैं |
+| अनुरोध दृश्यता | Helicone डैशबोर्ड | Phaseo गतिविधि और अनुरोध विवरण |
+
+<Steps>
+<Step title="Helicone की उपयोग की जाने वाली सुविधाओं की सूची बनाएं">
+
+प्रोडक्शन संचालन को प्रभावित करने वाली कस्टम प्रॉपर्टी, सेशन, उपयोगकर्ता पहचानकर्ता, कैशिंग, अनुरोध सीमाएं, अलर्ट और डैशबोर्ड दर्ज करें। यह न मानें कि प्रॉक्सी हटाने से ये वर्कफ़्लो अपने आप कहीं और बन जाएंगे।
+
+</Step>
+
+<Step title="प्रॉक्सी कॉन्फ़िगरेशन बदलें">
+
+अपने OpenAI-संगत क्लाइंट को Phaseo पर सेट करें और `Helicone-Auth` तथा अन्य Helicone-विशिष्ट हेडर हटाएं।
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="अनुरोध दृश्यता स्थानांतरित करें">
+
+ऑपरेशनल डिबगिंग के लिए Phaseo गतिविधि, अनुरोध ID, प्रोवाइडर प्रयास और कीमत की जानकारी का उपयोग करें। अगर आपकी टीम टेलीमेट्री कहीं और एक्सपोर्ट करती है, तो स्विच से पहले संबंधित [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx) इंटीग्रेशन सेट करें।
+
+</Step>
+
+<Step title="टेस्ट करें और रोल आउट करें">
+
+पुष्टि करें कि Helicone हेडर के बिना अनुरोध पूरे होते हैं और आपकी टीम घटनाओं के दौरान ज़रूरी ऑपरेशनल सवालों के जवाब दे सकती है। इन्फ़रेंस और ऑब्ज़र्वेबिलिटी जांच पास होने के बाद ट्रैफ़िक धीरे-धीरे स्थानांतरित करें।
+
+</Step>
+</Steps>
+
+## माइग्रेशन चेकलिस्ट
+
+- Helicone प्रॉक्सी URL और प्रमाणीकरण हेडर हटा दिए गए हैं।
+- प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
+- ज़रूरी अनुरोध मेटाडेटा Phaseo या आपके टेलीमेट्री स्टैक में अब भी उपलब्ध है।
+- ज़रूरत पड़ने पर अलर्ट और डैशबोर्ड के विकल्प तय हैं।
+- रोलबैक अब भी केवल एंडपॉइंट और कुंजी की सेटिंग बदलकर हो सकता है।
+
+## अगले चरण
+
+- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)
+- [प्रोवाइडर स्थितियां](../guides/provider-statuses.mdx)
+- [त्रुटि प्रबंधन](../api-reference/errors.mdx)

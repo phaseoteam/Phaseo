@@ -1,0 +1,126 @@
+---
+title: "Roteie apenas para provedores da UE ou compatíveis com ZDR"
+icon: "globe"
+description: "Defina requisitos de residência de dados e retenção zero na requisição para encaminhá-la somente a ofertas de provedores em conformidade."
+---
+
+Use esta receita quando uma requisição precisar filtrar provedores por motivos de conformidade ou tratamento de dados, sem alterar a política de todo o workspace.
+
+## Objetivo
+
+- Exigir execução na UE.
+- Exigir residência de dados na UE.
+- Exigir provedores compatíveis com retenção zero de dados.
+
+## 1. Adicione os requisitos de residência à requisição
+
+Defina os requisitos do provedor diretamente no corpo da requisição.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Filtros compatíveis no nível da requisição para este fluxo:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. Use o conjunto mínimo de regras que atende à política
+
+Exija somente o que a carga de trabalho realmente precisa.
+
+Exemplos:
+
+- somente local de execução:
+  - `required_execution_region: "eu"`
+- somente local dos dados:
+  - `required_data_region: "eu"`
+- somente provedores compatíveis com ZDR:
+  - `require_zero_data_retention: true`
+
+## 3. Considere que o grupo de provedores candidatos ficará menor
+
+Os filtros são aplicados antes da classificação dos provedores e podem removê-los por completo.
+
+Isso significa que:
+
+- a requisição pode ser roteada para uma oferta regional mais cara
+- a lista de provedores pode ficar bem menor
+- a requisição pode falhar se nenhum provedor para o modelo atender aos requisitos
+
+## 4. Faça uma verificação prévia na página do modelo, quando possível
+
+Antes de implantar a requisição, confira nos cartões de provedores da página do modelo:
+
+- ofertas regionais, como `OpenAI EU` ou `Google Vertex EU`
+- suporte a ZDR
+- observações e fontes sobre as políticas de dados dos provedores
+
+Assim, você confirma que existe pelo menos um provedor elegível antes de exigir essa condição no tráfego de produção.
+
+## 5. Use as configurações de privacidade do workspace como padrão
+
+Se a política deve valer para todas as requisições de um workspace, configure-a em **Configurações -> Privacidade** em vez de repetir os mesmos filtros em cada requisição.
+
+Use os campos da requisição quando a regra se aplicar:
+
+- a um fluxo de trabalho
+- a um cliente
+- a uma requisição
+
+## Guias relacionados
+
+- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
+- [Predefinições](../guides/presets.mdx)

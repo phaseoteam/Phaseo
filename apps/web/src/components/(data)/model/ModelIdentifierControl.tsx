@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Copy } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -11,16 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { toast } from "sonner";
-
-function formatVariantKindLabel(kind?: string | null): string {
-	const normalized = String(kind ?? "").trim().toLowerCase();
-	if (normalized === "standard") return "Base";
-	if (normalized === "free") return "Free";
-	if (!normalized) return "Variant";
-	return normalized
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
 
 interface ModelIdentifierControlProps {
 	defaultIdentifier: string;
@@ -58,6 +49,14 @@ export default function ModelIdentifierControl({
 	requestedAlias,
 	variants = [],
 }: ModelIdentifierControlProps) {
+	const t = useTranslations("Catalogue.models.detail.actions");
+	const formatVariantKindLabel = (kind?: string | null) => {
+		const normalized = String(kind ?? "").trim().toLowerCase();
+		if (normalized === "standard") return t("base");
+		if (normalized === "free") return t("free");
+		if (normalized === "current") return t("current");
+		return t("variant");
+	};
 	const router = useRouter();
 	const copyResetTimerRef = useRef<number | null>(null);
 	const { options, displayedIdentifier } = useMemo(
@@ -111,7 +110,7 @@ export default function ModelIdentifierControl({
 			setCopied(false);
 			copyResetTimerRef.current = null;
 		}, 1500);
-		toast.success("Model ID copied", {
+		toast.success(t("identifierCopied"), {
 			description,
 		});
 	};
@@ -132,8 +131,8 @@ export default function ModelIdentifierControl({
 				markCopied(value);
 			} catch {
 				setCopied(false);
-				toast.error("Copy failed", {
-					description: "Could not copy the selected model identifier.",
+				toast.error(t("copyFailed"), {
+					description: t("copyFailedDescription"),
 				});
 			}
 		}
@@ -148,8 +147,8 @@ export default function ModelIdentifierControl({
 		<button
 			type="button"
 			className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-			aria-label={`Copy model identifier ${displayedIdentifier}`}
-			title={copied ? "Copied" : "Copy model identifier"}
+			aria-label={t("copyIdentifierWithValue", { identifier: displayedIdentifier })}
+			title={copied ? t("copied") : t("copyIdentifier")}
 			onClick={() => void copyIdentifier(displayedIdentifier)}
 		>
 			<span className="min-w-0 select-none truncate font-mono">{displayedIdentifier}</span>
@@ -168,15 +167,15 @@ export default function ModelIdentifierControl({
 					<DropdownMenuTrigger render={<button
 						type="button"
 						className="inline-flex h-7 items-center gap-2 rounded-md border border-zinc-200 bg-background px-2.5 text-[11px] font-medium text-foreground shadow-xs transition-colors hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:border-zinc-800 dark:hover:bg-zinc-900"
-						aria-label="Select model variant" />
+						aria-label={t("modelVariants")} />
 					}>
-						<span className="text-muted-foreground">Variant</span>
+						<span className="text-muted-foreground">{t("modelVariants")}</span>
 						<span className="truncate">{currentVariantLabel}</span>
 						<ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="w-72 max-w-[calc(100vw-2rem)] rounded-lg p-1.5">
 						<div className="px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground">
-							Model variant
+							{t("modelVariants")}
 						</div>
 						{variantOptions.map((variant) => {
 							const isCurrent = variant.model_id === defaultIdentifier;
@@ -207,12 +206,12 @@ export default function ModelIdentifierControl({
 					<DropdownMenuTrigger render={<button
 						type="button"
 						className="group inline-flex max-w-full items-center gap-1 px-0 py-0 text-left text-xs font-medium text-zinc-700 transition-colors hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-0 dark:text-zinc-300 dark:hover:text-zinc-50"
-						aria-label="Model identifiers" />
+						aria-label={t("modelIdentifiers")} />
 					}>
 						<span className="min-w-0 select-none truncate font-mono">{displayedIdentifier}</span>
 						{isDisplayingAlias ? (
 							<span className="shrink-0 rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-								Alias
+								{t("aliasIdentifier")}
 							</span>
 						) : null}
 						<span className="ml-0.5 shrink-0 text-zinc-500 transition-all duration-150 group-hover:opacity-100 group-focus-visible:opacity-100 dark:text-zinc-400">
@@ -221,7 +220,7 @@ export default function ModelIdentifierControl({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="start" className="w-auto min-w-0 max-w-[calc(100vw-2rem)] rounded-lg">
 						<div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground">
-							Identifiers
+							{t("identifiers")}
 						</div>
 						{options.map((option) => (
 							<DropdownMenuItem
@@ -237,7 +236,7 @@ export default function ModelIdentifierControl({
 									<span className="truncate">{option}</span>
 								</span>
 								<span className="shrink-0 text-[11px] text-zinc-500 dark:text-zinc-400">
-									{option === defaultIdentifier ? "Default" : "Alias"}
+									{option === defaultIdentifier ? t("defaultIdentifier") : t("aliasIdentifier")}
 								</span>
 							</DropdownMenuItem>
 						))}

@@ -1,0 +1,76 @@
+---
+title: "oh-my-pi"
+icon: "/icons/brands/oh-my-pi.svg"
+description: "使用 Phaseo CLI 通过 Phaseo Gateway 运行 oh-my-pi。"
+---
+
+Phaseo CLI 可以使用专用网关密钥和临时的 OpenAI 兼容提供商目录启动 oh-my-pi。
+
+## 使用 Phaseo CLI 配置
+
+```bash
+phaseo login
+phaseo omp --model openai/gpt-5.6-terra --
+```
+
+首次交互式运行时，如果缺少 `omp` 命令，系统会提示安装。使用 `--catalog all` 提供所有有效的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划，而不创建密钥或启动 oh-my-pi：
+
+```bash
+phaseo omp --catalog all --dry-run --json
+```
+
+使用 `phaseo run omp ...` 这一显式命令形式。将 oh-my-pi 的选项放在 `--` 后，让 Phaseo 先处理自己的选项。
+
+## 手动配置 oh-my-pi
+
+如果希望在每个 oh-my-pi 会话中都能使用 Phaseo，请使用持久提供商配置。创建 Phaseo 密钥，在启动 oh-my-pi 的 shell 中导出，并向 `~/.omp/agent/models.yml` 添加提供商：
+
+```bash
+phaseo login
+phaseo keys create --name "oh-my-pi Phaseo key" --json
+export PHASEO_OMP_API_KEY="<your Phaseo API key>"
+mkdir -p ~/.omp/agent
+```
+
+```yaml title="~/.omp/agent/models.yml"
+providers:
+  phaseo:
+    baseUrl: https://api.phaseo.app/v1
+    api: openai-completions
+    apiKey: PHASEO_OMP_API_KEY
+    authHeader: true
+    models:
+      - id: openai/gpt-5.6-terra
+        name: GPT-5.6 Terra via Phaseo
+        contextWindow: 32768
+        maxTokens: 8192
+```
+
+使用带提供商前缀的模型 ID 启动 oh-my-pi：
+
+```bash
+omp --model phaseo/openai/gpt-5.6-terra
+```
+
+按需为同一提供商添加更多模型。让 `apiKey` 指向环境变量，不要将密钥直接写入 `models.yml`。
+
+## 验证
+
+通过已启动的运行环境发送简短提示词，然后确认请求出现在 Phaseo 活动中。运行器将 `models.yml` 写入临时的 `PI_CODING_AGENT_DIR`，并在 oh-my-pi 退出时删除。
+
+## 故障排除
+
+### 未安装 oh-my-pi
+
+在交互式终端中运行命令并批准安装，或单独安装 oh-my-pi 后使用 `--skip-install` 重新运行。
+
+### 未列出模型
+
+使用 `--catalog all` 或通过 `--model` 传入模型 ID。Phaseo 网关不要求使用模型发现功能。
+
+## 相关内容
+
+- [Phaseo CLI](./phaseo-cli)
+- [oh-my-pi 提供商配置](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
+- [模型](../../api-reference/endpoint/models.mdx)
+- [活动](../../api-reference/endpoint/activity.mdx)

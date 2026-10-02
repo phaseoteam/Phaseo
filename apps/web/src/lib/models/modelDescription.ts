@@ -233,6 +233,11 @@ export type ModelOverviewMetadataSignals = {
 	contextLength?: number;
 };
 
+type ModelMetadataTitleTranslate = (
+	key: string,
+	values?: Record<string, string | number>,
+) => string;
+
 function formatContextLength(value: number): string {
 	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
 	if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
@@ -248,8 +253,47 @@ export function countModelMetadataProviders(
 export function buildModelOverviewMetadataTitle(
 	modelName: string,
 	signals?: ModelOverviewMetadataSignals,
+	translate?: ModelMetadataTitleTranslate,
 ): string {
 	const normalizedName = normalizeText(modelName) ?? "AI Model";
+	if (translate) {
+		if (!signals) {
+			return translate("titleDefault", { model: normalizedName });
+		}
+
+		const providerCount = Math.max(0, Math.floor(signals.providerCount ?? 0));
+		const benchmarkCount = Math.max(0, Math.floor(signals.benchmarkCount ?? 0));
+		const values = {
+			model: normalizedName,
+			count: providerCount,
+			context: formatContextLength(signals.contextLength ?? 0),
+		};
+		const fullKey = signals.hasPricing && providerCount > 0
+			? "pricingWithProviders"
+			: signals.hasPricing
+				? "pricing"
+				: providerCount > 0
+					? "providers"
+					: benchmarkCount > 0
+						? "benchmarks"
+						: signals.contextLength && signals.contextLength > 0
+							? "context"
+							: "model";
+		const title = translate(fullKey, values);
+		if (title.length <= 60) return title;
+
+		const compactKey = signals.hasPricing
+			? "compactPricing"
+			: providerCount > 0
+				? "compactProviders"
+				: benchmarkCount > 0
+					? "compactBenchmarks"
+					: "compactModel";
+		const compactTitle = translate(compactKey, values);
+		return compactTitle.length <= 60
+			? compactTitle
+			: `${truncateAtWordBoundary(normalizedName, 51)} | Phaseo`;
+	}
 	if (signals) {
 		const providerCount = Math.max(0, Math.floor(signals.providerCount ?? 0));
 		const benchmarkCount = Math.max(0, Math.floor(signals.benchmarkCount ?? 0));

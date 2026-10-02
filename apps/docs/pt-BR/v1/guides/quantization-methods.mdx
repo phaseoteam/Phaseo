@@ -1,0 +1,47 @@
+---
+icon: "settings-2"
+title: "Métodos de quantização"
+description: "Entenda como os métodos de quantização diferem dos formatos numéricos e por que a escolha do método importa."
+---
+
+O formato numérico (`FP8`, `INT8`, `INT4`) indica a precisão.
+
+O método de quantização indica **como** essa precisão foi aplicada.
+
+## Por que os métodos importam
+
+Duas variantes `INT4` podem se comportar de maneiras bem diferentes, pois a escolha do método afeta:
+
+- Preservação da precisão
+- Compatibilidade com o ambiente de execução
+- Layout da memória e desempenho de inferência
+- Requisitos de calibração
+
+## Famílias de métodos comuns
+
+| Família de métodos | Uso típico | Observações |
+| --- | --- | --- |
+| `AWQ` | Preserva os pesos mais sensíveis às ativações | Comum para equilibrar qualidade e eficiência na inferência |
+| `GPTQ` | Quantização pós-treinamento com minimização de erros | Popular em variantes compactas para inferência local |
+| `GGUF` | Formato de empacotamento usado no ecossistema do llama.cpp | Costuma ser combinado com diferentes níveis de quantização (`Q4`, `Q5` etc.) |
+| `EXL2` | Variantes agressivas de poucos bits no ecossistema ExLlama | Prioriza alto throughput, com restrições de arquitetura e ambiente de execução |
+
+## Exemplo: método e formato
+
+`INT4` é o nível de precisão desejado.  
+`AWQ INT4` e `GPTQ INT4` são implementações diferentes desse objetivo.
+
+## Recomendações práticas
+
+1. Escolha primeiro um ambiente de execução que você consiga implantar com confiança.
+2. Filtre as famílias de métodos compatíveis com esse ambiente.
+3. Compare vários métodos de quantização usando o mesmo nível de precisão desejado.
+4. Acompanhe os modos de falha, não apenas as pontuações médias dos benchmarks.
+
+## Lista de verificação da avaliação
+
+- Correção das saídas estruturadas
+- Fidelidade em contextos longos
+- Confiabilidade das chamadas de ferramentas
+- Comportamento de segurança e moderação
+- Latência de cauda sob carga

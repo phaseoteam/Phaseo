@@ -19,6 +19,7 @@ import { redeemCreditCodeAction } from "@/app/(dashboard)/settings/credits/actio
 import { normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type TeamOption = {
@@ -45,6 +46,7 @@ type Props = {
 };
 
 export default function RedeemCreditCodeCard(props: Props) {
+	const t = useTranslations("SettingsUI.credits");
 	const format = useDisplayFormatters();
 	const {
 		teams,
@@ -52,14 +54,18 @@ export default function RedeemCreditCodeCard(props: Props) {
 		defaultWorkspaceId = null,
 		disabled = false,
 		disabledReason = null,
-		title = "Redeem Credit Code",
-		description = "Enter a promo code to apply credits to the selected team.",
-		submitLabel = "Redeem Code",
+		title,
+		description,
+		submitLabel,
 		showTeamSelector = true,
 		showDisclaimer = false,
-		disclaimerText = "Promotional credits are issued at our sole discretion and may be changed or withdrawn at any time without notice.",
+		disclaimerText,
 		className,
 	} = props;
+	const resolvedTitle = title ?? t("redeemCreditCode");
+	const resolvedDescription = description ?? t("redeemCreditDescription");
+	const resolvedSubmitLabel = submitLabel ?? t("redeemCode");
+	const resolvedDisclaimerText = disclaimerText ?? t("promoDisclaimer");
 	const [code, setCode] = useState("");
 	const [selectedTeamId, setSelectedTeamId] = useState<string>(
 		defaultWorkspaceId ?? teams[0]?.id ?? ""
@@ -73,10 +79,10 @@ export default function RedeemCreditCodeCard(props: Props) {
 		const map = new Map<string, string>();
 		for (const team of teams) {
 			if (!team?.id) continue;
-			map.set(String(team.id), String(team.name ?? "Team"));
+			map.set(String(team.id), String(team.name ?? t("team")));
 		}
 		return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-	}, [teams]);
+	}, [teams, t]);
 	const invoiceTeamIdSet = useMemo(() => {
 		const set = new Set<string>();
 		for (const workspaceId of invoiceTeamIds) {
@@ -88,7 +94,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 	const selectedTeamIsInvoice =
 		selectedTeamId.length > 0 && invoiceTeamIdSet.has(selectedTeamId);
 	const effectiveDisabledReason = selectedTeamIsInvoice
-		? "Credit codes are disabled for invoice billing teams."
+		? t("creditCodesInvoiceDisabled")
 		: disabledReason;
 
 	useEffect(() => {
@@ -106,15 +112,15 @@ export default function RedeemCreditCodeCard(props: Props) {
 
 		const normalizedCode = normalizePromoCodeInput(code);
 		if (!normalizedCode) {
-			toast.error("Enter a credit code.");
+			toast.error(t("enterCreditCode"));
 			return;
 		}
 		if (!selectedTeamId) {
-			toast.error("Select a team.");
+			toast.error(t("selectTeamError"));
 			return;
 		}
 		if (selectedTeamIsInvoice) {
-			const message = "Credit codes are disabled for invoice billing teams.";
+			const message = t("creditCodesInvoiceDisabled");
 			setButtonState("error");
 			setResultMessage(message);
 			setResultTone("error");
@@ -157,8 +163,8 @@ export default function RedeemCreditCodeCard(props: Props) {
 							notation: "standard",
 						})}`
 					: null;
-			const targetTeam =
-				teamOptions.find((team) => team.id === selectedTeamId)?.name ?? "selected team";
+				const targetTeam =
+					teamOptions.find((team) => team.id === selectedTeamId)?.name ?? t("selectedTeam");
 			const successMessage = appliedAmountText
 				? `${result.message} ${appliedAmountText} applied to ${targetTeam}.`
 				: result.message;
@@ -183,12 +189,12 @@ export default function RedeemCreditCodeCard(props: Props) {
 
 	const buttonCopy =
 		buttonState === "submitting"
-			? "Redeeming..."
+			? t("redeeming")
 			: buttonState === "success"
-				? "Redeemed"
+				? t("redeemed")
 				: buttonState === "error"
-					? "Redeem Again"
-					: submitLabel;
+					? t("redeemAgain")
+					: resolvedSubmitLabel;
 	const ButtonIcon =
 		buttonState === "success"
 			? CheckCircle2
@@ -199,13 +205,13 @@ export default function RedeemCreditCodeCard(props: Props) {
 	return (
 		<Card className={className}>
 			<CardHeader className="pb-2">
-				<CardTitle>{title}</CardTitle>
+			<CardTitle>{resolvedTitle}</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{effectiveDisabledReason ? (
 					<p className="text-sm text-muted-foreground">{effectiveDisabledReason}</p>
 				) : (
-					<p className="text-sm text-muted-foreground">{description}</p>
+					<p className="text-sm text-muted-foreground">{resolvedDescription}</p>
 				)}
 
 				<div
@@ -215,7 +221,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 					)}
 				>
 					<div className="space-y-2">
-						<Label htmlFor="redeem-credit-code">Code</Label>
+						<Label htmlFor="redeem-credit-code">{t("code")}</Label>
 						<Input
 							id="redeem-credit-code"
 							value={code}
@@ -230,14 +236,14 @@ export default function RedeemCreditCodeCard(props: Props) {
 					</div>
 					{showTeamSelector ? (
 						<div className="space-y-2">
-							<Label htmlFor="redeem-credit-team">Team</Label>
+							<Label htmlFor="redeem-credit-team">{t("team")}</Label>
 							<Select
 								value={selectedTeamId}
 								onValueChange={setSelectedTeamId}
 								disabled={disabled || isSubmitting || teamOptions.length === 0}
 							>
 								<SelectTrigger id="redeem-credit-team">
-									<SelectValue placeholder="Select team" />
+									<SelectValue placeholder={t("selectTeam")} />
 								</SelectTrigger>
 								<SelectContent>
 									{teamOptions.map((team) => (
@@ -312,7 +318,7 @@ export default function RedeemCreditCodeCard(props: Props) {
 					<Alert className="bg-muted/40 text-xs">
 						<Info className="h-4 w-4" />
 						<AlertDescription>
-							<p>{disclaimerText}</p>
+							<p>{resolvedDisclaimerText}</p>
 						</AlertDescription>
 					</Alert>
 				) : null}

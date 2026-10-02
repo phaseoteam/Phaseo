@@ -1,0 +1,73 @@
+---
+title: "Google Nano Banana 2"
+description: "Wichtige Hinweise zur Einführung von Nano Banana 2 für die produktive Bildgenerierung und -bearbeitung."
+icon: "/icons/brands/google.svg"
+---
+
+# Google Nano Banana 2
+
+Mit diesem Leitfaden führen Sie Nano Banana 2 sicher in produktiven Bild-Workflows ein.
+
+Nano Banana 2 ist nicht nur ein Qualitätsupgrade. Google positioniert das Modell als produktionsreif und bietet mehr Kontrolle über Ausgabeformat, Auflösung und Detailtreue.
+
+## Neuerungen
+
+- Nano Banana 2 ermöglicht eine explizite Steuerung des Seitenverhältnisses.
+- Die Ausgabeauflösung reicht von `512px` bis `4K`.
+- Die Konsistenz von Motiven über mehrere Generierungen und Bearbeitungen hinweg wurde verbessert.
+- Anweisungen werden besser befolgt.
+- Textdarstellung und Übersetzung innerhalb von Bildern wurden verbessert.
+- Die visuelle Detailtreue steigt, während die Generierung schnell bleibt.
+
+## Schnelleinstieg für die Migration
+
+### 1. Ausgabeannahmen erneut prüfen
+
+Wenn nachgelagerter Code eine feste Bildgröße, ein Seitenverhältnis oder ein bestimmtes Zuschneideverhalten voraussetzt, aktualisieren Sie ihn vor dem Rollout. Nano Banana 2 ist flexibler, sodass ältere Annahmen leichter nicht mehr zutreffen.
+
+### 2. Produktvoreinstellungen aktualisieren
+
+Überprüfen Sie:
+
+- Seitenverhältnis-Voreinstellungen für soziale Netzwerke
+- Standardauflösungen
+- Workflows für Bearbeitung und Inpainting
+- UI-Bezeichnungen für verfügbare Bildgrößen
+
+### 3. Prompts für die Bildbearbeitung abstimmen
+
+Da das Modell Anweisungen besser befolgt, können Prompts mit zu genauen Angaben zu Komposition, Text oder Stil unnötig starr sein. Testen Sie kürzere Prompts erneut und vergleichen Sie die Ergebnisse.
+
+## Was Sie testen sollten
+
+### Ausgabequalität
+
+- Hochformat, Quadrat und Breitbild
+- Ausgaben mit niedriger und hoher Auflösung
+- Motivkonsistenz bei wiederholten Bearbeitungen
+- Text, Beschriftungen und Übersetzungen in Bildern
+
+### Workflow-Kompatibilität
+
+- Dateiverarbeitung bei höheren Auflösungen
+- Zeitüberschreitungen bei detailreicheren Generierungen
+- Erfolgsrate von Moderation oder menschlicher Prüfung
+- Annahmen zur nachgelagerten Größenänderung und Asset-Verarbeitung
+
+### Produktmetriken
+
+- Gesamtlatenz der Generierung
+- Anteil brauchbarer Ausgaben
+- Wiederholungsrate
+- Kosten pro freigegebenem Asset
+
+## Rollout-Empfehlungen
+
+1. Testen Sie Seitenverhältnisse und Auflösungen getrennt, statt eine einzige Migration anzunehmen.
+2. Prüfen Sie Ihre Asset-Pipeline mit der größten geplanten Ausgabegröße.
+3. Testen Sie echte Produktions-Prompts, insbesondere Bearbeitungen und Text in Bildern.
+4. Wenn die UI Bildoptionen anbietet, stellen Sie Änderungen an Standardvoreinstellungen getrennt vom Modellwechsel bereit.
+
+## Quellen
+
+- [Nano Banana 2](https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/)

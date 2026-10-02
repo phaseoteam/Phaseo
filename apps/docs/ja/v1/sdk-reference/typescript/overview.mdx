@@ -1,0 +1,111 @@
+---
+icon: "compass"
+title: "TypeScript SDK の概要"
+description: "Phaseo Gateway API 用の公式 TypeScript クライアント"
+---
+
+公開済みの [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) パッケージを npm からインストールします。
+
+Phaseo TypeScript SDK は、型安全で使いやすい Phaseo Gateway API の操作方法を提供します。OpenAPI 仕様を基盤とし、生成済み型による完全な TypeScript サポートとシンプルなクライアントインターフェースを備えています。
+
+## 主な機能
+
+-   **型安全**: OpenAPI 仕様から生成された型による完全な TypeScript サポート
+-   **シンプルな API**: 使いやすく、明快なインターフェースのクライアント
+-   **生成コード**: 正式な API 仕様から自動生成
+-   **包括範囲**: Gateway API のすべてのエンドポイントをカバー
+
+## 簡単な例
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## 音楽・動画・バッチの完了を待つ
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+動画には`videos.generateAndWait(request, options)`、バッチには`batches.createAndWait(request, options)`を使います。1回だけ送信し、即時完了の応答はポーリングせずに返し、それ以外は同じジョブを完了までポーリングします。応答全体を返し、失敗、キャンセル、期限切れでは`response`を持つ`JobFailedError`を送出します。完了したバッチにも個別の失敗が含まれる場合があります。
+
+各リソースには、失敗を含むすべての最終応答を返す`wait(id, options)`もあります。オプションは`intervalMs`（既定5,000、最小250）、`timeoutMs`（既定1,800,000）、`signal`、`onPoll`です。待機タイムアウトは送信から戻った後に開始し、最初のHTTPリクエストには独自のタイムアウトが適用されます。進行状況コールバックは初回応答と各ポーリングを受け取ります。
+
+`JobTimeoutError`と`JobCancelledError`は`jobId`と`lastResponse`を保持し、`.wait(error.jobId)`で再開できます。待機の停止は進行中のポーリングをキャンセルしますが、リモートの処理は停止しません。HTTP失敗は自動再送信せずに伝播します。SDKヘルパーはGatewayにバックグラウンド実行を追加しません。
+
+## リクエスト制御と診断
+
+`client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })`で、
+すべてのリソース、ストリーム、メディアに制御を適用した不変のクライアントを作ります。
+タイムアウトには応答本文の読み取りも含まれます。再試行は既定で0回で、
+`Retry-After`を守ってGET/HEADにのみ適用されます。有料の送信は再試行されません。
+
+`responseMetadata(result)`はGatewayのリクエストIDとダッシュボードのトレースURLを返します。
+HTTPエラーは`code`、`requestId`、`traceUrl`、`retryAfterMs`、本文、ヘッダーを公開します。
+
+## ワークフローヘルパー
+
+`music.start`、`videos.start`、`batches.start`は`result()`、
+`events()`、`toJSON()`を持つハンドルを返します。種類とIDを保存し、`resume(id)`で復元します。
+`result()`は最終的な失敗を拒否します。リモートキャンセルは動画とバッチのみ対応します。
+
+`videos.streamContent(id)`と`downloadTo(stream, writable)`は大きな
+出力をストリーミングします。`toFile(bytes, filename, contentType)`はアップロードを準備します。
+`batchResults(await client.batches.streamResults(id))`はJSONLを逐次解析し、
+`matchBatchResult(row, inputsByCustomId)`は個別エラーと入力の対応を保持します。
+
+`responses.parse(request, schema)`はZod互換のパーサーを受け取り、
+検証済み出力を返します。リクエストでサーバーの構造化出力形式も指定してください。
+`collectStream(client.streamResponses(request))`はテキストと使用量を集めます。
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })`は1つの有効なプロバイダー提供について公開された機能とスカラー制約を
+確認します。メタデータの欠落は不明として報告します。モデルの変更や
+パラメーターの削除はせず、実際のプロバイダーがリクエストを受け付ける保証もありません。
+
+モデル選択やパラメーター編集には、現在のエンドポイントメタデータを使います。
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+各パラメーターは`supported`、`partial`、`unsupported`、`unknown`のいずれかで示され、
+表示に使えるプロバイダールートと制約の問題も含まれます。
+`client.models.capabilities(modelId)`はエンドポイントの機能応答全体を
+返します。明示的な確認であり、生成呼び出しに検出リクエストを追加しません。
+
+## ローカルテストとWebサイトからのエクスポート
+
+`@phaseo/sdk/testing`から`createMockTransport`と`jobFixtures`をインポートし、
+`fetchImpl`で順序付きの厳密なテストデータを注入します。`mock.assertDone()`で
+期待する全リクエストの実行を確認してください。想定外の呼び出しはネットワークに接続せずローカルで失敗します。
+
+Phaseoのルームで送信した後、**コードを取得**はモデルと
+設定をTypeScriptまたはPythonでエクスポートします。**リクエストを表示**は
+リクエストIDがある場合にダッシュボードのトレースを開きます。`PHASEO_API_KEY`を設定したサーバーで実行してください。
+## 含まれるもの
+
+-   すべての API 操作に使う `Phaseo` クライアントクラス
+-   リソース別ヘルパー（例:） `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   モデルの検索や料金確認に使うヘルパー（例:） `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   バッチと動画のライフサイクルストリーム用非同期ジョブ WebSocket URL ヘルパー
+-   `client.batches.streamResults(batchId, { signal })` Anthropic JSONLのストリーミングダウンロード用
+-   すべてのリクエストとレスポンスオブジェクト用の生成済み型
+-   Chat Completions、モデル、クレジットなどを含む API 全体のカバー
+-   開発体験を高める TypeScript 定義

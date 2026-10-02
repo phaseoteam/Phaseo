@@ -10,6 +10,7 @@ import {
 	type RefObject,
 } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	MessageScroller,
 	useMessageScroller,
@@ -186,16 +187,18 @@ function ModelChangeMarkerIcon({
 }
 
 function GeneratingResponseIndicator() {
+	const t = useTranslations("Product.chat.messageContent");
+
 	return (
 		<Marker role="status" aria-live="polite" className="min-h-7">
 			<MarkerIcon>
 				<ThinkingOrb
 					state="composing"
 					size={20}
-					aria-label="Generating response"
+					aria-label={t("generatingResponse")}
 				/>
 			</MarkerIcon>
-			<MarkerContent className="shimmer">Generating response&hellip;</MarkerContent>
+			<MarkerContent className="shimmer">{t("generatingResponse")}</MarkerContent>
 		</Marker>
 	);
 }
@@ -416,6 +419,8 @@ export function ChatConversationMessages({
 	onSelectionAction,
 	onOpenModelPicker,
 }: ChatConversationMessagesProps) {
+	const tMessage = useTranslations("Product.chat.messageContent");
+	const tSettings = useTranslations("SettingsUI");
 	const { scrollToMessage } = useMessageScroller();
 	const [copiedMessageKey, setCopiedMessageKey] = useState<string | null>(null);
 	const copiedResetTimeoutRef = useRef<number | null>(null);
@@ -1002,7 +1007,7 @@ export function ChatConversationMessages({
 											}}
 										>
 											<X className="mr-1 h-4 w-4" />
-											Cancel
+											{tSettings("strings.Cancel" as never)}
 										</Button>
 										<Button
 											size="sm"
@@ -1016,7 +1021,7 @@ export function ChatConversationMessages({
 											}}
 										>
 											<Save className="mr-1 h-4 w-4" />
-											Save
+											{tSettings("strings.Save" as never)}
 										</Button>
 									</div>
 								</div>
@@ -1234,7 +1239,7 @@ export function ChatConversationMessages({
 								{!contentWithoutMediaLinks &&
 									messageRequestError ? (
 									<p className="not-prose text-sm text-muted-foreground">
-										Request failed. Use Retry to run this message again.
+										{tMessage("requestFailedTryAgain")}
 									</p>
 								) : null}
 								{isPendingAssistant &&
@@ -1248,7 +1253,7 @@ export function ChatConversationMessages({
 									<div className="not-prose mt-3 grid gap-2">
 										<img
 											src={imageUrl}
-											alt="Generated image"
+											alt={tMessage("generatedImage")}
 											className="max-h-[420px] w-auto max-w-full rounded-lg border border-border object-contain"
 										/>
 										<Link
@@ -1257,7 +1262,7 @@ export function ChatConversationMessages({
 											rel="noreferrer"
 											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
 										>
-											Open image in new tab
+											{tMessage("openImage")}
 										</Link>
 									</div>
 								) : null}
@@ -1293,7 +1298,7 @@ export function ChatConversationMessages({
 											rel="noreferrer"
 											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
 										>
-											Open audio in new tab
+											{tMessage("openAudio")}
 										</Link>
 									</div>
 								) : null}
@@ -1328,7 +1333,7 @@ export function ChatConversationMessages({
 											rel="noreferrer"
 											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
 										>
-											Open video in new tab
+											{tMessage("openVideo")}
 										</Link>
 									</div>
 								) : null}

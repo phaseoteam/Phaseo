@@ -1,9 +1,11 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
+import { usePathname as useLocalePathname } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	Boxes,
@@ -131,38 +133,40 @@ const SNAP_EASING = `linear(
 )`;
 
 const CORNER_LABELS: Record<ActionDockCorner, string> = {
-	"top-left": "Top left",
-	"top-right": "Top right",
-	"bottom-left": "Bottom left",
-	"bottom-right": "Bottom right",
+	"top-left": "Common.ui.actionDockCopy.topLeft",
+	"top-right": "Common.ui.actionDockCopy.topRight",
+	"bottom-left": "Common.ui.actionDockCopy.bottomLeft",
+	"bottom-right": "Common.ui.actionDockCopy.bottomRight",
 };
 
 const subscribeToHydration = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
-function actorLabel(userRole: string | undefined, providerMode: boolean) {
-	if (providerMode) return "Provider Admin";
-	if (userRole?.toLocaleLowerCase() === "admin") return "Phaseo Admin";
-	if (userRole?.toLocaleLowerCase() === "editor") return "Phaseo Editor";
-	return "Workspace member";
+type DockTranslator = { (key: never, values?: never): string };
+
+function actorLabel(userRole: string | undefined, providerMode: boolean, tx: DockTranslator) {
+	if (providerMode) return tx("Common.ui.actionDockCopy.providerAdmin" as never);
+	if (userRole?.toLocaleLowerCase() === "admin") return tx("Common.ui.actionDockCopy.phaseoAdmin" as never);
+	if (userRole?.toLocaleLowerCase() === "editor") return tx("Common.ui.actionDockCopy.phaseoEditor" as never);
+	return tx("Common.ui.actionDockCopy.workspaceMember" as never);
 }
 
-function pageLabel(pathname: string) {
-	if (/^\/models\/[^/]+\/[^/]+/.test(pathname)) return "Model details";
-	if (pathname.startsWith("/models")) return "Models";
-	if (pathname.startsWith("/compare")) return "Compare";
-	if (pathname.startsWith("/rankings")) return "Rankings";
-	if (pathname.startsWith("/api-providers")) return "Providers";
-	if (pathname.startsWith("/apps")) return "Apps";
-	if (pathname.startsWith("/settings/keys")) return "API keys";
-	if (pathname.startsWith("/settings/workspaces")) return "Workspace settings";
-	if (pathname.startsWith("/settings/usage")) return "Usage and activity";
-	if (pathname.startsWith("/settings/provider")) return "Provider tools";
-	if (pathname.startsWith("/internal")) return "Internal tools";
-	if (pathname.startsWith("/chat")) return "Chat";
-	if (pathname === "/") return "Home";
-	return "Page details";
+function pageLabel(pathname: string, tx: DockTranslator) {
+	if (/^\/models\/[^/]+\/[^/]+/.test(pathname)) return tx("Common.ui.modelEditor.detailsHeading" as never);
+	if (pathname.startsWith("/models")) return tx("Common.nav.models" as never);
+	if (pathname.startsWith("/compare")) return tx("Common.nav.compare" as never);
+	if (pathname.startsWith("/rankings")) return tx("Common.nav.rankings" as never);
+	if (pathname.startsWith("/api-providers")) return tx("Common.nav.providers" as never);
+	if (pathname.startsWith("/apps")) return tx("Common.nav.apps" as never);
+	if (pathname.startsWith("/settings/keys")) return tx("Common.authFlows.oauthConsent.groups.keys.title" as never);
+	if (pathname.startsWith("/settings/workspaces")) return tx("SettingsUI.settingsCopy.teams.workspaceSettingsTitle" as never);
+	if (pathname.startsWith("/settings/usage")) return tx("Common.ui.actionDockCopy.usageAndActivity" as never);
+	if (pathname.startsWith("/settings/provider")) return tx("Common.ui.actionDockCopy.providerTools" as never);
+	if (pathname.startsWith("/internal")) return tx("Product.internalTools.modelTestPlayground.internalTools" as never);
+	if (pathname.startsWith("/chat")) return tx("Common.nav.chat" as never);
+	if (pathname === "/") return tx("Common.nav.home" as never);
+	return tx("Common.ui.actionDockCopy.pageDetails" as never);
 }
 
 function positionStyle(corner: ActionDockCorner): CSSProperties {
@@ -227,17 +231,31 @@ async function writeClipboardText(value: string) {
 	}
 }
 
-async function copyText(value: string, label: string) {
+async function copyText(value: string, label: string, tx: DockTranslator) {
 	try {
 		await writeClipboardText(value);
-		toast.success(`${label} copied`, { description: "Ready to paste." });
+		toast.success(tx("Common.ui.actions.copied" as never, ({ label }) as never), { description: tx("Common.ui.actionDockCopy.readyToPaste" as never) });
 	} catch {
-		toast.error(`Could not copy ${label.toLowerCase()}`);
+		toast.error(tx("Common.ui.actions.copyFailed" as never, ({ label }) as never));
 	}
 }
 
+
+function localizedRefreshMessage(result: { ok: boolean; message: string }, tx: DockTranslator): string {
+	if (result.ok) return tx("Common.ui.actionDockCopy.pageDataRefreshed" as never);
+	if (result.message === "This page does not have refreshable data.") return tx("Common.ui.actionDockCopy.thisPageDoesNotHaveRefreshableData" as never);
+	if (result.message.startsWith("This page was refreshed, but its shared data cache could not be purged:")) {
+		console.error(result.message);
+		return tx("Common.ui.actionDockCopy.thisPageWasRefreshedButItsSharedDataCacheCouldNotBePurged" as never);
+	}
+	console.error(result.message);
+	return tx("Common.ui.actionDockCopy.couldNotRefreshPageData" as never);
+}
+
 export function PhaseoActionDock({ userId, userRole, providerMode = false }: ActionDockProps) {
-	const pathname = usePathname() ?? "/";
+	const tx = useTranslations();
+	const currentPathname = usePathname() ?? "/";
+	const pathname = useLocalePathname() ?? "/";
 	const queryClient = useQueryClient();
 	const mounted = useSyncExternalStore(
 		subscribeToHydration,
@@ -305,20 +323,20 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 		[pathname],
 	);
 	const dockLabel = providerMode
-		? "Open provider action dock"
+		? tx("Common.ui.actionDockCopy.openProviderActionDock" as never)
 		: isPhaseoAdmin
-			? "Open Phaseo admin action dock"
-			: "Open Phaseo action dock";
+			? tx("Common.ui.actionDockCopy.openPhaseoAdminActionDock" as never)
+			: tx("Common.ui.actionDockCopy.openPhaseoActionDock" as never);
 	const routeSegments = useMemo(
-		() => pathname.split("/").filter(Boolean),
-		[pathname],
+		() => currentPathname.split("/").filter(Boolean),
+		[currentPathname],
 	);
 	const confirmProviderCatalogDiscard = useCallback(() => {
 		if (!providerCatalogDirty) return true;
-		const confirmed = window.confirm("Discard unsaved provider catalog changes?");
+		const confirmed = window.confirm(tx("Common.ui.actionDockCopy.discardUnsavedProviderCatalogChanges" as never));
 		if (confirmed) setProviderCatalogDirty(false);
 		return confirmed;
-	}, [providerCatalogDirty]);
+	}, [providerCatalogDirty, tx]);
 	const changeView = useCallback((nextView: DockView) => {
 		if (view === "provider-catalog" && nextView !== view && !confirmProviderCatalogDiscard()) return;
 		setView(nextView);
@@ -338,39 +356,40 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 				});
 			}
 			if (result.ok) {
-				toast.success("Page data refreshed", { description: result.message });
+				toast.success(tx("Common.ui.actionDockCopy.pageDataRefreshed" as never), { description: localizedRefreshMessage(result, tx) });
 			} else {
-				toast.error("Page data refresh incomplete", { description: result.message });
+				toast.error(tx("Common.ui.actionDockCopy.pageDataRefreshIncomplete" as never), { description: localizedRefreshMessage(result, tx) });
 			}
 		} catch (error) {
-			toast.error("Could not refresh page data", {
-				description: error instanceof Error ? error.message : "Please try again.",
+			console.error(error);
+			toast.error(tx("Common.ui.actionDockCopy.couldNotRefreshPageData" as never), {
+				description: tx("SettingsUI.strings.phrasePleaseTryAgain" as never),
 			});
 		} finally {
 			setIsRefreshingPageData(false);
 		}
-	}, [pageRefreshTarget, pathname, queryClient]);
+	}, [pageRefreshTarget, pathname, queryClient, tx]);
 
 	const pageActions = useMemo<DockAction[]>(() => {
 		const actions: DockAction[] = [];
 		if (modelId) {
 			actions.push({
 				id: "copy-model-id",
-				label: "Copy model ID",
+				label: tx("Common.search.palette.context.copyModelId" as never),
 				icon: Clipboard,
-				onSelect: () => void copyText(modelId, "Model ID"),
+				onSelect: () => void copyText(modelId, tx("Common.ui.auditDataTable.modelId" as never), tx),
 			});
 		}
 		actions.push({
 			id: "copy-page-link",
-			label: "Copy page link",
+			label: tx("Common.ui.actionDockCopy.copyPageLink" as never),
 			icon: Link2,
-			onSelect: () => void copyText(window.location.href, "Page link"),
+			onSelect: () => void copyText(window.location.href, tx("Common.ui.actionDockCopy.pageLink" as never), tx),
 		});
 		if (isPhaseoAdmin || providerMode) {
 			actions.push({
 				id: "route-info",
-				label: "Route info",
+				label: tx("Common.ui.actionDockCopy.routeInfo" as never),
 				icon: Link2,
 				onSelect: () => setView("route"),
 				keepOpen: true,
@@ -378,20 +397,20 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 		}
 		actions.push({
 			id: "report-issue",
-			label: "Report an issue",
+			label: tx("Common.search.palette.items.resource-report-issue.title" as never),
 			icon: MessageSquareMore,
 			onSelect: () => setFeedbackOpen(true),
 		});
 		return actions;
-	}, [isPhaseoAdmin, modelId, providerMode, setFeedbackOpen, setView]);
+	}, [isPhaseoAdmin, modelId, providerMode, setFeedbackOpen, setView, tx]);
 
 	const adminGroups = useMemo<ActionGroup[]>(() => [
 		...(isPhaseoAdmin ? [{
-			label: "Phaseo Admin",
+			label: tx("Common.ui.actionDockCopy.phaseoAdmin" as never),
 			actions: [
 				...(modelId ? [{
 					id: "edit-current-model",
-					label: "Edit this model",
+					label: tx("Common.ui.actionDockCopy.editThisModel" as never),
 					icon: Pencil,
 					onSelect: () => {
 						setEditingModelId(modelId);
@@ -400,14 +419,14 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 				}] : []),
 				{
 					id: "search-models-to-edit",
-					label: "Find a model to edit",
+					label: tx("Common.ui.actionDockCopy.findAModelToEdit" as never),
 					icon: Search,
 					onSelect: () => setView("model-search"),
 					keepOpen: true,
 				},
 				...(pageRefreshTarget ? [{
 					id: "refresh-page-data",
-					label: isRefreshingPageData ? "Refreshing page data…" : "Refresh page data",
+					label: isRefreshingPageData ? tx("Common.ui.actionDockCopy.refreshingPageData" as never) : tx("Common.ui.actionDockCopy.refreshPageData" as never),
 					icon: RefreshCw,
 					onSelect: () => void refreshPageData(),
 					keepOpen: true,
@@ -416,20 +435,20 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 			],
 		}] : []),
 		...(providerMode ? [{
-			label: "Provider Admin",
+			label: tx("Common.ui.actionDockCopy.providerAdmin" as never),
 			actions: [{
 				id: "edit-provider-catalog",
-				label: "Edit provider catalog",
+				label: tx("Common.ui.actionDockCopy.editProviderCatalog" as never),
 				icon: Boxes,
 				onSelect: () => setView("provider-catalog"),
 				keepOpen: true,
 			}],
 		}] : []),
-	], [isPhaseoAdmin, isRefreshingPageData, modelId, pageRefreshTarget, providerMode, refreshPageData]);
+	], [isPhaseoAdmin, isRefreshingPageData, modelId, pageRefreshTarget, providerMode, refreshPageData, tx]);
 
 	const groups = useMemo<ActionGroup[]>(() => {
 		const candidateGroups: ActionGroup[] = [
-			{ label: "Page Actions", actions: pageActions },
+			{ label: tx("Common.ui.actionDockCopy.pageActions" as never), actions: pageActions },
 			...adminGroups,
 		];
 		const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -441,7 +460,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 					: group.actions,
 			}))
 			.filter((group) => group.actions.length > 0);
-	}, [adminGroups, pageActions, query]);
+	}, [adminGroups, pageActions, query, tx]);
 
 	const handlePointerDown = useCallback((event: PointerEvent<HTMLButtonElement>) => {
 		if (open || event.button !== 0 || !event.isPrimary) return;
@@ -553,10 +572,10 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 	const disableOnDevice = useCallback(() => {
 		setActionDockEnabled(userId, false);
 		setOpen(false);
-		toast.success("Phaseo action dock turned off", {
-			description: "You can turn it back on from your profile menu.",
+		toast.success(tx("Common.ui.actionDockCopy.phaseoActionDockTurnedOff" as never), {
+			description: tx("Common.ui.actionDockCopy.youCanTurnItBackOnFromYourProfileMenu" as never),
 		});
-	}, [userId]);
+	}, [userId, tx]);
 
 	if (!mounted || !actionDockEnabled || hiddenForSession || (!isPhaseoAdmin && !providerMode)) return null;
 	if (typeof document === "undefined") return null;
@@ -593,7 +612,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						variant="outline"
 						size="icon-lg"
 						aria-label={dockLabel}
-						title={providerMode ? "Provider admin tools" : "Phaseo admin tools"}
+						title={providerMode ? tx("Common.ui.actionDockCopy.providerAdminTools" as never) : tx("Common.ui.actionDockCopy.phaseoAdminTools" as never)}
 						aria-expanded={open}
 						onPointerDown={handlePointerDown}
 						onPointerMove={handlePointerMove}
@@ -635,14 +654,14 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 				{view === "actions" ? (
 						<>
 							<div className="flex items-center justify-between px-3 pb-1 pt-3">
-								<span className="text-xs font-medium text-muted-foreground">Action Dock</span>
+								<span className="text-xs font-medium text-muted-foreground">{tx("Common.ui.actionDockCopy.actionDock" as never)}</span>
 								<span className={cn(
 								"rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-none",
 									providerMode
 										? "border-green-500/25 bg-green-500/10 text-green-700 dark:text-green-400"
 										: "border-blue-500/25 bg-blue-500/10 text-blue-700 dark:text-blue-400",
 								)}>
-									{providerMode ? "Provider" : "Admin"}
+									{providerMode ? tx("Common.ui.modelEditor.mainCopy.aliasProvider" as never) : tx("Common.ui.chatSettings.admin" as never)}
 								</span>
 							</div>
 							<div className="flex items-center gap-1.5 px-2.5 pb-2 pt-1">
@@ -651,37 +670,37 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 									<Input
 										value={query}
 										onChange={(event) => setQuery(event.target.value)}
-										placeholder="Search actions"
-										aria-label="Search actions"
+										placeholder={tx("Common.ui.actionDockCopy.searchActions" as never)}
+										aria-label={tx("Common.ui.actionDockCopy.searchActions" as never)}
 										className="h-9 rounded-lg border-border bg-muted/30 pl-8 text-sm"
 									/>
 								</div>
 								<DropdownMenu>
 									<DropdownMenuTrigger asChild>
-										<Button variant="ghost" size="icon-sm" aria-label="Action dock settings" className="size-9 shrink-0 rounded-lg text-muted-foreground">
+										<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.actionDockSettings" as never)} className="size-9 shrink-0 rounded-lg text-muted-foreground">
 											<MoreHorizontal className="size-4" />
 										</Button>
 									</DropdownMenuTrigger>
 									<DropdownMenuContent align="end" className="w-52">
 										<DropdownMenuGroup>
-											<DropdownMenuLabel>Action Dock</DropdownMenuLabel>
+											<DropdownMenuLabel>{tx("Common.ui.actionDockCopy.actionDock" as never)}</DropdownMenuLabel>
 										</DropdownMenuGroup>
 										<DropdownMenuSub>
-											<DropdownMenuSubTrigger><span>Move to corner</span></DropdownMenuSubTrigger>
+											<DropdownMenuSubTrigger><span>{tx("Common.ui.actionDockCopy.moveToCorner" as never)}</span></DropdownMenuSubTrigger>
 											<DropdownMenuSubContent>
 												{(Object.keys(CORNER_LABELS) as ActionDockCorner[]).map((option) => (
 													<DropdownMenuItem key={option} onClick={() => moveToCorner(option)}>
 														<span className="flex size-4 items-center justify-center">
 															{corner === option ? <Check className="size-3.5" /> : null}
 														</span>
-														{CORNER_LABELS[option]}
+														{tx(CORNER_LABELS[option] as never)}
 													</DropdownMenuItem>
 												))}
 											</DropdownMenuSubContent>
 										</DropdownMenuSub>
 										<DropdownMenuSeparator />
-										<DropdownMenuItem onClick={hideForSession}>Hide for this session</DropdownMenuItem>
-										<DropdownMenuItem variant="destructive" onClick={disableOnDevice}>Turn off on this device</DropdownMenuItem>
+										<DropdownMenuItem onClick={hideForSession}>{tx("Common.ui.actionDockCopy.hideForThisSession" as never)}</DropdownMenuItem>
+										<DropdownMenuItem variant="destructive" onClick={disableOnDevice}>{tx("Common.ui.actionDockCopy.turnOffOnThisDevice" as never)}</DropdownMenuItem>
 									</DropdownMenuContent>
 								</DropdownMenu>
 							</div>
@@ -716,7 +735,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 											</div>
 										</section>
 									)) : (
-										<p className="px-2 py-8 text-center text-sm text-muted-foreground">No actions match “{query}”.</p>
+										<p className="px-2 py-8 text-center text-sm text-muted-foreground">{tx("Common.ui.actionDockCopy.noActionsMatchQuery", { query })}</p>
 									)}
 								</div>
 							</ScrollArea>
@@ -725,26 +744,26 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-								<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
+								<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.backToActions" as never)} className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium">Route info</p>
-										<p className="truncate text-xs text-muted-foreground">{pageLabel(pathname)}</p>
+										<p className="truncate text-sm font-medium">{tx("Common.ui.actionDockCopy.routeInfo" as never)}</p>
+										<p className="truncate text-xs text-muted-foreground">{pageLabel(pathname, tx)}</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
+								<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.closeActionDock" as never)} className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
 							<ScrollArea className="max-h-[min(25rem,calc(100dvh-10rem))]" viewportClassName="max-h-[inherit]">
 								<div className="space-y-4 px-3 py-3">
 									<div className="space-y-1">
-										<p className="text-xs font-medium text-muted-foreground">Current Path</p>
-										<code className="block break-all rounded-lg border border-border bg-muted/30 px-2.5 py-2 text-xs">{pathname}</code>
+										<p className="text-xs font-medium text-muted-foreground">{tx("Common.ui.actionDockCopy.currentPath" as never)}</p>
+										<code className="block break-all rounded-lg border border-border bg-muted/30 px-2.5 py-2 text-xs">{currentPathname}</code>
 									</div>
 									<div className="space-y-1">
-										<p className="text-xs font-medium text-muted-foreground">URL Segments</p>
+										<p className="text-xs font-medium text-muted-foreground">{tx("Common.ui.actionDockCopy.uRLSegments" as never)}</p>
 										<div className="space-y-1">
 											{(routeSegments.length ? routeSegments : ["/"]).map((segment, index) => (
 												<div key={`${segment}-${index}`} className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm">
@@ -756,15 +775,15 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 									</div>
 									{modelId ? (
 										<div className="space-y-1">
-												<p className="text-xs font-medium text-muted-foreground">Model ID</p>
+												<p className="text-xs font-medium text-muted-foreground">{tx("Common.ui.auditDataTable.modelId" as never)}</p>
 											<code className="block break-all rounded-lg border border-border bg-muted/30 px-2.5 py-2 text-xs">{modelId}</code>
 										</div>
 									) : null}
 									<div className="flex items-center justify-between gap-2 border-t pt-3 text-xs">
-										<span className="truncate text-muted-foreground">{actorLabel(userRole, providerMode)}</span>
-						<Button variant="outline" size="sm" className="h-8 shrink-0 gap-1.5" onClick={() => void copyText(pathname, "Route")}>
+										<span className="truncate text-muted-foreground">{actorLabel(userRole, providerMode, tx)}</span>
+						<Button variant="outline" size="sm" className="h-8 shrink-0 gap-1.5" onClick={() => void copyText(currentPathname, tx("Common.ui.modelEditor.providerControls.route" as never), tx)}>
 											<Clipboard className="size-3.5" />
-											Copy route
+											{tx("Common.ui.actionDockCopy.copyRoute" as never)}
 										</Button>
 									</div>
 								</div>
@@ -774,15 +793,15 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
+									<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.backToActions" as never)} className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium">Provider catalog</p>
-										<p className="truncate text-xs text-muted-foreground">Edit your models, pricing, and release details</p>
+										<p className="truncate text-sm font-medium">{tx("SettingsUI.providerCatalog.title" as never)}</p>
+										<p className="truncate text-xs text-muted-foreground">{tx("Common.ui.actionDockCopy.editYourModelsPricingAndReleaseDetails" as never)}</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
+								<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.closeActionDock" as never)} className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
@@ -796,15 +815,15 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 						<>
 							<div className="flex items-center justify-between border-b px-2.5 py-2">
 								<div className="flex min-w-0 items-center gap-1.5">
-									<Button variant="ghost" size="icon-sm" aria-label="Back to actions" className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
+									<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.backToActions" as never)} className="size-8 shrink-0 rounded-lg" onClick={() => changeView("actions")}>
 										<ChevronLeft className="size-4" />
 									</Button>
 									<div className="min-w-0">
-										<p className="truncate text-sm font-medium">Find a model to edit</p>
-										<p className="truncate text-xs text-muted-foreground">Search the full model catalog</p>
+										<p className="truncate text-sm font-medium">{tx("Common.ui.actionDockCopy.findAModelToEdit" as never)}</p>
+										<p className="truncate text-xs text-muted-foreground">{tx("Common.ui.actionDockCopy.searchTheFullModelCatalog" as never)}</p>
 									</div>
 								</div>
-								<Button variant="ghost" size="icon-sm" aria-label="Close action dock" className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
+								<Button variant="ghost" size="icon-sm" aria-label={tx("Common.ui.actionDockCopy.closeActionDock" as never)} className="size-8 shrink-0 rounded-lg text-muted-foreground" onClick={closeDock}>
 									<X className="size-4" />
 								</Button>
 							</div>
@@ -840,10 +859,10 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 				open={feedbackOpen}
 				onOpenChange={setFeedbackOpen}
 				surface="action_dock"
-				title="Report an issue"
+				title={tx("Common.search.palette.items.resource-report-issue.title" as never)}
 				defaultCategory="issue"
 				defaultReason="reliability"
-				prompt="Tell us what went wrong on this page."
+				prompt={tx("Common.ui.actionDockCopy.tellUsWhatWentWrongOnThisPage" as never)}
 			/>
 		</>,
 		document.body,

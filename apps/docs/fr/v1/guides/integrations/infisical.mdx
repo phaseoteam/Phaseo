@@ -1,0 +1,81 @@
+---
+title: "Infisical"
+icon: "key-round"
+description: "Préparez la rotation automatique des clés API Phaseo avec Infisical."
+---
+
+Infisical peut faire tourner les clés Gateway API de Phaseo en s’authentifiant avec une clé Phaseo Management API aux permissions limitées. Phaseo expose déjà le cycle de vie des clés nécessaire à une rotation en deux phases sans interruption.
+
+<Warning>
+Phaseo n’est pas encore disponible comme App Connection dans Infisical. Cette page décrit le contrat Phaseo pris en charge et la configuration à utiliser lorsque la connexion Infisical sera disponible.
+</Warning>
+
+## Fonctionnement de la rotation
+
+1. Infisical s’authentifie auprès de Phaseo avec une clé Management API.
+2. Infisical crée une clé Gateway API de remplacement avec `POST /v1/keys`.
+3. Infisical stocke la clé renvoyée en texte brut dans le secret configuré.
+4. L’application commence à utiliser la clé de remplacement.
+5. Infisical révoque l’ancienne clé avec `DELETE /v1/keys/{id}`.
+
+Phaseo ne renvoie la valeur en clair d’une clé Gateway API qu’au moment de sa création. L’ancienne et la nouvelle clé peuvent coexister pendant la mise à jour du secret.
+
+## Créer une clé Management API à portée limitée
+
+Dans **Dashboard → Settings → Management Keys**, créez une clé dotée des permissions suivantes :
+
+- `keys:read` pour valider la connexion et examiner les clés gérées
+- `keys:write` pour créer des clés de remplacement
+- `keys:delete` pour révoquer les anciennes clés
+
+Stockez le secret `phaseo_v1_mk_...` obtenu dans Infisical. Les clés Management API sont des identifiants du plan de contrôle et ne peuvent pas servir à l’inférence.
+
+## Détails de connexion
+
+| Champ | Valeur |
+| --- | --- |
+| URL de base | `https://api.phaseo.app/v1` |
+| Authentification | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| Vérifier | `GET /keys` |
+| Lister les clés Gateway | `GET /keys` |
+| Créer une clé Gateway | `POST /keys` |
+| Révoquer une clé Gateway | `DELETE /keys/{id}` |
+
+## Créer une clé de remplacement
+
+```bash
+curl https://api.phaseo.app/v1/keys \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "infisical-production",
+    "limit": 100,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false
+  }'
+```
+
+La réponse contient une seule fois la nouvelle clé Gateway dans `data.key`, ainsi que son identifiant stable dans `data.id`.
+
+## Révoquer l’ancienne clé
+
+```bash
+curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+La suppression est idempotente. Une clé déjà supprimée renvoie un état de suppression réussi, ce qui rend les nouvelles tentatives de rotation sûres.
+
+## Limites et BYOK
+
+Phaseo accepte les champs de compatibilité `limit`, `limit_reset` et `include_byok_in_limit`. Les périodes de réinitialisation prises en charge sont quotidiennes, hebdomadaires et mensuelles. `include_byok_in_limit` est uniquement conservé pour la compatibilité ; Phaseo exclut l’utilisation BYOK de cette limite de clé.
+
+## État du partenariat
+
+Une connexion Infisical native nécessite que l’intégration Phaseo App Connection et l’implémentation Phaseo API Key Rotation soient acceptées par Infisical. Les API de gestion et de cycle de vie des clés Phaseo sont déjà disponibles ; il reste le connecteur côté Infisical, ses tests, son entrée dans l’interface et la documentation.
+
+## À lire aussi
+
+- [Clés Management API](../../developers/management-api-keys.mdx)
+- [Créer une clé API](../../api-reference/endpoint/keys-create.mdx)
+- [Supprimer une clé API](../../api-reference/endpoint/keys-delete.mdx)

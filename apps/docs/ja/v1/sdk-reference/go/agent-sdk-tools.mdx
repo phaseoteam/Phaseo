@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "ツール"
+description: "検証、承認ゲート、手動実行、進捗通知に対応するGoツールを定義します。"
+---
+
+`Tool`値を作成し、`DefineTool(...)`に渡します。ツールには次の内容を含められます。
+
+- モデルに提示するJSONの`Parameters`
+- `InputSchema`、`OutputSchema`、`EventSchema`のバリデーター
+- `Timeout`と`Execute(input, RuntimeContext)`関数
+- 無条件の`RequireApproval`または条件付きの`Approval`述語
+- インタラクティブな処理向けの`OnToolCalled`と`OnResponseReceived`
+- `NextTurn`の上書きと`OnError: "return-to-model"`
+
+`RuntimeContext.EmitProgress`、`SetContext`、および渡された`context.Context`を使います。`ToolExecutionConfig{Concurrency: ...}`は独立したツールを並列実行しつつ、ツール結果の順序を維持します。
+
+## 関連項目
+
+- [状態と承認](./agent-sdk-state-and-approval.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

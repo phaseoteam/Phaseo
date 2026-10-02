@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "状態と承認"
+description: "人による判断のためにPythonエージェントを一時停止し、アプリケーション管理の状態から再開します。"
+---
+
+汎用チェックポイントには`human_review`を使います。承認が必要なツールや手動ツールは、正確な呼び出しIDを`paused.run.pause.pending_tool_calls`に格納します。
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+拒否する呼び出しには`rejections`を、一般的なレビュー一時停止には`human_input`を指定します。判断はツール名ではなく呼び出しIDに紐づけられます。
+
+リクエストやプロセスの再起動後も実行状態を保持するには、`AgentStateAccessor.load(run_id)`と`save(result)`を実装します。再開時には`run_id`から状態を読み込めます。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

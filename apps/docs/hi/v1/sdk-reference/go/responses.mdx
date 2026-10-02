@@ -1,0 +1,39 @@
+---
+icon: "message-square"
+title: "रिस्पॉन्स"
+description: "Go wrapper से /responses call करें।"
+---
+
+Wrapper method का उपयोग करें:
+
+- `client.GenerateResponse(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {
+      "type": "input_text",
+      "text": "Reply with: responses endpoint works",
+    },
+  },
+}
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+Wrapper में अभी streaming के लिए अलग helper उपलब्ध नहीं है।

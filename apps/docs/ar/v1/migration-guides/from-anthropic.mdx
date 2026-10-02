@@ -1,0 +1,102 @@
+---
+title: "الترحيل من Anthropic SDK"
+sidebarTitle: "Anthropic SDK"
+description: "انقل تكامل Anthropic SDK إلى Phaseo مع الحفاظ على سير العمل المألوف لواجهة Messages API."
+icon: "/icons/brands/anthropic.svg"
+---
+
+استخدم هذا الدليل للحفاظ على سير العمل باستخدام Anthropic SDK مع تمرير الطلبات عبر Phaseo. غيّر إعداد العميل أولًا، ثم تحقّق من معرّفات النماذج والسلوكيات الخاصة بـ Anthropic التي يعتمد عليها تطبيقك.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL الأساسي | القيمة الافتراضية لـ Anthropic | `https://api.phaseo.app/v1` |
+| مفتاح API | مفتاح Anthropic | `PHASEO_API_KEY` |
+| النموذج | اسم نموذج Anthropic | معرّف نموذج Phaseo الذي يعيده `GET /v1/models` |
+| استدعاء Messages | استدعاء SDK الحالي | لا يتغير عادةً |
+
+<Steps>
+<Step title="أنشئ مفتاح API لـ Phaseo">
+
+أنشئ مفتاحًا في [مفاتيح Gateway](https://phaseo.app/gateway/keys) واجعله متاحًا لتطبيقك باسم `PHASEO_API_KEY`.
+
+</Step>
+
+<Step title="حدّث عميل Anthropic">
+
+وجّه SDK إلى عنوان URL الأساسي لـ Phaseo واستخدم مفتاح Phaseo.
+
+<CodeGroup>
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-sonnet-4.6",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-sonnet-4.6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="تحقّق من السلوكيات الخاصة بـ Anthropic">
+
+اختبر مطالبات النظام والبث واستخدام الأدوات وخيارات الاستدلال والمخرجات المنظّمة باستخدام النماذج نفسها التي يستخدمها تطبيقك. أزل رؤوس الإصدار التجريبي أو حقول الطلب القديمة بدلًا من نقلها إلى المسار الجديد دون تحقق.
+
+</Step>
+
+<Step title="أطلق التغيير تدريجيًا">
+
+قارن مجموعة مطالبات تمثيلية بين الإعدادين. تحقّق من شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة قبل تحويل حركة مرور الإنتاج.
+
+</Step>
+</Steps>
+
+## قائمة التحقق من الترحيل
+
+- تم إعداد مفتاح Phaseo في كل بيئة نشر.
+- يشير عميل Anthropic إلى `https://api.phaseo.app/v1`.
+- تم التحقق من كل معرّف نموذج إنتاج باستخدام `GET /v1/models`.
+- تنجح مسارات البث واستخدام الأدوات في بيئة التجهيز.
+- تمت مراجعة رؤوس الإصدار التجريبي والمعلمات الخاصة بـ Anthropic.
+- يظل التراجع مقتصرًا على تغيير المفتاح ونقطة النهاية في الإعدادات.
+
+## الخطوات التالية
+
+- [عمليات ترحيل نماذج Anthropic](../model-migrations/index.mdx)
+- [النماذج](../exploring/models.mdx)
+- [استدعاء الأدوات](../guides/tool-calling.mdx)

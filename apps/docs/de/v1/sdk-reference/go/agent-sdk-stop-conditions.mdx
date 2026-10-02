@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Abbruchbedingungen"
+description: "Begrenze die Arbeit von Go-Agenten nach Schritten, Token, Kosten, Dauer, Tools oder Beendigungsgrund."
+---
+
+`MaxSteps` ist eine nützliche Sicherheitsgrenze. `StopWhen` ergänzt kombinierbare Produktlimits, die während des Laufs ausgewertet werden.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+Weitere Helpers sind `HasToolCall("publish_report")` und `FinishReasonIs("content_filter")`. Wenn die Entscheidung vom Anwendungskontext abhängt, kannst du außerdem eine eigene `StopCondition` bereitstellen.
+
+Wenn eine Bedingung zutrifft, prüfe `result.Run.StopReason`, die normalisierten Verbrauchssummen und den letzten abgeschlossenen Schritt. Ein Stopp ist ein erfolgreich begrenztes Ergebnis, sofern die Anwendung diesen Grund nicht als Fehler behandelt.

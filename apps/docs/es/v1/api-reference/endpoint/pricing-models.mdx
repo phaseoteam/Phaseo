@@ -1,0 +1,12 @@
+---
+title: "Listar precios de modelos"
+sidebarTitle: "Listar precios de modelos"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /pricing/models"
+description: "Listar las tarjetas de precios del catálogo que están activas y disponibles a través de la pasarela."
+---
+
+- `models`: una entrada por cada combinación visible de proveedor, modelo y endpoint
+- `meters`: las líneas de medición activas de esa entrada, incluidas la unidad, su tamaño, la moneda y el precio por unidad
+- `display_name`: el nombre público visible del modelo cuando la regla de precios se asigna a un modelo público canónico
+

@@ -4,6 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	AlertCircle,
 	ChevronDown,
@@ -192,23 +193,6 @@ function clampModels(models: string[]) {
 	return out;
 }
 
-function displayStatus(status: string) {
-	switch (status) {
-		case "running_sources":
-			return "Running sources";
-		case "awaiting_synthesis":
-			return "Awaiting synthesis";
-		case "running_analysis":
-			return "Running analysis";
-		case "running_fusion":
-			return "Running fusion";
-		case "local_pending":
-			return "Starting";
-		default:
-			return status[0]?.toUpperCase() + status.slice(1);
-	}
-}
-
 function getLogoId(value: string) {
 	const provider = value.trim().toLowerCase();
 	if (!provider) return "unknown";
@@ -376,7 +360,10 @@ async function callResponsesStream(
 	}
 }
 
-function parseAnalysis(raw: string): CouncilAnalysis {
+function parseAnalysis(
+	raw: string,
+	invalidAnalysisMessage = "Analysis returned non-JSON output.",
+): CouncilAnalysis {
 	const empty: CouncilAnalysis = {
 		agreement: [],
 		key_differences: [],
@@ -401,7 +388,7 @@ function parseAnalysis(raw: string): CouncilAnalysis {
 			if (first >= 0 && last > first) return tryParse(trimmed.slice(first, last + 1));
 			return null;
 		})();
-	if (!parsed) return { ...empty, blind_spots: ["Analysis returned non-JSON output."] };
+	if (!parsed) return { ...empty, blind_spots: [invalidAnalysisMessage] };
 
 	const getArrayField = (keys: string[]): unknown[] => {
 		for (const key of keys) {
@@ -557,10 +544,11 @@ function hasAnalysisContent(analysis: CouncilAnalysis): boolean {
 async function runAnalysisWithRepair(
 	model: string,
 	analysisPrompt: string,
+	invalidAnalysisMessage = "Analysis returned non-JSON output.",
 ): Promise<{ ok: true; analysis: CouncilAnalysis } | { ok: false; error: string }> {
 	const initial = await callResponsesText(model, analysisPrompt);
 	if (!initial.ok) return initial;
-	const parsed = parseAnalysis(initial.text);
+	const parsed = parseAnalysis(initial.text, invalidAnalysisMessage);
 	if (hasAnalysisContent(parsed)) {
 		return { ok: true, analysis: parsed };
 	}
@@ -579,7 +567,7 @@ ${initial.text}`;
 	if (!repaired.ok) {
 		return { ok: true, analysis: parsed };
 	}
-	const repairedParsed = parseAnalysis(repaired.text);
+	const repairedParsed = parseAnalysis(repaired.text, invalidAnalysisMessage);
 	return {
 		ok: true,
 		analysis: hasAnalysisContent(repairedParsed) ? repairedParsed : parsed,
@@ -599,6 +587,7 @@ function ModelSearchSelect(props: {
 	isFavorite?: (value: string) => boolean;
 	getReleaseDate?: (value: string) => string | null;
 }) {
+	const t = useTranslations("Product.experimentsCouncil");
 	const newModelWindowMs = 14 * 24 * 60 * 60 * 1000;
 	const {
 		value,
@@ -606,7 +595,7 @@ function ModelSearchSelect(props: {
 		onSelect,
 		getLabel,
 		getLogoIdForOption,
-		placeholder = "Select model",
+		placeholder = t("selectModel"),
 		showSelectedLogoInTrigger = false,
 		showChevron = true,
 		className,
@@ -677,7 +666,7 @@ function ModelSearchSelect(props: {
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-[min(92vw,460px)] rounded-md p-0">
 				<Command>
-					<CommandInput placeholder="Search models..." value={searchValue} onValueChange={setSearchValue} />
+					<CommandInput placeholder={t("searchModels")} value={searchValue} onValueChange={setSearchValue} />
 					<div className="flex items-center gap-1 border-b border-border px-3 py-2">
 						{(["free", "new"] as const).map((filter) => (
 							<Button
@@ -697,15 +686,15 @@ function ModelSearchSelect(props: {
 										: "border-border bg-transparent text-foreground hover:bg-muted",
 								)}
 							>
-								{filter === "free" ? "Free" : "New"}
+							{filter === "free" ? t("free") : t("new")}
 							</Button>
 						))}
 					</div>
 					<VirtualizedModelCatalog
 						sections={searchValue
-							? [{ key: "results", heading: "Results", items: filteredOptions }]
+							? [{ key: "results", heading: t("results"), items: filteredOptions }]
 							: [
-								{ key: "favorites", heading: "Favourites", items: favoriteOptions },
+								{ key: "favorites", heading: t("favourites"), items: favoriteOptions },
 								...groupedOptions,
 							]}
 						getItemKey={(option) => option}
@@ -733,7 +722,7 @@ function ModelSearchSelect(props: {
 									<Check className={cn("h-3.5 w-3.5", value === option ? "opacity-100" : "opacity-0")} />
 							</>
 						)}
-						emptyContent="No models found."
+						emptyContent={t("noModelsFound")}
 						estimateItemSize={34}
 						maxHeightPx={420}
 					/>
@@ -780,8 +769,27 @@ export default function CouncilClient({
 	const format = useDisplayFormatters();
 	const formatRunTime = format.dateTime;
 	const router = useRouter();
+	const locale = useLocale();
+	const t = useTranslations("Product.experimentsCouncil");
+	const chatT = useTranslations("Product.chat");
+	const localizeCouncilError = (message: string | null | undefined) => {
+		const statusMatch = message?.match(/^Request failed \((\d+)\)\.$/);
+		if (statusMatch?.[1]) {
+			return t("requestFailedWithStatus", { status: statusMatch[1] });
+		}
+		switch (message) {
+			case "Insufficient source quorum.":
+				return t("synthesisQuorumError");
+			case "One or more source models failed.":
+				return t("sourceModelsFailed");
+			case "Request failed.":
+				return chatT("requestFailed");
+			default:
+				return message ?? null;
+		}
+	};
 	const initialAuth = useInitialChatAuth();
-	const [dayPeriod, setDayPeriod] = useState("Morning");
+	const [dayPeriod, setDayPeriod] = useState<"morning" | "afternoon" | "evening">("morning");
 	const [prompt, setPrompt] = useState("");
 	const [presets, setPresets] = useState<CouncilPresetOption[]>(
 		initialPresets.map(toSystemPresetOption),
@@ -818,7 +826,7 @@ export default function CouncilClient({
 
 	useEffect(() => {
 		const hour = new Date().getHours();
-		setDayPeriod(hour < 12 ? "Morning" : hour < 18 ? "Afternoon" : "Evening");
+		setDayPeriod(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
 	}, []);
 
 	useEffect(() => {
@@ -1030,13 +1038,28 @@ export default function CouncilClient({
 		}
 	}, [selectedPreset?.key, selectedPreset?.sourceStore]);
 	const selectedRun = useMemo(() => runs.find((run) => run.id === selectedRunId) ?? null, [runs, selectedRunId]);
+	const translatedStatus = (status: string) => {
+		switch (status) {
+			case "running_sources": return t("runningSources");
+			case "awaiting_synthesis": return t("awaitingSynthesis");
+			case "running_analysis": return t("runningAnalysis");
+			case "running_fusion": return t("runningFusion");
+			case "local_pending": return t("starting");
+			case "running": return t("running");
+			case "failed": return t("failed");
+			case "queued": return t("queued");
+			case "completed": return t("complete");
+			case "partial": return t("partial");
+			default: return t("unknownRunStatus", { status });
+		}
+	};
 	const isHydratingInitialRun = initialSelectedRunId != null && !runsLoaded;
 	const shouldCenterComposer = !selectedRun;
 	const mobileRunTriggerLabel = selectedRun
 		? selectedRun.originalPrompt
 		: runsLoaded
-			? "New Council Run"
-			: "Loading runs...";
+			? t("newCouncilRun")
+			: t("loadingRuns");
 	const displayRun = (selectedRun?.runSnapshot as CouncilRun | undefined) ?? null;
 	const runSourceResults = displayRun?.source_results ?? selectedRun?.sourceResults ?? [];
 	const sourceModelForView =
@@ -1101,7 +1124,7 @@ export default function CouncilClient({
 		selectedRun?.modelSlugs[0] ??
 		modelOptions[0] ??
 		"";
-	const step3ModelLabel = step3ModelId ? getLabel(step3ModelId) : "Synthesis model";
+	const step3ModelLabel = step3ModelId ? getLabel(step3ModelId) : t("selectSynthesisModel");
 	const fusedSourceModelIds = (
 		runSourceResults
 			.filter((row) => row.status === "completed" && Boolean(row.output_text))
@@ -1113,10 +1136,10 @@ export default function CouncilClient({
 			: selectedRun?.modelSlugs ?? []
 	).slice(0, 4);
 	const step3StatusLabel = synthesisBusy
-		? "Fusing"
+		? t("fusing")
 		: displayedSynthesis || selectedRun?.isSynthesised
-			? "Fused"
-			: "Selected";
+			? t("fused")
+		: t("selected");
 	const analysisView =
 		displayRun?.analysis_json ??
 		((selectedRun?.analysisFindings as CouncilAnalysis | null) ?? null);
@@ -1197,14 +1220,14 @@ export default function CouncilClient({
 		? [
 				{
 					key: "agreement" as AnalysisCategoryKey,
-					label: "Agreement",
+					label: t("analysisCategories.agreement"),
 					points: analysisSections.agreement
 						.map((item) => item.point)
 						.filter(Boolean),
 				},
 				{
 					key: "key_differences" as AnalysisCategoryKey,
-					label: "Key Differences",
+					label: t("analysisCategories.keyDifferences"),
 					points: analysisSections.key_differences
 						.map((item) => {
 							if (item.topic) return item.topic;
@@ -1222,21 +1245,21 @@ export default function CouncilClient({
 				},
 				{
 					key: "partial_coverage" as AnalysisCategoryKey,
-					label: "Partial Coverage",
+					label: t("analysisCategories.partialCoverage"),
 					points: analysisSections.partial_coverage
 						.map((item) => item.point)
 						.filter(Boolean),
 				},
 				{
 					key: "unique_insights" as AnalysisCategoryKey,
-					label: "Unique Insights",
+					label: t("analysisCategories.uniqueInsights"),
 					points: analysisSections.unique_insights
 						.map((item) => item.insight)
 						.filter(Boolean),
 				},
 				{
 					key: "blind_spots" as AnalysisCategoryKey,
-					label: "Blind Spots",
+					label: t("analysisCategories.blindSpots"),
 					points: analysisSections.blind_spots.filter(Boolean),
 				},
 			]
@@ -1337,17 +1360,17 @@ export default function CouncilClient({
 	const createCustomPreset = async (name: string) => {
 		if (!selectedPreset) return;
 		if (selectedPreset.key !== "custom") {
-			setErrorMessage("Select the Custom preset to save a new group.");
+			setErrorMessage(t("selectCustomPreset"));
 			return;
 		}
 		const sourceModels = clampModels(selectedPreset.sourceModels);
 		if (sourceModels.length < 2) {
-			setErrorMessage("Select at least two models before saving a custom preset.");
+			setErrorMessage(t("selectTwoModels"));
 			return;
 		}
 		const normalizedName = name.trim();
 		if (!normalizedName) {
-			setErrorMessage("Enter a preset name.");
+			setErrorMessage(t("presetNameRequired"));
 			return;
 		}
 		setIsCreatingCustomPreset(true);
@@ -1368,7 +1391,7 @@ export default function CouncilClient({
 			setIsSavingPresetInline(false);
 			setPresetNameDraft("");
 		} catch {
-			setErrorMessage("Failed to save custom preset.");
+			setErrorMessage(t("saveCustomPresetFailed"));
 		} finally {
 			setIsCreatingCustomPreset(false);
 		}
@@ -1380,7 +1403,7 @@ export default function CouncilClient({
 		}
 		const sourceModels = clampModels(selectedPreset.sourceModels);
 		if (sourceModels.length === 0) {
-			setErrorMessage("Select at least one model before saving this preset.");
+			setErrorMessage(t("selectOneModel"));
 			return;
 		}
 		setIsUpdatingCustomPreset(true);
@@ -1406,7 +1429,7 @@ export default function CouncilClient({
 				current.filter((id) => id !== (saved.id as number)),
 			);
 		} catch {
-			setErrorMessage("Failed to update preset.");
+			setErrorMessage(t("updatePresetFailed"));
 		} finally {
 			setIsUpdatingCustomPreset(false);
 		}
@@ -1433,7 +1456,7 @@ export default function CouncilClient({
 				fallbackSelection ? getPresetRef(fallbackSelection) : filtered[0] ? getPresetRef(filtered[0]) : null,
 			);
 		} catch {
-			setErrorMessage("Failed to delete preset.");
+			setErrorMessage(t("deletePresetFailed"));
 		} finally {
 			setIsDeletingCustomPreset(false);
 		}
@@ -1618,8 +1641,8 @@ export default function CouncilClient({
 			setSelectedSourceModelId(null);
 			setPrompt("");
 		} catch {
-			await persist({ status: "failed", isComplete: true, error: "Failed to create run." });
-			setErrorMessage("Failed to create run.");
+			await persist({ status: "failed", isComplete: true, error: t("createRunFailed") });
+			setErrorMessage(t("createRunFailed"));
 		} finally {
 			setCreatingRun(false);
 		}
@@ -1701,7 +1724,7 @@ export default function CouncilClient({
 					output_text: null,
 					output_tokens: null,
 					latency_ms: 0,
-					error: "No response.",
+					error: t("noResponse"),
 				};
 			});
 
@@ -1731,7 +1754,7 @@ export default function CouncilClient({
 							: null,
 			});
 		} catch {
-			setErrorMessage("Failed to retry source models.");
+			setErrorMessage(t("retrySourcesFailed"));
 		} finally {
 			setRetryingRunId((current) => (current === runId ? null : current));
 		}
@@ -1753,7 +1776,7 @@ export default function CouncilClient({
 				modelOptions[0] ??
 				"").trim();
 		if (!synthesisModel) {
-			setErrorMessage("Select a synthesis model first.");
+			setErrorMessage(t("selectSynthesisFirst"));
 			return;
 		}
 
@@ -1777,7 +1800,11 @@ export default function CouncilClient({
 				error: null,
 			});
 			const analysisPrompt = `## Original Question\n${run.originalPrompt}\n\n## Individual Model Responses\n${successful.map((row, index) => `### source_${index + 1} (${row.model_id})\n${row.output_text ?? "[no output]"}`).join("\n\n")}\n\n## Instructions\nReturn strict JSON only (no markdown) with top-level keys:\n- agreement: [{ point, supporting_models, confidence }]\n- key_differences: [{ topic, stances, material }]\n- partial_coverage: [{ models, point }]\n- unique_insights: [{ model, insight }]\n- blind_spots: [string]\n\nDo not omit keys.`;
-			const analysisResult = await runAnalysisWithRepair(synthesisModel, analysisPrompt);
+			const analysisResult = await runAnalysisWithRepair(
+				synthesisModel,
+				analysisPrompt,
+				t("analysisInvalid"),
+			);
 			if (!analysisResult.ok) {
 				await persist({ status: "failed", isComplete: true, error: analysisResult.error });
 				setErrorMessage(analysisResult.error);
@@ -1835,8 +1862,8 @@ export default function CouncilClient({
 				error: null,
 			});
 		} catch {
-			await persist({ status: "failed", isComplete: true, error: "Failed to synthesise run." });
-			setErrorMessage("Failed to synthesise run.");
+			await persist({ status: "failed", isComplete: true, error: t("synthesiseFailed") });
+			setErrorMessage(t("synthesiseFailed"));
 		} finally {
 			setSynthesisingRunId((current) => (current === runId ? null : current));
 			setStreamedSynthesisByRunId((current) => {
@@ -1865,24 +1892,24 @@ export default function CouncilClient({
 						onClick={() => {
 							openRunById(null);
 						}}
-						aria-label="New Fusion"
+						aria-label={t("newFusion")}
 					>
 						<SquarePen className="h-4 w-4 shrink-0" />
-						New Fusion
+						{t("newFusion")}
 					</Button>
 					<Button
 						variant="ghost"
 						className="h-8 w-full justify-start gap-2 px-2 text-sm font-medium"
 						onClick={() => setSearchOpen(true)}
-						aria-label="Search Fusions"
+						aria-label={t("searchFusions")}
 					>
 						<Search className="h-4 w-4 shrink-0" />
-						Search Fusions
+						{t("searchFusions")}
 					</Button>
 				</div>
 					<SidebarGroup className={cn("flex min-h-0 flex-1", CHAT_SIDEBAR_HISTORY_GROUP_CLASS)}>
 						<div className="flex h-8 items-center justify-between px-2">
-							<SidebarGroupLabel className="px-0">Recent Fusions</SidebarGroupLabel>
+							<SidebarGroupLabel className="px-0">{t("recentFusions")}</SidebarGroupLabel>
 							{runs.length > 0 ? (
 								<Button
 									type="button"
@@ -1894,7 +1921,7 @@ export default function CouncilClient({
 										setSelectedRunIds(new Set());
 									}}
 								>
-									{runEditMode ? "Done" : "Edit"}
+									{runEditMode ? t("done") : t("edit")}
 								</Button>
 							) : null}
 						</div>
@@ -1909,7 +1936,7 @@ export default function CouncilClient({
 									onClick={() => void deleteSelectedRuns()}
 								>
 									<Trash2 className="mr-1 h-3.5 w-3.5" />
-									Delete {selectedRunIds.size > 0 ? selectedRunIds.size : ""}
+									{t("deleteSelectedRuns", { count: selectedRunIds.size })}
 								</Button>
 							</div>
 						) : null}
@@ -1918,7 +1945,7 @@ export default function CouncilClient({
 								<SidebarMenu className="space-y-1">
 									{runs.length === 0 ? (
 										<div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-muted-foreground">
-											No stored runs yet.
+											{t("noStoredRuns")}
 										</div>
 									) : (
 										runs.map((run) => (
@@ -1944,7 +1971,7 @@ export default function CouncilClient({
 																<Clock3 className="h-3 w-3" />
 																{formatRunTime(run.createdAt)}
 															</span>
-															<span>{displayStatus(run.status)}</span>
+									<span>{translatedStatus(run.status)}</span>
 														</div>
 													</div>
 												</SidebarMenuButton>
@@ -1963,7 +1990,7 @@ export default function CouncilClient({
 					<div className="flex min-w-0 flex-1 items-center gap-1">
 						<SidebarTrigger className="group -ml-1" />
 						{selectedRun ? (
-							<p className="truncate text-sm font-medium leading-8">Fusion result</p>
+							<p className="truncate text-sm font-medium leading-8">{t("fusionResult")}</p>
 						) : (
 							<>
 								<RoomModelSelector
@@ -1998,15 +2025,15 @@ export default function CouncilClient({
 												</span>
 											))}
 										</div>
-										<span className="text-sm">{selectedPreset?.sourceModels.length ?? 0} models</span>
+						<span className="text-sm">{t("modelsCount", { count: selectedPreset?.sourceModels.length ?? 0 })}</span>
 										<ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground" />
 									</Button>
 								</PopoverTrigger>
 								<PopoverContent align="start" className="w-[min(92vw,380px)] rounded-md p-3">
 									<div className="space-y-4">
 										<div>
-											<p className="text-sm font-medium">Fusion models</p>
-											<p className="text-xs text-muted-foreground">Choose two to four perspectives.</p>
+							<p className="text-sm font-medium">{t("fusionModels")}</p>
+							<p className="text-xs text-muted-foreground">{t("fusionModelsDescription")}</p>
 										</div>
 										<div className="flex flex-wrap gap-1">
 											{corePresets.map((preset) => (
@@ -2049,7 +2076,7 @@ export default function CouncilClient({
 												getLabel={getLabel}
 												getLogoIdForOption={getOptionLogoId}
 												isFavorite={isFavoriteModel}
-												placeholder="Search and add model"
+													placeholder={t("searchAddModel")}
 												className="w-full justify-start rounded-md"
 											/>
 										) : null}
@@ -2086,14 +2113,14 @@ export default function CouncilClient({
 							</PopoverTrigger>
 							<PopoverContent align="start" className="w-[min(92vw,420px)] p-0">
 								<Command>
-									<CommandInput placeholder="Search council runs..." />
+								<CommandInput placeholder={t("searchCouncilRuns")} />
 									<CommandList>
-										<CommandEmpty>No stored runs yet.</CommandEmpty>
-										<CommandGroup heading="Recent Runs">
+										<CommandEmpty>{t("noStoredRuns")}</CommandEmpty>
+										<CommandGroup heading={t("recentRuns")}>
 											{runs.map((run) => (
 												<CommandItem
 													key={`mobile-run-${run.id}`}
-													value={`${run.originalPrompt} ${displayStatus(run.status)} ${formatRunTime(run.createdAt)}`}
+										value={`${run.originalPrompt} ${translatedStatus(run.status)} ${formatRunTime(run.createdAt)}`}
 													onSelect={() => {
 														if (run.id == null) return;
 														setMobileRunPickerOpen(false);
@@ -2103,7 +2130,7 @@ export default function CouncilClient({
 													<div className="min-w-0 flex-1">
 														<p className="truncate text-xs font-medium">{run.originalPrompt}</p>
 														<p className="text-[10px] text-muted-foreground">
-															{displayStatus(run.status)} - {formatRunTime(run.createdAt)}
+															{translatedStatus(run.status)} - {formatRunTime(run.createdAt)}
 														</p>
 													</div>
 													<Check
@@ -2124,7 +2151,7 @@ export default function CouncilClient({
 							variant="outline"
 							size="icon"
 							className="h-9 w-9 shrink-0"
-							aria-label="New council run"
+							aria-label={t("newCouncilRun")}
 							onClick={() => {
 								setMobileRunPickerOpen(false);
 								openRunById(null);
@@ -2136,7 +2163,7 @@ export default function CouncilClient({
 					{selectedRun ? (
 						<div className="flex flex-col gap-5">
 							<div className="space-y-1">
-								<p className="text-xs font-medium text-muted-foreground">Prompt</p>
+											<p className="text-xs font-medium text-muted-foreground">{t("prompt")}</p>
 								<div className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground">
 									{selectedRun.originalPrompt}
 								</div>
@@ -2146,7 +2173,7 @@ export default function CouncilClient({
 								<div className="flex flex-col-reverse gap-5">
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
-											<p className="text-sm font-semibold">Step 1</p>
+									<p className="text-sm font-semibold">{t("step", { number: 1 })}</p>
 											<div className="flex items-center gap-2">
 												{showStep2 && failedSourceCount > 0 ? (
 													<Button
@@ -2165,14 +2192,14 @@ export default function CouncilClient({
 														) : (
 															<RotateCcw className="mr-1.5 h-3.5 w-3.5" />
 														)}
-														Retry Failed
+										{t("retryFailed")}
 													</Button>
 												) : null}
-												<p className="text-xs text-muted-foreground">Run Source Models</p>
+									<p className="text-xs text-muted-foreground">{t("runSourceModels")}</p>
 											</div>
 										</div>
 										<div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-											{displayStatus(selectedRun.status)} - {format.number(successfulSourceCount)} complete - {format.number(failedSourceCount)} failed - {format.number(totalSourceOutputTokens)} output tokens
+											{translatedStatus(selectedRun.status)} - {format.number(successfulSourceCount)} {t("complete")} - {format.number(failedSourceCount)} {t("failed")} - {format.number(totalSourceOutputTokens)} {t("outputTokens")}
 										</div>
 										<div className="space-y-2">
 											{selectedRun.modelSlugs.map((modelId) => {
@@ -2185,14 +2212,14 @@ export default function CouncilClient({
 												const outputTokens =
 													typeof result?.output_tokens === "number" ? result.output_tokens : null;
 												const statusLabel = isPending
-													? "Running"
+															? t("running")
 													: isCompleted
 														? outputTokens !== null
-													? `Complete (${format.number(outputTokens)} tokens, ${format.number((result?.latency_ms ?? 0) / 1000, { maximumFractionDigits: 1, notation: "standard" })}s)`
-															: `Complete (${((result?.latency_ms ?? 0) / 1000).toFixed(1)}s)`
-														: isFailed
-															? "Failed"
-															: "Queued";
+															? t("completedWithUsage", { tokens: format.number(outputTokens), tokenLabel: t("outputTokens"), seconds: format.number((result?.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
+															: t("completedWithoutUsage", { seconds: format.number((result?.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
+																: isFailed
+																	? t("failed")
+																	: t("queued");
 												return (
 													<button
 														key={modelId}
@@ -2222,7 +2249,7 @@ export default function CouncilClient({
 														</div>
 														<div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
 															{isPending ? (
-																<RoomWorkingIndicator label="Running..." size={16} showLabel={false} />
+																		<RoomWorkingIndicator label={t("runningIndicator")} size={16} showLabel={false} />
 															) : isFailed ? (
 																<AlertCircle className="h-3.5 w-3.5 text-red-500" />
 															) : isCompleted ? (
@@ -2244,11 +2271,11 @@ export default function CouncilClient({
 
 											<div className="space-y-3">
 												<div className="flex items-center justify-between">
-													<p className="text-sm font-semibold">Step 2</p>
-													<p className="text-xs text-muted-foreground">Choose Synthesiser and Analyse</p>
+									<p className="text-sm font-semibold">{t("step", { number: 2 })}</p>
+									<p className="text-xs text-muted-foreground">{t("chooseSynthesiser")}</p>
 												</div>
 												<div className="space-y-2">
-													<p className="text-sm font-medium">Synthesis</p>
+									<p className="text-sm font-medium">{t("synthesis")}</p>
 													<div className="flex items-center gap-2">
 														<div className="min-w-0 flex-1">
 															<ModelSearchSelect
@@ -2261,7 +2288,7 @@ export default function CouncilClient({
 																getLogoIdForOption={getOptionLogoId}
 																isFavorite={isFavoriteModel}
 																getReleaseDate={getModelReleaseDate}
-																placeholder="Select synthesis model"
+																placeholder={t("selectSynthesisModelPlaceholder")}
 																showSelectedLogoInTrigger
 																className="h-8 w-full min-w-0 rounded-md border border-border bg-background px-2"
 															/>
@@ -2280,17 +2307,17 @@ export default function CouncilClient({
 																runIsRetryingSources
 															}
 														>
-															{synthesisBusy ? <RoomWorkingIndicator label="Synthesising..." size={16} showLabel={false} /> : <Sparkles className="mr-2 h-4 w-4" />}
-															{synthesisBusy ? "Synthesising" : selectedRun.isSynthesised ? "Re-synthesise" : "Synthesize"}
+											{synthesisBusy ? <RoomWorkingIndicator label={t("synthesisingIndicator")} size={16} showLabel={false} /> : <Sparkles className="mr-2 h-4 w-4" />}
+											{synthesisBusy ? t("synthesising") : selectedRun.isSynthesised ? t("resynthesise") : t("synthesize")}
 														</Button>
 													</div>
 													{showSynthesisError ? (
 														<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-															Need at least two successful source responses before synthesis.
+										{t("synthesisQuorumError")}
 														</div>
 													) : synthesisNeedsQuorum ? (
 														<div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-															Synthesis unlocks after at least two source responses finish.
+										{t("synthesisQuorumPending")}
 														</div>
 													) : null}
 												</div>
@@ -2298,7 +2325,7 @@ export default function CouncilClient({
 												{analysisSections ? (
 													<div className="space-y-2">
 														<div className="h-px w-full bg-border" />
-														<p className="text-sm font-medium">Analysis</p>
+																<p className="text-sm font-medium">{t("analysis")}</p>
 														<div className="space-y-2">
 															{analysisHasRenderableContent ? (
 																<div className="space-y-2">
@@ -2382,7 +2409,7 @@ export default function CouncilClient({
 																							</div>
 																						</div>
 																					) : (
-																						<p className="mt-2 text-xs text-muted-foreground">No points.</p>
+																		<p className="mt-2 text-xs text-muted-foreground">{t("noPoints")}</p>
 																					)}
 																				</button>
 																			</div>
@@ -2391,7 +2418,7 @@ export default function CouncilClient({
 																</div>
 															) : (
 																<div className="text-muted-foreground">
-																	Analysis returned no structured findings for this run.
+												{t("analysisNoFindings")}
 																</div>
 															)}
 														</div>
@@ -2405,7 +2432,7 @@ export default function CouncilClient({
 								{sourceModelForView ? (
 									<div className="hidden">
 										<div className="flex items-center justify-between gap-3">
-											<p className="text-sm font-medium">Selected Response</p>
+															<p className="text-sm font-medium">{t("selectedResponse")}</p>
 											{sourceViewResult?.output_text ? (
 												<Button
 													type="button"
@@ -2413,7 +2440,7 @@ export default function CouncilClient({
 													size="icon"
 													className="h-7 w-7"
 													onClick={() => setExpandedSourceDialogOpen(true)}
-													aria-label="Expand selected response"
+															aria-label={t("expandSelectedResponse")}
 												>
 													<Expand className="h-3.5 w-3.5" />
 												</Button>
@@ -2423,7 +2450,7 @@ export default function CouncilClient({
 										{sourceViewResult ? (
 											<div className="space-y-3">
 												<div className="max-h-[480px] overflow-auto p-1 text-sm leading-6">
-													<Streamdown>{sourceViewResult.output_text ?? sourceViewResult.error ?? "No output yet."}</Streamdown>
+											<Streamdown>{localizeCouncilError(sourceViewResult.output_text ?? sourceViewResult.error) ?? t("noOutputYet")}</Streamdown>
 												</div>
 												{sourceViewResult.output_text ? (
 													<Button
@@ -2435,14 +2462,14 @@ export default function CouncilClient({
 															)
 														}
 													>
-														Continue in Chat Room
+																{t("continueInChat")}
 														<ArrowRight className="h-4 w-4" />
 													</Button>
 												) : null}
 											</div>
 										) : (
 											<div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
-												Waiting for selected model output.
+												{t("waitingForOutput")}
 											</div>
 										)}
 										<Dialog
@@ -2450,19 +2477,19 @@ export default function CouncilClient({
 											onOpenChange={setExpandedSourceDialogOpen}
 										>
 											<DialogContent className="w-[96vw] max-w-6xl max-h-[90vh] overflow-hidden p-0">
-												<DialogTitle className="sr-only">Expanded Selected Response</DialogTitle>
-												<DialogDescription className="sr-only">
-													Wide view of the currently selected source model response.
+														<DialogTitle className="sr-only">{t("expandedSelectedResponseTitle")}</DialogTitle>
+														<DialogDescription className="sr-only">
+															{t("expandedSelectedResponseDescription")}
 												</DialogDescription>
 												<div className="flex h-full max-h-[90vh] flex-col">
 													<div className="border-b border-border px-4 py-3">
 														<p className="text-sm font-medium">
-															{sourceViewResult ? getLabel(sourceViewResult.model_id) : "Selected Response"}
+															{sourceViewResult ? getLabel(sourceViewResult.model_id) : t("selectedResponse")}
 														</p>
 													</div>
 													<div className="min-h-0 flex-1 overflow-auto px-4 py-3 text-sm leading-6">
 														<Streamdown>
-															{sourceViewResult?.output_text ?? sourceViewResult?.error ?? "No output yet."}
+												{localizeCouncilError(sourceViewResult?.output_text ?? sourceViewResult?.error) ?? t("noOutputYet")}
 														</Streamdown>
 													</div>
 												</div>
@@ -2476,8 +2503,8 @@ export default function CouncilClient({
 								<div className="order-1 space-y-3">
 									<div className="h-px w-full bg-border" />
 									<div className="flex items-center justify-between">
-										<p className="text-sm font-semibold">Step 3</p>
-										<p className="text-xs text-muted-foreground">Final Answer</p>
+										<p className="text-sm font-semibold">{t("step", { number: 3 })}</p>
+										<p className="text-xs text-muted-foreground">{t("stepFinal")}</p>
 									</div>
 									<div className="space-y-3 rounded-md border border-border bg-card p-4">
 										<div className="flex items-center justify-between gap-3">
@@ -2557,13 +2584,13 @@ export default function CouncilClient({
 										) : (
 											<div className="min-h-[460px] rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground lg:min-h-[360px]">
 												{runReadyForSynthesis
-													? "Choose a synthesis model in Step 2 and run synthesis."
-													: selectedRun.status === "running_sources"
-														? "Waiting for source models to finish."
-														: selectedRun.status === "running_fusion"
-															? "Generating fused answer."
-															: "No synthesized output yet."}
-											</div>
+															? t("chooseSynthesisModel")
+															: selectedRun.status === "running_sources"
+																? t("waitingForSources")
+															: selectedRun.status === "running_fusion"
+																	? t("generatingFusedAnswer")
+															: t("noSynthesizedOutputYet")}
+										</div>
 										)}
 										{(selectedRun.synthesisedContent || displayedSynthesis) && !synthesisBusy ? (
 											<Button
@@ -2574,7 +2601,7 @@ export default function CouncilClient({
 													)
 												}
 											>
-												Continue in Chat Room
+											{t("continueInChat")}
 												<ArrowRight className="h-4 w-4" />
 											</Button>
 										) : null}
@@ -2584,7 +2611,7 @@ export default function CouncilClient({
 
 							{errorMessage ? (
 								<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-									{errorMessage}
+									{localizeCouncilError(errorMessage)}
 								</div>
 							) : null}
 						</div>
@@ -2607,19 +2634,19 @@ export default function CouncilClient({
 							<div className="w-full space-y-8">
 								<div className="space-y-2 text-center">
 									<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-										Good {dayPeriod}{firstName ? `, ${firstName}` : ""}
+										{chatT("greeting", { period: chatT(dayPeriod), name: firstName ? `, ${firstName}` : "" })}
 									</h1>
 									<p className="text-sm text-muted-foreground">
-										Bring several perspectives together in one answer.
+										{t("promptDescription")}
 									</p>
-								</div>
-								<div className="grid gap-2 sm:grid-cols-2">
-									{[
-										["Compare approaches", "Compare the strongest approaches to solving this problem, including tradeoffs."],
-										["Challenge an idea", "Evaluate this idea from several perspectives and identify its weakest assumptions."],
-										["Reach a recommendation", "Consider the available options and produce a clear, evidence-based recommendation."],
-										["Explore a question", "Explore this question through several distinct expert perspectives."],
-									].map(([label, starterPrompt]) => (
+				</div>
+				<div className="grid gap-2 sm:grid-cols-2">
+					{[
+						{ label: t("starterPrompts.compareApproaches"), prompt: t("starterPrompts.compareApproachesPrompt") },
+						{ label: t("starterPrompts.challengeIdea"), prompt: t("starterPrompts.challengeIdeaPrompt") },
+						{ label: t("starterPrompts.reachRecommendation"), prompt: t("starterPrompts.reachRecommendationPrompt") },
+						{ label: t("starterPrompts.exploreQuestion"), prompt: t("starterPrompts.exploreQuestionPrompt") },
+					].map(({ label, prompt: starterPrompt }) => (
 										<button
 											key={label}
 											type="button"
@@ -2633,7 +2660,7 @@ export default function CouncilClient({
 								</div>
 								{errorMessage ? (
 									<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-										{errorMessage}
+										{localizeCouncilError(errorMessage)}
 									</div>
 								) : null}
 								<div className="hidden space-y-5">
@@ -2698,7 +2725,7 @@ export default function CouncilClient({
 															<Input
 																value={presetNameDraft}
 																onChange={(event) => setPresetNameDraft(event.target.value)}
-																placeholder="Preset name"
+																placeholder={t("presetName")}
 																className="h-7 w-32 text-xs"
 																onKeyDown={(event) => {
 																	if (event.key === "Enter") {
@@ -2721,7 +2748,7 @@ export default function CouncilClient({
 																	void createCustomPreset(presetNameDraft);
 																}}
 																disabled={isCreatingCustomPreset || presetNameDraft.trim().length === 0}
-																aria-label="Save custom preset"
+										aria-label={t("saveCustomPreset")}
 															>
 																{isCreatingCustomPreset ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
 															</Button>
@@ -2735,7 +2762,7 @@ export default function CouncilClient({
 																	setPresetNameDraft("");
 																}}
 																disabled={isCreatingCustomPreset}
-																aria-label="Cancel saving preset"
+										aria-label={t("cancelSavingPreset")}
 															>
 																<X className="h-3.5 w-3.5" />
 															</Button>
@@ -2750,11 +2777,11 @@ export default function CouncilClient({
 																	className="h-7 gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
 																	onClick={() => {
 																		setIsSavingPresetInline(true);
-																		setPresetNameDraft("My Preset");
+																		setPresetNameDraft(t("defaultPresetName"));
 																	}}
 																>
 																	<Save className="h-3 w-3" />
-																	Save Group
+											{t("saveGroup")}
 																</Button>
 															) : null}
 															{canUpdateSelectedCustomPreset ? (
@@ -2767,7 +2794,7 @@ export default function CouncilClient({
 																		void updateSelectedCustomPreset();
 																	}}
 																	disabled={isUpdatingCustomPreset || isDeletingCustomPreset}
-																	aria-label="Update preset"
+										aria-label={t("updatePreset")}
 																>
 																	{isUpdatingCustomPreset ? (
 																		<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2786,7 +2813,7 @@ export default function CouncilClient({
 																		void deleteSelectedCustomPreset();
 																	}}
 																	disabled={isDeletingCustomPreset || isUpdatingCustomPreset}
-																	aria-label="Delete preset"
+										aria-label={t("deletePreset")}
 																>
 																	{isDeletingCustomPreset ? (
 																		<Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -2857,7 +2884,7 @@ export default function CouncilClient({
 														getLogoIdForOption={getOptionLogoId}
 														isFavorite={isFavoriteModel}
 														showChevron={false}
-														placeholder="Search and add model"
+														placeholder={t("searchAddModel")}
 														className="h-6 min-w-0 w-auto px-0 text-sm"
 													/>
 												</div>
@@ -2867,7 +2894,7 @@ export default function CouncilClient({
 
 										{errorMessage ? (
 											<div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-												{errorMessage}
+												{localizeCouncilError(errorMessage)}
 											</div>
 										) : null}
 								</div>
@@ -2890,7 +2917,7 @@ export default function CouncilClient({
 										event.preventDefault();
 										void createRun();
 									}}
-									placeholder="Ask anything"
+													placeholder={t("askAnything")}
 									rows={1}
 									className="min-h-9 flex-1 resize-none border-0 bg-transparent px-2 py-2 shadow-none focus-visible:ring-0"
 								/>
@@ -2904,10 +2931,10 @@ export default function CouncilClient({
 										(selectedPreset.sourceModels?.length ?? 0) === 0 ||
 										prompt.trim().length === 0
 									}
-									aria-label={creatingRun ? "Starting run" : "Send prompt"}
+														aria-label={creatingRun ? t("startingRunIndicator") : t("sendPromptAria")}
 								>
 									{creatingRun ? (
-										<RoomWorkingIndicator label="Starting fusion..." showLabel={false} />
+														<RoomWorkingIndicator label={t("startingFusionIndicator")} showLabel={false} />
 									) : (
 										<SendHorizontal className="h-4 w-4" />
 									)}
@@ -2941,14 +2968,14 @@ export default function CouncilClient({
 							</span>
 							<div className="min-w-0">
 								<ProviderInspectorSheetTitle className="truncate">
-									{sourceModelForView ? getLabel(sourceModelForView) : "Model response"}
+														{sourceModelForView ? getLabel(sourceModelForView) : t("modelResponse")}
 								</ProviderInspectorSheetTitle>
 								<ProviderInspectorSheetDescription>
 									{sourceViewResult?.status === "completed"
-										? `${sourceViewResult.output_tokens != null ? format.number(sourceViewResult.output_tokens) : "—"} output tokens · ${format.number((sourceViewResult.latency_ms ?? 0) / 1000, { maximumFractionDigits: 1, notation: "standard" })}s`
+										? t("outputSummary", { tokens: sourceViewResult.output_tokens != null ? format.number(sourceViewResult.output_tokens) : "—", tokenLabel: t("outputTokens"), seconds: format.number((sourceViewResult.latency_ms ?? 0) / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1, notation: "standard" }) })
 										: sourceViewResult?.status === "failed"
-											? "Generation failed"
-											: "Generating response…"}
+											? t("generationFailed")
+															: t("generatingResponse")}
 								</ProviderInspectorSheetDescription>
 							</div>
 						</div>
@@ -2957,11 +2984,11 @@ export default function CouncilClient({
 						<div className="px-5 py-5 text-sm leading-7">
 							{sourceViewResult ? (
 								<Streamdown>
-									{sourceViewResult.output_text ?? sourceViewResult.error ?? "No output yet."}
+										{localizeCouncilError(sourceViewResult.output_text ?? sourceViewResult.error) ?? t("noOutputYet")}
 								</Streamdown>
 							) : (
 								<div className="flex min-h-48 items-center justify-center text-muted-foreground">
-									<RoomWorkingIndicator label="Waiting for response..." />
+															<RoomWorkingIndicator label={t("waitingForOutput")} />
 								</div>
 							)}
 						</div>
@@ -2978,7 +3005,7 @@ export default function CouncilClient({
 									)
 								}
 							>
-								Continue in Chat Room
+														{t("continueInChat")}
 								<ArrowRight className="h-4 w-4" />
 							</Button>
 						</div>
@@ -2988,10 +3015,10 @@ export default function CouncilClient({
 			<RoomSearchDialog
 				open={searchOpen}
 				onOpenChange={setSearchOpen}
-				title="Search fusions"
-				placeholder="Search fusions..."
-				emptyLabel="No fusions found."
-				groupLabel="Fusions"
+				title={t("searchFusionsTitle")}
+				placeholder={t("searchFusionsPlaceholder")}
+				emptyLabel={t("noFusionsFound")}
+				groupLabel={t("fusionsGroupLabel")}
 				conversations={runs.map((run) => ({
 					id: String(run.id),
 					title: run.originalPrompt,

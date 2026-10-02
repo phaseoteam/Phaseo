@@ -344,12 +344,13 @@ export function nowIso() {
 export function createInitialChatThread(
 	existing: ChatThread[],
 	modelId: string | null,
+	title = "New chat",
 ): ChatThread | null {
 	if (existing.length > 0 && modelId === null) return null;
 	const createdAt = nowIso();
 	return {
 		id: generateId(),
-		title: "New chat",
+		title,
 		titleLocked: false,
 		modelId: modelId ?? "",
 		createdAt,
@@ -362,10 +363,10 @@ export function createInitialChatThread(
 	};
 }
 
-export function buildTitle(messages: ChatMessage[]) {
+export function buildTitle(messages: ChatMessage[], emptyTitle: string) {
 	const first = messages.find((msg) => msg.role === "user");
-	if (!first) return "New chat";
-	return first.content.trim().slice(0, 48) || "New chat";
+	if (!first) return emptyTitle;
+	return first.content.trim().slice(0, 48) || emptyTitle;
 }
 
 export function buildPersonalizationPrompt(

@@ -1,0 +1,24 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere Modelleinstellungen und Tools zwischen den Turns von Java-Agenten."
+---
+
+Verwende dynamische Callbacks, wenn spätere Turns auf den Anwendungskontext, frühere Tool-Ergebnisse oder die Anzahl abgeschlossener Turns reagieren sollen.
+
+Dynamische Werte können Folgendes auswählen:
+
+- das Modell oder Fallback-Modelle
+- Anweisungen
+- Temperatur, Top-p und maximale Ausgabetokenzahl
+- die Tool-Liste für die nächste Modellanfrage
+
+Tools können den Anwendungskontext über `RuntimeContext` aktualisieren und `NextTurnParams` für die unmittelbar folgende Anfrage zurückgeben. Überschreibungen für den nächsten Turn werden im pausierten Zustand gespeichert, sodass die Genehmigung die Routing- oder Sampling-Entscheidung eines Tools nicht verwirft.
+
+Halte Kontext und Werte für den nächsten Turn serialisierbar, wenn ein Lauf möglicherweise über `StateAccessor` neu geladen wird.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx)

@@ -1,0 +1,67 @@
+---
+title: "Anthropic SDK"
+icon: "message-square"
+description: "将兼容 Anthropic 的客户端与 Phaseo 配合使用。"
+---
+
+当应用、Agent 或编程工具需要 Claude 风格的 `/v1/messages` 请求时，请使用 Anthropic 兼容 API。
+
+## TypeScript
+
+```bash
+npm install @anthropic-ai/sdk
+```
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app",
+});
+
+const message = await client.messages.create({
+	model: "anthropic/claude-sonnet-4.5",
+	max_tokens: 512,
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+
+console.log(message.content);
+```
+
+## Python
+
+```bash
+pip install anthropic
+```
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
+)
+
+message = client.messages.create(
+    model="anthropic/claude-sonnet-4.5",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(message.content)
+```
+
+## 说明
+
+- 使用根主机 `https://api.phaseo.app`；Anthropic 客户端会追加 `/v1/messages`。
+- 端点详情请参阅 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)。
+- Phaseo 支持时可以使用 Anthropic 原生工具结构；跨供应商的服务器工具应使用 Phaseo 工具名称。
+- 如果工作流依赖流式工具循环，请在上线前进行测试，因为 Anthropic 兼容客户端对工具事件顺序的要求更严格。
+
+## 相关内容
+
+- [Claude Code](./claude-code.mdx)
+- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
+- [工具调用](../tool-calling.mdx)

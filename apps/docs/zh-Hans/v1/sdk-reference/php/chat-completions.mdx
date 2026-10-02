@@ -1,0 +1,69 @@
+---
+icon: "messages-square"
+title: "聊天补全"
+description: "使用 PHP SDK 调用 /chat/completions。"
+---
+
+**方法**: `generateText()`, `createChatCompletion()`
+
+### 示例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createChatCompletion([
+    'model' => 'openai/gpt-4o-mini',
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
+    'temperature' => 0.5
+]);
+echo $response['choices'][0]['message']['content'];
+```
+
+### 关键参数
+
+- `model`（必填）：目标模型 ID。
+- `messages`（必填）：按顺序排列的消息，角色为 `system|user|assistant|tool`；内容使用 MessageContent 对象。
+- 采样：`temperature`（0–2）、`top_p`（0–1）、`top_k`（>=1）、`seed`（int，可选）。
+- 长度与惩罚项：`max_output_tokens`（int）、`presence_penalty` 和 `frequency_penalty`（-2 到 2）、`stop`（string|string[]）。
+- 工具：`tools`（定义）、`tool_choice`（自动/无/指定工具）、`max_tool_calls`（int）、`parallel_tool_calls`（bool）。
+- Logprobs：`logprobs`（bool）、`top_logprobs`（0–20）。
+- 输出：`response_format`（json/text）、`meta`（bool，是否包含 meta 块）、`stream`（bool）、`service_tier`。
+- Gateway 附加选项：`usage`（bool，用于请求使用量）。
+
+### 返回值
+
+ChatCompletionsResponse JSON 对象。
+
+```json
+{
+	"id": "chatcmpl-123",
+	"object": "chat.completion",
+	"created": 1677652288,
+	"model": "gpt-3.5-turbo-0125",
+	"choices": [
+		{
+			"index": 0,
+			"message": {
+				"role": "assistant",
+				"content": "Hello there, how may I assist you today?"
+			},
+			"finish_reason": "stop"
+		}
+	],
+	"usage": {
+		"prompt_tokens": 9,
+		"completion_tokens": 12,
+		"total_tokens": 21
+	}
+}
+```

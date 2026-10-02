@@ -1,0 +1,132 @@
+---
+icon: "blocks"
+title: "البناء باستخدام Rust Agent SDK"
+description: "أنشئ وكيل Rust متزامنًا يستدعي أداة محلية عبر Phaseo Gateway."
+---
+
+استخدم هذا الدليل لإنشاء وكيل صغير يستخدم الأدوات، ثم افحص الجولة بعد اكتمالها.
+
+## تعريف أداة
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+تُنفّذ closure محليًا. ويتضمن `RuntimeContext` الخاص بها معرّف الجولة ومعرّف الوكيل وفهرس الخطوة وسياق التطبيق واستدعاء الأداة الأصلي.
+
+## إنشاء الوكيل
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## التشغيل عبر Phaseo Gateway
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## مثال كامل
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## حالة الجولة
+
+يحتوي `RunResult` على:
+
+- `run`: الحالة والمعرّفات والنموذج الفعلي وحد الخطوات والسياق وحالة الإيقاف المؤقت
+- `steps`: كل دور للنموذج ومعرّف الطلب والمزوّد والنموذج وسبب الإنهاء واستدعاءات الأدوات والاستخدام
+- `messages`: سجل الرسائل الكامل للنموذج والأدوات
+- `output`: قيمة المخرجات النهائية
+- `usage`: إجمالي قيم الرموز وأي تكلفة يقدّمها عميل النموذج
+
+## نموذج التنفيذ الحالي
+
+تعمل جولات Rust Agent SDK بشكل متزامن. وتُنفّذ الأدوات المحلية واحدة تلو الأخرى. استخدم خيط عامل للتطبيق أو حدًا فاصلًا للمهمة عندما ينبغي ألا تحظر الجولة معالج الطلبات.
+
+## التالي
+
+- [الأدوات والموافقات](./agent-sdk-tools.mdx)
+- [حفظ الجولات واستئنافها](./agent-sdk-state-and-approval.mdx)
+- [الأحداث وإعادة المحاولة والأخطاء](./agent-sdk-events-and-errors.mdx)

@@ -1,14 +1,18 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { oauthScopeLabel } from "@/lib/oauth/scopes";
+import { useLocalizedOAuthScopes } from "@/components/(gateway)/oauth/useLocalizedOAuthScopes";
 
 interface ReauthorizeDialogProps {
 	authorizationId: string;
@@ -19,6 +23,9 @@ interface ReauthorizeDialogProps {
 }
 
 export default function ReauthorizeDialog({ authorizationId, appName, homepageUrl, currentScopes, additionalScopes }: ReauthorizeDialogProps) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const { getScopeCopy } = useLocalizedOAuthScopes();
 	const isPhaseoCli = appName === "Phaseo CLI";
 	const [open, setOpen] = useState(false);
 	const [selectedAdditionalScopes, setSelectedAdditionalScopes] = useState<string[]>([]);
@@ -27,7 +34,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 
 	const copyCliCommand = async () => {
 		await navigator.clipboard.writeText("phaseo login");
-		toast.success("Copied phaseo login");
+		toast.success(s("Copied phaseo login"));
 	};
 	const toggleAdditionalScope = (scope: string, checked: boolean) => {
 		setSelectedAdditionalScopes((current) => checked ? Array.from(new Set([...current, scope])) : current.filter((value) => value !== scope));
@@ -37,10 +44,10 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 		const result = await reauthorizeCliScopesAction(authorizationId, Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])));
 		setSaving(false);
 		if (result.error) {
-			toast.error(result.error);
+			toast.error(localizedSettingsError(result.error, t, "Action failed"));
 			return;
 		}
-		toast.success("CLI permissions restored");
+		toast.success(s("CLI permissions restored"));
 		setOpen(false);
 		setSelectedAdditionalScopes([]);
 		router.refresh();
@@ -50,56 +57,56 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm" className="min-w-0 flex-1 rounded-md sm:flex-none">
-					<RefreshCw className="size-4" /> Reauthorize
+					<RefreshCw className="size-4" /> {s("Reauthorize")}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Reauthorize {appName}</DialogTitle>
+					<DialogTitle>{s("Reauthorize app")} {appName}</DialogTitle>
 					<DialogDescription>
-						{isPhaseoCli ? "Restore removed permissions on the web, or start a genuinely fresh session from the CLI." : "OAuth must be restarted by the application so it can create a fresh, secure PKCE request."}
+						{isPhaseoCli ? s("phraseRestoreRemovedPermissionsOnTheWebOrStartAGenuinelyFreshSessionFromTheCLI") : s("phraseOAuthMustBeRestartedByTheApplicationSoItCanCreateAFreshSecurePKCERequest")}
 					</DialogDescription>
 				</DialogHeader>
 
 				{isPhaseoCli ? (
 					<div className="space-y-3">
 						<div className="rounded-md border bg-muted/30 p-3">
-							<div className="text-sm font-medium">CLI permissions</div>
+								<div className="text-sm font-medium">{s("CLI permissions")}</div>
 							{additionalScopes.length > 0 ? (
 								<>
-									<p className="mt-1 text-xs text-muted-foreground">Select permissions you previously removed. Restored access applies when the CLI next refreshes its session.</p>
+									<p className="mt-1 text-xs text-muted-foreground">{s("phraseSelectPermissionsYouPreviouslyRemovedRestoredAccessAppliesWhenTheCLINextRefreshesItsSession")}</p>
 									<div className="mt-3 max-h-48 space-y-1 overflow-y-auto">
 										{additionalScopes.map((scope) => (
 											<label key={scope} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60">
 												<Checkbox checked={selectedAdditionalScopes.includes(scope)} onCheckedChange={(checked) => toggleAdditionalScope(scope, checked === true)} />
-												<span className="text-xs">{oauthScopeLabel(scope)}</span>
+												<span className="text-xs">{getScopeCopy(scope).label}</span>
 											</label>
 										))}
 									</div>
 									<Button type="button" className="mt-3 w-full rounded-md" disabled={saving || selectedAdditionalScopes.length === 0} onClick={reauthorizeOnWeb}>
 										<RefreshCw className="size-4" />
-										{saving ? "Restoring..." : "Restore selected permissions"}
+										{saving ? s("phraseRestoring") : s("Restore selected permissions")}
 									</Button>
 								</>
 							) : (
 								<div className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
-									All available CLI permissions are currently authorized.
+									{s("phraseAllAvailableCLIPermissionsAreCurrentlyAuthorized")}
 								</div>
 							)}
 						</div>
 						<div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 p-3">
 							<div className="flex min-w-0 items-center gap-2"><Terminal className="size-4 shrink-0 text-muted-foreground" /><code className="truncate text-sm">phaseo login</code></div>
-							<Button type="button" size="sm" variant="outline" className="rounded-md" onClick={copyCliCommand}><Copy className="size-3.5" /> Copy</Button>
+							<Button type="button" size="sm" variant="outline" className="rounded-md" onClick={copyCliCommand}><Copy className="size-3.5" /> {s("Copy")}</Button>
 						</div>
 					</div>
 				) : homepageUrl ? (
-					<p className="text-sm text-muted-foreground">Open the application and sign in with Phaseo again to review its requested permissions.</p>
+					<p className="text-sm text-muted-foreground">{s("phraseOpenTheApplicationAndSignInWithPhaseoAgainToReviewItsRequestedPermissions")}</p>
 				) : (
-					<p className="text-sm text-muted-foreground">Open this application where you originally connected it, then choose its Phaseo sign-in or reconnect option.</p>
+					<p className="text-sm text-muted-foreground">{s("phraseOpenThisApplicationWhereYouOriginallyConnectedItThenChooseItsPhaseoSignInOrReconnectOption")}</p>
 				)}
 
 				{!isPhaseoCli && homepageUrl ? (
-					<DialogFooter><Button asChild className="rounded-md"><a href={homepageUrl} target="_blank" rel="noopener noreferrer">Open application <ExternalLink className="size-4" /></a></Button></DialogFooter>
+					<DialogFooter><Button asChild className="rounded-md"><a href={homepageUrl} target="_blank" rel="noopener noreferrer">{s("Open application")} <ExternalLink className="size-4" /></a></Button></DialogFooter>
 				) : null}
 			</DialogContent>
 		</Dialog>

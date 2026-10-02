@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "输出与重试"
+description: "验证 .NET Agent 输出，并对有限次数的模型故障进行重试。"
+---
+
+当下游 .NET 代码需要结构化值时，请验证最终输出。应将验证失败视为契约错误，而非暂时性传输故障。
+
+使用 `ModelRetryConfig` 配置有限次数的重试：
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+已完成步骤会保留模型最终尝试次数。局部工具故障单独处理，不会作为模型请求重试。
+
+`GatewayAgentClientOptions` 包含结构化响应、路由、供应商、推理、工具选择、提示词缓存及其他请求选项。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [错误与故障排除](./agent-sdk-observability.mdx)

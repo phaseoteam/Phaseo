@@ -1,0 +1,52 @@
+---
+icon: "calculator"
+title: "Contexto e orçamento de tokens"
+description: "Como distribuir tokens de entrada e saída para equilibrar qualidade, velocidade e custo."
+---
+
+Gerenciar o orçamento de tokens é uma habilidade essencial em produção. Isso afeta diretamente a latência, os gastos e a confiabilidade.
+
+## Componentes do orçamento de tokens
+
+O tamanho total de uma solicitação geralmente inclui:
+
+- Instruções do sistema ou do desenvolvedor
+- Prompt ou entrada do usuário
+- Contexto recuperado (RAG, documentação e ferramentas)
+- Esquemas de ferramentas ou definições de funções
+- Tokens de saída do modelo
+
+## Por que os orçamentos são importantes
+
+- Prompts maiores aumentam a latência e o custo.
+- Prompts muito longos podem reduzir a relevância quando a qualidade do contexto é baixa.
+- Um orçamento de saída muito pequeno pode truncar a resposta e gerar saídas estruturadas inválidas.
+
+O raciocínio pode consumir o orçamento de saída antes de o modelo produzir uma resposta. Essas
+respostas retornam HTTP 200 com o raciocínio produzido, sem inventar
+uma resposta. Chat Completions preserva `reasoning_content` e `finish_reason: "length"`
+quando o limite de saída é atingido. Responses preserva o item de raciocínio e
+informa `status: "incomplete"`. Uma parada normal do provedor continua sendo `stop` ou `completed`.
+## Estratégia de orçamento
+
+1. Defina um limite máximo de tokens de entrada para cada rota.
+2. Reserve margem de saída para as respostas mais longas esperadas.
+3. Remova agressivamente o contexto de baixo valor.
+4. Monitore ao longo do tempo a distribuição real do uso de tokens.
+
+## Proteções práticas
+
+- Aplique limites rígidos aos tokens de entrada e saída.
+- Adicione regras de pré-processamento para truncar ou resumir contextos extensos.
+- Use limites específicos por rota (resposta de busca ou geração longa).
+- Valide se as saídas contêm marcadores de truncamento ou JSON parcial.
+
+## Erros comuns
+
+- Copiar o mesmo limite de tokens para todos os endpoints.
+- Manter prompts de sistema extensos para todos os tipos de solicitação.
+- Ignorar o custo adicional em tokens dos esquemas de ferramentas.
+
+## Recomendação
+
+Trate os orçamentos de tokens como uma configuração que exige monitoramento contínuo, não como algo definido uma única vez.

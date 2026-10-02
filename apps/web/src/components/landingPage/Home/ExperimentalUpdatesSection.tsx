@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { localizedUpdateBadge } from "@/i18n/update-card-messages";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { fetchFrontendModelUpdateCards } from "@/lib/fetchers/frontend/fetchPublicCatalog";
@@ -21,27 +23,29 @@ export function ExperimentalUpdatesSectionFallback() {
 }
 
 export default async function ExperimentalUpdatesSection() {
+	const tCopy = await getTranslations("Site.landingGaps");
+	const tEvents = await getTranslations("Catalogue.updates.eventTypes");
+
 	const updates = await fetchFrontendModelUpdateCards(3, false);
 
 	return (
 		<section className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
 			<div className="space-y-4">
 				<p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-zinc-500 dark:text-zinc-400">
-					Latest model movement
-				</p>
+{tCopy("copy081")}
+</p>
 				<h2 className="max-w-md text-4xl font-semibold tracking-[-0.06em] text-zinc-950 dark:text-zinc-50">
-					A short market read, not another content block.
-				</h2>
+{tCopy("copy082")}
+</h2>
 				<p className="max-w-md text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-					The experimental version ends this section with a tighter update strip so
-					the page keeps momentum instead of collapsing into more generic cards.
-				</p>
+{tCopy("copy083")}
+</p>
 				<Link
 					href="/updates"
 					className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 				>
-					View all model updates
-					<ArrowRight className="h-4 w-4" />
+{tCopy("copy084")}
+<ArrowRight className="h-4 w-4" />
 				</Link>
 			</div>
 
@@ -69,7 +73,7 @@ export default async function ExperimentalUpdatesSection() {
 								<div className="flex flex-wrap items-center gap-2">
 									{update.badges?.[0] ? (
 										<span className={update.badges[0].className}>
-											{update.badges[0].label}
+											{localizedUpdateBadge(tEvents, update.badges[0].label)}
 										</span>
 									) : null}
 									{update.dateIso ? (

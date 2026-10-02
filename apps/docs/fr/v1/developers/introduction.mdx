@@ -1,0 +1,32 @@
+---
+title: "Fonctionnement de Phaseo"
+description: "Comprenez les modèles, fournisseurs, routage et facturation avant d’intégrer Phaseo."
+icon: "terminal"
+---
+
+Phaseo achemine les requêtes de modèles de votre application vers les fournisseurs via une API. Votre application choisit le modèle et le point d’accès ; les réglages de l’espace de travail et les contrôles de requête déterminent les fournisseurs pouvant la traiter.
+
+## Modèles et fournisseurs
+
+Un modèle est le système qui génère la sortie. Un fournisseur l’héberge et détermine sa disponibilité, ses paramètres compatibles, ses tarifs et ses performances. Un même modèle peut avoir plusieurs offres fournisseurs.
+
+Le catalogue public comprend aussi des modèles actuellement indisponibles via le Gateway. Vérifiez la [disponibilité du modèle](../exploring/models.mdx) avant d’utiliser un identifiant dans une requête.
+
+## Requêtes et routage
+
+Utilisez [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) selon le protocole de votre application. Les capacités varient selon le fournisseur ; un point d’accès commun ne signifie pas que chaque modèle accepte chaque paramètre.
+
+Les [contrôles de routage](../guides/routing-and-fallbacks.mdx) permettent de limiter les fournisseurs et de choisir leur classement. Les replis restent soumis à vos restrictions et à la capacité disponible ; ils ne garantissent pas le succès.
+
+## Facturation et accès
+
+Les requêtes gérées utilisent le solde de votre espace de travail Phaseo. Les modèles `:free` fonctionnent sans crédits déposés. Avec des identifiants fournisseur (BYOK), sa facturation et ses limites de compte s’appliquent ; consultez les [tarifs et la facturation](../pricing/tiers.mdx) avant le déploiement.
+
+Les [tâches vidéo et par lots](../guides/async-video-and-batch.mdx) renvoient une tâche avant la fin du traitement. Leur accès de préversion est géré par espace de travail. Interrogez le statut ou recevez des mises à jour webhook, puis téléchargez le résultat.
+
+## Créer votre intégration
+
+- [Démarrage rapide](../quickstart.mdx) : envoyez votre première requête.
+- [Intégrer le Gateway](./integrating-with-the-gateway.mdx) : gardez les identifiants sur votre backend et configurez l’application.
+- [Fiabilité et statut](./reliability-and-status.mdx) : examinez la disponibilité et les requêtes échouées.
+- [Journaux et observabilité](../guides/integrations/observability.mdx) : examinez l’utilisation, la latence, le coût et les erreurs.

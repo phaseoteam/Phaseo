@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 Go Agent 的轮次之间更改模型、指令、工具和采样设置。"
+---
+
+动态轮次回调让路由可以根据运行状态作出响应，无需重新构建 Agent。回调会在每次模型请求前运行，并接收当前轮次上下文。
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+还可以配置动态工具，以及每轮的 `Temperature`、`MaxOutputTokens` 和 `TopP` 值。
+
+## 让工具影响下一轮
+
+在工具上设置 `NextTurn` 可更改紧接着的下一次模型请求。这些覆盖值会存入暂停状态，因此可跨越审批检查点，并在下一轮后失效。
+
+对于需要在每轮重新计算的策略，请使用动态回调。对于特定工具的交接（例如检查仓库后切换模型），请使用 `NextTurn`。

@@ -1,0 +1,83 @@
+---
+title: "Anthropic Claude Opus 4.8"
+description: "À connaître pour adopter Claude Opus 4.8, notamment la réflexion adaptative, les contrôles d’échantillonnage et le long contexte."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.8
+
+Suivez ce guide pour adopter `anthropic/claude-opus-4.8` en production en toute sécurité.
+
+Anthropic a déclaré Claude Opus 4.1 obsolète le 5 juin 2026 et a prévu son retrait le 5 août 2026. Les consignes de migration sont cumulatives : appliquez d’abord les changements de requête d’Opus 4.7, puis examinez les changements de comportement d’Opus 4.8.
+
+## Nouveautés
+
+- L’identifiant de modèle Phaseo est `anthropic/claude-opus-4.8`.
+- Opus 4.7 et les versions ultérieures rejettent les paramètres d’échantillonnage non définis par défaut, comme `temperature`, `top_p` et `top_k`.
+- Opus 4.7 et les versions ultérieures rejettent les budgets manuels de réflexion étendue ; utilisez la réflexion adaptative.
+- Opus 4.8 définit `output_config.effort` sur `high` par défaut.
+- Opus 4.8 prend en charge les messages système au milieu d’une conversation.
+- Opus 4.8 porte les limites de référence à un million de tokens de contexte et 128 000 tokens de sortie maximale sur l’API Claude, Claude Platform sur AWS, Amazon Bedrock et Vertex AI.
+
+## Démarrage rapide de la migration
+
+### 1. Mettez à jour l’identifiant du modèle
+
+Utilisez `anthropic/claude-opus-4.8`.
+
+### 2. Supprimez les paramètres d’échantillonnage non définis par défaut
+
+Si vos requêtes Opus 4.1 définissent encore l’un de ces paramètres, supprimez-le avant le déploiement :
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Sur Opus 4.7 et les versions ultérieures, les valeurs non définies par défaut renvoient `400`.
+
+### 3. Remplacez les budgets manuels de réflexion par la réflexion adaptative
+
+Si vous envoyez encore une ancienne charge de réflexion telle que :
+
+- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+
+remplacez-la par :
+
+- `thinking: { "type": "adaptive" }`
+- `output_config.effort = "high"` comme valeur de référence
+
+### 4. Redéfinissez les attentes en matière d’effort et de long contexte
+
+Opus 4.8 utilise `high` par défaut et accepte un contexte bien plus long qu’Opus 4.1 sur les API exploitées par Anthropic. Retestez :
+
+- les budgets de latence
+- l’utilisation des tokens
+- le comportement de mise en cache des prompts
+- les traces d’agents et les longs documents
+
+Avec Microsoft Foundry, ne supposez pas que la fenêtre d’un million de tokens est disponible dès le lancement ; Anthropic documente une fenêtre de 200 000 tokens pour Opus 4.8 sur Foundry.
+
+### 5. Revérifiez les changements d’instructions dans les longues conversations
+
+Opus 4.8 accepte les messages système au milieu d’une conversation. Si votre boucle d’agent réécrit actuellement tout le prompt système à chaque tour, vous pourriez simplifier le flux et conserver davantage de succès de cache.
+
+## Points à tester
+
+- Les requêtes qui envoient encore `temperature`, `top_p` ou `top_k`.
+- Les routes de réflexion qui dépendaient auparavant de `budget_tokens`.
+- Les flux d’agents et d’outils de longue durée.
+- Les sorties sensibles aux schémas avec des niveaux `effort` explicites.
+- Les écarts de coût en tokens et de latence sur vos catégories de prompts Opus 4.1 les plus utilisées.
+
+## Déploiement sûr
+
+1. Supprimez les paramètres d’échantillonnage et les anciens budgets de réflexion avant de déplacer le trafic.
+2. Exécutez Opus 4.8 en parallèle sur des prompts et des flux d’outils proches de la production.
+3. Faites un déploiement progressif en gardant une solution de repli pendant la période de chevauchement précédant le 5 août 2026.
+4. Augmentez le trafic seulement lorsque les écarts de latence, de coût et d’achèvement respectent vos objectifs.
+
+## Sources
+
+- [Dépréciations des modèles Anthropic](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Guide de migration Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Nouveautés de Claude Opus 4.8](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

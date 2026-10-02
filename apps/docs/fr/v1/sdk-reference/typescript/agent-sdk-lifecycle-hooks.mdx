@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "Hooks de cycle de vie"
+description: "Réagissez aux événements d’exécution, de modèle, d’étape, d’outil et de point de contrôle."
+---
+
+Utilisez `onEvent` pour mettre à jour les interfaces produit, écrire des journaux d’audit ou relier l’activité de l’agent à votre télémétrie existante.
+
+## Écouter une exécution
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+Gardez les gestionnaires d’événements légers. Déplacez les opérations réseau ou de stockage lentes vers la file d’attente de votre application si elles ne doivent pas retarder l’exécution.
+
+## Familles d’événements
+
+| Famille | Événements |
+| --- | --- |
+| Exécution | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| Étape | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| Modèle | `model.requested`, `model.completed`, `model.failed` |
+| Outil | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| État | `checkpoint.saved` |
+
+`step.completed` est émis après l’enregistrement du point de contrôle de l’étape terminée. Les systèmes de persistance ou de télémétrie peuvent ainsi le considérer comme une limite stable.
+
+## Choisir les événements d’une interface produit
+
+- Utilisez les différentiels du modèle du [streaming](./agent-sdk-streaming.mdx) pour afficher le texte de réponse en temps réel.
+- Utilisez les événements d’outil pour afficher des cartes d’appel et des indicateurs de progression.
+- Utilisez `run.waiting_for_human` pour afficher les commandes d’approbation ou de saisie.
+- Utilisez les événements de fin d’exécution pour fermer les états de chargement et enregistrer les résultats.
+
+## Guides associés
+
+- [Diffusion en continu](./agent-sdk-streaming.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

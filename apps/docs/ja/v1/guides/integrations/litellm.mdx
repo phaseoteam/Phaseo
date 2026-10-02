@@ -1,0 +1,56 @@
+---
+title: "LiteLLM"
+icon: "route"
+description: "LiteLLMの背後でPhaseoを使うか、LiteLLMの呼び出しをPhaseo経由でルーティングします。"
+---
+
+LiteLLMのプロキシ、予算管理、ローカルルーターをすでに利用していて、Phaseoのモデル、分析機能、サーバーツールも使いたい場合は、LiteLLMをPhaseoと組み合わせます。
+
+## Pythonから直接呼び出す
+
+```bash
+pip install litellm
+```
+
+```python
+import os
+from litellm import completion
+
+response = completion(
+    model="openai/openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(response.choices[0].message.content)
+```
+
+LiteLLMはOpenAI互換エンドポイントにプロバイダープレフィックス`openai/`をよく使います。PhaseoのモデルIDは`openai/gpt-5-nano`のままなので、LiteLLMのモデル文字列は`openai/openai/gpt-5-nano`のようになります。
+
+## Proxyの設定
+
+アプリケーションコードにLiteLLMのプロバイダープレフィックスを含めたくない場合は、モデルエイリアスを使います。
+
+```yaml
+model_list:
+  - model_name: phaseo-gpt-5-nano
+    litellm_params:
+      model: openai/openai/gpt-5-nano
+      api_key: os.environ/PHASEO_API_KEY
+      api_base: https://api.phaseo.app/v1
+```
+
+その後、`model: "phaseo-gpt-5-nano"`を指定してLiteLLMプロキシを呼び出します。
+
+## 補足
+
+- 本番環境では、モデル名を読みやすく保てるLiteLLMエイリアスを推奨します。
+- Phaseoのサーバーツールを使う場合は、LiteLLMの経路を実際にテストしてください。プロキシ層によっては不明なツールタイプが正規化されたり破棄されたりします。
+- 価格の記録元をLiteLLM、Phaseo、または両方のどれにするか決めてください。
+
+## 関連項目
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [サーバーツール](../server-tools/index.mdx)
+- [料金](../../api-reference/endpoint/pricing-calculate.mdx)

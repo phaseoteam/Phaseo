@@ -1,0 +1,40 @@
+---
+icon: "binary"
+title: "Représentations vectorielles"
+description: "Appelez /embeddings avec le SDK TypeScript."
+---
+
+**Méthode** : `client.generateEmbedding()`.
+
+### Exemple
+```typescript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+### Paramètres principaux
+- `model` (obligatoire) : identifiant du modèle d’embeddings (par exemple, `openai/text-embedding-3-large`).
+- `input` (obligatoire) : une chaîne ou un tableau de chaînes.
+- `encoding_format` : `float` (par défaut) ou `base64`.
+- `dimensions` : entier facultatif pour réduire la longueur de l’embedding (selon le modèle).
+- `user` : étiquette facultative pour l’utilisateur final.
+
+### Valeur renvoyée
+Charge utile d’embeddings (JSON)
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```

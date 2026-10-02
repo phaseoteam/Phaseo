@@ -1,0 +1,10 @@
+---
+title: "Criar convite para o espaço de trabalho"
+sidebarTitle: "Criar convite"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "Cria um convite temporário para o espaço de trabalho."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `workspaces:write`.</Note>
+
+O `token` em texto simples é retornado uma única vez. Armazene-o com segurança; operações de listagem posteriores retornam apenas uma prévia.

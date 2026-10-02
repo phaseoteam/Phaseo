@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useId } from "react";
 import {
 	DndContext,
@@ -65,6 +67,7 @@ function ColumnGroupTarget({
 	pinned: boolean;
 	empty: boolean;
 }) {
+	const t = useTranslations("SettingsUI");
 	const { setNodeRef, isOver } = useDroppable({
 		id: pinned ? "pinned-columns" : "unpinned-columns",
 	});
@@ -78,11 +81,11 @@ function ColumnGroupTarget({
 		>
 			<div className="flex items-center gap-1.5 font-medium">
 				{pinned && <Pin className="size-3" />}
-				{pinned ? "Pinned" : "Unpinned"}
+				{pinned ? t("realtimeCopy.copyPinned") : t("realtimeCopy.unpin")}
 			</div>
 			{empty && (
 				<div className="mt-2 rounded-md border border-dashed px-2 py-3 text-center">
-					{pinned ? "Drag here to pin to the left" : "Drag here to unpin"}
+					{pinned ? t("realtimeCopy.dragPin") : t("realtimeCopy.dragUnpin")}
 				</div>
 			)}
 		</div>
@@ -102,6 +105,7 @@ function ColumnOption<Id extends string>({
 	onToggle: () => void;
 	onPin: () => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const { attributes, listeners, setNodeRef, transform, transition } =
 		useSortable({ id: column.id });
 	return (
@@ -114,7 +118,7 @@ function ColumnOption<Id extends string>({
 				type="button"
 				{...attributes}
 				{...listeners}
-				aria-label={`Reorder ${label}`}
+				aria-label={t("realtimeCopy.reorderColumn", { label })}
 				className="touch-none cursor-grab rounded p-1 text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
 			>
 				<GripVertical className="size-4" />
@@ -132,8 +136,8 @@ function ColumnOption<Id extends string>({
 			<button
 				type="button"
 				onClick={onPin}
-				aria-label={`${column.pinned ? "Unpin" : "Pin"} ${label}`}
-				title={column.pinned ? "Unpin column" : "Pin to the left"}
+				aria-label={column.pinned ? t("realtimeCopy.unpinColumnLabel", { label }) : t("realtimeCopy.pinColumn", { label })}
+				title={column.pinned ? t("realtimeCopy.unpinColumn") : t("realtimeCopy.pinLeft")}
 				className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
 			>
 				{column.pinned ? (
@@ -163,6 +167,8 @@ export default function TableSettings<Id extends string>({
 	density: TableDensity;
 	onDensityChange: (density: TableDensity) => void;
 }) {
+	const t = useTranslations("SettingsUI");
+	const columnLabel = (id: string | number) => id === "pinned-columns" ? t("realtimeCopy.copyPinned") : id === "unpinned-columns" ? t("realtimeCopy.unpin") : definitions.find(column => column.id === id)?.label ?? String(id);
 	const densityGroupId = useId();
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -175,18 +181,18 @@ export default function TableSettings<Id extends string>({
 		<Popover>
 			<PopoverTrigger
 				className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
-				aria-label={`Configure ${tableLabel} table`}
-				title="Table Settings"
+				aria-label={t("realtimeCopy.configureTable", { table: tableLabel })}
+				title={t("realtimeCopy.tableSettings")}
 			>
 				<Settings2 className="size-4" />
 			</PopoverTrigger>
 			<PopoverContent
 				align="end"
 				className="w-64 max-w-[calc(100vw-2rem)] max-h-[var(--available-height)] gap-1 overflow-hidden p-2"
-				aria-label={`${tableLabel} table settings`}
+				aria-label={t("realtimeCopy.tableSettingsLabel", { table: tableLabel })}
 			>
 				<div className="flex items-center justify-between">
-					<span className="font-medium">Table Settings</span>
+					<span className="font-medium">{t("realtimeCopy.tableSettings")}</span>
 					<Button
 						variant="ghost"
 						size="sm"
@@ -195,16 +201,16 @@ export default function TableSettings<Id extends string>({
 							onDensityChange("regular");
 						}}
 					>
-						Reset
-					</Button>
+						{t("realtimeCopy.copyReset")}</Button>
 				</div>
 				<Tabs defaultValue="columns" className="gap-2">
 					<TabsList variant="line" className="w-full justify-start border-b">
-						<TabsTrigger value="columns">Columns</TabsTrigger>
-						<TabsTrigger value="density">Density</TabsTrigger>
+						<TabsTrigger value="columns">{t("realtimeCopy.columns")}</TabsTrigger>
+						<TabsTrigger value="density">{t("realtimeCopy.density")}</TabsTrigger>
 					</TabsList>
 					<TabsContent value="columns">
 						<DndContext
+							accessibility={{ screenReaderInstructions: { draggable: t("realtimeCopy.dragInstructions") }, announcements: { onDragStart: ({ active }) => t("realtimeCopy.dragStart", { label: columnLabel(active.id) }), onDragOver: ({ active, over }) => over ? t("realtimeCopy.dragOver", { label: columnLabel(active.id), target: columnLabel(over.id) }) : undefined, onDragEnd: ({ active }) => t("realtimeCopy.dragEnd", { label: columnLabel(active.id) }), onDragCancel: ({ active }) => t("realtimeCopy.dragCancel", { label: columnLabel(active.id) }) } }}
 							sensors={sensors}
 							modifiers={columnDragModifiers}
 							collisionDetection={closestCenter}
@@ -229,7 +235,7 @@ export default function TableSettings<Id extends string>({
 								<ScrollArea
 									className="h-[min(45vh,320px,calc(var(--available-height)-100px))]"
 									viewportClassName="overscroll-contain pr-2"
-									viewportProps={{ "aria-label": "Table columns" }}
+									viewportProps={{ "aria-label": t("realtimeCopy.tableColumns") }}
 								>
 									<ColumnGroupTarget
 										pinned
@@ -283,12 +289,12 @@ export default function TableSettings<Id extends string>({
 					</TabsContent>
 					<TabsContent value="density">
 						<fieldset className="py-1">
-							<legend className="sr-only">Row density</legend>
+							<legend className="sr-only">{t("realtimeCopy.rowDensity")}</legend>
 							{(
 								[
-									{ value: "compact", label: "Compact", icon: Rows4 },
-									{ value: "regular", label: "Regular", icon: Rows3 },
-									{ value: "expanded", label: "Expanded", icon: Rows2 },
+									{ value: "compact", label: t("realtimeCopy.copyCompact"), icon: Rows4 },
+									{ value: "regular", label: t("realtimeCopy.regular"), icon: Rows3 },
+									{ value: "expanded", label: t("realtimeCopy.expanded"), icon: Rows2 },
 								] as const
 							).map(({ value, label, icon: Icon }) => (
 								<label

@@ -1,0 +1,270 @@
+---
+title: "त्रुटियाँ और डीबगिंग"
+description: "Phaseo की त्रुटियों को समझें और अनुरोध, प्रोवाइडर तथा रूटिंग की आम समस्याएँ जल्दी हल करें।"
+icon: "bug"
+---
+
+इस पेज का उपयोग यह समझने के लिए करें कि Phaseo की त्रुटि का क्या अर्थ है और आगे क्या करना है।
+
+हर त्रुटि प्रतिक्रिया एक ही JSON प्रारूप का उपयोग करती है, ताकि आपका ऐप मॉडल और प्रदाता के बीच होने वाली विफलताओं को एकसमान ढंग से संभाल सके।
+
+## त्रुटि प्रतिक्रिया का उदाहरण
+
+```json
+{
+  "generation_id": "G-abc123",
+  "status_code": 502,
+  "error": "upstream_error",
+  "error_type": "system",
+  "error_origin": "upstream",
+  "reason": "all_candidates_failed",
+  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "attempt_count": 1,
+  "failed_providers": ["google-ai-studio"],
+  "failed_statuses": [403],
+  "provider_failure_diagnostics": {
+    "category": "provider_access_missing",
+    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+    "provider": "google-ai-studio"
+  },
+  "upstream_error": {
+    "code": "PERMISSION_DENIED",
+    "message": "The caller does not have permission.",
+    "description": null,
+    "param": null
+  },
+  "failure_sample": [
+    {
+      "provider": "google-ai-studio",
+      "type": "upstream_non_2xx",
+      "status": 403,
+      "upstream_error_code": "PERMISSION_DENIED",
+      "upstream_error_message": "The caller does not have permission.",
+      "upstream_error_description": null,
+      "upstream_error_param": null,
+      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
+      "retryable": false
+    }
+  ]
+}
+```
+
+## वे फ़ील्ड जो हमेशा मिलेंगे
+
+- `generation_id`: स्थिर request ID जिसे आप support के साथ साझा कर सकते हैं।
+- `status_code`: HTTP स्थिति कोड से मेल खाता है।
+- `error`: मशीन-पठनीय त्रुटि कोड, जैसे `validation_error`।
+- `error_type`: उच्च-स्तरीय वर्ग, आम तौर पर `user` या `system`।
+- `error_origin`: बताता है कि समस्या मुख्य रूप से अनुरोध भेजने वाले, Phaseo या अपस्ट्रीम प्रदाता की वजह से हुई।
+- `description`: क्या हुआ इसका सरल विवरण।
+- `details` (वैकल्पिक): अनुरोध सत्यापन में समस्या होने पर उससे जुड़ी संरचित जानकारी।
+
+## अन्य फ़ील्ड जो दिख सकते हैं
+
+कुछ त्रुटियाँ समस्या जल्दी ठीक करने में मदद के लिए अतिरिक्त विवरण देती हैं:
+
+- `reason`: अधिक विशिष्ट कारण, जैसे `all_candidates_failed` या `pricing_not_configured`।
+- `provider_candidate_diagnostics` और `provider_enablement`: बताते हैं कि माँगे गए एंडपॉइंट पर मॉडल का उपयोग क्यों नहीं हो सका।
+- `routing_diagnostics`: बताता है कि रूटिंग या उपलब्धता-जाँच ने विकल्पों को कैसे सीमित किया।
+- `provider_failure_diagnostics`: क्रेडेंशियल अनुपलब्ध होने, पहुँच न मिलने, क्षेत्रीय प्रतिबंधों, दर सीमाओं और प्रदाता की ओर से हुई अन्य विफलताओं के संकेत देता है।
+- `upstream_error` और `failure_sample`: यदि अनुरोध किसी प्रदाता तक पहुँचा हो, तो पहली प्रदाता विफलता का उपलब्ध जानकारी पर आधारित सारांश।
+- `failed_providers`, `failed_statuses` और `attempt_count`: दोबारा प्रयास और विफलता के बाद दूसरे प्रदाता पर जाने का अतिरिक्त संदर्भ।
+
+## स्थिति श्रेणी संबंधी मार्गदर्शन
+
+| स्थिति | अर्थ | सुझाया गया कदम |
+| --- | --- | --- |
+| `400-499` | अनुरोध, प्रमाणीकरण या अनुमति की समस्या | दोबारा प्रयास से पहले अनुरोध या क्रेडेंशियल ठीक करें। |
+| `429` | प्रदाता या रूट स्तर पर अनुरोधों की दर सीमित होना | बढ़ते अंतराल के साथ दोबारा प्रयास करें और `Retry-After` का सम्मान करें। |
+| `500-599` | Phaseo या अपस्ट्रीम प्रदाता की विफलता | यादृच्छिक अंतर वाले बढ़ते विलंब के साथ दोबारा प्रयास करें और अनुरोध ID लॉग करें। |
+
+## आम त्रुटि कोड
+
+| प्रकार | HTTP स्थिति | विवरण |
+| --- | --- | --- |
+| `authentication_error` | `401` | API कुंजी मौजूद नहीं है या अमान्य है। |
+| `authorization_error` | `403` | इस कुंजी को संसाधन तक पहुँच की अनुमति नहीं है। |
+| `not_found_error` | `404` | एंडपॉइंट या संसाधन नहीं मिला। |
+| `rate_limit_error` | `429` | अनुरोधों की संख्या बहुत अधिक है। बताई गई देरी के बाद फिर प्रयास करें। |
+| `validation_error` | `400` | पैरामीटर या अनुरोध का मुख्य भाग अमान्य है। |
+| `provider_error` | `502` | अपस्ट्रीम मॉडल प्रदाता ने सही जवाब नहीं दिया। |
+| `server_error` | `500` | Phaseo में अनपेक्षित समस्या हुई। |
+
+## प्रदाता विफल होने पर
+
+यदि Phaseo किसी प्रदाता तक पहुँचा, लेकिन अनुरोध फिर भी विफल हुआ, तो आपको ये फ़ील्ड दिख सकते हैं:
+
+- `provider_failure_diagnostics.category`
+- `provider_failure_diagnostics.hint`
+- `provider_failure_diagnostics.provider`
+
+मौजूदा श्रेणियाँ:
+
+- `credentials_not_configured`
+- `credentials_invalid_or_forbidden`
+- `provider_access_missing`
+- `region_or_project_restriction`
+- `model_unavailable_for_endpoint`
+- `rate_limited`
+- `server_error`
+
+इन फ़ील्डों का उद्देश्य पूरा डीबग मोड चालू किए बिना समस्या ठीक करने में मदद करना है।
+
+## मॉडल या एंडपॉइंट उपलब्ध न हो
+
+`unsupported_model_or_endpoint` response में Phaseo ये दे सकता है:
+
+- `provider_candidate_diagnostics`
+- `provider_enablement`
+- `missing_pricing_providers`
+- `routing_diagnostics`
+
+इनसे आप अंतर समझ सकते हैं:
+
+- ज्ञात मॉडल जो अभी सक्रिय नहीं है
+- ऐसा मॉडल जो माँगे गए एंडपॉइंट का समर्थन नहीं करता
+- कीमत का डेटा मौजूद नहीं
+- क्रमिक रिलीज़ या आंतरिक उपलब्धता की पाबंदी
+
+आम फ़ील्ड:
+
+- `provider_candidate_diagnostics.totalProviders`: एंडपॉइंट फ़िल्टरिंग से पहले मॉडल के लिए ज्ञात प्रदाताओं की संख्या।
+- `provider_candidate_diagnostics.supportsEndpointCount`: माँगे गए एंडपॉइंट का समर्थन करने वाले प्रदाताओं की संख्या।
+- `provider_candidate_diagnostics.candidateCount`: अडैप्टर-जाँच के बाद बचे प्रदाताओं की संख्या।
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: एंडपॉइंट का समर्थन न होने के कारण हटाए गए प्रदाता।
+- `provider_candidate_diagnostics.droppedMissingAdapter`: उस एंडपॉइंट के लिए Gateway अडैप्टर उपलब्ध न होने के कारण हटाए गए प्रदाता/एंडपॉइंट जोड़े।
+- `provider_enablement.capability`: लागू की जा रही क्षमता-पाबंदी, जैसे `video_generation`।
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: क्षमता या सुविधा सक्रिय करने के आधार पर फ़िल्टर करने से पहले और बाद के प्रदाता।
+- `provider_enablement.dropped[].reason`: मशीन-पठनीय कारण, जैसे `pricing_missing`।
+- `routing_diagnostics.filterStages[].stage`: रूटिंग चरण, जैसे क्षमता, क्रमिक रिलीज़ या रूटिंग-स्थिति के आधार पर फ़िल्टर करना।
+- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: हर चरण से पहले और बाद में प्रदाताओं की संख्या।
+- `routing_diagnostics.filterStages[].droppedProviders[].reason`: मशीन-पठनीय कारण, जैसे क्रमिक रिलीज़ या रूटिंग प्रतिबंध।
+
+### उदाहरण
+
+```json
+{
+  "generation_id": "G-unsupported123",
+  "status_code": 400,
+  "error": "unsupported_model_or_endpoint",
+  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+  "provider_candidate_diagnostics": {
+    "totalProviders": 3,
+    "supportsEndpointCount": 2,
+    "candidateCount": 1,
+    "droppedUnsupportedEndpoint": ["provider-a"],
+    "droppedMissingAdapter": [
+      {
+        "providerId": "provider-b",
+        "endpoint": "responses"
+      }
+    ]
+  },
+  "provider_enablement": {
+    "capability": "responses",
+    "providersBefore": ["provider-b", "provider-c"],
+    "providersAfter": ["provider-c"],
+    "dropped": [
+      {
+        "providerId": "provider-b",
+        "reason": "pricing_missing"
+      }
+    ]
+  },
+  "routing_diagnostics": {
+    "filterStages": [
+      {
+        "stage": "provider_routing_status",
+        "beforeCount": 1,
+        "afterCount": 0,
+        "droppedProviders": [
+          {
+            "providerId": "provider-c",
+            "reason": "provider_status_not_ready"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## वैकल्पिक डीबग मोड
+
+समस्या की जाँच को नियंत्रित रखने के लिए अधिकांश अनुरोध स्कीमा `debug` ऑब्जेक्ट का समर्थन करते हैं:
+
+```json
+{
+  "debug": {
+    "enabled": true,
+    "return_upstream_request": true,
+    "return_upstream_response": false,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+उपलब्ध फ़ील्ड:
+
+- `enabled`
+- `return_upstream_request`
+- `return_upstream_response`
+- `trace`
+- `trace_level` (`summary` या `full`)
+
+Debug mode केवल development या कड़ाई से नियंत्रित environments में उपयोग करें।
+
+## पुनः प्रयास की रणनीति
+
+- **429 को छोड़कर 400-श्रेणी की त्रुटियाँ:** पुनः प्रयास से पहले अनुरोध, क्रेडेंशियल या पहुँच नीति ठीक करें।
+- **429:** Exponential backoff लागू करें और `Retry-After` header का पालन करें।
+- **500-श्रेणी की त्रुटियाँ:** सीमित पुनः प्रयास केवल तभी करें जब ऑपरेशन दोहराना सुरक्षित हो। अनिश्चित परिणाम वाले सबमिशन से जॉब बन चुका हो सकता है या शुल्क लग चुका हो सकता है; स्वीकार किए गए जॉब को दोबारा भेजने के बजाय उसकी जानकारी प्राप्त करें।
+
+प्रयासों की सीमा और कुल समय सीमा तय करें तथा बैकऑफ़ विलंब में यादृच्छिक बदलाव जोड़ें। प्रतिक्रिया हेडर और पुनः प्रयास संभालने के लिए [अनुरोध सीमाएँ](./limits.mdx) देखें।
+
+## स्ट्रीमिंग के लिए खास बातें
+
+- Streaming शुरू होने से पहले request विफल हो, तो standard JSON error payload मिलता है।
+- Stream के बीच में विफलता हो, तो partial stream को अधूरा मानें और retry का विकल्प दें।
+- हमेशा `generation_id` और endpoint/model metadata रिकॉर्ड करें।
+
+## समस्या हल करने के सुझाव
+
+- चल रही घटनाओं के लिए [Gateway status page](https://status.phaseo.app) देखें।
+- Request payload को endpoint docs से मिलाकर देखें।
+- Support से संपर्क करते समय `generation_id` साझा करें।
+
+## संबंधित संसाधन
+
+<Columns cols={2}>
+	<Card
+		title="प्रमाणीकरण"
+		icon="key"
+		href="../developers/authentication.mdx"
+	>
+		Bearer API keys से authenticate करें।
+	</Card>
+	<Card
+		title="सीमाएँ"
+		icon="gauge"
+		href="./limits.mdx"
+	>
+		Provider की throttling और retries संभालें।
+	</Card>
+	<Card
+		title="स्ट्रीमिंग"
+		icon="radio"
+		href="../guides/streaming.mdx"
+	>
+		Production flows में SSE को सुरक्षित रूप से उपयोग करें।
+	</Card>
+</Columns>
+
+<Visibility for="agents">
+अगर आप एजेंट के रूप में error handling लागू कर रहे हैं:
+
+- पुनः प्रयास के नियम, संरचित लॉगिंग और स्कीमा-सुरक्षित त्रुटि विश्लेषण के लिए रिपॉज़िटरी के कौशल इस्तेमाल करें।
+- Debug payloads को संभावित संवेदनशील मानें और persistent logs में लिखने से पहले redact करें।
+- बिना सीमा वाले loop के बजाय deterministic retries (सीमित प्रयास और jitter) अपनाएँ।
+</Visibility>

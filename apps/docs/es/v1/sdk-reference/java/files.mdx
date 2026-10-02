@@ -1,0 +1,30 @@
+---
+icon: "files"
+title: "Archivos"
+description: "Usa el SDK de Java para subir archivos y consultar sus metadatos y contenido."
+---
+
+**Métodos**: `Phaseo#uploadFile(...)`, `Phaseo#listFiles(...)`, `Phaseo#retrieveFile(...)`, `Phaseo#retrieveFileContent(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
+
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
+
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+
+System.out.println(String.valueOf(file));
+System.out.println(new String(content));
+```
+
+<Note>
+`listFiles(...)` está conectado en el SDK, pero `GET /files` devuelve actualmente `file_list_not_supported_with_shared_gateway_key` con la clave compartida del gateway.
+Guarda los ID de los archivos subidos y recupéralos directamente.
+</Note>

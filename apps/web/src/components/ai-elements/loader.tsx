@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { HTMLAttributes } from "react";
 
 type LoaderIconProps = {
   size?: number;
+  label: string;
 };
 
-const LoaderIcon = ({ size = 16 }: LoaderIconProps) => (
+const LoaderIcon = ({ size = 16, label }: LoaderIconProps) => (
   <svg
     height={size}
     strokeLinejoin="round"
@@ -13,7 +15,7 @@ const LoaderIcon = ({ size = 16 }: LoaderIconProps) => (
     viewBox="0 16"
     width={size}
   >
-    <title>Loader</title>
+    <title>{label}</title>
     <g clipPath="url(#clip0_2393_1490)">
       <path d="M8 0V4" stroke="currentColor" strokeWidth="1.5" />
       <path
@@ -83,14 +85,18 @@ export type LoaderProps = HTMLAttributes<HTMLDivElement> & {
   size?: number;
 };
 
-export const Loader = ({ className, size = 16, ...props }: LoaderProps) => (
-  <div
-    className={cn(
-      "inline-flex animate-spin items-center justify-center",
-      className
-    )}
-    {...props}
-  >
-    <LoaderIcon size={size} />
-  </div>
-);
+export const Loader = ({ className, size = 16, ...props }: LoaderProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <div
+      className={cn(
+        "inline-flex animate-spin items-center justify-center",
+        className
+      )}
+      {...props}
+    >
+      <LoaderIcon label={t("loading")} size={size} />
+    </div>
+  );
+};

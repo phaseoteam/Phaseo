@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condições de parada"
+description: "Limite o trabalho de agentes Go por etapas, tokens, custo, duração, ferramentas ou motivo de conclusão."
+---
+
+`MaxSteps` é um limite de segurança útil. `StopWhen` adiciona limites de produto combináveis, avaliados conforme a execução avança.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+Outros helpers incluem `HasToolCall("publish_report")` e `FinishReasonIs("content_filter")`. Você também pode fornecer uma `StopCondition` personalizada quando a decisão depender do contexto da aplicação.
+
+Quando uma condição for atendida, inspecione `result.Run.StopReason`, os totais de uso normalizados e a última etapa concluída. A parada é um resultado limitado bem-sucedido, a menos que a aplicação escolha tratar esse motivo como erro.

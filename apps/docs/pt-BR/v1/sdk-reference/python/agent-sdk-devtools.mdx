@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "Ferramentas de desenvolvimento"
+description: "Capture localmente as execuções do SDK de agentes Python para desenvolvimento e depuração."
+---
+
+Ative a captura local em JSONL com `create_agent_devtools(...)` e passe para `run(...)`, `stream(...)`, or continuation.
+
+As entradas capturadas incluem status e duração, detalhes do modelo e do provedor, IDs de solicitação, mensagens, etapas, atividade das ferramentas, uso, custo e erros estruturados.
+
+<Warning>
+As entradas do agente, o contexto e os resultados das ferramentas podem conter dados confidenciais. Não inclua saídas do DevTools no controle de versão nem em imagens de produção.
+</Warning>
+
+## Relacionados
+
+- [Hooks do ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [Erros e solução de problemas](./agent-sdk-observability.mdx)

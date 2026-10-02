@@ -1,0 +1,36 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "PHP SDKで/moderationsを呼び出します。"
+---
+
+**メソッド**: `generateModeration()`、`createModeration()`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createModeration([
+    'model' => 'openai/omni-moderation-latest',
+    'input' => 'Text to classify'
+]);
+echo $response['results'][0]['flagged'] ? 'Flagged' : 'Not flagged';
+```
+
+### 主なパラメーター
+
+-   `model`（必須）：モデレーションモデルのID（例：`openai/omni-moderation-latest`）。
+-   `input`（必須）：コンテンツ項目（テキストまたは`image_url`）。
+-   任意：`categories`／`severity`フィルター（対応する場合）と`user`タグ。
+
+### 戻り値
+
+モデレーションレスポンス

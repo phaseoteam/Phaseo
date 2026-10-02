@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ export function RouteRequestDetailErrorDialog({
 	onRetry?: () => void;
 }) {
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
 
 	return (
 		<Dialog
@@ -35,18 +37,17 @@ export function RouteRequestDetailErrorDialog({
 		>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Request details unavailable</DialogTitle>
+					<DialogTitle>{t("strings.Request details unavailable" as never)}</DialogTitle>
 					<DialogDescription>
-						We couldn&apos;t load this request. Try again or return to the
-						request logs.
+						{t("strings.phraseWeCouldnTLoadThisRequestTryAgainOrReturnToTheRequestLogs" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>
 					<Button variant="outline" onClick={onRetry ?? (() => router.refresh())}>
-						Try again
+						{t("strings.Try again" as never)}
 					</Button>
 					<Button asChild>
-						<Link href={closeHref}>Back to request logs</Link>
+						<Link href={closeHref}>{t("strings.Back to request logs" as never)}</Link>
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -70,6 +71,7 @@ export default function RouteRequestDetailDialog({
 	total?: number | null;
 }) {
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
 	const modelMetadata = React.useMemo(
 		() => new Map(detail.modelMetadata ?? []),
 		[detail.modelMetadata],
@@ -105,23 +107,23 @@ export default function RouteRequestDetailDialog({
 					<div className="flex items-center gap-1">
 						{previousHref ? (
 							<Button asChild variant="ghost" size="icon-sm">
-								<Link href={previousHref} prefetch aria-label="Open previous request">
+								<Link href={previousHref} prefetch aria-label={t("strings.Open previous request" as never)}>
 									<ChevronLeft className="size-4" />
 								</Link>
 							</Button>
 						) : (
-							<Button variant="ghost" size="icon-sm" disabled aria-label="No previous request">
+							<Button variant="ghost" size="icon-sm" disabled aria-label={t("strings.No previous request" as never)}>
 								<ChevronLeft className="size-4" />
 							</Button>
 						)}
 						{nextHref ? (
 							<Button asChild variant="ghost" size="icon-sm">
-								<Link href={nextHref} prefetch aria-label="Open next request">
+								<Link href={nextHref} prefetch aria-label={t("strings.Open next request" as never)}>
 									<ChevronRight className="size-4" />
 								</Link>
 							</Button>
 						) : (
-							<Button variant="ghost" size="icon-sm" disabled aria-label="No next request">
+							<Button variant="ghost" size="icon-sm" disabled aria-label={t("strings.No next request" as never)}>
 								<ChevronRight className="size-4" />
 							</Button>
 						)}

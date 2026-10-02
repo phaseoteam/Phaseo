@@ -1,0 +1,59 @@
+---
+icon: "brain-circuit"
+title: "モデル"
+description: "C# SDKでモデルを一覧表示します。"
+---
+
+**メソッド**：`client.ListModels(...)`
+
+### 例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10"
+});
+```
+
+### パラメーター
+- 任意のフィルター：`provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`、`organisation`、`endpoints`、`input_types`、`output_types`、`params`、`availability`、`limit`、`offset`。
+- ロールアウト状態の`preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused`、`soft_blocked`などを取得する場合、`availability = "all"`と`provider_availability_reason`が役立ちます。
+- ルーティングできないエンドポイントの対応付け（`coming_soon`、`internal_testing`など）を取得する場合、`availability = "all"`と`capability_status`が役立ちます。
+
+### 戻り値
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

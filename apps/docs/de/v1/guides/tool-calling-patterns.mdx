@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "Muster für Tool-Aufrufe"
+description: "Zuverlässige Tool-Aufruf-Schleifen für Chat-Completions- und Responses-Endpunkte."
+---
+
+Nutze diese Muster, damit Tool-Aufruf-Schleifen deterministisch und leicht zu debuggen sind.
+
+## Muster 1: Chat-Completions-Schleife
+
+1. Sende die Nutzernachricht und die Tool-Definitionen.
+2. Wenn `finish_reason` den Wert `tool_calls` hat, führe jeden Tool-Aufruf aus.
+3. Sende die Tool-Ergebnisse als Nachrichten mit `role: "tool"` zurück.
+4. Lies die endgültige Antwort des Assistenten.
+
+### Anfrage (Fortsetzung)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Muster 2: Responses-Schleife
+
+Bei `/v1/responses` erscheinen Tool-Aufrufe des Modells als Ausgabe-Elemente vom Typ `function_call`.
+Sende anschließend eine Folgeanfrage mit `function_call_output`-Eingabeelementen.
+
+### Anfrage (Folgeanfrage)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## Endpunkt auswählen
+
+- Nutze `/v1/chat/completions`, wenn du bereits OpenAI-ähnliche Nachrichtenabläufe verwendest.
+- Nutze `/v1/responses`, wenn deine Anwendung auf die Responses-API standardisiert ist.
+- Nutze `/v1/messages`, wenn deine Anwendung auf Anthropic ausgelegt ist.
+

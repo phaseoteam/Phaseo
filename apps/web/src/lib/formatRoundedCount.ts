@@ -12,22 +12,29 @@ const COUNT_UNITS = [
 	[1e3, "K"],
 ] as const;
 
-export function formatRoundedCount(value: number): string {
+export function formatRoundedCount(value: number, locale?: string): string {
 	if (!Number.isFinite(value)) return "--";
 
 	for (const [threshold, suffix] of COUNT_UNITS) {
-		if (value >= threshold) return `${Math.floor(value / threshold)}${suffix}`;
+		if (value >= threshold) {
+			const rounded = Math.floor(value / threshold);
+			if (locale && !locale.startsWith("en")) return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 20 }).format(rounded * threshold);
+			return `${rounded.toLocaleString(locale, { useGrouping: false })}${suffix}`;
+		}
 	}
 
-	return Math.floor(value).toLocaleString();
+	return Math.floor(value).toLocaleString(locale);
 }
 
-export function formatCompactAxisTick(value: number): string {
+export function formatCompactAxisTick(value: number, locale?: string): string {
 	if (!Number.isFinite(value)) return "--";
 
 	for (const [threshold, suffix] of COUNT_UNITS) {
-		if (value >= threshold) return `${value / threshold}${suffix}`;
+		if (value >= threshold) {
+			if (locale && !locale.startsWith("en")) return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 20 }).format(value);
+			return `${locale ? new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 20 }).format(value / threshold) : value / threshold}${suffix}`;
+		}
 	}
 
-	return String(value);
+	return locale ? new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 20 }).format(value) : String(value);
 }

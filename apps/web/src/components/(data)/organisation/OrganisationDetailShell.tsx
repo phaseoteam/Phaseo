@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
 import Image from "next/image";
 import Link from "next/link";
 import { List, MapPin, PanelsTopLeft } from "lucide-react";
@@ -25,6 +26,8 @@ export default async function OrganisationDetailShell({
 	tocItems = [],
 	tab = "overview",
 }: OrganisationDetailShellProps) {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.organisations");
 	const header = await fetchFrontendOrganisationHeader(organisationId).catch(() => null);
 
 	if (!header) {
@@ -37,11 +40,10 @@ export default async function OrganisationDetailShell({
 							<span className="text-xl">🏢</span>
 						</div>
 						<p className="text-base font-medium">
-							We don&apos;t know that lab... yet!
+							{t("unknownLabTitle")}
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
-							If we&apos;re missing a lab, please
-							open a data request.
+							{t("unknownLabDescription")}
 						</p>
 						<div className="mt-3">
 							<a
@@ -50,17 +52,17 @@ export default async function OrganisationDetailShell({
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 							>
-								Request missing data
+								{t("requestMissingData")}
 								<Image
 									src="/social/github_light.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="inline dark:hidden"
 								/>
 								<Image
 									src="/social/github_dark.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="hidden dark:inline"
@@ -74,7 +76,7 @@ export default async function OrganisationDetailShell({
 	}
 
 	const countryCode = header.country_code;
-	const location = formatLocation(countryCode, header.subdivision_code);
+	const location = formatLocation(countryCode, header.subdivision_code, locale);
 
 	return (
 		<main className="flex flex-col">
@@ -110,7 +112,7 @@ export default async function OrganisationDetailShell({
 						</div>
 					</div>
 					<div className="flex w-full gap-2 sm:w-auto sm:flex-col">
-						{tab === "models" ? <Button asChild variant="outline" size="sm" className="flex-1 rounded-lg sm:flex-none"><Link href={`/organisations/${organisationId}`}><PanelsTopLeft className="size-4" />Overview</Link></Button> : <Button asChild variant="outline" size="sm" className="flex-1 rounded-lg sm:flex-none"><Link href={`/organisations/${organisationId}/models`}><List className="size-4" />Models</Link></Button>}
+						{tab === "models" ? <Button asChild variant="outline" size="sm" className="flex-1 rounded-lg sm:flex-none"><Link href={`/organisations/${organisationId}`}><PanelsTopLeft className="size-4" />{t("overviewTab")}</Link></Button> : <Button asChild variant="outline" size="sm" className="flex-1 rounded-lg sm:flex-none"><Link href={`/organisations/${organisationId}/models`}><List className="size-4" />{t("modelsTab")}</Link></Button>}
 						<OrganisationEditButton organisationId={organisationId} />
 					</div>
 				</div>

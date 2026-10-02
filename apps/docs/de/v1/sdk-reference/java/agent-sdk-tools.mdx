@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Werkzeuge"
+description: "Definiere validierte, genehmigungspflichtige, manuelle und Fortschritt meldende Java-Tools."
+---
+
+`AgentSdk.Tool` unterstützt:
+
+- JSON-`parameters`, die dem Modell angezeigt werden
+- `Validator`-Funktionen für Eingaben, Ausgaben und Fortschrittsereignisse
+- tool-spezifische `Duration`-Timeouts
+- bedingungslose oder bedingte Genehmigung
+- manuelle Tools, die von deiner Anwendung abgeschlossen werden
+- vorläufige Fortschrittsmeldungen über `RuntimeContext.emitProgress()`
+- Fehlerbehandlung mit `fail-run` oder `return-to-model`
+- Überschreibungen für den nächsten Turn nach erfolgreicher Tool-Ausführung
+
+Übergib Tool-Datensätze über `AgentSdk.defineTool(...)` und sichere Seiteneffekte durch ausdrückliche Genehmigung oder manuelle, anwendungseigene Ausführung ab.
+
+## Weiterführende Themen
+
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

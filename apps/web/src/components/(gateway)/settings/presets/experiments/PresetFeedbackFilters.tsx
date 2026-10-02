@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import Link from "next/link";
 import * as React from "react";
 import { ArrowUpRight, X } from "lucide-react";
@@ -14,6 +16,7 @@ import {
 	SelectTrigger,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type PresetOption = {
 	id: string;
@@ -43,18 +46,18 @@ const RANGE_VALUES = new Set<PresetFeedbackFilterValues["range"]>([
 ]);
 
 const RANGE_LABELS: Record<PresetFeedbackFilterValues["range"], string> = {
-	"7d": "Last 7 Days",
-	"30d": "Last 30 Days",
-	"90d": "Last 90 Days",
-	custom: "Custom Range",
+	"7d": "Last 7 days",
+	"30d": "Last 30 days",
+	"90d": "Last 90 days",
+	custom: "Custom",
 };
 
 const RATING_LABELS: Record<string, string> = {
-	all: "All Ratings",
-	thumbs_up: "Thumbs Up",
-	thumbs_down: "Thumbs Down",
+	all: "All ratings",
+	thumbs_up: "Thumbs up",
+	thumbs_down: "Thumbs down",
 	correct: "Correct",
-	partly_correct: "Partly Correct",
+	partly_correct: "Partly correct",
 	incorrect: "Incorrect",
 	unsafe: "Unsafe",
 	unrated: "Unrated",
@@ -71,6 +74,7 @@ export function PresetFeedbackFilters({
 	baselineId: string | null;
 	metadataKeys: string[];
 }) {
+	const t = useTranslations("SettingsUI");
 	const [selectedBaselineId, setSelectedBaselineId] = React.useState(
 		baselineId ?? "none",
 	);
@@ -92,9 +96,9 @@ export function PresetFeedbackFilters({
 	return (
 		<section className="space-y-3">
 			<div>
-				<h2 className="text-sm font-semibold">Analysis</h2>
+				<h2 className="text-sm font-semibold">{t("strings.Analysis" as never)}</h2>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Choose the comparison baseline and narrow the feedback included below.
+					{t("strings.phraseChooseTheComparisonBaselineAndNarrowTheFeedbackIncludedBelow" as never)}
 				</p>
 			</div>
 			<form method="get">
@@ -106,8 +110,8 @@ export function PresetFeedbackFilters({
 				<div className="divide-y divide-border/70 border-y border-border/70">
 					<div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<Label htmlFor="baseline_id" className="text-sm font-medium">Comparison Baseline</Label>
-							<p className="mt-1 text-xs text-muted-foreground">Optional. Select a control only for A/B tests or staged rollouts.</p>
+				<Label htmlFor="baseline_id" className="text-sm font-medium">{t("strings.Comparison Baseline" as never)}</Label>
+				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseOptionalSelectAControlOnlyForABTestsOrStagedRollouts" as never)}</p>
 						</div>
 						<Select
 							value={selectedBaselineId}
@@ -116,15 +120,15 @@ export function PresetFeedbackFilters({
 							<SelectTrigger
 								id="baseline_id"
 								className={cn(controlClassName, "sm:w-72")}
-								aria-label="Baseline preset"
+					aria-label={t("strings.Baseline preset" as never)}
 							>
 								<span className="truncate">
-									{selectedBaseline?.displayName ?? "No Baseline"}
+									{selectedBaseline?.displayName ?? t("strings.No Baseline" as never)}
 								</span>
 							</SelectTrigger>
 							<SelectContent className={cn(contentClassName, "max-h-[320px]")}>
 								<SelectItem value="none" className={itemClassName}>
-									No Baseline
+									{t("strings.No Baseline" as never)}
 								</SelectItem>
 								{presets.map((preset) => (
 									<SelectItem key={preset.id} value={preset.id} className={itemClassName}>
@@ -141,8 +145,8 @@ export function PresetFeedbackFilters({
 					</div>
 					<div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<Label htmlFor="range" className="text-sm font-medium">Date Window</Label>
-							<p className="mt-1 text-xs text-muted-foreground">Limit feedback to a recent or custom period.</p>
+				<Label htmlFor="range" className="text-sm font-medium">{t("strings.Date Window" as never)}</Label>
+				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseLimitFeedbackToARecentOrCustomPeriod" as never)}</p>
 						</div>
 						<Select
 							value={range}
@@ -155,23 +159,23 @@ export function PresetFeedbackFilters({
 							<SelectTrigger
 								id="range"
 								className={cn(controlClassName, "sm:w-72")}
-								aria-label="Date window"
+					aria-label={t("strings.Date window" as never)}
 							>
-								<span>{RANGE_LABELS[range]}</span>
+								<span>{t(settingsStringKey(RANGE_LABELS[range]) as never)}</span>
 							</SelectTrigger>
 							<SelectContent className={contentClassName}>
-								<SelectItem value="7d" className={itemClassName}>Last 7 days</SelectItem>
-								<SelectItem value="30d" className={itemClassName}>Last 30 days</SelectItem>
-								<SelectItem value="90d" className={itemClassName}>Last 90 days</SelectItem>
-								<SelectItem value="custom" className={itemClassName}>Custom</SelectItem>
+					<SelectItem value="7d" className={itemClassName}>{t("strings.Last 7 days" as never)}</SelectItem>
+					<SelectItem value="30d" className={itemClassName}>{t("strings.Last 30 days" as never)}</SelectItem>
+					<SelectItem value="90d" className={itemClassName}>{t("strings.Last 90 days" as never)}</SelectItem>
+					<SelectItem value="custom" className={itemClassName}>{t("strings.Custom" as never)}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 					{isCustomRange ? (
 						<div className="grid gap-3 py-3 sm:grid-cols-[1fr_18rem] sm:items-center">
 							<div>
-								<p className="text-sm font-medium">Custom Dates</p>
-								<p className="mt-1 text-xs text-muted-foreground">Include feedback created within this range.</p>
+				<p className="text-sm font-medium">{t("strings.Custom Dates" as never)}</p>
+				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseIncludeFeedbackCreatedWithinThisRange" as never)}</p>
 							</div>
 							<div className="grid grid-cols-2 gap-2">
 								<DatePickerInput id="from" name="from" value={from} onChange={setFrom} />
@@ -181,33 +185,33 @@ export function PresetFeedbackFilters({
 					) : null}
 					<div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<Label htmlFor="rating" className="text-sm font-medium">Rating</Label>
-							<p className="mt-1 text-xs text-muted-foreground">Focus the analysis on a specific response outcome.</p>
+				<Label htmlFor="rating" className="text-sm font-medium">{t("strings.Rating" as never)}</Label>
+				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseFocusTheAnalysisOnASpecificResponseOutcome" as never)}</p>
 						</div>
 						<Select value={rating} onValueChange={setRating}>
 							<SelectTrigger
 								id="rating"
 								className={cn(controlClassName, "sm:w-72")}
-								aria-label="Rating filter"
+					aria-label={t("strings.Rating filter" as never)}
 							>
-								<span>{RATING_LABELS[rating] ?? "All Ratings"}</span>
+								<span>{t(settingsStringKey(RATING_LABELS[rating] ?? "All Ratings") as never)}</span>
 							</SelectTrigger>
 							<SelectContent className={contentClassName}>
-								<SelectItem value="all" className={itemClassName}>All ratings</SelectItem>
-								<SelectItem value="thumbs_up" className={itemClassName}>Thumbs up</SelectItem>
-								<SelectItem value="thumbs_down" className={itemClassName}>Thumbs down</SelectItem>
-								<SelectItem value="correct" className={itemClassName}>Correct</SelectItem>
-								<SelectItem value="partly_correct" className={itemClassName}>Partly correct</SelectItem>
-								<SelectItem value="incorrect" className={itemClassName}>Incorrect</SelectItem>
-								<SelectItem value="unsafe" className={itemClassName}>Unsafe</SelectItem>
-								<SelectItem value="unrated" className={itemClassName}>Unrated</SelectItem>
+					<SelectItem value="all" className={itemClassName}>{t("strings.All ratings" as never)}</SelectItem>
+					<SelectItem value="thumbs_up" className={itemClassName}>{t("strings.Thumbs up" as never)}</SelectItem>
+					<SelectItem value="thumbs_down" className={itemClassName}>{t("strings.Thumbs down" as never)}</SelectItem>
+					<SelectItem value="correct" className={itemClassName}>{t("strings.Correct" as never)}</SelectItem>
+					<SelectItem value="partly_correct" className={itemClassName}>{t("strings.Partly correct" as never)}</SelectItem>
+					<SelectItem value="incorrect" className={itemClassName}>{t("strings.Incorrect" as never)}</SelectItem>
+					<SelectItem value="unsafe" className={itemClassName}>{t("strings.Unsafe" as never)}</SelectItem>
+					<SelectItem value="unrated" className={itemClassName}>{t("strings.Unrated" as never)}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 					<div className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
 						<div>
-							<Label htmlFor="metadata_key" className="text-sm font-medium">Metadata Cohort</Label>
-							<p className="mt-1 text-xs text-muted-foreground">Group or filter feedback using an indexed metadata dimension.</p>
+				<Label htmlFor="metadata_key" className="text-sm font-medium">{t("strings.Metadata Cohort" as never)}</Label>
+				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseGroupOrFilterFeedbackUsingAnIndexedMetadataDimension" as never)}</p>
 						</div>
 						<div className="grid w-full gap-2 sm:w-72 sm:grid-cols-2">
 							<Input
@@ -236,20 +240,20 @@ export function PresetFeedbackFilters({
 
 				<div className="flex flex-wrap items-center justify-between gap-3 pt-3">
 					<p className="max-w-3xl text-xs text-muted-foreground">
-						Comparisons use explicit ratings. Positive means thumbs up or correct; negative means thumbs down, incorrect, or unsafe. Numeric scores are optional detail only.
+						{t("strings.phraseComparisonsUseExplicitRatingsPositiveMeansThumbsUpOrCorrectNegativeMeansThumbsDownIncorrectOrUnsafeNumericScoresAreOptionalDetailOnly" as never)}
 					</p>
 					<div className="flex items-center gap-2">
 						{hasFilters ? (
 							<Button asChild type="button" variant="ghost" size="sm">
 								<Link href="/settings/presets/experiments">
 									<X className="h-4 w-4" />
-									Reset
+									{t("strings.Reset" as never)}
 								</Link>
 							</Button>
 						) : null}
 						<Button type="submit" size="sm">
 							<ArrowUpRight className="h-4 w-4" />
-							Apply filters
+							{t("strings.Apply filters" as never)}
 						</Button>
 					</div>
 				</div>

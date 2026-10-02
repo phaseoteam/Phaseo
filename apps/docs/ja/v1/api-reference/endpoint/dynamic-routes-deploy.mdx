@@ -1,0 +1,10 @@
+---
+title: "動的ルートのバージョンをデプロイ"
+sidebarTitle: "バージョンをデプロイ"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /routing/dynamic-routes/{id}/versions/{version}/deploy"
+description: "変更不可のルートバージョンをデプロイします。"
+---
+<Note>このエンドポイントには `settings:write` 権限を持つ管理APIキーが必要です。</Note>
+
+デプロイにより、関連付けられているすべてのAPIキーのGatewayコンテキストが更新されます。

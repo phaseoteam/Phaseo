@@ -1,0 +1,100 @@
+---
+title: "Implementar guardrails en claves de API"
+icon: "shield-check"
+description: "Aplica guardrails a claves de API, prueba su aplicación antes del despliegue y verifica bloqueos, redacciones y alertas en la actividad."
+---
+
+Usa esta guía cuando necesites proteger una o varias claves de API con límites de presupuesto, restricciones de enrutamiento, comprobaciones de inyección de prompts o controles de información sensible.
+
+## 1. Crea el guardrail en el espacio de trabajo
+
+Crea primero los guardrails en el nivel del espacio de trabajo para poder reutilizar la misma política en varias claves.
+
+Para empezar:
+
+- añade restricciones de modelos y proveedores antes de las comprobaciones de contenido
+- limita el primer despliegue a una sola clave o entorno
+- asigna al guardrail un nombre que describa el resultado de la política, no el nombre del equipo
+
+## 2. Asócialo a una clave de API
+
+En la página de ajustes de la clave de API, asocia el guardrail a la clave que deba aplicar la política.
+
+Sigue este orden:
+
+1. empieza con una clave de pruebas o de bajo riesgo
+2. cuando sea posible, asocia un solo guardrail cada vez
+3. confirma que el cuadro de detalles de la clave muestra el guardrail aplicado
+
+## 3. Configura la política de presupuesto y las restricciones de enrutamiento
+
+Una combinación habitual incluye:
+
+- un límite de coste diario
+- una lista de proveedores bloqueados para proveedores de poca confianza
+- una lista de modelos permitidos con los modelos de producción exactos que deben seguir disponibles para el enrutamiento
+
+Usa la vista previa en tiempo real del editor de guardrails para comprobar:
+
+- qué proveedores siguen permitidos
+- qué modelos quedan bloqueados
+- si `Only allow` restringe más de lo previsto
+
+## 4. Añade reglas contra la inyección de prompts y para la información sensible
+
+Para un despliegue práctico:
+
+- empieza con `flag` o `redact` para la inyección de prompts
+- usa `block` solo después de revisar los falsos positivos
+- empieza por reglas deterministas para información sensible:
+  - correo electrónico
+  - teléfono
+  - número de la Seguridad Social
+  - tarjeta de crédito
+  - dirección IP
+
+Si necesitas patrones personalizados, añádelos como reglas regex explícitas y pruébalos en la entrada de vista previa antes de guardar.
+
+## 5. Prueba la política antes de ampliarla
+
+Usa la vista previa del guardrail con:
+
+- una entrada inocua
+- una entrada claramente prohibida
+- un prompt realista, parecido a los de producción
+
+Comprueba que haya:
+
+- texto de redacción correcto
+- comportamiento correcto de bloqueo y permiso
+- ninguna coincidencia accidental con contenido no relacionado
+
+## 6. Verifica la aplicación en la actividad y los registros
+
+Después de enviar solicitudes reales con la clave protegida, revisa:
+
+- el panel **Aplicación de guardrails** en la página de actividad
+- los cuadros de detalles de solicitudes bloqueadas o redactadas
+- el cuadro de detalles de la clave de API para ver la actividad de guardrails por clave
+
+Deberías ver:
+
+- el número de solicitudes bloqueadas
+- el número de solicitudes redactadas
+- el número de solicitudes marcadas
+- los detalles del guardrail y del detector concretos cuando se aplicó la política
+
+## 7. Amplía el despliegue de forma segura
+
+Cuando la primera clave funcione correctamente:
+
+1. asocia el mismo guardrail a más claves
+2. intensifica las acciones de `flag` a `redact` o `block`
+3. añade detección de nombres y direcciones de mayor latencia solo cuando el coste en latencia sea aceptable
+
+## Relacionado
+
+- [Preajustes](../guides/presets.mdx)
+- [Guía de inicio rápido](../quickstart.mdx)
+- [Agentes de programación con `SKILL.md`](./coding-agents-skill-md.mdx)
+

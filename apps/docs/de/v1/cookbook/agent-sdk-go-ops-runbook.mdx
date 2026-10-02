@@ -1,0 +1,64 @@
+---
+title: "Einen Ops-Runbook-Agenten in Go erstellen"
+icon: "clipboard-check"
+description: "Nutze das Go Agent SDK, um einige deterministische lokale Tools in einem begrenzten Ablauf zur Fehlerbehebung zu kombinieren."
+---
+
+Verwende dieses Rezept, wenn ein Go-Dienst operative Fragen mit lokalem Kontext beantworten soll.
+
+## 1. SDKs vorbereiten
+
+<Note type="warning">Für das Go Agent SDK gibt es noch keine öffentliche Modulversion. Folge der [Installationsanleitung aus dem Quellcode](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+
+## 2. Kleine Runtime-Tools definieren
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. Agent erstellen
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. Einen begrenzten Schritt zur Fehlerbehebung ausführen
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## Wann dieses Rezept passt
+
+- der Ablauf zu einem einzelnen Go-Dienst gehört
+- der benötigte Kontext bereits über lokale oder interne Aufrufe verfügbar ist
+- du einen Agent-Ablauf möchtest, ohne schon ein größeres Jobsystem einzuführen
+
+## Weiterführende Themen
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [Extraktionen mit web fetch absichern](./tool-grounding-with-web-fetch.mdx)

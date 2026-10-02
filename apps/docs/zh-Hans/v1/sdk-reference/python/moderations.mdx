@@ -1,0 +1,24 @@
+---
+icon: "shield-check"
+title: "内容审核"
+description: "使用 Python SDK 调用 `/moderations`。"
+---
+
+**方法**: `client.generate_moderation()`.
+
+### 示例
+```python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation-latest",
+    "input": "Text to classify",
+})
+```
+
+### 关键参数
+- `model`（必填）：内容审核模型 ID（例如 `openai/omni-moderation-latest`）。
+- `input`（必填）：字符串或内容项数组（文本或 `image_url`）。
+- 可选：`categories`/`severity` 过滤器（支持时）和 `user` 标签。
+
+### 返回值
+`ModerationResponse`
+

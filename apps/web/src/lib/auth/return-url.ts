@@ -1,4 +1,14 @@
+import { publicLocales } from "@/i18n/routing";
+
 export const DEFAULT_POST_AUTH_REDIRECT = "/";
+
+function stripPublicLocalePrefix(pathname: string): string {
+	const [firstSegment = ""] = pathname.slice(1).split("/", 1);
+	const isLocale = publicLocales.some(
+		(locale) => locale.toLowerCase() === firstSegment.toLowerCase(),
+	);
+	return isLocale ? pathname.slice(firstSegment.length + 1) || "/" : pathname;
+}
 
 export function sanitizeReturnUrl(
 	candidate: unknown,
@@ -20,7 +30,7 @@ export function sanitizeReturnUrl(
 	if (!normalized.startsWith("/")) return fallback;
 	if (normalized.startsWith("//")) return fallback;
 
-	const lower = normalized.toLowerCase();
+	const lower = stripPublicLocalePrefix(normalized).toLowerCase();
 	if (lower.startsWith("/sign-in") || lower.startsWith("/sign-up")) {
 		return fallback;
 	}

@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "الاستخدام"
+description: "شغّل حلقات الأدوات والمراجعة البشرية وإعادة المحاولات والوكلاء القابلين للاستئناف باستخدام Agent SDK لـ C#."
+---
+
+## إعداد بيئة التشغيل
+
+حزمة Agent SDK غير متاحة بعد على NuGet. اتبع [تعليمات التثبيت من المصدر](./agent-sdk-installation.mdx).
+
+## البدء السريع
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## الميزات المتوفرة
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- حلقة أدوات محدودة عبر واجهة `responses` في Phaseo
+
+## بيئة تشغيل متقدمة
+
+يدعم C# مفوضات التحقق والموافقة، وأدوات HITL والأدوات اليدوية، وتتبع التقدم، والأخطاء القابلة للاسترداد، والتعدادات غير المتزامنة القابلة لإعادة التشغيل، وأدوات الإيقاف، والأدوار الديناميكية، و`NextTurnParams` المحفوظة، والاستخدام والتكلفة الموحدين، و`IStateAccessor`.
+
+## البث والإلغاء
+
+يستخدم `Agent.Stream(...)` و`Agent.ContinueStream(...)` النوع `IAsyncEnumerable` عبر تدفق SSE الخاص بـ Responses في البوابة. استهلك `TextStream()` أو `FullStream()`، واستدعِ `Cancel()` لإلغاء رمز الطلب المرتبط. تحتفظ الخطوات المكتملة بمعرّفات الطلب وبيانات المزوّد وأسباب الإنهاء والتحذيرات والاستخدام والتكلفة.
+
+## صفحات ذات صلة
+
+- [نظرة عامة على Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK لـ TypeScript](../typescript/agent-sdk.mdx)

@@ -1,0 +1,68 @@
+---
+icon: "brain-circuit"
+title: "النماذج"
+description: "اعرض قائمة النماذج باستخدام SDK الخاص بـ Ruby."
+---
+
+**الطريقة**: `client.list_models(...)`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
+```
+
+### المعلمات الأساسية
+- `provider` (اختياري): التصفية حسب مزود الخدمة
+- `provider_status` / `provider_routing_status` / `model_routing_status` (اختياري): التصفية حسب حالة الإطلاق والتوجيه
+- `capability_status` / `provider_availability_status` / `provider_availability_reason` (اختياري): التصفية حسب القدرة والتوفر
+- يفيد `provider_availability_reason` مع `availability: "all"` عند البحث عن حالات الإطلاق مثل `preview_only` و`provider_not_ready` و`gated` و`access_limited` و`region_limited` و`project_limited` و`paused` أو `soft_blocked`
+- يفيد `capability_status` مع `availability: "all"` عند البحث عن تعيينات نقاط النهاية غير القابلة للتوجيه مثل `coming_soon` أو `internal_testing`
+- `status` (اختياري): التصفية حسب حالة دورة حياة النموذج
+- `organisation` (اختياري): التصفية حسب المؤسسة
+- `endpoints` (اختياري): مصفوفة نقاط النهاية
+- `input_types` / `output_types` / `params` (اختياري): عوامل تصفية الإمكانات
+- `availability` (اختياري): `active` أو `all`
+- `limit` (اختياري): العدد
+- `offset` (اختياري): عدد العناصر التي يتم تخطيها
+
+### القيمة المعادة
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```
+

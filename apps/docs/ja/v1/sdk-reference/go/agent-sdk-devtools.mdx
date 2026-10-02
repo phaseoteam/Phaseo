@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "Go Agent SDKの実行をPhaseo DevToolsのローカルイベント形式で記録します。"
+---
+
+DevToolsの記録では、実行と継続処理ごとに構造化JSONLレコードを書き込みます。タイムライン、承認インターフェース、ツール呼び出しの表示を開発する際に便利です。
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+実行ステータス、使用量、モデルの試行、ツール呼び出し、一時停止、リクエストメタデータ、エラーが記録されます。継続処理は同じ実行IDで関連付けられます。
+
+ローカル記録を本番環境の監査ストアとして扱わないでください。機密性の高いプロンプトやツール結果を保存する前に、独自の保持期間、アクセス制御、秘匿化、暗号化のルールを適用してください。

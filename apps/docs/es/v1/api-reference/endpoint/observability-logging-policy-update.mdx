@@ -1,0 +1,11 @@
+---
+title: "Actualizar la política de registro de observabilidad"
+sidebarTitle: "Actualizar política de registro"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /observability/logging-policy"
+description: "Configurar el almacenamiento y la retención de los registros de entrada y salida del espacio de trabajo."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `settings:write`.</Note>
+
+La retención debe ser de entre 90 y 365 días. Al desactivar el registro, también se desactiva el control de privacidad de registros de entrada y salida del espacio de trabajo.
+

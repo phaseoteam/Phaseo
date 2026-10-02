@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import ModelCalendarChart from "./ModelCalendarChart";
 import ModelReleasePace from "./ModelReleasePace";
@@ -42,7 +43,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MAX_EVENTS_PER_DAY = 3;
 
 const EVENT_TYPE_BORDER_COLOR: Record<EventType, string> = {
@@ -69,20 +69,35 @@ const TYPE_RANK: Record<EventType, number> = {
 	Retired: 3,
 };
 
-const MONTH_NAMES = [
-	"January",
-	"February",
-	"March",
-	"April",
-	"May",
-	"June",
-	"July",
-	"August",
-	"September",
-	"October",
-	"November",
-	"December",
-];
+const EVENT_TYPE_MESSAGE_KEY: Record<
+	EventType,
+	"announced" | "released" | "deprecated" | "retired"
+> = {
+	Announced: "announced",
+	Released: "released",
+	Deprecated: "deprecated",
+	Retired: "retired",
+};
+
+function getWeekdayLabels(locale: string) {
+	const monday = new Date(Date.UTC(2024, 0, 1));
+	return Array.from({ length: 7 }, (_, index) => {
+		const date = new Date(monday);
+		date.setUTCDate(monday.getUTCDate() + index);
+		return new Intl.DateTimeFormat(locale, {
+			weekday: "short",
+			timeZone: "UTC",
+		}).format(date);
+	});
+}
+
+function getMonthNames(locale: string) {
+	return Array.from({ length: 12 }, (_, index) =>
+		new Intl.DateTimeFormat(locale, { month: "long", timeZone: "UTC" }).format(
+			new Date(Date.UTC(2024, index, 1))
+		)
+	);
+}
 
 function getDateKey(date: Date) {
 	return `${date.getFullYear()}-${(date.getMonth() + 1)
@@ -141,6 +156,15 @@ export default function ModelCalendar({
 	monthsWindow = 13,
 	headerActions,
 }: ModelCalendarProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.updatesCalendar.calendar");
+	const eventTypeT = useTranslations("Catalogue.updates.eventTypes");
+	const weekdayLabels = useMemo(() => getWeekdayLabels(locale), [locale]);
+	const monthNames = useMemo(() => getMonthNames(locale), [locale]);
+	const formatNumber = (value: number) =>
+		new Intl.NumberFormat(locale).format(value);
+	const eventTypeLabel = (type: EventType) =>
+		eventTypeT(EVENT_TYPE_MESSAGE_KEY[type]);
 	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 	const currentYear = new Date().getFullYear();
@@ -269,7 +293,7 @@ export default function ModelCalendar({
 						{cell.date.getDate()}
 					</p>
 					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-						{WEEKDAY_LABELS[getWeekdayIndex(cell.date)]}
+						{weekdayLabels[getWeekdayIndex(cell.date)]}
 					</span>
 				</header>
 
@@ -288,7 +312,10 @@ export default function ModelCalendar({
 								style={{
 									borderColor: eventBorderColor,
 								}}
-								aria-label={`Model update: ${event.model.name} (${eventType})`}
+								aria-label={t("modelUpdate", {
+									model: event.model.name,
+									type: eventTypeLabel(eventType),
+								})}
 							>
 								<div className="flex items-center gap-1.5">
 									<EventIcon
@@ -331,14 +358,13 @@ export default function ModelCalendar({
 								type="button"
 								className="mt-2 text-[11px] font-semibold text-zinc-700 dark:text-zinc-400 cursor-pointer"
 							>
-								+{hiddenCount} more
+								{t("moreEvents", { count: formatNumber(hiddenCount) })}
 							</button>
 						</DialogTrigger>
 						<DialogContent className="max-w-2xl">
 							<DialogHeader>
 								<DialogTitle>
-									Releases on{" "}
-									{format.calendarDate(`${getDateKey(cell.date)}T00:00:00.000Z`)}
+									{t("releasesOn", { date: format.calendarDate(`${getDateKey(cell.date)}T00:00:00.000Z`) })}
 								</DialogTitle>
 							</DialogHeader>
 							<ScrollArea className="max-h-96">
@@ -423,11 +449,9 @@ export default function ModelCalendar({
 																				{event.model.name}
 																			</Link>
 																			<span className="text-zinc-500 dark:text-zinc-400">
-																				(
-																				{
-																					eventType
-																				}
-																				)
+													(
+														{eventTypeLabel(eventType)}
+													)
 																			</span>
 																		</div>
 																	</div>
@@ -454,6 +478,7 @@ export default function ModelCalendar({
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
+						aria-label={t("previousMonth")}
 						onClick={() => adjustMonth(-1)}
 						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 					>
@@ -462,11 +487,11 @@ export default function ModelCalendar({
 
 					<DropdownMenu>
 						<DropdownMenuTrigger className="inline-flex items-center gap-1 text-base font-semibold text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
-							<span>{MONTH_NAMES[currentMonth.getMonth()]}</span>
+							<span>{monthNames[currentMonth.getMonth()]}</span>
 							<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start" className="w-40 rounded-lg">
-							{MONTH_NAMES.map((month, index) => (
+							{monthNames.map((month, index) => (
 								<DropdownMenuItem
 									key={month}
 									onClick={() =>
@@ -491,7 +516,7 @@ export default function ModelCalendar({
 
 					<DropdownMenu>
 						<DropdownMenuTrigger className="inline-flex items-center gap-1 text-base font-semibold text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
-							<span>{currentMonth.getFullYear()}</span>
+							<span>{formatNumber(currentMonth.getFullYear())}</span>
 							<ChevronDown className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="start" className="w-32 rounded-lg">
@@ -519,7 +544,7 @@ export default function ModelCalendar({
 												isCurrent && "font-semibold"
 											)}
 										>
-											<span>{year}</span>
+											<span>{formatNumber(year)}</span>
 											{isCurrent ? (
 												<Check className="h-4 w-4 text-sky-500" />
 											) : null}
@@ -532,6 +557,7 @@ export default function ModelCalendar({
 
 					<button
 						type="button"
+						aria-label={t("nextMonth")}
 						onClick={() => adjustMonth(1)}
 						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
 					>
@@ -551,7 +577,7 @@ export default function ModelCalendar({
 							}
 							className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-50"
 						>
-							Today
+							{t("today")}
 						</button>
 					)}
 				</div>
@@ -563,7 +589,7 @@ export default function ModelCalendar({
 
 			<div className="overflow-hidden rounded-md border border-zinc-200 bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800">
 				<div className="hidden grid-cols-7 px-2 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 lg:grid">
-					{WEEKDAY_LABELS.map((label) => (
+					{weekdayLabels.map((label) => (
 						<span key={`weekday-${label}`} className="text-center">
 							{label}
 						</span>
@@ -572,7 +598,7 @@ export default function ModelCalendar({
 
 				<div className="bg-white dark:bg-zinc-950 lg:hidden">
 					<div className="grid grid-cols-7 border-b border-zinc-200 px-1 py-2 text-center text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-						{WEEKDAY_LABELS.map((label) => (
+						{weekdayLabels.map((label) => (
 							<span key={`mobile-weekday-${label}`}>{label.slice(0, 1)}</span>
 						))}
 					</div>
@@ -605,7 +631,7 @@ export default function ModelCalendar({
 									)}
 									aria-label={format.calendarDate(`${getDateKey(cell.date)}T00:00:00.000Z`)}
 								>
-									<span>{cell.date.getDate()}</span>
+									<span>{formatNumber(cell.date.getDate())}</span>
 									{cell.events.length > 0 ? (
 										<span className="flex items-center gap-0.5" aria-hidden="true">
 											{cell.events.slice(0, 3).map((event, index) => {
@@ -674,7 +700,7 @@ export default function ModelCalendar({
 												style={{ color: colour }}
 											>
 												<EventIcon className="size-3" />
-												{eventType}
+													{eventTypeLabel(eventType)}
 											</span>
 										</div>
 									);
@@ -682,7 +708,7 @@ export default function ModelCalendar({
 							</div>
 						) : (
 							<p className="text-sm text-zinc-500 dark:text-zinc-400">
-								No model updates recorded for this day.
+								{t("noModelUpdatesForDay")}
 							</p>
 						)}
 					</div>

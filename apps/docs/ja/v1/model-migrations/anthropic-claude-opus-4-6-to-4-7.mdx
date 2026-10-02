@@ -1,0 +1,89 @@
+---
+title: "Anthropic Claude Opus 4.7"
+description: "適応型思考、サンプリング制御、トークン使用量など、Claude Opus 4.7 の導入時に確認する内容です。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.7
+
+`anthropic/claude-opus-4.7` を本番環境に安全に導入するには、このガイドを使います。
+
+Claude Opus 4.7 ではリクエスト形式が変わりました。4.6 用の設定をそのまま残すと、リクエストが失敗することがあります。
+
+## 新機能
+
+- 新しい effort レベル `xhigh`（Messages API）。
+- Opus 4.7 では拡張 thinking budget が削除され、`thinking: { type: "enabled", budget_tokens: ... }` は失敗します。
+- サンプリングパラメーター `temperature`、`top_p`、`top_k` はデフォルト以外の値を指定できません。
+- 明示的に有効にしない限り、thinking の内容は省略されます。
+- tokenizer の更新により、Opus 4.6 よりトークン使用量が増えることがあります。
+
+## Phaseo Gateway の互換動作
+
+移行時の破損を抑えるため、Phaseo は Opus 4.7 でも古い Opus 4.6 フィールドを受け付け、上流への送信前に正規化します。
+
+- `temperature`、`top_p`、`top_k` は受け付けますが、削除します。
+- 古い thinking budget は転送されません。
+- Opus 4.7 の thinking は常に `thinking: { "type": "adaptive", "display": "summarized" }` として送信されます。
+- `reasoning.effort` は引き続き有効で `output_config.effort` に対応します。`xhigh` も使えます。
+
+## 移行クイックスタート
+
+### 1. モデル ID を更新する
+
+モデル ID を `anthropic/claude-opus-4.7` にします。
+
+### 2. 要約表示の適応型 thinking に移行する
+
+Opus 4.7 では次を使います。
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+以前の拡張 thinking budget は使わないでください。
+
+### 3. サンプリング制御を削除する
+
+次の値は送信しません。
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+代わりにプロンプトと指示を調整します。
+
+### 4. effort 制御を再設定する
+
+推論制御を使う場合は、次の値で再テストします。
+
+- 基準値として `output_config.effort = "high"`。
+- 最も難しいコーディングやエージェント処理には `output_config.effort = "xhigh"`。
+
+OpenAI 形式の payload で Phaseo を呼び出す場合、`reasoning.effort` は Opus 4.7 の `output_config.effort` と同じ値に変換されます。
+
+### 5. トークン上限を確認する
+
+tokenizer が変わったため、次を見直します。
+
+- `max_tokens` / `max_output_tokens`
+- タイムアウト予算
+- コスト制御とアラート
+
+## テスト項目
+
+- 本番プロンプトでの厳密なスキーマ出力成功率。
+- 長時間のツール処理（呼び出し回数、完了率、レイテンシ）。
+- `high` と `xhigh` の出力品質の差。
+- 利用量の多いプロンプトでのトークンコストの変化。
+
+## 安全なロールアウト
+
+1. トラフィックを切り替える前にリクエスト形式を更新します。
+2. 本番評価セットで Opus 4.7 をシャドー実行します。
+3. Opus 4.6 へ戻せる状態で段階的に試します。
+4. 品質、レイテンシ、コストの差が目標範囲内になってから拡大します。
+
+## 参考資料
+
+- [Claude Opus 4.7 の新機能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.7 システムカード（PDF）](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

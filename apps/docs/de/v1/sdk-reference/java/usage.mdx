@@ -1,0 +1,37 @@
+---
+icon: "square-terminal"
+title: "Java-SDK verwenden"
+description: "So initialisierst und verwendest du den Java-SDK-Wrapper."
+---
+
+## Einrichtung
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
+```
+
+## Muster
+
+Typische Aufrufe des Wrappers sehen so aus:
+
+```java
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
+```
+
+Wrapper-Methoden geben für die meisten JSON-Endpunkte geparste JSON-Knoten und für Datei- und Videoinhalte Byte-Arrays zurück.
+
+## Empfehlungen
+
+Nutze zunächst `app.phaseo.sdk.Phaseo` für die gängigen Gateway-Funktionen.
+Greife nur dann auf `app.phaseo.gen.Client` und `app.phaseo.gen.Operations` zurück, wenn du eine Low-Level-Operation benötigst, die noch nicht in den Wrapper aufgenommen wurde.
+Nutze zuerst die endpoint-spezifischen Beispiele in diesem Abschnitt, um die aktuellen Namen der Wrapper-Methoden zu sehen.

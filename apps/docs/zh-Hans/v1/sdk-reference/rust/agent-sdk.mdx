@@ -1,0 +1,132 @@
+---
+icon: "blocks"
+title: "使用 Rust Agent SDK 构建"
+description: "创建一个同步 Rust 智能体，通过 Phaseo Gateway 调用本地工具。"
+---
+
+使用本指南构建一个可调用工具的小型智能体，并检查已完成的运行结果。
+
+## 定义工具
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+闭包会在本地执行。其 `RuntimeContext` 包含运行 ID、智能体 ID、步骤索引、应用上下文以及原始工具调用。
+
+## 创建智能体
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## 通过 Phaseo Gateway 运行
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## 完整示例
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## 运行状态
+
+`RunResult` 包含：
+
+- `run`：状态、ID、实际使用的模型、步骤上限、上下文和暂停状态
+- `steps`：每轮模型调用、请求 ID、提供方、模型、结束原因、工具调用和用量
+- `messages`：模型与工具的完整消息历史
+- `output`：最终输出值
+- `usage`：汇总令牌数，以及模型客户端提供的任何费用
+
+## 当前执行模型
+
+Rust Agent SDK 的运行是同步的。本地工具会依次执行。如果运行不应阻塞请求处理程序，请使用应用工作线程或任务边界。
+
+## 后续步骤
+
+- [工具与审批](./agent-sdk-tools.mdx)
+- [保存并恢复运行](./agent-sdk-state-and-approval.mdx)
+- [事件、重试与错误](./agent-sdk-events-and-errors.mdx)

@@ -1,0 +1,14 @@
+---
+title: "检查网关运行状况"
+sidebarTitle: "健康检查"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /health"
+description: "返回 Phaseo Gateway 的基本运行状况快照。"
+---
+
+此端点无需身份验证，可用于快速检查连通性。当前事件和历史记录请参阅 [Phaseo 状态页](https://status.phaseo.app)。
+
+<Note>
+健康检查成功并不表示所有供应商或模型路由都可用。请使用默认的 `GET /v1/models` 响应确认当前可路由的模型。
+</Note>
+

@@ -24,6 +24,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { sanitizeRequestMultiplier } from "./calculatorState";
 import { formatSentenceLabel } from "./PricingTableVisuals";
+import { useTranslations } from "next-intl";
 
 interface UsageInputsProps {
 	meters: PricingMeter[];
@@ -56,6 +57,12 @@ export function UsageInputs({
 	onRequestMultiplierChange,
 	onPricingTimeUtcChange,
 }: UsageInputsProps) {
+	const t = useTranslations("Product.tools.pricing");
+	const translateMeter = useTranslations("Catalogue.modelDetail.pricing.meters");
+	const getMeterLabel = (meter: string) =>
+		translateMeter.has(meter as never)
+			? translateMeter(meter as never)
+			: formatSentenceLabel(formatMeterName(meter));
 	const uniqueMeters = useMemo(() => {
 		const map = new Map<string, PricingMeter>();
 		for (const meter of meters) {
@@ -68,9 +75,9 @@ export function UsageInputs({
 		<Card>
 			<CardHeader className="border-b bg-muted/10">
 				<CardTitle className="space-y-1">
-					<span>Usage inputs</span>
+					<span>{t("usageInputs")}</span>
 					<p className="text-xs font-normal text-muted-foreground">
-						Enter the usage for one request, then scale it across your expected request volume.
+						{t("usageInputsDescription")}
 					</p>
 				</CardTitle>
 			</CardHeader>
@@ -87,8 +94,8 @@ export function UsageInputs({
 										<MeterInputIcon meterName={meter.meter} />
 									</span>
 									<span className="min-w-0">
-										<span className="block truncate text-xs font-medium">{formatSentenceLabel(formatMeterName(meter.meter))}</span>
-										<span className="block text-[10px] font-normal text-muted-foreground">Per request • {unitLabel}</span>
+										<span className="block truncate text-xs font-medium">{getMeterLabel(meter.meter)}</span>
+										<span className="block text-[10px] font-normal text-muted-foreground">{t("perRequest", { unit: unitLabel })}</span>
 									</span>
 								</Label>
 								<Input
@@ -98,7 +105,7 @@ export function UsageInputs({
 									step={inputConfig.step}
 									value={meterInputs[meter.meter] || ""}
 									onChange={(event) => onMeterInputChange(meter.meter, event.target.value)}
-									placeholder={inputConfig.placeholder}
+									placeholder={inputConfig.placeholder ? t("inputExample", { example: inputConfig.placeholder }) : t("inputValuePlaceholder")}
 									className="h-10 rounded-lg bg-background"
 								/>
 							</div>
@@ -110,7 +117,7 @@ export function UsageInputs({
 					<div className="rounded-xl border bg-muted/10 p-3">
 						<Label htmlFor="request-multiplier" className="mb-2 flex items-center gap-2 text-xs">
 							<MousePointerClick className="size-4 text-muted-foreground" />
-							Number of requests
+							{t("numberOfRequests")}
 						</Label>
 						<Input
 							id="request-multiplier"
@@ -121,13 +128,13 @@ export function UsageInputs({
 							onChange={(event) => onRequestMultiplierChange(sanitizeRequestMultiplier(Number(event.target.value)))}
 							className="h-10 rounded-lg bg-background"
 						/>
-						<p className="mt-2 text-[11px] text-muted-foreground">Every meter value is multiplied by this request count.</p>
+						<p className="mt-2 text-[11px] text-muted-foreground">{t("requestMultiplierDescription")}</p>
 					</div>
 
 					<div className="rounded-xl border bg-muted/10 p-3">
 						<Label htmlFor="pricing-time-utc" className="mb-2 flex items-center gap-2 text-xs">
 							<Clock3 className="size-4 text-muted-foreground" />
-							Pricing time in UTC
+							{t("pricingTimeUtc")}
 						</Label>
 						<div className="flex gap-2">
 							<Input
@@ -144,12 +151,12 @@ export function UsageInputs({
 								size="icon"
 								className="size-10 rounded-lg bg-background"
 								onClick={() => onPricingTimeUtcChange(new Date().toISOString().slice(11, 16))}
-								aria-label="Use current UTC time"
+								aria-label={t("useCurrentUtcTime")}
 							>
 								<Clock3 className="size-4" />
 							</Button>
 						</div>
-						<p className="mt-2 text-[11px] text-muted-foreground">Used when a provider has time-window pricing.</p>
+						<p className="mt-2 text-[11px] text-muted-foreground">{t("timeWindowPricingHelp")}</p>
 					</div>
 				</div>
 			</CardContent>

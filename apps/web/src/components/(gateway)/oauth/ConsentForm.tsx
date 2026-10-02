@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import Image from "next/image";
 import {
 	AlertCircle,
@@ -31,6 +32,7 @@ import {
 	groupConsentScopes,
 	type ConsentScopeGroupKey,
 } from "./consentScopeGroups";
+import { scopePermissionFor, type ScopePermission, type ScopeTone } from "./scopePermission";
 
 interface ConsentFormProps {
 	oauthApp: any;
@@ -46,292 +48,11 @@ interface ConsentFormProps {
 	resource?: string;
 }
 
-type ScopeMeta = {
-	label: string;
-	description: string;
-	icon: any;
-	tone: "identity" | "read" | "write" | "delete";
-};
-
-const SCOPE_META: Record<string, ScopeMeta> = {
-	openid: {
-		label: "Confirm identity",
-		description: "Lets the app verify who is signing in.",
-		icon: Shield,
-		tone: "identity",
-	},
-	profile: {
-		label: "Read profile",
-		description: "Lets the app read basic profile details such as display name.",
-		icon: Users,
-		tone: "identity",
-	},
-	email: {
-		label: "Read email",
-		description: "Lets the app read the email address on the signed-in account.",
-		icon: Shield,
-		tone: "identity",
-	},
-	"gateway:access": {
-		label: "Use AI Gateway with your credits",
-		description: "Lets the app run model inference billed to the workspace you select.",
-		icon: KeyRound,
-		tone: "write",
-	},
-	"me:read": {
-		label: "Read current account",
-		description: "Lets the app inspect the current user and active workspace context.",
-		icon: Users,
-		tone: "read",
-	},
-	"models:read": {
-		label: "Read models",
-		description: "Lets the app inspect available model catalog data.",
-		icon: Search,
-		tone: "read",
-	},
-	"providers:read": {
-		label: "Read providers",
-		description: "Lets the app inspect provider availability and metadata.",
-		icon: Search,
-		tone: "read",
-	},
-	"pricing:read": {
-		label: "Read pricing",
-		description: "Lets the app inspect pricing and cost reference data.",
-		icon: Search,
-		tone: "read",
-	},
-	"credits:read": {
-		label: "Read credits",
-		description: "Lets the app read workspace credit balances and related usage state.",
-		icon: Search,
-		tone: "read",
-	},
-	"activity:read": {
-		label: "Read activity",
-		description: "Lets the app inspect recent workspace activity and operational history.",
-		icon: Search,
-		tone: "read",
-	},
-	"analytics:read": {
-		label: "Read analytics",
-		description: "Lets the app view analytics and usage reporting data.",
-		icon: Search,
-		tone: "read",
-	},
-	"generations:read": {
-		label: "Read generations",
-		description: "Lets the app inspect past generation records and related output metadata.",
-		icon: Search,
-		tone: "read",
-	},
-	"feedback:read": {
-		label: "Read feedback",
-		description: "Lets the app inspect workspace feedback, observability events, and preset test runs.",
-		icon: Search,
-		tone: "read",
-	},
-	"feedback:write": {
-		label: "Manage feedback",
-		description: "Lets the app create feedback, observability events, and preset test runs.",
-		icon: Settings2,
-		tone: "write",
-	},
-	"workspaces:read": {
-		label: "Read teams",
-		description: "Lets the app list teams you belong to and inspect their metadata.",
-		icon: Users,
-		tone: "read",
-	},
-	"workspaces:write": {
-		label: "Manage teams",
-		description: "Lets the app create or update team records on your behalf.",
-		icon: Users,
-		tone: "write",
-	},
-	"workspaces:delete": {
-		label: "Delete teams",
-		description: "Lets the app permanently delete team records and their associated configuration.",
-		icon: Users,
-		tone: "delete",
-	},
-	"keys:read": {
-		label: "Read API keys",
-		description: "Lets the app list existing API key metadata for selected teams.",
-		icon: KeyRound,
-		tone: "read",
-	},
-	"keys:write": {
-		label: "Create API keys",
-		description: "Lets the app create or update API keys for selected teams.",
-		icon: KeyRound,
-		tone: "write",
-	},
-	"keys:delete": {
-		label: "Delete API keys",
-		description: "Lets the app permanently remove API keys for selected teams.",
-		icon: KeyRound,
-		tone: "delete",
-	},
-	"presets:read": {
-		label: "Read presets",
-		description: "Lets the app inspect saved routing and prompt presets.",
-		icon: Settings2,
-		tone: "read",
-	},
-	"presets:write": {
-		label: "Manage presets",
-		description: "Lets the app create or update saved presets.",
-		icon: Settings2,
-		tone: "write",
-	},
-	"presets:delete": {
-		label: "Delete presets",
-		description: "Lets the app permanently remove saved presets.",
-		icon: Settings2,
-		tone: "delete",
-	},
-	"settings:read": {
-		label: "Read settings",
-		description: "Lets the app inspect workspace settings and configuration.",
-		icon: Settings2,
-		tone: "read",
-	},
-	"settings:write": {
-		label: "Manage settings",
-		description: "Lets the app change workspace settings and configuration.",
-		icon: Settings2,
-		tone: "write",
-	},
-	"provider_credentials:read": {
-		label: "Read provider credentials",
-		description: "Lets the app inspect provider credential metadata without revealing secret values.",
-		icon: KeyRound,
-		tone: "read",
-	},
-	"provider_credentials:write": {
-		label: "Manage provider credentials",
-		description: "Lets the app create or update encrypted provider credentials.",
-		icon: KeyRound,
-		tone: "write",
-	},
-	"provider_credentials:delete": {
-		label: "Delete provider credentials",
-		description: "Lets the app permanently remove provider credentials.",
-		icon: KeyRound,
-		tone: "delete",
-	},
-	"private_models:read": {
-		label: "Read private models",
-		description: "Lets the app inspect workspace private-model configuration without revealing credentials.",
-		icon: KeyRound,
-		tone: "read",
-	},
-	"private_models:write": {
-		label: "Manage private models",
-		description: "Lets the app connect or update workspace private-model endpoints.",
-		icon: KeyRound,
-		tone: "write",
-	},
-	"private_models:delete": {
-		label: "Delete private models",
-		description: "Lets the app permanently remove workspace private models.",
-		icon: KeyRound,
-		tone: "delete",
-	},
-	"guardrails:read": {
-		label: "Read guardrails",
-		description: "Lets the app inspect guardrails and policy configuration.",
-		icon: Shield,
-		tone: "read",
-	},
-	"guardrails:write": {
-		label: "Manage guardrails",
-		description: "Lets the app create or update guardrails and policy configuration.",
-		icon: Shield,
-		tone: "write",
-	},
-	"guardrails:delete": {
-		label: "Delete guardrails",
-		description: "Lets the app permanently remove guardrails and policy configuration.",
-		icon: Shield,
-		tone: "delete",
-	},
-	"budgets:read": {
-		label: "Read budgets",
-		description: "Lets the app inspect workspace spend budgets and usage.",
-		icon: Settings2,
-		tone: "read",
-	},
-	"budgets:write": {
-		label: "Manage budgets",
-		description: "Lets the app create or update workspace spend budgets.",
-		icon: Settings2,
-		tone: "write",
-	},
-	"budgets:delete": {
-		label: "Delete budgets",
-		description: "Lets the app permanently remove workspace spend budgets.",
-		icon: Settings2,
-		tone: "delete",
-	},
-	"management_keys:read": {
-		label: "Read management keys",
-		description: "Lets the app inspect machine-level management key metadata.",
-		icon: Wrench,
-		tone: "read",
-	},
-	"management_keys:write": {
-		label: "Manage management keys",
-		description: "Lets the app create or update machine-level management keys.",
-		icon: Wrench,
-		tone: "write",
-	},
-	"management_keys:delete": {
-		label: "Delete management keys",
-		description: "Lets the app permanently revoke machine-level management keys.",
-		icon: Wrench,
-		tone: "delete",
-	},
-	"oauth_clients:read": {
-		label: "Read OAuth apps",
-		description: "Lets the app inspect OAuth client and integration metadata.",
-		icon: Lock,
-		tone: "read",
-	},
-	"oauth_clients:write": {
-		label: "Manage OAuth apps",
-		description: "Lets the app create or update OAuth client configuration.",
-		icon: Lock,
-		tone: "write",
-	},
-	"oauth_clients:delete": {
-		label: "Delete OAuth apps",
-		description: "Lets the app permanently remove OAuth client and integration configuration.",
-		icon: Lock,
-		tone: "delete",
-	},
-};
-
-function fallbackScopeMeta(scope: string): ScopeMeta {
-	const isDelete = /:delete$/i.test(scope);
-	const isWrite = /:write$/i.test(scope);
-	return {
-		label: scope,
-		description: isWrite || isDelete
-			? "Lets the app change or manage this resource on your behalf."
-			: "Lets the app read or inspect this resource on your behalf.",
-		icon: isWrite || isDelete ? Settings2 : Search,
-		tone: isDelete ? "delete" : isWrite ? "write" : "read",
-	};
-}
-
-function scopeToneBadge(tone: ScopeMeta["tone"]) {
-	if (tone === "identity") return { label: "Identity", className: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300" };
-	if (tone === "delete") return { label: "Delete", className: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300" };
-	if (tone === "write") return { label: "Write", className: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300" };
-	return { label: "Read", className: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300" };
+function scopeToneBadge(tone: ScopeTone) {
+	if (tone === "identity") return { className: "border-sky-300 bg-sky-50 text-sky-700 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-300" };
+	if (tone === "delete") return { className: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300" };
+	if (tone === "write") return { className: "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300" };
+	return { className: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300" };
 }
 
 function scopeGroupIcon(key: ConsentScopeGroupKey) {
@@ -371,6 +92,10 @@ export default function ConsentForm({
 	codeChallengeMethod,
 	resource,
 }: ConsentFormProps) {
+	const t = useTranslations("Common.authFlows.oauthConsent");
+	const tSettings = useTranslations("SettingsUI");
+	const resources = t.raw("resources" as never) as Record<string, string>;
+	const groups = t.raw("groups" as never) as Record<string, { title: string; description: string }>;
 	const initialTeamIds = teams.map((team) => team.id);
 	const [selectedTeamIds, setSelectedTeamIds] = useState<string[]>(
 		teams.length <= 3 ? initialTeamIds : teams.length === 1 ? initialTeamIds : [teams[0]?.id].filter(Boolean),
@@ -384,6 +109,7 @@ export default function ConsentForm({
 	const [selectedScopes, setSelectedScopes] = useState<string[]>(requestedScopes);
 	const isFirstParty = Boolean(oauthApp.is_first_party);
 	const isUnverified = oauthApp.registration_source === "dynamic" && !oauthApp.is_first_party;
+	const displayedAppDescription = isFirstParty ? t("firstPartyDescription") : oauthApp.description;
 	const logoSrc = consentLogoSrc(oauthApp.logo_url);
 	const redirectHostname = displayHostname(redirectUri);
 
@@ -392,14 +118,46 @@ export default function ConsentForm({
 	const scopeGroups = useMemo(
 		() => groupConsentScopes(requestedScopes).map((group) => ({
 			...group,
-			scopes: group.scopes.map((scope) => ({
-				scope,
-				...((SCOPE_META[scope] ?? fallbackScopeMeta(scope)) as ScopeMeta),
+				scopes: group.scopes.map((scope) => ({
+					...scopePermissionFor(scope),
+				icon: scopeGroupIcon(group.key),
 			})),
 		})),
 		[requestedScopes],
 	);
 	const permissionCount = scopeGroups.reduce((total, group) => total + group.scopes.length, 0);
+	const permissionCopy = (permission: ScopePermission) => {
+		if (permission.action === "identity") {
+			return { label: t("identityPermissionLabel"), description: t("identityPermissionDescription") };
+		}
+		if (permission.action === "gateway") {
+			return { label: t("gatewayPermissionLabel"), description: t("gatewayPermissionDescription") };
+		}
+		if (permission.action === "unknown" || !permission.resourceKey) {
+			return {
+				label: t("unknownPermissionLabel", { scope: permission.scope }),
+				description: t("unknownPermissionDescription", { scope: permission.scope }),
+			};
+		}
+		const resource = resources[permission.resourceKey] ?? permission.scope;
+		if (permission.action === "read") {
+			return { label: t("readPermissionLabel", { resource }), description: t("readPermissionDescription", { resource }) };
+		}
+		if (permission.action === "manage") {
+			return { label: t("managePermissionLabel", { resource }), description: t("managePermissionDescription", { resource }) };
+		}
+		return { label: t("deletePermissionLabel", { resource }), description: t("deletePermissionDescription", { resource }) };
+	};
+	const toneLabel = (tone: ScopeTone) => {
+		if (tone === "identity") return t("toneIdentity");
+		if (tone === "delete") return t("toneDelete");
+		if (tone === "write") return t("toneWrite");
+		return t("toneRead");
+	};
+	const groupCopy = (key: ConsentScopeGroupKey) => groups[key] ?? {
+		title: t("otherGroupTitle"),
+		description: t("otherGroupDescription", { scope: key.slice("other:".length) }),
+	};
 	const requiredScopes = useMemo(() => new Set([
 		"openid",
 		...(requestedScopes.includes("gateway:access") ? ["gateway:access"] : []),
@@ -442,15 +200,15 @@ export default function ConsentForm({
 
 	const handleApprove = async () => {
 		if (isUnverified && !unverifiedAcknowledged) {
-			setError("Confirm that you understand this application has not been verified by Phaseo.");
+			setError(t("confirmUnverified"));
 			return;
 		}
 		if (!selectedTeamIds.length) {
-			setError("Select at least one team to authorize.");
+			setError(t("selectTeam"));
 			return;
 		}
 		if (!primaryTeamId || !selectedTeamIds.includes(primaryTeamId)) {
-			setError("Choose which selected team should be active for this login.");
+			setError(t("choosePrimaryTeam"));
 			return;
 		}
 
@@ -478,19 +236,19 @@ export default function ConsentForm({
 			const result = await response.json();
 
 			if (result.error) {
-				setError(result.error);
+				setError(t("approvalFailed"));
 				return;
 			}
 
 			if (result.data?.redirect_url) {
 				if (!isSafeOAuthRedirectUrl(result.data.redirect_url)) {
-					setError("The authorization server returned an unsafe redirect URL.");
+					setError(t("unsafeRedirect"));
 					return;
 				}
 				window.location.assign(result.data.redirect_url);
 			}
-		} catch (err: any) {
-			setError(err.message || "Failed to authorize application");
+		} catch {
+			setError(t("approvalFailed"));
 		} finally {
 			setLoading(false);
 		}
@@ -516,13 +274,13 @@ export default function ConsentForm({
 
 			if (result.data?.redirect_url) {
 				if (!isSafeOAuthRedirectUrl(result.data.redirect_url)) {
-					setError("The authorization server returned an unsafe redirect URL.");
+					setError(t("unsafeRedirect"));
 					return;
 				}
 				window.location.assign(result.data.redirect_url);
 			}
-		} catch (err: any) {
-			setError(err.message || "Failed to deny authorization");
+		} catch {
+			setError(t("denialFailed"));
 		} finally {
 			setLoading(false);
 		}
@@ -533,7 +291,7 @@ export default function ConsentForm({
 			<CardHeader className="space-y-4">
 				<div className="flex justify-end">
 					<Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-700">
-						OAuth Alpha
+						OAuth {tSettings("oauthAppsPage.alphaLabel")}
 					</Badge>
 				</div>
 
@@ -574,12 +332,12 @@ export default function ConsentForm({
 							{isFirstParty ? (
 								<Badge variant="outline" className="gap-1 border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300">
 									<CheckCircle2 className="size-3" />
-									Official Phaseo app
+									{t("officialApp")}
 								</Badge>
 							) : null}
 						</div>
 						<CardDescription className="mt-1">
-							wants access to your Phaseo account
+							{t("wantsAccess")}
 						</CardDescription>
 						{oauthApp.homepage_url && (
 							<a
@@ -595,8 +353,8 @@ export default function ConsentForm({
 					</div>
 				</div>
 
-				{oauthApp.description && (
-					<p className="text-sm text-muted-foreground">{oauthApp.description}</p>
+				{displayedAppDescription && (
+					<p className="text-sm text-muted-foreground">{displayedAppDescription}</p>
 				)}
 			</CardHeader>
 
@@ -605,15 +363,15 @@ export default function ConsentForm({
 					<Alert variant="destructive">
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription className="space-y-2">
-							<p><strong>Unverified application.</strong> Phaseo has not verified this app&apos;s identity, owner, or branding.</p>
-							<div className="font-mono text-xs break-all">Client: {clientId ?? oauthApp.client_id ?? "unknown"}</div>
-							{redirectHostname && <div className="text-xs">Authorization returns to: <strong>{redirectHostname}</strong></div>}
+							<p><strong>{t("unverifiedTitle")}</strong> {t("unverifiedDescription")}</p>
+							<div className="font-mono text-xs break-all">{t("clientLine", { client: clientId ?? oauthApp.client_id ?? "unknown" })}</div>
+							{redirectHostname && <div className="text-xs">{t("redirectLine", { hostname: redirectHostname })}</div>}
 							<label className="flex items-start gap-2 pt-1 text-sm">
 								<Checkbox
 									checked={unverifiedAcknowledged}
 									onCheckedChange={(checked) => setUnverifiedAcknowledged(checked === true)}
 								/>
-								<span>I understand this application is unverified and I trust the redirect destination shown above.</span>
+								<span>{t("unverifiedAcknowledgement")}</span>
 							</label>
 						</AlertDescription>
 					</Alert>
@@ -621,26 +379,24 @@ export default function ConsentForm({
 				<Alert>
 					<Shield className="h-4 w-4" />
 					<AlertDescription>
-						Authorize only applications you trust. This approval grants access to the selected
-						teams, and the active login session will start on one primary team.
+						{t("trustWarning")}
 					</AlertDescription>
 				</Alert>
 
 				<div className="space-y-3">
 					<div className="flex items-center justify-between gap-3">
 						<div>
-							<Label>Teams</Label>
+							<Label>{t("teamsTitle")}</Label>
 							<p className="text-xs text-muted-foreground mt-1">
-								Select every team this app may access. Then choose which one should be active
-								for this login right now.
+								{t("teamsDescription")}
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
 							<Button type="button" variant="outline" size="sm" onClick={handleSelectAll} disabled={allSelected} className="rounded-md">
-								Select all
+								{t("selectAll")}
 							</Button>
 							<Button type="button" variant="ghost" size="sm" onClick={handleClearTeams} disabled={!selectedCount} className="rounded-md">
-								Clear
+								{t("clear")}
 							</Button>
 						</div>
 					</div>
@@ -666,9 +422,9 @@ export default function ConsentForm({
 										<p className="text-xs text-muted-foreground">
 											{selected
 												? primary
-													? "Selected and active for this login."
-													: "Selected for app access."
-												: "Not selected."}
+													? t("selectedAndActive")
+													: t("selectedForAccess")
+												: t("notSelected")}
 										</p>
 									</div>
 									<Button
@@ -679,7 +435,7 @@ export default function ConsentForm({
 										disabled={!selected}
 										onClick={() => setPrimaryTeamId(team.id)}
 									>
-										{primary ? "Active now" : "Use now"}
+										{primary ? t("activeNow") : t("useNow")}
 									</Button>
 								</div>
 							);
@@ -687,22 +443,21 @@ export default function ConsentForm({
 					</div>
 
 					<div className="flex items-center justify-between text-xs text-muted-foreground">
-						<span>{selectedCount} team{selectedCount === 1 ? "" : "s"} selected</span>
-						<span>{primaryTeamId ? "Primary team chosen" : "Choose a primary team"}</span>
+						<span>{t("teamsSelected", { count: selectedCount })}</span>
+						<span>{primaryTeamId ? t("primaryTeamChosen") : t("choosePrimaryTeamLabel")}</span>
 					</div>
 				</div>
 
 				<div className="space-y-3">
 					<div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end">
 						<div>
-							<Label>Requested permissions</Label>
+							<Label>{t("requestedPermissions")}</Label>
 							<p className="text-xs text-muted-foreground mt-1">
-								Expand a group to review and choose optional permissions. Required permissions
-								keep the sign-in or gateway connection working.
+								{t("permissionsDescription")}
 							</p>
 						</div>
 						<p className="shrink-0 text-xs text-muted-foreground sm:text-right">
-							{selectedScopes.length} of {permissionCount} selected
+							{t("permissionsSelected", { selected: selectedScopes.length, total: permissionCount })}
 						</p>
 					</div>
 					<Accordion
@@ -713,6 +468,7 @@ export default function ConsentForm({
 						{scopeGroups.map((group) => {
 							const GroupIcon = scopeGroupIcon(group.key);
 							const tones = Array.from(new Set(group.scopes.map((scope) => scope.tone)));
+							const localizedGroup = groupCopy(group.key);
 							return (
 								<AccordionItem key={group.key} value={group.key} className="overflow-hidden rounded-md border">
 									<AccordionTrigger className="gap-3 px-4 py-3 hover:bg-muted/40">
@@ -722,7 +478,7 @@ export default function ConsentForm({
 											</div>
 											<div className="min-w-0 flex-1">
 												<div className="flex flex-wrap items-center gap-2">
-													<span>{group.label}</span>
+													<span>{localizedGroup.title}</span>
 													<Badge variant="secondary" className="rounded-md font-normal">
 														{group.scopes.length}
 													</Badge>
@@ -730,13 +486,13 @@ export default function ConsentForm({
 														const badge = scopeToneBadge(tone);
 														return (
 															<Badge key={tone} variant="outline" className={`${badge.className} rounded-md`}>
-																{badge.label}
+																{toneLabel(tone)}
 															</Badge>
 														);
 													})}
 												</div>
 												<p className="mt-1 text-xs font-normal text-muted-foreground">
-													{group.description}
+													{localizedGroup.description}
 												</p>
 											</div>
 										</div>
@@ -746,26 +502,27 @@ export default function ConsentForm({
 										const Icon = scopeInfo.icon;
 										const tone = scopeToneBadge(scopeInfo.tone);
 										const required = requiredScopes.has(scopeInfo.scope);
+										const localizedPermission = permissionCopy(scopeInfo);
 										return (
 											<label key={scopeInfo.scope} className={`flex items-start gap-3 rounded-md bg-muted/40 p-3 ${required ? "" : "cursor-pointer hover:bg-muted/60"}`}>
 												<Checkbox
 													checked={selectedScopes.includes(scopeInfo.scope)}
 													disabled={required}
 													onCheckedChange={(checked) => handleScopeToggle(scopeInfo.scope, checked === true)}
-													aria-label={`${selectedScopes.includes(scopeInfo.scope) ? "Allow" : "Do not allow"} ${scopeInfo.label}`}
+													aria-label={t(selectedScopes.includes(scopeInfo.scope) ? "allowPermission" : "disallowPermission", { permission: localizedPermission.label })}
 													className="mt-1"
 												/>
 												<Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
 													<div className="min-w-0 flex-1">
 														<div className="flex flex-wrap items-center gap-2">
-															<div className="font-medium text-sm">{scopeInfo.label}</div>
+														<div className="font-medium text-sm">{localizedPermission.label}</div>
 														<Badge variant="outline" className={`${tone.className} rounded-md`}>
-															{tone.label}
+															{toneLabel(scopeInfo.tone)}
 														</Badge>
-														{required ? <Badge variant="secondary" className="rounded-md font-normal">Required</Badge> : null}
+														{required ? <Badge variant="secondary" className="rounded-md font-normal">{t("required")}</Badge> : null}
 														</div>
 														<div className="text-xs text-muted-foreground mt-1">
-															{scopeInfo.description}
+															{localizedPermission.description}
 														</div>
 														<div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
 															{scopeInfo.scope}
@@ -782,7 +539,7 @@ export default function ConsentForm({
 				</div>
 
 				<div className="rounded-md border bg-muted/30 p-3">
-					<div className="text-xs text-muted-foreground mb-1">Authorizing as</div>
+					<div className="text-xs text-muted-foreground mb-1">{t("authorizingAs")}</div>
 					<div className="font-medium text-sm">
 						{user.user_metadata?.full_name || user.email}
 					</div>
@@ -799,20 +556,19 @@ export default function ConsentForm({
 
 			<CardFooter className="flex gap-3">
 				<Button variant="outline" onClick={handleDeny} disabled={loading} className="flex-1 rounded-md">
-					Deny
+					{t("deny")}
 				</Button>
 				<Button
 					onClick={handleApprove}
 					disabled={loading || !selectedTeamIds.length || !primaryTeamId || (isUnverified && !unverifiedAcknowledged)}
 					className="flex-1 rounded-md"
 				>
-					{loading ? "Authorizing..." : `Authorize ${selectedScopes.length} permissions`}
+					{loading ? t("authorizing") : t("authorizePermissions", { count: selectedScopes.length })}
 				</Button>
 			</CardFooter>
 
 			<div className="px-6 pb-6 text-center text-xs text-muted-foreground">
-				By authorizing, you grant this application access to the selected teams. You can revoke
-				access later from your settings.
+				{t("authorizationNotice")}
 			</div>
 		</Card>
 	);

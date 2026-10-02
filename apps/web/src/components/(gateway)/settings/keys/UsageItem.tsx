@@ -1,11 +1,13 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { BarChart2 } from "lucide-react";
 import Link from "next/link";
 
 export default function UsageItem({ k }: any) {
+	const tUi = useTranslations("Common.ui");
 	// Navigate to the dashboard usage page, scoped to this key
 	const href = `/settings/usage?key=${encodeURIComponent(k.id)}`;
 
@@ -15,7 +17,7 @@ export default function UsageItem({ k }: any) {
 				href={href} />}>
 
 				<BarChart2 className="mr-2" />
-				Usage
+				{tUi("actions.usage")}
 
 		</DropdownMenuItem>
 	);

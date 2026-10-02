@@ -1,0 +1,64 @@
+---
+icon: "search-check"
+title: "Generierung abrufen"
+description: "Rufe mit /generation eine frühere Generierung ab."
+---
+
+**Methode**: `client.getGeneration()`.
+
+### Beispiel
+```typescript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+### Parameter
+- `id` (Zeichenfolge, erforderlich): Request-ID aus einem vorherigen Aufruf.
+
+### Rückgabe
+Generierungsdatensatz (JSON)
+
+Wenn das Gateway alle Request-Details gespeichert hat, enthält der zurückgegebene Datensatz `replay_supported` und `replay_request`. Du kannst `replay_request` für eine kontrollierte Wiederholung an den ursprünglichen Endpunkt senden.
+
+Zeitfelder folgen der einheitlichen Gateway-Semantik:
+
+- `latency_ms`: Zeit bis zum ersten Token oder zum ersten Ausgabe-Byte/Frame, sofern erfasst
+- `generation_ms`: Generierungszeit nach der Latenz, sofern erfasst
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+

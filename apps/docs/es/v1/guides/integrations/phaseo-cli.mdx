@@ -1,0 +1,208 @@
+---
+title: "CLI de Phaseo"
+icon: "terminal"
+description: "Instala la CLI oficial de Phaseo, configura entornos de programación y administra Phaseo desde la terminal."
+---
+
+La CLI de Phaseo se distribuye como `@phaseo/cli`. Conecta entornos de programación con Phaseo y ofrece un flujo de trabajo oficial en la terminal para administrar el plano de control de Phaseo.
+
+Úsala si quieres:
+
+- Iniciar sesión como usuario de Phaseo desde una shell local o remota, o desde un entorno de agente
+- Crear o rotar claves de API y claves de administración
+- Administrar espacios de trabajo, ajustes preestablecidos, configuración y protecciones
+- Usar el OAuth oficial de la CLI mientras las aplicaciones OAuth creadas por usuarios siguen en pruebas privadas
+- Consultar modelos, proveedores, precios, créditos, actividad, analítica y generaciones
+
+## Instalar
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli
+```
+
+</CodeGroup>
+
+## Consulta la versión instalada
+
+```bash
+phaseo --version
+phaseo version
+phaseo version --json
+```
+
+- `phaseo --version` muestra la versión instalada.
+- `phaseo version` muestra la versión y el comando de actualización recomendado para el gestor de paquetes actual.
+- Las ejecuciones interactivas también muestran un aviso de actualización cuando hay una versión publicada más reciente.
+
+El comando anterior `phaseo` sigue disponible como alias de compatibilidad.
+
+## Iniciar sesión
+
+Empieza con:
+
+```bash
+phaseo login
+```
+
+La CLI admite dos flujos oficiales:
+
+- **Iniciar sesión con Phaseo**: OAuth en el navegador con código de autorización y PKCE
+- **Iniciar sesión con código de dispositivo**: ideal para SSH, CI, shells sin interfaz y entornos de agentes
+
+Puedes elegir explícitamente cualquiera de las dos opciones:
+
+```bash
+phaseo login --browser
+phaseo login --device-code
+```
+
+Los entornos remotos y no interactivos prefieren automáticamente el código de dispositivo.
+
+## Salida de la terminal
+
+Las terminales interactivas muestran los colores y la jerarquía visual de Phaseo, además de indicadores giratorios temporales durante la configuración. Estos indicadores usan `stderr` y borran su línea al terminar. Si `stderr` no es TTY o `TERM=dumb`, se desactiva la animación; `NO_COLOR` desactiva los colores. Los comandos con `--json` siempre devuelven una salida estructurada sin adornos, apta para agentes y automatizaciones. Usa `FORCE_COLOR=1` solo si un envoltorio de terminal admite colores, pero no se identifica como TTY.
+
+## Confirma tu identidad
+
+```bash
+phaseo whoami
+phaseo whoami --json
+```
+
+Esto devuelve tu usuario actual de Phaseo, sus ámbitos, el espacio de trabajo activo y los espacios disponibles.
+
+## Crear claves
+
+```bash
+phaseo keys create --name "Local CLI Key"
+phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys current
+```
+
+Usa `--json` cuando un agente o una automatización necesite obtener una sola vez la clave creada sin procesar.
+
+## Administrar espacios de trabajo y protecciones
+
+```bash
+phaseo workspaces list
+phaseo workspaces members <workspace-id-or-slug>
+
+phaseo guardrails list
+phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
+```
+
+La CLI permite acceder desde la terminal a las funciones útiles del panel de Phaseo y de las API de administración.
+
+## Inicia los entornos de programación compatibles
+
+Las integraciones persistentes usan directamente el nombre del producto:
+
+```bash
+phaseo codex
+phaseo claude-code
+phaseo deepseek-harness
+phaseo opencode
+phaseo pi
+phaseo prime-agent
+phaseo openclaw
+phaseo aider
+phaseo roo-code
+phaseo kilo-code
+phaseo continue
+phaseo cursor
+phaseo zed
+```
+
+Usa `--model`, `--catalog all|default` o `--dry-run` según lo necesites. La forma anterior `phaseo integrations setup <integration>` sigue disponible por compatibilidad, pero no es necesaria.
+
+La CLI puede iniciar Cline, Kilo Code, oh-my-pi, Muse Code y MiniMax Code con una configuración temporal del proveedor y una clave dedicada de Phaseo. Cada entorno tiene su guía de integración con detalles de configuración y resolución de problemas: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) y [MiniMax Code](./minimax-code).
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+phaseo kilo --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra --
+phaseo muse --model meta/muse-spark-1.3 --
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+Usa `phaseo run <cline|kilo|omp|muse|minimax>` para la forma explícita. Las opciones de Phaseo van antes de `--` y las del entorno después. Usa `--catalog all` para sincronizar todos los modelos activos de texto/chat de Phaseo, o previsualiza sin crear una credencial con:
+
+```bash
+phaseo cline --model openai/gpt-5.6-terra --dry-run --json
+```
+
+Si falta Cline, Kilo Code u oh-my-pi, se ofrece su instalación de forma interactiva. Muse Code y MiniMax Code usan sus instaladores oficiales cuando no está disponible el comando. En Windows, MiniMax Code usa su instalador oficial de PowerShell; usa `--skip-install` si administras cualquiera de los entornos por separado. Los ejecutores no sobrescriben la configuración existente de Cline, Kilo, oh-my-pi, Muse Code ni MiniMax Code.
+## Aplicaciones OAuth
+
+Phaseo usa un único servidor de autorización OAuth para la CLI oficial, las aplicaciones creadas por usuarios y los clientes MCP registrados dinámicamente. La CLI inicia sesión mediante el navegador o un código de dispositivo y utiliza tokens de actualización rotatorios. Los clientes de terceros usan el flujo de código de autorización con PKCE, ámbitos explícitos y consentimiento del espacio de trabajo, tokens de acceso delegados revocables y, de forma opcional, asociación a un recurso protegido.
+
+La API alojada de Phaseo habilita OAuth de terceros. Las implementaciones autoalojadas o de vista previa de la API lo mantienen desactivado, salvo que `PHASEO_THIRD_PARTY_OAUTH_ENABLED` tenga un valor verdadero. Se aceptan `1`, `true`, `yes` y `on`, sin distinguir mayúsculas y minúsculas y después de quitar espacios. Al habilitarlo, se exponen la administración de aplicaciones OAuth creadas por usuarios y el registro dinámico de clientes; acompáñalo de una configuración revisada de URI de redirección, consentimiento, secretos de cliente, límites de frecuencia y autorización del espacio de trabajo.
+
+```bash title=".env"
+PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
+```
+
+```bash title="Docker"
+docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
+```
+
+```yaml title="Kubernetes"
+env:
+  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
+    value: "true"
+```
+
+## Modelo de seguridad
+
+- De forma predeterminada, las sesiones de la CLI requieren almacenamiento seguro respaldado por el sistema operativo. Configura `PHASEO_SESSION_BACKEND=file` solo de forma explícita si no hay un almacén de credenciales del sistema; los tokens de actualización se guardarán en un archivo de texto con permisos restringidos.
+- `phaseo logout` revoca el token de actualización almacenado antes de borrar el estado local.
+- Las claves de administración requieren capacidades explícitas.
+- Las claves de inferencia normales se rigen por las protecciones, las políticas de enrutamiento y la configuración del espacio de trabajo, no por un modelo de ámbitos independiente.
+
+## Actualizar
+
+<CodeGroup>
+
+```bash title="npm"
+npm install -g @phaseo/cli@latest
+```
+
+```bash title="pnpm"
+pnpm add -g @phaseo/cli@latest
+```
+
+```bash title="yarn"
+yarn global add @phaseo/cli@latest
+```
+
+```bash title="bun"
+bun add -g @phaseo/cli@latest
+```
+
+</CodeGroup>
+
+## Próximos pasos
+
+- [Claves de administración de la API](../../developers/management-api-keys.mdx)
+- [Autenticación](../../developers/authentication.mdx)
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [Cline](./cline)
+- [Kilo Code](./kilo-code)
+- [oh-my-pi](./oh-my-pi)
+- [Muse Code](./muse-code)
+- [MiniMax Code](./minimax-code)

@@ -1,0 +1,30 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استخدم SDK Java لرفع الملفات واسترداد بياناتها الوصفية ومحتواها."
+---
+
+**الطرق**: `Phaseo#uploadFile(...)` و`Phaseo#listFiles(...)` و`Phaseo#retrieveFile(...)` و`Phaseo#retrieveFileContent(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
+
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
+
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+
+System.out.println(String.valueOf(file));
+System.out.println(new String(content));
+```
+
+<Note>
+تتوفر `listFiles(...)` في SDK، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key` عند استخدام مفتاح البوابة المشتركة.
+احفظ معرّفات الملفات المرفوعة واسترجعها مباشرةً.
+</Note>

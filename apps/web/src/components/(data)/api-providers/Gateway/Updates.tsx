@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
 import { fetchFrontendAPIProviderUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
+import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
@@ -42,40 +43,54 @@ export default async function Updates({
 }: {
 	apiProviderId: string;
 }) {
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.providers"),
+		getLocale(),
+	]);
 	const { recentModels, newModels, recentTokens } =
 		await fetchFrontendAPIProviderUpdates(apiProviderId);
 
 	const latestModelDisplay =
 		recentModels.length > 0
-			? resolveModelDisplayInfo(recentModels[0])
+			? resolveModelDisplayInfo(recentModels[0], t("free"))
 			: undefined;
 	const latestModelDateInfo =
 		recentModels.length > 0
 			? getLifecycleDateInfo(recentModels[0])
 			: { date: null, label: null };
 	const latestModelDate = latestModelDateInfo.date
-		? formatModelDate(latestModelDateInfo.date)
-		: "Unknown";
-	const latestModelDateLabel = latestModelDateInfo.label ?? "Date";
+		? formatModelDate(latestModelDateInfo.date, locale)
+		: t("unknown");
+	const latestModelDateLabel =
+		latestModelDateInfo.label === "Released"
+			? t("releasedLabel")
+			: latestModelDateInfo.label === "Announced"
+				? t("announcedLabel")
+				: t("dateLabel");
 
 	return (
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 			<div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 				<div className="mb-4">
-					<h3 className="text-lg font-semibold mb-2">Latest Models</h3>
+					<h3 className="text-lg font-semibold mb-2">{t("latestModelsHeading")}</h3>
 					<p className="text-sm text-muted-foreground">
-						Sorted by release date, with announcement date as fallback.
+						{t("latestModelsSortDescription")}
 					</p>
 				</div>
 				{newModels.length > 0 ? (
 					<div className="space-y-3">
 						{newModels.map((model) => {
-							const display = resolveModelDisplayInfo(model);
+							const display = resolveModelDisplayInfo(model, t("free"));
 							const dateInfo = getLifecycleDateInfo(model);
 							const formattedDate = dateInfo.date
-								? formatModelDate(dateInfo.date)
-								: "Unknown";
-							const dateLabel = dateInfo.label ?? "Date";
+								? formatModelDate(dateInfo.date, locale)
+								: t("unknown");
+							const dateLabel =
+								dateInfo.label === "Released"
+									? t("releasedLabel")
+									: dateInfo.label === "Announced"
+										? t("announcedLabel")
+										: t("dateLabel");
 
 							return (
 								<div
@@ -94,7 +109,7 @@ export default async function Updates({
 															<Check className="h-4 w-4 text-green-600" />
 														</TooltipTrigger>
 														<TooltipContent>
-															Available on Gateway
+															{t("availableOnGateway")}
 														</TooltipContent>
 													</Tooltip>
 												)}
@@ -125,10 +140,9 @@ export default async function Updates({
 								<EmptyMedia variant="icon">
 									<Sparkles className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle>No Recent Models</EmptyTitle>
+								<EmptyTitle>{t("noRecentModels")}</EmptyTitle>
 								<EmptyDescription>
-									No model releases or announcements landed
-									in the last 7 days.
+									{t("noRecentModelsDescription")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -138,11 +152,9 @@ export default async function Updates({
 
 			<div className="border border-gray-200 dark:border-gray-700 rounded-lg p-6">
 				<div className="mb-4">
-					<h3 className="text-lg font-semibold mb-2">
-						Recent Activity
-					</h3>
+					<h3 className="text-lg font-semibold mb-2">{t("recentActivityHeading")}</h3>
 					<p className="text-sm text-muted-foreground">
-						Usage statistics and model availability overview.
+						{t("usageStatsOverview")}
 					</p>
 				</div>
 				<div className="space-y-6">
@@ -153,7 +165,7 @@ export default async function Updates({
 						</div>
 						<p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
 							<TrendingUp className="h-3 w-3" />
-							Tokens in last 7 days
+							{t("tokensLastSevenDays")}
 						</p>
 					</div>
 
@@ -164,7 +176,7 @@ export default async function Updates({
 						</div>
 						<p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
 							<Sparkles className="h-3 w-3" />
-							Total models available
+							{t("totalModelsAvailable")}
 						</p>
 					</div>
 
@@ -173,7 +185,7 @@ export default async function Updates({
 						<div className="pt-2 border-t border-gray-200 dark:border-gray-700">
 							<p className="text-xs text-muted-foreground mb-3 flex items-center gap-1">
 								<Calendar className="h-3 w-3" />
-								Latest model:
+								{t("latestModelLabel")}:
 							</p>
 							<div className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 								<div className="flex items-start justify-between gap-4">
@@ -237,7 +249,10 @@ type ModelDisplayInfo = {
 	organisationId?: string;
 };
 
-function resolveModelDisplayInfo(model: APIProviderRecentModel): ModelDisplayInfo {
+function resolveModelDisplayInfo(
+	model: APIProviderRecentModel,
+	freeLabel: string,
+): ModelDisplayInfo {
 	const relatedModel = Array.isArray(model.data_models)
 		? model.data_models[0]
 		: model.data_models;
@@ -252,7 +267,7 @@ function resolveModelDisplayInfo(model: APIProviderRecentModel): ModelDisplayInf
 
 	let name = relatedModel?.name ?? model.model_id;
 	if (model.api_model_id?.endsWith(":free")) {
-		name += " (free)";
+		name += ` (${freeLabel})`;
 	}
 
 	return {
@@ -262,6 +277,6 @@ function resolveModelDisplayInfo(model: APIProviderRecentModel): ModelDisplayInf
 	};
 }
 
-function formatModelDate(timestamp: string) {
+function formatModelDate(timestamp: string, _locale?: string) {
 	return <DisplayCalendarDate value={timestamp} />;
 }

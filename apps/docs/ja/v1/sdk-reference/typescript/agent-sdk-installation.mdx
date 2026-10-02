@@ -1,0 +1,51 @@
+---
+icon: "package"
+title: "インストール"
+description: "Phaseo TypeScript Agent SDKをインストールして設定します。"
+---
+
+Agent SDKはnpmで[`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk)として公開されています。
+
+## 必要条件
+
+- npm、pnpm、Yarn、Bunのいずれかを使うTypeScriptまたはJavaScriptプロジェクト
+- PhaseoのAPIキー
+
+## インストール
+
+使い慣れたパッケージマネージャーでAgent SDKをインストールします。
+
+<CodeGroup>
+
+    ```bash title="npm"
+    npm install @phaseo/agent-sdk
+    ```
+
+    ```bash title="pnpm"
+    pnpm add @phaseo/agent-sdk
+    ```
+
+    ```bash title="yarn"
+    yarn add @phaseo/agent-sdk
+    ```
+
+    ```bash title="bun"
+    bun add @phaseo/agent-sdk
+    ```
+
+</CodeGroup>
+
+コアパッケージの`@phaseo/sdk`は依存関係として自動的にインストールされます。
+
+## 環境変数
+
+サンプルを実行する前に、ゲートウェイのAPIキーを設定します。
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 次のステップ
+
+- [概要](./agent-sdk-overview.mdx)
+- [Agent SDKで開発する](./agent-sdk.mdx)

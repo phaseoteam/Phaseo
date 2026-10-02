@@ -1,0 +1,85 @@
+---
+title: "Attribution de l’application"
+description: "Regroupez l’utilisation de Gateway par application à l’aide d’identifiants, de noms, d’URL et de catégories stables."
+icon: "badge-check"
+---
+
+Utilisez l’attribution des applications pour séparer l’utilisation entre produits, environnements ou expériences destinées aux clients. Elle apparaît dans les analyses et les audits des requêtes sans modifier la réponse d’inférence.
+
+## Ajouter des en-têtes d’attribution
+
+Envoyez un identifiant d’application stable avec chaque requête. Ajoutez un nom, une URL et jusqu’à trois catégories pour obtenir un regroupement plus détaillé dans le tableau de bord.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Utilisez le même `X-App-Id` pour chaque requête provenant d’une même application. Phaseo s’en sert comme identité stable lorsqu’aucune URL n’est disponible.
+
+## Utiliser le SDK TypeScript
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## En-têtes pris en charge
+
+| En-tête | Rôle |
+| --- | --- |
+| `X-App-Id` | Identifiant stable choisi par votre application. |
+| `X-App-Name` | Nom lisible affiché dans les vues des applications et de l’utilisation. |
+| `HTTP-Referer` | URL publique de la page ou du déploiement associé à l’application. |
+| `X-App-Categories` | Liste séparée par des virgules contenant jusqu’à trois catégories prises en charge. |
+| `X-Title` | Alias de compatibilité pour le nom lisible de l’application. |
+
+`HTTP-Referer` est une métadonnée d’attribution ; il n’a pas besoin de correspondre à l’en-tête `Referer` automatique du navigateur. Définissez-le explicitement dans les intégrations côté serveur si vous souhaitez une URL canonique unique pour l’application.
+
+## Catégories
+
+Choisissez jusqu’à trois valeurs :
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+Les valeurs ne sont pas sensibles à la casse. Phaseo ignore les valeurs inconnues, supprime les doublons et conserve les trois premières catégories valides. Les catégories reçues dans les requêtes ultérieures sont fusionnées avec celles déjà enregistrées pour l’application ; elles ne suppriment pas les sélections du tableau de bord.
+
+Vous pouvez également modifier les catégories dans **Gateway → Paramètres → Applications**. Utilisez le tableau de bord lorsque la classification est gérée de manière centralisée plutôt que dans le code de l’application.
+
+## Conseils d’attribution
+
+- Conservez des identifiants stables d’un déploiement à l’autre afin de garder l’utilisation regroupée.
+- Utilisez des identifiants distincts pour les applications nécessitant des rapports séparés sur les coûts ou l’utilisation.
+- N’incluez pas d’identifiants clients, d’adresses e-mail ni d’autres données personnelles dans les en-têtes d’attribution.
+- Considérez l’URL comme une métadonnée publique si l’application peut apparaître dans des vues partagées ou publiques.

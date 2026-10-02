@@ -1,0 +1,173 @@
+---
+title: "Structured JSON वर्कफ़्लो के लिए प्लगइन डिफ़ॉल्ट सेट करें"
+icon: "puzzle"
+description: "जवाब सुधार को एकसमान रखने के लिए workspace, preset और request-level plugin नीति का उपयोग करें।"
+---
+
+जब structured-output अनुरोधों को हर बार अलग सेटिंग के बजाय एक स्थिर plugin नीति चाहिए, तो इस गाइड का उपयोग करें।
+
+## 1. प्राथमिकता समझें
+
+Gateway plugin नीति इस क्रम में लागू होती है:
+
+1. workspace डिफ़ॉल्ट
+2. preset डिफ़ॉल्ट
+3. request-level plugins
+
+कम प्राथमिकता वाली परतें उच्च प्राथमिकता वाली परतों को बदल सकती हैं, जब तक workspace डिफ़ॉल्ट को स्पष्ट रूप से लॉक न किया गया हो।
+
+## 2. Workspace डिफ़ॉल्ट सेट करें
+
+जब किसी workspace को structured JSON अनुरोधों के लिए जवाब सुधार डिफ़ॉल्ट रूप से चालू रखना हो, तो routing settings में यह डिफ़ॉल्ट सेट करें।
+
+यह इन बातों के लिए सही जगह है:
+
+- व्यापक परिचालन डिफ़ॉल्ट
+- API key का साझा व्यवहार
+- सेवाओं के बीच अलग-अलग व्यवहार रोकना
+
+## 3. नीति अनिवार्य हो तो लॉक करें
+
+अगर किसी workspace में जवाब सुधार हमेशा चालू रहना चाहिए, तो उस डिफ़ॉल्ट को लॉक करें।
+
+Workspace डिफ़ॉल्ट लॉक होने पर:
+
+- presets इसे बंद नहीं कर सकते
+- request payload इसे बंद नहीं कर सकते
+- logs फिर भी दिखाते हैं कि plugin लागू हुआ, छोड़ा गया या विफल हुआ
+
+## 4. Workflow के खास डिफ़ॉल्ट के लिए presets इस्तेमाल करें
+
+जब अनुरोधों के किसी समूह में दोनों चीज़ें चाहिए हों, तो presets सही परत हैं:
+
+- संरचित आउटपुट की सेटिंग
+- जवाब सुधार plugin डिफ़ॉल्ट
+
+यह परत जवाब सुधार का mode भी चुन सकती है:
+
+- सीमित syntax cleanup के लिए `safe`
+- केवल बाहरी wrapper हटाने वाले व्यवहार के लिए `strict`
+
+इससे request body छोटा रहता है और अलग-अलग सेवाओं में routing तथा output behavior को दोबारा इस्तेमाल करना आसान होता है।
+
+## 5. Request-level पर तभी बदलें जब workspace अनुमति दे
+
+अगर workspace डिफ़ॉल्ट लॉक नहीं है, तो एक अनुरोध plugin config को सीधे बदल सकता है:
+
+## अनुरोध का उदाहरण
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+## 6. Logs में व्यवहार सत्यापित करें
+
+एक अनुरोध के बाद, अनुरोध विवरण खोलें और पुष्टि करें:
+
+- `plugin_executions` में `response-healing` शामिल है
+- status इनमें से एक है:
+  - `applied`
+  - `skipped`
+  - `failed`
+- प्रभावी plugin mode दिखता है
+- schema enforcement द्वारा सुधारे गए संभावित payload को अस्वीकार करने पर validation errors दिखती हैं
+
+## 7. सेवाओं के बीच व्यवहार अलग हो तो क्या करें
+
+अगर दो सेवाएं अलग तरह से व्यवहार करें, तो तुलना करें:
+
+- workspace routing की सेटिंग
+- preset plugin defaults
+- request-level `plugins`
+- workspace डिफ़ॉल्ट लॉक है या नहीं
+
+जब तक ये नीति परतें समान न हों, इसे model quality की समस्या मानकर डीबग न करें।
+
+## संबंधित जानकारी
+
+- [गलत structured JSON सुधारें](./response-healing-for-structured-json.mdx)
+- [presets के साथ response caching इस्तेमाल करें](./response-caching-with-presets.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

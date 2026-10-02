@@ -1,0 +1,18 @@
+---
+icon: "pencil"
+title: "تعديل الصور"
+description: "استدعِ /images/edits باستخدام Python SDK."
+---
+
+**الطريقة**: `client.generate_image_edit()`
+
+```python
+result = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+})
+
+print(result)
+```
+

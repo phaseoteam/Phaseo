@@ -1,0 +1,133 @@
+---
+title: "Caso você tenha perdido: O que lançamos em agosto de 2026"
+shortTitle: "Caso você tenha perdido: agosto de 2026"
+description: Agosto facilitou a conexão com ferramentas de programação, aprofundou o rastreamento de solicitações, adicionou controles de autoatendimento para workspaces e fez uma ampla limpeza no catálogo de provedores.
+publishedAt: 2026-08-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-august-2026.png
+tags:
+  - Resumo mensal
+  - Resumo mensal
+  - Produto
+  - Modelos
+draft: false
+---
+
+Agosto foi intenso, até para os nossos padrões. Facilitamos a conexão da Phaseo com ferramentas de programação, registramos mais detalhes de cada solicitação do Gateway, adicionamos controles de autoatendimento para workspaces e fizemos uma limpeza há muito necessária no catálogo de provedores.
+
+Este resumo cobre o trabalho lançado entre **1º e 30 de agosto de 2026**, com base em pull requests mesclados, no histórico de lançamentos e nos dados do catálogo do mês.
+
+## O que lançamos
+
+### Ficou mais fácil conectar ferramentas de programação
+
+A CLI da Phaseo agora cuida de mais etapas entre a instalação e uma primeira solicitação útil.
+
+Adicionamos publicação independente, verificações de atualização, o comando `doctor` e integrações com OpenCode e outros agentes de programação. A configuração do ambiente com um comando detecta as ferramentas compatíveis, explica o que será instalado e pede confirmação antes de alterar a configuração local. A CLI também compara modelos antes que um aplicativo se comprometa com uma rota.
+
+Também criamos uma migração guiada do OpenRouter. Ela se concentra no que realmente muda: credenciais, URLs base, identificadores de modelo e atribuição de solicitações.
+
+O código inicial do workspace para desktop e do cliente móvel Expo também chegou neste mês. Nenhum dos dois está pronto para ser lançado como cliente completo. Eles são o ponto de partida para levar os mesmos workspaces, catálogo de modelos e histórico de solicitações para além do navegador.
+
+### A observabilidade agora acompanha a solicitação inteira
+
+Agora registramos mais etapas da vida de uma solicitação, incluindo latência, comportamento do streaming, uso, tentativas de provedores e a decisão final de roteamento.
+
+Em agosto, adicionamos latência entre tokens e medição de entradas em cache, passamos a persistir tentativas de solicitações upstream e introduzimos a exportação do GenAI OpenTelemetry. Também melhoramos a inspeção dos registros de uso, restauramos a atribuição da origem das solicitações e a separamos do app Chat. As telas de roteamento agora explicam por que um provedor foi selecionado.
+
+As páginas de desempenho dos modelos ganharam filtros melhores, estados sincronizados ao passar o cursor pelos gráficos, histórico de preços, detalhes dos provedores e taxas semanais de retorno. Ajustamos as regras de baixo volume para que modelos com poucos dados ainda mostrem informações úteis, sem tratar uma amostra minúscula como conclusiva. As classificações continuam disponíveis quando uma fonte upstream falha.
+
+Quando uma solicitação é lenta, cara, repetida ou enviada para um destino inesperado, agora há mais evidências para explicar o motivo.
+
+### As APIs multimodais começaram a compartilhar a mesma infraestrutura
+
+As cargas de trabalho de processamento em lote, vídeo, tempo real, imagem, música, transcrição e documentos mudaram neste mês. Algumas receberam novas rotas; outras precisaram de trabalho menos visível com cobrança, propriedade ou tratamento de falhas.
+
+Reforçamos os controles de propriedade, cobrança e falhas nos fluxos das APIs Batch e Video. Também revisamos a admissão de retransmissões em tempo real e os ciclos de vida dos Durable Objects. Provedores de áudio agora seguem contratos mais consistentes, e músicas geradas podem completar todo o ciclo assíncrono, inclusive a recuperação.
+
+O Gateway ganhou rotas para Meta Muse Image 1.0 e vários modelos de mídia da MiniMax. Cohere Parse v5 levou a análise de documentos para uma categoria padrão de rotas, enquanto modelos de transcrição Gemini ampliaram a cobertura de áudio.
+
+Adaptadores mantidos pelos provedores e configurações controladas pelo banco de dados estão substituindo gradualmente o código de roteamento feito para casos isolados. Novas modalidades podem reutilizar autenticação, registro de uso, cobrança, rastreamento e alternativas, em vez de chegar com outra pilha separada para manter.
+
+### Os workspaces ganharam controles empresariais sem uma fila de chamados
+
+Complementos Enterprise de autoatendimento foram lançados para SSO, SCIM, gerenciamento de diretórios e departamentos. O SCIM ganhou uma implementação de provedor de serviços, permissões por departamento e reconciliação mais segura.
+
+As notificações dos workspaces agora podem ser direcionadas para e-mail, Discord, Slack, Microsoft Teams ou webhooks HTTPS personalizados. As equipes podem escolher um destino por alerta, em vez de tratar todas as notificações como um único fluxo global.
+
+Os controles de privacidade agora se aplicam ao workspace inteiro, filtros de políticas de provedores estão disponíveis no catálogo e o Phaseo Trust Centre está no ar. As páginas de modelos e provedores também explicam com mais clareza retenção, processamento regional e políticas de dados.
+
+As equipes não deveriam precisar abrir um chamado para descobrir onde as solicitações são processadas, como um provedor trata dados, quem pode acessar um workspace ou para onde um alerta será enviado. Essas respostas agora ficam mais próximas das configurações relacionadas.
+
+### Chat e Compare eliminaram vários pequenos incômodos
+
+Nenhuma mudança de agosto no Chat é enorme por si só. Em conjunto, elas fazem diferença.
+
+Comparações lado a lado aproveitam melhor as telas largas e mantêm as mensagens legíveis em notebooks e tablets. Rascunhos são preservados após o login, as salas de modelos são classificadas com mais confiabilidade e o seletor de modelos abre quando uma mensagem não tem um modelo selecionado. O Chat também ganhou indicadores de atividade, confirmações de recebimento, ações de seleção de assistente e marcadores na linha do tempo quando o modelo ativo muda.
+
+Os filtros de modelos no celular agora correspondem aos do desktop, a busca global ordena por relevância, os resultados mostram nomes regionais de provedores e os cartões do catálogo exibem o estado do ciclo de vida. O Compare abre diretamente e mantém os controles onde foram deixados.
+
+A maior parte disso elimina atritos, exatamente o que Chat e Compare precisavam.
+
+### Auditamos o catálogo de provedores, um por um
+
+Revisamos a identidade e a disponibilidade dos modelos, preços, regiões, níveis de serviço, políticas de privacidade, suporte a parâmetros e status de descontinuação em todo o catálogo de provedores.
+
+Isso incluiu as principais plataformas próprias e dezenas de provedores menores de inferência. Durante o trabalho, separamos a disponibilidade do provedor do status de roteamento da Phaseo, adicionamos registros independentes para modelos gratuitos, protegemos a identidade de provedores discretos e corrigimos o tratamento de provedores inativos e externos.
+
+Os preços agora oferecem histórico por período, promoções, tarifas fora do horário de pico, políticas por nível e comparações de descontos mais claras. Também renomeamos o nível de serviço Priority para Fast. Esse é o nome que os desenvolvedores escolhem, e ele é menos ambíguo do que o antigo rótulo interno.
+
+Na prática, há menos registros duplicados e rotas sem uso. Também ficou mais fácil responder à pergunta que o catálogo deve resolver: quem pode executar este modelo, onde, sob qual política e por qual preço?
+
+## Também lançamos
+
+- As predefinições ganharam versões imutáveis, histórico de ramificações, proteção de invocações e observabilidade de feedback.
+- A descoberta de recursos dos modelos e as perguntas frequentes sobre chamadas de ferramentas ficaram disponíveis no catálogo.
+- Melhoramos o streaming e a exibição do Server Tools.
+- Modernizamos a Models API e a interface MCP usando os dados atuais do catálogo.
+- As páginas de provedores e laboratórios ganharam mais logotipos, indicações regionais e estados de disponibilidade mais claros.
+- Os recursos de marca agora podem ser baixados em SVG e PNG, com prévias claras e escuras.
+- O acesso ao banco de dados migrou para PlanetScale, reduzindo a saída de dados e adicionando consultas identificadas para facilitar o diagnóstico.
+- O Next.js passou para a linha 16.3, seguido de atualizações de compatibilidade e segurança.
+
+## Destaques de modelos
+
+Os lançamentos de agosto cobriram programação, mídia, documentos e pesos abertos. Nenhum modelo dominou o mês inteiro.
+
+O GLM 5.3 da Z.AI foi um dos maiores esforços de roteamento do mês. Depois veio o GLM 5.3 Flash, com rotas em OpenRouter, Baseten, FriendliAI, CrofAI, Morph, Reka, Databricks, AkashML, GMI Cloud, DigitalOcean, Parasail e outros. A família Qwen 3.8 também cresceu, com as versões Max, 2.4T A95B, 27B e Flash.
+
+O Google lançou Gemini 3.7 Flash, enquanto a xAI adicionou Grok 4.6 e Grok Imagine Image 2.0. Entre os modelos de mídia estavam Muse Spark 1.2, Muse Glimmer 30B, Seedance 2.5 e DeepSeek V4 Flash Vision Exp. O Cohere Parse v5 adicionou análise de documentos, e a família IBM Granite 4.2 chegou nos tamanhos 3B, 8B e 30B.
+
+Confira os dados de lançamentos mais recentes:
+
+- [Ver atualizações recentes](/updates)
+
+## Resumo do mês
+
+O histórico do GitHub mostra **557 pull requests mesclados** entre 1º e 30 de agosto. O changelog de agosto registra **29 lançamentos de modelos**. A maior parte do trabalho se concentrou na configuração de ferramentas de programação, no rastreamento de solicitações, nas APIs multimodais, na administração de workspaces e na limpeza do catálogo.
+
+## Modelos lançados em agosto de 2026
+
+O changelog de agosto inclui estes lançamentos:
+
+- 3 de agosto: Qwen 3.8 Max (`qwen/qwen3.8-max`) e Namazu (`sakana/namazu`)
+- 5 de agosto: Ling 3.0 Tiny (`inclusionai/ling-3.0-tiny`), Muse Spark 1.2 (`meta/muse-spark-1.2`), Muse Spark 1.2 Contributor (`meta/muse-spark-1.2-contributor`) e Shieldstral 1.0 3B (`mistral/shieldstral-1.0-3b`)
+- 6 de agosto: Solar Pro 4 (`upstage/solar-pro-4`)
+- 7 de agosto: Seedance 2.5 (`bytedance/seedance-2.5`)
+- 10 de agosto: Muse Glimmer 30B (`meta/muse-glimmer-30b`)
+- 11 de agosto: MAI Code 1.1 Flash (`microsoft/mai-code-1.1-flash`), Nemotron 3.5 Lightning 30B A3B (`nvidia/nemotron-3.5-lightning`) e Grok Imagine Image 2.0 (`spacex-ai/grok-imagine-image-2.0`)
+- 12 de agosto: Grok 4.6 (`spacex-ai/grok-4.6`) e Qwen 3.8 2.4T A95B (`qwen/qwen3.8-2.4t-a95b`)
+- 13 de agosto: Gemini 3.7 Flash (`google/gemini-3.7-flash`), OCR 4.1 (`mistral/ocr-4.1`), DeepSeek V4 Pro 0813 (`deepseek/deepseek-v4-pro-0813`) e dots3-note Preview (`dots-studio/dots3-note-prev`)
+- 14 de agosto: GLM 5.3 (`z-ai/glm-5.3`) e Qwen 3.8 27B (`qwen/qwen3.8-27b`)
+- 21 de agosto: DeepSeek V4 Flash Vision Exp (`deepseek/deepseek-v4-flash-vision-exp`)
+- 25 de agosto: Granite 4.2 30B (`ibm/granite-4.2-30b`), Granite 4.2 8B (`ibm/granite-4.2-8b`) e Granite 4.2 3B (`ibm/granite-4.2-3b`)
+- 26 de agosto: Qwen 3.8 Flash (`qwen/qwen3.8-flash`) e GLM 5.3 Flash (`z-ai/glm-5.3-flash`)
+- 27 de agosto: Parse v5.0 (`cohere/parse-v5.0`) e Ling 3.0 Flash Fin (`inclusionai/ling-3.0-flash-fin`)
+- 28 de agosto: Hy4 Preview (`tencent/hy4-preview`)
+
+## Próximos passos
+
+As bases para desktop e dispositivos móveis ainda estão em construção, e alguns fluxos multimodais ainda têm particularidades por provedor. Em setembro, vamos avançar com esses clientes, eliminar mais casos especiais e facilitar o uso das novas informações de roteamento na escolha entre modelos e provedores.
+

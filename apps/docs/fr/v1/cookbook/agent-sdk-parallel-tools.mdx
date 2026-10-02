@@ -1,0 +1,104 @@
+---
+title: "Exécuter des outils locaux d’agent en parallèle"
+icon: "network"
+description: "Limitez l’exécution parallèle des outils locaux avec l’Agent SDK TypeScript afin qu’un tour de modèle puisse réunir des informations indépendantes sans exécuter chaque appel en série."
+---
+
+Utilisez cette recette lorsqu’un tour d’agent peut appeler sans risque plusieurs outils locaux indépendants et que vous souhaitez les exécuter en parallèle tout en préservant l’ordre déterministe des résultats.
+
+## Quand l’utiliser
+
+Utilisez `toolExecution.toolConcurrency` lorsque :
+
+- le modèle peut appeler plusieurs outils locaux pendant un même tour
+- ces outils ne dépendent pas des résultats des autres
+- l’exécution séquentielle ferait perdre du temps aux workers
+- vous souhaitez conserver l’ordre d’origine des appels dans les messages de résultat enregistrés
+
+Évitez une forte concurrence si un outil modifie un état partagé ou si les outils suivants dépendent des résultats précédents.
+
+## Exemple
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+```
+
+Consultez la version fournie dans `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## Garanties du runtime
+
+- les outils locaux peuvent s’exécuter en parallèle jusqu’à la limite `toolConcurrency` configurée
+- les événements `tool.started` et `tool.completed` continuent d’être émis pour chaque outil
+- les messages de résultat enregistrés conservent l’ordre d’origine des appels
+- un point de contrôle est toujours enregistré à la fin de la phase d’outils
+- le délai `timeoutMs` continue de s’appliquer à chaque outil
+
+## Conseils opérationnels
+
+- commencez par une faible valeur de concurrence, comme `2` ou `3`
+- privilégiez des outils locaux idempotents et avec peu d’effets secondaires
+- utilisez `timeoutMs` pour qu’une dépendance bloquée ne monopolise pas tous les workers
+- n’ajoutez `store` que si votre application a réellement besoin de reprise ou de coordination distante
+
+## Validation
+
+Après avoir activé ce modèle :
+
+- exécutez les tests de boucle d’agent qui couvrent les tours faisant appel à plusieurs outils
+- vérifiez que le workflow produit toujours les messages de résultat dans l’ordre
+- vérifiez que les journaux d’exploitation indiquent toujours les événements `tool.started` et `tool.completed` attendus

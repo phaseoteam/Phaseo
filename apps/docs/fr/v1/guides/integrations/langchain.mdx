@@ -1,0 +1,51 @@
+---
+title: "LangChain"
+icon: "link"
+description: "Utilisez LangChain avec Phaseo via l’API de chat compatible avec OpenAI."
+---
+
+Utilisez ce guide pour faire appeler des modèles via Phaseo par les chaînes, agents ou workflows LangGraph de LangChain.
+
+## Installation
+
+```bash
+pip install -U langchain langchain-openai
+```
+
+## Configurer ChatOpenAI
+
+```python
+import os
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+result = llm.invoke("Write one sentence about routing reliability.")
+print(result.content)
+```
+
+## Utiliser LangGraph
+
+Transmettez le même `llm` aux nœuds de votre graphe ou au générateur d’agent :
+
+```python
+def call_model(state):
+    response = llm.invoke(state["messages"])
+    return {"messages": [response]}
+```
+
+## Remarques
+
+- Le chemin compatible avec OpenAI de LangChain utilise Chat Completions. Utilisez les fonctionnalités Phaseo disponibles sur `/v1/chat/completions`.
+- Pour les outils serveur disponibles uniquement avec Responses, comme `phaseo:apply_patch`, appelez Phaseo directement ou consultez le guide du SDK OpenAI.
+- Pour le traçage, associez cette configuration à [Observabilité](./observability.mdx).
+
+## Pages associées
+
+- [SDK OpenAI](./openai-sdk.mdx)
+- [Appels d’outils](../tool-calling.mdx)
+- [Routage et solutions de repli](../routing-and-fallbacks.mdx)

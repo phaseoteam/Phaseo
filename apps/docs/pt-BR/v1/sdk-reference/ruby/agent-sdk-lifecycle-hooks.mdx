@@ -1,0 +1,26 @@
+---
+icon: "radio-tower"
+title: "Hooks de ciclo de vida"
+description: "Observe execuções de agentes Ruby, turnos do modelo, ferramentas, pausas e conclusão."
+---
+
+Passe `on_event` para receber eventos estruturados do ciclo de vida durante a execução.
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) {
+    logger.info(
+      "agent event",
+      type: event[:type],
+      run_id: event[:run_id],
+      details: event[:details]
+    )
+  }
+)
+```
+
+Eventos úteis incluem início, conclusão e falha da execução; tentativas do modelo; deltas de texto e raciocínio; início, progresso, conclusão e falha de ferramentas; e pontos de verificação humana.
+
+Mantenha os handlers rápidos. Enfile trabalhos lentos de persistência e remova dados confidenciais das entradas de ferramentas antes de encaminhar eventos a serviços externos.

@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "Salidas y reintentos"
+description: "Valida las salidas de los agentes .NET y vuelve a intentar los fallos acotados del modelo."
+---
+
+Valida la salida final cuando el código .NET posterior espera un valor estructurado. Trata los errores de validación como errores de contrato, no como fallos de transporte transitorios.
+
+Configura reintentos limitados con `ModelRetryConfig`:
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+El paso completado conserva el recuento final de intentos del modelo. Los fallos de herramientas locales se gestionan por separado y no se reintentan como solicitudes al modelo.
+
+`GatewayAgentClientOptions` contiene opciones de respuesta estructurada, enrutamiento, proveedor, razonamiento, selección de herramientas, caché de prompts y otras opciones adicionales de solicitud.
+
+## Contenido relacionado
+
+- [Turnos dinámicos](./agent-sdk-dynamic-turns.mdx)
+- [Condiciones de parada](./agent-sdk-stop-conditions.mdx)
+- [Errores y solución de problemas](./agent-sdk-observability.mdx)

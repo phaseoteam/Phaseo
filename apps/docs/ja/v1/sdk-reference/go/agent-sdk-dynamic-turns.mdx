@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "動的なターン"
+description: "Goエージェントのターン間で、モデル、指示、ツール、サンプリング設定を変更します。"
+---
+
+動的ターンのコールバックを使うと、エージェントを再構築せずに実行状態に応じてルーティングを変更できます。各モデルリクエストの前に実行され、現在のターンコンテキストを受け取ります。
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+動的ツールに加え、ターンごとの`Temperature`、`MaxOutputTokens`、`TopP`も設定できます。
+
+## ツールで次のターンに影響を与える
+
+ツールに`NextTurn`を設定すると、直後のモデルリクエストを変更できます。この上書き設定は一時停止状態に保存されるため、承認チェックポイント後も保持され、次のターン後に期限切れになります。
+
+各ターンで再計算するポリシーには動的コールバックを使います。リポジトリを調査した後にモデルを切り替える場合など、ツール固有の引き継ぎには`NextTurn`を使います。

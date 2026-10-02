@@ -1,7 +1,11 @@
+'use client'
+
 import * as React from 'react'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
 type PasswordStrength = 'weak' | 'medium' | 'strong' | 'very-strong'
+type PasswordFeedback = 'lowercase' | 'uppercase' | 'number' | 'special'
 
 interface PasswordStrengthIndicatorProps {
     password: string
@@ -17,14 +21,14 @@ interface PasswordStrengthIndicatorProps {
 export function calculatePasswordStrength(password: string): {
     strength: PasswordStrength
     score: number
-    feedback: string[]
+    feedback: PasswordFeedback[]
 } {
     if (!password) {
         return { strength: 'weak', score: 0, feedback: [] }
     }
 
     let score = 0
-    const feedback: string[] = []
+    const feedback: PasswordFeedback[] = []
 
     // Length scoring (0-40 points)
     if (password.length >= 8) score += 10
@@ -33,16 +37,16 @@ export function calculatePasswordStrength(password: string): {
 
     // Character variety (0-40 points)
     if (/[a-z]/.test(password)) score += 10
-    else feedback.push('Add lowercase letters')
+    else feedback.push('lowercase')
 
     if (/[A-Z]/.test(password)) score += 10
-    else feedback.push('Add uppercase letters')
+    else feedback.push('uppercase')
 
     if (/[0-9]/.test(password)) score += 10
-    else feedback.push('Add numbers')
+    else feedback.push('number')
 
     if (/[^a-zA-Z0-9]/.test(password)) score += 10
-    else feedback.push('Add special characters (!@#$%...)')
+    else feedback.push('special')
 
     // Bonus points for good patterns (0-20 points)
     if (password.length >= 8 && !/(.)\1{2,}/.test(password)) {
@@ -67,7 +71,8 @@ export function PasswordStrengthIndicator({
     password,
     className,
 }: PasswordStrengthIndicatorProps) {
-    const { strength, score, feedback } = React.useMemo(
+    const t = useTranslations('SettingsUI.passwordStrength')
+    const { strength, feedback } = React.useMemo(
         () => calculatePasswordStrength(password),
         [password]
     )
@@ -76,25 +81,25 @@ export function PasswordStrengthIndicator({
 
     const strengthConfig = {
         weak: {
-            label: 'Weak',
+            label: t('labels.weak'),
             color: 'bg-red-500',
             textColor: 'text-red-600',
             bars: 1,
         },
         medium: {
-            label: 'Medium',
+            label: t('labels.medium'),
             color: 'bg-yellow-500',
             textColor: 'text-yellow-600',
             bars: 2,
         },
         strong: {
-            label: 'Strong',
+            label: t('labels.strong'),
             color: 'bg-green-500',
             textColor: 'text-green-600',
             bars: 3,
         },
         'very-strong': {
-            label: 'Very Strong',
+            label: t('labels.veryStrong'),
             color: 'bg-green-600',
             textColor: 'text-green-700',
             bars: 4,
@@ -126,7 +131,7 @@ export function PasswordStrengthIndicator({
                     {config.label}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                    {password.length} characters
+                    {t('characterCount', { count: password.length })}
                 </p>
             </div>
 
@@ -136,7 +141,7 @@ export function PasswordStrengthIndicator({
                     {feedback.slice(0, 2).map((item, i) => (
                         <li key={i} className="flex items-center gap-1.5">
                             <span className="text-muted-foreground/60">•</span>
-                            {item}
+                            {t(`feedback.${item}`)}
                         </li>
                     ))}
                 </ul>

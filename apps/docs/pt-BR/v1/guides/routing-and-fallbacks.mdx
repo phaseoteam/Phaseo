@@ -1,0 +1,282 @@
+---
+title: "Roteamento e alternativas"
+description: "Como o Gateway seleciona provedores e mantém as solicitações confiáveis."
+icon: "git-branch"
+---
+
+O Phaseo Gateway encaminha cada solicitação para um provedor que pode atender ao modelo escolhido. Quando um provedor está lento, limita a taxa ou retorna erros, o Gateway pode tentar alternativas para que as solicitações sejam concluídas.
+
+## Escolha um modo de roteamento
+
+Comece com `balanced`, a menos que um requisito de produção seja claramente mais importante que os demais.
+
+| Modo | Use quando |
+| --- | --- |
+| `balanced` | Você quiser uma combinação prática de preço, latência, throughput e disponibilidade. |
+| `price` | Reduzir o custo do provedor for mais importante do que minimizar o tempo de resposta. |
+| `latency` | Começar a resposta rapidamente for o principal requisito. |
+| `throughput` | Manter uma alta velocidade de geração de tokens for o mais importante. |
+
+Configure o padrão do espaço de trabalho em **Painel -> Configurações -> Roteamento**. Use predefinições quando um fluxo de trabalho precisar de uma política de provedor ou modelo mais restrita do que o padrão do espaço.
+
+### Sufixos de roteamento de modelos
+
+Adicione um sufixo de roteamento quando o próprio ID do modelo precisar definir o modo de otimização para aquela solicitação:
+
+| Sufixo | Modo de roteamento |
+| --- | --- |
+| `:nitro` | `throughput` |
+| `:cheap` | `price` |
+| `:fast` | `latency` |
+
+Por exemplo, `openai/gpt-5-mini:nitro` prioriza throughput. Um sufixo de roteamento reconhecido tem precedência sobre `routing.mode` ou `provider.sort` da solicitação e sobre os modos de roteamento da predefinição e do espaço de trabalho. As demais restrições continuam valendo, como listas de provedores permitidos, requisitos regionais, guardrails e limites máximos de preço.
+
+## Como o roteamento funciona
+
+- Você envia uma solicitação com um ID de modelo.
+- O Gateway avalia a integridade, a latência e a cobertura de recursos dos provedores.
+- Um provedor é selecionado e executa a solicitação.
+
+Para investigar o comportamento do roteamento, confira os resultados das solicitações nos logs de atividade e nos metadados da resposta.
+
+## Selecione um modelo com o roteador automático
+
+O Roteamento Automático está em Alpha e disponível somente para espaços de trabalho selecionados.
+
+Use `phaseo/auto` quando o modelo precisar se adaptar à carga de trabalho. A Phaseo considera todos os modelos de texto de produção elegíveis, aplica as restrições do espaço de trabalho e cria uma lista de candidatos específica para aquela carga:
+
+1. Abra **Painel -> Configurações -> Roteamento -> Roteamento Automático**.
+2. Escolha otimizar desempenho equilibrado, qualidade, custo ou latência.
+3. Selecione um perfil de gastos Econômico, Padrão, Premium ou sem restrições. Antes da pontuação, esses perfis aplicam limites fixos de preço de entrada e saída.
+4. Se quiser, restrinja os modelos elegíveis com padrões como `anthropic/*`, `openai/gpt-5.*` ou um ID de modelo exato.
+5. Escolha se a Phaseo pode tentar os próximos modelos classificados após uma falha que permita nova tentativa.
+6. Salve a configuração.
+
+Assim, os aplicativos podem optar pelo roteador sem copiar a política de roteamento do espaço de trabalho para cada solicitação:
+
+```json
+{
+  "model": "phaseo/auto",
+  "input": "Review this TypeScript function for correctness."
+}
+```
+
+A solicitação não pode alterar o objetivo do espaço de trabalho, o perfil de gastos nem os padrões de modelos. Solicitações com modelo fixo continuam ignorando o roteador automático.
+
+O objetivo muda o peso relativo da qualidade do modelo, da confiabilidade do provedor, da latência e do preço:
+
+| Objetivo | Use quando |
+| --- | --- |
+| `balanced` | Você quiser um padrão prático que considere os quatro sinais. |
+| `quality` | O desempenho em benchmarks relevantes for o mais importante. |
+| `cost` | O menor preço estimado dos tokens de entrada e saída for o mais importante. |
+| `latency` | Reduzir a latência recente do provedor for o mais importante. |
+
+Os perfis de gastos impõem limites rígidos de preço no nível padrão, em USD por milhão de tokens de texto:
+
+| Perfil de gastos | Preço máximo de entrada | Preço máximo de saída |
+| --- | ---: | ---: |
+| Econômico | $0.10 | $0.50 |
+| Padrão | $0.30 | $1.50 |
+| Premium | $1 | $5 |
+| Qualquer preço | Sem limite | Sem limite |
+
+Limites personalizados definem diretamente os tetos de entrada e saída. Modelos sem um preço padrão de texto conhecido não entram no conjunto de candidatos gerenciados.
+
+Para cada solicitação `phaseo/auto`, a Phaseo cria uma solicitação filha normal do Gateway para um modelo classificador fixo e de baixo custo. A solicitação filha usa o mesmo espaço de trabalho e a mesma identidade de cobrança, aparece separadamente nos logs de solicitação e recebe o rótulo `purpose=auto_routing_classifier` e o ID da solicitação pai. O classificador retorna uma combinação estruturada de tipos de carga de trabalho, uma pontuação de complexidade e um valor de confiança; ele nunca escolhe um modelo diretamente.
+
+Fatos concretos da solicitação, como ferramentas e saída estruturada, são incluídos como metadados confiáveis. Se a solicitação do classificador falhar, expirar ou retornar dados inválidos, a Phaseo usa o classificador determinístico local para código, raciocínio, uso de ferramentas, saída estruturada, tradução, resumo ou uso geral em vez de falhar a solicitação de geração.
+
+A complexidade do classificador representa a capacidade mínima do modelo provavelmente necessária para produzir uma resposta confiável e aceitável. A Phaseo aplica uma margem de capacidade e combina a aderência aos benchmarks com o objetivo do espaço de trabalho, preço, latência, integridade do provedor e confiabilidade. A solicitação do classificador e a solicitação do modelo de geração selecionado são contabilizadas separadamente pelo fluxo normal do Gateway.
+
+Antes da pontuação, todo modelo permitido precisa passar pelas verificações normais de endpoint, modelo do espaço de trabalho, provedor, privacidade, guardrails e disjuntor. Em seguida, o roteador combina benchmarks relevantes do catálogo da Phaseo que não foram informados pelo próprio provedor com os dados atuais de integridade, latência e preços dos provedores Phaseo. A ausência de dados operacionais ou de benchmark é neutra; ela não amplia a lista de permitidos.
+
+O campo de resposta `model` identifica o modelo selecionado. Os detalhes da solicitação mostram a carga de trabalho, o objetivo, o modelo selecionado, a ordem das alternativas, as pontuações dos candidatos e dos fatores, os IDs dos benchmarks, as exclusões e a versão do algoritmo. Os rastros de roteamento não incluem o conteúdo da solicitação nem da resposta.
+
+Se as alternativas de modelo estiverem habilitadas no espaço de trabalho, a Phaseo tenta os próximos modelos classificados após respostas `429`, `500`, `502`, `503` ou `504`. Cada alternativa passa novamente por todo o fluxo de políticas e seleção de provedores. Erros do cliente não trocam o modelo.
+
+Um modelo fixo selecionado por uma rota dinâmica anexada tem precedência. Nesse caso, os detalhes da solicitação registram a substituição e desabilitam as alternativas do roteador automático para aquela solicitação.
+
+<Warning>
+  Perfis de gastos e padrões de modelos controlam a elegibilidade, não garantem qualidade. Valide a combinação de modelos resultante com suas próprias cargas de trabalho.
+</Warning>
+
+## Entenda uma decisão de roteamento
+
+Abra **Painel -> Configurações -> Uso -> Logs de solicitações**, selecione uma solicitação e expanda **Observabilidade do roteamento** em **Respostas dos provedores**.
+
+O log de solicitações mostra:
+
+- todos os provedores classificados e sua pontuação final
+- o provedor selecionado pela Phaseo e os provedores que ela tentou usar
+- provedores excluídos antes da classificação e o motivo registrado
+- provedores rebaixados por seu status de implantação ou roteamento
+- as entradas, ponderações, contribuições e multiplicadores usados na pontuação de cada provedor classificado
+
+Os fatores de pontuação ficam separados do contexto registrado. Um fator de pontuação altera a pontuação final do modo de roteamento ativo. O contexto registrado ajuda a explicar a decisão, mas não necessariamente afeta a pontuação.
+
+No roteamento `balanced`, a Phaseo pontua os provedores elegíveis usando confiabilidade, latência, latência de cauda, throughput, preço e adequação de tokens. O cálculo exibido mostra como cada fator contribuiu para a pontuação final, em vez de apresentar todas as métricas registradas como se fossem igualmente importantes.
+
+### Confiabilidade e disponibilidade dos provedores
+
+A amostra de confiabilidade é o valor usado na pontuação. Ela é calculada a partir dos resultados dos provedores; a taxa de sucesso aparece como contexto complementar.
+
+Estes resultados reduzem a disponibilidade do provedor:
+
+- falhas de autenticação (`401`)
+- falhas de pagamento (`402`)
+- respostas de modelo não encontrado (`404`)
+- erros do servidor (`500` ou superior)
+- erros depois do início do fluxo de resposta
+- respostas HTTP bem-sucedidas que terminam com um motivo de erro
+
+Estes resultados não reduzem a disponibilidade do provedor:
+
+- solicitações inválidas (`400`)
+- restrições geográficas (`403`)
+- payloads grandes demais (`413`)
+- limites de taxa (`429`)
+
+As restrições geográficas e os limites de taxa são registrados separadamente porque não indicam que o provedor em si esteja indisponível.
+
+### Disponibilidade e privacidade dos rastros
+
+Os rastros completos de roteamento ficam disponíveis para solicitações feitas depois que a observabilidade do roteamento é habilitada. Solicitações mais antigas podem mostrar um rastro parcial ou nenhum detalhe de roteamento.
+
+Os rastros de roteamento têm limites e não contêm conteúdo. Eles incluem os números e status necessários para explicar a seleção do provedor, mas não copiam prompts, mensagens nem conteúdo gerado para o rastro.
+
+## Escolha um provedor exato no ID do modelo
+
+Use `<provider-id>:<canonical-model-id>` quando uma solicitação precisar usar um par específico de provedor e modelo:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "input": "Hello"
+}
+```
+
+O qualificador desabilita alternativas entre provedores para aquela solicitação. Os sufixos continuam fazendo parte do ID canônico do modelo, inclusive em identificadores como `baseten:google/gemma-4-26b-a4b:free`.
+
+Consulte [IDs de modelo qualificados por provedor](./provider-qualified-models.mdx) para ver a sintaxe completa, a validação de rotas gratuitas, a precedência do roteamento, os aliases, os códigos de erro e exemplos de solicitação.
+
+## Controle o roteamento e as alternativas
+
+Os controles públicos atuais de roteamento e alternativas são explícitos:
+
+### Predefinições restringem o conjunto de alternativas
+
+Em **Painel -> Configurações -> Predefinições**, você pode definir:
+
+- modelos permitidos
+- listas de provedores permitidos
+- listas de provedores ignorados
+- comportamento padrão de prompts e parâmetros
+
+Essas restrições são aplicadas antes da seleção do provedor. Assim, uma predefinição pode restringir intencionalmente quais provedores são elegíveis para novas tentativas e failover.
+
+### O modo de roteamento muda a classificação dos provedores
+
+Em **Painel -> Configurações -> Roteamento**, os espaços de trabalho podem ajustar como o Gateway classifica provedores compatíveis:
+
+- `balanced`
+- `price`
+- `latency`
+- `throughput`
+
+A mesma página também oferece opções dos canais beta e alpha para introduzir tráfego de prévia intencionalmente, em vez de deixá-lo surgir como um efeito colateral de roteamento sem registro.
+
+### O fallback de BYOK é explícito
+
+Em **Painel -> Configurações -> BYOK**, as equipes podem escolher se uma solicitação BYOK com falha pode usar os créditos da Phaseo como alternativa. Esse é o controle público atual para a dúvida comum: “Minha chave própria falhou; a solicitação ainda deve ser concluída?”
+
+### Rotas dinâmicas associam políticas às chaves de API
+
+Em **Painel -> Configurações -> Roteamento**, crie uma rota dinâmica quando diferentes chaves de API ou classes de solicitação precisarem de comportamentos de provedor distintos. Uma rota pode:
+
+- ramificar com base em campos aninhados do corpo da solicitação, cabeçalhos, metadados personalizados, endpoint, modelo ou ID da sessão
+- dividir o tráfego por porcentagem para testes A/B e implantações graduais
+- impor limites diários, semanais ou mensais de solicitações e custos usando os intervalos de uso da chave autenticada
+- chamar outro modelo e escolher o modo de roteamento, a preferência de provedor e a política de alternativas
+- habilitar afinidade de provedor baseada em cache e sessão
+- associar-se a uma ou mais chaves de API de inferência
+
+As condições têm saídas para verdadeiro e falso. Os nós de taxa e orçamento têm saídas para dentro do limite e excedido. A seleção por porcentagem é determinística para uma sessão ou chave de cache de prompt, então a mesma conversa em cache não muda de ramificação aleatoriamente durante uma implantação gradual.
+
+Salvar cria uma versão de rascunho imutável. Implantar uma versão selecionada copia esse snapshot para o Gateway e invalida os caches de política das chaves associadas. As versões anteriores continuam disponíveis para reversão. Recomendações operacionais sobre a integridade dos provedores aparecem em **Insights**, separadas do editor de fluxo.
+
+Metadados personalizados estão disponíveis nas superfícies de inferência de texto compatíveis com OpenAI:
+
+```json
+{
+  "model": "openai/gpt-5-mini",
+  "metadata": {
+	    "customer_plan": "pro",
+	    "workspace": "acme"
+  }
+}
+```
+
+## Comportamento das alternativas
+
+Se um provedor retornar erros ou limites de taxa, o Gateway poderá tentar novamente ou encaminhar a solicitação para outro provedor compatível com o mesmo modelo. Ainda assim, trate respostas `429` e `5xx` com backoff exponencial.
+
+Os nós de modelo em uma rota dinâmica também podem definir uma lista ordenada de modelos alternativos. Primeiro, a Phaseo esgota as tentativas de provedores elegíveis para o modelo selecionado. Se a resposta permitir nova tentativa (`429`, `500`, `502`, `503` ou `504`), o Gateway executa novamente todo o fluxo de políticas e seleção de provedores para cada modelo alternativo, na ordem. Erros do cliente são retornados imediatamente e não trocam o modelo.
+
+Cada alternativa é verificada de forma independente em relação às restrições de modelos do espaço de trabalho, aos guardrails, à política de provedores, aos preços e ao suporte de recursos. Uma rota pode armazenar até oito modelos alternativos.
+
+Saiba mais:
+
+- [Limites de taxa](../api-reference/limits.mdx)
+- [Tratamento de erros](../api-reference/errors.mdx)
+
+## Afinidade baseada em cache e sessão
+
+O roteamento baseado em cache fica habilitado por padrão nos endpoints de geração de texto. Depois que um provedor informa uma leitura real do cache de prompt, a Phaseo fixa o contexto correspondente nesse provedor por 15 minutos, desde que ele continue saudável e permitido pela rota, pela predefinição, pelos guardrails e pela política da solicitação ativos.
+
+Quando `session_id` está presente, a afinidade de cache é vinculada à sessão, e não apenas ao contexto inicial. A Phaseo atualiza essa afinidade quando observa outra leitura do cache e a mantém por até 24 horas de atividade da sessão. Disjuntores e filtros de políticas sempre têm prioridade sobre a afinidade.
+
+Desative o recurso em uma solicitação sem alterar os padrões do espaço de trabalho ou da rota dinâmica:
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "provider": {
+    "cache_aware_routing": false
+  }
+}
+```
+
+Para manter a afinidade do cache de contexto, mas ignorar o identificador de sessão em uma solicitação, use:
+
+```json
+{
+  "model": "openai/gpt-5",
+  "session_id": "support-session-42",
+  "routing": {
+    "session_affinity": false
+  }
+}
+```
+
+## Considerações sobre BYOK
+
+Use BYOK quando quiser o roteamento e a observabilidade da Phaseo, mas preferir que o provedor selecionado cobre o uso do modelo na sua própria conta.
+
+- As primeiras 250.000 solicitações BYOK concluídas em cada mês do calendário UTC não têm tarifa de serviço da Phaseo.
+- Depois dessa franquia, a Phaseo cobra 2,5% do custo equivalente do provedor.
+- Mantenha pelo menos US$ 1 em créditos da Phaseo. Isso protege o fallback gerenciado e a cobrança após a franquia; os custos do provedor continuam sendo cobrados diretamente na conta que você tem com ele.
+- As cotas, a política de dados, o acesso a modelos e as restrições da conta do provedor continuam valendo.
+
+As credenciais do provedor são criptografadas com AES-256-GCM e vinculadas ao espaço de trabalho e ao provedor antes do armazenamento. Restrinja cada chave aos modelos e às chaves de API da Phaseo que precisam dela. Desabilite o fallback gerenciado se uma solicitação nunca puder usar créditos da Phaseo.
+
+## O que registrar
+
+Em cargas de produção, registre IDs de solicitação, códigos de status da resposta e IDs de modelo para correlacionar falhas e confirmar o comportamento do roteamento durante a depuração.
+
+## Guias relacionados
+
+- [Predefinições](./presets.mdx)
+- [Matriz de paridade de recursos](../migration-guides/feature-parity-matrix.mdx)
+

@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condições de parada"
+description: "Limite o trabalho dos agentes .NET por etapas, tokens, custo, duração, ferramentas ou motivo de conclusão."
+---
+
+Combine as funções auxiliares de parada em `AgentDefinition.StopWhen`:
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` e `FinishReasonIs(...)` provide event-based limits. Mantenha também um limite de etapas ou duração ao usar limites de tokens ou custo, pois eles dependem do uso informado.
+
+## Relacionados
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Outputs e retries](./agent-sdk-run-controls.mdx)

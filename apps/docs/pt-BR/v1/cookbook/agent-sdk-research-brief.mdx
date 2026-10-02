@@ -1,0 +1,163 @@
+---
+title: "Pesquise com saída estruturada e busca na web"
+icon: "telescope"
+description: "Crie um agente de TypeScript que usa busca na web e retorna JSON estrito pelo Agent SDK."
+---
+
+Use esta receita quando um fluxo de agente precisar:
+
+- rodar pelo TypeScript Agent SDK
+- usar busca na web gerenciada
+- retornar JSON estruturado estrito
+- recuperar JSON malformado quase válido de forma determinística
+
+## 1. Instale os SDKs
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. Defina um contrato de saída restrito
+
+Mantenha pequeno o primeiro resultado da pesquisa para que os operadores consigam inspecioná-lo facilmente nos logs.
+
+```ts
+type ResearchBrief = {
+  topic: string;
+  summary: string;
+  sources: Array<{
+    title: string;
+    url: string;
+  }>;
+};
+```
+
+## 3. Crie o agente
+
+Use `parseOutput` para que o runtime retorne dados tipados, em vez de texto bruto.
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+export const researchBriefAgent = createAgent<string, ResearchBrief>({
+  id: "research-brief-agent",
+  model: "phaseo/free",
+  instructions:
+    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
+  parseOutput(text) {
+    return JSON.parse(text) as ResearchBrief;
+  },
+});
+```
+
+## 4. Configure uma vez o adaptador conectado ao gateway
+
+Esta é a parte importante:
+
+- `responseFormat` deixa explícito o esquema da saída
+- `plugins` habilita a recuperação de respostas quase válidas em JSON
+- `gatewayTools` disponibiliza a busca na web gerenciada para o modelo
+- `toolChoice` força a ferramenta de busca quando o fluxo sempre precisa se basear em fontes
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              url: { type: "string" },
+            },
+            required: ["title", "url"],
+            additionalProperties: false,
+          },
+          minItems: 1,
+        },
+      },
+      required: ["topic", "summary", "sources"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  gatewayTools: [
+    { type: "phaseo:web_search", parameters: { max_results: 5 } },
+  ],
+  toolChoice: "phaseo:web_search",
+  webSearchOptions: { search_context_size: "high" },
+});
+```
+
+## 5. Execute o fluxo de trabalho
+
+```ts
+const result = await researchBriefAgent.run({
+  input: "Summarize the latest browser automation support patterns for coding agents.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+console.log(result.output);
+```
+
+## 6. O que verificar nos logs
+
+Depois de uma execução bem-sucedida, inspecione os detalhes da requisição e confirme:
+
+- as ferramentas de busca na web nativas solicitadas ou a atividade de busca gerenciada aparecem nos logs
+- os resultados da busca e as citações foram salvos
+- a execução do plugin mostra `response-healing` somente quando a recuperação foi necessária
+- a saída final corresponde ao esquema JSON solicitado
+
+## 7. Quando usar esse padrão
+
+Use esta receita quando:
+
+- o fluxo for principalmente uma pesquisa pontual, e não um ciclo profundo de ferramentas locais
+- o modelo precisar se basear em fontes antes de responder
+- os chamadores posteriores precisarem de JSON tipado em vez de prosa
+
+Não use este padrão quando:
+
+- o fluxo já souber as URLs exatas e `phaseo:web_fetch` for suficiente
+- o agente precisar mais de ferramentas locais avançadas do que de ferramentas nativas do provedor
+- o contrato de saída for flexível o bastante para que JSON estrito gere mais trabalho do que benefício
+
+## Guias relacionados
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Saídas estruturadas](../guides/structured-outputs.mdx)
+- [Valide saídas estruturadas](../guides/structured-outputs.mdx)
+- [Depure requisições de busca na web](./web-search-debugging.mdx)
+- [Recupere JSON estruturado malformado](./response-healing-for-structured-json.mdx)

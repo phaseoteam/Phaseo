@@ -1,0 +1,78 @@
+---
+title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
+description: "Connectez Kilo Code à Phaseo avec un fournisseur personnalisé compatible avec OpenAI."
+---
+
+Choisissez le lanceur de la CLI Phaseo pour une session isolée, ou créez une clé dédiée avec la CLI et configurez manuellement une installation existante de Kilo Code.
+
+## Exécuter Kilo Code avec la CLI Phaseo
+
+Pour la CLI Kilo Code, laissez Phaseo préparer la configuration fournisseur pour une session :
+
+```bash
+phaseo login
+phaseo kilo --model openai/gpt-5.6-terra --
+```
+
+Utilisez `--catalog all` pour afficher tous les modèles texte/chat Phaseo actifs, ou `--dry-run --json` pour prévisualiser l’installation et le lancement. Utilisez `phaseo run kilo ...` pour la forme explicite de la commande. Le lanceur utilise un fichier `KILO_CONFIG` temporaire ; il n’écrase donc aucune configuration Kilo Code ou VS Code existante.
+
+## Créer l’identifiant avec la CLI Phaseo
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Configurer Kilo Code manuellement
+
+1. Ouvrez Kilo Code dans VS Code.
+2. Sélectionnez l’icône des paramètres, ouvrez **Providers**, puis choisissez **Add custom provider**.
+3. Saisissez les valeurs suivantes :
+
+| Champ Kilo Code | Valeur |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Provider API | **OpenAI Compatible** |
+| Base URL | `https://api.phaseo.app/v1` |
+| API key | Sortie de `phaseo integrations credential kilo-code` |
+
+4. Si aucun modèle n’est détecté, ajoutez manuellement l’identifiant `anthropic/claude-sonnet-4.6`.
+5. Sélectionnez **Submit**, puis choisissez le modèle Phaseo.
+
+Kilo affiche la sélection sous la forme `phaseo/anthropic/claude-sonnet-4.6` : `phaseo` est l’identifiant local du fournisseur, et le reste est envoyé à Phaseo comme identifiant de modèle.
+
+## Vérifier
+
+Demandez à Kilo Code de répondre `PHASEO_KILO_OK` et vérifiez que la requête apparaît dans l’activité Phaseo.
+
+## Supprimer
+
+Supprimez le fournisseur personnalisé dans Kilo Code, puis exécutez :
+
+```bash
+phaseo integrations remove kilo-code
+```
+
+Le CLI ne peut pas effacer le stockage privé de l’extension, mais la suppression révoque la clé.
+
+## Dépannage
+
+### Aucun modèle n’est détecté
+
+Ajoutez le modèle manuellement. La découverte via `/models` n’est pas nécessaire.
+
+### L’authentification échoue
+
+Remplacez la valeur enregistrée par celle renvoyée par `phaseo integrations credential kilo-code` et conservez l’URL de base exactement comme indiqué.
+
+### Le nom du modèle semble différent
+
+Sélectionnez `phaseo/<Phaseo model ID>` dans Kilo, mais n’ajoutez pas `phaseo/` dans le champ de l’identifiant de modèle.
+
+## À lire aussi
+
+- [Modèles personnalisés de Kilo Code](https://kilo.ai/docs/code-with-ai/agents/custom-models)
+- [Agents de programmation](./coding-assistants.mdx)
+- [Modèles](../../api-reference/endpoint/models.mdx)

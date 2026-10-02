@@ -1,0 +1,36 @@
+---
+icon: "message-square"
+title: "Respuestas"
+description: "Llama a la API Responses con el SDK de C#."
+---
+
+**Método**: `client.GenerateResponse(...)` o `client.CreateResponse(...)`
+
+### Ejemplo
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["input"] = "Summarise this text",
+    ["temperature"] = 0.7
+});
+```
+
+### Parámetros principales
+- `model` (obligatorio): ID del modelo de destino.
+- `input` (obligatorio): matriz ordenada de elementos de entrada, como mensajes y llamadas a herramientas.
+- `temperature` (0–2): cuanto más alto, mayor aleatoriedad.
+- `top_p` (0–1) / `top_k` (>=1): controles de muestreo por núcleo y por k mejores opciones.
+- `max_output_tokens` (entero): límite estricto de tokens generados por respuesta; usa `max_output_tokens_per_message` para limitar cada mensaje.
+- Herramientas: `tools` (definiciones), `tool_choice` (automática/ninguna/específica), `max_tool_calls` (entero), `parallel_tool_calls` (booleano).
+- Logprobs: `logprobs` (booleano), `top_logprobs` (0–20) para devolver las probabilidades logarítmicas de cada token.
+- Salida: `response_format` (json/text), `service_tier`, `store` (booleano), `stream` (booleano).
+- Metadatos: `metadata` (objeto de transferencia directa), `reasoning` (objeto con parámetros de esfuerzo).
+- Opciones adicionales del gateway: `usage` (booleano para solicitar el uso), `meta` (booleano para incluir el bloque meta).
+
+### Valor devuelto
+`ResponsesResponse`
+

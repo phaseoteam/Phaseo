@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "Wichtige Hinweise zur Einführung von Claude Opus 4.6, einschließlich strukturierter Ausgaben, adaptivem Denken und Prefills."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+Mit diesem Leitfaden führen Sie `anthropic/claude-opus-4.6` sicher in der Produktion ein.
+
+Die Migration zu Claude Opus 4.6 ist mehr als ein Austausch der Modell-ID. Anthropic beschreibt Änderungen an Anfragen, entfernte Beta-Flags und ein strengeres Verhalten bei Prefills.
+
+## Neuerungen
+
+- Assistant-Prefills werden von Claude-4.6-Modellen nicht mehr unterstützt und liefern jetzt `400` zurück.
+- Strukturierte Ausgaben verwenden jetzt `output_config.format` statt `output_format`.
+- Adaptives Denken wird über `output_config.effort` konfiguriert.
+- Veraltete Beta-Header sollten entfernt werden.
+- Opus 4.6 benötigt den Beta-Header `interleaved-thinking-2025-05-14` nicht mehr.
+- Opus 4.6 bietet in der Beta ein Kontextfenster von einer Million Tokens und verbessert lang laufende Programmier- und Agentenaufgaben.
+
+## Schnelleinstieg für die Migration
+
+### 1. Assistant-Prefills entfernen
+
+Wenn Sie JSON oder einen Antwortpräfix erzwungen haben, indem Sie den Assistant-Turn teilweise vorbefüllt haben, funktioniert dieses Muster mit 4.6 nicht mehr. Verlagern Sie die Steuerung auf:
+
+- klarere Systemanweisungen
+- Beispiele im Benutzer- oder System-Prompt
+- strukturierte Ausgaben über `output_config.format`
+
+### 2. Strukturierte Ausgaben migrieren
+
+Wenn Sie noch `output_format` senden, verwenden Sie im Anfragekörper stattdessen `output_config.format`.
+
+### 3. Denk-Konfiguration prüfen
+
+Wenn Sie von älteren Thinking-Betas abhängen, wechseln Sie zur aktuellen Einstellung `effort` in `output_config` und testen Sie latenzempfindliche Routen erneut.
+
+### 4. Veraltete Beta-Flags entfernen
+
+Prüfen Sie fest codierte Beta-Header in SDK-Wrappern, Middleware und Gateway-Voreinstellungen. Veraltete Flags verursachen beim Rollout unnötige Fehler.
+
+## Was Sie testen sollten
+
+### Prompt-Verhalten
+
+- Lange Programmier- und Refactoring-Prompts.
+- Mehrstufige Recherche- oder Dokumentenabläufe.
+- Prompts, die bisher Assistant-Prefills voraussetzten.
+- Aufgaben mit langem Kontext, wenn Sie das Beta-Fenster von einer Million Tokens nutzen möchten.
+
+### Verträge und Tools
+
+- Schema-Erfolgsrate nach dem Wechsel zu `output_config.format`.
+- Qualität der Tool-Argumente bei mehrstufigen Agentenaufgaben.
+- Wiederholungsverhalten bei Ablehnung oder Umformatierung der Ausgabe.
+- Regressionen in Code-Review- und Debugging-Abläufen.
+
+### Betrieb
+
+- Median- und p95-Latenz mit den neuen Denk-Einstellungen.
+- Tokenverbrauch bei längeren Ausführungen.
+- Zeitüberschreitungen bei Aufgaben mit großem Kontext.
+- Erfolgsrate gegenüber Opus 4.5 anhand Ihrer Produktionsauswertungen.
+
+## Sicherer Rollout
+
+1. Entfernen Sie Prefills und migrieren Sie die Konfiguration strukturierter Ausgaben, bevor Sie Traffic umstellen.
+2. Führen Sie Opus 4.6 parallel mit wichtigen Produktions-Prompts aus.
+3. Testen Sie den Traffic schrittweise und behalten Sie Opus 4.5 als Fallback.
+4. Erhöhen Sie den Traffic erst, wenn Schema-Erfolgsrate, Latenz und Aufgabenabschluss stabil bleiben.
+
+## Quellen
+
+- [Anthropic-Migrationsleitfaden](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.6 vorgestellt](https://www.anthropic.com/news/claude-opus-4-6)

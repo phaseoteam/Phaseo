@@ -1,0 +1,167 @@
+---
+title: "AI Stats pasa a ser Phaseo"
+description: "Phaseo ayuda a los equipos a comparar modelos, dirigir solicitudes, seguir los precios y mantener la portabilidad de los sistemas de IA en producción."
+publishedAt: 2026-07-09
+author: Phaseo Team
+category: announcements
+pinned: true
+tags:
+  - Anuncio
+  - Migración
+  - Producto
+  - Documentación
+coverImage: /blog-images/migration.png
+draft: false
+---
+
+AI Stats pasa a ser **Phaseo** porque los equipos necesitan algo más que un directorio de modelos.
+
+Necesitan decidir qué modelo usar, a qué proveedor llamar, cuánto cuesta una ruta y cómo cambiar de rumbo cuando el mercado evoluciona.
+
+**Phaseo reúne todo ese trabajo en un mismo lugar:** descubrimiento de modelos, cobertura de proveedores, enrutamiento de Gateway, visibilidad de costes, SDK y observabilidad para sistemas de IA en producción.
+
+El nombre cambia porque el producto ha evolucionado. Phaseo ayuda a los equipos a entender, comparar, cambiar y usar modelos de IA sin reconstruir toda su arquitectura cada vez que cambia el mercado.
+
+## Por qué cambiamos el nombre ahora
+
+La IA está dejando atrás los experimentos y las integraciones puntuales para convertirse en una infraestructura central de los productos.
+
+La información estática sobre modelos es útil, pero deja de ser suficiente cuando un modelo forma parte de un producto. Los equipos de producción necesitan saber qué proveedores admiten cada modelo, cuánto cuesta cada ruta, si un endpoint está disponible para recibir llamadas, qué ha cambiado recientemente y cuánto costaría migrar si el mes que viene aparece un modelo mejor.
+
+El mercado también es cada vez más amplio y fragmentado. [Gartner prevé que el gasto mundial en IA alcance los 2,52 billones de dólares en 2026](https://www.gartner.com/en/newsroom/press-releases/2026-1-15-gartner-says-worldwide-ai-spending-will-total-2-point-5-trillion-dollars-in-2026), un 44 % más que el año anterior.
+
+El [2026 AI Index](https://hai.stanford.edu/ai-index/2026-ai-index-report) de Stanford informa de que la adopción en las organizaciones llegó al 88 % en 2025, mientras que la inversión privada en IA en Estados Unidos alcanzó los 285.900 millones de dólares.
+
+Estas cifras importan porque el gasto en IA ya no es solo un presupuesto de investigación o unas pocas llamadas a la API en un prototipo. Se está convirtiendo en un coste operativo recurrente. Los equipos necesitan controlar mejor el enrutamiento, los precios, la observabilidad y la elección de modelos antes de que esos costes sean difíciles de entender.
+
+**Phaseo permite a los equipos mantener visibles estas decisiones.** Conecta los metadatos de los modelos, la disponibilidad de los proveedores, los precios de las rutas y el comportamiento de Gateway, para que los equipos puedan inspeccionar la capa de modelos antes de que se convierta en una caja negra costosa.
+
+## Las suscripciones de IA están cambiando las expectativas
+
+La IA también se está convirtiendo en una categoría de suscripción para consumidores y lugares de trabajo.
+
+[OpenAI anunció que ChatGPT alcanzó los 900 millones de usuarios activos semanales y los 50 millones de suscriptores de pago en febrero de 2026](https://techcrunch.com/2026/02/27/chatgpt-reaches-900m-weekly-active-users/). Más tarde, el informe [2026 State of AI](https://sensortower.com/blog/state-of-ai-2026) de Sensor Tower situó a ChatGPT en los 1.000 millones de usuarios activos mensuales en mayo de 2026.
+
+Ese alcance cambia la forma en que las personas experimentan la IA. Cada vez más usuarios conocen los modelos a través de suscripciones, límites de uso, niveles de producto y valores predeterminados que cambian rápidamente. SemiAnalysis sigue esa misma presión desde el lado de los costes, desde la economía de las [suscripciones de IA de 20 y 200 dólares](https://newsletter.semianalysis.com/p/claude-code-is-the-inflection-point) hasta las [conversaciones con empresas](https://newsletter.semianalysis.com/p/tokenbudgeting-our-conversations), donde los presupuestos de tokens, el acceso a modelos premium y el gasto en IA por empleado empiezan a ser cuestiones operativas concretas.
+
+La calidad de los modelos evoluciona igual de rápido. Los lanzamientos que sigue Phaseo, incluidos [Claude Fable 5](https://phaseo.app/models/anthropic/claude-fable-5) y [Claude Mythos 5](https://phaseo.app/models/anthropic/claude-mythos-5), muestran con qué frecuencia los equipos necesitan volver a evaluar la calidad, la disponibilidad, los precios y la compatibilidad de los proveedores.
+
+Para quienes desarrollan, la conclusión es clara: la IA ya no consiste en elegir una vez a un único proveedor. Es un problema en constante cambio de suscripciones, uso, costes y capacidades.
+
+**Phaseo está diseñado para acompañar ese ciclo.** Los equipos pueden comparar modelos, entender la cobertura de los proveedores, dirigir el tráfico de forma deliberada y cambiar cuando evolucionen la economía o la calidad.
+
+## Elegir modelos se está convirtiendo en infraestructura
+
+La capa de modelos cambia más rápido que la mayoría de las capas de una aplicación.
+
+Un equipo puede empezar con un modelo cerrado porque es el más adecuado para razonar. Un mes después, un modelo más barato quizá sea suficiente para clasificar o extraer información. Otra carga de trabajo puede necesitar un modelo de pesos abiertos por soberanía de datos, ajuste fino, latencia o despliegue en un entorno controlado.
+
+Una función de voz en tiempo real puede dar más importancia a la latencia y al precio por minuto que a las puntuaciones de las pruebas de rendimiento. Un asistente de programación puede necesitar un modelo distinto al de un flujo de clasificación de solicitudes de atención al cliente.
+
+Elegir un solo modelo para siempre suele ser una abstracción equivocada.
+
+**Phaseo permite seguir un patrón más duradero:** mantener la aplicación lo bastante portable para que el equipo pueda cambiar de modelo de forma deliberada.
+
+**Con Phaseo, los equipos pueden:**
+
+- usar el modelo más adecuado para cada tarea
+- comparar proveedores antes de desviar el tráfico
+- tener los precios a la vista antes de que aumente el uso
+- desviar solicitudes ante una interrupción o una restricción del proveedor
+- probar opciones abiertas, cerradas, alojadas y autoalojadas
+- conservar la observabilidad al cambiar de modelo
+
+Phaseo conecta el descubrimiento de modelos con el flujo de trabajo de producción que los rodea. El catálogo ayuda a comparar opciones. Gateway y los SDK permiten usarlos en producción. Los precios y la cobertura de los proveedores explican las ventajas y desventajas. La observabilidad de Gateway muestra qué ocurrió después de dirigir una solicitud.
+
+## Las tecnologías abiertas importan más a medida que aumenta el gasto en IA
+
+El código abierto y los modelos de pesos abiertos están adquiriendo importancia estratégica, aunque los modelos cerrados más avanzados todavía lideren en algunos ámbitos.
+
+El 2026 AI Index de Stanford destaca cómo el desarrollo de código abierto está ampliando la participación en la IA: las contribuciones del resto del mundo a GitHub ya superan a las de Europa y se acercan a las de Estados Unidos.
+
+Al mismo tiempo, los modelos de pesos abiertos siguen mejorando rápidamente, y servicios como [Artificial Analysis](https://artificialanalysis.ai/models/open-source) los siguen en aspectos como calidad, velocidad, ventana de contexto, número de parámetros y licencia.
+
+Esto importa en producción.
+
+Las tecnologías abiertas ofrecen a los equipos más formas de controlar dónde se ejecuta el trabajo, cómo se gestionan los datos y cuál será la estructura de costes a largo plazo. También reducen el riesgo de que un producto dependa demasiado del modelo, los precios, las políticas o la disponibilidad de un único proveedor.
+
+En algunos casos, un modelo cerrado alojado seguirá siendo la opción adecuada. En otros, serán preferibles los modelos de pesos abiertos, el alojamiento propio o una estrategia de enrutamiento mixta.
+
+**Phaseo está diseñado para ese entorno mixto.** Considera los modelos abiertos, cerrados, alojados y autoalojados como opciones que los equipos pueden combinar, no como mundos separados con herramientas distintas.
+
+Los equipos no deberían tener que elegir entre «usar el modelo de vanguardia alojado más reciente» y «controlar por completo todas las capas». La mayoría de los sistemas de producción se situará entre esos extremos y usará varios proveedores, familias de modelos y formas de despliegue con el paso del tiempo.
+
+**Phaseo ayuda a gestionar ese punto intermedio** al reunir comparación, enrutamiento, precios y observabilidad en un mismo flujo de trabajo.
+
+## Cómo ayuda Phaseo a elegir modelos
+
+**Phaseo reúne la información sobre modelos y las herramientas de ejecución en un mismo producto.**
+
+**Con Phaseo, los equipos pueden:**
+
+- buscar modelos, proveedores, lanzamientos, estados y metadatos
+- consultar páginas de modelos y proveedores para ver disponibilidad, precios, ciclo de vida y opciones de enrutamiento
+- dirigir solicitudes mediante flujos compatibles con OpenAI y flujos específicos de cada proveedor
+- desarrollar con el Gateway mediante SDK y ejemplos
+- comparar los precios de proveedores y rutas antes de que aumente el tráfico
+- seguir lanzamientos de modelos, cambios de proveedores, versiones de SDK y mejoras del producto
+- entender el comportamiento de Gateway en producción
+
+Cambiar de modelo debería ser una decisión operativa, no una reescritura.
+
+Si un proveedor cambia sus precios, se retira un modelo, aparece un modelo de pesos abiertos mejor o una carga de trabajo necesita una ruta de menor latencia, los equipos deberían poder revisar las opciones, elegir y mantener estable el resto de la aplicación.
+
+## Qué cambia con la migración a Phaseo
+
+El producto público, la documentación, los ejemplos de los SDK y los textos del producto están adoptando la marca Phaseo.
+
+Esto significa que:
+
+- el sitio principal pasa a `phaseo.app`
+- la documentación, las guías de los SDK, las notas del registro de cambios y los textos del producto usan el nombre Phaseo
+- los nuevos ejemplos para desarrolladores usan `PHASEO_*`
+- las nuevas claves de API generadas llevan el prefijo `phaseo_v1_sk_`
+- las compilaciones locales, de vista previa y de producción tienen favicons distintos para que los desarrolladores identifiquen rápidamente el entorno que están probando
+
+El cambio es deliberadamente directo. Los proyectos nuevos deben usar los nombres de Phaseo. Los despliegues existentes no necesitan un cambio disruptivo en los nombres de las variables de entorno: pueden mantener los nombres actuales y actualizar sus valores cuando estén listos.
+
+## Qué deben saber los desarrolladores sobre las claves de API
+
+Las claves de API actuales seguirán funcionando durante la migración. No es necesario rotar de inmediato una clave que funciona solo porque cambia la marca.
+
+Las claves de API nuevas que se generen después de la migración usarán el prefijo de Phaseo:
+
+```bash
+PHASEO_API_KEY=phaseo_v1_sk_...
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+```
+
+Las claves de API antiguas con el formato `aistats` seguirán siendo válidas durante un periodo de transición de seis meses y está previsto que dejen de funcionar el **1 de enero de 2027**. Antes de esa fecha, crea una clave nueva con el prefijo de Phaseo y sustitúyela en tu despliegue cuando te convenga.
+
+Los ejemplos de los SDK, los fragmentos para verificar webhooks, la configuración de la CLI y los ejemplos de claves de gestión ya usan los nombres de Phaseo. Si así reduces los cambios, puedes seguir usando los nombres actuales de las variables de entorno en tu aplicación; los ejemplos nuevos utilizan `PHASEO_*` para que los proyectos nuevos empiecen con la nomenclatura actual.
+
+Si ejecutas compilaciones locales o de vista previa, el favicon ahora cambia según el entorno:
+
+- el desarrollo local usa el favicon de desarrollo
+- los despliegues de vista previa de Vercel usan el favicon de vista previa
+- producción usa el favicon de producción
+
+Así se evita confundir las compilaciones locales, los despliegues de vista previa y el sitio público durante las pruebas.
+
+## El sitio principal se traslada a phaseo.app
+
+Ese será el hogar oficial del producto, la documentación, el blog y el descubrimiento de modelos. Los enlaces antiguos de AI Stats se gestionarán durante la migración, pero los nuevos deben dirigir a Phaseo.
+
+## El objetivo del producto sigue siendo el mismo
+
+Phaseo sigue centrándose en ofrecer información clara sobre modelos, herramientas prácticas de Gateway, visibilidad de proveedores, precios transparentes, SDK y flujos de trabajo que aclaren las decisiones sobre productos de IA.
+
+El nombre cambia porque el producto ha crecido.
+
+La necesidad que lo impulsó también está más clara: los equipos de IA necesitan portabilidad, visibilidad de costes, opciones de tecnología abierta y una forma sencilla de cambiar de modelo a medida que evoluciona el mercado.
+
+El cambio de nombre es el momento en que la marca se pone al día con el producto.
+
+<SocialLinks />
+
+<GetStartedCta />

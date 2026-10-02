@@ -1,0 +1,25 @@
+---
+icon: "brain-circuit"
+title: "Informar uma atualização de modelo"
+description: "Solicite correções ou acréscimos aos metadados, recursos, disponibilidade e preços dos modelos."
+---
+
+Abra uma issue no GitHub para corrigir um modelo ou solicitar uma entrada ausente. Você não precisa editar JSON nem configurar o repositório.
+
+## Informar uma correção
+
+1. Copie a URL da página do modelo no Phaseo ou seu ID.
+2. [Informe dados incorretos](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), descrevendo o valor atual e a correção proposta.
+3. Inclua documentação oficial, um anúncio de lançamento ou outra fonte verificável.
+
+Para preços, inclua o provedor, a moeda, a unidade de cobrança, o nível aplicável e a data de vigência. Para pontuações de avaliações, siga [Enviar pontuações](../research/submitting-scores.mdx).
+
+## Solicitar um modelo ausente
+
+[Abra uma solicitação de dados](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) com o nome do modelo, a organização, o link oficial, a data de lançamento e os recursos conhecidos. Um modelo pode aparecer no catálogo antes de ter uma rota compatível no Gateway.
+
+## Após o envio
+
+Os mantenedores analisam as evidências e atualizam o banco de dados pelo editor interno. Acompanhe perguntas e a publicação na issue. Os snapshots JSON diários exportam o catálogo; alterações em arquivos JSON arquivados não atualizam o site em produção.
+
+Administradores podem editar registros em [Dados internos](https://phaseo.app/internal/data) e analisar preços propostos em [Atualizações de provedores](https://phaseo.app/internal/data/imports). Essas páginas exigem acesso de administrador.

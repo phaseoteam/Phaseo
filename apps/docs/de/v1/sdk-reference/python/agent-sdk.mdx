@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "Verwendung"
+description: "Führe Tool-Schleifen, menschliche Prüfungen, Wiederholungen und fortsetzbare Agents mit dem Python Agent SDK aus."
+---
+
+## Laufzeitumgebung vorbereiten
+
+Das eigenständige Paket ist noch nicht auf PyPI verfügbar. Folge der [Installationsanleitung für den Quellcode](./agent-sdk-installation.mdx).
+
+## Schnellstart
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## Enthaltene Funktionen
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- Wiederholungen, parallele Tools, Zeitüberschreitungen und Lebenszyklusereignisse
+- Pausen für menschliche Prüfungen mit `continue_run(...)`
+- serialisierbarer Zustand und Erfassung mit Phaseo Devtools
+
+## Erweiterte Laufzeitumgebung
+
+Python unterstützt Schemas und Freigaben über Callables, HITL- und manuelle Tools, Fortschrittsmeldungen, behebbare Fehler, erneut abspielbare Streams, Helfer zum Beenden, dynamische Turns, persistierte Überschreibungen für den nächsten Turn, normalisierte Nutzung und Kosten sowie anwendungseigenen Zugriff auf den Zustand.
+
+## Streaming und Abbruch
+
+`agent.stream(...)` und `agent.continue_stream(...)` verwenden den Responses-SSE-Stream des Gateways. Verarbeite `text_stream()`, `reasoning_stream()`, `item_stream()`, `tool_stream()` oder `full_stream()`; rufe `cancel()` auf, um den aktiven Request zu schließen. Abgeschlossene Schritte behalten Request-IDs, Provider-Metadaten, Beendigungsgründe, Warnungen, Nutzung und Kosten.
+
+## Verwandte Seiten
+
+- [Überblick über das Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK für TypeScript](../typescript/agent-sdk.mdx)

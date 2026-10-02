@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useWindowVirtualizer, type VirtualItem } from "@tanstack/react-virtual";
 import { ModelCard } from "@/components/(data)/models/Models/ModelCard";
 import type { ModelCard as ModelCardType } from "@/lib/fetchers/models/getAllModels";
@@ -285,12 +286,13 @@ function ServerRenderedModelsGrid({
 }
 
 function ModelsGridImpl(props: ModelsGridProps) {
+	const t = useTranslations("Catalogue.models");
 	const columns = useColumnCount();
 
 	if (props.filteredModels.length === 0) {
 		return (
 			<div className="rounded-2xl border bg-card px-4 py-10 text-center text-muted-foreground">
-				No models found for the selected filters.
+				{t("noModelsForFilters")}
 			</div>
 		);
 	}

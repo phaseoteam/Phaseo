@@ -1,0 +1,122 @@
+---
+title: "使用 TypeScript 构建持久化智能体循环"
+icon: "repeat-2"
+description: "使用 TypeScript Agent SDK 在 Phaseo Gateway 上运行可恢复的智能体循环。"
+---
+
+当你需要的不只是一次性文本请求时，请使用此方案：
+
+- 多步骤工具循环
+- 本地运行时工具
+- 可恢复运行
+- 用于智能体任务的统一 Gateway 入口
+
+## 1. 安装 SDK
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. 定义一个简单的运行时工具
+
+第一个工具应保持确定性，便于检查。
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. 创建智能体
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. 使用 Gateway 适配器
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. 步骤之间会保留哪些内容
+
+每个步骤完成后，返回的运行状态都会更新以下内容：
+
+- 运行 ID
+- 消息历史记录
+- 返回的工具调用
+- 本地工具结果
+- 运行完成后的最终输出
+
+如果要跨请求或进程恢复运行，请在自己的应用中保存该返回值，稍后再传给 `continueRun()`。
+
+## 6. 适合保持第一个版本简单的情况
+
+- 每个工作流使用一个智能体
+- 跨请求恢复之前由应用负责序列化
+- 先使用少量工具，再考虑通用工具注册表
+- 每次运行记录一行日志，包含运行 ID 和 Gateway 请求 ID
+
+## 7. 何时扩展此方案
+
+需要以下功能时，请扩展第一个持久化循环：
+
+- 暂停并等待审批
+- 由应用负责持久化返回的运行状态
+- 多个智能体定义共享运行时工具
+
+此时保留现有 Gateway 适配器，并围绕它扩展存储和编排逻辑。
+
+## 相关指南
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [预设](../guides/presets.mdx)
+- [路由与回退](../guides/routing-and-fallbacks.mdx)
+- [使用 SKILL.md 设置编程智能体](./coding-agents-skill-md.mdx)
+- [在免费路由器上部署](./free-router-first-deploy.mdx)

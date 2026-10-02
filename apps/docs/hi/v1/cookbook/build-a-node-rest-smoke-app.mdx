@@ -1,0 +1,117 @@
+---
+title: "Node REST smoke ऐप बनाएं"
+icon: "server"
+description: "raw HTTP integration और smoke-test script के लिए Node quickstart सैंपल को गाइड के रूप में इस्तेमाल करें।"
+---
+
+सबसे छोटा Node integration बनाना हो और हर HTTP अनुरोध साफ़ देखना हो, तो इस पेज का उपयोग करें।
+
+**लक्ष्य:** raw HTTP का उपयोग करके Phaseo health, मॉडल खोज और एक generation अनुरोध सत्यापित करें।
+
+**परिणाम:** कम dependencies वाला ऐसा script जिसे deployment या integration smoke test के रूप में रखा जा सके।
+
+<Prompt
+  description="raw HTTP से Phaseo के लिए **Node REST smoke ऐप** बनाएं।"
+  icon="terminal"
+  actions={["copy", "cursor"]}
+>
+{`आप raw HTTP का उपयोग करके Phaseo Gateway के लिए छोटा Node.js integration बना रहे हैं।
+
+ऐसा script-आधारित ऐप बनाएं जो:
+- environment से PHASEO_API_KEY पढ़ता हो
+- health और मॉडल खोज के रूट कॉल करता हो
+- एक text generation अनुरोध करता हो
+- ज़रूरत पड़ने पर embeddings जैसे एक अतिरिक्त API surface को कॉल करता हो
+
+आवश्यकताएं:
+- SDK के बजाय raw fetch इस्तेमाल करें।
+- कोड में dependencies कम रखें।
+- अनुरोध payload स्पष्ट और audit करने में आसान रखें।
+- टर्मिनल में सफलता और त्रुटि का स्पष्ट आउटपुट दिखाएं।
+- एक quick smoke mode और एक पूरा end-to-end mode समर्थित करें।
+
+डिलिवरेबल्स:
+- script
+- package.json commands
+- छोटा README
+- .env.example entry
+
+सत्यापन:
+- संभव हो तो smoke mode चलाएं
+- संभव हो तो अनुरोध का पूरा रास्ता चलाएं
+- क्या सत्यापित हुआ और कौन-सी मान्यताएं बाकी हैं, इसकी जानकारी दें।`}
+</Prompt>
+
+## सैंपल प्रोजेक्ट
+
+- GitHub: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
+- रिपॉज़िटरी में स्थानीय पथ: `examples/gateway-node-quickstart`
+
+## यह ऐप क्या करता है
+
+- कॉल करता है `GET /v1/health`
+- कॉल करता है `GET /v1/models`
+- जैसे generation routes का परीक्षण करता है `POST /v1/responses`
+- smoke tests, scripts और backend checks के लिए raw HTTP उदाहरण देता है
+
+## यह सैंपल कब सही है
+
+इन स्थितियों में यहां से शुरू करें:
+
+- आप raw API calls सीधे डीबग करना चाहते हैं
+- आप अभी SDK abstractions नहीं चाहते
+- आप web UI के बजाय script, worker या CLI बना रहे हैं
+
+## ज़रूरी चीज़ें
+
+- built-in `fetch` support
+- Phaseo API key
+
+## सैंपल चलाएं
+
+```bash
+cd examples/gateway-node-quickstart
+cp .env.example .env.local
+```
+
+यह सेट करें:
+
+- `PHASEO_API_KEY`
+
+फिर इनमें से कोई एक चलाएं:
+
+```bash
+npm run smoke
+```
+
+या:
+
+```bash
+npm run start
+```
+
+## काम की जांच करें
+
+- Smoke mode API की पहुंच की पुष्टि करता है।
+- मॉडल खोज में कम-से-कम एक मॉडल लौटता है।
+- पूरा रन एक सफल generation response प्रिंट करता है।
+- Authentication और non-200 responses पर टर्मिनल में स्पष्ट errors दिखती हैं।
+
+## कोड में किन बातों को देखें
+
+- script कैसे लोड करता है `.env.local`
+- authorization header कैसे जोड़ा जाता है
+- हर अनुरोध स्पष्ट रूप से कैसे बनाया जाता है
+- non-200 responses को दबाने के बजाय कैसे दिखाया जाता है
+
+## इसे अपने मुताबिक कैसे बनाएं
+
+- script में केवल वही routes रखें जिनकी service को ज़रूरत है
+- कई scripts में साझा request code को एक helper में रखें
+- raw HTTP code दोहराने लगे तो बाद में TypeScript SDK पर जाएं
+
+## संबंधित गाइड
+
+- [मिनी ऐप के लिए शुरुआती prompts](./mini-app-starter-prompts.mdx)
+- [मुफ़्त राउटर से शुरुआत करें](./free-router-first-deploy.mdx)
+- [उदाहरण](../guides/examples.mdx)

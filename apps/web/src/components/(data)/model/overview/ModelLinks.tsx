@@ -5,6 +5,7 @@ import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 import ModelLinkFavicon from "./ModelLinkFavicon";
 import { getGenericModelLinks } from "./modelOverviewMetadata";
+import { getTranslations } from "next-intl/server";
 
 interface ModelLinksProps {
 	model: ModelOverviewPage;
@@ -12,12 +13,27 @@ interface ModelLinksProps {
 }
 
 const LINK_FIELDS = [
-	{ key: "api_reference_link", label: "API Reference" },
-	{ key: "paper_link", label: "Paper" },
-	{ key: "announcement_link", label: "Announcement" },
-	{ key: "repository_link", label: "Repository" },
-	{ key: "weights_link", label: "Weights" },
-];
+	{ key: "api_reference_link", labelKey: "apiReference" },
+	{ key: "paper_link", labelKey: "paper" },
+	{ key: "announcement_link", labelKey: "announcement" },
+	{ key: "repository_link", labelKey: "repository" },
+	{ key: "weights_link", labelKey: "weights" },
+] as const;
+
+type ModelLinkLabelKey =
+	| "apiReference"
+	| "paper"
+	| "announcement"
+	| "repository"
+	| "weights"
+	| "documentation"
+	| "website"
+	| "playground"
+	| "modelCard"
+	| "provider"
+	| "link"
+	| "noLinksListed";
+type ModelLinkLabels = Record<ModelLinkLabelKey, string>;
 
 type ModelLink = {
 	url: string;
@@ -55,7 +71,8 @@ function getPlatformKey(link: {
 
 function getIconForLink(
 	link: { key?: string; url?: string; platform?: string | null; kind?: string | null },
-	model: ModelOverviewPage
+	model: ModelOverviewPage,
+	labels: ModelLinkLabels,
 ) {
 	const key = getPlatformKey(link);
 	const platform = (link.kind ?? link.platform)?.toLowerCase() ?? "";
@@ -77,7 +94,7 @@ function getIconForLink(
 			return (
 				<Logo
 					id={providerId}
-					alt="Provider"
+				alt={labels.provider}
 					width={20}
 					height={20}
 					className="h-5 w-5 rounded"
@@ -118,21 +135,24 @@ function getIconForLink(
 		);
 	}
 	if (key === "api_reference_link") {
-		return <BookText className="h-4 w-4" aria-label="API Reference" />;
+		return <BookText className="h-4 w-4" aria-label={labels.apiReference} />;
 	}
 	if (key === "playground_link") {
-		return <Gamepad2 className="h-4 w-4" aria-label="Playground" />;
+		return <Gamepad2 className="h-4 w-4" aria-label={labels.playground} />;
 	}
 	if (platform.includes("doc") || platform.includes("guide")) {
-		return <BookText className="h-4 w-4" aria-label="Documentation" />;
+		return <BookText className="h-4 w-4" aria-label={labels.documentation} />;
 	}
 	if (platform.includes("website") || platform.includes("site")) {
-		return <Globe2 className="h-4 w-4" aria-label="Website" />;
+		return <Globe2 className="h-4 w-4" aria-label={labels.website} />;
 	}
 	return <FileText className="h-4 w-4" aria-hidden="true" />;
 }
 
-function parseLinks(model: ModelOverviewPage): ParsedModelLink[] {
+function parseLinks(
+	model: ModelOverviewPage,
+	labels?: ModelLinkLabels,
+): ParsedModelLink[] {
 	const rawModelLinks = (model.model_links as ModelLink[] | undefined) ?? [];
 
 	const fromModelLinks = getGenericModelLinks(rawModelLinks)
@@ -140,7 +160,9 @@ function parseLinks(model: ModelOverviewPage): ParsedModelLink[] {
 			const kind = l.kind ?? l.platform;
 			return {
 				key: undefined as string | undefined,
-				label: l.title?.trim() || (kind ? prettyLabelForPlatform(kind) : undefined),
+				label:
+					l.title?.trim() ||
+					(kind ? prettyLabelForPlatform(kind, labels) : undefined),
 				url: l.url,
 				platform: l.platform,
 				kind,
@@ -148,10 +170,10 @@ function parseLinks(model: ModelOverviewPage): ParsedModelLink[] {
 		})
 		.filter(hasLinkUrl);
 
-	const fromLegacy = LINK_FIELDS.flatMap(({ key, label }) => {
+	const fromLegacy = LINK_FIELDS.flatMap(({ key, labelKey }) => {
 		const url = model[key as keyof ModelOverviewPage];
 		if (typeof url !== "string" || url.trim() === "") return [];
-		return [{ key, label, url }];
+		return [{ key, label: labels?.[labelKey], url }];
 	});
 
 	return fromModelLinks.length > 0 ? fromModelLinks : fromLegacy;
@@ -168,14 +190,32 @@ function getDisplayUrl(url: string) {
 	}
 }
 
-export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps) {
-	const links = parseLinks(model);
+export default async function ModelLinks({
+	model,
+	showEmpty = false,
+}: ModelLinksProps) {
+	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const labels: ModelLinkLabels = {
+		apiReference: t("apiReference"),
+		paper: t("paper"),
+		announcement: t("announcement"),
+		repository: t("repository"),
+		weights: t("weights"),
+		documentation: t("documentation"),
+		website: t("website"),
+		playground: t("playground"),
+		modelCard: t("modelCard"),
+		provider: t("provider"),
+		link: t("link"),
+		noLinksListed: t("noLinksListed"),
+	};
+	const links = parseLinks(model, labels);
 	if (links.length === 0) {
 		if (!showEmpty) return null;
 
 		return (
 			<p className="text-sm text-muted-foreground">
-				No links listed.
+				{labels.noLinksListed}
 			</p>
 		);
 	}
@@ -183,7 +223,7 @@ export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps
 	return (
 		<div className="overflow-hidden rounded-lg border border-border/70 bg-card sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:border-0 sm:bg-transparent xl:grid-cols-3">
 			{links.map((link) => {
-				const icon = getIconForLink(link, model);
+				const icon = getIconForLink(link, model, labels);
 				const isWeightsLink = getPlatformKey(link) === "weights_link";
 				return (
 					<Link
@@ -203,7 +243,7 @@ export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps
 						</div>
 						<div className="min-w-0">
 							<div className="truncate text-sm font-medium text-foreground">
-								{link.label ?? "Link"}
+								{link.label ?? labels.link}
 							</div>
 							<div className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
 								{link.url ? getDisplayUrl(link.url) : ""}
@@ -222,30 +262,36 @@ export function hasModelLinks(model: ModelOverviewPage) {
 	return parseLinks(model).length > 0;
 }
 
-function prettyLabelForPlatform(platform: string) {
+function prettyLabelForPlatform(
+	platform: string,
+	labels?: ModelLinkLabels,
+) {
 	const p = platform.toLowerCase();
 	if (p.includes("api") || p.includes("api_reference") || p.includes("docs"))
-		return "API Reference";
-	if (p.includes("documentation") || p.includes("guide")) return "Documentation";
+		return labels?.apiReference ?? "";
+	if (p.includes("documentation") || p.includes("guide"))
+		return labels?.documentation ?? "";
 	if (p.includes("website") || p.includes("site") || p.includes("homepage"))
-		return "Website";
-	if (p.includes("playground")) return "Playground";
+		return labels?.website ?? "";
+	if (p.includes("playground")) return labels?.playground ?? "";
 	if (p.includes("paper") || p.includes("pdf") || p.includes("arxiv"))
-		return "Paper";
+		return labels?.paper ?? "";
 	if (
 		p.includes("announce") ||
 		p.includes("announcement") ||
 		p.includes("blog")
 	)
-		return "Announcement";
+		return labels?.announcement ?? "";
 	if (
 		p.includes("model_card") ||
 		p.includes("model card") ||
 		p.includes("model-card")
 	)
-		return "Model Card";
-	if (p.includes("repo") || p.includes("github")) return "Repository";
-	if (p.includes("weight") || p.includes("hugging")) return "Weights";
+		return labels?.modelCard ?? "";
+	if (p.includes("repo") || p.includes("github"))
+		return labels?.repository ?? "";
+	if (p.includes("weight") || p.includes("hugging"))
+		return labels?.weights ?? "";
 	return platform
 		.replace(/[_-]+/g, " ")
 		.replace(/\b\w/g, (char) => char.toUpperCase());

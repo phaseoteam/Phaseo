@@ -1,0 +1,170 @@
+---
+icon: "square-terminal"
+title: "Python SDKの使い方"
+description: "Python SDKを使った各エンドポイントの例です。"
+---
+
+## セットアップ
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+```
+
+## チャット補完
+
+```python
+completion = client.generate_text(
+    {
+        "model": "openai/gpt-4o-mini",
+        "messages": [{"role": "user", "content": "Hi!"}],
+    }
+)
+
+for chunk in client.stream_chat(
+    {
+        "model": "openai/gpt-4o-mini",
+        "messages": [{"role": "user", "content": "Stream a story"}],
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+## Responses
+
+```python
+resp = client.generate_response(
+    {
+        "model": "openai/gpt-4.1",
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise"}]}],
+    }
+)
+
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-4.1",
+        "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream it"}]}],
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+## Messages（Anthropic互換）
+
+```python
+message = client.generate_message(
+    {
+        "model": "anthropic/claude-3-5-sonnet-latest",
+        "messages": [{"role": "user", "content": "Hello from messages API"}],
+        "max_tokens": 128,
+    }
+)
+
+for chunk in client.stream_message(
+    {
+        "model": "anthropic/claude-3-5-sonnet-latest",
+        "messages": [{"role": "user", "content": "Stream a short hello"}],
+        "max_tokens": 128,
+        "stream": True,
+    }
+):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+## 埋め込みとモデレーション
+
+```python
+embedding = client.generate_embedding(
+    {"model": "openai/text-embedding-3-large", "input": "Sample text"}
+)
+
+moderation = client.generate_moderation(
+    {"model": "openai/omni-moderation-latest", "input": "Text to check"}
+)
+```
+
+## モデルとヘルスチェック
+
+```python
+models = client.get_models()
+health = client.get_health()
+```
+
+## コントロールプレーンのヘルパー
+
+```python
+providers = client.list_providers()
+credits = client.get_credits({"team_id": "your-team-id"})
+activity = client.get_activity({"team_id": "your-team-id", "days": 30})
+```
+
+## 画像と音声
+
+```python
+image = client.generate_image(
+    {"model": "openai/gpt-image-1", "prompt": "A lighthouse at golden hour"}
+)
+
+transcription = client.generate_transcription(
+    {"model": "openai/gpt-4o-transcribe", "audio_b64": "base64-audio"}
+)
+
+speech = client.generate_speech(
+    {"model": "openai/gpt-4o-mini-tts", "input": "Hello world"}
+)
+```
+
+## バッチ
+
+```python
+batch = client.create_batch(
+    {
+        "endpoint": "responses",
+        "input_file_id": "file_123",
+        "completion_window": "24h",
+        "session_id": "agent-run-42",
+    }
+)
+
+status = client.get_batch(batch["id"])
+```
+
+## ファイル、生成処理、動画ジョブ
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+
+generation = client.get_generation("G-01ABC...")
+
+job = client.generate_video(
+    {"model": "openai/sora-2", "prompt": "A mountain sunrise"}
+)
+```
+
+## エラー処理
+
+```python
+try:
+    client.generate_text({"model": "invalid", "messages": []})
+except Exception as exc:
+    print(f"API error: {exc}")
+```
+
+## 設定オプション
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
+```

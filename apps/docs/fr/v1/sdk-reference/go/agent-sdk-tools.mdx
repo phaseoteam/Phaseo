@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "Outils"
+description: "Définissez des outils Go validés, soumis à approbation, manuels et capables de produire des événements de progression."
+---
+
+Créez des valeurs `Tool` et transmettez-les via `DefineTool(...)`. Les outils peuvent inclure :
+
+- des `Parameters` JSON présentés au modèle
+- des validateurs `InputSchema`, `OutputSchema` et `EventSchema`
+- un `Timeout` et une fonction `Execute(input, RuntimeContext)`
+- `RequireApproval` inconditionnel ou un prédicat conditionnel `Approval`
+- `OnToolCalled` et `OnResponseReceived` pour le travail interactif
+- des remplacements `NextTurn` et `OnError: "return-to-model"`
+
+Utilisez `RuntimeContext.EmitProgress`, `SetContext` et le contexte `context.Context` fourni. `ToolExecutionConfig{Concurrency: ...}` exécute les outils indépendants en parallèle tout en préservant l’ordre des résultats.
+
+## À lire aussi
+
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "Pythonエージェントの作業を、ステップ数、トークン、コスト、時間、ツール、終了理由で制限します。"
+---
+
+`stop_when`で停止ヘルパーを組み合わせます:
+
+```python
+stop_when = [
+    step_count_is(12),
+    max_tokens_used(40_000),
+    max_cost(2),
+    max_duration(60_000),
+]
+```
+
+追加のヘルパーには `has_tool_call(...)` と `finish_reason_is(...)` があります。コストやトークンで制限する場合も、報告される使用量に依存するため、ステップ数または時間の上限を設定してください。
+
+## 関連ページ
+
+- [動的ターン](./agent-sdk-dynamic-turns.mdx)
+- [出力と再試行](./agent-sdk-run-controls.mdx)
+

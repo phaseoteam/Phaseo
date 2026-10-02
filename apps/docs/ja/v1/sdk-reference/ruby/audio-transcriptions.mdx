@@ -1,0 +1,31 @@
+---
+icon: "mic"
+title: "音声認識（STT）"
+description: "Ruby SDKで/audio/transcriptionsを呼び出します。"
+---
+
+**メソッド**: `client.generate_transcription(...)`または`client.create_transcription(...)`。
+
+### 例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+transcript = client.generate_transcription(
+  model: 'openai/gpt-4o-transcribe',
+  audio_b64: 'base64_audio_data',
+  language: 'en'
+)
+```
+
+### 主なパラメーター
+- `model`（必須）：文字起こしに対応するモデルのID。
+- `audio_url`または`audio_b64`（必須）：音声データ（URLまたはbase64）。
+- `language`：言語コードのヒント（例：`en`）。
+- `prompt`：精度を高めるための任意のコンテキスト。
+- `temperature`（0～2）：サンプリングのランダム性。
+- `response_format`：`json`、`text`、`srt`、`verbose_json`など。
+
+### 戻り値
+`AudioTranscriptionResponse`
+

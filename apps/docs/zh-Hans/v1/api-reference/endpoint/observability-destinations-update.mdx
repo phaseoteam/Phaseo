@@ -1,0 +1,11 @@
+---
+title: "更新可观测性目标"
+sidebarTitle: "更新目标"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "更新目标 policy, filters, or credentials."
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+省略 `config` 可保留现有的加密配置。提供该字段时，会以原子方式替换目标记录中的配置。
+

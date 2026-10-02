@@ -1,0 +1,38 @@
+---
+icon: "shuffle"
+title: "Muestreo y decodificación"
+description: "Cómo influyen las estrategias de decodificación y las penalizaciones en las salidas del modelo."
+---
+
+La decodificación determina cómo se elige el siguiente token a partir de las probabilidades del modelo.
+
+## Controles habituales
+
+| Control | Finalidad | Notas |
+| --- | --- | --- |
+| `temperature` | Control global de aleatoriedad | Es el parámetro que más suele ajustarse primero |
+| `top_p` | Limita la masa de probabilidad acumulada | Suele combinarse con una temperatura moderada |
+| `top_k` | Limita la selección a los tokens con mayor probabilidad | No está disponible en todos los proveedores |
+| `frequency_penalty` | Desalienta la repetición de tokens o frases | Ayuda a reducir los bucles repetitivos |
+| `presence_penalty` | Fomenta la incorporación de nuevos tokens o temas | Útil para explorar más opciones |
+| `repetition_penalty` | Penaliza patrones de texto repetidos (depende del proveedor/modelo) | Objetivo parecido, pero la implementación tiene otra semántica |
+
+## Ajustes predefinidos habituales
+
+| Caso de uso | Perfil sugerido |
+| --- | --- |
+| Extracción/clasificación determinista | `temperature` baja (`0.0` a `0.2`), muestreo limitado |
+| Salida equilibrada del asistente | `temperature` media (`0.3` a `0.7`), `top_p` cerca de `0.9` a `1.0` |
+| Generación creativa | `temperature` más alta y muestreo más amplio, con evaluación más estricta |
+
+## Errores frecuentes
+
+- Demasiado aleatorio: datos incoherentes y salidas estructuradas inestables.
+- Demasiado determinista: respuestas repetitivas o insulsas.
+- Penalizaciones excesivas: redacción forzada y desviación del tema.
+
+## Consejos prácticos
+
+1. Ajusta la decodificación para cada tarea, no de forma global.
+2. Mantén conservadores los trabajos de extracción y JSON.
+3. Para tareas creativas, aumenta la aleatoriedad gradualmente y evalúa los resultados con revisión humana.

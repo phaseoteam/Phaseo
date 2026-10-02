@@ -1,0 +1,10 @@
+---
+title: "导出工作区分析数据"
+sidebarTitle: "导出分析数据"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /analytics/export"
+description: "将筛选后的工作区分析数据导出为 CSV。"
+---
+<Note>此端点需要具有 `analytics:read` 权限的管理 API 密钥。</Note>
+
+导出操作接受与分析端点相同的筛选器，并以适用于电子表格的 CSV 格式返回所有匹配的聚合行。

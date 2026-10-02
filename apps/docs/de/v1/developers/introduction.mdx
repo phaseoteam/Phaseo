@@ -1,0 +1,32 @@
+---
+title: "So funktioniert Phaseo"
+description: "Verstehe Modelle, Anbieter, Routing und Abrechnung vor der Phaseo-Integration."
+icon: "terminal"
+---
+
+Phaseo leitet Modellanfragen deiner Anwendung über eine API an Anbieter weiter. Deine Anwendung wählt Modell und Endpunkt; Workspace-Einstellungen und Anfragesteuerung bestimmen, welche Anbieter sie bearbeiten dürfen.
+
+## Modelle und Anbieter
+
+Ein Modell ist das System, das die Ausgabe erzeugt. Ein Anbieter hostet es und bestimmt Verfügbarkeit, unterstützte Parameter, Preise und Leistung. Dasselbe Modell kann mehrere Anbieterangebote haben.
+
+Der öffentliche Katalog enthält auch Modelle, die derzeit nicht über das Gateway verfügbar sind. Prüfe die [Modellverfügbarkeit](../exploring/models.mdx), bevor du eine ID in einer Anfrage nutzt.
+
+## Anfragen und Routing
+
+Nutze [Responses, Chat Completions oder Messages](../api-reference/introduction.mdx) passend zum Anwendungsprotokoll. Anbieterspezifische Fähigkeiten unterscheiden sich weiterhin; ein gemeinsamer Endpunkt bedeutet nicht, dass jedes Modell jeden Parameter unterstützt.
+
+[Routing-Steuerung](../guides/routing-and-fallbacks.mdx) erlaubt Anbieterbeschränkungen und die Wahl ihrer Reihenfolge. Fallbacks unterliegen weiterhin deinen Einschränkungen und der verfügbaren Kapazität; sie garantieren keinen Erfolg.
+
+## Abrechnung und Zugriff
+
+Verwaltete Anfragen nutzen dein Phaseo-Workspace-Guthaben. `:free`-Modelle benötigen keine Einzahlung. Mit Anbieterzugangsdaten (BYOK) gelten Anbieterabrechnung und Kontolimits; prüfe [Preise und Abrechnung](../pricing/tiers.mdx) vor dem Rollout.
+
+[Video- und Batch-Jobs](../guides/async-video-and-batch.mdx) liefern einen Job vor Ende der Verarbeitung. Der Vorschauzugang wird pro Workspace verwaltet. Frage den Status ab oder empfange Webhook-Updates und lade dann das Ergebnis herunter.
+
+## Integration erstellen
+
+- [Schnellstart](../quickstart.mdx): Sende deine erste Anfrage.
+- [Gateway integrieren](./integrating-with-the-gateway.mdx): Bewahre Zugangsdaten im Backend auf und konfiguriere deine Anwendung.
+- [Zuverlässigkeit und Status](./reliability-and-status.mdx): Untersuche Verfügbarkeit und fehlgeschlagene Anfragen.
+- [Anfragelogs und Beobachtbarkeit](../guides/integrations/observability.mdx): Prüfe Nutzung, Latenz, Kosten und Fehler.

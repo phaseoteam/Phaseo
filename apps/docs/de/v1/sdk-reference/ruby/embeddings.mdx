@@ -1,0 +1,31 @@
+---
+icon: "binary"
+title: "Einbettungen"
+description: "Rufe /embeddings mit dem Ruby-SDK auf."
+---
+
+**Methoden**: `client.generate_embedding(...)` oder `client.create_embedding(...)`.
+
+### Beispiel
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+### Wichtige Parameter
+
+-   `model` (erforderlich): ID des Embedding-Modells (z. B. `openai/text-embedding-3-large`).
+-   `input` (erforderlich): eine Zeichenfolge oder ein Array aus Zeichenfolgen.
+-   `encoding_format`: `float` (Standard) oder `base64`.
+-   `dimensions`: optionale Ganzzahl zum Kürzen der Embedding-Länge (modellabhängig).
+-   `user`: optionales Endnutzer-Tag.
+
+### Rückgabewert
+
+Embedding-Payload (JSON)

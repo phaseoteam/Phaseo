@@ -1,0 +1,38 @@
+---
+icon: "shuffle"
+title: "Sampling und Decoding"
+description: "Wie Decoding-Strategien und Strafwerte die Modellausgaben beeinflussen."
+---
+
+Decoding bestimmt, wie anhand der Modellwahrscheinlichkeiten das nächste Token ausgewählt wird.
+
+## Gängige Steuerungen
+
+| Steuerung | Zweck | Hinweise |
+| --- | --- | --- |
+| `temperature` | Globale Steuerung der Zufälligkeit | Wird meist als Erstes abgestimmt |
+| `top_p` | Begrenzt die kumulative Wahrscheinlichkeitsmasse | Wird oft mit moderater Temperatur kombiniert |
+| `top_k` | Beschränkt die Auswahl auf die wahrscheinlichsten Tokens | Nicht bei allen Anbietern verfügbar |
+| `frequency_penalty` | Wirkt der Wiederholung von Tokens oder Formulierungen entgegen | Hilft, Wiederholungsschleifen zu reduzieren |
+| `presence_penalty` | Fördert neue Tokens oder Themen | Nützlich für eine breitere Exploration |
+| `repetition_penalty` | Bestraft wiederholte Textmuster (abhängig von Provider und Modell) | Ähnliches Ziel, aber andere Implementierungssemantik |
+
+## Typische Voreinstellungen
+
+| Anwendungsfall | Empfohlenes Profil |
+| --- | --- |
+| Deterministische Extraktion/Klassifizierung | Niedrige `temperature` (`0.0` bis `0.2`), enges Sampling |
+| Ausgewogene Assistentenausgabe | Mittlere `temperature` (`0.3` bis `0.7`), `top_p` nahe `0.9` bis `1.0` |
+| Kreative Generierung | Höhere `temperature` und breiteres Sampling bei strengerer Bewertung |
+
+## Typische Fehlerbilder
+
+- Zu zufällig: inkonsistente Fakten und instabile strukturierte Ausgaben.
+- Zu deterministisch: repetitive oder eintönige Antworten.
+- Zu hohe Strafwerte: unnatürliche Formulierungen und Abschweifen vom Thema.
+
+## Praxistipps
+
+1. Stimme das Decoding auf die jeweilige Aufgabe ab, nicht global.
+2. Halte Einstellungen für Extraktion und JSON-Aufgaben konservativ.
+3. Erhöhe bei kreativen Aufgaben die Zufälligkeit schrittweise und prüfe die Ergebnisse durch menschliche Begutachtung.

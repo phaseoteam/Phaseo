@@ -147,8 +147,9 @@ for (const page of navigationPages(docsConfig.navigation)) {
 	if (!existsSync(file)) continue;
 	const frontmatter = readFileSync(file, "utf8").match(/^---\r?\n([\s\S]*?)\r?\n---/);
 	const metadata = frontmatter ? load(frontmatter[1]) : null;
+	const canonicalPage = page.replace(/^(?:es|fr|de|pt-BR|hi|ja|zh-Hans|ar)\//, "");
 	const iconOptional = ICON_OPTIONAL_PAGE_PREFIXES.some(
-		(prefix) => page === prefix || page.startsWith(`${prefix}/`),
+		(prefix) => canonicalPage === prefix || canonicalPage.startsWith(`${prefix}/`),
 	);
 	if (!metadata?.openapi && !iconOptional) validateIcon(metadata?.icon, page);
 }

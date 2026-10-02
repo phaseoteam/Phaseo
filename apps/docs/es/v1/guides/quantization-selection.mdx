@@ -1,0 +1,80 @@
+---
+icon: "search-check"
+title: "Cómo elegir una estrategia de cuantización"
+description: "Guía práctica para elegir variantes BF16/FP8/INT8/INT4 según la carga de trabajo."
+---
+
+Sigue este flujo de trabajo para elegir variantes de cuantización de forma segura.
+
+Para aplicar la elección en Phaseo Gateway, envía un filtro de enrutamiento compatible con OpenRouter:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+El filtro se aplica a las ofertas de modelos de cada proveedor, no solo a los nombres de los proveedores. La coincidencia no distingue entre mayúsculas y minúsculas y admite alias inequívocos, como `float8` para `FP8` y `bfloat16` para `BF16`. Las ofertas sin metadatos de cuantización no son válidas. Si no hay ninguna oferta válida, la solicitud falla y muestra diagnósticos de enrutamiento; Phaseo no recurre a una cuantización sin verificar. También se admite la estructura equivalente `routing.quantizations`.
+
+## Paso 1: define tus criterios de éxito
+
+Antes de elegir una cuantización:
+
+- Define umbrales de calidad (precisión de la tarea, tasas de aprobación y validez de la salida estructurada).
+- Define objetivos de latencia y coste.
+- Define los modos de fallo inaceptables.
+
+## Paso 2: elige una base de alta calidad
+
+Empieza con una base más precisa (a menudo `BF16` o `FP16`) y mide:
+
+- Calidad de la salida
+- Latencia mediana y de cola
+- Perfil de tokens y costes
+
+Esta será la referencia para comparar.
+
+## Paso 3: reduce la precisión gradualmente
+
+Evalúa progresivamente formatos de menor precisión:
+
+1. `FP8` or `INT8`
+2. Usa `FP4` o `INT4` solo si necesitas reducir costes o aumentar el rendimiento.
+
+No pases directamente a la variante más pequeña sin pruebas sólidas de que funciona con tu carga de trabajo.
+
+## Paso 4: evalúa cargas de trabajo reales
+
+Usa prompts similares a los de producción:
+
+- Prompts largos
+- Razonamiento en varios pasos
+- Llamadas a herramientas
+- Casos límite de solicitudes de soporte
+
+## Paso 5: decide por endpoint o caso de uso
+
+No es necesario utilizar una sola cuantización para todo.
+
+Ejemplos:
+
+- Atención al cliente y decisiones críticas: alta precisión.
+- Clasificación o resumen de grandes volúmenes: puede ser aceptable una precisión menor.
+
+## Puntos de partida recomendados
+
+| Tipo de carga de trabajo | Cuantización inicial recomendada |
+| --- | --- |
+| Razonamiento crítico para la calidad | `BF16` / `FP16` |
+| Equilibrio entre coste y calidad | `FP8` / `INT8` |
+| Alto rendimiento con costes ajustados | `INT4` / `FP4` (después de validarlo) |
+
+## Política de implementación
+
+- Configura un modelo o una cuantización de reserva.
+- Supervisa los cambios en la calidad después del despliegue.
+- Repite las pruebas cuando cambie el entorno de ejecución del proveedor o la versión del modelo.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ArrowUpRight } from "lucide-react";
 import { useInitialChatAuth } from "@/components/(chat)/ChatAuthProvider";
 
@@ -11,12 +12,12 @@ type RoomEmptyStateProps = {
 	onSelectPrompt: (prompt: string) => void;
 };
 
-type DayPeriod = "Morning" | "Afternoon" | "Evening";
+type DayPeriod = "morning" | "afternoon" | "evening";
 
 function getDayPeriod(hour: number): DayPeriod {
-	if (hour < 12) return "Morning";
-	if (hour < 18) return "Afternoon";
-	return "Evening";
+	if (hour < 12) return "morning";
+	if (hour < 18) return "afternoon";
+	return "evening";
 }
 
 export function RoomEmptyState({
@@ -26,7 +27,8 @@ export function RoomEmptyState({
 	onSelectPrompt,
 }: RoomEmptyStateProps) {
 	const initialAuth = useInitialChatAuth();
-	const [period, setPeriod] = useState<DayPeriod>("Morning");
+	const t = useTranslations("Product.chat");
+	const [period, setPeriod] = useState<DayPeriod>("morning");
 
 	useEffect(() => {
 		setPeriod(getDayPeriod(new Date().getHours()));
@@ -40,7 +42,10 @@ export function RoomEmptyState({
 			<section className="w-full max-w-2xl">
 				<div className="text-center">
 					<h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-						{title ?? <>Good {period}{firstName ? `, ${firstName}` : ""}</>}
+						{title ?? t("greeting", {
+							period: t(period),
+							name: firstName ? `, ${firstName}` : "",
+						})}
 					</h1>
 					<p className="mt-2 text-sm text-muted-foreground">{description}</p>
 				</div>

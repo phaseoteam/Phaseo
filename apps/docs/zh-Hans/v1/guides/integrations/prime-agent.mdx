@@ -1,0 +1,43 @@
+---
+title: "Prime Agent"
+icon: "/icons/brands/prime-agent.svg"
+description: "将已安装的 Prime Agent 模型目录连接到 Phaseo。"
+---
+
+## 使用 Phaseo CLI 设置
+
+这些可用于生产环境的命令需要 Phaseo 账户；CLI 会在登录和设置期间创建专用网关凭据。
+
+```bash
+phaseo login
+phaseo prime-agent
+```
+
+先从官方版本安装 Prime Agent。设置过程会在 `~/.prime/agent/models.json` 写入受管理的 `phaseo` 供应商。它会提供所有兼容 Chat Completions 的活动 Phaseo 文本模型，并在每次请求时从 Phaseo CLI 获取专用 API 密钥。
+
+Prime Agent 当前支持 macOS 和 Linux。在 Windows 上，请先在 WSL 中安装可执行文件，再于 WSL 中运行设置。
+
+选择一个初始目录条目，或按需仅配置一个模型：
+
+```bash
+phaseo prime-agent --model anthropic/claude-sonnet-4.6
+phaseo prime-agent --catalog default
+```
+
+## 启动并验证
+
+```bash
+prime-agent
+```
+
+打开 `/model`，选择 `phaseo` 供应商并发送一个简单提示。生成的供应商使用 Prime Agent 支持的命令式密钥格式：
+
+```text
+!phaseo integrations credential prime-agent
+```
+
+如需仅移除由 Phaseo 管理的供应商并撤销其专用密钥，请运行：
+
+```bash
+phaseo integrations remove prime-agent
+```

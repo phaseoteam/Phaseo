@@ -1,0 +1,80 @@
+---
+icon: "search-check"
+title: "Quantization strategy चुनना"
+description: "Workload के अनुसार BF16/FP8/INT8/INT4 variants चुनने की व्यावहारिक रूपरेखा।"
+---
+
+Quantization variants को सुरक्षित रूप से चुनने के लिए यह workflow अपनाएँ।
+
+Phaseo Gateway में इस choice को लागू करने के लिए OpenRouter-संगत routing filter भेजें:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+यह filter केवल provider names पर नहीं, बल्कि provider-model offers पर लागू होता है। Matching case-insensitive है और `FP8` के लिए `float8` तथा `BF16` के लिए `bfloat16` जैसे स्पष्ट aliases support करता है। Quantization metadata के बिना कोई offer eligible नहीं है। यदि कोई eligible offer match न करे, तो routing diagnostics के साथ request विफल होगा; Phaseo किसी unverified quantization पर fallback नहीं करेगा। समकक्ष `routing.quantizations` shape भी समर्थित है।
+
+## चरण 1: सफलता के मानदंड तय करें
+
+Quantization चुनने से पहले:
+
+- गुणवत्ता की सीमाएँ तय करें (कार्य की शुद्धता, सफलताओं की दर और संरचित आउटपुट की वैधता)।
+- Latency और cost targets तय करें।
+- अस्वीकार्य failure modes तय करें।
+
+## चरण 2: उच्च-गुणवत्ता baseline चुनें
+
+ज़्यादा quality वाले baseline (अक्सर `BF16` या `FP16`) से शुरू करें और मापें:
+
+- Output quality
+- Median और tail latency
+- Token/cost profile
+
+यही comparison anchor बनेगा।
+
+## चरण 3: precision धीरे-धीरे कम करें
+
+धीरे-धीरे कम precision वाले formats जाँचें:
+
+1. `FP8` or `INT8`
+2. Cost/throughput के लिए ज़रूरी हो तभी `FP4` या `INT4` लें।
+
+आपके कार्यभार में बेहतर परिणाम देने का ठोस प्रमाण न हो, तो सीधे सबसे छोटे variant पर न जाएँ।
+
+## चरण 4: वास्तविक workloads का मूल्यांकन करें
+
+प्रोडक्शन जैसे प्रॉम्प्ट उपयोग करें:
+
+- लंबे प्रॉम्प्ट
+- बहु-चरणीय तर्क
+- टूल कॉलिंग
+- सहायता टिकट की विशेष परिस्थितियाँ
+
+## चरण 5: प्रत्येक endpoint या उपयोग के मामले के अनुसार निर्णय लें
+
+एक ही क्वांटाइज़ेशन को हर जगह लागू करना ज़रूरी नहीं है।
+
+उदाहरण:
+
+- ग्राहक सहायता और महत्वपूर्ण निर्णय: उच्च सटीकता।
+- बड़े पैमाने पर वर्गीकरण या सारांश: कम सटीकता स्वीकार्य हो सकती है।
+
+## सुझाए गए शुरुआती बिंदु
+
+| कार्यभार का प्रकार | सुझाया गया प्रारंभिक क्वांटाइज़ेशन |
+| --- | --- |
+| गुणवत्ता-महत्वपूर्ण तर्क | `BF16` / `FP16` |
+| लागत और गुणवत्ता में संतुलन | `FP8` / `INT8` |
+| उच्च थ्रूपुट, लागत के प्रति संवेदनशील | `INT4` / `FP4` (सत्यापन के बाद) |
+
+## डिप्लॉयमेंट नीति
+
+- Fallback model/quantization configure करें।
+- Rollout के बाद quality drift monitor करें।
+- Provider runtime या model revision बदलने पर फिर test करें।

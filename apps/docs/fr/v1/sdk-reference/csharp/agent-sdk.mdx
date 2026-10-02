@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "Utilisation"
+description: "Exécutez des boucles d’outils, une validation humaine, des tentatives répétées et des agents reprenables avec le SDK Agent pour C#."
+---
+
+## Préparer l’environnement d’exécution
+
+Le package Agent SDK n’est pas encore disponible sur NuGet. Suivez les [instructions d’installation depuis les sources](./agent-sdk-installation.mdx).
+
+## Démarrage rapide
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## Fonctionnalités incluses
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- une boucle d’outils bornée sur l’API `responses` de Phaseo
+
+## Environnement d’exécution avancé
+
+C# prend en charge les délégués de validation et d’approbation, les outils HITL et manuels, le suivi de progression, les erreurs récupérables, les énumérables asynchrones rejouables, les helpers d’arrêt, les tours dynamiques, les `NextTurnParams` persistés, l’usage et le coût normalisés, ainsi que `IStateAccessor`.
+
+## Diffusion et annulation
+
+`Agent.Stream(...)` et `Agent.ContinueStream(...)` utilisent `IAsyncEnumerable` sur le flux SSE Responses de la passerelle. Consommez `TextStream()` ou `FullStream()` et appelez `Cancel()` pour annuler le jeton de requête associé. Les étapes terminées conservent les ID de requête, les métadonnées du fournisseur, les raisons de fin, les avertissements, l’usage et le coût.
+
+## Pages associées
+
+- [Présentation générale de l’Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK pour TypeScript](../typescript/agent-sdk.mdx)

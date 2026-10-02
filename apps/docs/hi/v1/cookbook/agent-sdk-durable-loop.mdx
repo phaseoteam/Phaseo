@@ -1,0 +1,122 @@
+---
+title: "TypeScript में टिकाऊ एजेंट लूप बनाएँ"
+icon: "repeat-2"
+description: "TypeScript Agent SDK के साथ Phaseo Gateway पर फिर से शुरू किया जा सकने वाला एजेंट लूप चलाएँ।"
+---
+
+जब आपको एक बार के टेक्स्ट अनुरोध से अधिक चाहिए, तब यह रेसिपी अपनाएँ:
+
+- कई चरणों वाले टूल लूप
+- लोकल रनटाइम टूल
+- फिर से शुरू किए जा सकने वाले रन
+- एजेंट कार्य के लिए एक Gateway-आधारित एंट्री पॉइंट
+
+## 1. SDK इंस्टॉल करें
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. एक छोटा रनटाइम टूल परिभाषित करें
+
+पहला टूल नियतात्मक और जाँचने में आसान रखें।
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. एजेंट बनाएँ
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Gateway-आधारित अडैप्टर इस्तेमाल करें
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. चरणों के बीच क्या बना रहता है
+
+हर पूरा हुआ चरण लौटाई गई रन स्थिति में ये जानकारी जोड़ता है:
+
+- रन ID
+- संदेश इतिहास
+- लौटाए गए टूल कॉल
+- लोकल टूल नतीजे
+- रन पूरा होने पर अंतिम आउटपुट
+
+अनुरोधों या प्रक्रियाओं के बीच रन जारी रखने के लिए, लौटाए गए मान को अपने ऐप्लिकेशन में सहेजें और बाद में `continueRun()` को दें।
+
+## 6. पहला संस्करण सरल कब रखें
+
+- हर वर्कफ़्लो के लिए एक एजेंट
+- अनुरोधों के बीच फिर से शुरू करने से पहले ऐप्लिकेशन द्वारा सीरियलाइज़ेशन
+- सामान्य टूल रजिस्ट्री से पहले छोटा टूल सेट
+- हर रन के लिए रन ID और Gateway अनुरोध ID वाली एक लॉग लाइन
+
+## 7. इस रेसिपी से आगे कब बढ़ें
+
+जब आपको ये चाहिए हों, तो पहला टिकाऊ लूप बढ़ाएँ:
+
+- अनुमोदन के लिए रोकना
+- लौटाई गई रन स्थिति का ऐप्लिकेशन-नियंत्रित स्थायी संग्रह
+- साझा रनटाइम टूल वाले कई एजेंट परिभाषाएँ
+
+उस स्थिति में उसी Gateway-आधारित अडैप्टर को रखें और उसके आसपास स्टोर व ऑर्केस्ट्रेशन विकसित करें।
+
+## संबंधित गाइड
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [प्रीसेट](../guides/presets.mdx)
+- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
+- [SKILL.md के साथ कोडिंग एजेंट सेट अप करें](./coding-agents-skill-md.mdx)
+- [मुफ़्त राउटर पर लॉन्च करें](./free-router-first-deploy.mdx)

@@ -1,0 +1,67 @@
+---
+title: "MiniMax Code"
+icon: "/icons/brands/minimax.svg"
+description: "Phaseo CLI を使って Phaseo Gateway 経由で MiniMax Code を実行します。"
+---
+
+Phaseo CLI は、専用のゲートウェイキーと一時的なプロバイダー設定を使って MiniMax Code を起動できます。
+
+## Phaseo CLI でセットアップ
+
+```bash
+phaseo login
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+ランチャーは MiniMax Code の `mcode provider add` コマンドで Phaseo の OpenAI 互換エンドポイントを設定し、選択したプロバイダーで `mcode` を起動します。`--catalog all` を使うと、Chat Completions に対応する Phaseo のすべての有効なテキスト・チャットモデルを登録できます。キーを作成せずにインストールと起動の計画を確認することもできます。
+
+```bash
+phaseo minimax --catalog all --dry-run --json
+```
+
+明示的なコマンド形式は `phaseo run minimax ...` です。Phaseo が自身のオプションを先に処理できるよう、MiniMax Code のオプションは `--` の後に指定してください。
+
+Unix 系システムでは、初回の対話実行時に MiniMax の公式インストーラーで MiniMax Code をインストールすることを提案します。Windows では Phaseo が公式の PowerShell インストーラーを使用します。MiniMax Code を別途管理している場合は、自分でインストールして `mcode --version` を確認し、`--skip-install` を指定して再実行してください。
+
+ランチャーは `MINIMAX_DATA_DIR` を一時ディレクトリに設定し、`mcode` の終了時に削除します。通常の `~/.minimax` 設定は変更されず、専用の Phaseo キーは一時的なプロバイダー設定プロセスにのみ渡されます。
+
+## 手動設定
+
+MiniMax Code の永続的なプロバイダー設定には、MiniMax Code のプロバイダーコマンドを直接使用します。
+
+```bash
+export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
+mcode provider add \
+  --name "Phaseo" \
+  --base-url "https://api.phaseo.app/v1" \
+  --api-format openai-completions \
+  --model "openai/gpt-5.6-terra" \
+  --use
+```
+
+MiniMax Code は、設定されたデータディレクトリに永続的なプロバイダー設定を保存します。設定を 1 つのセッションに限定したい場合は、Phaseo CLI ランナーを使用してください。
+
+## 確認
+
+MiniMax Code から短いプロンプトを送信し、Phaseo のアクティビティにリクエストが表示されることを確認します。利用可能なモデル ID を確認するには、`--catalog all` を使うか、`--model` で特定の Phaseo モデルを指定してください。
+
+## トラブルシューティング
+
+### MiniMax Code がインストールされていない
+
+対話型ターミナルでコマンドを実行して公式インストーラーを承認するか、MiniMax Code を別途インストールし、`--skip-install` を指定して再実行してください。
+
+### プロバイダーまたはモデルが表示されない
+
+`phaseo minimax --catalog all` を使うか、`--model` で目的のモデル ID を指定してください。CLI は `mcode` を起動する前に、一時的な MiniMax データディレクトリ内にプロバイダーを作成します。
+
+### 対話型 CLI の代わりに ACP が必要
+
+MiniMax Code は、エディターやホストとの連携用に `mcode acp` を通じて ACP プロセスも提供します。`phaseo minimax` は対話型 CLI のランナーです。ホストが ACP で直接通信する場合は、MiniMax Code の ACP 設定を使用してください。
+
+## 関連情報
+
+- [Phaseo CLI](./phaseo-cli)
+- [コーディングエージェント](./coding-assistants)
+- [モデル](../../api-reference/endpoint/models.mdx)
+- [アクティビティ](../../api-reference/endpoint/activity.mdx)

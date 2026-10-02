@@ -1,0 +1,57 @@
+---
+icon: "music"
+title: "TTS（文本转语音）"
+description: "使用 TypeScript SDK 调用 /audio/speech。"
+---
+
+**方法**：`client.generateSpeech()`。
+
+### 示例
+```typescript
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  response_format: "mp3",
+});
+```
+
+### 关键参数
+- `model`（必填）：支持 TTS 的模型 ID。
+- `input`（必填）：要合成的文本。
+- `voice`：提供方规范化的语音别名（推荐）或提供方原生语音值。
+- `response_format`：`mp3`、`wav`、`flac` 等。
+- `speed`：播放速度倍率（通常为 0.25–4）。
+
+如果 `voice` 对路由到的提供方/模型映射无效，API 会返回 `400`，并包含 `param: "voice"`。
+
+### 提供方配置示例
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
+
+### 返回值
+音频二进制数据（Blob）

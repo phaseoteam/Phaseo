@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "البث"
+description: "بث نصوص وأحداث وكلاء Go باستخدام مستهلكين قابلين لإعادة التشغيل."
+---
+
+تعيد `Agent.Stream(...)` قيمة `StreamResult` قابلة لإعادة التشغيل:
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+استخدم `Events()` لأحداث دورة الحياة والمزوّد. واستدعِ `Cancel()` لإلغاء سياق التدفق وطلب النموذج النشط.
+
+لا توفّر Go بعد مستهلكًا أصليًا للعناصر المحددة الأنواع مثل TypeScript؛ استخدم تسلسل الأحداث وسجلات التشغيل المكتملة لإنشاء جداول زمنية منظّمة للمنتج.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [الملاحظة وDevTools](./agent-sdk-observability.mdx)

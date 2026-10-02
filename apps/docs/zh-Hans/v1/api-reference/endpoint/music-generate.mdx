@@ -1,0 +1,69 @@
+---
+title: "生成音乐"
+sidebarTitle: "生成音乐"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+通过统一且不依赖供应商的 API 生成音乐。Phaseo 会在后台处理同步响应并轮询供应商队列。
+
+生成完成后，响应会包含 `audio_url` 或 `audio_base64`。如果供应商返回的任务尚未结束，请使用响应中的同一 `id` 调用 `GET /music/generate/{music_id}`。
+
+## 请求结构
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Suno 选项
+
+- `suno.customMode` （布尔值，默认值为 `false`）
+- `suno.instrumental` （布尔值，默认值为 `false`）
+- `suno.prompt` （可选，用于覆盖顶层 `prompt`）
+- `suno.style`, `suno.title` （当 `customMode = true` 时必填）
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## 验证规则
+
+- 当 `customMode = false` 时，必须提供 `prompt`。
+- 当 `customMode = true` 时，必须提供 `style` 和 `title`。
+- 当 `customMode = true` 且 `instrumental = false` 时，必须提供 `prompt`。
+
+验证错误会返回 `400`，并包含：
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## 响应
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` 是 Phaseo 的稳定请求 ID。使用 `GET /music/generate/{music_id}` 检索该请求。
+- `nativeResponseId` 是上游提供商的标识符，用于关联提供商请求并联系其支持团队。
+- `status` 可以是 `queued`、`in_progress`、`completed` 或 `failed`。
+- 提供商报告生成时长时，`usage` 可能包含 `output_audio_seconds`。
+

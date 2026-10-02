@@ -1,0 +1,111 @@
+---
+icon: "compass"
+title: "TypeScript SDK का परिचय"
+description: "Phaseo Gateway API के लिए आधिकारिक TypeScript क्लाइंट"
+---
+
+npm से प्रकाशित [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) पैकेज इंस्टॉल करें।
+
+Phaseo TypeScript SDK, Phaseo Gateway API के साथ काम करने का सुविधाजनक और टाइप-सुरक्षित तरीका देता है। OpenAPI स्पेसिफ़िकेशन पर आधारित यह जनरेट किए गए टाइप और सरल क्लाइंट इंटरफ़ेस के साथ पूर्ण TypeScript समर्थन देता है।
+
+## सुविधाएँ
+
+-   **टाइप-सुरक्षित**: OpenAPI स्पेसिफ़िकेशन से जनरेट किए गए टाइप के साथ पूर्ण TypeScript समर्थन
+-   **सरल API**: साफ़ इंटरफ़ेस वाला इस्तेमाल में आसान क्लाइंट
+-   **जनरेट किया गया कोड**: आधिकारिक API स्पेसिफ़िकेशन से अपने-आप जनरेट होता है
+-   **व्यापक**: Gateway API के सभी एंडपॉइंट शामिल हैं
+
+## त्वरित उदाहरण
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## संगीत, वीडियो या बैच की प्रतीक्षा करें
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+वीडियो के लिए `videos.generateAndWait(request, options)` और बैच के लिए `batches.createAndWait(request, options)` इस्तेमाल करें। सहायक एक बार भेजते हैं; तुरंत पूरी प्रतिक्रिया बिना पोलिंग लौटाते हैं या उसी जॉब को पूरा होने तक पोल करते हैं। पूरी प्रतिक्रिया मिलती है; विफल, रद्द या समाप्त जॉब पर `response` सहित `JobFailedError` आता है। पूरे बैच में अलग अनुरोध विफल हो सकते हैं।
+
+हर संसाधन में `wait(id, options)` भी है, जो विफलता सहित अंतिम प्रतिक्रिया लौटाता है। विकल्प: `intervalMs` (डिफ़ॉल्ट 5,000; न्यूनतम 250), `timeoutMs` (डिफ़ॉल्ट 1,800,000), `signal` और `onPoll`। प्रतीक्षा समय सीमा सबमिशन लौटने के बाद शुरू होती है; शुरुआती HTTP अनुरोध की अपनी सीमा रहती है। प्रगति कॉलबैक शुरुआती प्रतिक्रिया और हर पोल लेते हैं।
+
+`JobTimeoutError` और `JobCancelledError` `jobId` व `lastResponse` रखते हैं, ताकि `.wait(error.jobId)` से फिर शुरू करें। प्रतीक्षा रोकने पर जारी पोलिंग अनुरोध रद्द होता है, दूरस्थ काम नहीं। HTTP विफलता स्वतः फिर भेजे बिना आगे आती है। SDK सहायक गेटवे में पृष्ठभूमि निष्पादन नहीं जोड़ते।
+
+## अनुरोध नियंत्रण और निदान
+
+`client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` से
+अपरिवर्तनीय क्लाइंट लें, जिसमें सभी संसाधन, स्ट्रीम और मीडिया पर नियंत्रण लागू हों।
+समय सीमा में प्रतिक्रिया बॉडी पढ़ना शामिल है। पुनः प्रयास डिफ़ॉल्ट में शून्य हैं और
+केवल GET/HEAD पर `Retry-After` का सम्मान करते हैं। भुगतान वाले सबमिशन कभी पुनः नहीं भेजे जाते।
+
+`responseMetadata(result)` गेटवे अनुरोध ID और डैशबोर्ड ट्रेस URL देता है।
+HTTP त्रुटियाँ `code`, `requestId`, `traceUrl`, `retryAfterMs`, बॉडी और हेडर देती हैं।
+
+## प्रक्रिया सहायक
+
+`music.start`, `videos.start` और `batches.start` `result()`,
+`events()` और `toJSON()` वाले हैंडल देते हैं। प्रकार और ID सहेजें और `resume(id)` से फिर बनाएँ।
+`result()` अंतिम विफलता अस्वीकार करता है। केवल वीडियो और बैच दूरस्थ रद्द करना स्वीकार करते हैं।
+
+`videos.streamContent(id)` और `downloadTo(stream, writable)` बड़े
+आउटपुट स्ट्रीम करते हैं। `toFile(bytes, filename, contentType)` अपलोड तैयार करता है।
+`batchResults(await client.batches.streamResults(id))` क्रमशः JSONL पार्स करता है;
+`matchBatchResult(row, inputsByCustomId)` अलग त्रुटियाँ और इनपुट पहचान रखता है।
+
+`responses.parse(request, schema)` Zod-संगत पार्सर लेकर
+सत्यापित आउटपुट देता है। अनुरोध में सर्वर का संरचित आउटपुट प्रारूप भी सेट करें।
+`collectStream(client.streamResponses(request))` टेक्स्ट और उपयोग इकट्ठा करता है।
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` एक सक्रिय प्रदाता विकल्प की घोषित क्षमताएँ और स्केलर सीमाएँ
+जाँचता है। गायब मेटाडेटा अज्ञात बताया जाता है। यह मॉडल बदलता या
+पैरामीटर हटाता नहीं और वास्तविक प्रदाता के अनुरोध स्वीकार करने की गारंटी नहीं देता।
+
+मॉडल चयन और पैरामीटर संपादक के लिए वर्तमान एंडपॉइंट मेटाडेटा इस्तेमाल करें:
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+हर पैरामीटर `supported`, `partial`, `unsupported` या `unknown` होता है,
+साथ में प्रदाता रूट और इनलाइन हाइलाइट के लिए सीमा समस्याएँ होती हैं।
+`client.models.capabilities(modelId)` पूरी एंडपॉइंट क्षमता
+प्रतिक्रिया देता है। ये स्पष्ट जाँच जनरेशन कॉल में खोज अनुरोध नहीं जोड़तीं।
+
+## स्थानीय परीक्षण और वेबसाइट निर्यात
+
+`@phaseo/sdk/testing` से `createMockTransport` और `jobFixtures` आयात करके
+`fetchImpl` से सख्त, क्रमबद्ध परीक्षण फ़िक्सचर दें। `mock.assertDone()` से जाँचें कि
+सभी अपेक्षित अनुरोध हुए। अनपेक्षित कॉल स्थानीय रूप से विफल होते हैं, नेटवर्क फ़ॉलबैक नहीं होता।
+
+Phaseo रूम में अनुरोध भेजने के बाद **कोड लें** मॉडल और
+सेटिंग TypeScript या Python में निर्यात करता है। **अनुरोध देखें**
+ID मिलने पर डैशबोर्ड ट्रेस खोलता है। निर्यात कोड सर्वर पर `PHASEO_API_KEY` के साथ चलाएँ।
+## इसमें क्या शामिल है
+
+-   सभी API इंटरैक्शन के लिए `Phaseo` क्लाइंट क्लास
+-   संसाधन-आधारित हेल्पर, जैसे `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   खोज और मूल्य निर्धारण के हेल्पर, जैसे `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   बैच और वीडियो लाइफ़साइकल स्ट्रीम के लिए async-job WebSocket URL हेल्पर
+-   `client.batches.streamResults(batchId, { signal })` Anthropic JSONL डाउनलोड स्ट्रीम करने के लिए
+-   सभी अनुरोध/प्रतिक्रिया ऑब्जेक्ट के लिए जनरेट किए गए टाइप
+-   Chat Completions, मॉडल, क्रेडिट आदि सहित पूर्ण API कवरेज
+-   बेहतर डेवलपर अनुभव के लिए TypeScript परिभाषाएँ

@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type CSSProperties, type MouseEvent } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { Logo } from "@/components/Logo";
@@ -65,6 +66,7 @@ function formatTokens(value: number): string {
 }
 
 export default function APIProviderCard({ api_provider }: Props) {
+	const t = useTranslations("Catalogue.providers");
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;
 	const location = formatLocation(api_provider.country_code, api_provider.subdivision_code);
@@ -131,24 +133,24 @@ export default function APIProviderCard({ api_provider }: Props) {
 					<div className="min-w-0 space-y-0.5 self-center">
 						<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
 							<Link href={href} prefetch={false} className="line-clamp-1 text-sm font-semibold leading-[1.1] text-foreground transition-colors hover:underline underline-offset-4">{name}</Link>
-							{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />External</span> : null}
+							{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />{t("external")}</span> : null}
 						</div>
 						<div className="truncate font-mono text-xs leading-[1.15] text-muted-foreground">{id}</div>
 						{location ? <div className="truncate text-xs leading-[1.15] text-muted-foreground">{location}</div> : null}
 					</div>
-					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0"><Link href={href} prefetch={false} aria-label={`Open ${name} provider page`} className="group/open"><ArrowUpRight className={cn("h-4 w-4 text-muted-foreground transition-colors", api_provider.colour ? "group-hover:text-[var(--provider-accent)]" : "group-hover:text-primary")} /></Link></Button>
+					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0"><Link href={href} prefetch={false} aria-label={t("openPage", { name })} className="group/open"><ArrowUpRight className={cn("h-4 w-4 text-muted-foreground transition-colors", api_provider.colour ? "group-hover:text-[var(--provider-accent)]" : "group-hover:text-primary")} /></Link></Button>
 				</div>
 
 				<div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-					<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1"><span className="text-muted-foreground">Models</span><span className="font-medium tabular-nums text-foreground">{totalModels.toLocaleString()}</span></div>
-					{freeModels > 0 ? <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/5 px-2 py-1"><span className="text-muted-foreground">Free</span><span className="font-medium tabular-nums text-foreground">{freeModels.toLocaleString()}</span></div> : null}
+					<div className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1"><span className="text-muted-foreground">{t("models")}</span><span className="font-medium tabular-nums text-foreground">{totalModels.toLocaleString()}</span></div>
+					{freeModels > 0 ? <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/5 px-2 py-1"><span className="text-muted-foreground">{t("free")}</span><span className="font-medium tabular-nums text-foreground">{freeModels.toLocaleString()}</span></div> : null}
 				</div>
 
-				<div className="space-y-1">{renderModalityRow("Input", inputModalities)}{renderModalityRow("Output", outputModalities)}</div>
+				<div className="space-y-1">{renderModalityRow(t("input"), inputModalities)}{renderModalityRow(t("output"), outputModalities)}</div>
 
 				<div className="mt-auto grid grid-cols-2 gap-3 text-xs">
-					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">Daily Tokens</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(dailyTokens)}</div></div>
-					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">Monthly Tokens</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(monthlyTokens)}</div></div>
+					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">{t("dailyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(dailyTokens)}</div></div>
+					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">{t("monthlyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(monthlyTokens)}</div></div>
 				</div>
 			</div>
 		</div>

@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Werkzeuge"
+description: "Definiere validierte, genehmigungspflichtige, manuelle und Fortschritt meldende C#-Tools."
+---
+
+Erstelle `Tool`-Datensätze und übergib sie über `AgentSdk.DefineTool(...)`. Ein Tool kann Folgendes enthalten:
+
+- JSON-`Parameters`, die dem Modell angezeigt werden
+- Validierungsdelegaten für `InputSchema`, `OutputSchema` und `EventSchema`
+- ein tool-spezifischer `Timeout` und ein asynchroner `Execute`-Delegate
+- bedingungslose oder bedingte Genehmigung
+- `OnToolCalled` und `OnResponseReceived` für interaktive Abläufe
+- Überschreibungen für den nächsten Turn und behandelbare Tool-Fehler
+
+Verwende `RuntimeContext.EmitProgress` für vorläufige Ergebnisse, `SetContext` für den Anwendungskontext und `CancellationToken` für abbrechbare Abhängigkeiten.
+
+Unabhängige Tools können über `ToolExecutionConfig` gleichzeitig ausgeführt werden. Gespeicherte Tool-Ergebnismeldungen behalten die Modellaufruf-Reihenfolge bei, auch wenn die Ausführung in einer anderen Reihenfolge endet.
+
+## Weiterführende Themen
+
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

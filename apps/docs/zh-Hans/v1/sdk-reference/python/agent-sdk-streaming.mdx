@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "流式传输 Python Agent 的文本、推理、项目、工具和生命周期事件。"
+---
+
+`Agent.stream(...)` 与 `run(...)` 运行相同的状态机，并返回可重放的 `AgentStreamResult`：
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+如需其他视图，请使用 `reasoning_stream()`、`item_stream()`、`tool_stream()` 或 `full_stream()`。Python 项目目前是字典结构，而不是原生判别联合类型。
+
+调用 `cancel()` 停止当前模型流，并将取消操作传递给本地运行时任务。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

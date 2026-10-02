@@ -1,0 +1,19 @@
+---
+title: "Subir un archivo"
+sidebarTitle: "Subir un archivo"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /files"
+description: "Sube un archivo para procesarlo por lotes. La pasarela guarda los metadatos de propiedad para que el mismo espacio de trabajo pueda recuperar más adelante el archivo o su contenido."
+---
+
+Guarda el `file_id` devuelto y vuelve a usarlo con:
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+`GET /v1/files` no se admite actualmente con la clave de pasarela compartida, por lo que la respuesta de subida es el lugar canónico para obtener el ID del archivo.
+</Note>
+
+

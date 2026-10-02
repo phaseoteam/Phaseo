@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 Agent 的轮次之间更改 .NET 模型设置和工具。"
+---
+
+如果后续轮次需要根据上下文或先前的工具结果调整响应，请使用 `DynamicModel`、`DynamicInstructions`、`Temperature`、`MaxOutputTokens`、`TopP` 和 `DynamicTools`。
+
+工具可通过 `RuntimeContext.SetContext` 更新应用上下文，并为紧接着的下一次请求提供 `NextTurnParams`。审批后续接运行时，这些覆盖值会随暂停的运行状态保留。
+
+如果运行状态可能通过 `IStateAccessor` 保存，请确保应用上下文可序列化。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)

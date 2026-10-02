@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -23,27 +24,28 @@ export default function ExportDropdown({
 	disabled = false,
 	iconOnly = false,
 }: ExportDropdownProps) {
+	const t = useTranslations("SettingsUI");
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger render={<Button
 					variant="outline"
 					size={iconOnly ? "icon" : "sm"}
 					disabled={disabled}
-					aria-label="Export"
-					title="Export" />}>
+					aria-label={t("strings.Export" as never)}
+					title={t("strings.Export" as never)} />}>
 
 					<Download className={iconOnly ? "h-4 w-4" : "mr-2 h-4 w-4"} />
-					{iconOnly ? null : "Export"}
+					{iconOnly ? null : t("strings.Export" as never)}
 
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuItem onClick={onExportCSV}>
 					<FileSpreadsheet className="mr-2 h-4 w-4" />
-					Export as CSV
+					{t("strings.Export as CSV" as never)}
 				</DropdownMenuItem>
 				<DropdownMenuItem onClick={onExportPDF}>
 					<FileText className="mr-2 h-4 w-4" />
-					Export as PDF
+					{t("strings.Export as PDF" as never)}
 				</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>

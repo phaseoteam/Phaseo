@@ -9,6 +9,7 @@ import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Card } from "@/components/ui/card";
+import { useLocale, useTranslations } from "next-intl";
 import type { MarketShareData } from "@/lib/fetchers/rankings/getRankingsData";
 
 interface MarketShareVisualizationsProps {
@@ -35,7 +36,9 @@ export function MarketShareVisualizations({
     dimension,
 }: MarketShareVisualizationsProps) {
 	const format = useDisplayFormatters();
-    const chartData = data.map((row, idx) => ({
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.rankings");
+	const chartData = data.map((row, idx) => ({
         name: row.name,
         value: row.share_pct,
         requests: row.requests,
@@ -70,11 +73,11 @@ export function MarketShareVisualizations({
                                     <div className="space-y-1">
                                         <p className="font-semibold">{data.name}</p>
                                         <div className="text-sm space-y-1 pt-2 border-t">
-                                            <p>Share: {data.value.toFixed(1)}%</p>
-                                            <p>Requests: {format.number(data.requests)}</p>
-                                            <p>
-                                                Tokens:{" "}
-                                                {formatRoundedCount(data.tokens)}
+	                                            <p>{t("shareLabel")}: {data.value.toLocaleString(locale, { maximumFractionDigits: 1 })}%</p>
+	                                            <p>{t("requestsLabel")}: {format.number(data.requests)}</p>
+	                                            <p>
+	                                                {t("tokensLabel")}:{" "}
+                                                {formatRoundedCount(data.tokens, locale)}
                                             </p>
                                         </div>
                                     </div>

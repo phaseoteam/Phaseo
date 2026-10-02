@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "输出与重试"
+description: "验证 Java Agent 的输出，并在限定次数内重试暂时性模型故障。"
+---
+
+当后续 Java 代码需要结构化值而非未经验证的模型文本时，请使用最终输出验证。在 Agent 定义中添加最终验证器，并将验证失败视为契约错误。
+
+对于模型或供应商的暂时性故障，请使用 `ModelRetryConfig`：
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+重试次数记录首次请求之后的额外尝试。已完成的步骤会保留模型最终尝试次数，用于调试和遥测。
+
+请单独使用 `ToolExecutionConfig` 控制本地工具的并发。模型重试不会重试工具内部失败的副作用。
+
+可以通过 `GatewayOptions.requestOptions` 提供其他 Responses API 选项；模型、输入、指令和本地函数工具仍由适配器管理。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [错误与故障排查](./agent-sdk-observability.mdx)

@@ -1,0 +1,214 @@
+---
+title: "按请求固定或忽略提供商"
+icon: "pin"
+description: "使用请求级提供商控制来设置优先顺序、限制候选范围或排除某个提供商。"
+---
+
+当某个请求需要优先使用特定提供商路径，但又不想更改整个工作区的路由默认值时，可以使用此方案。
+
+## 目标
+
+- 按优先顺序尝试提供商。
+- 将请求限制在已批准的提供商子集中。
+- 无需编辑预设即可临时忽略某个提供商。
+
+## 1. 按指定顺序尝试提供商
+
+如果已确定首选路由顺序，请使用 `provider.order`。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+列出的提供商会排在候选项前面，然后才是其他符合条件的提供商。
+
+## 2. 将请求限制在固定的提供商子集中
+
+当请求必须限定在较小的允许列表内时，使用 `provider.only`。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+这样，请求会限制在这些提供商中，然后在该子集中应用所选排序模式。
+
+## 3. 排除某个提供商
+
+如果要在某个请求或短期推出期间跳过某个提供商，请使用 `provider.ignore`。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+以下情况适用：
+
+- 某个提供商性能下降
+- 你正在验证另一条提供商路径
+- 你想比较路由结果，但不想编辑预设
+
+## 4. 谨慎组合这些控制项
+
+你可以组合这些控制项，但意图应保持简单明确：
+
+- 使用 `order` 表示偏好
+- 使用 `only` 限定候选范围
+- 使用 `ignore` 排除某个提供商
+
+一种实用模式会组合：
+
+- 使用 `only` 将请求限制在 `google-vertex` 和 `google-vertex-eu` 内
+- 使用 `order` 优先选择 `google-vertex-eu`
+- 使用 `sort: "latency"` 对允许范围内的选项排序
+
+## 5. 何时将这些规则移入预设
+
+如果多个服务使用相同的提供商规则，请不要在每个请求中重复复制，而应将它们移入预设。
+
+以下情况适合使用请求级路由覆盖：
+
+- 临时的
+- 特定于调用方
+- 与某个用户流程绑定
+
+## 相关指南
+
+- [路由和回退](../guides/routing-and-fallbacks.mdx)
+- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)

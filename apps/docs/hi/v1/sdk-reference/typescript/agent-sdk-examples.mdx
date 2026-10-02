@@ -1,0 +1,42 @@
+---
+icon: "square-terminal"
+title: "उदाहरण"
+description: "Research, support, coding और parallel tools के लिए Agent SDK के complete patterns से शुरुआत करें।"
+---
+
+अपने product के अनुरूप सबसे छोटा example चुनें। हर pattern में persistence और user interface आपकी application में रहते हैं, जबकि model turns के लिए Phaseo उपयोग होता है।
+
+## पैकेज में शामिल उदाहरण
+
+| उदाहरण | उपयोग |
+| --- | --- |
+| `research-brief-agent.ts` | Managed search से research और typed final brief तैयार करना |
+| `support-triage-agent.ts` | Managed preset से support requests route और classify करना |
+| `coding-review-agent.ts` | Local runtime tools से code review करना |
+| `parallel-tool-agent.ts` | Independent local tools को parallel चलाना |
+
+## कुकबुक गाइड
+
+<CardGroup cols={2}>
+  <Card title="टिकाऊ agent loop" icon="database" href="../../cookbook/agent-sdk-durable-loop.mdx">
+    लौटाए गए run को सहेजें और बाद की request में जारी रखें।
+  </Card>
+  <Card title="Research brief" icon="search-check" href="../../cookbook/agent-sdk-research-brief.mdx">
+    Agent के साथ sources पर आधारित web research करें।
+  </Card>
+  <Card title="Support triage" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage.mdx">
+    Routing और prompt defaults को managed preset में रखें।
+  </Card>
+  <Card title="Code review" icon="code-2" href="../../cookbook/agent-sdk-coding-review.mdx">
+    Focused local tools को coding workflow से जोड़ें।
+  </Card>
+  <Card title="Parallel tools" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools.mdx">
+    Result order बदले बिना independent tool calls को fan out करें।
+  </Card>
+</CardGroup>
+
+## संबंधित संदर्भ
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [टूल](./agent-sdk-tools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)

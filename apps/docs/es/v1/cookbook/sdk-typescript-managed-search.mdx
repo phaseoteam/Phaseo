@@ -1,0 +1,155 @@
+---
+title: "Fundamentar un flujo del SDK de TypeScript con búsqueda web gestionada"
+icon: "search"
+description: "Usa el SDK oficial de TypeScript con ajustes predefinidos, búsqueda web gestionada y metadatos de respuesta para mantener un flujo fundamentado y fácil de depurar."
+---
+
+Usa esta receta cuando un servicio de TypeScript o JavaScript deba combinar:
+
+- valores predeterminados de enrutamiento definidos por ajustes predefinidos
+- la herramienta gestionada `phaseo:web_search`
+- análisis estricto de respuestas
+- metadatos a nivel de solicitud para depurar
+
+## Objetivo
+
+- mantener al cliente en el SDK oficial
+- evitar reconstruir manualmente cargas útiles de compatibilidad sin procesar
+- conservar suficientes metadatos para depurar resultados de búsqueda, enrutamiento y comportamiento de plugins
+
+## 1. Empieza con un cliente compartido
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. Primero, guarda los valores predeterminados estables en un ajuste predefinido
+
+Crea un ajuste predefinido para compartir entre varios clientes:
+
+- la política de modelos
+- las preferencias de proveedores
+- los valores predeterminados de razonamiento
+- el prompt del sistema
+- el comportamiento determinista de la caché
+
+Después, limita la solicitud del SDK a los valores que cambian en esa llamada.
+
+## 3. Pide una respuesta fundamentada mediante la herramienta de búsqueda gestionada
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+Esto te proporciona:
+
+- enrutamiento y valores predeterminados de prompts gestionados por el ajuste predefinido
+- búsqueda gestionada por el servidor, sin depender de que el proveedor admita búsqueda nativa
+- salida estructurada para analizar los datos posteriores de forma predecible
+- los metadatos necesarios para depurar las operaciones
+
+## 4. Analiza la salida y conserva los campos de depuración
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+Estos campos permiten averiguar fácilmente:
+
+- qué proveedor atendió realmente la solicitud
+- si se ejecutó la búsqueda gestionada
+- si se ejecutó la reparación de respuestas
+- qué solicitud debes revisar en el panel de control
+
+## 5. Comprueba en los registros la solicitud fundamentada
+
+Abre la solicitud en **Gateway -> Uso** y revisa:
+
+- los resultados de búsqueda normalizados
+- las citas
+- la selección del proveedor
+- los metadatos de ejecución del plugin
+
+Si el comportamiento o la clasificación de la búsqueda no son correctos, ajusta el preset o los parámetros de la herramienta basándote en los registros, en lugar de añadir ajustes a ciegas.
+
+## 6. Separa los flujos exploratorios de los deterministas
+
+Patrón recomendado:
+
+1. un ajuste predefinido para resultados de investigación estructurados y deterministas
+2. otro ajuste predefinido para solicitudes exploratorias o con temperatura más alta
+
+Así mantendrás:
+
+- una caché de respuestas más ordenada
+- un comportamiento de enrutamiento más fácil de entender
+- los flujos con muchas búsquedas separados del tráfico de generación de propósito general
+
+## Guías relacionadas
+
+- [Depurar solicitudes de búsqueda web](./web-search-debugging.mdx)
+- [Desplegar ajustes predefinidos y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+- [Usar la reparación de respuestas para JSON estructurado](./response-healing-for-structured-json.mdx)
+- [Descripción general del SDK de TypeScript](../sdk-reference/typescript/overview.mdx)

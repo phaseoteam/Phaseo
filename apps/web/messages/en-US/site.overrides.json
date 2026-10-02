@@ -1,0 +1,46 @@
+{
+  "faq": {
+    "items": [
+      {},
+      {},
+      {
+        "answer": "Phaseo stores each provider route's meter, unit size, currency, plan, and effective dates. Input and output rates remain separate, and token prices are normalized per 1M tokens for comparison; they are not combined into a blended headline price. Read the <pricingMethodology>pricing methodology</pricingMethodology> or enter your own token volumes in the <calculator>pricing calculator</calculator>."
+      },
+      {},
+      {},
+      {},
+      {
+        "answer": "Browse the <providers>provider directory</providers> for provider coverage, or filter the model directory by capabilities such as chat, embeddings, image, audio, video, and moderation. A provider page is the best place to check its currently listed model catalog."
+      },
+      {
+        "answer": "Benchmark scores are shown alongside the benchmark and its methodology so that comparisons retain their context. Read <benchmarkMethodology>how Phaseo normalizes AI benchmarks</benchmarkMethodology> and <performanceMethodology>how it measures latency and throughput</performanceMethodology> before making a production decision from a single score."
+      },
+      {
+        "answer": "Use the <contribute>contribution page</contribute> to report a correction or add missing information. Accurate, source-backed reports help keep the directory useful as providers change their catalogs and pricing."
+      }
+    ]
+  },
+  "methodology": {
+    "entries": {
+      "how-phaseo-calculates-model-pricing": {
+        "sections": {
+          "normalised": "How prices are normalized"
+        }
+      },
+      "how-phaseo-normalises-ai-benchmarks": {
+        "shortTitle": "Benchmark normalization",
+        "title": "How Phaseo normalizes AI benchmarks",
+        "sections": {
+          "normalised": "What normalization means here"
+        }
+      }
+    }
+  },
+  "mission": {
+    "transparencyBody": "Make pricing, routing, availability, lifecycle changes, and operational behavior understandable while keeping data and integrations portable."
+  },
+  "trust": {
+    "trustCentre": "Trust Center",
+    "phaseoTrustCentre": "Phaseo Trust Center"
+  }
+}

@@ -1,0 +1,18 @@
+---
+icon: "list-filter"
+title: "मॉडल खोज सर्वर टूल"
+description: "मॉडल को Phaseo की लाइव कैटलॉग से उपयुक्त मॉडल खोजने दें।"
+---
+
+जब कॉल करने वाले मॉडल को मौजूदा कैटलॉग मेटाडेटा के आधार पर मॉडल चुनना या सुझाना हो, तब `phaseo:search_models` का इस्तेमाल करें।
+
+```json
+{
+  "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
+  "max_tool_calls": 10
+}
+```
+
+टूल कॉल इन चीज़ों के आधार पर फ़िल्टर कर सकती है `query`, `input_modalities`, `output_modalities`, `series`, `provider`, और `required_params`. नतीजों में मॉडल ID, मोडैलिटी, प्रोवाइडर, समर्थित पैरामीटर और मूल्य मेटाडेटा शामिल हैं।
+
+उपयोग की जानकारी यहाँ दी जाती है `usage.server_tool_use.search_models_requests`.

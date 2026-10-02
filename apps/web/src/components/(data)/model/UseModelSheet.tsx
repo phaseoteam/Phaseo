@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { useTranslations } from "next-intl";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -36,6 +37,7 @@ export function UseModelSheet({
 	className?: string;
 }) {
 	const [open, setOpen] = useState(false);
+	const t = useTranslations("Catalogue.models.detail");
 	const handleOpenChange = (nextOpen: boolean) => {
 		if (nextOpen && !open) {
 			captureProductEvent("quickstart_opened", {
@@ -77,20 +79,20 @@ export function UseModelSheet({
 				variant="default"
 				size={compact ? "icon-sm" : "sm"}
 				className={cn("scroll-mt-28 rounded-lg", className)}
-				aria-label={compact ? `Use ${modelName}` : undefined}
+				aria-label={compact ? t("actions.useModel", { model: modelName }) : undefined}
 				aria-expanded={open}
 				onClick={() => handleOpenChange(true)}
 			>
 				<Bolt className="h-4 w-4" />
-				{compact ? null : "Use This Model"}
+				{compact ? null : t("actions.useThisModel")}
 			</Button>
 			<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[64vw] lg:!w-[58vw] xl:!w-[52vw] 2xl:!w-[48vw] data-[side=right]:sm:max-w-none">
 				<ProviderInspectorSheetHeader className="shrink-0 border-b border-zinc-200/80 px-5 py-4 pr-14 dark:border-zinc-800">
 					<ProviderInspectorSheetTitle className="truncate text-base">
-						Get started with {modelName}
+						{t("useModelSheet.title", { model: modelName })}
 					</ProviderInspectorSheetTitle>
 					<ProviderInspectorSheetDescription>
-						Create a key, configure the request, and copy production-ready code.
+						{t("useModelSheet.description")}
 					</ProviderInspectorSheetDescription>
 				</ProviderInspectorSheetHeader>
 				<ScrollArea className="min-h-0 flex-1" viewportClassName="px-5 py-5 sm:px-6" keepScrollbarMounted>

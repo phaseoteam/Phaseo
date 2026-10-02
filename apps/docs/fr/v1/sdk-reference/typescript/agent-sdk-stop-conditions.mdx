@@ -1,0 +1,65 @@
+---
+icon: "circle-check"
+title: "Conditions d’arrêt"
+description: "Limitez le travail de l’agent par nombre d’étapes, jetons, coût, durée, appels d’outils ou motif de fin."
+---
+
+Utilisez des conditions d’arrêt pour définir un budget d’exécution clair pour chaque agent. Elles sont évaluées en fonction des étapes terminées et de l’utilisation cumulée.
+
+## Combiner les limites intégrées
+
+```typescript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+La première condition satisfaite enregistre son motif et renvoie une exécution avec `status: "stopped"`.
+
+## Fonctions disponibles
+
+| Fonction | Arrêt lorsque… |
+| --- | --- |
+| `stepCountIs(limit)` | Le nombre d’étapes terminées atteint la limite |
+| `maxTokensUsed(limit)` | L’utilisation cumulée des jetons atteint la limite |
+| `maxCost(limit)` | Le coût cumulé déclaré atteint la limite |
+| `maxDuration(ms)` | La durée d’exécution atteint la durée limite |
+| `hasToolCall(name)` | Une étape contient l’appel d’outil indiqué |
+| `finishReasonIs(reason)` | Une étape du modèle indique le motif de fin |
+
+## Ajouter une condition personnalisée
+
+Une condition peut renvoyer `false`, `true` ou une chaîne indiquant le motif :
+
+```typescript
+const stopAfterRepeatedFailures = ({ steps }) => {
+  const failures = steps.filter((step) => step.status === "failed").length;
+  return failures >= 2 ? "repeated_failures" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedFailures],
+});
+```
+
+Préférez une chaîne indiquant le motif si les opérateurs ou l’interface produit doivent expliquer pourquoi une exécution s’est terminée.
+
+## Guides associés
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Sorties et nouvelles tentatives](./agent-sdk-run-controls.mdx)
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)

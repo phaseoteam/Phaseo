@@ -1,0 +1,34 @@
+---
+icon: "pencil"
+title: "图像编辑"
+description: "使用 Ruby SDK 调用 /images/edits。"
+---
+
+**方法**：`client.generate_image_edit(...)` 或 `client.create_image_edit(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+edited = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...',
+  mask: 'data:image/png;base64,...'
+)
+```
+
+### 关键参数
+- `model`（必填）：支持图像编辑的模型 ID。
+- `image`（必填）：源图像的 Base64 数据 URL 或 URL。
+- `prompt`：可选的新编辑指令。
+- `mask`：可选蒙版（透明区域会被编辑）。
+- `n`（1–10）：编辑后生成的变体数量。
+- `size`：例如 `1024x1024`、`1024x1792`、`1792x1024`。
+- `response_format`：`url` 或 `b64_json`。
+- `user`：可选的终端用户标记。
+
+### 返回值
+`ImageGenerationResponse`
+

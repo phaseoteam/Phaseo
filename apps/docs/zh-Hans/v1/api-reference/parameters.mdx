@@ -1,0 +1,635 @@
+---
+title: "参数"
+description: "Phaseo 文本、路由和调试请求参数的逐字段参考。"
+icon: "sliders-horizontal"
+---
+
+本页逐字段介绍 Phaseo 提供的请求参数。
+
+在需要了解以下内容时查阅：
+
+- 参数的作用
+- 参数接受的类型
+- 常见范围或可接受值
+- 是否会影响质量、成本、延迟或路由行为
+
+如果需要调优建议，而不是字段定义，请参阅[推理参数](../guides/inference-parameters.mdx)和[采样与解码](../guides/sampling-and-decoding.mdx)。
+
+参数支持情况仍因端点、模型和提供商而异。模型快速入门表汇总了特定路由上当前活跃提供商的支持情况。
+
+## 快速查找
+
+| 参数 | 类型 | 用途 |
+| --- | --- | --- |
+| [`model`](#model) | `string` | 选择要运行的网关模型 ID。 |
+| [`stream`](#stream) | `boolean` | 逐步返回 SSE 输出，而不是一次性返回最终内容。 |
+| [`temperature`](#temperature) | `number` | 提高或降低随机性。 |
+| [`top_p`](#top_p) | `number` | 缩小或扩大核采样候选范围。 |
+| [`top_k`](#top_k) | `integer` | 将采样限制为排名前 k 的候选 token。 |
+| [`max_tokens`](#max_tokens) | `integer` |在仍使用此字段名的路由上限制输出长度。 |
+| [`max_output_tokens`](#max_output_tokens) | `integer` | 在使用较新字段名的路由上限制输出长度。 |
+| [`max_completion_tokens`](#max_completion_tokens) | `integer` | 在新版 OpenAI 风格文本 API 上限制输出长度。 |
+| [`frequency_penalty`](#frequency_penalty) | `number` | 减少 token 和短语重复。 |
+| [`presence_penalty`](#presence_penalty) | `number` | 鼓励切换主题或词汇。 |
+| [`repetition_penalty`](#repetition_penalty) | `number` | 提供商专用的重复抑制控制。 |
+| [`seed`](#seed) | `integer` | 在上游提供商支持时提高可复现性。 |
+| [`stop`](#stop) | `string` or `string[]` | 定义明确的停止序列。 |
+| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | 请求 token 概率数据。 |
+| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | 控制工具调用和函数执行。 |
+| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | 允许或强制工具按顺序执行。 |
+| [`response_format`](#response_format) | `string` or `object` | 纯文本、JSON 或受 schema 约束的输出。 |
+| [`json_schema`](#json_schema) | `object` | 定义结构化输出流程所用的 schema。 |
+| [`structured_outputs`](#structured_outputs) | `boolean` | 可靠 schema 约束输出的能力信号。 |
+| [`reasoning`](#reasoning) | `object` | 提供商专用的推理配置。 |
+| [`reasoning_effort`](#reasoning_effort) | `string` | 降低或提高推理预算。 |
+| [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推理专用 token 限制或用量统计字段。 |
+| [`include_reasoning`](#include_reasoning) | `boolean` | 在支持时返回推理内容或摘要。 |
+| [`service_tier`](#service_tier) | `string` | 选择受支持的请求层级，如 `fast`、`ultrafast` 或 `flex`。 |
+| [`prompt_cache_key`](#prompt_cache_key) | `string` | 让相关请求保持缓存感知路由亲和性。 |
+| [`prompt_cache_options`](#prompt_cache_options) | `object` | 设置 OpenAI 提示缓存模式和 TTL 控制。 |
+| [`cache_control`](#cache_control) | `object` | 应用与提供商无关的 prompt 缓存提示或断点。 |
+| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | 设置兼容 OpenAI 的 prompt 缓存保留策略。 |
+| [`provider`](#provider) | `object` | 影响路由和提供商选择。 |
+| [`provider_options`](#provider_options) | `object` | 通过网关传递提供商原生设置。 |
+| [`meta`](#meta) / [`usage`](#usage) | `boolean` | 在响应中返回额外元数据或用量统计。 |
+| [`debug`](#debug) | `object` | 请求路由跟踪和诊断负载。 |
+
+## 端点说明
+
+`service_tier` 支持以下主要文本请求接口：
+
+- [Anthropic Messages](./endpoint/anthropic-messages.mdx)
+- [Chat Completions](./endpoint/chat-completions.mdx)
+- [Responses](./endpoint/responses.mdx)
+
+仅在所选模型和提供商组合支持时使用 `ultrafast`、`fast`（支持时也可使用 `priority`）和 `flex`。`Ultrafast` 选择受支持的最高速层级；`fast` 和 `priority` 使用相同的 Fast 路由和定价。省略 `service_tier` 时，默认值为 `standard`。
+
+`Batch` 不是 `service_tier` 的取值。批处理请求使用独立的 Batch API。
+
+对于兼容 Anthropic 的 Messages 请求，Anthropic 原生上游取值为 `auto` 和 `standard_only`。Phaseo 可能会在不同提供商之间规范化或映射这些值，同时保留 `/v1/messages` 上与 Anthropic 兼容的行为。
+
+如果使用自定义基础 URL 指向 Phaseo 的 Anthropic 官方 SDK，请优先在 `/v1/messages` 上使用 Anthropic 原生值。对于 `ultrafast`, `priority`、`flex` 等跨提供商规范化的级别控制，或 OpenAI 的别名 `fast`，请优先使用原始 HTTP 请求或网关原生/OpenAI 风格的文本 API。
+
+## 参数参考
+
+<span id="model"></span>
+<h3 id="parameter-model"><code>model</code></h3>
+
+选择请求使用的网关模型 ID。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` |
+| 必填 | 是 |
+| 示例 | `openai/gpt-5-nano` |
+
+除非你有意使用受支持的别名，否则请使用各模型页面快速入门中显示的规范模型 ID。规范 ID 是示例、自动化和长期集成中最稳妥的选择。
+
+<span id="stream"></span>
+<h3 id="parameter-stream"><code>stream</code></h3>
+
+通过 Server-Sent Events 逐步返回输出，而不是等待完整响应正文。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | `false` |
+| 常见值 | `true`, `false` |
+
+若用于聊天界面、逐 token 渲染，或提前输出能改善体验的长响应，请开启此选项。若需要完整 JSON 响应、更简单的重试或更容易进行结构化解析，请关闭。
+
+注意事项：
+
+流式传输支持情况因端点而异。
+流式传输通常是传输方式的选择，而非质量控制。
+工具调用或结构化输出流程的流式传输方式也可能因提供商而异。
+
+<span id="temperature"></span>
+<h3 id="parameter-temperature"><code>temperature</code></h3>
+
+控制 token 选择的随机程度。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `number` |
+| 常见范围 | 支持时为 `0.0` 至 `2.0` |
+| 默认值 | 因提供商和模型而异 |
+| 合适的起始值 | `0.2` to `0.7` |
+
+较低的值会让输出更保守、可重复。较高的值会增加多样性，有助于头脑风暴或创意写作，但也可能降低一致性和对 schema 的遵循度。
+
+适用场景：
+
+- 信息提取
+- 分类
+- JSON 或 schema 输出
+- 创意生成
+
+实用建议：
+
+对于结构化任务，请从较低值开始。
+请先调整 `temperature` 或 `top_p`，不要同时调整两者。
+较高的 temperature 与激进量化结合可能会放大不稳定性。
+
+<span id="top_p"></span>
+<h3 id="parameter-top_p"><code>top_p</code></h3>
+
+应用核采样，将候选项限制为累计概率达到 `top_p` 的最小 token 集。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `number` |
+| 常见范围 | 支持时为 `0.0` 至 `1.0` |
+| 默认值 | 因提供商和模型而异 |
+| 合适的起始值 | `0.9` to `1.0` |
+
+较低的值会缩小模型选择的概率范围，通常让输出更安全、更聚焦。较高的值允许模型考虑更多 token。
+
+注意事项：
+
+如果想在不直接更改 temperature 的情况下缩小或扩大搜索空间，请调整 `top_p`。
+对大多数应用而言，适中的 `temperature` 和接近 1.0 的 `top_p` 是合理的基准。
+
+<span id="top_k"></span>
+<h3 id="parameter-top_k"><code>top_k</code></h3>
+
+在支持此项的提供商上，将每一步的采样限制为排名前 k 的候选 token。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 常见范围 | 如受支持，`>= 1` |
+| 默认值 | 因提供商和模型而异 |
+
+较低的 `top_k` 会收窄模型的选择范围，使输出更可预测；较高的值会扩大候选集。
+
+注意事项：
+
+并非所有提供商都支持 `top_k`。
+相比 `top_p`，它能更明确地限制候选 token 集。
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+在仍使用 `max_tokens` 字段名的端点和提供商上限制输出长度。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 常见范围 | `>= 1` |
+| 默认值 | 因提供商和模型而异 |
+
+用于控制成本、延迟和输出截断风险。值过小时，即使模型运行正常，输出也可能看起来不完整。
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+在使用 `max_output_tokens` 而非 `max_tokens` 的路由上限制输出长度。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 常见范围 | `>= 1` |
+| 默认值 | 因提供商和模型而异 |
+
+语义上与 `max_tokens` 相同，但应使用所选端点或 SDK 接口要求的字段名。
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+在使用 `max_completion_tokens` 的新版 OpenAI 风格文本 API 上限制输出长度。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 常见范围 | `>= 1` |
+| 默认值 | 因提供商和模型而异 |
+
+这是另一个输出 token 预算字段。请使用端点要求的字段名，不要在同一请求结构中混用输出长度别名。
+
+<span id="frequency_penalty"></span>
+<h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
+
+根据 token 已出现的频率降低重复使用的倾向。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `number` |
+| 常见范围 | 支持时通常为 `-2.0` 至 `2.0` |
+| 默认值 | 通常为 `0` |
+
+如果模型陷入循环、重复短语或过度使用相同措辞，请调高此值。
+
+<span id="presence_penalty"></span>
+<h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
+
+token 一旦出现过，就会降低其再次使用的倾向，从而帮助模型探索新主题或措辞。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `number` |
+| 常见范围 | 支持时通常为 `-2.0` 至 `2.0` |
+| 默认值 | 通常为 `0` |
+
+相比 `frequency_penalty`，它通常更广泛地控制新颖性，而非重复次数。
+
+<span id="repetition_penalty"></span>
+<h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
+
+应用提供商专用的重复抑制行为，不属于经典 OpenAI 风格的 penalty 字段。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `number` |
+| 常见范围 | 因提供商和模型而异，通常为 `0.0` 至 `2.0` |
+| 默认值 | 因提供商和模型而异 |
+
+其用途与 `frequency_penalty` 和 `presence_penalty` 类似，但语义因提供商而异。应将其视为提供商原生行为，而非完全通用的控制项。
+
+<span id="seed"></span>
+<h3 id="parameter-seed"><code>seed</code></h3>
+
+在上游提供商支持 seed 生成时请求确定性采样。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 默认值 | 未设置 |
+
+用于调试、回归测试，并在上游平台允许的范围内尽可能复现行为。Seed 生成有助于提高可复现性，但无法保证所有提供商或基础设施变更下都完全确定。
+
+<span id="stop"></span>
+<h3 id="parameter-stop"><code>stop</code></h3>
+
+定义一个或多个用于提前终止生成的序列。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` or `string[]` |
+| 默认值 | 未设置 |
+| 常见用途 | 解析器边界、模板结尾和协议标记 |
+
+当需要严格控制输出边界时很有用，例如在页脚、工具分隔符或下一个生成区块之前停止。
+
+<span id="logprobs"></span>
+<h3 id="parameter-logprobs"><code>logprobs</code></h3>
+
+在可用时请求 token 级概率元数据。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | `false` |
+
+主要用于分析、评估、排序、调试和置信度类工作流。标准产品响应通常不需要此项。
+
+<span id="top_logprobs"></span>
+<h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
+
+请求每个输出位置的主要备选候选 token 及其对数概率。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 常见范围 | 因提供商而异，通常为 `0` 至 `20` |
+| 要求 | `logprobs: true` |
+
+当需要检查备选 token 分支，而不只是最终选中的输出 token 时使用。
+
+<span id="tools"></span>
+<h3 id="parameter-tools"><code>tools</code></h3>
+
+为使用工具的模型工作流声明可调用的工具或函数。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `array` |
+| 默认值 | 未设置 |
+
+除非端点文档另有说明，否则请使用 OpenAI 风格的工具 schema。工具声明说明模型可以调用什么，并不表示必须调用。
+
+<span id="tool_choice"></span>
+<h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
+
+控制模型是否可以自动调用工具、禁止调用工具或必须使用特定工具。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` or `object` |
+| 常见值 | `none`, `auto`, `required` |
+
+只需内容时使用 `none`，由模型决定时使用 `auto`；若下游编排要求调用工具，则使用更严格的取值。
+
+<span id="parallel_tool_calls"></span>
+<h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
+
+在兼容的工具调用 API 上允许或禁止并发工具调用。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | 因端点和提供商而异 |
+
+若下游系统要求严格按顺序执行、按序产生副作用或使用更简单的 agent 跟踪，请关闭此项。
+
+<span id="response_format"></span>
+<h3 id="parameter-response_format"><code>response_format</code></h3>
+
+请求特定的输出格式，例如纯文本、JSON 或受 schema 约束的响应。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` or `object` |
+| 默认值 | 因端点和提供商而异 |
+
+确切支持的结构取决于端点和提供商适配器。需要自由文本以外的格式时使用，尤其适合 JSON 响应和结构化提取流程。
+
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+表示所选路由和提供商组合是否支持可靠的结构化或 schema 约束响应。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 含义 | 表示支持能力，而非直接调优项。 |
+
+在快速入门表中，此项可帮助判断所选端点和活跃提供商能否可靠支持结构化输出工作流。最好将其视为支持情况元数据。
+
+<span id="json_schema"></span>
+<h3 id="parameter-json_schema"><code>json_schema</code></h3>
+
+提供用于在兼容模型和端点上强制结构化输出的 JSON schema。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 搭配使用 | 结构化输出或受 schema 约束的响应流程 |
+
+当应用需要保证字段、类型化提取或严格响应契约时使用。schema 应尽量精简并针对具体任务，以提高遵循度。
+
+<span id="reasoning"></span>
+<h3 id="parameter-reasoning"><code>reasoning</code></h3>
+
+包含面向支持推理的 API 的提供商专用推理配置。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 默认值 | 未设置 |
+
+根据路由不同，这可能包括是否启用、推理强度、token 预算、详细程度或是否返回推理内容。
+
+<span id="reasoning_effort"></span>
+<h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
+
+当端点和模型提供此控制项时，请求较低或较高的推理预算。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` |
+| 常见值 | 因提供商而异，常见值包括 `minimal`、`low`、`medium`、`high`、`none` |
+| 默认值 | 因提供商和模型而异 |
+
+更高的推理强度可能改善复杂推理任务，但会增加延迟和 token 用量。较低强度通常更适合追求速度和成本的请求。
+
+<span id="reasoning_tokens"></span>
+<h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
+
+在支持时表示推理专用的 token 字段。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `integer` |
+| 默认值 | 因提供商和模型而异 |
+
+根据路由不同，它可能是请求控制项、限制值或响应用量统计字段，而非普遍支持的请求参数。
+
+<span id="include_reasoning"></span>
+<h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
+
+在支持时请求在响应中返回推理内容或摘要。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | `false` |
+
+请谨慎使用。推理负载可能更大，并非所有模型都支持；对于不需要额外诊断信息的生产响应也可能不合适。
+
+<span id="service_tier"></span>
+<h3 id="parameter-service_tier"><code>service_tier</code></h3>
+
+在兼容的文本 API 上选择受支持的路由或价格级别。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` |
+| 支持的取值 | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
+| 默认值 | `standard` |
+
+仅在所选模型和提供商组合支持时使用 `ultrafast`、`fast`（支持时也可使用 `priority`）和 `flex`。`Ultrafast` 选择受支持的最高速层级；`fast` 和 `priority` 使用相同的 Fast 路由和定价。省略该字段以保持默认标准层级。
+
+Phaseo 会在内部将网关规范化的级别值映射为提供商原生控制项，因此调用方可在受支持的文本接口上使用相同的 `service_tier` 值。
+
+注意事项：
+
+`Batch` 是独立的 API 流程，并非服务级别的取值。
+支持情况因端点和提供商而异。
+
+<span id="prompt_cache_key"></span>
+<h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
+
+为具备 prompt 缓存感知能力的路由提供稳定的缓存亲和性键。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` |
+| 用途 | 让相关的缓存 prompt 保持路由亲和性 |
+
+当一系列请求共享稳定的 prompt 前缀，并希望尽可能使用相同的上游提供商或区域时使用。Phaseo 也可以根据请求上下文推导缓存亲和性，但显式键更适合长对话、agent 会话和重复工作流。
+
+<span id="prompt_cache_options"></span>
+<h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
+
+通过受支持的 OpenAI 路由传递 OpenAI 提示缓存控制。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 常用字段 | `mode`, `ttl` |
+| Astra TTL | `30m` |
+
+对于 GPT-6 Astra，需要显式提示缓存时使用 `{"mode":"explicit","ttl":"30m"}`。Phaseo 在请求规范化过程中保留此对象，并原样发送给 OpenAI。
+
+<span id="cache_control"></span>
+<h3 id="parameter-cache_control"><code>cache_control</code></h3>
+
+在受支持的文本请求接口上应用与提供商无关的 prompt 缓存策略。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 通用字段 | `type`, `ttl`, `scope` |
+| 用途 | 自动 prompt 缓存和显式缓存断点 |
+
+若要让相同的缓存提示通过网关通用 schema 传递，请在 Chat Completions、Responses 和 Anthropic Messages 请求的顶层使用 `cache_control`。需要显式缓存断点时，也可将其放在受支持的内容块上。
+
+常见 TTL 值为 `5m` 和 `1h`，具体取决于提供商和模型的支持情况。原生集成仍接受 `provider_options.anthropic.cache_control` 和 `provider_options.google.cache_control` 等提供商专用别名。
+
+<span id="prompt_cache_retention"></span>
+<h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
+
+在受支持的 OpenAI 路由请求上设置兼容 OpenAI 的 prompt 缓存保留策略。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `string` |
+| 示例 | `24h` |
+| 用途 | OpenAI prompt 缓存保留 |
+
+若要传递 OpenAI 缓存保留选项而不将其嵌套在提供商专用选项中，请使用此项。仍接受提供商专用别名 `provider_options.openai.prompt_cache_retention`。若两者同时提供，则顶层 `prompt_cache_retention` 优先。
+
+<span id="provider"></span>
+<h3 id="parameter-provider"><code>provider</code></h3>
+
+包含路由约束和提供商偏好。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 用途 | 路由规则、提供商选择和合规约束 |
+
+用于指定哪些上游提供商可以执行请求、如何排序，以及必须满足哪些合规要求。
+
+常见字段包括：
+
+| 字段 | 类型 | 用途 |
+| --- | --- | --- |
+| `order` | `string[]` | 提供商优先顺序。 |
+| `only` | `string[]` | 将路由限制为指定提供商。 |
+| `ignore` | `string[]` | 排除指定提供商。 |
+| `include_alpha` | `boolean` | 允许在路由决策中使用 alpha 提供商。 |
+| `sort` | `string` or `object` | 通常按 `price`、`latency` 或 `throughput` 对提供商排序。 |
+| `required_execution_region` | `string` | 将执行限制在指定区域。 |
+| `required_data_region` | `string` | 将数据处理限制在指定区域。 |
+| `require_zero_data_retention` | `boolean` | 要求提供商满足零数据保留约束。 |
+| `max_price` | `object` | 设置 prompt、补全、图像、音频或请求费用上限。 |
+| `quantizations` | `string[]` | 要求符合条件的报价，其目录量化方式与这些值之一匹配。 |
+
+`quantizations` 遵循兼容 OpenRouter 的提供商路由词汇，可放在 `provider` 或 `routing` 下。匹配不区分大小写，并忽略空格、连字符和下划线；`float8`/`FP8`、`bfloat16`/`BF16` 等无歧义名称可互为别名。启用此筛选器后，没有量化元数据的报价会被排除。如果没有符合条件的报价，Gateway 会返回错误并列出请求值和当前可用的量化方式，而不会静默路由到其他变体。
+
+<span id="provider_options"></span>
+<h3 id="parameter-provider_options"><code>provider_options</code></h3>
+
+包含提供商专用的直通设置，不应将其规范化到网关通用请求结构中。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 用途 | 提供商原生控制项 |
+
+例如：
+
+- `openai.context_management`
+- `openai.prompt_cache_retention`
+- `anthropic.cache_control`
+- `google.cache_control`
+- `google.cached_content`
+
+需要使用提供商原生功能，同时希望请求其余部分仍采用网关通用 schema 时使用。通用缓存提示优先使用顶层 `cache_control`；兼容 OpenAI 的保留设置优先使用顶层 `prompt_cache_retention`。
+
+有关 Chat Completions、Responses 和 Anthropic Messages 的提供商 prompt 缓存示例，请参阅[Prompt 缓存](../guides/prompt-caching.mdx)。
+
+<span id="meta"></span>
+<h3 id="parameter-meta"><code>meta</code></h3>
+
+在支持时请求额外的响应元数据。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | 因端点而异 |
+
+若要在响应中添加用于调试、分析或下游检查的非核心元数据，请使用此项。
+
+<span id="usage"></span>
+<h3 id="parameter-usage"><code>usage</code></h3>
+
+在支持时请求用量统计详情。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `boolean` |
+| 默认值 | 因端点而异 |
+
+如果希望在响应正文中明确包含 token 或用量统计，而不只是依赖标头或仪表板，此项会很有用。
+
+<span id="debug"></span>
+<h3 id="parameter-debug"><code>debug</code></h3>
+
+启用受控的请求和路由诊断信息。
+
+| 字段 | 值 |
+| --- | --- |
+| 类型 | `object` |
+| 用途 | 仅用于开发和故障排查 |
+
+支持的调试字段包括：
+
+| 字段 | 类型 | 用途 |
+| --- | --- | --- |
+| `enabled` | `boolean` | 为请求启用调试模式。 |
+| `return_upstream_request` | `boolean` | 包含转换后的上游请求负载。 |
+| `return_upstream_response` | `boolean` | 在可用时包含上游响应负载。 |
+| `trace` | `boolean` | 返回路由或调试跟踪。 |
+| `trace_level` | `summary` or `full` | 控制跟踪信息的详细程度。 |
+
+调试负载可能包含敏感请求上下文。仅在开发或严格受控的环境中使用。
+
+## 请求示例
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarize this changelog.",
+  "stream": false,
+  "temperature": 0.3,
+  "max_output_tokens": 300,
+  "provider": {
+    "order": ["openai", "anthropic"],
+    "ignore": ["some-provider"],
+    "sort": "latency",
+    "required_execution_region": "eu",
+    "require_zero_data_retention": true
+  },
+  "debug": {
+    "enabled": true,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+## 详细说明
+
+如果需要更深入的调优指导，而非单纯的字段参考，请继续阅读：
+
+- [推理参数](../guides/inference-parameters.mdx)：temperature、top_p、top_k、token 限制、停止序列和调优流程的实用建议
+- [采样与解码](../guides/sampling-and-decoding.mdx) 了解随机性、惩罚和解码控制如何改变模型行为
+
+## 相关页面
+
+- [推理参数](../guides/inference-parameters.mdx)
+- [采样与解码](../guides/sampling-and-decoding.mdx)
+- [流式传输](../guides/streaming.mdx)
+- [限制](./limits.mdx)
+- [错误与调试](./errors.mdx)
+
+<Visibility for="agents">
+如果你以 agent 身份实现参数处理：
+
+- 使用仓库技能检查 schema 和请求结构
+- 在允许时，在直通流程中保留未知的提供商专用键
+- 同时设置 tools、流式传输或 debug 等高级字段前，请先验证端点兼容性
+</Visibility>

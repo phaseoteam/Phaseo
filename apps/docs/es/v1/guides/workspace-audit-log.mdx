@@ -1,0 +1,22 @@
+---
+icon: "scroll-text"
+title: "Registro de auditoría del espacio de trabajo"
+description: "Consulta los cambios administrativos del espacio de trabajo relacionados con la seguridad."
+---
+
+Los propietarios y administradores del espacio de trabajo pueden revisar los cambios del ciclo de vida de las claves en **Configuración → Espacio de trabajo → Actividad**. Los eventos corresponden al espacio de trabajo activo y se ordenan del más reciente al más antiguo.
+
+La primera versión registra estas operaciones:
+
+- Creación, cambio de nombre, pausa, reanudación, modificación de límites, rotación y eliminación de claves API
+- Creación y eliminación de claves de gestión; cambio de nombre, pausa, reanudación y modificación de plantillas de acceso, límites y caducidad
+
+Cada evento incluye el actor, la acción, el destino, la marca de tiempo y algunos metadatos seguros sobre el cambio. Los eventos de auditoría son de solo anexado. Phaseo no almacena claves en texto plano, hashes de credenciales, encabezados de autorización, listas completas de permisos ni cuerpos de solicitudes en este registro.
+
+El acceso al registro de auditoría se limita a los propietarios y administradores del espacio de trabajo. Los miembros normales no pueden leer los eventos, y la tabla subyacente no está expuesta a clientes de bases de datos autenticados.
+
+Para automatizar consultas, llama a `GET /v1/audit-events` con una clave de gestión que tenga el permiso `activity:read`. Usa el `next_cursor` devuelto para recuperar eventos anteriores sin saltos entre marcas de tiempo.
+
+<Note>
+  Los registros de solicitudes y generaciones muestran qué tráfico se ejecutó. El registro de auditoría del espacio de trabajo muestra quién cambió un control administrativo y cuándo.
+</Note>

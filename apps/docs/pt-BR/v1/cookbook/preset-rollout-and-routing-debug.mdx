@@ -1,0 +1,111 @@
+---
+title: "Implantar predefinições e depurar o roteamento"
+icon: "route"
+description: "Use predefinições para padronizar prompts e padrões de roteamento; depois, inspecione os detalhes da solicitação para entender como o Phaseo a roteou."
+---
+
+Use esta receita para reutilizar uma predefinição em vários serviços, em vez de copiar os mesmos prompts, modelos e padrões de roteamento em todos eles.
+
+## Objetivo
+
+- Padronizar os padrões de prompts e parâmetros.
+- Limitar quais provedores podem ser usados em um rollout ou limite de conformidade.
+- Manter contexto suficiente da solicitação para explicar por que ela foi roteada daquela forma.
+
+## 1. Crie a predefinição
+
+Em **Painel -> Configurações -> Predefinições**, crie uma predefinição com:
+
+- um nome e slug claros
+- um prompt de sistema
+- modelos aprovados
+- preferências de provedores
+- valores padrão de parâmetros, como `temperature`
+
+Use o slug da predefinição no código de chamada para reutilizar a mesma política de solicitação em diferentes ambientes.
+
+## 2. Mantenha o corpo da solicitação enxuto
+
+A principal vantagem das predefinições é que quem faz a chamada não precisa repetir os mesmos padrões de roteamento e prompt em cada solicitação.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. Entenda o que a predefinição altera
+
+A predefinição é aplicada antes do roteamento de provedores:
+
+- parâmetros ausentes na solicitação são preenchidos pela predefinição
+- o prompt da predefinição é adicionado antes da camada de sistema
+- as preferências de provedor reduzem a lista de provedores disponíveis antes da classificação
+- restrições de modelo são verificadas antecipadamente, em vez de redirecionar silenciosamente
+
+## 4. Depure o resultado do roteamento
+
+Quando uma solicitação não for roteada como esperado, abra-a em **Gateway -> Uso** e inspecione:
+
+- provedores considerados
+- candidatos classificados
+- fatores de roteamento associados a cada candidato
+- bloqueios por política do workspace ou proteções
+
+Esta é a forma mais rápida de descobrir:
+
+- por que um provedor foi ignorado
+- por que uma solicitação foi bloqueada
+- por que um destino de menor custo ou latência ficou em primeiro lugar
+
+## 5. Padrão operacional
+
+Use este padrão de rollout ao alterar o comportamento do roteamento:
+
+1. Crie um novo slug de predefinição para a nova política.
+2. Migre um chamador de baixo risco para a nova predefinição.
+3. Inspecione os detalhes das solicitações e as tendências de atividade.
+4. Amplie o rollout somente depois que os resultados de roteamento corresponderem às expectativas.
+
+## Guias relacionados
+
+- [Predefinições](../guides/presets.mdx)
+- [Roteamento e fallback](../guides/routing-and-fallbacks.mdx)
+- [Tratamento de erros](../api-reference/errors.mdx)

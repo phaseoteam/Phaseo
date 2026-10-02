@@ -1,0 +1,178 @@
+---
+icon: "compass"
+title: "Ferramenta Advisor do servidor"
+description: "Permita que um modelo consulte outro durante a geração."
+---
+
+Use `phaseo:advisor` quando o modelo principal precisar pedir a outro modelo uma revisão, um plano, uma verificação ou uma opinião especializada antes de concluir.
+
+O modelo principal chama o Advisor como qualquer outra ferramenta. O Phaseo executa o modelo Advisor no servidor e retorna a orientação como resultado da ferramenta. Em seguida, o modelo principal redige a resposta final.
+
+<Note>
+O Advisor é gerenciado pelo gateway nos modelos de texto compatíveis. Ele não é convertido na ferramenta Advisor nativa da Anthropic, a menos que o cliente envie explicitamente o formato nativo dessa ferramenta.
+</Note>
+
+## Início rápido
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:advisor",
+        "parameters": {
+          "model": "anthropic/claude-opus-5",
+          "max_uses": 1,
+          "max_completion_tokens": 1400
+        }
+      }
+    ]
+  }'
+```
+
+## Escolher o modelo Advisor
+
+Você pode fixar o modelo Advisor na definição da ferramenta:
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "model": "anthropic/claude-opus-5"
+  }
+}
+```
+
+Se `parameters.model` for omitido, a chamada da ferramenta poderá informar `model`. Se nenhum dos dois for definido, o Phaseo usará o modelo da solicitação externa.
+
+## Parâmetros
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "name": "reviewer",
+    "model": "anthropic/claude-opus-5",
+    "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+    "forward_transcript": true,
+    "max_uses": 2,
+    "max_completion_tokens": 1400,
+    "reasoning": { "effort": "high" },
+    "temperature": 0.2
+  }
+}
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `name` | string | none | Nome opcional do Advisor. Após remover espaços no início e no fim, os nomes devem ser exclusivos e podem conter letras, números, espaços, sublinhados e hifens. |
+| `model` | string | outer model | Modelo Advisor a ser chamado. Se omitido, a chamada da ferramenta poderá informar `model`. |
+| `instructions` | string | default Advisor behavior | Instruções adicionais para o modelo Advisor. |
+| `forward_transcript` | boolean | `false` | Incluir a transcrição atual da conversa na solicitação ao Advisor. |
+| `max_uses` | integer | `1` | Número máximo de chamadas a este Advisor durante o ciclo de ferramentas de servidor. |
+| `max_completion_tokens` | integer | `1400` | Máximo de tokens de saída da resposta do Advisor. |
+| `max_tokens` | integer | `1400` | Alias legado de `max_completion_tokens`. |
+| `reasoning` | object | provider default | Configuração de raciocínio encaminhada à chamada do Advisor quando compatível com o modelo ou provedor selecionado. |
+| `temperature` | number | provider default | Temperatura de amostragem da chamada ao Advisor. |
+
+## Argumentos da chamada da ferramenta
+
+Normalmente, o modelo chama o Advisor com um `prompt`:
+
+```json
+{
+  "prompt": "Review this migration plan and identify the riskiest assumptions."
+}
+```
+
+Se a definição do Advisor não fixar um modelo, a chamada da ferramenta também poderá incluir `model`:
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "prompt": "Check this security design for missing controls."
+}
+```
+
+Quando `forward_transcript` é `true`, o Phaseo pode executar uma chamada ao Advisor contendo apenas a transcrição se o modelo não fornecer um prompt.
+
+## Vários Advisors
+
+Adicione uma entrada `phaseo:advisor` para cada Advisor. Cada Advisor nomeado se torna uma ferramenta interna distinta, como `phaseo_advisor_security_reviewer` ou `phaseo_advisor_architect`.
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "security-reviewer",
+        "model": "anthropic/claude-opus-5",
+        "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "architect",
+        "model": "openai/gpt-5",
+        "instructions": "Review system design tradeoffs and operational risks."
+      }
+    }
+  ]
+}
+```
+
+No máximo uma entrada Advisor pode omitir `name`. Se você forçar `tool_choice: "phaseo:advisor"` com vários Advisors, o Phaseo associará esse alias ao primeiro Advisor configurado.
+
+## O que a ferramenta retorna
+
+O Advisor retorna JSON como resultado da ferramenta:
+
+```json
+{
+  "status": "ok",
+  "name": "reviewer",
+  "model": "anthropic/claude-opus-5",
+  "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
+}
+```
+
+Se a solicitação ao Advisor não puder ser executada, o Phaseo retornará um erro de ferramenta como `advisor_invalid_request`, `advisor_max_uses_exceeded` ou `advisor_request_failed`.
+
+## Memória da conversa
+
+O Advisor não mantém estado oculto entre solicitações. Se você reenviar mensagens e resultados de ferramentas anteriores na próxima solicitação, o modelo principal poderá ver a consulta anterior. Se `forward_transcript` estiver ativado, o Advisor também poderá ver a transcrição encaminhada nessa solicitação.
+
+## Uso e preços
+
+As chamadas ao Advisor incrementam:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 1
+    }
+  }
+}
+```
+
+Os tokens do modelo Advisor são incluídos no uso total e podem ser cobrados conforme os preços do modelo Advisor selecionado. A precificação de ferramentas de servidor também pode usar `server_tool_advisor_requests`.
+
+## Limites atuais
+
+- O streaming das orientações do Advisor ainda não está habilitado.
+- As chamadas ao Advisor não disponibilizam ferramentas adicionais ao modelo consultado.
+
+## Relacionados
+
+- [Ferramentas do servidor](./index.mdx)
+- [Subagente](./subagent.mdx)
+- [Chamadas de ferramentas](../tool-calling.mdx)

@@ -1,0 +1,63 @@
+---
+title: "流式传输"
+description: "接收增量输出、处理端点特定事件并恢复中断的流。"
+icon: "radio"
+---
+
+设置 `stream: true`，以服务器发送事件（SSE）接收输出。将 Phaseo API 密钥保存在服务器上，再将输出转发到界面。
+
+## 发送流式请求
+
+```bash
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello in one sentence.",
+    "stream": true
+  }'
+```
+
+读取流之前请检查 HTTP 状态。流开始前的失败会返回正常的 [JSON 错误响应](../api-reference/errors.mdx)。
+
+## 读取事件
+
+使用所调用端点的事件格式：
+
+| 端点 | 增量输出 | 完成 |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | 如 `response.output_text.delta` 的事件 | 检查终止响应事件及其状态 |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | 检查 `finish_reason`；`[DONE]` 结束流 |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, 及相关事件 | `message_stop` |
+
+SSE 事件由空行分隔。网络块可能包含部分事件或多个事件；请勿将每个网络块作为独立 JSON 解析。缓冲不完整帧或使用 SDK 流助手。不要假定每个端点都会发送 `[DONE]`。
+
+SDK 助手处理流传输：
+
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` 配合 `@phaseo/ai-sdk-provider`.
+
+客户端设置请参阅 [TypeScript 使用指南](../sdk-reference/typescript/usage.mdx)或 [Python 使用指南](../sdk-reference/python/usage.mdx)。
+
+## 流式工具调用
+
+Gateway 接受带工具的流式请求，但支持取决于所选模型和提供商。累积工具调用参数增量直至调用完成，再在执行前解析、验证并授权参数。切勿执行不完整参数。
+
+续接请求请参照[工具调用模式](./tool-calling-patterns.mdx)，验证和审批控制请参照[工具安全](./tool-calling-safety.mdx)。
+
+## 取消与恢复
+
+向服务器端 HTTP 客户端传入 `AbortSignal`，在用户停止或断开连接时取消。设置适合工作负载的期限。取消并不保证提供商立即停止，也不保证生成输出免费。
+
+逐步显示部分文本，但只有收到端点成功终止事件后才能标记完成。连接关闭本身并不证明已完成。
+
+流在输出开始后失败时：
+
+1. 将部分响应标记为中断。
+2. 在日志中保留请求或生成 ID、端点和模型。
+3. 提供明确的重试选项。新请求可能生成不同输出并产生另一笔费用。
+4. 不要重新执行已执行的工具，也不要自动将重试响应追加到部分输出。
+
+输出开始前失败时，应限制重试次数并遵守[速率限制标头](../api-reference/limits.mdx)。如应用必须在显示前验证整个输出，请使用非流式请求或在服务器上缓冲结果。

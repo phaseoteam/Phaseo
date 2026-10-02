@@ -1,0 +1,80 @@
+---
+title: "Prendre une décision"
+sidebarTitle: "Decisions"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /decisions"
+description: "Évaluez des questions typées à partir de l’état de l’application avec les modèles de décision pris en charge."
+---
+
+Utilisez `POST /v1/decisions` lorsque votre application a besoin de réponses structurées directement exploitables par le code. Les modèles pris en charge incluent TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) et Respan Span-01 (`respan/span-01:free` et `respan/span-01`).
+
+La requête contient :
+
+- `state` : une chaîne, un objet ou un tableau contenant les informations à évaluer.
+- `questions` : un dictionnaire de questions nommées. Chaque question définit `type` sur `noul`, `choice` ou `score` et inclut `instructions` ; les types pris en charge dépendent du modèle sélectionné.
+- `model` : l’identifiant du modèle Phaseo. Utilisez `typesafe/jev-1.13.0` pour Jev 1.13 ou `typesafe/jev-latest` pour suivre la dernière version de Jev.
+
+Liquid D1 (`liquid-ai/d1:free`, également disponible sous `liquid-ai/d1`) et Perplexity Decider 27B (`perplexity/decider-27b`) prennent en charge les trois types de questions. D1 est gratuit pendant l’accès anticipé expérimental. Decider coûte 0,04 USD par million de tokens d’entrée, y compris les tokens d’image ; les tokens de sortie sont gratuits. Ajoutez un identifiant de fournisseur Perplexity dans Phaseo pour utiliser Decider. Son état contenant des images utilise des URL de données base64 PNG, JPEG ou WebP ; les URL d’images distantes ne sont pas prises en charge. Chaque question de choix accepte jusqu’à 255 options, et chaque question de score jusqu’à 10 niveaux. Vérifiez la disponibilité avant d’appeler l’un ou l’autre modèle.
+
+Pour Respan Span-01, `state` doit être un segment de conversation avec un tableau `input` de messages précédents et un message d’assistant `output`. Span-01 ne prend en charge que les questions `noul`. La réponse `noul` est la probabilité que le comportement soit présent ; `probabilities` inclut aussi les probabilités d’absence et de non-observabilité.
+
+```json
+{
+  "model": "respan/span-01:free",
+  "state": {
+    "input": [{ "role": "user", "content": "Please connect me to a person." }],
+    "output": { "role": "assistant", "content": "I will connect you to support." }
+  },
+  "questions": {
+    "escalation": {
+      "type": "noul",
+      "instructions": "Does the assistant offer a human handoff?"
+    }
+  }
+}
+```
+
+`respan/span-01:free` est le modèle Lite gratuit avec une limite quotidienne ; Phaseo le fait correspondre à l’identifiant de modèle API `span-01-free` de Respan. `respan/span-01` correspond à `span-01-pro` et est facturé par Respan à 0,02 USD par million de tokens d’entrée ; les tokens de sortie sont gratuits. Span-01 est en accès anticipé : Respan doit donc activer l’accès pour votre organisation. Ajoutez votre clé API Respan comme identifiant de fournisseur Respan dans Phaseo avant d’appeler ces modèles.
+
+Les réponses utilisent les mêmes clés que `questions`. Les réponses `choice` incluent l’option sélectionnée, les probabilités et la confiance ; les réponses `noul` incluent une probabilité entre 0 et 1 ; les réponses `score` incluent un score pondéré par les probabilités, une légende, les probabilités et la confiance.
+
+Pour l’exemple Respan, une réponse ressemble à ceci :
+
+```json
+{
+  "answers": {
+    "escalation": {
+      "type": "noul",
+      "noul": 0.73,
+      "probabilities": {
+        "true": 0.73,
+        "false": 0.25,
+        "not_observable": 0.02
+      }
+    }
+  }
+}
+```
+
+Jev permet de mélanger les trois types de questions dans une requête ; Span-01 ne prend en charge que les questions `noul`. Consultez le [démarrage rapide](../../quickstart) pour des exemples cURL, JavaScript, SDK TypeScript et SDK Python prêts à copier-coller. Jev 1.13 est facturé à 0,042 USD par million de tokens d’entrée ; les tokens de sortie sont gratuits.
+
+Pour la sémantique des questions du fournisseur, consultez la [référence API](https://docs.typesafe.ai/api) de TypeSafe.
+
+### Décisions sur les images avec Clef
+
+`cloudflare/clef` et `cloudflare/clef-flash` prennent en charge les trois types de questions et les images intégrées via Cloudflare Workers AI. Chacun dispose d’une fenêtre de contexte de 65 536 jetons. L’entrée coûte 0,24 USD par million de jetons pour Clef et 0,09 USD pour Clef Flash.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+Vous pouvez également fournir une chaîne `data:image/png;base64,...` dans `images`. Clef accepte jusqu’à quatre images PNG, JPEG ou WebP, chacune de 4 MiB et 16 mégapixels au maximum, avec au plus 8 MiB de données d’image décodées au total et un corps de requête de 13 MiB. Les URL distantes ne sont pas prises en charge. Cloudflare valide les formats et dimensions des images. Les modèles ne prenant pas en charge les images rejettent les requêtes contenant des images.
+
+Clef accepte au maximum 64 questions, avec des identifiants de 100 lettres, chiffres, traits de soulignement, points ou tirets au maximum. Les questions de choix nécessitent 2 à 255 options ; les questions de score, 2 à 10 niveaux. Consultez la [documentation de Clef](https://developers.cloudflare.com/workers-ai/models/clef/) de Cloudflare.

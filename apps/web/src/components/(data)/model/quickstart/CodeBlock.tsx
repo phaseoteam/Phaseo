@@ -2,6 +2,7 @@
 
 // src/components/code/CodeBlock.tsx
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Separator } from "@/components/ui/separator";
 import { codeToHtmlBoth } from "./shiki";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ export default function CodeBlock({
 	lang?: ShikiLang;
 	label?: string;
 }) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const [lightHtml, setLightHtml] = useState<string | null>(null);
 	const [darkHtml, setDarkHtml] = useState<string | null>(null);
 	const [error, setError] = useState(false);
@@ -85,7 +87,7 @@ export default function CodeBlock({
 					className="h-8 gap-1.5 rounded-md border-border bg-background px-2.5 text-xs text-foreground hover:bg-muted"
 				>
 					{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-					{copied ? "Copied" : "Copy"}
+					{t(copied ? "copied" : "copy")}
 				</Button>
 			</div>
 			<Separator />

@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -17,6 +18,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, Sparkles } from "lucide-react";
 import { deletePresetAction } from "@/app/(dashboard)/settings/presets/actions";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange, showTrigger = true }: any) {
 	const write = useSettingsWrite();
@@ -25,6 +27,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 	const setOpen = onOpenChange ?? setInternalOpen;
 	const [confirm, setConfirm] = useState("");
 	const [loading, setLoading] = useState(false);
+	const t = useTranslations("SettingsUI");
 
 	async function onDelete(e?: React.FormEvent) {
 		e?.preventDefault();
@@ -33,11 +36,11 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		const promise = write(deletePresetAction(p.id, confirm));
 		try {
 			await toast.promise(promise, {
-				loading: `Deleting preset...`,
-				success: `Preset deleted`,
+				loading: t("strings.phraseDeletingPreset" as never),
+				success: t("strings.Preset deleted" as never),
 				error: (err) => {
 					return (
-						(err && (err as any).message) || "Failed to delete preset"
+						localizedSettingsError(err, t, "Failed to delete preset")
 					);
 				},
 			});
@@ -58,7 +61,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 			>
 
 					<Trash2 className="mr-2" />
-					Delete
+					{t("labels.delete")}
 
 			</DropdownMenuItem> : null}
 
@@ -67,34 +70,33 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Sparkles className="h-5 w-5 text-blue-600" />
-						Delete Preset
+						{t("strings.Delete Preset" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						This action is permanent and cannot be undone.
+						{t("strings.phraseThisActionIsPermanentAndCannotBeUndone" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onDelete} className="space-y-4">
 					<div className="space-y-2">
 						<p className="text-sm">
-							To confirm, type the preset name{" "}
-							<strong>{p.name}</strong> below.
+							{t("settingsPageCopy.confirmPresetName" as never, { name: p.name } as never)}
 						</p>
 						<Input
 							value={confirm}
 							onChange={(e) => setConfirm(e.target.value)}
-							placeholder="Type preset name to confirm"
+							placeholder={t("strings.Type preset name to confirm" as never)}
 						/>
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
-							<Button variant="ghost">Cancel</Button>
+							<Button variant="ghost">{t("labels.cancel")}</Button>
 						</DialogClose>
 						<Button
 							type="submit"
 							variant="destructive"
 							disabled={loading || confirm !== p.name}
 						>
-							{loading ? "Deleting..." : "Delete Preset"}
+							{loading ? t("labels.deleting") : t("strings.Delete Preset" as never)}
 						</Button>
 					</DialogFooter>
 				</form>

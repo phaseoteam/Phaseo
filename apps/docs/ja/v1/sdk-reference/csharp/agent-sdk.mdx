@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "使い方"
+description: "C# Agent SDKで、ツールループ、人によるレビュー、再試行、再開可能なエージェントを実行します。"
+---
+
+## 実行環境を準備する
+
+Agent SDKのパッケージはまだNuGetでは公開されていません。[ソースからのインストール手順](./agent-sdk-installation.mdx)に従ってください。
+
+## クイックスタート
+
+```csharp
+using PhaseoAgentSdk;
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "quickstart-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Answer concisely and helpfully."
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Give me one fun fact about cURL.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## 提供される機能
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- Phaseoの`responses` APIを使った回数制限付きのツールループ
+
+## 高度な実行環境
+
+C#では、検証と承認のデリゲート、HITLおよび手動ツール、進捗表示、回復可能なエラー、再生可能な非同期列挙、停止ヘルパー、動的ターン、永続化された`NextTurnParams`、正規化された使用量とコスト、`IStateAccessor`をサポートします。
+
+## ストリーミングとキャンセル
+
+`Agent.Stream(...)`と`Agent.ContinueStream(...)`は、ゲートウェイのResponses SSEストリームで`IAsyncEnumerable`を使用します。`TextStream()`または`FullStream()`を処理し、`Cancel()`を呼び出して関連付けられたリクエストトークンをキャンセルします。完了したステップには、リクエストID、プロバイダーメタデータ、終了理由、警告、使用量、コストが保持されます。
+
+## 関連ページ
+
+- [Agent SDKの概要](../agent-sdk/overview.mdx)
+- [TypeScript向けAgent SDK](../typescript/agent-sdk.mdx)

@@ -1,0 +1,38 @@
+---
+icon: "music"
+title: "TTS (Text-zu-Sprache)"
+description: "Rufe /audio/speech mit dem PHP-SDK auf."
+---
+
+**Methode**: `$client->createSpeech(...)`
+
+### Beispiel
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$audioFile = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3'
+]);
+file_put_contents('output.mp3', $audioFile->fread($audioFile->getSize()));
+```
+
+### Wichtige Parameter
+
+-   `model` (erforderlich): ID eines TTS-fähigen Modells.
+-   `input` (erforderlich): zu synthetisierender Text.
+-   `voice`: Stimmprofil (modellabhängig, z. B. `alloy`).
+-   `format`: `mp3`, `wav`, `flac` usw.
+-   `speed`: Wiedergabegeschwindigkeit (üblicherweise 0,25–4).
+
+### Rückgabewert
+
+Binäre Audiodaten (`\SplFileObject`)

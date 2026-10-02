@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 Agent 的轮次之间更改 Python 模型设置和工具。"
+---
+
+模型、备用模型、指令、温度、最大输出令牌数、top-p 和工具都可以是固定值，也可以是每轮求值的回调。
+
+工具发现后续需要的信息时，请使用 `runtime.set_context(value)`。仅对紧接着的下一次模型请求生效的覆盖项，请使用 `next_turn_params`。
+
+下一轮的覆盖项会随暂停状态一起保存，因此审批检查点不会丢弃路由或采样决策。
+
+使用 `AgentStateAccessor` 时，请确保上下文可序列化。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)

@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "Go SDK का उपयोग"
+description: "Go SDK में अभी समर्थित wrapper methods।"
+---
+
+## सेटअप
+
+```go
+import (
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New("<API_KEY>", "https://api.phaseo.app/v1")
+ctx := context.Background()
+```
+
+## चैट कंप्लीशन
+
+```go
+chatReq := phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Hello"},
+  },
+}
+chatResp, err := client.GenerateText(ctx, chatReq)
+```
+
+## Responses
+
+```go
+input := map[string]interface{}{
+  "role": "user",
+  "content": []map[string]interface{}{
+    {"type": "input_text", "text": "Reply with: go sdk works"},
+  },
+}
+resp, err := client.GenerateResponse(ctx, phaseo.ResponsesRequest{
+  Model: "openai/gpt-5-nano",
+  Input: &input,
+})
+```
+
+## एम्बेडिंग
+
+```go
+embedding, err := client.GenerateEmbedding(ctx, map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+```
+
+## मॉडरेशन
+
+```go
+moderation, err := client.GenerateModeration(ctx, map[string]interface{}{
+  "model": "openai/omni-moderation-latest",
+  "input": "Some text to check",
+})
+```
+
+## इमेज और ऑडियो
+
+```go
+image, err := client.CreateImage(ctx, map[string]interface{}{
+  "model": "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+})
+
+speech, err := client.CreateSpeech(ctx, map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Go",
+})
+```
+
+## मॉडल
+
+```go
+models, err := client.GetModels(ctx, map[string]string{"limit": "10"})
+```
+
+## मौजूदा सीमाएँ
+
+Go wrapper अब chat, Responses, images, audio, embeddings, moderations, models, providers, batches, files, generation lookup, health और video helpers को कवर करता है। जिन endpoints को अभी handwritten wrapper में नहीं जोड़ा गया है, उनके लिए lower-level generated operations उपलब्ध हैं; सामान्य request types wrapper package से दोबारा export किए जाते हैं।

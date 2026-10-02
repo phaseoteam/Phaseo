@@ -1,0 +1,19 @@
+---
+title: "Datei hochladen"
+sidebarTitle: "Datei hochladen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /files"
+description: "Lade eine Datei zur Stapelverarbeitung hoch. Das Gateway speichert Eigentumsmetadaten, damit derselbe Arbeitsbereich später die Datei oder ihren Inhalt abrufen kann."
+---
+
+Speichere die zurückgegebene `file_id` und verwende sie erneut mit:
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+`GET /v1/files` wird mit dem gemeinsamen Gateway-Schlüssel derzeit nicht unterstützt. Daher ist die Upload-Antwort die maßgebliche Quelle für die Datei-ID.
+</Note>
+
+

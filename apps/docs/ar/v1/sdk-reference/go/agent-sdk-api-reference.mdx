@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "راجع الأنواع والأساليب الرئيسية في Go Agent SDK."
+---
+
+| API | الغرض |
+| --- | --- |
+| `CreateAgent(...)` | تعريف وكيل |
+| `DefineTool(...)` | تعريف أداة محلية أو يدوية |
+| `CreateGatewayAgentClient(...)` | ربط جولات النموذج بـ Phaseo |
+| `Agent.Run(...)` | التشغيل حتى الاكتمال أو الإيقاف المؤقت |
+| `Agent.Stream(...)` | التشغيل باستخدام مستهلكي تدفق قابلين لإعادة الاستخدام |
+| `Agent.Continue(...)` | متابعة حالة محفوظة أو متوقفة مؤقتًا |
+| `StreamResult.Result()` | قراءة التشغيل المكتمل |
+| `StreamResult.Text()` | قراءة أجزاء النص |
+| `StreamResult.Events()` | قراءة جميع الأحداث |
+| `StreamResult.Cancel()` | إلغاء التشغيل النشط |
+
+تشمل الأنواع المهمة `AgentDefinition` و`RunOptions` و`RunResult` و`RunRecord` و`RunStep` و`Tool` و`ToolDecision` و`ToolOutput` و`RuntimeContext` و`StateAccessor` و`ModelRetryConfig` و`ToolExecutionConfig`.
+
+## مواضيع ذات صلة
+
+- [أنشئ وكيلك الأول](./agent-sdk.mdx)
+- [قابلية المراقبة وDevTools](./agent-sdk-observability.mdx)

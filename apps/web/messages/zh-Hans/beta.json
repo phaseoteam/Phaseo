@@ -1,0 +1,7 @@
+{
+  "title": "测试版",
+  "description": "Web UI 的预览和实验控制。",
+  "empty": "目前没有可选择加入的 Web 测试版功能。",
+  "badge": "测试版",
+  "notSignedIn": "未登录。"
+}

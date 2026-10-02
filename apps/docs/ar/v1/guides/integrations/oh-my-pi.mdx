@@ -1,0 +1,76 @@
+---
+title: "oh-my-pi"
+icon: "/icons/brands/oh-my-pi.svg"
+description: "شغّل oh-my-pi عبر Phaseo Gateway باستخدام Phaseo CLI."
+---
+
+يمكن لـ Phaseo CLI تشغيل oh-my-pi بمفتاح مخصص للبوابة وكتالوج مؤقت لمزودي الخدمة متوافق مع OpenAI.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo omp --model openai/gpt-5.6-terra --
+```
+
+يعرض التشغيل التفاعلي الأول تثبيت الأمر `omp` إذا لم يكن موجودًا. استخدم `--catalog all` لإتاحة جميع نماذج النص/الدردشة النشطة في Phaseo، أو `--dry-run --json` لمعاينة خطة التثبيت والتشغيل دون إنشاء مفتاح أو تشغيل oh-my-pi:
+
+```bash
+phaseo omp --catalog all --dry-run --json
+```
+
+استخدم `phaseo run omp ...` للصيغة الصريحة للأمر. ضع خيارات oh-my-pi بعد `--` حتى يتمكن Phaseo من معالجة خياراته أولًا.
+
+## تهيئة oh-my-pi يدويًا
+
+استخدم مزودًا دائمًا إذا أردت إتاحة Phaseo في كل جلسة oh-my-pi. أنشئ مفتاح Phaseo وصدّره في الصدفة التي تشغّل oh-my-pi، ثم أضف مزودًا إلى `~/.omp/agent/models.yml`:
+
+```bash
+phaseo login
+phaseo keys create --name "oh-my-pi Phaseo key" --json
+export PHASEO_OMP_API_KEY="<your Phaseo API key>"
+mkdir -p ~/.omp/agent
+```
+
+```yaml title="~/.omp/agent/models.yml"
+providers:
+  phaseo:
+    baseUrl: https://api.phaseo.app/v1
+    api: openai-completions
+    apiKey: PHASEO_OMP_API_KEY
+    authHeader: true
+    models:
+      - id: openai/gpt-5.6-terra
+        name: GPT-5.6 Terra via Phaseo
+        contextWindow: 32768
+        maxTokens: 8192
+```
+
+شغّل oh-my-pi بمعرّف النموذج المسبوق باسم المزود:
+
+```bash
+omp --model phaseo/openai/gpt-5.6-terra
+```
+
+أضف نماذج أخرى إلى المزود نفسه حسب الحاجة. اجعل `apiKey` يشير إلى متغير بيئة بدلًا من كتابة المفتاح مباشرة في `models.yml`.
+
+## التحقق
+
+أرسل مطالبة قصيرة عبر البيئة التي تم تشغيلها، ثم تأكد من ظهور الطلب في نشاط Phaseo. يكتب المشغّل ملف `models.yml` داخل `PI_CODING_AGENT_DIR` مؤقت ويحذفه عند خروج oh-my-pi.
+
+## استكشاف الأخطاء وإصلاحها
+
+### oh-my-pi غير مثبت
+
+شغّل الأمر في طرفية تفاعلية للموافقة على التثبيت، أو ثبّت oh-my-pi بشكل منفصل وأعد التشغيل باستخدام `--skip-install`.
+
+### النموذج غير مدرج
+
+استخدم `--catalog all` أو مرّر معرّف نموذج باستخدام `--model`. اكتشاف النماذج غير مطلوب لبوابة Phaseo.
+
+## روابط ذات صلة
+
+- [Phaseo CLI](./phaseo-cli)
+- [تهيئة مزودي oh-my-pi](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
+- [النماذج](../../api-reference/endpoint/models.mdx)
+- [النشاط](../../api-reference/endpoint/activity.mdx)

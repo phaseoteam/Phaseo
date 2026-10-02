@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "डायनेमिक टर्न"
+description: "PHP एजेंट टर्न के बीच routing, instructions, tools और sampling settings बदलें।"
+---
+
+हर model request से पहले dynamic callback मौजूदा रन state के आधार पर model parameters फिर से तय करते हैं।
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+Dynamic tools और sampling values उसी turn context का उपयोग कर सकते हैं। कोई tool `nextTurnParams` सेट करके केवल तुरंत अगले request को भी बदल सकता है। approval के लिए रन रुकने पर ये override बने रहते हैं और अगले turn के बाद समाप्त हो जाते हैं।
+
+हर टर्न में फिर से तय की जाने वाली policy के लिए dynamic callback उपयोग करें। किसी tool का अपना बदलाव अगले turn तक पहुँचाने के लिए `nextTurnParams` उपयोग करें।

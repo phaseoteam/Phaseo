@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Flux"
+description: "Diffusez le texte et les événements des agents Java avec des consommateurs pouvant relire le flux."
+---
+
+`Agent.stream(...)` renvoie un `StreamResult` :
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+`textStream()` et `fullStream()` peuvent être relus : l’interface du produit et le code de télémétrie peuvent donc consommer indépendamment la même exécution. Appelez `cancel()` pour interrompre le worker de flux actif.
+
+Les événements d’élément Java restent des objets génériques, et non l’union discriminée `AgentItem` de TypeScript.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Observabilité et DevTools](./agent-sdk-observability.mdx)

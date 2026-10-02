@@ -1,10 +1,14 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { useRef, useState } from "react";
 import { Info } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 export function ProviderRoutingHelp() {
+    const tx = useTranslations();
+    const locale = useLocale();
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const pinnedRef = useRef(false);
@@ -19,7 +23,7 @@ export function ProviderRoutingHelp() {
                 <button
                     ref={triggerRef}
                     type="button"
-                    aria-label="About provider-specific routing"
+                    aria-label={tx("Common.ui.pricingEditorCopy.aboutProviderSpecificRouting" as never)}
                     aria-expanded={open}
                     onClick={() => {
                         pinnedRef.current = true;
@@ -42,12 +46,12 @@ export function ProviderRoutingHelp() {
                     setOpen(false);
                 }}
             >
-                <p className="text-xs font-semibold text-foreground">Provider-Specific Routing</p>
+                <p className="text-xs font-semibold text-foreground">{tx("Common.ui.pricingEditorCopy.providerSpecificRouting" as never)}</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Pass this slug in the <code>model</code> field of your API request to pin it to this provider.
+                    {tx.rich("Common.ui.pricingEditorCopy.passThisSlugInTheModelFieldOfYourAPIRequestToPinItToThisProvider", { model: () => <code>model</code> })}
                 </p>
-                <a href="/docs/v1/guides/provider-qualified-models" className="mt-2 inline-block text-xs font-medium text-foreground underline underline-offset-4 hover:text-foreground">
-                    Read the routing docs
+                <a href={getLocalizedDocsHref(locale, "v1/guides/provider-qualified-models")} className="mt-2 inline-block text-xs font-medium text-foreground underline underline-offset-4 hover:text-foreground">
+                    {tx("Catalogue.modelDetail.sections.readRoutingDocs" as never)}
                 </a>
             </HoverCardContent>
         </HoverCard>

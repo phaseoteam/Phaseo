@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "Mistral Small 4 अपनाते समय reasoning controls और normalized response fields के बारे में जानें।"
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+Phaseo Gateway के ज़रिए Mistral Small 4 को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## नया क्या है
+
+- Mistral Small 4 में `reasoning_effort` से reasoning mode नियंत्रित किया जाता है।
+- Gateway इस model route के लिए upstream को केवल दो values भेजता है:
+  - `none` (reasoning बंद)
+  - `high` (reasoning चालू)
+- Gateway, Mistral के thinking blocks को मानक response फ़ील्ड में सामान्यीकृत करता है:
+  - `message.content` में user को दिखने वाला assistant text
+  - `message.reasoning_content` और `message.reasoning_details` में reasoning text
+
+## माइग्रेशन quickstart
+
+इस route पर reasoning default रूप से बंद है।
+
+Gateway mapping नियम:
+
+- reasoning controls न देने पर Gateway `reasoning_effort: "none"` भेजता है।
+- `reasoning.enabled: true` देने पर Gateway `reasoning_effort: "high"` भेजता है।
+- `reasoning.effort: "none"` देने पर Gateway `reasoning_effort: "none"` भेजता है।
+- `reasoning.effort` की कोई दूसरी value देने पर Gateway `reasoning_effort: "high"` भेजता है।
+
+अनुशंसित उपयोग:
+
+- हल्के काम के लिए `reasoning.effort: "none"`।
+- गहरे reasoning के लिए `reasoning.effort: "high"`।
+
+उदाहरण:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## जवाब संभालने संबंधी नोट
+
+Mistral मिश्रित assistant content blocks लौटा सकता है (जैसे `thinking` और `text`)। Gateway उन्हें स्थिर रूप में बदलता है:
+
+- अंतिम user-visible उत्तर: `choices[0].message.content`।
+- reasoning text: `choices[0].message.reasoning_content`।
+
+इससे OpenAI-style chat-completion fields पर निर्भर downstream behavior बना रहता है।
+
+## रिलीज़ जाँच-सूची
+
+1. Model ID को `mistral/mistral-small-4-2026-03-16` पर अपडेट करें।
+2. reasoning controls को सिर्फ़ `none` और `high` से validate करें।
+3. high-effort routes पर output quality और schema tests फिर चलाएँ।
+4. पूरी तरह बदलने से पहले `none` और `high` की latency और लागत की तुलना करें।

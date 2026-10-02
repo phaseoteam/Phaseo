@@ -1,0 +1,214 @@
+---
+title: "تثبيت مزودي الخدمة أو تجاهلهم لكل طلب"
+icon: "pin"
+description: "استخدم إعدادات مزودي الخدمة على مستوى الطلب لتحديد ترتيب مفضل أو تقييد المجموعة أو استبعاد مزود خدمة."
+---
+
+استخدم هذه الوصفة عندما تريد أن يفضّل طلب واحد مسار مزود خدمة محددًا دون تغيير إعدادات التوجيه الافتراضية لمساحة العمل.
+
+## الهدف
+
+- جرّب مزودي الخدمة بالترتيب المفضل.
+- قيّد الطلب بمجموعة فرعية معتمدة من مزودي الخدمة.
+- تجاهل مزود خدمة مؤقتًا دون تعديل الإعدادات المسبقة.
+
+## 1. جرّب مزودي الخدمة بترتيب محدد
+
+استخدم `provider.order` عندما تعرف ترتيب المسارات المفضل مسبقًا.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-opus-4.6",
+    "input": "Write a concise launch summary.",
+    "provider": {
+      "order": ["anthropic-us", "anthropic"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-opus-4.6",
+  input: "Write a concise launch summary.",
+  provider: {
+    order: ["anthropic-us", "anthropic"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-opus-4.6",
+        "input": "Write a concise launch summary.",
+        "provider": {
+            "order": ["anthropic-us", "anthropic"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+يضع مزودي الخدمة المذكورين في مقدمة ترتيب المرشحين قبل بقية الخيارات المؤهلة.
+
+## 2. قيّد الطلب بمجموعة ثابتة من مزودي الخدمة
+
+استخدم `provider.only` عندما يجب أن يبقى الطلب ضمن قائمة سماح صغيرة.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5.4-nano",
+    "input": "Extract the action items.",
+    "provider": {
+      "only": ["openai", "openai-eu"],
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "openai/gpt-5.4-nano",
+  input: "Extract the action items.",
+  provider: {
+    only: ["openai", "openai-eu"],
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5.4-nano",
+        "input": "Extract the action items.",
+        "provider": {
+            "only": ["openai", "openai-eu"],
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+يبقي ذلك الطلب ضمن مزودي الخدمة هؤلاء، ثم يطبق نمط الترتيب المحدد داخل المجموعة الفرعية.
+
+## 3. استبعد مزود خدمة من الخيارات
+
+استخدم `provider.ignore` لتخطي مزود خدمة في طلب أو خلال طرح قصير الأمد.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "meta/llama-4-maverick",
+    "input": "Summarize the transcript.",
+    "provider": {
+      "ignore": ["deepinfra"]
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "meta/llama-4-maverick",
+  input: "Summarize the transcript.",
+  provider: {
+    ignore: ["deepinfra"],
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "meta/llama-4-maverick",
+        "input": "Summarize the transcript.",
+        "provider": {
+            "ignore": ["deepinfra"],
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+يكون ذلك مفيدًا عندما:
+
+- يتدهور أداء أحد مزودي الخدمة
+- تتحقق من مسار مزود خدمة آخر
+- تريد مقارنة نتائج التوجيه دون تعديل إعداد مسبق
+
+## 4. اجمع عناصر التحكم بحذر
+
+يمكنك الجمع بين عناصر التحكم هذه، لكن أبقِ الهدف واضحًا:
+
+- استخدم `order` لتحديد التفضيل
+- استخدم `only` لفرض مجموعة المرشحين
+- استخدم `ignore` لاستبعاد مزود خدمة
+
+يجمع نمط عملي بين:
+
+- `only` لإبقاء الطلب ضمن `google-vertex` و`google-vertex-eu`
+- `order` لتفضيل `google-vertex-eu` أولًا
+- `sort: "latency"` لترتيب الخيارات ضمن المجموعة المسموح بها
+
+## 5. متى تنقل ذلك إلى إعداد مسبق
+
+إذا تكررت قواعد مزودي الخدمة نفسها في عدة خدمات، فتوقف عن نسخها لكل طلب وانقلها إلى إعداد مسبق.
+
+استخدم التوجيه على مستوى الطلب عندما يكون التجاوز:
+
+- مؤقتًا
+- خاصًا بالمتصل
+- مرتبطًا بتدفق مستخدم واحد
+
+## أدلة ذات صلة
+
+- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
+- [طرح الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)

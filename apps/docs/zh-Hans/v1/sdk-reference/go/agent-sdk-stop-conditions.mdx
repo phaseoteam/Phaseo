@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "按步骤数、令牌数、成本、时长、工具或结束原因限制 Go Agent 工作。"
+---
+
+`MaxSteps` 是一个实用的安全网。`StopWhen` 可组合多个产品限制，并在运行过程中持续评估。
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+其他辅助函数包括 `HasToolCall("publish_report")` 和 `FinishReasonIs("content_filter")`。如果决策取决于应用上下文，也可以提供自定义 `StopCondition`。
+
+条件匹配时，请检查 `result.Run.StopReason`、规范化用量总计以及最后一个已完成步骤。除非应用选择将该原因视为错误，否则停止属于成功的有界结果。

@@ -1,0 +1,23 @@
+---
+icon: "layers"
+title: "Trabajar con resultados y elementos"
+description: "Crea cronologías de ejecuciones de Java a partir de mensajes, pasos, herramientas y eventos de proveedores."
+---
+
+Use `RunResult` como el resultado persistente de un agente Java. Incluye el registro de ejecución, los mensajes guardados, los pasos, el uso y el costo normalizados, las advertencias, los motivos de finalización y el resultado final.
+
+`StreamResult.fullStream()` incluye eventos de elementos del proveedor junto con los eventos del modelo, las herramientas, los pasos y la ejecución. Actualmente, Java expone esos elementos como objetos genéricos, no como la unión discriminada `AgentItem` de TypeScript.
+
+Para crear una cronología del producto:
+
+1. Mientras se ejecuta el agente, representa el texto de `textStream()`.
+2. Representa tarjetas de herramientas a partir de los eventos del ciclo de vida de las herramientas.
+3. Guarda el `RunResult` completado.
+4. Reconstruye la cronología final a partir de los mensajes y pasos guardados.
+
+Mantén los datos de elementos específicos del proveedor detrás de un adaptador de la aplicación para que un cambio de formato del proveedor no afecte al resto de la interfaz.
+
+## Relacionado
+
+- [Transmisión](./agent-sdk-streaming.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,64 @@
+---
+title: "Go में ops runbook एजेंट बनाएँ"
+icon: "clipboard-check"
+description: "सीमित troubleshooting loop में कुछ नियतात्मक स्थानीय टूल जोड़ने के लिए Go Agent SDK उपयोग करें।"
+---
+
+स्थानीय संदर्भ के साथ परिचालन प्रश्नों का उत्तर देने वाली Go सेवा के लिए यह रेसिपी उपयोग करें।
+
+## 1. SDK तैयार करें
+
+<Note type="warning">Go Agent SDK का सार्वजनिक module version अभी उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/go/agent-sdk-installation.mdx) देखें।</Note>
+
+## 2. छोटे runtime टूल तय करें
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. एजेंट बनाएँ
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. एक सीमित troubleshooting turn चलाएँ
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## यह रेसिपी कब उपयुक्त है
+
+- वर्कफ़्लो एक Go सेवा का हिस्सा हो
+- सहायक संदर्भ स्थानीय या आंतरिक कॉल से पहले से उपलब्ध हो
+- बड़े job system के बिना agent loop चाहिए
+
+## संबंधित विषय
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [web fetch से निकाले गए डेटा के स्रोत की पुष्टि करें](./tool-grounding-with-web-fetch.mdx)

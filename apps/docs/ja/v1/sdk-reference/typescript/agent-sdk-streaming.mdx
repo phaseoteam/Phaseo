@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "ストリーミング"
+description: "テキスト、推論、ツールの動作、エージェントの全イベントをストリーミングします。"
+---
+
+実行中にエージェントの応答やツールの動作を画面に表示するには`stream()`を使います。`run()`と同じ再開可能な状態機械を、ストリーミング対応のモデルクライアントで開始します。
+
+## テキストをストリーミングする
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## 複数の場所から結果を読む
+
+ストリームのコンシューマーは再生可能です。描画、テレメトリー、永続化の各処理で同じ実行を並行して消費できます。
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## ストリームを選ぶ
+
+- `getTextStream()`は回答テキストを返します。
+- モデルが推論の更新を返す場合、`getReasoningStream()`で取得できます。
+- `getItemsStream()`は、メッセージ、推論、ツールの動作、エラー、最終出力を表す型付き`AgentItem<TOutput>`値を返します。
+- `getToolStream()`はツールの動作を返します。
+- `getFullStream()`はランタイムの全イベントを返します。
+
+`cancel()`で実行を中止します。ローカルツールにはランタイムシグナルを通じてキャンセルが通知されます。
+
+## ツールの進捗をストリーミングする
+
+非同期ジェネレーターとして実装されたツールは、暫定結果を出力できます。完全なストリームでは`tool.preliminary_result`イベントとして表示され、完了したステップに紐付きます。
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## 関連ガイド
+
+- [ツールを定義して実行する](./agent-sdk-tools.mdx)
+- [型付きアイテムを使う](./agent-sdk-items.mdx)
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)
+- [永続的なエージェントループを構築する](../../cookbook/agent-sdk-durable-loop.mdx)

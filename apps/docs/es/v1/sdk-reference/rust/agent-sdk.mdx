@@ -1,0 +1,132 @@
+---
+icon: "blocks"
+title: "Crear con el SDK de agentes de Rust"
+description: "Crea un agente síncrono en Rust que llame a una herramienta local a través de Phaseo Gateway."
+---
+
+Usa esta guía para crear un agente pequeño que utilice herramientas y revisar su ejecución completada.
+
+## Definir una herramienta
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+La función de cierre se ejecuta localmente. Su `RuntimeContext` incluye el ID de ejecución, el ID del agente, el índice del paso, el contexto de la aplicación y la llamada original a la herramienta.
+
+## Crear el agente
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## Ejecutar mediante Phaseo Gateway
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## Ejemplo completo
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## Estado de la ejecución
+
+`RunResult` contiene:
+
+- `run`: estado, ID, modelo efectivo, límite de pasos, contexto y estado de pausa
+- `steps`: cada turno del modelo, ID de solicitud, proveedor, modelo, motivo de finalización, llamadas a herramientas y uso
+- `messages`: historial completo de mensajes del modelo y de las herramientas
+- `output`: valor de salida final
+- `usage`: valores agregados de tokens y cualquier coste proporcionado por el cliente del modelo
+
+## Modelo de ejecución actual
+
+Las ejecuciones del SDK de agentes de Rust son síncronas. Las herramientas locales se ejecutan de una en una. Si no quieres que la ejecución bloquee un controlador de solicitudes, usa un hilo de trabajo de la aplicación o un límite de tarea.
+
+## Siguiente
+
+- [Herramientas y aprobaciones](./agent-sdk-tools.mdx)
+- [Guardar y reanudar ejecuciones](./agent-sdk-state-and-approval.mdx)
+- [Eventos, reintentos y errores](./agent-sdk-events-and-errors.mdx)

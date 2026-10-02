@@ -1,0 +1,40 @@
+---
+title: "Tratamento de erros"
+description: "Entenda os tipos de erro e as estratégias de recuperação para integrações confiáveis com o Gateway."
+icon: "triangle-alert"
+---
+
+Até os melhores modelos apresentam falhas de vez em quando. Este guia explica como o Gateway informa erros e como você deve responder.
+
+---
+
+## Categorias de erro
+
+Os erros podem vir do Gateway, do provedor ou da sua solicitação. A resposta incluirá metadados para ajudar a diagnosticar o problema.
+
+| Faixa de status | Significado                                  | Ação típica                        |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| 400-499     | Solicitação inválida ou problema de autenticação | Corrija o conteúdo da solicitação ou as credenciais.       |
+| 429         | Limite de taxa atingido                             | Tente novamente com espera e respeite os limites. |
+| 500-599     | Falha do Gateway ou do provedor              | Tente novamente com espera e registre os detalhes.    |
+
+---
+
+## Comportamento das novas tentativas
+
+- Implemente espera exponencial com jitter.
+- Respeite o cabeçalho `Retry-After` quando estiver presente.
+- Evite tentativas infinitas definindo um número máximo de repetições.
+
+---
+
+## Erros do provedor
+
+Às vezes, os erros vêm do provedor upstream. Vamos tentar indicar isso na resposta. Se continuarem, o roteador deve evitar esse provedor quando possível.
+
+---
+
+## Próximos passos
+
+- Consulte os [limites de taxa](./rate-limits.mdx) para se preparar para restrições.
+- Saiba como funcionam o [roteamento e os fallbacks](../guides/routing-and-fallbacks.mdx).

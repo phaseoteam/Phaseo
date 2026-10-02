@@ -2170,8 +2170,8 @@ export function calculateUnits(
 /**
  * Format numbers with K/M/B/T/Q suffixes
  */
-export function formatQuantity(n: number): string {
-	if (n === Number.POSITIVE_INFINITY) return "Unlimited";
+export function formatQuantity(n: number, unlimitedLabel = "Unlimited"): string {
+	if (n === Number.POSITIVE_INFINITY) return unlimitedLabel;
     if (n >= 1_000_000_000_000_000) return `${(n / 1_000_000_000_000_000).toFixed(1)}Q`;
     if (n >= 1_000_000_000_000) return `${(n / 1_000_000_000_000).toFixed(1)}T`;
     if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
@@ -2231,23 +2231,23 @@ export function getMeterInputConfig(
     const m = (meterName || "").toLowerCase();
 
     if (u.includes("token")) {
-        return { type: "number", step: "1000", placeholder: "e.g., 10000" };
+        return { type: "number", step: "1000", placeholder: "10000" };
     }
     if (u.includes("pixel") || m.includes("pixel")) {
-        return { type: "number", step: "1000", placeholder: "e.g., 1048576" };
+        return { type: "number", step: "1000", placeholder: "1048576" };
     }
     if (u.includes("second") || m.includes("second")) {
-        return { type: "number", step: "1", placeholder: "e.g., 60" };
+        return { type: "number", step: "1", placeholder: "60" };
     }
     if (u.includes("minute") || m.includes("minute")) {
-        return { type: "number", step: "1", placeholder: "e.g., 10" };
+        return { type: "number", step: "1", placeholder: "10" };
     }
     if (u.includes("request") || u.includes("call")) {
-        return { type: "number", step: "1", placeholder: "e.g., 100" };
+        return { type: "number", step: "1", placeholder: "100" };
     }
     if (u.includes("image") || m.includes("image")) {
-        return { type: "number", step: "1", placeholder: "e.g., 10" };
+        return { type: "number", step: "1", placeholder: "10" };
     }
 
-    return { type: "number", step: "1", placeholder: "Enter value..." };
+    return { type: "number", step: "1", placeholder: "" };
 }

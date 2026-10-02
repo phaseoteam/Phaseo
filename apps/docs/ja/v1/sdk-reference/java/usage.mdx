@@ -1,0 +1,37 @@
+---
+icon: "square-terminal"
+title: "Java SDKの使い方"
+description: "Java SDKのラッパーを初期化して使用する方法。"
+---
+
+## セットアップ
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
+```
+
+## 使用パターン
+
+ラッパーの一般的な呼び出しは次のようになります。
+
+```java
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
+```
+
+ほとんどのJSONエンドポイントでは解析済みJSONノードを返し、ファイルや動画の内容を取得するヘルパーではバイト配列を返します。
+
+## 推奨事項
+
+- まず一般的なゲートウェイ機能には`app.phaseo.sdk.Phaseo`を使います。
+- ラッパーにまだ追加されていない低レベル操作が必要な場合に限り、`app.phaseo.gen.Client`と`app.phaseo.gen.Operations`を使います。
+- 現在のラッパーメソッド名は、このセクションにある各エンドポイントの例を参照してください。

@@ -1,0 +1,153 @@
+---
+icon: "server-cog"
+title: "أدوات الخادم"
+description: "أتِح للنماذج استدعاء الأدوات التي تديرها Phaseo أثناء الطلب."
+---
+
+أدوات الخادم هي أدوات تشغّلها Phaseo نيابةً عنك أثناء طلب النموذج. يحدّد النموذج وقت استدعائها، ثم تنفّذها Phaseo على الخادم وتعيد النتيجة إلى دورة النموذج.
+
+استخدم أدوات الخادم عندما يحتاج النموذج إلى الوقت الحالي أو سياق الويب أو نص صفحة جرى جلبها أو رأي نموذج آخر، من دون إضافة منفّذ أدوات خاص بك.
+
+<Note>
+أدوات الخادم في المرحلة التجريبية. قد تتغير بنية الطلبات والبيانات المعادة مع تطور دعم المزوّدين.
+</Note>
+
+## الأدوات المتاحة
+
+| الأداة | النوع | الاستخدام |
+| --- | --- | --- |
+| التاريخ والوقت | `phaseo:datetime` | التاريخ والوقت الحاليان في ما يصل إلى 5 مناطق زمنية |
+| بحث الويب | `phaseo:web_search` | عمليات بحث على الويب يوجّهها النموذج أثناء الطلب |
+| جلب صفحات الويب | `phaseo:web_fetch` | جلب النص واستخراجه من عناوين URL محددة |
+| المستشار | `phaseo:advisor` | استشارة نموذج آخر أثناء التوليد |
+| وكيل فرعي | `phaseo:subagent` | تفويض مهمة محددة إلى نموذج مساعد |
+| Fusion | `phaseo:fusion` | تحليل متوازٍ يتبعه تركيب النموذج للنتائج |
+| البحث عن النماذج | `phaseo:search_models` | العثور على نماذج مناسبة في الكتالوج المباشر |
+| إنشاء الصور | `phaseo:image_generation` | إنشاء الصور عبر دورة أدوات النموذج |
+| تطبيق رقعة | `phaseo:apply_patch` | إنشاء رقع ملفات تم التحقق منها عبر Responses API |
+
+## آلية عمل أدوات الخادم
+
+1. أضف أداة خادم واحدة أو أكثر إلى مصفوفة `tools`.
+2. يقرّر النموذج ما إذا كان يحتاج إلى أداة، ثم يصدر استدعاءً لها.
+3. تعترض Phaseo استدعاء أداة الخادم، وتنفّذه، ثم ترسل النتيجة إلى النموذج.
+4. يواصل النموذج عمله ويكتب الرد النهائي.
+
+يمكن استخدام أدوات الخادم إلى جانب أدوات الوظائف الخاصة بك. تنفّذ Phaseo أدوات الخادم فقط، بينما يظل تطبيقك مسؤولًا عن استدعاءات `function` المعتادة.
+
+## البدء السريع
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What are the latest AI policy updates this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" },
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
+    ]
+  }'
+```
+
+## الدمج مع أدوات الوظائف
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Find recent funding news and save the best item." }
+  ],
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 3 } },
+    {
+      "type": "function",
+      "function": {
+        "name": "save_research_item",
+        "description": "Save a selected research item",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "url": { "type": "string" }
+          },
+          "required": ["title", "url"]
+        }
+      }
+    }
+  ]
+}
+```
+
+إذا استدعى النموذج `phaseo:web_search`، تنفّذ Phaseo ذلك تلقائيًا. وإذا استدعى `save_research_item`، يتلقى تطبيقك استدعاء الوظيفة ويجب أن يعيد نتيجتها في طلب لاحق.
+
+## نقاط النهاية المدعومة
+
+تتوفر أدوات الخادم على:
+
+- `/v1/chat/completions`
+- `/v1/responses`
+- `/v1/messages`
+
+تدعم الطلبات المتدفقة أيضًا. وبالنسبة لأدوات الخادم التي تديرها البوابة، قد تنشئ Phaseo دور استدعاء الأداة الواردة، وتنفّذ الأداة، وتتابع الدورة، ثم تصدر تدفقًا اصطناعيًا للرد النهائي.
+
+## تتبّع الاستخدام
+
+يُبلّغ عن استخدام أدوات الخادم في `usage.server_tool_use`:
+
+```json
+{
+  "usage": {
+    "input_tokens": 105,
+    "output_tokens": 250,
+    "server_tool_use": {
+      "datetime_requests": 1,
+      "web_search_requests": 2,
+      "web_search_results": 8,
+      "web_fetch_requests": 1,
+      "advisor_requests": 1,
+      "subagent_requests": 1,
+      "fusion_requests": 1,
+      "search_models_requests": 1,
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+يمكن أن تستخدم الأسعار أيضًا عدادات أدوات الخادم مثل `server_tool_web_search_requests` و`server_tool_web_search_extra_results` و`server_tool_web_fetch_requests` و`server_tool_advisor_requests` و`server_tool_image_generation_requests` و`native_web_search_requests` و`native_web_fetch_requests` عند ضبطها في بطاقات أسعار النماذج.
+
+## صفحات الأدوات
+
+<Columns cols={2}>
+  <Card title="التاريخ والوقت" icon="clock" href="./datetime.mdx">
+    زوّد النموذج بالتاريخ والوقت الحاليين.
+  </Card>
+  <Card title="بحث الويب" icon="search" href="./web-search.mdx">
+    أتِح للنموذج البحث على الويب عندما يحتاج إلى معلومات حديثة.
+  </Card>
+  <Card title="جلب صفحات الويب" icon="file-search" href="./web-fetch.mdx">
+    أتِح للنموذج جلب عناوين URL محددة وقراءتها.
+  </Card>
+  <Card title="المستشار" icon="message-square" href="./advisor.mdx">
+    أتِح لنموذج استشارة نموذج آخر أثناء التوليد.
+  </Card>
+  <Card title="وكيل فرعي" icon="cpu" href="./subagent.mdx">
+    أتِح للنموذج تفويض مهام محددة إلى نموذج مساعد.
+  </Card>
+  <Card title="Fusion" icon="combine" href="./fusion.mdx">
+	شغّل تحليلات متوازية للنماذج ثم لخّص النتائج.
+  </Card>
+	<Card title="البحث عن النماذج" icon="list-filter" href="./search-models.mdx">
+		أتِح للنموذج البحث عن نموذج مناسب في كتالوج Phaseo المباشر.
+	</Card>
+  <Card title="إنشاء الصور" icon="image" href="./image-generation.mdx">
+    أتِح للنموذج إنشاء الصور أثناء الإجابة.
+  </Card>
+	<Card title="تطبيق رقعة" icon="file-diff" href="./apply-patch.mdx">
+		أنشئ رقعة تم التحقق منها لإضافة الملفات أو تحديثها أو حذفها.
+	</Card>
+</Columns>

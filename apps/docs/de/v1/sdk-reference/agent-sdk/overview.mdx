@@ -1,0 +1,83 @@
+---
+icon: "rocket"
+title: "Agent SDK im Überblick"
+description: "Erstelle lokale, fortsetzbare Agent-Schleifen mit Phaseo Gateway in den unterstützten Sprachen des Agent SDK."
+---
+
+Verwende die Phaseo Agent SDKs, wenn deine Anwendung mehr als eine einmalige Generierung benötigt:
+
+- mehrstufige Tool-Schleifen
+- lokale Laufzeit-Tools
+- Gateway-gestützte Modellrunden
+- fortsetzbarer, von der Anwendung verwalteter Ausführungsstatus
+- Freigaben für exakte Aufrufe, Tools mit menschlicher Kontrolle, manuelle Tools und fortsetzbare Abläufe
+- Laufzeitvalidierung, Tools mit Fortschrittsmeldungen und behebbare Tool-Fehler
+- gestreamte Modellausgabe mit wiederabspielbaren Ereignis-Consumern
+- dynamische Turn-Konfiguration, kombinierbare Abbruchbedingungen und normalisierte Nutzung/Kosten
+- Modellwiederholungen, Tool-Zeitlimits, begrenzte Tool-Konkurrenz und Lebenszyklusereignisse
+- lokale Erfassung mit Phaseo Devtools
+- einheitliches Request-Routing in denselben Sprachen wie bei den zentralen Client-SDKs
+
+## Unterstützte Sprachen
+
+Die Sprachen des aktuellen Agent SDK entsprechen den zentralen Client-SDKs im Phaseo-Schnellstart:
+
+- [TypeScript](../typescript/agent-sdk.mdx)
+- [Python](../python/agent-sdk.mdx)
+- [Go](../go/agent-sdk.mdx)
+- [C#](../csharp/agent-sdk.mdx)
+- [PHP](../php/agent-sdk.mdx)
+- [Ruby](../ruby/agent-sdk.mdx)
+- [Rust](../rust/agent-sdk.mdx)
+
+## Gemeinsames Modell
+
+Jedes Agent SDK verwendet dasselbe Laufzeitmodell:
+
+- einen Agent definieren
+- null oder mehr lokale Tools definieren
+- einen Gateway-gestützten Modell-Client erstellen
+- eine begrenzte Schleife über die `responses`-API ausführen
+- Lebenszyklusereignisse oder eine Devtools-Spur untersuchen
+- den zurückgegebenen Lauf speichern und nach einer menschlichen Entscheidung fortsetzen
+
+TypeScript dient als Referenz für das API-Design. Python, Go, C#, PHP und Ruby bieten den umfassenderen sprachübergreifenden Vertrag mit sprachspezifischen Callbacks und Primitiven für Parallelität, Zeitüberschreitungen und Abbruch. Rust ist eine unterstützte synchrone Laufzeit mit lokalen und externen Tools, Freigaben über exakte IDs, menschlicher Prüfung, Modellwiederholungen, serialisierbarem Laufstatus, Lebenszyklus-Callbacks und Nutzungsaggregation. Java und C++ befinden sich noch in Arbeit.
+
+<Note>
+  Das Rust Agent SDK wird als `phaseo-agent` veröffentlicht. Streaming, asynchrone Ausführung, parallele lokale Tools, Laufzeit-Schemavalidierung und Devtools-Erfassung sind noch nicht enthalten.
+</Note>
+
+## Sprachübergreifender Funktionsumfang
+
+| Funktion | TypeScript | Python | Go | C# | PHP | Ruby | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Ausführbare Tools und behebbare Tool-Fehler | Ja | Ja | Ja | Ja | Ja | Ja | Synchron |
+| Freigaben über exakte IDs, HITL und manuelle Ergebnisse | Ja | Ja | Ja | Ja | Ja | Ja | Ja |
+| Vorläufiger Tool-Fortschritt | Asynchroner Generator | Iterator oder Callback | Callback | Callback | Callback | Callback | Noch nicht |
+| Modell-Streaming und wiederabspielbare Consumer | Asynchron iterierbar | Iterator | Kanal | Asynchron aufzählbar | Iterierbar | Enumerator | Noch nicht |
+| Kombinierbare Abbruchbedingungen | Ja | Ja | Ja | Ja | Ja | Ja | Schrittlimit |
+| Dynamische Turns und veränderbarer Kontext | Ja | Ja | Ja | Ja | Ja | Ja | Modell pro Lauf, Schrittlimit und Kontext |
+| Von der Anwendung gespeicherter Laufstatus | Ja | Ja | Ja | Ja | Ja | Ja | Serialisierbares `RunResult` |
+| Normalisierte Nutzung und Kosten | Ja | Ja | Ja | Ja | Ja | Ja | Tokens; Kosten mit eigenem Client nur in `0.1` |
+
+PHP und Ruby stellen Provider-Streamereignisse über ihre normalen synchronen Iterations-APIs bereit. Dafür ist weder eine gehostete Laufzeit noch ein Phaseo-Hintergrunddienst erforderlich.
+
+## Client-SDK, Agent SDK und API
+
+| Anwendungsfall | Wähle | Zuständigkeit |
+| --- | --- | --- |
+| Eine API-Anfrage oder vollständige Endpoint-Abdeckung | Client-SDK | Generierte API-Typen und Transport |
+| Mehrstufige Anwendungslogik mit Tools | Agent SDK | Lokale Schleife, Tools, Checkpoints, Prüfung, Ereignisse und Devtools |
+| Eigener Transport oder nicht unterstützte Sprache | Direkte API | Verwaltung von HTTP-Anfrage und -Antwort |
+
+Die Gateway-Adapter des Agent SDK delegieren Modellrunden an das passende Client-SDK. Sprachen mit einem `requestOptions`-Hook oder einem Äquivalent können zusätzliche Responses-API-Felder übergeben, während das Agent SDK weiterhin `model`, `input`, `instructions` und lokale Funktionstools verwaltet. Der Rust-Adapter `0.1` sendet derzeit die normalisierten Agent-Felder ohne zusätzlichen Hook für Request-Optionen.
+
+## Rezepte
+
+Das Kochbuch enthält TypeScript-Workflows und sprachspezifische Einstiegspunkte:
+
+- [Eine dauerhafte Agent-Schleife erstellen](../../cookbook/agent-sdk-durable-loop.mdx)
+- [Mit agentengestützter Websuche recherchieren](../../cookbook/agent-sdk-research-brief.mdx)
+- [Supportanfragen mit Preset-gesteuerten Agents bearbeiten](../../cookbook/agent-sdk-support-triage.mdx)
+- [Code mit lokalen Laufzeit-Tools prüfen](../../cookbook/agent-sdk-coding-review.mdx)
+- [Lokale Tools parallel ausführen](../../cookbook/agent-sdk-parallel-tools.mdx)

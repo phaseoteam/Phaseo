@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import type { ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
@@ -44,11 +45,13 @@ function sortResults(results: ModelBenchmarkResult[]) {
 
 export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 	const [openRows, setOpenRows] = useState<Record<string, boolean>>({});
+	const t = useTranslations("Catalogue.models.detail.benchmarksTable");
+
 
 	if (!Object.keys(grouped).length) {
 		return (
 			<div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-				No benchmark history recorded for this model yet.
+				{t("noHistory")}
 			</div>
 		);
 	}
@@ -58,12 +61,12 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 			<table className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
 				<thead className="bg-zinc-100 dark:bg-zinc-800">
 					<tr>
-						<th className="px-4 py-2 text-left">Benchmark</th>
-						<th className="px-4 py-2 text-left">Category</th>
-						<th className="px-4 py-2 text-left">Top Score</th>
-						<th className="px-4 py-2 text-left">Info</th>
-						<th className="px-4 py-2 text-center">Self Reported</th>
-						<th className="px-4 py-2 text-left">Source</th>
+						<th className="px-4 py-2 text-left">{t("benchmark")}</th>
+						<th className="px-4 py-2 text-left">{t("category")}</th>
+						<th className="px-4 py-2 text-left">{t("topScore")}</th>
+						<th className="px-4 py-2 text-left">{t("info")}</th>
+						<th className="px-4 py-2 text-center">{t("selfReported")}</th>
+						<th className="px-4 py-2 text-left">{t("source")}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -100,8 +103,8 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 													onClick={toggleRow}
 													aria-label={
 														isOpen
-															? "Hide all scores"
-															: "Show all scores"
+										? t("hideAllScores")
+										: t("showAllScores")
 													}
 												>
 													{isOpen ? (
@@ -136,7 +139,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 														: "rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 dark:bg-green-900 dark:text-green-200"
 												}
 											>
-												{anySelfReported ? "Yes" : "No"}
+								{anySelfReported ? t("yes") : t("no")}
 											</span>
 										</td>
 										<td className="px-4 py-2 text-left">
@@ -148,7 +151,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 													className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 												>
 													<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-														Source
+															{t("source")}
 													</span>
 													<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 												</a>
@@ -188,13 +191,13 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 														}
 														title={
 															item.is_self_reported
-																? "Self-reported (may be less reliable)"
-																: "Not self-reported (more reliable)"
+										? t("selfReportedTooltip")
+										: t("notSelfReportedTooltip")
 														}
 													>
 														{item.is_self_reported
-															? "Yes"
-															: "No"}
+									? t("yes")
+									: t("no")}
 													</span>
 												</td>
 												<td className="px-4 py-2">
@@ -208,7 +211,7 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 															className="group inline-flex items-center text-indigo-600 dark:text-indigo-400"
 														>
 															<span className="relative inline-block align-middle truncate text-sm font-normal underline decoration-transparent group-hover:decoration-current transition-colors duration-200">
-																Source
+																		{t("source")}
 															</span>
 															<ExternalLink className="ml-1 h-3 w-3 text-indigo-500 opacity-0 transition-all group-hover:opacity-100 group-hover:text-indigo-700 dark:text-indigo-400 dark:group-hover:text-indigo-300" />
 														</Link>

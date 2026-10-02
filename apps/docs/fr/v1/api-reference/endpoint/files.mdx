@@ -1,0 +1,19 @@
+---
+title: "Téléverser un fichier"
+sidebarTitle: "Téléverser un fichier"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /files"
+description: "Téléversez un fichier pour le traiter par lots. La passerelle stocke les métadonnées de propriété afin que le même espace de travail puisse récupérer ultérieurement le fichier ou son contenu."
+---
+
+Conservez le `file_id` renvoyé et réutilisez-le avec :
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+`GET /v1/files` n’est pas encore pris en charge avec la clé de passerelle partagée ; la réponse de téléversement est donc la référence pour récupérer l’identifiant du fichier.
+</Note>
+
+

@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले Ruby tools परिभाषित करें।"
+---
+
+`PhaseoAgentSdk::Tool` वैल्यू बनाएँ और उन्हें `define_tool` से दें। Tools में ये शामिल हो सकते हैं:
+
+- मॉडल को दिखाए जाने वाले JSON `parameters`
+- `input_schema`, `output_schema` और `event_schema` के validation callback
+- `timeout_ms` और `execute` callback
+- boolean या callable `require_approval`
+- interactive काम के लिए `on_tool_called` और `on_response_received`
+- `next_turn_params` और `on_error: "return-to-model"`
+
+प्रारंभिक नतीजों के लिए `runtime.emit_progress` और ऐप context के लिए `set_context` उपयोग करें। सीमित threads स्वतंत्र tools को साथ चला सकते हैं और सहेजे गए नतीजों को model call के क्रम में रखते हैं।
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

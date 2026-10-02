@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Info } from "lucide-react";
 import { ProviderLogo } from "../ProviderLogo";
 import { PriceRotator } from "./PriceRotator";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface SubscriptionPlansComparisonProps {
@@ -123,11 +124,12 @@ function formatCurrencyAmount(
 function formatPriceLine(
 	p: PlanPrice,
 	formatNumber: ReturnType<typeof useDisplayFormatters>["number"],
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
 ): string {
 	const freq = normalizeFrequency(p.frequency);
-	if (freq.toLowerCase() === "usage") return "Usage-based";
-	if (freq.toLowerCase() === "custom") return "Custom pricing";
-	if (p.price == null || !Number.isFinite(p.price)) return `Custom / ${freq}`;
+	if (freq.toLowerCase() === "usage") return t("usageBased");
+	if (freq.toLowerCase() === "custom") return t("customPricing");
+	if (p.price == null || !Number.isFinite(p.price)) return `${t("customPricing")} / ${freq}`;
 	return `${formatCurrencyAmount(p.price, p.currency, formatNumber)} / ${freq}`;
 }
 
@@ -155,6 +157,8 @@ export default function SubscriptionPlansComparison({
 	selectedModels,
 	hideHeader = false,
 }: SubscriptionPlansComparisonProps) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
@@ -171,9 +175,9 @@ export default function SubscriptionPlansComparison({
 		<div className="space-y-3">
 			{!hideHeader ? (
 				<header className="space-y-1">
-					<h2 className="text-lg font-semibold">Subscription plans</h2>
+					<h2 className="text-lg font-semibold">{t("subscriptionPlans")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Plans that include each selected model, grouped by organisation.
+						{t("subscriptionPlansDescription")}
 					</p>
 				</header>
 			) : null}
@@ -195,14 +199,13 @@ export default function SubscriptionPlansComparison({
 									</span>
 								</Link>
 								<p className="text-xs text-muted-foreground">
-									{plans.length} plan
-									{plans.length === 1 ? "" : "s"}
+									{t("planCount", { count: plans.length })}
 								</p>
 							</div>
 						</div>
 						{plans.length === 0 ? (
 							<p className="text-sm text-muted-foreground">
-								No subscription plans include this model yet.
+								{t("noSubscriptionPlans")}
 							</p>
 						) : (
 							<div className="grid gap-3">
@@ -215,7 +218,7 @@ export default function SubscriptionPlansComparison({
 									.map((plan) => {
 										const sortedPrices = getSortedPlanPrices(plan.prices);
 										const priceLines = sortedPrices.map((price) =>
-											formatPriceLine(price, format.number),
+											formatPriceLine(price, format.number, t)
 										);
 										const notes = getPlanNotes(plan);
 										return (
@@ -229,14 +232,14 @@ export default function SubscriptionPlansComparison({
 													<button
 														type="button"
 														className="absolute top-3 right-3 inline-flex items-center justify-center rounded-md border border-border/60 bg-background/70 p-1.5 text-muted-foreground transition hover:text-foreground hover:border-border focus:outline-none focus:ring-2 focus:ring-ring/40"
-														aria-label="View plan notes"
+									aria-label={t("viewPlanNotes")}
 													>
 														<Info className="h-4 w-4" />
 													</button>
 												</PopoverTrigger>
 												<PopoverContent align="end" className="w-80">
 													<div className="text-xs font-medium text-muted-foreground mb-1">
-														Notes
+												{t("planNotes")}
 													</div>
 													<div className="text-sm whitespace-pre-wrap leading-5">
 														{notes}
@@ -314,7 +317,7 @@ export default function SubscriptionPlansComparison({
 											</div>
 										) : (
 											<p className="text-sm font-mono text-muted-foreground">
-												Price unavailable
+											{t("priceUnavailable")}
 											</p>
 										)}
 										{plan.description && (

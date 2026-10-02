@@ -1,0 +1,69 @@
+---
+title: "Anthropic Claude Sonnet 4.6"
+description: "Aspectos clave para adoptar Claude Sonnet 4.6 en programación, uso del ordenador y planificación de agentes."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Sonnet 4.6
+
+Usa esta guía para incorporar `anthropic/claude-sonnet-4.6` de forma segura en producción.
+
+Sonnet 4.6 comparte el proceso de migración de la familia Claude 4.6, pero también cambia lo suficiente el rendimiento como para que debas volver a validar tus supuestos sobre prompts y enrutamiento.
+
+## Novedades
+
+- Los modelos Claude 4.6 ya no admiten prefills del asistente y devuelven `400`.
+- La salida estructurada pasa de `output_format` a `output_config.format`.
+- El pensamiento adaptativo se configura mediante `output_config.effort`.
+- Se deben quitar las cabeceras beta obsoletas.
+- Sonnet 4.6 supone una mejora general en programación, uso del ordenador, razonamiento con contexto largo, planificación de agentes y seguimiento de instrucciones.
+- Sonnet 4.6 añade una ventana de contexto de 1 millón de tokens en beta.
+
+## Inicio rápido de la migración
+
+### 1. Deja de usar prefills del asistente
+
+Si tus prompts actuales de Sonnet 4.5 empiezan el turno del asistente con un prefijo JSON, una etiqueta XML o un fragmento de formato, quita ese patrón antes del despliegue.
+
+### 2. Cambia la configuración de salida estructurada
+
+Sustituye `output_format` por `output_config.format` y vuelve a ejecutar las pruebas de esquemas y analizadores.
+
+### 3. Ajusta el esfuerzo y las expectativas de latencia
+
+Si usas Sonnet en rutas interactivas, compara distintos niveles de `effort` antes de establecer 4.6 como predeterminado. El modelo es más potente, pero el mejor ajuste depende de tu presupuesto de latencia.
+
+## Qué probar
+
+### Comportamiento de las respuestas
+
+- Seguimiento de instrucciones en prompts sensibles al formato.
+- Calidad de la planificación de agentes para tareas con varios pasos.
+- Prompts de programación, refactorización y revisión.
+- Recuperación y resumen con contexto largo.
+
+### Estabilidad de los contratos
+
+- Tasa de validación de JSON y esquemas.
+- Integridad de los argumentos de herramientas.
+- Motivos de finalización y manejo de respuestas vacías.
+- Rutas que antes dependían de prefills para mantener un formato estable.
+
+### Métricas de producción
+
+- Latencia por nivel de esfuerzo.
+- Éxito de las tareas frente a Sonnet 4.5.
+- Tasas de tiempo de espera y reintento.
+- Coste por tarea completada correctamente.
+
+## Despliegue seguro
+
+1. Quita los prefills y actualiza primero la configuración de salida estructurada.
+2. Evalúa Sonnet 4.6 con tu conjunto actual de prompts de producción.
+3. Prueba el tráfico gradualmente y conserva Sonnet 4.5 u otra ruta estable como alternativa.
+4. Aumenta el tráfico solo cuando se mantengan la calidad y la estabilidad de los contratos.
+
+## Fuentes
+
+- [Guía de migración de Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Presentación de Claude Sonnet 4.6](https://www.anthropic.com/news/claude-sonnet-4-6)

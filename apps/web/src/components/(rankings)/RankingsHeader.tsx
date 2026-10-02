@@ -4,8 +4,10 @@
 // How: Simple presentational component
 
 import { Trophy } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-export function RankingsHeader() {
+export async function RankingsHeader() {
+    const t = await getTranslations("Catalogue.rankings");
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3">
@@ -13,14 +15,14 @@ export function RankingsHeader() {
                     <Trophy className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold">AI Model Rankings</h1>
+                    <h1 className="text-3xl font-bold">{t("title")}</h1>
                     <p className="text-muted-foreground">
-                        Real-time usage statistics and performance metrics
+                        {t("realTimeUsage")}
                     </p>
                 </div>
             </div>
             <p className="text-sm text-muted-foreground">
-                Aggregated data from Phaseo Gateway. Updated every 5 minutes. All metrics are privacy-preserving aggregations across teams.
+                {t("privacyNote")}
             </p>
         </div>
     );

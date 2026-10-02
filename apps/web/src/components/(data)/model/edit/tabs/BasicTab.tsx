@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useState } from "react"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,36 @@ interface FamilyOption {
 
 const TYPE_OPTIONS = MODEL_MODALITY_OPTIONS
 
+const MODALITY_TRANSLATION_KEYS: Record<string, string> = {
+	text: "text",
+	image: "image",
+	video: "video",
+	audio: "audio",
+	audio_stt: "audioStt",
+	audio_tts: "audioTts",
+	audio_music: "audioMusic",
+	file: "file",
+	embeddings: "embeddings",
+	code: "code",
+	vision: "vision",
+	speech: "speech",
+	multimodal: "multimodal",
+	embedding: "embedding",
+	rerank: "rerank",
+	moderation: "moderation",
+}
+
+const STATUS_TRANSLATION_KEYS: Record<string, string> = {
+	Rumoured: "rumoured",
+	Announced: "announced",
+	Preview: "preview",
+	"Limited Access": "limitedAccess",
+	Withheld: "withheld",
+	Released: "released",
+	Deprecated: "deprecated",
+	Retired: "retired",
+}
+
 function formatDateForInput(dateStr: string | null): string {
   if (!dateStr) return ""
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr
@@ -90,6 +121,9 @@ function FieldRow({
 }
 
 export default function BasicTab({ model, onModelChange }: BasicTabProps) {
+  const tUi = useTranslations("Common.ui")
+  const tEditor = useTranslations("Common.ui.modelEditor")
+  const tModel = useTranslations("Common.ui.modelCreation")
   const [existingModels, setExistingModels] = useState<ExistingModel[]>([])
   const [organisations, setOrganisations] = useState<OrganisationOption[]>([])
   const [families, setFamilies] = useState<FamilyOption[]>([])
@@ -128,17 +162,17 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
   return (
     <div className="space-y-5">
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Identity</div>
-        <FieldRow label="Model name">
+        <div className="text-sm font-semibold">{tEditor("identity")}</div>
+        <FieldRow label={tModel("displayName")}>
           <Input
             value={model.name || ""}
             onChange={(event) => onModelChange({ ...model, name: event.target.value })}
           />
         </FieldRow>
-        <FieldRow label="Organisation">
-          <SearchableSelect label="Organisation" value={model.organisation_id || ""} placeholder="Select organisation" options={organisations.map((item) => ({ value: item.organisation_id, label: item.name || item.organisation_id, icon: <Logo id={item.organisation_id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={(value) => onModelChange({ ...model, organisation_id: value === "__none__" ? null : value })} />
+        <FieldRow label={tModel("organization")}>
+          <SearchableSelect label={tModel("organization")} value={model.organisation_id || ""} placeholder={tModel("selectOrganization")} options={organisations.map((item) => ({ value: item.organisation_id, label: item.name || item.organisation_id, icon: <Logo id={item.organisation_id} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))} onValueChange={(value) => onModelChange({ ...model, organisation_id: value === "__none__" ? null : value })} />
         </FieldRow>
-        <FieldRow label="Status">
+        <FieldRow label={tModel("status")}>
           <Select
             value={normalizeModelStatus(model.status)}
             onValueChange={(value) => onModelChange({ ...model, status: value })}
@@ -147,37 +181,37 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
             <SelectContent>
               {MODEL_STATUS_OPTIONS.map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status}
+                  {tEditor(`modelStatuses.${STATUS_TRANSLATION_KEYS[status]}` as never)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </FieldRow>
-        <FieldRow label="License">
-          <SearchableSelect label="License" value={model.license || "unspecified"} options={[{ value: "unspecified", label: "Not specified" }, ...[...new Set(["Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-NC-4.0", "OpenRAIL", "Proprietary", ...(model.license ? [model.license] : [])])].map((value) => ({ value, label: value }))]} onValueChange={(value) => onModelChange({ ...model, license: value === "unspecified" ? null : value })} />
+        <FieldRow label={tEditor("license")}>
+          <SearchableSelect label={tEditor("license")} value={model.license || "unspecified"} options={[{ value: "unspecified", label: tEditor("notSpecified") }, ...[...new Set(["Apache-2.0", "MIT", "BSD-3-Clause", "CC-BY-4.0", "CC-BY-NC-4.0", "OpenRAIL", "Proprietary", ...(model.license ? [model.license] : [])])].map((value) => ({ value, label: value === "Proprietary" ? tEditor("proprietary") : value }))]} onValueChange={(value) => onModelChange({ ...model, license: value === "unspecified" ? null : value })} />
         </FieldRow>
         <FieldRow
-          label="Visibility"
-          description="Control whether this model appears in public listings."
+          label={tEditor("visibility")}
+          description={tEditor("visibilityDescription")}
         >
           <label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
             <Checkbox
               checked={Boolean(model.hidden)}
               onCheckedChange={(checked) => onModelChange({ ...model, hidden: checked === true })}
             />
-            Hidden
+            {tModel("hidden")}
           </label>
         </FieldRow>
       </section>
 
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Relationships</div>
-        <FieldRow label="Previous model">
-          <SearchableSelect label="Previous model" value={model.previous_model_id || "__none__"} options={[{ value: "__none__", label: "None" }, ...existingModels.map((item) => ({ value: item.model_id, label: item.name || item.model_id, icon: <Logo id={item.model_id.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))]} onValueChange={(value) => onModelChange({ ...model, previous_model_id: value === "__none__" ? null : value })} />
+        <div className="text-sm font-semibold">{tEditor("relationships")}</div>
+        <FieldRow label={tEditor("previousModel")}>
+          <SearchableSelect label={tEditor("previousModel")} value={model.previous_model_id || "__none__"} options={[{ value: "__none__", label: tUi("select.none") }, ...existingModels.map((item) => ({ value: item.model_id, label: item.name || item.model_id, icon: <Logo id={item.model_id.split("/")[0]} alt="" width={20} height={20} className="size-5 shrink-0 object-contain" /> }))]} onValueChange={(value) => onModelChange({ ...model, previous_model_id: value === "__none__" ? null : value })} />
         </FieldRow>
         <FieldRow
-          label="Recommended successor"
-          description="Shown in deprecation notices; independent of model lineage."
+          label={tEditor("recommendedSuccessor")}
+          description={tEditor("recommendedSuccessorDescription")}
           htmlFor="recommended-successor"
         >
           <Select
@@ -190,10 +224,10 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
             }
           >
             <SelectTrigger id="recommended-successor">
-              <SelectValue placeholder="Select recommended successor" />
+              <SelectValue placeholder={tEditor("selectRecommendedSuccessor")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__none__">None</SelectItem>
+              <SelectItem value="__none__">{tUi("select.none")}</SelectItem>
               {existingModels.map((existingModel) => (
                 <SelectItem key={existingModel.model_id} value={existingModel.model_id}>
                   {existingModel.name}
@@ -202,46 +236,46 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
             </SelectContent>
           </Select>
         </FieldRow>
-        <FieldRow label="Model family">
-          <SearchableSelect label="Model family" value={model.family_id || "__none__"} options={[{ value: "__none__", label: "None" }, ...families.map((item) => ({ value: item.family_id, label: item.family_name || item.family_id }))]} onValueChange={(value) => onModelChange({ ...model, family_id: value === "__none__" ? null : value })} />
+        <FieldRow label={tEditor("modelFamily")}>
+          <SearchableSelect label={tEditor("modelFamily")} value={model.family_id || "__none__"} options={[{ value: "__none__", label: tUi("select.none") }, ...families.map((item) => ({ value: item.family_id, label: item.family_name || item.family_id }))]} onValueChange={(value) => onModelChange({ ...model, family_id: value === "__none__" ? null : value })} />
         </FieldRow>
       </section>
 
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Lifecycle</div>
-        <FieldRow label="Announcement date">
+        <div className="text-sm font-semibold">{tEditor("lifecycle")}</div>
+        <FieldRow label={tEditor("announcementDate")}>
           <DatePickerInput
             value={formatDateForInput(model.announcement_date)}
             onChange={(value) => onModelChange({ ...model, announcement_date: value || null })}
-            placeholder="Announcement date"
+            placeholder={tEditor("announcementDate")}
           />
         </FieldRow>
-        <FieldRow label="Release date">
+        <FieldRow label={tModel("releaseDate")}>
           <DatePickerInput
             value={formatDateForInput(model.release_date)}
             onChange={(value) => onModelChange({ ...model, release_date: value || null })}
-            placeholder="Release date"
+            placeholder={tModel("releaseDate")}
           />
         </FieldRow>
-        <FieldRow label="Deprecation date">
+        <FieldRow label={tEditor("deprecationDate")}>
           <DatePickerInput
             value={formatDateForInput(model.deprecation_date)}
             onChange={(value) => onModelChange({ ...model, deprecation_date: value || null })}
-            placeholder="Deprecation date"
+            placeholder={tEditor("deprecationDate")}
           />
         </FieldRow>
-        <FieldRow label="Retirement date">
+        <FieldRow label={tModel("retirementDate")}>
           <DatePickerInput
             value={formatDateForInput(model.retirement_date)}
             onChange={(value) => onModelChange({ ...model, retirement_date: value || null })}
-            placeholder="Retirement date"
+            placeholder={tModel("retirementDate")}
           />
         </FieldRow>
       </section>
 
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Modalities</div>
-        <FieldRow label="Input types">
+        <div className="text-sm font-semibold">{tEditor("modalities")}</div>
+        <FieldRow label={tEditor("inputTypes")}>
           <div className="flex flex-wrap gap-2">
             {TYPE_OPTIONS.map((type) => {
               const active = inputTypes.includes(type)
@@ -254,13 +288,13 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
                   onClick={() => toggleType("input_types", type)}
                   className={cn(active && "border-primary bg-primary/10")}
                 >
-                  {type}
+                  {tModel(`modalities.${MODALITY_TRANSLATION_KEYS[type] ?? type}` as never)}
                 </Button>
               )
             })}
           </div>
         </FieldRow>
-        <FieldRow label="Output types">
+        <FieldRow label={tEditor("outputTypes")}>
           <div className="flex flex-wrap gap-2">
             {TYPE_OPTIONS.map((type) => {
               const active = outputTypes.includes(type)
@@ -273,7 +307,7 @@ export default function BasicTab({ model, onModelChange }: BasicTabProps) {
                   onClick={() => toggleType("output_types", type)}
                   className={cn(active && "border-primary bg-primary/10")}
                 >
-                  {type}
+                  {tModel(`modalities.${MODALITY_TRANSLATION_KEYS[type] ?? type}` as never)}
                 </Button>
               )
             })}

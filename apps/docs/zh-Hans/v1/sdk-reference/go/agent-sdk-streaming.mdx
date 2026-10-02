@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "使用可重放的消费者流式接收 Go Agent 文本和事件。"
+---
+
+`Agent.Stream(...)` 会返回可重放的 `StreamResult`：
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+使用 `Events()` 接收生命周期和供应商事件。调用 `Cancel()` 可取消流上下文和当前模型请求。
+
+Go 尚未提供与 TypeScript 相同的原生类型化条目消费者；请使用事件序列和已完成的运行记录构建结构化产品时间线。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

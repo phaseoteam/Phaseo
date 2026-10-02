@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "按步骤数、令牌数、成本、时长、工具或结束原因限制 Java Agent 工作。"
+---
+
+在 `AgentDefinition.stopWhen` 中组合停止函数：
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+其他辅助函数包括 `hasToolCall(...)` 和 `finishReasonIs(...)`。第一个匹配条件会记录停止原因并返回已停止的运行，而不是悄悄继续。
+
+只有在所选模型路由会报告相关信息时，才使用成本和令牌限制。始终保留步骤数或时长限制作为备用运行边界。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [输出与重试](./agent-sdk-run-controls.mdx)

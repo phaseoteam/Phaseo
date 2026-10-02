@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import {
@@ -74,12 +75,12 @@ type ChatRequestErrorNoticeProps = {
 	onChooseModel?: () => void;
 };
 
-function buildSummary(error: ChatRequestErrorDetails): string {
+function buildSummary(error: ChatRequestErrorDetails, fallback = "Request failed"): string {
 	return (
 		error.description ||
 		error.details[0]?.message ||
 		error.message ||
-		`Request failed${error.status ? ` (${error.status})` : ""}.`
+		fallback
 	);
 }
 
@@ -114,16 +115,21 @@ export function ChatRequestErrorNotice({
 	onRetry,
 	onChooseModel,
 }: ChatRequestErrorNoticeProps) {
+	const t = useTranslations("Product.chat");
 	const [open, setOpen] = useState(false);
 	const [notes, setNotes] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const summary = useMemo(() => buildSummary(error), [error]);
+	const summary = useMemo(() => buildSummary(error, t("requestFailed")), [error, t]);
 	const copyPayload = useMemo(() => buildCopyPayload(error), [error]);
 	const presentation = useMemo(
 		() => getChatRequestErrorPresentation(error),
 		[error],
 	);
 	const isPaymentRequired = presentation.kind === "payment";
+	const presentationTitle = t(`errorNotice.${presentation.titleKey}`);
+	const presentationDescription = presentation.descriptionKey
+		? t(`errorNotice.${presentation.descriptionKey}`)
+		: summary;
 	const isRecoveryState = [
 		"payment",
 		"authentication",
@@ -137,9 +143,9 @@ export function ChatRequestErrorNotice({
 	const copyDiagnostics = async () => {
 		try {
 			await navigator.clipboard.writeText(copyPayload);
-			toast.success("Copied diagnostics");
+			toast.success(t("errorNotice.copiedDiagnostics"));
 		} catch {
-			toast.error("Failed to copy diagnostics");
+			toast.error(t("errorNotice.copyDiagnosticsFailed"));
 		}
 	};
 
@@ -163,20 +169,20 @@ export function ChatRequestErrorNotice({
 				}),
 			});
 			if (!payload.issueUrl) {
-				throw new Error(payload.error || "Failed to create GitHub issue");
+				throw new Error(payload.error || t("errorNotice.createIssueFailed"));
 			}
 			window.open(payload.issueUrl, "_blank", "noopener,noreferrer");
 			toast.success(
 				payload.created
-					? "GitHub issue created"
-					: "Opened prefilled GitHub issue",
+					? t("errorNotice.issueCreated")
+					: t("errorNotice.prefilledIssueOpened"),
 			);
 			setOpen(false);
 		} catch (issueError) {
 			toast.error(
 				issueError instanceof Error
 					? issueError.message
-					: "Failed to create GitHub issue",
+					: t("errorNotice.createIssueFailed"),
 			);
 		} finally {
 			setIsSubmitting(false);
@@ -205,7 +211,7 @@ export function ChatRequestErrorNotice({
 						)}
 						<div className="min-w-0 flex-1">
 							<p className="text-sm font-medium">
-								{presentation.title}
+								{presentationTitle}
 							</p>
 							<p
 								className={cn(
@@ -215,7 +221,7 @@ export function ChatRequestErrorNotice({
 										: "text-destructive/80",
 								)}
 							>
-								{presentation.description}
+								{presentationDescription}
 							</p>
 							{isPaymentRequired ||
 							presentation.kind === "authentication" ||
@@ -226,7 +232,7 @@ export function ChatRequestErrorNotice({
 										<>
 											<Button asChild size="sm">
 												<Link href="/settings/credits">
-													Add credits
+													{t("errorNotice.addCredits")}
 													<ArrowRight />
 												</Link>
 											</Button>
@@ -234,7 +240,7 @@ export function ChatRequestErrorNotice({
 												<Link
 													href={`/chat?model=${encodeURIComponent(FREE_ROUTER_MODEL_ID)}`}
 												>
-													Try a free model
+													{t("errorNotice.tryFreeModel")}
 												</Link>
 											</Button>
 										</>
@@ -242,7 +248,7 @@ export function ChatRequestErrorNotice({
 									{presentation.kind === "authentication" ? (
 										<Button asChild size="sm">
 											<Link href="/sign-in?returnUrl=%2Fchat">
-												Sign in
+													{t("errorNotice.signIn")}
 												<ArrowRight />
 											</Link>
 										</Button>
@@ -250,7 +256,7 @@ export function ChatRequestErrorNotice({
 									{presentation.canRetry && onRetry ? (
 										<Button type="button" size="sm" onClick={onRetry}>
 											<RefreshCw />
-											Try again
+											{t("tryAgain")}
 										</Button>
 									) : null}
 									{presentation.canChooseModel && onChooseModel ? (
@@ -260,7 +266,7 @@ export function ChatRequestErrorNotice({
 											variant="outline"
 											onClick={onChooseModel}
 										>
-											Choose another model
+											{t("errorNotice.chooseAnotherModel")}
 										</Button>
 									) : null}
 								</div>
@@ -283,7 +289,7 @@ export function ChatRequestErrorNotice({
 										type="button"
 										size="icon-xs"
 										variant="ghost"
-										aria-label="Show error details"
+										aria-label={t("errorNotice.showErrorDetails")}
 										className={cn(
 											isRecoveryState
 												? "text-muted-foreground hover:text-foreground aria-expanded:text-foreground"
@@ -295,13 +301,13 @@ export function ChatRequestErrorNotice({
 								</PopoverTrigger>
 							</TooltipTrigger>
 							<TooltipContent side="top" sideOffset={6}>
-								Show error details
+								{t("errorNotice.showErrorDetails")}
 							</TooltipContent>
 						</Tooltip>
 						<PopoverContent align="end" className="w-80 gap-3 rounded-md">
 							<PopoverHeader>
 								<PopoverTitle className="text-sm">
-									Chat request failed
+									{t("errorNotice.chatRequestFailed")}
 								</PopoverTitle>
 								<PopoverDescription className="text-sm">
 									{summary}
@@ -309,19 +315,19 @@ export function ChatRequestErrorNotice({
 							</PopoverHeader>
 							<div className="grid gap-1 text-xs text-muted-foreground">
 								<p>
-									<span className="font-medium text-foreground">Status:</span>{" "}
-									{error.status ?? "unknown"}
+									<span className="font-medium text-foreground">{t("errorNotice.status")}:</span>{" "}
+									{error.status ?? t("errorNotice.unknown")}
 								</p>
 								<p>
-									<span className="font-medium text-foreground">Code:</span>{" "}
-									{error.errorCode ?? "unknown"}
+									<span className="font-medium text-foreground">{t("errorNotice.code")}:</span>{" "}
+									{error.errorCode ?? t("errorNotice.unknown")}
 								</p>
 								<p className="break-all">
-									<span className="font-medium text-foreground">Request:</span>{" "}
-									{error.requestId ?? "unknown"}
+									<span className="font-medium text-foreground">{t("errorNotice.request")}:</span>{" "}
+									{error.requestId ?? t("errorNotice.unknown")}
 								</p>
 								<p className="break-all">
-									<span className="font-medium text-foreground">Model:</span>{" "}
+									<span className="font-medium text-foreground">{t("errorNotice.model")}:</span>{" "}
 									{error.modelId}
 								</p>
 							</div>
@@ -333,7 +339,7 @@ export function ChatRequestErrorNotice({
 								type="button"
 								size="icon-xs"
 							variant="ghost"
-							aria-label="Copy error diagnostics"
+							aria-label={t("errorNotice.copyDiagnostics")}
 							className={cn(
 								isRecoveryState
 									? "text-muted-foreground hover:text-foreground"
@@ -345,7 +351,7 @@ export function ChatRequestErrorNotice({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="top" sideOffset={6}>
-							Copy diagnostics
+							{t("errorNotice.copyDiagnostics")}
 						</TooltipContent>
 					</Tooltip>
 					<Tooltip>
@@ -354,7 +360,7 @@ export function ChatRequestErrorNotice({
 								type="button"
 								size="icon-xs"
 							variant="ghost"
-							aria-label="Report error"
+							aria-label={t("errorNotice.reportError")}
 							className={cn(
 								isRecoveryState
 									? "text-muted-foreground hover:text-foreground"
@@ -366,7 +372,7 @@ export function ChatRequestErrorNotice({
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="top" sideOffset={6}>
-							Report error
+							{t("errorNotice.reportError")}
 						</TooltipContent>
 					</Tooltip>
 				</BubbleReactions>
@@ -374,9 +380,9 @@ export function ChatRequestErrorNotice({
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="max-h-[85vh] overflow-hidden sm:max-w-2xl">
 					<DialogHeader>
-						<DialogTitle>Chat error details</DialogTitle>
+						<DialogTitle>{t("errorNotice.chatErrorDetails")}</DialogTitle>
 						<DialogDescription>
-							Inspect the gateway failure and create a GitHub issue from this dialog.
+							{t("errorNotice.dialogDescription")}
 						</DialogDescription>
 					</DialogHeader>
 					<ScrollArea
@@ -386,45 +392,45 @@ export function ChatRequestErrorNotice({
 						<div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
 							<div className="grid gap-1 sm:grid-cols-2">
 								<p>
-									<span className="font-medium">Status:</span>{" "}
-									{error.status ?? "unknown"}
+									<span className="font-medium">{t("errorNotice.status")}:</span>{" "}
+									{error.status ?? t("errorNotice.unknown")}
 								</p>
 								<p>
-									<span className="font-medium">Code:</span>{" "}
-									{error.errorCode ?? "unknown"}
+									<span className="font-medium">{t("errorNotice.code")}:</span>{" "}
+									{error.errorCode ?? t("errorNotice.unknown")}
 								</p>
 								<p className="break-all">
-									<span className="font-medium">Request ID:</span>{" "}
-									{error.requestId ?? "unknown"}
+									<span className="font-medium">{t("errorNotice.requestId")}:</span>{" "}
+									{error.requestId ?? t("errorNotice.unknown")}
 								</p>
 								<p className="break-all">
-									<span className="font-medium">Endpoint:</span>{" "}
+									<span className="font-medium">{t("errorNotice.endpoint")}:</span>{" "}
 									{error.endpoint}
 								</p>
 								<p className="break-all">
-									<span className="font-medium">Model:</span>{" "}
+									<span className="font-medium">{t("errorNotice.model")}:</span>{" "}
 									{error.modelId}
 								</p>
 								<p className="break-all">
-									<span className="font-medium">Provider:</span>{" "}
-									{error.providerId ?? "auto"}
+									<span className="font-medium">{t("errorNotice.provider")}:</span>{" "}
+									{error.providerId ?? t("errorNotice.automatic")}
 								</p>
 							</div>
 							<div>
-								<p className="font-medium">Summary</p>
+								<p className="font-medium">{t("errorNotice.summary")}</p>
 								<p className="mt-1 text-muted-foreground">{summary}</p>
 							</div>
 						</div>
 						{error.details.length > 0 ? (
 							<div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
-								<p className="font-medium">Validation details</p>
+								<p className="font-medium">{t("errorNotice.validationDetails")}</p>
 								<div className="space-y-2">
 									{error.details.map((detail, index) => (
 										<div key={`${detail.keyword ?? "detail"}-${index}`}>
 											<p>{detail.message}</p>
 											{detail.path?.length ? (
 												<p className="text-xs text-muted-foreground">
-													Path: {detail.path.join(" / ")}
+												{t("errorNotice.path")}: {detail.path.join(" / ")}
 												</p>
 											) : null}
 										</div>
@@ -434,7 +440,7 @@ export function ChatRequestErrorNotice({
 						) : null}
 						{error.routingDiagnostics ? (
 							<div className="grid gap-2 rounded-lg border border-border p-3 text-sm">
-								<p className="font-medium">Routing diagnostics</p>
+								<p className="font-medium">{t("errorNotice.routingDiagnostics")}</p>
 								<ScrollArea
 									className="max-h-56 rounded bg-muted"
 									viewportClassName="p-3"
@@ -446,21 +452,21 @@ export function ChatRequestErrorNotice({
 							</div>
 						) : null}
 						<div className="grid gap-2">
-							<p className="text-sm font-medium">Extra notes for the issue</p>
+							<p className="text-sm font-medium">{t("errorNotice.extraNotes")}</p>
 							<Textarea
 								value={notes}
 								onChange={(event) => setNotes(event.target.value)}
 								rows={4}
-								placeholder="What were you trying to do? How can we reproduce it?"
+								placeholder={t("errorNotice.notesPlaceholder")}
 							/>
 						</div>
 					</ScrollArea>
 					<DialogFooter>
 						<Button type="button" variant="outline" onClick={copyDiagnostics}>
-							Copy diagnostics
+						{t("errorNotice.copyDiagnostics")}
 						</Button>
 						<Button type="button" onClick={createIssue} disabled={isSubmitting}>
-							{isSubmitting ? "Creating issue..." : "Create GitHub issue"}
+							{isSubmitting ? t("errorNotice.creatingIssue") : t("errorNotice.createIssue")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

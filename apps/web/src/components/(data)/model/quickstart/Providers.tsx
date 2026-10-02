@@ -13,13 +13,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/components/Logo";
+import { getTranslations } from "next-intl/server";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import {
 	groupProviders,
-	type GroupedProvider,
 	type ProviderStateKey,
 } from "./providerAvailability";
+
+type ProviderStateTranslationKey =
+	| `${ProviderStateKey}.label`
+	| `${ProviderStateKey}.description`;
 
 function getStatusUi(statusKey: ProviderStateKey): {
 	icon: typeof CheckCircle2;
@@ -83,38 +87,49 @@ function getStatusUi(statusKey: ProviderStateKey): {
 	}
 }
 
-function renderAvailabilitySummary(group: GroupedProvider): string {
-	const parts: string[] = [];
-	if (group.activeEndpointCount > 0) {
-		parts.push(
-			`${group.activeEndpointCount} active endpoint${group.activeEndpointCount === 1 ? "" : "s"}`,
-		);
-	}
-	if (group.comingSoonEndpointCount > 0) {
-		parts.push(
-			`${group.comingSoonEndpointCount} preview endpoint${group.comingSoonEndpointCount === 1 ? "" : "s"}`,
-		);
-	}
-	if (group.inactiveEndpointCount > 0) {
-		parts.push(
-			`${group.inactiveEndpointCount} unavailable endpoint${group.inactiveEndpointCount === 1 ? "" : "s"}`,
-		);
-	}
-	return parts.join(" | ");
-}
-
-export default function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
+export default async function Providers({ metadata }: { metadata: ModelGatewayMetadata }) {
+	const [tAvailability, tState, t] = await Promise.all([
+		getTranslations("Catalogue.models.detail.quickstart.providerAvailability"),
+		getTranslations("Catalogue.models.detail.quickstart.providerStates"),
+		getTranslations("Catalogue.models.detail.quickstart"),
+	]);
 	const providers = groupProviders(metadata);
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="text-lg">Provider Availability</CardTitle>
+				<CardTitle className="text-lg">
+					{tAvailability("title")}
+				</CardTitle>
 			</CardHeader>
 			<CardContent>
 				{providers.length > 0 ? (
 					<div className="grid gap-3 md:grid-cols-2">
 						{providers.map((provider) => {
+							const stateKey = provider.state.key;
+							const stateLabel = tState(
+								`${stateKey}.label` as ProviderStateTranslationKey,
+							);
+							const activeEndpoints = provider.activeEndpointCount
+								? tAvailability("activeEndpointCount", {
+										count: provider.activeEndpointCount,
+									})
+								: null;
+							const previewEndpoints = provider.comingSoonEndpointCount
+								? tAvailability("previewEndpointCount", {
+										count: provider.comingSoonEndpointCount,
+									})
+								: null;
+							const unavailableEndpoints = provider.inactiveEndpointCount
+								? tAvailability("unavailableEndpointCount", {
+										count: provider.inactiveEndpointCount,
+									})
+								: null;
+							const availabilitySummary = [
+								activeEndpoints,
+								previewEndpoints,
+								unavailableEndpoints,
+							].filter(Boolean).join(" · ");
 							return (
 								<div
 									key={provider.providerId}
@@ -159,7 +174,7 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 														<KeyRound className="h-4 w-4" />
 													</Link>
 												</TooltipTrigger>
-												<TooltipContent>This provider requires a BYOK key.</TooltipContent>
+												<TooltipContent>{t("byokRequired")}</TooltipContent>
 											</Tooltip>
 										) : null}
 									</div>
@@ -173,19 +188,23 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 													const StatusIcon = getStatusUi(provider.state.key).icon;
 													return <StatusIcon className="h-3 w-3" />;
 												})()}
-												{provider.state.label}
+												{stateLabel}
 											</span>
 										</Badge>
 									</div>
 
 									<div className="mt-3 space-y-2">
 										<p className="text-[11px] text-muted-foreground">
-											{provider.state.description}
+											{tState(
+												`${stateKey}.description` as ProviderStateTranslationKey,
+											)}
 										</p>
 										<div className="flex items-center justify-between gap-2">
 											<p className="text-[11px] text-muted-foreground">
-												{renderAvailabilitySummary(provider) ||
-													`${provider.endpoints.size} endpoint${provider.endpoints.size === 1 ? "" : "s"}`}
+												{availabilitySummary ||
+													tAvailability("endpointCountInCatalogue", {
+														count: provider.endpoints.size,
+													})}
 											</p>
 											<ProviderInfoHoverIcons
 												providerId={provider.providerId}
@@ -204,8 +223,9 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 											/>
 										</div>
 										<p className="text-[11px] text-muted-foreground">
-											{provider.endpoints.size} endpoint
-											{provider.endpoints.size === 1 ? "" : "s"} in catalog
+											{tAvailability("endpointCountInCatalogue", {
+												count: provider.endpoints.size,
+											})}
 										</p>
 									</div>
 								</div>
@@ -214,7 +234,7 @@ export default function Providers({ metadata }: { metadata: ModelGatewayMetadata
 					</div>
 				) : (
 					<p className="text-sm text-muted-foreground">
-						No provider mappings are listed for this model yet.
+						{tAvailability("noProviderMappings")}
 					</p>
 				)}
 			</CardContent>

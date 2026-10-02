@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Pause agentes Java para obter decisões humanas e continuar o estado gerenciado pela aplicação."
+---
+
+Retorne `HumanReviewRequest` de `AgentDefinition.humanReview` para criar um ponto de revisão geral. Aprovações de ferramentas e trabalho manual registram os IDs exatos das chamadas no resultado pausado.
+
+Continue com `Agent.continueRun(...)` e forneça:
+
+- entradas `ToolDecision` para aprovações ou rejeições
+- entradas `ToolOutput` para ferramentas manuais
+- entrada humana para uma pausa de revisão geral
+- um `RunResult` serializado ou um ID de execução respaldado por `StateAccessor`
+
+O SDK não depende de estado hospedado do Agent SDK. Implemente `StateAccessor` se uma execução precisar sobreviver a solicitações ou reinicializações do serviço.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

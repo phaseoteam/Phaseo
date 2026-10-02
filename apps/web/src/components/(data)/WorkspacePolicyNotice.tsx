@@ -1,20 +1,23 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { getTranslations } from "next-intl/server";
+import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { ShieldBan } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getWorkspacePolicyBlockedReasons } from "@/lib/chat/effectivePolicy";
 import { fetchChatEffectivePolicy } from "@/lib/fetchers/internal/fetchChatEffectivePolicy";
 
 export default async function WorkspacePolicyNotice({ kind, id }: { kind: "model" | "provider"; id: string }) {
+	const t = await getTranslations("Common.ui.localisationGaps");
 	const policy = await fetchChatEffectivePolicy().catch(() => null);
 	const reasons = getWorkspacePolicyBlockedReasons(policy, kind === "model" ? { modelIds: [id] } : { providerIds: [id] });
 	if (!reasons.length) return null;
 	return <Alert className="mb-6 border-destructive/40 bg-destructive/5">
 		<ShieldBan className="size-4 text-destructive" />
-		<AlertTitle>Blocked in this workspace</AlertTitle>
+		<AlertTitle>{t("workspaceBlocked")}</AlertTitle>
 		<AlertDescription>
-			Requests using the selected workspace cannot route to this {kind}.{" "}
+			{t(kind === "model" ? "modelBlocked" : "providerBlocked")}{" "}
 			{reasons.map((reason, index) => <span key={`${reason.source}:${reason.settingsHref}`}>
-				{index > 0 ? " · " : ""}<Link href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{reason.label}</Link>
+				{index > 0 ? " · " : ""}<Link href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{localizedWorkspacePolicyReason(t, reason)}</Link>
 			</span>)}
 		</AlertDescription>
 	</Alert>;

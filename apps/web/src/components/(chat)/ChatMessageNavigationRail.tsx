@@ -8,6 +8,7 @@ import {
 	useState,
 	type RefObject,
 } from "react";
+import { useTranslations } from "next-intl";
 import { FileText } from "lucide-react";
 import {
 	type MessageScrollerScrollOptions,
@@ -32,12 +33,12 @@ export type ChatMessageNavigationHandler = (
 const HOVER_MARKER_WIDTHS = [28, 18, 12, 8] as const;
 const DEFAULT_MARKER_WIDTH = 6;
 
-function getMessagePreview(message: ChatMessage) {
+function getMessagePreview(message: ChatMessage, emptyLabel: string) {
 	const preview = message.content.replace(/\s+/g, " ").trim();
-	return preview || "Attachment or empty message";
+	return preview || emptyLabel;
 }
 
-function getAttachmentLabel(meta: ChatMessage["meta"]) {
+function getAttachmentLabel(meta: ChatMessage["meta"], more: (name: string, count: number) => string, attachments: (count: number) => string) {
 	if (!meta || typeof meta !== "object") return null;
 
 	const metadata = meta as Record<string, unknown>;
@@ -53,7 +54,7 @@ function getAttachmentLabel(meta: ChatMessage["meta"]) {
 
 	if (previews.length === 1) return previews[0];
 	if (previews.length > 1) {
-		return `${previews[0]} + ${previews.length - 1} more`;
+		return more(previews[0], previews.length - 1);
 	}
 
 	const requestContext =
@@ -64,7 +65,7 @@ function getAttachmentLabel(meta: ChatMessage["meta"]) {
 			: null;
 	const count = requestContext?.attachments_count;
 	if (typeof count === "number" && Number.isFinite(count) && count > 0) {
-		return `${count} attachment${count === 1 ? "" : "s"}`;
+		return attachments(count);
 	}
 
 	return null;
@@ -126,6 +127,7 @@ export function ChatMessageNavigationRail({
 	onNavigate?: ChatMessageNavigationHandler;
 	scrollViewportRef?: RefObject<HTMLDivElement | null>;
 }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const { scrollToMessage } = useMessageScroller();
 	const { start: canScrollToStart, end: canScrollToEnd } =
 		useMessageScrollerScrollable();
@@ -254,12 +256,12 @@ export function ChatMessageNavigationRail({
 		? "transition-[width,height,background-color,opacity]"
 		: "transition-[background-color,opacity]";
 	const attachmentLabel = previewTurn
-		? getAttachmentLabel(previewTurn.user.meta)
+		? getAttachmentLabel(previewTurn.user.meta, (name, count) => tCopy("moreAttachments", { name, count }), (count) => tCopy("attachmentsCount", { count }))
 		: null;
 
 	return (
 		<nav
-			aria-label="Conversation navigation"
+			aria-label={tCopy("conversationNavigation")}
 			className="pointer-events-none absolute inset-y-0 left-0 z-30 hidden w-[min(32rem,100vw)] lg:block"
 		>
 			<div className="pointer-events-auto absolute inset-y-0 left-2 w-6">
@@ -294,9 +296,9 @@ export function ChatMessageNavigationRail({
 							<button
 								key={turn.user.id}
 								type="button"
-								aria-label={`Jump to turn ${index + 1}: ${getMessagePreview(turn.user)}`}
+								aria-label={tCopy("jumpToTurnPreview", { number: index + 1, preview: getMessagePreview(turn.user, tCopy("emptyMessage")) })}
 								aria-current={isCurrent ? "location" : undefined}
-								title={getMessagePreview(turn.user)}
+								title={getMessagePreview(turn.user, tCopy("emptyMessage"))}
 								onPointerEnter={() => showPreview(turn.user.id)}
 								onPointerDown={() => showPreview(turn.user.id)}
 								onFocus={() => showPreview(turn.user.id)}
@@ -335,18 +337,18 @@ export function ChatMessageNavigationRail({
 						>
 							<button
 								type="button"
-				aria-label={`Jump to turn ${previewTurnIndex + 1}`}
+				aria-label={tCopy("jumpToTurn", { number: previewTurnIndex + 1 })}
 				onPointerDown={() => showPreview(previewTurn.user.id)}
 				onFocus={() => showPreview(previewTurn.user.id)}
 				onClick={() => handleNavigate(previewTurn.user.id)}
 								className="block w-full rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								<div className="truncate text-sm font-medium text-foreground">
-									{getMessagePreview(previewTurn.user)}
+									{getMessagePreview(previewTurn.user, tCopy("emptyMessage"))}
 								</div>
 								{previewTurn.assistant ? (
 									<div className="mt-1 line-clamp-2 text-sm leading-5 text-muted-foreground">
-										{getMessagePreview(previewTurn.assistant)}
+										{getMessagePreview(previewTurn.assistant, tCopy("emptyMessage"))}
 									</div>
 								) : null}
 								{attachmentLabel ? (

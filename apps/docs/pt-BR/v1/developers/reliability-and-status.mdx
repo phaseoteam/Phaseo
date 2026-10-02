@@ -1,0 +1,98 @@
+---
+title: "Verifique a confiabilidade e o status do Gateway"
+sidebarTitle: "Confiabilidade e status"
+description: "Consulte incidentes, confirme se um modelo pode receber solicitações, interprete métricas do Gateway e valide a Phaseo com sua carga de trabalho."
+icon: "shield-check"
+---
+
+Use este guia para responder a uma destas três perguntas: a Phaseo está funcionando, um modelo pode ser roteado agora ou uma rota atende à meta de confiabilidade do seu aplicativo?
+
+## Verifique o status atual do serviço
+
+1. Abra a [página de status da Phaseo](https://status.phaseo.app) para consultar os incidentes atuais e o histórico.
+2. Chame `GET /v1/health` para fazer uma verificação básica de disponibilidade do Gateway.
+3. Se uma solicitação falhar, guarde o ID dela e inspecione a atividade ou o registro de geração antes de presumir que o serviço inteiro está indisponível.
+
+```bash
+curl https://api.phaseo.app/v1/health
+```
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<Note>
+A página pública de status informa a disponibilidade do serviço. A Phaseo não declara atualmente um SLA público contratual de disponibilidade.
+</Note>
+
+## Confirme se um modelo pode ser roteado
+
+O catálogo da Phaseo inclui mais modelos do que os disponíveis pelo Gateway. A presença de um modelo no catálogo significa que a Phaseo o acompanha, não que exista uma rota pública.
+
+`GET /v1/models` retorna apenas modelos roteáveis no momento por padrão:
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Use `availability=all` somente quando quiser consultar mapeamentos futuros ou inativos. Não envie tráfego de produção para uma linha de provedor, a menos que `availability_status` seja `active` e `is_active_gateway` seja `true`.
+
+| Estado | Significado |
+| --- | --- |
+| `active` | Há pelo menos uma rota pública do Gateway disponível no momento. |
+| `coming_soon` | A Phaseo acompanha uma rota planejada ou em prévia, mas ela não pode ser acessada publicamente. |
+| `inactive` | Uma rota conhecida está desabilitada, indisponível, expirada ou não pode ser roteada por outro motivo. |
+| `not_listed` | Não há atualmente um mapeamento de provedor do Gateway listado para o modelo. |
+
+A disponibilidade não garante operação contínua, acesso em todas as regiões nem condições comerciais idênticas para cada workspace.
+
+## Interprete métricas de desempenho
+
+Os dados de desempenho da Phaseo são observacionais: resumem as solicitações roteadas pelo Gateway, em vez de resultados de testes controlados em laboratório.
+
+| Métrica | Definição |
+| --- | --- |
+| TTFT do Gateway | Do início da solicitação ao Gateway até a primeira saída gerada com conteúdo. |
+| TTFT do provedor | Do envio ao provedor até a primeira saída gerada com conteúdo. |
+| Duração do provedor | Do envio ao provedor até a resposta final. |
+| Gateway E2E | Do início da solicitação ao Gateway até a conclusão. |
+| Sobrecarga da Phaseo | A diferença não negativa entre a duração E2E do Gateway e a duração do provedor. |
+| Throughput efetivo | Todos os tokens de saída divididos pela duração total do provedor. |
+| Velocidade de saída | Tokens de saída após o primeiro divididos pelo tempo do provedor depois do TTFT. |
+
+TTFT e velocidade de saída exigem uma resposta em streaming cuja primeira saída contenha conteúdo. Uma solicitação sem streaming ainda pode contribuir com medidas de duração e throughput efetivo, sem inventar um TTFT.
+
+Sempre interprete uma métrica junto com o período, a rota, a região, o modo de streaming e o percentil. A carga do provedor, o tamanho do prompt e da saída, as novas tentativas e as condições de transporte podem alterar o resultado.
+
+Para ver as definições completas, consulte [Preços e desempenho](../exploring/pricing-performance.mdx) e [Como a Phaseo mede latência e throughput](https://phaseo.app/how-phaseo-measures-latency-throughput).
+
+## Valide com sua carga de trabalho
+
+A telemetria pública é indicativa, mas não prova que uma rota atende à meta de produção. Faça um estudo pequeno e reproduzível antes da implantação:
+
+1. Remova dados de produção confidenciais e mantenha uma combinação representativa de prompts.
+2. Registre o ID do modelo, endpoint, restrições do provedor, região, modo de streaming e concorrência.
+3. Faça repetições suficientes para comparar distribuições, e não apenas uma solicitação.
+4. Registre taxa de sucesso, TTFT do Gateway, duração do provedor, E2E do Gateway, tokens de saída e custo final.
+5. Teste chaves e modelos inválidos, limites de taxa e falhas de provedores indisponíveis.
+6. Salve os IDs das solicitações e o período exato para que outra pessoa possa reproduzir o resultado.
+
+Não publique nome de cliente, citação, resultado de carga de trabalho ou percentual de confiabilidade sem autorização e um método documentado.
+
+## Investigue uma solicitação com falha
+
+- Consulte o [status do serviço](https://status.phaseo.app).
+- Confirme se o modelo ainda aparece na resposta padrão de `GET /v1/models`.
+- Consulte o status HTTP e o código de erro em[Tratamento de erros](../api-reference/errors.mdx).
+- Tente novamente os erros transitórios `429` e `5xx` com recuo exponencial limitado.
+- Anote o ID da solicitação ao contatar o [suporte](https://phaseo.app/help).
+
+## Guias relacionados
+
+- [API de modelos](../api-reference/endpoint/models.mdx)
+- [Endpoints de modelos](../api-reference/endpoint/model-endpoints.mdx)
+- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
+- [Limites de taxa](../api-reference/limits.mdx)

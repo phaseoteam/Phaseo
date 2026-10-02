@@ -1,76 +1,59 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Area,
 	AreaChart,
 	CartesianGrid,
 	ReferenceLine,
-	ResponsiveContainer,
 	Tooltip,
 	XAxis,
 	YAxis,
-	type TooltipProps,
 } from "recharts";
+import { BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import type {
-	ModelTokenTrajectory,
-	ModelTokenMilestone,
-	ModelSuccessorMilestone,
-	ModelTokenTrajectoryPoint,
-} from "@/lib/fetchers/models/getModelTokenTrajectory";
 import {
 	Empty,
+	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-	EmptyDescription,
 } from "@/components/ui/empty";
-import { BarChart3 } from "lucide-react";
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
+import type {
+	ModelSuccessorMilestone,
+	ModelTokenMilestone,
+	ModelTokenTrajectory,
+	ModelTokenTrajectoryPoint,
+} from "@/lib/fetchers/models/getModelTokenTrajectory";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
-const cumulativeTokensChartConfig: ChartConfig = {
-	cumulativeTokens: {
-		label: "Cumulative Tokens",
-		color: "hsl(142, 76%, 50%)",
-	},
-};
-
-type RechartsTooltipContentProps = TooltipProps<number, string> & {
+type RechartsTooltipContentProps = {
 	active?: boolean;
-	payload?: Array<any>;
+	payload?: ReadonlyArray<any>;
 	label?: string | number;
 };
 
-function formatCompact(value: number): string {
-	if (value >= 1_000_000_000) {
-		return `${(value / 1_000_000_000).toFixed(1)}B`;
-	}
-	if (value >= 1_000_000) {
-		return `${(value / 1_000_000).toFixed(1)}M`;
-	}
-	if (value >= 1_000) {
-		return `${(value / 1_000).toFixed(1)}k`;
-	}
-	return value.toString();
+const EMPTY_POINTS: ModelTokenTrajectoryPoint[] = [];
+const EMPTY_TOKEN_MILESTONES: ModelTokenMilestone[] = [];
+const EMPTY_SUCCESSOR_MILESTONES: ModelSuccessorMilestone[] = [];
+
+function formatCompact(value: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		notation: "compact",
+		maximumFractionDigits: 1,
+	}).format(value);
 }
 
-function formatDelta(value: number): string {
-	const sign = value >= 0 ? "+" : "-";
-	const magnitude = Math.abs(value);
-	if (magnitude >= 1_000_000_000) {
-		return `${sign}${(magnitude / 1_000_000_000).toFixed(2)}B`;
-	}
-	if (magnitude >= 1_000_000) {
-		return `${sign}${(magnitude / 1_000_000).toFixed(2)}M`;
-	}
-	if (magnitude >= 1_000) {
-		return `${sign}${(magnitude / 1_000).toFixed(2)}k`;
-	}
-	return `${sign}${magnitude}`;
+function formatDelta(value: number, locale: string): string {
+	return new Intl.NumberFormat(locale, {
+		notation: "compact",
+		maximumFractionDigits: 2,
+		signDisplay: "always",
+	}).format(value);
 }
 
 function formatDays(value: number | null) {
@@ -92,19 +75,28 @@ interface ModelTokenTrajectoryProps {
 
 function MilestoneTable({
 	tokenMilestones,
+	locale,
 }: {
 	tokenMilestones: ModelTokenMilestone[];
+	locale: string;
 }) {
+	const t = useTranslations("Catalogue.models.tokenTrajectory");
 	return (
 		<Table>
 			<TableBody>
 				{tokenMilestones.map((milestone) => (
 					<TableRow key={milestone.threshold}>
 						<TableCell className="font-medium">
-							{formatCompact(milestone.threshold)} tokens
+							{t("milestoneTokens", {
+								count: formatCompact(milestone.threshold, locale),
+							})}
 						</TableCell>
 						<TableCell>
-							{formatDays(milestone.daysSinceRelease)}
+							{milestone.daysSinceRelease == null
+								? "—"
+								: t("daysSinceRelease", {
+										count: milestone.daysSinceRelease,
+									})}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
 							<DisplayCalendarDate value={milestone.reachedOn} fallback="—" />
@@ -118,15 +110,14 @@ function MilestoneTable({
 
 function SuccessorList({
 	successors,
+	locale,
 }: {
 	successors: ModelSuccessorMilestone[];
+	locale: string;
 }) {
+	const t = useTranslations("Catalogue.models.tokenTrajectory");
 	if (!successors.length) {
-		return (
-			<p className="text-sm text-muted-foreground">
-				No successor models have been announced yet.
-			</p>
-		);
+		return <p className="text-sm text-muted-foreground">{t("noSuccessors")}</p>;
 	}
 
 	return (
@@ -138,7 +129,11 @@ function SuccessorList({
 							{successor.name}
 						</TableCell>
 						<TableCell>
-							{formatDays(successor.daysSinceRelease)}
+							{successor.daysSinceRelease == null
+								? "—"
+								: t("daysSinceRelease", {
+										count: successor.daysSinceRelease,
+									})}
 						</TableCell>
 						<TableCell className="text-muted-foreground">
 							<DisplayCalendarDate value={successor.releaseDate} fallback="—" />
@@ -154,7 +149,58 @@ export default function ModelTokenTrajectoryChart({
 	data,
 }: ModelTokenTrajectoryProps) {
 	const format = useDisplayFormatters();
-	if (!data || !data.points.length) {
+	const t = useTranslations("Catalogue.models.tokenTrajectory");
+	const locale = useLocale();
+	const points = data?.points ?? EMPTY_POINTS;
+	const tokenMilestones = data?.tokenMilestones ?? EMPTY_TOKEN_MILESTONES;
+	const successorMilestones = data?.successorMilestones ?? EMPTY_SUCCESSOR_MILESTONES;
+	const deprecationDays = data?.deprecationDaysSinceRelease ?? null;
+
+	const chartConfig: ChartConfig = {
+		cumulativeTokens: {
+			label: t("cumulative"),
+			color: "hsl(var(--chart-1))",
+		},
+	};
+	const deprecationLabel = data?.deprecationDate ? t("markedDeprecatedOn", { date: format.calendarDate(data.deprecationDate, "—") }) : null;
+
+	const pointByDay = useMemo(() => {
+		const map = new Map<number, ModelTokenTrajectoryPoint>();
+		points.forEach((point) => map.set(point.daysSinceRelease, point));
+		return map;
+	}, [points]);
+
+	const milestoneLookup = useMemo(() => {
+		const map = new Map<number, ModelTokenMilestone[]>();
+		tokenMilestones.forEach((milestone) => {
+			if (milestone.daysSinceRelease == null) return;
+			const existing = map.get(milestone.daysSinceRelease) ?? [];
+			existing.push(milestone);
+			map.set(milestone.daysSinceRelease, existing);
+		});
+		return map;
+	}, [tokenMilestones]);
+
+	const successorLookup = useMemo(() => {
+		const map = new Map<number, ModelSuccessorMilestone>();
+		successorMilestones.forEach((milestone) => {
+			if (milestone.daysSinceRelease == null) return;
+			map.set(milestone.daysSinceRelease, milestone);
+		});
+		return map;
+	}, [successorMilestones]);
+
+	const ticks = useMemo(() => {
+		const computed = points
+			.filter((point) => point.daysSinceRelease % 5 === 0)
+			.map((point) => point.daysSinceRelease);
+		const lastDay = points[points.length - 1]?.daysSinceRelease ?? 0;
+		if (!computed.length) return [0, lastDay];
+		if (computed[computed.length - 1] !== lastDay) computed.push(lastDay);
+		return computed;
+	}, [points]);
+
+	if (!data || !points.length) {
 		return (
 			<Card className="p-6">
 				<Empty>
@@ -162,67 +208,15 @@ export default function ModelTokenTrajectoryChart({
 						<EmptyMedia variant="icon">
 							<BarChart3 />
 						</EmptyMedia>
-						<EmptyTitle>No token usage yet</EmptyTitle>
-						<EmptyDescription>
-							We’ll chart cumulative tokens once this model begins
-							processing gateway traffic.
-						</EmptyDescription>
+						<EmptyTitle>{t("emptyTitle")}</EmptyTitle>
+						<EmptyDescription>{t("emptyDescription")}</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
 			</Card>
 		);
 	}
 
-	const releaseDate = new Date(data.releaseDate);
-	const deprecationDays = data.deprecationDaysSinceRelease ?? null;
-	const deprecationLabel = data.deprecationDate
-		? `Deprecated ${format.calendarDate(data.deprecationDate, "—")}`
-		: null;
-
-	const pointByDay = useMemo(() => {
-		const map = new Map<number, ModelTokenTrajectoryPoint>();
-		data.points.forEach((point) => {
-			map.set(point.daysSinceRelease, point);
-		});
-		return map;
-	}, [data.points]);
-
-	const milestoneLookup = useMemo(() => {
-		const map = new Map<number, ModelTokenMilestone[]>();
-		data.tokenMilestones.forEach((milestone) => {
-			if (milestone.daysSinceRelease == null) return;
-			const existing = map.get(milestone.daysSinceRelease) ?? [];
-			existing.push(milestone);
-			map.set(milestone.daysSinceRelease, existing);
-		});
-		return map;
-	}, [data.tokenMilestones]);
-
-	const successorLookup = useMemo(() => {
-		const map = new Map<number, ModelSuccessorMilestone>();
-		data.successorMilestones.forEach((milestone) => {
-			if (milestone.daysSinceRelease == null) return;
-			map.set(milestone.daysSinceRelease, milestone);
-		});
-		return map;
-	}, [data.successorMilestones]);
-
-	const ticks = useMemo(() => {
-		const computed = data.points
-			.filter((point) => point.daysSinceRelease % 5 === 0)
-			.map((point) => point.daysSinceRelease);
-		const lastDay =
-			data.points[data.points.length - 1]?.daysSinceRelease ?? 0;
-		if (!computed.length) {
-			return [0, lastDay];
-		}
-		if (computed[computed.length - 1] !== lastDay) {
-			computed.push(lastDay);
-		}
-		return computed;
-	}, [data.points]);
-
-	const CustomTooltip = ({
+	const renderTooltip = ({
 		active,
 		payload,
 	}: RechartsTooltipContentProps) => {
@@ -233,50 +227,50 @@ export default function ModelTokenTrajectoryChart({
 			? point.cumulativeTokens - previous.cumulativeTokens
 			: point.cumulativeTokens;
 		const milestoneHits = milestoneLookup.get(point.daysSinceRelease) ?? [];
-		const successorHit =
-			successorLookup.get(point.daysSinceRelease) ?? null;
+		const successorHit = successorLookup.get(point.daysSinceRelease) ?? null;
 		const isDeprecationDay =
-			deprecationDays != null &&
-			point.daysSinceRelease === deprecationDays;
+			deprecationDays != null && point.daysSinceRelease === deprecationDays;
 
 		return (
 			<div className="min-w-[220px] rounded-lg border border-border bg-background/95 p-4 text-sm shadow-xl">
 				<div className="mb-2">
 					<p className="text-xs uppercase text-muted-foreground">
-						Day {point.daysSinceRelease}
+						{t("day", { count: point.daysSinceRelease })}
 					</p>
 					<p className="font-semibold">{format.calendarDate(point.date, "—")}</p>
 				</div>
 				<div className="space-y-1 text-sm">
 					<div className="flex items-center justify-between">
-						<span>Tokens that day</span>
+						<span>{t("tokensThatDay")}</span>
 						<span className="font-mono font-semibold">
-							{formatCompact(point.tokens)}
+							{formatCompact(point.tokens, locale)}
 						</span>
 					</div>
 					<div className="flex items-center justify-between text-muted-foreground">
-						<span>Change vs prev day</span>
+						<span>{t("dailyChange")}</span>
 						<span className="font-mono">
-							{formatDelta(dailyChange)}
+							{formatDelta(dailyChange, locale)}
 						</span>
 					</div>
 					<div className="flex items-center justify-between text-muted-foreground">
-						<span>Cumulative</span>
+						<span>{t("cumulative")}</span>
 						<span className="font-mono">
-							{formatCompact(point.cumulativeTokens)}
+							{formatCompact(point.cumulativeTokens, locale)}
 						</span>
 					</div>
 				</div>
 				{milestoneHits.length > 0 && (
 					<div className="mt-3 rounded border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs">
 						<p className="font-semibold text-emerald-600 dark:text-emerald-300">
-							Token milestones
+							{t("milestones")}
 						</p>
 						<ul className="mt-1 space-y-1 text-muted-foreground">
 							{milestoneHits.map((milestone) => (
-								<li key={`${milestone.threshold}`}>
-									Hit {formatCompact(milestone.threshold)} (
-									{formatDays(milestone.daysSinceRelease)})
+								<li key={milestone.threshold}>
+									{t("hitThreshold", {
+										count: formatCompact(milestone.threshold, locale),
+										days: milestone.daysSinceRelease ?? 0,
+									})}
 								</li>
 							))}
 						</ul>
@@ -285,23 +279,25 @@ export default function ModelTokenTrajectoryChart({
 				{isDeprecationDay && (
 					<div className="mt-3 rounded border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
 						<p className="font-semibold text-amber-600 dark:text-amber-300">
-							Deprecated
+							{t("deprecated")}
 						</p>
 						<p className="text-muted-foreground">
-							Model marked deprecated on{" "}
-							{format.calendarDate(data.deprecationDate, "—")}
+							{t("markedDeprecatedOn", {
+								date: format.calendarDate(data.deprecationDate, "—"),
+							})}
 						</p>
 					</div>
 				)}
 				{successorHit && (
 					<div className="mt-3 rounded border border-indigo-500/30 bg-indigo-500/5 px-3 py-2 text-xs">
 						<p className="font-semibold text-indigo-600 dark:text-indigo-300">
-							Successor release
+							{t("successorRelease")}
 						</p>
 						<p className="text-muted-foreground">
-							{successorHit.name} launched{" "}
-							{formatDays(successorHit.daysSinceRelease)} after
-							release.
+							{t("successorLaunchedAfter", {
+								name: successorHit.name,
+								days: successorHit.daysSinceRelease ?? 0,
+							})}
 						</p>
 					</div>
 				)}
@@ -315,22 +311,21 @@ export default function ModelTokenTrajectoryChart({
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div>
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Token usage growth
+							{t("chartEyebrow")}
 						</p>
 						<h3 className="text-lg font-semibold text-foreground">
-							Cumulative tokens since launch
+							{t("chartTitle")}
 						</h3>
 					</div>
 					<span className="text-xs text-muted-foreground">
-						Release date: {format.calendarDate(data.releaseDate, "—")}
+						{t("releaseDate", {
+							date: format.calendarDate(data.releaseDate, "—"),
+						})}
 					</span>
 				</div>
 				<div className="mt-4 h-[360px]">
-					<ChartContainer
-						config={cumulativeTokensChartConfig}
-						className="h-[360px] w-full"
-					>
-						<AreaChart data={data.points}>
+					<ChartContainer config={chartConfig} className="h-[360px] w-full">
+						<AreaChart data={points}>
 							<CartesianGrid
 								strokeDasharray="3 3"
 								stroke="rgba(148, 163, 184, 0.2)"
@@ -342,21 +337,15 @@ export default function ModelTokenTrajectoryChart({
 								tickFormatter={(value) => `${value}d`}
 								axisLine={false}
 								tickLine={false}
-								tick={{
-									fontSize: 12,
-									fill: "var(--chart-axis-color)",
-								}}
+								tick={{ fontSize: 12, fill: "var(--chart-axis-color)" }}
 							/>
 							<YAxis
 								axisLine={false}
 								tickLine={false}
-								tick={{
-									fontSize: 12,
-									fill: "var(--chart-axis-color)",
-								}}
-								tickFormatter={(value) => formatCompact(value)}
+								tick={{ fontSize: 12, fill: "var(--chart-axis-color)" }}
+								tickFormatter={(value) => formatCompact(value, locale)}
 							/>
-							<Tooltip content={<CustomTooltip />} />
+			<Tooltip content={renderTooltip} />
 							<Area
 								type="monotone"
 								dataKey="cumulativeTokens"
@@ -365,18 +354,14 @@ export default function ModelTokenTrajectoryChart({
 								fillOpacity={0.2}
 								strokeWidth={2}
 							/>
-							{data.successorMilestones.map((successor) =>
+							{successorMilestones.map((successor) =>
 								successor.daysSinceRelease != null ? (
 									<ReferenceLine
 										key={successor.modelId}
 										x={successor.daysSinceRelease}
 										stroke="hsl(217, 91%, 60%)"
 										strokeDasharray="4 2"
-										label={
-											<SuccessorReferenceLabel
-												name={successor.name}
-											/>
-										}
+										label={<SuccessorReferenceLabel name={successor.name} />}
 									/>
 								) : null
 							)}
@@ -385,9 +370,7 @@ export default function ModelTokenTrajectoryChart({
 									x={deprecationDays}
 									stroke="hsl(38, 92%, 50%)"
 									strokeDasharray="6 4"
-									label={
-										<SuccessorReferenceLabel name="Deprecated" />
-									}
+									label={<SuccessorReferenceLabel name={t("deprecated")} />}
 								/>
 							)}
 						</AreaChart>
@@ -399,32 +382,34 @@ export default function ModelTokenTrajectoryChart({
 				<Card className="p-6">
 					<div className="mb-4">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Deprecation
+							{t("deprecationSectionTitle")}
 						</p>
 						<h3 className="text-lg font-semibold text-foreground">
-							Lifecycle status
+							{t("lifecycleStatus")}
 						</h3>
 					</div>
 					{data.deprecationDate ? (
 						<div className="space-y-2 text-sm">
 							<div className="flex items-center justify-between">
-								<span>Deprecated on</span>
+								<span>{t("deprecatedOn")}</span>
 								<span className="font-semibold">
 									{format.calendarDate(data.deprecationDate, "—")}
 								</span>
 							</div>
 							<div className="flex items-center justify-between text-muted-foreground">
-								<span>Days after launch</span>
+								<span>{t("daysAfterLaunch")}</span>
 								<span>
-									{formatDays(
-										data.deprecationDaysSinceRelease
-									)}
+									{data.deprecationDaysSinceRelease == null
+										? "—"
+										: t("daysSinceRelease", {
+												count: data.deprecationDaysSinceRelease,
+											})}
 								</span>
 							</div>
 						</div>
 					) : (
 						<p className="text-sm text-muted-foreground">
-							This model has not been marked deprecated.
+							{t("notDeprecated")}
 						</p>
 					)}
 				</Card>
@@ -432,25 +417,31 @@ export default function ModelTokenTrajectoryChart({
 				<Card className="p-6">
 					<div className="mb-4">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Token milestones
+							{t("milestones")}
 						</p>
 						<h3 className="text-lg font-semibold text-foreground">
-							Days to hit key thresholds
+							{t("daysToThresholds")}
 						</h3>
 					</div>
-					<MilestoneTable tokenMilestones={data.tokenMilestones} />
+					<MilestoneTable
+						tokenMilestones={tokenMilestones}
+						locale={locale}
+					/>
 				</Card>
 
 				<Card className="p-6">
 					<div className="mb-4">
 						<p className="text-xs uppercase tracking-wide text-muted-foreground">
-							Successor models
+							{t("successorModels")}
 						</p>
 						<h3 className="text-lg font-semibold text-foreground">
-							Release milestones
+							{t("releaseMilestones")}
 						</h3>
 					</div>
-					<SuccessorList successors={data.successorMilestones} />
+					<SuccessorList
+						successors={successorMilestones}
+						locale={locale}
+					/>
 				</Card>
 			</div>
 		</div>

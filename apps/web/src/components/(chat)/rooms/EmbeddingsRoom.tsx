@@ -4,6 +4,7 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
@@ -186,10 +187,10 @@ function truncateTitle(value: string, max = 72): string {
 	return `${trimmed.slice(0, max - 3).trimEnd()}...`;
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File, errorMessage: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+		reader.onerror = () => reject(new Error(errorMessage));
 		reader.onload = () => resolve(String(reader.result ?? ""));
 		reader.readAsDataURL(file);
 	});
@@ -245,7 +246,7 @@ function projectPayload(payload: any): {
 
 function truncateInlineText(value: string, max = 72): string {
 	const text = value.trim();
-	if (!text) return "No source text";
+	if (!text) return "";
 	if (text.length <= max) return text;
 	return `${text.slice(0, max - 3).trimEnd()}...`;
 }
@@ -256,23 +257,34 @@ function buildEmbeddingResultCopyText(args: {
 	dimensions: number;
 	rows: EmbeddingRow[];
 	rowLabelByIndex: Map<number, string>;
+	labels: {
+		resultTitle: string;
+		model: string;
+		vectors: string;
+		dimensions: string;
+		items: string;
+		preview: string;
+		noSourceText: string;
+	};
 }): string {
 	const lines = [
-		"Embedding Result",
-		`Model: ${args.modelLabel}`,
-		`Vectors: ${args.vectorCount}`,
-		`Dimensions: ${args.dimensions}`,
+		args.labels.resultTitle,
+		`${args.labels.model}: ${args.modelLabel}`,
+		`${args.labels.vectors}: ${args.vectorCount}`,
+		`${args.labels.dimensions}: ${args.dimensions}`,
 		"",
-		"Items:",
+		`${args.labels.items}:`,
 	];
 	for (const row of args.rows) {
-		const label = truncateInlineText(args.rowLabelByIndex.get(row.index) ?? "", 120);
+		const label =
+			truncateInlineText(args.rowLabelByIndex.get(row.index) ?? "", 120) ||
+			args.labels.noSourceText;
 		const preview = row.vector
 			.slice(0, 8)
 			.map((value) => value.toFixed(4))
 			.join(", ");
 		lines.push(`- #${row.index + 1}: ${label}`);
-		lines.push(`  Preview: ${preview}`);
+		lines.push(`  ${args.labels.preview}: ${preview}`);
 	}
 	return lines.join("\n");
 }
@@ -427,6 +439,11 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 }
 
 export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const t = useTranslations("Product.chatRooms");
+	const tChat = useTranslations("Product.chat");
+	const tUi = useTranslations("Common.ui");
+	const tSearch = useTranslations("Common.search");
 	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState, isMobile } = useSidebar();
 	const collapsed = sidebarState === "collapsed" && !isMobile;
@@ -758,7 +775,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				}
 
 				for (const file of effectiveFiles) {
-					const dataUrl = await readFileAsDataUrl(file);
+					const dataUrl = await readFileAsDataUrl(file, tCopy("fileReadFailed"));
 					if (file.type.startsWith("image/")) {
 						parts.push({ type: "input_image", image_url: dataUrl });
 						continue;
@@ -788,7 +805,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				}
 
 				if (!parts.length) {
-					throw new Error("Provide at least one text/image/audio/video input.");
+					throw new Error(tCopy("embeddingsInputRequired"));
 				}
 				requestInput = buildEmbeddingsMultimodalInput(parts);
 			}
@@ -807,7 +824,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 					: `Embedding ${format.date(new Date())}`;
 			const conversationTitle =
 				overrides?.forcedConversationTitle ||
-				(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
+				(temporaryMode ? t("temporaryChat") : existingTitle || candidateTitle);
 			pendingEntryId = crypto.randomUUID();
 			setEntries((prev) => [
 				{
@@ -863,7 +880,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 			});
 			if (!response.ok) {
 				const text = await response.text();
-				throw new Error(text || `Request failed (${response.status})`);
+				throw new Error(text || t("newMainCopy.requestStatusFailed", { status: response.status }));
 			}
 			const payload = await response.json();
 			setEntries((prev) => prev.filter((item) => item.id !== pendingEntryId));
@@ -913,7 +930,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 			if (!overrides?.inputOverride) {
 				setTextInput((current) => current || submittedTextInput);
 			}
-			setError(err instanceof Error ? err.message : "Embeddings request failed");
+			setError(err instanceof Error ? err.message : t("requestFailed"));
 		} finally {
 			if (pendingEntryId) {
 				setEntries((prev) => prev.filter((item) => item.id !== pendingEntryId));
@@ -1134,7 +1151,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									}}
 								>
 									<PencilLine className="mr-2 h-4 w-4" />
-									Rename
+							{tUi("actions.rename")}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => toggleConversationPin(conversation)}>
 									{conversation.pinned ? (
@@ -1142,7 +1159,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									) : (
 										<Pin className="mr-2 h-4 w-4" />
 									)}
-									{conversation.pinned ? "Unpin" : "Pin"}
+{conversation.pinned ? tUi("actions.unpin") : tUi("actions.pin")}
 								</DropdownMenuItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem
@@ -1152,7 +1169,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									className="group text-foreground focus:text-destructive data-highlighted:text-destructive"
 								>
 									<Trash2 className="mr-2 h-4 w-4 text-muted-foreground group-data-highlighted:text-destructive" />
-									Delete
+							{tUi("actions.delete")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
@@ -1173,13 +1190,13 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={startNewConversation}
-										aria-label="New Chat"
+									aria-label={t("newChat")}
 									>
 										<SquarePen className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									New Chat
+								{t("newChat")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1187,10 +1204,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={startNewConversation}
-								aria-label="New Chat"
+								aria-label={t("newChat")}
 							>
 								<SquarePen className="h-4 w-4 shrink-0" />
-								<span className="truncate text-left">New Chat</span>
+								<span className="truncate text-left">{t("newChat")}</span>
 							</Button>
 						)}
 						{collapsed ? (
@@ -1200,7 +1217,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										asChild
-										aria-label="Database"
+									aria-label={t("database")}
 									>
 										<Link
 											href="/"
@@ -1211,7 +1228,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Database
+								{t("database")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1219,11 +1236,11 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-0 px-2 text-sm font-medium"
 								asChild
-								aria-label="Database"
+								aria-label={t("database")}
 							>
 								<Link href="/" className="group/db flex w-full min-w-0 items-center gap-2">
 									<Database className="h-4 w-4 shrink-0" />
-									<span className="flex-1 min-w-0 truncate text-left">Database</span>
+									<span className="flex-1 min-w-0 truncate text-left">{t("database")}</span>
 									<ArrowUpRight className="ml-auto h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition group-hover/db:opacity-100" />
 								</Link>
 							</Button>
@@ -1235,13 +1252,13 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										variant="ghost"
 										className="h-8 min-w-0 w-full justify-start px-2 text-sm font-medium"
 										onClick={() => setConversationSearchOpen(true)}
-										aria-label="Search Chats"
+									aria-label={t("searchChats")}
 									>
 										<Search className="h-4 w-4 shrink-0" />
 									</Button>
 								</TooltipTrigger>
 								<TooltipContent side="right" align="center" sideOffset={10}>
-									Search Chats
+								{t("searchChats")}
 								</TooltipContent>
 							</Tooltip>
 						) : (
@@ -1249,28 +1266,28 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								variant="ghost"
 								className="h-8 min-w-0 w-full flex-1 justify-start gap-2 px-2 text-sm font-medium"
 								onClick={() => setConversationSearchOpen(true)}
-								aria-label="Search Chats"
+								aria-label={t("searchChats")}
 							>
 								<Search className="h-4 w-4 shrink-0" />
-								<span className="truncate text-left">Search Chats</span>
+								<span className="truncate text-left">{t("searchChats")}</span>
 							</Button>
 						)}
 					</div>
 					<SidebarSeparator className="mx-0 my-0 w-full" />
 					<ScrollArea className="h-full group-data-[collapsible=icon]:hidden">
 						<SidebarGroup className={CHAT_SIDEBAR_HISTORY_GROUP_CLASS}>
-							<SidebarGroupLabel>Chats</SidebarGroupLabel>
+						<SidebarGroupLabel>{t("chats")}</SidebarGroupLabel>
 							<SidebarGroupContent className="overflow-hidden">
 								<SidebarMenu>
-									{renderConversationSection("Pinned", groupedConversations.pinned)}
-									{renderConversationSection("Today", groupedConversations.today)}
-									{renderConversationSection("Yesterday", groupedConversations.yesterday)}
-									{renderConversationSection("This week", groupedConversations.week)}
-									{renderConversationSection("This month", groupedConversations.month)}
-									{renderConversationSection("Older", groupedConversations.older)}
+{renderConversationSection(tSearch("pinned"), groupedConversations.pinned)}
+										{renderConversationSection(t("today"), groupedConversations.today)}
+										{renderConversationSection(t("yesterday"), groupedConversations.yesterday)}
+										{renderConversationSection(t("thisWeek"), groupedConversations.week)}
+										{renderConversationSection(t("thisMonth"), groupedConversations.month)}
+										{renderConversationSection(t("older"), groupedConversations.older)}
 									{conversations.length === 0 ? (
 										<p className="px-2 py-3 text-xs text-muted-foreground">
-											No chats found.
+										{tChat("noChatsFound")}
 										</p>
 									) : null}
 								</SidebarMenu>
@@ -1295,7 +1312,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								size="icon"
 							className="-ml-1 h-8 w-8"
 							onClick={toggleSidebar}
-							aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+							aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar")}
 							>
 							{sidebarState === "expanded" ? (
 								<PanelLeftClose className="h-4 w-4" />
@@ -1304,7 +1321,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							)}
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side={sidebarState === "collapsed" ? "right" : "bottom"} align="center" sideOffset={8}>Toggle sidebar</TooltipContent>
+							<TooltipContent side={sidebarState === "collapsed" ? "right" : "bottom"} align="center" sideOffset={8}>{t("toggleSidebar")}</TooltipContent>
 					</Tooltip>
 						<RoomModelSelector
 							models={filteredModels}
@@ -1327,7 +1344,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									<MessageCircleDashed className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>Temporary chat</TooltipContent>
+							<TooltipContent>{t("temporaryChat")}</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -1343,7 +1360,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									<SettingsIcon className="h-5 w-5" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>Settings</TooltipContent>
+							<TooltipContent>{t("settings")}</TooltipContent>
 						</Tooltip>
 					</div>
 				</div>
@@ -1353,12 +1370,12 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeEntries.length === 0 ? (
 						<RoomEmptyState
-							description="What would you like to turn into embeddings?"
+							description={t("embeddingsEmptyDescription")}
 							suggestions={[
-							{ label: "Compare two ideas", prompt: "Remote work improves focus\nWorking from home increases concentration" },
-							{ label: "Embed product copy", prompt: "A fast, reliable AI gateway for every model and provider." },
-							{ label: "Explore semantic similarity", prompt: "Machine learning\nArtificial intelligence\nDeep neural networks" },
-							{ label: "Test a search query", prompt: "How do I reduce latency in an AI application?" },
+							{ label: t("embeddingCompareLabel"), prompt: t("embeddingComparePrompt") },
+							{ label: t("embeddingProductLabel"), prompt: t("embeddingProductPrompt") },
+							{ label: t("embeddingSimilarityLabel"), prompt: t("embeddingSimilarityPrompt") },
+							{ label: t("embeddingSearchLabel"), prompt: t("embeddingSearchPrompt") },
 						]}
 						onSelectPrompt={setTextInput}
 					/>
@@ -1430,7 +1447,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								}),
 							);
 							const activeLabel =
-								activeRow ? rowLabelByIndex.get(activeRow.index) ?? "No source text" : null;
+								activeRow ? rowLabelByIndex.get(activeRow.index) ?? t("noSourceText") : null;
 							if (entry.isPending) {
 								return (
 									<div key={entry.id} className="group/response space-y-3">
@@ -1447,7 +1464,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 												<Logo id={logoId} alt={logoAlt} width={18} height={18} className="shrink-0 rounded-none" />
 												<span className="truncate">{modelLabel}</span>
 											</Link>
-											<RoomWorkingIndicator label="Generating embeddings..." />
+											<RoomWorkingIndicator label={t("generatingEmbeddings")} />
 										</div>
 									</div>
 								);
@@ -1485,7 +1502,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{promptCopied ? "Copied" : "Copy prompt"}
+{promptCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Tooltip>
@@ -1509,7 +1526,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 														<PencilLine className="h-3.5 w-3.5" />
 													</Button>
 												</TooltipTrigger>
-												<TooltipContent side="top">Edit prompt</TooltipContent>
+										<TooltipContent side="top">{t("editPrompt")}</TooltipContent>
 											</Tooltip>
 										</div>
 									</div>
@@ -1529,12 +1546,12 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										</Link>
 										<div className="space-y-3 py-1">
 											<div className="flex flex-wrap items-center gap-2">
-												<h2 className="text-sm font-semibold">2D projection (PCA)</h2>
+												<h2 className="text-sm font-semibold">{t("projection2d")}</h2>
 												<span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-													{vectorCount} vectors
+													{t("vectorCount", { count: vectorCount })}
 												</span>
 												<span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-													{dimensions} dims
+													{t("dimensionCount", { count: dimensions })}
 												</span>
 											</div>
 											<svg
@@ -1594,10 +1611,10 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 											{activeRow ? (
 												<div className="rounded-md border border-border bg-muted/30 p-2 text-xs">
 													<p className="font-medium text-foreground">
-														Selected #{activeRow.index + 1}
+														{t("selectedIndex", { index: activeRow.index + 1 })}
 													</p>
 													<p className="text-muted-foreground">
-														{truncateInlineText(activeLabel ?? "")}
+														{activeLabel ? truncateInlineText(activeLabel) : t("noSourceText")}
 													</p>
 												</div>
 											) : null}
@@ -1606,9 +1623,9 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													<thead className="sticky top-0 bg-muted/60">
 														<tr>
 															<th className="px-2 py-1 text-left">#</th>
-															<th className="px-2 py-1 text-left">Input</th>
-															<th className="px-2 py-1 text-left">Preview</th>
-															<th className="px-2 py-1 text-left">Dims</th>
+													<th className="px-2 py-1 text-left">{t("input")}</th>
+													<th className="px-2 py-1 text-left">{t("preview")}</th>
+													<th className="px-2 py-1 text-left">{t("dims")}</th>
 														</tr>
 													</thead>
 													<tbody>
@@ -1661,7 +1678,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 														<RotateCcw className="h-3.5 w-3.5" />
 													</Button>
 												</TooltipTrigger>
-												<TooltipContent side="top">Retry</TooltipContent>
+										<TooltipContent side="top">{t("retry")}</TooltipContent>
 											</Tooltip>
 											<Tooltip>
 												<TooltipTrigger asChild>
@@ -1676,9 +1693,18 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 																	modelLabel,
 																	vectorCount,
 																	dimensions,
-																	rows: entryProjection.rows,
-																	rowLabelByIndex,
-																}),
+													rows: entryProjection.rows,
+													rowLabelByIndex,
+													labels: {
+														resultTitle: t("embeddingResultTitle"),
+														model: t("model"),
+														vectors: t("vectors"),
+														dimensions: t("dims"),
+														items: t("results"),
+														preview: t("preview"),
+														noSourceText: t("noSourceText"),
+													},
+												}),
 															);
 															if (copied) {
 																markResultCopied(entry.id);
@@ -1693,7 +1719,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 													</Button>
 												</TooltipTrigger>
 												<TooltipContent side="top">
-													{resultCopied ? "Copied" : "Copy result"}
+{resultCopied ? tChat("copied") : tChat("copy")}
 												</TooltipContent>
 											</Tooltip>
 											<Popover
@@ -1715,12 +1741,12 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 															</Button>
 														</PopoverTrigger>
 													</TooltipTrigger>
-													<TooltipContent side="top">Metadata</TooltipContent>
+										<TooltipContent side="top">{t("metadata")}</TooltipContent>
 												</Tooltip>
 												<PopoverContent align="start" className="w-72">
 													<div className="grid gap-1.5 text-sm">
 														<div className="flex items-center justify-between">
-															<span className="text-muted-foreground">Total tokens</span>
+										<span className="text-muted-foreground">{t("totalTokens")}</span>
 															<span>
 																{typeof rawResponse?.usage?.total_tokens === "number"
 																	? rawResponse.usage.total_tokens
@@ -1728,7 +1754,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 															</span>
 														</div>
 														<div className="flex items-center justify-between">
-															<span className="text-muted-foreground">Generation</span>
+										<span className="text-muted-foreground">{t("generation")}</span>
 															<span>
 																{typeof rawResponse?.meta?.generation_ms === "number"
 																	? `${(rawResponse.meta.generation_ms / 1000).toFixed(1)} s`
@@ -1772,7 +1798,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 							value={textInput}
 							onChange={(event) => setTextInput(event.target.value)}
 							rows={1}
-							placeholder="Embed anything"
+								placeholder={t("embedAnything")}
 							className={cn(
 								"resize-none border-0 !bg-transparent shadow-none focus-visible:ring-0 dark:!bg-transparent",
 								showImageUrlInput || showAudioUrlInput || showVideoUrlInput || imageUrl.trim() || audioUrl.trim() || videoUrl.trim() || files.length || splitTextModeActive || error
@@ -1782,7 +1808,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 						/>
 						{splitTextModeActive ? (
 							<p className="px-1 pb-1 text-[11px] text-muted-foreground">
-								Embedding {splitTextEntries.length} text entries (one per line).
+								{t("embeddingEntries", { count: splitTextEntries.length })}
 							</p>
 						) : null}
 						{showImageUrlInput || showAudioUrlInput || showVideoUrlInput ? (
@@ -1792,7 +1818,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										ref={imageUrlInputRef}
 										value={imageUrl}
 										onChange={(event) => setImageUrl(event.target.value)}
-										placeholder="Image URL"
+										placeholder={t("imageUrl")}
 										className="h-8"
 									/>
 								) : null}
@@ -1801,7 +1827,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										ref={audioUrlInputRef}
 										value={audioUrl}
 										onChange={(event) => setAudioUrl(event.target.value)}
-										placeholder="Audio URL"
+										placeholder={t("audioUrl")}
 										className="h-8"
 									/>
 								) : null}
@@ -1810,7 +1836,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										ref={videoUrlInputRef}
 										value={videoUrl}
 										onChange={(event) => setVideoUrl(event.target.value)}
-										placeholder="Video URL"
+										placeholder={t("videoUrl")}
 										className="h-8"
 									/>
 								) : null}
@@ -1824,7 +1850,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
 										onClick={() => setImageUrl("")}
 									>
-										<span className="max-w-[220px] truncate">Image URL</span>
+										<span className="max-w-[220px] truncate">{t("imageUrl")}</span>
 										<X className="h-3 w-3" />
 									</button>
 								) : null}
@@ -1834,7 +1860,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
 										onClick={() => setAudioUrl("")}
 									>
-										<span className="max-w-[220px] truncate">Audio URL</span>
+										<span className="max-w-[220px] truncate">{t("audioUrl")}</span>
 										<X className="h-3 w-3" />
 									</button>
 								) : null}
@@ -1844,7 +1870,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 										className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
 										onClick={() => setVideoUrl("")}
 									>
-										<span className="max-w-[220px] truncate">Video URL</span>
+										<span className="max-w-[220px] truncate">{t("videoUrl")}</span>
 										<X className="h-3 w-3" />
 									</button>
 								) : null}
@@ -1872,28 +1898,28 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 									tools={[
 										{
 											id: "image-url",
-											label: "Add image URL",
+											label: t("addImageUrl"),
 											icon: ImagePlus,
 											active: Boolean(showImageUrlInput || imageUrl.trim()),
 											onSelect: () => setShowImageUrlInput((prev) => !prev),
 										},
 										{
 											id: "audio-url",
-											label: "Add audio URL",
+											label: t("addAudioUrl"),
 											icon: AudioLines,
 											active: Boolean(showAudioUrlInput || audioUrl.trim()),
 											onSelect: () => setShowAudioUrlInput((prev) => !prev),
 										},
 										{
 											id: "video-url",
-											label: "Add video URL",
+											label: t("addVideoUrl"),
 											icon: Clapperboard,
 											active: Boolean(showVideoUrlInput || videoUrl.trim()),
 											onSelect: () => setShowVideoUrlInput((prev) => !prev),
 										},
 										{
 											id: "upload-files",
-											label: "Upload files",
+											label: t("uploadFiles"),
 											icon: Paperclip,
 											active: files.length > 0,
 											onSelect: () => fileInputRef.current?.click(),
@@ -1908,7 +1934,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 								}}
 								disabled={isLoading || !modelId || !selectedModelEnabled}
 							>
-								{isLoading ? <RoomWorkingIndicator label="Generating embeddings..." /> : "Embed"}
+								{isLoading ? <RoomWorkingIndicator label={t("generatingEmbeddings")} /> : t("embed")}
 							</Button>
 						</div>
 					</RoomComposerSurface>

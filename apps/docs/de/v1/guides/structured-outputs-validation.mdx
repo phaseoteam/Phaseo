@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "Validierung strukturierter Ausgaben"
+description: "Serverseitige Validierung, Wiederholungen und Fallback-Strategien für strukturierte Ausgaben."
+---
+
+Auch bei schema-gesteuerter Generierung solltest du die Ausgabe immer auf deinem Server validieren.
+
+## Empfohlener Ablauf
+
+1. Fordere eine schema-gesteuerte Ausgabe an.
+2. Parse das JSON.
+3. Validiere anhand des Server-Schemas.
+4. Wiederhole den Aufruf bei ungültiger Ausgabe einmal mit einem Korrektur-Prompt.
+5. Ist die Ausgabe weiterhin ungültig, greife auf einen sicheren Fehlerfall zurück.
+
+## Validierungsbeispiel (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## Korrektur-Prompt für Wiederholungen
+
+Wenn die Validierung fehlschlägt, sende eine kurze Korrekturanweisung:
+
+`Deine vorherige Ausgabe entsprach nicht dem Schema. Gib ausschließlich gültiges JSON mit den erforderlichen Feldern und ohne zusätzliche Schlüssel zurück.`
+
+## Empfehlungen für den Produktionseinsatz
+
+Verwende pro Anwendungsfall ein eigenes Schema und versieh es mit einer Version.
+Erfasse Validierungsfehlerquoten pro Modell-ID.
+Richte einen Alarm ein, wenn Schema-Fehler nach Modelländerungen plötzlich zunehmen.
+

@@ -1,0 +1,26 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "观察 Ruby Agent 运行、模型轮次、工具、暂停和完成事件。"
+---
+
+传入 `on_event`，即可在运行期间接收结构化生命周期事件。
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) {
+    logger.info(
+      "agent event",
+      type: event[:type],
+      run_id: event[:run_id],
+      details: event[:details]
+    )
+  }
+)
+```
+
+常见事件包括运行的开始/完成/失败、模型尝试、文本和推理增量、工具开始/进度/完成/失败，以及人工检查点。
+
+保持处理程序快速运行。将耗时的持久化任务放入队列，并在向外部转发事件前对工具输入中的敏感信息进行脱敏。

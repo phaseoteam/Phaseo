@@ -1,0 +1,13 @@
+---
+title: "Obtenir les analyses de l’espace de travail"
+sidebarTitle: "Obtenir les analyses"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /analytics"
+description: "Obtenir des totaux filtrés des coûts, des requêtes et des jetons de l’espace de travail."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `analytics:read`.</Note>
+
+Filtrez par date, libellé de requête, clé API, utilisateur final, modèle, fournisseur, point de terminaison, source d’identifiants ou résultat. Les résultats sont regroupés par date, modèle, fournisseur et point de terminaison, avec une pagination stable.
+
+Les plages sont limitées aux 30 derniers jours UTC complets et à 10 000 requêtes source au maximum.
+

@@ -1,0 +1,17 @@
+---
+icon: "image"
+title: "Geração de imagens"
+description: "Chame /images/generations com o SDK Python."
+---
+
+**Método**: `client.generate_image()`
+
+```python
+result = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+})
+
+print(result)
+```
+

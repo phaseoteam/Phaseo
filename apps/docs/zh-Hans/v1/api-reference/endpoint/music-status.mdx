@@ -1,0 +1,46 @@
+---
+title: "获取音乐生成结果"
+sidebarTitle: "获取音乐生成结果"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "使用 Phaseo 请求 ID 检索音乐生成结果。"
+---
+
+检索通过 `POST /music/generate` 创建的音乐结果。供应商任务完成后，此端点会返回已存储的规范化结果；如果任务仍在异步处理中，则会轮询上游供应商。
+
+## 响应结构
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## 说明
+
+- `status` 的值可以是：`queued`、`in_progress`、`completed`、`failed`。
+- 生成完成后会包含 `usage`。
+- 请传入 `POST /music/generate` 返回的 Phaseo `id`，而不是 `nativeResponseId`。
+- 此端点会在内部处理供应商特定的状态和检索 API。
+

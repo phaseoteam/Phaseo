@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "Herramientas de desarrollo"
+description: "Captura ejecuciones locales del Agent SDK durante el desarrollo y la depuración."
+---
+
+Durante el desarrollo, usa la captura de DevTools del Agent SDK para guardar localmente las entradas, los pasos, las herramientas, las salidas, los tiempos y los ID de correlación del gateway de una ejecución.
+
+## Activar la captura en una ejecución
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+De forma predeterminada, los archivos se guardan en `.phaseo-devtools` dentro del directorio de trabajo actual.
+
+## Configurar el directorio de salida
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+También puedes configurar `PHASEO_DEVTOOLS=true` y, de forma opcional, `PHASEO_DEVTOOLS_DIR` para los procesos de desarrollo locales.
+
+## Información capturada
+
+Cada entrada de `agent.run` o `agent.continue` incluye:
+
+- ID del agente y de la ejecución
+- estado y duración de la ejecución
+- entrada y contexto de la aplicación
+- detalles del modelo y del proveedor, si están disponibles
+- ID de solicitud del gateway y de respuesta nativa
+- cantidad de pasos y herramientas
+- estado final de la ejecución, mensajes, pasos y salida
+- detalles estructurados del error si falla una ejecución
+
+<Warning>
+Las entradas del agente, los mensajes, los resultados de herramientas y el contexto de la aplicación pueden contener datos sensibles. Excluye el directorio de DevTools del control de versiones y aplica los mismos controles de acceso que a los demás registros de desarrollo.
+</Warning>
+
+## Guías relacionadas
+
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [Errores y solución de problemas](./agent-sdk-events-and-errors.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)

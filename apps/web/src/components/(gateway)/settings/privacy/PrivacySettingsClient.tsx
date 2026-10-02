@@ -1,7 +1,10 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,8 +73,8 @@ function uniqStrings(items: string[]): string[] {
 	return Array.from(new Set(items.filter(Boolean)));
 }
 
-function summarizeList(values: string[], limit = 3): string {
-	if (!values.length) return "All";
+function summarizeList(values: string[], allLabel: string, limit = 3): string {
+	if (!values.length) return allLabel;
 	if (values.length <= limit) return values.join(", ");
 	return `${values.slice(0, limit).join(", ")} +${values.length - limit}`;
 }
@@ -134,6 +137,8 @@ function SelectionDialog(props: {
 	renderLeading?: (opt: { value: string; label: string }) => React.ReactNode;
 	trigger: React.ReactNode;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [draft, setDraft] = useState<string[]>(props.selected);
@@ -168,7 +173,7 @@ function SelectionDialog(props: {
 				</DialogHeader>
 				<div className="space-y-3">
 					<Input
-						placeholder="Search..."
+						placeholder={s("phraseSearch")}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 					/>
@@ -209,21 +214,21 @@ function SelectionDialog(props: {
 													});
 												}}
 											>
-												{checked ? "Selected" : "Select"}
+										{checked ? s("Selected") : s("Select")}
 											</button>
 										</li>
 									);
 								})}
 							</ul>
 						) : (
-							<div className="p-6 text-sm text-muted-foreground">No matches.</div>
+							<div className="p-6 text-sm text-muted-foreground">{s("phraseNoMatches")}</div>
 						)}
 					</div>
 				</div>
 				<DialogFooter className="gap-2 sm:gap-0">
 					<DialogClose asChild>
 						<Button type="button" variant="outline">
-							Cancel
+							{s("Cancel")}
 						</Button>
 					</DialogClose>
 					<Button
@@ -233,7 +238,7 @@ function SelectionDialog(props: {
 							setOpen(false);
 						}}
 					>
-						Save ({draft.length})
+						{s("Save")} ({draft.length})
 					</Button>
 				</DialogFooter>
 			</DialogContent>
@@ -271,6 +276,7 @@ function EligibilityHero(props: {
 	};
 }) {
 	const [modelQuery, setModelQuery] = useState("");
+	const t = useTranslations("Common.ui.privacyEligibility");
 
 	const providerRows = useMemo(() => {
 		return Array.from(props.eligiblePreview.modelsByProvider.entries())
@@ -296,10 +302,10 @@ function EligibilityHero(props: {
 
 	const ruleText =
 		props.globalMode === "none"
-			? "No provider restrictions"
+			? t("settingsPreview.noProviderRestrictions")
 			: props.globalMode === "allowlist"
-				? "Allowlist"
-				: "Blocklist";
+				? t("settingsPreview.allowlist")
+				: t("settingsPreview.blocklist");
 
 	const selectedProviderLabels = props.globalProviderIds.map(
 		(id) => props.providerLabelById.get(id) ?? id,
@@ -311,24 +317,28 @@ function EligibilityHero(props: {
 				<div className="min-w-0 space-y-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<h2 className="text-base font-semibold tracking-tight">
-							Eligibility Preview
+							{t("title")}
 						</h2>
-						<Badge variant="outline" className="gap-1">
-							<Shield className="h-3.5 w-3.5" />
-							Alpha
-						</Badge>
-						{props.zdrOnly ? <Badge variant="secondary">ZDR Only</Badge> : null}
+							<Badge variant="outline" className="gap-1">
+								<Shield className="h-3.5 w-3.5" />
+								{t("settingsPreview.earlyAccess")}
+							</Badge>
+							{props.zdrOnly ? (
+								<Badge variant="secondary">{t("settingsPreview.zdrOnly")}</Badge>
+							) : null}
 					</div>
 					<p className="text-sm text-muted-foreground">
-						Gateway-active models eligible based on your current global settings
-						{props.teamName ? ` (${props.teamName})` : ""}.
+						{t("settingsPreview.gatewayActiveDescription")}
+						{props.teamName
+							? ` ${t("settingsPreview.teamContext", { teamName: props.teamName })}`
+							: ""}
 					</p>
 				</div>
 
 				<div className="flex flex-wrap items-center gap-2">
 					<div className="rounded-xl border bg-background/70 px-3 py-2">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Providers
+							{t("providers")}
 						</div>
 						<div className="mt-1 text-xl font-semibold">
 							{props.eligiblePreview.providerCount}
@@ -336,7 +346,7 @@ function EligibilityHero(props: {
 					</div>
 					<div className="rounded-xl border bg-background/70 px-3 py-2">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Models
+							{t("models")}
 						</div>
 						<div className="mt-1 text-xl font-semibold">
 							{props.eligiblePreview.modelCount}
@@ -344,7 +354,7 @@ function EligibilityHero(props: {
 					</div>
 					<div className="rounded-xl border bg-background/70 px-3 py-2">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Rule
+								{t("settingsPreview.rule")}
 						</div>
 						<div className="mt-1 text-sm font-semibold">{ruleText}</div>
 						{props.globalMode !== "none" ? (
@@ -357,7 +367,7 @@ function EligibilityHero(props: {
 										>
 											<Logo
 												id={getProviderLogoId(id)}
-												alt={`${id} logo`}
+											alt={t("settingsPreview.providerLogo", { provider: id })}
 												width={16}
 												height={16}
 												className="h-4 w-4"
@@ -366,7 +376,7 @@ function EligibilityHero(props: {
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									{summarizeList(selectedProviderLabels, 2)}
+									{summarizeList(selectedProviderLabels, t("settingsPreview.allProviders"), 2)}
 								</p>
 							</div>
 						) : null}
@@ -376,7 +386,7 @@ function EligibilityHero(props: {
 
 			<div className="mt-5">
 				<p className="text-xs font-medium text-muted-foreground">
-					Eligible providers
+					{t("settingsPreview.eligibleProviders")}
 				</p>
 				<div className="mt-2 flex gap-2 overflow-x-auto pb-1">
 					{providerRows.length ? (
@@ -387,7 +397,7 @@ function EligibilityHero(props: {
 							>
 								<Logo
 									id={p.logoId}
-									alt={`${p.label} logo`}
+								alt={t("settingsPreview.providerLogo", { provider: p.label })}
 									width={18}
 									height={18}
 									className="h-[18px] w-[18px]"
@@ -400,7 +410,7 @@ function EligibilityHero(props: {
 						))
 					) : (
 						<div className="text-sm text-muted-foreground">
-							No eligible providers.
+							{t("settingsPreview.noEligibleProviders")}
 						</div>
 					)}
 				</div>
@@ -409,17 +419,15 @@ function EligibilityHero(props: {
 			<div className="mt-5 rounded-xl border bg-background/70 p-4">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="space-y-1">
-						<p className="text-sm font-semibold">Eligible models</p>
+						<p className="text-sm font-semibold">{t("settingsPreview.eligibleModels")}</p>
 						<p className="text-xs text-muted-foreground">
-							This list is derived from Gateway-active provider model entries.
-							Privacy metadata (train/publish/ZDR) will refine eligibility as it
-							lands in the catalogue.
+							{t("settingsPreview.eligibleModelsDescription")}
 						</p>
 					</div>
 					<Input
 						value={modelQuery}
 						onChange={(e) => setModelQuery(e.target.value)}
-						placeholder="Search models..."
+						placeholder={t("settingsPreview.searchModels")}
 						className="h-9 w-full sm:w-[260px]"
 					/>
 				</div>
@@ -436,7 +444,9 @@ function EligibilityHero(props: {
 							))}
 						</ul>
 					) : (
-						<div className="p-6 text-sm text-muted-foreground">No matches.</div>
+						<div className="p-6 text-sm text-muted-foreground">
+							{t("settingsPreview.noModelsMatch")}
+						</div>
 					)}
 				</div>
 			</div>
@@ -452,6 +462,10 @@ export default function PrivacySettingsClient(props: {
 	ioLoggingFeatureEnabled: boolean;
 	dataContribution: DataContributionSettings;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const tUi = useTranslations("Common.ui");
+	const tEligibility = useTranslations("Common.ui.privacyEligibility.settingsPreview");
 	const providerLabelById = useMemo(() => {
 		const map = new Map<string, string>();
 		for (const p of props.providers) map.set(p.id, p.name);
@@ -549,9 +563,9 @@ export default function PrivacySettingsClient(props: {
 							global.providerRestrictionEnforceAllowed,
 					}),
 					{
-						loading: "Saving privacy settings...",
-						success: "Privacy settings updated",
-						error: "Failed to update privacy settings",
+						loading: s("phraseSavingPrivacySettings"),
+						success: s("Privacy settings updated"),
+						error: s("Failed to update privacy settings"),
 					},
 				);
 				if (saveSeq === globalSaveSeqRef.current) {
@@ -625,10 +639,10 @@ export default function PrivacySettingsClient(props: {
 				<div className="flex flex-wrap items-start justify-between gap-3">
 					<div className="space-y-1">
 						<h2 className="text-sm font-semibold tracking-tight">
-							Privacy defaults
+							{s("Privacy defaults")}
 						</h2>
 						<p className="text-sm text-muted-foreground">
-							Global defaults applied to all requests.
+							{s("phraseGlobalDefaultsAppliedToAllRequests")}
 						</p>
 					</div>
 					<span className="text-xs text-muted-foreground">{globalStateText}</span>
@@ -636,24 +650,24 @@ export default function PrivacySettingsClient(props: {
 
 				<div className="grid gap-2">
 					<ToggleRow
-						label="Enable paid endpoints that may train on inputs"
-						description="When disabled, paid endpoints flagged as training-on-inputs become ineligible."
+						label={s("Enable paid endpoints that may train on inputs")}
+						description={s("phraseWhenDisabledPaidEndpointsFlaggedAsTrainingOnInputsBecomeIneligible")}
 						checked={global.privacyEnablePaidMayTrain}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyEnablePaidMayTrain: checked }))
 						}
 					/>
 					<ToggleRow
-						label="Enable free models that may train on inputs"
-						description="When disabled, free models flagged as training-on-inputs become ineligible."
+						label={s("Enable free models that may train on inputs")}
+						description={s("phraseWhenDisabledFreeModelsFlaggedAsTrainingOnInputsBecomeIneligible")}
 						checked={global.privacyEnableFreeMayTrain}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyEnableFreeMayTrain: checked }))
 						}
 					/>
 					<ToggleRow
-						label="Enable free endpoints that may publish prompts"
-						description="When disabled, free endpoints flagged as publishing prompts become ineligible."
+						label={s("Enable free endpoints that may publish prompts")}
+						description={s("phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible")}
 						checked={global.privacyEnableFreeMayPublishPrompts}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({
@@ -665,8 +679,8 @@ export default function PrivacySettingsClient(props: {
 					{props.ioLoggingFeatureEnabled ? (
 						<>
 							<ToggleRow
-								label="Store Gateway I/O logs"
-								description="Store request prompts and completions in private R2 storage for the Logs detail view."
+								label={s("Store Gateway I/O logs")}
+								description={s("phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView")}
 								checked={global.ioLoggingEnabled}
 								onCheckedChange={(checked) =>
 									setGlobal((prev) => ({ ...prev, privacyEnableInputOutputLogging: checked, ioLoggingEnabled: checked }))
@@ -675,7 +689,7 @@ export default function PrivacySettingsClient(props: {
 							{global.ioLoggingEnabled ? (
 								<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2">
 									<label className="space-y-1 text-sm">
-										<span className="font-medium">Retention</span>
+										<span className="font-medium">{s("Retention")}</span>
 										<select
 											className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
 											value={String(global.ioLoggingRetentionDays)}
@@ -683,14 +697,14 @@ export default function PrivacySettingsClient(props: {
 												setGlobal((prev) => ({ ...prev, ioLoggingRetentionDays: Number(event.target.value) }))
 											}
 										>
-											<option value="90">90 days</option>
-											<option value="180">180 days</option>
-											<option value="365">365 days</option>
+										<option value="90">{s("90 days")}</option>
+										<option value="180">{s("180 days")}</option>
+										<option value="365">{s("365 days")}</option>
 										</select>
 									</label>
 									<ToggleRow
-										label="Include provider payloads"
-										description="Also retain the upstream provider request and response."
+										label={s("Include provider payloads")}
+										description={s("phraseAlsoRetainTheUpstreamProviderRequestAndResponse")}
 										checked={global.ioLoggingIncludeProviderPayloads}
 										onCheckedChange={(checked) =>
 											setGlobal((prev) => ({ ...prev, ioLoggingIncludeProviderPayloads: checked }))
@@ -701,8 +715,8 @@ export default function PrivacySettingsClient(props: {
 						</>
 					) : null}
 					<ToggleRow
-						label="Enable ZDR endpoints only"
-						description="Restrict routing to endpoints that meet ZDR requirements (may reduce availability)."
+						label={s("Enable ZDR endpoints only")}
+						description={s("phraseRestrictRoutingToEndpointsThatMeetZDRRequirementsMayReduceAvailability")}
 						checked={global.privacyZdrOnly}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyZdrOnly: checked }))
@@ -714,10 +728,10 @@ export default function PrivacySettingsClient(props: {
 			<section className="space-y-3">
 				<div className="space-y-1">
 					<h2 className="text-sm font-semibold tracking-tight">
-						Provider restrictions
+						{s("Provider restrictions")}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Globally allow or exclude providers for all requests.
+						{s("phraseGloballyAllowOrExcludeProvidersForAllRequests")}
 					</p>
 				</div>
 
@@ -725,41 +739,41 @@ export default function PrivacySettingsClient(props: {
 					<div className="grid gap-3 md:grid-cols-3">
 						<div className="rounded-xl border bg-background/80 px-3 py-3">
 							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-								Rule
+								{s("Rule")}
 							</div>
 							<div className="mt-2 text-sm font-semibold">
 								{global.providerRestrictionMode === "none"
-									? "Allow all providers"
+									? s("Allow all providers")
 									: global.providerRestrictionMode === "allowlist"
-										? "Allow only selected"
-										: "Block selected"}
+										? s("Allow only selected")
+										: s("Block selected")}
 							</div>
 						</div>
 						<div className="rounded-xl border bg-background/80 px-3 py-3">
 							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-								Selected providers
+								{s("Selected providers")}
 							</div>
 							<div className="mt-2 text-sm font-semibold">
 								{global.providerRestrictionMode === "none"
-									? "Not used"
-									: `${selectedProviderOptions.length} selected`}
+									? s("Not used")
+									: `${selectedProviderOptions.length} ${s("selected")}`}
 							</div>
 						</div>
 						<div className="rounded-xl border bg-background/80 px-3 py-3">
 							<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-								Enforcement
+								{s("Enforcement")}
 							</div>
 							<div className="mt-2 text-sm font-semibold">
 								{global.providerRestrictionMode === "allowlist" &&
 								global.providerRestrictionEnforceAllowed
-									? "Strict"
-									: "Flexible"}
+									? s("Strict")
+									: s("Flexible")}
 							</div>
 						</div>
 					</div>
 
 					<div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
-						<Label className="text-sm font-medium">Mode</Label>
+						<Label className="text-sm font-medium">{s("Mode")}</Label>
 						<Select
 							value={global.providerRestrictionMode}
 							onValueChange={(value) =>
@@ -774,24 +788,24 @@ export default function PrivacySettingsClient(props: {
 							}
 						>
 							<SelectTrigger className="max-w-sm">
-								<SelectValue placeholder="Select mode" />
+								<SelectValue placeholder={tUi("select.mode")} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="none">Allow any provider</SelectItem>
+								<SelectItem value="none">{tUi("privacy.allowAnyProvider")}</SelectItem>
 								<SelectItem value="allowlist">
-									Allow only selected providers
+									{tUi("privacy.allowOnlySelectedProviders")}
 								</SelectItem>
-								<SelectItem value="blocklist">Block selected providers</SelectItem>
+								<SelectItem value="blocklist">{tUi("privacy.blockSelectedProviders")}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
 
 					<div className="grid gap-3 md:grid-cols-[220px_1fr] md:items-center">
-						<Label className="text-sm font-medium">Providers</Label>
+						<Label className="text-sm font-medium">{s("Providers")}</Label>
 						<div className="space-y-3">
 							<SelectionDialog
-								title="Select providers"
-								description="Choose providers to allow or block globally."
+								title={tEligibility("selectProviders")}
+								description={tEligibility("selectProvidersDescription")}
 								options={[...props.providers]
 									.sort((a, b) => a.name.localeCompare(b.name))
 									.map((p) => ({ value: p.id, label: p.name }))}
@@ -805,7 +819,7 @@ export default function PrivacySettingsClient(props: {
 								renderLeading={(opt) => (
 									<Logo
 										id={getProviderLogoId(opt.value)}
-										alt={`${opt.label} logo`}
+											alt={tEligibility("providerLogo", { provider: opt.label })}
 										width={18}
 										height={18}
 										className="h-[18px] w-[18px] rounded-sm"
@@ -821,20 +835,20 @@ export default function PrivacySettingsClient(props: {
 										<div className="min-w-0 text-left">
 											<div className="text-sm font-medium">
 												{global.providerRestrictionMode === "none"
-													? "No provider list needed"
-													: "Choose providers"}
+												? tEligibility("noProviderListNeeded")
+												: tEligibility("chooseProviders")}
 											</div>
 											<div className="truncate text-xs text-muted-foreground">
 												{global.providerRestrictionMode === "none"
-													? "Turn on allowlist or blocklist to target providers."
+												? tEligibility("enableProviderListDescription")
 													: global.providerRestrictionMode === "allowlist"
-														? "Only the providers below will remain eligible."
-														: "The providers below will be excluded from routing."}
+														? tEligibility("onlyProvidersEligible")
+														: tEligibility("providersExcluded")}
 											</div>
 										</div>
 										<Badge variant="secondary">
 											{global.providerRestrictionMode === "none"
-												? "All"
+											? tEligibility("allProviders")
 												: `${global.providerRestrictionProviderIds.length}`}
 										</Badge>
 									</Button>
@@ -861,22 +875,23 @@ export default function PrivacySettingsClient(props: {
 															{provider.name}
 														</div>
 														<div className="text-xs text-muted-foreground">
-															{activeModelCountByProvider.get(provider.id) ?? 0} active
-															models
+											{tEligibility("activeModels", {
+												count: activeModelCountByProvider.get(provider.id) ?? 0,
+											})}
 														</div>
 													</div>
 												</div>
 												<Badge variant="outline">
 													{global.providerRestrictionMode === "allowlist"
-														? "Allowed"
-														: "Blocked"}
+									? tEligibility("allowedStatus")
+									: tEligibility("blockedStatus")}
 												</Badge>
 											</div>
 										))}
 									</div>
 								) : (
 									<div className="rounded-xl border border-dashed bg-background/60 px-4 py-4 text-sm text-muted-foreground">
-										No providers selected yet.
+										{tEligibility("noProvidersSelected")}
 									</div>
 								)
 							) : null}
@@ -889,10 +904,10 @@ export default function PrivacySettingsClient(props: {
 							<div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2">
 								<div className="min-w-0">
 									<p className="text-sm font-medium">
-										Always enforce allowed providers
+										{tEligibility("enforceAllowedProviders")}
 									</p>
 									<p className="text-xs text-muted-foreground">
-										This might reduce fallback options and impact availability.
+										{tEligibility("availabilityMayDecrease")}
 									</p>
 								</div>
 								<Switch
@@ -903,16 +918,15 @@ export default function PrivacySettingsClient(props: {
 											providerRestrictionEnforceAllowed: checked,
 										}))
 									}
-									aria-label="Always enforce allowed providers"
+								aria-label={tEligibility("enforceAllowedProviders")}
 								/>
 							</div>
 							<Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
 								<Info className="text-amber-700 dark:text-amber-200" />
 								<div>
-									<AlertTitle>Availability warning</AlertTitle>
+									<AlertTitle>{tEligibility("availabilityWarning")}</AlertTitle>
 									<AlertDescription>
-										Allowlisting providers may remove fallback routes. Consider
-										keeping at least two providers enabled for critical paths.
+										{tEligibility("availabilityWarningDescription")}
 									</AlertDescription>
 								</div>
 							</Alert>
@@ -923,4 +937,3 @@ export default function PrivacySettingsClient(props: {
 		</div>
 	);
 }
-

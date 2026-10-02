@@ -1,0 +1,35 @@
+---
+icon: "messages-square"
+title: "चैट कंप्लीशन"
+description: "Go wrapper से /chat/completions कॉल करें।"
+---
+
+रैपर मेथड का उपयोग करें:
+
+- `client.GenerateText(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-5-nano",
+  Messages: []map[string]interface{}{
+    {
+      "role": "user",
+      "content": "Write a one-line haiku.",
+    },
+  },
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+रैपर में अभी स्ट्रीमिंग के लिए अलग हेल्पर उपलब्ध नहीं है।

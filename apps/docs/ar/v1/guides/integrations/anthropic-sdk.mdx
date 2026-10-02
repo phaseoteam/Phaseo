@@ -1,0 +1,67 @@
+---
+title: "Anthropic SDK"
+icon: "message-square"
+description: "استخدم عملاء متوافقين مع Anthropic مع Phaseo."
+---
+
+استخدم واجهة API المتوافقة مع Anthropic عندما يتوقع تطبيقك أو وكيلك أو أداة البرمجة طلبات `/v1/messages` بأسلوب Claude.
+
+## TypeScript
+
+```bash
+npm install @anthropic-ai/sdk
+```
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app",
+});
+
+const message = await client.messages.create({
+	model: "anthropic/claude-sonnet-4.5",
+	max_tokens: 512,
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+
+console.log(message.content);
+```
+
+## Python
+
+```bash
+pip install anthropic
+```
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
+)
+
+message = client.messages.create(
+    model="anthropic/claude-sonnet-4.5",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(message.content)
+```
+
+## ملاحظات
+
+- استخدم المضيف الجذر `https://api.phaseo.app`؛ إذ تضيف عملاء Anthropic المسار `/v1/messages`.
+- راجع [رسائل Anthropic](../../api-reference/endpoint/anthropic-messages.mdx) لمعرفة تفاصيل نقطة النهاية.
+- قد تعمل بنى الأدوات الأصلية في Anthropic حيثما يدعمها Phaseo، لكن استخدم أسماء أدوات Phaseo لأدوات الخادم العابرة للمزوّدين.
+- إذا كان سير العمل يعتمد على حلقات أدوات متدفقة، فاختبره قبل النشر للإنتاج لأن العملاء المتوافقين مع Anthropic أكثر تشددًا بشأن ترتيب أحداث الأدوات.
+
+## مواضيع ذات صلة
+
+- [Claude Code](./claude-code.mdx)
+- [رسائل Anthropic](../../api-reference/endpoint/anthropic-messages.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)

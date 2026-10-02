@@ -1,0 +1,111 @@
+---
+icon: "compass"
+title: "نظرة عامة على TypeScript SDK"
+description: "عميل TypeScript الرسمي لواجهة Phaseo Gateway API"
+---
+
+ثبّت الحزمة المنشورة [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) من npm.
+
+يوفّر Phaseo TypeScript SDK طريقة مريحة وآمنة من ناحية الأنواع للتعامل مع Phaseo Gateway API. وهو مبني على مواصفات OpenAPI، ويوفّر دعمًا كاملًا لـ TypeScript مع أنواع مُنشأة وواجهة عميل بسيطة.
+
+## الميزات
+
+-   **آمن من ناحية الأنواع**: دعم كامل لـ TypeScript مع أنواع مُنشأة من مواصفات OpenAPI
+-   **واجهة API بسيطة**: عميل سهل الاستخدام بواجهة واضحة
+-   **كود مُنشأ**: يُنشأ تلقائيًا من مواصفات API المعتمدة
+-   **شامل**: يغطي جميع نقاط نهاية Gateway API
+
+## مثال سريع
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## انتظار الموسيقى أو الفيديو أو الدفعات
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+استخدم `videos.generateAndWait(request, options)` للفيديو و`batches.createAndWait(request, options)` للدفعات. ترسل المساعدات مرة واحدة وتعيد الاستجابة المكتملة فورًا دون استطلاع، أو تستطلع المهمة نفسها حتى اكتمالها. تعيد الاستجابة كاملة وتطرح `JobFailedError` مع `response` للمهام الفاشلة أو الملغاة أو المنتهية. قد تحتوي الدفعات المكتملة على طلبات فردية فاشلة.
+
+لكل مورد أيضًا `wait(id, options)` يعيد أي استجابة نهائية بما فيها الفشل. الخيارات: `intervalMs` (افتراضي 5,000؛ أدنى 250) و`timeoutMs` (افتراضي 1,800,000) و`signal` و`onPoll`. تبدأ مهلة الانتظار بعد عودة الإرسال؛ ويحتفظ طلب HTTP الأول بمهلته. تتلقى ردود نداء التقدم الاستجابة الأولى وكل استطلاع.
+
+يحتفظ `JobTimeoutError` و`JobCancelledError` بـ`jobId` و`lastResponse` للاستئناف عبر `.wait(error.jobId)`. يلغِي إيقاف الانتظار طلب الاستطلاع الجاري دون العمل البعيد. تنتقل إخفاقات HTTP دون إعادة إرسال تلقائي. لا تضيف مساعدات SDK تنفيذًا خلفيًا للبوابة.
+
+## ضوابط الطلبات والتشخيص
+
+استخدم `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` للحصول على
+عميل غير قابل للتغيير بضوابط لكل الموارد والتدفقات والوسائط.
+تشمل المهلات قراءة جسم الاستجابة. إعادة المحاولة صفر افتراضيًا وتُطبق
+على GET/HEAD فقط مع احترام `Retry-After`. لا تُعاد الإرسالات المدفوعة أبدًا.
+
+يوفّر `responseMetadata(result)` معرّف طلب البوابة وعنوان تتبعه في لوحة التحكم.
+توفّر أخطاء HTTP الحقول `code` و`requestId` و`traceUrl` و`retryAfterMs` والجسم والترويسات.
+
+## مساعدات سير العمل
+
+تعيد `music.start` و`videos.start` و`batches.start` مقابض تتضمن `result()`
+و`events()` و`toJSON()`. احفظ النوع والمعرّف وأعد الإنشاء عبر `resume(id)`.
+يرفض `result()` الإخفاقات النهائية. يدعم الفيديو والدفعات فقط الإلغاء البعيد.
+
+يبث `videos.streamContent(id)` مع `downloadTo(stream, writable)` الإخراج
+الكبير. يجهّز `toFile(bytes, filename, contentType)` الرفع.
+يحلّل `batchResults(await client.batches.streamResults(id))` JSONL تدريجيًا؛
+ويحتفظ `matchBatchResult(row, inputsByCustomId)` بالأخطاء الفردية وهوية الإدخال.
+
+يقبل `responses.parse(request, schema)` محلّلًا متوافقًا مع Zod ويعيد
+إخراجًا متحققًا منه. اضبط أيضًا تنسيق الإخراج المنظّم للخادم في الطلب.
+يجمع `collectStream(client.streamResponses(request))` النص والاستخدام.
+
+يفحص `checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` القدرات المعلنة والقيود العددية في عرض مزوّد
+نشط واحد. تُبلغ البيانات الوصفية المفقودة بأنها مجهولة. لا يغيّر
+النموذج أو يحذف معلمات، ولا يضمن قبول المزوّد الفعلي للطلب.
+
+لمحددات النماذج ومحررات المعلمات، استخدم البيانات الوصفية الحية لنقاط النهاية:
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+تُعلّم كل معلمة بـ`supported` أو`partial` أو`unsupported` أو`unknown`،
+مع مسارات المزوّدين ومشكلات القيود المناسبة للإبراز ضمن السطر.
+يعيد `client.models.capabilities(modelId)` استجابة قدرات نقطة النهاية
+كاملة. لا تضيف هذه الفحوص الصريحة طلب اكتشاف إلى استدعاءات التوليد.
+
+## الاختبار المحلي وتصدير الموقع
+
+استورد `createMockTransport` و`jobFixtures` من `@phaseo/sdk/testing` لحقن
+بيانات اختبار صارمة ومرتبة عبر `fetchImpl`. استدعِ `mock.assertDone()` للتحقق من
+كل الطلبات المتوقعة. تفشل الاستدعاءات غير المتوقعة محليًا دون الرجوع إلى الشبكة.
+
+بعد إرسال طلب في غرفة Phaseo، يصدّر **الحصول على الكود** النموذج
+والإعدادات بصيغة TypeScript أوPython. يفتح **عرض الطلب** تتبعه في لوحة التحكم عند
+توفر معرّف طلب. شغّل الكود على خادمك مع `PHASEO_API_KEY`.
+## ما الذي يتضمنه
+
+-   فئة العميل `Phaseo` لجميع تفاعلات API
+-   مساعدات منظّمة حسب المورد مثل `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   مساعدات الاستكشاف والتسعير مثل `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   مساعدات لعناوين WebSocket لتدفّقات دورة حياة المهام غير المتزامنة والدفعات والفيديو
+-   `client.batches.streamResults(batchId, { signal })` لتنزيلات Anthropic JSONL المتدفقة
+-   أنواع مُنشأة لجميع كائنات الطلب والاستجابة
+-   تغطية كاملة لواجهة API، بما في ذلك إكمالات الدردشة والنماذج والأرصدة وغيرها
+-   تعريفات TypeScript لتحسين تجربة التطوير

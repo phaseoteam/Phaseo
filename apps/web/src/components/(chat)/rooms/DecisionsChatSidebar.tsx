@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
@@ -67,6 +68,7 @@ export function DecisionsChatSidebar({
 	onSaveTags,
 	onDelete,
 }: DecisionsChatSidebarProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const [sidebarSlotEl, setSidebarSlotEl] = useState<HTMLElement | null>(null);
 	const [renameTarget, setRenameTarget] = useState<DecisionConversation | null>(null);
 	const [renameValue, setRenameValue] = useState("");
@@ -118,15 +120,15 @@ export function DecisionsChatSidebar({
 					className="h-8 min-w-0 w-full justify-start gap-2 px-2 text-sm font-medium"
 					onClick={onCreate}
 					disabled={!historyLoaded}
-					aria-label="New Chat"
+					aria-label={tCopy("copyNewChat")}
 				>
 					<SquarePen className="h-4 w-4 shrink-0" />
-					{collapsed ? null : <span className="truncate text-left">New Chat</span>}
+					{collapsed ? null : <span className="truncate text-left">{tCopy("copyNewChat")}</span>}
 				</Button>
 			</div>
 			<ScrollArea className="min-h-0 flex-1">
 				<SidebarGroup className={CHAT_SIDEBAR_HISTORY_GROUP_CLASS}>
-					<SidebarGroupLabel>Chats</SidebarGroupLabel>
+					<SidebarGroupLabel>{tCopy("copyChats")}</SidebarGroupLabel>
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{conversations.map((conversation) => (
@@ -152,7 +154,7 @@ export function DecisionsChatSidebar({
 												<SidebarMenuAction
 													showOnHover
 													disabled={!historyLoaded}
-													aria-label={`Open actions for ${conversation.title}`}
+													aria-label={tCopy("openChatActions", { title: conversation.title })}
 												/>
 											}
 										>
@@ -170,15 +172,14 @@ export function DecisionsChatSidebar({
 												}}
 											>
 												<PencilLine className="mr-2 h-4 w-4" />
-												Rename
-											</DropdownMenuItem>
+												{tCopy("copyRename")}</DropdownMenuItem>
 											<DropdownMenuItem onClick={() => onTogglePin(conversation)}>
 												{conversation.pinned ? (
 													<PinOff className="mr-2 h-4 w-4" />
 												) : (
 													<Pin className="mr-2 h-4 w-4" />
 												)}
-												{conversation.pinned ? "Unpin" : "Pin"}
+												{conversation.pinned ? tCopy("copyUnpin") : tCopy("copyPin")}
 											</DropdownMenuItem>
 											<DropdownMenuItem
 												onClick={() => {
@@ -187,8 +188,7 @@ export function DecisionsChatSidebar({
 												}}
 											>
 												<Tag className="mr-2 h-4 w-4" />
-												Tags
-											</DropdownMenuItem>
+												{tCopy("copyTags")}</DropdownMenuItem>
 											<DropdownMenuSeparator />
 											<DropdownMenuItem
 												variant="destructive"
@@ -198,16 +198,14 @@ export function DecisionsChatSidebar({
 												}}
 											>
 												<Trash2 className="mr-2 h-4 w-4" />
-												Delete
-											</DropdownMenuItem>
+												{tCopy("copyDelete")}</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
 								</SidebarMenuItem>
 							))}
 							{historyLoaded && conversations.length === 0 ? (
 								<p className="px-2 py-3 text-xs text-muted-foreground">
-									No chats yet.
-								</p>
+									{tCopy("noChats")}</p>
 							) : null}
 						</SidebarMenu>
 					</SidebarGroupContent>

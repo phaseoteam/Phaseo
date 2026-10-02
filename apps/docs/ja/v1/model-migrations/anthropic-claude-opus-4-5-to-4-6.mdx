@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "構造化出力、適応型思考、assistant prefill など、Claude Opus 4.6 の導入時に確認する内容です。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+`anthropic/claude-opus-4.6` を本番環境に安全に導入するには、このガイドを使います。
+
+Claude Opus 4.6 への移行はモデル ID の変更だけではありません。Anthropic の移行ガイドには、リクエストの変更、ベータフラグの廃止、prefill の厳格化が含まれています。
+
+## 新機能
+
+- Claude 4.6 モデルでは assistant prefill が使えなくなり、`400` が返されます。
+- 構造化出力の設定は `output_format` から `output_config.format` に移りました。
+- 適応型思考は `output_config.effort` で設定します。
+- 古いベータヘッダーを削除します。
+- Opus 4.6 では `interleaved-thinking-2025-05-14` ベータヘッダーも不要です。
+- Opus 4.6 はベータ版で 100 万トークンのコンテキストウィンドウを追加し、長時間のコーディングやエージェント処理を改善します。
+
+## 移行クイックスタート
+
+### 1. assistant prefill を削除する
+
+assistant ターンを一部先に埋めて JSON や応答プレフィックスを強制していた場合、その方法は 4.6 では失敗します。次の方法に置き換えます。
+
+- より明確なシステム指示
+- ユーザーまたはシステムプロンプト内の例
+- `output_config.format` による構造化出力
+
+### 2. 構造化出力を移行する
+
+`output_format` を送信している場合は、リクエスト本文を `output_config.format` に更新します。
+
+### 3. 思考設定を見直す
+
+古い thinking ベータに依存している場合は、`output_config` 内の現在の `effort` 設定に移行し、レイテンシに敏感な経路を再テストします。
+
+### 4. 古いベータフラグを削除する
+
+SDK wrapper、middleware、Gateway プリセットにハードコードされたベータヘッダーがないか確認します。古いフラグを残すとロールアウト時に不要なエラーが発生します。
+
+## テスト項目
+
+### プロンプトの動作
+
+- 長いコーディングやリファクタリングのプロンプト。
+- 複数ステップの調査や文書処理。
+- 以前 assistant prefill に依存していたプロンプト。
+- 100 万トークンのベータウィンドウを使う場合は長いコンテキストのタスク。
+
+### 契約とツール
+
+- `output_config.format` に移行した後のスキーマ成功率。
+- 複数ステップのエージェントタスクにおけるツール引数の品質。
+- モデルが出力を拒否または再形式化した場合の再試行動作。
+- コードレビューやデバッグでの回帰処理。
+
+### 運用
+
+- 新しい thinking 設定での中央値および p95 レイテンシ。
+- 長時間実行時のトークン使用量。
+- 大きなコンテキストのタスクにおけるタイムアウト率。
+- 本番評価セットでの Opus 4.5 に対する成功率。
+
+## 安全なロールアウト
+
+1. トラフィック切り替え前に prefill を削除し、構造化出力設定を移行します。
+2. 重要な本番プロンプトで Opus 4.6 をシャドー実行します。
+3. Opus 4.5 をフォールバックに残して段階的に試します。
+4. スキーマ成功率、レイテンシ、タスク完了率が安定してから拡大します。
+
+## 参考資料
+
+- [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.6 の紹介](https://www.anthropic.com/news/claude-opus-4-6)

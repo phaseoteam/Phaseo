@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erros e solução de problemas"
+description: "Diagnostique falhas de agentes .NET, dados inválidos de ferramentas e execuções interrompidas."
+---
+
+Um `RunResult` com falha mantém a etapa ativa, a contagem de tentativas, o ID da solicitação, o ID de resposta nativo, os metadados do provedor e os detalhes disponíveis do gateway.
+
+Verifique primeiro o seguinte:
+
+- o processo tem acesso a `PHASEO_API_KEY`
+- os IDs das ferramentas são exclusivos e estáveis
+- as decisões de aprovação usam os IDs exatos das chamadas de ferramentas
+- o estado pausado é persistido antes de o controle sair da solicitação
+- os validadores não produzem efeitos colaterais
+- os tokens de cancelamento alcançam as dependências usadas dentro das ferramentas
+
+Use hooks do ciclo de vida para a telemetria da aplicação e o DevTools para inspecionar execuções localmente.
+
+## Relacionados
+
+- [Hooks de ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

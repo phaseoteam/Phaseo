@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useTransition } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -15,6 +16,7 @@ export default function CopyPresetButton({
 	sourceVersionId?: string;
 }) {
 	const router = useRouter();
+	const t = useTranslations("Product.gateway");
 	const [isPending, startTransition] = useTransition();
 
 	return (
@@ -26,8 +28,8 @@ export default function CopyPresetButton({
 				startTransition(async () => {
 					try {
 						const copied = await forkPresetAction(sourcePresetId, sourceVersionId);
-						toast.success("Preset copied to your workspace", {
-							action: copied.slug ? { label: "Open Preset", onClick: () => router.push(`/settings/presets/${encodeURIComponent(copied.slug!)}`) } : { label: "View Presets", onClick: () => router.push("/settings/presets") },
+						toast.success(t("presetCopied"), {
+							action: copied.slug ? { label: t("openPreset"), onClick: () => router.push(`/settings/presets/${encodeURIComponent(copied.slug!)}`) } : { label: t("viewPresets"), onClick: () => router.push("/settings/presets") },
 						});
 					} catch (error) {
 						const message = error instanceof Error ? error.message : "";
@@ -36,15 +38,15 @@ export default function CopyPresetButton({
 							return;
 						}
 						if (message === "TEAM_REQUIRED") {
-							toast.error("Select a team before copying a preset.");
+							toast.error(t("selectTeamBeforeCopy"));
 							return;
 						}
-						toast.error(message || "Failed to copy preset");
+						toast.error(t("copyPresetFailed"));
 					}
 				});
 			}}
 		>
-			{isPending ? "Copying..." : "Copy to my presets"}
+			{isPending ? t("copyingPreset") : t("copyPresetButton")}
 		</Button>
 	);
 }

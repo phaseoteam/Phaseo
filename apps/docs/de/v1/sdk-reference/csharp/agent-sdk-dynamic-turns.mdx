@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere .NET-Modelleinstellungen und Tools zwischen Agent-Turns."
+---
+
+Verwende `DynamicModel`, `DynamicInstructions`, `Temperature`, `MaxOutputTokens`, `TopP` und `DynamicTools`, wenn spätere Turns auf den Kontext oder frühere Tool-Ergebnisse reagieren sollen.
+
+Tools können den Anwendungskontext über `RuntimeContext.SetContext` aktualisieren und `NextTurnParams` für die unmittelbar folgende Anfrage bereitstellen. Diese Überschreibungen bleiben beim Fortsetzen nach einer Genehmigung im pausierten Laufzustand erhalten.
+
+Halte den Anwendungskontext serialisierbar, wenn ein Lauf möglicherweise über `IStateAccessor` gespeichert wird.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)
+- [Stoppbedingungen](./agent-sdk-stop-conditions.mdx)

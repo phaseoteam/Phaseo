@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "Contribuer au code ou à la documentation"
+description: "Configurez Phaseo localement, validez un changement ciblé et ouvrez une demande de fusion."
+---
+
+Utilisez ce processus pour les changements de code et de documentation. Pour les données de modèles, fournisseurs, prix, organisations ou benchmarks, [ouvrez plutôt un ticket de catalogue](./overview.mdx) ; aucune configuration locale n’est nécessaire.
+
+## Configurer votre fork
+
+Installez Git, Node.js 22.12 ou ultérieur et pnpm. Créez un fork du [dépôt Phaseo](https://github.com/phaseoteam/Phaseo), clonez-le et créez une nouvelle branche :
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## Effectuer et prévisualiser le changement
+
+Consultez la [structure du dépôt](./repo-structure.mdx) pour trouver l’application ou le package concerné. Pour les modifications uniquement Markdown, vous pouvez aussi utiliser l’éditeur de fichiers GitHub et y ouvrir une demande de fusion.
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+Suivez les instructions `AGENTS.md` pertinentes. Conservez les secrets dans des fichiers d’environnement locaux, hors des commits. Les aperçus locaux peuvent nécessiter des services backend configurés et une connexion normale.
+
+## Valider vos changements
+
+Exécutez les contrôles adaptés aux fichiers modifiés. Pour la documentation :
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+Pour les changements web :
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+Exécutez une compilation de production pour les changements de rendu ou de routage. Les changements d’API, de SDK et de schéma nécessitent les tests et étapes de génération correspondants. Consultez le [guide de contribution](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) à la racine.
+
+## Ouvrir une demande de fusion
+
+Ajoutez à l’index uniquement les fichiers modifiés, utilisez un message de commit descriptif et poussez votre branche :
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Ouvrez une demande de fusion depuis votre fork. Expliquez le problème, les changements et les contrôles réussis. Liez les tickets associés et joignez des captures pour les changements visibles de l’interface. Traitez les retours de revue avant la fusion ; les changements deviennent disponibles après le déploiement concerné.
+
+Suivez le [Code de conduite](../community/code-of-conduct.mdx). Pour les changements importants ou incertains, discutez de la proposition avant d’écrire du code.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useReducer } from "react";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 function isDateToday(dateStr: string) {
@@ -23,6 +24,7 @@ export default function TimeDisplay({
 	isModelRelease: boolean;
 }) {
 	const format = useDisplayFormatters();
+	const t = useTranslations("Catalogue.updates.models");
 	const [_, update] = useReducer(() => ({}), {});
 	useEffect(() => {
 		const interval = setInterval(update, 60000); // update every minute
@@ -34,7 +36,7 @@ export default function TimeDisplay({
 		if (today) {
 			return (
 				<span className="text-[10px] uppercase tracking-wide font-semibold text-amber-800 bg-amber-200 dark:text-amber-200 dark:bg-amber-800 rounded px-2 py-0.5 border border-amber-300 dark:border-amber-700">
-					Today
+					{t("today")}
 				</span>
 			);
 		} else {

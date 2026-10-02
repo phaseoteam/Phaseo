@@ -1,0 +1,119 @@
+---
+title: "Usar la reparación de respuestas para JSON estructurado"
+icon: "file-check"
+description: "Recupera salidas JSON estructuradas casi válidas sin ampliar los esquemas ni reintentar manualmente respuestas mal formadas."
+---
+
+Usa esta receta si tu aplicación necesita JSON estricto y algunos modelos devuelven ocasionalmente resultados casi válidos que aun así hacen fallar el analizador.
+
+## 1. Empieza con un contrato de respuesta estructurada
+
+La reparación de respuestas solo sirve cuando la solicitud ya pide una salida estructurada.
+
+Casos adecuados:
+
+- `response_format.type = "json_object"`
+- salida con formato de esquema JSON
+- una forma de objeto estable que usan varios clientes
+
+No actives la reparación para solicitudes de prosa abierta.
+
+## 2. Activa el plugin en la capa adecuada
+
+Puedes activar `response-healing` en tres lugares:
+
+1. política de plugins predeterminada del espacio de trabajo
+2. configuración de plugins de un ajuste predefinido
+3. `plugins` de la solicitud
+
+El orden de prioridad es:
+
+1. espacio de trabajo
+2. ajuste predefinido
+3. solicitud
+
+Usa valores predeterminados de un ajuste predefinido cuando un flujo de trabajo espere siempre JSON estructurado.
+
+## 3. Mantén acotada la salida del modelo
+
+La reparación funciona mejor cuando la forma solicitada ya está restringida.
+
+Recomendaciones:
+
+- un solo objeto, no varios bloques sin relación
+- claves obligatorias explícitas
+- una temperatura determinista, si es posible
+- no solicites texto explicativo fuera de la carga JSON
+
+## 4. Conoce los límites de la reparación de respuestas
+
+La ruta de reparación actual es determinista y solo funciona sin streaming. Las solicitudes de streaming omiten por completo la reparación.
+
+Puede corregir:
+
+- bloques de código Markdown alrededor del JSON
+- comas finales
+- cierres seguros que falten
+- claves de objeto sin comillas en objetos recuperables de otro modo
+
+Si necesitas una política más acotada, usa el modo `strict`. Este modo solo extrae JSON ya válido de bloques de código o texto circundante y omite las transformaciones de reparación sintáctica más amplias.
+
+Cuando la solicitud usa una salida basada en JSON Schema, la reparación también valida la carga recuperada antes de reescribirla. El validador actual cubre restricciones habituales como:
+
+- claves obligatorias
+- tipos básicos escalares y de contenedor
+- enums y valores const
+- límites de matrices y `uniqueItems`
+- longitud de cadenas, expresiones regulares y formatos comunes como `email`, `uri`, `uuid` y `date-time`
+- límites numéricos y `multipleOf`
+- límites de propiedades de objetos y `additionalProperties: false`
+
+No puede:
+
+- inventar campos semánticos que falten
+- adivinar valores de negocio
+- convertir prosa arbitraria en datos válidos
+
+## 5. Comprueba que el plugin se haya ejecutado
+
+Cuando se activa la reparación, los detalles de la solicitud deben mostrar información de ejecución del plugin.
+
+Comprueba:
+
+- el ID del plugin
+- si intentó transformar la respuesta
+- si la carga cambió
+- el motivo del fallo si no se pudo recuperar la respuesta
+- si la solicitud no usaba streaming, como se esperaba
+
+Si el plugin no aparece, comprueba que la política de solicitud, del ajuste predefinido o del espacio de trabajo lo haya activado.
+
+## 6. Distingue los errores del analizador de los errores de contenido
+
+Si la reparación no ayuda, determina qué tipo de fallo se produjo:
+
+1. JSON mal formado pero estructuralmente cercano a lo esperado
+2. JSON válido según el esquema, pero con campos incorrectos
+3. prosa en lugar de JSON
+4. salida truncada porque el límite de tokens es demasiado bajo
+
+Solo el caso 1 es adecuado para la reparación de respuestas.
+
+## 7. Despliega el cambio poco a poco
+
+1. activa la reparación en un ajuste predefinido con una salida estructurada estable
+2. observa los metadatos de ejecución del plugin en los registros
+3. confirma que las cargas recuperadas coincidan con el esquema esperado
+4. amplía la configuración a ajustes predefinidos similares solo cuando los registros sean correctos
+
+## 8. Elige el modo adecuado
+
+- Usa `safe` si el flujo de trabajo se beneficia de una limpieza sintáctica limitada, como quitar comas finales o añadir comillas a claves sin comillas.
+- Usa `strict` si el flujo de trabajo solo debe aceptar JSON ya válido una vez eliminados los envoltorios.
+- Comprueba los detalles de la solicitud para confirmar qué modo se ejecutó.
+
+## Guías relacionadas
+
+- [Usar caché de respuestas con ajustes predefinidos](./response-caching-with-presets.mdx)
+- [Desplegar ajustes predefinidos y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+- [SDK de agentes de TypeScript](../sdk-reference/typescript/agent-sdk.mdx)

@@ -1,0 +1,80 @@
+---
+title: "Python Agent SDKで構造化JSONを抽出する"
+icon: "file-code"
+description: "Python Agent SDKを使い、ローカルツールを含む範囲の決まったループでPhaseo Gateway経由の厳密なJSONを返します。"
+---
+
+Pythonのワークフローで次の要件を満たしたい場合に、このレシピを使います。
+
+- ローカル検索ツール1つ
+- 範囲を絞ったエージェントループ
+- 厳密なJSON出力形式
+
+## 1. SDKを準備する
+
+<Note type="warning">Python Agent SDKパッケージはまだPyPIで公開されていません。[ソースからのインストール手順](../sdk-reference/python/agent-sdk-installation.mdx)に従ってください。</Note>
+
+## 2. ローカルツールを定義する
+
+```python
+from phaseo_agent import AgentTool, define_tool
+
+lookup_policy = define_tool(
+    AgentTool(
+        id="lookup-policy",
+        description="Look up one internal policy by slug.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "slug": {"type": "string"},
+            },
+            "required": ["slug"],
+            "additionalProperties": False,
+        },
+        execute=lambda input, ctx: {
+            "slug": input["slug"],
+            "summary": "Presets centralize routing, prompts, and caching defaults.",
+        },
+    )
+)
+```
+
+## 3. エージェントを作成する
+
+```python
+from phaseo_agent import create_agent
+
+agent = create_agent(
+    {
+        "id": "policy-extractor",
+        "model": "openai/gpt-5.4-nano",
+        "instructions": "Use tools when needed and return concise JSON.",
+        "tools": [lookup_policy],
+        "parse_output": lambda text: text,
+    }
+)
+```
+
+## 4. ゲートウェイクライアント経由でエージェントを実行する
+
+```python
+from phaseo_agent import create_gateway_agent_client
+
+result = agent.run(
+    input="Look up presets and return JSON with keys summary and recommendation.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## 5. このレシピが適する場面
+
+- 1つのPythonワーカーがオーケストレーションを担う
+- ツールがローカルかつ決定的である
+- 大規模なオーケストレーション層を構築する前に、厳密な出力を得たい
+
+## 関連項目
+
+- [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
+- [Pythonで構造化JSONを出力する](./sdk-python-presets-and-json.mdx)

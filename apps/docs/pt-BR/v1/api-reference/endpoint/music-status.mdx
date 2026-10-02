@@ -1,0 +1,46 @@
+---
+title: "Obter geração de música"
+sidebarTitle: "Obter geração de música"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "Recupere uma geração de música usando o ID da solicitação do Phaseo."
+---
+
+Recupere um resultado musical criado por `POST /music/generate`. Este endpoint retorna o resultado normalizado armazenado quando o provedor conclui e consulta o provedor upstream enquanto o trabalho ainda é assíncrono.
+
+## Formato da resposta
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## Observações
+
+- `status` pode ser: `queued`, `in_progress`, `completed` ou `failed`.
+- `usage` é incluído quando a geração é concluída.
+- Use o `id` do Phaseo retornado por `POST /music/generate`, não `nativeResponseId`.
+- Este endpoint gerencia internamente as APIs de status e recuperação específicas de cada provedor.
+

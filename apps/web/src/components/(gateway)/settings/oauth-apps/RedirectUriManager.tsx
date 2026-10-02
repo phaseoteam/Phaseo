@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Empty,
 	EmptyDescription,
@@ -24,6 +26,14 @@ export default function RedirectUriManager({
 	clientId,
 	initialRedirectUris,
 }: RedirectUriManagerProps) {
+	const translate = useTranslations("SettingsUI");
+	const t = (key: string, values?: Record<string, unknown>) =>
+		translate(
+			(key.startsWith("oauthDetail.")
+				? key.replace("oauthDetail.", "oauthDetailCopy.")
+				: key) as never,
+			values as never,
+		);
 	const write = useSettingsWrite();
 	const [redirectUris, setRedirectUris] = useState<string[]>(initialRedirectUris);
 	const [newUri, setNewUri] = useState("");
@@ -56,10 +66,14 @@ export default function RedirectUriManager({
 				throw new Error(result.error);
 			}
 			toast.success(successMessage);
-		} catch (err: any) {
+		} catch (err: unknown) {
 			setRedirectUris(previous);
 			const message =
-				err?.message || "Failed to update redirect URIs. Please try again.";
+				localizedSettingsError(
+					err,
+					translate,
+					"Failed to update redirect URIs. Please try again.",
+				);
 			setError(message);
 			toast.error(message);
 		} finally {
@@ -71,33 +85,33 @@ export default function RedirectUriManager({
 		const trimmedUri = newUri.trim();
 
 		if (!trimmedUri) {
-			setError("Please enter a redirect URI");
+			setError(t("strings.Please enter a redirect URI" as never));
 			return;
 		}
 
 		if (!isValidUri(trimmedUri)) {
-			setError("Please enter a valid HTTP or HTTPS URL");
+				setError(t("oauthDetail.validRedirect"));
 			return;
 		}
 
 		if (redirectUris.includes(trimmedUri)) {
-			setError("This redirect URI already exists");
+				setError(t("oauthDetail.duplicateRedirect"));
 			return;
 		}
 
 		const next = [...redirectUris, trimmedUri];
 		setNewUri("");
 		setError(null);
-		await persistRedirectUris(next, "Redirect URI added successfully");
+		await persistRedirectUris(next, t("oauthDetail.redirectAdded"));
 	};
 
 	const removeUri = async (uri: string) => {
 		if (redirectUris.length <= 1) {
-			setError("At least one redirect URI is required");
+				setError(t("oauthDetail.oneRedirect"));
 			return;
 		}
 		const next = redirectUris.filter((u) => u !== uri);
-		await persistRedirectUris(next, "Redirect URI removed successfully");
+		await persistRedirectUris(next, t("oauthDetail.redirectRemoved"));
 	};
 
 	return (
@@ -120,7 +134,7 @@ export default function RedirectUriManager({
 				/>
 				<Button onClick={() => void addUri()} size="sm" disabled={saving}>
 					<Plus className="h-4 w-4 mr-1" />
-					{saving ? "Saving..." : "Add"}
+					{saving ? t("oauthDetail.saving") : t("oauthDetail.add")}
 				</Button>
 			</div>
 
@@ -140,9 +154,9 @@ export default function RedirectUriManager({
 						<EmptyMedia variant="icon">
 							<AlertCircle className="h-5 w-5" />
 						</EmptyMedia>
-						<EmptyTitle className="text-base">No redirect URIs configured</EmptyTitle>
+					<EmptyTitle className="text-base">{t("oauthDetail.noRedirects")}</EmptyTitle>
 						<EmptyDescription>
-							Add at least one callback URL to complete your OAuth setup.
+							{t("oauthDetail.redirectEmpty")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -171,8 +185,7 @@ export default function RedirectUriManager({
 			<Alert>
 				<AlertCircle className="h-4 w-4" />
 				<AlertDescription>
-					Redirect URIs must be HTTPS URLs (or HTTP localhost for development).
-					Users will be redirected here after authorizing your app.
+					{t("oauthDetail.redirectHelp")}
 				</AlertDescription>
 			</Alert>
 		</div>

@@ -1,0 +1,275 @@
+---
+title: "プロンプトキャッシュ"
+description: "Chat Completions、Responses、Anthropic Messagesの各リクエスト間で、安定したプロンプトコンテキストを再利用します。"
+icon: "database-zap"
+---
+
+同じ大きなコンテキストを複数のリクエストで使う場合は、プロンプトキャッシュを使います。安定した指示、ドキュメント、例、ツール出力、ツール定義をキャッシュ可能としてマークすると、対応プロバイダーは後続の呼び出しでそのコンテキストを再利用できます。
+
+プロンプトキャッシュは[レスポンスキャッシュ](../cookbook/response-caching-with-presets.mdx)とは異なります。プロンプトキャッシュでは推論を実行しますが、入力を繰り返し処理するコストとレイテンシを削減できます。レスポンスキャッシュは、同一リクエストに対して以前に生成した回答を返します。
+
+<Note>
+プロンプトキャッシュの対応状況はプロバイダーとモデルによって異なります。未対応のプロバイダーはキャッシュヒントを無視するか、キャッシュ料金を適用せずにルーティングします。キャッシュの読み取りと書き込みの料金はモデルページの料金表で確認してください。
+</Note>
+
+## キャッシュする内容
+
+リクエスト間で変わらない内容をキャッシュします。
+
+- 長いシステム指示
+- 再利用するRAGドキュメント
+- few-shotの例
+- ツール定義
+- 次のターンで再利用する大きなツール結果
+
+リクエストごとに変わる内容、短い一度限りのユーザー入力、または選択したプロバイダーへの保存をポリシーで禁止されている機密データはキャッシュしないでください。
+
+## キャッシュ制御
+
+PhaseoはChat Completions、Responses、Anthropic Messagesの各リクエストで、トップレベルの互換ヒント`cache_control`を受け付けます。
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+短期間共有するコンテキストには`ttl: "5m"`を使い、プロバイダーとモデルが長期間のプロンプトキャッシュに対応している場合は`ttl: "1h"`を使います。対応プロバイダーでは、トップレベルのキャッシュ制御が自動またはデフォルトのキャッシュポリシーとして扱われます。
+
+対応するテキスト、画像、ツール結果、ツール定義の各ブロックに`cache_control`を直接指定して、明示的なキャッシュ境界を設けることもできます。
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+プロバイダー固有のエイリアスも引き続き使えます。たとえば、`provider_options`を使ってAnthropicのデフォルトキャッシュポリシーを指定できます。
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+対応している`scope`の値:
+
+| 範囲 | 動作 |
+| --- | --- |
+| `all_text` | キャッシュ制御がまだ設定されていないシステムテキストとユーザーのテキスト・画像ブロックに追加します。 |
+| `last_user_message` | 最新のユーザーメッセージにのみキャッシュ制御を追加します。 |
+| `none` | デフォルトのキャッシュポリシーを適用しません。 |
+
+ブロックごとの`cache_control`はデフォルトポリシーより優先されます。
+
+## Chat Completions
+
+OpenAI互換のチャットクライアントでは`/v1/chat/completions`を使います。
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+OpenAI経由のリクエストでは、OpenAI互換のトップレベルフィールドでOpenAIのキャッシュ保持オプションを渡します。
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+プロバイダー固有のエイリアスも指定できます。
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+新しいOpenAI互換のテキスト統合やエージェントフローでは`/v1/responses`を使います。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+すでにGoogle Geminiのキャッシュ済みコンテンツリソースがある場合は、`provider_options.google.cached_content`で渡します。
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+Anthropic互換のクライアントでは`/v1/messages`を使います。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+Anthropic Messagesでは次の箇所でキャッシュ制御を利用できます。
+
+- `system`のテキストブロック
+- メッセージのテキストブロックと画像ブロック
+- ツール結果ブロック
+- ツール定義
+
+## 使用量と料金フィールド
+
+プロバイダーがキャッシュ使用量を返すと、Phaseoは共通の使用量フィールドに正規化します。
+
+| 項目 | 意味 |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | プロバイダーのプロンプトキャッシュから読み取られたキャッシュ済み入力トークン。 |
+| `output_tokens_details.cached_tokens` | プロバイダーのプロンプトキャッシュに書き込まれたキャッシュ済み入力トークン。 |
+| `cached_read_text_tokens` | キャッシュ読み取りの料金メーターです。プロバイダーのキャッシュから再利用された入力テキストを表します。 |
+| `cached_write_text_tokens` | プロバイダーのキャッシュ書き込み料金が一律の場合に使われる料金メーターです。 |
+| `cached_write_text_tokens_5m` | プロバイダーがTTL別の書き込み量を返す場合の、5分TTLキャッシュ書き込みトークン。 |
+| `cached_write_text_tokens_1h` | プロバイダーがTTL別の書き込み量を返す場合の、1時間TTLキャッシュ書き込みトークン。 |
+
+キャッシュへの書き込みは通常の入力トークンより高く、読み取りは通常より安価です。正確な料金はプロバイダー、モデル、TTLによって異なります。
+
+## 実践的な確認
+
+プロンプトキャッシュを追加した後:
+
+1. キャッシュを作成またはウォームアップするために、1件リクエストを送ります。
+2. 同じキャッシュ対象コンテンツを含む2件目のリクエストを送ります。
+3. レスポンスの使用量とリクエスト詳細を確認し、キャッシュの読み取り・書き込みフィールドを探します。
+4. 初回だけでなく、複数回の呼び出し全体でレイテンシとコストを比較します。
+
+## プロバイダーとの親和性
+
+デフォルトでPhaseoは、プロバイダーのプロンプトキャッシュ使用量をルーティングシグナルとして利用します。
+プロバイダーがキャッシュ済み入力トークンを返すと、同じキャッシュキーまたは安定した
+冒頭のコンテキストを持つリクエストは15分間そのプロバイダーを優先します。これにより、別の
+プロバイダーに同じプロンプトキャッシュを再構築させる費用を避けられます。
+
+`session_id`を含めると、キャッシュ読み取りが確認された時点でセッション親和性も作成されます。
+Phaseoはアクティブなセッション期間中その親和性を保持しながら、
+プロバイダーが不健全になった場合やポリシー対象外になった場合はフェイルオーバーします。
+
+1つのリクエストで無効にするには`provider.cache_aware_routing`を`false`に設定します。続けて、
+リクエストに`session_id`が含まれていても、通常のコンテキストベースのルーティングだけを使う場合は、
+`routing.session_affinity`を`false`に設定します。
+
+## 関連ページ
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [パラメーター](../api-reference/parameters.mdx)
+- [コンテキストとトークン予算の管理](./context-and-token-budgeting.mdx)
+- [プリセットを使ったレスポンスキャッシュ](../cookbook/response-caching-with-presets.mdx)

@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "Usa el proveedor oficial de Phaseo para Vercel AI SDK."
+---
+
+Phaseo ofrece un proveedor oficial para Vercel AI SDK en el paquete `@phaseo/ai-sdk-provider`.
+
+## Instalación
+
+AI SDK 7 y la implementación nativa `ProviderV4` de Phaseo son los valores predeterminados para los proyectos nuevos:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+El paquete de Phaseo sin versión sigue la etiqueta `latest` de npm y, por tanto, selecciona la versión activa del proveedor compatible con AI SDK 7. El paquete declara AI SDK 7 como dependencia de par, que npm instala automáticamente.
+
+### Línea de mantenimiento de AI SDK 6
+
+AI SDK 6 usa el contrato anterior `ProviderV3`. Instala la versión de compatibilidad etiquetada:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+Phaseo provider 1.x seguirá en mantenimiento mientras AI SDK 7 sea la versión vigente. Cuando AI SDK 8 alcance una versión estable, Phaseo marcará la línea 1.x como obsoleta en npm. Esto no eliminará las versiones existentes; cualquier decisión futura de fin de soporte se anunciará por separado.
+
+### Compatibilidad con AI SDK 5
+
+AI SDK 5 acepta el contrato anterior `ProviderV2`. Instala la versión de compatibilidad específica de Phaseo:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+Si tu gestor de paquetes no instala automáticamente las dependencias de par, instala por separado la versión principal correspondiente de `ai` (`ai@^7`, `ai@^6` o `ai@^5`).
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+La línea v5 admite generación y transmisión de texto, herramientas, salida estructurada, embeddings, imágenes, transcripción y voz. El reordenamiento estandarizado está disponible en los contratos de proveedor de AI SDK 6 y 7.
+
+## Uso básico
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## Funciones compatibles con AI SDK 7
+
+Provider 2.x implementa y prueba los contratos nativos v4 de AI SDK 7 para:
+
+- generación y transmisión de texto
+- ajustes de razonamiento independientes del proveedor y salida de razonamiento
+- herramientas de función estándar, entradas transmitidas de herramientas e intercambios de resultados
+- salida estructurada en JSON y JSON Schema
+- entradas de archivos de texto e imagen con el formato de datos de archivo etiquetado de V7
+- fuentes de citas de URL
+- embeddings y generación de imágenes
+- reordenamiento
+- transcripción y generación de voz
+- metadatos del proveedor, uso, cabeceras de solicitud, señales de cancelación y fragmentos sin procesar del flujo
+
+Usa los ID de modelo del [endpoint de modelos](../../api-reference/endpoint/models.mdx). Las funciones disponibles también dependen del modelo seleccionado y del proveedor ascendente.
+
+## Reordenamiento y límites de compatibilidad
+
+El reordenamiento está disponible mediante el helper `rerank()` de AI SDK y `phaseo.rerankingModel(modelId)`. No se anuncian las funciones de ProviderV4 que requieren superficies de la API de Phaseo aún no expuestas: cargas y referencias a archivos gestionados, habilidades, ni definiciones, resultados o respuestas de aprobación de herramientas ejecutadas por el proveedor. Las herramientas de función ejecutadas por la aplicación siguen usando el flujo normal de ejecución y aprobación de AI SDK. Las partes de prompts personalizadas o específicas del proveedor no admitidas generan un error claro en vez de descartarse silenciosamente.
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

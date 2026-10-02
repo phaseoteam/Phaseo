@@ -1,0 +1,61 @@
+---
+icon: "compass"
+title: "SDK Rust"
+description: "Envoyez des requêtes à la passerelle Phaseo depuis Rust avec le crate officiel phaseo."
+---
+
+Utilisez le crate publié [`phaseo`](https://crates.io/crates/phaseo) pour appeler la passerelle Phaseo depuis une application Rust.
+
+Le client de haut niveau prend en charge :
+
+- requêtes à l’API Responses avec `Phaseo::responses(...)`
+- requêtes Chat Completions avec `Phaseo::chat_completions(...)`
+- d’autres points de terminaison JSON avec `Phaseo::post(...)`
+- découverte des routes de modèles en temps réel avec `Phaseo::model_endpoint_capabilities(...)`
+- rapports de prise en charge des paramètres avec `Phaseo::check_model_parameters(...)`
+- configuration basée sur l’environnement avec `Phaseo::from_env()`
+- points de terminaison HTTPS personnalisés et serveurs de développement loopback
+- statut, corps JSON, ID de requête et détails d’erreur structurés
+
+Les rapports de paramètres classent chaque paramètre demandé comme `supported`, `partial`, `unsupported` ou `unknown`, valident les valeurs et plages annoncées et renvoient les routes acceptant l’ensemble des paramètres.
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  La version `0.1` est prise en charge et publiée, mais l’API Rust peut encore évoluer avant la version `1.0`. Verrouillez une version mineure compatible en production.
+</Note>
+
+## Périmètre actuel
+
+Le client ergonomique est synchrone et accepte des corps de requête `serde_json::Value`. Les modules bas niveau générés restent disponibles dans `phaseo::gen`, avec des réexportations pratiques dans `phaseo::client`, `phaseo::models` et `phaseo::operations`.
+
+Le client Rust ne fournit actuellement ni transport asynchrone ni fonction de streaming de haut niveau. Utilisez l’API HTTP brute si l’application a besoin de streaming avant l’ajout de ces fonctions.
+
+<Columns cols={2}>
+  <Card title="Installer le SDK Rust" icon="package" href="./installation.mdx">
+    Ajoutez le crate et configurez votre clé API.
+  </Card>
+  <Card title="Envoyer des requêtes" icon="play" href="./usage.mdx">
+    Appelez Responses, Chat Completions et d’autres points de terminaison JSON.
+  </Card>
+  <Card title="Référence de l’API Rust" icon="book-open" href="./api-reference.mdx">
+    Consultez les types et méthodes publics exacts de `phaseo 0.1`.
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    Parcourez la documentation générée de l’API Rust.
+  </Card>
+</Columns>

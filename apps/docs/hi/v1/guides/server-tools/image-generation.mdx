@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "छवि जनरेशन"
+description: "Phaseo server tool के ज़रिए models को images बनाने दें।"
+---
+
+जवाब देते समय model को image बनानी हो, तो `phaseo:image_generation` उपयोग करें। Phaseo model को managed tool देता है, image request server-side चलाता है और परिणाम model loop में लौटाता है।
+
+## अनुरोध
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## पैरामीटर
+
+| पैरामीटर | प्रकार | विवरण |
+| --- | --- | --- |
+| `model` | string | वैकल्पिक इमेज-जनरेशन समर्थित मॉडल ID। टूल या टूल कॉल में मॉडल न दिया हो, तो डिफ़ॉल्ट `openai/gpt-image-2` है। |
+| `quality` | string | प्रदाता के लिए वैकल्पिक गुणवत्ता संकेत, जैसे `low`, `medium` या `high`। |
+| `size` | string | वैकल्पिक इमेज आकार का संकेत। |
+| `aspect_ratio` | string | वैकल्पिक पहलू अनुपात, जैसे `1:1`, `16:9` या `9:16`। |
+| `background` | string | वैकल्पिक बैकग्राउंड मोड का संकेत। |
+| `output_format` | string | वैकल्पिक आउटपुट फ़ॉर्मैट, जैसे `png`, `jpeg` या `webp`। |
+| `output_compression` | integer | प्रदाता के लिए वैकल्पिक कम्प्रेशन संकेत। |
+| `moderation` | string | प्रदाता के लिए वैकल्पिक मॉडरेशन संकेत। |
+
+Tool call के समय final `prompt` model देता है। Tool-level parameters उस call के defaults और constraints तय करते हैं।
+
+Tool call में `prompt` के बजाय `description` भी भेज सकते हैं। Model-generated image descriptions के साथ compatibility के लिए Phaseo `description` को prompt alias मानता है।
+
+## टूल का परिणाम
+
+Result model को JSON के रूप में लौटाया जाता है:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+कुछ providers इसके बजाय base64 image data लौटाते हैं:
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## उपयोग और मूल्य निर्धारण
+
+Image model द्वारा token usage report किए जाने पर image generation usage parent response usage में शामिल होता है। Phaseo यह भी record करता है:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+Pricing cards इसे `server_tool_image_generation_requests` meter से bill कर सकते हैं। Underlying image model usage पर उसकी सामान्य model pricing के अनुसार शुल्क भी लग सकता है।
+
+## संबंधित
+
+- [Server tools](./index.mdx)
+- [Tool calling](../tool-calling.mdx)

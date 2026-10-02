@@ -1,0 +1,73 @@
+---
+title: "Anthropic Claude Opus 5"
+description: "Points clés pour adopter Claude Opus 5 dans les tâches de raisonnement à long contexte, de programmation et d’agents."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 5
+
+Suivez ce guide pour déployer `anthropic/claude-opus-5` en production en toute sécurité.
+
+Claude Opus 5 est le modèle Opus actuel pour le raisonnement complexe, la programmation agentique de longue durée et les flux de travail autonomes. Son prix reste celui d’Opus 4.8 ; il prend en charge une fenêtre de contexte d’un million de tokens et jusqu’à 128 000 tokens en sortie.
+
+## Démarrage rapide de la migration
+
+1. Remplacez l’identifiant du modèle par `anthropic/claude-opus-5` sans modifier le reste de la requête.
+2. Relancez vos évaluations de prompts, d’outils et de sorties structurées en production.
+3. Établissez de nouvelles références de latence, d’utilisation des tokens et de coût pour les charges à long contexte et à effort élevé.
+4. Testez progressivement le modèle avec Claude Opus 4.8 en solution de repli avant de modifier votre route par défaut.
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Review this implementation plan and identify the highest-risk assumptions."
+    }
+  ]
+}
+```
+
+## Nouveautés
+
+- L’identifiant de modèle Phaseo est `anthropic/claude-opus-5`.
+- La fenêtre de contexte est d’un million de tokens.
+- La sortie maximale est de 128 000 tokens.
+- Le modèle vise les tâches longues de raisonnement, de programmation et d’utilisation autonome d’outils.
+- Le tarif reste aligné sur celui de Claude Opus 4.8.
+
+## Points à tester
+
+### Prompts et sorties
+
+- Le suivi des instructions avec vos prompts système les plus longs.
+- Les taux de réussite des sorties structurées et des schémas.
+- La longueur des réponses et le comportement d’arrêt.
+- Les régressions dans les prompts optimisés spécifiquement pour Claude Opus 4.8.
+
+### Outils et agents
+
+- Le choix des outils et la qualité de leurs arguments.
+- La reprise après une erreur d’outil ou un résultat partiel.
+- Le taux de réussite des tâches longues.
+- Les limites de permission et d’approbation dans les flux à forte autonomie.
+
+### Exploitation
+
+- La latence et l’utilisation des tokens pour chaque niveau d’effort proposé.
+- L’utilisation du contexte sur des documents longs et des traces d’agents.
+- Le coût par tâche réussie.
+- Le comportement de repli lorsque la route principale expire ou échoue.
+
+## Déploiement sûr
+
+1. Gardez Claude Opus 4.8 comme solution de repli pendant l’évaluation.
+2. Exécutez en parallèle un trafic de production représentatif avant de servir les requêtes des utilisateurs.
+3. Testez par type de charge au lieu de remplacer toutes les routes Opus d’un coup.
+4. Ne généralisez qu’après validation des objectifs de qualité, latence, coût et sécurité des outils.
+
+## Sources
+
+- [Annonce de Claude Opus 5](https://www.anthropic.com/news/claude-opus-5)
+- [Fiche système de Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)

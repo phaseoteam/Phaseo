@@ -1,0 +1,60 @@
+---
+icon: "braces"
+title: "Rust API संदर्भ"
+description: "phaseo 0.1 के सार्वजनिक प्रकारों और विधियों का विवरण।"
+---
+
+यह पृष्ठ [`phaseo 0.1`](https://docs.rs/phaseo/0.1.0/phaseo/) द्वारा समर्थित उच्च-स्तरीय API का वर्णन करता है।
+
+## `Phaseo`
+
+एक सिंक्रोनस, प्रमाणीकृत Gateway क्लाइंट।
+
+| विधि | लौटाता है | उद्देश्य |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | प्रोडक्शन base URL के साथ क्लाइंट बनाएँ। |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | `PHASEO_API_KEY` और वैकल्पिक `PHASEO_BASE_URL` पढ़ें। |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | Base URL बदलें। दूरस्थ URLs के लिए HTTPS आवश्यक है; सटीक loopback hosts HTTP का उपयोग कर सकते हैं। |
+| `.with_header(name, value)` | `Phaseo` | आगे भेजे जाने वाले अनुरोधों में हेडर जोड़ें। |
+| `.responses(request)` | `Result<PhaseoResponse, PhaseoError>` | JSON को `/responses` पर POST करें। |
+| `.chat_completions(request)` | `Result<PhaseoResponse, PhaseoError>` | JSON को `/chat/completions` पर POST करें। |
+| `.post(path, request)` | `Result<PhaseoResponse, PhaseoError>` | कॉन्फ़िगर किए गए base URL के अंतर्गत किसी दूसरे path पर JSON POST करें। |
+
+सभी अनुरोध बॉडी का प्रकार `&serde_json::Value` है।
+
+## `PhaseoResponse`
+
+| फ़ील्ड | प्रकार | अर्थ |
+| --- | --- | --- |
+| `status` | `u16` | HTTP स्थिति कोड। |
+| `body` | `serde_json::Value` | पार्स किया गया JSON उत्तर; यदि उत्तर मान्य JSON न हो, तो JSON स्ट्रिंग। |
+| `request_id` | `Option<String>` | मौजूद होने पर प्रतिक्रिया के `x-request-id` हेडर का मान। |
+
+## `PhaseoError`
+
+| फ़ील्ड | प्रकार | अर्थ |
+| --- | --- | --- |
+| `message` | `String` | कॉन्फ़िगरेशन, ट्रांसपोर्ट या Gateway त्रुटि का संदेश। |
+| `status` | `Option<u16>` | उत्तर मिलने पर Gateway का HTTP स्थिति कोड। |
+| `body` | `Option<serde_json::Value>` | उपलब्ध होने पर पार्स की गई Gateway त्रुटि की बॉडी। |
+
+`PhaseoError`, `std::error::Error` और `Display` को लागू करता है।
+
+## जनरेट किए गए मॉड्यूल
+
+यह crate अपना जनरेट किया गया OpenAPI क्लाइंट भी प्रदान करता है:
+
+| मॉड्यूल | उद्देश्य |
+| --- | --- |
+| `phaseo::gen` | पूरा जनरेट किया गया क्लाइंट, मॉडल और ऑपरेशन मॉड्यूल। |
+| `phaseo::client` | `phaseo::gen::client` को पुनः निर्यात करता है। |
+| `phaseo::models` | `phaseo::gen::models` को पुनः निर्यात करता है। |
+| `phaseo::operations` | `phaseo::gen::operations` को पुनः निर्यात करता है। |
+| `phaseo::model_ids` | जनरेट किए गए Phaseo मॉडल पहचानकर्ता। |
+
+जनरेट किए गए ऑपरेशन नाम और प्रकार OpenAPI आउटपुट से मेल खाते हैं; ये `Phaseo` की सहायक विधियों से अधिक निम्न-स्तरीय हो सकते हैं। Responses और Chat Completions के लिए ऊपर दी गई उच्च-स्तरीय विधियों का उपयोग करें।
+
+## बाहरी संदर्भ
+
+- [crates.io पर `phaseo`](https://crates.io/crates/phaseo)
+- [docs.rs पर `phaseo`](https://docs.rs/phaseo)

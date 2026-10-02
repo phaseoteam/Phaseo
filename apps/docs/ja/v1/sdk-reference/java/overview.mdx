@@ -1,0 +1,27 @@
+---
+title: "Java SDK（開発中）"
+description: "開発中のJavaクライアントをソースからビルドします。"
+---
+
+<Note type="warning">
+  Java SDKは開発中で、Maven Centralにはまだ公開されていません。ソースからのビルドは評価目的でのみ使用してください。
+</Note>
+
+Java SDKには、生成されたクライアントを使う軽量な手書きラッパーが追加されています。
+
+- `app.phaseo.sdk.Phaseo`は、チャット、Responses、Anthropicメッセージ、画像、埋め込み、モデレーション、音声/文字起こし/翻訳、バッチ、ファイル、動画、モデル/プロバイダー/エンドポイント/組織/料金、APIキーの検索とライフサイクル管理、ワークスペースと現在のキーの管理、料金計算、アクティビティ/クレジット/分析、生成結果の検索、ライフサイクル検証、直接ヘルパーまたは`client.asyncJobs.websocketUrl(...)`による非同期ジョブのWebSocket URL、devtools対応テレメトリーのための高レベルヘルパーを提供します。
+- 必要に応じて低レベル操作をすべて利用できるよう、下位層では引き続き`app.phaseo.gen.Client`と`app.phaseo.gen.Operations`を使用できます。
+
+`getModelEndpointCapabilities(...)` は現在のプロバイダールートのメタデータを返します。`checkModelParameters(...)` は各パラメーターを `supported`、`partial`、`unsupported`、`unknown` のいずれかとして示し、公開された値と範囲を検証して、パラメーターの組み合わせ全体を受け入れるルートを返します。
+
+## 現在の状況
+
+- 開発中。Maven Centralにはまだ公開されていません。
+- ソースは`packages/sdk/sdk-java`にあります。
+- 生成された低レベルコードは`packages/sdk/sdk-java/src/gen`にあります。
+- 手書きラッパーは`packages/sdk/sdk-java/src/app/phaseo/sdk`にあります。
+
+## 次のステップ
+
+- [インストール](./installation.mdx)
+- [使い方](./usage.mdx)

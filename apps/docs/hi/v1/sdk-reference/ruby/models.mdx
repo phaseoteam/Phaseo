@@ -1,0 +1,67 @@
+---
+icon: "brain-circuit"
+title: "मॉडल"
+description: "Ruby SDK से models की सूची पाएँ।"
+---
+
+**Method**: `client.list_models(...)`।
+
+### उदाहरण
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+models = client.list_models(
+  limit: "5",
+  provider: "anthropic",
+  provider_status: "beta,not_ready",
+  provider_availability_reason: "preview_only,provider_not_ready",
+  capability_status: "coming_soon,internal_testing",
+  availability: "all",
+)
+```
+
+### मुख्य parameters
+- `provider` (वैकल्पिक): प्रदाता के आधार पर फ़िल्टर करें।
+- `provider_status` / `provider_routing_status` / `model_routing_status` (वैकल्पिक): क्रमिक रिलीज़ और रूटिंग स्थिति के आधार पर फ़िल्टर करें।
+- `capability_status` / `provider_availability_status` / `provider_availability_reason` (वैकल्पिक): क्षमता और उपलब्धता के आधार पर फ़िल्टर करें।
+- `provider_availability_reason`, `availability: "all"` के साथ `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` या `soft_blocked` जैसी rollout states देखने में उपयोगी है
+- `capability_status`, `availability: "all"` के साथ `coming_soon` या `internal_testing` जैसी non-routable endpoint mappings देखने में उपयोगी है
+- `status` (वैकल्पिक): मॉडल जीवनचक्र स्थिति के आधार पर फ़िल्टर करें।
+- `organisation` (वैकल्पिक): संगठन के आधार पर फ़िल्टर करें।
+- `endpoints` (वैकल्पिक): एंडपॉइंट की सूची।
+- `input_types` / `output_types` / `params` (वैकल्पिक): क्षमता फ़िल्टर।
+- `availability` (optional): `active` या `all`
+- `limit` (optional): संख्या
+- `offset` (वैकल्पिक): छोड़े जाने वाले आइटमों की संख्या।
+
+### रिटर्न मान
+`ModelListResponse`
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

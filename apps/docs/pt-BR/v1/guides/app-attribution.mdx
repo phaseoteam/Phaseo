@@ -1,0 +1,85 @@
+---
+title: "Atribuição do aplicativo"
+description: "Agrupe o uso do Gateway por aplicativo com IDs, nomes, URLs e categorias estáveis."
+icon: "badge-check"
+---
+
+Use a atribuição de aplicativos para separar o uso entre produtos, ambientes ou experiências voltadas ao cliente. Ela aparece nas análises de aplicativos e auditorias de solicitações sem alterar a resposta de inferência.
+
+## Adicionar cabeçalhos de atribuição
+
+Envie um ID de aplicativo estável em cada solicitação. Adicione nome, URL e até três categorias para obter um agrupamento mais detalhado no painel.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Use o mesmo `X-App-Id` em todas as solicitações do mesmo aplicativo. O Phaseo o usa como identidade estável quando não há uma URL disponível.
+
+## Usar o SDK TypeScript
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## Cabeçalhos compatíveis
+
+| Cabeçalho | Finalidade |
+| --- | --- |
+| `X-App-Id` | Identificador estável escolhido pelo seu aplicativo. |
+| `X-App-Name` | Nome legível exibido nas telas de aplicativos e uso. |
+| `HTTP-Referer` | URL pública da página ou implantação associada ao aplicativo. |
+| `X-App-Categories` | Lista separada por vírgulas com até três categorias compatíveis. |
+| `X-Title` | Alias de compatibilidade para um nome legível do aplicativo. |
+
+`HTTP-Referer` é um metadado de atribuição; não precisa corresponder ao cabeçalho `Referer` automático do navegador. Defina-o explicitamente em integrações no servidor se quiser usar uma única URL canônica para o aplicativo.
+
+## Categorias
+
+Escolha até três valores:
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+Os valores não diferenciam maiúsculas de minúsculas. O Phaseo ignora valores desconhecidos, remove duplicatas e mantém as três primeiras categorias válidas. Categorias recebidas em solicitações posteriores são combinadas às já salvas para o aplicativo; elas não removem seleções feitas no painel.
+
+Você também pode editar categorias em **Gateway → Configurações → Aplicativos**. Use o painel quando a classificação for gerenciada centralmente, e não pelo código do aplicativo.
+
+## Diretrizes de atribuição
+
+- Mantenha os IDs estáveis entre implantações para que o uso continue agrupado.
+- Use IDs separados para aplicativos que precisam de relatórios de custo ou uso independentes.
+- Não inclua IDs de clientes, endereços de e-mail ou outros dados pessoais nos cabeçalhos de atribuição.
+- Considere a URL como metadado público quando o aplicativo puder aparecer em visualizações públicas ou compartilhadas.

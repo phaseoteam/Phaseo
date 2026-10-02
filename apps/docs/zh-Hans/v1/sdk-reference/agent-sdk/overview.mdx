@@ -1,0 +1,83 @@
+---
+icon: "rocket"
+title: "Agent SDK 概览"
+description: "使用 Agent SDK 支持的语言，在 Phaseo Gateway 上构建本地、可恢复的 Agent 循环。"
+---
+
+如果应用需要的不只是单次生成，请使用 Phaseo Agent SDK：
+
+- 多步骤工具循环
+- 本地运行时工具
+- 由 Gateway 提供支持的模型轮次
+- 由应用管理、可恢复的运行状态
+- 精确调用审批、人工参与工具、手动工具以及可恢复的继续执行
+- 运行时验证、可报告进度的工具以及可恢复的工具错误
+- 支持回放事件消费者的模型输出流
+- 动态轮次配置、可组合的停止条件以及标准化的用量/成本
+- 模型重试、工具超时、有界工具并发以及生命周期事件
+- 使用 Phaseo Devtools 进行本地捕获
+- 与核心客户端 SDK 相同语言中的一致请求路由
+
+## 支持的语言
+
+当前 Agent SDK 支持的语言与 Phaseo 快速入门中提供的主要客户端 SDK 语言一致：
+
+- [TypeScript](../typescript/agent-sdk.mdx)
+- [Python](../python/agent-sdk.mdx)
+- [Go](../go/agent-sdk.mdx)
+- [C#](../csharp/agent-sdk.mdx)
+- [PHP](../php/agent-sdk.mdx)
+- [Ruby](../ruby/agent-sdk.mdx)
+- [Rust](../rust/agent-sdk.mdx)
+
+## 通用模型
+
+所有 Agent SDK 都采用相同的运行时模型：
+
+- 定义一个 Agent
+- 定义零个或多个本地工具
+- 创建连接 Gateway 的模型客户端
+- 围绕 `responses` API 运行有界循环
+- 检查生命周期事件或 Devtools 跟踪
+- 保存返回的运行状态，并在人工作出决定后恢复执行
+
+TypeScript 是 API 设计的参考实现。Python、Go、C#、PHP 和 Ruby 使用各自语言的回调及并发、超时和取消原语，提供更广泛的跨语言契约。Rust 是受支持的同步运行时，支持本地和外部工具、精确 ID 审批、人工审核、模型重试、可序列化运行状态、生命周期回调和用量聚合。Java 与 C++ 仍在开发中。
+
+<Note>
+  Rust Agent SDK 以 `phaseo-agent` 发布。目前尚不支持流式输出、异步执行、本地工具并发、运行时架构验证或 Devtools 捕获。
+</Note>
+
+## 跨语言能力契约
+
+| 能力 | TypeScript | Python | Go | C# | PHP | Ruby | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 可执行工具和可恢复的工具错误 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 同步 |
+| 精确 ID 审批、HITL 和手动输出 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 |
+| 工具的初步进度 | 异步生成器 | 迭代器或回调 | 回调 | 回调 | 回调 | 回调 | 暂不支持 |
+| 模型流式输出和可回放消费者 | 异步可迭代对象 | 迭代器 | 通道 | 异步可枚举对象 | 可迭代对象 | 枚举器 | 暂不支持 |
+| 可组合的停止条件 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 步数上限 |
+| 动态轮次和可变上下文 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 每次运行的模型、步数上限和上下文 |
+| 由应用持久化的运行状态 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | 可序列化的 `RunResult` |
+| 标准化用量和成本 | 支持 | 支持 | 支持 | 支持 | 支持 | 支持 | Token；自定义客户端成本仅在 `0.1` 中提供 |
+
+PHP 和 Ruby 通过常规同步迭代 API 提供提供商流事件。它们不需要托管运行时，也不需要 Phaseo 后台服务。
+
+## 客户端 SDK、Agent SDK 与 API
+
+| 用途 | 选择 | 负责内容 |
+| --- | --- | --- |
+| 单次 API 请求或完整端点覆盖 | 客户端 SDK | 生成的 API 类型和传输 |
+| 使用工具的多步骤应用逻辑 | Agent SDK | 本地循环、工具、检查点、审核、事件和 Devtools |
+| 自定义传输或尚未支持的语言 | 原始 API | HTTP 请求和响应处理 |
+
+Agent SDK 的 Gateway 适配器会将模型轮次委托给对应的客户端 SDK。具有 `requestOptions` 钩子或等效功能的语言可以传递额外的 Responses API 字段，同时 Agent SDK 继续管理 `model`、`input`、`instructions` 和本地函数工具。Rust `0.1` 适配器目前会发送标准化的 Agent 字段，但不提供额外的请求选项钩子。
+
+## 示例流程
+
+Cookbook 包含 TypeScript 工作流和针对各语言的起步指南：
+
+- [构建持久运行的 Agent 循环](../../cookbook/agent-sdk-durable-loop.mdx)
+- [使用 Agent 网页搜索进行研究](../../cookbook/agent-sdk-research-brief.mdx)
+- [使用预设驱动的 Agent 处理支持请求](../../cookbook/agent-sdk-support-triage.mdx)
+- [使用本地运行时工具审查代码](../../cookbook/agent-sdk-coding-review.mdx)
+- [并行运行本地工具](../../cookbook/agent-sdk-parallel-tools.mdx)

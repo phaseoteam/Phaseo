@@ -1,0 +1,38 @@
+---
+icon: "binary"
+title: "Quantização de modelos"
+description: "Visão geral da quantização e orientação para continuar a série sobre quantização e parâmetros."
+---
+
+Esta página é o ponto de partida de uma série completa de guias sobre quantização e parâmetros de inferência.
+
+Se estiver escolhendo variantes do modelo (por exemplo, `BF16` ou `FP8`) ou ajustando configurações da solicitação (`temperature`, `top_p`, orçamento de tokens), comece aqui e siga os guias vinculados.
+
+## O que é quantização?
+
+A quantização representa os pesos e as ativações do modelo com números de menor precisão para reduzir o uso de memória e acelerar a inferência.
+
+Em geral:
+
+- Maior precisão: melhor qualidade e estabilidade, mas custo mais alto.
+- Menor precisão: mais vazão e custo menor, mas maior risco para a qualidade.
+
+## Guias da série
+
+1. [Formatos de quantização](./quantization-formats.mdx)
+2. [Métodos de quantização](./quantization-methods.mdx)
+3. [Como escolher uma estratégia de quantização](./quantization-selection.mdx)
+4. [Parâmetros de inferência](./inference-parameters.mdx)
+5. [Parâmetros de amostragem e decodificação](./sampling-and-decoding.mdx)
+6. [Contexto e orçamento de tokens](./context-and-token-budgeting.mdx)
+
+## Ordem recomendada
+
+1. Leia primeiro sobre formatos e métodos.
+2. Use o guia de seleção para escolher uma variante inicial.
+3. Ajuste os parâmetros de inferência a partir dessa configuração de referência.
+4. Finalize os orçamentos de tokens com traces de prompts de produção.
+
+## Lembrete prático
+
+A quantização e o ajuste de parâmetros devem sempre ser validados com seus prompts e critérios de aceitação reais, não apenas com microbenchmarks sintéticos.

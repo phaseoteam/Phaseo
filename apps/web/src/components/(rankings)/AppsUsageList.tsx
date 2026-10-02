@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,9 @@ import {
 type AppRange = "today" | "week" | "month";
 
 const RANGE_OPTIONS: Array<{ key: AppRange; label: string }> = [
-	{ key: "today", label: "Today" },
-	{ key: "week", label: "Last 7d" },
-	{ key: "month", label: "Last 30d" },
+	{ key: "today", label: "appRangeToday" },
+	{ key: "week", label: "appRangeWeek" },
+	{ key: "month", label: "appRangeMonth" },
 ];
 
 type AppsUsageListProps = {
@@ -48,6 +49,11 @@ export function AppsUsageList({
 	maxCollapsed = 10,
 	maxExpanded = 20,
 }: AppsUsageListProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const rangeOptions = RANGE_OPTIONS.map(({ key, label }) => ({ key, label: t(label as never) }));
+	const rangeLabel = (value: AppRange) => rangeOptions.find((option) => option.key === value)?.label ?? value;
+	const formatTokens = (value: number) => formatRoundedCount(value, locale);
 	const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "A";
 
 	const resolvedDataByRange = useMemo<Partial<Record<AppRange, TopAppData[]>>>(
@@ -90,8 +96,8 @@ export function AppsUsageList({
 	if (!entries.length) {
 		return (
 			<EmptyLeaderboardPreview
-				title="No app usage data yet"
-				description="App usage appears once requests are recorded."
+				title={t("notEnoughData")}
+				description={t("appUsageEmptyDescription")}
 			/>
 		);
 	}
@@ -101,7 +107,7 @@ export function AppsUsageList({
 			<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 				{showHeader ? (
 					<div className="min-w-0 max-w-xl space-y-0.5">
-						<h2 className="text-xl font-semibold leading-8">{title ?? "Top Apps"}</h2>
+						<h2 className="text-xl font-semibold leading-8">{title ?? t("topApps")}</h2>
 						{subtitle ? (
 							<p className="text-sm text-muted-foreground">{subtitle}</p>
 						) : null}
@@ -120,7 +126,7 @@ export function AppsUsageList({
 
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-max min-w-40 rounded-md">
-							{RANGE_OPTIONS.map((option) => (
+							{rangeOptions.map((option) => (
 								<DropdownMenuItem
 									key={option.key}
 									disabled={!resolvedDataByRange[option.key]?.length}
@@ -207,7 +213,7 @@ export function AppsUsageList({
 							</div>
 							<div className="text-right">
 								<div className="whitespace-nowrap text-sm tabular-nums text-muted-foreground">
-									{formatRoundedCount(entry.tokens)} tokens
+										{t("usageCountLabel", { count: formatTokens(entry.tokens), unit: t("usageTokensUnit") })}
 								</div>
 							</div>
 								</div>
@@ -228,7 +234,7 @@ export function AppsUsageList({
 						className="text-muted-foreground"
 					>
 						<span className="flex items-center gap-2">
-							{showAll ? "Show less" : "Show more"}
+							{showAll ? t("usageShowLess") : t("usageShowMore")}
 							<ChevronDown
 								className={[
 									"h-4 w-4 transition-transform",

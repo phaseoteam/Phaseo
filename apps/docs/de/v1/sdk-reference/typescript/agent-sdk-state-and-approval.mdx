@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "Status und Freigabe"
+description: "Speichere den Ausführungsstatus, genehmige Tool-Aufrufe und setze pausierte Agenten fort."
+---
+
+Verwende die Fortsetzung, wenn ein Agent vor dem nächsten Schritt auf eine Person, einen externen Auftrag oder ein anwendungseigenes Tool warten muss. Das Agent SDK gibt den vollständigen Status zurück, der für eine spätere Fortsetzung benötigt wird.
+
+<Note>
+Phaseo speichert Agent-SDK-Ausführungen nicht in einem gehosteten Agent-Dienst. Speichere fortsetzbaren Status in deiner Anwendung, wenn er einen Anfrage- oder Prozessneustart überstehen muss.
+</Note>
+
+## Tool-Aufruf freigeben
+
+Verlange eine Freigabe nur für Aufrufe, die sie benötigen:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+Der Lauf wird mit ausstehenden Aufrufen in `run.pause.pendingToolCalls` pausiert. Setze ihn anhand der exakten Aufruf-ID fort, damit gleichzeitige Aufrufe nicht verwechselt werden:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## Für menschliche Überprüfung pausieren
+
+Verwende `humanReview`, wenn die vollständige Modellantwort vor dem nächsten Schritt geprüft werden soll:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+Setze den Lauf mit einer expliziten menschlichen Eingabe fort:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## Ausführungsstatus speichern
+
+Speichere das zurückgegebene `AgentRunResult` direkt oder stelle einen `state`-Zugriff mit asynchronen Methoden `load(runId)` und `save(result)` bereit. Eine fortgesetzte Ausführung kann dann `runId` verwenden, statt den serialisierten Datensatz durch jede Schicht zu reichen.
+
+Das SDK enthält weder Persistenzadapter noch ein gehostetes Status-Backend. Deine Anwendung kann einmalige Läufe im Prozess halten und nur pausierte oder unvollständige Läufe speichern.
+
+## Weiterführende Anleitungen
+
+- [Tools definieren und ausführen](./agent-sdk-tools.mdx)
+- [Agent-Ausführungen steuern](./agent-sdk-run-controls.mdx)
+- [Eine robuste Agent-Schleife erstellen](../../cookbook/agent-sdk-durable-loop.mdx)

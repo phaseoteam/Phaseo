@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslations } from "next-intl";
 
 export function PresetComparisonExplorer({
 	children,
@@ -12,6 +13,7 @@ export function PresetComparisonExplorer({
 	children: ReactNode;
 	initialQuery?: string;
 }) {
+	const t = useTranslations("SettingsUI");
 	const [query, setQuery] = useState(initialQuery);
 	const [visibleCount, setVisibleCount] = useState<number | null>(null);
 	const resultsRef = useRef<HTMLDivElement>(null);
@@ -34,8 +36,8 @@ export function PresetComparisonExplorer({
 				<Input
 					value={query}
 					onChange={(event) => setQuery(event.target.value)}
-					placeholder="Search presets"
-					aria-label="Search presets"
+					placeholder={t("strings.Search presets" as never)}
+					aria-label={t("strings.Search presets" as never)}
 					className="!rounded-md pr-8 pl-8"
 				/>
 				{query ? (
@@ -45,7 +47,7 @@ export function PresetComparisonExplorer({
 						size="icon-sm"
 						className="absolute right-0.5 top-1/2 -translate-y-1/2 rounded-md"
 						onClick={() => setQuery("")}
-						aria-label="Clear preset search"
+						aria-label={t("strings.Clear preset search" as never)}
 					>
 						<X className="size-4" />
 					</Button>
@@ -53,7 +55,7 @@ export function PresetComparisonExplorer({
 			</div>
 			<div ref={resultsRef}>{children}</div>
 			{query && visibleCount === 0 ? (
-				<p className="py-4 text-sm text-muted-foreground">No presets match “{query}”.</p>
+				<p className="py-4 text-sm text-muted-foreground">{t("strings.No presets match" as never)} “{query}”.</p>
 			) : null}
 		</div>
 	);

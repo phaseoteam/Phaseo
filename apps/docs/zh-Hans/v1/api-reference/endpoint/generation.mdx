@@ -1,0 +1,23 @@
+---
+title: "获取生成记录"
+sidebarTitle: "获取生成记录"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /generations"
+---
+获取属于你团队的指定 `request_id` 的已存储审计记录。
+
+使用：
+- `GET /v1/generations?id=<request_id>`
+
+如果网关捕获了该生成请求的完整详细信息，响应还会包含：
+
+- `replay_supported`：指示是否存在可用于重放的载荷
+- `replay_request`：已存储的请求正文，可发送回原始端点以受控地重新运行
+
+典型的重放流程：
+
+1. 使用 `GET /v1/generations?id=<request_id>` 读取生成记录。
+2. 检查 `replay_supported === true`。
+3. 将 `replay_request` 重新提交到 `endpoint` 指定的原始端点，例如 `/v1/chat/completions` 或 `/v1/responses`。
+
+

@@ -1,0 +1,33 @@
+---
+icon: "files"
+title: "Arquivos"
+description: "Use o SDK PHP para enviar arquivos, consultar metadados e recuperar o conteúdo dos arquivos."
+---
+
+**Métodos**: `uploadFile()`, `listFiles()`, `retrieveFile()`, `retrieveFileContent()`
+
+### Exemplo
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
+
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+<Note>
+`listFiles()` está disponível no SDK, mas atualmente `GET /files` retorna `file_list_not_supported_with_shared_gateway_key` quando se usa a chave compartilhada do gateway
+Armazene os IDs dos arquivos enviados e recupere-os diretamente.
+</Note>

@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "Errores y solución de problemas"
+description: "Gestiona fallos del gateway, errores de validación y ejecuciones fallidas del agente."
+---
+
+Usa los errores estructurados del Agent SDK cuando tu aplicación deba decidir si reintentar, pedir otra entrada al usuario o mostrar detalles de la solicitud a un operador.
+
+## Gestionar fallos del gateway
+
+Los fallos del gateway se vuelven a lanzar como `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Las ejecuciones y los pasos fallidos conservan los detalles del error del gateway cuando están disponibles.
+
+## Gestionar errores de esquema
+
+`AgentSchemaValidationError` identifica entradas o salidas de herramientas, eventos de progreso o resultados finales no válidos. Trátalos como fallos del contrato, no como fallos transitorios del modelo.
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## Inspeccionar la ejecución fallida
+
+Cuando el runtime pueda guardar un punto de control del error, inspecciona:
+
+- `result.run.status`
+- `result.run.error`
+- `status`, `error` y `modelAttempts` del paso más reciente
+- `requestId` y `nativeResponseId` para correlacionarlos con los registros del gateway
+
+## Comprobaciones habituales
+
+- Confirma que el proceso del servidor tenga acceso a `PHASEO_API_KEY`.
+- Asigna a cada herramienta un `id` único y estable.
+- Usa los ID exactos de llamada a herramienta al aprobar, rechazar o proporcionar una salida manual.
+- Limita los reintentos del modelo; no reintentes a ciegas ante fallos de validación o aprobación.
+- Guarda el estado de una ejecución pausada antes de devolver el control al navegador o al trabajador de cola.
+
+## Guías relacionadas
+
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)

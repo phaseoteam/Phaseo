@@ -1,0 +1,33 @@
+---
+icon: "package"
+title: "Instalación"
+description: "Instala y configura el Agent SDK de Go de Phaseo."
+---
+
+El Agent SDK se publica como [`agent-sdk-go`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go) mediante Go Modules.
+
+## Requisitos
+
+- Go 1.24 o posterior
+- una clave de API de Phaseo
+
+## Instalación
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+```
+
+El módulo principal `sdk-go/v2` se instala automáticamente como dependencia.
+
+## Entorno
+
+Configura la clave de API de tu Gateway antes de ejecutar los ejemplos:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## Siguiente
+
+- [Resumen](./agent-sdk-overview.mdx)
+- [Crear con el SDK de agentes](./agent-sdk.mdx)

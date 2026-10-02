@@ -1,0 +1,152 @@
+---
+icon: "square-terminal"
+title: "Uso del SDK de TypeScript"
+description: "Ejemplos endpoint por endpoint con el SDK de TypeScript."
+---
+
+## Configuración
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+```
+
+## Completado de chats
+
+```typescript
+const completion = await client.generateText({
+  model: "openai/gpt-4o-mini",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "What is Phaseo?" },
+  ],
+  temperature: 0.7,
+});
+
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-4o-mini",
+  messages: [{ role: "user", content: "Tell me a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+## Responses
+
+```typescript
+const response = await client.generateResponse({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this" }] }],
+});
+
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+  stream: true,
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+## Imágenes
+
+```typescript
+await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+});
+
+await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+});
+```
+
+## Audio
+
+```typescript
+await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+});
+
+await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+});
+
+await client.generateTranslation({
+  model: "openai/gpt-4o-translate",
+  file: "data:audio/mp3;base64,...",
+});
+```
+
+## Vídeo
+
+```typescript
+await client.generateVideo({
+  model: "openai/gpt-video-1",
+  prompt: "A serene mountain lake at sunrise",
+});
+```
+
+## Incrustaciones
+
+```typescript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+## Moderación
+
+```typescript
+await client.generateModeration({
+  model: "openai/omni-moderation-latest",
+  input: "Some text to check",
+});
+```
+
+## Lotes y archivos
+
+```typescript
+const file = await client.uploadFile({ purpose: "batch", file: new Blob(["{}"], { type: "application/json" }) });
+const batch = await client.createBatch({
+  input_file_id: file.id,
+  endpoint: "responses",
+  completion_window: "24h",
+});
+const batchStatus = await client.getBatch(batch.id);
+const files = await client.listFiles();
+```
+
+## URL de WebSocket para trabajos asíncronos
+
+```typescript
+const batchSocketUrl = client.batches.websocketUrl(batch.id, {
+  intervalMs: 1500,
+  closeOnTerminal: false,
+});
+
+const videoSocketUrl = client.videos.websocketUrl("vid_123");
+```
+
+## Modelos y estado
+
+```typescript
+const models = await client.getModels();
+const health = await client.getHealth();
+```
+
+## Gestión de errores
+
+```typescript
+try {
+  await client.generateText({ model: "invalid", messages: [] });
+} catch (error) {
+  console.error("API Error:", (error as Error).message);
+}
+```

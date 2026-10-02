@@ -1,0 +1,9 @@
+---
+title: "Criar um modelo privado"
+sidebarTitle: "Criar um modelo privado"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /private-models"
+description: "Conecte um endpoint compatível com OpenAI ao espaço de trabalho autenticado."
+---
+
+Requer `private_models:write` e uma identidade de proprietário ou administrador. Informe `model_reference` como um ID exato de modelo do catálogo ou um slug curto local ao espaço de trabalho. A Phaseo atribui o ID final do modelo; `credential` é criptografado e permite apenas escrita.

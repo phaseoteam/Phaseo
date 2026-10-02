@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "स्ट्रीमिंग"
+description: "दोबारा पढ़े जा सकने वाले consumer के साथ Java एजेंट का टेक्स्ट और इवेंट स्ट्रीम करें।"
+---
+
+`Agent.stream(...)` एक `StreamResult` लौटाता है:
+
+```java
+var stream = agent.stream(options);
+
+for (var delta : stream.textStream()) {
+  System.out.print(delta);
+}
+
+var completed = stream.getResult();
+```
+
+`textStream()` और `fullStream()` को दोबारा पढ़ा जा सकता है, इसलिए प्रोडक्ट UI और telemetry कोड एक ही रन को स्वतंत्र रूप से उपयोग कर सकते हैं। सक्रिय stream worker को रोकने के लिए `cancel()` कॉल करें।
+
+Java item इवेंट सामान्य ऑब्जेक्ट ही रहते हैं; वे TypeScript के discriminated union `AgentItem` नहीं हैं।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

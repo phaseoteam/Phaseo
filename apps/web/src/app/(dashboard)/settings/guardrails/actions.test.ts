@@ -8,7 +8,7 @@ jest.mock("@/lib/web-api/client", () => ({
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
-import { updateGlobalGuardrailsSettings } from "./actions";
+import { updateGlobalGuardrailsSettings } from "@/app/[locale]/(dashboard)/settings/guardrails/actions";
 
 const mockGetServerAccountContext = jest.mocked(getServerAccountContext);
 const mockFetchAccountWebApi = jest.mocked(fetchAccountWebApi);

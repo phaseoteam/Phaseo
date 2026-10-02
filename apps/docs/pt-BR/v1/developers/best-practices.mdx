@@ -1,0 +1,58 @@
+---
+title: "Boas práticas"
+description: "Crie recursos de IA confiáveis com estas orientações de arquitetura, segurança e observabilidade."
+icon: "clipboard-check"
+---
+
+A adoção do Gateway em cargas de produção é simples quando você estabelece boas bases. Siga as recomendações abaixo para melhorar a resiliência, a segurança e a facilidade de manutenção.
+
+---
+
+## Arquitetura
+
+-   **Isole a lógica dos provedores.** Encapsule chamadas do Gateway em um serviço ou SDK dedicado para limitar o impacto de mudanças.
+-   **Transmita respostas sempre que possível.** Reduza a latência dos assistentes transmitindo tokens à interface conforme chegam.
+-   **Agrupe tarefas não críticas.** Coloque gerações ou avaliações em segundo plano na fila para suavizar picos de tráfego.
+
+---
+
+## Segurança
+
+-   Em produção, armazene chaves de API em gerenciadores de segredos (AWS Secrets Manager, Doppler, 1Password), e não em arquivos `.env`.
+-   Ative a assinatura de solicitações nas suas próprias APIs para que aplicativos clientes nunca exponham chaves do Gateway.
+-   Registre apenas chaves truncadas (por exemplo, `sk_prod_abcd...`) para evitar o vazamento de credenciais.
+
+---
+
+## Confiabilidade
+
+-   Implemente espera exponencial com jitter para todos os erros que podem ser repetidos (HTTP 429 ou 5xx).
+-   Respeite o cabeçalho [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) antes de repetir solicitações limitadas.
+-   Monitore metadados dos provedores para detectar failovers automáticos de um fornecedor para outro.
+
+---
+
+## Observabilidade
+
+| Sinal        | Ação recomendada                                                |
+| ------------- | ----------------------------------------------------------------- |
+| Latência       | Acompanhe tempos p95 e p99 para detectar regressões com antecedência.             |
+| Uso de tokens   | Relacione custos a métricas de negócio para avaliar o retorno sobre o investimento.            |
+| Taxa de erros   | Gere um alerta se as falhas ultrapassarem 1% por um período contínuo.             |
+| Distribuição de provedores  | Confira se o tráfego está distribuído entre provedores conforme o esperado.         |
+
+---
+
+## Colaboração
+
+-   Documente modelos de prompts, parâmetros de entrada e tratamento das saídas na wiki interna.
+-   Compartilhe painéis que destaquem mudanças nos benchmarks e seus efeitos no produto.
+-   Incentive revisões regulares entre as equipes de produto, pesquisa e suporte para manter o comportamento alinhado.
+
+---
+
+## Leia também
+
+-   Veja como [tratar erros](../api-reference/errors.mdx) corretamente.
+-   Explore os [limites de taxa](../api-reference/limits.mdx) para planejar a escala.
+-   Consulte os [exemplos](../guides/examples.mdx) de referência.

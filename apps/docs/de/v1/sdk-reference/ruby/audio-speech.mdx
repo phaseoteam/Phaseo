@@ -1,0 +1,31 @@
+---
+icon: "music"
+title: "TTS (Text zu Sprache)"
+description: "Rufe `/audio/speech` mit dem Ruby-SDK auf."
+---
+
+**Methode**: `client.generate_speech(...)` oder `client.create_speech(...)`.
+
+### Beispiel
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines TTS-fähigen Modells.
+- `input` (erforderlich): Zu synthetisierender Text.
+- `voice`: Sprachvoreinstellung (modellabhängig, z. B. `alloy`).
+- `format`: `mp3`, `wav`, `flac` usw.
+- `speed`: Faktor für die Wiedergabegeschwindigkeit (typischerweise 0,25–4).
+
+### Rückgabe
+Audiodaten (Binärformat)
+

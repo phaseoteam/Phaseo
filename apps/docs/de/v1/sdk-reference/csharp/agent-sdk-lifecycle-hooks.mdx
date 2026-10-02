@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Reagiere auf .NET-Ereignisse zu Läufen, Modellen, Schritten, Werkzeugen und Checkpoints."
+---
+
+Pass `RunOptions.OnEvent` um eine Produkt-Zeitleiste, ein Auditprotokoll oder eine Telemetrie-Pipeline zu aktualisieren.
+
+Ereignisfamilien umfassen Start, Fortsetzung und Endzustände von Läufen, Modellanfragen, Schritt-Checkpoints, Werkzeugausführung und -fortschritt, Warten auf menschliche Eingaben, Abbruch und Fehler.
+
+Halte den Callback schnell. Lagere langsame Speicher- oder Netzwerkarbeit aus der Agentenschleife aus.
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## Verwandte Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

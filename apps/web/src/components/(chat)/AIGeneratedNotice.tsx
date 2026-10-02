@@ -1,6 +1,10 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function AIGeneratedNotice({ className }: { className?: string }) {
+	const t = useTranslations("Product.chatRooms.aiElements");
 	return (
 		<p
 			role="note"
@@ -9,7 +13,7 @@ export function AIGeneratedNotice({ className }: { className?: string }) {
 				className,
 			)}
 		>
-			AI can make mistakes. Check important info.
+			{t("aiGeneratedNotice")}
 		</p>
 	);
 }

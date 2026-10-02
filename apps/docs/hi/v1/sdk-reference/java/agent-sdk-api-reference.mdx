@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "Java Agent SDK के मुख्य records और methods देखें।"
+---
+
+| API | उद्देश्य |
+| --- | --- |
+| `AgentSdk.createAgent(...)` | एजेंट तय करें |
+| `AgentSdk.defineTool(...)` | स्थानीय या मैन्युअल टूल तय करें |
+| `AgentSdk.createGatewayAgentClient(...)` | मॉडल टर्न को Phaseo से जोड़ें |
+| `Agent.run(...)` | पूरा होने या रुकने तक चलाएँ |
+| `Agent.stream(...)` | दोबारा चलाए जा सकने वाले stream consumer के साथ चलाएँ |
+| `Agent.continueRun(...)` | सहेजी या रुकी स्थिति जारी रखें |
+| `StreamResult.getResult()` | पूरे हुए रन को पढ़ें |
+| `StreamResult.textStream()` | टेक्स्ट अंश पढ़ें |
+| `StreamResult.fullStream()` | सभी इवेंट पढ़ें |
+| `StreamResult.cancel()` | सक्रिय रन रद्द करें |
+
+महत्वपूर्ण records और interfaces में `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor`, `ModelRetryConfig` और `ToolExecutionConfig` शामिल हैं।
+
+## संबंधित विषय
+
+- [अपना पहला एजेंट बनाएँ](./agent-sdk.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

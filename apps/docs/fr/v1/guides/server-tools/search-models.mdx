@@ -1,0 +1,18 @@
+---
+icon: "list-filter"
+title: "Outil serveur de recherche de modèles"
+description: "Permettez à un modèle de trouver des modèles adaptés dans le catalogue à jour de Phaseo."
+---
+
+Utilisez `phaseo:search_models` lorsque le modèle appelant doit sélectionner ou recommander un modèle à partir des métadonnées actuelles du catalogue.
+
+```json
+{
+  "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
+  "max_tool_calls": 10
+}
+```
+
+L’appel d’outil peut appliquer des filtres sur `query`, `input_modalities`, `output_modalities`, `series`, `provider`, et `required_params`. Les résultats comprennent les identifiants des modèles, les modalités, les fournisseurs, les paramètres pris en charge et les métadonnées tarifaires.
+
+L’utilisation est indiquée dans `usage.server_tool_use.search_models_requests`.

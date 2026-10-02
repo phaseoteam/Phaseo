@@ -1,0 +1,11 @@
+---
+title: "批准工作区加入请求"
+sidebarTitle: "批准加入请求"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "以原子方式批准待处理的加入请求。"
+---
+<Note>此端点需要具有 `workspaces:write` 权限的管理 API 密钥。</Note>
+
+批准时会验证邀请是否过期及剩余使用次数，应用邀请角色，并在同一事务中记录决定。
+

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,12 +29,6 @@ interface UsageTableFiltersProps {
 	children?: React.ReactNode;
 }
 
-const STATUS_FILTER_ITEMS = [
-	{ value: "all", label: "All requests" },
-	{ value: "success", label: "Successful only" },
-	{ value: "error", label: "Errors only" },
-];
-
 export default function UsageTableFilters({
 	models,
 	providers,
@@ -43,6 +38,15 @@ export default function UsageTableFilters({
 	modelMetadata,
 	children,
 }: UsageTableFiltersProps) {
+	const t = useTranslations("SettingsUI");
+	const statusFilterItems = React.useMemo(
+		() => [
+			{ value: "all", label: t("strings.All requests" as never) },
+			{ value: "success", label: t("strings.Successful only" as never) },
+			{ value: "error", label: t("strings.Errors only" as never) },
+		],
+		[t],
+	);
 	const [modelFilter, setModelFilter] = useQueryState("model", {
 		defaultValue: "",
 	});
@@ -134,7 +138,7 @@ export default function UsageTableFilters({
 				providerId,
 				label:
 					providerId === OTHER_GROUP_ID
-						? "Other"
+						? t("strings.Other" as never)
 						: getProviderLabel(providerId),
 				models: sortedModels,
 			};
@@ -145,36 +149,36 @@ export default function UsageTableFilters({
 			if (b.providerId === OTHER_GROUP_ID) return -1;
 			return a.label.localeCompare(b.label, undefined, { sensitivity: "base" });
 		});
-	}, [models, modelProviders, getProviderLabel]);
+	}, [models, modelProviders, getProviderLabel, t]);
 	const modelFilterItems = React.useMemo(
-		() => [
-			{ value: "all", label: "All models" },
+			() => [
+			{ value: "all", label: t("strings.All models" as never) },
 			...models.map((model) => ({
 				value: model,
 				label: getModelDisplayName(model, modelMetadata),
 			})),
 		],
-		[modelMetadata, models],
+		[modelMetadata, models, t],
 	);
 	const providerFilterItems = React.useMemo(
 		() => [
-			{ value: "all", label: "All providers" },
+			{ value: "all", label: t("strings.All providers" as never) },
 			...sortedProviders.map((provider) => ({
 				value: provider,
 				label: getProviderLabel(provider),
 			})),
 		],
-		[getProviderLabel, sortedProviders],
+		[getProviderLabel, sortedProviders, t],
 	);
 	const keyFilterItems = React.useMemo(
 		() => [
-			{ value: "all", label: "All keys" },
+			{ value: "all", label: t("strings.All keys" as never) },
 			...apiKeys.map((key) => ({
 				value: key.id,
 				label: key.name || key.prefix || key.id.slice(0, 8),
 			})),
 		],
-		[apiKeys],
+		[apiKeys, t],
 	);
 
 	const clearFilters = () => {
@@ -200,12 +204,12 @@ export default function UsageTableFilters({
 					<SelectTrigger
 						id="model-filter"
 						className={cn(triggerClassName, "min-w-[220px]")}
-						aria-label="Model filter"
+						aria-label={t("strings.Model filter" as never)}
 					>
-						<SelectValue placeholder="Model (all)" />
+						<SelectValue placeholder={t("strings.Model (all)" as never)} />
 					</SelectTrigger>
 					<SelectContent className="max-h-[320px]">
-						<SelectItem value="all" label="All models">All models</SelectItem>
+						<SelectItem value="all" label={t("strings.All models" as never)}>{t("strings.All models" as never)}</SelectItem>
 						{groupedModels.map((group) => (
 							<SelectGroup key={group.providerId}>
 								<SelectLabel>
@@ -256,12 +260,12 @@ export default function UsageTableFilters({
 					<SelectTrigger
 						id="provider-filter"
 						className={cn(triggerClassName, "min-w-[190px]")}
-						aria-label="Provider filter"
+						aria-label={t("strings.Provider filter" as never)}
 					>
-						<SelectValue placeholder="Provider (all)" />
+						<SelectValue placeholder={t("strings.Provider (all)" as never)} />
 					</SelectTrigger>
 					<SelectContent className="max-h-[320px]">
-						<SelectItem value="all" label="All providers">All providers</SelectItem>
+						<SelectItem value="all" label={t("strings.All providers" as never)}>{t("strings.All providers" as never)}</SelectItem>
 						{sortedProviders.map((provider) => (
 							<SelectItem
 								key={provider}
@@ -292,12 +296,12 @@ export default function UsageTableFilters({
 					<SelectTrigger
 						id="key-filter"
 						className={cn(triggerClassName, "min-w-[160px]")}
-						aria-label="API key filter"
+						aria-label={t("strings.API key filter" as never)}
 					>
-						<SelectValue placeholder="Key (all)" />
+						<SelectValue placeholder={t("strings.Key (all)" as never)} />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="all" label="All keys">All keys</SelectItem>
+						<SelectItem value="all" label={t("strings.All keys" as never)}>{t("strings.All keys" as never)}</SelectItem>
 						{apiKeys.map((key) => (
 							<SelectItem
 								key={key.id}
@@ -312,18 +316,18 @@ export default function UsageTableFilters({
 
 				<Select
 					value={statusFilter}
-					items={STATUS_FILTER_ITEMS}
+					items={statusFilterItems}
 					onValueChange={setStatusFilter}
 				>
 					<SelectTrigger
 						id="status-filter"
 						className={cn(triggerClassName, "min-w-[150px]")}
-						aria-label="Status filter"
+						aria-label={t("strings.Status filter" as never)}
 					>
-						<SelectValue placeholder="Status" />
+						<SelectValue placeholder={t("strings.Status" as never)} />
 					</SelectTrigger>
 					<SelectContent>
-						{STATUS_FILTER_ITEMS.map((item) => (
+						{statusFilterItems.map((item) => (
 							<SelectItem key={item.value} value={item.value} label={item.label}>
 								{item.label}
 							</SelectItem>
@@ -336,8 +340,8 @@ export default function UsageTableFilters({
 						variant="ghost"
 						size="icon"
 						onClick={clearFilters}
-						aria-label="Clear filters"
-						title="Clear filters"
+						aria-label={t("strings.Clear filters" as never)}
+						title={t("strings.Clear filters" as never)}
 						className="h-9 w-9"
 					>
 						<X className="h-4 w-4" />
@@ -354,7 +358,7 @@ export default function UsageTableFilters({
 								onClick={() => setRequestFilter("")}
 								className="h-8 gap-2 rounded-md px-2 text-xs"
 							>
-								<span className="text-muted-foreground">Req</span>
+								<span className="text-muted-foreground">{t("strings.Req" as never)}</span>
 								<code className="font-mono text-[11px]">
 									{shortenIdentifier(requestFilter, 6)}
 								</code>
@@ -369,7 +373,7 @@ export default function UsageTableFilters({
 								onClick={() => setSessionFilter("")}
 								className="h-8 gap-2 rounded-md px-2 text-xs"
 							>
-								<span className="text-muted-foreground">Session</span>
+								<span className="text-muted-foreground">{t("strings.Session" as never)}</span>
 								<code className="font-mono text-[11px]">
 									{shortenIdentifier(sessionFilter, 6)}
 								</code>

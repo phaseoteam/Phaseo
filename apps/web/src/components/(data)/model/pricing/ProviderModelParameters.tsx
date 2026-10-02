@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "next-intl";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { ProviderModel } from "@/lib/fetchers/models/getModelPricing";
 import { extractSupportedParameters } from "@/lib/fetchers/models/table-view/helpers";
@@ -71,6 +72,7 @@ export default function ProviderModelParameters({
 }: {
 	models?: ProviderModel[];
 }) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const parameters = buildSupportedParameters(models);
 	if (!parameters.length) return null;
 
@@ -79,7 +81,7 @@ export default function ProviderModelParameters({
 			<HoverCardTrigger asChild>
 				<button
 					type="button"
-					aria-label="Supported parameters"
+					aria-label={t("parameterSupport")}
 					className="inline-flex h-7 w-7 items-center justify-center rounded-md border bg-background text-muted-foreground transition-colors hover:border-slate-300 hover:text-foreground dark:hover:border-slate-700"
 				>
 					<Sliders className="h-3.5 w-3.5" />
@@ -87,7 +89,7 @@ export default function ProviderModelParameters({
 			</HoverCardTrigger>
 			<HoverCardContent align="start" className="w-80 p-3 text-xs">
 				<div className="space-y-2">
-					<p className="text-muted-foreground">Supported parameters</p>
+					<p className="text-muted-foreground">{t("parameterSupport")}</p>
 					<div className="max-h-72 overflow-auto pr-1">
 						<div className="flex flex-wrap gap-1.5">
 							{parameters.map((param) => (

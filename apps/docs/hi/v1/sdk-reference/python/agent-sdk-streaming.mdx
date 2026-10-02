@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "स्ट्रीमिंग"
+description: "Python एजेंट का टेक्स्ट, reasoning, items, tools और lifecycle events stream करें।"
+---
+
+`Agent.stream(...)`, `run(...)` जैसी ही state machine चलाता है और दोबारा पढ़ा जा सकने वाला `AgentStreamResult` लौटाता है:
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+अन्य projection के लिए `reasoning_stream()`, `item_stream()`, `tool_stream()` या `full_stream()` उपयोग करें। Python items अभी dictionary हैं, native discriminated union नहीं।
+
+सक्रिय model stream रोकने और स्थानीय runtime काम तक cancellation पहुँचाने के लिए `cancel()` कॉल करें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

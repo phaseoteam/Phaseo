@@ -1,0 +1,111 @@
+---
+icon: "compass"
+title: "TypeScript SDK 概览"
+description: "Phaseo Gateway API 的官方 TypeScript 客户端"
+---
+
+从 npm 安装已发布的 [~@phaseo/sdk~](https://www.npmjs.com/package/@phaseo/sdk) 软件包。
+
+Phaseo TypeScript SDK 提供了类型安全且便捷的 Phaseo Gateway API 交互方式。它基于 OpenAPI 规范构建，提供完整的 TypeScript 支持、生成的类型和简洁的客户端接口。
+
+## 功能
+
+-   **类型安全**：基于 OpenAPI 规范生成类型，完整支持 TypeScript
+-   **简洁的 API**：易于使用的客户端和清晰的接口
+-   **生成代码**：根据规范 API 定义自动生成
+-   **覆盖全面**：涵盖所有 Gateway API 端点
+
+## 快速示例
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+	model: "openai/gpt-4o-mini",
+	messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+## 等待音乐、视频或批处理完成
+
+```typescript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+视频使用 `videos.generateAndWait(request, options)`，批处理使用 `batches.createAndWait(request, options)`。这些助手只提交一次；立即完成的响应无需轮询，否则轮询同一任务直至完成。返回完整响应，失败、取消或过期时抛出带 `response` 的 `JobFailedError`。已完成批处理仍可能包含失败的单独请求。
+
+每个资源还有 `wait(id, options)`，返回任何终止响应，包括失败。选项包括 `intervalMs`（默认 5,000，最小 250）、`timeoutMs`（默认 1,800,000）、`signal` 和 `onPoll`。等待超时在提交返回后开始；初始 HTTP 请求保留自身超时。进度回调接收初始响应和每次轮询。
+
+`JobTimeoutError` 和 `JobCancelledError` 保留 `jobId` 与 `lastResponse`，可通过 `.wait(error.jobId)` 恢复。停止等待会取消进行中的轮询请求，但不会取消远程工作。HTTP 失败会直接传播，不会自动重新提交。这些 SDK 助手不会为网关增加后台执行。
+
+## 请求控制与诊断
+
+使用 `client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 })` 创建
+不可变客户端，将控制应用于所有资源、流和媒体。
+超时包括读取响应正文。重试默认是零，仅适用于
+GET/HEAD，并遵守 `Retry-After`。付费提交绝不会重试。
+
+`responseMetadata(result)` 提供网关请求 ID 和控制台追踪 URL。
+HTTP 错误提供 `code`、`requestId`、`traceUrl`、`retryAfterMs`、正文和标头。
+
+## 工作流助手
+
+`music.start`、`videos.start` 和 `batches.start` 返回带有 `result()`、
+`events()` 和 `toJSON()` 的句柄。保存类型和 ID，并用 `resume(id)` 重建。
+`result()` 拒绝终止失败。仅视频和批处理支持远程取消。
+
+`videos.streamContent(id)` 配合 `downloadTo(stream, writable)` 流式传输大型
+输出。`toFile(bytes, filename, contentType)` 准备上传。
+`batchResults(await client.batches.streamResults(id))` 增量解析 JSONL；
+`matchBatchResult(row, inputsByCustomId)` 保留单独错误和输入身份。
+
+`responses.parse(request, schema)` 接受 Zod 兼容解析器并返回
+已验证输出。还需在请求中设置服务器的结构化输出格式。
+`collectStream(client.streamResponses(request))` 累积文本和使用量。
+
+`checkModelCapabilities(id, { inputTypes, outputTypes, endpoints, parameters,
+parameterValues })` 检查单个活跃提供商报价的已声明能力和标量约束。
+缺失元数据报告为未知。它绝不会更改
+模型或删除参数，也无法保证实时提供商接受请求。
+
+模型选择器和参数编辑器应使用实时端点元数据：
+
+```typescript
+const support = await client.models.checkParameters(
+  "openai/gpt-5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+每个参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，
+附带适合行内高亮的提供商路由和约束问题。
+`client.models.capabilities(modelId)` 返回完整端点能力
+响应。这些显式检查不会向生成调用添加发现请求。
+
+## 本地测试与网站导出
+
+从 `@phaseo/sdk/testing` 导入 `createMockTransport` 和 `jobFixtures`，通过
+`fetchImpl` 注入严格、有序的测试夹具。调用 `mock.assertDone()` 检查
+所有预期请求均已发生。意外调用在本地失败，不会回退到网络。
+
+在 Phaseo 房间提交请求后，**获取代码**将模型和
+设置导出为 TypeScript 或 Python。**查看请求**在
+请求 ID 可用时打开控制台追踪。在服务器上设置 `PHASEO_API_KEY` 后运行导出代码。
+## 包含内容
+
+-   用于所有 API 交互的 `Phaseo` 客户端类
+-   按资源组织的辅助方法，例如 `client.models`, `client.batches`, `client.videos`, and `client.asyncJobs`
+-   用于发现和查询价格的辅助方法，例如 `client.getModels()`, `client.listProviders()`, `client.getCredits()`, `client.getActivity()`, `client.getAnalytics()`, `client.listEndpoints()`, `client.listOrganisations()`, `client.listPricingModels()`, `client.calculatePricing()`, `client.listApiKeys()`, `client.createApiKey()`, `client.getApiKey(id)`, `client.updateApiKey(id, ...)`, `client.deleteApiKey(id)`, `client.listWorkspaces()`, `client.getWorkspace(id)`, `client.createWorkspace(...)`, `client.updateWorkspace(id, ...)`, `client.deleteWorkspace(id)`, and `client.getCurrentApiKey()`
+-   用于批处理和视频生命周期流的异步任务 WebSocket URL 辅助方法
+-   `client.batches.streamResults(batchId, { signal })` 用于流式下载 Anthropic JSONL
+-   为所有请求和响应对象生成的类型
+-   全面覆盖 API，包括 Chat Completions、模型、额度等
+-   改善开发体验的 TypeScript 定义

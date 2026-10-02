@@ -1,0 +1,118 @@
+---
+title: "连接专用模型部署"
+description: "将私有的 OpenAI 兼容端点添加到工作区模型目录。"
+icon: "lock-keyhole"
+---
+
+私有模型让团队通过常规 Phaseo API 调用专用或自托管部署。模型仅对工作区中已认证的成员显示，并可用于任何原本使用公共模型 ID 的地方。
+
+常见来源包括 Baseten、Modal、RunPod、Fireworks 或 Together 上的专用部署，以及运行 vLLM 或其他 OpenAI 兼容服务器的服务。
+
+## 开始之前
+
+您的部署必须提供：
+
+- 公共 HTTPS 基础 URL；
+- OpenAI 兼容的 `/chat/completions` 端点；
+- Bearer token 认证；以及
+- 该端点接受的上游模型或部署 ID。
+
+`/responses` 支持是可选的。除非部署明确实现了该端点，否则请保持关闭。
+
+<Warning>
+私有模型不会转换提供商专有协议或自定义认证方案。请在这些部署前添加 OpenAI 兼容层，或使用 Phaseo 支持的提供商集成。
+</Warning>
+
+## 连接部署
+
+<Steps>
+<Step title="打开私有模型">
+
+打开**仪表板 → 设置 → 工作区 → 私有模型**，然后选择**添加模型**。您必须是工作区所有者或管理员。
+
+</Step>
+
+<Step title="命名模型">
+
+选择现有目录模型，将此部署添加到其提供商列表，或输入 `legal-assistant` 等简短模型标识。如果目录中没有模型使用该唯一标识，Phaseo 会将其与受信任的工作区命名空间组合：
+
+```text
+acme/legal-assistant
+```
+
+您不能选择或替换工作区命名空间。精确的目录 ID 会关联到该模型，而不改变其公共身份。
+
+</Step>
+
+<Step title="配置端点">
+
+输入推理路径之前的基础 URL。例如：
+
+```text
+https://model.example.com/v1
+```
+
+不要包含 `/chat/completions` 或 `/responses`。请单独输入精确的上游模型或部署 ID；Phaseo 会在转发请求时替换为该 ID。
+
+</Step>
+
+<Step title="保存凭证">
+
+输入部署的 API 密钥。Phaseo 会加密凭证，保存后不会再返回。您可以稍后在模型设置页替换凭证。
+
+</Step>
+
+<Step title="调用模型">
+
+将生成的模型 ID 用于常规 Chat Completions 端点：
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "acme/legal-assistant",
+    "messages": [{"role": "user", "content": "Summarize this contract."}]
+  }'
+```
+
+调用所用的 API 密钥必须与私有模型属于同一工作区。
+
+</Step>
+</Steps>
+
+## 路由的工作方式
+
+私有模型使用与目录模型相同的 Phaseo 请求接口。独立的工作区模型只会路由到配置的端点。关联到目录模型的端点会按其**优先**、**常规池**或**仅回退**策略加入该模型的提供商列表。Phaseo 将保存的凭证作为 Bearer token 发送，并替换为配置的上游模型 ID。
+
+私有模型不会成为公共提供商路由，也不会对其他工作区显示。启用的私有模型会包含在认证后的模型目录中，并显示在**私有**筛选器下。
+
+<Note>
+在现有目录模型上添加或启用私有部署后，请等待 5–10 秒，让变更传播到 API 层，再测试路由。在此期间，请求可能继续使用该模型现有的公共提供商。已经进行中的请求不会重新路由。
+</Note>
+
+## 提供商示例
+
+| 部署 | 应输入的内容 |
+| --- | --- |
+| Baseten 专用端点 | 其 OpenAI 兼容基础 URL、部署模型 ID 和 API 密钥 |
+| Modal Web 端点 | 实现 OpenAI Chat Completions 接口规范的公共 HTTPS 端点 |
+| RunPod 无服务器端点 | OpenAI 兼容的代理 URL 和 Bearer 凭证 |
+| Fireworks 或 Together 专用部署 | 专用 OpenAI 兼容 URL 和提供商模型 ID |
+| vLLM | 以 `/v1` 结尾的公共 URL 和 vLLM 提供的模型名称 |
+
+提供商产品和 URL 格式可能会变化。请在提供商当前的部署文档中确认基础 URL、模型 ID、认证方式和支持的端点。
+
+## 通过 API 管理私有模型
+
+服务端管理可以使用[私有模型 API](../api-reference/endpoint/private-models-list)，并按需使用具备 `private_models:read`、`private_models:write` 或 `private_models:delete` 权限的管理密钥。
+
+创建和更新请求接受 `model_reference`，可为精确的目录模型 ID 或简短标识。Phaseo 会推导 `model_id`；客户端不能直接提交它。对于现有 Phaseo 提供商，使用 `host_provider_id`；对于其他运营者，使用 `custom_provider_name` 和可选的 `custom_provider_url`。
+
+## 故障排除
+
+- **提供商返回 404：**检查基础 URL 是否在推理路径之前结束。
+- **未知模型：**将提供商的上游部署 ID 复制到**上游模型 ID**。不要在此处使用 Phaseo 工作区模型 ID。
+- **上游请求未授权：**替换保存的凭证，并确认提供商接受 Bearer 认证。
+- **Chat 正常但 Responses 失败：**除非提供商原生实现 `/responses`，否则请关闭 **Responses API**。
+- **目录中缺少模型：**确认模型已启用，且调用方已在同一工作区完成认证。

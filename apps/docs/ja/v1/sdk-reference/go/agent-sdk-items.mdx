@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "ストリーム項目"
+description: "Goエージェントの実行から、テキスト、推論、ツール、プロバイダー項目のイベントを取得します。"
+---
+
+`Stream`は、ライブエージェント画面向けに再生可能なイベント列を提供します。テキスト差分は最も簡単に扱えますが、完全なイベントストリームには推論、プロバイダー項目、ツールの進行状況、ライフサイクルの変更、最終応答も含まれます。
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Goでは現在、プロバイダー項目は閉じた型付きユニオンではなく、`AgentEvent`の汎用`details`マップを通じて公開されます。`event.Type`で分岐し、UI境界で項目データを検証し、将来の互換性のため未知のイベント用フォールバックも用意してください。
+</Note>
+
+完了後もイベント履歴を再生できるため、別々の処理でテキストを表示したり、イベントを保存したり、モデルへの追加リクエストなしで監査タイムラインを作成したりできます。

@@ -1,0 +1,161 @@
+---
+title: "OpenAI GPT-5.6"
+description: "在生产工作负载中采用 GPT-5.6 Sol、Terra 或 Luna 时需要了解的内容"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.6
+
+使用本指南在生产环境中安全采用 GPT-5.6 系列。
+
+GPT-5.6 是 OpenAI 当前面向复杂生产工作流的 GPT 系列。在 AI Stats 中，固定档位 ID 对应 OpenAI 模型 ID：`gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`。
+
+## 迁移快速入门
+
+1. 选择与工作负载相匹配的固定模型 Sol、Terra 或 Luna。
+2. 只替换模型 ID，其余请求内容保持不变。
+3. 重新测试推理强度、结构化输出、工具、延迟和任务成本。
+4. 将新路由以金丝雀方式发布，同时保留之前的 GPT-5 模型作为回退。
+
+## 选择模型
+
+| 模型 | 用途 | 推理强度 |
+| --- | --- | --- |
+| `openai/gpt-5.6-sol` | 最高能力推理、代理式编程、科学分析和复杂专业工作 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | 覆盖推理、编程和助手工作流的均衡日常任务 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | 对延迟和成本敏感的 GPT-5.6 工作负载 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+
+OpenAI 的 `gpt-5.6` 别名会路由到 `gpt-5.6-sol`。在 AI Stats 中，如果要使用 Sol 档位作为默认值，请使用 `openai/gpt-5.6` 或 `openai/gpt-sol-latest`；如需控制路由，则使用固定档位 ID。
+
+AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-latest`、`openai/gpt-terra-latest` 和 `openai/gpt-luna-latest`。受控迁移请使用固定 GPT-5.6 ID；只有在你明确希望未来的 Sol、Terra 或 Luna 版本沿用同一路由时，才使用档位别名。
+
+## 新增内容
+
+- GPT-5.6 新增 Sol/Terra/Luna 档位划分，不再只有一个默认 GPT 路由。
+- GPT-5.6 的三个档位均支持 `reasoning.effort: "max"`，用于最高推理预算。
+- GPT-5.6 支持 `reasoning.mode: "pro"`，无需切换到单独的 Pro 模型标识。
+- GPT-5.6 通过 `reasoning.context` 增加了持久化推理控制。
+- GPT-5.6 为符合条件且大量使用工具的工作流新增了多代理支持和 Programmatic Tool Calling（测试版）。
+- 提示缓存分别计算未缓存输入、缓存读取、缓存写入和输出的费用。
+- 显式提示缓存通过 `prompt_cache_options` 支持；OpenAI 目前建议使用 `prompt_cache_options.ttl`，而不是 `prompt_cache_retention`。
+
+## 更新请求
+
+首先只替换模型 ID，其余请求内容保持不变。
+
+前面的示例使用 Responses API 风格的 `input` 结构。如果要迁移 Chat Completions 流量，请在路由支持的情况下继续使用 `messages` 和扁平的 `reasoning_effort` 字段。
+
+```json
+{
+  "model": "openai/gpt-5.6-terra",
+  "input": "Summarize the rollout risks in this migration plan.",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+仅在额外推理预算带来的收益足以抵消延迟和成本时，才在路由中使用 `max`。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": "Review this multi-service incident report and propose a rollback plan.",
+  "reasoning": {
+    "effort": "max"
+  }
+}
+```
+
+如果集成仍发送 OpenAI 兼容的扁平字段，AI Stats 也会在路由支持时接受 `reasoning_effort`：
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Design a test plan for this agent workflow."
+    }
+  ],
+  "reasoning_effort": "max"
+}
+```
+
+## 查看价格
+
+目录中的 GPT-5.6 价格按每百万令牌统计。
+
+| 模型 | 输入 | 缓存读取 | 缓存写入 | 输出 |
+| --- | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
+| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
+| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+
+缓存读取与缓存写入分别计费。在当前目录中，缓存读取比未缓存输入便宜 90%，而缓存写入的价格是未缓存输入的 1.25 倍。
+
+## 有意识地使用提示缓存
+
+对于重复使用的上下文，将提示中的稳定部分放入可缓存块，并让请求专属文本不进入缓存。
+
+```json
+{
+  "model": "openai/gpt-5.6-sol",
+  "input": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "Stable policy document...",
+          "cache_control": {
+            "type": "ephemeral",
+            "ttl": "1h"
+          }
+        },
+        {
+          "type": "input_text",
+          "text": "Apply the policy to this new customer request."
+        }
+      ]
+    }
+  ],
+  "prompt_cache_options": {
+    "mode": "explicit",
+    "ttl": "24h"
+  }
+}
+```
+
+如果需要与提供商无关的缓存提示或显式缓存断点，请使用 `cache_control`。如果需要直接传递 OpenAI 缓存模式和 TTL 选项，请使用 `prompt_cache_options`。
+
+## 测试内容
+
+### 推理和输出质量
+
+- 按计划向用户开放的强度测试 Sol、Terra 和 Luna；质量优先的工作流可包括 `max`
+- 在质量比延迟更重要的复杂任务上，对比 standard 模式与 `reasoning.mode: "pro"`
+- 各强度下的结构化输出和 schema 通过率
+- 工具调用选择和参数质量
+
+### 成本和延迟
+
+- 各推理强度下的延迟
+- 相较当前生产基准的输出 token 增长
+- 重复 prompt 的缓存读写比例
+- 每项成功任务的成本，而不只是 token 单价
+
+### 回滚
+
+- 保留之前的 GPT-5.x 路由作为备用方案
+- 在通过接近生产环境的 prompt 验证之前，将 `max` 保留在配置标志或预设之后
+- 分别监控缓存写入量和读取量
+- 只有在自己的评测确认任务成功率、成本和延迟后，才将 GPT-5.6 加入默认路由
+
+## 来源
+
+- [OpenAI GPT-5.6 预览公告](https://openai.com/index/previewing-gpt-5-6-sol/)
+- [OpenAI GPT-5.6 模型指南](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
+- [GPT-5.6 预览系统卡](https://deploymentsafety.openai.com/gpt-5-6-preview)
+- [AI Stats 提示缓存指南](../guides/prompt-caching.mdx)

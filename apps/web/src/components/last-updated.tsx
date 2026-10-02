@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from "react";
 import { formatRelativeToNow } from "@/lib/formatRelative";
+import { useLocale, useTranslations } from "next-intl";
 
 interface LastUpdatedProps {
 	deployTime: string;
 }
 
 export default function LastUpdated({ deployTime }: LastUpdatedProps) {
+	const locale = useLocale();
+	const t = useTranslations("Common.ui.localisationGaps");
 	const [lastUpdated, setLastUpdated] = useState<string>("");
 
 	useEffect(() => {
@@ -18,7 +21,7 @@ export default function LastUpdated({ deployTime }: LastUpdatedProps) {
 		}
 
 		function updateLastUpdated() {
-			setLastUpdated(formatRelativeToNow(targetMs, Date.now()));
+			setLastUpdated(formatRelativeToNow(targetMs, Date.now(), locale));
 		}
 
 		updateLastUpdated();
@@ -27,11 +30,11 @@ export default function LastUpdated({ deployTime }: LastUpdatedProps) {
 		const interval = setInterval(updateLastUpdated, 60000);
 
 		return () => clearInterval(interval);
-	}, [deployTime]);
+	}, [deployTime, locale]);
 
 	if (!deployTime) {
 		return null;
 	}
 
-	return <span className="mt-1">Last updated: {lastUpdated}</span>;
+	return <span className="mt-1">{t("lastUpdated", {time: lastUpdated})}</span>;
 }

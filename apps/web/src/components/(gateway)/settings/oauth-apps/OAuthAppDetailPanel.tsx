@@ -38,12 +38,14 @@ import {
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
+import { useTranslations } from "next-intl";
 import RegenerateSecretDialog from "./RegenerateSecretDialog";
 import RedirectUriManager from "./RedirectUriManager";
 import DeleteOAuthAppDialog from "./DeleteOAuthAppDialog";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { normalizeOAuthScopes } from "@/lib/oauth/scopes";
 import { updateOAuthAppScopesAction } from "@/app/(dashboard)/settings/oauth-apps/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface OAuthAppDetailPanelProps {
 	oauthApp: any;
@@ -118,6 +120,14 @@ export default function OAuthAppDetailPanel({
 	userDirectory,
 	currentUserId,
 }: OAuthAppDetailPanelProps) {
+	const translate = useTranslations("SettingsUI");
+	const t = (key: string, values?: Record<string, unknown>) =>
+		translate(
+			(key.startsWith("oauthDetail.")
+				? key.replace("oauthDetail.", "oauthDetailCopy.")
+				: key) as never,
+			values as never,
+		);
 	const write = useSettingsWrite();
 	const [copiedId, setCopiedId] = useState(false);
 	const [allowedScopes, setAllowedScopes] = useState(() => normalizeOAuthScopes(oauthApp.allowed_scopes));
@@ -175,7 +185,7 @@ export default function OAuthAppDetailPanel({
 	const copyClientId = () => {
 		navigator.clipboard.writeText(oauthApp.client_id);
 		setCopiedId(true);
-		toast.success("Client ID copied to clipboard");
+		toast.success(t("strings.Client ID copied to clipboard" as never));
 		setTimeout(() => setCopiedId(false), 2000);
 	};
 
@@ -184,9 +194,11 @@ export default function OAuthAppDetailPanel({
 		try {
 			const result = await write(updateOAuthAppScopesAction(oauthApp.client_id, allowedScopes));
 			if (result.error) throw new Error(result.error);
-			toast.success("OAuth scopes updated");
-		} catch (error: any) {
-			toast.error(error?.message || "Failed to update OAuth scopes");
+		toast.success(t("strings.OAuth scopes updated" as never));
+		} catch (error: unknown) {
+			toast.error(
+				localizedSettingsError(error, translate, "Failed to update OAuth scopes"),
+			);
 		} finally {
 			setSavingScopes(false);
 		}
@@ -198,11 +210,7 @@ export default function OAuthAppDetailPanel({
 		deleted: "bg-red-500",
 	}[(oauthApp.status as string)] || "bg-gray-500";
 
-	const statusText = {
-		active: "Active",
-		suspended: "Suspended",
-		deleted: "Deleted",
-	}[(oauthApp.status as string)] || "Unknown";
+	const statusText = t(`oauthDetail.${oauthApp.status as string}` as never) || t("oauthDetail.unknown");
 
 	return (
 		<div className="space-y-6">
@@ -240,7 +248,7 @@ export default function OAuthAppDetailPanel({
 						<div className="p-4 border rounded-md">
 							<div className="flex items-center gap-2 text-muted-foreground mb-1">
 								<Users className="size-4" />
-								<span className="text-sm">Active Users</span>
+						<span className="text-sm">{t("strings.Active Users" as never)}</span>
 							</div>
 							<div className="text-2xl font-bold">
 								{oauthApp.active_authorizations || 0}
@@ -249,7 +257,7 @@ export default function OAuthAppDetailPanel({
 						<div className="p-4 border rounded-md">
 							<div className="flex items-center gap-2 text-muted-foreground mb-1">
 								<Activity className="size-4" />
-								<span className="text-sm">Requests (30d)</span>
+						<span className="text-sm">{t("strings.Requests (30d)" as never)}</span>
 							</div>
 							<div className="text-2xl font-bold">
 								{oauthApp.requests_last_30d || 0}
@@ -258,14 +266,14 @@ export default function OAuthAppDetailPanel({
 						<div className="p-4 border rounded-md">
 							<div className="flex items-center gap-2 text-muted-foreground mb-1">
 								<Activity className="size-4" />
-								<span className="text-sm">Last Used</span>
+						<span className="text-sm">{t("strings.Last Used" as never)}</span>
 							</div>
 							<div className="text-sm font-medium">
 								{oauthApp.last_used_at
 									? formatDistanceToNow(new Date(oauthApp.last_used_at), {
 											addSuffix: true,
 									  })
-									: "Never"}
+											: t("oauthDetail.never")}
 							</div>
 						</div>
 					</div>
@@ -281,7 +289,7 @@ export default function OAuthAppDetailPanel({
 									className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 								>
 									<ExternalLink className="size-4" />
-									<span>Visit website</span>
+						<span>{t("strings.Visit website" as never)}</span>
 								</a>
 							</div>
 						</>
@@ -294,22 +302,22 @@ export default function OAuthAppDetailPanel({
 				<CardHeader>
 					<CardTitle className="text-lg flex items-center gap-2">
 						<Settings className="size-5" />
-						OAuth Credentials
+						{t("oauthDetail.credentials")}
 					</CardTitle>
 					<CardDescription>
-						Use these credentials to integrate with the Phaseo OAuth flow
+						{t("oauthDetail.credentialsDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
-							Never share your client secret publicly. Treat it like a password.
+							{t("oauthDetail.secretWarning")}
 						</AlertDescription>
 					</Alert>
 
 					<div>
-						<label className="text-sm font-medium">Client ID</label>
+					<label className="text-sm font-medium">{t("strings.Client ID" as never)}</label>
 						<div className="flex items-center gap-2 mt-1">
 							<Card className="flex-1 p-3">
 								<code className="text-xs break-all">{oauthApp.client_id}</code>
@@ -326,7 +334,7 @@ export default function OAuthAppDetailPanel({
 
 					<div>
 						<div className="flex items-center justify-between mb-1">
-							<label className="text-sm font-medium">Client Secret</label>
+					<label className="text-sm font-medium">{t("strings.Client Secret" as never)}</label>
 							<RegenerateSecretDialog
 								clientId={oauthApp.client_id}
 								appName={oauthApp.name}
@@ -338,7 +346,7 @@ export default function OAuthAppDetailPanel({
 							</code>
 						</Card>
 						<p className="text-xs text-muted-foreground mt-1">
-							Hidden for security. Regenerate if compromised.
+							{t("oauthDetail.hiddenSecret")}
 						</p>
 					</div>
 				</CardContent>
@@ -347,9 +355,9 @@ export default function OAuthAppDetailPanel({
 			{/* Redirect URIs Card */}
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Redirect URIs</CardTitle>
+					<CardTitle className="text-lg">{t("oauth.redirectUri")}</CardTitle>
 					<CardDescription>
-						Authorized callback URLs for your OAuth flow
+						{t("oauthDetail.authorizedCallbacks")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -363,22 +371,22 @@ export default function OAuthAppDetailPanel({
 			{/* Allowed OAuth scopes */}
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Scopes this app may request</CardTitle>
+					<CardTitle className="text-lg">{t("strings.Scopes this app may request" as never)}</CardTitle>
 					<CardDescription>
-						Choose the maximum permissions this client can ask users to approve.
+						{t("oauthDetail.scopesDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
-							Changing this list never expands an existing authorization. The app must request a new scope and each user must approve it in the OAuth consent flow.
+							{t("oauthDetail.scopeWarning")}
 						</AlertDescription>
 					</Alert>
 					<OAuthScopeSelector selectedScopes={allowedScopes} onChange={setAllowedScopes} disabled={savingScopes} />
 					<div className="flex justify-end">
 						<Button onClick={saveScopes} disabled={savingScopes || allowedScopes.length === 0}>
-							{savingScopes ? "Saving..." : "Save scopes"}
+							{savingScopes ? t("oauthDetail.saving") : t("oauthDetail.saveScopes")}
 						</Button>
 					</div>
 				</CardContent>
@@ -387,9 +395,9 @@ export default function OAuthAppDetailPanel({
 			{/* Recent Authorizations */}
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">Recent Authorizations</CardTitle>
+					<CardTitle className="text-lg">{t("strings.Recent Authorizations" as never)}</CardTitle>
 					<CardDescription>
-						Users who have authorized your app
+						{t("oauthDetail.authorizedUsers")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -402,9 +410,9 @@ export default function OAuthAppDetailPanel({
 								<EmptyMedia variant="icon">
 									<Users className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No authorizations yet</EmptyTitle>
+					<EmptyTitle className="text-base">{t("oauthDetail.noAuthorizations")}</EmptyTitle>
 								<EmptyDescription>
-									Users who authorize this app will appear here.
+									{t("oauthDetail.authorizationEmpty")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -417,10 +425,10 @@ export default function OAuthAppDetailPanel({
 								>
 									<div>
 										<div className="font-medium text-sm">
-											{auth.users?.full_name || auth.users?.email || "Unknown User"}
+											{auth.users?.full_name || auth.users?.email || t("oauthDetail.unknownUser")}
 										</div>
 										<div className="text-xs text-muted-foreground">
-											{auth.teams?.name || "Unknown Workspace"}
+											{auth.teams?.name || t("oauthDetail.unknownWorkspace")}
 										</div>
 									</div>
 									<div className="text-xs text-muted-foreground">
@@ -428,7 +436,7 @@ export default function OAuthAppDetailPanel({
 											? `Used ${formatDistanceToNow(new Date(auth.last_used_at), {
 													addSuffix: true,
 											  })}`
-											: "Never used"}
+												  : t("oauthDetail.neverUsed")}
 									</div>
 								</div>
 							))}
@@ -440,9 +448,9 @@ export default function OAuthAppDetailPanel({
 			{/* User Activity */}
 			<Card>
 				<CardHeader>
-					<CardTitle className="text-lg">User Activity (Recent)</CardTitle>
+					<CardTitle className="text-lg">{t("strings.User Activity (Recent)" as never)}</CardTitle>
 					<CardDescription>
-						Request activity by end user from the latest OAuth request logs
+						{t("oauthDetail.activityDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -455,9 +463,9 @@ export default function OAuthAppDetailPanel({
 								<EmptyMedia variant="icon">
 									<Users className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No user activity yet</EmptyTitle>
+					<EmptyTitle className="text-base">{t("oauthDetail.noActivity")}</EmptyTitle>
 								<EmptyDescription>
-									User-level OAuth activity will appear after successful requests.
+									{t("oauthDetail.activityEmpty")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -466,12 +474,12 @@ export default function OAuthAppDetailPanel({
 							<Table>
 								<TableHeader>
 									<TableRow>
-										<TableHead>User</TableHead>
-										<TableHead className="text-right">Requests</TableHead>
-										<TableHead className="text-right">Success</TableHead>
-										<TableHead className="text-right">Errors</TableHead>
-										<TableHead className="text-right">Spend</TableHead>
-										<TableHead className="text-right">Last Used</TableHead>
+																												<TableHead>{t("oauthDetail.user")}</TableHead>
+																												<TableHead className="text-right">{t("oauthDetail.requests")}</TableHead>
+																												<TableHead className="text-right">{t("oauthDetail.success")}</TableHead>
+																												<TableHead className="text-right">{t("oauthDetail.errors")}</TableHead>
+																												<TableHead className="text-right">{t("oauthDetail.spend")}</TableHead>
+																												<TableHead className="text-right">{t("oauthDetail.lastUsed")}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
@@ -486,8 +494,8 @@ export default function OAuthAppDetailPanel({
 														<div className="flex items-center gap-2">
 															<div className="text-sm font-medium">{displayName}</div>
 															{summary.userId === currentUserId ? (
-																<Badge variant="outline" className="text-[10px]">
-																	You
+																																					<Badge variant="outline" className="text-[10px]">
+																																							{t("oauthDetail.you")}
 																</Badge>
 															) : null}
 														</div>
@@ -526,10 +534,10 @@ export default function OAuthAppDetailPanel({
 				<CardHeader>
 					<CardTitle className="text-lg flex items-center gap-2">
 						<FileClock className="size-5" />
-						Recent OAuth Request Logs
+						{t("oauthDetail.requestLogs")}
 					</CardTitle>
 					<CardDescription>
-						Latest {recentRequests.length} requests for this OAuth app
+						{t("oauthDetail.latestRequests", { count: String(recentRequests.length) })}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -542,9 +550,9 @@ export default function OAuthAppDetailPanel({
 								<EmptyMedia variant="icon">
 									<FileClock className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No request logs yet</EmptyTitle>
+								<EmptyTitle className="text-base">{t("oauthDetail.logsEmpty")}</EmptyTitle>
 								<EmptyDescription>
-									Log rows will appear after this OAuth app starts making requests.
+									{t("oauthDetail.logsEmptyDescription")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -554,14 +562,14 @@ export default function OAuthAppDetailPanel({
 								<Table>
 									<TableHeader>
 										<TableRow>
-											<TableHead>Time</TableHead>
-											<TableHead>User</TableHead>
-											<TableHead>Endpoint</TableHead>
-											<TableHead>Model</TableHead>
-											<TableHead>Provider</TableHead>
-											<TableHead className="text-right">Status</TableHead>
-											<TableHead className="text-right">Cost</TableHead>
-											<TableHead className="text-right">Latency</TableHead>
+												<TableHead>{t("oauthDetail.time")}</TableHead>
+												<TableHead>{t("oauthDetail.user")}</TableHead>
+												<TableHead>{t("oauthDetail.endpoint")}</TableHead>
+												<TableHead>{t("oauthDetail.model")}</TableHead>
+												<TableHead>{t("oauthDetail.provider")}</TableHead>
+												<TableHead className="text-right">{t("oauthDetail.status")}</TableHead>
+												<TableHead className="text-right">{t("oauthDetail.cost")}</TableHead>
+												<TableHead className="text-right">{t("oauthDetail.latency")}</TableHead>
 										</TableRow>
 									</TableHeader>
 									<TableBody>
@@ -569,7 +577,10 @@ export default function OAuthAppDetailPanel({
 											const identity = request.oauth_user_id
 												? userDirectoryMap.get(request.oauth_user_id)
 												: null;
-											const userLabel = identity?.email || request.oauth_user_id || "Unknown";
+										const userLabel =
+											identity?.email ||
+											request.oauth_user_id ||
+											t("strings.Unknown");
 											return (
 												<TableRow key={`${request.request_id}-${request.created_at}`}>
 													<TableCell className="whitespace-nowrap text-xs text-muted-foreground">
@@ -628,18 +639,18 @@ export default function OAuthAppDetailPanel({
 				<CardHeader>
 					<CardTitle className="text-lg text-red-600 dark:text-red-400 flex items-center gap-2">
 						<Trash2 className="size-5" />
-						Danger Zone
+						{translate("strings.Danger Zone" as never)}
 					</CardTitle>
 					<CardDescription>
-						Irreversible actions that will affect all users
+						{translate("oauthCopy.irreversibleActionsDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex items-center justify-between">
 						<div>
-							<div className="font-medium text-sm">Delete OAuth App</div>
+							<div className="font-medium text-sm">{translate("oauthDetail.deleteApp")}</div>
 							<div className="text-xs text-muted-foreground">
-								This will revoke all user authorizations and cannot be undone
+												{t("oauthDetail.deleteDescription")}
 							</div>
 						</div>
 						<DeleteOAuthAppDialog

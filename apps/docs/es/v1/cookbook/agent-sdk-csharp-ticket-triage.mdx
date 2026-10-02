@@ -1,0 +1,66 @@
+---
+title: "Clasifica tickets con el Agent SDK de C#"
+icon: "ticket-check"
+description: "Usa el Agent SDK de C# para clasificar tickets con herramientas locales dentro de un único servicio .NET."
+---
+
+Usa esta receta cuando un servicio .NET deba clasificar o resumir los tickets de soporte entrantes.
+
+## 1. Prepara los SDK
+
+<Note type="warning">El paquete C# Agent SDK aún no está disponible en NuGet. Sigue las [instrucciones de instalación desde el código fuente](../sdk-reference/csharp/agent-sdk-installation.mdx).</Note>
+
+## 2. Define una herramienta interna de consulta
+
+```csharp
+var loadTicket = AgentSdk.DefineTool(new Tool(
+    Id: "load-ticket",
+    Description: "Load one support ticket by id.",
+    Parameters: new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?>
+        {
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+        },
+        ["required"] = new[] { "ticketId" },
+    },
+    Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
+    {
+        ["ticketId"] = "T-1042",
+        ["severity"] = "medium",
+        ["summary"] = "Customer cannot find preset routing settings.",
+    })
+));
+```
+
+## 3. Crea y ejecuta el agente
+
+```csharp
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "ticket-triage-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Use tools when helpful and answer with a short triage summary.",
+    Tools = new[] { loadTicket },
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Review ticket T-1042 and summarize the next action.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## Cuándo encaja esta receta
+
+- el flujo de trabajo está dentro de un único servicio ASP.NET o de un worker
+- tu runtime local ya sabe cómo recuperar el estado interno de los tickets
+- quieres un ciclo de agente acotado antes de añadir colas o aprobaciones
+
+## Relacionados
+
+- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
+- [Clasifica solicitudes de soporte con agentes basados en presets](./agent-sdk-support-triage.mdx)

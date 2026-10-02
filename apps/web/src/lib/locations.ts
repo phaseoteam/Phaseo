@@ -20,11 +20,11 @@ const SUBDIVISION_NAMES: Record<string, string> = {
 	"US-WA": "Washington",
 };
 
-function countryName(code: string | null | undefined): string | null {
+function countryName(code: string | null | undefined, locale = "en"): string | null {
 	const normalized = code?.trim().toUpperCase();
 	if (!normalized || normalized === "XX") return null;
 	try {
-		return new Intl.DisplayNames(["en"], { type: "region" }).of(normalized) ?? normalized;
+		return new Intl.DisplayNames([locale], { type: "region" }).of(normalized) ?? normalized;
 	} catch {
 		return normalized;
 	}
@@ -33,12 +33,13 @@ function countryName(code: string | null | undefined): string | null {
 export function formatLocation(
 	countryCode: string | null | undefined,
 	subdivisionCode: string | null | undefined,
+	locale = "en",
 ): string | null {
 	const normalizedSubdivision = subdivisionCode?.trim().toUpperCase() || null;
 	const subdivisionName = normalizedSubdivision
 		? SUBDIVISION_NAMES[normalizedSubdivision] ?? normalizedSubdivision
 		: null;
-	const resolvedCountryName = countryName(countryCode);
+	const resolvedCountryName = countryName(countryCode, locale);
 
 	return [subdivisionName, resolvedCountryName].filter(Boolean).join(", ") || null;
 }

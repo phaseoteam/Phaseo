@@ -1,0 +1,91 @@
+---
+title: "Nachgelagerte Extraktion mit Web Fetch fundieren"
+icon: "file-search"
+description: "Verwende `phaseo:web_fetch`, um begrenzten Seitentext in die Tool-Schleife zu laden und darauf eine reproduzierbare nachgelagerte Extraktion und Prüfung auszuführen."
+---
+
+Verwende dieses Rezept, wenn ein Ablauf eine einzelne Seite abrufen und in begrenzten Text umwandeln muss, bevor das Modell Inhalte extrahiert, zusammenfasst oder klassifiziert.
+
+## 1. Mit `phaseo:web_fetch` eine einzelne Seite fundieren
+
+`phaseo:web_fetch` ist ein vom Gateway verwaltetes Server-Tool.
+
+Verwende es, wenn du Folgendes brauchst:
+
+- direkter Abruf einer URL durch das Gateway
+- begrenzter Text als Rückgabe an die Tool-Schleife
+- nutzungsbezogene Erfassung pro Anfrage
+- Einblick in die abgerufene Seite in den Anfrageprotokollen
+
+Wenn die URL bereits bekannt ist, eignet sich dies besser als eine allgemeine Suche.
+
+## 2. Die Anfrage eindeutig formulieren
+
+Typischer Ablauf:
+
+1. das Modell zum Aufruf von `phaseo:web_fetch` auffordern
+2. das Gateway die Seite abrufen und normalisieren lassen
+3. das Modell die Extraktion anhand des zurückgegebenen Textes fortsetzen lassen
+
+Gib im Prompt die Aufgabe nach dem Abruf klar an:
+
+- Felder extrahieren
+- einen Abschnitt zusammenfassen
+- das Dokument klassifizieren
+- eine Aussage überprüfen
+
+## 3. Die Abrufgröße gezielt begrenzen
+
+Verwende `max_chars`, wenn die Standardgrenze für die Aufgabe zu hoch oder zu niedrig ist.
+
+Empfohlener Ablauf:
+
+- kleinere Grenzen für Titel- und Zusammenfassungsextraktion
+- größere Grenzen für die Extraktion strukturierter Felder
+
+Ist die Seite sehr umfangreich, wähle lieber eine engere Extraktionsaufgabe, statt den Abruf unbegrenzt zu vergrößern.
+
+## 4. Protokolle statt nur der endgültigen Antwort prüfen
+
+In den Anfragedetails sollten stehen:
+
+- abgerufene URL
+- endgültige URL nach Weiterleitungen
+- Seitentitel, sofern verfügbar
+- HTTP-Status
+- Inhaltstyp
+- Anzahl der zurückgegebenen Zeichen
+- Kürzungskennzeichen
+
+Prüfe dort, ob das Modell tatsächlich die erwartete Seite als Grundlage verwendet hat.
+
+## 5. Die Grenzen des Tools kennen
+
+`phaseo:web_fetch` ist bewusst begrenzt.
+
+Geeignet ist es für:
+
+- HTML-Seiten
+- Klartext
+- einfache JSON- oder XML-Antworten
+
+Nicht geeignet ist es für:
+
+- Binärdateien
+- umfangreiche Crawls
+- Prüfungen, bei denen die Darstellung ausschließlich von JavaScript abhängt
+
+Verwende für Prüfungen der Browserdarstellung einen Browser-Ablauf, statt dich allein auf den abgerufenen Text zu verlassen.
+
+## 6. Empfohlener Einführungsablauf
+
+1. mit einem Preset oder einem Endpoint-Pfad beginnen
+2. Abrufmetadaten und Kürzungen in den Anfrageprotokollen prüfen
+3. den Prompt eingrenzen, wenn der abgerufene Inhalt zu umfangreich ist
+4. den Umfang erst erweitern, wenn die fundierte Extraktion stabil läuft
+
+## Weiterführend
+
+- [Websuchanfragen debuggen](./web-search-debugging.mdx)
+- [Tool-Aufrufe](../guides/tool-calling.mdx)
+- [Strukturiertes JSON mit Response Healing korrigieren](./response-healing-for-structured-json.mdx)

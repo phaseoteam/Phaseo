@@ -1,5 +1,6 @@
 "use server";
 
+import { getLocale } from "next-intl/server";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
 import { fetchSettingsAppsInitialData } from "@/lib/fetchers/internal/fetchSettingsAppsInitialData";
@@ -72,7 +73,7 @@ const readers = {
 	profile: readProfile,
 	notifications: readNotifications,
 	apps: fetchSettingsAppsInitialData,
-	"authorized-apps": fetchSettingsAuthorizedAppsInitialData,
+	"authorized-apps": async () => fetchSettingsAuthorizedAppsInitialData(await getLocale()),
 	"dynamic-routes": fetchSettingsDynamicRoutesInitialData,
 	keys: fetchSettingsKeysInitialData,
 	"management-api-keys": fetchSettingsManagementApiKeysInitialData,

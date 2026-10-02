@@ -1,0 +1,23 @@
+---
+title: "Generierung abrufen"
+sidebarTitle: "Generierung abrufen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /generations"
+---
+Ruft den gespeicherten Auditdatensatz für eine zu deinem Team gehörende `request_id` ab.
+
+Verwende:
+- `GET /v1/generations?id=<request_id>`
+
+Wenn das Gateway alle Anfragedetails dieser Generierung erfasst hat, enthält die Antwort zusätzlich:
+
+- `replay_supported`: Gibt an, ob eine wiedergabefertige Nutzlast verfügbar ist
+- `replay_request`: Der gespeicherte Anfrageinhalt, den du für eine kontrollierte Wiederholung an den ursprünglichen Endpunkt senden kannst
+
+Typischer Ablauf für eine Wiederholung:
+
+1. Lies den Generierungsdatensatz mit `GET /v1/generations?id=<request_id>`.
+2. Prüfe, ob `replay_supported === true` ist.
+3. Sende `replay_request` erneut an den durch `endpoint` angegebenen ursprünglichen Endpunkt, etwa `/v1/chat/completions` oder `/v1/responses`.
+
+

@@ -37,6 +37,7 @@ import {
 	type SpawnCloudId,
 } from "@/lib/experiments/spawnManifest";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type CopyTarget = "spawn-command" | "bootstrap-command";
 
@@ -52,6 +53,8 @@ function shellEscape(value: string): string {
 }
 
 export default function SpawnClient() {
+	const t = useTranslations("Product.experiments");
+	const tUi = useTranslations("Common.ui");
 	const defaultMatrix = getDefaultSpawnMatrixEntry();
 	const [selectedAgentId, setSelectedAgentId] = useState<SpawnAgentId>(
 		SPAWN_MANIFEST.defaultAgentId,
@@ -152,7 +155,7 @@ export default function SpawnClient() {
 			setCopyFeedback({
 				target,
 				status: "error",
-				message: "Clipboard access unavailable in this browser context.",
+				message: t("clipboardUnavailable"),
 			});
 			return;
 		}
@@ -161,13 +164,13 @@ export default function SpawnClient() {
 			setCopyFeedback({
 				target,
 				status: "success",
-				message: "Copied to clipboard.",
+				message: t("copied"),
 			});
 		} catch {
 			setCopyFeedback({
 				target,
 				status: "error",
-				message: "Copy failed. Select and copy manually.",
+				message: t("copyFailed"),
 			});
 		}
 	}
@@ -177,48 +180,45 @@ export default function SpawnClient() {
 			<div className="space-y-3">
 				<div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
 					<FlaskConical className="h-3.5 w-3.5" />
-					Experiment
+					{t("experimentTag")}
 				</div>
 				<div className="space-y-2">
-					<h1 className="text-3xl font-semibold tracking-tight">Spawn+ (BYOC)</h1>
+					<h1 className="text-3xl font-semibold tracking-tight">{t("spawnTitle")}</h1>
 					<p className="max-w-5xl text-sm text-zinc-600 dark:text-zinc-300 sm:text-base">
-						Spawn+ is a BYOC workflow. You run commands and provisioning scripts yourself, inside
-						your cloud account. Phaseo does not host your compute, VPC, storage, or cloud bill.
+						{t("spawnDescription")}
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
-					<Badge variant="outline">BYOC Infra</Badge>
-					<Badge variant="outline">CLI + Scripts</Badge>
-					<Badge variant="outline">No Provisioning API</Badge>
+					<Badge variant="outline">{t("byocInfrastructure")}</Badge>
+					<Badge variant="outline">{t("cliAndScripts")}</Badge>
+					<Badge variant="outline">{t("noProvisioningApi")}</Badge>
 				</div>
 			</div>
 
 			<Card>
 				<CardHeader>
-					<CardTitle>Boundary and Billing Model</CardTitle>
+					<CardTitle>{t("boundaryBilling")}</CardTitle>
 					<CardDescription>
-						Keep ownership clear so users know exactly what they pay for.
+						{t("boundaryDescription")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4 md:grid-cols-2">
 					<div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
 						<p className="mb-2 flex items-center gap-2 text-sm font-semibold">
 							<Cloud className="h-4 w-4" />
-							Your Cloud Account
+							{t("yourCloudAccount")}
 						</p>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							You own and pay for VM/GPU resources, networking, storage, and egress directly with
-							your cloud provider.
+							{t("cloudDescription")}
 						</p>
 					</div>
 					<div className="rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/40">
 						<p className="mb-2 flex items-center gap-2 text-sm font-semibold">
 							<Wallet className="h-4 w-4" />
-							Phaseo Billing
+							{t("phaseoBilling")}
 						</p>
 						<p className="text-sm text-zinc-600 dark:text-zinc-300">
-							Phaseo only bills for Gateway usage routed with your API key. No cloud resource
-							markup, no hidden infrastructure hosting.
+							{t("phaseoBillingDescription")}
 						</p>
 					</div>
 				</CardContent>
@@ -229,22 +229,22 @@ export default function SpawnClient() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
 							<ServerCog className="h-5 w-5" />
-							Build Your Spawn Command
+							{t("buildCommand")}
 						</CardTitle>
 						<CardDescription>
-							Pick an agent and cloud, then optionally pin model, region, and size.
+							{t("buildCommandDescription")}
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-2">
-								<Label htmlFor="spawn-agent">Agent</Label>
+								<Label htmlFor="spawn-agent">{t("agent")}</Label>
 								<Select
 									value={selectedAgent.id}
 									onValueChange={(value) => setSelectedAgentId(value as SpawnAgentId)}
 								>
 									<SelectTrigger id="spawn-agent">
-										<SelectValue placeholder="Select agent" />
+										<SelectValue placeholder={t("selectAgent")} />
 									</SelectTrigger>
 									<SelectContent>
 										{SPAWN_MANIFEST.agents.map((agent) => (
@@ -258,13 +258,13 @@ export default function SpawnClient() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="spawn-cloud">Cloud</Label>
+								<Label htmlFor="spawn-cloud">{t("cloud")}</Label>
 								<Select
 									value={selectedCloud.id}
 									onValueChange={(value) => setSelectedCloudId(value as SpawnCloudId)}
 								>
 									<SelectTrigger id="spawn-cloud">
-										<SelectValue placeholder="Select cloud" />
+										<SelectValue placeholder={t("selectCloud")} />
 									</SelectTrigger>
 									<SelectContent>
 										{cloudOptions.map((cloud) => (
@@ -278,13 +278,15 @@ export default function SpawnClient() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="spawn-model">Model (Optional)</Label>
+								<Label htmlFor="spawn-model">{t("optionalModel")}</Label>
 								<Select value={selectedModel} onValueChange={setSelectedModel}>
 									<SelectTrigger id="spawn-model">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="auto">Auto (default: {matrix.defaults.model})</SelectItem>
+						<SelectItem value="auto">
+							{tUi("requestBuilder.autoDefault", { model: matrix.defaults.model })}
+						</SelectItem>
 										{matrix.models.map((model) => (
 											<SelectItem key={model} value={model}>
 												{model}
@@ -295,13 +297,15 @@ export default function SpawnClient() {
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="spawn-region">Region (Optional)</Label>
+								<Label htmlFor="spawn-region">{t("optionalRegion")}</Label>
 								<Select value={selectedRegion} onValueChange={setSelectedRegion}>
 									<SelectTrigger id="spawn-region">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectItem value="auto">Auto (default: {matrix.defaults.region})</SelectItem>
+						<SelectItem value="auto">
+							{tUi("requestBuilder.autoDefault", { model: matrix.defaults.region })}
+						</SelectItem>
 										{matrix.regions.map((region) => (
 											<SelectItem key={region} value={region}>
 												{region}
@@ -312,17 +316,18 @@ export default function SpawnClient() {
 							</div>
 
 							<div className="space-y-2 sm:col-span-2">
-								<Label htmlFor="spawn-size">Size (Optional)</Label>
+								<Label htmlFor="spawn-size">{t("optionalSize")}</Label>
 								<Select value={selectedSize} onValueChange={setSelectedSize}>
 									<SelectTrigger id="spawn-size">
 										<SelectValue />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="auto">
-											Auto (default:{" "}
-											{matrix.sizes.find((size) => size.id === matrix.defaults.size)?.label ??
-												matrix.defaults.size}
-											)
+							{tUi("requestBuilder.autoDefault", {
+								model:
+									matrix.sizes.find((size) => size.id === matrix.defaults.size)?.label ??
+									matrix.defaults.size,
+							})}
 										</SelectItem>
 										{matrix.sizes.map((size) => (
 											<SelectItem key={size.id} value={size.id}>
@@ -337,7 +342,7 @@ export default function SpawnClient() {
 						<div className="space-y-5">
 							<div className="space-y-2">
 								<div className="flex items-center justify-between gap-2">
-									<p className="text-sm font-medium">CLI Command</p>
+									<p className="text-sm font-medium">{t("cliCommand")}</p>
 									<Button
 										type="button"
 										size="sm"
@@ -350,7 +355,7 @@ export default function SpawnClient() {
 										) : (
 											<Copy className="h-4 w-4" />
 										)}
-										Copy
+										{t("copy")}
 									</Button>
 								</div>
 								<pre className="overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100">
@@ -367,13 +372,13 @@ export default function SpawnClient() {
 								>
 									{copyFeedback?.target === "spawn-command"
 										? copyFeedback.message
-										: `Runs directly in your terminal with the ${SPAWN_MANIFEST.cliBinary} binary.`}
+										: t("runsInTerminal", { binary: SPAWN_MANIFEST.cliBinary })}
 								</p>
 							</div>
 
 							<div className="space-y-2">
 								<div className="flex items-center justify-between gap-2">
-									<p className="text-sm font-medium">Run Without Install (One-Liner Script)</p>
+								<p className="text-sm font-medium">{t("runWithoutInstall")}</p>
 									<Button
 										type="button"
 										size="sm"
@@ -388,7 +393,7 @@ export default function SpawnClient() {
 										) : (
 											<Copy className="h-4 w-4" />
 										)}
-										Copy
+										{t("copy")}
 									</Button>
 								</div>
 								<pre className="overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-100">
@@ -405,7 +410,7 @@ export default function SpawnClient() {
 								>
 									{copyFeedback?.target === "bootstrap-command"
 										? copyFeedback.message
-										: "Downloads and runs the bootstrap script, then forwards your command arguments."}
+										: t("bootstrapDescription")}
 								</p>
 							</div>
 						</div>
@@ -417,15 +422,15 @@ export default function SpawnClient() {
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-base">
 								<Wrench className="h-4 w-4" />
-								Prerequisites
+								{t("prerequisites")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Cloud CLI auth configured in your local shell session.</li>
-								<li>IAM/role permissions to create, update, and destroy compute resources.</li>
-								<li>Gateway API key exported as an environment variable before launch.</li>
-								<li>Region quotas checked for the selected machine size.</li>
+								<li>{t("prerequisiteCloudCliAuth")}</li>
+								<li>{t("prerequisiteIamPermissions")}</li>
+								<li>{t("prerequisiteGatewayApiKey")}</li>
+								<li>{t("prerequisiteRegionQuota")}</li>
 							</ul>
 						</CardContent>
 					</Card>
@@ -434,15 +439,15 @@ export default function SpawnClient() {
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-base">
 								<AlertTriangle className="h-4 w-4" />
-								Troubleshooting
+								{t("troubleshooting")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Permission failures: verify active cloud profile and role assumptions.</li>
-								<li>Capacity failures: switch region or downsize from large to medium.</li>
-								<li>Model route issues: pin a specific model instead of auto-selection.</li>
-								<li>Bootstrap failures: inspect the script URL and run with shell debug flags.</li>
+								<li>{t("troubleshootPermissions")}</li>
+								<li>{t("troubleshootCapacity")}</li>
+								<li>{t("troubleshootModelRoute")}</li>
+								<li>{t("troubleshootBootstrap")}</li>
 							</ul>
 						</CardContent>
 					</Card>
@@ -451,15 +456,15 @@ export default function SpawnClient() {
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-base">
 								<TerminalSquare className="h-4 w-4" />
-								Teardown Reminders
+								{t("teardown")}
 							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<ul className="list-disc space-y-2 pl-5 text-sm text-zinc-600 dark:text-zinc-300">
-								<li>Destroy compute and networking resources after each experiment run.</li>
-								<li>Revoke temporary credentials and rotate cloud keys used for provisioning.</li>
-								<li>Review cloud billing dashboards for idle disks, IPs, and instances.</li>
-								<li>Phaseo billing remains scoped to Gateway API usage only.</li>
+								<li>{t("teardownResources")}</li>
+								<li>{t("teardownCredentials")}</li>
+								<li>{t("teardownBillingReview")}</li>
+								<li>{t("teardownGatewayBilling")}</li>
 							</ul>
 						</CardContent>
 					</Card>

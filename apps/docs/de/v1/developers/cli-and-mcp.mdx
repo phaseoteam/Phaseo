@@ -1,0 +1,103 @@
+---
+title: "CLI und MCP"
+description: "Nutze die Phaseo CLI für Terminalautomatisierung oder verbinde den authentifizierten MCP-Server mit KI-Clients, um aktuelle Phaseo-Daten lesend abzurufen."
+icon: "square-terminal"
+---
+
+# CLI und MCP
+
+Nutze Phaseo im Terminal mit der CLI oder verbinde einen KI-Client über MCP. Beide verwenden Phaseo OAuth, sind aber für unterschiedliche Aufgaben gedacht.
+
+| Schnittstelle | Am besten für | Zugriff |
+| --- | --- | --- |
+| Phaseo CLI | Terminal-Workflows, CI, Verwaltung und Automatisierung | Lesen und Schreiben, beschränkt durch deine Scopes und Workspace-Rolle |
+| Phaseo MCP | Live-Phaseo-Daten in Codex, Claude, ChatGPT und anderen MCP-Clients | Authentifiziert und schreibgeschützt |
+| Docs MCP | Aktuelle Phaseo-Dokumentation beim Programmieren nachschlagen | Nur Dokumentation und schreibgeschützt |
+
+## Phaseo CLI
+
+Verwende die CLI, um Phaseo-Ressourcen zu erstellen oder zu ändern, Workflows zu automatisieren oder Kontodaten in einer Shell zu prüfen.
+
+### Installieren und anmelden
+
+```bash
+npm install -g @phaseo/cli
+phaseo login
+phaseo whoami
+```
+
+Interaktive Terminals verwenden standardmäßig Browser-OAuth. Für SSH, CI und Umgebungen ohne Benutzeroberfläche verwendest du die Geräteautorisierung:
+
+```bash
+phaseo login --device-code
+```
+
+### Häufige Workflows
+
+```bash
+phaseo models list --limit 20
+phaseo pricing models
+phaseo credits get
+phaseo workspaces list
+phaseo keys create --name "Local development"
+phaseo logs list --since 1h --status error --json
+```
+
+Verwende `--json`, wenn ein anderes Tool oder Skript strukturierte Ausgaben benötigt. Geheimnisse werden nur von Befehlen angezeigt, die sie ausdrücklich erstellen oder offenlegen.
+
+<Card title="Phaseo-CLI-Leitfaden" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
+	Hier findest du Authentifizierungsoptionen, Schlüsselverwaltung, Workspaces, Guardrails und den vollständigen Befehlsablauf.
+</Card>
+
+## Phaseo MCP
+
+Verbinde den Phaseo-MCP-Server, wenn ein KI-Client Fragen mit aktuellen Daten zu Modellen, Preisen, Anbietern, Nutzung und Workspaces beantworten soll.
+
+### Server-URL
+
+`https://mcp.phaseo.app/mcp`
+
+### Von Codex aus verbinden
+
+```bash
+codex mcp add phaseo --url https://mcp.phaseo.app/mcp
+codex mcp login phaseo
+```
+
+Der Anmeldebefehl öffnet Phaseo OAuth. Wähle einen Workspace aus, genehmige die angeforderten Leseberechtigungen und bestätige anschließend die Verbindung:
+
+```bash
+codex mcp list
+```
+
+Füge für einen anderen MCP-Client dieselbe URL als entfernten Streamable-HTTP-Server hinzu. Der Client muss OAuth Discovery, den Authorization-Code-Flow mit S256 PKCE und den MCP-Parameter `resource` unterstützen.
+
+### Über MCP verfügbare Daten
+
+- Modelle, Anbieter, Organisationen, Endpunktfamilien und Preise
+- Guthaben, Aktivität, Analysen, Anfrageprotokolle und Generierungsmetadaten
+- Workspaces, Mitglieder, Voreinstellungen, Einstellungen und Guardrails
+- Metadaten zu API-Schlüsseln, Management-Schlüsseln, OAuth-Anwendungen und Webhooks ohne geheime Werte
+
+MCP führt keine kostenpflichtigen Inferenzen aus, gibt keine geheimen Werte zurück und ändert keine Phaseo-Ressourcen. Nutze dafür das Dashboard, die CLI oder die Management-API.
+
+## Docs MCP
+
+Docs MCP ist ein separater Endpunkt zum Suchen und Lesen der Phaseo-Dokumentation. Er greift nicht auf dein Konto oder deinen Workspace zu.
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+Verwende ihn, wenn ein Coding-Assistent aktuelle API-Beispiele, Integrationshinweise oder Feature-Dokumentation benötigt.
+
+<Card title="Docs-MCP-Leitfaden" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+	Verbinde den Dokumentationsserver mit Codex, Claude Code, Cursor, OpenCode oder VS Code.
+</Card>
+
+## Die passende Schnittstelle auswählen
+
+- Verwende die **CLI**, um Schlüssel zu erstellen, Einstellungen zu ändern, Workspaces zu verwalten oder administrative Abläufe zu automatisieren.
+- Verwende **Phaseo MCP**, um einem KI-Client sicheren Zugriff auf aktuelle Phaseo-Daten zu geben.
+- Verwende **Docs MCP**, um einem Coding-Assistenten aktuelle Phaseo-Dokumentation bereitzustellen, ohne Kontozugriff zu gewähren.
+

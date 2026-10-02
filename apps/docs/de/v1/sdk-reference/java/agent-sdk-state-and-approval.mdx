@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "Status und Genehmigung"
+description: "Pausiere Java-Agenten für menschliche Entscheidungen und setze den anwendungseigenen Zustand fort."
+---
+
+Gib `HumanReviewRequest` über `AgentDefinition.humanReview` zurück, um einen allgemeinen Prüfpunkt einzurichten. Tool-Genehmigungen und manuelle Abläufe speichern die exakten Aufruf-IDs im pausierten Ergebnis.
+
+Setze den Lauf mit `Agent.continueRun(...)` fort und übergib:
+
+- `ToolDecision`-Einträge für Genehmigungen oder Ablehnungen
+- `ToolOutput`-Einträge für manuelle Tools
+- menschliche Eingaben für eine allgemeine Prüfungspause
+- ein serialisiertes `RunResult` oder eine Lauf-ID mit `StateAccessor`
+
+Das SDK ist nicht von gehostetem Agent-SDK-Zustand abhängig. Implementiere `StateAccessor`, wenn ein Lauf Anfragen oder Dienstneustarts überdauern muss.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

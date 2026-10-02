@@ -11,6 +11,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "next-intl";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
@@ -32,6 +33,8 @@ export default function RelativeDateBadge({
 	date,
 	className,
 }: RelativeDateBadgeProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const [now, setNow] = useState(() => new Date());
 
 	useEffect(() => {
@@ -44,6 +47,31 @@ export default function RelativeDateBadge({
 
 	const relativeDate = describeDetailedRelativeCalendarDate(date, now);
 	if (!relativeDate) return null;
+	const absoluteDays = Math.abs(relativeDate.dayDifference);
+	const relativeUnit: Intl.RelativeTimeFormatUnit =
+		absoluteDays < 14
+			? "day"
+			: absoluteDays < 28
+				? "week"
+				: absoluteDays < 730
+					? "month"
+					: "year";
+	const relativeValue =
+		relativeUnit === "day"
+			? absoluteDays
+			: relativeUnit === "week"
+				? Math.round(absoluteDays / 7)
+				: relativeUnit === "month"
+					? Math.round(absoluteDays / 30.4375)
+					: Math.round(absoluteDays / 365.25);
+	const relativeLabel = new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+		Math.sign(relativeDate.dayDifference) * relativeValue,
+		relativeUnit,
+	);
+	const detailedLabel = new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+		relativeDate.dayDifference,
+		"day",
+	);
 
 	return (
 		<HoverCard openDelay={140} closeDelay={80}>
@@ -57,22 +85,21 @@ export default function RelativeDateBadge({
 						className,
 					)}
 				>
-					{relativeDate.label}
+					{relativeLabel}
 				</span>
 			</HoverCardTrigger>
 			<HoverCardContent align="end" className="w-72 p-3">
 				<div className="space-y-1">
 					<p className="text-xs font-medium text-muted-foreground">
-						Relative Time
+						{t("relativeTime")}
 					</p>
-					<p className="text-sm font-semibold">{relativeDate.detailedLabel}</p>
+					<p className="text-sm font-semibold">{detailedLabel}</p>
 					<p className="text-xs text-muted-foreground">
-						<DisplayNumber value={relativeDate.totalDays} /> total day
-						{relativeDate.totalDays === 1 ? "" : "s"}
+						{t("totalDays", { count: relativeDate.totalDays })}{" "}
 						{relativeDate.dayDifference < 0
-							? " elapsed"
+							? t("elapsed")
 							: relativeDate.dayDifference > 0
-								? " remaining"
+								? t("remaining")
 								: ""}
 					</p>
 				</div>

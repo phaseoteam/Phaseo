@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 Go SDK 获取文件元数据和文件内容。"
+---
+
+**方法**：`client.ListFiles()`、`client.RetrieveFile()`、`client.RetrieveFileContent()`。
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+封装中提供了 `ListFiles()`，但 `GET /files` 目前会返回 `file_list_not_supported_with_shared_gateway_key`
+使用共享网关密钥时。请保存已上传文件的 ID，并直接获取文件。
+</Note>
+
+<Note>
+Go 封装目前尚未为 `POST /files` 提供专用的 multipart 上传辅助方法。请直接使用 REST 或生成的客户端
+如果需要试验文件上传流程，请使用它们。
+</Note>
+

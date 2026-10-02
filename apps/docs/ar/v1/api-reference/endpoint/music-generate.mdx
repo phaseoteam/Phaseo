@@ -1,0 +1,69 @@
+---
+title: "إنشاء موسيقى"
+sidebarTitle: "إنشاء موسيقى"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+إنشاء الموسيقى عبر واجهة API واحدة مستقلة عن المزوّد. ويتولى Phaseo معالجة الاستجابات المتزامنة واستطلاع قوائم انتظار المزوّدين في الخلفية.
+
+عند اكتمال التوليد، تتضمن الاستجابة `audio_url` أو `audio_base64`. وإذا أعاد المزوّد مهمة غير نهائية، فاستخدم `id` نفسه من الاستجابة مع `GET /music/generate/{music_id}`.
+
+## بنية الطلب
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## خيارات Suno
+
+- `suno.customMode` (قيمة منطقية، الافتراضي `false`)
+- `suno.instrumental` (قيمة منطقية، الافتراضي `false`)
+- `suno.prompt` (تجاوز اختياري لـ `prompt` في المستوى الأعلى)
+- `suno.style`, `suno.title` (مطلوب عندما تكون `customMode = true`)
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## قواعد التحقق
+
+- عندما تكون `customMode = false`، يكون `prompt` مطلوبًا.
+- عندما تكون `customMode = true`، يكون كل من `style` و`title` مطلوبًا.
+- عندما تكون `customMode = true` و`instrumental = false`، يكون `prompt` مطلوبًا.
+
+تعيد أخطاء التحقق `400` مع:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## الاستجابة
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` هو معرّف طلب Phaseo الثابت. استخدمه لاسترجاع الطلب عبر `GET /music/generate/{music_id}`.
+- `nativeResponseId` هو معرّف مزود الخدمة الأصلي، ويُستخدم لربط الطلب بالمزود وطلب الدعم منه.
+- يمكن أن تكون قيمة `status` هي `queued` أو `in_progress` أو `completed` أو `failed`.
+- قد يتضمن `usage` الحقل `output_audio_seconds` عندما يبلغ المزود عن مدة الصوت المُنشأ.
+

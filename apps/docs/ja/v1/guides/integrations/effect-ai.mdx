@@ -1,0 +1,76 @@
+---
+title: "Effect AI SDK"
+icon: "square-function"
+description: "Effectを使うTypeScriptアプリケーションからPhaseoを利用します。"
+---
+
+アプリケーションですでにEffectを使っており、EffectのサービスやワークフローからPhaseoを利用したい場合に、このガイドを使います。
+
+## 状況
+
+PhaseoはOpenAI互換のHTTPエンドポイントを提供します。Effectの公式プロバイダーパッケージが必要なプロバイダーに直接対応していれば便利です。インストール済みのEffect OpenAIパッケージにBase URLオプションがない場合は、Effect HTTPクライアントからPhaseoを呼ぶか、[OpenAI SDK](./openai-sdk.mdx)を独自のEffectレイヤーでラップします。
+
+## インストール
+
+```bash
+npm install effect @effect/platform
+```
+
+## Effect HTTPでPhaseoを呼び出す
+
+```ts
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
+import { Config, Effect, Redacted } from "effect";
+
+const generate = Effect.gen(function* () {
+	const apiKey = yield* Config.redacted("PHASEO_API_KEY");
+	const client = yield* HttpClient.HttpClient;
+
+	const request = HttpClientRequest.post(
+		"https://api.phaseo.app/v1/chat/completions",
+	).pipe(
+		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+		HttpClientRequest.jsonBody({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "Reply with only: ok" }],
+		}),
+	);
+
+	return yield* client.execute(request).pipe(
+		Effect.flatMap((response) => response.json),
+	);
+});
+
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
+```
+
+## OpenAI SDKをEffectサービスに組み込む
+
+他の場所ですでに公式OpenAI SDKを使っている場合は、Phaseoの設定を1つのレイヤーにまとめます。
+
+```ts
+import OpenAI from "openai";
+import { Config, Effect } from "effect";
+
+const makeClient = Effect.gen(function* () {
+	const apiKey = yield* Config.string("PHASEO_API_KEY");
+
+	return new OpenAI({
+		apiKey,
+		baseURL: "https://api.phaseo.app/v1",
+	});
+});
+```
+
+## 注意事項
+
+- OpenAI互換の呼び出しには`https://api.phaseo.app/v1`を使います。
+- モデルIDは`openai/gpt-5-nano`のようにPhaseo形式で指定します。
+- アプリ全体で共通のプロバイダー抽象化を使う場合は、独自のEffectレイヤーを作成します。
+- 本番投入前に、実際に使用するEffectパッケージのバージョンでストリーミングとツール呼び出しをテストします。
+
+## 関連項目
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [ストリーミング](../streaming.mdx)

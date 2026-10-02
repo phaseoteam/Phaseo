@@ -1,0 +1,73 @@
+---
+title: "Anthropic Claude Opus 5"
+description: "Wichtige Hinweise zur Einführung von Claude Opus 5 für Reasoning mit langem Kontext, Programmierung und Agenten-Workloads."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 5
+
+Mit diesem Leitfaden führen Sie `anthropic/claude-opus-5` sicher in der Produktion ein.
+
+Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufende agentische Programmierung und hochautonome Abläufe. Der Preis entspricht weiterhin Opus 4.8. Das Modell unterstützt ein Kontextfenster von einer Million Tokens und bis zu 128.000 Ausgabetokens.
+
+## Schnelleinstieg für die Migration
+
+1. Ändern Sie die Modell-ID zu `anthropic/claude-opus-5` und lassen Sie die übrige Anfrage unverändert.
+2. Wiederholen Sie Ihre Produktionsauswertungen für Prompts, Tools und strukturierte Ausgaben.
+3. Erfassen Sie Latenz, Tokenverbrauch und Aufgabenkosten für lange Kontexte und hohe Aufwandsstufen neu.
+4. Testen Sie das Modell schrittweise mit Claude Opus 4.8 als Fallback, bevor Sie die Standardroute ändern.
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Review this implementation plan and identify the highest-risk assumptions."
+    }
+  ]
+}
+```
+
+## Neuerungen
+
+- Die Phaseo-Modell-ID lautet `anthropic/claude-opus-5`.
+- Das Kontextfenster umfasst eine Million Tokens.
+- Die maximale Ausgabe beträgt 128.000 Tokens.
+- Das Modell ist auf längeres Reasoning, Programmierung und autonome Tool-Workflows ausgelegt.
+- Der Preis bleibt auf dem Niveau von Claude Opus 4.8.
+
+## Was Sie testen sollten
+
+### Prompts und Ausgaben
+
+- Befolgung von Anweisungen bei Ihren längsten System-Prompts.
+- Erfolgsraten strukturierter Ausgaben und Schemas.
+- Antwortlänge und Beendigungsverhalten.
+- Regressionen bei Prompts, die speziell für Claude Opus 4.8 optimiert wurden.
+
+### Tools und Agenten
+
+- Tool-Auswahl und Qualität der Argumente.
+- Wiederherstellung nach Tool-Fehlern oder Teilergebnissen.
+- Abschlussrate bei lang laufenden Aufgaben.
+- Berechtigungs- und Freigabegrenzen in hochautonomen Workflows.
+
+### Betrieb
+
+- Latenz und Tokenverbrauch auf jeder angebotenen Aufwandsstufe.
+- Kontextfensternutzung bei langen Dokumenten und Agenten-Traces.
+- Kosten pro erfolgreich abgeschlossener Aufgabe.
+- Fallback-Verhalten bei Zeitüberschreitung oder Fehler der primären Route.
+
+## Sicherer Rollout
+
+1. Halten Sie Claude Opus 4.8 während der Auswertung als Fallback verfügbar.
+2. Führen Sie repräsentativen Produktions-Traffic parallel aus, bevor Nutzeranfragen bedient werden.
+3. Testen Sie schrittweise nach Workload, statt alle Opus-Routen gleichzeitig umzustellen.
+4. Erhöhen Sie den Anteil erst, wenn Qualität, Latenz, Kosten und Tool-Sicherheit Ihre Ziele erfüllen.
+
+## Quellen
+
+- [Ankündigung von Claude Opus 5](https://www.anthropic.com/news/claude-opus-5)
+- [Systemkarte zu Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)

@@ -1,0 +1,10 @@
+---
+title: "Supprimer une invitation de l’espace de travail"
+sidebarTitle: "Supprimer l’invitation"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /workspaces/{id}/invites/{invite_id}"
+description: "Révoque définitivement une invitation de l’espace de travail."
+---
+Ce point de terminaison nécessite une clé API de gestion avec `workspaces:write`.
+
+La suppression d’une invitation ne retire pas les membres qui l’ont utilisée pour rejoindre l’espace de travail.

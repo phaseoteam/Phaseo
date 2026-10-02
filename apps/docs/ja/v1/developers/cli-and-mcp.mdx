@@ -1,0 +1,103 @@
+---
+title: "CLI と MCP"
+description: "Phaseo CLI で端末作業を自動化するか、認証済み MCP サーバーを AI クライアントに接続して Phaseo の最新データを読み取り専用で利用できます。"
+icon: "square-terminal"
+---
+
+# CLI と MCP
+
+CLI を使ってターミナルから Phaseo を操作するか、MCP 経由で AI クライアントを接続します。どちらも Phaseo OAuth を使いますが、用途は異なります。
+
+| インターフェース | 主な用途 | アクセス |
+| --- | --- | --- |
+| Phaseo CLI | ターミナルでの作業、CI、管理、自動化 | スコープとワークスペースのロールに応じた読み取り・書き込み |
+| Phaseo MCP | Codex、Claude、ChatGPT などの MCP クライアントから参照できる Phaseo の最新データ | 認証済み・読み取り専用 |
+| Docs MCP | 開発中に Phaseo の最新ドキュメントを検索する | ドキュメントのみ・読み取り専用 |
+
+## Phaseo CLI
+
+Phaseo CLI は、Phaseo リソースの作成・変更、ワークフローのスクリプト化、シェルからのアカウント情報の確認に使用します。
+
+### インストールしてログイン
+
+```bash
+npm install -g @phaseo/cli
+phaseo login
+phaseo whoami
+```
+
+対話型ターミナルでは、デフォルトでブラウザー OAuth を使用します。SSH、CI、ヘッドレス環境ではデバイス認証を使用してください。
+
+```bash
+phaseo login --device-code
+```
+
+### よく使う操作
+
+```bash
+phaseo models list --limit 20
+phaseo pricing models
+phaseo credits get
+phaseo workspaces list
+phaseo keys create --name "Local development"
+phaseo logs list --since 1h --status error --json
+```
+
+別のツールやスクリプトで構造化出力が必要な場合は `--json` を使用します。シークレット値を表示するのは、明示的に作成または表示するコマンドだけです。
+
+<Card title="Phaseo CLI ガイド" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
+	認証方法、キー管理、ワークスペース、ガードレール、コマンドの全手順を確認できます。
+</Card>
+
+## Phaseo MCP
+
+モデル、料金、プロバイダー、使用量、ワークスペースの最新データを使って AI クライアントに質問へ回答させるには、Phaseo MCP サーバーを接続します。
+
+### サーバー URL
+
+`https://mcp.phaseo.app/mcp`
+
+### Codex から接続する
+
+```bash
+codex mcp add phaseo --url https://mcp.phaseo.app/mcp
+codex mcp login phaseo
+```
+
+ログインコマンドで Phaseo OAuth が開きます。ワークスペースを選択し、要求された読み取りスコープを承認して接続を確認します。
+
+```bash
+codex mcp list
+```
+
+別の MCP クライアントには同じ URL をリモート Streamable HTTP サーバーとして追加します。OAuth Discovery、S256 PKCE を使った認可コード、MCP `resource` パラメーターに対応している必要があります。
+
+### MCP が読み取れるデータ
+
+- モデル、プロバイダー、組織、エンドポイント群、料金
+- クレジット、アクティビティ、分析、リクエストログ、生成メタデータ
+- ワークスペース、メンバー、プリセット、設定、ガードレール
+- API キー、管理キー、OAuth アプリケーション、Webhook のメタデータ（シークレット値を除く）
+
+MCP は課金対象の推論を実行せず、シークレット値を返さず、Phaseo リソースを変更しません。これらの操作にはダッシュボード、CLI、Management API を使用してください。
+
+## Docs MCP
+
+Docs MCP は Phaseo ドキュメントの検索・参照用の別エンドポイントです。アカウントやワークスペースにはアクセスしません。
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+コーディングアシスタントに最新の API 例、統合ガイド、機能ドキュメントを参照させる場合に使用します。
+
+<Card title="Docs MCP ガイド" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+	ドキュメントサーバーを Codex、Claude Code、Cursor、OpenCode、VS Code に接続します。
+</Card>
+
+## 適切なインターフェースを選ぶ
+
+- キーの作成、設定変更、ワークスペース管理、管理タスクの自動化には **CLI** を使用します。
+- AI クライアントに Phaseo の最新データへの安全なアクセスを提供するには **Phaseo MCP** を使用します。
+- アカウントにアクセスさせず、コーディングアシスタントに Phaseo の最新ドキュメントを提供するには **Docs MCP** を使用します。
+

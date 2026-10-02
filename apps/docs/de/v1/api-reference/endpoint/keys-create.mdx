@@ -1,0 +1,13 @@
+---
+title: "API-Schlüssel erstellen"
+sidebarTitle: "API-Schlüssel erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /keys"
+description: "Einen neuen API-Schlüssel im authentifizierten Arbeitsbereich erstellen."
+---
+<Note>
+Für diesen Endpunkt ist ein Management-API-Schlüssel erforderlich. Standard-Gateway-API-Schlüssel werden nicht akzeptiert.
+</Note>
+
+Der API-Schlüssel im Klartext wird nur bei der Erstellung einmal zurückgegeben. Die Kompatibilitätsfelder `limit`, `limit_reset` und `include_byok_in_limit` werden akzeptiert; Phaseo behandelt `include_byok_in_limit` derzeit ausschließlich aus Kompatibilitätsgründen und rechnet BYOK nie auf dieses Schlüssellimit an.
+

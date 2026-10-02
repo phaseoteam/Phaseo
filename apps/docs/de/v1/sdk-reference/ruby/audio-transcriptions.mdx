@@ -1,0 +1,31 @@
+---
+icon: "mic"
+title: "STT (Sprache-zu-Text)"
+description: "Rufe /audio/transcriptions mit dem Ruby-SDK auf."
+---
+
+**Methoden**: `client.generate_transcription(...)` oder `client.create_transcription(...)`.
+
+### Beispiel
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+transcript = client.generate_transcription(
+  model: 'openai/gpt-4o-transcribe',
+  audio_b64: 'base64_audio_data',
+  language: 'en'
+)
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines transkriptionsfähigen Modells.
+- `audio_url` oder `audio_b64` (erforderlich): Audiodaten (URL oder Base64).
+- `language`: Hinweis auf die Sprache (z. B. `en`).
+- `prompt`: optionaler Kontext zur Verbesserung der Genauigkeit.
+- `temperature` (0–2): Zufälligkeit der Stichprobenauswahl.
+- `response_format`: `json`, `text`, `srt`, `verbose_json` usw.
+
+### Rückgabewert
+`AudioTranscriptionResponse`
+

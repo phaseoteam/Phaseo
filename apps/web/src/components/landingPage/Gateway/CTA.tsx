@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 const SALES_HREF = "/sign-up";
 const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
 export function CTA() {
+	const t = useTranslations("Site.gatewayMarketing.cta");
 	return (
 		<section className="mb-8 py-8">
 			<div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -13,23 +15,21 @@ export function CTA() {
 					<div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
 						<div>
 							<p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
-								Ready to ship
+								{t("eyebrow")}
 							</p>
 							<h2 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl lg:text-5xl">
-								Move the product surface and the routing layer onto the same system.
+								{t("title")}
 							</h2>
 
 							<p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-700 dark:text-zinc-300">
-								Use the open database to choose models, then put live traffic
-								through a gateway built for latency, failover, and cleaner cost
-								controls.
+								{t("description")}
 							</p>
 						</div>
 
 						<div className="space-y-5">
 							<div className="space-y-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-								<p>Keep the same request shape while changing providers underneath.</p>
-								<p>Use the database for selection, then move straight into live routing.</p>
+								<p>{t("benefitOne")}</p>
+								<p>{t("benefitTwo")}</p>
 							</div>
 
 							<div className="flex flex-wrap items-center gap-4">
@@ -39,7 +39,7 @@ export function CTA() {
 									className="h-12 gap-3 bg-zinc-900 px-6 text-sm font-semibold text-white hover:bg-zinc-800"
 								>
 									<Link href={SALES_HREF}>
-										Create free account
+										{t("createAccount")}
 										<ArrowRight className="h-5 w-5" />
 									</Link>
 								</Button>
@@ -51,7 +51,7 @@ export function CTA() {
 								>
 									<Link href={DOCS_HREF}>
 										<BookOpen className="h-5 w-5" />
-										Quickstart
+										{t("quickstart")}
 									</Link>
 								</Button>
 							</div>
@@ -62,4 +62,3 @@ export function CTA() {
 		</section>
 	);
 }
-

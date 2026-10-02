@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	Table,
@@ -34,15 +35,16 @@ export default function ErrorsTable({
 	rows: ErrorRow[];
 	onSelect: (row: ErrorRow) => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	return (
 		<div className="overflow-auto">
 			<Table>
 				<TableHeader>
 					<TableRow className="h-8">
-						<TableHead className="py-1">Time</TableHead>
-						<TableHead className="py-1">Model</TableHead>
-						<TableHead className="py-1">Status</TableHead>
+						<TableHead className="py-1">{t("strings.Time" as never)}</TableHead>
+						<TableHead className="py-1">{t("strings.Model" as never)}</TableHead>
+						<TableHead className="py-1">{t("strings.Status" as never)}</TableHead>
 						<TableHead className="w-[40px] py-1" />
 					</TableRow>
 				</TableHeader>
@@ -75,7 +77,7 @@ export default function ErrorsTable({
 									variant="ghost"
 									size="icon"
 									onClick={() => onSelect(r)}
-									aria-label="View details"
+									aria-label={t("strings.View details" as never)}
 								>
 									<ChevronRight className="h-4 w-4" />
 								</Button>
