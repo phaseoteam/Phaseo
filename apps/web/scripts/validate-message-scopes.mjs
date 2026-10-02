@@ -1,20 +1,21 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
+import assert from 'node:assert/strict';
 
 // Read-only dependency audit. Resolve route-local imports and literal
 // translation calls; computed runtime keys still require review.
 const root = path.resolve('src');
 const cache = new Map();
-function fileInfo(file) {
+function fileInfo(file, sourceOverride) {
     if (cache.has(file))
         return cache.get(file);
-    const text = fs.readFileSync(file, 'utf8');
+    const text = sourceOverride ?? fs.readFileSync(file, 'utf8');
     const tree = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
     const first = tree.statements[0];
     const serverAction = first && ts.isExpressionStatement(first)
         && ts.isStringLiteral(first.expression) && first.expression.text === 'use server';
-    const info = { imports: [], keys: [], scopes: [], serverAction };
+    const info = { imports: [], keys: [], namespaces: [], scopes: [], serverAction };
     cache.set(file, info);
     function resolve(spec) {
         let bases = [];
@@ -30,6 +31,10 @@ function fileInfo(file) {
                     return base + suffix;
     }
     function visit(node) {
+        if (ts.isCallExpression(node) && node.expression.getText(tree) === 'useTranslations'
+            && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) {
+            info.namespaces.push(node.arguments[0].text);
+        }
         if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier) && !(ts.isImportDeclaration(node) && node.importClause?.isTypeOnly)) {
             const p = resolve(node.moduleSpecifier.text);
             if (p)
@@ -57,13 +62,19 @@ function fileInfo(file) {
                 scope = scope.parent;
             function calls(n) {
                 if (ts.isCallExpression(n) && (n.expression.getText(tree) === name || n.expression.getText(tree) === name + '.rich' || n.expression.getText(tree) === name + '.has' || n.expression.getText(tree) === name + '.raw')) {
-                    let key = n.arguments[0];
-                    if (key && ts.isAsExpression(key))
-                        key = key.expression;
-                    if (key && (ts.isStringLiteral(key) || ts.isNoSubstitutionTemplateLiteral(key)))
-                        info.keys.push([namespace, key.text].filter(Boolean).join('.'));
-                    else if (key && ts.isTemplateExpression(key))
-                        info.keys.push([namespace, key.head.text.replace(/\.$/, '')].filter(Boolean).join('.') + '.*');
+                    function addKey(key) {
+                        if (!key) return;
+                        if (ts.isAsExpression(key) || ts.isParenthesizedExpression(key)) addKey(key.expression);
+                        else if (ts.isConditionalExpression(key)) {
+                            addKey(key.whenTrue);
+                            addKey(key.whenFalse);
+                        } else if (ts.isStringLiteral(key) || ts.isNoSubstitutionTemplateLiteral(key)) {
+                            info.keys.push([namespace, key.text].filter(Boolean).join('.'));
+                        } else if (ts.isTemplateExpression(key)) {
+                            info.keys.push([namespace, key.head.text.replace(/\.$/, '')].filter(Boolean).join('.') + '.*');
+                        }
+                    }
+                    addKey(n.arguments[0]);
                 }
                 ts.forEachChild(n, calls);
             }
@@ -73,6 +84,19 @@ function fileInfo(file) {
     }
     visit(tree);
     return info;
+}
+
+if (process.argv.includes('--self-test')) {
+    const fixture = fileInfo('scope-audit-fixture.tsx', `
+        function CopyButton() {
+            const t = useTranslations("Feature.copyButton");
+            return t(copied ? "copied" : "copy");
+        }
+    `);
+    assert.deepEqual(fixture.namespaces, ['Feature.copyButton']);
+    assert.deepEqual(fixture.keys.sort(), ['Feature.copyButton.copied', 'Feature.copyButton.copy']);
+    console.log('Message scope audit self-test passed.');
+    process.exit(0);
 }
 function graph(entries) {
     const visited = new Set();
@@ -107,10 +131,16 @@ for (const page of routes) {
     }
     const scopes = [...shell, ...entries.flatMap(f => fileInfo(f).scopes)];
     const missing = [];
-    for (const f of graph(entries))
+    for (const f of graph(entries)) {
+        for (const namespace of fileInfo(f).namespaces) {
+            if (!scopes.some(scope => namespace === scope || namespace.startsWith(scope + '.') || scope.startsWith(namespace + '.'))) {
+                missing.push({ file: path.relative(root, f), key: namespace });
+            }
+        }
         for (const key of fileInfo(f).keys)
             if (!scopes.some(s => key === s || key.startsWith(s + '.')))
                 missing.push({ file: path.relative(root, f), key });
+    }
     if (missing.length)
         problems.push({ route: path.relative(root, page), missing: [...new Map(missing.map(e => [e.key, e])).values()] });
 }

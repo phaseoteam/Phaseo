@@ -36,7 +36,7 @@
 		"test": "jest --runInBand",
 		"audit:i18n:ui": "node scripts/audit-localised-ui.mjs",
 		"test:i18n:ui-audit": "node scripts/audit-localised-ui.mjs --self-test",
-		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/validate-message-scopes.mjs && node scripts/generate-docs-search.mjs --check",
+		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/validate-message-scopes.mjs --self-test && node scripts/validate-message-scopes.mjs && node scripts/generate-docs-search.mjs --check",
 		"test:i18n": "pnpm run validate:i18n"
 	},
 	"dependencies": {

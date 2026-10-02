@@ -9,6 +9,7 @@ export const SHELL_MESSAGE_NAMESPACES = [
 	"SettingsUI.providerCatalogCopy", "SettingsUI.providerCatalog.title",
 	"SettingsUI.identity.availability.other", "SettingsUI.identity.reviewStatus.other",
 	"SettingsUI.settingsCopy.settingsSidebar", "SettingsUI.strings.phrasePleaseTryAgain",
+	"SettingsUI.strings.Details",
 ] as const;
 
 export function selectMessages(
