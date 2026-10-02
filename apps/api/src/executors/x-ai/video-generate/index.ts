@@ -159,7 +159,11 @@ function buildXAiVideoRequest(ir: IRVideoGenerationRequest, model: string): {
 			inputVideoSeconds,
 		};
 	}
-	if (isGrokImagineVideo15(model) && (imageUrls.length !== 1 || useReferenceImages)) {
+	const isLite = model.toLowerCase() === "grok-imagine-video-1.5-lite";
+	if (isLite && (imageUrls.length > 1 || useReferenceImages)) {
+		throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5-lite accepts text-only input or one first_frame image.");
+	}
+	if (isGrokImagineVideo15(model) && !isLite && (imageUrls.length !== 1 || useReferenceImages)) {
 		throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5 requires exactly one first_frame image.");
 	}
 	if (seconds != null) body.duration = seconds;
