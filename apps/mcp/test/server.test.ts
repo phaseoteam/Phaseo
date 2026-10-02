@@ -72,6 +72,8 @@ describe("Phaseo MCP server metadata", () => {
 			"generation_get",
 			"logs_list",
 			"log_get",
+			"inference_quote",
+			"inference_run",
 		]);
 		expect(tools.models_list?.outputSchema).toMatchObject({
 			type: "object",
@@ -149,14 +151,33 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.securitySchemes).toEqual([
 			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
 		]);
+		expect(tools.models_list?._meta?.ui).toMatchObject({
+			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
+		});
+		expect(tools.models_list?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		const icon = tools.models_list?.icons?.[0];
+		expect(icon?.mimeType).toBe("image/svg+xml");
+		const svg = atob(icon!.src.split(",")[1]!);
+		expect(svg).toContain('viewBox="0 0 20 20"');
+		expect(svg).toContain('fill="currentColor"');
+		const resources = await client.listResources();
+		expect(resources.resources.map((resource) => resource.uri)).toContain("ui://phaseo/model-explorer.html");
+		const view = await client.readResource({ uri: "ui://phaseo/model-explorer.html" });
+		expect(view.contents[0]).toMatchObject({
+			mimeType: "text/html;profile=mcp-app",
+			_meta: { "openai/ui": { availableDisplayModes: ["fullscreen"], preferredDisplayMode: "fullscreen" } },
+		});
+		expect((view.contents[0] as { text: string }).text).toContain("<!doctype html>");
 		expect(tools.generation_get?.outputSchema).toMatchObject({
 			type: "object",
 			properties: { generation: { type: "object" } },
 			required: ["generation"],
 		});
-		expect(Object.values(tools).every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
+		expect(Object.values(tools).filter((tool) => tool.name !== "inference_run").every((tool) => tool.annotations?.readOnlyHint === true)).toBe(true);
 		expect(Object.values(tools).every((tool) => tool.annotations?.destructiveHint === false)).toBe(true);
-		expect(Object.values(tools).every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
+		expect(Object.values(tools).filter((tool) => tool.name !== "inference_run").every((tool) => tool.annotations?.openWorldHint === false)).toBe(true);
+		expect(tools.inference_run?._meta?.ui).toEqual({ visibility: ["app"] });
+		expect(tools.inference_run?.annotations?.readOnlyHint).toBe(false);
 		expect(Object.keys(tools).some((name) => /(?:create|update|delete|remove)$/.test(name))).toBe(false);
 	});
 
@@ -571,6 +592,7 @@ describe("Phaseo MCP OAuth discovery", () => {
 			"activity:read",
 			"analytics:read",
 			"generations:read",
+			"gateway:access",
 		]);
 		expect(response.headers.get("x-content-type-options")).toBe("nosniff");
 		expect(response.headers.get("access-control-allow-origin")).toBe("*");

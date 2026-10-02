@@ -36,7 +36,7 @@ describe("public gateway catalogue", () => {
 		expect(response.status).toBe(200);
 		const catalogue = await response.clone().json() as { models: Array<{ serviceTiers: string[] }> };
 		expect(catalogue.models[0].serviceTiers).toEqual(["flex", "priority", "standard"]);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(response.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models");
 		await expect(response.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", internalModelId: "openai/gpt-test", providerId: "openai", capabilities: ["responses", "rerank"], capabilityParamsById: { responses: { response_format: true }, rerank: { top_n: true } }, inputModalities: ["text", "image"], outputModalities: ["text"], organisationId: "openai", organisationName: "OpenAI", inputPricePerMillion: 2, outputPricePerMillion: 8, isAvailable: true }] });

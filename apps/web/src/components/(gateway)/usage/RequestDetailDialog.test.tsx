@@ -1,9 +1,17 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
+import { NextIntlClientProvider } from "next-intl";
+import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
+import productMessages from "../../../../messages/en-GB/product.json";
+const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></NextIntlClientProvider>);
 import React from "react";
 
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
+
+let mockTraceEnabled = false;
+jest.mock("@statsig/react-bindings", () => ({ useFeatureGate: () => ({ value: mockTraceEnabled }) }));
 
 const router = {
 	push: jest.fn(),
@@ -49,6 +57,13 @@ const historicalRequestWithoutCollections = {
 } as RequestRow;
 
 describe("RequestDetailDialog", () => {
+	beforeEach(() => { mockTraceEnabled = false; });
+	it("shows the Trace tab only when its rollout gate passes", () => {
+		const render = () => renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		expect(render()).not.toContain('value="trace"');
+		mockTraceEnabled = true;
+		expect(render()).toContain("Trace");
+	});
 	it("shows routing first and non-overlapping streaming intervals", () => {
 		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={{
 			...historicalRequestWithoutCollections,
@@ -56,8 +71,8 @@ describe("RequestDetailDialog", () => {
 			detail_metadata: { response_timeline: { version: 1, routing_ms: 15 } },
 			provider_attempts: [{ provider: "openai", attempt_number: 1, outcome: "success", status: 200, duration_ms: 120 }],
 		}} />);
-		expect(markup).toContain("Response Timeline");
-		const timeline = markup.slice(markup.indexOf("Response Timeline"));
+		expect(markup).toContain("Response timeline");
+		const timeline = markup.slice(markup.indexOf("Response timeline"));
 		expect(timeline).toContain("Phaseo routing");
 		expect(timeline.indexOf("Phaseo routing")).toBeLessThan(timeline.indexOf("openai"));
 		expect(timeline).toContain("15 ms");

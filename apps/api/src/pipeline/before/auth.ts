@@ -150,6 +150,26 @@ function isInternalRequestAuthorized(req: Request, bindings: ReturnType<typeof g
     return timingSafeEqualText(providedToken, configuredToken);
 }
 
+// Resource-bound keys remain unusable directly at the Gateway. The MCP resource
+// server may forward an explicitly consented key only for text comparison runs.
+function isMcpInferenceRequestAuthorized(
+    req: Request,
+    resource: string,
+    scopes: string[],
+    bindings: ReturnType<typeof getBindings>,
+): boolean {
+    if (
+        req.method !== "POST" ||
+        new URL(req.url).pathname !== "/v1/chat/completions" ||
+        !scopes.includes(GATEWAY_ACCESS_SCOPE)
+    ) return false;
+    const configured = String(bindings.PHASEO_MCP_RESOURCE_SERVER_SECRET ?? "").trim();
+    const provided = req.headers.get("x-phaseo-mcp-secret") ?? "";
+    return configured.length >= 64 && provided.length <= 512 &&
+        req.headers.get("x-phaseo-mcp-resource") === resource &&
+        timingSafeEqualText(provided, configured);
+}
+
 /* -------------------- token parsing -------------------- */
 
 /**
@@ -554,7 +574,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 			if ((!oauthResource || isGatewayApiResource) && !effectiveScopes.includes(GATEWAY_ACCESS_SCOPE)) {
 				return { ok: false, reason: "oauth_gateway_scope_required" };
 			}
-			if (oauthResource && !isGatewayApiResource && !options.allowResourceBoundOAuthKey) {
+			if (oauthResource && !isGatewayApiResource && !options.allowResourceBoundOAuthKey && !isMcpInferenceRequestAuthorized(req, oauthResource, effectiveScopes, bindings)) {
 				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}
 

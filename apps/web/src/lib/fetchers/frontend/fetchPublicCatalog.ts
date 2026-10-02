@@ -153,6 +153,7 @@ export type ProviderModelMapping = {
 
 export async function fetchFrontendModels(options: {
 	includeMonitorRows?: boolean;
+	includeGatewayData?: boolean;
 } = {}): Promise<ModelCard[]> {
 	type ModelsResponse = {
 		models: unknown[];
@@ -161,8 +162,9 @@ export async function fetchFrontendModels(options: {
 		offset: number;
 	};
 	const pageSize = 2_000;
+	const gatewayQuery = options.includeGatewayData === false ? "&include_gateway_data=false" : "";
 	const firstPage = await fetchPublicWebApi<ModelsResponse>(
-		`/api/_web/models?limit=${pageSize}&offset=0`,
+		`/api/_web/models?limit=${pageSize}&offset=0${gatewayQuery}`,
 	);
 	const offsets: number[] = [];
 	for (let offset = pageSize; offset < firstPage.total; offset += pageSize) {
@@ -170,7 +172,7 @@ export async function fetchFrontendModels(options: {
 	}
 	const laterPages = await Promise.all(
 		offsets.map((offset) => fetchPublicWebApi<ModelsResponse>(
-			`/api/_web/models?limit=${pageSize}&offset=${offset}`,
+			`/api/_web/models?limit=${pageSize}&offset=${offset}${gatewayQuery}`,
 		)),
 	);
 	return [firstPage, ...laterPages]

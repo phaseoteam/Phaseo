@@ -1,6 +1,7 @@
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
 
 const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
+const PUBLIC_WEB_API_TIMEOUT_MS = 15_000;
 
 export class WebApiError extends Error {
 	readonly status: number;
@@ -54,10 +55,15 @@ export async function fetchPublicWebApi<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
+	// Bound both fetching and reading the body so cached prerenders can reach
+	// their fallback instead of hanging until Next's cache-fill deadline.
+	const timeoutSignal = AbortSignal.timeout(PUBLIC_WEB_API_TIMEOUT_MS);
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
 		cache: "no-store",
-		signal: options.signal,
+		signal: options.signal
+			? AbortSignal.any([options.signal, timeoutSignal])
+			: timeoutSignal,
 		credentials: options.credentials ?? "omit",
 	});
 

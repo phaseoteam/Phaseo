@@ -857,10 +857,11 @@ publicModelsRouter.get("/", async (c) => {
 			);
 			return response;
 		}
-		const gatewayRowsByModelId = await fetchGatewayMonitorRows(
-			c.env,
-			catalogueVersion,
-		);
+		// Metadata consumers such as the sitemap do not need the expensive
+		// gateway-monitor projection. Preserve enrichment for existing callers.
+		const gatewayRowsByModelId = c.req.query("include_gateway_data") === "false"
+			? new Map<string, Record<string, unknown>[]>()
+			: await fetchGatewayMonitorRows(c.env, catalogueVersion);
 		const table = "v2_models";
 		const select = "model_slug,lab_slug,name,description,status,released_at,announced_at,updated_at,input_modalities,output_modalities,organisation:v2_labs!v2_models_lab_slug_fkey(name,metadata)";
 		const createQuery = () => {
