@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -315,6 +316,7 @@ function getColorFromPointer(
 }
 
 function ColorPicker({ value, onChange, className }: ColorPickerProps) {
+	const t = useTranslations("Common.ui.accessibility");
 	const [currentHex, setCurrentHex] = React.useState(() =>
 		normalizeColorValue(value),
 	);
@@ -448,10 +450,11 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 		<div className={cn("grid gap-3", className)}>
 			<div
 				role="slider"
-				aria-label="Saturation and brightness"
-				aria-valuetext={`${Math.round(hsv.s * 100)}% saturation, ${Math.round(
-					hsv.v * 100,
-				)}% brightness`}
+				aria-label={t("saturationBrightness")}
+				aria-valuetext={t("colorSaturationBrightness", {
+					saturation: Math.round(hsv.s * 100),
+					brightness: Math.round(hsv.v * 100),
+				})}
 				tabIndex={0}
 				className="relative h-36 cursor-crosshair overflow-hidden rounded-xl border border-border shadow-inner outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
 				style={{ backgroundColor: hueColor }}
@@ -477,7 +480,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 			<div className="flex items-center gap-2">
 				<div
 					role="slider"
-					aria-label="Hue"
+					aria-label={t("hue")}
 					aria-valuemin={0}
 					aria-valuemax={360}
 					aria-valuenow={Math.round(hsv.h)}
@@ -507,7 +510,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 			</div>
 			<div
 				role="group"
-				aria-label="Color value format"
+				aria-label={t("colorValueFormat")}
 				className="grid grid-cols-4 gap-0.5 rounded-md border border-border bg-muted/40 p-0.5"
 			>
 				{COLOR_FORMATS.map((format) => (
@@ -535,7 +538,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 						style={{ backgroundColor: hexValue }}
 					/>
 					<Input
-						aria-label="Selected color hex value"
+						aria-label={t("selectedColorHex")}
 						value={hexDraft}
 						onChange={(event) => {
 							const nextValue = event.target.value.trim();

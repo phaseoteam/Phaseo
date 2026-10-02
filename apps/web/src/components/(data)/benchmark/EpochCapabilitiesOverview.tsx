@@ -1,14 +1,17 @@
+import { useLocale, useTranslations } from "next-intl";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ArtificialAnalysisMetricCharts from "./ArtificialAnalysisMetricCharts";
 import BenchmarkProgressChart from "./BenchmarkProgressChart";
 import ModelsUsingBenchmark from "./ModelsUsingBenchmark";
 
-function formatDate(value: string | null | undefined) {
-	return value ? new Date(value).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
+function formatDate(value: string | null | undefined, locale: string) {
+	return value ? new Date(value).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 }
 
 export function EpochCapabilitiesOverview({ benchmark }: { benchmark: BenchmarkPage }) {
+	const t = useTranslations("Catalogue.benchmarks.current");
+	const locale = useLocale();
 	const results = (benchmark.results ?? []).filter((result) => result.score !== null && Number.isFinite(Number(result.score)));
 	const sorted = [...results].sort((a, b) => Number(b.score) - Number(a.score));
 	const best = sorted[0];
@@ -39,24 +42,24 @@ export function EpochCapabilitiesOverview({ benchmark }: { benchmark: BenchmarkP
 	return <div className="space-y-12 pb-12">
 		<section id="summary" className="scroll-mt-36 space-y-5">
 			<div className="flex flex-wrap items-center justify-between gap-3">
-				<p className="max-w-3xl text-sm text-muted-foreground">An independent measure of frontier AI capabilities, presented with the latest published results from Epoch AI.</p>
-				<span className="text-xs font-medium text-[#24bca5]">Higher is better</span>
+				<p className="max-w-3xl text-sm text-muted-foreground">{t("epochDescription")}</p>
+				<span className="text-xs font-medium text-[#24bca5]">{t("higherBetter")}</span>
 			</div>
 			<div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card lg:grid-cols-4">
 				{[
-					{ label: "Models with results", value: modelCount.toLocaleString() },
-					{ label: "Highest score", value: best ? Number(best.score).toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—" },
-					{ label: "Leading model", value: best?.model?.name ?? best?.model_id ?? "—" },
-					{ label: "Last synced", value: formatDate(updated) },
+					{ label: t("modelsResults"), value: modelCount.toLocaleString(locale) },
+					{ label: t("highestScore"), value: best ? Number(best.score).toLocaleString(locale, { maximumFractionDigits: 2 }) : "—" },
+					{ label: t("leadingModel"), value: best?.model?.name ?? best?.model_id ?? "—" },
+					{ label: t("lastSynced"), value: formatDate(updated, locale) },
 				].map((item) => <div key={item.label} className="space-y-2 border-b p-5 odd:border-r lg:border-b-0 lg:border-r lg:last:border-r-0"><p className="text-xs text-muted-foreground">{item.label}</p><p className="truncate text-lg font-semibold tabular-nums" title={item.value}>{item.value}</p></div>)}
 			</div>
-			<p className="text-xs text-muted-foreground">Source: <a href="https://epoch.ai/eci" target="_blank" rel="noreferrer" className="underline underline-offset-2">Epoch AI</a>. Scores and confidence intervals reflect the latest published ECI results.</p>
+			<p className="text-xs text-muted-foreground"><a href="https://epoch.ai/eci" target="_blank" rel="noreferrer" className="underline underline-offset-2">{t("source", {brand: "Epoch AI"})}</a>. {t("epochResultsNote")}</p>
 		</section>
 
 		<ArtificialAnalysisMetricCharts rankings={[ranking]} variant="epoch" />
 
 		<section id="progress" className="scroll-mt-36 space-y-4">
-			<div><h2 className="text-xl font-semibold">Progress</h2><p className="mt-1 text-sm text-muted-foreground">See how the Capabilities Index has moved as new models have been released.</p></div>
+			<div><h2 className="text-xl font-semibold">{t("progress")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("epochProgress")}</p></div>
 			<BenchmarkProgressChart benchmark={{ ...benchmark, results }} />
 		</section>
 

@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行和可报告进度的 Go 工具。"
+---
+
+创建 `Tool` 值并通过 `DefineTool(...)` 传入。工具可包含：
+
+- 提供给模型的 JSON `Parameters`
+- `InputSchema`、`OutputSchema` 和 `EventSchema` 验证器
+- `Timeout` 和 `Execute(input, RuntimeContext)` 函数
+- 无条件的 `RequireApproval` 或有条件的 `Approval` 谓词
+- 用于交互式工作的 `OnToolCalled` 和 `OnResponseReceived`
+- `NextTurn` 覆盖项和 `OnError: "return-to-model"`
+
+使用 `RuntimeContext.EmitProgress`、`SetContext` 和提供的 `context.Context`。`ToolExecutionConfig{Concurrency: ...}` 会并发运行互不依赖的工具，同时保留工具结果的顺序。
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

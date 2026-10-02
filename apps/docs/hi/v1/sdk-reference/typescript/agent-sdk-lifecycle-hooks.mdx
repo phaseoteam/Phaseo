@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "जीवनचक्र हुक"
+description: "Run, model, step, tool और checkpoint events पर प्रतिक्रिया दें।"
+---
+
+Product UI update करने, audit records लिखने या agent activity को मौजूदा telemetry से जोड़ने के लिए `onEvent` का उपयोग करें।
+
+## रन की घटनाएँ सुनें
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+Event handlers छोटे रखें। धीमे network या storage काम को run में देरी नहीं करनी चाहिए, तो उसे अपने app की queue में भेजें।
+
+## इवेंट के प्रकार
+
+| Family | Events |
+| --- | --- |
+| Run | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| Step | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| Model | `model.requested`, `model.completed`, `model.failed` |
+| Tool | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| State | `checkpoint.saved` |
+
+Completed step checkpoint होने के बाद `step.completed` emit होता है। इससे persistence या telemetry consumer इसे stable boundary मान सकते हैं।
+
+## प्रोडक्ट इंटरफ़ेस के लिए इवेंट चुनें
+
+- Live answer text के लिए [स्ट्रीमिंग](./agent-sdk-streaming.mdx) के model deltas का उपयोग करें।
+- Tool-call cards और progress indicators के लिए tool events का उपयोग करें।
+- Approval या input controls दिखाने के लिए `run.waiting_for_human` का उपयोग करें।
+- Loading states बंद करने और outcomes दर्ज करने के लिए terminal run events का उपयोग करें।
+
+## संबंधित गाइड
+
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

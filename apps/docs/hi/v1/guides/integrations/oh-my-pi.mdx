@@ -1,0 +1,76 @@
+---
+title: "oh-my-pi"
+icon: "/icons/brands/oh-my-pi.svg"
+description: "Phaseo CLI से Phaseo Gateway के माध्यम से oh-my-pi चलाएँ।"
+---
+
+Phaseo CLI एक समर्पित गेटवे कुंजी और अस्थायी OpenAI-संगत प्रदाता कैटलॉग के साथ oh-my-pi शुरू कर सकता है।
+
+## Phaseo CLI से सेट अप करें
+
+```bash
+phaseo login
+phaseo omp --model openai/gpt-5.6-terra --
+```
+
+पहली इंटरैक्टिव रन में `omp` कमांड न होने पर उसे इंस्टॉल करने का विकल्प मिलता है। सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल उपलब्ध कराने के लिए `--catalog all` इस्तेमाल करें, या कुंजी बनाए या oh-my-pi शुरू किए बिना इंस्टॉल और लॉन्च योजना देखने के लिए `--dry-run --json` इस्तेमाल करें:
+
+```bash
+phaseo omp --catalog all --dry-run --json
+```
+
+स्पष्ट कमांड रूप के लिए `phaseo run omp ...` इस्तेमाल करें। oh-my-pi के फ़्लैग `--` के बाद रखें, ताकि Phaseo पहले अपने फ़्लैग पढ़ सके।
+
+## oh-my-pi को मैन्युअल रूप से कॉन्फ़िगर करें
+
+हर oh-my-pi सत्र में Phaseo उपलब्ध रखने के लिए स्थायी प्रदाता इस्तेमाल करें। Phaseo कुंजी बनाएँ, oh-my-pi शुरू करने वाले शेल में उसे एक्सपोर्ट करें और `~/.omp/agent/models.yml` में प्रदाता जोड़ें:
+
+```bash
+phaseo login
+phaseo keys create --name "oh-my-pi Phaseo key" --json
+export PHASEO_OMP_API_KEY="<your Phaseo API key>"
+mkdir -p ~/.omp/agent
+```
+
+```yaml title="~/.omp/agent/models.yml"
+providers:
+  phaseo:
+    baseUrl: https://api.phaseo.app/v1
+    api: openai-completions
+    apiKey: PHASEO_OMP_API_KEY
+    authHeader: true
+    models:
+      - id: openai/gpt-5.6-terra
+        name: GPT-5.6 Terra via Phaseo
+        contextWindow: 32768
+        maxTokens: 8192
+```
+
+प्रदाता सहित मॉडल आईडी से oh-my-pi शुरू करें:
+
+```bash
+omp --model phaseo/openai/gpt-5.6-terra
+```
+
+आवश्यकतानुसार उसी प्रदाता में और मॉडल जोड़ें। कुंजी को सीधे `models.yml` में लिखने के बजाय `apiKey` को पर्यावरण वेरिएबल की ओर इंगित रखें।
+
+## सत्यापित करें
+
+शुरू किए गए वातावरण से छोटा प्रॉम्प्ट भेजें और पुष्टि करें कि अनुरोध Phaseo गतिविधि में दिखाई देता है। रनर अस्थायी `PI_CODING_AGENT_DIR` में `models.yml` लिखता है और oh-my-pi बंद होने पर उसे हटा देता है।
+
+## समस्या निवारण
+
+### oh-my-pi इंस्टॉल नहीं है
+
+इंस्टॉल की अनुमति देने के लिए कमांड इंटरैक्टिव टर्मिनल में चलाएँ, या oh-my-pi अलग से इंस्टॉल करें और `--skip-install` के साथ फिर चलाएँ।
+
+### मॉडल सूची में नहीं है
+
+`--catalog all` इस्तेमाल करें या `--model` से मॉडल आईडी दें। Phaseo गेटवे के लिए मॉडल खोज आवश्यक नहीं है।
+
+## संबंधित
+
+- [Phaseo CLI](./phaseo-cli)
+- [oh-my-pi प्रदाता कॉन्फ़िगरेशन](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
+- [मॉडल](../../api-reference/endpoint/models.mdx)
+- [गतिविधि](../../api-reference/endpoint/activity.mdx)

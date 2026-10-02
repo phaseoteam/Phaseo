@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { METRICS, benchmarkId, fetchModels, matchModels, mergeResults, metricValue, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
+import { METRICS, benchmarkId, databaseModelMappings, fetchModels, matchModels, mergeResults, metricValue, methodologyVersionFromHtml, reassignedArtificialAnalysisResultIds, resultsForConfigurations, type CatalogModel, type MappingConfig } from "./artificial-analysis/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -25,35 +25,38 @@ async function main() {
 	if (!apiKey) throw new Error("Set ARTIFICIAL_ANALYSIS_API_KEY in .env.local, .env, apps/web/.env.local or the environment.");
 	const write = process.argv.includes("--write");
 	const syncDb = true;
-	const config = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/mappings.json"), "utf8")) as MappingConfig;
-	if (!config.models || !config.creators || Object.values(config.models).some((id) => id !== null && (typeof id !== "string" || !id)) || Object.values(config.creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis mappings.");
+	const creators = JSON.parse(readFileSync(resolve("scripts/artificial-analysis/creators.json"), "utf8")) as MappingConfig["creators"];
+	if (!creators || Object.values(creators).some((id) => typeof id !== "string" || !id)) throw new Error("Invalid Artificial Analysis creator mappings.");
 	const entries: Array<{ file: string | null; model: CatalogModel }> = [];
 	const db = syncDb ? createAdminClient() : null;
 	const dbIds = new Set<string>();
 	if (db) {
 		for (let offset = 0; ; offset += 500) {
-			const { data, error } = await db.from("v2_models").select("model_slug,name,lab_slug").order("model_slug").range(offset, offset + 499);
+			const { data, error } = await db.from("v2_models").select("model_slug,name,lab_slug,metadata").order("model_slug").range(offset, offset + 499);
 			if (error) throw error;
 			for (const row of data ?? []) {
 				dbIds.add(row.model_slug);
-				if (!entries.some((entry) => entry.model.model_id === row.model_slug)) entries.push({ file: null, model: { model_id: row.model_slug, name: row.name, organisation_id: row.lab_slug } });
+				if (!entries.some((entry) => entry.model.model_id === row.model_slug)) entries.push({ file: null, model: { model_id: row.model_slug, name: row.name, organisation_id: row.lab_slug, metadata: row.metadata } });
 			}
 			if ((data ?? []).length < 500) break;
 		}
 	}
-	for (const id of Object.keys(config.models)) if (!entries.some((entry) => entry.model.model_id === id)) throw new Error(`Mapping references unknown Phaseo model ${id}.`);
+	const config: MappingConfig = { models: databaseModelMappings(entries.map((entry) => entry.model)), creators };
 	const source = await fetchModels(apiKey);
+	const versionResponse = await fetch("https://artificialanalysis.ai/data-api/docs", { signal: AbortSignal.timeout(30_000) });
+	if (!versionResponse.ok) throw new Error(`Artificial Analysis version documentation returned ${versionResponse.status}; no data was written.`);
+	const methodologyVersion = methodologyVersionFromHtml(await versionResponse.text(), source.version);
 	const updated_at = new Date().toISOString();
 	const matches = matchModels(entries.map((entry) => entry.model), source.models, config);
 	const plan = entries.map((entry, index) => ({ ...entry, match: matches[index] }));
-	const report = { version: source.version, sourceModels: source.models.length,
+	const report = { version: source.version, methodologyVersion, sourceModels: source.models.length,
 		matched: plan.filter((entry) => entry.match.status === "matched").length,
 		models: plan.map((entry) => ({ model_id: entry.model.model_id, status: entry.match.status, source_id: entry.match.source?.id, source_name: entry.match.source?.name, sources: (entry.match.sources ?? []).map(({ id, name, slug }) => ({ id, name, slug })), candidates: entry.match.candidates.map(({ id, name, slug }) => ({ id, name, slug })) })),
 		unmappedSources: source.models.filter((model) => !plan.some((entry) => entry.match.sources?.some((match) => match.id === model.id))).map(({ id, name, slug }) => ({ id, name, slug })),
 	};
 	const reportArg = process.argv.find((arg) => arg.startsWith("--report="));
 	if (reportArg) writeJson(resolve(reportArg.slice("--report=".length)), report);
-	console.log(`Artificial Analysis v${source.version}: ${report.matched}/${entries.length} Phaseo models matched; ${source.models.length} source models.`);
+	console.log(`Artificial Analysis v${methodologyVersion} (API v${source.version}): ${report.matched}/${entries.length} Phaseo models matched; ${source.models.length} source models.`);
 	for (const status of ["ambiguous", "unmatched", "excluded"]) console.log(`${status}: ${plan.filter((entry) => entry.match.status === status).length}`);
 	if (!report.matched) throw new Error("No models matched; no benchmark data was written.");
 	if (!write) { console.log("Dry run complete. Use --write to update the database catalog."); return; }
@@ -64,7 +67,7 @@ async function main() {
 	for (const entry of plan) {
 		// Retain unmatched models' previous results and provenance until explicitly mapped.
 		if (!entry.match.source) continue;
-		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at), source.version);
+		entry.model.benchmarks = mergeResults(entry.model, resultsForConfigurations(entry.match.sources ?? [entry.match.source], source.version, source.models, updated_at, methodologyVersion), source.version);
 
 	}
 	if (!db) return;
@@ -89,6 +92,22 @@ async function main() {
 		const stale = (old ?? []).filter((row) => !rows.some((result) => result.result_id === row.result_id)).map((row) => row.result_id);
 		// Saved catalogue records cannot be deleted. Withdraw obsolete scores in place.
 		if (stale.length) { const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at }).is("effective_to", null).in("result_id", stale); if (error) throw error; }
+	}
+	// Retire former owners only after all newly assigned results were published.
+	const sourceOwners = new Map(plan.flatMap((entry) => (entry.match.sources ?? []).map((source) => [source.id, entry.model.model_id] as const)));
+	const reassignedIds: string[] = [];
+	for (let offset = 0; ; offset += 500) {
+		const { data, error } = await db.from("v2_benchmark_results")
+			.select("result_id,model_slug,other_info").is("effective_to", null)
+			.in("benchmark_id", managedBenchmarkIds).order("result_id").range(offset, offset + 499);
+		if (error) throw error;
+		reassignedIds.push(...reassignedArtificialAnalysisResultIds(data ?? [], sourceOwners));
+		if ((data ?? []).length < 500) break;
+	}
+	for (let offset = 0; offset < reassignedIds.length; offset += 200) {
+		const { error } = await db.from("v2_benchmark_results").update({ effective_to: updated_at, updated_at })
+			.is("effective_to", null).in("result_id", reassignedIds.slice(offset, offset + 200));
+		if (error) throw error;
 	}
 	console.log("Synchronized matched database models. Public caches expire under their normal TTLs.");
 }

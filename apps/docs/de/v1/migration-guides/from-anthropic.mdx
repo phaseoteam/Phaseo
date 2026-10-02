@@ -1,0 +1,102 @@
+---
+title: "Vom Anthropic-SDK migrieren"
+sidebarTitle: "Anthropic-SDK"
+description: "Migriere eine Anthropic-SDK-Integration zu Phaseo und behalte den vertrauten Ablauf mit der Messages-API bei."
+icon: "/icons/brands/anthropic.svg"
+---
+
+Nutze diese Anleitung, um deinen Anthropic-SDK-Workflow beizubehalten und Anfragen über Phaseo zu senden. Ändere zuerst die Client-Konfiguration und überprüfe anschließend die Modell-IDs und das Anthropic-spezifische Verhalten, von dem deine Anwendung abhängt.
+
+## Was sich ändert
+
+| Einstellung | Vorher | Nachher |
+| --- | --- | --- |
+| Basis-URL | Anthropic-Standard | `https://api.phaseo.app/v1` |
+| API-Schlüssel | Anthropic-Schlüssel | `PHASEO_API_KEY` |
+| Modell | Anthropic-Modellname | Von `GET /v1/models` zurückgegebene Phaseo-Modell-ID |
+| Messages-Aufruf | Bisheriger SDK-Aufruf | Meist unverändert |
+
+<Steps>
+<Step title="Erstelle einen Phaseo-API-Schlüssel">
+
+Erstelle unter [Gateway-Schlüssel](https://phaseo.app/gateway/keys) einen Schlüssel und stelle ihn deiner Anwendung als `PHASEO_API_KEY` bereit.
+
+</Step>
+
+<Step title="Aktualisiere den Anthropic-Client">
+
+Richte das SDK auf die Phaseo-Basis-URL aus und verwende deinen Phaseo-Schlüssel.
+
+<CodeGroup>
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-sonnet-4.6",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-sonnet-4.6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Prüfe Anthropic-spezifisches Verhalten">
+
+Teste System-Prompts, Streaming, Tool-Nutzung, Reasoning-Optionen und strukturierte Ausgaben mit genau den Modellen, die deine Anwendung verwendet. Entferne veraltete Beta-Header oder Request-Felder, statt sie ungeprüft in den neuen Pfad zu übernehmen.
+
+</Step>
+
+<Step title="Rolle schrittweise aus">
+
+Vergleiche einen repräsentativen Prompt-Satz mit beiden Konfigurationen. Prüfe Ausgabeformat, Latenz, Tokenverbrauch, Fehler und Kosten, bevor du Produktionsverkehr umleitest.
+
+</Step>
+</Steps>
+
+## Migrations-Checkliste
+
+- Der Phaseo-Schlüssel ist in jeder Deployment-Umgebung konfiguriert.
+- Der Anthropic-Client verwendet `https://api.phaseo.app/v1`.
+- Jede Produktionsmodell-ID wurde mit `GET /v1/models` überprüft.
+- Streaming- und Tool-Abläufe funktionieren in der Staging-Umgebung.
+- Anthropic-spezifische Beta-Header und Parameter wurden überprüft.
+- Ein Rollback erfordert weiterhin nur eine Änderung von Schlüssel und Endpunkt in der Konfiguration.
+
+## Nächste Schritte
+
+- [Anthropic-Modellmigrationen](../model-migrations/index.mdx)
+- [Modelle](../exploring/models.mdx)
+- [Tool-Aufrufe](../guides/tool-calling.mdx)

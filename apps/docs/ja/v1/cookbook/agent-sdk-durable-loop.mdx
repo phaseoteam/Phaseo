@@ -1,0 +1,122 @@
+---
+title: "TypeScriptで永続化可能なエージェントループを構築する"
+icon: "repeat-2"
+description: "TypeScript Agent SDKを使ってPhaseo Gateway上で再開可能なエージェントループを実行します。"
+---
+
+単発のテキストリクエスト以上の処理が必要な場合に、このレシピを使います。
+
+- 複数ステップのツールループ
+- ローカルランタイムツール
+- 再開可能な実行
+- エージェント処理のための単一のGateway経由エントリーポイント
+
+## 1. SDKをインストールする
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. 小さなランタイムツールを定義する
+
+最初のツールは決定的で、簡単に確認できるものにします。
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. エージェントを作成する
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Gatewayアダプターを使う
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. ステップ間で保持される情報
+
+各ステップが完了すると、返される実行状態に次の情報が追加されます。
+
+- 実行ID
+- メッセージ履歴
+- 返されたツール呼び出し
+- ローカルツールの結果
+- 実行完了時の最終出力
+
+リクエストやプロセスをまたいで再開するには、返された値をアプリケーションに保存し、後から`continueRun()`に渡します。
+
+## 6. 最初のバージョンをシンプルに保つ場面
+
+- ワークフローごとにエージェントを1つ用意する
+- リクエストをまたいで再開する前にアプリケーション側でシリアライズする
+- 汎用ツールレジストリを作る前にツールを少数に絞る
+- 各実行につき、実行IDとGatewayリクエストIDを含むログを1行出力する
+
+## 7. このレシピを拡張する場面
+
+次の要件が出てきたら、最初の永続化ループを拡張します。
+
+- 承認のための一時停止
+- 返された実行状態のアプリケーション側での永続化
+- 共通のランタイムツールを使う複数のエージェント定義
+
+その場合もGatewayアダプターはそのまま使い、ストアとオーケストレーションを拡張します。
+
+## 関連ガイド
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [プリセット](../guides/presets.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [SKILL.mdでコーディングエージェントを設定する](./coding-agents-skill-md.mdx)
+- [無料ルーターでデプロイする](./free-router-first-deploy.mdx)

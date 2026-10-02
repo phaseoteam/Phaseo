@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "डेवलपर टूल"
+description: "Go Agent SDK रन को Phaseo DevTools के स्थानीय event फ़ॉर्मैट में कैप्चर करें।"
+---
+
+DevTools कैप्चर हर रन और continuation के लिए structured JSONL रिकॉर्ड लिखता है। टाइमलाइन, approval इंटरफ़ेस और tool-call view बनाते समय यह उपयोगी है।
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+रिकॉर्ड में रन status, usage, model attempts, tool calls, pauses, request metadata और errors शामिल होते हैं। continuation उसी रन पहचान से जुड़ते हैं।
+
+स्थानीय कैप्चर को production audit store न मानें। संवेदनशील prompt या tool result सहेजने से पहले अपनी retention, access control, redaction और encryption नीतियाँ लागू करें।

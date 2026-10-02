@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "State और approval"
+description: "मानवीय निर्णय लेने और ऐप-प्रबंधित state से जारी रखने के लिए Ruby एजेंट रोकें।"
+---
+
+सामान्य checkpoint के लिए `human_review` उपयोग करें। approval-gated और manual tools सटीक call IDs को `run.pause.pending_tool_calls` में रखते हैं।
+
+`Agent#continue_run` से जारी रखें और यह दें:
+
+- approval या rejection के लिए `ToolDecision` वैल्यू
+- मैन्युअल काम के लिए `ToolOutput` वैल्यू
+- सामान्य समीक्षा विराम के लिए `human_input`
+- पिछला रन या state accessor के साथ `run_id`
+
+निर्णय सटीक call IDs उपयोग करते हैं, इसलिए एक ही tool की साथ हुई calls अलग रहती हैं। संगत state object में `load(run_id)` और `save(result)` लागू होना चाहिए।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

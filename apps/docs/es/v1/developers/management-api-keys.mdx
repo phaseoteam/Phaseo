@@ -1,0 +1,83 @@
+---
+title: Claves de API de administración
+description: Crea claves de administración con permisos específicos para las API de control de Phaseo.
+icon: "key-round"
+---
+
+Las claves de API de administración son credenciales del lado del servidor para el plano de control de Phaseo: créditos, actividad, administración de espacios de trabajo, gestión de claves, preajustes, ajustes y guardrails. No sirven para enviar solicitudes de inferencia.
+
+Créelas en **Panel → Ajustes → Claves de administración**. El secreto solo se muestra una vez; guárdalo en tu gestor de secretos antes de cerrar el cuadro de diálogo.
+
+## Tipos de credenciales
+
+| Credencial | Uso | Controles |
+| --- | --- | --- |
+| Clave de API de Gateway | Solicitudes de modelos y generación | Política de enrutamiento, presupuestos, límites y guardrails asociados |
+| Clave de API de administración | Solicitudes al plano de control | Capacidades de administración explícitas y comprobaciones del rol en el espacio de trabajo |
+| Token de acceso OAuth | Acceso delegado al plano de control | Ámbitos OAuth aprobados y comprobaciones del rol en el espacio de trabajo |
+
+Las rutas de administración solo aceptan `phaseo_v1_mk_<kid>_<secret>`. Las claves de API de Gateway usan `phaseo_v1_sk_<kid>_<secret>` y son solo para inferencia; no pueden acceder a los endpoints del plano de control.
+
+Usa las claves de administración únicamente desde código del lado del servidor:
+
+```http
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
+```
+
+La URL base de producción es:
+
+```text
+https://api.phaseo.app/v1
+```
+
+## Elige un nivel de acceso
+
+El panel ofrece plantillas explícitas. Al crear la clave, cada plantilla se expande a las capacidades enumeradas; Phaseo nunca almacena un comodín como `all`. Por tanto, una clave no puede obtener implícitamente los permisos que se añadan en el futuro.
+
+| Plantilla | Permisos |
+| --- | --- |
+| **Read** | Todas las capacidades de administración `*:read` actuales |
+| **Write** | Todas las capacidades actuales `*:read` y `*:write`; sin acceso de eliminación |
+| **All** | Todas las capacidades de administración actuales de lectura, escritura y eliminación |
+
+## Referencia de capacidades
+
+Usa una plantilla de acceso para los casos habituales. Elige capacidades explícitas cuando una integración necesite permisos más limitados y específicos.
+
+| Área | Lectura | Escritura | Eliminación |
+| --- | --- | --- | --- |
+| Identidad y catálogo | `me:read`, `models:read`, `providers:read`, `pricing:read` | — | — |
+| Uso y observabilidad | `credits:read`, `activity:read`, `analytics:read`, `generations:read`, `feedback:read` | `feedback:write` | — |
+| Espacios de trabajo | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Claves de API de Gateway | `keys:read` | `keys:write` | `keys:delete` |
+| Claves de API de administración | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| Preajustes | `presets:read` | `presets:write` | `presets:delete` |
+| Ajustes | `settings:read` | `settings:write` | — |
+| Credenciales de proveedor | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
+| Modelos privados | `private_models:read` | `private_models:write` | `private_models:delete` |
+| Guardrails | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| Presupuestos | `budgets:read` | `budgets:write` | `budgets:delete` |
+| Clientes OAuth | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+Las plantillas `Write` incluyen las capacidades de lectura correspondientes para que una integración pueda consultar un recurso antes de actualizarlo. `All` incluye capacidades de eliminación; úsala solo para automatizaciones administrativas de confianza.
+
+## Ámbitos y roles del espacio de trabajo
+
+Un ámbito es necesario, pero no suficiente. Phaseo también verifica que la entidad de OAuth o la clave pertenezca al espacio de trabajo solicitado y tenga el rol requerido. Una clave con ámbitos definidos no puede usar una capacidad para acceder a otro espacio de trabajo ni eludir las comprobaciones de propiedad y administración.
+
+Por ejemplo, `keys:write` autoriza las operaciones de gestión de claves, mientras que la comprobación del rol determina si quien realiza la solicitud puede administrar claves en ese espacio de trabajo.
+
+## Los guardrails son distintos
+
+Los guardrails se aplican a las **claves de API de Gateway** y controlan el tráfico de inferencia: restricciones de enrutamiento, presupuestos, gestión de inyección de instrucciones y reglas para información sensible. Los ámbitos de las claves de administración determinan qué API administrativas puede usar una credencial. Son controles complementarios, no intercambiables.
+
+Consulta [Implementar guardrails en claves de API](../cookbook/guardrails-for-api-keys.mdx) para obtener instrucciones sobre cómo implementar guardrails en una clave de inferencia.
+
+## Seguridad y rotación
+
+- Mantén las claves de administración fuera de los navegadores, los registros de escritorio, el control de versiones y los chats.
+- Usa una clave específica por integración y elige la plantilla con menos permisos.
+- Asigna una fecha de caducidad cuando la integración no necesite acceso indefinido.
+- Desactiva o elimina de inmediato las claves que ya no se utilicen.
+- Si se filtra una clave, rótala antes de continuar investigando el incidente.
+

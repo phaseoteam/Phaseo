@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 type AnnouncementCounterProps = {
@@ -10,6 +11,7 @@ type AnnouncementCounterProps = {
 export default function AnnouncementCounter({
 	initial = 0,
 }: AnnouncementCounterProps) {
+	const t = useTranslations("Content.announcementComponents");
 	const [count, setCount] = useState(initial);
 
 	return (
@@ -18,6 +20,7 @@ export default function AnnouncementCounter({
 				type="button"
 				variant="outline"
 				size="sm"
+				aria-label={t("decrementCounter")}
 				onClick={() => setCount((current) => current - 1)}
 			>
 				-
@@ -27,6 +30,7 @@ export default function AnnouncementCounter({
 				type="button"
 				variant="outline"
 				size="sm"
+				aria-label={t("incrementCounter")}
 				onClick={() => setCount((current) => current + 1)}
 			>
 				+

@@ -1,6 +1,7 @@
 "use client";
 
 import { Maximize2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type {
 	ModelPerformancePoint,
 	ModelPerformanceSummary,
@@ -37,34 +38,34 @@ type MetricValueKey =
 type MetricDefinition = {
 	metric: MetricKey;
 	valueKey: MetricValueKey;
-	label: string;
-	description: string;
+	labelKey: string;
+	descriptionKey: string;
 };
 
 const METRICS: MetricDefinition[] = [
 	{
 		metric: "throughput",
 		valueKey: "avgThroughput",
-		label: "Throughput",
-		description: "Output tokens per second across the complete provider request.",
+		labelKey: "throughput",
+		descriptionKey: "metricDescriptions.throughputCard",
 	},
 	{
 		metric: "latency",
 		valueKey: "avgLatencyMs",
-		label: "Latency",
-		description: "Time from request start until the first generated output arrives.",
+		labelKey: "latency",
+		descriptionKey: "metricDescriptions.latencyCard",
 	},
 	{
 		metric: "endToEnd",
 		valueKey: "avgEndToEndMs",
-		label: "End-to-End Latency",
-		description: "Total time from request start until the complete response is returned.",
+		labelKey: "endToEndLatency",
+		descriptionKey: "metricDescriptions.endToEndCard",
 	},
 	{
 		metric: "cachedInput",
 		valueKey: "cachedInputPct",
-		label: "Cache Rate",
-		description: "Share of reported input tokens served from the provider cache.",
+		labelKey: "cachedInput",
+		descriptionKey: "metricDescriptions.cachedInput",
 	},
 ];
 
@@ -184,6 +185,8 @@ export default function ModelPerformanceCards({
 	chartProviderDaily7d,
 	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
@@ -210,11 +213,16 @@ export default function ModelPerformanceCards({
 			.filter((point) => point.requests > 0)
 			.map((point) => point.provider),
 	).size;
+	const metrics = METRICS.map((definition) => ({
+		...definition,
+		label: t(definition.labelKey as never),
+		description: t(definition.descriptionKey as never),
+	}));
 	const detailSeriesLabel = chartProviderDaily7d
-		? "All available percentile bands"
+		? tx("Common.ui.publicModelCopy.allPercentileBands")
 		: usesAggregateData
-			? "Model-wide observations; provider identities are hidden"
-			: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+			? tx("Common.ui.publicModelCopy.hiddenProviderObservations")
+			: tx("Common.ui.publicModelCopy.providerObservations", { resolution: usesHourlyData ? "hour" : "day", count: providerCount });
 	const metricUsesPercentiles = (metric: MetricKey) => {
 		if (!chartProviderDaily7d) return false;
 		const definition = METRIC_DEFINITIONS[metric];
@@ -237,22 +245,22 @@ export default function ModelPerformanceCards({
 		metricUsesPercentiles(metric)
 			? detailSeriesLabel
 			: usesAggregateData
-				? "Model-wide observations; provider identities are hidden"
-				: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+				? tx("Common.ui.publicModelCopy.hiddenProviderObservations")
+				: tx("Common.ui.publicModelCopy.providerObservations", { resolution: usesHourlyData ? "hour" : "day", count: providerCount });
 	const qualityMetrics = [
 		{
-			title: "Tool Call Errors",
+			title: t("qualityMetrics.toolCallErrors.label"),
 			metric: "toolCallErrorPct" as const,
 		},
 		{
-			title: "Structured Response Errors",
+			title: t("qualityMetrics.structuredResponseErrors.label"),
 			metric: "structuredOutputErrorPct" as const,
 		},
 	].filter(({ metric }) => hasQualityMetricData(metric, qualitySeries));
 	return (
 		<div className="space-y-4">
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{METRICS.map((definition) => (
+				{metrics.map((definition) => (
 					<Dialog key={definition.metric}>
 						<div className="min-w-0 rounded-lg border border-border/70 bg-background px-4 py-4">
 							<ModelProviderTrendChart
@@ -266,7 +274,7 @@ export default function ModelPerformanceCards({
 										<button
 											type="button"
 											className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-											aria-label={`Expand ${definition.label}`}
+												aria-label={t("expandMetric", { metric: definition.label } as never)}
 										>
 											<Maximize2 className="size-3.5" />
 										</button>
@@ -278,9 +286,7 @@ export default function ModelPerformanceCards({
 							<DialogHeader className="pr-10">
 								<DialogTitle className="text-xl">{definition.label}</DialogTitle>
 								<DialogDescription>
-									{definition.description}{" "}
-									{metricSeriesLabel(definition.metric)}{" "}
-									are shown below.
+									{t("observationsShown", { description: definition.description, series: metricSeriesLabel(definition.metric) })}
 								</DialogDescription>
 							</DialogHeader>
 							<div className="h-full min-h-0 overflow-hidden rounded-lg border border-border/70 bg-background p-4">
@@ -314,12 +320,11 @@ export default function ModelPerformanceCards({
 
 			{!hasHourly ? (
 				<p className="text-xs text-muted-foreground">
-					Low sample volume in the last 24 hours. Trends use the available{" "}
-					seven-day history.
+					{t("lowSampleVolume")}
 				</p>
 			) : usesAggregateData ? (
 				<p className="text-xs text-muted-foreground">
-					Provider attribution is hidden for this model. Trends use model-wide observations.
+					{t("hiddenAttribution")}
 				</p>
 			) : null}
 		</div>

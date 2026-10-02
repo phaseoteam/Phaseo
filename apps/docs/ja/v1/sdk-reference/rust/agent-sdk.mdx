@@ -1,0 +1,132 @@
+---
+icon: "blocks"
+title: "Rust Agent SDK を使って開発する"
+description: "Phaseo Gateway 経由でローカルツールを呼び出す、同期型 Rust エージェントを作成します。"
+---
+
+このガイドでは、ツールを使う小さなエージェントを作成し、完了した実行の内容を確認します。
+
+## ツールを定義する
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+クロージャはローカルで実行されます。`RuntimeContext` には実行 ID、エージェント ID、ステップインデックス、アプリケーションのコンテキスト、元のツール呼び出しが含まれます。
+
+## エージェントを作成する
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## Phaseo Gateway 経由で実行する
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## 完全な例
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## 実行状態
+
+`RunResult` には次の情報が含まれます。
+
+- `run`: 状態、ID、有効なモデル、ステップ上限、コンテキスト、一時停止状態
+- `steps`: 各モデルターン、リクエスト ID、プロバイダー、モデル、終了理由、ツール呼び出し、使用量
+- `messages`: モデルとツールのメッセージ履歴全体
+- `output`: 最終的な出力値
+- `usage`: 集計されたトークン数と、モデルクライアントが提供するコスト
+
+## 現在の実行モデル
+
+Rust Agent SDK の実行は同期型です。ローカルツールは1つずつ実行されます。リクエストハンドラーをブロックしたくない場合は、アプリケーションのワーカースレッドやタスク境界を使ってください。
+
+## 次のステップ
+
+- [ツールと承認](./agent-sdk-tools.mdx)
+- [実行を保存して再開する](./agent-sdk-state-and-approval.mdx)
+- [イベント、再試行、エラー](./agent-sdk-events-and-errors.mdx)

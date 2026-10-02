@@ -1,0 +1,174 @@
+---
+icon: "braces"
+title: "Rust Agent SDK API संदर्भ"
+description: "phaseo-agent 0.1 के सार्वजनिक structs, traits और methods।"
+---
+
+इस पेज में [`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/) का सार्वजनिक API बताया गया है।
+
+## एजेंट की परिभाषा
+
+| API | उपयोग |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | आठ स्टेप की डिफ़ॉल्ट सीमा के साथ एजेंट की परिभाषा बनाएँ। |
+| `.instructions(text)` | मॉडल के निर्देश सेट करें। |
+| `.tool(tool)` | एक टूल जोड़ें। |
+| `.max_steps(limit)` | मॉडल टर्न की सीमा सेट करें। न्यूनतम मान एक है। |
+| `.model_retries(count, backoff)` | निश्चित `Duration` अंतराल पर विफल मॉडल अनुरोध फिर से चलाएँ। |
+| `.human_review(callback)` | callback के `Some(HumanReviewRequest)` लौटाने पर मॉडल के जवाब के बाद रन रोकें। |
+| `create_agent(definition)` | एक `Agent` बनाएँ। |
+
+## चलाएँ और जारी रखें
+
+| मेथड | उपयोग |
+| --- | --- |
+| `Agent::run(client, options)` | इवेंट callback के बिना सिंक्रोनस तरीके से चलाएँ। |
+| `Agent::run_with_events(client, options, callback)` | सिंक्रोनस तरीके से चलाएँ और `AgentEvent` वैल्यू जारी करें। |
+| `Agent::continue_run(client, options)` | रुकी हुई रन जारी रखें। |
+| `Agent::continue_with_events(client, options, callback)` | रन जारी रखें और इवेंट जारी करें। |
+
+`RunOptions` फ़ील्ड:
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+डिफ़ॉल्ट बनाने के लिए `RunOptions::new(input)` का इस्तेमाल करें।
+
+`ContinueOptions` फ़ील्ड:
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+डिफ़ॉल्ट बनाने के लिए `ContinueOptions::new(result)` का इस्तेमाल करें।
+
+## टूल
+
+| API | उपयोग |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | स्थानीय सिंक्रोनस टूल परिभाषित करें। |
+| `Tool::external(id, description, parameters)` | ऐसा टूल परिभाषित करें जिसका नतीजा pause के बाद ऐप्लिकेशन देता है। |
+| `Tool::require_approval()` | स्थानीय निष्पादन से पहले सटीक ID के लिए अनुमोदन ज़रूरी करें। |
+| `define_tool(tool)` | एक समान परिभाषा शैली के लिए दिया गया `Tool` लौटाएँ। |
+
+executor का signature:
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+`Tool` में `id`, `description`, `parameters`, `execute` और `require_approval` उपलब्ध हैं। executor के प्रकार और डिफ़ॉल्ट एक जैसे रखने के लिए उसके constructor और builder method को प्राथमिकता दें।
+
+executor को दिया गया `RuntimeContext` इन चीज़ों को रखता है:
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## संदेश और टूल कॉल
+
+`Message` में `role`, `content`, `tool_calls`, वैकल्पिक `tool_call_id`, वैकल्पिक `name` और `is_error` होते हैं। सामान्य संदेश इनसे बनाएँ:
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+`ToolCall` में कॉल ID `id`, टूल का नाम `name` और JSON इनपुट `input` होता है।
+
+`ToolSpec` में टूल ID `id`, `description` और मॉडल क्लाइंट को भेजे जाने वाले JSON Schema पैरामीटर `parameters` होते हैं।
+
+## मॉडल क्लाइंट
+
+दूसरा मॉडल ट्रांसपोर्ट इस्तेमाल करने के लिए `ModelClient` लागू करें:
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+बिल्ट-इन Gateway adapter इन तरीकों से उपलब्ध है:
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+यह `ModelRequest` वैल्यू को `POST /responses` पर भेजता है और आउटपुट टेक्स्ट, फ़ंक्शन कॉल, अनुरोध मेटाडेटा और उपयोग को सामान्य रूप में बदलता है।
+
+`ModelRequest` में एजेंट ID, प्रभावी मॉडल, निर्देश, मौजूदा संदेश, टूल स्पेसिफिकेशन और ऐप्लिकेशन संदर्भ होते हैं।
+
+`ModelResponse` में यह होता है:
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## समीक्षा और pause के प्रकार
+
+`HumanReviewContext` में रन और एजेंट ID, स्टेप इंडेक्स, मौजूदा संदेश, सामान्यीकृत मॉडल जवाब और ऐप्लिकेशन संदर्भ होते हैं।
+
+रन को pause करने के लिए review callback से `HumanReviewRequest { reason, payload }` लौटाएँ।
+
+`HumanPause` में यह होता है:
+
+- `reason`
+- JSON payload `payload`
+- `kind`
+- `pending_tool_calls`
+
+हर `PendingToolCall` में मूल `ToolCall`, आवश्यक इनपुट का प्रकार `kind` और पढ़ने योग्य कारण होता है।
+
+`ToolDecision` में अनुमोदित `tool_call_id` और वैकल्पिक कारण होता है। `ToolOutput` में `tool_call_id` और JSON आउटपुट होता है।
+
+## रन रिकॉर्ड
+
+`RunResult` में यह होता है:
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+`RunRecord` में रन और एजेंट ID, प्रभावी मॉडल और स्टेप सीमा, स्थिति, मूल इनपुट, ऐप्लिकेशन संदर्भ, स्टेप की संख्या, वैकल्पिक pause, वैकल्पिक रोकने का कारण और टाइमस्टैम्प होते हैं।
+
+`RunStep` में इंडेक्स, स्थिति, मॉडल के प्रयासों की संख्या, टूल कॉल, अनुरोध ID, प्रोवाइडर, मॉडल, पूरा होने का कारण, वैकल्पिक त्रुटि और उपयोग होता है।
+
+`UsageSummary` में `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` और `cost` होते हैं।
+
+`cost` मॉडल क्लाइंट देता है। बिल्ट-इन Gateway 0.1 adapter अभी Gateway के `cost_nanos` या `cost_cents` को इस फ़ील्ड में नहीं रखता है।
+
+जिन परिभाषाओं में `Serialize` और `Deserialize` derive किए गए हों, उनमें `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` और `UsageSummary` Serde serialization का समर्थन करते हैं।
+
+## इवेंट और त्रुटियाँ
+
+`AgentEvent` फ़ील्ड:
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+`AgentError`, `std::error::Error` और `Display` लागू करता है। त्रुटि बनाने के लिए `AgentError::new(...)` और उसका संदेश पढ़ने के लिए `message()` इस्तेमाल करें।
+
+## बाहरी संदर्भ
+
+- [crates.io पर `phaseo-agent`](https://crates.io/crates/phaseo-agent)
+- [docs.rs पर `phaseo-agent`](https://docs.rs/phaseo-agent)

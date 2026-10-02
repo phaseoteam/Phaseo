@@ -1,0 +1,38 @@
+---
+icon: "shuffle"
+title: "Amostragem e decodificação"
+description: "Como estratégias de decodificação e penalidades moldam as saídas do modelo."
+---
+
+A decodificação determina como escolher o próximo token a partir das probabilidades do modelo.
+
+## Controles comuns
+
+| Controle | Finalidade | Observações |
+| --- | --- | --- |
+| `temperature` | Controle global da aleatoriedade | Geralmente é o primeiro parâmetro ajustado |
+| `top_p` | Restringe a massa de probabilidade acumulada | Muitas vezes combinado com temperatura moderada |
+| `top_k` | Restringe a seleção aos tokens mais prováveis | Não está disponível em todos os provedores |
+| `frequency_penalty` | Desestimula a repetição de tokens ou frases | Ajuda a reduzir ciclos repetitivos |
+| `presence_penalty` | Incentiva a introdução de novos tokens ou tópicos | Útil para explorar mais possibilidades |
+| `repetition_penalty` | Penaliza padrões de texto repetidos (depende do provedor/modelo) | Objetivo semelhante, mas com semântica de implementação diferente |
+
+## Predefinições comuns
+
+| Caso de uso | Perfil sugerido |
+| --- | --- |
+| Extração/classificação determinística | `temperature` baixa (`0.0` a `0.2`), amostragem restrita |
+| Resposta equilibrada do assistente | `temperature` média (`0.3` a `0.7`), `top_p` próximo de `0.9` a `1.0` |
+| Geração criativa | `temperature` mais alta e amostragem mais ampla, com avaliação mais rigorosa |
+
+## Padrões de falha
+
+- Aleatoriedade excessiva: fatos inconsistentes e saídas estruturadas instáveis.
+- Determinismo excessivo: respostas repetitivas ou sem vivacidade.
+- Penalidades excessivas: texto artificial e desvio do tema.
+
+## Recomendações práticas
+
+1. Ajuste a decodificação por tarefa, não de forma global.
+2. Mantenha configurações conservadoras para tarefas de extração e JSON.
+3. Em tarefas criativas, aumente a aleatoriedade aos poucos e avalie os resultados com revisão humana.

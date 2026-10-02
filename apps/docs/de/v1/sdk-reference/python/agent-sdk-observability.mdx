@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Fehler und Fehlerbehebung"
+description: "Diagnostiziere Fehler von Python-Agenten, ungültige Tool-Daten und unterbrochene Läufe."
+---
+
+Ein fehlgeschlagenes Ergebnis enthält weiterhin den aktiven Schritt, die Anzahl der Wiederholungen, die Anfragen-ID, die native Response-ID, Provider-Metadaten und verfügbare Gateway-Details.
+
+Prüfe Folgendes:
+
+- der Prozess auf `PHASEO_API_KEY` zugreifen kann
+- Tool-IDs eindeutig sind
+- Genehmigungsentscheidungen die exakten Aufruf-IDs verwenden
+- der pausierte Zustand gespeichert wird, bevor ein weiterer Request fortgesetzt wird
+- Validatoren keine Seiteneffekte auslösen
+- Abbruchsignale Netzwerk- oder Speicherarbeiten innerhalb von Tools erreichen
+
+Verwende Lifecycle-Ereignisse für Anwendungstelemetrie und DevTools zur lokalen Laufinspektion.
+
+## Weiterführende Themen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

@@ -1,0 +1,10 @@
+---
+title: "تحديث مفتاح الإدارة"
+sidebarTitle: "تحديث مفتاح الإدارة"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "يحدّث نطاقات مفتاح الإدارة وحدوده وانتهاء صلاحيته واسمه وحالة إيقافه."
+---
+<Note>تتطلب نقطة النهاية هذه هوية مالك أو مسؤول و`management_keys:write`.</Note>
+
+لا يمكن لمقدم الطلب منح نطاقات لا يملكها. تحتفظ الحقول المحذوفة بقيمها الحالية.

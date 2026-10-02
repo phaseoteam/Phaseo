@@ -1,0 +1,174 @@
+---
+icon: "braces"
+title: "Rust Agent SDK API 参考"
+description: "phaseo-agent 0.1 的公开结构体、trait 和方法。"
+---
+
+本页介绍 [`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/) 的公开 API。
+
+## 智能体定义
+
+| API | 用途 |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | 创建智能体定义，默认步数上限为 8。 |
+| `.instructions(text)` | 设置模型指令。 |
+| `.tool(tool)` | 添加一个工具。 |
+| `.max_steps(limit)` | 设置模型轮次上限，最小值为 1。 |
+| `.model_retries(count, backoff)` | 按固定的 `Duration` 间隔重试失败的模型请求。 |
+| `.human_review(callback)` | 如果回调返回 `Some(HumanReviewRequest)`，则在模型响应后暂停运行。 |
+| `create_agent(definition)` | 创建一个 `Agent`。 |
+
+## 运行与继续
+
+| 方法 | 用途 |
+| --- | --- |
+| `Agent::run(client, options)` | 同步运行，不使用事件回调。 |
+| `Agent::run_with_events(client, options, callback)` | 同步运行并发出 `AgentEvent` 值。 |
+| `Agent::continue_run(client, options)` | 继续已暂停的运行。 |
+| `Agent::continue_with_events(client, options, callback)` | 继续运行并发出事件。 |
+
+`RunOptions` 字段：
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+使用 `RunOptions::new(input)` 创建默认值。
+
+`ContinueOptions` 字段：
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+使用 `ContinueOptions::new(result)` 创建默认值。
+
+## 工具
+
+| API | 用途 |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | 定义一个本地同步工具。 |
+| `Tool::external(id, description, parameters)` | 定义一个在暂停后由应用提供结果的工具。 |
+| `Tool::require_approval()` | 本地执行前要求提供精确 ID 的审批。 |
+| `define_tool(tool)` | 返回提供的 `Tool`，以便统一工具定义方式。 |
+
+执行器的签名如下：
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+`Tool` 提供 `id`、`description`、`parameters`、`execute` 和 `require_approval`。建议使用其构造函数和 builder 方法，以保持执行器类型和默认值一致。
+
+传递给执行器的 `RuntimeContext` 包含：
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## 消息与工具调用
+
+`Message` 包含 `role`、`content`、`tool_calls`、可选的 `tool_call_id`、可选的 `name` 以及 `is_error`。使用以下方法创建普通消息：
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+`ToolCall` 包含调用 ID `id`、工具名称 `name` 和 JSON 输入 `input`。
+
+`ToolSpec` 包含工具 ID `id`、描述 `description`，以及发送给模型客户端的 JSON Schema 参数 `parameters`。
+
+## 模型客户端
+
+实现 `ModelClient`，即可使用其他模型传输方式：
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+可通过以下方式使用内置 Gateway 适配器：
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+适配器会将 `ModelRequest` 值发送到 `POST /responses`，并规范化输出文本、函数调用、请求元数据和用量。
+
+`ModelRequest` 包含智能体 ID、实际模型、指令、当前消息、工具规范和应用上下文。
+
+`ModelResponse` 包含：
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## 人工审核与暂停类型
+
+`HumanReviewContext` 包含运行 ID 和智能体 ID、步骤索引、当前消息、规范化后的模型响应以及应用上下文。
+
+从审核回调返回 `HumanReviewRequest { reason, payload }`，即可暂停运行。
+
+`HumanPause` 包含：
+
+- `reason`
+- JSON 负载 `payload`
+- `kind`
+- `pending_tool_calls`
+
+每个 `PendingToolCall` 包含原始 `ToolCall`、所需输入类型 `kind` 和便于阅读的原因。
+
+`ToolDecision` 提供已批准的 `tool_call_id` 和可选原因。`ToolOutput` 提供 `tool_call_id` 和 JSON 输出。
+
+## 运行记录
+
+`RunResult` 包含：
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+`RunRecord` 包含运行 ID 和智能体 ID、实际模型和步数上限、状态、原始输入、应用上下文、步数、可选的暂停信息、可选的停止原因和时间戳。
+
+`RunStep` 包含索引、状态、模型尝试次数、工具调用、请求 ID、提供方、模型、结束原因、可选错误和用量。
+
+`UsageSummary` 包含 `input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens` 和 `cost`。
+
+`cost` 由模型客户端提供。内置 Gateway 0.1 适配器目前不会将 Gateway 的 `cost_nanos` 或 `cost_cents` 映射到此字段。
+
+如果定义派生了 `Serialize` 和 `Deserialize`，`RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput` 和 `UsageSummary` 均支持 Serde 序列化。
+
+## 事件与错误
+
+`AgentEvent` 字段：
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+`AgentError` 实现了 `std::error::Error` 和 `Display`。使用 `AgentError::new(...)` 创建错误，使用 `message()` 读取错误消息。
+
+## 外部参考
+
+- [crates.io 上的 `phaseo-agent`](https://crates.io/crates/phaseo-agent)
+- [docs.rs 上的 `phaseo-agent`](https://docs.rs/phaseo-agent)

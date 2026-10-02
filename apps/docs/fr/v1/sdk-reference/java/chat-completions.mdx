@@ -1,0 +1,26 @@
+---
+icon: "messages-square"
+title: "Complétions de chat"
+description: "Appelez `/chat/completions` avec le SDK Java."
+---
+
+**Méthode**: `client.createChatCompletion(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Write a one-line haiku." }
+  ]
+}
+""";
+
+Object response = client.createChatCompletion(body);
+System.out.println(String.valueOf(response));
+```
+

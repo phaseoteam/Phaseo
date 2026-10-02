@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "响应 .NET 运行、模型、步骤、工具和检查点事件。"
+---
+
+Pass `RunOptions.OnEvent` 更新产品时间线、审计日志或遥测管道。
+
+事件类型包括运行的开始、恢复和终止状态，模型请求，步骤检查点，工具执行与进度，等待人工处理，取消和失败。
+
+回调应保持快速。将耗时的存储或网络工作排到代理循环之外。
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

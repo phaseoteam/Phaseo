@@ -1,0 +1,104 @@
+---
+title: "लोकल एजेंट टूल एक साथ चलाएँ"
+icon: "network"
+description: "TypeScript Agent SDK में लोकल टूल की समवर्ती संख्या सीमित करें, ताकि हर टूल कॉल को क्रम से चलाए बिना मॉडल एक टर्न में स्वतंत्र संदर्भ जुटा सके।"
+---
+
+जब एजेंट का एक टर्न कई स्वतंत्र लोकल टूल सुरक्षित रूप से कॉल कर सकता हो और आप नतीजों का तय क्रम बनाए रखते हुए उन्हें साथ चलाना चाहते हों, तब यह रेसिपी अपनाएँ।
+
+## इसका उपयोग कब करें
+
+इन स्थितियों में `toolExecution.toolConcurrency` उपयोग करें:
+
+- मॉडल एक टर्न में कई लोकल टूल कॉल कर सकता हो
+- वे टूल एक-दूसरे के नतीजों पर निर्भर न हों
+- क्रमिक निष्पादन से वर्कर का समय बर्बाद हो
+- आप सहेजे गए टूल-नतीजा संदेशों को मूल कॉल क्रम में रखना चाहते हों
+
+अगर कोई टूल साझा स्थिति बदलता हो या बाद के टूल पहले के नतीजों पर निर्भर हों, तो अधिक समवर्ती संख्या न रखें।
+
+## उदाहरण
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+```
+
+पैकेज में शामिल उदाहरण देखें: `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## रनटाइम की गारंटी
+
+- लोकल टूल, कॉन्फ़िगर किए गए `toolConcurrency` तक एक साथ चल सकते हैं
+- हर टूल के लिए `tool.started` और `tool.completed` इवेंट जारी होते हैं
+- सहेजे गए टूल-नतीजा संदेश मूल कॉल क्रम में रहते हैं
+- टूल चरण पूरा होने के बाद भी चेकपॉइंट बनता है
+- `timeoutMs` के ज़रिए हर टूल पर टाइमआउट लागू रहता है
+
+## संचालन संबंधी सुझाव
+
+- `2` या `3` जैसी छोटी समवर्ती संख्या से शुरू करें
+- लोकल टूल को इडेम्पोटेंट और कम साइड इफ़ेक्ट वाला रखें
+- `timeoutMs` उपयोग करें ताकि अटकी निर्भरता सभी वर्कर स्लॉट न घेर ले
+- `store` तभी जोड़ें जब ऐप्लिकेशन को वाकई रन फिर शुरू करने या रिमोट समन्वय की ज़रूरत हो
+
+## सत्यापन
+
+इस पैटर्न को सक्षम करने के बाद:
+
+- कई टूल वाले टर्न के लिए एजेंट लूप टेस्ट चलाएँ
+- पुष्टि करें कि वर्कफ़्लो टूल-नतीजा संदेश सही क्रम में देता है
+- पुष्टि करें कि ऑपरेटर लॉग में अपेक्षित `tool.started` और `tool.completed` इवेंट अब भी दिखते हैं

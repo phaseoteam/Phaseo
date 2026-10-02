@@ -1,0 +1,120 @@
+---
+title: "文档 MCP"
+icon: "plug-zap"
+description: "将 Phaseo 文档 MCP 服务器连接到 Codex、Claude Code、Cursor 或 VS Code。"
+---
+
+如果你希望编程代理使用最新文档而非过时的训练数据回答 Phaseo 相关问题，请连接 Phaseo 文档 MCP 服务器。
+
+此 MCP 服务器为只读，可帮助代理在工作时搜索文档并阅读完整页面。
+
+## 服务器 URL
+
+`https://phaseo.app/docs/mcp`
+
+## 它提供的功能
+
+- 搜索整个 Phaseo 文档并获取最新结果
+- 代理需要更多细节时可读取完整页面内容
+- 可访问托管的能力说明 [skill.md](https://phaseo.app/docs/skill.md)
+
+## Codex
+
+添加服务器：
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+检查连接：
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+为当前项目添加服务器：
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+使其在所有项目中可用：
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+检查连接：
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+使用文档中的上下文菜单在 Cursor 中安装 MCP 服务器，或手动添加：
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+将 Phaseo 文档服务器添加到 `opencode.json`：
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+使用文档中的上下文菜单在 VS Code 中安装 MCP 服务器，或手动添加：
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## 适用场景
+
+如果你希望代理执行以下操作，请使用 Docs MCP：
+
+- 编写代码前查询最新的请求格式
+- 确认模型或提供商是否支持某个端点
+- 检查路由、预设、护栏或异步任务的行为
+- 无需离开编辑器即可从文档获取示例
+
+## 示例提示词
+
+- `查阅 Phaseo 文档中的 Responses 请求格式，并给我一个最简示例。`
+- `更改此请求前，使用 Phaseo 文档 MCP 服务器检查 provider.sort 的工作方式。`
+- `查找 Phaseo 护栏文档，并总结其中影响提供商路由的部分。`
+
+## 相关指南
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [快速入门](../../quickstart.mdx)
+- [API 参考](../../api-reference/introduction.mdx)

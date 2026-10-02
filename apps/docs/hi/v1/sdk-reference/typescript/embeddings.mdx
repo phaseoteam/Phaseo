@@ -1,0 +1,40 @@
+---
+icon: "binary"
+title: "एम्बेडिंग"
+description: "TypeScript SDK के साथ /embeddings call करें।"
+---
+
+**Method**: `client.generateEmbedding()`।
+
+### उदाहरण
+```typescript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): embedding model ID (जैसे `openai/text-embedding-3-large`)।
+- `input` (ज़रूरी): string या strings का array।
+- `encoding_format`: `float` (default) या `base64`।
+- `dimensions`: एम्बेडिंग की लंबाई घटाने के लिए वैकल्पिक पूर्णांक (मॉडल पर निर्भर)।
+- `user`: अंतिम उपयोगकर्ता का वैकल्पिक टैग।
+
+### लौटाया गया मान
+Embedding payload (JSON)
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```

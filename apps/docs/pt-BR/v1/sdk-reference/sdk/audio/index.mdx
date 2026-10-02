@@ -1,0 +1,40 @@
+---
+icon: "audio-lines"
+title: "TTS / STT (texto para fala / fala para texto, AI SDK)"
+description: "Transcrição de fala (STT) e síntese de fala (TTS) com modelos do provedor Phaseo."
+---
+
+Use `experimental_transcribe` com `transcriptionModel` e `experimental_generateSpeech` com `speechModel`.
+
+```ts
+import { readFileSync, writeFileSync } from "node:fs";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { experimental_generateSpeech, experimental_transcribe } from "ai";
+
+const audioInput = readFileSync("./audio.mp3");
+
+const transcription = await experimental_transcribe({
+  model: phaseo.transcriptionModel("openai/whisper-1"),
+  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+});
+
+console.log(transcription.text);
+console.log(transcription.providerMetadata);
+
+const speech = await experimental_generateSpeech({
+  model: phaseo.speechModel("openai/tts-1"),
+  text: "Hello from Phaseo audio.",
+  voice: "alloy",
+  outputFormat: "mp3",
+});
+
+writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
+console.log(speech.providerMetadata);
+```
+
+## Observações
+
+- Os helpers de áudio atuais do AI SDK ainda são experimentais, portanto os nomes podem mudar quando as APIs estáveis upstream forem lançadas.
+- Os formatos de entrada e saída de áudio variam conforme o modelo.
+- Ajuste o tamanho dos dados e os tempos limite para arquivos longos.
+- Repita as solicitações após respostas transitórias `429` e `5xx`.

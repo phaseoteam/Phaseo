@@ -1,0 +1,82 @@
+---
+icon: "message-square"
+title: "Responses API"
+description: "使用 Rust 通过 Phaseo Responses API 生成文本并调用工具。"
+---
+
+新的文本生成和工具调用场景请使用 `responses(...)`。
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Give three concise benefits of model routing.",
+        "max_output_tokens": 200
+    }))?;
+
+    println!("status: {}", response.status);
+    println!("request ID: {:?}", response.request_id);
+    println!("{}", serde_json::to_string_pretty(&response.body)?);
+    Ok(())
+}
+```
+
+## 读取输出文本
+
+Responses API 的输出是一个数组。要获取简单的文本结果：
+
+```rust
+use serde_json::Value;
+
+let text = response.body
+    .get("output")
+    .and_then(Value::as_array)
+    .into_iter()
+    .flatten()
+    .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+    .flat_map(|item| {
+        item.get("content")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    })
+    .find_map(|part| {
+        (part.get("type").and_then(Value::as_str) == Some("output_text"))
+            .then(|| part.get("text").and_then(Value::as_str))
+            .flatten()
+    });
+```
+
+如果请求可能返回多条消息、推理项、工具调用或提供商元数据，请保留完整的 `body`。
+
+## 发送函数工具
+
+```rust
+let response = client.responses(&json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Check the weather in London.",
+    "tools": [{
+        "type": "function",
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": { "type": "string" }
+            },
+            "required": ["city"]
+        }
+    }]
+}))?;
+```
+
+如需构建包含审批和可恢复状态的本地工具循环，请使用 [Rust Agent SDK](./agent-sdk-overview.mdx)。
+
+## 相关内容
+
+- [Responses API 参考](../../api-reference/endpoint/responses.mdx)
+- [使用 Rust Agent SDK 构建代理](./agent-sdk.mdx)

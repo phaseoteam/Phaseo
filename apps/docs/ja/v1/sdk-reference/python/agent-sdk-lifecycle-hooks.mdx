@@ -1,0 +1,20 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "Pythonの実行、モデル、ステップ、ツール、チェックポイントのイベントに対応します。"
+---
+
+`on_event`を渡すと、プロダクトのタイムライン、監査記録、既存のテレメトリーシステムを更新できます:
+
+```python
+def on_event(event):
+    logger.info("%s %s", event.type, event.run_id)
+```
+
+イベントには、実行状態、モデル呼び出し、ステップ、チェックポイント、ツールの実行と進捗、人間の応答待ち、キャンセル、失敗が含まれます。コールバックは短時間で処理し、時間のかかる作業は外部キューに送ってください。
+
+## 関連ページ
+
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [開発ツール](./agent-sdk-devtools.mdx)
+

@@ -1,0 +1,61 @@
+---
+title: "Méthodologie des benchmarks"
+description: "Découvrez comment Phaseo collecte, normalise et publie les résultats de benchmarks."
+icon: "clipboard-check"
+---
+
+Les benchmarks servent de base aux comparaisons entre modèles et fournisseurs. Cette page explique comment les données arrivent sur la plateforme et comment nous assurons leur cohérence.
+
+---
+
+## Sources des données
+
+- **Sources officielles** — Annonces des fournisseurs, blogs techniques et dossiers de presse.
+- **Articles universitaires** — Publications évaluées par des pairs et prépublications arXiv avec des résultats reproductibles.
+- **Contributions de la communauté** — Contributions vérifiées de la communauté Phaseo et de ses partenaires.
+
+Chaque score doit être accompagné d’une référence publique ou d’une évaluation reproductible avant son acceptation.
+
+---
+
+## Normalisation
+
+Nous harmonisons les noms, métriques et partitions des benchmarks afin de rendre les comparaisons entre modèles précises :
+
+1. Associer chaque contribution à un ID de benchmark interne.
+2. Convertir les métriques publiées sur une échelle canonique (par exemple, en pourcentages).
+3. Signaler les écarts, tels que les variantes few-shot ou les systèmes d’évaluation personnalisés.
+4. Exécuter une validation automatisée pour vérifier la cohérence des champs et des plages de valeurs.
+
+---
+
+## Fréquence des mises à jour
+
+- Chaque semaine pour les suites populaires telles que MMLU, GSM8K et HumanEval.
+- Chaque mois pour les benchmarks spécialisés ou émergents.
+- À la demande, lorsque des fournisseurs ou membres de la communauté soumettent des évaluations de qualité.
+
+Les mises à jour importantes donnent lieu à des entrées du journal des modifications afin que vous puissiez suivre l’historique.
+
+---
+
+## Transparence et reproductibilité
+
+| Pratique | Résultat |
+| --- | --- |
+| Lien vers les sources primaires | Les utilisateurs peuvent vérifier rapidement les scores. |
+| Suivi des dates `last_updated` | Indique quand un benchmark pourrait nécessiter une révision. |
+| Documentation de la configuration d’évaluation | Précise le format du prompt, les fenêtres de contexte et l’échantillonnage. |
+| Signalement des scores vérifiés par des humains | Distingue la validation manuelle des processus automatisés. |
+
+---
+
+## Boucle de retour
+
+Si vous constatez des écarts ou des données manquantes :
+
+1.  Ouvrez une issue avec les preuves décrites dans [Soumettre des scores de benchmark](./submitting-scores.mdx).
+2.  Répondez aux questions de révision dans l’issue. Les responsables publient les corrections vérifiées dans l’éditeur de base de données.
+3.  Contactez-nous sur Discord pour coordonner des soumissions de recherche plus importantes.
+
+Nous examinons chaque signalement et partageons des mises à jour pendant la vérification du benchmark.

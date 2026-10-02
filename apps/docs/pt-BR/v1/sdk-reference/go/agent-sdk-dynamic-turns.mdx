@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "Turnos dinâmicos"
+description: "Altere o modelo, as instruções, as ferramentas e as configurações de amostragem entre turnos do agente Go."
+---
+
+Callbacks de turnos dinâmicos permitem que o roteamento reaja ao estado da execução sem recriar o agente. Eles são executados antes de cada solicitação ao modelo e recebem o contexto do turno atual.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+Também é possível configurar ferramentas dinâmicas e valores de `Temperature`, `MaxOutputTokens` e `TopP` por turno.
+
+## Permitir que uma ferramenta influencie o próximo turno
+
+Defina `NextTurn` em uma ferramenta para alterar a próxima solicitação ao modelo. Essas substituições são armazenadas no estado pausado, persistem após uma etapa de aprovação e expiram depois do turno seguinte.
+
+Use callbacks dinâmicos para políticas que devem ser recalculadas a cada turno. Use `NextTurn` para uma transferência específica da ferramenta, como trocar de modelo após inspecionar um repositório.

@@ -1,0 +1,55 @@
+---
+icon: "package"
+title: "Installation du SDK Agent Rust"
+description: "Installez phaseo-agent et configurez son client pour la passerelle Phaseo."
+---
+
+## Prérequis
+
+- Rust 1.86 ou version ultérieure
+- une clé API de la passerelle Phaseo
+
+## Installation
+
+```toml
+[dependencies]
+phaseo = "0.1"
+phaseo-agent = "0.1"
+serde_json = "1"
+```
+
+Ou exécutez :
+
+```bash
+cargo add phaseo@0.1 phaseo-agent@0.1 serde_json
+```
+
+## Configurer l’authentification
+
+`create_gateway_agent_client(...)` et `GatewayAgentClient::from_env(...)` lisent `PHASEO_API_KEY` :
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+Le client `phaseo` sous-jacent accepte également `PHASEO_BASE_URL` en option.
+
+## Vérifier l’installation
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+## Étapes suivantes
+
+- [Créer votre premier agent Rust](./agent-sdk.mdx)
+- [Outils et approbations](./agent-sdk-tools.mdx)
+- [Référence de l’API Agent](./agent-sdk-api-reference.mdx)

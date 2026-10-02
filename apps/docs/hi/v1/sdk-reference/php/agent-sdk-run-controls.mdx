@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "आउटपुट और पुनः प्रयास"
+description: "Final outputs validate करें, model requests retry करें और पूरी हुई PHP runs देखें।"
+---
+
+जब आगे का PHP कोड एक अनुमानित संरचना पर निर्भर हो, तो आउटपुट की जाँच करें। मॉडल के पुनः प्रयास अस्थायी अनुरोध विफलताओं को संभालते हैं। जिन टूल के बाहरी प्रभाव होते हैं, उनमें ही पुनः प्रयास रखें और उन्हें दोबारा चलाने पर समान परिणाम देने योग्य बनाएँ।
+
+## पुनः प्रयास कॉन्फ़िगर करें
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+Run result में status, steps, messages, normalized usage, stop reason और final output होते हैं। Final text को पूरा execution record मानने के बजाय इन fields की जाँच करें।
+
+## अंतिम परिणाम validate करें
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+Budgets लागू करने के लिए [रोकने की शर्तें](./agent-sdk-stop-conditions) और recoverable failures का व्यवहार चुनने के लिए [त्रुटियाँ और समस्या-निवारण](./agent-sdk-observability) देखें।

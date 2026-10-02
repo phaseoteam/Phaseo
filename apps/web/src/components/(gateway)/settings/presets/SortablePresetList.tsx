@@ -21,6 +21,7 @@ import { GripVertical, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export type SortablePresetOption = {
 	id: string;
@@ -34,6 +35,7 @@ function SortableRow({ item, index, isDefault, onRemove }: {
 	isDefault: boolean;
 	onRemove: () => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 	return (
 		<div
@@ -49,7 +51,7 @@ function SortableRow({ item, index, isDefault, onRemove }: {
 				{item.icon}
 				<span className="truncate text-sm font-medium">{item.label}</span>
 			</div>
-			{isDefault ? <Badge variant="secondary" className="h-5 rounded-md px-1.5 text-[10px]">Default</Badge> : null}
+			{isDefault ? <Badge variant="secondary" className="h-5 rounded-md px-1.5 text-[10px]">{t("labels.default")}</Badge> : null}
 			<Button type="button" variant="ghost" size="icon" className="h-6 w-6 rounded-md" onClick={onRemove} aria-label={`Remove ${item.label}`}>
 				<X className="h-3.5 w-3.5" />
 			</Button>

@@ -12,16 +12,19 @@ import React from "react";
 import { Info } from "lucide-react";
 import Link from "next/link";
 import { ProviderLogoName } from "../../ProviderLogoName";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 interface ContextWindowComparisonProps {
 	selectedModels: ExtendedModel[];
 }
 
-function getBarChartData(models: ExtendedModel[]) {
+type CompareTranslator = ReturnType<typeof useTranslations<"Catalogue.compare">>;
+
+function getBarChartData(models: ExtendedModel[], t: CompareTranslator) {
 	return [
 		{
-			type: "Input Context",
+			type: t("inputContext"),
 			...Object.fromEntries(
 				models.map((m) => [
 					m.name,
@@ -32,7 +35,7 @@ function getBarChartData(models: ExtendedModel[]) {
 			),
 		},
 		{
-			type: "Output Context",
+			type: t("outputContext"),
 			...Object.fromEntries(
 				models.map((m) => [
 					m.name,
@@ -45,59 +48,36 @@ function getBarChartData(models: ExtendedModel[]) {
 	];
 }
 
-function getInfoSentence(models: ExtendedModel[], formatNumber: (value: number) => string) {
+function getInfoSentence(models: ExtendedModel[], formatNumber: (value: number) => string, t: CompareTranslator) {
 	if (models.length < 2) return null;
 	// Sort by input context length descending
 	const sorted = [...models].sort(
 		(a, b) => (b.input_context_length || 0) - (a.input_context_length || 0)
 	);
 	const [first, second] = sorted;
-	return (
-		<>
-			<Link
-				href={`/models/${first.id}`}
-				className="group"
-			>
-				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-					{first.name}
-				</span>
-			</Link>{" "}
-			accepts {first.input_context_length != null ? formatNumber(first.input_context_length) : "-"} input
-			tokens compared to{" "}
-			<Link
-				href={`/models/${second.id}`}
-				className="group"
-			>
-				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-					{second.name}
-				</span>
-			</Link>
-			&apos;s {second.input_context_length != null ? formatNumber(second.input_context_length) : "-"}.{" "}
-			<Link
-				href={`/models/${first.id}`}
-				className="group"
-			>
-				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-					{first.name}
-				</span>
-			</Link>{" "}
-			can generate responses up to{" "}
-			{first.output_context_length != null ? formatNumber(first.output_context_length) : "-"} tokens, while{" "}
-			<Link
-				href={`/models/${second.id}`}
-				className="group"
-			>
-				<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-					{second.name}
-				</span>
-			</Link>{" "}
-			is limited to{" "}
-			{second.output_context_length != null ? formatNumber(second.output_context_length) : "-"} tokens.
-		</>
+	const modelLink = (model: ExtendedModel) => (chunks: React.ReactNode) => (
+		<Link href={`/models/${model.id}`} className="group">
+			<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
+				{chunks}
+			</span>
+		</Link>
 	);
+	const number = (value: number | null | undefined) =>
+		value == null ? "-" : formatNumber(value);
+
+	return t.rich("contextSummary", {
+		first: modelLink(first),
+		firstInput: number(first.input_context_length),
+		second: modelLink(second),
+		secondInput: number(second.input_context_length),
+		firstOutput: number(first.output_context_length),
+		secondOutput: number(second.output_context_length),
+	});
 }
 
 function BarChartTooltip({ active, payload, label }: any) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	if (!active || !payload || payload.length === 0) return null;
 	return (
@@ -108,7 +88,7 @@ function BarChartTooltip({ active, payload, label }: any) {
 					<span>{p.name}</span>
 					<span>
 						{p.value != null ? format.number(Number(p.value)) : "-"}{" "}
-						tokens
+						{t("tokenUnit")}
 					</span>
 				</div>
 			))}
@@ -116,28 +96,28 @@ function BarChartTooltip({ active, payload, label }: any) {
 	);
 }
 
-function getModelCountBadge(models: ExtendedModel[]) {
+function getModelCountBadge(models: ExtendedModel[], t: CompareTranslator) {
 	const withInfo = models.filter(
 		(m) => m.input_context_length != null && m.output_context_length != null
 	);
 	if (withInfo.length === models.length) {
-		return <Badge variant="outline" className="text-xs">All models have context</Badge>;
+		return <Badge variant="outline" className="text-xs">{t("allModelsHaveContext")}</Badge>;
 	}
 	if (withInfo.length === 1) {
 		return (
-			<Badge variant="outline" className="text-xs">1 model has context</Badge>
+			<Badge variant="outline" className="text-xs">{t("oneModelHasContext")}</Badge>
 		);
 	}
 	if (withInfo.length === 0) {
 		return (
 			<Badge variant="outline" className="text-xs">
-				No context data
+				{t("noContextData")}
 			</Badge>
 		);
 	}
 	return (
 		<Badge variant="outline" className="text-xs">
-			{models.length - withInfo.length} missing
+			{t("missingModels", { count: models.length - withInfo.length })}
 		</Badge>
 	);
 }
@@ -145,6 +125,8 @@ function getModelCountBadge(models: ExtendedModel[]) {
 export default function ContextWindowComparison({
 	selectedModels,
 }: ContextWindowComparisonProps) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	if (!selectedModels || selectedModels.length === 0) return null;
 
@@ -153,17 +135,17 @@ export default function ContextWindowComparison({
 	);
 	if (!anyContext) return null;
 
-	const infoSentence = getInfoSentence(selectedModels, format.number);
+	const infoSentence = getInfoSentence(selectedModels, format.number, t);
 	return (
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Context window</h2>
+					<h2 className="text-lg font-semibold">{t("contextWindow")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Maximum input and output token capacity.
+						{t("contextWindowDescription")}
 					</p>
 				</div>
-				{getModelCountBadge(selectedModels)}
+				{getModelCountBadge(selectedModels, t)}
 			</header>
 
 			<div className="space-y-4">
@@ -208,7 +190,7 @@ export default function ContextWindowComparison({
 							<CardContent className="pt-0">
 								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm mb-1">
 									<span className="text-muted-foreground">
-										Input Context Length
+									{t("inputContextLength")}
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.input_context_length != null
@@ -218,7 +200,7 @@ export default function ContextWindowComparison({
 								</div>
 								<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm">
 									<span className="text-muted-foreground">
-										Output Context Length
+									{t("outputContextLength")}
 									</span>
 									<span className="font-mono font-bold mt-1 sm:mt-0">
 										{model.output_context_length != null
@@ -232,12 +214,15 @@ export default function ContextWindowComparison({
 				</div>
 				<div className="hidden sm:block rounded-xl border border-border/60 bg-background/60 p-4 text-center mb-4">
 					<ContextWindowBarChart
-						chartData={getBarChartData(selectedModels)}
+						chartData={getBarChartData(selectedModels, t)}
 						models={selectedModels.map((m) => ({
 							name: m.name,
 							provider: m.provider.name,
 						}))}
 						CustomTooltip={BarChartTooltip}
+						locale={locale}
+						inputLabel={t("inputContext")}
+						outputLabel={t("outputContext")}
 						barGap={32}
 					/>
 				</div>

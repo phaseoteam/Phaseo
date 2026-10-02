@@ -1,0 +1,42 @@
+---
+title: "Etiquetas de solicitud"
+description: "Asigna solicitudes del gateway a equipos, funciones o entornos definidos en el código y desglosa el gasto por etiqueta."
+icon: "tags"
+---
+
+Usa etiquetas de solicitud cuando el código de la aplicación necesite una dimensión de coste estable y más específica que una clave API o una aplicación. Las etiquetas se registran con la auditoría de la solicitud y pueden filtrarse en analíticas sin cambiar la solicitud al modelo.
+
+## Enviar etiquetas
+
+Configura `X-Phaseo-Metadata` como un objeto JSON que contenga hasta 32 pares únicos de clave y valor:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Los SDK de TypeScript y Python aceptan encabezados personalizados, por lo que puedes configurar el mismo encabezado en el cliente. Las etiquetas no se reenvían a los proveedores.
+
+## Desglosar el gasto
+
+Usa el endpoint de analíticas con `label_key` y `label_value`:
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+La respuesta usa el mismo formato de gasto agrupado que las analíticas sin filtrar, pero solo incluye solicitudes con ese par exacto de etiquetas.
+
+## Reglas
+
+- Las claves solo pueden contener letras, números, `_`, `.`, `:` o `-`, y no pueden superar los 64 caracteres.
+- Los valores son cadenas de un máximo de 256 caracteres.
+- Una solicitud puede incluir hasta 32 etiquetas y el encabezado admite un máximo de 8 KiB.
+- Las claves duplicadas o los metadatos mal formados se rechazan con `400 invalid_request`.
+- No incluyas prompts, secretos, direcciones de correo electrónico ni otros datos personales en las etiquetas.

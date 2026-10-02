@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "Exemplos"
+description: "Copie padrões específicos de Ruby para ferramentas, aprovações, streaming e execuções limitadas."
+---
+
+## Implantação com aprovação
+
+```ruby
+deploy = PhaseoAgentSdk.define_tool(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: true,
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+Armazene a execução retornada quando ela entrar em `waiting_for_human` e depois continue com uma decisão associada ao ID da chamada pendente.
+
+## Transmitir texto
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+## Limitar o trabalho autônomo
+
+Combine limites de etapas, tokens, custo e duração para que o agente não exceda o orçamento da aplicação, mesmo que continue encontrando trabalho útil.
+
+Consulte [ferramentas](./agent-sdk-tools.mdx), [estado e aprovação](./agent-sdk-state-and-approval.mdx) e [condições de parada](./agent-sdk-stop-conditions.mdx) para ver os contratos completos.

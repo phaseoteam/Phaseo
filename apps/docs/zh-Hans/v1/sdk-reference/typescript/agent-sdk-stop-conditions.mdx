@@ -1,0 +1,65 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "按步骤数、token 数、成本、时长、工具调用或结束原因限制 Agent 工作。"
+---
+
+使用停止条件为每个 Agent 设置明确的运行预算。系统会根据已完成步骤和累计用量检查条件。
+
+## 组合内置限制
+
+```typescript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+首个满足的条件会记录原因，并返回 `status: "stopped"` 的运行结果。
+
+## 可用辅助方法
+
+| 辅助方法 | 停止条件 |
+| --- | --- |
+| `stepCountIs(limit)` | 已完成步骤数达到上限 |
+| `maxTokensUsed(limit)` | 累计 token 用量达到上限 |
+| `maxCost(limit)` | 已报告的累计成本达到上限 |
+| `maxDuration(ms)` | 运行时间达到时长上限 |
+| `hasToolCall(name)` | 某个步骤包含指定的工具调用 |
+| `finishReasonIs(reason)` | 模型步骤报告了结束原因 |
+
+## 添加自定义条件
+
+条件可以返回 `false`、`true` 或原因字符串：
+
+```typescript
+const stopAfterRepeatedFailures = ({ steps }) => {
+  const failures = steps.filter((step) => step.status === "failed").length;
+  return failures >= 2 ? "repeated_failures" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedFailures],
+});
+```
+
+如果操作人员或产品界面需要说明运行结束的原因，建议返回原因字符串。
+
+## 相关指南
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [输出与重试](./agent-sdk-run-controls.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)

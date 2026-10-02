@@ -1,0 +1,10 @@
+---
+title: "Exporter les analyses de l’espace de travail"
+sidebarTitle: "Exporter les analyses"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /analytics/export"
+description: "Exporte les analyses filtrées de l’espace de travail au format CSV."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `analytics:read`.</Note>
+
+L’export accepte les mêmes filtres que le point de terminaison d’analyses et renvoie toutes les lignes agrégées correspondantes dans un CSV compatible avec les tableurs.

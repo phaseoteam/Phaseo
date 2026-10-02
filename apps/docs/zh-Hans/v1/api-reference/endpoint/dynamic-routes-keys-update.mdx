@@ -1,0 +1,10 @@
+---
+title: "替换动态路由密钥"
+sidebarTitle: "关联密钥"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PUT /routing/dynamic-routes/{id}/keys"
+description: "以原子方式替换关联到动态路由的 API 密钥。"
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+所有密钥都必须属于管理密钥所在的工作区。一个密钥只能关联到一条动态路由。

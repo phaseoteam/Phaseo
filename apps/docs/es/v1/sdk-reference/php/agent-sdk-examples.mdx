@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "Ejemplos"
+description: "Copia patrones de PHP concretos para herramientas, aprobaciones, streaming y ejecuciones con límites."
+---
+
+## Despliegue con aprobación
+
+```php
+$deploy = new Tool(
+    id: "deploy",
+    description: "Deploy the selected release",
+    requireApproval: true,
+    execute: fn (array $input, $runtime) => $deployments->deploy($input)
+);
+```
+
+Guarda la ejecución devuelta cuando pase a `waiting_for_human` y, después, continúa con una decisión asociada al ID de la llamada pendiente.
+
+## Transmitir texto
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+## Limitar el trabajo autónomo
+
+Combina límites de pasos, tokens, coste y duración para que el agente no supere el presupuesto de la aplicación, aunque siga encontrando tareas útiles.
+
+Consulta [herramientas](./agent-sdk-tools.mdx), [estado y aprobación](./agent-sdk-state-and-approval.mdx) y [condiciones de detención](./agent-sdk-stop-conditions.mdx) para conocer todos los detalles.

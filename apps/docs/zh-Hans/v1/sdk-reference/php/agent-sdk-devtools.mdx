@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "开发工具"
+description: "以 Phaseo DevTools 本地事件格式捕获 PHP Agent SDK 运行记录。"
+---
+
+构建工具时间线、审批界面和运行检查器时，可启用 DevTools 捕获。
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+每次运行和续接都会写入结构化 JSONL 记录，其中包含状态、用量、模型尝试、工具调用、暂停、请求元数据和错误。
+
+本地捕获用于辅助开发，不能作为生产环境的审计存储。持久化敏感内容前，请按应用需求进行脱敏、访问控制、加密并设置保留期限。

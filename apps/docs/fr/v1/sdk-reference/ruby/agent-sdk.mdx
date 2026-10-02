@@ -1,0 +1,48 @@
+---
+icon: "blocks"
+title: "Utilisation"
+description: "Exécutez des boucles d’outils, des validations humaines, des nouvelles tentatives et des agents reprenables avec l’Agent SDK Ruby."
+---
+
+## Préparer l’environnement d’exécution
+
+La gem Agent SDK n’est pas encore publiée sur RubyGems. Suivez les [instructions d’installation depuis les sources](./agent-sdk-installation.mdx).
+
+## Démarrage rapide
+
+```ruby
+require "phaseo_agent_sdk"
+
+agent = PhaseoAgentSdk.create_agent(
+  id: "quickstart-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Answer concisely and helpfully."
+)
+
+result = agent.run(
+  input: "Give me one fun fact about cURL.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## Contenu du package
+
+- `PhaseoAgentSdk.create_agent(...)`
+- `PhaseoAgentSdk.define_tool(...)`
+- `PhaseoAgentSdk.create_gateway_agent_client(...)`
+- Une boucle d’outils limitée au-dessus de l’API `responses` de Phaseo
+
+## Environnement d’exécution avancé
+
+Ruby prend en charge les fonctions de validation et d’approbation, HITL et les outils manuels, la progression, les erreurs récupérables, les énumérateurs rejouables, les fonctions d’arrêt, les tours dynamiques, les paramètres persistants du tour suivant, l’utilisation/le coût normalisés et les accesseurs d’état à typage structurel.
+
+## Streaming et annulation
+
+`Agent#stream(...)` et `Agent#continue_stream(...)` consomment le flux SSE Responses de la passerelle dans un thread de travail. Utilisez `text_stream`, `reasoning_stream`, `item_stream` ou `full_stream` ; appelez `cancel` pour arrêter le thread et fermer le flux HTTP. Les étapes terminées conservent les identifiants de requête, les métadonnées du fournisseur, les motifs de fin, les avertissements, l’utilisation et le coût.
+
+## À lire aussi
+
+- [Présentation de l’Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK TypeScript](../typescript/agent-sdk.mdx)

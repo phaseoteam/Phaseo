@@ -1,0 +1,90 @@
+---
+icon: "blocks"
+title: "保存并继续运行"
+description: "保存 Rust Agent SDK 运行状态，并在工具执行或人工审核后继续。"
+---
+
+`RunResult` 可使用 Serde 序列化。如果暂停状态需要在进程重启后保留，请将它存入自己的数据库、对象存储或任务记录中。
+
+## 保存暂停状态
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## 恢复状态
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+继续运行前，请重新创建相同的代理定义和工具。闭包和 `AgentDefinition` 不属于序列化运行状态。
+
+有效模型和最大步骤数保存在 `RunRecord` 中，因此继续运行后仍会保留单次运行的覆盖设置。
+
+## 人工审核
+
+使用 `human_review(...)` 检查完整的模型轮次并请求人工输入：
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-6-astra",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+通过人工输入恢复运行：
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## 暂停类型
+
+| `pause.kind` | 继续运行所需的值 |
+| --- | --- |
+| `human_review` | 非空的 `ContinueOptions.human_input` |
+| `tool_approval` | 按工具调用 ID 提供的 `ToolDecision` 条目 |
+| `external_output` | 按工具调用 ID 提供的 `ToolOutput` 条目 |
+| `tool_input` | 审批与外部输出的组合 |
+
+
+## 由应用管理的持久化
+
+Rust Agent SDK 不提供托管状态后端或持久化适配器。以下内容由应用负责：
+
+- 对已保存运行进行加密并设置保留期限
+- 授权审批和人工输入
+- 重新创建工具执行器
+- 继续运行副作用时确保幂等
+
+## 相关内容
+
+- [工具与审批](./agent-sdk-tools.mdx)
+- [事件、重试与错误](./agent-sdk-events-and-errors.mdx)

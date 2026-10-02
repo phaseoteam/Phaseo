@@ -1,0 +1,95 @@
+---
+title: "从 Cloudflare AI Gateway 迁移"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "将 Cloudflare AI Gateway 路由替换为 Phaseo，同时保留应用的请求流程。"
+icon: "/icons/brands/cloudflare.svg"
+---
+
+如果你的应用已经通过 Cloudflare AI Gateway 发送兼容 OpenAI 的请求，请使用本指南。先切换 Gateway 边界，再重新配置生产流量真正需要的路由、缓存和可观测性行为。
+
+## 变更内容
+
+| 设置 | 之前 | 之后 |
+| --- | --- | --- |
+| Gateway URL | 账户和 Gateway 专属的 Cloudflare URL | `https://api.phaseo.app/v1` |
+| 身份验证 | Cloudflare 和提供商凭据 | `PHASEO_API_KEY` |
+| 路由策略 | Cloudflare Gateway 配置 | Phaseo 路由设置和预设 |
+| 请求可见性 | Cloudflare 分析 | Phaseo 活动和请求详情 |
+
+<Steps>
+<Step title="梳理当前 Gateway 配置">
+
+记录 Cloudflare Gateway URL、提供商路由、自定义请求头、缓存规则、重试行为和应用依赖的分析功能。这有助于区分必须保留的行为和无需迁移的设置。
+
+</Step>
+
+<Step title="替换端点和凭据">
+
+尽可能保持请求负载不变，并更新兼容 OpenAI 的客户端连接边界。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="重新配置路由和共享默认值">
+
+将稳定的提供商限制、提示词默认值和生成参数移到[预设](../guides/presets.mdx)中。通过[路由和回退](../guides/routing-and-fallbacks.mdx)配置提供商排序和回退行为。
+
+Cloudflare 的缓存和分析设置不会自动迁移。请明确决定每项行为应由 Phaseo、应用还是边缘层负责。
+
+</Step>
+
+<Step title="切换前完成验证">
+
+根据需要测试非流式传输、流式传输、错误、工具和结构化输出。逐步切换流量前，比较延迟、输出、令牌用量和费用。
+
+</Step>
+</Steps>
+
+## 迁移检查清单
+
+- 已移除 Cloudflare 专用的 Gateway URL 和请求头。
+- 已通过 `GET /v1/models` 验证生产模型 ID。
+- 已有意重新配置或停用所需的缓存行为。
+- Phaseo 活动和请求详情能提供团队所需的可见性。
+- 回滚仍只需更改端点和密钥配置。
+
+## 后续步骤
+
+- [预设](../guides/presets.mdx)
+- [路由和回退](../guides/routing-and-fallbacks.mdx)
+- [可观测性](../guides/integrations/observability.mdx)

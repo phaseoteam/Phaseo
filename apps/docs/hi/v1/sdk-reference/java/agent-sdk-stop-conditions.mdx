@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "रोकने की शर्तें"
+description: "Java एजेंट के काम को steps, tokens, लागत, अवधि, tools या finish reason से सीमित करें।"
+---
+
+`AgentDefinition.stopWhen` में stop helper मिलाएँ:
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+`hasToolCall(...)` और `finishReasonIs(...)` जैसे helper भी हैं। पहली मेल खाती शर्त stop reason दर्ज करती है और चुपचाप जारी रखने के बजाय रुका हुआ रन लौटाती है।
+
+Cost और token limits तभी उपयोग करें जब चुना गया model route यह जानकारी देता हो। हमेशा fallback execution bound के रूप में step या duration limit रखें।
+
+## संबंधित विषय
+
+- [डायनेमिक टर्न](./agent-sdk-dynamic-turns.mdx)
+- [आउटपुट और रीट्राई](./agent-sdk-run-controls.mdx)

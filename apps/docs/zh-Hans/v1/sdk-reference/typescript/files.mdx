@@ -1,0 +1,56 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 TypeScript SDK 调用 /files。"
+---
+
+**方法**：`client.uploadFile()`、`client.listFiles()`、`client.getFile()`、`client.getFileContent()`。
+
+### 示例
+```typescript
+const uploaded = await client.uploadFile({ purpose: "batch", file: new Blob(["{}"]) });
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id);
+```
+
+<Note>
+`client.listFiles()` 已提供，但 `GET /files` 目前会返回 `file_list_not_supported_with_shared_gateway_key`
+使用共享网关密钥时会如此。请保存 `uploaded.id` 的值并直接检索文件。
+</Note>
+
+### 关键参数
+- `file`（上传时必填）：Blob/File/base64/字符串。
+- `purpose`（上传时必填）：例如 `batch`。
+
+### 返回值
+`FileObject`（上传/获取）
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```
+
+或 `FileListResponse`（底层提供方密钥支持列出文件时的列表响应）
+
+```json
+{
+  "data": [
+    {
+      "id": "file-123",
+      "object": "file",
+      "filename": "data.json",
+      "purpose": "batch",
+      "status": "processed",
+      "created_at": 1677610602,
+      "bytes": 123
+    }
+  ]
+}
+```

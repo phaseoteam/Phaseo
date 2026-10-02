@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "Outils de développement"
+description: "Enregistrez les exécutions locales du SDK Agent pour le développement et le débogage."
+---
+
+Pendant le développement, utilisez la capture DevTools du SDK Agent pour conserver localement les entrées, étapes, outils, sorties, durées et ID de corrélation de la passerelle d’une exécution.
+
+## Activer la capture pour une exécution
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+Par défaut, les fichiers sont enregistrés dans `.phaseo-devtools`, dans le répertoire de travail actuel.
+
+## Configurer le répertoire de sortie
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+Vous pouvez également définir `PHASEO_DEVTOOLS=true` et, facultativement, `PHASEO_DEVTOOLS_DIR` pour les processus de développement locaux.
+
+## Informations enregistrées
+
+Chaque entrée de `agent.run` ou `agent.continue` comprend :
+
+- ID de l’agent et de l’exécution
+- état et durée de l’exécution
+- entrée et contexte de l’application
+- détails du modèle et du fournisseur, le cas échéant
+- ID de requête de la passerelle et de réponse native
+- nombre d’étapes et d’outils
+- état final de l’exécution, messages, étapes et sortie
+- détails structurés de l’échec si une exécution génère une exception
+
+<Warning>
+Les entrées de l’agent, les messages, les résultats des outils et le contexte de l’application peuvent contenir des données sensibles. Excluez le répertoire DevTools du contrôle de version et appliquez les mêmes règles d’accès qu’aux autres journaux de développement.
+</Warning>
+
+## Guides associés
+
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [Erreurs et dépannage](./agent-sdk-events-and-errors.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)

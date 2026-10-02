@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import {
 	ArrowDown,
@@ -17,6 +19,8 @@ import {
 import { useSettingsRouter as useRouter } from "../../PrivateSettingsQuery";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import { Badge } from "@/components/ui/badge";
@@ -81,11 +85,6 @@ interface Props {
 	samplePreview?: boolean;
 }
 
-const ROLE_OPTIONS = [
-	{ value: "admin", label: "Admin" },
-	{ value: "member", label: "Member" },
-];
-
 function roleRank(role?: string) {
 	switch ((role || "").toLowerCase()) {
 		case "owner":
@@ -99,34 +98,34 @@ function roleRank(role?: string) {
 	}
 }
 
-function roleBadge(role?: string) {
+function roleBadge(role: string | undefined, s: (key: string) => string) {
 	switch ((role || "").toLowerCase()) {
 		case "owner":
 			return (
 				<Badge variant="default" className="gap-1.5">
 					<Crown className="h-3.5 w-3.5" />
-					Owner
+					{s("Owner")}
 				</Badge>
 			);
 		case "admin":
 			return (
 				<Badge variant="secondary" className="gap-1.5">
 					<ShieldIcon className="h-3.5 w-3.5" />
-					Admin
+					{s("Admin")}
 				</Badge>
 			);
 		case "member":
 			return (
 				<Badge variant="outline" className="gap-1.5">
 					<User className="h-3.5 w-3.5" />
-					Member
+					{s("Member")}
 				</Badge>
 			);
 		default:
 			return (
 				<Badge variant="outline" className="gap-1.5">
 					<UserRoundX className="h-3.5 w-3.5" />
-					Unknown
+					{s("Unknown")}
 				</Badge>
 			);
 	}
@@ -159,6 +158,19 @@ export default function TeamsMembers({
 }: Props) {
 	const format = useDisplayFormatters();
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
+	const s = React.useCallback(
+		(key: string, values?: Record<string, string>) =>
+			t(settingsStringKey(key) as never, values as never),
+		[t],
+	);
+	const roleOptions = React.useMemo(
+		() => [
+			{ value: "admin", label: s("Admin") },
+			{ value: "member", label: s("Member") },
+		],
+		[s],
+	);
 	const [selectedMember, setSelectedMember] = React.useState<Member | null>(
 		null
 	);
@@ -251,18 +263,18 @@ export default function TeamsMembers({
 		isCurrentUserOwner &&
 		!isSelectedHigherRole;
 
-	const confirmActionTitle = canLeaveTeam ? "Leave workspace" : "Revoke access";
-	const confirmActionButton = canLeaveTeam ? "Leave workspace" : "Revoke access";
-	const confirmActionLoading = canLeaveTeam ? "Leaving..." : "Revoking...";
+	const confirmActionTitle = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
+	const confirmActionButton = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
+	const confirmActionLoading = canLeaveTeam ? s("phraseLeaving") : s("phraseRevoking");
 	const confirmActionDescription = canLeaveTeam
-		? `Are you sure you want to leave ${activeWorkspaceName ?? "this workspace"}?`
+		? s("Are you sure you want to leave {workspace}?", {
+				workspace: activeWorkspaceName ?? s("this workspace"),
+		  })
 		: isSelectedHigherRole
-			? "You can't revoke access for someone with a higher role than yours."
-			: `Are you sure you want to revoke access for ${
-					selectedMember?.display_name ??
-					selectedMember?.user_id ??
-					"this member"
-				}?`;
+			? s("phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours")
+			: s("Are you sure you want to revoke access for {member}?", {
+					member: selectedMember?.display_name ?? selectedMember?.user_id ?? s("this member"),
+				});
 
 	const saveRole = async () => {
 		if (!activeWorkspaceId || !selectedMember || !canEditSelectedRole) return;
@@ -271,7 +283,7 @@ export default function TeamsMembers({
 				...current,
 				[selectedMember.user_id]: selectedRole,
 			}));
-			toast.success(`Updated ${selectedMember.display_name}'s sample role.`);
+			toast.success(s("phraseUpdatedMemberSSampleRole", { member: selectedMember.display_name ?? selectedMember.user_id }));
 			setRoleDialogOpen(false);
 			setSelectedMember(null);
 			return;
@@ -296,7 +308,12 @@ export default function TeamsMembers({
 			router.refresh();
 		} catch (error: any) {
 			toast.error(
-				error?.message ?? "Unable to update the member role right now."
+				localizedSettingsError(
+					error,
+					t,
+					"Action failed",
+					s("phraseUnableToUpdateTheMemberRoleRightNow"),
+				),
 			);
 		} finally {
 			setLoading(false);
@@ -306,9 +323,7 @@ export default function TeamsMembers({
 	const confirmRevoke = async () => {
 		if (!activeWorkspaceId || !selectedMember) return;
 		if (!canLeaveTeam && !canRevokeSelectedMember) {
-			toast.error(
-				"You can't revoke access for members with a higher role than yours."
-			);
+			toast.error(s("phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours"));
 			return;
 		}
 		if (selectedMember.is_sample) {
@@ -317,15 +332,14 @@ export default function TeamsMembers({
 				next.add(selectedMember.user_id);
 				return next;
 			});
-			toast.success(`Removed sample member ${selectedMember.display_name}.`);
+			toast.success(s("phraseRemovedSampleMemberMember", { member: selectedMember.display_name ?? selectedMember.user_id }));
 			setConfirmOpen(false);
 			setRoleDialogOpen(false);
 			setSelectedMember(null);
 			return;
 		}
 
-		const targetLabel =
-			selectedMember.display_name ?? selectedMember.user_id ?? "member";
+		const targetLabel = selectedMember.display_name ?? selectedMember.user_id ?? s("member");
 		try {
 			setLoading(true);
 			if (onRemoveMember) {
@@ -336,9 +350,14 @@ export default function TeamsMembers({
 					selectedMember.user_id
 				);
 				if (result && result.ok === false) {
-					const message = result.message ?? "Unable to revoke access.";
+					const message = localizedSettingsError(
+						result.message,
+						t,
+						"Action failed",
+						s("phraseUnableToRevokeAccess"),
+					);
 					if (message.toLowerCase().includes("owner")) {
-						toast.error("You can't revoke the owner's access.");
+						toast.error(s("phraseYouCanTRevokeTheOwnerSAccess"));
 					} else {
 						toast.error(message);
 					}
@@ -348,15 +367,22 @@ export default function TeamsMembers({
 
 			toast.success(
 				canLeaveTeam
-					? `You left ${activeWorkspaceName ?? "the workspace"}.`
-					: `Revoked access for ${targetLabel}.`
+					? s("phraseYouLeftWorkspace", { workspace: activeWorkspaceName ?? s("the workspace") })
+					: s("phraseRevokedAccessForMember", { member: targetLabel })
 			);
 			setConfirmOpen(false);
 			setRoleDialogOpen(false);
 			setSelectedMember(null);
 			router.refresh();
 		} catch (error: any) {
-			toast.error(error?.message ?? "Unable to revoke access right now.");
+			toast.error(
+				localizedSettingsError(
+					error,
+					t,
+					"Action failed",
+					s("phraseUnableToRevokeAccessRightNow"),
+				),
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -376,9 +402,9 @@ export default function TeamsMembers({
 	const copyUserId = async (userId: string) => {
 		try {
 			await navigator.clipboard.writeText(userId);
-			toast.success("Copied user ID");
+			toast.success(s("Copied user ID"));
 		} catch {
-			toast.error("Unable to copy user ID");
+			toast.error(s("Unable to copy user ID"));
 		}
 	};
 
@@ -392,11 +418,11 @@ export default function TeamsMembers({
 		<section className="space-y-4">
 			<div className="flex flex-wrap items-center gap-2">
 				<Badge variant="secondary">
-					{count} member{count === 1 ? "" : "s"}
+					{count} {count === 1 ? s("member") : s("members")}
 				</Badge>
 				{samplePreview ? (
 					<>
-						<Badge variant="outline">Sample preview</Badge>
+						<Badge variant="outline">{s("Sample preview")}</Badge>
 						<Button asChild variant="ghost" size="sm" className="ml-auto">
 							<Link
 								href={
@@ -405,7 +431,7 @@ export default function TeamsMembers({
 										: "/settings/workspaces/members"
 								}
 							>
-								Hide Samples
+								{s("Hide Samples")}
 							</Link>
 						</Button>
 					</>
@@ -414,19 +440,19 @@ export default function TeamsMembers({
 
 			{!activeWorkspaceId ? (
 				<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-					No workspace is currently selected.
+					{s("phraseNoWorkspaceIsCurrentlySelected")}
 				</div>
 			) : count === 0 ? (
 				<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-					No members in {activeWorkspaceName ?? "this workspace"} yet.
+					{s("phraseNoMembersInWorkspaceYet", { workspace: activeWorkspaceName ?? s("this workspace") })}
 				</div>
 			) : (
 				<div className="overflow-hidden rounded-xl border bg-background">
 					<Table className="min-w-[720px]">
 							<TableHeader className="bg-muted/30">
 								<TableRow>
-									<TableHead className="w-[40%] px-4">Member</TableHead>
-									<TableHead className="w-[18%] px-4">Role</TableHead>
+					<TableHead className="w-[40%] px-4">{s("Member")}</TableHead>
+					<TableHead className="w-[18%] px-4">{s("Role")}</TableHead>
 									<TableHead
 										className="w-[22%] px-2"
 										aria-sort={
@@ -443,15 +469,15 @@ export default function TeamsMembers({
 											size="sm"
 											className="h-7 gap-1.5 px-2 text-muted-foreground hover:text-foreground"
 											onClick={cycleSpendSort}
-											aria-label={`Sort by 30-day spend${
+											aria-label={`${s("Sort by 30-day spend")}${
 												spendSort === "none"
 													? ""
 													: spendSort === "desc"
-														? ", currently descending"
-														: ", currently ascending"
+														? `, ${s("currently descending")}`
+														: `, ${s("currently ascending")}`
 											}`}
 										>
-											Spend (30d)
+											{s("Spend (30d)")}
 											{spendSort === "asc" ? (
 												<ArrowUp />
 											) : spendSort === "desc" ? (
@@ -462,7 +488,7 @@ export default function TeamsMembers({
 										</Button>
 									</TableHead>
 									<TableHead className="w-[20%] px-4 text-right">
-										Actions
+										{s("Actions")}
 									</TableHead>
 								</TableRow>
 						</TableHeader>
@@ -498,14 +524,14 @@ export default function TeamsMembers({
 													{isCurrent || member.is_sample ? (
 														<div className="mt-1">
 															<Badge variant="outline">
-																{isCurrent ? "You" : "Sample"}
+														{isCurrent ? s("You") : s("Sample")}
 															</Badge>
 														</div>
 													) : null}
 												</div>
 											</TableCell>
 											<TableCell className="px-4 py-3">
-												{roleBadge(member.role)}
+												{roleBadge(member.role, s)}
 											</TableCell>
 											<TableCell className="px-4 py-3 text-sm text-muted-foreground">
 												<span className="font-mono tabular-nums">
@@ -517,9 +543,9 @@ export default function TeamsMembers({
 													<DropdownMenuTrigger render={<Button
 															variant="ghost"
 															size="icon"
-															aria-label={`Actions for ${
-																member.display_name ?? member.user_id
-															}`} />}>
+															aria-label={s("Actions for {member}", {
+																member: member.display_name ?? member.user_id,
+															})} />}>
 
 															<MoreHorizontal className="h-4 w-4" />
 
@@ -530,7 +556,7 @@ export default function TeamsMembers({
 														onClick={() => openRoleEditor(member)}
 													>
 														<UserCog />
-														Change Role
+															{s("Change Role")}
 													</DropdownMenuItem>
 												) : null}
 												{canOpenEditDialog ? (
@@ -540,7 +566,7 @@ export default function TeamsMembers({
 															onClick={() => void copyUserId(member.user_id)}
 														>
 															<Copy className="h-4 w-4" />
-															Copy User ID
+															{s("Copy User ID")}
 														</DropdownMenuItem>
 														{canRemoveMember ? (
 															<>
@@ -555,8 +581,8 @@ export default function TeamsMembers({
 																<UserRoundX />
 															)}
 															{isCurrent && canLeaveCurrentRow
-																? "Leave workspace"
-																: "Remove Member"}
+																? s("Leave workspace")
+																: s("Remove Member")}
 																</DropdownMenuItem>
 															</>
 														) : null}
@@ -584,39 +610,39 @@ export default function TeamsMembers({
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Member actions</DialogTitle>
+						<DialogTitle>{s("Member actions")}</DialogTitle>
 						<DialogDescription>
 							{selectedMember
 								? selectedMember.display_name ?? selectedMember.user_id
-								: "Member"}
+								: s("Member")}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="mt-2">
-						<Label className="mb-2">User Role</Label>
+						<Label className="mb-2">{s("User Role")}</Label>
 						{!canModifyRoles ? (
 							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
-								Only workspace owners can change member roles.
+								{s("phraseOnlyWorkspaceOwnersCanChangeMemberRoles")}
 							</div>
 						) : isSelectedOwner ? (
 							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
-								The workspace owner role is fixed and cannot be edited.
+								{s("phraseTheWorkspaceOwnerRoleIsFixedAndCannotBeEdited")}
 							</div>
 						) : (
 							<Select
 								value={selectedRole}
-								items={ROLE_OPTIONS}
+								items={roleOptions}
 								onValueChange={(value) => setSelectedRole(value)}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="admin" label="Admin">
-										Admin
+									<SelectItem value="admin" label={s("Admin")}>
+										{s("Admin")}
 									</SelectItem>
-									<SelectItem value="member" label="Member">
-										Member
+									<SelectItem value="member" label={s("Member")}>
+										{s("Member")}
 									</SelectItem>
 								</SelectContent>
 							</Select>
@@ -633,24 +659,24 @@ export default function TeamsMembers({
 								}}
 								disabled={loading || (!canLeaveTeam && !canRevokeSelectedMember)}
 							>
-								{loading ? "Working..." : confirmActionButton}
+								{loading ? s("phraseWorking") : confirmActionButton}
 							</Button>
 							{!canLeaveTeam && isSelectedHigherRole ? (
 								<p className="mt-2 text-xs text-muted-foreground">
-									You can only revoke members with an equal or lower role.
+									{s("phraseYouCanOnlyRevokeMembersWithAnEqualOrLowerRole")}
 								</p>
 							) : null}
 						</div>
 
 						<div className="ml-auto flex items-center gap-2">
 							<DialogClose asChild>
-								<Button variant="ghost">Cancel</Button>
+								<Button variant="ghost">{s("Cancel")}</Button>
 							</DialogClose>
 							<Button
 								onClick={saveRole}
 								disabled={loading || !canEditSelectedRole}
 							>
-								{loading ? "Saving..." : "Save"}
+								{loading ? s("phraseSaving") : s("Save")}
 							</Button>
 						</div>
 					</DialogFooter>
@@ -669,7 +695,7 @@ export default function TeamsMembers({
 							disabled={loading}
 							onClick={() => setConfirmOpen(false)}
 						>
-							Cancel
+							{s("Cancel")}
 						</Button>
 						<Button
 							variant="destructive"

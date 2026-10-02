@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "暂停 Java Agent 以等待人工决策，并从应用管理的状态继续运行。"
+---
+
+如需通用检查点，请从 `AgentDefinition.humanReview` 返回 `HumanReviewRequest`。工具审批和手动工作会将确切的调用 ID 写入暂停结果。
+
+使用 `Agent.continueRun(...)` 继续，并提供：
+
+- 用于批准或拒绝的 `ToolDecision` 条目
+- 用于手动工具的 `ToolOutput` 条目
+- 用于通用审核暂停的人工输入
+- 序列化的 `RunResult`，或由 `StateAccessor` 支持的运行 ID
+
+SDK 不依赖托管的 Agent SDK 状态。如果运行需要跨请求或服务重启保留，请实现 `StateAccessor`。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

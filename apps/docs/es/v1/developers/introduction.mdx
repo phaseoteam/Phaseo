@@ -1,0 +1,32 @@
+---
+title: "Cómo funciona Phaseo"
+description: "Comprende los modelos, proveedores, enrutamiento y facturación antes de integrar Phaseo."
+icon: "terminal"
+---
+
+Phaseo enruta las solicitudes de modelos de tu aplicación a proveedores mediante una API. Tu aplicación elige un modelo y endpoint; los ajustes del espacio de trabajo y los controles de la solicitud determinan qué proveedores pueden atenderla.
+
+## Modelos y proveedores
+
+Un modelo es el sistema que genera la salida. Un proveedor aloja el modelo y determina su disponibilidad, parámetros compatibles, precios y rendimiento. El mismo modelo puede tener varias ofertas de proveedores.
+
+El catálogo público también incluye modelos que no están disponibles actualmente en el Gateway. Comprueba la [disponibilidad del modelo](../exploring/models.mdx) antes de usar un ID en una solicitud.
+
+## Solicitudes y enrutamiento
+
+Usa [Responses, Chat Completions o Messages](../api-reference/introduction.mdx) según el protocolo de tu aplicación. Las capacidades siguen variando por proveedor; un endpoint común no significa que todos los modelos admitan todos los parámetros.
+
+Los [controles de enrutamiento](../guides/routing-and-fallbacks.mdx) permiten restringir proveedores y elegir su clasificación. Las alternativas siguen sujetas a tus restricciones y a la capacidad disponible; no garantizan el éxito.
+
+## Facturación y acceso
+
+Las solicitudes administradas usan el saldo de tu espacio de trabajo de Phaseo. Los modelos `:free` funcionan sin créditos depositados. Con credenciales del proveedor (BYOK), se aplican su facturación y los límites de su cuenta; revisa [precios y facturación](../pricing/tiers.mdx) antes del lanzamiento.
+
+Las [tareas de vídeo y lotes](../guides/async-video-and-batch.mdx) devuelven una tarea antes de terminar el procesamiento. Su acceso de prueba se administra por espacio de trabajo. Consulta el estado o recibe actualizaciones por webhook y descarga el resultado.
+
+## Crea tu integración
+
+- [Inicio rápido](../quickstart.mdx): realiza tu primera solicitud.
+- [Integra el Gateway](./integrating-with-the-gateway.mdx): mantén las credenciales en el backend y configura tu aplicación.
+- [Fiabilidad y estado](./reliability-and-status.mdx): investiga la disponibilidad y las solicitudes fallidas.
+- [Registros de solicitudes y observabilidad](../guides/integrations/observability.mdx): revisa el uso, latencia, coste y errores.

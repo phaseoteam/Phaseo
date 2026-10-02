@@ -1,0 +1,96 @@
+---
+icon: "activity"
+title: "الأحداث وإعادات المحاولة والأخطاء"
+description: "راقب عمليات تشغيل وكلاء Rust المتزامنة وتعامل مع إخفاقات النموذج أو الأدوات."
+---
+
+## أحداث دورة الحياة
+
+استخدم `run_with_events(...)` أو `continue_with_events(...)` لتلقي الأحداث بشكل متزامن:
+
+```rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!(
+        "{} run={} details={}",
+        event.event_type,
+        event.run_id,
+        event.details
+    );
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+يُصدر وقت التشغيل حاليًا الأحداث التالية:
+
+- `run.started`
+- `model.request.started`
+- `model.response.completed`
+- `tool.started`
+- `tool.completed`
+- `run.paused`
+- `run.resumed`
+- `run.completed`
+- `run.stopped`
+
+تُنفّذ دوال الاستدعاء في مؤشر ترابط التشغيل. اجعلها سريعة أو فوّض العمل إلى مكوّن آخر.
+
+## إعادات محاولة النموذج
+
+```rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new(
+    "resilient-agent",
+    "openai/gpt-6-astra",
+)
+.model_retries(2, Duration::from_millis(250));
+```
+
+يحسب `max_retries` المحاولات الإضافية بعد الطلب الأول. ويسجّل `RunStep.model_attempts` عدد المحاولات التي سبقت الحصول على استجابة ناجحة من النموذج.
+
+## الاستخدام
+
+يجمع `RunResult.usage` ما يلي:
+
+- `input_tokens`
+- `output_tokens`
+- `cached_tokens`
+- `total_tokens`
+- تتضمن `cost` عندما يملأها عميل النموذج
+
+تتضمن كل `RunStep` أيضًا ملخص الاستخدام الخاص بها ومعرّف الطلب والمزوّد والنموذج وسبب الإنهاء.
+
+لا يعيّن محوّل Gateway المضمّن `0.1` قيمتي `cost_nanos` أو `cost_cents` من Gateway إلى `UsageSummary.cost`. راجع استجابة Gateway أو سجل التوليد عند الحاجة إلى معرفة التكلفة الدقيقة.
+
+## الأخطاء
+
+تستخدم جميع إخفاقات وقت التشغيل `AgentError`:
+
+```rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+تُحوّل قيم `PhaseoError` من Gateway إلى `AgentError`. إذا احتاج التطبيق إلى حالة Gateway الأصلية ونص الاستجابة، فاستدعِ عميل `phaseo` مباشرةً أو نفّذ `ModelClient` مخصصًا يحتفظ بهذه الحقول في معالجة الأخطاء.
+
+تُعاد أخطاء منفّذ الأدوات المحلي إلى النموذج بوصفها نتائج أدوات بدلًا من إنهاء التشغيل فورًا.
+
+## حدود الخطوات
+
+يحدّد `AgentDefinition::max_steps(...)` الحد الافتراضي لأدوار النموذج. ويمكن تغييره لعملية تشغيل واحدة:
+
+```rust
+let mut options = RunOptions::new("Investigate this issue");
+options.max_steps = Some(4);
+```
+
+عند بلوغ الحد، تصبح قيمة `run.status` هي `stopped` وقيمة `run.stop_reason` هي `max_steps:<limit>`.

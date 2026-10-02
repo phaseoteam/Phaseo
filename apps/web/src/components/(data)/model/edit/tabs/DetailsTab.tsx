@@ -1,6 +1,7 @@
 "use client"
 
 import { type ReactNode, useEffect, useRef, useState } from "react"
+import { useLocale, useTranslations } from "next-intl"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,33 +33,23 @@ interface ModelLink {
 const DETAIL_FIELDS = [
   {
     key: "input_context_length",
-    label: "Input context length",
     inputType: "number",
-    placeholder: "e.g., 128000",
   },
   {
     key: "output_context_length",
-    label: "Output context length",
     inputType: "number",
-    placeholder: "e.g., 8192",
   },
   {
     key: "knowledge_cutoff",
-    label: "Knowledge cutoff",
     inputType: "date",
-    placeholder: "Knowledge cutoff date",
   },
   {
     key: "parameter_count",
-    label: "Parameter count",
     inputType: "text",
-    placeholder: "e.g., 70000000000",
   },
   {
     key: "training_tokens",
-    label: "Training tokens",
     inputType: "text",
-    placeholder: "e.g., 13000000000000",
   },
 ] as const
 
@@ -75,11 +66,6 @@ const LINK_FIELDS = [
 type DetailFieldKey = (typeof DETAIL_FIELDS)[number]["key"]
 type LinkFieldKey = (typeof LINK_FIELDS)[number]["key"]
 
-const COMPACT_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 2,
-})
-
 const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>([
   "parameter_count",
   "training_tokens",
@@ -89,13 +75,16 @@ function sanitizeDigitInput(value: string): string {
   return value.replace(/[^\d]/g, "")
 }
 
-function formatCompactNumberLabel(value: string): string {
+function formatCompactNumberLabel(value: string, locale: string): string {
   if (!value) return ""
   const normalized = value.replace(/^0+(?=\d)/, "")
   const safe = normalized || "0"
   const numeric = Number(safe)
   if (!Number.isFinite(numeric)) return ""
-  return COMPACT_NUMBER_FORMATTER.format(numeric)
+  return new Intl.NumberFormat(locale, {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(numeric)
 }
 
 function createEmptyDetailValues(): Record<DetailFieldKey, string> {
@@ -157,6 +146,8 @@ export default function DetailsTab({
   onDetailsChange,
   onLinksChange,
 }: DetailsTabProps) {
+  const locale = useLocale()
+  const tEditor = useTranslations("Common.ui.modelEditor")
   void model
   void onModelChange
 
@@ -260,15 +251,16 @@ export default function DetailsTab({
   return (
     <div className="space-y-5">
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Model Details</div>
+        <div className="text-sm font-semibold">{tEditor("detailsHeading")}</div>
         {DETAIL_FIELDS.map((field) => {
           const isCompactField = COMPACT_DETAIL_FIELDS.has(field.key)
           const compactLabel = isCompactField
-            ? formatCompactNumberLabel(detailValues[field.key])
+            ? formatCompactNumberLabel(detailValues[field.key], locale)
             : ""
+          const fieldTranslationKey = `detailFields.${field.key}`
 
           return (
-            <FieldRow key={field.key} label={field.label}>
+            <FieldRow key={field.key} label={tEditor(`${fieldTranslationKey}.label` as never)}>
               {field.inputType === "date" ? (
                 <DatePickerInput
                   value={detailValues[field.key]}
@@ -278,7 +270,7 @@ export default function DetailsTab({
                       [field.key]: value,
                     }))
                   }
-                  placeholder={field.placeholder}
+                  placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
                 />
               ) : isCompactField ? (
                 <div className="relative">
@@ -292,7 +284,7 @@ export default function DetailsTab({
                         [field.key]: sanitizeDigitInput(event.target.value),
                       }))
                     }
-                    placeholder={field.placeholder}
+                    placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
                     className={compactLabel ? "pr-16" : undefined}
                   />
                   {compactLabel ? (
@@ -311,7 +303,7 @@ export default function DetailsTab({
                       [field.key]: event.target.value,
                     }))
                   }
-                  placeholder={field.placeholder}
+                  placeholder={tEditor(`${fieldTranslationKey}.placeholder` as never)}
                 />
               )}
             </FieldRow>
@@ -320,9 +312,9 @@ export default function DetailsTab({
       </section>
 
       <section className="rounded-lg border p-4 space-y-4">
-        <div className="text-sm font-semibold">Model Links</div>
+        <div className="text-sm font-semibold">{tEditor("linksHeading")}</div>
         {LINK_FIELDS.map((field) => (
-          <FieldRow key={field.key} label={field.label}>
+          <FieldRow key={field.key} label={tEditor(`linkFields.${field.key}` as never)}>
             <Input
               type="url"
               value={linkValues[field.key]}

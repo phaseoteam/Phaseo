@@ -1,0 +1,25 @@
+---
+icon: "files"
+title: "Dateien"
+description: "Rufe `/files` mit dem Python-SDK auf."
+---
+
+**Methoden**: `client.upload_file()`, `client.list_files()`, `client.get_file()`, `client.get_file_content()`.
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
+
+print(uploaded)
+print(file_obj)
+print(file_bytes[:20])
+```
+
+<Note>
+  `list_files()` ist im SDK integriert, aber `GET /files` gibt derzeit `file_list_not_supported_with_shared_gateway_key` zurück
+  mit dem gemeinsamen Gateway-Schlüssel. Speichere die IDs hochgeladener Dateien und rufe sie direkt ab.
+</Note>

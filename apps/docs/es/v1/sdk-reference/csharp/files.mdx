@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "Archivos"
+description: "Usa el SDK de C# para subir archivos, consultar sus metadatos y recuperar su contenido."
+---
+
+**Métodos**: `client.UploadFile()`, `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+### Ejemplo
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()` está disponible en el SDK, pero actualmente `GET /files` devuelve `file_list_not_supported_with_shared_gateway_key` cuando se usa la clave compartida del gateway
+Guarda los IDs de los archivos subidos y recupéralos directamente.
+</Note>

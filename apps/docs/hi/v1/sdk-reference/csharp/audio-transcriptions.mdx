@@ -1,0 +1,32 @@
+---
+icon: "mic"
+title: "STT (वाणी से पाठ)"
+description: "C# SDK के साथ /audio/transcriptions call करें।"
+---
+
+**Method**: `client.CreateTranscription(...)`
+
+### उदाहरण
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateTranscription(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-transcribe",
+    ["audio_b64"] = "base64-audio",
+    ["language"] = "en"
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): transcription-सक्षम model ID।
+- `file` (ज़रूरी): audio data (stream या file)।
+- `language`: भाषा code का hint (जैसे `en`)।
+- `prompt`: accuracy बढ़ाने के लिए optional context।
+- `temperature` (0–2): sampling randomness।
+- `response_format`: `json`, `text`, `srt`, `verbose_json` आदि।
+
+### लौटाया गया मान
+`AudioTranscriptionResponse`
+

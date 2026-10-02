@@ -1,0 +1,58 @@
+---
+title: "बेहतर तरीके"
+description: "आर्किटेक्चर, सुरक्षा और ऑब्ज़र्वेबिलिटी के इन निर्देशों से भरोसेमंद AI फ़ीचर जारी करें।"
+icon: "clipboard-check"
+---
+
+प्रोडक्शन वर्कलोड में Gateway अपनाना आसान है, अगर आपकी बुनियाद मज़बूत हो। रेज़िलिएंस, सुरक्षा और रखरखाव बेहतर करने के लिए नीचे दिए सुझाव अपनाएँ।
+
+---
+
+## आर्किटेक्चर
+
+-   **प्रोवाइडर लॉजिक अलग रखें।** Gateway कॉल को किसी समर्पित service या SDK में रखें ताकि बदलाव सीमित रहें।
+-   **संभव हो तो responses को stream करें।** Tokens आते ही UI में भेजकर assistant की latency घटाएँ।
+-   **गैर-ज़रूरी jobs को batch करें।** ट्रैफ़िक के अचानक बढ़ने को संभालने के लिए बैकग्राउंड generation या evaluation को queue करें।
+
+---
+
+## सुरक्षा
+
+-   प्रोडक्शन में API keys को `.env` फ़ाइलों के बजाय secrets manager (AWS Secrets Manager, Doppler, 1Password) में रखें।
+-   अपने API पर request signing चालू करें ताकि client apps Gateway keys उजागर न करें।
+-   Credentials लीक होने से बचाने के लिए logs में केवल छोटी की हुई keys रखें (जैसे `sk_prod_abcd...`)।
+
+---
+
+## विश्वसनीयता
+
+-   सभी retry किए जा सकने वाले errors (HTTP 429 या 5xx) के लिए jitter के साथ exponential backoff लागू करें।
+-   रेट-लिमिट वाले अनुरोध को फिर भेजने से पहले [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) header का सम्मान करें।
+-   एक provider से दूसरे पर अपने-आप हुए failover पहचानने के लिए provider metadata देखें।
+
+---
+
+## ऑब्ज़र्वेबिलिटी
+
+| सिग्नल        | सुझाई गई कार्रवाई                                                |
+| ------------- | ----------------------------------------------------------------- |
+| लेटेंसी       | समस्या जल्दी पकड़ने के लिए p95 और p99 समय ट्रैक करें।             |
+| टोकन उपयोग   | ROI समझने के लिए लागत की तुलना व्यावसायिक metrics से करें।            |
+| त्रुटि दर   | लंबे समय तक failures 1% से अधिक रहें तो alert दें।             |
+| प्रोवाइडर का मिश्रण  | पक्का करें कि ट्रैफ़िक अपेक्षा के अनुसार providers में बाँटा गया हो।         |
+
+---
+
+## सहयोग
+
+-   आंतरिक wiki में prompt templates, input parameters और output handling लिखें।
+-   ऐसे dashboards साझा करें जिनमें benchmark बदलाव और उत्पाद पर उनका असर दिखे।
+-   व्यवहार में तालमेल रखने के लिए product, research और support टीमों के साथ नियमित समीक्षा करें।
+
+---
+
+## आगे पढ़ें
+
+-   [त्रुटियों को संभालने](../api-reference/errors.mdx) का तरीका जानें।
+-   स्केल की योजना के लिए [रेट लिमिट](../api-reference/limits.mdx) देखें।
+-   संदर्भ implementations के लिए [उदाहरण](../guides/examples.mdx) देखें।

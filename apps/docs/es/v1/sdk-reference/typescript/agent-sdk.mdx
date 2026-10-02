@@ -1,0 +1,474 @@
+---
+icon: "blocks"
+title: "Uso"
+description: "Crea aplicaciones de agentes con el Agent SDK de TypeScript sobre Phaseo Gateway."
+---
+
+Usa `@phaseo/agent-sdk` cuando tu aplicación necesite algo más que generar texto en una sola llamada:
+
+- bucles de herramientas de varios pasos
+- herramientas del entorno de ejecución local
+- ejecuciones reanudables a partir del estado devuelto por el SDK
+- pausas explícitas para aprobación humana
+- salidas finales tipadas
+- turnos de modelo a través del gateway mediante el SDK de TypeScript existente
+
+El paquete es un SDK que instalas, no una plataforma de agentes alojada. Tú aportas la aplicación, el modelo de despliegue y la estrategia de persistencia que quieras usar con el estado devuelto por cada ejecución.
+
+## Modelo de estado
+
+El Agent SDK no guarda las ejecuciones en ningún servicio alojado por Phaseo.
+
+- `run()` devuelve el estado completo necesario para continuar más adelante.
+- Si tu aplicación necesita reanudar una ejecución entre solicitudes o reinicios del proceso, guarda el estado devuelto en tu propio almacenamiento.
+- `continueRun()` acepta directamente el estado anterior de la ejecución.
+
+Phaseo no guarda nada fuera de tu aplicación.
+
+## Instalación
+
+```bash
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+## Qué incluye el SDK
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `continueRun()` para continuar desde un estado de ejecución devuelto anteriormente
+- `stream()` y `continueStream()` para obtener resultados progresivos que se pueden volver a reproducir
+- funciones auxiliares para condiciones de parada, como `stepCountIs()`, `maxCost()` y `hasToolCall()`
+
+## Primer agente
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## Modelo mental
+
+El bucle de ejecución hace cuatro cosas:
+
+1. envía el estado actual de los mensajes al cliente del modelo
+2. ejecuta las llamadas a herramientas locales devueltas
+3. añade los resultados de las herramientas al siguiente turno
+4. devuelve el estado actualizado de la ejecución tras completar cada paso
+
+Así, tu aplicación obtiene un bucle reanudable sin depender de un producto de orquestación alojado.
+
+## Elementos básicos
+
+### `createAgent()`
+
+Usa `createAgent()` para definir:
+
+- un `id` estable
+- instrucciones
+- un modelo o preset
+- una lista breve de herramientas
+- análisis opcional de la salida
+- reglas opcionales de revisión humana
+- controles opcionales para reintentos y ejecución de herramientas
+
+Mantén acotado el primer agente. Normalmente basta con un flujo de trabajo y una o dos herramientas.
+
+### `defineTool()`
+
+Define herramientas del entorno de ejecución local con:
+
+- `id`
+- `description`
+- `parameters` JSON opcionales
+- `timeoutMs` opcional
+- validadores de ejecución `inputSchema` y `outputSchema`
+- `execute()`, `execute: false` o callbacks con intervención humana
+- `requireApproval`, `onError`, `nextTurnParams` y eventos de progreso
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+Si se agota el tiempo, el entorno de ejecución aborta `context.signal`, marca la ejecución como `failed` y vuelve a lanzar el error de tiempo de espera.
+
+Los esquemas pueden ser una función o cualquier objeto que exponga `parse()` o `safeParse()`. Los argumentos no válidos del modelo y los resultados no válidos de las herramientas fallan antes de cruzar el límite de la herramienta.
+
+## Aprobación, HITL y herramientas manuales
+
+Controla por llamada las herramientas que producen efectos secundarios:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+La ejecución se pausa con `run.pause.pendingToolCalls`. Reanúdala con el ID exacto de la llamada para no confundir llamadas concurrentes:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [{ toolCallId: "call_delete_17", reason: "Not authorized" }],
+});
+```
+
+Configura `execute: false` para el trabajo que realiza tu aplicación y proporciona el resultado mediante `toolOutputs`. Para una herramienta interactiva, devuelve `null` desde `onToolCalled`; después de continuar, `onResponseReceived` puede validar o transformar la respuesta humana recibida.
+
+## Herramientas que generan progreso
+
+Un generador asíncrono puede publicar resultados preliminares y devolver un resultado final:
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+El progreso aparece como eventos `tool.preliminary_result` y en `preliminaryResults` del paso.
+
+## Resultados en streaming
+
+`stream()` inicia la misma máquina de estados con un cliente de modelo con streaming. Sus consumidores se pueden reproducir, por lo que la interfaz, la telemetría y el código de persistencia pueden leerlos a la vez:
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
+```
+
+Usa `getReasoningStream()`, `getItemsStream()`, `getToolStream()` o `getFullStream()` para acceder a flujos más específicos. `cancel()` cancela la ejecución.
+
+### Representar elementos de ejecución tipados
+
+`getItemsStream()` devuelve `AgentItem<TOutput>`, una unión discriminada que se puede gestionar de forma segura con `switch`:
+
+```typescript
+for await (const item of result.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+El mismo contrato de elementos ordenados está disponible en `completed.items` después de `run()` o `stream()`. La salida del proveedor se normaliza en elementos de mensaje, razonamiento, llamada a herramienta, resultado de herramienta, error y salida final. Los campos específicos del proveedor siguen disponibles mediante `rawProviderItem` en los elementos normalizados.
+
+## Condiciones de parada y turnos dinámicos
+
+Las condiciones de parada se combinan en una matriz. La primera que se cumpla registra el motivo y devuelve una ejecución `stopped`:
+
+```typescript
+import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [stepCountIs(12), maxTokensUsed(40_000), maxCost(2)],
+  model: ({ context }) => context.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) => `Research turn ${numberOfTurns}`,
+});
+```
+
+Las herramientas pueden establecer el contexto de la aplicación con `context.setContext()` y sobrescribir los parámetros del turno siguiente mediante `nextTurnParams`.
+
+### `createGatewayAgentClient()`
+
+Usa el adaptador conectado al gateway cuando los turnos del modelo deban ejecutarse a través de Phaseo Gateway.
+
+Puede incluir controles nativos del gateway, como:
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+Así, la aplicación puede mantener el enrutamiento, la búsqueda, las salidas estructuradas y los valores predeterminados de los plugins junto al cliente del modelo, sin reconstruir los cuerpos de las solicitudes en cada ejecución.
+
+## Persistencia gestionada por la aplicación
+
+Si tu aplicación necesita reanudar ejecuciones, guarda directamente el `AgentRunResult` devuelto o proporciona un acceso `state` con métodos asíncronos `load(runId)` y `save(result)`. Así, una ejecución reanudada puede usar `runId` sin pasar el registro serializado por cada capa.
+
+El SDK no incluye adaptadores de persistencia ni un backend de estado alojado, por decisión de diseño.
+
+Por tanto, puedes:
+
+- mantener las ejecuciones de una sola llamada en el mismo proceso
+- serializar las ejecuciones pausadas o incompletas en tus propios registros de aplicación
+- volver a cargar el estado guardado y pasarlo a `continueRun()` más adelante
+
+## Revisión humana y continuación
+
+Usa `humanReview` cuando una ejecución deba guardar un punto de control y esperar la aprobación:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+Continúa con una indicación humana explícita:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## Salidas tipadas
+
+Usa `parseOutput` si tu aplicación necesita un valor final tipado:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+Para controlar mejor el comportamiento del modelo, combínalo con las salidas estructuradas del adaptador del gateway:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Controles del runtime
+
+### Reintentos del modelo
+
+Usa `modelRetry` para volver a intentar errores transitorios del modelo antes de guardar la ejecución como `failed`:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` cuenta los intentos adicionales posteriores a la primera solicitud del modelo.
+El registro persistido del paso guarda el total final de reintentos en `modelAttempts`.
+
+### Herramientas locales concurrentes
+
+Si un turno del modelo puede llamar con seguridad a varias herramientas independientes, configura `toolExecution.toolConcurrency`:
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+El runtime conserva el orden de los mensajes con resultados de herramientas.
+
+### Enrutamiento basado en presets
+
+Usa `preset` si quieres gestionar los valores predeterminados de enrutamiento, prompts o parámetros en el panel, en lugar de codificarlos en la aplicación:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## Eventos del ciclo de vida
+
+Usa `onEvent` si tu aplicación necesita hooks del ciclo de vida para registros, telemetría o flujos de trabajo internos.
+
+Los eventos actuales incluyen:
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+Si un paso se completa correctamente, el runtime emite `step.completed` después de guardar el paso con su punto de control.
+
+## Gestión de errores
+
+Los errores del gateway se vuelven a lanzar como `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Si el error procede del gateway, las ejecuciones y los pasos fallidos también guardan `errorDetails`.
+
+## Ejemplos incluidos
+
+El paquete incluye actualmente estos ejemplos:
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## Alcance actual
+
+El SDK se centra deliberadamente en los componentes básicos para crear aplicaciones:
+
+- persistencia local o gestionada por la aplicación para los puntos de control
+- turnos de modelo a través del gateway
+- herramientas locales
+- bucles de agente reanudables
+- uso de tokens, coste, advertencias, motivos de finalización y resultados de herramientas normalizados por paso
+
+No pretende ser una plataforma de orquestación alojada ni incluir un único backend remoto de persistencia impuesto.
+
+## Guías relacionadas
+
+- [Crea un bucle de agente duradero en TypeScript](../../cookbook/agent-sdk-durable-loop.mdx)
+- [Investiga con búsqueda web mediante agentes](../../cookbook/agent-sdk-research-brief.mdx)
+- [Clasifica solicitudes de soporte con agentes basados en presets](../../cookbook/agent-sdk-support-triage.mdx)
+- [Revisa código con herramientas del entorno local](../../cookbook/agent-sdk-coding-review.mdx)
+- [Distribuye herramientas locales en paralelo](../../cookbook/agent-sdk-parallel-tools.mdx)

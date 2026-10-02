@@ -1,0 +1,58 @@
+---
+icon: "book-open"
+title: "SDK Go"
+description: "عميل Go الرسمي لبوابة Phaseo."
+---
+
+ثبّت الوحدة المنشورة [`sdk-go/v3`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3).
+
+يعرض الغلاف المحلي في `packages/sdk/sdk-go/index.go` الطرق التالية حاليًا:
+
+- `GenerateText(...)`
+- `GenerateResponse(...)`
+- `GenerateEmbedding(...)`
+- `GenerateModeration(...)`
+- `CreateSpeech(...)`, `CreateTranscription(...)`, `CreateTranslation(...)`
+- `CreateAnthropicMessage(...)`
+- `GetModels(...)`
+- `GetModelEndpointCapabilities(...)`, `CheckModelParameters(...)`
+- `ListOrganisations(...)`
+- `ListPricingModels(...)`
+- `CalculatePricing(...)`
+- `ListApiKeys(...)`
+- `CreateApiKey(...)`, `UpdateApiKey(...)`, `DeleteApiKey(...)`
+- `GetApiKey(...)`
+- `ListWorkspaces(...)`, `GetWorkspace(...)`, `CreateWorkspace(...)`, `UpdateWorkspace(...)`, `DeleteWorkspace(...)`
+- `GetCurrentApiKey(...)`
+- `ListEndpoints(...)`
+- `ListProviders(...)`
+- `GetAnalytics(...)`, `GetCredits(...)`, `GetActivity(...)`
+- `CreateBatch(...)`, `RetrieveBatch(...)`, `CancelBatch(...)`
+- `GetAsyncJobWebSocketURL(...)`, `GetBatchWebSocketURL(...)`, `GetVideoWebSocketURL(...)`, `client.AsyncJobs.WebSocketURL(...)`
+- `ListFiles(...)`, `RetrieveFile(...)`, `RetrieveFileContent(...)`
+- `RetrieveVideoContent(...)`, `GetVideoDownloadURL(...)`
+- `GetGeneration(...)`
+- `Health(...)`
+- `GetModelDeprecationInfo(...)`, `ValidateModel(...)`
+- `CreateImage(...)`, `CreateImageEdit(...)`
+- `GenerateVideo(...)`, `GetVideo(...)`, `CancelVideo(...)`, `DeleteVideo(...)`
+- `ListVideoModels(...)`, `ListVideos(...)`
+
+لنقاط النهاية التي لم تُضف بعد إلى الغلاف، استخدم العميل المُنشأ ضمن `packages/sdk/sdk-go/src/gen` مباشرةً。
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New("YOUR_KEY", "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{"limit": "5"})
+if err != nil {
+  panic(err)
+}
+fmt.Println(models)
+```
+
+يستخدم `CheckModelParameters` البيانات الوصفية المباشرة لمسارات المزودين لتصنيف كل معلمة على أنها `supported` أو `partial` أو `unsupported` أو `unknown`، والتحقق من القيم والنطاقات المعلنة، وعرض المسارات التي تقبل مجموعة المعلمات كاملةً.

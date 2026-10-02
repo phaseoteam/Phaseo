@@ -1,0 +1,57 @@
+---
+title: "Autenticação"
+description: "Autentique solicitações com chaves de API Bearer e gerencie o ciclo de vida delas com segurança."
+icon: "key"
+---
+
+Todas as solicitações ao Gateway exigem uma chave de API Bearer.
+
+Crie e gerencie as chaves no painel da Phaseo.
+
+<Note>
+Chamadas a modelos `:free` podem ser feitas sem créditos depositados. Chamadas a modelos pagos exigem saldo disponível na carteira.
+</Note>
+
+## Como usar uma chave de API
+
+Inclua sua chave de API no cabeçalho `Authorization` usando o esquema `Bearer`:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Hello!"
+  }'
+```
+
+## Formato e proteção das chaves
+
+- Formato da chave: `phaseo_v1_sk_<kid>_<secret>`
+- Armazene as chaves em um gerenciador de segredos, não em código executado no navegador.
+- Use chaves separadas por aplicativo e ambiente para fazer a rotação com mais segurança.
+
+## Chaves de gerenciamento
+
+As chaves da API de gerenciamento são criadas e administradas no painel da Phaseo, não pela API pública.
+
+Use-as em endpoints administrativos com privilégios elevados, como [Créditos](./endpoint/credits.mdx) e [Atividade](./endpoint/activity.mdx), e em futuras APIs do plano de controle, como as de guardrails, gerenciamento de chaves e espaços de trabalho.
+
+## Falhas de autenticação
+
+- `401`: chave de API ausente, malformada ou inválida.
+- `403`: a chave é válida, mas não tem acesso ao recurso solicitado.
+
+## Páginas relacionadas
+
+- [Limites](./limits.mdx)
+- [Erros e depuração](./errors.mdx)
+
+<Visibility for="agents">
+Se você estiver implementando fluxos de autenticação como agente:
+
+- Use as skills do repositório para tratar segredos e configurar o ambiente.
+- Nunca coloque chaves de API do Gateway em código enviado ao cliente.
+- Prefira tokens internos de curta duração entre o frontend e o backend; as chaves do Gateway devem ficar somente no servidor.
+</Visibility>

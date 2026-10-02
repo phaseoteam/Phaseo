@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "एम्बेडिंग"
+description: "C# SDK के साथ /embeddings call करें।"
+---
+
+**Method**: `client.CreateEmbedding(...)`
+
+### उदाहरण
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text"
+});
+```
+
+### मुख्य पैरामीटर
+
+-   `model` (ज़रूरी): embedding model ID (जैसे `openai/text-embedding-3-large`)।
+-   `input` (ज़रूरी): string या strings का array।
+-   `encoding_format`: `float` (default) या `base64`।
+-   `dimensions`: एम्बेडिंग की लंबाई घटाने के लिए वैकल्पिक पूर्णांक (मॉडल पर निर्भर)।
+-   `user`: अंतिम उपयोगकर्ता का वैकल्पिक टैग।
+
+### लौटाया गया मान
+
+Embedding payload (JSON)

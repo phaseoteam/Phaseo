@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "暂停 Go Agent 以等待人工决策，并从应用管理的状态继续运行。"
+---
+
+如需通用检查点，请使用 `HumanReview`。需要审批或手动执行的工具会将确切的调用 ID 填入 `Run.Pause.PendingToolCalls`。
+
+使用 `Agent.Continue(...)` 继续，并传入：
+
+- `Approvals` 或 `Rejections` 中的 `ToolDecision` 条目
+- 用于手动工作的 `ToolOutput` 条目
+- 用于通用审核暂停的 `HumanInput`
+- 上一个 `RunResult`，或 `RunID` 与 `StateAccessor`
+
+决策使用确切的调用 ID，因此对同一工具的并发调用仍能区分。如果运行需要跨请求或重启保存，请实现 `StateAccessor.Load(...)` 和 `Save(...)`。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,103 @@
+---
+title: "CLI 与 MCP"
+description: "使用 Phaseo CLI 自动化终端任务，或将经过身份验证的 MCP 服务器连接到 AI 客户端，以只读方式获取 Phaseo 实时数据。"
+icon: "square-terminal"
+---
+
+# CLI 与 MCP
+
+你可以在终端中使用 Phaseo CLI，也可以通过 MCP 连接 AI 客户端。两者都使用 Phaseo OAuth，但用途不同。
+
+| 接口 | 适用场景 | 访问权限 |
+| --- | --- | --- |
+| Phaseo CLI | 终端工作流、CI、管理和自动化 | 根据授权范围和工作区角色限制读取与写入权限 |
+| Phaseo MCP | 在 Codex、Claude、ChatGPT 等 MCP 客户端中访问 Phaseo 实时数据 | 已验证身份，仅可读取 |
+| Docs MCP | 在编写代码时查阅最新 Phaseo 文档 | 仅文档，只读 |
+
+## Phaseo CLI
+
+需要创建或修改 Phaseo 资源、编写工作流脚本或从 shell 检查账户数据时，请使用 CLI。
+
+### 安装并登录
+
+```bash
+npm install -g @phaseo/cli
+phaseo login
+phaseo whoami
+```
+
+交互式终端默认使用浏览器 OAuth。对于 SSH、CI 和无头环境，请使用设备授权：
+
+```bash
+phaseo login --device-code
+```
+
+### 常见工作流
+
+```bash
+phaseo models list --limit 20
+phaseo pricing models
+phaseo credits get
+phaseo workspaces list
+phaseo keys create --name "Local development"
+phaseo logs list --since 1h --status error --json
+```
+
+其他工具或脚本需要结构化输出时，请使用 `--json`。只有明确创建或显示密钥的命令才会返回密钥值。
+
+<Card title="Phaseo CLI 指南" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
+	了解身份验证选项、密钥管理、工作区、护栏和完整命令流程。
+</Card>
+
+## Phaseo MCP
+
+如果你希望 AI 客户端根据模型、价格、提供商、用量和工作区的实时数据回答问题，请连接 Phaseo MCP 服务器。
+
+### 服务器 URL
+
+`https://mcp.phaseo.app/mcp`
+
+### 从 Codex 连接
+
+```bash
+codex mcp add phaseo --url https://mcp.phaseo.app/mcp
+codex mcp login phaseo
+```
+
+登录命令会打开 Phaseo OAuth。选择工作区、批准请求的只读权限，然后确认连接：
+
+```bash
+codex mcp list
+```
+
+对于其他 MCP 客户端，请将相同 URL 添加为远程 Streamable HTTP 服务器。客户端必须支持 OAuth 发现、S256 PKCE 授权码流程和 MCP `resource` 参数。
+
+### MCP 可读取的数据
+
+- 模型、提供商、组织、端点系列和价格
+- 积分、活动、分析、请求日志和生成元数据
+- 工作区、成员、预设、设置和护栏
+- API 密钥、管理密钥、OAuth 应用和 webhook 的元数据，不含密钥值
+
+MCP 不会运行计费推理、返回密钥值或修改 Phaseo 资源。需要执行这些操作时，请使用控制台、CLI 或管理 API。
+
+## Docs MCP
+
+Docs MCP 是用于搜索和阅读 Phaseo 文档的独立端点，不会访问你的账户或工作区。
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+当编程助手需要最新 API 示例、集成指南或功能文档时，请使用它。
+
+<Card title="Docs MCP 指南" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+	将文档服务器连接到 Codex、Claude Code、Cursor、OpenCode 或 VS Code。
+</Card>
+
+## 选择合适的接口
+
+- 使用 **CLI** 创建密钥、修改设置、管理工作区或自动执行管理工作流。
+- 使用 **Phaseo MCP** 为 AI 客户端安全地开放 Phaseo 实时数据。
+- 使用 **Docs MCP** 为编程助手提供最新 Phaseo 文档，同时不授予账户访问权限。
+

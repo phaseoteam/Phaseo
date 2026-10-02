@@ -58,7 +58,6 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-collections", title: "Collections", subtitle: "Browse curated model collections", href: "/models/collections", keywords: ["model collections", "curated"] },
 	{ id: "nav-apps", title: "Apps", subtitle: "Discover applications using the gateway", href: "/apps", keywords: ["applications", "ecosystem"] },
 	{ id: "nav-rankings", title: "Rankings", subtitle: "View model and provider rankings", href: "/rankings", keywords: ["leaderboard", "market share", "usage"] },
-	{ id: "nav-monitor", title: "Model Monitor", subtitle: "Monitor catalogue and provider coverage", href: "/monitor", keywords: ["monitoring", "status", "coverage"] },
 	{ id: "nav-performance", title: "Performance", subtitle: "Explore latency and throughput", href: "/performance", keywords: ["speed", "latency", "throughput"] },
 	{ id: "nav-pricing", title: "Pricing", subtitle: "Compare model API pricing", href: "/pricing", keywords: ["cost", "prices", "tokens"] },
 	{ id: "nav-works-with", title: "Works With", subtitle: "Browse compatible clients and SDKs", href: "/works-with", keywords: ["compatibility", "integrations", "clients"] },
@@ -122,6 +121,9 @@ const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouti
 );
 
 const additionalPages: Array<[string, string]> = [
+	["/support", "Support"],
+	["/chat/decisions", "Decisions"],
+	["/settings/account/providers", "Provider Onboarding"],
 	["/settings/webhooks/new", "Create Webhook"],
 	["/settings/workspaces/private-models/new", "Create Private Model"],
 	["/settings/routing/demo", "Dynamic Routing Demo"],

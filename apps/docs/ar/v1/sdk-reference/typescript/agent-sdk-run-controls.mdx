@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "المخرجات وإعادات المحاولة"
+description: "تحقق من المخرجات النهائية، وأعِد المحاولة عند إخفاقات النموذج المؤقتة، وطبّق إعدادات التوجيه الافتراضية المُدارة."
+---
+
+استخدم تحليل المخرجات عندما يحتاج باقي تطبيقك إلى قيمة ذات نوع محدد بدلًا من نص حر. أضف عددًا محدودًا من المحاولات عند إخفاقات النموذج المؤقتة، مع إبقاء أخطاء التحقق والسياسات ظاهرة لتطبيقك.
+
+## تحليل مخرج ذي نوع محدد
+
+`parseOutput` تحوّل `parseOutput` النص النهائي بعد اكتمال حلقة الوكيل:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+لضبط سلوك النموذج بشكل أكثر صرامة، اجمع التحليل مع استجابة منظّمة من عميل Gateway:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## إعادة طلبات النموذج
+
+استخدم `modelRetry` عندما يلزم تكرار إخفاق مؤقت للنموذج ضمن التشغيل الحالي:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+تحسب `maxRetries` المحاولات التي تلي الطلب الأول. ويُحفظ العدد النهائي للمحاولات في الخطوة ضمن `modelAttempts`.
+
+## استخدام إعدادات التوجيه الافتراضية المُدارة
+
+استخدم `preset` عندما تريد إبقاء إعدادات التوجيه أو المطالبة أو المعاملات الافتراضية في لوحة التحكم:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+يمكن لمحوّل Gateway أيضًا تمرير `responseFormat` و`plugins` و`gatewayTools` و`toolChoice` و`webSearchOptions` و`providerOptions` و`promptCacheKey` و`includeMeta`.
+
+## أدلة ذات صلة
+
+- [تغيير جولات النموذج اللاحقة](./agent-sdk-dynamic-turns.mdx)
+- [إيقاف الوكيل بأمان](./agent-sdk-stop-conditions.mdx)
+- [معالجة الأخطاء](./agent-sdk-events-and-errors.mdx)

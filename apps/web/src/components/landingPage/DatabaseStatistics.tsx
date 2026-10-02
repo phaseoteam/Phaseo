@@ -3,6 +3,7 @@ import {
 	fetchFrontendLandingStats,
 	fetchFrontendSignInSupportedModelsStats,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 
@@ -13,29 +14,30 @@ function roundDisplayValue(raw: number, bucket: number) {
 }
 
 export default async function DatabaseStats() {
-	const [{ db: data, monthlyTokenTotal }, gatewayStats] = await Promise.all([
+	const [{ db: data, monthlyTokenTotal }, gatewayStats, t] = await Promise.all([
 		fetchFrontendLandingStats(),
 		fetchFrontendSignInSupportedModelsStats(),
+		getTranslations("Site.home"),
 	]);
 
 	const stats = [
 		{
-			label: "Catalog models",
+			label: t("statistics.catalogModels"),
 			value: <><DisplayNumber value={roundDisplayValue(data.models ?? 0, 25)} />+</>,
 			route: "/models",
 		},
 		{
-			label: "Routable models",
+			label: t("statistics.routableModels"),
 			value: <><DisplayNumber value={roundDisplayValue(gatewayStats.apiCount ?? 0, 25)} />+</>,
 			route: "/models",
 		},
 		{
-			label: "Catalog providers",
+			label: t("statistics.catalogProviders"),
 			value: <><DisplayNumber value={roundDisplayValue(data.api_providers ?? 0, 5)} />+</>,
 			route: "/api-providers",
 		},
 		{
-			label: "Monthly tokens routed",
+			label: t("statistics.monthlyTokensRouted"),
 			value: `${formatRoundedCount(monthlyTokenTotal ?? 0)}+`,
 			route: "/rankings",
 		},

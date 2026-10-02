@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "डेवलपर टूल"
+description: "Development और debugging के लिए local Agent SDK runs capture करें।"
+---
+
+विकास के दौरान Agent SDK DevTools कैप्चर से रन के इनपुट, चरण, टूल, आउटपुट, समय और गेटवे सहसंबंध ID का स्थानीय रिकॉर्ड रखें।
+
+## एक रन के लिए कैप्चर चालू करें
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+By default, files current working directory के `.phaseo-devtools` folder में लिखी जाती हैं।
+
+## आउटपुट डायरेक्टरी कॉन्फ़िगर करें
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+Local development processes के लिए `PHASEO_DEVTOOLS=true` और optional `PHASEO_DEVTOOLS_DIR` भी set कर सकते हैं।
+
+## कैप्चर की गई जानकारी
+
+हर `agent.run` या `agent.continue` entry में शामिल है:
+
+- एजेंट और रन ID
+- रन की स्थिति और अवधि
+- इनपुट और ऐप्लिकेशन संदर्भ
+- मॉडल और प्रदाता का विवरण, यदि उपलब्ध हो
+- Gateway अनुरोध और मूल प्रतिक्रिया ID
+- चरणों और टूल की संख्या
+- पूरा हुआ रन: स्थिति, संदेश, चरण और आउटपुट
+- रन में अपवाद आने पर संरचित विफलता का विवरण
+
+<Warning>
+एजेंट इनपुट, संदेशों, टूल परिणामों और ऐप्लिकेशन संदर्भ में संवेदनशील डेटा हो सकता है। DevTools डायरेक्टरी को स्रोत नियंत्रण से बाहर रखें और उस पर वही पहुँच नियंत्रण लागू करें जो अन्य विकास लॉग पर लागू होते हैं।
+</Warning>
+
+## संबंधित गाइड
+
+- [लाइफसाइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [त्रुटियाँ और समस्या-निवारण](./agent-sdk-events-and-errors.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)

@@ -1,0 +1,28 @@
+---
+icon: "search-check"
+title: "जनरेशन रिकॉर्ड देखें"
+description: "Go SDK से सहेजी गई जनरेशन देखें।"
+---
+
+रैपर मेथड का उपयोग करें:
+
+- `client.GetGeneration(ctx, generationID)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(record)
+```
+
+अनुरोध का विवरण सहेजा गया हो, तो लौटाए गए रिकॉर्ड में यह भी शामिल होता है `replay_supported` और `replay_request` ताकि आप कैप्चर किए गए पेलोड को मूल एंडपॉइंट पर फिर से भेज सकें।
+

@@ -1,0 +1,31 @@
+---
+icon: "binary"
+title: "Vetores de incorporação"
+description: "Chame /embeddings com o SDK Ruby."
+---
+
+**Métodos**: `client.generate_embedding(...)` ou `client.create_embedding(...)`.
+
+### Exemplo
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+### Parâmetros principais
+
+-   `model` (obrigatório): ID do modelo de embeddings (por exemplo, `openai/text-embedding-3-large`).
+-   `input` (obrigatório): uma string ou um array de strings.
+-   `encoding_format`: `float` (padrão) ou `base64`.
+-   `dimensions`: inteiro opcional para truncar o tamanho do embedding (depende do modelo).
+-   `user`: identificador opcional do usuário final.
+
+### Retorno
+
+Payload de embeddings (JSON)

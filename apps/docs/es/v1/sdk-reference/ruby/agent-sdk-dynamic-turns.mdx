@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos"
+description: "Cambia el enrutamiento, las instrucciones, las herramientas y los parámetros de muestreo entre turnos de un agente Ruby."
+---
+
+Los campos ejecutables del agente recalculan los parámetros de solicitud a partir del estado de ejecución actual antes de cada turno del modelo.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+Las herramientas dinámicas y los valores de muestreo pueden seguir el mismo patrón. Una herramienta puede configurar `next_turn_params` para cambiar solo la solicitud inmediatamente posterior. Estas anulaciones sobreviven a un punto de control de aprobación y vencen después del siguiente turno.
+
+Usa funciones ejecutables para las políticas que deban volver a calcularse en cada turno. Usa `next_turn_params` para transferir un ajuste específico de una herramienta.

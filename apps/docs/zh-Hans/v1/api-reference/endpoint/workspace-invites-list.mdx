@@ -1,0 +1,10 @@
+---
+title: "列出工作区邀请"
+sidebarTitle: "列出邀请"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /workspaces/{id}/invites"
+description: "列出工作区邀请元数据。"
+---
+此端点需要具有 `workspaces:read` 权限的管理 API 密钥。
+
+仅返回经过掩码处理的令牌预览。之后无法重新获取明文邀请令牌。

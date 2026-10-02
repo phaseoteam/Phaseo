@@ -1,0 +1,59 @@
+---
+title: "ऑब्ज़र्वेबिलिटी"
+icon: "activity"
+description: "Langfuse, LangSmith, OpenTelemetry और मिलते-जुलते टूल से Phaseo अनुरोधों को ट्रेस करें।"
+---
+
+अधिकांश ऑब्ज़र्वेबिलिटी टूल मॉडल क्लाइंट के ऊपर काम करते हैं। अपनी ट्रेसिंग सेटअप बनाए रखें और नीचे के OpenAI-संगत या Anthropic-संगत क्लाइंट को Phaseo पर पॉइंट करें।
+
+## OpenAI SDK के साथ Langfuse
+
+```bash
+pip install langfuse openai
+```
+
+```python
+import os
+from langfuse.openai import openai
+
+client = openai.OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.responses.create(
+    model="openai/gpt-5-nano",
+    input="Reply with only: ok",
+)
+```
+
+## LangChain के साथ LangSmith
+
+[LangChain](./langchain.mdx) सेटअप का उपयोग करें और सामान्य LangChain पर्यावरण चर से LangSmith सक्षम करें:
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY="your_langsmith_key"
+export PHASEO_API_KEY="your_phaseo_key"
+```
+
+## OpenTelemetry
+
+अगर आपका फ़्रेमवर्क OpenTelemetry spans भेजता है, तो Phaseo को किसी खास exporter की ज़रूरत नहीं है। उपयोगी अनुरोध संदर्भ खुद जोड़ें:
+
+- मॉडल ID
+- `responses` या `chat.completions` जैसा endpoint
+- प्रतिक्रिया मेटाडेटा या लॉग से Phaseo अनुरोध ID
+- प्रतिक्रिया मेटाडेटा सक्षम होने पर चुना गया प्रोवाइडर
+
+## नोट्स
+
+- Phaseo API कुंजियों को ऑब्ज़र्वेबिलिटी टूल में attributes के रूप में न भेजें।
+- अगर ऑब्ज़र्वेबिलिटी लाइब्रेरी OpenAI SDK को wrap करती है, तो wrapped client में `base_url: "https://api.phaseo.app/v1"` कॉन्फ़िगर करें।
+- LangChain traces के लिए tracing callback को Phaseo `ChatOpenAI` कॉन्फ़िगरेशन के साथ जोड़ें।
+
+## संबंधित
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [LangChain](./langchain.mdx)
+- [गतिविधि](../../api-reference/endpoint/activity.mdx)

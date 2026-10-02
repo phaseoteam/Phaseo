@@ -1,0 +1,10 @@
+---
+title: "部署动态路由版本"
+sidebarTitle: "部署版本"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /routing/dynamic-routes/{id}/versions/{version}/deploy"
+description: "部署不可变的路由版本。"
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+部署会刷新所有关联 API 密钥的网关上下文。

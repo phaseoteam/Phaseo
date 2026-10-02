@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "الاستخدام"
+description: "شغّل حلقات الأدوات والمراجعة البشرية وإعادة المحاولات والوكلاء القابلين للاستئناف باستخدام Agent SDK لـ Python."
+---
+
+## إعداد بيئة التشغيل
+
+الحزمة المستقلة غير متاحة بعد على PyPI. اتبع [تعليمات التثبيت من المصدر](./agent-sdk-installation.mdx).
+
+## البدء السريع
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## الميزات المتوفرة
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- إعادة المحاولات والأدوات المتزامنة والمهل الزمنية وأحداث دورة الحياة
+- التوقف للمراجعة البشرية باستخدام `continue_run(...)`
+- حالة قابلة للتسلسل والتقاط عبر Phaseo Devtools
+
+## بيئة تشغيل متقدمة
+
+يدعم Python المخططات والموافقات عبر الدوال القابلة للاستدعاء، وأدوات HITL والأدوات اليدوية، وتتبع التقدم، والأخطاء القابلة للاسترداد، والتدفقات القابلة لإعادة التشغيل، وأدوات الإيقاف، والأدوار الديناميكية، وتجاوزات الدور التالي المحفوظة، والاستخدام والتكلفة الموحدين، والوصول إلى الحالة الذي تديره التطبيقات.
+
+## البث والإلغاء
+
+يستخدم `agent.stream(...)` و`agent.continue_stream(...)` تدفق SSE الخاص بـ Responses في البوابة. استهلك `text_stream()` أو `reasoning_stream()` أو `item_stream()` أو `tool_stream()` أو `full_stream()`؛ واستدعِ `cancel()` لإغلاق الطلب النشط. تحتفظ الخطوات المكتملة بمعرّفات الطلب وبيانات المزوّد وأسباب الإنهاء والتحذيرات والاستخدام والتكلفة.
+
+## صفحات ذات صلة
+
+- [نظرة عامة على Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK لـ TypeScript](../typescript/agent-sdk.mdx)

@@ -1,0 +1,43 @@
+---
+title: "Java SDK 安装（开发中）"
+description: "从源代码构建仍在开发中的 Java SDK。"
+---
+
+<Note type="warning">Java SDK 仍在开发中，尚未发布到 Maven Central。</Note>
+
+## 环境要求
+
+- Java 17+
+- Maven 3.8+
+
+## 本地构建
+
+```bash
+cd packages/sdk/sdk-java
+mvn -DskipTests package
+```
+
+此操作会生成 `target/sdk-java-0.0.0-local.jar`。
+
+## 在项目中使用
+
+将生成的 JAR 安装到本地 Maven 缓存：
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=app.phaseo \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+然后将其作为依赖项添加到应用的 `pom.xml` 中：
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
+```

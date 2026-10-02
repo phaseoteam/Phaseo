@@ -1,0 +1,40 @@
+---
+title: "ここから始める"
+description: "最初のリクエストの送信、アプリ接続、必要なリファレンスの検索を行います。"
+icon: "house"
+---
+
+Phaseoで複数プロバイダーのモデルを1つのAPIから呼び出し、ルーティングの制御と使用量・コストの追跡を行えます。
+
+<Columns cols={2}>
+  <Card title="最初のリクエストを送る" icon="rocket" href="./quickstart.mdx">
+    キーを作成し、リクエストを送信して結果を読みます。
+  </Card>
+  <Card title="アプリケーションを移行する" icon="arrow-right-left" href="./migration-guides/index.mdx">
+    既存のプロバイダーまたはGateway連携を更新します。
+  </Card>
+  <Card title="コーディングアシスタントを接続する" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
+    Codex、Claude Code、Cursorなどのアシスタントを設定します。
+  </Card>
+  <Card title="SDKで開発する" icon="package" href="./sdk-reference/typescript/overview.mdx">
+    クライアントSDKメニューから言語を選択します。
+  </Card>
+</Columns>
+
+## 開発と運用
+
+| 作業 | ドキュメント |
+| --- | --- |
+| リクエストフィールドやエンドポイントを調べる | [APIリファレンス](./api-reference/introduction.mdx) |
+| スターターアプリを実行する | [例](./guides/examples.mdx) |
+| 特定のワークフローを実装する | [クックブック](./cookbook/index.mdx) |
+| プロバイダーとフォールバックを選ぶ | [ルーティング](./guides/routing-and-fallbacks.mdx) |
+| 動画やバッチのジョブを処理する | [非同期ジョブとWebhook](./guides/async-video-and-batch.mdx) |
+| ツールを使うエージェントを開発する | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
+| リクエスト失敗を診断する | [エラーとデバッグ](./api-reference/errors.mdx) |
+
+## モデルを選ぶ
+
+[モデルを探す](https://phaseo.app/models)か[比較](https://phaseo.app/compare)してください。カタログにはルーティングできないモデルも含まれるため、連携前にGatewayの利用可否を確認します。モデル、プロバイダー、料金は[Phaseoの仕組み](./developers/introduction.mdx)を参照してください。
+
+アシスタント内でドキュメントを使うには[Docs MCP](./guides/integrations/docs-mcp.mdx)を接続するか、[エージェント向け機能概要](https://phaseo.app/docs/skill.md)を読んでください。

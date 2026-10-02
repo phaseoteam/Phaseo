@@ -1,0 +1,69 @@
+---
+icon: "workflow"
+title: "Outil serveur Fusion"
+description: "Exécutez plusieurs modèles d’analyse et synthétisez leurs conclusions."
+---
+
+Utilisez `phaseo:fusion` lorsqu’une réponse peut bénéficier de plusieurs points de vue indépendants. Phaseo exécute les modèles d’analyse en parallèle, puis demande au modèle analyste choisi de synthétiser leurs conclusions pour le modèle appelant.
+
+## Configuration dans le Playground
+
+Dans le menu des outils serveur du Playground, Fusion vous permet de choisir :
+
+- des modèles d’analyse qui examinent la requête indépendamment
+- un modèle juge facultatif qui compare les résultats des analyses
+- une limite maximale d’appels d’outils pour les outils de conseil Fusion
+
+Le modèle principal voit ces conseillers nommés dans la même boucle d’outils et peut utiliser leurs résultats avant de rédiger la réponse finale.
+
+## Structure de l’API
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:fusion",
+      "parameters": {
+        "analysis_models": ["anthropic/claude-opus-5", "openai/gpt-5"],
+        "model": "google/gemini-pro-latest",
+        "instructions": "Reconcile disagreements and return concise synthesis guidance.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## Quand utiliser Fusion
+
+Utilisez Fusion pour :
+
+- les décisions de planification où un deuxième ou troisième modèle peut repérer des hypothèses manquantes
+- la synthèse de recherches où les modèles peuvent interpréter les éléments de preuve différemment
+- les revues de code ou d’architecture pour lesquelles vous souhaitez des critiques indépendantes
+- les réponses à forte valeur ajoutée pour lesquelles un peu plus de latence est acceptable
+
+Utilisez plutôt un seul Advisor si vous n’avez besoin que d’une seule révision.
+
+## Utilisation et tarification
+
+Chaque appel à Fusion incrémente :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "fusion_requests": 1
+    }
+  }
+}
+```
+
+Les tokens des modèles conseillers sont inclus dans l’utilisation totale et peuvent être facturés aux tarifs de chaque modèle sélectionné. La tarification des outils serveur peut également utiliser le compteur `server_tool_advisor_requests`.
+
+## Pages associées
+
+- [Advisor](./advisor.mdx)
+- [Sous-agent](./subagent.mdx)
+- [Outils serveur](./index.mdx)

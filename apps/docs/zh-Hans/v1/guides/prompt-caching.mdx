@@ -1,0 +1,275 @@
+---
+title: "提示缓存"
+description: "在 Chat Completions、Responses 和 Anthropic Messages 请求之间复用稳定的 prompt 上下文。"
+icon: "database-zap"
+---
+
+当多个请求中会重复出现相同的大段上下文时，可使用 prompt 缓存。将稳定的指令、文档、示例、工具输出或工具定义标记为可缓存内容，受支持的供应商便可在后续调用中复用这些内容。
+
+prompt 缓存不同于[响应缓存](../cookbook/response-caching-with-presets.mdx)。prompt 缓存仍会运行推理，但可降低重复处理输入的成本和延迟。响应缓存则会针对完全相同的请求返回此前生成的答案。
+
+<Note>
+prompt 缓存因供应商和模型而异。不支持的供应商会忽略缓存提示，或在不采用缓存计费的情况下路由请求。请查看模型页面的价格表，了解缓存读写费率。
+</Note>
+
+## 缓存内容
+
+缓存各请求之间保持稳定的内容：
+
+- 较长的系统指令
+- 重复使用的 RAG 文档
+- few-shot 示例
+- 工具定义
+- 下一轮会再次使用的大型工具结果
+
+避免缓存每次请求都会变化的内容、简短的一次性用户输入，或根据你的政策不允许所选供应商存储的敏感数据。
+
+## 缓存控制
+
+Phaseo 在 Chat Completions、Responses 和 Anthropic Messages 请求中接受顶层兼容性提示 `cache_control`：
+
+```json
+{
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "5m"
+  }
+}
+```
+
+短期共享上下文使用 `ttl: "5m"`；当供应商和模型支持更长时间的 prompt 缓存时，使用 `ttl: "1h"`。支持该功能的供应商会将顶层缓存控制视为自动或默认缓存策略。
+
+你也可以在受支持的文本、图像、工具结果和工具定义块上直接设置 `cache_control`，以明确指定缓存断点：
+
+```json
+{
+  "type": "text",
+  "text": "Large stable reference text...",
+  "cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+  }
+}
+```
+
+仍支持供应商专属别名。例如，你可以通过 `provider_options` 应用默认的 Anthropic 缓存策略：
+
+```json
+{
+  "provider_options": {
+    "anthropic": {
+      "cache_control": {
+        "type": "ephemeral",
+        "ttl": "5m",
+        "scope": "last_user_message"
+      }
+    }
+  }
+}
+```
+
+支持的 `scope` 值：
+
+| 范围 | 行为 |
+| --- | --- |
+| `all_text` | 为尚未设置缓存控制的系统文本和用户文本/图像块添加缓存控制。 |
+| `last_user_message` | 仅为最新的用户消息添加缓存控制。 |
+| `none` | 不应用默认缓存策略。 |
+
+块级 `cache_control` 优先于默认策略。
+
+## Chat Completions
+
+使用 OpenAI 兼容的聊天客户端时，请使用 `/v1/chat/completions`。
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      {
+        "role": "user",
+        "content": "Summarise the latest ticket."
+      }
+    ]
+  }'
+```
+
+对于路由到 OpenAI 的请求，请通过 OpenAI 兼容的顶层字段传递 OpenAI 缓存保留选项：
+
+```json
+{
+  "prompt_cache_retention": "24h"
+}
+```
+
+也可以使用供应商专属别名：
+
+```json
+{
+  "provider_options": {
+    "openai": {
+      "prompt_cache_retention": "24h"
+    }
+  }
+}
+```
+
+## Responses
+
+对于新的 OpenAI 兼容文本集成和智能体流程，请使用 `/v1/responses`。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+如果你已有 Google Gemini 缓存内容资源，请通过 `provider_options.google.cached_content` 传入：
+
+```json
+{
+  "provider_options": {
+    "google": {
+      "cached_content": "cachedContents/abc123"
+    }
+  }
+}
+```
+
+## Anthropic Messages
+
+客户端兼容 Anthropic 时，请使用 `/v1/messages`。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "text",
+            "text": "Can this customer return an item after 20 days?"
+          }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "order_id": { "type": "string" }
+          },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+
+Anthropic Messages 支持在以下内容上使用缓存控制：
+
+- `system` 文本块
+- 消息文本块和图像块
+- 工具结果块
+- 工具定义
+
+## 用量与定价字段
+
+供应商返回缓存用量时，Phaseo 会将其规范化为通用用量字段。
+
+| 字段 | 含义 |
+| --- | --- |
+| `input_tokens_details.cached_tokens` | 从供应商 prompt 缓存中读取的缓存输入 token。 |
+| `output_tokens_details.cached_tokens` | 写入供应商 prompt 缓存的缓存输入 token。 |
+| `cached_read_text_tokens` | 缓存读取的计费项，表示从供应商缓存中复用的输入文本。 |
+| `cached_write_text_tokens` | 当供应商对缓存写入采用统一价格时使用的计费项。 |
+| `cached_write_text_tokens_5m` | 供应商报告按 TTL 区分的写入时，TTL 为 5 分钟的缓存写入 token。 |
+| `cached_write_text_tokens_1h` | 供应商报告按 TTL 区分的写入时，TTL 为 1 小时的缓存写入 token。 |
+
+缓存写入通常比普通输入 token 更贵，读取通常更便宜。具体价格取决于供应商、模型和 TTL。
+
+## 实际检查
+
+添加 prompt 缓存后：
+
+1. 发送一个请求以创建或预热缓存。
+2. 使用相同的可缓存内容发送第二个请求。
+3. 检查响应用量和请求详情中的缓存读写字段。
+4. 比较多次调用的延迟和成本，不要只看第一次。
+
+## 供应商亲和性
+
+默认情况下，Phaseo 会将供应商 prompt 缓存用量作为路由信号。当供应商
+返回缓存输入 token 后，具有相同缓存键或稳定开头上下文的请求
+会优先使用该供应商 15 分钟。这样就无需付费让另一个
+供应商重新构建相同的 prompt 缓存。
+
+如果包含 `session_id`，观察到缓存读取时也会创建会话亲和性。
+Phaseo 会在当前会话窗口内保留该亲和性，同时仍允许
+在供应商异常或不再符合策略条件时进行故障转移。
+
+如需对单个请求停用此功能，请将 `provider.cache_aware_routing` 设为 `false`。如果请求中
+包含 `session_id`，但你只想使用常规的上下文路由，请将 `routing.session_affinity`
+设为 `false`。
+
+## 相关页面
+
+- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
+- [Responses](../api-reference/endpoint/responses.mdx)
+- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
+- [参数](../api-reference/parameters.mdx)
+- [上下文与 Token 预算](./context-and-token-budgeting.mdx)
+- [使用预设进行响应缓存](../cookbook/response-caching-with-presets.mdx)

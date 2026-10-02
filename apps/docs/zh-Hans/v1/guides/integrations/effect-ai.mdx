@@ -1,0 +1,76 @@
+---
+title: "Effect AI SDK"
+icon: "square-function"
+description: "在使用 Effect 的 TypeScript 应用中使用 Phaseo。"
+---
+
+如果应用已使用 Effect，且你想通过 Effect 服务或工作流调用 Phaseo，请使用本指南。
+
+## 状态
+
+Phaseo 提供兼容 OpenAI 的 HTTP 端点。如果 Effect 官方供应商包直接支持所需供应商，可优先使用；若已安装的 Effect OpenAI 包没有 Base URL 选项，请通过 Effect HTTP 客户端调用 Phaseo，或在自定义 Effect 层中封装 [OpenAI SDK](./openai-sdk.mdx)。
+
+## 安装
+
+```bash
+npm install effect @effect/platform
+```
+
+## 使用 Effect HTTP 调用 Phaseo
+
+```ts
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
+import { Config, Effect, Redacted } from "effect";
+
+const generate = Effect.gen(function* () {
+	const apiKey = yield* Config.redacted("PHASEO_API_KEY");
+	const client = yield* HttpClient.HttpClient;
+
+	const request = HttpClientRequest.post(
+		"https://api.phaseo.app/v1/chat/completions",
+	).pipe(
+		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
+		HttpClientRequest.jsonBody({
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "Reply with only: ok" }],
+		}),
+	);
+
+	return yield* client.execute(request).pipe(
+		Effect.flatMap((response) => response.json),
+	);
+});
+
+const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
+```
+
+## 在 Effect 服务中封装 OpenAI SDK
+
+如果你已在其他位置使用官方 OpenAI SDK，可将 Phaseo 配置集中在一个层中：
+
+```ts
+import OpenAI from "openai";
+import { Config, Effect } from "effect";
+
+const makeClient = Effect.gen(function* () {
+	const apiKey = yield* Config.string("PHASEO_API_KEY");
+
+	return new OpenAI({
+		apiKey,
+		baseURL: "https://api.phaseo.app/v1",
+	});
+});
+```
+
+## 说明
+
+- OpenAI 兼容调用请使用 `https://api.phaseo.app/v1`。
+- 模型 ID 请使用 Phaseo 格式，例如 `openai/gpt-5-nano`。
+- 如果希望在整个应用中统一供应商抽象，可使用自定义 Effect 层。
+- 上线前，请使用实际 Effect 包版本测试流式传输和工具调用。
+
+## 相关内容
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [流式传输](../streaming.mdx)

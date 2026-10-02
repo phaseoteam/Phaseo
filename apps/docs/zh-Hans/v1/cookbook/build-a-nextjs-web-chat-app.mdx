@@ -1,0 +1,174 @@
+---
+title: "使用 Next.js 构建 Web 聊天应用"
+icon: "messages-square"
+description: "通过现有的 Next.js 示例聊天应用了解完整流程，页面顶部还提供可复制的构建提示词。"
+---
+
+如果你想构建一个实用的小型 Next.js 聊天应用，同时将 Phaseo API 密钥保留在服务器上，请参考本页。
+
+**目标：** 运行一个浏览器聊天应用，通过服务器端路由发现模型并发送响应。
+
+**结果：** 获得一个可在本地运行的聊天界面，不会向浏览器暴露 Phaseo 凭据。
+
+<Prompt
+  description="基于 Phaseo Gateway 构建一个 **Next.js Web 聊天应用**。"
+  icon="message-square"
+  actions={["copy", "cursor"]}
+>
+{`你正在使用 Phaseo Gateway 构建一个小型、接近生产环境的聊天应用。
+
+创建一个 Next.js 应用，包含：
+- 聊天界面
+- 一个基于 GET /v1/models 的模型选择器
+- 一个调用 POST /v1/responses 的服务器端路由
+- 使用 PHASEO_API_KEY 在服务器端管理 API 密钥
+- 加载、成功和错误状态
+
+有意保持应用精简，便于检查。
+
+实现要求：
+- 使用一个本地 API 路由来发现模型。
+- 使用一个本地 API 路由来生成响应。
+- 仅在服务器端保留机密信息。
+- 在代码中清晰展示请求和响应流程。
+- 添加一份简短的 README，说明设置和运行步骤。
+
+验证：
+- 尽可能运行应用。
+- 验证一次聊天轮次能够成功完成。
+- 报告更改的确切文件、验证内容和任何剩余假设。`}
+</Prompt>
+
+## 示例项目
+
+- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
+- 仓库本地路径： `examples/web-chat-nextjs`
+
+## 此应用的功能
+
+- - 获取可用模型 `GET /v1/models`
+- - 提交聊天轮次 `POST /v1/responses`
+- 将 API 密钥保留在服务器上
+- 为真实产品提供简单的起点，避免 OAuth 带来的复杂性
+
+## 关键文件
+
+- `app/api/models/route.ts`
+- `app/api/responses/route.ts`
+- `app/components/ChatClient.tsx`
+- `lib/gateway.ts`
+
+## 采用此结构的原因
+
+### 1. 浏览器不会直接调用 Phaseo
+
+界面先与自己的 Next.js 路由通信，再由这些路由从服务器调用 Phaseo。
+
+这样可以：
+
+- 在服务器端管理机密信息
+- 集中管理请求标头和请求正文
+- 方便日后添加身份验证、请求速率限制或日志记录
+
+### 2. 将模型发现与生成分开
+
+将模型列表路由和聊天生成路由分开，便于理解各自的职责：
+
+- 一个用于列出模型的路由
+- 一个用于执行聊天请求的路由
+
+### 3. UI 只管理交互状态
+
+React 客户端负责：
+
+- 输入状态
+- 加载状态
+- 错误展示
+- 渲染的消息
+
+服务器路由负责 AI 调用，浏览器只负责用户体验。
+
+## 前置条件
+
+- - Node.js 和受支持的包管理器
+- Phaseo API 密钥
+
+## 运行示例
+
+<CodeGroup>
+```bash npm
+cd examples/web-chat-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/web-chat-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/web-chat-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/web-chat-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+设置：
+
+- `PHASEO_API_KEY`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+然后运行：
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+打开 `http://localhost:3000`.
+
+## 检查结果
+
+- 模型选择器从服务器路由加载模型。
+- 发送消息后会收到一条助手回复。
+- 浏览器网络面板不会暴露 `PHASEO_API_KEY`.
+- Gateway 请求失败时，界面会显示有用的错误状态。
+
+## 根据需要修改应用
+
+- 将默认模型改为计划用于生产环境的模型
+- 如果用户体验需要逐个显示 token，则添加流式传输
+- 如果应用之后支持多个用户，再添加身份验证
+- 如果希望使用更高层级的客户端，之后可将服务器路由的内部实现替换为 TypeScript SDK
+
+## 何时选择其他起点
+
+- 如果需要脚本或后端连通性测试，而不是 UI，请使用 Node 快速入门。
+- 如果首次集成要运行在 worker、CLI 或后端服务中，请使用 Python 快速入门。
+
+## 相关指南
+
+- [迷你应用起步提示词](./mini-app-starter-prompts.mdx)
+- [示例](../guides/examples.mdx)
+- [快速入门](../quickstart.mdx)

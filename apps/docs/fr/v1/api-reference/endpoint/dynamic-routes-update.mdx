@@ -1,0 +1,10 @@
+---
+title: "Mettre à jour une route dynamique"
+sidebarTitle: "Mettre à jour la route"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "Met à jour les métadonnées de la route ou crée une nouvelle version de configuration."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `settings:write`.</Note>
+
+La modification de `config` crée une nouvelle version immuable. Les modifications de métadonnées seules ne créent pas de version.

@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Gérez les échecs de modèle, d’outil, de validation, de délai d’attente et de reprise dans les agents Ruby."
+---
+
+Les échecs des agents proviennent généralement d’une requête au modèle, d’un outil local, de la validation du schéma, d’un délai d’attente ou d’une décision humaine manquante.
+
+## Récupérer après une erreur d’outil
+
+Définissez `on_error: "return-to-model"` lorsque le modèle peut récupérer d’une erreur d’outil. L’erreur devient un résultat d’outil et l’agent peut choisir une autre action. Conservez le comportement fail-run pour les opérations dangereuses ou irrécupérables.
+
+## Comprendre l’exécution de Ruby
+
+Ruby consomme les flux du modèle avec une itération synchrone classique. Définissez des délais d’attente explicites pour les outils réseau et les processus, et évitez de bloquer les hooks de cycle de vie avec des opérations de persistance lentes.
+
+## Diagnostiquer les erreurs de reprise
+
+Chaque appel en attente nécessite une approbation, un rejet ou un résultat externe associé à l’identifiant de l’appel d’outil. Enregistrez l’état d’exécution complet renvoyé avant d’afficher une interface d’approbation.
+
+## Consigner les champs utiles
+
+Enregistrez l’identifiant d’exécution, l’index d’étape, l’identifiant de requête, le fournisseur, le modèle, le motif de fin, l’identifiant d’appel d’outil et le motif d’arrêt. Préférez les hooks de cycle de vie ou DevTools à la journalisation brute des prompts.

@@ -1,0 +1,69 @@
+---
+icon: "workflow"
+title: "Fusion – Serverwerkzeug"
+description: "Führe mehrere Analysemodelle aus und fasse ihre Ergebnisse zusammen."
+---
+
+Verwende `phaseo:fusion`, wenn eine Antwort von mehreren unabhängigen Modellperspektiven profitieren kann. Phaseo führt die Analysemodelle parallel aus und bittet anschließend das ausgewählte Analysemodell, ihre Ergebnisse für das aufrufende Modell zusammenzufassen.
+
+## Einrichtung im Playground
+
+Im Server-Tools-Menü des Playgrounds kannst du Folgendes auswählen:
+
+- Analysemodelle, die die Anfrage unabhängig voneinander prüfen
+- ein optionales Bewertungsmodell, das die Analyseergebnisse vergleicht
+- eine maximale Anzahl an Tool-Aufrufen für die Fusion-Beratungstools
+
+Das Hauptmodell sieht diese benannten Berater im selben Tool-Durchlauf und kann ihre Ergebnisse vor der endgültigen Antwort nutzen.
+
+## API-Aufbau
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:fusion",
+      "parameters": {
+        "analysis_models": ["anthropic/claude-opus-5", "openai/gpt-5"],
+        "model": "google/gemini-pro-latest",
+        "instructions": "Reconcile disagreements and return concise synthesis guidance.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## Wann du Fusion verwenden solltest
+
+Verwende Fusion für:
+
+- Planungsentscheidungen, bei denen ein zweites oder drittes Modell fehlende Annahmen erkennen könnte
+- Forschungssynthesen, bei denen Modelle Belege unterschiedlich gewichten könnten
+- Code- oder Architekturprüfungen mit unabhängiger Kritik
+- besonders wichtige Antworten, bei denen etwas zusätzliche Latenz akzeptabel ist
+
+Verwende stattdessen einen einzelnen Advisor, wenn du nur eine Prüfung benötigst.
+
+## Nutzung und Preise
+
+Jeder Fusion-Aufruf erhöht:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "fusion_requests": 1
+    }
+  }
+}
+```
+
+Die Tokens der Beratermodelle zählen zur Gesamtnutzung und können zu den Preisen der jeweiligen Modelle abgerechnet werden. Für Server-Tools kann außerdem der Zähler `server_tool_advisor_requests` verwendet werden.
+
+## Verwandte Seiten
+
+- [Advisor](./advisor.mdx)
+- [Subagent](./subagent.mdx)
+- [Server-Tools](./index.mdx)

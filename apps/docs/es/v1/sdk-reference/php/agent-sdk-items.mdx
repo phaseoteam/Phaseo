@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Elementos del flujo"
+description: "Consume eventos de texto, razonamiento, herramientas y elementos del proveedor en ejecuciones de agentes PHP."
+---
+
+El resultado del flujo ofrece consumidores reutilizables para el texto y los eventos estructurados.
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->itemStream() as $item) {
+    renderItem($item);
+}
+
+$result = $stream->getResult();
+```
+
+Usa el flujo completo de eventos si la interfaz necesita fragmentos de razonamiento, progreso de herramientas, puntos de control de aprobación o cambios del ciclo de vida además de los elementos del proveedor.
+
+<Note>
+Los valores de elementos de PHP son arrays u objetos genéricos, no una unión cerrada de elementos tipados. Valida los campos que consuma tu interfaz y conserva una alternativa para los elementos desconocidos y los próximos eventos del proveedor.
+</Note>
+
+PHP consume el flujo del proveedor de forma síncrona y permite volver a recorrer la secuencia recopilada. Es adecuado para workers de solicitudes y programas CLI, pero no constituye por sí solo un canal de envío en segundo plano.

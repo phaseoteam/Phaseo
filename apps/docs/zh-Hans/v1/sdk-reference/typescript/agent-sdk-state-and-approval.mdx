@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "持久化运行状态、审批工具调用并继续已暂停的代理。"
+---
+
+如果代理需要等待人员、外部任务或应用自有工具后才能继续，请使用继续运行功能。Agent SDK 会返回之后继续运行所需的完整状态。
+
+<Note>
+Phaseo 不会将 Agent SDK 运行状态持久化到托管代理服务中。如果状态需要在请求结束或进程重启后保留，请在自己的应用中保存可恢复的运行状态。
+</Note>
+
+## 审批工具调用
+
+仅对确实需要审批的调用要求审批：
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+运行会在 `run.pause.pendingToolCalls` 中保留待处理调用并暂停。按确切的调用 ID 恢复，以免混淆并发调用：
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## 暂停以供人工审核
+
+如果要在开始下一轮之前检查模型的完整响应，请使用 `humanReview`：
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+通过明确的人工输入继续：
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## 持久化运行状态
+
+直接持久化返回的 `AgentRunResult`，或提供带有异步 `load(runId)` 和 `save(result)` 方法的 `state` 访问器。这样，继续运行时可使用 `runId`，无需在每一层传递序列化记录。
+
+SDK 不包含持久化适配器或托管状态后端。应用可以将一次性运行保存在进程内，只持久化已暂停或未完成的运行。
+
+## 相关指南
+
+- [定义并运行工具](./agent-sdk-tools.mdx)
+- [控制代理运行](./agent-sdk-run-controls.mdx)
+- [构建持久的代理循环](../../cookbook/agent-sdk-durable-loop.mdx)

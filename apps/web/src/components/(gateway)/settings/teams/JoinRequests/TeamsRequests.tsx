@@ -1,6 +1,10 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Card,
 	CardHeader,
@@ -67,6 +71,9 @@ export default function TeamsRequests({
 	onApprove,
 	onReject,
 }: Props) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string, values?: Record<string, string>) =>
+		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
@@ -160,9 +167,10 @@ export default function TeamsRequests({
 			try {
 				// call server action with toast feedback
 				await toast.promise(approveJoinRequest(request.id), {
-					loading: "Approving…",
-					success: "Request approved",
-					error: (err) => `Failed: ${err?.message || err}`,
+					loading: s("Approving…"),
+					success: s("Request approved"),
+					error: (err) =>
+						`${s("Failed:")} ${localizedSettingsError(err, t, "Action failed")}`,
 				});
 				await onApprove?.(request.id);
 			} catch {
@@ -177,9 +185,10 @@ export default function TeamsRequests({
 			setLocalStatus("rejected");
 			try {
 				await toast.promise(rejectJoinRequest(request.id), {
-					loading: "Rejecting…",
-					success: "Request rejected",
-					error: (err) => `Failed: ${err?.message || err}`,
+					loading: s("Rejecting…"),
+					success: s("Request rejected"),
+					error: (err) =>
+						`${s("Failed:")} ${localizedSettingsError(err, t, "Action failed")}`,
 				});
 				await onReject?.(request.id);
 			} catch {
@@ -202,14 +211,14 @@ export default function TeamsRequests({
 				<div className="flex items-center gap-3 pl-2">
 					<div className="min-w-0 flex-1">
 						<div className="truncate text-sm font-medium">
-							{request.requester?.display_name
-								? `${request.requester.display_name} requested to join`
-								: "Join request"}
+								{request.requester?.display_name
+									? `${request.requester.display_name} ${s("requested to join")}`
+									: s("Join request")}
 						</div>
 						<div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
 							<span>
 								{request.created_at
-									? `Requested ${formatDate(
+									? `${s("Requested")} ${formatDate(
 											request.created_at
 									  )}`
 									: ""}
@@ -237,12 +246,12 @@ export default function TeamsRequests({
 											className="h-8 w-8 hover:text-green-600"
 											onClick={handleApprove}
 											disabled={busy}
-											aria-label="Approve request"
+											aria-label={s("Approve request")}
 										>
 											<Check className="h-4 w-4" />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>Approve</TooltipContent>
+							<TooltipContent>{s("Approve")}</TooltipContent>
 								</Tooltip>
 
 								<Tooltip>
@@ -253,12 +262,12 @@ export default function TeamsRequests({
 											className="h-8 w-8 hover:text-red-600"
 											onClick={handleReject}
 											disabled={busy}
-											aria-label="Reject request"
+											aria-label={s("Reject request")}
 										>
 											<X className="h-4 w-4" />
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>Reject</TooltipContent>
+							<TooltipContent>{s("Reject")}</TooltipContent>
 								</Tooltip>
 							</>
 						) : null}
@@ -274,23 +283,22 @@ export default function TeamsRequests({
 				<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div>
 						<CardTitle className="text-base">
-							Join requests
+											{s("Join requests")}
 						</CardTitle>
 						<CardDescription>
-							Approve or ignore requests to join this workspace.
+										{s("phraseApproveOrIgnoreRequestsToJoinThisWorkspace")}
 						</CardDescription>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
 						<Badge variant="outline">
-							{active.length} pending{" "}
-							{active.length === 1 ? "request" : "requests"}
+							{active.length} {s("pending")} {active.length === 1 ? s("request") : s("requests")}
 						</Badge>
 						<Select
 							value={activeWorkspaceId}
 							onValueChange={(v) => setActiveTeamId(v)}
 						>
 							<SelectTrigger className="w-full sm:w-[200px]">
-								<SelectValue placeholder="Select workspace…" />
+							<SelectValue placeholder={s("Select workspace…")} />
 							</SelectTrigger>
 							<SelectContent>
 								{teams.map((t) => (
@@ -306,11 +314,11 @@ export default function TeamsRequests({
 				<CardContent>
 					{!activeTeam ? (
 						<div className="text-sm text-muted-foreground">
-							No workspaces available.
+							{s("phraseNoWorkspacesAvailable")}
 						</div>
 					) : active.length === 0 ? (
 						<div className="text-sm text-muted-foreground">
-							No pending requests for {activeTeam.name}.
+							{s("No pending requests for")} {activeTeam.name}.
 						</div>
 					) : (
 						<div className="grid grid-cols-1 gap-3 md:grid-cols-2">

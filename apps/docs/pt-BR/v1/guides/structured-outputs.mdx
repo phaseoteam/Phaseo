@@ -1,0 +1,94 @@
+---
+icon: "shapes"
+title: "Saídas estruturadas"
+description: "Retorne JSON previsível com os formatos de saída json_object ou json_schema."
+---
+
+As saídas estruturadas permitem exigir um formato legível por máquina em vez de texto livre.
+
+## Compatibilidade dos endpoints
+
+Use saídas estruturadas em:
+
+- `/v1/chat/completions` com `response_format`
+- `/v1/responses` com `text.format`
+- `/v1/messages` ainda pode retornar texto JSON, mas não usa o mesmo contrato de `response_format`.
+
+## Solicitação
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## Resposta
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## Observações sobre o contrato
+
+- `response_format.type` deve ser `text`, `json_object` ou `json_schema`.
+- Para `json_schema`, inclua um objeto de schema (`response_format.json_schema.schema` em payloads no estilo chat ou `text.format.schema` em payloads no estilo Responses).
+- Valide o JSON no servidor antes de usá-lo em etapas posteriores.
+
+## Projete seu esquema
+
+Comece com um objeto pequeno, marque explicitamente os campos obrigatórios e use enumerações para categorias conhecidas. Defina `additionalProperties: false` para rejeitar chaves extras. Mantenha o esquema solicitado e o validador do servidor sincronizados; versione-os juntos.
+
+## Valide o resultado
+
+Analise e valide o resultado completo antes de usá-lo nas próximas etapas. Este exemplo de TypeScript usa Zod e corresponde ao esquema meteorológico acima:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+Trate recusas, conteúdo ausente e respostas truncadas antes de analisar. Se a validação falhar, permita apenas um número limitado de tentativas corretivas e depois retorne uma falha segura. Novas gerações podem gerar cobranças adicionais. JSON válido não comprova a exatidão factual dos valores nem autoriza uma ação.
+
+Acompanhe falhas de validação por modelo e versão do esquema. Reavalie os casos de teste quando qualquer um mudar. Para recuperar JSON malformado, veja [reparo de respostas](../cookbook/response-healing-for-structured-json.mdx).

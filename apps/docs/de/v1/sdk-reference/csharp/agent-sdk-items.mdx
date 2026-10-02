@@ -1,0 +1,16 @@
+---
+icon: "layers"
+title: "Mit Ergebnissen und Elementen arbeiten"
+description: "Erstelle .NET-Laufzeitachsen aus Nachrichten, Schritten, Tools und Stream-Ereignissen."
+---
+
+`RunResult` ist das dauerhafte Ergebnis eines Agents. Es enthält den Laufdatensatz, Nachrichten, Schritte, Verbrauch und Kosten, Warnungen, Beendigungsgründe und die endgültige Ausgabe.
+
+Verwende `TextStream()` für den laufenden Antworttext und `FullStream()` für Modell-, Tool-, Schritt-, Lauf- und Provider-Elementereignisse. C# stellt Provider-Elemente derzeit als generische Objekte bereit und nicht als diskriminierte TypeScript-Union `AgentItem`.
+
+Erstelle während des aktiven Laufs anhand der Lifecycle-Ereignisse Produktzeitachsen und rekonstruiere anschließend den Endzustand aus gespeicherten Nachrichten und Schritten.
+
+## Weiterführende Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)

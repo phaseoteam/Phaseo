@@ -1,0 +1,67 @@
+---
+icon: "square-terminal"
+title: "C# SDK 用法"
+description: "C# SDK 当前支持的包装方法。"
+---
+
+## 设置
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("<API_KEY>");
+```
+
+## Chat completions
+
+```csharp
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["messages"] = new[]
+  {
+    new Dictionary<string, object>
+    {
+      ["role"] = "user",
+      ["content"] = "Hello"
+    }
+  }
+});
+```
+
+## Responses
+
+```csharp
+var resp = await client.GenerateResponse(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["input"] = "Reply with: csharp sdk works"
+});
+```
+
+## 图像
+
+```csharp
+var image = await client.GenerateImage(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-image-1",
+  ["prompt"] = "A lighthouse at golden hour"
+});
+```
+
+## 内容审核
+
+```csharp
+var moderation = await client.GenerateModeration(new Dictionary<string, object>
+{
+  ["model"] = "openai/omni-moderation-latest",
+  ["input"] = "Some text to check"
+});
+```
+
+## 模型与健康状态
+
+```csharp
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "10" });
+var health = await client.Health();
+```

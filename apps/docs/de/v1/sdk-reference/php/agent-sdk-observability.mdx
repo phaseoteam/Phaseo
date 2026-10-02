@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Fehler und Fehlerbehebung"
+description: "Behandle Fehler bei Modell, Tools, Validierung, Zeitüberschreitung und Fortsetzung in PHP-Agenten."
+---
+
+Agent-Fehler entstehen meist durch eine Modellanfrage, ein lokales Tool, Schema-Validierung, eine Zeitüberschreitung oder eine fehlende menschliche Entscheidung.
+
+## Tool-Fehler beheben
+
+Setze `onError: "return-to-model"`, wenn sich das Modell von einem Tool-Fehler erholen kann. Der Fehler wird zu einem strukturierten Tool-Ergebnis und der Lauf kann eine andere Aktion auswählen. Behalte fail-run für unsichere oder nicht behebbare Vorgänge bei.
+
+## PHP-Ausführung verstehen
+
+PHP-Tool-Callbacks werden synchron ausgeführt. Daher sind Tool-Konkurrenz und Unterbrechungen durch die PHP-Runtime und den zugrunde liegenden E/A-Client begrenzt. Setze ausdrückliche Timeouts für Netzwerk- und Prozesstools und gehe nicht davon aus, dass ein abgelaufener Callback immer zwangsweise beendet werden kann.
+
+## Fortsetzungsfehler diagnostizieren
+
+Jeder ausstehende Aufruf benötigt eine Genehmigung, Ablehnung oder extern bereitgestellte Ausgabe, die über die Tool-Aufruf-ID zugeordnet ist. Speichere den vollständig zurückgegebenen Laufzustand, bevor du eine Genehmigungsoberfläche anzeigst.
+
+## Aussagekräftige Felder protokollieren
+
+Protokolliere Lauf-ID, Schrittindex, Anfragen-ID, Provider, Modell, Beendigungsgrund, Tool-Aufruf-ID und Stoppgrund. Verwende Lifecycle-Hooks oder DevTools statt Prompts und Zugangsdaten direkt zu protokollieren.

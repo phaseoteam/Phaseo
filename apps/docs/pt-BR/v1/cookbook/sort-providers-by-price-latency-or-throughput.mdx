@@ -1,0 +1,332 @@
+---
+title: "Ordenar provedores por preço, latência ou throughput"
+icon: "arrow-down-up"
+description: "Use a classificação de provedores por solicitação para priorizar a rota mais barata, rápida ou com maior throughput de um modelo."
+---
+
+Use esta receita quando o modelo permanecer o mesmo, mas você quiser que o gateway classifique as ofertas dos provedores de outra forma para uma solicitação.
+
+## Objetivo
+
+- Priorize o provedor mais barato para uma solicitação.
+- Priorize o provedor com menor latência para fluxos interativos.
+- Priorize o provedor com maior throughput para geração em lote.
+
+## 1. Adicione `provider.sort` à solicitação
+
+Para solicitações de texto, defina a classificação desejada diretamente no objeto `provider`.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Give me one release-note bullet for the last deploy.",
+    "provider": {
+      "sort": "price"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Give me one release-note bullet for the last deploy.",
+  provider: {
+    sort: "price",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Give me one release-note bullet for the last deploy.",
+        "provider": {
+            "sort": "price",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Give me one release-note bullet for the last deploy.",
+    Provider: map[string]interface{}{
+      "sort": "price",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Give me one release-note bullet for the last deploy.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["sort"] = "price"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Give me one release-note bullet for the last deploy.',
+    'provider' => [
+        'sort' => 'price',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Give me one release-note bullet for the last deploy.',
+  provider: {
+    sort: 'price'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+As classificações de roteamento disponíveis neste fluxo são:
+
+- `price`
+- `latency`
+- `throughput`
+
+## 2. Escolha a classificação adequada para a carga de trabalho
+
+Use:
+
+- `price` quando o custo importa mais que a latência de cauda
+- `latency` para chat, copilotos e ferramentas com intervenção humana
+- `throughput` para geração em grande volume ou preenchimentos retroativos
+
+## 3. Entenda o que o gateway compara
+
+Ao definir uma classificação explícita por solicitação, o gateway classifica os candidatos de forma determinística, em vez de usar a combinação ponderada e equilibrada padrão.
+
+Para modelos de texto:
+
+- `price` compara uma base de preços comum entre os provedores elegíveis
+- se houver medidores de texto compartilhados, o gateway prioriza aqueles que correspondem a `input_text_tokens` e `output_text_tokens`
+- `latency` usa os dados de latência mais recentes dos provedores
+- `throughput` usa as medições de throughput mais recentes
+
+## 4. Mantenha um conjunto realista de provedores
+
+A classificação funciona melhor quando você restringe o conjunto de candidatos, se necessário.
+
+Por exemplo, classifique apenas um conjunto aprovado de provedores:
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the incident in one sentence.",
+    "provider": {
+      "only": ["google-vertex", "google-vertex-eu"],
+      "sort": "latency"
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the incident in one sentence.",
+  provider: {
+    only: ["google-vertex", "google-vertex-eu"],
+    sort: "latency",
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the incident in one sentence.",
+        "provider": {
+            "only": ["google-vertex", "google-vertex-eu"],
+            "sort": "latency",
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "google/gemini-3.1-flash-lite",
+    Input: "Summarize the incident in one sentence.",
+    Provider: map[string]interface{}{
+      "only": []string{"google-vertex", "google-vertex-eu"},
+      "sort": "latency",
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "google/gemini-3.1-flash-lite",
+    ["input"] = "Summarize the incident in one sentence.",
+    ["provider"] = new Dictionary<string, object>
+    {
+        ["only"] = new[] { "google-vertex", "google-vertex-eu" },
+        ["sort"] = "latency"
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'google/gemini-3.1-flash-lite',
+    'input' => 'Summarize the incident in one sentence.',
+    'provider' => [
+        'only' => ['google-vertex', 'google-vertex-eu'],
+        'sort' => 'latency',
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'google/gemini-3.1-flash-lite',
+  input: 'Summarize the incident in one sentence.',
+  provider: {
+    only: ['google-vertex', 'google-vertex-eu'],
+    sort: 'latency'
+  }
+)
+
+puts response
+```
+</CodeGroup>
+
+## 5. Verifique o resultado da classificação
+
+Ao depurar, inspecione a solicitação em **Gateway -> Uso** e procure:
+
+- provedores considerados
+- provedores classificados
+- os fatores de pontuação do roteamento para preço, latência ou throughput
+
+Assim, fica fácil confirmar se o gateway classificou os resultados como esperado.
+
+## Guias relacionados
+
+- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
+- [Implantar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)

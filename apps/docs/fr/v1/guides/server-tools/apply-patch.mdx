@@ -1,0 +1,87 @@
+---
+title: "Appliquer un patch"
+description: "Permettez aux modèles Responses de renvoyer des opérations de patch validées."
+icon: "file-pen-line"
+---
+
+Utilisez `phaseo:apply_patch` lorsqu’un flux Responses doit renvoyer des modifications de fichiers sous forme d’opérations de patch structurées. Phaseo valide l’opération et la renvoie à votre client ; il ne modifie ni votre système de fichiers ni votre dépôt.
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## Requête
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## Structure de l’opération
+
+Lorsque le modèle appelle l’outil, il envoie un objet d’opération :
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+Types d’opérations pris en charge :
+
+| Type | Champs obligatoires |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## Résultat de l’outil
+
+Phaseo renvoie l’opération validée à la boucle du modèle :
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+Votre application reste responsable d’appliquer le patch, de le montrer à un utilisateur, de le refuser ou de demander au modèle une opération révisée.
+
+## Utilisation et tarification
+
+Phaseo enregistre :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Les grilles tarifaires peuvent facturer cette utilisation à l’aide du compteur `server_tool_apply_patch_requests`.
+
+## Pages associées
+
+- [Outils serveur](./index.mdx)
+- [API Responses](../../api-reference/endpoint/responses.mdx)

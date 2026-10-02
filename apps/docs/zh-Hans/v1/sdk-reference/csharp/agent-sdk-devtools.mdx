@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "开发工具"
+description: "在本地捕获 .NET Agent SDK 运行记录，用于开发和调试。"
+---
+
+启用本地 JSONL 捕获： `AgentSdk.CreateAgentDevtools(...)` 并将其传入 `RunOptions`.
+
+捕获的条目包括运行状态和时长、模型与提供商详情、请求 ID、消息、步骤、工具活动、用量、费用和结构化错误。
+
+<Warning>
+代理的输入、上下文和工具结果可能包含敏感数据。请勿将 DevTools 输出提交到源代码管理或打包进生产镜像。
+</Warning>
+
+## 相关内容
+
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [错误与排查](./agent-sdk-observability.mdx)

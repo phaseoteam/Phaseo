@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "Hooks du cycle de vie"
+description: "Réagissez aux événements .NET d’exécution, de modèle, d’étape, d’outil et de point de contrôle."
+---
+
+Pass `RunOptions.OnEvent` pour mettre à jour une chronologie produit, un journal d’audit ou un pipeline de télémétrie.
+
+Les familles d’événements couvrent le démarrage, la reprise et la fin des exécutions, les requêtes de modèle, les points de contrôle des étapes, l’exécution et la progression des outils, l’attente d’une intervention humaine, l’annulation et les échecs.
+
+Gardez la fonction de rappel rapide. Placez les opérations lentes de stockage ou de réseau dans une file extérieure à la boucle de l’agent.
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## Pages associées
+
+- [Diffusion en continu](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

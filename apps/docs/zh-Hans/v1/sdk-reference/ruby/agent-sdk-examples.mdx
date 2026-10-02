@@ -1,0 +1,32 @@
+---
+icon: "square-terminal"
+title: "示例"
+description: "参考 Ruby 示例，了解工具、审批、流式传输和受限运行。"
+---
+
+## 需审批的部署
+
+```ruby
+deploy = PhaseoAgentSdk.define_tool(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: true,
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+运行进入 `waiting_for_human` 后保存返回的运行状态，再使用与待处理调用 ID 关联的决策继续运行。
+
+## 流式传输文本
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+## 限制自主运行
+
+组合设置步骤、令牌、成本和时长限制，确保 Agent 即使不断找到有用任务，也不会超出应用预算。
+
+完整约定请参阅[工具](./agent-sdk-tools.mdx)、[状态与审批](./agent-sdk-state-and-approval.mdx)和[停止条件](./agent-sdk-stop-conditions.mdx)。

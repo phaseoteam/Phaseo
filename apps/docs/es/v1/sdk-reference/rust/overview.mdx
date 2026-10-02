@@ -1,0 +1,61 @@
+---
+icon: "compass"
+title: "SDK de Rust"
+description: "Envía solicitudes al gateway de Phaseo desde Rust con el crate oficial phaseo."
+---
+
+Usa el crate publicado [`phaseo`](https://crates.io/crates/phaseo) para llamar al gateway de Phaseo desde una aplicación Rust.
+
+El cliente de alto nivel admite:
+
+- solicitudes a la API Responses con `Phaseo::responses(...)`
+- solicitudes a Chat Completions con `Phaseo::chat_completions(...)`
+- otros endpoints JSON con `Phaseo::post(...)`
+- descubrimiento de rutas de modelos en tiempo real con `Phaseo::model_endpoint_capabilities(...)`
+- informes de compatibilidad de parámetros con `Phaseo::check_model_parameters(...)`
+- configuración basada en el entorno con `Phaseo::from_env()`
+- endpoints HTTPS personalizados y servidores de desarrollo loopback
+- estado, cuerpo JSON, ID de solicitud y detalles de error estructurados
+
+Los informes de parámetros clasifican cada parámetro solicitado como `supported`, `partial`, `unsupported` o `unknown`, validan los valores y rangos publicados y devuelven las rutas que aceptan el conjunto completo de parámetros.
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  La versión `0.1` tiene soporte y está publicada, pero la API de Rust puede seguir evolucionando antes de `1.0`. Fija una versión menor compatible en producción.
+</Note>
+
+## Alcance actual
+
+El cliente de alto nivel es síncrono y acepta cuerpos de solicitud `serde_json::Value`. Los módulos de bajo nivel generados siguen disponibles en `phaseo::gen`, con exportaciones prácticas en `phaseo::client`, `phaseo::models` y `phaseo::operations`.
+
+El cliente de Rust actualmente no ofrece un transporte asíncrono ni un ayudante de streaming de alto nivel. Usa la API HTTP sin procesar si la aplicación necesita streaming antes de que se incorporen esas funciones.
+
+<Columns cols={2}>
+  <Card title="Instalar el SDK de Rust" icon="package" href="./installation.mdx">
+    Añade el crate y configura tu clave de API.
+  </Card>
+  <Card title="Enviar solicitudes" icon="play" href="./usage.mdx">
+    Llama a Responses, Chat Completions y otros endpoints JSON.
+  </Card>
+  <Card title="Referencia de la API de Rust" icon="book-open" href="./api-reference.mdx">
+    Consulta los tipos y métodos públicos exactos de `phaseo 0.1`.
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    Explora la documentación de la API de Rust generada.
+  </Card>
+</Columns>

@@ -1,0 +1,40 @@
+---
+icon: "pencil"
+title: "छवि संपादन"
+description: "TypeScript SDK के साथ /images/edits call करें।"
+---
+
+**Method**: `client.generateImageEdit()`।
+
+### उदाहरण
+```typescript
+const edited = await client.generateImageEdit({
+  model: "openai/gpt-image-1",
+  prompt: "Make it sunset",
+  image: "data:image/png;base64,...",
+  mask: "data:image/png;base64,...",
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): image-edit सक्षम model ID।
+- `image` (ज़रूरी): source image का base64 data URL या URL।
+- `prompt`: संपादन के लिए एक वैकल्पिक नया निर्देश।
+- `mask`: वैकल्पिक मास्क (पारदर्शी क्षेत्र संपादित होते हैं)।
+- `n` (1–10): edited variants की संख्या।
+- `size`: जैसे `1024x1024`, `1024x1792`, `1792x1024`।
+- `response_format`: `url` या `b64_json`।
+- `user`: अंतिम उपयोगकर्ता का वैकल्पिक टैग।
+
+### लौटाया गया मान
+`ImageGenerationResponse`
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/edited_image.png"
+    }
+  ]
+}
+```

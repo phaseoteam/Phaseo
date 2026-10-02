@@ -1,0 +1,27 @@
+---
+icon: "files"
+title: "Arquivos"
+description: "Use o SDK Ruby para enviar arquivos, consultar metadados e recuperar o conteúdo dos arquivos."
+---
+
+**Métodos**: `upload_file`, `list_files`, `retrieve_file`, `retrieve_file_content`.
+
+### Exemplo
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+
+uploaded = client.upload_file(
+  'purpose' => 'batch',
+  'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=='
+)
+
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+<Note>
+`list_files` está disponível no SDK, mas atualmente `GET /files` retorna `file_list_not_supported_with_shared_gateway_key` quando se usa a chave compartilhada do gateway
+Armazene os IDs dos arquivos enviados e recupere-os diretamente.
+</Note>

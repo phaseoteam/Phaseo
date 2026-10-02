@@ -1,0 +1,78 @@
+---
+title: "Kilo Code"
+icon: "/icons/brands/kilo.svg"
+description: "OpenAI互換のカスタムプロバイダーを使ってKilo CodeをPhaseoに接続します。"
+---
+
+分離されたセッションにはPhaseo CLIのランナーを使うか、CLIで専用キーを作成して既存のKilo Codeを手動で設定してください。
+
+## Phaseo CLIでKilo Codeを実行する
+
+Kilo Code CLIでは、1セッション用のプロバイダー設定をPhaseoに準備させます。
+
+```bash
+phaseo login
+phaseo kilo --model openai/gpt-5.6-terra --
+```
+
+`--catalog all`でPhaseoのすべての有効なテキスト/チャットモデルを公開し、`--dry-run --json`でインストールと起動計画を確認できます。明示的なコマンド形式は`phaseo run kilo ...`です。ランナーは一時的な`KILO_CONFIG`ファイルを使うため、既存のKilo CodeやVS Codeの設定を上書きしません。
+
+## Phaseo CLIで認証情報を作成する
+
+```bash
+phaseo login
+phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Kilo Codeを手動で設定する
+
+1. VS CodeでKilo Codeを開きます。
+2. 設定アイコンを選び、**Providers**を開いてから**Add custom provider**を選択します。
+3. 次の値を入力します。
+
+| Kilo Codeの項目 | 値 |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Provider API | **OpenAI Compatible** |
+| Base URL | `https://api.phaseo.app/v1` |
+| API key | 次のコマンドの出力 `phaseo integrations credential kilo-code` |
+
+4. モデルが検出されない場合は、ID `anthropic/claude-sonnet-4.6`を手動で追加します。
+5. **Submit**を選択し、その後Phaseoモデルを選びます。
+
+Kiloでは選択内容が`phaseo/anthropic/claude-sonnet-4.6`と表示されます。`phaseo`はローカルプロバイダーIDで、残りはモデルIDとしてPhaseoに送信されます。
+
+## 確認する
+
+Kilo Codeに`PHASEO_KILO_OK`と返答するよう依頼し、Phaseoのアクティビティに表示されることを確認します。
+
+## 削除する
+
+Kilo Codeでカスタムプロバイダーを削除してから、次を実行します。
+
+```bash
+phaseo integrations remove kilo-code
+```
+
+CLIから拡張機能の非公開ストレージは消去できませんが、削除操作によりキーは失効します。
+
+## トラブルシューティング
+
+### モデルが検出されない
+
+モデルを手動で追加します。`/models`による検出は不要です。
+
+### 認証に失敗する
+
+保存済みの値を`phaseo integrations credential kilo-code`の出力に置き換え、Base URLは表示どおりに保ちます。
+
+### モデル名の表示が異なる
+
+Kiloでは`phaseo/<Phaseo model ID>`を選択しますが、モデルID欄には`phaseo/`を追加しないでください。
+
+## 関連項目
+
+- [Kilo Codeのカスタムモデル](https://kilo.ai/docs/code-with-ai/agents/custom-models)
+- [コーディングエージェント](./coding-assistants.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,10 @@
+---
+title: "Workspace-Analysen exportieren"
+sidebarTitle: "Analysen exportieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /analytics/export"
+description: "Exportiert gefilterte Workspace-Analysen als CSV."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `analytics:read` erforderlich.</Note>
+
+Der Export akzeptiert dieselben Filter wie der Analyse-Endpunkt und gibt alle passenden aggregierten Zeilen als tabellenkalkulationssicheres CSV zurück.

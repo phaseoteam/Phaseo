@@ -1,4 +1,5 @@
-import { getAppCategoryLabel, parseAppCategories } from "@/lib/appCategories";
+import { useTranslations } from "next-intl";
+import { parseAppCategories } from "@/lib/appCategories";
 
 export default function AppCategoryTags({
 	categoryCsv,
@@ -7,6 +8,7 @@ export default function AppCategoryTags({
 	categoryCsv?: string | null;
 	className?: string;
 }) {
+	const t = useTranslations("SettingsUI");
 	const categories = parseAppCategories(categoryCsv);
 	if (categories.length === 0) return null;
 
@@ -17,7 +19,7 @@ export default function AppCategoryTags({
 					key={category}
 					className="inline-flex rounded-md border border-border/70 bg-muted/35 px-1.5 py-0.5 text-[10px] font-medium leading-4 text-muted-foreground"
 				>
-					{getAppCategoryLabel(category)}
+					{t(`apps.categories.${category}` as never)}
 				</span>
 			))}
 		</div>

@@ -1,0 +1,55 @@
+---
+icon: "package"
+title: "تثبيت Agent SDK لـ Rust"
+description: "ثبّت phaseo-agent وأعدّ عميله لبوابة Phaseo."
+---
+
+## المتطلبات
+
+- Rust 1.86 أو أحدث
+- مفتاح API لبوابة Phaseo
+
+## التثبيت
+
+```toml
+[dependencies]
+phaseo = "0.1"
+phaseo-agent = "0.1"
+serde_json = "1"
+```
+
+أو شغّل:
+
+```bash
+cargo add phaseo@0.1 phaseo-agent@0.1 serde_json
+```
+
+## إعداد المصادقة
+
+تقرأ `create_gateway_agent_client(...)` و`GatewayAgentClient::from_env(...)` المتغير `PHASEO_API_KEY`:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+يقبل عميل `phaseo` الأساسي أيضًا المتغير الاختياري `PHASEO_BASE_URL`.
+
+## التحقق من التثبيت
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+## الخطوة التالية
+
+- [إنشاء أول وكيل Rust](./agent-sdk.mdx)
+- [الأدوات والموافقات](./agent-sdk-tools.mdx)
+- [مرجع Agent API](./agent-sdk-api-reference.mdx)

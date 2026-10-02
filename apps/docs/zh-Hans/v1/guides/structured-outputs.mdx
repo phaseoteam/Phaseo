@@ -1,0 +1,94 @@
+---
+icon: "shapes"
+title: "结构化输出"
+description: "使用 json_object 或 json_schema 输出格式返回可预测的 JSON。"
+---
+
+结构化输出可强制使用机器可读格式，而非自由文本。
+
+## 端点支持情况
+
+可在以下端点使用结构化输出：
+
+- `/v1/chat/completions`，使用 `response_format`
+- `/v1/responses`，使用 `text.format`
+- `/v1/messages` 仍可返回 JSON 文本，但不使用相同的 `response_format` 契约。
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## 响应
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## 契约说明
+
+- `response_format.type` 应为 `text`、`json_object` 或 `json_schema`。
+- 使用 `json_schema` 时需包含 Schema 对象（chat 风格请求使用 `response_format.json_schema.schema`，Responses 风格请求使用 `text.format.schema`）。
+- 在下游使用前，请在服务器上校验 JSON。
+
+## 设计架构
+
+从小型对象开始，明确标记必填字段，并对已知类别使用枚举。需要拒绝额外键时，设置 `additionalProperties: false`。请保持请求架构与服务器验证器同步，并共同进行版本管理。
+
+## 验证结果
+
+在后续流程中使用之前，先解析并验证完整结果。此 TypeScript 示例使用 Zod，并与上面的天气架构一致：
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+解析前请处理拒绝、内容缺失和截断响应。验证失败时，只允许有限的纠正重试，随后返回安全失败。重试生成可能产生额外费用。有效 JSON 并不能证明值在事实上正确，也不能授权操作。
+
+按模型和架构版本跟踪验证失败。任何一项更改时，都应重新检查评估用例。恢复格式错误的 JSON，请参阅[响应修复](../cookbook/response-healing-for-structured-json.mdx)。

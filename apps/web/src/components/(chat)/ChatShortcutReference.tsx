@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { useTranslations } from "next-intl";
 import {
 	CornerDownLeft,
 	Keyboard,
@@ -22,64 +23,56 @@ import { Separator } from "@/components/ui/separator";
 
 export const CHAT_SHORTCUT_GROUPS = [
 	{
-		label: "Chat",
+		key: "chat",
 		items: [
 			{
+				key: "newChat",
 				icon: MessageSquarePlus,
-				title: "New chat",
-				description: "Start a fresh conversation.",
 				keys: ["Ctrl/Cmd", "Shift", "C"],
 			},
 			{
+				key: "addModel",
 				icon: Plus,
-				title: "Add model",
-				description: "Open the model picker for this chat.",
 				keys: ["Ctrl/Cmd", "Shift", "M"],
 			},
 			{
+				key: "temporaryChat",
 				icon: MessageCircleDashed,
-				title: "Temporary chat",
-				description: "Toggle temporary chat mode.",
 				keys: ["Ctrl/Cmd", "Shift", "U"],
 			},
 			{
+				key: "searchChats",
 				icon: Search,
-				title: "Search chats",
-				description: "Search your local chat history.",
 				keys: ["Ctrl/Cmd", "K"],
 			},
 		],
 	},
 	{
-		label: "Composer",
+		key: "composer",
 		items: [
 			{
+				key: "commandMenu",
 				icon: Keyboard,
-				title: "Command menu",
-				description: "Type slash in the composer to open commands.",
 				keys: ["/"],
 			},
 			{
+				key: "sendOrQueue",
 				icon: SendHorizontal,
-				title: "Send or queue",
-				description: "Send now, or queue while a response is running.",
 				keys: ["Enter"],
 			},
 			{
+				key: "newLine",
 				icon: CornerDownLeft,
-				title: "New line",
-				description: "Insert a line break in the composer.",
 				keys: ["Shift", "Enter"],
 			},
 			{
+				key: "showShortcuts",
 				icon: Keyboard,
-				title: "Shortcuts",
-				description: "Show or hide this reference.",
 				keys: ["Ctrl/Cmd", "/"],
 			},
 		],
 	},
-];
+] as const;
 
 function ShortcutKey({ children }: { children: string }) {
 	return (
@@ -90,19 +83,21 @@ function ShortcutKey({ children }: { children: string }) {
 }
 
 export function ChatShortcutReference() {
+	const t = useTranslations("Product.chat.shortcuts");
+
 	return (
 		<div className="grid gap-4 sm:gap-5">
 			{CHAT_SHORTCUT_GROUPS.map((group) => (
-				<div key={group.label} className="grid gap-2.5">
+				<div key={group.key} className="grid gap-2.5">
 					<div className="px-2 text-xs font-medium text-muted-foreground">
-						{group.label}
+						{t(`groups.${group.key}`)}
 					</div>
 					<div className="grid gap-1">
 						{group.items.map((item) => {
 							const Icon = item.icon;
 							return (
 								<div
-									key={item.title}
+									key={item.key}
 									className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 rounded-lg px-2 py-2 hover:bg-muted/70 sm:grid-cols-[auto_minmax(0,1fr)_auto]"
 								>
 									<div className="row-span-2 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
@@ -110,15 +105,15 @@ export function ChatShortcutReference() {
 									</div>
 									<div className="min-w-0">
 										<div className="text-sm font-medium text-foreground">
-											{item.title}
+											{t(`${item.key}Title`)}
 										</div>
 										<div className="text-xs leading-4 text-muted-foreground">
-											{item.description}
+											{t(`${item.key}Description`)}
 										</div>
 									</div>
 									<div className="flex flex-wrap items-center gap-1 sm:justify-self-end">
 										{item.keys.map((key, keyIndex) => (
-											<Fragment key={`${item.title}-${key}`}>
+											<Fragment key={`${item.key}-${key}`}>
 												{keyIndex > 0 ? (
 													<span className="text-xs text-muted-foreground">
 														+
@@ -145,6 +140,8 @@ export function ChatShortcutHelpDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
+	const t = useTranslations("Product.chat.shortcuts");
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[min(92vw,30rem)] gap-0 overflow-hidden p-0">
@@ -154,9 +151,9 @@ export function ChatShortcutHelpDialog({
 							<Keyboard className="h-4 w-4" />
 						</div>
 						<div className="min-w-0">
-							<DialogTitle>Keyboard shortcuts</DialogTitle>
+							<DialogTitle>{t("dialogTitle")}</DialogTitle>
 							<DialogDescription>
-								Fast actions for chat, models, and the composer.
+								{t("dialogDescription")}
 							</DialogDescription>
 						</div>
 					</div>

@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "生成情報の取得"
+description: "Python SDKで/generationsの情報を取得します。"
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+リクエストの詳細が保存されている場合、返されるレコードには `replay_supported` と `replay_request` も含まれ、取得したペイロードを元のエンドポイントに再送信できます。
+

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { RankingMetricLeaderboard } from "@/components/(rankings)/RankingMetricLeaderboard";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
@@ -45,7 +46,6 @@ export type ModalityMetric = {
 
 export type ModalitySectionData = {
 	id: ModalityId;
-	label: string;
 	title: string;
 	description: string;
 	chartTitle: string;
@@ -64,11 +64,12 @@ type ModalityLeaderboardsProps = {
 	organisationNameMap?: Record<string, string | null>;
 };
 
-function EmptyChartPlaceholder({ section }: { section: ModalitySectionData }) {
+function EmptyChartPlaceholder() {
+	const t = useTranslations("Catalogue.rankings");
 	return (
 		<EmptyChartPreview
-			title={`No weekly ${section.label.toLowerCase()} usage yet`}
-			description="This chart appears once public gateway aggregates expose enough data."
+			title={t("modalityNoWeeklyUsage")}
+			description={t("modalityChartAvailability")}
 			heightClassName="h-[280px]"
 		/>
 	);
@@ -85,14 +86,16 @@ function TopChart({
 	logoIdMap: Record<string, string | null>;
 	organisationNameMap: Record<string, string | null>;
 }) {
-	const valueUnit = section.valueUnit ?? (
+	const t = useTranslations("Catalogue.rankings");
+	const valueUnit = section.valueUnit ?? t((
 		section.id === "image"
-			? "images"
+			? "usageImagesUnit"
 			: section.id === "video"
-				? "seconds"
+				? "usageSecondsUnit"
 				: section.id === "speech" || section.id === "transcription"
-					? "minutes"
-					: "tokens");
+					? "usageMinutesUnit"
+					: "usageTokensUnit"
+	) as never);
 	if (section.unavailable) return <RankingUnavailable title={section.chartTitle} />;
 
 	if (!section.primaryTimeseries.length) {
@@ -104,7 +107,7 @@ function TopChart({
 						{section.chartDescription}
 					</p>
 				</div>
-				<EmptyChartPlaceholder section={section} />
+			<EmptyChartPlaceholder />
 			</div>
 		);
 	}
@@ -123,8 +126,8 @@ function TopChart({
 				nameMap={nameMap}
 				logoIdMap={logoIdMap}
 				organisationNameMap={organisationNameMap}
-				leaderboardTitle={`${section.label} Leaderboard`}
-				leaderboardDescription={`Compare ${section.label.toLowerCase()} models across the selected usage period.`}
+				leaderboardTitle={t("usageDefaultLeaderboardTitle")}
+				leaderboardDescription={t("usageDefaultLeaderboardDescription")}
 				valueUnit={valueUnit}
 				showScaleToggle={section.id === "text"}
 			/>
@@ -142,6 +145,8 @@ function ModalitySection({
 	logoIdMap: Record<string, string | null>;
 	organisationNameMap: Record<string, string | null>;
 }) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
 	const latestBucket = section.primaryTimeseries.reduce<Date | null>(
 		(latest, row) => {
 			const parsed = new Date(row.bucket);
@@ -150,7 +155,7 @@ function ModalitySection({
 		},
 		null,
 	);
-	const updatedThrough = latestBucket?.toLocaleDateString("en-GB", {
+	const updatedThrough = latestBucket?.toLocaleDateString(locale, {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
@@ -171,13 +176,13 @@ function ModalitySection({
 					{section.description}
 				</p>
 				<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-					{updatedThrough ? <span>Week of {updatedThrough}</span> : null}
+					{updatedThrough ? <span>{t("modalityWeekOf", { date: updatedThrough })}</span> : null}
 					{updatedThrough ? <span aria-hidden="true">·</span> : null}
 					<Link
 						href="/methodology"
 						className="underline decoration-transparent underline-offset-2 transition-colors hover:text-foreground hover:decoration-current"
 					>
-						Methodology
+						{t("viewBenchmarkMethodology")}
 					</Link>
 				</div>
 			</div>
@@ -221,16 +226,16 @@ export function ModalityLeaderboards({
 	logoIdMap = {},
 	organisationNameMap = {},
 }: ModalityLeaderboardsProps) {
+	const t = useTranslations("Catalogue.rankings");
 	const showIntro = sections.length > 1;
 
 	return (
 		<div className="space-y-16">
 			{showIntro ? (
 				<div className="space-y-1">
-					<h2 className="text-2xl font-semibold">Modality Leaderboards</h2>
+					<h2 className="text-2xl font-semibold">{t("modalityRankingsHeading")}</h2>
 					<p className="max-w-3xl text-sm text-muted-foreground">
-						Each section uses modality-specific signals where available, and calls
-						out the aggregate needed for the next metric.
+						{t("modalityRankingsIntro")}
 					</p>
 				</div>
 			) : null}

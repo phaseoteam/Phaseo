@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "Goエージェントの実行、モデルのターン、ツール、一時停止、完了をリアルタイムで監視します。"
+---
+
+アプリケーションをモデルの通信方式に依存させずに構造化ライフサイクルイベントを受け取るには、`RunOptions`または`ContinueOptions`で`OnEvent`を設定します。
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+実行の開始・完了・失敗、モデルの試行、出力テキストと推論の差分、ツールの開始・進行・完了・失敗、人による確認ポイントなどのイベントを利用できます。
+
+ハンドラーは高速かつノンブロッキングに保ちます。永続化に時間がかかる場合は独自のキューやテレメトリー層にイベントを送り、外部に転送する前にツール入力の機密情報をマスキングします。

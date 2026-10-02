@@ -1,0 +1,62 @@
+---
+title: "Uso"
+description: "Defina ferramentas, execute um agente Java e retome-o após uma revisão humana."
+---
+
+## Loop de ferramentas
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## Revisão humana
+
+Retorne `HumanReviewRequest` de `AgentDefinition.humanReview` para salvar um checkpoint da execução. Persista o `RunResult` retornado, obtenha uma decisão no aplicativo e então chame `continueRun(...)` com `humanInput`. O Agent SDK não depende de estado oculto hospedado.
+
+## Opções da API Responses
+
+Passe campos adicionais da API Responses por `GatewayOptions.requestOptions`. O adaptador aplica `model`, `input`, `instructions` e as ferramentas de função locais controladas pelo agente.
+
+## Runtime avançado
+
+O Java oferece interfaces de validação e aprovação, ferramentas HITL e manuais, progresso, erros recuperáveis, iteráveis reproduzíveis, auxiliares de parada, turnos dinâmicos, `NextTurnParams` persistidos, uso e custo normalizados e `StateAccessor`.
+
+## Streaming e cancelamento
+
+`Agent.stream(...)` e `Agent.continueStream(...)` consomem o stream SSE de Responses do gateway. Leia `textStream()` ou `fullStream()` para obter resultados reproduzíveis e chame `cancel()` para interromper o worker ativo e a leitura HTTP. As etapas concluídas mantêm IDs de solicitação, metadados do provedor, motivos de conclusão, avisos, uso e custo.
+
+## Relacionados
+
+- [Visão geral do Agent SDK](../agent-sdk/overview.mdx)
+- [SDK de cliente para Java](./overview.mdx)

@@ -1,0 +1,96 @@
+---
+icon: "activity"
+title: "Événements, nouvelles tentatives et erreurs"
+description: "Observez les exécutions synchrones d’agents Rust et gérez les échecs du modèle ou des outils."
+---
+
+## Événements du cycle de vie
+
+Utilisez `run_with_events(...)` ou `continue_with_events(...)` pour recevoir les événements de manière synchrone :
+
+```rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!(
+        "{} run={} details={}",
+        event.event_type,
+        event.run_id,
+        event.details
+    );
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+Le runtime émet actuellement :
+
+- `run.started`
+- `model.request.started`
+- `model.response.completed`
+- `tool.started`
+- `tool.completed`
+- `run.paused`
+- `run.resumed`
+- `run.completed`
+- `run.stopped`
+
+Les fonctions de rappel s’exécutent sur le thread de l’exécution. Gardez-les rapides ou déléguez le travail à un autre composant.
+
+## Nouvelles tentatives du modèle
+
+```rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new(
+    "resilient-agent",
+    "openai/gpt-6-astra",
+)
+.model_retries(2, Duration::from_millis(250));
+```
+
+`max_retries` compte les tentatives supplémentaires après la première requête. `RunStep.model_attempts` indique le nombre de tentatives nécessaires pour obtenir une réponse valide du modèle.
+
+## Utilisation
+
+`RunResult.usage` regroupe :
+
+- `input_tokens`
+- `output_tokens`
+- `cached_tokens`
+- `total_tokens`
+- `cost`, si le client du modèle le renseigne
+
+Chaque `RunStep` contient également son propre récapitulatif d’utilisation, l’ID de requête, le fournisseur, le modèle et le motif de fin.
+
+L’adaptateur Gateway intégré `0.1` ne convertit pas `cost_nanos` ni `cost_cents` de Gateway en `UsageSummary.cost`. Consultez la réponse Gateway ou l’enregistrement de génération pour connaître le montant exact.
+
+## Erreurs
+
+Toutes les erreurs du runtime utilisent `AgentError` :
+
+```rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+Les valeurs `PhaseoError` de Gateway sont converties en `AgentError`. Si une application a besoin du statut et du corps Gateway d’origine, appelez directement le client `phaseo` ou implémentez un `ModelClient` personnalisé qui préserve ces champs dans sa gestion des erreurs.
+
+Les erreurs de l’exécuteur d’outils local sont renvoyées au modèle sous forme de résultats d’outil au lieu d’interrompre immédiatement l’exécution.
+
+## Limites d’étapes
+
+`AgentDefinition::max_steps(...)` définit le nombre maximal de tours par défaut. Vous pouvez le remplacer pour une exécution :
+
+```rust
+let mut options = RunOptions::new("Investigate this issue");
+options.max_steps = Some(4);
+```
+
+Lorsque la limite est atteinte, `run.status` vaut `stopped` et `run.stop_reason` vaut `max_steps:<limit>`.

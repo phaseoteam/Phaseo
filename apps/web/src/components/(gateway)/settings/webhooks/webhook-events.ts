@@ -34,8 +34,21 @@ const EVENT_LABELS = new Map<string, string>(
 	),
 );
 
-export function getWebhookEventLabel(value: string): string {
+export type WebhookEventLabels = {
+	batch: string;
+	video: string;
+	allJobs: string;
+	phases: Record<WebhookPhase, string>;
+};
+
+export function getWebhookEventLabel(value: string, labels?: WebhookEventLabels): string {
 	const normalized = value.trim().toLowerCase();
+	if (labels) {
+		const [kind, phase] = normalized.split(".");
+		const phaseLabel = labels.phases[phase as WebhookPhase];
+		const kindLabel = kind === "batch" ? labels.batch : kind === "video" ? labels.video : kind === "job" ? labels.allJobs : null;
+		return phaseLabel && kindLabel ? `${kindLabel}: ${phaseLabel}` : value;
+	}
 	const knownLabel = EVENT_LABELS.get(normalized);
 	if (knownLabel) return knownLabel;
 

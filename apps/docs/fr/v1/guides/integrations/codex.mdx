@@ -1,0 +1,75 @@
+---
+title: "Codex"
+icon: "/icons/brands/codex.svg"
+description: "Utilisez le Gateway Phaseo comme fournisseur personnalisé pour la CLI Codex, Codex App et l’extension IDE Codex."
+---
+
+Codex prend en charge les fournisseurs de modèles personnalisés via `config.toml`. Vous pouvez ainsi acheminer les requêtes par Phaseo tout en conservant votre flux de travail habituel dans la CLI, l’application ou l’IDE.
+
+Pour que Codex consulte aussi la documentation Phaseo à jour pendant son travail, ajoutez également le serveur [Docs MCP](./docs-mcp.mdx).
+
+<Visibility for="humans">
+<Note>
+Vous avez besoin d’aide pour configurer des agents réutilisables en plus du fournisseur ? Installez les skills publiques Phaseo depuis [`phaseoteam/skills`](https://github.com/phaseoteam/skills) :
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+Vous avez besoin d’aide pour configurer des agents réutilisables en plus du fournisseur ? Installez les skills publiques Phaseo depuis [`phaseoteam/skills`](https://github.com/phaseoteam/skills) :
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+## Configurer avec Phaseo CLI
+
+```bash
+phaseo login
+phaseo codex --model openai/gpt-5.6-terra
+```
+
+Installez d’abord Codex depuis sa version officielle. La configuration crée une clé `Phaseo CLI: Codex API Key` sans expiration, la stocke dans le trousseau de clés du système et écrit un profil Phaseo dédié. Codex récupère la clé via l’assistant CLI ; elle n’est donc pas écrite en clair dans `config.toml`.
+
+### Démarrez Codex avec :
+
+```bash
+codex --profile phaseo
+```
+
+Le même processus CLI Phaseo lance aussi [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) et [MiniMax Code](./minimax-code) avec une configuration fournisseur temporaire et isolée.
+## Configuration manuelle
+
+Créez ou modifiez votre configuration utilisateur dans `~/.codex/config.toml`. Pour un projet de confiance, vous pouvez aussi placer les mêmes paramètres dans `.codex/config.toml` à la racine du dépôt.
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+Codex utilise actuellement le protocole Responses pour les fournisseurs personnalisés. Conservez `wire_api = "responses"` ou omettez cette option pour utiliser la valeur par défaut.
+
+Codex App et l’extension IDE partagent les mêmes couches de configuration. Dans l’extension IDE, ouvrez le fichier via `Codex Settings > Open config.toml`.
+
+## Vérification
+
+- Vérifiez que l’ID du modèle figure dans [Modèles](../../api-reference/endpoint/models.mdx) avant de démarrer.
+- Utilisez [Responses](../../api-reference/endpoint/responses.mdx) pour le flux Codex par défaut.
+
+## Dépannage
+
+- `401 Unauthorized` : exécutez `phaseo whoami`, puis relancez `phaseo codex`.
+- `model_not_found` : récupérez un ID à jour dans [Modèles](../../api-reference/endpoint/models.mdx) et modifiez `model`.
+- Problèmes propres au fournisseur : consultez [Routage et replis](../routing-and-fallbacks.mdx) pour le comportement de basculement.

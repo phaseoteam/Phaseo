@@ -1,4 +1,5 @@
 import ModelsUsingBenchmarkClient from "./ModelsUsingBenchmarkTable";
+import { getTranslations } from "next-intl/server";
 import {
 	getLowerIsBetter,
 	normalizeBenchmarkScoreValue,
@@ -10,9 +11,10 @@ interface ModelsUsingBenchmarkProps {
 	benchmark: any; // BenchmarkPage from getBenchmark
 }
 
-export default function ModelsUsingBenchmark({
+export default async function ModelsUsingBenchmark({
 	benchmark,
 }: ModelsUsingBenchmarkProps) {
+	const t = await getTranslations("Catalogue.benchmarks");
 	const results = benchmark?.results ?? [];
 
 	// Build server-serializable modelsByProvider structure
@@ -30,13 +32,13 @@ export default function ModelsUsingBenchmark({
 				organisation: org
 					? {
 							organisation_id: org.organisation_id ?? null,
-							display_name:
-								org.display_name ?? org.name ?? "Unknown",
+								display_name:
+									org.display_name ?? org.name ?? t("unknownOrganization"),
 							name: org.name ?? null,
 							logo: org.logo ?? null,
 							logo_url: org.logo_url ?? null,
-						}
-					: { organisation_id: null, display_name: "Unknown" },
+					  }
+					: { organisation_id: null, display_name: t("unknownOrganization") },
 				release_date: r.model?.release_date ?? null,
 				announcement_date: r.model?.announcement_date ?? null,
 				benchmark_results: [],

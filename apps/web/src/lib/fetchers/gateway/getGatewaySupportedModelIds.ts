@@ -8,6 +8,7 @@ export type GatewaySupportedModel = {
 	providerId: string;
 	capabilities: string[];
 	capabilityParamsById?: CapabilityParamsById;
+	serviceTiers?: string[];
 	inputModalities?: string[];
 	outputModalities?: string[];
 	effectiveFrom: string | null;

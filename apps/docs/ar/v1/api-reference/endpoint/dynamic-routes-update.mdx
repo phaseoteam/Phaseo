@@ -1,0 +1,10 @@
+---
+title: "تحديث مسار ديناميكي"
+sidebarTitle: "تحديث المسار"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "يحدّث بيانات المسار الوصفية أو ينشئ إصدار إعداد جديدًا."
+---
+<Note>تتطلب نقطة النهاية هذه مفتاح API للإدارة يتضمن `settings:write`.</Note>
+
+يؤدي تغيير `config` إلى إنشاء إصدار جديد غير قابل للتغيير. لا تنشئ التغييرات التي تقتصر على البيانات الوصفية إصدارًا.

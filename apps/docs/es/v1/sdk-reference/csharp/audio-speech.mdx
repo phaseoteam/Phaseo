@@ -1,0 +1,32 @@
+---
+icon: "music"
+title: "TTS (texto a voz)"
+description: "Llama a `/audio/speech` con el SDK de C#."
+---
+
+**Método**: `client.CreateSpeech(...)`
+
+### Ejemplo
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3"
+});
+```
+
+### Parámetros principales
+- `model` (obligatorio): ID de un modelo compatible con TTS.
+- `input` (obligatorio): Texto que se va a sintetizar.
+- `voice`: Ajuste preestablecido de voz (depende del modelo; por ejemplo, `alloy`).
+- `format`: `mp3`, `wav`, `flac`, etc.
+- `speed`: Multiplicador de la velocidad de reproducción (normalmente entre 0,25 y 4).
+
+### Devuelve
+Audio binario
+

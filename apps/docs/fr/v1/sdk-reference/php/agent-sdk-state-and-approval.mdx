@@ -1,0 +1,20 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Mettez les agents PHP en pause pour obtenir une décision humaine et reprendre l’état géré par l’application."
+---
+
+Utilisez `AgentDefinition::$humanReview` pour créer un point de contrôle général. Les outils soumis à approbation ou exécutés manuellement renseignent `$result->run->pause->pendingToolCalls` avec les identifiants exacts des appels.
+
+Continuez avec `Agent::continueRun(...)` et fournissez :
+
+- des valeurs `ToolDecision` pour approuver ou rejeter
+- des valeurs `ToolOutput` pour le travail manuel
+- une saisie humaine pour une pause de révision générale
+
+Utilisez `continueRunById(...)` avec un `StateAccessor` lorsque l’application doit recharger l’exécution depuis le stockage. Les décisions sont associées à l’identifiant de l’appel, et non au nom de l’outil.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

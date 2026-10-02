@@ -1,0 +1,19 @@
+---
+title: "ファイルをアップロード"
+sidebarTitle: "ファイルをアップロード"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /files"
+description: "バッチ処理用のファイルをアップロードします。ゲートウェイは所有者メタデータを保存するため、同じワークスペースから後でファイルやその内容を取得できます。"
+---
+
+返された`file_id`を保存し、次のエンドポイントで再利用します。
+
+- `POST /v1/batches`
+- `GET /v1/files/{file_id}`
+- `GET /v1/files/{file_id}/content`
+
+<Note>
+共有ゲートウェイキーでは現在`GET /v1/files`を利用できないため、アップロードレスポンスからファイルIDを取得してください。
+</Note>
+
+

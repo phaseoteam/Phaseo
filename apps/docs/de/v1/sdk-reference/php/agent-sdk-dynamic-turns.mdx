@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere Routing, Anweisungen, Tools und Sampling-Einstellungen zwischen den Turns eines PHP-Agenten."
+---
+
+Dynamische Callbacks berechnen Modellparameter vor jeder Modellanfrage anhand des aktuellen Laufzustands neu.
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+Dynamische Tools und Sampling-Werte können denselben Turn-Kontext verwenden. Ein Tool kann außerdem `nextTurnParams` setzen, um nur die unmittelbar folgende Anfrage zu ändern. Diese Überschreibungen bleiben erhalten, wenn der Lauf zur Genehmigung pausiert wird, und laufen nach dem nächsten Turn ab.
+
+Verwende dynamische Callbacks für Richtlinien, die in jedem Turn neu berechnet werden sollen. Verwende `nextTurnParams` für eine tool-spezifische Übergabe.

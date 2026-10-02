@@ -1,0 +1,35 @@
+---
+icon: "messages-square"
+title: "चैट कम्प्लीशन"
+description: "Ruby SDK से /chat/completions call करें।"
+---
+
+**तरीके**: `client.generate_text(...)`, `client.create_chat_completion(...)`।
+
+### उदाहरण
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+response = client.create_chat_completion(
+  "model" => "openai/gpt-4o-mini",
+  messages: [
+    { "role" => "user", "content" => "Write a limerick about lighthouses." }
+  ],
+  "temperature" => 0.5
+)
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): लक्ष्य model ID।
+- `messages` (ज़रूरी): `user`/`system`/`assistant`/`tool` roles वाले क्रमबद्ध messages; content text के रूप में होता है।
+- नमूना चयन: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (वैकल्पिक पूर्णांक)।
+- लंबाई/penalties: `max_output_tokens` (integer), `presence_penalty` और `frequency_penalty` (-2 से 2), `stop` (string या string array)।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (auto/none/विशिष्ट टूल), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20)।
+- आउटपुट: `response_format` (json/text), `metadata` (बिना बदलाव आगे भेजा गया ऑब्जेक्ट), `stream` (बूलियन), `service_tier`।
+- Gateway के अतिरिक्त विकल्प: `usage` (उपयोग आँकड़े माँगने के लिए बूलियन), `meta` (मेटा ब्लॉक शामिल करने के लिए बूलियन)।
+
+### लौटाया गया मान
+`ChatCompletionsResponse`

@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -49,6 +51,8 @@ import {
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type KeyOption = {
 	id: string;
@@ -104,26 +108,9 @@ type RuleGroup = {
 	rules: Rule[];
 };
 
-const RULE_FIELDS: Array<{ id: RuleField; label: string; textBased: boolean }> = [
-	{ id: "model", label: "Model", textBased: true },
-	{ id: "provider", label: "Provider", textBased: true },
-	{ id: "session_id", label: "Session ID", textBased: true },
-	{ id: "user_id", label: "User ID", textBased: true },
-	{ id: "api_key_name", label: "API Key Name", textBased: true },
-	{ id: "finish_reason", label: "Finish Reason", textBased: true },
-	{ id: "input", label: "Input", textBased: true },
-	{ id: "output", label: "Output", textBased: true },
-	{ id: "token_cost", label: "Token Cost", textBased: false },
-	{ id: "total_cost", label: "Total Cost", textBased: false },
-	{ id: "total_tokens", label: "Total Tokens", textBased: false },
-	{ id: "prompt_tokens", label: "Prompt Tokens", textBased: false },
-	{ id: "completion_tokens", label: "Completion Tokens", textBased: false },
+const RULE_FIELDS: Array<{ id: RuleField; labelKey: string; textBased: boolean }> = [
+	{ id: "model", labelKey: "model", textBased: true }, { id: "provider", labelKey: "provider", textBased: true }, { id: "session_id", labelKey: "sessionId", textBased: true }, { id: "user_id", labelKey: "userId", textBased: true }, { id: "api_key_name", labelKey: "apiKeyName", textBased: true }, { id: "finish_reason", labelKey: "finishReason", textBased: true }, { id: "input", labelKey: "input", textBased: true }, { id: "output", labelKey: "output", textBased: true }, { id: "token_cost", labelKey: "tokenCost", textBased: false }, { id: "total_cost", labelKey: "totalCost", textBased: false }, { id: "total_tokens", labelKey: "totalTokens", textBased: false }, { id: "prompt_tokens", labelKey: "promptTokens", textBased: false }, { id: "completion_tokens", labelKey: "completionTokens", textBased: false },
 ];
-
-const RULE_FIELD_OPTIONS: Option[] = RULE_FIELDS.map((field) => ({
-	value: field.id,
-	label: field.label,
-}));
 
 const TEXT_CONDITIONS: RuleCondition[] = [
 	"equals",
@@ -139,16 +126,8 @@ const TEXT_CONDITIONS: RuleCondition[] = [
 
 const BASIC_CONDITIONS: RuleCondition[] = ["equals", "not_equals", "exists", "not_exists"];
 
-const CONDITION_LABELS: Record<RuleCondition, string> = {
-	equals: "Equals",
-	not_equals: "Does Not Equal",
-	contains: "Contains",
-	not_contains: "Does Not Contain",
-	starts_with: "Starts With",
-	ends_with: "Ends With",
-	exists: "Exists",
-	not_exists: "Does Not Exist",
-	matches_regex: "Matches Regex",
+const CONDITION_KEYS: Record<RuleCondition, string> = {
+	equals: "equals", not_equals: "doesNotEqual", contains: "contains", not_contains: "doesNotContain", starts_with: "startsWith", ends_with: "endsWith", exists: "exists", not_exists: "doesNotExist", matches_regex: "matchesRegex",
 };
 
 function id(prefix: string) {
@@ -211,6 +190,7 @@ function RuleCombobox(props: {
 	onChange: (value: string) => void;
 	isProvider?: boolean;
 }) {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const listViewportRef = useRef<HTMLDivElement>(null);
@@ -257,7 +237,7 @@ function RuleCombobox(props: {
 						keepScrollbarMounted
 					>
 						<CommandList className="max-h-none overflow-visible p-0">
-							<CommandEmpty>No matching options.</CommandEmpty>
+							<CommandEmpty>{t("broadcastControls.noMatchingOptions")}</CommandEmpty>
 							{props.options.map((option) => (
 								<CommandItem
 									key={option.value}
@@ -289,6 +269,7 @@ function KeyMultiCombobox(props: {
 	onChange: (next: string[]) => void;
 	getLabel: (key: KeyOption) => string;
 }) {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const searchInputRef = useRef<HTMLInputElement>(null);
@@ -308,7 +289,7 @@ function KeyMultiCombobox(props: {
 	return (
 		<div className="space-y-1.5">
 			<Label className="text-xs font-medium">
-				{props.title} <span className="font-normal text-muted-foreground">(optional)</span>
+				{props.title} <span className="font-normal text-muted-foreground">{t("broadcastControls.optional")}</span>
 			</Label>
 			<p className="sr-only">{props.description}</p>
 			<Popover open={open} onOpenChange={(next) => {
@@ -319,14 +300,14 @@ function KeyMultiCombobox(props: {
 				<PopoverTrigger asChild>
 					<Button variant="outline" role="combobox" aria-expanded={open} className="h-10 w-full justify-between rounded-md px-3 font-normal">
 						<span className={props.selected.length ? "text-foreground" : "text-muted-foreground"}>
-							{props.selected.length ? `${props.selected.length} key${props.selected.length === 1 ? "" : "s"} selected` : "Select API keys"}
+							{props.selected.length ? t("broadcastControls.selectedKeys", { count: props.selected.length }) : t("broadcastControls.selectApiKeys")}
 						</span>
 						<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 					</Button>
 				</PopoverTrigger>
 				<PopoverContent initialFocus={false} align="start" className="w-(--anchor-width) min-w-[360px] rounded-md p-0">
 					<Command className="rounded-md">
-						<CommandInput ref={searchInputRef} placeholder="Search API keys..." value={query} onValueChange={setQuery} />
+						<CommandInput ref={searchInputRef} placeholder={t("broadcastControls.searchApiKeys")} value={query} onValueChange={setQuery} />
 						<ScrollArea
 							className="h-72"
 							viewportClassName="overscroll-contain p-1"
@@ -334,7 +315,7 @@ function KeyMultiCombobox(props: {
 							keepScrollbarMounted
 						>
 							<CommandList className="max-h-none overflow-visible p-0">
-								<CommandEmpty>No API keys found.</CommandEmpty>
+								<CommandEmpty>{t("broadcastControls.noApiKeys")}</CommandEmpty>
 								{props.keys.map((key) => {
 								const checked = props.selected.includes(key.id);
 								const disabled = props.disabledIds.includes(key.id);
@@ -349,7 +330,7 @@ function KeyMultiCombobox(props: {
 									>
 										<Check className={`h-4 w-4 ${checked ? "opacity-100" : "opacity-0"}`} />
 										<span className="min-w-0 flex-1 truncate">{props.getLabel(key)}</span>
-										{disabled ? <span className="text-[10px] text-muted-foreground">Selected opposite</span> : null}
+										{disabled ? <span className="text-[10px] text-muted-foreground">{t("broadcastControls.selectedOpposite")}</span> : null}
 									</CommandItem>
 								);
 								})}
@@ -363,7 +344,7 @@ function KeyMultiCombobox(props: {
 					{selectedKeys.map((key) => (
 						<Badge key={key.id} variant="outline" className="max-w-full gap-1 rounded-md pr-1 font-normal">
 							<span className="truncate">{props.getLabel(key)}</span>
-							<button type="button" aria-label={`Remove ${props.getLabel(key)}`} onClick={() => props.onChange(props.selected.filter((id) => id !== key.id))} className="rounded-md p-0.5 hover:bg-muted">
+							<button type="button" aria-label={t("broadcastControls.remove", { label: props.getLabel(key) })} onClick={() => props.onChange(props.selected.filter((id) => id !== key.id))} className="rounded-md p-0.5 hover:bg-muted">
 								<X className="h-3 w-3" />
 							</button>
 						</Badge>
@@ -384,6 +365,8 @@ export default function BroadcastDestinationCreateClient(props: {
 }) {
 	const { destination, keys, providerOptions, modelOptions, workspaceId } = props;
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
+	const ruleFieldOptions = RULE_FIELDS.map((field) => ({ value: field.id, label: t(`broadcastControls.${field.labelKey}` as never) }));
 	const write = useSettingsWrite();
 	const [destinationName, setDestinationName] = useState(destination.label);
 	const [excludePromptsAndOutputs, setExcludePromptsAndOutputs] = useState(
@@ -449,11 +432,11 @@ export default function BroadcastDestinationCreateClient(props: {
 					})),
 				})),
 			}));
-			toast.success("Broadcast destination saved");
+			toast.success(t("strings.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Failed to save destination";
+			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.failedSave"));
 			toast.error(message);
 		} finally {
 			setIsSaving(false);
@@ -472,12 +455,12 @@ export default function BroadcastDestinationCreateClient(props: {
 				body: JSON.stringify({ destinationId: destination.id, config, workspaceId }),
 			});
 			if (result.ok) {
-				toast.success("Connection verified");
+				toast.success(t("strings.Connected" as never));
 				return;
 			}
-			toast.error("Connection check failed");
+			toast.error(t("strings.Connection check failed" as never));
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Connection check failed";
+			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.connectionCheckFailed"));
 			toast.error(message);
 		} finally {
 			setIsTestingConnection(false);
@@ -543,7 +526,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						prefetch={false}
 					>
 						<ArrowLeft className="h-3.5 w-3.5" />
-						Back to Destinations
+						{t("strings.Back to Destinations" as never)}
 					</Link>
 					<div className="flex items-center gap-2">
 						{destination.id === "webhook" ? (
@@ -560,14 +543,14 @@ export default function BroadcastDestinationCreateClient(props: {
 							/>
 						) : null}
 						<h2 className="text-base font-semibold tracking-tight">
-							New {destination.label} Destination
+							{t("strings.New Destination" as never, { destination: destination.label } as never)}
 						</h2>
 					</div>
 				</div>
 				<div className="flex items-center gap-2">
 					<Button disabled={!canSave || isSaving} onClick={handleSave}>
 						<Save className="mr-2 h-4 w-4" />
-						{isSaving ? "Saving..." : "Save Destination"}
+						{isSaving ? t("broadcastControls.saving") : t("broadcastControls.save")}
 					</Button>
 				</div>
 			</div>
@@ -576,22 +559,22 @@ export default function BroadcastDestinationCreateClient(props: {
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
 						<Plug className="h-4 w-4" />
-						<h3 className="text-sm font-semibold">Connection</h3>
+						<h3 className="text-sm font-semibold">{t("strings.Connection" as never)}</h3>
 					</div>
 					<div className="flex items-center gap-2">
 						<Button variant="outline" onClick={handleTestConnection} disabled={isTestingConnection || !hasAllRequiredConnectionValues}>
 							<FlaskConical className="mr-2 h-4 w-4" />
-							{isTestingConnection ? "Testing..." : "Test Connection"}
+							{isTestingConnection ? t("broadcastControls.testing") : t("broadcastControls.test")}
 						</Button>
-						<Button variant="outline" disabled title="Save destination before sending a sample trace.">
+						<Button variant="outline" disabled title={t("strings.phraseSaveDestinationBeforeSendingASampleTrace" as never)}>
 							<SendHorizontal className="mr-2 h-4 w-4" />
-							Send Sample Trace
+							{t("broadcastControls.sendSample")}
 						</Button>
 					</div>
 				</div>
 				<div className="grid gap-x-4 gap-y-3 lg:grid-cols-2">
 					<div className="space-y-2">
-						<Label>Destination Name</Label>
+						<Label>{t("strings.Destination Name" as never)}</Label>
 						<Input
 							value={destinationName}
 							onChange={(e) => setDestinationName(e.target.value)}
@@ -601,9 +584,9 @@ export default function BroadcastDestinationCreateClient(props: {
 					{destination.fields.map((field) => (
 						<div key={field.key} className="space-y-1.5">
 							<Label className="text-xs font-medium">
-								{field.label.replace(/\s*\(Optional\)$/i, "")}
+								{t(settingsStringKey(field.label) as never)}
 								{field.required === false ? (
-									<span className="ml-1 text-muted-foreground">(optional)</span>
+											<span className="ml-1 text-muted-foreground">{t("broadcastControls.optional")}</span>
 								) : null}
 							</Label>
 							{field.key === "method" ? (
@@ -614,7 +597,7 @@ export default function BroadcastDestinationCreateClient(props: {
 									}
 								>
 									<SelectTrigger className="w-full rounded-md">
-										<SelectValue placeholder="Select method" />
+										<SelectValue placeholder={t("broadcastControls.selectMethod")} />
 									</SelectTrigger>
 									<SelectContent>
 										<SelectItem value="POST">POST</SelectItem>
@@ -640,16 +623,16 @@ export default function BroadcastDestinationCreateClient(props: {
 				<div className="space-y-2">
 					<div className="inline-flex items-center gap-2">
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
-						<h3 className="text-sm font-semibold">Additional Metadata</h3>
+						<h3 className="text-sm font-semibold">{t("strings.Additional Metadata" as never)}</h3>
 					</div>
-					<p className="text-xs text-muted-foreground">Choose which structured context accompanies each trace.</p>
+						<p className="text-xs text-muted-foreground">{t("strings.phraseChooseWhichStructuredContextAccompaniesEachTrace" as never)}</p>
 				</div>
 				<div className="divide-y divide-border/50 rounded-md border border-border/60">
 					{[
-						{ label: "Generation Metadata", description: "Model, provider, routing outcome, token usage and generation timing.", icon: Sparkles, checked: includeGenerationMetadata, change: setIncludeGenerationMetadata },
-						{ label: "Cost", description: "Calculated request cost and billing currency.", icon: CircleDollarSign, checked: includeCostMetadata, change: setIncludeCostMetadata },
-						{ label: "Identity", description: "Application, API key, user origin and request identity fields.", icon: Fingerprint, checked: includeIdentityMetadata, change: setIncludeIdentityMetadata },
-						{ label: "Request Context", description: "Correlation, endpoint, model, routing and request context fields.", icon: Route, checked: includeRequestContext, change: setIncludeRequestContext },
+										{ label: t("broadcastControls.generationMetadata"), description: t("broadcastControls.generationMetadataDescription"), icon: Sparkles, checked: includeGenerationMetadata, change: setIncludeGenerationMetadata },
+										{ label: t("broadcastControls.cost"), description: t("broadcastControls.costDescription"), icon: CircleDollarSign, checked: includeCostMetadata, change: setIncludeCostMetadata },
+										{ label: t("broadcastControls.identity"), description: t("broadcastControls.identityDescription"), icon: Fingerprint, checked: includeIdentityMetadata, change: setIncludeIdentityMetadata },
+										{ label: t("broadcastControls.requestContext"), description: t("broadcastControls.requestContextDescription"), icon: Route, checked: includeRequestContext, change: setIncludeRequestContext },
 					].map((option) => (
 						<label key={option.label} className="flex items-center gap-3 px-3 py-2.5">
 							<option.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -668,14 +651,14 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Shield className="h-4 w-4 text-muted-foreground" />
-							<h3 className="text-sm font-semibold">Privacy</h3>
+							<h3 className="text-sm font-semibold">{t("strings.Privacy" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Control what data is sent to this destination.
+							{t("broadcastControls.privacyDescription")}
 						</p>
 					</div>
 					<div className="space-y-2">
-						<Label className="text-xs font-medium">Privacy Mode</Label>
+						<Label className="text-xs font-medium">{t("broadcastControls.privacyMode")}</Label>
 						<label className="flex items-start gap-2 rounded-md border border-border/60 px-3 py-2 text-sm">
 							<Checkbox
 								checked={excludePromptsAndOutputs}
@@ -683,7 +666,7 @@ export default function BroadcastDestinationCreateClient(props: {
 								className="mt-0.5"
 							/>
 							<span className="text-sm text-foreground/90">
-								When enabled, excludes prompt and completion data from traces.
+								{t("broadcastControls.excludeSensitive")}
 							</span>
 						</label>
 					</div>
@@ -693,14 +676,14 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Gauge className="h-4 w-4 text-muted-foreground" />
-							<h3 className="text-sm font-semibold">Sampling</h3>
+							<h3 className="text-sm font-semibold">{t("strings.Sampling" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Set the probability that an eligible trace is sent to this destination.
+							{t("broadcastControls.samplingDescription")}
 						</p>
 					</div>
 					<div className="space-y-2">
-						<Label className="text-xs font-medium">Rate</Label>
+						<Label className="text-xs font-medium">{t("broadcastControls.rate")}</Label>
 						<Input
 							type="number"
 							min="0"
@@ -711,7 +694,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							className="h-10 w-full"
 						/>
 						{samplingRate.length > 0 && !samplingValid ? (
-							<p className="text-xs text-destructive">Sampling rate must be between 0 and 1.</p>
+							<p className="text-xs text-destructive">{t("broadcastControls.samplingRateError")}</p>
 						) : null}
 					</div>
 				</section>
@@ -720,19 +703,19 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<KeyRound className="h-4 w-4 text-muted-foreground" />
-							<h3 className="text-sm font-semibold">API Key Filter</h3>
+							<h3 className="text-sm font-semibold">{t("strings.API Key Filter" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Optionally filter traces by API key.
+							{t("broadcastControls.apiKeyFilterDescription")}
 						</p>
 					</div>
 					{keys.length ? (
 						<div className="space-y-4">
-							<KeyMultiCombobox title="Included API Keys" description="When selected, only these keys send traces." keys={keys} selected={includedKeyIds} disabledIds={excludedKeyIds} onChange={setIncludedKeyIds} getLabel={getKeyLabel} />
-							<KeyMultiCombobox title="Excluded API Keys" description="These keys never send traces to this destination." keys={keys} selected={excludedKeyIds} disabledIds={includedKeyIds} onChange={setExcludedKeyIds} getLabel={getKeyLabel} />
+							<KeyMultiCombobox title={t("strings.Included API Keys" as never)} description={t("strings.phraseWhenSelectedOnlyTheseKeysSendTraces" as never)} keys={keys} selected={includedKeyIds} disabledIds={excludedKeyIds} onChange={setIncludedKeyIds} getLabel={getKeyLabel} />
+							<KeyMultiCombobox title={t("strings.Excluded API Keys" as never)} description={t("strings.phraseTheseKeysNeverSendTracesToThisDestination" as never)} keys={keys} selected={excludedKeyIds} disabledIds={includedKeyIds} onChange={setExcludedKeyIds} getLabel={getKeyLabel} />
 						</div>
 					) : (
-						<p className="text-xs text-muted-foreground">No API keys found for this workspace.</p>
+						<p className="text-xs text-muted-foreground">{t("broadcastControls.noKeysWorkspace")}</p>
 					)}
 				</section>
 			</div>
@@ -742,21 +725,21 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div>
 						<h3 className="inline-flex items-center gap-1.5 text-sm font-medium">
 							<Filter className="h-4 w-4" />
-							Filter Rules
+							{t("broadcastControls.filterRules")}
 						</h3>
 						<p className="text-xs text-muted-foreground">
-							Only traces matching these rule groups will be sent.
+							{t("broadcastControls.filterRulesDescription")}
 						</p>
 					</div>
 					<div className="flex items-center gap-2">
-						<Label className="text-xs text-muted-foreground">Between Groups</Label>
+										<Label className="text-xs text-muted-foreground">{t("broadcastControls.betweenGroups")}</Label>
 						<Select value={groupJoin} onValueChange={(value) => setGroupJoin(value as GroupLogic)}>
 							<SelectTrigger className="h-8 w-[220px] rounded-md">
-								<SelectValue>{groupJoin === "and" ? "All Groups (AND)" : "Any Group (OR)"}</SelectValue>
+									<SelectValue>{groupJoin === "and" ? t("broadcastControls.allGroups") : t("broadcastControls.anyGroup")}</SelectValue>
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="or">Any Group (OR)</SelectItem>
-								<SelectItem value="and">All Groups (AND)</SelectItem>
+								<SelectItem value="or">{t("broadcastControls.anyGroup")}</SelectItem>
+								<SelectItem value="and">{t("broadcastControls.allGroups")}</SelectItem>
 							</SelectContent>
 						</Select>
 					</div>
@@ -765,7 +748,7 @@ export default function BroadcastDestinationCreateClient(props: {
 				<div className="space-y-5">
 					{ruleGroups.length === 0 ? (
 						<div className="rounded-md border border-dashed p-4 text-xs text-muted-foreground">
-							No rule groups yet. Add a rule group to start filtering traces.
+							{t("broadcastControls.noRuleGroups")}
 						</div>
 					) : null}
 					{ruleGroups.map((group, groupIndex) => (
@@ -774,7 +757,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							<div className="flex flex-wrap items-center justify-between gap-2">
 								<div className="flex min-w-0 flex-1 items-center gap-2">
 									<p className="min-w-[140px] text-sm font-medium text-foreground/90">
-										Rule Group {groupIndex + 1}
+																{t("broadcastControls.ruleGroup", { index: String(groupIndex + 1) })}
 									</p>
 									<Select
 										value={group.match}
@@ -783,11 +766,11 @@ export default function BroadcastDestinationCreateClient(props: {
 										}
 									>
 										<SelectTrigger className="h-8 w-[240px] rounded-md">
-											<SelectValue>{group.match === "and" ? "All Rules Must Match (AND)" : "Any Rule Can Match (OR)"}</SelectValue>
+																	<SelectValue>{group.match === "and" ? t("broadcastControls.allRules") : t("broadcastControls.anyRule")}</SelectValue>
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="and">All Rules Must Match (AND)</SelectItem>
-											<SelectItem value="or">Any Rule Can Match (OR)</SelectItem>
+																	<SelectItem value="and">{t("broadcastControls.allRules")}</SelectItem>
+																	<SelectItem value="or">{t("broadcastControls.anyRule")}</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
@@ -824,9 +807,9 @@ export default function BroadcastDestinationCreateClient(props: {
 										>
 											<RuleCombobox
 												value={rule.field}
-												options={RULE_FIELD_OPTIONS}
-												placeholder="Select field"
-												searchPlaceholder="Search fields..."
+																options={ruleFieldOptions}
+																placeholder={t("broadcastControls.selectField")}
+																searchPlaceholder={t("broadcastControls.searchFields")}
 												onChange={(value) =>
 													patchRule(group.id, rule.id, {
 														field: value as RuleField,
@@ -846,12 +829,12 @@ export default function BroadcastDestinationCreateClient(props: {
 												}
 											>
 												<SelectTrigger className="h-9 w-full rounded-md text-xs">
-									<SelectValue>{CONDITION_LABELS[rule.condition]}</SelectValue>
+					<SelectValue>{t(`broadcastControls.${CONDITION_KEYS[rule.condition]}` as never)}</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
 													{conditions.map((condition) => (
 														<SelectItem key={condition} value={condition}>
-															{CONDITION_LABELS[condition]}
+																	{t(`broadcastControls.${CONDITION_KEYS[condition]}` as never)}
 														</SelectItem>
 													))}
 												</SelectContent>
@@ -863,8 +846,8 @@ export default function BroadcastDestinationCreateClient(props: {
 													<RuleCombobox
 														value={rule.value}
 														options={enumeratedOptions}
-														placeholder="Select value"
-														searchPlaceholder={`Search ${rule.field === "provider" ? "providers" : "models"}...`}
+																placeholder={t("broadcastControls.selectValue")}
+																searchPlaceholder={rule.field === "provider" ? t("broadcastControls.searchProviders") : t("broadcastControls.searchModels")}
 														onChange={(value) => patchRule(group.id, rule.id, { value })}
 														isProvider={rule.field === "provider"}
 													/>
@@ -874,14 +857,14 @@ export default function BroadcastDestinationCreateClient(props: {
 															onChange={(e) =>
 																patchRule(group.id, rule.id, { value: e.target.value })
 															}
-															placeholder={
-																rule.condition === "matches_regex" ? "e.g. ^openai/" : "Value"
+																																												placeholder={
+																																													rule.condition === "matches_regex" ? t("finalSettingsCopy.regexExample", { pattern: "^openai/" }) : t("broadcastControls.value")
 															}
 														/>
 													)
 												) : (
 											<div className="flex h-9 items-center rounded-md border border-dashed bg-muted/20 px-2 text-xs text-muted-foreground">
-														No value required
+																{t("broadcastControls.noValueRequired")}
 													</div>
 												)}
 											</div>
@@ -901,12 +884,12 @@ export default function BroadcastDestinationCreateClient(props: {
 
 							<Button size="sm" variant="outline" onClick={() => addRule(group.id)}>
 								<Plus className="mr-1.5 h-3.5 w-3.5" />
-								Add Rule
+															{t("broadcastControls.addRule")}
 							</Button>
 						</div>
 							{groupIndex < ruleGroups.length - 1 ? (
 								<div className="flex justify-center">
-									<Badge variant="outline">{groupJoin === "and" ? "AND" : "OR"}</Badge>
+									<Badge variant="outline">{groupJoin === "and" ? t("broadcastControls.and") : t("broadcastControls.or")}</Badge>
 								</div>
 							) : null}
 						</div>
@@ -915,7 +898,7 @@ export default function BroadcastDestinationCreateClient(props: {
 
 				<Button size="sm" variant="outline" onClick={addRuleGroup}>
 					<Plus className="mr-1.5 h-3.5 w-3.5" />
-					Add Rule Group
+													{t("broadcastControls.addRuleGroup")}
 				</Button>
 			</section>
 		</div>

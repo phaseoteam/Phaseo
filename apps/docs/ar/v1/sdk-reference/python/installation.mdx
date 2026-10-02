@@ -1,0 +1,74 @@
+---
+icon: "package"
+title: "تثبيت SDK الخاص بـ Python"
+description: "كيفية تثبيت SDK الخاص بـ Python من Phaseo وإعداده."
+---
+
+يُنشر SDK على PyPI باسم [`phaseo`](https://pypi.org/project/phaseo/).
+
+## التثبيت
+
+ثبّت SDK باستخدام مدير حزم Python المفضل لديك:
+
+<CodeGroup>
+
+    ```bash title="pip"
+    pip install phaseo
+    ```
+
+    ```bash title="uv"
+    uv add phaseo
+    ```
+
+</CodeGroup>
+
+## المتطلبات
+
+- Python 3.10+
+
+## الإعداد
+
+### مفتاح API
+
+أنشئ مفتاح API في [لوحة تحكم Phaseo](https://phaseo.app/gateway/keys).
+
+### متغير البيئة
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+### الاستخدام الأساسي
+
+```python
+from phaseo import Phaseo
+import os
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+
+response = client.generate_text(
+    {
+        "model": "openai/gpt-5-nano",
+        "messages": [{"role": "user", "content": "Hello!"}],
+    }
+)
+
+print(response["choices"][0]["message"]["content"])
+```
+
+### إعدادات اختيارية للعميل
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
+```
+
+## الخطوات التالية
+
+- راجع [دليل الاستخدام](./usage.mdx)
+- تصفّح [مرجع API](../../api-reference/introduction.mdx)

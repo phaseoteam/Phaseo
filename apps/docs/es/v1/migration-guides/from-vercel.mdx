@@ -1,0 +1,136 @@
+---
+title: "Migración desde Vercel AI Gateway"
+sidebarTitle: "Vercel AI Gateway"
+description: "Sustituye el enrutamiento de Vercel AI Gateway por Phaseo Gateway y conserva el comportamiento de las aplicaciones con AI SDK o compatibles con OpenAI."
+icon: "/icons/brands/vercel.svg"
+---
+
+Si ya usas Vercel AI Gateway mediante Vercel AI SDK o un cliente compatible con OpenAI, la forma más segura de migrar es mantener igual la lógica de tu aplicación y cambiar primero solo la integración con el proveedor.
+
+## Qué cambia
+
+| Configuración | Antes | Después |
+| --- | --- | --- |
+| URL de la pasarela | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| Clave de API | Clave de Vercel AI Gateway | `PHASEO_API_KEY` |
+| Proveedor de AI SDK | Configuración del proveedor existente | `@phaseo/ai-sdk-provider` si usas AI SDK directamente |
+| Flujo de la aplicación | Lógica de generación existente | Manténla sin cambios en la primera fase de la migración |
+
+## Antes de empezar
+
+- La URL base y la configuración de la clave actuales de Vercel AI Gateway.
+- `PHASEO_API_KEY` disponible en los entornos local, de pruebas y de producción.
+- Un conjunto pequeño de prompts o una suite de integración que cubra los modos sin streaming, con streaming y cualquier flujo de llamadas a herramientas que utilices.
+
+## 1) Documenta el punto de integración actual con la pasarela
+
+Busca el lugar único donde tu aplicación crea proveedores de modelos o clientes de API. Ese es el punto de migración recomendado.
+
+- Localiza la fábrica de proveedores o clientes que usa tu aplicación.
+- Enumera los identificadores de modelo que se usan actualmente en producción.
+- Anota los valores predeterminados de reintentos, tiempos de espera y alternativas.
+- Indica si los entornos edge y de servidor necesitan el mismo cambio de configuración.
+- Identifica los valores predeterminados compartidos de prompts o parámetros que deberían convertirse en ajustes preestablecidos de Gateway, en lugar de permanecer integrados en cada llamada a AI SDK.
+
+## 2) Cambia el endpoint y la clave
+
+En la mayoría de los casos con clientes compatibles con OpenAI, solo hay que sustituir la URL base y la clave.
+
+<CodeGroup>
+```typescript TypeScript
+// OpenAI-compatible client before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
+  baseURL: "https://ai-gateway.vercel.sh/v1",
+});
+```
+
+```typescript TypeScript
+// OpenAI-compatible client after
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```typescript TypeScript
+// Official Phaseo provider for the Vercel AI SDK
+import { generateText } from "ai";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const { text } = await generateText({
+  model: phaseo("openai/gpt-4.1-mini"),
+  prompt: "Generate a migration checklist.",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) Confirma la paridad de comportamiento
+
+Ejecuta el mismo conjunto de prompts en las rutas antigua y nueva y compara la latencia, el formato de salida y el uso de tokens.
+
+- Verifica la generación de texto sin streaming.
+- Verifica el procesamiento de fragmentos de streaming por la misma ruta de código que usa tu aplicación en producción.
+- Verifica los flujos de llamadas a herramientas si tu aplicación depende de ellos.
+- Confirma que el mapeo de errores de la aplicación no haya cambiado.
+- Traslada los valores predeterminados duraderos de enrutamiento y las restricciones de proveedores a [Presets](../guides/presets.mdx) o [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx), en lugar de volver a implementarlos en cada fábrica de modelos.
+
+## 4) Lista de comprobación para Vercel AI SDK y Gateway
+
+Usa esta lista antes de aumentar el tráfico:
+
+- URL base actualizada a `https://api.phaseo.app/v1`.
+- `PHASEO_API_KEY` configurada en cada entorno que antes usaba la clave de Vercel Gateway.
+- Proveedor oficial `@phaseo/ai-sdk-provider` integrado si tu aplicación usa Vercel AI SDK directamente.
+- La ruta principal de generación de texto de AI SDK funciona en el entorno de pruebas.
+- Una prueba de streaming a nivel de aplicación pasa sin cambios.
+- Se han vuelto a comprobar las llamadas a herramientas y los flujos de salida estructurada, si se usan.
+- Se han comparado las salidas antigua y nueva con un conjunto pequeño de prompts.
+- Es posible revertir el cambio solo mediante la configuración o un indicador de funcionalidad.
+- Los valores predeterminados compartidos de prompts y enrutamiento se han trasladado a presets cuando corresponde.
+- Se han vuelto a comprobar las consultas de generaciones con `GET /v1/generations?id=<request_id>`, para poder reproducir solicitudes fallidas desde la carga `replay_request` almacenada cuando `replay_supported=true`.
+
+## 5) Plan de lanzamiento de bajo riesgo
+
+1. Publica detrás de un indicador de funcionalidad o con un despliegue gradual por porcentaje.
+2. Empieza con tráfico interno o una fracción muy pequeña del tráfico de producción.
+3. Supervisa la latencia, la tasa de errores y las variaciones de tokens y costes.
+4. Mantén ambas configuraciones disponibles durante al menos un ciclo de lanzamiento.
+
+## Comandos de validación
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Después:
+
+- Ejecuta la prueba de integración principal de generación de texto de tu aplicación.
+- Ejecuta una prueba de streaming en el entorno de pruebas.
+- Compara las salidas antigua y nueva para tus prompts principales antes del despliegue completo.
+
+## Próximos pasos
+
+- [Migración desde OpenRouter](./from-openrouter.mdx)
+- [Inicio rápido](../quickstart.mdx)
+- [Ejemplos](../guides/examples.mdx)

@@ -15,8 +15,10 @@ import type {
 	ProviderTokenSeriesModel,
 	ProviderTokenSeriesPoint,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
+import { getTranslations } from "next-intl/server";
 
 export default async function ProvidersTokenUsageChart() {
+	const t = await getTranslations("Catalogue.providers");
 	const { data } = await fetchFrontendMarketShareTimeseries(
 		"provider",
 		"month",
@@ -31,9 +33,9 @@ export default async function ProvidersTokenUsageChart() {
 		return (
 			<section className="space-y-2">
 				<div>
-					<h2 className="text-2xl font-semibold">Total tokens over time</h2>
+					<h2 className="text-2xl font-semibold">{t("totalTokensOverTime")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Daily token usage split by top providers over the last 30 days.
+						{t("dailyProviderTokensDescription")}
 					</p>
 				</div>
 				<Empty>
@@ -41,9 +43,9 @@ export default async function ProvidersTokenUsageChart() {
 						<EmptyMedia variant="icon">
 							<BarChart3 />
 						</EmptyMedia>
-						<EmptyTitle>No token usage yet</EmptyTitle>
+						<EmptyTitle>{t("noTokenUsageYet")}</EmptyTitle>
 						<EmptyDescription>
-							This chart will populate when provider usage data is available.
+							{t("providerTokenChartWillPopulate")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -78,9 +80,9 @@ export default async function ProvidersTokenUsageChart() {
 	return (
 		<section className="space-y-2">
 			<div>
-				<h2 className="text-2xl font-semibold">Total tokens over time</h2>
+				<h2 className="text-2xl font-semibold">{t("totalTokensOverTime")}</h2>
 				<p className="text-sm text-muted-foreground">
-					Daily token usage split by top providers over the last 30 days.
+					{t("dailyProviderTokensDescription")}
 				</p>
 			</div>
 			<ProviderTokenUsageChartClient

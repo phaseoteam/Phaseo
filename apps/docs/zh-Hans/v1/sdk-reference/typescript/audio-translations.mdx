@@ -1,0 +1,31 @@
+---
+icon: "arrow-right-left"
+title: "音频翻译"
+description: "使用 TypeScript SDK 调用 /audio/translations。"
+---
+
+**方法**: `client.generateTranslation()`.
+
+### 示例
+```typescript
+const translated = await client.generateTranslation({
+  model: "openai/gpt-4o-translate",
+  file: "data:audio/mp3;base64,...",
+});
+```
+
+### 关键参数
+- `model` 必填: 支持翻译的模型 ID。
+- `file` 必填: 要翻译的音频数据。
+- `prompt`: 用于引导翻译的可选上下文。
+- `temperature` (0–2): 采样随机性。
+- `response_format`: `json`, `text`, `srt`, `verbose_json`, 等
+
+### 返回
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

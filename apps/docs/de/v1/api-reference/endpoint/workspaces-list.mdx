@@ -1,0 +1,10 @@
+---
+title: "Workspaces auflisten"
+sidebarTitle: "Workspaces auflisten"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml GET /workspaces"
+description: "Listet Workspaces auf, die dem Inhaber des authentifizierten Management-Schlüssels gehören."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel erforderlich. Standard-Gateway-API-Schlüssel werden nicht akzeptiert.</Note>
+
+Gibt Workspaces im authentifizierten Managementkontext mit Paginierung über `offset` und `limit` zurück.

@@ -1,0 +1,13 @@
+---
+title: "Obter análises do espaço de trabalho"
+sidebarTitle: "Obter análises"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /analytics"
+description: "Obter agregados filtrados de custos, solicitações e tokens do espaço de trabalho."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `analytics:read`.</Note>
+
+Filtre por data, rótulo da solicitação, chave de API, usuário final, modelo, provedor, endpoint, origem da credencial ou resultado. Os resultados são agrupados por data, modelo, provedor e endpoint, com paginação estável.
+
+Os intervalos são limitados aos últimos 30 dias UTC completos e a no máximo 10.000 solicitações de origem.
+

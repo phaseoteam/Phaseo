@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "Vercel AI SDK के लिए आधिकारिक Phaseo प्रोवाइडर इस्तेमाल करें।"
+---
+
+Phaseo, `@phaseo/ai-sdk-provider` पैकेज में Vercel AI SDK के लिए आधिकारिक प्रोवाइडर देता है।
+
+## इंस्टॉल करें
+
+नए प्रोजेक्ट में AI SDK 7 और Phaseo का नेटिव `ProviderV4` इम्प्लीमेंटेशन डिफ़ॉल्ट है:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+बिना वर्शन वाला Phaseo पैकेज npm के `latest` टैग का पालन करता है, इसलिए यह AI SDK 7 के साथ संगत मौजूदा प्रोवाइडर लाइन चुनता है। पैकेज, AI SDK 7 को peer dependency घोषित करता है, जिसे npm अपने-आप इंस्टॉल कर देता है।
+
+### AI SDK 6 की रखरखाव शाखा
+
+AI SDK 6, पुराने `ProviderV3` कॉन्ट्रैक्ट का उपयोग करता है। इसका टैग किया हुआ संगत वर्शन इंस्टॉल करें:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+AI SDK 7 मौजूदा वर्शन रहने तक Phaseo provider 1.x की मेंटेनेंस जारी रहेगी। AI SDK 8 का स्थिर वर्शन आने पर Phaseo, npm पर 1.x लाइन को deprecated चिह्नित करेगा। इससे मौजूदा रिलीज़ नहीं हटेंगी; सपोर्ट समाप्त करने का कोई भी फ़ैसला अलग से घोषित किया जाएगा।
+
+### AI SDK 5 के साथ संगतता
+
+AI SDK 5, पुराने `ProviderV2` कॉन्ट्रैक्ट को स्वीकार करता है। Phaseo का खास संगत वर्शन इंस्टॉल करें:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+अगर आपका पैकेज मैनेजर peer dependencies अपने-आप इंस्टॉल नहीं करता, तो `ai` का मेल खाता major वर्शन अलग से इंस्टॉल करें (`ai@^7`, `ai@^6` या `ai@^5`)।
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+v5 लाइन टेक्स्ट जनरेशन और स्ट्रीमिंग, टूल, स्ट्रक्चर्ड आउटपुट, embeddings, इमेज, ट्रांसक्रिप्शन और स्पीच को सपोर्ट करती है। मानकीकृत री-रैंकिंग, AI SDK 6 और 7 के प्रोवाइडर कॉन्ट्रैक्ट में उपलब्ध है।
+
+## बुनियादी उपयोग
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## AI SDK 7 में समर्थित सुविधाएँ
+
+Provider 2.x, AI SDK 7 के नेटिव v4 कॉन्ट्रैक्ट को लागू और टेस्ट करता है। इसमें ये सुविधाएँ शामिल हैं:
+
+- टेक्स्ट जनरेशन और स्ट्रीमिंग
+- प्रोवाइडर से स्वतंत्र रीजनिंग सेटिंग और रीजनिंग आउटपुट
+- सामान्य फ़ंक्शन टूल, स्ट्रीम किए गए टूल इनपुट और टूल परिणाम के राउंड ट्रिप
+- JSON और JSON Schema स्ट्रक्चर्ड आउटपुट
+- V7 के टैग किए गए फ़ाइल-डेटा फ़ॉर्मैट का उपयोग करने वाले टेक्स्ट और इमेज फ़ाइल इनपुट
+- URL उद्धरण स्रोत
+- embeddings और इमेज जनरेशन
+- री-रैंकिंग
+- ट्रांसक्रिप्शन और स्पीच जनरेशन
+- प्रोवाइडर मेटाडेटा, उपयोग, अनुरोध हेडर, रद्द करने के सिग्नल और रॉ स्ट्रीम चंक्स
+
+[Models endpoint](../../api-reference/endpoint/models.mdx) से मॉडल ID इस्तेमाल करें। उपलब्ध क्षमताएँ चुने गए मॉडल और upstream प्रोवाइडर पर भी निर्भर करती हैं।
+
+## री-रैंकिंग और क्षमता की सीमाएँ
+
+AI SDK के `rerank()` helper और `phaseo.rerankingModel(modelId)` से री-रैंकिंग करें। जिन ProviderV4 क्षमताओं के लिए Phaseo API की ऐसी सुविधाएँ चाहिए जो अभी उपलब्ध नहीं हैं, उन्हें समर्थित घोषित नहीं किया जाता। इसमें managed file uploads और references, skills, और प्रोवाइडर द्वारा चलाए जाने वाले टूल की परिभाषाएँ, नतीजे या approval responses शामिल हैं। ऐप्लिकेशन द्वारा चलाए गए फ़ंक्शन टूल AI SDK का सामान्य execution और approval flow इस्तेमाल करते हैं। असमर्थित प्रोवाइडर-विशिष्ट या कस्टम prompt भागों को चुपचाप हटाने के बजाय स्पष्ट त्रुटि मिलती है।
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "الملفات"
+description: "استخدم SDK Go لقراءة بيانات الملفات الوصفية واسترداد محتواها."
+---
+
+**الطرق**: `client.ListFiles()` و`client.RetrieveFile()` و`client.RetrieveFileContent()`.
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+تتوفر `ListFiles()` في الغلاف، لكن `GET /files` يعيد حاليًا `file_list_not_supported_with_shared_gateway_key`
+عند استخدام مفتاح البوابة المشتركة. احفظ معرّفات الملفات المرفوعة واسترجعها مباشرةً.
+</Note>
+
+<Note>
+لا يوفّر غلاف Go بعد مساعدًا مخصصًا لرفع multipart إلى `POST /files`. استخدم REST مباشرةً أو العميل المُولّد
+إذا أردت تجربة آلية الرفع.
+</Note>
+

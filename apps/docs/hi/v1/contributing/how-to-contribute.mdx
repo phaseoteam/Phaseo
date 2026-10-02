@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "कोड या दस्तावेज़ में योगदान दें"
+description: "Phaseo स्थानीय रूप से सेट करें, केंद्रित बदलाव सत्यापित करें और पुल अनुरोध खोलें।"
+---
+
+यह प्रक्रिया कोड और दस्तावेज़ बदलाव के लिए इस्तेमाल करें। मॉडल, प्रदाता, कीमत, संगठन या बेंचमार्क रिकॉर्ड के लिए इसके बजाय [कैटलॉग issue भेजें](./overview.mdx); स्थानीय सेटअप नहीं चाहिए।
+
+## अपना फ़ोर्क सेट करें
+
+Git, Node.js 22.12 या नया और pnpm इंस्टॉल करें। [Phaseo रिपॉज़िटरी](https://github.com/phaseoteam/Phaseo) फ़ोर्क करें, फिर अपना फ़ोर्क क्लोन करके नई ब्रांच बनाएँ:
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## बदलाव करें और प्रीव्यू देखें
+
+संबंधित ऐप्लिकेशन या पैकेज के लिए [रिपॉज़िटरी संरचना](./repo-structure.mdx) देखें। केवल Markdown संपादन के लिए GitHub फ़ाइल एडिटर इस्तेमाल करके वहीं पुल अनुरोध भी खोल सकते हैं।
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+संबंधित `AGENTS.md` निर्देश मानें। सीक्रेट स्थानीय एनवायरनमेंट फ़ाइलों में रखें और कमिट में न डालें। स्थानीय ऐप प्रीव्यू के लिए कॉन्फ़िगर किए बैकएंड सेवाएँ और सामान्य साइन-इन चाहिए हो सकते हैं।
+
+## बदलाव सत्यापित करें
+
+बदली गई फ़ाइलों के लिए संबंधित जाँच चलाएँ। दस्तावेज़ के लिए:
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+वेब बदलाव के लिए:
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+रेंडरिंग या रूटिंग बदलाव के लिए प्रोडक्शन बिल्ड चलाएँ। API, SDK और स्कीमा बदलाव को संबंधित टेस्ट और जनरेशन चरण चाहिए। रूट में [योगदान गाइड](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) देखें।
+
+## पुल अनुरोध खोलें
+
+केवल बदली फ़ाइलें स्टेज करें, विवरण वाला कमिट संदेश दें और अपनी ब्रांच पुश करें:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+अपने फ़ोर्क से पुल अनुरोध खोलें। समस्या, बदलाव और सफल जाँच बताएँ। संबंधित issue लिंक करें और दिखाई देने वाले UI बदलाव के स्क्रीनशॉट दें। मर्ज से पहले समीक्षा सुझाव हल करें; संबंधित डिप्लॉयमेंट पूरा होने के बाद बदलाव लाइव होते हैं।
+
+[आचार संहिता](../community/code-of-conduct.mdx) मानें। बड़े या अनिश्चित बदलाव के लिए कोड लिखने से पहले प्रस्ताव पर चर्चा करें।

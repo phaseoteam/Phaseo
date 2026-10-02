@@ -1,0 +1,34 @@
+---
+icon: "package"
+title: "安装"
+description: "安装并配置 Phaseo PHP Agent SDK。"
+---
+
+Agent SDK 以此名称发布 [`phaseo/agent-sdk`](https://packagist.org/packages/phaseo/agent-sdk) （Packagist）。
+
+## 要求
+
+- PHP 8.1 或更高版本
+- Composer
+- Phaseo API 密钥
+
+## 安装
+
+```bash
+composer require phaseo/agent-sdk
+```
+
+核心 `phaseo/sdk` 包会作为依赖项自动安装。
+
+## 环境变量
+
+运行示例前，请设置 Gateway API 密钥：
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## 下一步
+
+- [概览](./agent-sdk-overview.mdx)
+- [使用 Agent SDK 构建](./agent-sdk.mdx)

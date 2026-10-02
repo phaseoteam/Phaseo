@@ -1,0 +1,178 @@
+---
+icon: "compass"
+title: "Advisor 服务器工具"
+description: "让一个模型在生成过程中咨询另一个模型。"
+---
+
+如果希望主模型在完成前向另一个模型征求评审、计划、合理性检查或专业意见，请使用 `phaseo:advisor`。
+
+主模型像调用其他工具一样调用 Advisor。Phaseo 在服务器端运行 Advisor 模型，并将建议作为工具结果返回。随后，主模型生成最终回复。
+
+<Note>
+Advisor 会由网关在受支持的文本模型之间进行管理。只有客户端明确发送 Anthropic 原生工具格式时，才会转换为 Anthropic 的原生 Advisor 工具。
+</Note>
+
+## 快速开始
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
+    ],
+    "tools": [
+      {
+        "type": "phaseo:advisor",
+        "parameters": {
+          "model": "anthropic/claude-opus-5",
+          "max_uses": 1,
+          "max_completion_tokens": 1400
+        }
+      }
+    ]
+  }'
+```
+
+## 选择 Advisor 模型
+
+你可以在工具定义中固定 Advisor 模型：
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "model": "anthropic/claude-opus-5"
+  }
+}
+```
+
+如果省略 `parameters.model`，工具调用可以提供 `model`。如果两者都未设置，Phaseo 会回退到外层请求所用的模型。
+
+## 参数
+
+```json
+{
+  "type": "phaseo:advisor",
+  "parameters": {
+    "name": "reviewer",
+    "model": "anthropic/claude-opus-5",
+    "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
+    "forward_transcript": true,
+    "max_uses": 2,
+    "max_completion_tokens": 1400,
+    "reasoning": { "effort": "high" },
+    "temperature": 0.2
+  }
+}
+```
+
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `name` | string | none | 可选的 Advisor 名称。去除首尾空格后，名称必须唯一，并且可以包含字母、数字、空格、下划线和连字符。 |
+| `model` | string | outer model | 要调用的 Advisor 模型。省略时，工具调用可以提供 `model`。 |
+| `instructions` | string | default Advisor behavior | 提供给 Advisor 模型的额外指令。 |
+| `forward_transcript` | boolean | `false` | 在 Advisor 请求中包含当前对话记录。 |
+| `max_uses` | integer | `1` | 服务器工具循环中对此 Advisor 的最大调用次数。 |
+| `max_completion_tokens` | integer | `1400` | Advisor 回复的最大输出 token 数。 |
+| `max_tokens` | integer | `1400` | `max_completion_tokens` 的旧别名。 |
+| `reasoning` | object | provider default | 所选模型或供应商支持时，会转发给 Advisor 调用的推理配置。 |
+| `temperature` | number | provider default | Advisor 调用的采样温度。 |
+
+## 工具调用参数
+
+模型通常会使用 `prompt` 调用 Advisor：
+
+```json
+{
+  "prompt": "Review this migration plan and identify the riskiest assumptions."
+}
+```
+
+如果 Advisor 定义中未固定模型，工具调用也可以包含 `model`：
+
+```json
+{
+  "model": "anthropic/claude-opus-5",
+  "prompt": "Check this security design for missing controls."
+}
+```
+
+当 `forward_transcript` 为 `true` 时，如果模型未提供 prompt，Phaseo 可以仅凭对话记录执行 Advisor 调用。
+
+## 多个 Advisor
+
+每个 Advisor 添加一个 `phaseo:advisor` 条目。每个命名的 Advisor 都会成为独立的内部工具，例如 `phaseo_advisor_security_reviewer` 或 `phaseo_advisor_architect`。
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "security-reviewer",
+        "model": "anthropic/claude-opus-5",
+        "instructions": "Review for vulnerabilities, abuse cases, and missing mitigations."
+      }
+    },
+    {
+      "type": "phaseo:advisor",
+      "parameters": {
+        "name": "architect",
+        "model": "openai/gpt-5",
+        "instructions": "Review system design tradeoffs and operational risks."
+      }
+    }
+  ]
+}
+```
+
+最多只能有一个 Advisor 条目省略 `name`。如果配置了多个 Advisor 并强制使用 `tool_choice: "phaseo:advisor"`，Phaseo 会将该别名映射到第一个配置的 Advisor。
+
+## 工具返回内容
+
+Advisor 会以 JSON 形式返回工具结果：
+
+```json
+{
+  "status": "ok",
+  "name": "reviewer",
+  "model": "anthropic/claude-opus-5",
+  "advice": "Start with a smaller migration slice and define rollback criteria before changing traffic routing."
+}
+```
+
+如果 Advisor 请求无法运行，Phaseo 会返回工具错误，例如 `advisor_invalid_request`、`advisor_max_uses_exceeded` 或 `advisor_request_failed`。
+
+## 对话记忆
+
+Advisor 不会保留跨请求的隐藏状态。如果在下一个请求中重放之前的消息和工具结果，主模型就能看到先前的咨询内容。启用 `forward_transcript` 后，Advisor 也可以看到该请求转发的对话记录。
+
+## 用量与定价
+
+Advisor 调用会增加以下计数：
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "advisor_requests": 1
+    }
+  }
+}
+```
+
+Advisor 模型的 token 会计入总用量，并可按所选 Advisor 模型的费率计费。服务器工具定价还可以使用 `server_tool_advisor_requests`。
+
+## 当前限制
+
+- Advisor 建议的流式传输尚未启用。
+- Advisor 调用不会向被咨询的模型提供额外工具。
+
+## 相关内容
+
+- [服务器工具](./index.mdx)
+- [子代理](./subagent.mdx)
+- [工具调用](../tool-calling.mdx)

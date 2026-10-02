@@ -1,0 +1,47 @@
+---
+icon: "settings-2"
+title: "Méthodes de quantification"
+description: "Découvrez en quoi les méthodes de quantification diffèrent des formats numériques et pourquoi le choix de la méthode compte."
+---
+
+Le format numérique (`FP8`, `INT8`, `INT4`) indique la précision.
+
+La méthode de quantification indique **comment** cette précision a été appliquée.
+
+## Pourquoi les méthodes comptent
+
+Deux variantes `INT4` peuvent se comporter très différemment, car le choix de la méthode influe sur :
+
+- Conservation de la précision
+- Compatibilité avec l’environnement d’exécution
+- Organisation de la mémoire et performances de service
+- Exigences de calibration
+
+## Familles de méthodes courantes
+
+| Famille de méthodes | Usage courant | Remarques |
+| --- | --- | --- |
+| `AWQ` | Préserve les poids les plus sensibles aux activations | Courant pour équilibrer qualité et efficacité en inférence |
+| `GPTQ` | Quantification après entraînement avec minimisation de l’erreur | Populaire pour les variantes compactes d’inférence locale |
+| `GGUF` | Format de paquet utilisé dans l’écosystème llama.cpp | Souvent associé à différents niveaux de quantification (`Q4`, `Q5`, etc.) |
+| `EXL2` | Variantes agressives à faible nombre de bits dans l’écosystème ExLlama | Privilégie le débit, avec des contraintes d’architecture et d’environnement d’exécution |
+
+## Exemple : méthode et format
+
+`INT4` est le niveau de précision visé.  
+`AWQ INT4` et `GPTQ INT4` sont deux façons différentes d’atteindre ce niveau.
+
+## Conseils pratiques
+
+1. Choisissez d’abord l’environnement d’exécution que vous pouvez déployer de manière fiable.
+2. Filtrez les familles de méthodes compatibles avec cet environnement.
+3. Comparez plusieurs méthodes de quantification avec le même niveau de précision visé.
+4. Suivez les modes d’échec, pas seulement les scores moyens des benchmarks.
+
+## Liste de contrôle pour l’évaluation
+
+- Exactitude des sorties structurées
+- Fidélité sur les longs contextes
+- Fiabilité des appels d’outils
+- Comportement en matière de sécurité et de modération
+- Latence de queue sous charge

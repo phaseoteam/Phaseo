@@ -16,6 +16,7 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_VISIBLE_BENCHMARKS = 4;
@@ -215,8 +216,11 @@ function formatScoreValue(
 	});
 }
 
-function scoreTypeLabel(scoreType: BenchmarkScoreType): string {
-	return scoreType === "percent" ? "%" : "Numerical";
+function scoreTypeLabel(
+	scoreType: BenchmarkScoreType,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
+	return scoreType === "percent" ? "%" : t("numeric");
 }
 
 function toChartData(
@@ -246,6 +250,8 @@ function CustomTooltip({
 	label?: string;
 	metaByName: Record<string, ComparableBenchmark>;
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	if (!active || !payload || !payload.length || !label) return null;
 	const benchmarkMeta = metaByName[label];
@@ -255,7 +261,7 @@ function CustomTooltip({
 			<div className="mb-1 flex items-center justify-between gap-2">
 				<div className="text-sm font-semibold">{label}</div>
 				<Badge variant="outline" className="text-[10px]">
-					{scoreTypeLabel(scoreType)}
+					{scoreTypeLabel(scoreType, t)}
 				</Badge>
 			</div>
 			{payload.map((item) => (
@@ -275,6 +281,8 @@ export default function PerformanceBenchmarkGraph({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const [expanded, setExpanded] = React.useState(false);
 	const [selectedScoreType, setSelectedScoreType] =
@@ -326,9 +334,9 @@ export default function PerformanceBenchmarkGraph({
 		<section className="space-y-3">
 			<header className="flex items-start justify-between gap-4">
 				<div className="space-y-1">
-					<h2 className="text-lg font-semibold">Benchmarks Comparison</h2>
+					<h2 className="text-lg font-semibold">{t("benchmarkComparison")}</h2>
 					<p className="text-sm text-muted-foreground">
-						Only benchmarks with comparable results across every selected model are shown.
+						{t("comparableBenchmarksDescription")}
 					</p>
 				</div>
 			</header>
@@ -338,10 +346,10 @@ export default function PerformanceBenchmarkGraph({
 					<div className="flex items-start justify-between gap-3">
 						<div>
 							<CardTitle className="text-sm font-semibold">
-								Benchmark Scores ({scoreTypeLabel(activeScoreType)})
+								{t("benchmarkScores", { scoreType: scoreTypeLabel(activeScoreType, t) })}
 							</CardTitle>
 							<p className="text-xs text-muted-foreground mt-1">
-								Switch benchmark type to compare percent and numerical families separately.
+								{t("switchBenchmarkType")}
 							</p>
 						</div>
 						{availableScoreTypes.length > 1 ? (
@@ -358,13 +366,13 @@ export default function PerformanceBenchmarkGraph({
 													setExpanded(false);
 												}}
 												className="h-7 w-7"
-												aria-label="Percentage benchmarks"
+								aria-label={t("percentageBenchmarks")}
 												aria-pressed={activeScoreType === "percent"}
 											>
 												<Percent className="h-4 w-4" />
 											</Button>
 										</TooltipTrigger>
-										<TooltipContent>Percentage benchmarks</TooltipContent>
+						<TooltipContent>{t("percentageBenchmarks")}</TooltipContent>
 									</Tooltip>
 									<Tooltip>
 										<TooltipTrigger asChild>
@@ -377,13 +385,13 @@ export default function PerformanceBenchmarkGraph({
 													setExpanded(false);
 												}}
 												className="h-7 w-7"
-												aria-label="Numerical benchmarks"
+								aria-label={t("numericalBenchmarks")}
 												aria-pressed={activeScoreType === "numeric"}
 											>
 												<Hash className="h-4 w-4" />
 											</Button>
 										</TooltipTrigger>
-										<TooltipContent>Numerical benchmarks</TooltipContent>
+						<TooltipContent>{t("numericalBenchmarks")}</TooltipContent>
 									</Tooltip>
 								</TooltipProvider>
 							</div>
@@ -464,10 +472,10 @@ export default function PerformanceBenchmarkGraph({
 									)}
 									<div className="inline-flex items-center gap-1.5">
 										<Badge variant="outline" className="text-[10px]">
-											{scoreTypeLabel(benchmark.scoreType)}
+										{scoreTypeLabel(benchmark.scoreType, t)}
 										</Badge>
 										<Badge variant="secondary" className="text-[10px]">
-											{benchmark.lowerIsBetter ? "Lower is better" : "Higher is better"}
+											{benchmark.lowerIsBetter ? t("lowerIsBetter") : t("higherIsBetter")}
 										</Badge>
 									</div>
 								</div>
@@ -547,7 +555,7 @@ export default function PerformanceBenchmarkGraph({
 						className="h-7 text-xs"
 						onClick={() => setExpanded((current) => !current)}
 					>
-						{expanded ? "Show Less" : `Show More (${hiddenCount})`}
+						{expanded ? t("showLess") : t("showMore", { count: hiddenCount })}
 					</Button>
 				</div>
 			) : null}

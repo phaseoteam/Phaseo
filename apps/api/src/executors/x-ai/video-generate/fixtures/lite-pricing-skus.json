@@ -1,0 +1,226 @@
+[
+  {
+    "sku_id": "fae6a29c-145d-4691-bee7-1613a2cc596e",
+    "provider_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5-lite",
+    "sku_code": "input-image",
+    "version": 1,
+    "operation": "video.generate",
+    "status": "active",
+    "region": null,
+    "display_name": "input-image",
+    "description": null,
+    "currency": "USD",
+    "effective_from": "2026-10-01 22:40:17.134604+00",
+    "effective_to": null,
+    "metadata": {
+      "match": [],
+      "sources": [
+        {
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-lite",
+          "accessed_at": "2026-10-01"
+        }
+      ],
+      "priority": 100,
+      "billing_timestamp_basis": "request_start"
+    },
+    "created_at": "2026-10-01 22:40:17.134604+00",
+    "updated_at": "2026-10-01 22:40:17.134604+00",
+    "service_tier_slug": "standard",
+    "route_variant_id": "7a061ae6-def6-4bd9-8717-4daa974482e4",
+    "meters": [
+      {
+        "unit": "image",
+        "sku_id": "fae6a29c-145d-4691-bee7-1613a2cc596e",
+        "billable": true,
+        "metadata": {
+          "source": "official_documentation"
+        },
+        "modality": "image",
+        "direction": "input",
+        "meter_key": "input_image",
+        "created_at": "2026-10-01T22:40:17.134604+00:00",
+        "updated_at": "2026-10-01T22:40:17.134604+00:00",
+        "meter_order": 100,
+        "price_nanos": 10000000,
+        "display_unit": "1 image",
+        "sku_meter_id": "1bc56e2a-c5d9-4a9a-8932-79e47bd94aa5",
+        "display_label": "input_image",
+        "unit_quantity": 1
+      }
+    ]
+  },
+  {
+    "sku_id": "2bd9926f-d0a7-4422-8372-8f10a2659873",
+    "provider_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5-lite",
+    "sku_code": "output-1080p",
+    "version": 1,
+    "operation": "video.generate",
+    "status": "active",
+    "region": null,
+    "display_name": "output-1080p",
+    "description": null,
+    "currency": "USD",
+    "effective_from": "2026-10-01 22:40:17.134604+00",
+    "effective_to": null,
+    "metadata": {
+      "match": [
+        {
+          "op": "eq",
+          "path": "video_params.resolution",
+          "value": "1080p",
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-lite",
+          "accessed_at": "2026-10-01"
+        }
+      ],
+      "priority": 100,
+      "billing_timestamp_basis": "request_start"
+    },
+    "created_at": "2026-10-01 22:40:17.134604+00",
+    "updated_at": "2026-10-01 22:40:17.134604+00",
+    "service_tier_slug": "standard",
+    "route_variant_id": "7a061ae6-def6-4bd9-8717-4daa974482e4",
+    "meters": [
+      {
+        "unit": "second",
+        "sku_id": "2bd9926f-d0a7-4422-8372-8f10a2659873",
+        "billable": true,
+        "metadata": {
+          "source": "official_documentation"
+        },
+        "modality": "video",
+        "direction": "output",
+        "meter_key": "output_video_seconds",
+        "created_at": "2026-10-01T22:40:17.134604+00:00",
+        "updated_at": "2026-10-01T22:40:17.134604+00:00",
+        "meter_order": 100,
+        "price_nanos": 140000000,
+        "display_unit": "1 second",
+        "sku_meter_id": "3910e91b-578d-4ebc-a1d0-2a943716cb99",
+        "display_label": "output_video_seconds",
+        "unit_quantity": 1
+      }
+    ]
+  },
+  {
+    "sku_id": "444ad59d-e96e-4f3a-ac30-fc1389c6f9a9",
+    "provider_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5-lite",
+    "sku_code": "output-480p",
+    "version": 1,
+    "operation": "video.generate",
+    "status": "active",
+    "region": null,
+    "display_name": "output-480p",
+    "description": null,
+    "currency": "USD",
+    "effective_from": "2026-10-01 22:40:17.134604+00",
+    "effective_to": null,
+    "metadata": {
+      "match": [
+        {
+          "op": "eq",
+          "path": "video_params.resolution",
+          "value": "480p",
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-lite",
+          "accessed_at": "2026-10-01"
+        }
+      ],
+      "priority": 100,
+      "billing_timestamp_basis": "request_start"
+    },
+    "created_at": "2026-10-01 22:40:17.134604+00",
+    "updated_at": "2026-10-01 22:40:17.134604+00",
+    "service_tier_slug": "standard",
+    "route_variant_id": "7a061ae6-def6-4bd9-8717-4daa974482e4",
+    "meters": [
+      {
+        "unit": "second",
+        "sku_id": "444ad59d-e96e-4f3a-ac30-fc1389c6f9a9",
+        "billable": true,
+        "metadata": {
+          "source": "official_documentation"
+        },
+        "modality": "video",
+        "direction": "output",
+        "meter_key": "output_video_seconds",
+        "created_at": "2026-10-01T22:40:17.134604+00:00",
+        "updated_at": "2026-10-01T22:40:17.134604+00:00",
+        "meter_order": 100,
+        "price_nanos": 20000000,
+        "display_unit": "1 second",
+        "sku_meter_id": "83f55725-f42c-40a2-ab78-39ba4622a81b",
+        "display_label": "output_video_seconds",
+        "unit_quantity": 1
+      }
+    ]
+  },
+  {
+    "sku_id": "f7a1d56b-33ba-429b-9be5-817eb976bb5e",
+    "provider_model_id": "spacex-ai:spacex-ai/grok-imagine-video-1.5-lite",
+    "sku_code": "output-720p",
+    "version": 1,
+    "operation": "video.generate",
+    "status": "active",
+    "region": null,
+    "display_name": "output-720p",
+    "description": null,
+    "currency": "USD",
+    "effective_from": "2026-10-01 22:40:17.134604+00",
+    "effective_to": null,
+    "metadata": {
+      "match": [
+        {
+          "op": "eq",
+          "path": "video_params.resolution",
+          "value": "720p",
+          "or_group": 1,
+          "and_index": 1
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://docs.x.ai/developers/models/grok-imagine-video-1.5-lite",
+          "accessed_at": "2026-10-01"
+        }
+      ],
+      "priority": 100,
+      "billing_timestamp_basis": "request_start"
+    },
+    "created_at": "2026-10-01 22:40:17.134604+00",
+    "updated_at": "2026-10-01 22:40:17.134604+00",
+    "service_tier_slug": "standard",
+    "route_variant_id": "7a061ae6-def6-4bd9-8717-4daa974482e4",
+    "meters": [
+      {
+        "unit": "second",
+        "sku_id": "f7a1d56b-33ba-429b-9be5-817eb976bb5e",
+        "billable": true,
+        "metadata": {
+          "source": "official_documentation"
+        },
+        "modality": "video",
+        "direction": "output",
+        "meter_key": "output_video_seconds",
+        "created_at": "2026-10-01T22:40:17.134604+00:00",
+        "updated_at": "2026-10-01T22:40:17.134604+00:00",
+        "meter_order": 100,
+        "price_nanos": 30000000,
+        "display_unit": "1 second",
+        "sku_meter_id": "6ef268bd-5dcc-4755-84a5-35a9b9fa8c67",
+        "display_label": "output_video_seconds",
+        "unit_quantity": 1
+      }
+    ]
+  }
+]

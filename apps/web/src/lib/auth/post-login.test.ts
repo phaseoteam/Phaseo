@@ -78,10 +78,10 @@ describe("resolvePostLoginDestination", () => {
 		})).toBe("/onboarding");
 	});
 
-	it("falls back home for unrecognised stored values", () => {
+	it.each(["external-url", "monitor"])("falls back home for retired or unrecognised stored value %s", (landingPage) => {
 		expect(resolvePostLoginDestination({
 			returnUrl: "/",
-			landingPage: "external-url",
+			landingPage,
 			showOnboarding: false,
 		})).toBe("/");
 	});

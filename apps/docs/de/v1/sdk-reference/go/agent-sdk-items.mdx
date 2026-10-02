@@ -1,0 +1,32 @@
+---
+icon: "layers"
+title: "Stream-Elemente"
+description: "Verarbeite Text-, Reasoning-, Tool- und Provider-Elemente aus Go-Agent-Ausführungen."
+---
+
+`Stream` stellt eine wiederholbar abspielbare Ereignisfolge für Live-Agent-Oberflächen bereit. Textänderungen sind am einfachsten zu verarbeiten; der vollständige Ereignisstrom enthält außerdem Reasoning, Provider-Elemente, Tool-Fortschritt, Lebenszyklusänderungen und die endgültige Antwort.
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details)
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details)
+  }
+}
+
+result, err := stream.Result()
+```
+
+<Note>
+Go stellt Provider-Elemente derzeit über die generische `details`-Map von `AgentEvent` bereit, nicht über eine abgeschlossene typisierte Union. Prüfe `event.Type`, validiere Elementdaten an der UI-Grenze und behalte einen Fallback für unbekannte Ereignisse, um zukunftskompatibel zu bleiben.
+</Note>
+
+Der Ereignisverlauf lässt sich nach Abschluss erneut abspielen. So können verschiedene Verbraucher Text darstellen, Ereignisse speichern und eine Audit-Zeitleiste erstellen, ohne eine weitere Modellanfrage zu starten.

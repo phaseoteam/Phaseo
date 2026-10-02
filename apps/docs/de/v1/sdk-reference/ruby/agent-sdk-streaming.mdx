@@ -1,0 +1,23 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Konsumiere Text-, Reasoning-, Element- und Lifecycle-Streams von Ruby-Agenten."
+---
+
+`Agent#stream` gibt ein erneut durchlaufbares `StreamResult` zurück:
+
+```ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+completed = stream.result
+```
+
+Verwende `reasoning_stream`, `item_stream` oder `full_stream` für weitere Projektionen. Ruby konsumiert den Provider-Stream synchron und stellt anschließend Sequenzen bereit, die weitere Konsumenten erneut durchlaufen können.
+
+Elementwerte sind derzeit Hashes und keine diskriminierte TypeScript-Element-Union.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

@@ -1,0 +1,173 @@
+---
+title: "为结构化 JSON 工作流设置插件默认值"
+icon: "puzzle"
+description: "使用工作区、预设和请求级插件策略，确保响应修复行为一致。"
+---
+
+如果结构化输出请求需要统一的插件策略，而不是为每个请求单独设置，请使用本指南。
+
+## 1. 了解优先级
+
+Gateway 插件策略按以下顺序解析：
+
+1. 工作区默认值
+2. 预设默认值
+3. 请求级插件
+
+除非工作区默认值已明确锁定，否则低优先级层可以覆盖高优先级层。
+
+## 2. 设置工作区默认值
+
+如果要让某个工作区默认对结构化 JSON 请求启用响应修复，请在路由设置中配置工作区默认值。
+
+适合在此处配置：
+
+- 通用运行默认值
+- 共享的 API 密钥行为
+- 避免不同服务之间出现偏差
+
+## 3. 策略不可协商时将其锁定
+
+如果某个工作区必须始终启用响应修复，请锁定该默认值。
+
+锁定工作区默认值后：
+
+- 预设无法将其禁用
+- 请求正文无法将其禁用
+- 日志仍会显示插件是已应用、已跳过还是失败
+
+## 4. 使用预设设置工作流专属默认值
+
+如果一组请求需要同时包含以下内容，预设是合适的配置层：
+
+- 结构化输出设置
+- 响应修复插件默认值
+
+这一层还可以选择响应修复模式：
+
+- `safe`用于范围受限的语法清理
+- `strict`用于仅移除外层包装的行为
+
+这样可以缩短请求正文，也更容易在不同服务间复用路由和输出行为。
+
+## 5. 仅在工作区允许时按请求覆盖
+
+如果工作区默认值未锁定，请求仍可直接覆盖插件配置：
+
+## 请求示例
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Return valid JSON",
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "answer",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "summary": { "type": "string" }
+          },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [
+      { "id": "response-healing", "enabled": true }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Return valid JSON",
+  response_format: {
+    type: "json_schema",
+    json_schema: {
+      name: "answer",
+      schema: {
+        type: "object",
+        properties: {
+          summary: { type: "string" },
+        },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", enabled: true }],
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Return valid JSON",
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "answer",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "string"}
+                    },
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "plugins": [
+            {"id": "response-healing", "enabled": True}
+        ],
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+## 6. 在日志中验证行为
+
+发送一次请求后，检查请求详情并确认：
+
+- `plugin_executions`包含`response-healing`
+- 状态为以下之一：
+  - `applied`
+  - `skipped`
+  - `failed`
+- 可以查看最终生效的插件模式
+- 架构验证拒绝修复后的候选内容时，会显示验证错误
+
+## 7. 服务间行为不一致时的处理方法
+
+如果两个服务的行为不同，请比较：
+
+- 工作区路由设置
+- 预设插件默认值
+- 请求级`plugins`
+- 工作区默认值是否已锁定
+
+确认这些策略层一致后，再排查模型质量问题。
+
+## 相关内容
+
+- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
+- [使用预设配置响应缓存](./response-caching-with-presets.mdx)
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)

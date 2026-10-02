@@ -1,0 +1,69 @@
+---
+title: "ワークスペース"
+description: "Phaseoの料金プランを変えずに、APIキー、設定、管理アクセスを整理します。"
+icon: "building-2"
+---
+
+ワークスペースでは、チーム、製品、環境ごとにAPIキー、ルーティング設定、プリセット、ガードレール、管理アクセスを整理できます。
+
+ワークスペースはPhaseo標準の従量課金サービスに含まれます。作成や利用に別のプランは必要ありません。
+
+## ワークスペースを作成する場面
+
+次のように分けたい場合は、ワークスペースを個別に作成します。
+
+- 開発、ステージング、本番環境の認証情報を分離する
+- 製品や顧客プロジェクトを分ける
+- 管理用インテグレーションが必要なリソースだけにアクセスできるようにする
+- 異なるルーティング、プリセット、ガードレールのポリシーを適用する
+
+小規模なインテグレーションなら、デフォルトのワークスペースで十分な場合があります。
+
+## ワークスペースを管理する
+
+ワークスペースはPhaseoダッシュボードまたは管理APIから管理できます。
+
+ワークスペースAPIでは[管理APIキー](../developers/management-api-keys.mdx)を使います。標準のGateway APIキーは推論リクエスト用であり、ワークスペース管理エンドポイントは呼び出せません。
+
+| 操作 | エンドポイント |
+| --- | --- |
+| ワークスペースを一覧表示 | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
+| ワークスペースを作成 | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
+| ワークスペースを取得 | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
+| ワークスペースを更新 | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
+| ワークスペースを削除 | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+
+<Note>
+ワークスペース管理エンドポイントは現在Betaです。管理オートメーションは再試行しやすくし、後続の変更を適用する前にAPIレスポンスを確認してください。
+</Note>
+
+## 適切なアクセス権を選ぶ
+
+インテグレーションに必要なワークスペース機能だけを付与した管理キーを作成します。
+
+- ワークスペースの一覧表示と確認には`workspaces:read`
+- ワークスペースの作成や更新には`workspaces:write`
+- ワークスペースの削除には`workspaces:delete`
+
+Phaseoはワークスペースのメンバーシップとロールも確認します。機能権限だけでは、別のワークスペースにアクセスできません。
+
+管理キーはサーバー側のシークレットストアに保存してください。ブラウザーコード、デスクトップログ、ソース管理、チャットには含めないでください。
+
+## ワークスペースを削除する
+
+デフォルトのワークスペースは削除できません。他のワークスペースを削除する前に、アクティブなAPIキーを削除するか移動し、存在しないワークスペースにリクエストが向かわないようにしてください。
+
+## 請求
+
+ワークスペースによって料金プランが分かれることはありません。使用量は[料金と請求](../pricing/tiers.mdx)に記載された標準の従量課金で請求されます。
+
+## 次のステップ
+
+<CardGroup cols={2}>
+	<Card title="管理APIキー" icon="key-round" href="../developers/management-api-keys.mdx">
+		ワークスペース管理に必要な権限だけを持つサーバー側の認証情報を作成します。
+	</Card>
+	<Card title="認証" icon="key" href="../developers/authentication.mdx">
+		モデルと生成のリクエストにはGateway APIキーを使います。
+	</Card>
+</CardGroup>

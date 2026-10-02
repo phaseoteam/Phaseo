@@ -1,0 +1,64 @@
+---
+icon: "messages-square"
+title: "Completions de chat"
+description: "Llama a /chat/completions con el SDK de C#."
+---
+
+**Método**: `client.GenerateText(...)` o `client.CreateChatCompletion(...)`
+
+### Ejemplo
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses."
+        }
+    }
+});
+```
+
+### Parámetros clave
+- `model` (obligatorio): ID del modelo de destino.
+- `messages` (obligatorio): mensajes ordenados con los roles `system|user|assistant|tool`; el contenido puede ser texto o partes.
+- Muestreo: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (entero, opcional).
+- Longitud y penalizaciones: `max_output_tokens` (entero), `presence_penalty` y `frequency_penalty` (-2 a 2), `stop` (string|string[]).
+- Herramientas: `tools` (definiciones), `tool_choice` (auto/none/herramienta específica), `max_tool_calls` (entero), `parallel_tool_calls` (booleano).
+- Probabilidades logarítmicas: `logprobs` (booleano), `top_logprobs` (0–20).
+- Salida: `response_format` (json/text), `meta` (objeto de paso directo), `stream` (booleano), `service_tier`.
+- Opciones adicionales de Gateway: `usage` (booleano para solicitar el uso), `meta` (booleano para incluir el bloque meta).
+
+### Devuelve
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+

@@ -1,23 +1,19 @@
+"use client";
+
 import type { ExtendedModel } from "@/data/types";
 import Link from "next/link";
-
-function joinWithVs(values: string[]): string {
-	return values.join(" vs ");
-}
-
-function joinModelDescriptions(selectedModels: ExtendedModel[]): string {
-	return selectedModels
-		.map((model) => `${model.name} from ${model.provider.name}`)
-		.join(", ");
-}
+import { useTranslations } from "next-intl";
 
 export default function ComparisonHeader({
 	selectedModels,
 }: {
 	selectedModels: ExtendedModel[];
 }) {
-	const title = joinWithVs(selectedModels.map((model) => model.name));
-	const description = joinModelDescriptions(selectedModels);
+	const t = useTranslations("Catalogue.compare");
+	const title = selectedModels.map((model) => model.name).join(` ${t("versus")} `);
+	const description = selectedModels
+		.map((model) => t("modelFromProvider", { model: model.name, provider: model.provider.name }))
+		.join(", ");
 
 	return (
 		<section className="space-y-5">
@@ -26,14 +22,14 @@ export default function ComparisonHeader({
 					href="/"
 					className="shrink-0 text-primary underline decoration-transparent underline-offset-2 hover:decoration-current"
 				>
-					Home
+					{t("home")}
 				</Link>
 				<span>/</span>
 				<Link
 					href="/compare"
 					className="shrink-0 text-primary underline decoration-transparent underline-offset-2 hover:decoration-current"
 				>
-					Compare
+					{t("breadcrumbCompare")}
 				</Link>
 				<span>/</span>
 				<span className="truncate text-foreground">{title}</span>
@@ -44,11 +40,9 @@ export default function ComparisonHeader({
 					{title}
 				</h1>
 				<p className="text-pretty text-base leading-7 text-muted-foreground">
-					Compare {description} on key metrics including benchmarks, price,
-					context length, providers, gateway usage, and other model features.
+					{t("comparisonHeaderDescription", { models: description })}
 				</p>
 			</div>
 		</section>
 	);
 }
-

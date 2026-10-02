@@ -1,0 +1,10 @@
+---
+title: "创建可观测性目标"
+sidebarTitle: "创建目标"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /observability/destinations"
+description: "创建 Webhook 或 OpenTelemetry 目标。"
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+`config` 对象仅可写入，存储前会加密。端点必须使用公共 HTTPS 地址。

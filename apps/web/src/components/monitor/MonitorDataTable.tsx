@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
+import { useLocale, useTranslations } from "next-intl";
 import {
 	Table,
 	TableBody,
@@ -66,7 +67,6 @@ import type {
 
 import Link from "next/link";
 import { useQueryState } from "nuqs";
-import { featureLabels } from "@/lib/config/featureLabels";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
@@ -96,7 +96,6 @@ type ModalityConfig = {
 	input: LucideIcon;
 	output: LucideIcon;
 	color: string;
-	label: string;
 };
 
 const modalityIcons: Record<string, ModalityConfig> = {
@@ -104,162 +103,73 @@ const modalityIcons: Record<string, ModalityConfig> = {
 		input: AlignCenter,
 		output: AlignCenter,
 		color: "text-gray-600",
-		label: "Text",
 	},
 	image: {
 		input: ImageUp,
 		output: ImageDown,
 		color: "text-blue-600",
-		label: "Image",
 	},
 	video: {
 		input: Video,
 		output: Video,
 		color: "text-purple-600",
-		label: "Video",
 	},
 	audio: {
 		input: AudioLines,
 		output: Headphones,
 		color: "text-pink-600",
-		label: "Audio",
 	},
 	audio_stt: {
 		input: Mic,
 		output: Captions,
 		color: "text-rose-600",
-		label: "Transcription",
 	},
 	audio_tts: {
 		input: Speech,
 		output: Speech,
 		color: "text-orange-600",
-		label: "Speech",
 	},
 	audio_music: {
 		input: Music4,
 		output: Music4,
 		color: "text-fuchsia-600",
-		label: "Music",
 	},
 	moderations: {
 		input: BadgeAlert,
 		output: BadgeAlert,
 		color: "text-red-600",
-		label: "Moderations",
 	},
 	rerank: {
 		input: ArrowUpDown,
 		output: ArrowUpDown,
 		color: "text-teal-600",
-		label: "Rerank",
 	},
 	embeddings: {
 		input: FileDigit,
 		output: FileDigit,
 		color: "text-orange-600",
-		label: "Embeddings",
 	},
 	file: {
 		input: FileUp,
 		output: FileUp,
 		color: "text-green-600",
-		label: "File",
 	},
 	multimodal: {
 		input: Globe,
 		output: Globe,
 		color: "text-indigo-600",
-		label: "Multimodal",
 	},
 	code: {
 		input: Braces,
 		output: Braces,
 		color: "text-cyan-600",
-		label: "Code",
 	},
 	function: {
 		input: Wrench,
 		output: Wrench,
 		color: "text-yellow-600",
-		label: "Function",
 	},
 };
-
-const modalityDescriptions: Record<
-	string,
-	{ input: string; output: string }
-> = {
-	text: {
-		input: "Accepts text in prompts and request content.",
-		output: "Returns generated text in the model response.",
-	},
-	image: {
-		input: "Accepts images for vision and multimodal understanding.",
-		output: "Can generate or transform image content.",
-	},
-	video: {
-		input: "Accepts video content for analysis or transformation.",
-		output: "Can return generated video content.",
-	},
-	audio: {
-		input: "Accepts audio content for analysis and generation workflows.",
-		output: "Can return generated audio content.",
-	},
-	audio_stt: {
-		input: "Accepts recorded speech for transcription workflows.",
-		output: "Returns transcribed speech as text.",
-	},
-	audio_tts: {
-		input: "Accepts content and controls for speech synthesis.",
-		output: "Returns synthesized speech audio.",
-	},
-	audio_music: {
-		input: "Accepts audio or composition context for music workflows.",
-		output: "Returns generated music or musical audio.",
-	},
-	moderations: {
-		input: "Accepts content for safety and policy classification.",
-		output: "Returns moderation labels and safety results.",
-	},
-	rerank: {
-		input: "Accepts documents and a query for relevance scoring.",
-		output: "Returns results ordered by relevance.",
-	},
-	embeddings: {
-		input: "Accepts content to encode as vector representations.",
-		output: "Returns vector embeddings for the supplied content.",
-	},
-	file: {
-		input: "Accepts uploaded files as request content.",
-		output: "Can return file-based response content.",
-	},
-	multimodal: {
-		input: "Accepts more than one content type in a request.",
-		output: "Can return more than one response content type.",
-	},
-	code: {
-		input: "Accepts source code and code-oriented prompts.",
-		output: "Can return generated or transformed source code.",
-	},
-	function: {
-		input: "Accepts function and tool definitions in requests.",
-		output: "Can return structured function or tool calls.",
-	},
-};
-
-function getModalityDescription(
-	modality: string,
-	type: "input" | "output",
-	label: string,
-): string {
-	return (
-		modalityDescriptions[modality]?.[type] ??
-		(type === "input"
-			? `Accepts ${label.toLowerCase()} as request content.`
-			: `Can return ${label.toLowerCase()} in the model response.`)
-	);
-}
 
 function normalizeModality(value: string): string {
 	const normalized = String(value ?? "")
@@ -310,16 +220,6 @@ function normalizeStatusValue(value: string): string {
 	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
 	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
 	return normalized;
-}
-
-function formatStatusLabel(status: string): string {
-	const normalized = normalizeStatusValue(status);
-	if (!normalized) return "Unknown";
-	const mapped = statusMetaByKey[normalized];
-	if (mapped) return mapped.label;
-	return normalized
-		.replace(/_/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function sortModalities(values: string[]): string[] {
@@ -379,64 +279,45 @@ const featureIcons = {
 	},
 };
 
-const featureDescriptions: Record<string, string> = {
-	tools: "Supports function calls and external tools.",
-	reasoning: "Supports enhanced reasoning workflows.",
-	structured_outputs: "Returns responses constrained to a defined schema.",
-	caching: "Supports prompt and response caching.",
-	web_search: "Can retrieve and ground responses in live web results.",
-	moderated: "Includes provider-side moderation controls.",
-	free: "Available through a free usage tier.",
-};
-
 const statusMetaByKey: Record<
 	string,
-	{ icon: LucideIcon; color: string; label: string }
+        { icon: LucideIcon; color: string }
 > = {
 	active: {
 		icon: CheckCircle2,
 		color: "text-green-600 dark:text-green-400",
-		label: "Active",
 	},
 	deranked_lvl1: {
 		icon: AlertTriangle,
 		color: "text-amber-500 dark:text-amber-400",
-		label: "Deranked Level 1",
 	},
 	deranked_lvl2: {
 		icon: AlertTriangle,
 		color: "text-amber-600 dark:text-amber-400",
-		label: "Deranked Level 2",
 	},
 	deranked_lvl3: {
 		icon: AlertTriangle,
 		color: "text-red-500 dark:text-red-400",
-		label: "Deranked Level 3",
 	},
 	coming_soon: {
 		icon: Clock3,
 		color: "text-sky-600 dark:text-sky-400",
-		label: "Coming Soon",
 	},
 	inactive: {
 		icon: XCircle,
 		color: "text-zinc-500 dark:text-zinc-400",
-		label: "Not Active",
 	},
 	not_active: {
 		icon: XCircle,
 		color: "text-zinc-500 dark:text-zinc-400",
-		label: "Not Active",
 	},
 	not_listed: {
 		icon: XCircle,
 		color: "text-zinc-500 dark:text-zinc-400",
-		label: "Not Listed",
 	},
 	disabled: {
 		icon: Ban,
 		color: "text-red-600 dark:text-red-400",
-		label: "Disabled",
 	},
 };
 const statusLegendOrder = [
@@ -500,8 +381,31 @@ export function MonitorDataTable({
 	stickyHeaderOffset = 60,
 	modelTablePreferences,
 }: MonitorDataTableProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.monitor");
+	const tWithModality = t as unknown as (
+		key: string,
+		values: { modality: string },
+	) => string;
+	const modelsUiT = useTranslations("Catalogue.models.filtersUi");
+	const pricingT = useTranslations("Catalogue.modelDetail.pricing");
+	const sectionsT = useTranslations("Catalogue.modelDetail.sections");
+	const comparisonT = useTranslations("Catalogue.compare");
 	const format = useDisplayFormatters();
-	const localModelTablePreferences = useTablePreferences("models-table", MODEL_TABLE_COLUMNS);
+	const localizedModelTableColumns = useMemo(() => {
+		const labels: Record<ModelTableColumnId, string> = {
+			model: t("context.model"), providers: t("providersGroup"),
+			status: sectionsT("gatewayStatus"), capability: t("capabilityLabel"),
+			inputPrice: pricingT("inputPrice"), outputPrice: pricingT("outputPrice"),
+			tier: t("tier"), inputModalities: modelsUiT("inputModalities"),
+			outputModalities: modelsUiT("outputModalities"), features: modelsUiT("features"),
+			context: comparisonT("context"), maxOutput: sectionsT("maxOutput"),
+			weeklyTokens: t("tableHeaders.weeklyTokens"), added: t("actionAdded"), retired: t("tableHeaders.retired"),
+		};
+		return MODEL_TABLE_COLUMNS.map((column) => ({ ...column, label: labels[column.id] }));
+	}, [t, sectionsT, pricingT, modelsUiT, comparisonT]);
+
+	const localModelTablePreferences = useTablePreferences("models-table", localizedModelTableColumns);
 	const {
 		columns: modelTableColumns,
 		density: modelTableDensity,
@@ -663,7 +567,7 @@ export function MonitorDataTable({
 						: "justify-start text-left",
 					isActive ? "text-foreground" : "text-muted-foreground",
 				)}
-				aria-label={`Sort models by ${label.toLowerCase()}`}
+				aria-label={t("sortModelsBy", { label })}
 			>
 				<span>{label}</span>
 				{getSortIcon(field)}
@@ -980,9 +884,9 @@ export function MonitorDataTable({
 					>
 						<div className="w-6 h-6 relative flex items-center justify-center rounded-md border">
 							<div className="w-4 h-4 relative">
-								<Logo
-									id={organisationId}
-									alt="Organisation logo"
+							<Logo
+								id={organisationId}
+								alt={t("organisationLogoAlt")}
 									className="object-contain"
 									fill
 								/>
@@ -1070,8 +974,8 @@ export function MonitorDataTable({
 		const minimum = prices[0];
 		const maximum = prices[prices.length - 1];
 		return minimum === maximum
-			? `$${minimum.toFixed(2)}`
-			: `$${minimum.toFixed(2)}–$${maximum.toFixed(2)}`;
+			? format.number(minimum, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" })
+			: `${format.number(minimum, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" })}–${format.number(maximum, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" })}`;
 	};
 
 	const renderModalities = (modalities: string[], type: "input" | "output") => {
@@ -1082,11 +986,10 @@ export function MonitorDataTable({
 					const iconConfig = modalityIcons[modality];
 					if (!iconConfig) return null;
 					const tone = getModalityTone(modality);
-					const description = getModalityDescription(
-						modality,
-						type,
-						iconConfig.label,
-					);
+					const label = t(`modalityLabels.${modality}` as never) as string;
+					const description = tWithModality(`modalityDescriptions.${type}`, {
+						modality: label,
+					});
 
 					const IconComponent =
 						type === "input" ? iconConfig.input : iconConfig.output;
@@ -1096,7 +999,7 @@ export function MonitorDataTable({
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-									aria-label={`${iconConfig.label} ${type} modality`}
+					aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
 									className={cn(
 										"group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
 										tone.badgeClassName,
@@ -1116,7 +1019,7 @@ export function MonitorDataTable({
 								className="w-72 p-3"
 							>
 								<p className="text-sm font-semibold leading-tight text-foreground">
-									{iconConfig.label} {type === "input" ? "Input" : "Output"}
+									{tWithModality(`modalityHeadings.${type}`, { modality: label })}
 								</p>
 								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
 									{description}
@@ -1164,15 +1067,14 @@ export function MonitorDataTable({
 					const borderClass =
 						colorMap[iconConfig.color] || "border-gray-600 bg-gray-50";
 
-					const label = featureLabels[key] ?? feature;
-					const description =
-						featureDescriptions[key] ?? "Supported by this provider.";
+					const label = t(`featureLabels.${key}` as never) as string;
+					const description = t(`featureDescriptions.${key}` as never) as string;
 					return (
 						<HoverCard key={feature} openDelay={160} closeDelay={80}>
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-									aria-label={`Feature: ${label}`}
+					aria-label={t("featureAriaLabel", { label })}
 									className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${borderClass}`}
 								>
 									<IconComponent
@@ -1200,7 +1102,9 @@ export function MonitorDataTable({
 		const iconConfig =
 			statusMetaByKey[normalizedStatus] ?? statusMetaByKey.inactive;
 		const IconComponent = iconConfig.icon;
-		const label = formatStatusLabel(status);
+		const label = statusMetaByKey[normalizedStatus]
+			? (t(`providerStatus.${normalizedStatus}` as never) as string)
+			: t("providerStatus.unknown", { status });
 		const endpointLabel = formatEndpoint(endpoint);
 
 		return (
@@ -1208,7 +1112,7 @@ export function MonitorDataTable({
 				<HoverCardTrigger asChild>
 					<button
 						type="button"
-						aria-label={`${label}: ${endpointLabel}`}
+						aria-label={t("statusAriaLabel", { status: label, capability: endpointLabel })}
 						className="inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 					>
 						{IconComponent && (
@@ -1224,10 +1128,10 @@ export function MonitorDataTable({
 					<p className="font-semibold text-foreground">{label}</p>
 					<div className="mt-1.5 space-y-1 text-muted-foreground">
 						<p>
-							Capability:{" "}
+							{t("capabilityLabel")}:{" "}
 							<span className="font-mono text-foreground">{endpointLabel}</span>
 						</p>
-						<p>Status is capability-specific, not provider-wide.</p>
+						<p>{t("capabilityStatusDescription")}</p>
 					</div>
 				</HoverCardContent>
 			</HoverCard>
@@ -1245,7 +1149,15 @@ export function MonitorDataTable({
 				<TierIcon
 					className={cn("h-3.5 w-3.5 shrink-0", tierMeta.iconClassName)}
 				/>
-				<span>{normalizedTier}</span>
+					<span>{
+						({
+							standard: modelsUiT("tierStandard"),
+							batch: modelsUiT("tierBatch"),
+							free: modelsUiT("tierFree"),
+							flex: modelsUiT("tierFlex"),
+							priority: modelsUiT("tierPriority"),
+						} as Record<string, string>)[normalizedTier] ?? normalizedTier
+					}</span>
 			</span>
 		);
 	};
@@ -1292,42 +1204,14 @@ export function MonitorDataTable({
 
 	const formatTokenCount = (value: number): string => {
 		if (!Number.isFinite(value) || value < 0) return "-";
-		if (value >= 1_000_000_000_000_000_000) {
-			const scaled = value / 1_000_000_000_000_000_000;
-			const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-			return `${text}Qi`;
-		}
-		if (value >= 1_000_000_000_000_000) {
-			const scaled = value / 1_000_000_000_000_000;
-			const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-			return `${text}Q`;
-		}
-		if (value >= 1_000_000_000_000) {
-			const scaled = value / 1_000_000_000_000;
-			const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-			return `${text}T`;
-		}
-		if (value >= 1_000_000_000) {
-			const scaled = value / 1_000_000_000;
-			const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-			return `${text}B`;
-		}
-		if (value >= 1_000_000) {
-			const scaled = value / 1_000_000;
-			const text = scaled.toFixed(2).replace(/\.?0+$/, "");
-			return `${text}M`;
-		}
-		if (value >= 1_000) {
-			return `${Math.round(value / 1_000)}K`;
-		}
-		return format.number(value);
+		return format.number(value, { notation: "compact", maximumFractionDigits: 2 });
 	};
 
 	const visibleModelTableColumns = modelTableColumns
 		.filter(({ visible }) => visible)
 		.map((preference) => ({
 			preference,
-			definition: MODEL_TABLE_COLUMNS.find(({ id }) => id === preference.id)! as ModelTableColumn,
+			definition: localizedModelTableColumns.find(({ id }) => id === preference.id)! as ModelTableColumn,
 		}));
 	const modelTableWidth = visibleModelTableColumns.reduce(
 		(total, { definition }) => total + definition.width,
@@ -1358,7 +1242,7 @@ export function MonitorDataTable({
 	const modelTableSettings = modelTablePreferences ? null : (
 		<TableSettings
 			columns={modelTableColumns}
-			definitions={MODEL_TABLE_COLUMNS}
+			definitions={localizedModelTableColumns}
 			tableLabel="models"
 			onReset={resetModelTableColumns}
 			onChange={updateModelTableColumns}
@@ -1396,7 +1280,7 @@ export function MonitorDataTable({
 				<HoverCardTrigger asChild>{content}</HoverCardTrigger>
 				<HoverCardContent align="start" className="w-52 p-3">
 					<div className="space-y-2">
-						<p className="text-[11px] font-medium text-muted-foreground">Status Key</p>
+						<p className="text-[11px] font-medium text-muted-foreground">{t("statusKeyLabel")}</p>
 						<div className="space-y-1.5">
 							{statusLegendOrder.map((statusKey) => {
 								const statusMeta = statusMetaByKey[statusKey];
@@ -1405,12 +1289,12 @@ export function MonitorDataTable({
 								return (
 									<div key={statusKey} className="flex items-center gap-2 text-xs">
 										<IconComponent className={`h-3.5 w-3.5 ${statusMeta.color}`} />
-										<span>{statusMeta.label}</span>
+										<span>{t(`providerStatus.${statusKey}` as never)}</span>
 									</div>
 								);
 							})}
 						</div>
-						<p className="text-[11px] text-muted-foreground">Applies to each provider capability.</p>
+						<p className="text-[11px] text-muted-foreground">{t("statusAppliesToRowCapability")}</p>
 					</div>
 				</HoverCardContent>
 			</HoverCard>
@@ -1488,7 +1372,7 @@ export function MonitorDataTable({
 					>
 						<Table
 							wrapInContainer={false}
-							aria-label="Models table column headers"
+							aria-label={t("modelsTable")}
 							className="table-fixed w-max bg-background text-xs"
 							style={{
 								width: `${modelTableWidth}px`,
@@ -1526,7 +1410,7 @@ export function MonitorDataTable({
 				>
 					<Table
 							wrapInContainer={false}
-							aria-label="Models table rows"
+							aria-label={t("rows")}
 							data-density={modelTableDensity}
 							className={cn(
 								"table-fixed w-max bg-background text-xs",
@@ -1555,7 +1439,7 @@ export function MonitorDataTable({
 										colSpan={visibleModelTableColumns.length}
 										className="text-center py-8"
 								>
-									No models match the current filters
+										{t("noModelsMatchFilters")}
 								</TableCell>
 							</TableRow>
 						) : (
@@ -1613,10 +1497,10 @@ export function MonitorDataTable({
 			) : (
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<span className="tabular-nums">
-						{format.number(totalItems)} {totalItems === 1 ? "model" : "models"}
+						{t("rowCount", { formattedCount: format.number(totalItems) })}
 					</span>
 					<span aria-hidden>·</span>
-					<span>Visible rows render on demand</span>
+					<span>{t("rowsRenderedOnDemand")}</span>
 				</div>
 			)}
 		</div>

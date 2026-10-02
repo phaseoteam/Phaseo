@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import Image from "next/image";
 import { Trophy } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
@@ -20,17 +21,17 @@ export default async function BenchmarkDetailShell({
 	children,
 	tocItems = [],
 }: BenchmarkDetailShellProps) {
+	const t = await getTranslations("Catalogue.benchmarks");
 	if (!benchmark) {
 		return (
 			<main className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
 					<div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center md:p-8">
 						<p className="text-base font-medium">
-							We don&apos;t know that benchmark... yet!
+							{t("unknownBenchmarkTitle")}
 						</p>
 						<p className="mt-1 text-sm text-muted-foreground">
-							If we&apos;re missing a benchmark, please contribute
-							on Github!
+							{t("unknownBenchmarkDescription")}
 						</p>
 						<div className="mt-3">
 							<a
@@ -39,17 +40,17 @@ export default async function BenchmarkDetailShell({
 								rel="noopener noreferrer"
 								className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
 							>
-								Contribute on GitHub
+								{t("contributeGitHub")}
 								<Image
 									src="/social/github_light.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="inline dark:hidden"
 								/>
 								<Image
 									src="/social/github_dark.svg"
-									alt="GitHub Logo"
+									alt={t("githubLogoAlt")}
 									width={16}
 									height={16}
 									className="hidden dark:inline"
@@ -79,7 +80,7 @@ export default async function BenchmarkDetailShell({
 							<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
 								{displayName}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? `${artificialAnalysisMetric} · Independent evaluations` : epochCapabilitiesIndex ? "Capabilities Index · Independent evaluations" : "AI benchmark results and model performance"}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? t("independentEvaluations", { metric: artificialAnalysisMetric }) : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} />

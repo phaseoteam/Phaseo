@@ -1,0 +1,78 @@
+---
+title: "OpenAI GPT-5.4"
+description: "GPT-5.4 अपनाने के लिए reasoning controls, vision और computer use की जानकारी।"
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.4
+
+Production में `openai/gpt-5.4` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+
+GPT-5.4 में सबसे बड़ा बदलाव नया request format नहीं, बल्कि updated reasoning controls, vision handling और tool use है। 10 मार्च 2026 तक OpenAI के आधिकारिक GPT-5.4 docs `reasoning.effort`, बेहतर computer use और अधिक faithful image input पर ज़ोर देते हैं। वे GPT-5.4-विशिष्ट `phase` parameter का उल्लेख नहीं करते।
+
+## माइग्रेशन quickstart
+
+1. बाकी request बदले बिना model ID को `openai/gpt-5.4` करें।
+2. Route के latency budget से मेल खाने वाला reasoning effort चुनें और test करें।
+3. लागू होने पर vision, structured output और computer-use workflows फिर जाँचें।
+4. GPT-5.4 को canary करें और पिछली route को fallback रखें।
+
+## नया क्या है
+
+- `reasoning.effort` में `none`, `low`, `medium`, `high` और `xhigh` मान हैं।
+- GPT-5.4 high-fidelity visual perception के लिए `original` image detail जोड़ता है।
+- Updated `computer` tool, GPT-5.4 computer-use workflows का आधिकारिक रास्ता है।
+- GPT-5.4 लंबे tool use, बड़े context वाले काम और professional document workflows बेहतर करता है।
+
+## एकीकरण में क्या बदलें
+
+### 1. Reasoning settings की समीक्षा करें
+
+GPT-4.1 या पुराने GPT-5 variant से आ रहे हों तो पुराने defaults को सही न मानें। Latency budget के अनुसार हर route को फिर test करें:
+
+- low-latency routes के लिए `none` या `low`
+- ज़्यादातर structured tasks के लिए `medium` या `high`
+- गहरे reasoning या agent workflows के लिए `xhigh`
+
+### 2. Vision pipelines की समीक्षा करें
+
+अगर workflow में detailed screenshots, documents या UI localization शामिल है, तो नया `original` image-detail level जाँचें। इससे fidelity और cost दोनों बदलते हैं।
+
+### 3. Computer-use routes फिर जाँचें
+
+Browser या desktop automation tasks माइग्रेट करते समय `computer` tool के मौजूदा path पर अपडेट करें और steps की end-to-end completion फिर जाँचें।
+
+## क्या जाँचें
+
+### प्रॉम्प्ट की संगतता
+
+- लंबे सिस्टम प्रॉम्प्ट
+- जानकारी निकालने और वर्गीकृत करने वाले प्रॉम्प्ट
+- फ़ॉर्मैटिंग पर निर्भर आउटपुट
+- वे प्रॉम्प्ट जिनमें कार्य पर बने रहने के लिए पहले पुनःप्रयास करने पड़ते थे
+
+### टूल और संरचित आउटपुट
+
+- हर effort level पर schema adherence
+- tool selection quality
+- arguments की पूर्णता
+- कई चरणों वाले computer-use flows की स्थिरता
+
+### विज़न और संचालन
+
+- `high` बनाम `original` detail पर screenshots और documents की समझ
+- realistic load पर latency और token usage
+- retry और timeout rate
+- बदले जा रहे model की तुलना में प्रति सफल task लागत
+
+## सुरक्षित rollout
+
+1. GPT-5.4 को उन्हीं effort levels के साथ benchmark करें जिन्हें इस्तेमाल करने का इरादा है।
+2. इमेज का उपयोग हो तो `original` को अलग से जाँचें, क्योंकि गुणवत्ता और लागत दोनों बदलती हैं।
+3. डिफ़ॉल्ट रूट बदलने से पहले प्रोडक्शन प्रॉम्प्ट को छाया-मोड में चलाएँ।
+4. पुराने OpenAI मॉडल या दूसरे प्रदाता को फ़ॉलबैक रखकर ट्रैफ़िक धीरे-धीरे बढ़ाएँ।
+
+## स्रोत
+
+- [GPT-5.4 का परिचय](https://openai.com/index/introducing-gpt-5-4/)
+- [GPT-5.4 model docs](https://developers.openai.com/api/docs/models/gpt-5.4)

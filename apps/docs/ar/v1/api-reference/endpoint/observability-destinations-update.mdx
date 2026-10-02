@@ -1,0 +1,11 @@
+---
+title: "تحديث وجهة قابلية الملاحظة"
+sidebarTitle: "تحديث الوجهة"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "تحديث الوجهة policy, filters, or credentials."
+---
+<Note>يتطلب هذا المسار مفتاح API للإدارة يتضمن `settings:write`.</Note>
+
+احذف `config` للاحتفاظ بالإعداد المشفّر الحالي. وعند تقديمه، يُستبدل الإعداد في سجل الوجهة ذريًا.
+

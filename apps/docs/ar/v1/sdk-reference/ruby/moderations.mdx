@@ -1,0 +1,28 @@
+---
+icon: "shield-check"
+title: "الإشراف على المحتوى"
+description: "استدعِ /moderations باستخدام SDK Ruby."
+---
+
+**الأساليب**: `client.generate_moderation(...)`, `client.create_moderation(...)`.
+
+### مثال
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+moderation = client.create_moderation(
+  "model" => "openai/omni-moderation-latest",
+  "input" => "Text to classify"
+)
+```
+
+### المعلمات الأساسية
+- `model` مطلوب: معرّف نموذج الإشراف (مثل `openai/omni-moderation-latest`).
+- `input` مطلوب: سلسلة أو مصفوفة من عناصر المحتوى (نص أو image_url).
+- اختياري: فلاتر `categories`/`severity` (عند توفر الدعم)، وعلامة `user`.
+
+### القيمة المعادة
+`ModerationResponse`
+

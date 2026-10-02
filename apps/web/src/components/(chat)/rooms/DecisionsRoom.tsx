@@ -1,7 +1,8 @@
 "use client";
 
 import { MessageScroller } from "@shadcn/react/message-scroller";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -24,6 +25,7 @@ import {
 } from "@/components/(chat)/playground/chat-playground-core";
 import {
 	DecisionComposer,
+	DECISION_VALIDATION_COPY_KEYS,
 	createDefaultDecisionDraft,
 	serializeDecisionDraft,
 	validateDecisionDraft,
@@ -108,7 +110,7 @@ function writeActiveDecisionConversationId(id: string): boolean {
 	}
 }
 
-function formatDecisionTime(value: string): string {
+function formatDecisionTime(value: string, locale: string): string {
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return "";
 	const now = new Date();
@@ -116,7 +118,7 @@ function formatDecisionTime(value: string): string {
 		date.getFullYear() === now.getFullYear() &&
 		date.getMonth() === now.getMonth() &&
 		date.getDate() === now.getDate();
-	const time = new Intl.DateTimeFormat("en-GB", {
+	const time = new Intl.DateTimeFormat(locale, {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
@@ -136,12 +138,12 @@ function formatDecisionTime(value: string): string {
 		(startOfToday - startOfMessageDay) / 86_400_000,
 	);
 	if (daysAgo > 0 && daysAgo < 7) {
-		const dayName = new Intl.DateTimeFormat("en-GB", {
+		const dayName = new Intl.DateTimeFormat(locale, {
 			weekday: "long",
 		}).format(date);
 		return `${dayName} ${time}`;
 	}
-	const dateLabel = new Intl.DateTimeFormat("en-GB", {
+	const dateLabel = new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		...(date.getFullYear() === now.getFullYear()
@@ -151,15 +153,15 @@ function formatDecisionTime(value: string): string {
 	return `${dateLabel}, ${time}`;
 }
 
-function formatErrorBody(body: string, status: number): string {
+function formatErrorBody(body: string, fallback: string): string {
 	try {
 		const parsed = JSON.parse(body) as Record<string, unknown>;
 		const message = parsed.message ?? parsed.error ?? parsed.detail;
 		return typeof message === "string"
 			? message
-			: `Decisions request failed (${status}).`;
+			: fallback;
 	} catch {
-		return body.trim() || `Decisions request failed (${status}).`;
+		return body.trim() || fallback;
 	}
 }
 
@@ -172,6 +174,9 @@ function getDefaultDecisionModelParams(): Record<string, never> {
 }
 
 export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
+	const t = useTranslations("Product.chatRooms");
+	const tValidation = useTranslations("SettingsUI.chatGaps");
+	const locale = useLocale();
 	const searchParams = useSearchParams();
 	const { state: sidebarState, toggleSidebar, isMobile } = useSidebar();
 	const sidebarCollapsed = sidebarState === "collapsed" && !isMobile;
@@ -258,25 +263,25 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				setLoadedHistoryModel(loadedHistory.complete ? requestedModel : null);
 				if (!loadedHistory.complete) {
 					setError(
-						"Some local chat history could not be loaded. Reload before editing or sending.",
+						t("newMainCopy.historyPartial"),
 					);
 				} else if (saveResults.some((result) => result.status === "rejected")) {
-					setError("A chat could not be saved locally.");
+					setError(t("newMainCopy.chatSaveFailed"));
 				}
 			})
 			.catch(() => {
 				if (!mounted) return;
 				setLoadedHistoryModel(null);
-				setError("Local chat history could not be loaded.");
+				setError(t("newMainCopy.historyFailed"));
 			});
 		return () => {
 			mounted = false;
 		};
-	}, [requestedModel]);
+	}, [requestedModel, t]);
 
 	function persistActiveConversation(id: string) {
 		if (!writeActiveDecisionConversationId(id)) {
-			setError("The active chat could not be saved locally.");
+			setError(t("newMainCopy.activeSaveFailed"));
 		}
 	}
 
@@ -298,7 +303,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		resetConversationView();
 		if (!historyLoaded) {
 			setError(
-				"Some local chat history could not be loaded. Reload before editing or sending.",
+				t("newMainCopy.historyPartial"),
 			);
 		}
 		persistActiveConversation(conversation.id);
@@ -308,7 +313,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		initialDraft = createDefaultDecisionDraft(),
 	) {
 		if (!historyLoaded) return;
-		const conversation = createDecisionConversation(model || DEFAULT_MODEL_ID);
+		const conversation = createDecisionConversation(model || DEFAULT_MODEL_ID, {title: t("newMainCopy.newChat")});
 		setConversations((previous) =>
 			sortDecisionConversations([conversation, ...previous]),
 		);
@@ -319,7 +324,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		try {
 			await upsertChat(conversation, "decisions");
 		} catch {
-			setError("The new chat could not be saved locally.");
+			setError(t("newMainCopy.newSaveFailed"));
 		}
 	}
 
@@ -345,7 +350,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			(run) => run.conversationId === conversation.id,
 		);
 		if (conversationRuns.some((run) => run.isPending)) {
-			setError("Wait for the decision to finish before deleting this chat.");
+			setError(t("newMainCopy.waitDelete"));
 			return false;
 		}
 		const deletionResults = await Promise.allSettled([
@@ -367,8 +372,8 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			);
 			setError(
 				restored
-					? "This chat could not be deleted locally; its saved history was restored."
-					: "This chat could not be deleted completely. Reload to reconcile its local history.",
+					? t("newMainCopy.deleteRestored")
+					: t("newMainCopy.deletePartial"),
 			);
 			return false;
 		}
@@ -419,7 +424,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 					),
 				),
 			);
-			setError("This chat could not be renamed locally.");
+			setError(t("newMainCopy.renameFailed"));
 			return false;
 		}
 	}
@@ -447,7 +452,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 					),
 				),
 			);
-			setError("This chat could not be updated locally.");
+			setError(t("newMainCopy.updateFailed"));
 		}
 	}
 
@@ -479,7 +484,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			});
 			return true;
 		} catch {
-			setError("These chat tags could not be saved locally.");
+			setError(t("newMainCopy.tagsFailed"));
 			return false;
 		}
 	}
@@ -488,12 +493,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		if (!historyLoaded || isSubmitting) return false;
 		setError(null);
 		if (modelSettings.selectedProfile?.enabled === false) {
-			setError("Enable this model in settings before sending a decision.");
+			setError(t("newMainCopy.enableModel"));
 			return false;
 		}
 		const draftError = validateDecisionDraft(draft);
 		if (draftError) {
-			setError(draftError);
+			setError(tValidation(DECISION_VALIDATION_COPY_KEYS[draftError as keyof typeof DECISION_VALIDATION_COPY_KEYS]));
 			return false;
 		}
 
@@ -503,7 +508,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const runId = `decision-${crypto.randomUUID()}`;
 		const runModel = model || DEFAULT_MODEL_ID;
 		const conversation =
-			activeConversation ?? createDecisionConversation(runModel);
+			activeConversation ?? createDecisionConversation(runModel, {title: t("newMainCopy.newChat")});
 		const conversationId = conversation.id;
 		const hasPreviousRuns = runs.some(
 			(run) => run.conversationId === conversationId,
@@ -528,7 +533,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		setActiveConversationId(conversationId);
 		persistActiveConversation(conversationId);
 		void upsertChat(updatedConversation, "decisions").catch(() => {
-			setError("This chat could not be saved locally.");
+			setError(t("newMainCopy.thisSaveFailed"));
 		});
 		const pendingRun: DecisionRun = {
 			id: runId,
@@ -598,7 +603,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				}),
 			});
 			const body = await response.text();
-			if (!response.ok) throw new Error(formatErrorBody(body, response.status));
+			if (!response.ok) throw new Error(formatErrorBody(body, t("newMainCopy.decisionStatusFailed", {status: response.status})));
 			const parsedResult = body ? JSON.parse(body) : null;
 			const completedRun: DecisionRun = {
 				...baseRun,
@@ -613,13 +618,13 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				),
 			);
 			await persistRun(completedRun).catch(() => {
-				setError("The decision completed, but it could not be saved locally.");
+				setError(t("newMainCopy.completedNotSaved"));
 			});
 		} catch (submissionError) {
 			const message =
 				submissionError instanceof Error
 					? submissionError.message
-					: "Decisions request failed.";
+					: t("newMainCopy.decisionFailed");
 			setError(message);
 			const failedRun: DecisionRun = {
 				...baseRun,
@@ -666,7 +671,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		const nextDraft = { ...cloneDraft(run.draft), prompt: nextPrompt };
 		const draftError = validateDecisionDraft(nextDraft);
 		if (draftError) {
-			setError(draftError);
+			setError(tValidation(DECISION_VALIDATION_COPY_KEYS[draftError as keyof typeof DECISION_VALIDATION_COPY_KEYS]));
 			return;
 		}
 		if (nextPrompt === run.input) {
@@ -709,7 +714,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				);
 			}, 1600);
 		} catch {
-			setError("Unable to copy the decision response.");
+			setError(t("newMainCopy.copyResponseFailed"));
 		}
 	}
 
@@ -723,7 +728,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				);
 			}, 1600);
 		} catch {
-			setError("Unable to copy the decision question.");
+			setError(t("newMainCopy.copyQuestionFailed"));
 		}
 	}
 
@@ -752,8 +757,8 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 							onClick={toggleSidebar}
 							aria-label={
 								sidebarState === "expanded"
-										? "Collapse sidebar"
-										: "Expand sidebar"
+										? t("newMainCopy.collapseSidebar")
+										: t("newMainCopy.expandSidebar")
 							}
 						>
 							{sidebarState === "expanded" ? (
@@ -782,12 +787,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 									size="icon"
 									onClick={startNewConversation}
 									disabled={!historyLoaded}
-									aria-label="New chat"
+									aria-label={t("newMainCopy.newChat")}
 								>
 									<SquarePen className="h-4 w-4" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>New chat</TooltipContent>
+							<TooltipContent>{t("newMainCopy.newChat")}</TooltipContent>
 						</Tooltip>
 						<Tooltip>
 							<TooltipTrigger asChild>
@@ -796,12 +801,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 									variant="ghost"
 									size="icon"
 									onClick={() => modelSettings.openModelSettingsForModel(model)}
-									aria-label="Open decision settings"
+									aria-label={t("newMainCopy.openSettings")}
 								>
 									<Settings className="h-5 w-5" />
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent>Settings</TooltipContent>
+							<TooltipContent>{t("newMainCopy.settings")}</TooltipContent>
 						</Tooltip>
 					</div>
 				</div>
@@ -811,20 +816,20 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				<div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeRuns.length === 0 ? (
 						<RoomEmptyState
-							title="Decisions"
-							description="Ask Jev to turn account state into a clear, typed decision."
+							title={t("newMainCopy.decisions")}
+							description={t("newMainCopy.decisionDescription")}
 							suggestions={[
 								{
-									label: "Check outreach readiness",
-									prompt: "Is this account ready for outreach?",
+									label: t("newMainCopy.outreachLabel"),
+									prompt: t("newMainCopy.outreachPrompt"),
 								},
 								{
-									label: "Find a collaboration signal",
-									prompt: "Does this account show a recent collaboration signal?",
+									label: t("newMainCopy.collaborationLabel"),
+									prompt: t("newMainCopy.collaborationPrompt"),
 								},
 								{
-									label: "Assess product adoption",
-									prompt: "How strong is this account's product adoption?",
+									label: t("newMainCopy.adoptionLabel"),
+									prompt: t("newMainCopy.adoptionPrompt"),
 								},
 							]}
 							onSelectPrompt={(prompt) =>
@@ -849,16 +854,17 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 									viewportRef={scrollViewportRef}
 									viewportRender={
 										<MessageScroller.Viewport
-											aria-label="Decision messages"
+											aria-label={t("newMainCopy.decisionMessages")}
 											role="region"
 										/>
 									}
 								>
 									<MessageScroller.Content className="space-y-8 pb-2">
 								{activeRuns.map((run) => {
-									const sentAtLabel = formatDecisionTime(run.createdAt);
+									const sentAtLabel = formatDecisionTime(run.createdAt, locale);
 									const responseSentAtLabel = formatDecisionTime(
 										run.completedAt ?? run.createdAt,
+										locale,
 									);
 									const responseMetadata = getDecisionResponseMetadata(run.result);
 									const modelLogoId = run.model.split("/")[0] || "phaseo";
@@ -899,12 +905,12 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 																	}}
 																	rows={3}
 																	className="min-h-[100px] resize-none"
-																	aria-label="Edit decision question"
+																	aria-label={t("newMainCopy.editQuestion")}
 																/>
 																<div className="flex items-center justify-end gap-2">
 																	<Button size="sm" variant="ghost" onClick={cancelEditingRun}>
 																		<X className="mr-1 h-4 w-4" />
-																		Cancel
+																		{t("newMainCopy.cancel")}
 																	</Button>
 																	<Button
 																		size="sm"
@@ -912,7 +918,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 																		disabled={!editingValue.trim() || isSubmitting}
 																	>
 																		<Save className="mr-1 h-4 w-4" />
-																		Save
+																		{t("newMainCopy.save")}
 																	</Button>
 																</div>
 															</div>
@@ -951,7 +957,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 													</MessageHeader>
 													{run.isPending ? (
 														<RoomWorkingIndicator
-															label="Evaluating decision…"
+															label={t("newMainCopy.evaluating")}
 															className="self-start justify-start py-1"
 														/>
 													) : run.error ? (
@@ -996,7 +1002,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 									</MessageScroller.Content>
 								</ScrollArea>
 								<MessageScroller.Button
-									aria-label="Scroll to latest decision"
+									aria-label={t("newMainCopy.scrollLatest")}
 									className="absolute bottom-4 left-1/2 z-20 inline-flex h-9 w-9 -translate-x-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[active=false]:pointer-events-none data-[active=false]:opacity-0"
 									direction="end"
 								>

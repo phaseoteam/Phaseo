@@ -1,0 +1,65 @@
+---
+icon: "circle-check"
+title: "Abbruchbedingungen"
+description: "Begrenze Agent-Arbeit nach Schritten, Tokens, Kosten, Dauer, Tool-Aufrufen oder Beendigungsgrund."
+---
+
+Verwende Abbruchbedingungen, um für jeden Agent ein klares Ausführungsbudget festzulegen. Geprüft wird anhand abgeschlossener Schritte und der kumulierten Nutzung.
+
+## Integrierte Limits kombinieren
+
+```typescript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+Die erste zutreffende Bedingung protokolliert ihren Grund und gibt einen Lauf mit `status: "stopped"` zurück.
+
+## Verfügbare Hilfsfunktionen
+
+| Hilfsfunktion | Abbruch, wenn … |
+| --- | --- |
+| `stepCountIs(limit)` | Die Anzahl abgeschlossener Schritte den Grenzwert erreicht |
+| `maxTokensUsed(limit)` | Die kumulierte Token-Nutzung den Grenzwert erreicht |
+| `maxCost(limit)` | Die gemeldeten kumulierten Kosten den Grenzwert erreichen |
+| `maxDuration(ms)` | Die Laufzeit die Dauergrenze erreicht |
+| `hasToolCall(name)` | Ein Schritt den angegebenen Tool-Aufruf enthält |
+| `finishReasonIs(reason)` | Ein Modellschritt den Beendigungsgrund meldet |
+
+## Benutzerdefinierte Bedingung hinzufügen
+
+Eine Bedingung kann `false`, `true` oder eine Zeichenfolge mit einem Grund zurückgeben:
+
+```typescript
+const stopAfterRepeatedFailures = ({ steps }) => {
+  const failures = steps.filter((step) => step.status === "failed").length;
+  return failures >= 2 ? "repeated_failures" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedFailures],
+});
+```
+
+Verwende bevorzugt eine Begründungszeichenfolge, wenn Operatoren oder Produktoberflächen erklären müssen, warum ein Lauf beendet wurde.
+
+## Zugehörige Anleitungen
+
+- [Dynamische Turns](./agent-sdk-dynamic-turns.mdx)
+- [Ausgaben und Wiederholungen](./agent-sdk-run-controls.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)

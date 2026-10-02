@@ -15,6 +15,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type Props = {
 	teamName: string;
@@ -32,8 +34,17 @@ const HOLD_TO_SIGN_MS = 1600;
 const SIGNATURE_PATH_LENGTH = 560;
 
 export default function EnterpriseBillingOnboardingClient(props: Props) {
+	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const router = useRouter();
-	const isEnterprise = props.teamTier.toLowerCase() === "enterprise";
+	const normalizedTeamTier = props.teamTier.trim().toLowerCase();
+	const isEnterprise = normalizedTeamTier === "enterprise";
+	const localizedTeamTier =
+		normalizedTeamTier === "enterprise"
+			? t("enterprise")
+			: normalizedTeamTier === "basic"
+				? t("basic")
+				: props.teamTier;
 	const isInvoiceActive = props.currentBillingMode === "invoice";
 	const [started, setStarted] = React.useState<boolean>(isInvoiceActive);
 	const [billingDay, setBillingDay] = React.useState<number>(
@@ -73,8 +84,8 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 	const safeSignerName = React.useMemo(() => {
 		const trimmed = String(props.signerName ?? "").trim();
 		if (trimmed.length >= 2) return trimmed;
-		return "Authorized Signer";
-	}, [props.signerName]);
+		return t("authorizedSigner");
+	}, [props.signerName, t]);
 
 	React.useEffect(() => {
 		return () => {
@@ -127,15 +138,15 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 
 	async function handleSave() {
 		if (!isEnterprise) {
-			toast.error("Invoiced billing is available for Enterprise teams only.");
+			toast.error(t("enterpriseOnly"));
 			return;
 		}
 		if (!started) {
-			toast.error("Start invoiced billing first.");
+			toast.error(t("startInvoiced"));
 			return;
 		}
 		if (!isInvoiceActive && !holdComplete) {
-			toast.error("Please press and hold to sign the invoiced billing terms.");
+			toast.error(t("pressHoldToSign", { percent: 0 }));
 			return;
 		}
 
@@ -149,9 +160,10 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 					signedByName: safeSignerName,
 				}),
 				{
-					loading: "Saving billing setup...",
-					success: "Billing setup saved",
-					error: (err: any) => err?.message ?? "Failed to save billing setup",
+					loading: t("savingBilling"),
+					success: t("billingSaved"),
+					error: (err: unknown) =>
+						localizedSettingsError(err, settingsT, "Action failed", t("billingSaveFailed")),
 				}
 			);
 			router.push("/settings/credits");
@@ -166,33 +178,30 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 			<div className="space-y-2">
 				<div className="inline-flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
 					<Building2 className="h-3.5 w-3.5" />
-					Invoiced Billing
+					{t("invoicedBilling")}
 				</div>
 				<h2 className="text-2xl font-semibold tracking-tight">
-					{isInvoiceActive ? "Invoiced billing is active" : "Start invoiced billing"}
+					{isInvoiceActive ? t("invoicedActive") : t("startInvoiced")}
 				</h2>
 				<p className="text-sm text-muted-foreground">
-					Configure post-usage billing for{" "}
-					<span className="font-medium text-foreground">{props.teamName}</span>.
+					{t("configurePostUsage", { team: props.teamName })}
 				</p>
 			</div>
 
 			{!isEnterprise ? (
 				<p className="text-sm text-muted-foreground">
-					This team is on the{" "}
-					<span className="font-medium text-foreground">{props.teamTier}</span>{" "}
-					tier. Invoiced billing is available on Enterprise.
+					{t("teamTierMessage", { tier: localizedTeamTier })}
 				</p>
 			) : null}
 
 			{isEnterprise && !started ? (
 				<div className="space-y-3">
 					<Button onClick={() => setStarted(true)}>
-						Start Invoiced Billing
+						{t("startInvoicedBilling")}
 						<ArrowRight className="ml-2 h-4 w-4" />
 					</Button>
 					<p className="text-xs text-muted-foreground">
-						Invoiced billing is permanent once enabled.
+						{t("invoicedPermanent")}
 					</p>
 				</div>
 			) : null}
@@ -201,18 +210,18 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 				<div className="space-y-6 border-t pt-6">
 					<div className="grid gap-4 md:grid-cols-2">
 						<div className="grid gap-2">
-							<Label htmlFor="billing-day">Billing day</Label>
+							<Label htmlFor="billing-day">{t("billingDay")}</Label>
 							<Select
 								value={String(billingDay)}
 								onValueChange={(v) => setBillingDay(Number(v))}
 							>
 								<SelectTrigger id="billing-day">
-									<SelectValue placeholder="Choose billing day" />
+									<SelectValue placeholder={t("chooseBillingDay")} />
 								</SelectTrigger>
 								<SelectContent>
 									{BILLING_DAYS.map((day) => (
 										<SelectItem key={day} value={String(day)}>
-											Day {day}
+										{t("day", { day })}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -220,18 +229,18 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 						</div>
 
 						<div className="grid gap-2">
-							<Label htmlFor="payment-terms">Payment terms</Label>
+							<Label htmlFor="payment-terms">{t("paymentTerms")}</Label>
 							<Select
 								value={String(paymentTermsDays)}
 								onValueChange={(v) => setPaymentTermsDays(v === "14" ? 14 : 30)}
 							>
 								<SelectTrigger id="payment-terms">
-									<SelectValue placeholder="Choose terms" />
+									<SelectValue placeholder={t("chooseTerms")} />
 								</SelectTrigger>
 								<SelectContent>
 									{PAYMENT_TERMS.map((days) => (
 										<SelectItem key={days} value={String(days)}>
-											Net {days}
+										{t("netDays", { days })}
 										</SelectItem>
 									))}
 								</SelectContent>
@@ -240,12 +249,12 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 					</div>
 
 					<div className="space-y-3 rounded-lg border bg-muted/25 p-4">
-						<p className="text-sm font-medium">By enabling invoiced billing, you agree:</p>
+						<p className="text-sm font-medium">{t("billingAgreement")}</p>
 						<ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
-							<li>Invoices are issued monthly based on gateway usage.</li>
-							<li>Payment is due under the selected Net terms.</li>
-							<li>Invoiced billing cannot be switched back to wallet mode.</li>
-							<li>Delinquent invoices may result in service restrictions.</li>
+							<li>{t("monthlyInvoices")}</li>
+							<li>{t("paymentDue")}</li>
+							<li>{t("cannotSwitchWallet")}</li>
+							<li>{t("delinquentRestrictions")}</li>
 						</ul>
 					</div>
 
@@ -253,17 +262,17 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 						<div className="space-y-3 rounded-lg border p-4">
 							<div className="flex items-center gap-2 text-sm font-medium">
 								<PenLine className="h-4 w-4" />
-								Signature
+								{t("signature")}
 							</div>
 							<p className="text-sm text-muted-foreground">
-								Signing as <span className="font-medium text-foreground">{safeSignerName}</span>
+								{t("signingAs", { name: safeSignerName })}
 							</p>
 
 							<div className="overflow-hidden rounded-md border bg-background">
 								<svg
 									viewBox="0 0 640 120"
 									role="img"
-									aria-label="Signature preview"
+									aria-label={t("signaturePreview")}
 									className="h-20 w-full"
 								>
 									<path
@@ -293,8 +302,8 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 								disabled={saving || holdComplete}
 							>
 								{holdComplete
-									? "Signature captured"
-									: `Press and hold to sign (${Math.round(holdProgressPct)}%)`}
+									? t("signatureCaptured")
+									: t("pressHoldToSign", { percent: Math.round(holdProgressPct) })}
 							</Button>
 						</div>
 					) : null}
@@ -302,15 +311,15 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 					<div className="flex items-center justify-between gap-3 border-t pt-4">
 						<p className="text-xs text-muted-foreground">
 							{isInvoiceActive
-								? "Update your billing day and payment terms at any time."
-								: "Enable invoiced billing once your signature is captured."}
+							? t("updateBilling")
+							: t("enableAfterSignature")}
 						</p>
 						<Button onClick={handleSave} disabled={saving || !canSave}>
 							{saving
-								? "Saving..."
+							? t("savingBilling")
 								: isInvoiceActive
-									? "Save invoice settings"
-									: "Enable invoiced billing"}
+									? t("saveInvoiceSettings")
+									: t("enableInvoicedBilling")}
 							<ArrowRight className="ml-2 h-4 w-4" />
 						</Button>
 					</div>

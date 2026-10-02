@@ -64,7 +64,7 @@ function mapBenchmark(result: ModelPage["benchmark_results"][number]) {
 			: null;
 	const benchmark: Benchmark = {
 		id: benchmarkId,
-		name: result.benchmark?.name ?? "Unknown Benchmark",
+		name: result.benchmark?.name ?? benchmarkId,
 		category: result.benchmark?.category ?? null,
 		order: benchmarkOrderFromAscending(ascendingOrder) ?? "higher",
 		type: normalizeBenchmarkScoreType(result.benchmark?.type),

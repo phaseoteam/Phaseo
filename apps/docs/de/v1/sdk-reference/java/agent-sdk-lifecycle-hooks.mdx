@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Reagiere auf Java-Ereignisse zu Läufen, Modellen, Schritten, Tools und Prüfpunkten."
+---
+
+Übergib in `RunOptions` einen Ereignis-Consumer, um einen Agenten mit einer Produkt-Zeitleiste, einem Audit-Log oder einer Telemetrie-Pipeline zu verbinden:
+
+```java
+event -> logger.info("{} {}", event.type(), event.runId())
+```
+
+Ereignisgruppen umfassen:
+
+- Start, Fortsetzung, Warten auf Menschen, Abschluss, Abbruch und Fehler eines Laufs
+- Start, Prüfpunkt, Abschluss, Abbruch und Fehler eines Schritts
+- Modellanfrage, Abschluss und Fehler
+- Start, vorläufiger Fortschritt, Abschluss und Fehler eines Tools
+
+Halte den Callback kurz. Stelle langsame Speicher- oder Netzwerkarbeit außerhalb der Laufzeitschleife in eine Warteschlange.
+
+## Weiterführende Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

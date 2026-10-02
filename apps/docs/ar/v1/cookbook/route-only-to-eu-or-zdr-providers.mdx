@@ -1,0 +1,126 @@
+---
+title: "التوجيه إلى مزودي الاتحاد الأوروبي أو المتوافقين مع ZDR فقط"
+icon: "globe"
+description: "طبّق متطلبات موقع البيانات والاحتفاظ الصفري بالبيانات على الطلب لتوجيهه إلى عروض المزودين المتوافقة فقط."
+---
+
+استخدم هذه الوصفة عندما يحتاج طلب واحد إلى تصفية المزودين لأسباب تتعلق بالامتثال أو بمعالجة البيانات، من دون تغيير سياسة مساحة العمل بأكملها.
+
+## الهدف
+
+- اشتراط تنفيذ الطلب في الاتحاد الأوروبي.
+- اشتراط وجود البيانات في الاتحاد الأوروبي.
+- اشتراط استخدام مزودين يدعمون الاحتفاظ الصفري بالبيانات.
+
+## 1. أضف متطلبات موقع البيانات إلى الطلب
+
+حدّد متطلبات المزود مباشرةً في نص الطلب.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+عوامل التصفية المدعومة على مستوى الطلب لهذا المسار:
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. استخدم أقل مجموعة من القواعد التي تحقق السياسة
+
+اشترط فقط ما يحتاجه عبء العمل فعلًا.
+
+أمثلة:
+
+- موقع التنفيذ فقط:
+  - `required_execution_region: "eu"`
+- موقع البيانات فقط:
+  - `required_data_region: "eu"`
+- مزودون يدعمون ZDR فقط:
+  - `require_zero_data_retention: true`
+
+## 3. توقّع تقلص مجموعة المزودين المرشحين
+
+تُطبّق عوامل التصفية هذه قبل ترتيب المزودين، لذلك قد تستبعد مزودين بالكامل.
+
+ويعني ذلك أن:
+
+- الطلب قد يُوجَّه إلى عرض إقليمي أعلى تكلفة
+- قائمة المزودين قد تصبح أقصر بكثير
+- الطلب قد يفشل إذا لم يستوفِ أي مزود لهذا النموذج المتطلبات
+
+## 4. افحص صفحة النموذج مسبقًا إن أمكن
+
+قبل نشر الطلب، راجع بطاقات المزودين في صفحة النموذج للتحقق من:
+
+- العروض الإقليمية مثل `OpenAI EU` أو `Google Vertex EU`
+- دعم ZDR
+- ملاحظات ومصادر سياسات بيانات المزودين
+
+يساعدك ذلك على التأكد من وجود مزود مؤهل واحد على الأقل قبل فرض المتطلب على حركة الإنتاج.
+
+## 5. استخدم إعدادات خصوصية مساحة العمل كقيم افتراضية
+
+إذا كان ينبغي تطبيق السياسة على جميع طلبات مساحة العمل، فاضبطها ضمن **الإعدادات -> الخصوصية** بدلًا من تكرار عوامل التصفية نفسها في كل طلب.
+
+استخدم حقول الطلب عندما تنطبق القاعدة على:
+
+- سير عمل محدد
+- عميل محدد
+- طلب محدد
+
+## أدلة ذات صلة
+
+- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
+- [الإعدادات المسبقة](../guides/presets.mdx)

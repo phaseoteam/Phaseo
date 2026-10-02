@@ -1,0 +1,87 @@
+---
+title: "Cursor"
+icon: "/icons/brands/cursor.svg"
+description: "Conecte o Cursor ao Phaseo usando a chave de API da OpenAI e a substituição da URL base."
+---
+
+Use este guia para rotear modelos de chat compatíveis do Cursor pelo Phaseo. Use a CLI Phaseo para criar e revogar uma chave dedicada e conclua no Cursor, ou forneça sua própria chave Phaseo e siga os mesmos ajustes manuais.
+
+## Configure com a CLI Phaseo
+
+```bash
+phaseo login
+phaseo cursor --model openai/gpt-5.6-terra
+```
+
+A configuração cria uma chave `Phaseo CLI: Cursor API Key` sem expiração e exibe as configurações abaixo. Ela não altera o armazenamento privado de credenciais do Cursor.
+
+## Configure o Cursor
+
+1. Abra **Cursor Settings**.
+2. Selecione **Models**.
+3. Encontre a seção **OpenAI API Key** e ative-a.
+4. Copie a chave dedicada:
+
+```bash
+phaseo integrations credential cursor
+```
+
+5. Cole a chave no campo de chave de API da OpenAI do Cursor.
+6. Ative **Override OpenAI Base URL**.
+7. Informe `https://api.phaseo.app/v1` sem barra no final.
+8. Adicione ou ative o modelo do Phaseo que deseja usar.
+
+| Campo do Cursor | Valor |
+| --- | --- |
+| OpenAI API Key | Saída de `phaseo integrations credential cursor` |
+| Override OpenAI Base URL | `https://api.phaseo.app/v1` |
+| Model | Um ID de modelo do Phaseo compatível com o campo do Cursor |
+
+Os controles atuais de provedores personalizados do Cursor são globais, não específicos de cada provedor. O nome do modelo é encaminhado ao endpoint configurado, enquanto a chave de API e a URL base ativas determinam o destino da solicitação.
+
+<Warning>
+Atualmente, o Cursor aplica amplamente a substituição da URL base da OpenAI. Desative-a antes de voltar aos modelos hospedados pelo Cursor se eles falharem enquanto o Phaseo estiver ativado. O Cursor também pode rejeitar IDs personalizados que coincidam com nomes de modelos integrados ou não se encaixem no roteamento da família OpenAI.
+</Warning>
+
+## Verificar
+
+1. Mantenha a chave do Phaseo e a substituição da URL base ativadas.
+2. Selecione o modelo configurado no seletor de modelos do Cursor.
+3. Inicie um novo chat e peça uma resposta `PHASEO_CURSOR_OK`.
+4. Confirme que a solicitação aparece na atividade ou nos logs do Phaseo.
+
+O fluxo padrão de chat do Cursor é o alvo de compatibilidade relevante. Recursos que usam modelos especializados do Cursor, como conclusão por tabulação, podem continuar usando a infraestrutura própria do Cursor.
+
+## Remover
+
+Primeiro, desative a chave de API da OpenAI e a substituição da URL base em **Cursor Settings → Models**. Em seguida, revogue a chave dedicada do Phaseo:
+
+```bash
+phaseo integrations remove cursor
+```
+
+A remoção não pode limpar automaticamente o armazenamento seguro de credenciais do Cursor. Se a chave continuar configurada, exclua-a nas configurações de Models do Cursor.
+
+## Solução de problemas
+
+### Modelos hospedados pelo Cursor param de funcionar
+
+Desative **Override OpenAI Base URL** antes de selecionar um modelo hospedado pelo Cursor. Atualmente, o Cursor não isola uma URL base personalizada por modelo.
+
+### O modelo é rejeitado
+
+Tente um modelo do Phaseo que o Cursor aceite como modelo personalizado da família OpenAI. O Cursor pode rejeitar IDs que coincidam com o catálogo integrado, e algumas versões talvez não aceitem IDs com prefixo de provedor.
+
+### O botão Verify não aparece
+
+Algumas versões do Cursor salvam a chave sem uma ação Verify separada. Informe a chave e a URL base e teste-as em um novo chat.
+
+### A autenticação falha
+
+Execute `phaseo integrations credential cursor` novamente, substitua o valor salvo no Cursor e verifique se a URL base é exatamente `https://api.phaseo.app/v1`.
+
+## Relacionados
+
+- [Documentação da chave de API do Cursor](https://docs.cursor.com/settings/api-keys)
+- [Agentes de programação](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,10 @@
+---
+title: "Lister les clés de gestion"
+sidebarTitle: "Lister les clés de gestion"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "Liste les métadonnées des clés de gestion de l’espace de travail authentifié."
+---
+<Note>Ce point de terminaison nécessite une identité de propriétaire ou d’administrateur et `management_keys:read`.</Note>
+
+Les valeurs brutes des clés ne sont jamais incluses. Utilisez `limit` et `offset` pour paginer les résultats.

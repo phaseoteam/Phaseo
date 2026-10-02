@@ -1,0 +1,27 @@
+---
+icon: "shield-check"
+title: "Moderation"
+description: "Rufe /moderations mit dem Ruby-SDK auf."
+---
+
+**Methodeen**: `client.generate_moderation(...)`, `client.create_moderation(...)`.
+
+### Beispiel
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+moderation = client.create_moderation(
+  "model" => "openai/omni-moderation-latest",
+  "input" => "Text to classify"
+)
+```
+
+### Wichtige Parameter
+- `model` erforderlich: ID des Moderationmodells (z. B. `openai/omni-moderation-latest`).
+- `input` erforderlich: Zeichenfolge oder Array mit Inhaltselementen (Text oder image_url).
+- Optional: Filter für `categories`/`severity` (sofern unterstützt), `user`-Tag.
+
+### Rückgabe
+`ModerationResponse`

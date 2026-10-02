@@ -1,0 +1,67 @@
+---
+title: "Replit"
+icon: "box"
+description: "ReplitのアプリやデプロイからPhaseoを呼び出します。"
+---
+
+ReplitからPhaseoを使うには、公式OpenAI SDKまたはAI SDK向けのPhaseo公式プロバイダーを使います。APIキーはソースコードではなくReplit Secretsに保存します。
+
+## シークレットを追加する
+
+Replitのワークスペースで **Tools → Secrets** を開き、次を追加します。
+
+```text
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+シークレットはアプリケーションから環境変数として利用できます。
+
+## OpenAI SDKを使うTypeScript
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Reply with only: ok",
+});
+
+console.log(response.output_text);
+```
+
+## AI SDKを使うTypeScript
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const { text } = await generateText({
+	model: phaseo("openai/gpt-5-nano"),
+	prompt: "Reply with only: ok",
+});
+
+console.log(text);
+```
+
+## デプロイ
+
+開発ワークスペースに加えて、デプロイのシークレットにも`PHASEO_API_KEY`を追加します。環境変数やリクエストヘッダーがデプロイのログに出力されないことを確認してください。
+
+## 関連項目
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [認証](../../developers/authentication.mdx)

@@ -1,0 +1,63 @@
+---
+title: "列出模型端点能力"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
+description: "查看某个模型可用的供应商路由、模态、参数、可用性和价格。"
+---
+
+如果应用需要确认某个模型、供应商、端点和参数组合是否可用，请在发送请求前使用此端点。
+
+对于 `openai/gpt-5.4-mini`，请使用：
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+每一行代表一项供应商和端点能力，包括：
+
+- 规范能力 ID 和公共 API 路径
+- 供应商 ID、名称及供应商模型 slug
+- 输入和输出模态
+- 受支持的参数名称及结构化参数详情
+- 供应商、模型、能力、路由和可用性状态
+- 路由已计划或有时间限制时的生效日期
+- 端点定价摘要
+
+## 包含计划中和未启用的路由
+
+默认值 `availability=active` 仅返回可公开路由的条目。使用 `availability=all` 可查看即将推出和未启用的路由：
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+除非 `availability_status` 为 `active` 且 `is_active_gateway` 为 `true`，否则不要将生产流量路由到该条目。
+
+## 筛选路由
+
+以下筛选条件可重复指定，也可使用逗号分隔：
+
+- `provider`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+- `provider_availability_status`
+- `provider_availability_reason`
+- `status`
+- `supported_parameters`
+
+例如，以下请求会返回支持 `temperature` 的 OpenAI 路由：
+
+```bash
+curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+## 相关端点
+
+- [列出模型](./models.mdx)
+- [列出端点](./endpoints.mdx)
+

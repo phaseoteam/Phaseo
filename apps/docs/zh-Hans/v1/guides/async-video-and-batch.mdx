@@ -1,0 +1,138 @@
+---
+icon: "clapperboard"
+title: "视频和批处理任务"
+badge: "Beta"
+description: "跟踪异步任务、接收 Webhook，并传递提供商专用的视频选项。"
+---
+
+<Note>
+Video API 和 Batch API 是仅限受邀工作区使用的测试预览版。请在**设置 → 功能预览**中检查可用性。访问权限按工作区管理；启用个人网页偏好设置不会授予 API 访问权限。仍按正常的模型使用费率收费。
+</Note>
+
+视频生成和批处理会在工作完成前返回任务。保存其 `id`，并使用返回的 `polling_url` 恢复最新状态。创建响应成功并不意味着生成或批处理已经完成。
+
+测试期间，请从小规模请求开始，并为 API 密钥设置支出上限。提供商和模型的能力不同；参考输入、取消和输出保留时间取决于所选提供商。请在已完成输出过期前保存自己的副本。
+
+## 接收更新
+
+创建任意一种任务时，附加属于你工作区的 Webhook 端点：
+
+```json
+{
+  "webhook": {
+    "endpoint_id": "YOUR_ENDPOINT_ID",
+    "events": ["job.status_changed", "job.completed", "job.failed", "job.cancelled", "job.expired"]
+  }
+}
+```
+
+Phaseo 会核对提供商状态并向客户发送通知。需要轮询的提供商，包括 Anthropic 消息批次，也能生成客户 Webhook。Webhook 投递失败与生成或批处理失败相互独立。
+
+端点订阅可以分别针对批处理和视频事件。使用 `batch.completed` 或 `video.failed` 等带命名空间的事件类型；通用 `job.*` 事件类型仍受支持，会订阅两种任务中对应阶段的事件。
+
+使用端点密钥验证 `x-phaseo-signature`：签名是将 `x-phaseo-timestamp`、字面句点和**未经修改的请求正文**串联后计算的十六进制 HMAC-SHA256。检查时间戳是否足够新，按 `x-phaseo-event-id` 去重，并用成功的 HTTP 响应确认已接受的投递。投递可能重试或乱序到达；应用冲突的状态变更之前，先获取任务。
+
+保存端点后，使用设置中的**发送测试事件**投递带签名的 `webhook.test` 负载。测试投递仅尝试一次，不会重试，也不会加入任务投递历史。
+
+将 `completed`、`failed`、`cancelled` 和 `expired` 生命周期状态视为终态。即使使用 Webhook，也要保留通过轮询恢复的途径。
+
+对每个事件，Phaseo 先进行一次投递尝试。成功的 2xx 响应会结束投递，无需重试。失败投递最多重试三次，分别安排在 1、5 和 15 分钟后。后台定期扫描会处理符合条件的重试，因此实际投递可能晚于计划时间。每次尝试都会记录次数、时间、HTTP 状态、错误和下次重试时间。第四次尝试仍失败后，投递会被标记为永久失败。接收方仍须对事件去重：确认响应丢失或 Worker 中断可能使投递结果不确定。
+
+## 查看任务和请求日志
+
+在**设置 → 使用量 → 日志**中，**请求**用于查看推理请求详情，**视频**用于查看视频生命周期，**批处理**用于查看批处理任务及逐行结果。视频和批处理详情视图包含计费状态、提供商尝试和 Webhook 尝试。任务可以成功完成，而 Webhook 投递失败。
+
+提交视频时会在联系提供商之前预留额度。若超时且没有任务 ID，预留额度会保留以供核对；这不证明生成失败。如果付费视频或批处理的预留在工作成功后意外计价为零，计费会保持未完成，并标记 `unexpected_zero_cost` 以便调查。创建响应本身显示零成本，在异步生成中是正常现象。
+
+## 视频输入
+
+### 理解视频定价
+
+视频价格取决于提供商和模型。每秒价格必须乘以计费时长；每片段价格仅适用于其指定时长和分辨率。多个输出和收费的参考输入可能增加总费用。
+
+LTX 文本/图像生成按输出秒数计费，音频转视频按输入音频秒数计费。BytePlus Seedance 使用视频令牌，有参考视频时费率不同。MiniMax Hailuo V1 使用固定时长片段价格；H3 按秒计费，也可能对参考输入收费。请检查所选提供商的计价维度，不要将醒目显示的单价理解为整个请求的费用。
+
+预留金额是在提交前冻结的估算值。最终计费按任务的可计费使用量结算；未使用的预留额度在核对后释放。提供商支持某分辨率或选项，并不保证测试版中可用。
+
+使用 `seconds` 或 `duration` 指定输出时长。若两者都有，必须一致。使用 `resolution` 配合 `aspect_ratio`，或使用像素 `size`，例如 `1280x720`。
+
+使用 `frame_images` 显式指定首帧和尾帧：
+
+```json
+{
+  "frame_images": [
+    {
+      "type": "image_url",
+      "frame_type": "first_frame",
+      "image_url": { "url": "https://example.com/start.png" }
+    }
+  ],
+  "input_references": [
+    {
+      "type": "image_url",
+      "role": "reference",
+      "image_url": { "url": "https://example.com/character.png" }
+    }
+  ]
+}
+```
+
+参考 URL 必须使用 HTTPS。仅用作参考的图像必须显式指定 `role: "reference"`：没有 `frame_images` 的旧请求会将第一张无标签图像解释为首帧。不要将 `frame_images` 与 `input_references` 中的首帧/尾帧角色或 `input_reference` 混用。
+
+视频和音频参考使用 `type: "video_url"` 或 `"audio_url"`，以及 `media_url: { "url": "https://..." }`。不同模型和提供商支持不同组合。参考时长影响价格时，请以秒为单位提供 `input_video_duration` 和 `input_audio_duration`。
+
+## 提供商选项
+
+将模型、时长、分辨率、音频生成、输入媒体和输出数量保留在标准字段中。将提供商专用扩展放在标准提供商 ID 下：
+
+```json
+{
+  "provider_options": {
+    "atlascloud": { "watermark": false, "output_format": "mp4" },
+    "byteplus": { "camera_fixed": true }
+  }
+}
+```
+
+仅转发所选提供商的选项。选项不会选择提供商；请使用 `provider` 路由配置。不要将 `provider_options` 与旧的 `provider_params` 混用。嵌套选项不能覆盖由网关控制的计费或回调字段。
+
+| 提供商 | 原生扩展示例 | 参考 |
+| --- | --- | --- |
+| AtlasCloud Seedance 2.5 | `watermark`, `output_format`, `return_last_frame`, `omni_reference_task_type` | [模型 API](https://www.atlascloud.ai/models/bytedance/seedance-2.5/reference-to-video) |
+| Novita Seedance 1.5 | `watermark`, `camera_fixed`, `fps` (24), `service_tier` (`default`) | [统一视频 API](https://docs.novita.ai/api-reference/reference-unified-video-generation) |
+| BytePlus Seedance | `camera_fixed` | 使用前请检查所选模型的提供商规范。 |
+| MiniMax V1 | `fast_pretreatment`；提示词优化请使用标准的 `enhance_prompt` | [视频 API](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
+
+AtlasCloud Seedance 使用原生 `resolution`、`ratio` 和 `last_image` 字段。其参考转视频版本接收按顺序排列的图像、视频和音频参考。网关的固定时长预留规则不支持自动时长编辑（`duration: -1`）。模型可路由之前，必须配置提供商模型的可用性和价格；提供商选项不会启用不可用的模型。
+
+MiniMax H3 使用 V2：在 `768P` 或 `2K` 下支持 4–15 整秒。H3 Max 在 `480P` 或 `768P` 下支持 5–15 整秒，可使用文本或帧图像。H3 支持图像、视频和音频参考；参考不能与首帧/尾帧混用。两种模型每个请求都生成一个视频，且不支持 V1 提示词优化选项。使用标准的 `aspect_ratio`；帧输入会决定自身比例。参考视频预留覆盖提供商的 15 秒输入上限，实际用量在完成时结算。参阅 [MiniMax V2 规范](https://platform.minimax.io/docs/api-reference/video-generation-v2-create)。
+
+## 批处理提供商
+
+批处理请求也接受 `provider_options`：OpenAI 支持 `output_expires_after`，Mistral 支持 `metadata`。使用标准提供商 ID，不要在顶层重复这些字段。例如，`provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` 设置 OpenAI 输出保留时间。选项无法覆盖行输入、模型、端点和 Webhook 目标。
+
+Mistral 已有原生批处理适配器。Anthropic 消息批次通过轮询查询；其他提供商可能结合轮询和原生完成通知。可用性取决于提供商支持的端点和部署的批处理允许列表。提交文件或内联请求之前，检查批处理能力响应。
+
+完成的批次可能包含失败行。请按自定义 ID 检查每个结果，不要假设每行都成功。保留原始输入和任务 ID，直到结果与计费核对完成。提交结果不确定时，应先调查再重新提交，因为提供商可能已接受原始请求。
+
+### 下载批处理结果
+
+受支持的批次进入终态后，其 `results_url` 指向经过身份验证的 Phaseo 下载。请使用批次所属工作区的常规 Phaseo API 密钥：
+
+```bash
+curl --fail "https://api.phaseo.app/v1/batches/$BATCH_ID/results" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  --output results.jsonl
+```
+
+所有受支持的批处理提供商都通过同一个端点流式返回 JSONL。Phaseo 会合并分开的成功与错误文件，将内联结果数组转成 JSONL，并遍历结果分页。生成内容和逐请求错误都会保留。行字段保持提供商原生格式：OpenAI 兼容行和 Anthropic 行使用 `custom_id`，Gemini 使用请求元数据，xAI 使用 `batch_request_id`。Anthropic 成功行在 `result.message` 中包含生成的消息。
+
+下载支持 OpenAI、Anthropic、Google AI Studio、Mistral、Together、Groq、Alibaba Cloud、Moonshot、Parasail、OVHcloud 和 xAI 适配器。提供商可用性仍取决于预览访问和提交允许列表；支持下载不会启用其他路由。现有 `output_file_id`、`error_file_id` 和文件内容端点仍可使用。批处理请求行端点包含跟踪和计费元数据，不包含生成的消息正文。
+
+下载结果不会提交另一个批次，也不会增加推理费用。无需提供商凭据。Webhook 用于通知任务更新；结果须单独下载。终态任务可能只有部分结果，或没有任何输出：处理期间端点返回 `409`，无可用输出时返回 `404`。请在提供商保留期限结束前保存结果。若下载中断，丢弃部分文件并重试下载，而不是重新提交批次。内联 JSON 结果流式传输时有每行 8 MiB 的安全上限；原生 JSONL 文件流式传输没有该行上限。
+
+对于大输出，TypeScript 的 `client.batches.streamResults(batchId, { signal })` 无缓冲地返回 `ReadableStream<Uint8Array>`。将其导向目标位置，提前停止时取消流或中止信号；下载总时长没有固定超时。Python 的 `client.batches.stream_results(batch_id)` 按配置的 HTTP 超时产出字节块，提前停止时请关闭迭代器。生成的 `retrieveBatchResults` 操作返回完整 JSONL 文本，适合小输出。
+
+### 批处理下载限制
+
+批处理结果下载在滚动的 30 分钟窗口内，允许每个工作区每个批次尝试 10 次，所有 API 密钥以及 `/batches` 和 `/batch` 别名共享此限制。只要尝试进入下载准入阶段，即使上游下载失败或被取消也会计数。所有权或就绪状态检查失败不计数。`429` 响应包含以秒为单位的 `Retry-After`。限流器不可用时，下载返回 `503` 和 `Retry-After: 30`。

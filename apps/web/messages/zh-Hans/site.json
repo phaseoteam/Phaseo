@@ -1,0 +1,2717 @@
+{
+	"home": {
+		"title": "Phaseo：让 AI 更实惠的开放网关",
+		"description": "发现模型，在提供商之间路由请求，使用开源 AI 网关，让推理保持易于使用、可迁移且透明。",
+		"heroTitle": "AI 推理应当开放、实惠，并由你自由选择。",
+		"heroDescription": "Phaseo 正在构建开源且独立于提供商的 AI 网关。发现模型，在提供商之间路由请求，并保持集成的可迁移性，同时通过更好的合作关系降低推理成本。",
+		"explore": "探索",
+		"models": "模型",
+		"getApiKey": "获取 API 密钥",
+		"viewGithub": "查看 GitHub",
+		"openModelDatabase": "开放模型数据库，统一网关",
+		"openModelDatabaseDescription": "探索更广泛的模型目录，然后在上线前筛选出具有活跃 Gateway 路由的模型。",
+		"transparentPricing": "今天价格透明，明天额外成本更低。",
+		"viewPricing": "查看定价",
+		"usePricingCalculator": "使用定价计算器",
+		"latestModels": "最新模型",
+		"statistics": {
+			"catalogModels": "目录模型",
+			"routableModels": "可路由模型",
+			"catalogProviders": "目录提供商",
+			"monthlyTokensRouted": "本月已路由 Token"
+		},
+		"noModelUpdates": "暂无模型更新，请稍后再来查看。",
+		"gatewaySection": {
+			"title": "一个 API，连接团队真正使用的模型。",
+			"description": "通过一个网关转发生产流量，保留 OpenAI 风格 SDK 的使用体验，并在主流模型系列之间切换，无需每个迭代周期都重写应用。",
+			"singleApiTitle": "统一 API 接口",
+			"singleApiBody": "使用兼容 OpenAI 的请求访问 GPT、Claude、Gemini、DeepSeek 以及目录中的其他模型。",
+			"modelDatabaseTitle": "内置模型数据库",
+			"modelDatabaseBody": "上线变更前，可先比较模型、发布记录、价格和供应商覆盖情况。",
+			"reliableTitle": "默认可靠",
+			"reliableBody": "路由、故障转移、遥测和策略控制都集成在应用已调用的同一网关中。",
+			"searchModels": "搜索网关模型…",
+			"noModelsFound": "未找到模型。",
+			"startBuilding": "开始构建",
+			"readQuickstart": "阅读快速入门"
+		},
+		"familyForecast": {
+			"title": "即将发布的模型系列",
+			"description": "根据每个系列最近四次发布计算的间隔中位数",
+			"family": "系列",
+			"medianGap": "间隔中位数",
+			"lastRelease": "最近发布",
+			"predictedNext": "预计下次发布",
+			"daysUnit": "天",
+			"predictionNotice": "监测程序记录到模型系列的新版本后，预测结果会自动更新。"
+		},
+		"trends": {
+			"eyebrow": "信号概览",
+			"title": "趋势与实时分析",
+			"description": "基于模型和基准数据库得出的宏观信号（显示示例数据）。新事件出现时会持续更新。"
+		},
+		"pricingPoints": {
+			"payAsYouGo": "按使用量付费",
+			"payAsYouGoBody": "模型使用无需合同、订阅或最低消费。",
+			"creditFee": "购买额度收取 {fee}% 手续费",
+			"creditFeeBody": "购买额度时收取，最低 1 美元。用量按目录中显示的模型价格计算。",
+			"managedCredits": "托管额度或 BYOK",
+			"managedCreditsBody": "BYOK 每月包含一百万次免手续费请求，之后按提供商等价成本收取 2.5% 的服务费。",
+			"selfServeEnterprise": "自助式 Enterprise",
+			"selfServeEnterpriseBody": "可选的工作区月度套餐，提供 SSO、SCIM、治理和优先支持。"
+		},
+		"reliability": {
+			"title": "为生产环境打造的 AI 可靠性。",
+			"description": "通过一个网关层，在服务商变化、性能下降和持续迭代时保持模型访问稳定。",
+			"smartRoutingTitle": "智能路由",
+			"smartRoutingBody": "根据延迟、价格、地区或自定义策略进行路由，无需应用团队了解每家服务商的特殊情况。",
+			"failoverTitle": "基于健康状态的故障转移",
+			"failoverBody": "当服务商变慢、错误激增或模型发布导致不稳定时，自动转移流量。",
+			"migrationsTitle": "可预测的迁移",
+			"migrationsBody": "在用于路由决策的同一平台中跟踪模型发布、弃用和替代方案。",
+			"controlsTitle": "面向生产团队的控制",
+			"controlsBody": "在网关中整合权限范围、密钥、策略和审计能力，让可靠性不再依赖口口相传的经验。"
+		},
+		"observability": {
+			"title": "需要时，随时掌握情况。",
+			"description": "大多数服务商的不稳定应由路由和故障转移吸收。遇到仍需处理的问题时，网关为团队提供统一的位置来检查变更。",
+			"dashboard": "查看网关控制台",
+			"traceTitle": "追踪问题",
+			"traceBody": "查看哪个模型、服务商、密钥和应用导致了故障或速度变慢。",
+			"routingTitle": "检查路由",
+			"routingBody": "了解服务商健康状况变化时网关如何重新路由流量。",
+			"regressionsTitle": "及早发现回归",
+			"regressionsBody": "在模型和服务商的变化演变为用户可见的事故前进行比较。"
+		},
+		"transparentPricingDescription": "使用费用遵循目录中的模型价格。当前的积分购买手续费公开显示；当提供商合作和运营效率使其可持续时，我们的使命是降低可避免的平台成本。",
+		"missionLink": "了解我们的发展方向",
+		"missionProofs": {
+			"openSource": "开源",
+			"openSourceBody": "查看、扩展并改进网关。",
+			"providerNeutral": "独立于提供商",
+			"providerNeutralBody": "选择适合你工作的提供商。",
+			"lowerOverhead": "更低的额外成本",
+			"lowerOverheadBody": "通过效率和合作降低可避免的成本。"
+		}
+	},
+	"about": {
+		"badge": "公司",
+		"title": "一个统一、开放的层，让你跨提供商访问模型并可靠地上线。",
+		"intro": "Phaseo 以实用的开放性为核心：广泛的模型与提供商访问、明确的发布、弃用和退役跟踪，以及清晰的可观测性，让团队能够以更少的意外运行生产工作负载。",
+		"exploreModels": "探索模型",
+		"pricing": "Phaseo 定价",
+		"documentation": "文档",
+		"howItWorks": "工作原理",
+		"howItWorksTitle": "从探索到生产运营的清晰路径。",
+		"howItWorksDescription": "研究模型，通过一个 API 层执行请求，持续了解生命周期变化，并长期监控行为。",
+		"whatWeBuild": "我们构建什么",
+		"whatWeBuildTitle": "随着 AI 变化依然有用的持久产品界面。",
+		"whatWeBuildDescription": "我们的目标很简单：保持访问广泛、接口稳定、运营易于理解。",
+		"open": "打开",
+		"step": "第 {number} 步",
+		"metadataTitle": "关于 Phaseo",
+		"metadataDescription": "了解 Phaseo 的功能、网关与模型目录如何协同工作，以及在哪里查看动态、价格和平台政策。",
+		"metadataKeywords": [
+			"Phaseo",
+			"关于",
+			"AI 网关",
+			"模型目录",
+			"价格"
+		],
+		"heroTags": [
+			"AI 模型",
+			"网关",
+			"可观测性"
+		],
+		"openItem": "打开{title}",
+		"platformFlow": [
+			{
+				"title": "统一访问模型",
+				"description": "在一个界面中浏览和比较不同提供商的模型能力与价格。",
+				"points": [
+					"从一个地方访问尽可能多的模型和提供商。",
+					"以一致的结构比较能力、基准测试和成本。"
+				]
+			},
+			{
+				"title": "通过网关执行",
+				"description": "通过兼容 OpenAI 的 API 层，将请求路由到不同提供商。",
+				"points": [
+					"即使提供商的产品不断变化，也能保持集成代码稳定。",
+					"无需绑定单一提供商，即可应用实用的路由和控制策略。"
+				]
+			},
+			{
+				"title": "发布动态",
+				"description": "及时了解新模型发布、弃用和停止服务的信息。",
+				"points": [
+					"无需手动监控即可跟踪发布事件。",
+					"查看发生了哪些变化、哪些即将停止，以及可以迁移到哪里。"
+				]
+			},
+			{
+				"title": "请求可观测性",
+				"description": "清晰了解请求行为、可靠性和提供商性能。",
+				"points": [
+					"查看用量、错误、延迟，以及模型和提供商分布。",
+					"审计长期行为并尽早发现偏差。"
+				]
+			}
+		],
+		"offerings": [
+			{
+				"title": "模型目录",
+				"description": "包含基准测试、价格和提供商覆盖范围的模型数据，帮助你做出决策。",
+				"badges": [
+					"覆盖范围",
+					"基准测试",
+					"价格"
+				]
+			},
+			{
+				"title": "网关",
+				"description": "兼容 OpenAI 的 API，可通过多个提供商执行请求。",
+				"badges": [
+					"兼容性",
+					"路由",
+					"控制"
+				]
+			},
+			{
+				"title": "发布动态",
+				"description": "在一个信息流中跟踪新模型发布、弃用和停止服务。",
+				"badges": [
+					"发布",
+					"弃用",
+					"停止服务"
+				]
+			},
+			{
+				"title": "网关可观测性",
+				"description": "清晰了解请求、延迟、错误和行为变化。",
+				"badges": [
+					"用量",
+					"可靠性",
+					"可审计性"
+				]
+			}
+		],
+		"pricingSection": {
+			"eyebrow": "价格",
+			"title": "平台价格与模型价格分开显示。",
+			"description": "平台和服务价格请查看 Phaseo 价格页面；模型级成本可使用价格计算器估算。",
+			"platformDescription": "查看平台价格详情，包括购买额度的费率档位和计费范围。",
+			"modelToolsTitle": "模型价格工具",
+			"modelToolsDescription": "使用模型价格参考和成本估算工具规划不同场景。",
+			"calculator": "价格计算器"
+		},
+		"company": {
+			"sectionLabel": "公司",
+			"title": "默认开放、行为明确、运营清晰。",
+			"description": "我们重视透明的覆盖范围和公开文档，而不是模糊的承诺。兼容性、生命周期更新和可观测性都是重点。",
+			"openTitle": "默认开放",
+			"openDescription": "提供广泛而实用的访问、一致的命名和清晰的文档。",
+			"lifecycleTitle": "清晰的生命周期信号",
+			"lifecycleDescription": "跟踪新发布、弃用和停止服务，让迁移安排更加可预期。",
+			"operationsTitle": "运营清晰",
+			"operationsDescription": "请求级可观测性让生产环境中的审计和调试更加容易。",
+			"resourcesTitle": "信息查找",
+			"resourcesDescription": "公司、产品和政策相关信息集中在一处。"
+		},
+		"resources": {
+			"announcements": "公告",
+			"modelUpdates": "模型更新",
+			"gatewayUsage": "网关用量",
+			"mission": "我们的使命",
+			"roadmap": "路线图",
+			"contact": "联系我们",
+			"terms": "条款",
+			"privacy": "隐私"
+		},
+		"current": {
+			"beliefs": {
+				"openSource": {
+					"title": "开源建立信任",
+					"body": "依赖网关的人应能检查并改进网关、其行为和标准。"
+				},
+				"fees": {
+					"title": "目标是消除额外平台费用",
+					"body": "长期目标是消除可避免的平台成本，让人们为推理付费，而非承担永久的网关附加费。任何承诺都必须以可持续的经济模式为基础。"
+				},
+				"access": {
+					"title": "访问应广泛开放",
+					"body": "无论由哪家提供商运营，人们都应能发现并使用最佳的可用模型。"
+				},
+				"choice": {
+					"title": "选择应真实可行",
+					"body": "稳定、开放的接口应让人们无需重建一切就能更换模型或提供商。"
+				},
+				"transparency": {
+					"title": "透明胜于锁定",
+					"body": "公开的模型数据、清晰的价格、生命周期信息和可观察的请求，比不透明的便利更好。"
+				},
+				"revenue": {
+					"title": "收入应服务于访问",
+					"body": "可靠的基础设施需要可持续收入，但收入是保持服务有用的手段，而不是服务存在的理由。"
+				}
+			},
+			"forYou": {
+				"title": "为你而建。",
+				"body": "Phaseo 为你而建：让你自由选择合适的模型，清楚理解取舍，并相信网关会以你的利益为重。我们希望成为你使用过的最诚实、透明的 AI 网关，由所服务的社区塑造，并向依赖它的人负责。"
+			},
+			"audiences": {
+				"people": {
+					"title": "面向用户",
+					"body": "提供更多发现实用模型、理解取舍和使用 AI 的方式，无需永久依赖单一中间平台。"
+				},
+				"developers": {
+					"title": "面向开发者",
+					"body": "可迁移的集成方式、可靠的路由，以及足以理解请求处理过程的可见性。"
+				},
+				"providers": {
+					"title": "面向提供商",
+					"body": "开放的分发层，带来匹配的需求、有用的反馈，并让提供商直接参与决定模型如何呈现和使用。"
+				}
+			},
+			"hero": {
+				"title": "AI 应造福所有人。",
+				"body": "我创立 Phaseo，是为了让这一原则落地：构建开源、提供商中立的网关，让人们尽可能多地发现和使用模型，而不被单一提供商锁定。"
+			},
+			"missionLink": "阅读我们的使命",
+			"catalogLink": "浏览模型目录",
+			"who": {
+				"title": "Phaseo 是谁。",
+				"intro": "一个独立项目，基于简单的理念：获取智能应扩大人们的选择，而非限制选择。",
+				"project": "Phaseo 是我正在建设的公司和开源项目，旨在将模型发现、推理和真实的运维信息汇集于一处。",
+				"goal": "目标不是成为另一个永久的把关者，而是让用户与模型提供商之间的这一层更实用、更易迁移，也更容易接受质疑。"
+			},
+			"beliefsTitle": "我们的立场。",
+			"beliefsIntro": "这些选择支撑着产品、业务和我们希望建立的关系。",
+			"gateway": {
+				"title": "为何需要开放网关。",
+				"intro": "AI 生态在能力增强的同时，也越来越碎片化。",
+				"fragmentation": "每家提供商都有不同的模型、API、价格、限制和政策。这种碎片化造成不必要的工作，也让人们难以了解付费内容或请求去向。",
+				"role": "开放网关可以让这种复杂性更易理解，而不掩盖它。Phaseo 致力于保持集成可迁移、展示取舍，并帮助提供商凭质量、可靠性和价值竞争，而非靠锁定用户。",
+				"quote": "“最好的网关会随着时间增加用户的选择，保持透明并对用户负责，与所服务的社区共同建设。”",
+				"community": "它应由使用者塑造，而非仅由运营公司决定。"
+			},
+			"inspiration": {
+				"title": "从以人为先的使命中汲取灵感。",
+				"intro": "我们受到这样的理念启发：先进 AI 应改善所有人的生活，而不只是掌控基础设施的公司的利益。",
+				"openai": "OpenAI 公开提出 AGI 应造福全人类的使命，将正确的问题放在核心：能力更强的 AI 最终让谁受益？",
+				"benefit": "Phaseo 选择更具体、更务实的路径来实现类似的人类福祉。如果人们能够通过开源网关访问更多模型、公平比较，并自由切换提供商，那么更多价值就能留在构建和使用技术的人手中。",
+				"independence": "这是一种启发，而非隶属关系。Phaseo 是独立项目，有责任证明开放、可迁移性和公平访问可以在实践中成立。",
+				"economics": "商业模式也有所不同。传统营利平台必须平衡用户价值与所有者期待的财务回报。Phaseo 围绕不同的优先事项构建：可持续运营、实用性优先，并以消除额外平台费用为目标。目的不是收取更高的过路费，而是让这种收费不再必要。"
+			},
+			"community": {
+				"title": "为你而建，与社区共建。",
+				"body": "Phaseo 旨在为你提供更诚实、透明、可迁移的 AI 使用方式，由依赖它的人共同塑造。"
+			},
+			"cta": {
+				"title": "更多访问，更少锁定。",
+				"body": "这就是 Phaseo 努力实现的未来：服务于人的基础设施、提供商被公平发现的路径，以及足够开放、能持续改进的生态。",
+				"start": "开始使用",
+				"contact": "联系我们"
+			}
+		}
+	},
+	"mission": {
+		"title": "我们的使命",
+		"intro": "Phaseo 的使命是让 AI 模型的访问更广泛、更实惠、更透明、更易迁移且更加开放。",
+		"principles": "我们的原则",
+		"broadAccess": "广泛访问",
+		"broadAccessBody": "通过一个一致的接口，在负责任的范围内支持尽可能多的实用模型、提供商、模态和能力。",
+		"lowestPrice": "可持续的最低价格",
+		"lowestPriceBody": "持续改进路由、基础设施和软件效率，再将这些收益用于降低价格并改善服务。",
+		"openByDefault": "默认开放",
+		"openByDefaultBody": "坚持 Phaseo 开源，让依赖网关的人可以检查、扩展、质疑并改进它。",
+		"usersFirst": "用户优先于投资者",
+		"usersFirstBody": "围绕长期用户利益、产品质量和公平访问做决策，而不是承受追求短期财务回报的压力。",
+		"transparency": "透明而不锁定",
+		"transparencyBody": "让定价、路由、可用性、生命周期变化和运营行为易于理解，同时保持数据和集成的可迁移性。",
+		"technicalExcellence": "技术卓越",
+		"technicalExcellenceBody": "通过准确的数据、可靠的路由、强大的兼容性、有用的可观测性，以及简洁易用的开发者体验来竞争。",
+		"builtWithEveryone": "与所有人共同构建",
+		"builtWithEveryoneBody": "为用户、贡献者、模型创建者和提供商提供有意义的方式，共同塑造平台及其周边标准。",
+		"principlesTitle": "指导我们如何构建的承诺。",
+		"principlesDescription": "随着 Phaseo 成长，这些原则将指导产品、定价、合作关系和业务决策。",
+		"exploreModels": "探索模型",
+		"viewSource": "查看源代码",
+		"roadmap": "阅读路线图",
+		"metadataKeywords": [
+			"Phaseo 使命",
+			"开源 AI 网关",
+			"普惠 AI",
+			"AI 模型访问",
+			"AI 网关原则"
+		],
+		"heroBadges": [
+			"开源",
+			"用户优先"
+		],
+		"why": {
+			"eyebrow": "Phaseo 为何存在",
+			"title": "访问 AI 不应意味着必须永久选择某个把关者。",
+			"description": "模型生态分散在研究机构、推理服务商、云平台、价格、接口和政策之中。Phaseo 让这些复杂内容更易理解和使用，而不把它们藏在另一个封闭平台后面。",
+			"successTitle": "成功意味着什么",
+			"successFirst": "我们希望与使用者共同打造尽可能好的网关。成功意味着人们能以合理的价格，通过合适的提供商使用合适的模型，并清楚了解整个过程。",
+			"successSecond": "即使请求从未经过 Phaseo，只要 Phaseo 的开源项目、公开数据或标准帮助其他产品让 AI 更易使用，我们的使命也取得了进展。"
+		},
+		"independence": {
+			"eyebrow": "以独立为设计原则",
+			"title": "可持续发展，并对用户负责。",
+			"description": "Phaseo 不以传统风险投资或最大化投资者回报的压力为发展前提。",
+			"noVcTitle": "不计划依赖风险投资",
+			"noVcDescription": "Phaseo 不计划寻求传统风险投资。我们希望依靠可持续收入、审慎支出，以及真正能为用户提供价值的产品来发展。",
+			"revenueTitle": "收入服务于产品",
+			"revenueDescription": "收入有助于 Phaseo 保持可靠并持续改进，它用来支撑使命，而不是牺牲合理价格、开放性或用户体验的理由。",
+			"financingTitle": "只接受符合使命的融资",
+			"financingDescription": "如果将来考虑融资，也必须维护 Phaseo 的独立性、开源承诺、公平对待用户的原则，以及长期进行产品决策的自由。"
+		},
+		"partners": {
+			"eyebrow": "与合作伙伴协作",
+			"title": "降低价格需要整个服务链条共同合作。",
+			"description": "Phaseo 的日常运营依赖模型创建者、推理服务商、云和网络平台、部署托管方、数据服务、可观测性工具和支付服务商。",
+			"first": "我们希望与运营和基础设施合作伙伴直接协作，在提升可靠性的同时降低推理、计算、交付、存储、可观测性和支付成本。",
+			"second": "更好的商业条款、共享技术工作、额度、效率更高的软件和更智能的路由都能降低单次请求的服务成本。我们会把这些收益用于降低 Phaseo 的价格并改善服务。",
+			"testTitle": "合作原则",
+			"testDescription": "合作至少应改善价格、访问、可靠性、隐私、可移植性或开发者体验中的一项，同时不损害其他方面。",
+			"contact": "与 Phaseo 合作"
+		},
+		"progress": {
+			"eyebrow": "衡量进展",
+			"title": "使命应体现在产品中。",
+			"description": "我们通过用户能够查看、质疑并参与改进的证据来评估进展。"
+		},
+		"measures": [
+			"模型、提供商、模态和地区的覆盖范围",
+			"可通过多个提供商使用的路由",
+			"向用户提供的降价和效率提升",
+			"网关可靠性、延迟和 Phaseo 额外开销",
+			"开源贡献者和社区推动的改进",
+			"发布版本、修正和生命周期变更所需的时间"
+		],
+		"closing": {
+			"title": "公开构建，共同改进。",
+			"description": "这项使命需要持续践行。如果 Phaseo 未能做到，请提交 issue、提出改进，或帮助我们共同打造更好的版本。",
+			"openIssue": "提交 issue",
+			"aboutPhaseo": "关于 Phaseo"
+		},
+		"current": {
+			"principles": {
+				"sustainablePrice": "通过提供商合作和运营效率降低可避免的成本，将收益回馈用户，并保留足够的利润以运营可靠的基础设施。",
+				"usersFirst": "根据用户长期利益、产品质量和公平访问做决策，而非受最大化短期财务回报的压力驱动。"
+			},
+			"measures": {
+				"coverage": "覆盖的模型、提供商、模态和地区",
+				"multipleProviders": "可通过多家提供商使用的路由",
+				"savings": "回馈用户的降价和效率提升",
+				"providerDemand": "通过 Phaseo 为提供商带来的需求和流量",
+				"performance": "网关可靠性、延迟和平台开销",
+				"operatingCosts": "可逐步消除的支付和运营成本",
+				"community": "开源贡献者和社区推动的改进",
+				"publishTime": "发布版本、修正和生命周期变化所需的时间"
+			},
+			"hero": {
+				"title": "让 AI 推理开放、实惠，并惠及所有人。",
+				"body": "Phaseo 正在建设可验证的开源网关，让人们不受锁定地发现和使用不同提供商的模型。我们与提供商合作降低推理成本，再利用这些收益减少可避免的平台开销并改善访问。"
+			},
+			"updatesLink": "阅读最新动态",
+			"fees": {
+				"title": "人们应为推理付费，而非承担可避免的网关附加费。",
+				"body": "Phaseo 对当前费用保持透明。长期目标是在提供商关系、路由效率和可持续运营允许时，消除可避免的平台开销。",
+				"tagline": "开放的经济模式，可衡量的进展。"
+			},
+			"purpose": {
+				"title": "AI 基础设施应服务于使用它的人。",
+				"ecosystem": "模型生态分散在不同实验室、推理提供商、云平台、价格、接口和政策之间。Phaseo 旨在通过保留选择自由的开放层，让这种复杂性易于理解和使用。",
+				"success": "我们希望与使用者共同打造尽可能好的网关。成功意味着人们能以公平价格通过合适的提供商使用合适的模型，并清楚了解处理过程与资金去向。",
+				"sharedSuccess": "如果 Phaseo 的开源成果、公开数据或标准帮助其他产品改善 AI 的可及性，即使请求从未经过 Phaseo，我们也会认为使命取得了成功。目标是更健康的生态，而非对单一网关的永久依赖。"
+			},
+			"sustainability": {
+				"title": "可持续性让使命延续。",
+				"intro": "Phaseo 致力于对用户、提供商和开源社区负责，而非受最大化投资者回报的压力驱动。",
+				"marginTitle": "最低可持续利润",
+				"marginBody": "我们只希望保留运营可靠基础设施、支持团队和持续改进产品所需的利润。效率提升应改善访问，而不只是让平台索取更多。",
+				"revenueTitle": "收入服务于访问",
+				"revenueBody": "收入很重要，因为 Phaseo 必须保持可靠并持续改进。它是维持使命的方式，而非牺牲公平价格、开放性或用户体验的理由。",
+				"independenceTitle": "从设计上保持独立",
+				"independenceBody": "如果未来考虑融资，必须保留 Phaseo 的独立性、开源承诺、公平对待用户的原则，以及进行长期产品决策的自由。传统风险投资不是默认路径。"
+			},
+			"providers": {
+				"title": "开发者能够接触到提供商，提供商才能成长。",
+				"distribution": "Phaseo 为模型创建者和推理提供商提供开放的分发层：更容易被发现、一致的集成方式、有用的需求信号，以及直接参与决定其模型如何使用的渠道。",
+				"costs": "我们希望直接与提供商及更广泛的基础设施生态合作，在提升可靠性的同时，降低推理、计算、交付、存储、可观测性和支付成本。",
+				"cycle": "更好的商业条款、共同技术工作、余额支持、更高效的软件和更智能的路由，都能降低请求处理成本。循环很简单：更好的提供商访问带来更低成本和更强可靠性，进而吸引更多开发者和路由需求。",
+				"partners": "我们寻找的是愿意与开放网关共同成长的伙伴，而不是仅在另一个市场放置标志的合作方。提供商可以帮助验证适配器、改进模型元数据、塑造路由和可观测性，并协调能吸引匹配用户的发布。",
+				"testTitle": "合作的检验标准",
+				"testBody": "合作应改善提供商的分发，并至少改善价格、访问、可靠性、隐私、可迁移性或开发者体验中的一项，同时不损害其他方面。"
+			},
+			"evidence": {
+				"title": "使命应体现在产品中。",
+				"body": "我们希望根据用户可查看、可质疑并能帮助改进的证据评估进展。"
+			},
+			"commitment": "这一使命是一项持续发展的承诺。如果 Phaseo 做得不够，请提交问题、提出改进，或帮助我们打造更好的版本。"
+		}
+	},
+	"faq": {
+		"title": "AI 模型数据库与网关常见问题",
+		"intro": "这里有关于比较模型、理解数据和使用网关的实用答案。找不到答案？<support>联系我们的团队</support>。",
+		"metadataDescription": "关于探索 AI 模型和提供商、比较价格与基准测试，以及使用 Phaseo Gateway 的答疑。",
+		"items": [
+			{
+				"question": "如何在 Phaseo 上比较 AI 模型？",
+				"answer": "从<models>模型目录</models>开始，然后打开模型页面，比较其定价、提供商、基准测试结果、延迟信号和兼容性详情。页面展示的信息会因该模型可用的数据而异。"
+			},
+			{
+				"question": "模型页面能告诉我什么？",
+				"answer": "模型页面汇总特定模型的实用信息：创建者、提供该模型的提供商、列出的价格、基准测试覆盖范围和网关可用性。使用页面标签深入了解定价、提供商、性能和快速入门详情。"
+			},
+			{
+				"question": "Phaseo 如何计算模型定价？",
+				"answer": "Phaseo 保存每条提供商路由的计量方式、单位大小、货币、套餐和生效日期。输入和输出费率保持分开，令牌价格会按每 1M 个令牌标准化以便比较；它们不会合并成一个混合的总价。请阅读<pricingMethodology>定价方法</pricingMethodology>，或在<calculator>定价计算器</calculator>中输入自己的令牌用量。"
+			},
+			{
+				"question": "网关可用性是什么意思？",
+				"answer": "网关可用性表示 Phaseo 当前是否有符合条件的模型路由。它与模型质量或基准测试性能是分开的。提供商状态可能变化，因此在生产环境依赖某条路由前，请检查模型的提供商和可用性信息。"
+			},
+			{
+				"question": "我可以将 Phaseo 用作 AI 网关吗？",
+				"answer": "可以。Phaseo Gateway 为受支持的模型和提供商提供一个兼容 OpenAI 的接口。创建 API 密钥、选择模型，即可在保留模型和提供商选择权的同时使用同一套集成接口。"
+			},
+			{
+				"question": "我可以使用自己的提供商 API 密钥吗？",
+				"answer": "可以。当你希望保留与提供商的关系并直接向其结算时，可以携带自己的提供商密钥，同时继续使用 Phaseo 的路由、健康检查和策略层。"
+			},
+			{
+				"question": "我可以探索哪些提供商和模型类型？",
+				"answer": "浏览<providers>提供商目录</providers>了解覆盖范围，或按聊天、嵌入、图像、音频、视频和审核等能力筛选模型目录。提供商页面最适合查看其当前列出的模型目录。"
+			},
+			{
+				"question": "基准测试和性能数据是如何处理的？",
+				"answer": "基准测试分数会与对应的基准测试及其方法一起展示，以保留比较所需的上下文。在根据单个分数做出生产决策前，请阅读<benchmarkMethodology>Phaseo 如何标准化 AI 基准测试</benchmarkMethodology>以及<performanceMethodology>它如何衡量延迟和吞吐量</performanceMethodology>。"
+			},
+			{
+				"question": "如果某个条目看起来不正确或不完整，我该怎么办？",
+				"answer": "使用<contribute>贡献页面</contribute>报告更正或补充缺失信息。准确且有来源支持的报告有助于在提供商更新目录和定价时保持目录的实用性。"
+			}
+		]
+	},
+	"methodology": {
+		"label": "方法论",
+		"title": "Phaseo 如何衡量所发布的内容",
+		"description": "四个参考页面，介绍公开目录中定价、性能、基准测试和提供商覆盖范围的定义方式。",
+		"lastUpdated": "最后更新于 {date}",
+		"readPage": "阅读页面",
+		"relatedPages": "相关页面",
+		"articleLastUpdated": "最后更新：{date}",
+		"entries": {
+			"how-phaseo-calculates-model-pricing": {
+				"shortTitle": "模型定价",
+				"title": "Phaseo 如何计算模型定价",
+				"description": "Phaseo 如何将提供商价目表、计量方式和路由规则映射为目录中公开显示的模型价格。",
+				"intro": "本页面说明 Phaseo 如何将提供商定价来源转换为模型页面和提供商页面上公开显示的定价值。",
+				"sections": {
+					"what": "我们衡量什么",
+					"inputs": "主要输入",
+					"normalised": "如何标准化价格",
+					"dates": "生效日期与变更处理",
+					"caveats": "注意事项"
+				},
+				"related": {
+					"gateway": "网关定价",
+					"calculator": "定价计算器",
+					"models": "模型数据库"
+				}
+			},
+			"how-phaseo-measures-latency-throughput": {
+				"shortTitle": "延迟与吞吐量",
+				"title": "Phaseo 如何衡量延迟与吞吐量",
+				"description": "Phaseo 如何定义排名以及模型或提供商性能页面中显示的延迟、吞吐量和请求性能指标。",
+				"intro": "本页面说明 Phaseo 如何计算延迟和吞吐量、如何汇总这些指标，以及为什么结果会因路由和时间范围而异。",
+				"sections": {
+					"what": "我们衡量什么",
+					"windows": "汇总时间窗口",
+					"eligibility": "筛选与纳入条件",
+					"move": "数值为何会变化",
+					"caveats": "注意事项"
+				},
+				"related": {
+					"rankings": "排名",
+					"models": "模型",
+					"providers": "提供商"
+				}
+			},
+			"how-phaseo-normalises-ai-benchmarks": {
+				"shortTitle": "基准测试标准化",
+				"title": "Phaseo 如何标准化 AI 基准测试",
+				"description": "Phaseo 如何存储基准测试分数、变体和排序方向，同时让不同来源的基准测试展示保持一致。",
+				"intro": "本页面说明 Phaseo 如何处理不同来源的基准测试数据，同时避免假装所有基准测试都能直接比较。",
+				"sections": {
+					"what": "我们存储什么",
+					"normalised": "这里的标准化是什么意思",
+					"ranking": "排名逻辑",
+					"source": "来源质量与披露",
+					"caveats": "注意事项"
+				},
+				"related": {
+					"benchmarks": "基准测试",
+					"models": "模型",
+					"compare": "比较模型"
+				}
+			},
+			"how-phaseo-tracks-provider-availability": {
+				"shortTitle": "提供商可用性",
+				"title": "Phaseo 如何跟踪提供商可用性",
+				"description": "Phaseo 如何将模型映射到提供商、跟踪网关可用性，并解读公开目录页面中的提供商覆盖范围。",
+				"intro": "本页面说明 Phaseo 如何判断模型是否在某个提供商处可用，以及公开的提供商覆盖视图 intended 表达什么。",
+				"sections": {
+					"what": "Phaseo 上的可用性是什么意思",
+					"mappings": "如何存储映射关系",
+					"active": "网关活跃与目录可见的区别",
+					"changes": "提供商页面何时变化",
+					"caveats": "注意事项"
+				},
+				"related": {
+					"providers": "提供商数据库",
+					"models": "模型",
+					"rankings": "排名"
+				}
+			}
+		}
+	},
+	"contact": {
+		"title": "联系 Phaseo 支持团队",
+		"intro": "告诉我们你的需求，我们会将你引导到合适的地方。私密账户问题会变成支持工单。公开 Bug、功能请求和简短问题则会进入最适合的渠道。",
+		"repliesResumeSoon": "支持回复即将恢复。",
+		"availableNow": "当前可用",
+		"outsideHours": "不在服务时间内",
+		"backIn": "{time} 后恢复",
+		"availableReplyNotice": "我现在可以为您提供帮助，预计会在 30 分钟内由工作人员直接回复。",
+		"supportBackInNotice": "支持服务将在 {time} 后恢复。回复可能会延迟，但我们仍会尽快由工作人员直接回复您。",
+		"supportAwayNotice": "我暂时不在线。回复可能会延迟，但我们仍会尽快由工作人员直接回复您。",
+		"resumeAfterMinutes": "{count} 分钟后",
+		"resumeAfterHours": "{count} 小时后",
+		"feedbackPrompt": "告诉我们 Phaseo 的哪些地方应该更清晰、更快或更有用。账户或账单问题请使用下方的支持选项。",
+		"sendFeedback": "发送产品反馈",
+		"stepOne": "第 1 步",
+		"stepTwo": "第 2 步",
+		"whatHelp": "你需要什么帮助？",
+		"chooseIssue": "选择问题类型",
+		"pickClosest": "选择最接近的选项，我们会在下方显示下一步。",
+		"recommended": "推荐：{method}",
+		"privateReply": "希望私下回复？",
+		"switchPrivate": "切换到私密工单",
+		"otherMethods": "其他支持方式",
+		"otherMethodsBody": "如果其他渠道更适合你的问题，请使用它。",
+		"yourTime": "你的时间 {time}",
+		"checking": "检查中……",
+		"supportTime": "Phaseo 支持时间：{time}",
+		"support": "支持",
+		"liveChatTitle": "在线聊天或电子邮件",
+		"liveChatDescription": "从此页面开始在线聊天，或打开一封已预填所需上下文的电子邮件。",
+		"signedInAs": "已登录账户：{email}",
+		"chatNotConfigured": "此部署未配置在线聊天。",
+		"chatOutsideHours": "在线聊天仅在支持时间内提供。电子邮件始终可用。",
+		"chatOffline": "在线聊天离线",
+		"loadingChat": "正在加载聊天……",
+		"startLiveChat": "开始在线聊天",
+		"chatUnavailable": "在线聊天不可用",
+		"sendEmail": "发送电子邮件",
+		"createTicket": "创建工单",
+		"openChatNewTab": "在新标签页中打开聊天",
+		"privateReplyBody": "如果内容包含账户详情、账单信息、请求 ID 或截图，请改选私密支持工单。",
+		"emailTemplate": {
+			"subjectWithIssue": "[Phaseo 支持] {issue}",
+			"subjectDefault": "[Phaseo 支持] 支持请求",
+			"greeting": "Phaseo 支持团队，您好：",
+			"opening": "我需要协助处理以下问题：",
+			"summary": "摘要：",
+			"details": "详情：",
+			"usefulContext": "相关信息：",
+			"issueType": "- 问题类型：{value}",
+			"accountEmail": "- 账户邮箱：{value}",
+			"workspace": "- 工作区：{value}",
+			"plan": "- 套餐：{value}",
+			"pageUrl": "- 页面 URL：",
+			"requestId": "- 请求 ID：",
+			"modelProvider": "- 模型 ID / 提供方：",
+			"timeObserved": "- 发现问题的时间：",
+			"attachments": "附件 / 屏幕截图：",
+			"notSelected": "未选择"
+		},
+		"methods": {
+			"support": {
+				"title": "私密支持工单",
+				"description": "适用于账户、账单、数据或实施问题。",
+				"cta": "创建工单"
+			},
+			"github": {
+				"title": "GitHub",
+				"description": "适用于可复现的 Bug、功能请求和公开跟踪。",
+				"cta": "打开 GitHub"
+			},
+			"discord": {
+				"title": "Discord",
+				"description": "适用于快速设置问题和轻量的社区反馈。",
+				"cta": "加入 Discord"
+			},
+			"docs": {
+				"title": "文档",
+				"description": "适用于网关指南、SDK 示例、模型参考和快速入门。",
+				"cta": "阅读文档"
+			}
+		},
+		"issues": {
+			"billing": {
+				"label": "账单或账户问题",
+				"helper": "创建私密支持工单，我们会回复你提供的电子邮件地址。"
+			},
+			"bug": {
+				"label": "Bug 或服务中断",
+				"helper": "如果问题可复现且对其他用户跟踪有帮助，请使用 GitHub。"
+			},
+			"data": {
+				"label": "数据或指标问题",
+				"helper": "创建私密工单，并附上模型 ID、提供商名称、URL 和时间戳。"
+			},
+			"docs": {
+				"label": "文档或集成问题",
+				"helper": "先查看文档。如果缺少答案，请附上确切页面并发送工单。"
+			},
+			"feature": {
+				"label": "功能请求",
+				"helper": "在 GitHub 中提交 Issue，说明工作流程、预期行为以及它为何重要。"
+			},
+			"general": {
+				"label": "一般问题",
+				"helper": "创建私密支持工单，并提供足够的上下文以便直接回复。"
+			},
+			"community": {
+				"label": "社区或快速反馈",
+				"helper": "如果你想获得轻量的答复或与其他用户讨论，请使用 Discord。"
+			}
+		},
+		"loadingSupportHours": "正在加载当前支持时间…"
+	},
+	"profileShare": {
+		"titleSuffix": "Phaseo 分享卡片",
+		"description": "根据个人工作区活动生成的轻量摘要。",
+		"shareCard": "{name} 的分享卡片",
+		"downloadImage": "下载图像",
+		"openPhaseo": "打开 Phaseo",
+		"imageAlt": "{name} 的 Phaseo 分享卡片"
+	},
+	"profile": {
+		"title": "共享个人资料",
+		"loading": "正在加载个人资料……"
+	},
+	"gatewayHero": {
+		"startFree": "免费开始",
+		"viewDocumentation": "查看文档",
+		"classicTitle": "适用于各种场景的统一 AI Gateway",
+		"classicRotatingWords": [
+			"AI 模型",
+			"LLMs",
+			"视觉模型",
+			"音频模型",
+			"Embeddings",
+			"智能体"
+		],
+		"classicDescription": "保留现有 SDK 结构，通过多个提供商路由请求，并在一个兼容 OpenAI 的接口中控制延迟、价格和故障切换。",
+		"monthlyTokens": "月度 Token 数",
+		"models": "模型",
+		"providers": "提供商",
+		"experimentalBadge": "Gateway 实验版主视觉",
+		"experimentalTitle": "面向以下场景的路由基础设施：",
+		"experimentalRotatingWords": [
+			"生产环境 AI",
+			"延迟 SLA",
+			"多云故障切换",
+			"成本控制"
+		],
+		"experimentalDescription": "保留当前模型技术栈，摆脱对单一提供商的依赖，并通过统一的 API 合约更精细地控制路由、可靠性和支出。",
+		"routingCockpit": "路由控制台",
+		"policyDrivenRouting": "策略驱动的路由",
+		"policyDrivenRoutingDescription": "根据延迟预算、模型质量和提供商健康状态实时路由请求。",
+		"modelPortability": "模型可移植性",
+		"modelPortabilityDescription": "无需重写 SDK 集成层即可切换提供商。",
+		"productionGuardrails": "生产环境防护措施",
+		"productionGuardrailsDescription": "通过一个控制平面执行速率限制、支出上限和故障回退规则。",
+		"liveRequestEfficiency": "实时请求效率",
+		"stable": "稳定"
+	},
+	"gatewayMarketing": {
+		"hero": {
+			"title": "全球最大的统一 AI 网关。",
+			"openSourceTitle": "完全开源。",
+			"description": "一个 API 即可调用聊天、视觉、音频和嵌入模型，并内置实时遥测、合规控制和提供商故障切换。",
+			"startBuilding": "开始构建",
+			"viewQuickstart": "查看快速入门",
+			"uptime24h": "运行时间（24 小时）",
+			"supportedProviders": "支持的提供商",
+			"supportedModels": "支持的模型",
+			"tokens24h": "令牌（24 小时）",
+			"pricingCommitmentTitle": "持续降低价格并扩展模型选择",
+			"pricingCommitmentDescription": "我会尽可能降低价格。我独自开发这个产品，也在持续扩展网关的模型选择。"
+		},
+		"cta": {
+			"eyebrow": "准备好发布",
+			"title": "让产品和路由层运行在同一套系统上。",
+			"description": "通过开放数据库选择模型，再使用专为延迟、故障切换和成本控制打造的网关处理线上流量。",
+			"benefitOne": "更换提供商时仍可沿用相同的请求格式。",
+			"benefitTwo": "在数据库中选择模型，然后直接通过网关路由线上流量。",
+			"createAccount": "创建免费账户",
+			"quickstart": "快速入门"
+		},
+		"why": {
+			"title": "团队选择 Phaseo Gateway 的原因",
+			"description": "我们提供开源路由、遥测和合规工具，让团队无需重建基础设施也能更快推进。",
+			"healthPoint": "健康信号和故障切换规则可在数秒内调整不同提供商之间的流量。",
+			"communityPoint": "社区贡献加快适配器开发，每项更改都公开并接受审查。",
+			"transparencyPoint": "开源代码让安全、合规和路由逻辑都可供检查。",
+			"cards": {
+				"openSourceTitle": "开源与信任",
+				"openSourceDescription": "审查安全、合规和路由决策背后的代码。",
+				"latencyTitle": "感知延迟的路由",
+				"latencyDescription": "EWMA 和百分位健康信号会在事件影响 SLA 前切换流量。",
+				"observabilityTitle": "优先保障可观测性",
+				"observabilityDescription": "自动记录每个请求的成本、令牌、延迟、成功状态码和追踪信息。",
+				"communityTitle": "社区驱动的开发",
+				"communityDescription": "社区贡献和透明的路线图加快适配器、功能以及开放 AI 访问的发展。"
+			}
+		},
+		"reliability": {
+			"title": "可靠性值得信赖，开放性有据可查。",
+			"description": "延迟、正常运行时间和吞吐量遥测数据会直接用于路由。每个适配器、健康探测和数据摄取脚本都采用开源许可。",
+			"last24Hours": "过去 24 小时",
+			"uptime": "正常运行时间",
+			"medianLatency": "中位延迟",
+			"tokensServed": "已处理令牌",
+			"modelsSupported": "支持的模型",
+			"tokensPerHour": "网关每小时令牌数（24 小时）",
+			"chartDescription": "社区贡献和企业采用推动了稳定健康的令牌用量。",
+			"tokens": "令牌",
+			"perHour": "每小时",
+			"now": "现在",
+			"hourAbbreviation": "小时",
+			"hoursAgo": "{count, plural, other {# 小时前}}"
+		}
+	},
+	"gatewayQuickstart": {
+		"title": "快速开始：密钥、端点和请求",
+		"description": "选择所需端点和示例模型，然后复制适用于 Gateway、SDK 或 OpenAI 兼容客户端的可运行请求。",
+		"setupHeading": "设置步骤",
+		"fromZeroHeading": "从零开始完成首次调用",
+		"step1Title": "创建或复制 API 密钥",
+		"step1Description": "使用服务器端工作区密钥，并将其作为以下名称提供给运行环境",
+		"apiKeys": "API 密钥",
+		"step2Title": "选择端点和模型",
+		"step2Description": "端点选择器会同时更新路径、负载和受支持的示例模型。",
+		"step3Title": "复制请求",
+		"step3Description": "切换语言或 SDK 风格，然后将精简代码片段复制到应用或智能体指令中。",
+		"copyCode": "复制代码",
+		"copied": "已复制",
+		"openAiBetaNotice": "随着适配器逐步完善，OpenAI 选项（Beta）可能会发生变化。",
+		"baseUrl": "基础 URL",
+		"model": "模型",
+		"modelPayloadHelp": "所有模型使用相同的基础请求负载，只需更改 <model>model</model> 的值。",
+		"endpoints": {
+			"completions": {
+				"label": "聊天",
+				"summary": "支持聊天、推理和工具调用，并可在提供商之间即时故障切换。"
+			},
+			"images": {
+				"label": "图像生成",
+				"summary": "通过能适配提供商差异的路由生成高保真图像。"
+			},
+			"video": {
+				"label": "视频生成",
+				"summary": "无需切换不同的视频 API，即可制作产品预告或操作演示。"
+			},
+			"audio": {
+				"label": "音频生成",
+				"summary": "使用统一的输入和格式参数，以编程方式生成语音。"
+			},
+			"embeddings": {
+				"label": "Embeddings",
+				"summary": "从任意提供商获取向量表示，并保持一致的批处理语义。"
+			},
+			"moderations": {
+				"label": "内容审核",
+				"summary": "无需为每种审核 API 改写负载，即可执行安全检查。"
+			}
+		}
+	},
+	"homeOpenSourceMarketing": {
+		"title": "基于全球最大的开源 AI 网关构建应用",
+		"description": "只需接入一次 OpenAI 兼容 API，即可使用丰富的模型提供商和适用于生产环境的可靠性，无供应商锁定，也无需依赖不透明的基础设施。",
+		"firstRequest": "不到五分钟即可发送第一个请求。",
+		"modelIdDescription": "只需更改 <code>model</code> 的值，即可通过同一个 API 将请求路由到任何受支持的模型。",
+		"explore": "浏览",
+		"models": "模型",
+		"readDocs": "阅读文档",
+		"getApiKey": "获取 API 密钥",
+		"viewGitHub": "在 GitHub 上查看",
+		"migrationGuide": "迁移指南",
+		"notReadyTitle": "还不准备接入 API？",
+		"notReadyDescription": "使用 Chat 在浏览器中试用模型，无需编写代码即可比较模型回复。",
+		"tryChat": "试用 Chat",
+		"more": "更多",
+		"copy": "复制",
+		"copied": "已复制",
+		"providerAria": "{provider} 提供商",
+		"migrationSourceAria": "从 {provider} 迁移"
+	},
+	"homeQuickstart": {
+		"benefits": {
+			"database": {
+				"title": "开放模型信息",
+				"body": "查看基准测试、价格和提供商覆盖情况，帮助做出更好的开发决策。",
+				"cta": "浏览目录"
+			},
+			"gateway": {
+				"title": "统一 AI Gateway",
+				"body": "只需集成一次，即可通过兼容 OpenAI 的 API 访问数百种模型。",
+				"cta": "浏览模型"
+			},
+			"modalities": {
+				"title": "覆盖所有 AI 工作负载",
+				"body": "通过一个 API 使用文本、图像、视频、音频、内容审核、Embeddings 等能力。",
+				"cta": "探索 Gateway"
+			},
+			"observability": {
+				"title": "请求可观测性",
+				"body": "在同一处监控每个请求的价格、可靠性、用量和性能。",
+				"cta": "查看活动"
+			}
+		},
+		"workloads": {
+			"text": {
+				"label": "文本",
+				"detail": "聊天与响应"
+			},
+			"images": {
+				"label": "图像",
+				"detail": "生成与编辑"
+			},
+			"video": {
+				"label": "视频",
+				"detail": "从提示词生成视频"
+			},
+			"textToSpeech": {
+				"label": "文本转语音",
+				"detail": "自然语音"
+			},
+			"transcription": {
+				"label": "语音转写",
+				"detail": "语音转文本"
+			},
+			"music": {
+				"label": "音乐",
+				"detail": "生成音频"
+			},
+			"moderation": {
+				"label": "内容审核",
+				"detail": "文本与图像"
+			},
+			"embeddings": {
+				"label": "Embeddings",
+				"detail": "向量搜索"
+			},
+			"realtime": {
+				"label": "实时",
+				"detail": "实时交互"
+			},
+			"batch": {
+				"label": "批处理",
+				"detail": "异步处理"
+			},
+			"decisions": {
+				"label": "决策",
+				"detail": "类型化答案"
+			}
+		},
+		"gatewayCapabilities": "Gateway 能力",
+		"workloadsCount": "{count} 种工作负载",
+		"healthAwareRouting": "根据健康状态路由并自动故障切换",
+		"latency": "延迟",
+		"throughput": "吞吐量",
+		"cost": "成本",
+		"gpqaScore": "GPQA 分数",
+		"rank": "排名",
+		"rankOverall": "总排名第 7",
+		"pricingPerMillionTokens": "价格 / 百万 Token",
+		"model": "模型",
+		"appLabel": "应用",
+		"providersLabel": "提供商",
+		"tokensLabel": "Token"
+	},
+	"trust": {
+		"trustCentre": "信任中心",
+		"phaseoTrustCentre": "Phaseo 信任中心",
+		"lastReviewed": "最后审核于 {date}",
+		"privacyPolicy": "隐私政策",
+		"termsOfService": "服务条款",
+		"privacyQuestions": "隐私问题",
+		"securityAndTrust": "Phaseo 的安全与信任",
+		"currentSafeguards": "当前的产品护栏、数据实践和保障状态。本页面的声明仅限于 Phaseo 今天能够支持的内容。",
+		"assurance": "保障",
+		"sections": "信任中心栏目",
+		"claimLabels": "声明标签",
+		"trustDocuments": "信任文档",
+		"trustDocumentsBody": "使用详细资料进行安全审查、供应商评估或 DPA 讨论。",
+		"security": "安全",
+		"securityBody": "当前代码和文档所支持的产品与运营护栏。",
+		"securityPage": {
+			"metadataTitle": "安全白皮书",
+			"metadataDescription": "了解 Phaseo 的架构、数据流、当前安全措施、局限以及各方共同承担的责任。",
+			"keywords": [
+				"Phaseo 安全白皮书",
+				"Phaseo 安全",
+				"AI Gateway 安全"
+			],
+			"title": "安全白皮书",
+			"description": "本文件由 Phaseo 自行说明其如何保护网站、仪表板、API Gateway 和客户数据。内容反映当前实现情况，不构成独立审计。",
+			"status": "自我声明 · 版本 1.0",
+			"assurance": {
+				"title": "保证范围",
+				"body": "Phaseo 尚未取得 SOC 2 或 ISO 27001 认证，也未完成独立渗透测试。本文件不是认证或保证，也不能代替您自己的风险评估。"
+			},
+			"sections": {
+				"scope": "1. 范围和服务模式",
+				"flow": "2. Gateway 数据流",
+				"storage": "3. 内容存储选项和例外",
+				"controls": "4. 当前技术措施",
+				"development": "5. 软件和变更管理",
+				"availability": "6. 可用性和事件处理",
+				"responsibilities": "7. 客户责任",
+				"gaps": "8. 已知的保证缺口",
+				"contact": "9. 联系方式"
+			},
+			"scope": {
+				"introduction": "Phaseo 提供公开的 AI 模型目录、客户仪表板，以及一个将请求转发给第三方 AI 提供商的 API Gateway。本文件涵盖由 Phaseo 控制的应用、Gateway、数据存储和运营集成，但不证明 AI 提供商或客户配置的目标服务所采取的控制措施。",
+				"services": "公开网站是由 Vercel 托管并经 Cloudflare 分发的 Next.js 应用。Gateway 运行在 Cloudflare Workers 上。Supabase 提供身份验证和主要关系型数据库。其他服务列于<subprocessors>子处理商清单</subprocessors>。"
+			},
+			"flow": {
+				"stage": "阶段",
+				"data": "数据",
+				"handling": "处理方式",
+				"rows": [
+					{
+						"stage": "客户端到 Phaseo",
+						"data": "请求内容、凭据、路由选项和网络元数据",
+						"handling": "通过 HTTPS 发送到 Cloudflare，并由 Gateway Worker 处理。"
+					},
+					{
+						"stage": "Phaseo 元数据",
+						"data": "请求 ID、模型和提供商 ID、用量、费用、延迟、状态、错误和粗略位置",
+						"handling": "存储在 Supabase 中，用于计费、用量视图、可靠性、滥用防护和支持。原始提示词和完整输出不会写入主要请求记录。"
+					},
+					{
+						"stage": "响应缓存",
+						"data": "按工作区隔离的缓存键、响应正文和响应元数据",
+						"handling": "符合条件的非流式文本响应默认可在 Upstash Redis 中保存五分钟。Preset 可设置 30 秒至 24 小时的时长。请求正文会参与生成 SHA-256 缓存键摘要，但不会存入缓存记录。"
+					},
+					{
+						"stage": "AI 提供商",
+						"data": "所选模型调用所需的请求内容和元数据",
+						"handling": "通过 HTTPS 发送给直接选定的提供商，或客户路由策略选出的提供商。提供商的保留、训练和数据驻留条款均适用。"
+					},
+					{
+						"stage": "返回客户端",
+						"data": "提供商输出和 Phaseo 响应元数据",
+						"handling": "通过 HTTPS 返回客户端。连接期间，流式数据在内存中处理。"
+					}
+				]
+			},
+			"storage": {
+				"introduction": "Phaseo 不承诺在所有情况下都实现零数据保留。除短期响应缓存外，客户还可以选择以下设置来延长内容存储时间：",
+				"options": [
+					{
+						"title": "私有 I/O 日志",
+						"description": "仅在功能启用时可用的工作区设置，可将请求、响应和可选的提供商载荷保存在私有 Cloudflare R2 中 90、180 或 365 天。默认关闭。"
+					},
+					{
+						"title": "数据贡献",
+						"description": "明确选择加入后，非 BYOK 请求中成功的提示词和响应可在私有 Cloudflare R2 中最多保存 30 天。Phaseo 会尽力进行脱敏，但客户不应将其视为保证。配置的样本会在 API 存储关闭的情况下发送给 OpenAI，用于异步任务分类。"
+					},
+					{
+						"title": "可观测性导出和通知",
+						"description": "根据客户设置，客户配置的目标服务可能会收到提示词、输出、元数据或告警内容。"
+					},
+					{
+						"title": "异步 API 和媒体 API",
+						"description": "提供商可能会按其公布的期限保留任务状态、文件、输入或生成的资源。Phaseo 会保存核对这些请求所需的任务和计费元数据。"
+					}
+				],
+				"conclusion": "关闭 Phaseo 存储功能后，在变更生效且进行中的任务结束后，将停止新的数据采集。此前已被 AI 提供商或客户配置的目标服务接收的数据不会因此删除。"
+			},
+			"controls": {
+				"transport": {
+					"title": "传输和机密信息",
+					"items": [
+						"公共服务和上游提供商连接均使用 HTTPS。",
+						"客户提供的提供商凭据在写入数据库前使用 AES-256-GCM 加密。",
+						"API 密钥和管理密钥采用带密钥的单向派生；OAuth 机密采用基于密码或密钥的单向派生。",
+						"功能支持保存机密信息时，Webhook 和通知凭据会加密存储。"
+					]
+				},
+				"identity": {
+					"title": "身份和访问",
+					"items": [
+						"工作区角色和数据库策略会限制账户及工作区记录的访问。",
+						"OAuth 授权页面会显示所请求的权限范围；授权和令牌均可撤销。",
+						"SAML 单点登录和 SCIM 配置属于受限的企业功能，并非所有账户都具备的通用控制。",
+						"管理密钥和 Gateway 密钥可以限制权限范围并轮换。"
+					]
+				},
+				"safeguards": {
+					"title": "应用防护",
+					"items": [
+						"速率限制用于保护敏感的 OAuth 和实时路由。",
+						"安全标头会限制内容类型、框架、引用来源和权限；OAuth 授权路由还采用更严格的内容安全策略。",
+						"在 API 和配置边界会验证数据结构。",
+						"对安全敏感的计费流程使用幂等机制和数据库事务。",
+						"经验证的账户删除会永久删除 Auth 账户和活动数据库数据；随后，可重试的定时任务会在 30 天内清除私有 R2 和 Gateway KV 数据。"
+					]
+				},
+				"monitoring": {
+					"title": "监控和漏洞披露",
+					"items": [
+						"Cloudflare 调用日志和请求元数据支持运营监控。",
+						"提供商运行状况和路由状态有助于控制上游故障。"
+					],
+					"statusPublication": "服务状态和事件发布于 <status>status.phaseo.app</status>。",
+					"vulnerabilityReports": "可通过 <advisories>GitHub Security Advisories</advisories> 或 <email>security@phaseo.app</email> 提交非公开漏洞报告。"
+				}
+			},
+			"development": {
+				"paragraphs": [
+					"Phaseo 的主代码仓库是公开的。变更使用版本控制、依赖锁文件、自动 lint 和类型检查，以及有针对性的自动化测试。安全验证会检查部分机密边界、数据库策略、身份验证流程和 Gateway 契约。",
+					"这些做法可以降低风险，但不能证明每项变更都经过正式安全审查，也不能证明服务没有漏洞。Phaseo 目前没有发布安全开发认证或经独立审计的变更管理控制。"
+				]
+			},
+			"availability": {
+				"paragraphs": [
+					"Phaseo 使用托管基础设施和基于提供商运行状况的路由来减少部分故障。incident.io 托管公开状态页。Phaseo 不为公共服务提供合同约定的正常运行时间 SLA，也不声称其事件响应或业务连续性流程经过独立测试。",
+					"涉及个人数据的安全事件会根据适用的通知义务进行评估。公开漏洞政策的目标是在三个工作日内确认收到善意报告；这是运营目标，不是合同约定的解决期限。"
+				]
+			},
+			"responsibilities": {
+				"items": [
+					"除非您选择的 Phaseo 和 AI 提供商配置适用于敏感或受监管数据，否则请勿发送此类数据。",
+					"启用路由前，请查看提供商关于数据保留、训练、驻留和可接受使用的条款。",
+					"在路由选择很重要时，使用提供商允许列表和隐私路由控制。",
+					"保护并轮换账户、API、管理、BYOK、Webhook 和 OAuth 凭据。",
+					"将工作区成员和 OAuth 权限范围限制在每个人或应用所需的范围内。",
+					"投入生产前，请检查私有 I/O 日志、数据贡献、响应缓存、可观测性和通知设置。"
+				]
+			},
+			"gaps": {
+				"items": [
+					"Phaseo 未声称拥有 SOC 2、ISO 27001、PCI DSS、HIPAA 或同等认证。",
+					"Phaseo 未声称已完成独立渗透测试或发布公开审计报告。",
+					"对于所有提供商，均不保证零数据保留或绝不用于训练。",
+					"对于所有路由，均不保证端到端区域驻留。",
+					"账户、元数据、备份、支持和运营日志等各类数据的一般保留期限尚未汇总到一份公开清单中。"
+				]
+			},
+			"contact": {
+				"security": "安全报告请发送至 <email>security@phaseo.app</email>。",
+				"privacy": "隐私、DPA 和子处理商相关问题请发送至 <email>privacy@phaseo.app</email>。"
+			}
+		},
+		"dataHandling": "数据处理",
+		"dataHandlingBody": "网关内容默认如何处理、哪些情况适用例外，以及哪些方面取决于提供商。",
+		"serviceProviders": "服务提供商",
+		"serviceProvidersBody": "Phaseo 当前隐私政策中披露的类别。",
+		"availability": "可用性与事件",
+		"compliance": "合规",
+		"responsibleDisclosure": "负责任披露",
+		"emailSecurity": "电子邮件安全",
+		"privateGithubReport": "私密 GitHub 报告",
+		"reviewedEvidence": "已根据代码仓库证据审核",
+		"overview": {
+			"states": [
+				{
+					"id": "available",
+					"label": "可用",
+					"description": "目前已在产品中提供。"
+				},
+				{
+					"id": "gated",
+					"label": "受限",
+					"description": "仅适用于符合条件的工作区或配置。"
+				},
+				{
+					"id": "self-attested",
+					"label": "自行说明",
+					"description": "根据 Phaseo 自身的代码、政策和运营情况说明；未经独立审计。"
+				},
+				{
+					"id": "planned",
+					"label": "计划中",
+					"description": "计划开展的工作，未承诺交付日期。"
+				},
+				{
+					"id": "independently-certified",
+					"label": "经独立认证",
+					"description": "由外部认证机构验证。Phaseo 目前尚无此类认证。"
+				}
+			],
+			"documents": [
+				{
+					"id": "security",
+					"title": "安全白皮书",
+					"description": "架构、数据流、当前保护措施、限制和客户责任。",
+					"status": "自行说明"
+				},
+				{
+					"id": "subprocessors",
+					"title": "子处理方",
+					"description": "核心基础设施、附条件使用的处理方以及客户指定的第三方。",
+					"status": "公开清单"
+				},
+				{
+					"id": "dpa",
+					"title": "数据处理附录",
+					"description": "用于审查英国和欧盟控制者与处理者关系的首份非约束性草案。",
+					"status": "需要法律审查"
+				}
+			],
+			"securityPractices": [
+				{
+					"id": "encryptedTransport",
+					"state": "self-attested",
+					"title": "加密传输",
+					"description": "Phaseo 的公开服务通过 HTTPS 提供。请求通过加密的 HTTPS 连接转发给模型提供商。"
+				},
+				{
+					"id": "providerKeyProtection",
+					"state": "self-attested",
+					"title": "提供商密钥保护",
+					"description": "客户自带的提供商凭据在存储前使用 AES-256-GCM 加密。API、管理和 OAuth 密钥在存储前进行单向派生。"
+				},
+				{
+					"id": "scopedAccessOAuth",
+					"state": "available",
+					"title": "范围受限的访问与 OAuth",
+					"description": "工作区角色以及受限的 API 或 OAuth 权限可限制访问。OAuth 连接会在授权时显示所请求的权限，并且可以撤销。"
+				},
+				{
+					"id": "enterpriseIdentity",
+					"state": "gated",
+					"title": "企业身份",
+					"description": "SAML 单点登录以及 SCIM 用户和群组配置受工作区权限和功能开关限制，并非所有账户均可使用。"
+				},
+				{
+					"id": "privateVulnerabilityReporting",
+					"state": "available",
+					"title": "私密漏洞报告",
+					"description": "可通过 GitHub Security Advisories 或 security@phaseo.app 提交报告。Phaseo 的目标是在三个工作日内确认收到。"
+				}
+			],
+			"dataPractices": [
+				{
+					"id": "gatewayContent",
+					"state": "self-attested",
+					"title": "默认网关内容处理",
+					"description": "原始提示词和完整输出不会进入 Phaseo 的主要请求数据库或分析系统。符合条件的非流式输出默认可在 Upstash 缓存五分钟；配置缓存策略后最长可达 24 小时。"
+				},
+				{
+					"id": "privateIoLogging",
+					"state": "gated",
+					"title": "私有输入/输出日志",
+					"description": "受功能开关限制的工作区设置可将请求、响应和可选的提供商负载保存在私有 Cloudflare R2 中，期限为 90、180 或 365 天。默认关闭。"
+				},
+				{
+					"id": "optionalDataContribution",
+					"state": "available",
+					"title": "可选数据贡献",
+					"description": "此功能须主动选择加入。符合条件的提示词和补全内容可能经过编辑并保留不超过 30 天。撤销同意后会停止新的采集，并将之前采集的数据加入删除队列。"
+				},
+				{
+					"id": "providerRetentionTraining",
+					"state": "self-attested",
+					"title": "提供商的数据保留与训练",
+					"description": "Phaseo 无法承诺所有模型提供商都实行零数据保留。后续处理取决于所用提供商和路由；发送敏感数据前请查看提供商政策。"
+				},
+				{
+					"id": "regionalRouting",
+					"state": "gated",
+					"title": "区域路由",
+					"description": "提供商和地理位置控制可限制符合条件的路由，但 Phaseo 目前不保证每个请求都能实现端到端数据驻留。"
+				}
+			],
+			"providers": [
+				{
+					"id": "hosting",
+					"name": "Cloudflare 和 Vercel",
+					"purpose": "托管、保护并交付服务",
+					"data": "服务流量、传输中的请求内容以及运行 Phaseo 所需的运营元数据"
+				},
+				{
+					"id": "database",
+					"name": "Supabase",
+					"purpose": "数据库与账户基础设施",
+					"data": "账户、工作区、配置和请求元数据"
+				},
+				{
+					"id": "cache",
+					"name": "Upstash",
+					"purpose": "短期响应缓存",
+					"data": "缓存的模型输出、按工作区隔离的缓存键及响应元数据"
+				},
+				{
+					"id": "billing",
+					"name": "Stripe",
+					"purpose": "支付与账单",
+					"data": "账单身份和交易记录；Phaseo 不存储完整银行卡信息"
+				},
+				{
+					"id": "analytics",
+					"name": "分析与功能提供商",
+					"purpose": "产品分析、功能交付和错误诊断",
+					"data": "页面、设备、身份和使用情况遥测；不包含原始网关提示词和输出"
+				},
+				{
+					"id": "support",
+					"name": "电子邮件与支持提供商",
+					"purpose": "服务通信与客户支持",
+					"data": "联系信息、消息或工单内容以及相关账户背景"
+				},
+				{
+					"id": "models",
+					"name": "模型提供商",
+					"purpose": "处理你所路由的推理请求",
+					"data": "输入、输出和必要的请求元数据；适用提供商条款和保留政策"
+				},
+				{
+					"id": "assistants",
+					"name": "已连接的助手提供商",
+					"purpose": "返回已授权的 OAuth 工具结果",
+					"data": "仅限只读结果以及通过授权流程批准的权限范围"
+				}
+			],
+			"unclaimed": [
+				"Phaseo 尚未取得 SOC 2、ISO 27001、PCI DSS、HIPAA 或其他独立认证",
+				"尚无已完成的独立渗透测试或已发布的审计报告",
+				"未承诺公开服务的合同可用性 SLA",
+				"未承诺所有提供商均实行零数据保留或不使用请求数据训练",
+				"未保证所有提供商和路由均实现区域数据驻留",
+				"公开草案不构成法律意见或自动生效的 DPA"
+			],
+			"assuranceSummary": "Phaseo 尚未获得 SOC 2 或 ISO 27001 认证。其安全计划未经独立审计。",
+			"providerHeader": "提供商",
+			"purposeHeader": "用途",
+			"dataHeader": "涉及的数据",
+			"subprocessorNoteLead": "请查看带日期的",
+			"scheduleText": "子处理方清单",
+			"subprocessorNoteTail": "，了解供应商、适用条件、位置方面的空缺，以及客户选择的 AI 提供商的单独处理方式。",
+			"serviceStatus": "服务状态",
+			"serviceStatusBodyLead": "当前运行状况和事故信息发布在 ",
+			"statusLinkText": "status.phaseo.app",
+			"serviceStatusBodyTail": "。Phaseo 不承诺公开服务的合同可用性 SLA。",
+			"incidentResponse": "事故响应",
+			"incidentResponseBody": "运营代码包含事故通知和联系流程。内部手册不公开，该流程也未经独立测试。",
+			"complianceBody": "Phaseo 目前没有独立安全认证。公开 DPA 是非约束性的初稿，安全白皮书基于自我声明。若客户需求和预算足以支持，可考虑建立正式的保证计划；目前未承诺采用任何框架或日期。",
+			"responsibleDisclosureBody": "请私下报告安全问题。请勿访问他人的数据、进行拒绝服务测试，或在修复方案可用之前披露漏洞。",
+			"lastReviewed": "最近审查",
+			"contact": "联系"
+		},
+		"subprocessorsPage": {
+			"metadataTitle": "子处理方",
+			"metadataDescription": "查看 Phaseo 为提供服务而使用的基础设施、AI 处理服务及其他第三方。",
+			"keywords": [
+				"Phaseo 子处理方",
+				"Phaseo 服务提供商",
+				"AI 网关子处理方"
+			],
+			"title": "子处理方和第三方处理",
+			"description": "列明 Phaseo 所用服务、这些服务可能接收的数据及适用条件，并注明日期。AI 提供商的法律角色可能因路由和合同而异。",
+			"status": "公开清单 · 已注明事实核查与法律审查",
+			"calloutTitle": "如何阅读此清单",
+			"calloutBody": "第一张表列出依据客户 DPA、可能代表 Phaseo 处理客户数据的服务。后续部分区分客户选择的 AI 提供商，以及 Phaseo 主要用于自身控制者运营的服务。列入清单不代表某项服务会收到每位客户的所有数据。",
+			"sections": {
+				"core": "1. 核心及有条件的子处理方",
+				"managedAi": "2. Phaseo 管理的 AI 提供商",
+				"customerAi": "3. 客户选择的 AI 提供商",
+				"operations": "4. 其他服务提供商",
+				"destinations": "5. 客户指定的目的地",
+				"changes": "6. 变更与异议",
+				"history": "7. 变更记录"
+			},
+			"headers": {
+				"provider": "提供商",
+				"purpose": "用途",
+				"data": "数据",
+				"location": "处理地点",
+				"whenUsed": "使用条件",
+				"role": "角色"
+			},
+			"coreProcessors": {
+				"cloudflare": {
+					"purpose": "公共边缘网络、DNS、Gateway Worker 执行、日志、KV、Durable Objects 和私有 R2 对象存储",
+					"data": "网络和请求数据；传输中的 Gateway 内容；可选的输入/输出日志和数据贡献；运营元数据",
+					"location": "Workers 在 Cloudflare 全球网络上运行。Phaseo 的私有 R2 存储桶位于西欧 (WEUR)；目前未对其施加欧盟司法管辖区限制。",
+					"condition": "核心服务"
+				},
+				"vercel": {
+					"purpose": "托管并交付 Phaseo Web 应用",
+					"data": "网站和控制面板流量、账户相关请求、设备及运营元数据",
+					"location": "全球交付网络；部署处理地点仍需事实核实",
+					"condition": "核心服务"
+				},
+				"supabase": {
+					"purpose": "身份验证和主要关系型数据库",
+					"data": "账户、工作区、配置、账单引用、请求、使用情况、安全和支持元数据",
+					"location": "AWS eu-west-2 (London)，已于 2026 年 8 月 30 日根据生产项目核实",
+					"condition": "核心服务"
+				},
+				"upstash": {
+					"purpose": "基于 Redis 的响应缓存及相关路由数据",
+					"data": "工作区范围的缓存键、模型输出、响应元数据和短期路由/缓存记录",
+					"location": "生产数据库区域仍需事实核实",
+					"condition": "启用 Redis 绑定时"
+				},
+				"openai": {
+					"purpose": "对经选择加入的数据贡献配置样本进行分类",
+					"data": "尽力去标识化的提示词和响应内容，以及分类器指令",
+					"location": "遵循 Phaseo OpenAI API 账户和适用的传输条款；需事实核实",
+					"condition": "仅在启用数据贡献和上游分类时"
+				}
+			},
+			"managedAi": {
+				"introduction": "{date}，Phaseo 将生产环境中启用的 Gateway 路由与生产 Worker 的受管凭据绑定进行了比对。共有 38 个提供商系列同时满足这两个条件。法律角色取决于 API 接收方及其合同，而非通过该 API 提供的模型开发者。",
+				"termsHeading": "已找到处理方条款",
+				"termsBody": "已为相关商业服务找到现行处理方条款或 DPA。账户配置、签约实体、数据传输及特定功能条款仍需确认。",
+				"pendingHeading": "处理方合同待确认",
+				"pendingBody": "Phaseo 计划仅将这些提供商作为子处理方，但尚未记录充分的第 28 条合同证据。对于个人数据处理，这些提供商仍属暂定。",
+				"restrictedHeading": "受限审查",
+				"restrictedBody": "关于训练、依赖退出选项或不明确的自身用途，仍有相关条款需要厘清。在问题解决前，不应通过受管池向这些提供商发送不受限制的客户个人数据。",
+				"conclusion": "此初步角色登记并不表示所有列出的受管路由均已获准处理个人数据。在签署 DPA 前，Phaseo 必须完成未结的合同和配置检查，或将相关提供商从受管池中移除。"
+			},
+			"customerAi": {
+				"directory": "Phaseo 会将请求内容和必要元数据发送给客户选择的提供商、请求的模型或客户的路由配置。添加、停用或降级路由时，可用选项也会变化。实时的<directory>提供商目录</directory>是维护当前可用提供商信息的来源。",
+				"ownAccount": "Phaseo 使用自有提供商账户时，该提供商在推理环节应作为 Phaseo 的子处理方，并须通过上述受管提供商审查。客户提供凭据或持有提供商合同时，该提供商通常是客户指定的接收方或客户自己的处理方。如果提供商为自身目的处理数据（包括条款允许的训练），也可能另行作为控制者行事。"
+			},
+			"operations": {
+				"introduction": "这些供应商支持 Phaseo 的账单、通信、产品运营、文档或支持工作。当 Phaseo 作为控制者行事时，他们可能为 Phaseo 处理个人数据，但不会因此自动成为 DPA 项下所有客户数据的子处理方。"
+			},
+			"operationalProviders": {
+				"stripe": {
+					"role": "账单和支付处理",
+					"data": "账单身份、交易、发票、退款和支付方式数据"
+				},
+				"resend": {
+					"role": "交易和运营电子邮件",
+					"data": "收件人联系方式、电子邮件内容和投递事件"
+				},
+				"statsig": {
+					"role": "功能开关和实验",
+					"data": "用户、工作区、环境和功能评估的稳定标识符；配置后还包括已验证的电子邮件地址"
+				},
+				"googleAnalytics": {
+					"role": "基于同意的网站分析",
+					"data": "页面、设备、引荐来源、事件和粗略位置数据"
+				},
+				"vercelAnalytics": {
+					"role": "基于同意的网站分析",
+					"data": "页面、设备和引荐来源数据及性能遥测"
+				},
+				"posthog": {
+					"role": "启用生产密钥时进行产品分析",
+					"data": "产品事件、页面、设备和使用情况遥测；按设计不包含原始 Gateway 内容"
+				},
+				"axiom": {
+					"role": "启用生产密钥时进行运营可观测性",
+					"data": "工作区和请求遥测；配置后会对抽样请求详情尽力去标识化"
+				},
+				"mintlify": {
+					"role": "文档托管",
+					"data": "文档请求、网络数据和文档分析数据"
+				},
+				"incidentIo": {
+					"role": "公开状态页和事件通信",
+					"data": "状态页流量，以及用户提供的事件订阅联系方式"
+				},
+				"tawkTo": {
+					"role": "可选的实时支持聊天",
+					"data": "联系方式、聊天内容、设备和页面上下文"
+				},
+				"notion": {
+					"role": "支持工单和内部工作流管理",
+					"data": "联系方式、工单内容和相关账户上下文"
+				},
+				"discord": {
+					"role": "内部运营通知和客户配置的警报发送",
+					"data": "经遮蔽的联系方式、运营或账单摘要及客户选择的警报内容"
+				}
+			},
+			"customerDestinations": {
+				"introduction": "客户配置可观测性端点、webhook、电子邮件收件人、Slack 工作区、Microsoft Teams 频道、Discord 目的地、OAuth 应用或兼容的 AI 助手时，Phaseo 会按客户指示向该处发送所选数据。仅因 Phaseo 提供连接功能，这些接收方不会成为 Phaseo 委任的子处理方。"
+			},
+			"changes": {
+				"introduction": "Phaseo 会在本页发布重大变更，并标注新的审查日期。根据 DPA 审阅稿，Phaseo 将至少提前 30 天向客户账户邮箱发出通知，然后新的子处理方才开始处理客户个人数据；在此期间，Phaseo 会接受书面异议。",
+				"contact": "目前，公开产品尚未提供订阅子处理方变更通知的一般功能。审阅待签署版本的客户应确认通知联系人：<email>privacy@phaseo.app</email>。"
+			},
+			"history": {
+				"initialEntry": "首份有证据支持的清单。新增短期 Upstash 响应缓存、可选的 OpenAI 数据贡献分类，以及客户指定目的地和控制者运营的独立类别。"
+			}
+		},
+		"dpaPage": {
+			"metadataTitle": "数据处理附录",
+			"metadataDescription": "查看 Phaseo 面向英国和欧盟控制者与处理方关系的数据处理附录草案。",
+			"keywords": [
+				"Phaseo DPA",
+				"Phaseo 数据处理附录",
+				"AI 网关 DPA"
+			],
+			"title": "数据处理附录 (DPA)",
+			"description": "Phaseo 代表客户处理个人数据的条款。本公开版本为审阅草案。在签署或明确纳入协议前，本文件不对任何一方产生约束力。",
+			"status": "审阅草案 · 需法律批准",
+			"calloutTitle": "审阅草案",
+			"calloutBody": "本草案旨在涵盖 UK GDPR 和 EU GDPR 第 28 条规定的控制者与处理方之间的强制条款。仍需补充 Phaseo 的服务地址、已确认的数据传输条款、最终批准的 Phaseo 管理型 AI 子处理方名单，并取得合格法律顾问批准。请发送邮件至 <email>privacy@phaseo.app</email> 索取签署版。",
+			"sections": {
+				"parties": "合同双方和生效日期",
+				"definitions": "1. 定义",
+				"scope": "2. 范围、角色和指示",
+				"customer": "3. 客户的责任",
+				"confidentiality": "4. 保密与安全",
+				"subprocessors": "5. 子处理方和 AI 提供商",
+				"assistance": "6. 协助和监管义务",
+				"breach": "7. 个人数据泄露",
+				"transfers": "8. 国际传输",
+				"deletion": "9. 返还和删除",
+				"audit": "10. 信息与审计",
+				"term": "11. 期限、责任和一般条款",
+				"annex1": "附件 1：处理详情",
+				"annex2": "附件 2：技术和组织措施",
+				"annex3": "附件 3：子处理方",
+				"annex4": "附件 4：受限传输条款",
+				"sources": "起草依据",
+				"signature": "签署栏"
+			},
+			"content": {
+				"parties": {
+					"introduction": "本数据处理附录 (<dpa>DPA</dpa>) 在签署或明确纳入协议后，构成规范客户使用服务的协议 (<agreement>协议</agreement>) 的一部分。",
+					"customer": "<customer>客户</customer>是协议、订单表或签署栏中列明的个人或组织。",
+					"phaseo": "<phaseo>Phaseo</phaseo>指以 Phaseo 名义经营的 Daniel Butler，服务地址为[填写服务地址及所需税务或注册信息]。",
+					"effectiveDate": "<effectiveDate>生效日期</effectiveDate>是本 DPA 最后签署或有效纳入协议的日期。",
+					"conflict": "如果本 DPA 与协议关于处理客户个人数据的条款冲突，以本 DPA 为准。协议的其他部分保持不变。"
+				},
+				"definitions": [
+					{
+						"term": "适用的数据保护法",
+						"definition": "指适用于本 DPA 项下处理活动的隐私和数据保护法律，包括 UK GDPR、Data Protection Act 2018、在修改英国数据保护法的范围内适用的 Data (Use and Access) Act 2025、EU GDPR，以及实施或补充这些法规的适用国家法律。"
+					},
+					{
+						"term": "客户数据",
+						"definition": "指客户或代表客户提交给服务的数据，或客户指示 Phaseo 通过服务处理的数据。"
+					},
+					{
+						"term": "客户个人数据",
+						"definition": "指客户数据中由 Phaseo 代表客户处理的个人数据。"
+					},
+					{
+						"term": "AI 提供商",
+						"definition": "指收到运行 AI 模型或相关服务请求的第三方。"
+					},
+					{
+						"term": "服务",
+						"definition": "指协议涵盖的 Phaseo 服务。"
+					},
+					{
+						"term": "子处理方",
+						"definition": "指 Phaseo 为服务而聘用、负责处理客户个人数据的另一处理方。"
+					},
+					{
+						"term": "控制者、处理方、数据主体、个人数据泄露和处理",
+						"definition": "均具有适用数据保护法赋予的含义。"
+					}
+				],
+				"scope": [
+					"客户是客户个人数据的控制者，Phaseo 是其处理方。如果客户本身是处理方，Phaseo 即为客户的子处理方，客户确认相关控制者已授权其发出指示。",
+					"Phaseo 仅根据客户的书面指示处理客户个人数据。协议、本 DPA、客户的 API 请求、所选模型和提供商、路由规则、产品设置及书面支持请求均构成书面指示，其中包括提供服务所需的数据传输。",
+					"如果英国或欧盟法律要求 Phaseo 在没有客户指示的情况下处理客户个人数据，除非法律禁止通知，Phaseo 会在处理前告知客户。",
+					"如果 Phaseo 认为某项指示违反适用的数据保护法，会通知客户。双方解决问题前，Phaseo 可以暂停受影响的处理活动。",
+					"附件 1 说明处理的主题、期限、性质和目的、个人数据类型、数据主体类别，以及双方相关的权利和义务。"
+				],
+				"customerResponsibilities": [
+					"客户将遵守适用的数据保护法，提供所有必要通知，并为其指示和客户个人数据确立有效的法律依据。",
+					"除非协议明确允许，且客户已评估所选设置和 AI 提供商，否则客户不得提交特殊类别数据、刑事犯罪数据、完整支付卡数据或其他高度敏感的数据。",
+					"客户负责其对 AI 提供商设定的限制、保留和日志设置、凭据以及由客户指定的目的地。",
+					"客户应限制对服务的访问、保护凭据，并在怀疑存在未经授权的访问或违法处理时及时通知 Phaseo。"
+				],
+				"confidentiality": [
+					"Phaseo 仅允许需要为提供、保护或支持服务或遵守法律而访问客户个人数据的人员访问这些数据。",
+					"Phaseo 授权处理客户个人数据的任何人员均须承担合同保密义务或适当的法定保密义务。",
+					"Phaseo 将维持附件 2 中的技术和组织措施。这些措施应结合 UK GDPR 和 EU GDPR 第 32 条列出的因素，提供与风险相称的安全水平。",
+					"随着服务发展，Phaseo 可以调整个别措施，但在协议有效期内不会实质性降低对客户个人数据的整体保护水平。"
+				],
+				"scopeIndependentController": "如果 Phaseo 自行决定处理目的和方式（包括账户管理、账单、反欺诈、法律合规及服务安全），则作为独立控制者行事。此类处理适用<privacyPolicy>隐私政策</privacyPolicy>。仅仅因为 Gateway 内容经过服务，Phaseo 不会将其视为独立控制者的数据。",
+				"assistance": [
+					"考虑到处理活动的性质，Phaseo 将采取适当的技术和组织措施，协助客户依据适用的数据保护法回应数据主体的请求。",
+					"如果数据主体直接向 Phaseo 提出有关客户个人数据的请求，Phaseo 会将其转交客户。除非客户指示代为回应或法律要求回应，否则 Phaseo 不会代表客户答复。",
+					"考虑到处理性质及 Phaseo 掌握的信息，Phaseo 将协助客户履行安全、个人数据泄露通知、数据保护影响评估以及事先咨询监管机构等义务。",
+					"适用的数据保护法要求时，Phaseo 将保留记录并配合监管机构。",
+					"如果客户要求超出产品标准功能范围的大量协助，Phaseo 可以收取合理且双方同意的费用；若该工作因 Phaseo 违反本 DPA 而需要，则不收取此类费用。"
+				],
+				"breach": [
+					"Phaseo 知悉影响客户个人数据的个人数据泄露后，将及时通知客户，不作不合理延迟。",
+					"在当时已知的范围内，通知将说明泄露性质、受影响数据主体和记录的类别及估计数量、可能后果、已采取或拟采取的措施，以及进一步咨询的联系人。Phaseo 可以分阶段提供信息。",
+					"Phaseo 将采取适当措施控制、调查、减轻并补救泄露事件，并提供客户依法通知所合理需要的信息和协助。",
+					"Phaseo 的通知不构成对过错或责任的承认。是否必须通知监管机构或受影响的数据主体，仍由客户决定。"
+				],
+				"transfers": [
+					"除非根据客户的书面指示并遵守适用的数据保护法，Phaseo 不会对客户个人数据进行受限传输。",
+					"双方可以依赖适用的充分性决定或法规。若无此类依据，双方将签订欧盟委员会 2021 年国际传输标准合同条款、英国 International Data Transfer Agreement、这些欧盟条款的 UK Addendum 或其他有效保障措施。",
+					"如果传输保障措施要求进行风险评估或英国数据保护测试，Phaseo 将提供合理掌握的信息，并实施双方商定的补充措施。",
+					"如果某项传输机制不再提供合法依据，双方将采用其他合法机制或停止受影响的处理活动。",
+					"签署前，附件 4 必须列出未获充分性决定覆盖的传输的出口方和进口方、相关 SCC 模块、适用法律、监管机构、可选条款、英国机制和处理地点。"
+				],
+				"deletion": [
+					"在协议期限内，客户可以通过产品现有控制功能检索或删除受支持的客户数据。",
+					"服务终止时，Phaseo 将按照客户选择返还或删除客户个人数据及其现有副本，除非法律要求保留。客户应在终止前或终止后 30 天内告知选择；未作选择的，Phaseo 将删除数据。",
+					"Phaseo 将在相关指示或终止日期后不无故拖延且最迟 30 天内，从活动系统删除客户个人数据。自助流程会移除 Auth 账户和活动数据库记录，删除关联的 Stripe 客户档案，并将私有 R2 对象和 Gateway KV 条目加入可重试的定时清除队列。完成记录不会保留用户或工作区标识符。",
+					"备份副本在备份周期删除前会受到保护并与日常使用隔离。生产 Supabase 项目每天保留数据库还原点，共七天，并已停用时间点恢复。Phaseo 将在签署前以及备份计划变更后重新核实此期限。",
+					"Phaseo 的删除操作不会删除独立控制者或客户指定接收方持有的数据。客户必须另行指示这些相关方。"
+				],
+				"audit": [
+					"Phaseo 将在遵守保密和安全义务的前提下，提供证明符合本 DPA 和第 28 条所合理需要的信息。",
+					"客户通常会先审阅 Phaseo 当前的信任资料和书面答复，再请求检查。此规定不限制适用数据保护法或监管机构要求的审计。",
+					"客户每 12 个月可审计 Phaseo 一次，并可在个人数据泄露后或有可信的重要不合规证据时审计。除紧急情况或监管机构要求更短期限外，客户须至少提前 30 天通知。",
+					"审计由客户或受保密义务约束的独立合格审计人员进行，不得访问其他客户数据、源代码或与处理无关的系统。Phaseo 将配合；直接访问存在安全风险时，可以提供等效证据。",
+					"除非审计发现 Phaseo 严重违反本 DPA，否则客户承担自身审计费用及 Phaseo 的合理费用。",
+					"Phaseo 目前没有 SOC 2 报告、ISO 27001 证书或独立渗透测试报告。"
+				],
+				"term": [
+					"只要 Phaseo 仍根据协议处理客户个人数据，本 DPA 就持续有效。",
+					"本 DPA 不免除任何一方依据适用数据保护法直接承担的义务或责任。",
+					"协议中的责任限制和免责条款在法律允许的范围内适用于本 DPA。",
+					"除非适用数据保护法或纳入的传输机制另有要求，否则适用协议中的准据法和争议解决条款。"
+				],
+				"annex1": [
+					{
+						"label": "处理主题",
+						"value": "提供协议涵盖的控制面板、API 网关、模型路由、使用和账单记录、已配置的日志、可选数据贡献、可观测性导出、通知及支持服务。"
+					},
+					{
+						"label": "期限",
+						"value": "协议期限及第 9 节规定的删除期限。"
+					},
+					{
+						"label": "处理性质和目的",
+						"value": "为提供和保障服务而接收、传输、路由、保护、缓存、记录、检索数据；在客户选择加入时进行分类；在客户配置目的地时导出；并提供支持、返还和删除服务。"
+					},
+					{
+						"label": "频率",
+						"value": "根据客户使用服务的情况持续或间歇进行。"
+					},
+					{
+						"label": "数据主体",
+						"value": "客户的用户、员工、承包商、最终用户、客户和供应商，以及客户通过服务提交其数据的其他人员。"
+					},
+					{
+						"label": "个人数据类型",
+						"value": "提示词、消息、文档、图像、音频、视频、工具和模型输出内容；标识符；账户和工作区引用；设备、IP、粗略位置、身份验证、路由、提供商、使用情况、成本、延迟、错误、安全和支持元数据。"
+					},
+					{
+						"label": "敏感数据",
+						"value": "服务不要求特殊类别数据或刑事犯罪数据。Phaseo 无法可靠判断客户是否在自由格式内容中包含此类数据。第 3 节限制适用。"
+					},
+					{
+						"label": "保留期限",
+						"value": "响应缓存：默认五分钟，配置后最长 24 小时。可选私有输入/输出日志：90、180 或 365 天。可选数据贡献：最长 30 天。其他客户个人数据遵循第 9 节和协议。"
+					},
+					{
+						"label": "控制者的权利和义务",
+						"value": "客户可以发出合法指示、配置服务、行使本 DPA 下的审计和协助权，并要求返还或删除数据。客户必须履行第 3 节规定的义务。"
+					}
+				],
+				"annex2": [
+					"通过 HTTPS 提供公开服务，并建立 Phaseo 到 AI 提供商的连接。",
+					"客户自带提供商凭据在存储前使用 AES-256-GCM 加密。受支持的 webhook 和通知密钥也会加密存储。",
+					"API、管理和 OAuth 密钥使用单向密钥或密码派生。",
+					"工作区角色、数据库访问策略、范围受限的 API 和 OAuth 权限、同意屏幕及撤销控制。",
+					"对敏感身份验证和实时路由实施速率限制，并在请求和配置边界进行结构化验证。",
+					"受管基础设施日志、请求元数据、提供商健康信号及公开事件状态页。",
+					"版本控制、依赖锁定文件、自动 lint、类型检查、针对性测试和私密漏洞报告。"
+				],
+				"annex2Security": "除响应缓存、输入/输出日志、数据贡献、AI 提供商和客户指定目的地路径外，原始 Gateway 内容不会进入主要请求数据库和分析系统。相关路径见<securityWhitepaper>安全白皮书</securityWhitepaper>。",
+				"annex2Summary": "这些措施为 Phaseo 自行声明。Phaseo 不声称其安全计划经过独立审计、灾难恢复计划经过测试或已获得正式认证。",
+				"annex3Introduction": "签署本 DPA 时，带日期的<subprocessorSchedule>子处理方清单</subprocessorSchedule>构成附件 3。新增和替换适用第 5 节。",
+				"annex3Review": "Phaseo 已初步分类目前由其管理的 AI 提供商。签署前，Phaseo 必须完成清单指出的处理方合同、账户设置、传输及保留期限方面的待办检查，并移除或限制未获准处理客户个人数据的受管提供商。客户使用自有凭据或协议的提供商将单独列明。",
+				"annex4": "如果客户个人数据将在没有适用充分性决定或法规的情况下传输，请在签署前填写本附件。列明传输机制、出口方和进口方、国家/地区、数据和数据主体类别、频率、目的、保留期限、主管监管机构、适用法律、可选 SCC 条款及补充措施。",
+				"sourcesIntroduction": "本草案参考英国 Information Commissioner's Office 发布的现行处理方合同检查清单，以及欧盟委员会关于第 28 条和国际传输的资料。ICO 表示，Data (Use and Access) Act 2025 颁布后，其部分处理方合同指引正在审查。合格法律顾问应依据届时生效的法律和指引审阅最终签署文本。",
+				"sourceLinks": [
+					"ICO：控制者与处理方合同的必备条款",
+					"ICO：国际传输",
+					"欧盟委员会：控制者与处理方标准条款"
+				],
+				"signature": {
+					"customer": "客户",
+					"phaseoParty": "Daniel Butler，以 Phaseo 名义经营",
+					"customerFields": [
+						"姓名",
+						"职务",
+						"签名",
+						"日期"
+					],
+					"phaseoNameLabel": "姓名",
+					"phaseoName": "Daniel Butler",
+					"capacityLabel": "身份",
+					"capacity": "个体经营者",
+					"signatureLabel": "签名",
+					"dateLabel": "日期",
+					"insertPlaceholder": "[填写]"
+				},
+				"subprocessorsIntroduction": "客户一般性书面授权 Phaseo 使用<subprocessorSchedule>子处理方清单</subprocessorSchedule>中列出的子处理方。",
+				"subprocessorsClauses": [
+					"新子处理方开始处理客户个人数据前至少 30 天，Phaseo 会通知客户。通知发送至账户邮箱并记录在清单中。如果紧急安全或服务连续性需求使提前通知不可行，Phaseo 会尽快通知客户。",
+					"客户可以在通知期内基于合理的数据保护理由书面提出异议。双方将本着诚信原则尝试解决。若无法解决，Phaseo 可以不使用该子处理方、提出合理的服务调整，或允许客户依协议停止使用受影响的服务部分。",
+					"Phaseo 将通过书面条款要求每个子处理方提供不低于本 DPA 适用条款的客户个人数据保护水平。在适用数据保护法要求的范围内，Phaseo 对子处理方的履行负责。",
+					"通过 Phaseo 管理的路由使用 AI 提供商时，如果该提供商代表 Phaseo 处理客户个人数据，则其为子处理方。若客户提供自己的凭据或与 AI 提供商直接签约，除非清单另有说明，该提供商通常是客户指定的接收方。提供商的法律角色取决于实际处理方式和适用法律，而非本 DPA 使用的标签。",
+					"客户指示 Phaseo 向其路由配置允许的 AI 提供商披露客户数据。若提供商身份、地点、保留期限或训练政策很重要，客户可以使用可用的提供商限制。"
+				]
+			}
+		}
+	},
+	"pricing": {
+		"title": "定价",
+		"description": "简单透明的按量付费AI网关定价，并可选自助式企业身份管理、治理及含支付权益的方案。",
+		"everythingIncluded": "全部包含",
+		"everythingIncludedBody": "在花费任何费用前探索模型目录、排名、SDK 和免费模型聊天。需要付费模型用量时再添加额度，无需更换方案。",
+		"swipeCompare": "横向滑动以比较提供商。",
+		"showFreeAccess": "显示免费访问",
+		"compareCompetitors": "比较竞争对手",
+		"competitorNote": "竞争对手详情反映了 2026 年 7 月 26 日核查的公开文档。“未宣传”表示无法在公开产品或定价文档中验证该功能。",
+		"selfServeEnterprise": "自助式企业方案",
+		"selfServeEnterpriseBody": "为100至100,000名成员的团队配置企业方案，查看准确月费，无需销售沟通或承诺模型消费即可订阅。",
+		"buildPlan": "构建我的方案",
+		"activeMembers": "活跃成员",
+		"users": "用户",
+		"enterpriseSubscription": "企业方案订阅",
+		"monthEstimated": "/月（预计）",
+		"whatYouGet": "你将获得",
+		"included": "包含",
+		"creditTopUpFee": "额度充值手续费",
+		"modelUsageCredits": "模型用量额度",
+		"purchasedSeparately": "单独购买",
+		"committedModelSpend": "承诺的模型支出",
+		"none": "无",
+		"usdNote": "按月以美元计费的订阅。额度购买保持独立，在所有受支持的支付方式中均采用标准 5% 充值手续费。模型用量可以按需消费多少或少消费多少——订阅价格不变。",
+		"features": {
+			"sso": "SAML SSO 与强制登录",
+			"scim": "SCIM 用户、群组和批量操作",
+			"departments": "部门与工作区角色",
+			"audit": "审计与治理控制",
+			"priority": "优先支持"
+		},
+		"paygHeadline": "默认按量付费。团队需要时，自助开通 Enterprise。",
+		"paygBody": "按需购买余额，只为实际使用付费。Enterprise 是用于身份管理、治理和优先支持的独立月度订阅，不改变模型使用价格，无需销售沟通即可开通。如需估算单个模型的费用，请使用",
+		"manageCredits": "管理额度",
+		"manageProviderKeys": "管理提供商密钥",
+		"modelPricingCalculator": "模型定价计算器",
+		"payg": "按量付费",
+		"paygBodyShort": "只在需要时充值额度。",
+		"enterpriseOptional": "自助 Enterprise",
+		"enterpriseOptionalBody": "添加 SSO、SCIM、治理和优先支持，不改变使用价格。",
+		"pricesPublic": "价格公开透明",
+		"pricesPublicBody": "回答简短问卷后立即订阅。",
+		"faqTitle": "常见问题",
+		"ready": "准备开始了吗？",
+		"readyBody": "免费开始，需要时添加额度，并在成长过程中保持相同的按量付费条款。",
+		"openPlatform": "开放平台",
+		"askPricing": "询问定价问题",
+		"andReview": "并查看",
+		"modelPricingGuide": "Phaseo 如何计算模型价格",
+		"whatPhaseoCharges": "Phaseo 的收费方式",
+		"usageAndFeeDetails": "模型使用费和 Phaseo 费用分开显示，方便你了解收费项目、收费方和收费时间。",
+		"managedModelUsage": "托管模型用量",
+		"catalogModelPrice": "目录中的模型价格",
+		"managedModelUsageDetails": "成功使用后从预付额度中扣除。Phaseo 不会按托管请求额外加价。",
+		"creditPurchase": "购买额度",
+		"creditTopUpValue": "充值手续费 {feePercent}%（最低 1 美元）",
+		"creditPurchaseDetails": "购买额度时收取，不会针对每个托管请求重复收取。",
+		"bringYourOwnKey": "自带密钥（BYOK）",
+		"byokUsageValue": "每月前 {freeRequests, number} 个请求包含在内，之后按供应商等效成本收取 {feePercent}%。",
+		"byokUsageDetails": "模型使用费由你的供应商直接收取。免费额度会在每个 UTC 月初重置。",
+		"featureColumn": "功能",
+		"freeAccessColumn": "免费使用",
+		"activeMembersValue": "活跃成员：{count, number} 人",
+		"memberOverageSummary": "基础费用为 {base}，超出部分按每位成员每月 {rate} 收取，共 {count} 位额外成员。",
+		"membersAboveLimit": "超过 {limit} 人的成员",
+		"overageRate": "每位独立成员每月 {rate}",
+		"buyCredits": "购买额度",
+		"addCredits": "添加额度",
+		"viewUsage": "查看用量",
+		"gotACode": "有兑换码吗？",
+		"billingInviteMessageWithLink": "你已受邀设置发票付款。<link>从这里开始</link>。",
+		"billingInviteOnlyWithContact": "发票付款目前仅限受邀用户使用。<link>联系我们</link>以申请访问权限。",
+		"billingInviteOnly": "发票付款目前仅限受邀用户使用。",
+		"faq": {
+			"sectionTitles": {
+				"billing-pricing": "费用与账单",
+				"enterprise": "企业",
+				"byok": "自带密钥",
+				"usage-controls": "使用与控制",
+				"routing-reliability": "路由与可靠性",
+				"apis-features": "API 与功能",
+				"privacy-data": "隐私与数据",
+				"support-status": "支持与服务状态"
+			},
+			"questions": {
+				"how-are-tokens-billed": "托管模型的使用费用如何结算？",
+				"what-does-phaseo-charge": "Phaseo 会收取哪些费用？",
+				"is-top-up-fee-per-request": "购买额度时的 {fee, number}% 手续费会按每次请求收取吗？",
+				"how-is-billing-structured": "账单如何构成？",
+				"are-sdks-priced-separately": "SDK 或集成需要额外付费吗？",
+				"contracts-commitments": "我需要签合同或承诺每月消费吗？",
+				"are-failed-or-fallback-attempts-billed": "失败的尝试或回退请求会收费吗？",
+				"streaming-pricing": "流式响应的收费方式不同吗？",
+				"data-api-free": "Data API 免费吗？",
+				"payment-methods": "你们接受哪些付款方式？",
+				"refunds": "额度购买后可以退款吗？",
+				"invoices": "可以下载发票吗？",
+				"enterprise-plan": "什么是自助式企业方案？",
+				"enterprise-credit-fees": "企业方案会改变额度充值手续费吗？",
+				"enterprise-team-sizes": "团队扩大后价格如何变化？",
+				"enterprise-usage-billing": "企业方案包含模型使用费用吗？",
+				"enterprise-bank-transfer": "美元银行转账的价格不同吗？",
+				"how-does-byok-work": "BYOK 如何计费？",
+				"what-is-included-with-byok": "BYOK 包含哪些功能？",
+				"provider-equivalent-cost": "什么是供应商等价成本？",
+				"can-i-control-byok-fallback": "我可以控制 Phaseo 何时使用我的供应商密钥吗？",
+				"do-you-enforce-rate-limits": "平台会实施速率限制吗？",
+				"can-i-separate-environments": "可以隔离开发、预发布和生产环境吗？",
+				"can-i-set-budgets": "可以设置预算和支出控制吗？",
+				"provider-unavailable": "供应商不可用时会怎样？",
+				"routing-mode": "可以按价格或延迟优化路由吗？",
+				"region-privacy-routing": "可以限制区域或要求零数据保留吗？",
+				"model-pricing-changes": "模型弃用或价格变化时会怎样？",
+				"openai-anthropic-migration": "可以从 OpenAI、Anthropic 或其他网关迁移吗？",
+				"tools-structured-output": "支持工具和结构化输出吗？",
+				"multimodal-endpoints": "可以使用哪些模态？",
+				"training-data": "Phaseo 会使用我的提示词或响应进行训练吗？",
+				"request-logging": "Phaseo 会存储哪些请求数据？",
+				"service-status": "在哪里查看故障和运行时间？",
+				"contact-support": "如何联系支持团队？",
+				"receipts": "购买余额后可以获取收据吗？"
+			},
+			"answers": {
+				"how-are-tokens-billed": "输入、输出及其他可计费使用量会按目录中显示的模型价格从你的 Phaseo 额度余额中扣除。Phaseo 不会对每个托管请求另加费用。",
+				"what-does-phaseo-charge": "托管使用会在购买额度时收取 {fee, number}% 手续费，最低 {minimum}。BYOK 每个 UTC 自然月的前 {freeRequests, number} 次请求免收 Phaseo 服务费。超过后，按供应商等价成本收取 {serviceFee, number}%。",
+				"is-top-up-fee-per-request": "不会。{fee, number}% 的手续费（最低 {minimum}）只在购买额度时收取一次。之后托管模型使用按目录价格扣除额度，不会再按请求收取 Phaseo 加价。",
+				"how-is-billing-structured": "免费访问包括受支持的免费模型、公开数据、SDK和集成。付费模型使用从预付额度中扣除。需要SSO、SCIM、治理功能或支付权益的团队，可以另加月度企业订阅，模型使用量的计量方式不变。",
+				"are-sdks-priced-separately": "不需要。Phaseo 客户端 SDK、Agent SDK、兼容层和文档中列出的集成都无需单独套餐或订阅。通过这些方式发出的请求仍按本页所示的托管使用或 BYOK 价格计费。",
+				"contracts-commitments": "按量付费无需合同、订阅或每月最低消费。企业方案是可选的月度订阅，可自行开通，无需协商企业协议。",
+				"are-failed-or-fallback-attempts-billed": "Phaseo 只记录成功模型使用的托管费用。失败尝试不会产生成功使用费用。若回退供应商完成请求，该供应商提供的使用量会正常计费。BYOK 供应商可能会按自己的规则对错误发生前已处理的工作收费。",
+				"streaming-pricing": "不会。流式传输只改变响应的交付方式，不改变 Phaseo 的定价模式。测得的输入、输出及其他可计费使用量与非流式请求按相同目录价格收费。",
+				"data-api-free": "是。所有人都可以使用 Data API。查询公开的模型、供应商、价格、基准测试或排名数据，无需购买网关额度。",
+				"payment-methods": "Phaseo接受信用卡和借记卡充值。符合条件的企业工作区也可通过美元银行转账充值，前提是该付款方式已为其Stripe客户启用。所有受支持的付款方式均收取标准5%充值费。",
+				"refunds": "如果购买的额度一笔都没用，可在 24 小时内通过自助方式申请退款。请在“设置 → 额度”查看资格并提交申请。",
+				"invoices": "可以。已完成的额度购买可在“设置 → 额度”下载 PDF 发票。如果成功付款却没有发票，请联系支持团队并提供付款 ID 和日期。",
+				"enterprise-plan": "这是面向需要 SAML SSO、SCIM 配置、部门与角色、审计和治理控制以及优先支持的工作区月度订阅。活跃成员为 100 到 100,000 人的团队可以查看准确的自助价格。",
+				"enterprise-credit-fees": "不会。自助式企业方案用于身份管理、治理和支持。额度购买单独计费，受支持的付款方式仍按标准5%充值费收取，最低{minimum}。",
+				"enterprise-team-sizes": "企业方案按活跃成员的准确人数定价，团队越大，每增加一名成员的边际费用越低。计算器可立即显示最多100,000名成员团队的月费。",
+				"enterprise-usage-billing": "不包含。企业订阅用于身份管理、治理和支持。托管模型使用仍按目录价格从工作区额度余额中扣除。模型消费没有承诺额度：按需使用，订阅价格不变。",
+				"enterprise-bank-transfer": "目前没有差异。受支持的美元银行转账与银行卡充值适用相同的 5% 额度充值费。如有特殊电汇、退款或银行手续费，会在适用时单独列出。",
+				"how-does-byok-work": "模型使用费用由供应商直接向你的供应商账户收取。Phaseo 对每个 UTC 自然月的前 {freeRequests, number} 次 BYOK 请求不收服务费。超过免费额度后，Phaseo 收取供应商等价成本的 {serviceFee, number}%。",
+				"what-is-included-with-byok": "包括安全存储供应商密钥、网关路由、请求日志、供应商选择，以及优先密钥或回退密钥顺序设置。供应商侧配额、协商价格和账单仍由你的供应商账户管理。",
+				"provider-equivalent-cost": "这是同一模型、供应商路由和计量用量在由 Phaseo 托管凭证处理时对应的目录成本。超过每月免费额度后，{serviceFee, number}% BYOK 服务费按该参考金额计算，而不是按充值金额或供应商账户余额计算。",
+				"can-i-control-byok-fallback": "可以。优先密钥会先于 Phaseo 托管供应商尝试。你也可以启用回退 BYOK 密钥，在托管供应商之后尝试。",
+				"do-you-enforce-rate-limits": "不会。Phaseo 不设置平台级速率限制。上游供应商仍可能设置自己的限制。",
+				"can-i-separate-environments": "可以。为每个环境创建单独的 API 密钥和策略，以隔离使用情况、控制和日志。",
+				"can-i-set-budgets": "可以。按量付费包含 API 密钥级和团队级的限制及支出控制。使用免费模型无需设置支出控制。",
+				"provider-unavailable": "供应商触发速率限制或返回错误时，Phaseo 可以重试，或将请求路由到支持所选模型的其他供应商。可用替代方案由预设、供应商限制和 BYOK 回退设置决定。",
+				"routing-mode": "可以。工作区路由模式可按平衡性能、价格、延迟或吞吐量为兼容供应商排序。也可以在路由开始前通过预设限制供应商范围。",
+				"region-privacy-routing": "有匹配的供应商方案时可以。请求可指定执行和数据区域，或要求支持零数据保留。若路由不符合要求，Phaseo 会返回错误，不会静默切换到不符合条件的路由。",
+				"model-pricing-changes": "Phaseo 会在目录中跟踪模型生命周期和供应商可用性。处理请求时采用目录中的当前价格。需要受控迁移模型版本时，请使用精确的模型 ID、可用性数据和回退预设。",
+				"openai-anthropic-migration": "可以。Phaseo 提供兼容 OpenAI 的 Chat Completions 和 Responses API、兼容 Anthropic 的 Messages API、SDK 兼容性和迁移指南。多数集成从更改基础 URL、API 密钥和模型 ID 开始。",
+				"tools-structured-output": "如果所选模型和端点支持，则可使用工具调用、结构化输出模式、服务器工具和可选的响应修复。目录和 Data API 提供模型能力数据。",
+				"multimodal-endpoints": "Phaseo 在受支持的模型和供应商上提供文本、图像、视频、音频、语音、转录、音乐、embeddings、审核、reranking、OCR 和实时工作流。可用性和计费单位因模型而异。",
+				"training-data": "不会。Phaseo 不会使用网关提示词或响应训练自有模型。请求会发送给实际处理请求的供应商，因此该供应商的数据与训练政策仍然适用，除非你的路由要求将其排除。",
+				"request-logging": "Phaseo 会存储模型、供应商、令牌数、延迟和错误等运行及账单元数据。默认不会持久保存原始提示词和响应。若工作区启用了 I/O 日志，载荷保留时间由工作区的隐私与保留设置决定。",
+				"service-status": "当前服务状态和故障历史发布在 status.phaseo.app。请求 ID 和活动日志有助于支持团队追踪具体故障。",
+				"contact-support": "账户、账单和技术问题请使用联系页面或发送邮件至 support@phaseo.app。也可以通过公开的 GitHub 仓库提交 Bug 报告和功能请求。",
+				"receipts": "可以。已完成购买的 Stripe 托管收据可在设置 → 余额中查看。若成功付款后缺少收据，请联系支持并提供付款 ID 和日期。"
+			}
+		},
+		"matrix": {
+			"copy": {
+				"ai-gateway": "AI 网关",
+				"gateway-usage": "网关使用",
+				"limited-execution-on-supported-free-models": "受支持的免费模型有限执行",
+				"production-execution-traffic": "生产环境执行流量",
+				"credit-purchase-fee": "额度购买手续费",
+				"no-top-up-required": "无需充值",
+				"5-1-minimum-when-credits-are-purchased": "购买额度时收取 5% 费用（最低 1 美元）",
+				"models": "模型",
+				"includes-free-models-count-varies": "包含免费模型（数量不固定）",
+				"execute-across-gateway-enabled-models": "通过已启用 Gateway 的模型路由执行",
+				"providers": "供应商",
+				"gateway-api-access": "Gateway API 访问",
+				"responses-api": "Responses API",
+				"chat-completions-api": "Chat Completions API",
+				"anthropic-messages-api": "Anthropic Messages API",
+				"available-where-a-supported-free-model-route-exists": "存在受支持的免费模型路由时可用。",
+				"text-generation": "文本生成",
+				"image-generation": "图像生成",
+				"video-generation": "视频生成",
+				"audio-generation": "音频生成",
+				"music-generation": "音乐生成",
+				"embeddings": "Embeddings",
+				"support-depends-on-the-selected-model-and-provider": "支持情况取决于所选模型和供应商。",
+				"structured-outputs-and-tool-calling": "结构化输出与工具调用",
+				"model-support-varies": "支持情况因模型而异。",
+				"built-in-server-tools": "内置服务器工具",
+				"the-datetime-tool-is-free-metered-tools-require-credits": "日期时间工具免费。按量计费的工具需要额度。",
+				"tool-costs-shown-separately": "工具费用单独显示",
+				"request-activity-logs-and-export": "请求活动日志和导出",
+				"view-logs-only-no-export": "仅查看日志（不可导出）",
+				"operational-logs-with-export": "可导出的运行日志",
+				"smart-auto-routing": "智能自动路由",
+				"within-the-supported-free-model-set": "限于受支持的免费模型范围",
+				"preferred-provider-selection": "选择首选供应商",
+				"routing-presets-fallbacks-and-service-tiers": "路由预设、回退和服务层级",
+				"routing-is-limited-to-supported-free-model-routes": "路由仅限受支持的免费模型路径。",
+				"response-healing": "响应修复",
+				"repairs-supported-structured-responses": "修复受支持的结构化响应。",
+				"guardrails": "安全防护",
+				"any-underlying-model-usage-is-billed-normally": "底层模型的使用费用照常计费。",
+				"asynchronous-jobs": "异步任务",
+				"batch-api": "Batch API",
+				"files-api": "Files API",
+				"video-generation-api": "视频生成 API",
+				"webhooks": "Webhooks",
+				"availability-depends-on-the-selected-model-and-provider": "可用性取决于所选模型和供应商。",
+				"budgets-and-spend-controls": "预算与支出控制",
+				"not-required-for-free-model-usage": "免费模型使用无需设置",
+				"prompt-caching": "提示缓存",
+				"automatic-only-when-a-free-model-supports-caching": "仅在免费模型支持缓存时自动启用",
+				"management-api": "管理 API",
+				"team-workspaces": "团队工作区",
+				"single-team": "单个团队",
+				"multi-team": "多个团队",
+				"managed-workspace-controls": "托管工作区控制",
+				"payment-method": "付款方式",
+				"none-required": "无需付款方式",
+				"credit-or-debit-card": "信用卡或借记卡",
+				"card-supported-usd-bank-transfer-with-included-payments": "银行卡；支持通过 Included Payments 进行美元银行转账",
+				"billing-method": "账单方式",
+				"no-charge": "免费",
+				"prepaid-credits": "预付额度",
+				"monthly-subscription-prepaid-credits": "月度订阅 + 预付额度",
+				"bring-your-own-provider-keys": "使用自己的供应商密钥",
+				"add-provider-credentials-and-route-through-your-own-provider-account": "添加供应商凭据，并通过自己的供应商账户路由请求。",
+				"priority-and-fallback-byok-routing-are-included": "包含优先级和回退 BYOK 路由。",
+				"byok-service-fee": "BYOK 服务费",
+				"250k-requests-month-included-then-2-5-of-provider-equivalent-cost": "每月包含 25 万次请求，之后按供应商等价成本收取 2.5%",
+				"usage-limits-management": "使用限制管理",
+				"rate-limits": "速率限制",
+				"no-platform-limits": "平台不设限制",
+				"upstream-provider-limits-may-still-apply": "上游供应商仍可能设置自己的限制。",
+				"support": "支持",
+				"docs": "文档",
+				"included": "包含",
+				"priority-support": "优先支持",
+				"enterprise-identity-and-governance": "企业身份管理与治理",
+				"enterprise": "企业版",
+				"saml-single-sign-on": "SAML 单点登录",
+				"configure-a-workspace-identity-provider-without-a-sales-led-setup": "无需销售介入即可配置工作区身份提供商。",
+				"scim-users-groups-and-bulk-operations": "SCIM 用户、群组和批量操作",
+				"provision-users-and-organisational-groups-from-a-compatible-identity-provider": "通过兼容的身份提供商配置用户和组织群组。",
+				"departments-and-workspace-roles": "部门和工作区角色",
+				"keep-member-permissions-separate-from-department-structure": "将成员权限与部门结构分开管理。",
+				"enterprise-audit-and-governance-controls": "企业审计与治理控制",
+				"volume-discounted-member-pricing": "成员量阶折扣",
+				"lower-marginal-member-rates-are-applied-automatically-as-the-workspace-grows": "工作区扩大时，每名成员的边际费用会自动降低。",
+				"chat-and-media-studios": "聊天和媒体工作室",
+				"free-model-chat": "免费模型聊天",
+				"chat-with-supported-free-model-routes-without-a-credit-balance": "无需额度余额，即可使用受支持的免费模型路由聊天。",
+				"use-paid-and-free-models-from-the-same-chat": "可在同一聊天中使用付费和免费模型。",
+				"side-by-side-model-comparison": "并排比较模型",
+				"multimodal-chat-and-parameter-controls": "多模态聊天与参数控制",
+				"model-capabilities-vary": "模型能力因模型而异。",
+				"image-video-audio-and-music-studios": "图像、视频、音频和音乐工作室",
+				"use-a-supported-free-route-or-byok-your-provider-charges-still-apply-with-byok": "使用受支持的免费路由或 BYOK。使用 BYOK 时，仍需支付供应商费用。",
+				"realtime-voice-speech-and-transcription": "实时语音、语音处理与转录",
+				"local-chat-history": "本地聊天记录",
+				"sdks-and-integrations": "SDK 与集成",
+				"client-sdks": "客户端 SDK",
+				"typescript-python-go-java-c-php-ruby-rust-c": "TypeScript, Python, Go, Java, C#, PHP, Ruby, Rust, C++",
+				"agent-sdks": "Agent SDK",
+				"typescript-python-go-c-php-ruby": "TypeScript, Python, Go, C#, PHP, Ruby",
+				"vercel-ai-sdk-provider": "Vercel AI SDK 提供方",
+				"openai-and-anthropic-sdk-compatibility": "兼容 OpenAI 和 Anthropic SDK",
+				"framework-and-coding-assistant-integrations": "框架和编程助手集成",
+				"model-data-and-discovery": "模型数据与发现",
+				"database-usage": "数据库使用",
+				"public-model-and-pricing-data": "公开模型和价格数据",
+				"public-provider-metadata": "公开供应商元数据",
+				"provider-data-explorer": "供应商数据浏览器",
+				"token-pricing-visibility": "Token 价格可见性",
+				"multimodal-rankings": "多模态排行榜",
+				"text-image-embeddings-rerank-audio-video-speech-transcription": "文本、图像、embeddings、rerank、音频、视频、语音和转录",
+				"benchmarks-and-performance-comparisons": "基准测试和性能比较",
+				"pricing-calculator-and-request-builder": "价格计算器和请求构建器",
+				"data-api-access": "Data API 访问",
+				"0-gateway-markup-payment-processing-fees-may-apply": "网关不加价（0%）；可能会收取支付处理费",
+				"1m-requests-month-free-then-5": "每月前 100 万次请求免费，之后收取 5%",
+				"200-requests-60-sec-with-unified-billing": "Unified Billing 每 60 秒 200 次请求",
+				"5-1-5-non-us-cards": "5%（美国以外的银行卡另收 1.5%）",
+				"5-5-0-80-minimum": "5.5%（最低 0.80 美元）",
+				"5-with-unified-billing": "Unified Billing 收取 5%",
+				"50-free-requests-day-high-paid-limits": "每天 50 次免费请求；付费请求限额较高",
+				"ai-sdk-interface": "AI SDK 接口",
+				"available-at-the-openai-compatible-v1-responses-endpoint": "可通过兼容 OpenAI 的 /v1/responses 端点使用。",
+				"available-through-cloudflare-s-openai-compatible-rest-api": "可通过 Cloudflare 兼容 OpenAI 的 REST API 使用。",
+				"byok-or-unified-billing-credits": "BYOK 或 Unified Billing 额度",
+				"card": "银行卡",
+				"card-crypto-and-more": "银行卡、加密货币等",
+				"card-enterprise-invoicing": "银行卡；企业账单",
+				"chat-model-selection": "聊天模型选择",
+				"cloudflare-billing-account": "Cloudflare 账单账户",
+				"community-or-email": "社区或电子邮件",
+				"community-sla-on-enterprise": "社区支持；企业版提供 SLA",
+				"credits-byok-or-subscription": "额度、BYOK 或订阅",
+				"credits-or-enterprise-invoice": "额度或企业发票",
+				"dedicated-asynchronous-video-api": "专用异步视频 API。",
+				"docs-and-community": "文档和社区",
+				"docs-and-vercel-support": "文档和 Vercel 支持",
+				"enterprise-feature": "企业功能",
+				"gateway-and-provider-limits": "网关和提供商限额",
+				"includes-provider-and-gateway-server-tools": "包含提供商和网关服务器工具。",
+				"includes-provider-tools-and-ai-sdk-tooling": "包含提供商工具和 AI SDK 工具。",
+				"includes-web-search-and-provider-tools": "包含网络搜索和提供商工具。",
+				"model-catalog": "模型目录",
+				"model-dependent": "因模型而异",
+				"model-pricing": "模型定价",
+				"no-fee": "不收费",
+				"no-gateway-markup": "无网关加价",
+				"no-hosted-chat": "不提供托管聊天",
+				"no-hosted-studio": "不提供托管工作室",
+				"no-paid-model-rate-limit": "付费模型无请求速率限制",
+				"no-unified-billing-fee": "Unified Billing 不收费",
+				"openrouter-documents-a-beta-responses-api": "OpenRouter 文档提供了测试版 Responses API。",
+				"openrouter-publishes-rankings-and-usage-based-model-lists-across-multiple-modalities": "OpenRouter 发布覆盖多种模态的排行榜和按使用情况整理的模型列表。",
+				"persistent-logs-are-included-logpush-requires-workers-paid": "包含持久化日志。Logpush 需要 Workers Paid。",
+				"pricing-data": "定价数据",
+				"project-apis": "项目 API",
+				"provider-dependent": "因提供商而异",
+				"provider-performance-data": "提供商性能数据",
+				"public-guardrails-include-budgets-allowlists-zdr-prompt-injection-and-sensitive-data-policies": "公开的护栏功能包括预算、允许列表、ZDR、提示注入防护和敏感数据策略。",
+				"repairs-malformed-structured-json-on-supported-non-streaming-requests": "修复受支持的非流式请求中的格式错误结构化 JSON。",
+				"speech-and-transcription-are-publicly-documented": "语音生成和转录已有公开文档。",
+				"speech-generation-is-publicly-documented": "语音生成已有公开文档。",
+				"supported-through-the-ai-sdk-video-generation-interface": "可通过 AI SDK 视频生成接口使用。",
+				"text-image-audio-video-more": "文本、图像、音频、视频等",
+				"text-image-video": "文本、图像、视频",
+				"tts-and-asr-are-available-through-ai-run": "TTS 和 ASR 可通过 /ai/run 使用。",
+				"typescript": "TypeScript",
+				"typescript-agents-sdk": "TypeScript Agents SDK",
+				"typescript-ai-sdk-agent-tooling": "TypeScript AI SDK 智能体工具",
+				"typescript-ai-sdk-provider-openai-compatible-sdks": "TypeScript AI SDK 提供商；兼容 OpenAI 的 SDK",
+				"typescript-ai-sdk-python-via-compatible-sdks": "TypeScript AI SDK；通过兼容的 SDK 使用 Python",
+				"typescript-python-go": "TypeScript、Python、Go",
+				"typescript-workers-bindings-rest-in-any-language": "TypeScript Workers 绑定；可使用任意语言的 REST",
+				"vercel-ai-gateway-leaderboards-are-filterable-by-modality": "Vercel AI Gateway 排行榜可按模态筛选。",
+				"vercel-documents-a-dedicated-responses-api": "Vercel 提供专用 Responses API 的文档。",
+				"video-jobs": "视频任务",
+				"workers-ai-usage-charges-apply": "Workers AI 使用费用需另行支付。"
+			},
+			"notApplicable": "不适用",
+			"notIncluded": "不包含",
+			"included": "包含",
+			"notAdvertised": "未公布",
+			"detailsAriaLabel": "{label}：{status}。查看详情",
+			"cellLabel": "{feature}，{plan}",
+			"paygCreditPurchaseFee": "购买额度时收取 {fee, number}% 手续费（最低 {minimum}）",
+			"enterpriseCreditPurchaseFee": "购买额度时收取 5% 手续费（最低 {minimum}）",
+			"byokServiceFee": "每月包含 {freeRequests, number} 次请求，之后按供应商等价成本收取 {serviceFee, number}%"
+		},
+		"paygHeadlinePreview": "默认按量付费。",
+		"paygBodyPreview": "按需购买余额，只为实际使用付费。Enterprise 身份管理、治理和优先支持目前向符合条件的工作区提供预览。如需估算单个模型的费用，请使用",
+		"enterprisePreview": "Enterprise 预览",
+		"enterprisePreviewBody": "正在为符合条件的工作区准备身份管理、治理和优先支持。",
+		"pricesPublicPreview": "公开价格",
+		"pricesPublicPreviewBody": "在目录和计算器中公开比较模型使用价格。"
+	},
+	"gatewayComparison": {
+		"title": "Phaseo 与 {name} 对比",
+		"metadataTitle": "Phaseo 与 {name} 对比：AI 网关比较",
+		"metadataDescription": "比较 {name} 与 Phaseo 在模型路由、定价、BYOK、模型信息和可观测性方面的表现。",
+		"eyebrow": "AI 网关比较",
+		"tryPhaseo": "试用 Phaseo",
+		"migrationGuide": "迁移指南",
+		"phaseoStandsOut": "Phaseo 的优势",
+		"competitorStandsOut": "{name} 的优势",
+		"capabilityComparison": "功能比较",
+		"capability": "功能",
+		"phaseo": "Phaseo",
+		"whichShouldYouChoose": "应该选择哪个？",
+		"officialSources": "{name} 官方资料",
+		"lastReviewed": "最近审核于 {date}。产品功能和价格可能变化；购买前请向各提供商核实。",
+		"otherComparisons": "其他网关比较",
+		"moreComparisons": "查看更多网关比较",
+		"content": {
+			"openrouter": {
+				"intro": "比较两个独立且兼容 OpenAI 的平台，了解它们如何访问不同提供商的模型并进行路由。",
+				"bestFor": "如果你最看重丰富的目录、成熟的路由控制或现有生态系统，请选择 OpenRouter。如果你希望在一个开源平台中整合模型信息、网关路由和请求可观测性，请选择 Phaseo。",
+				"phaseoAdvantage": "Phaseo 将开放模型数据库与提供商定价、可用性、基准测试、路由和可观测性结合起来；它的目录不只是 API 选择器。",
+				"competitorAdvantage": "OpenRouter 提供成熟的多提供商路由功能，具有丰富的提供商筛选条件和广泛的现有模型生态系统。",
+				"rows": [
+					{
+						"capability": "产品主要形态",
+						"phaseo": "模型数据库、网关和可观测性平台",
+						"competitor": "统一模型 API 和提供商路由器"
+					},
+					{
+						"capability": "源代码可用性",
+						"phaseo": "开源平台和公开目录",
+						"competitor": "托管平台并提供公开文档"
+					},
+					{
+						"capability": "提供商路由",
+						"phaseo": "策略、回退、预设和提供商兼容性",
+						"competitor": "提供商排序、筛选、回退，以及按价格、延迟和吞吐量排序"
+					},
+					{
+						"capability": "BYOK",
+						"phaseo": "每月前 100 万次请求免费，之后收取服务费",
+						"competitor": "每月前 100 万次请求免费，之后收取等效推理成本的 5%"
+					},
+					{
+						"capability": "托管使用费用",
+						"phaseo": "购买额度时收取费用；目录模型费率另计",
+						"competitor": "按用量付费购买额度时收取 5.5% 费用"
+					},
+					{
+						"capability": "模型研究",
+						"phaseo": "价格、提供商、生命周期、能力、基准测试和相关模型",
+						"competitor": "模型目录、价格、排名和提供商可用性"
+					}
+				],
+				"sources": [
+					"OpenRouter 定价",
+					"OpenRouter 提供商路由",
+					"OpenRouter BYOK"
+				]
+			},
+			"vercel-ai-gateway": {
+				"intro": "比较 Phaseo 与 Vercel 网关在统一模型访问、路由、计费和用量可见性方面的差异。",
+				"bestFor": "如果你的技术栈已经围绕 Vercel 和 AI SDK 构建，请选择 Vercel AI Gateway。如果你希望使用不依赖基础设施的开源网关，并连接更深入的公开模型数据库，请选择 Phaseo。",
+				"phaseoAdvantage": "Phaseo 以开放的模型情报层为核心，将研究、提供商路由、价格、运行信号和网关用量连接起来。",
+				"competitorAdvantage": "Vercel AI Gateway 与 Vercel 项目和 AI SDK 紧密集成，目前说明包括 BYOK 在内不收取 Token 加价。",
+				"rows": [
+					{
+						"capability": "产品主要形态",
+						"phaseo": "模型数据库、网关和可观测性平台",
+						"competitor": "集成于 Vercel 平台的托管网关"
+					},
+					{
+						"capability": "框架兼容性",
+						"phaseo": "兼容 OpenAI 的 API 和 Phaseo SDK",
+						"competitor": "AI SDK、OpenAI Chat Completions、Responses 和 Anthropic Messages"
+					},
+					{
+						"capability": "路由",
+						"phaseo": "提供商策略、回退、预设和兼容性路由",
+						"competitor": "动态提供商选择、负载均衡、重试和回退"
+					},
+					{
+						"capability": "BYOK",
+						"phaseo": "工作区提供商密钥和路由控制",
+						"competitor": "提供商凭据，并优先使用 BYOK 的回退行为"
+					},
+					{
+						"capability": "定价模式",
+						"phaseo": "按用量付费，购买额度时明确收取费用",
+						"competitor": "提供商公开价格，不收取 Token 加价"
+					},
+					{
+						"capability": "模型研究",
+						"phaseo": "公开的生命周期、价格、可用性、基准测试和提供商信息",
+						"competitor": "公开模型列表，以及网关价格和提供商差异"
+					}
+				],
+				"sources": [
+					"Vercel AI Gateway 概览",
+					"Vercel AI Gateway 定价",
+					"Vercel 提供商选项"
+				]
+			},
+			"cloudflare-ai-gateway": {
+				"intro": "比较 Phaseo 统一模型平台与 Cloudflare 控制平面在观察和控制 AI 应用流量方面的差异。",
+				"bestFor": "如果边缘缓存、速率限制和 Cloudflare 整个平台是核心需求，请选择 Cloudflare AI Gateway。如果你希望整合模型发现、托管访问、路由和可观测性，请选择 Phaseo。",
+				"phaseoAdvantage": "Phaseo 提供公开模型数据库和托管的多提供商模型访问，并配有网关路由和可观测性。",
+				"competitorAdvantage": "Cloudflare 将网关分析、日志、缓存和速率限制整合进其全球开发者平台；目前网关核心功能免费提供。",
+				"rows": [
+					{
+						"capability": "产品主要形态",
+						"phaseo": "模型数据库、托管网关和可观测性平台",
+						"competitor": "Cloudflare 平台中的 AI 流量控制平面"
+					},
+					{
+						"capability": "流量控制",
+						"phaseo": "路由策略、回退、护栏和提供商控制",
+						"competitor": "缓存、速率限制、重试、模型回退和路由"
+					},
+					{
+						"capability": "托管模型访问",
+						"phaseo": "通过一个模型 API 使用托管额度或 BYOK",
+						"competitor": "统一计费和提供商集成，以及类似 BYOK 的提供商连接"
+					},
+					{
+						"capability": "可观测性",
+						"phaseo": "请求、成本、模型、提供商、可靠性和用量视图",
+						"competitor": "请求、Token 和成本分析，以及持久化日志"
+					},
+					{
+						"capability": "定价模式",
+						"phaseo": "按用量付费，购买额度时明确收取费用",
+						"competitor": "网关核心功能免费；提供商推理不加价"
+					},
+					{
+						"capability": "模型研究",
+						"phaseo": "生命周期、价格、提供商、基准测试、能力和相关模型",
+						"competitor": "网关模型目录和提供商集成文档"
+					}
+				],
+				"sources": [
+					"Cloudflare AI Gateway 概览",
+					"Cloudflare AI Gateway 定价"
+				]
+			}
+		}
+	},
+	"legal": {
+		"lastUpdated": "最后更新：{date}",
+		"privacyTitle": "隐私政策",
+		"privacyIntro": "本隐私政策说明以 Phaseo 名义运营的 Daniel Butler（“Phaseo”“我们”）在你使用我们的网站、控制台和 API 网关（统称“服务”）时如何收集、使用和保护个人数据。",
+		"termsTitle": "服务条款",
+		"termsIntro": "这些服务条款（“条款”）适用于你对 Phaseo 网站、数据目录和统一 API 网关（统称“服务”）的使用。",
+		"privacyHeadings": {
+			"scope": "1. 我们是谁以及本政策的适用范围",
+			"dataCollected": "2. 我们收集的数据",
+			"provided": "2.1 你主动提供的信息",
+			"gatewayIO": "2.2 通过 Gateway 发送的输入和输出",
+			"telemetry": "2.3 遥测和技术数据",
+			"connectedAssistants": "2.4 已连接的 AI 助手和 MCP 客户端",
+			"cookies": "2.5 Cookie 和类似技术",
+			"analytics": "2.6 分析和产品遥测",
+			"legalBases": "3. 我们如何使用个人数据及其法律依据",
+			"sharing": "4. 我们如何共享个人数据",
+			"transfers": "5. 国际数据传输",
+			"retention": "6. 我们会保留数据多久",
+			"rights": "7. 你的权利和选择",
+			"children": "8. 儿童",
+			"security": "9. 我们如何保护你的数据",
+			"thirdParties": "10. 第三方网站和服务",
+			"changes": "11. 本隐私政策的变更",
+			"contact": "12. 联系方式和投诉"
+		},
+		"termsHeadings": {
+			"serviceOverview": "1. 服务概述",
+			"eligibilityAccounts": "2. 使用资格和账户",
+			"feesCreditsPayment": "3. 费用、额度和付款",
+			"creditsWallet": "3.1 额度和钱包",
+			"paymentProcessing": "3.2 付款处理（Stripe）",
+			"autoTopUp": "3.3 自动充值",
+			"refundsExpiry": "3.4 退款和有效期",
+			"pricingChanges": "3.5 价格变更和账单错误",
+			"content": "4. 输入、输出和你的内容",
+			"handling": "4.1 我们如何处理提示和输出",
+			"providerTerms": "4.2 第三方提供商条款",
+			"userResponsibilities": "4.3 你对用户内容的责任",
+			"prohibitedUse": "5. 禁止的使用方式",
+			"suspensionTermination": "6. 暂停和终止",
+			"privacy": "7. 隐私",
+			"changes": "8. 服务和本条款的变更",
+			"intellectualProperty": "9. 知识产权和开源组件",
+			"feedback": "10. 反馈",
+			"indemnity": "11. 赔偿（面向企业用户）",
+			"disclaimers": "12. 免责声明",
+			"liability": "13. 责任限制",
+			"governingLaw": "14. 适用法律和司法管辖",
+			"general": "15. 一般条款",
+			"contact": "16. 联系方式"
+		},
+		"privacyBody": {
+			"notice": "本页概述我们如何处理个人数据，不构成法律建议。此处未定义的首字母大写术语，含义以我们的<terms>服务条款</terms>为准。",
+			"consent": "使用本服务即表示你同意我们按照本隐私政策和服务条款处理你的个人数据。如果你不同意，请不要使用本服务。",
+			"controller": "根据英国和欧盟的数据保护法律，<person>Daniel Butler</person>以<brand>Phaseo</brand>名义开展业务，是通过 Phaseo 收集的个人数据的<controller>数据控制者</controller>。",
+			"appliesIntro": "在以下情况下，本隐私政策适用：",
+			"appliesItems": [
+				"浏览 Phaseo 网站或文档；",
+				"创建并使用 Phaseo 账户；",
+				"使用 Phaseo Gateway 将请求路由至第三方模型提供商；",
+				"将 Phaseo 连接到 ChatGPT、Codex 或其他兼容 MCP 的客户端；",
+				"通过电子邮件、支持渠道或其他方式与我们联系。"
+			],
+			"providerRoles": "第三方模型提供商有各自的隐私和数据处理惯例。通过 Phaseo 管理的凭据使用提供商时，如果适用合同支持该角色，我们计划由其作为推理服务的次级处理方。使用你的凭据或直接协议时，提供商通常是由客户指定的接收方或你的处理方。如果提供商为自身目的处理数据，例如在其条款允许时用于模型训练，也可能单独作为数据控制者。我们对这些角色的最新评估发布在 Phaseo 的次级处理方清单中。",
+			"providedIntro": "我们会收集你选择直接提供的信息，例如：",
+			"dataItems": [
+				{
+					"label": "账户信息",
+					"text": "例如注册时提供的姓名、电子邮件地址、组织名称和密码（以哈希值形式存储）。"
+				},
+				{
+					"label": "个人资料和团队信息",
+					"text": "你添加到账户或团队资料中的详情，例如显示名称或项目标签。"
+				},
+				{
+					"label": "账单信息",
+					"text": "与你购买额度或订阅相关的记录（例如币种、支付金额和时间）。银行卡信息由 Stripe 等支付服务商处理，不会完整存储在我们的服务器上。"
+				},
+				{
+					"label": "支持和沟通信息",
+					"text": "你发送给我们的电子邮件、消息和其他沟通内容，例如错误报告、反馈或功能请求。"
+				},
+				{
+					"label": "可选公开数据",
+					"text": "如果你选择公开分享某些使用情况或应用信息，例如公开的应用使用页面或赞助商名单，我们会按照你的选择处理并展示这些信息。"
+				}
+			],
+			"gatewayIntro": "通过 Phaseo Gateway 调用模型时，你会发送请求（“Inputs”）并接收响应（“Outputs”）。根据你发送的内容，其中可能包含个人信息。",
+			"gatewayStorageGoal": "我们的目标是尽可能少地存储数据：",
+			"gatewayStorageItems": [
+				"我们不会在主要数据库或分析工具中长期存储提示词原文或模型 Outputs 的完整文本。",
+				"符合条件的非流式文本 Outputs 默认可在工作区范围的响应缓存中保存五分钟。配置的 preset 可将期限设为 30 秒至 24 小时。请求会参与生成单向缓存键摘要；缓存记录保存 Output 和响应元数据，不保存原始请求正文。",
+				"如果你启用私有 I/O 日志，我们可能会将 Inputs、Outputs 和可选的提供商负载保存 90、180 或 365 天。如果你选择贡献数据，我们可能会尽力进行内容删减，并将符合条件的 Inputs 和 Outputs 最多保存 30 天。这些功能与提供商自身的数据保留相互独立。",
+				"我们会将生成 Output 所需的请求内容发送给相应的第三方提供商。提供商可能会根据自己的政策记录或存储这些数据。"
+			],
+			"sensitiveDataWarning": "你可以控制发送的内容。因此，除非确有必要且你认可相关模型提供商的隐私做法，否则请勿在提示词或 Outputs 中包含敏感个人数据。",
+			"telemetryIntro": "你使用服务时，我们会自动收集某些技术信息和使用信息，例如：",
+			"telemetryItems": [
+				{
+					"label": "日志和设备数据",
+					"text": "IP 地址、浏览器类型、操作系统、设备标识符、访问的页面、使用的功能、时间戳和来源 URL。"
+				},
+				{
+					"label": "Gateway 指标",
+					"text": "模型和提供商标识符、请求和响应时间戳、token 用量、延迟、错误代码，以及计费和运行状况检查所需的类似元数据。"
+				},
+				{
+					"label": "位置指标",
+					"text": "根据 IP 地址或其他信号推算的大致地理位置，例如国家或地区，用于分析和防止滥用。"
+				},
+				{
+					"label": "配置数据",
+					"text": "你选择的主题或外观、功能标记，以及存储在本地存储或 Cookie 中的其他偏好设置。"
+				}
+			],
+			"telemetryUse": "我们使用这些遥测数据来运营、保护和改进服务，计算用量和价格，并提供分析和可观测性面板。遥测设计会排除提示词和 Outputs 的原始文本。",
+			"assistantIntro": "如果你将 Phaseo 插件连接到 ChatGPT、Codex 或其他兼容 MCP 的客户端，即表示你通过 OAuth 授权该客户端请求其授权页面中显示的 Phaseo 只读信息。根据你使用的工具，Phaseo 可能会返回：",
+			"assistantItems": [
+				"模型、提供商、能力和价格信息；",
+				"额度余额和汇总使用分析；或",
+				"请求元数据，例如请求标识符、时间戳、模型、提供商、token 用量、费用、延迟、状态和错误代码。"
+			],
+			"assistantPrivacy": "Phaseo 公开插件不会返回密码、API 密钥值、OAuth 密钥、提示词或模型 Output 的原始内容、工作区或用户标识符、存储详情或重放负载。连接的客户端只能在你批准的权限范围内接收其调用工具的结果。客户端提供商的隐私政策和保留做法适用于其收到的信息。",
+			"cookiesIntro": "我们使用 Cookie 及类似技术（例如本地存储、像素和脚本）来确保网站正常运行并了解使用情况。这些技术可能包括：",
+			"cookieItems": [
+				{
+					"label": "严格必要的 Cookie",
+					"text": "用于安全和登录、CSRF 防护等核心功能。"
+				},
+				{
+					"label": "偏好设置 Cookie",
+					"text": "用于记住深色模式或最近选择的筛选条件等设置。"
+				},
+				{
+					"label": "分析 Cookie",
+					"text": "用于衡量使用情况、性能和错误，例如通过 Google Analytics 或 PostHog。"
+				}
+			],
+			"cookieControl": "你可以在浏览器设置中管理 Cookie。阻止某些类型的 Cookie 可能影响使用体验或导致部分功能无法运行。",
+			"analyticsIntro": "我们可能会使用 Google Analytics、PostHog 等第三方分析和错误跟踪工具，以了解用户如何使用 Phaseo 以及产品可改进之处。",
+			"analyticsDetails": "这些工具会收集访问页面、执行的操作、设备和浏览器信息以及国家等大致位置数据。我们会进行配置，避免这些工具存储通过 Gateway 发送的提示词原文、Outputs 或其他高度敏感内容。",
+			"legalBasesIntro": "我们基于以下法律依据，将个人数据用于下列目的（适用于英国和欧盟用户）：",
+			"legalBasesItems": [
+				{
+					"label": "提供和运营服务",
+					"text": "包括创建账户、通过 Gateway 路由请求、提供用量面板、处理账单和客户支持。",
+					"basis": "法律依据：履行合同；合法利益。"
+				},
+				{
+					"label": "个性化和改进服务",
+					"text": "例如了解哪些功能最常使用、测试新功能以及调整 UI。",
+					"basis": "法律依据：合法利益。"
+				},
+				{
+					"label": "与您沟通",
+					"text": "例如发送服务通知、回复支持请求，以及告知您条款或政策的变更。",
+					"basis": "法律依据：履行合同；合法利益；法律义务。"
+				},
+				{
+					"label": "发送可选更新或产品资讯",
+					"text": "前提是您已订阅，或当地法律允许我们这样做。",
+					"basis": "法律依据：同意；或在法律允许时基于合法利益。"
+				},
+				{
+					"label": "防止滥用、执行条款并保护服务",
+					"text": "例如监控高风险使用模式、绕过速率限制的尝试或欺诈行为。",
+					"basis": "法律依据：合法利益；法律义务。"
+				},
+				{
+					"label": "履行法律义务",
+					"text": "例如保存税务和会计记录，或回应主管机关的合法请求。",
+					"basis": "法律依据：法律义务。"
+				}
+			],
+			"aggregatedStats": "我们还可能生成有关模型采用情况、benchmark 结果或 API 性能的汇总匿名统计数据。这些统计数据无法识别个人用户。",
+			"sharingIntro": "我们不会出售您的个人数据。我们仅会在以下有限情况下共享个人数据：",
+			"sharingItems": [
+				{
+					"label": "服务提供商",
+					"text": "我们会使用可信的第三方协助运营服务，例如托管和数据库提供商（包括 Supabase）、分析平台、支付处理商（包括 Stripe）、电子邮件提供商和客户支持工具。第三方仅能为我们提供服务而访问个人数据，并受合同约束保护这些数据。"
+				},
+				{
+					"label": "第三方模型提供商",
+					"text": "当您通过 Gateway 发送请求时，我们会将您的 Inputs 和必要元数据共享给您选择或由我们路由至的模型提供商。提供商会依据适用的提供商合同、条款和隐私政策处理数据。提供商的角色取决于提供商账户由 Phaseo 还是客户提供，以及提供商是否为自身独立目的处理数据。"
+				},
+				{
+					"label": "已连接的 AI 助手或 MCP 提供商",
+					"text": "当您连接 Phaseo 并要求已连接的客户端使用 Phaseo 工具时，我们会将请求的只读工具结果返回给相应提供商，例如为 ChatGPT 或 Codex 提供服务的 OpenAI。提供商依据自身条款和隐私政策处理该结果。"
+				},
+				{
+					"label": "您选择共享的公开数据",
+					"text": "如果您启用公开用量页面、共享集成，或选择通过 AI Stats 发布信息，我们会按照您的设置展示这些信息。"
+				},
+				{
+					"label": "法律和安全原因",
+					"text": "如果我们合理地认为，为遵守法律、法院命令或其他法律请求，或保护我们、用户或他人的权利、财产或安全而有必要，我们可能会披露数据。"
+				},
+				{
+					"label": "业务转让",
+					"text": "如果我们考虑或进行合并、收购、重组或资产出售，个人数据可能作为该流程的一部分被转让。我们会采取合理措施，确保接收方继续按照本政策保护您的数据。"
+				},
+				{
+					"label": "经您同意",
+					"text": "如果您明确要求或同意，我们可能会出于其他目的共享您的信息。"
+				}
+			],
+			"transferIntro": "我们的总部位于英国，但我们会使用位于其他国家的服务提供商和基础设施，包括欧洲经济区和美国。因此，您的个人数据可能会被传输至数据保护法律与您所在司法辖区不同的国家并在那里处理。",
+			"transferOutsideIntro": "如果我们将个人数据传输到英国或欧洲经济区以外，会采取措施确保获得适当保护，例如依靠：",
+			"transferMethods": [
+				"英国或欧盟认定为具有充分保护水平的国家；",
+				"经英国或欧盟批准的标准合同条款或同等保障措施；或",
+				"其他可用的合法数据传输机制。"
+			],
+			"retentionIntro": "我们会在实现本政策所述目的所合理必需的期限内保留个人数据，包括：",
+			"retentionReasons": [
+				"BYOK Gateway 调用的请求级元数据最多保留 90 天。不含内容的汇总用量总计可能为计费、可靠性和统计目的保留更长时间。",
+				"运营和维护您的账户及付费功能；",
+				"履行法律和监管义务，例如保存税务及会计记录；以及",
+				"解决争议并执行我们的协议。"
+			],
+			"retentionDelete": "不再需要个人数据时，我们会将其删除或不可逆地匿名化。经过汇总且完全匿名化的遥测数据可能为统计目的保留更长时间。",
+			"retentionDetails": [
+				"经验证的账户删除请求会立即撤销账户访问权限并删除数据库中的活动记录。随后，我们会通过可重试的工作流清除私有对象存储和 Gateway 缓存数据，并须在 30 天内完成。",
+				"符合条件的缓存模型 Outputs 默认保留五分钟；根据配置的缓存政策，最长保留 24 小时。",
+				"启用私有 I/O 日志时，其保留期限设为 90、180 或 365 天。",
+				"经您选择加入的原始数据贡献最多保留 30 天；汇总分类统计数据可能保留更久。",
+				"AI 提供商和由客户配置的目标位置适用其自身的保留条款。"
+			],
+			"retentionSchedule": "我们尚未将账户、请求元数据、账单、支持、备份和运营日志的所有类别整合到一个固定的保留期限表中。有关目前已核实的内容处理期限及其限制，请参阅<security>安全白皮书</security>。",
+			"pluginRetention": "使用 Phaseo 插件不会在 Phaseo 中额外创建一份 Gateway 记录的长期副本。工具请求会读取或计算授权服务可用的 Phaseo 数据，其中在适用情况下包括已保留的账户和 Gateway 记录。已连接的客户端可能按照自身保留政策保存工具结果。",
+			"rightsIntro": "根据您所在的地区，您可能对个人数据享有某些权利。在适用法律的限制和例外范围内，这些权利可能包括：",
+			"rightsItems": [
+				{
+					"label": "访问权",
+					"text": "询问我们是否处理您的个人数据，并索取副本。"
+				},
+				{
+					"label": "更正权",
+					"text": "要求我们更正不准确或不完整的个人数据。"
+				},
+				{
+					"label": "删除权",
+					"text": "要求我们删除某些个人数据。"
+				},
+				{
+					"label": "限制处理权",
+					"text": "在特定情况下要求我们限制对您数据的处理。"
+				},
+				{
+					"label": "数据可携权",
+					"text": "以结构化、常用且机器可读的格式接收个人数据，并在技术可行时要求将其传输给另一位控制者。"
+				},
+				{
+					"label": "反对权",
+					"text": "反对某些类型的处理，包括直接营销或基于合法利益的处理。"
+				},
+				{
+					"label": "撤回同意",
+					"text": "如果我们依据您的同意处理数据，您可以随时撤回同意，但这不影响撤回前处理活动的合法性。"
+				}
+			],
+			"rightsExercise": "您可以登录账户（设置、个人资料和 API 密钥）行使其中许多权利，也可以通过 <email>privacy@phaseo.app</email> 联系我们。回复请求前，我们可能会要求您验证身份。",
+			"emailOptOut": "您可以点击邮件中的取消订阅链接，或联系我们，选择不再接收非必要邮件。我们仍可能向您发送有关账户管理或服务重大变更的通知。",
+			"children": "本服务面向年满 13 周岁的用户。我们不会明知而收集 13 岁以下儿童的个人数据。如果您认为儿童在未获得适当同意的情况下向我们提供了个人数据，请联系我们，我们会采取措施删除这些信息。",
+			"securityMeasures": "我们采用技术、组织和管理方面的安全措施保护个人数据，包括传输加密、基于角色的访问控制以及异常活动监控。",
+			"securityLimits": "但是，没有任何在线服务能够做到绝对安全。您有责任对密码、API 密钥及其他凭据保密，并在怀疑密钥泄露时进行轮换。如果您认为账户已遭入侵，请立即通过 <email>support@phaseo.app</email> 联系我们。",
+			"thirdParties": "本服务可能包含指向第三方网站或集成的链接，包括 AI 模型、文档、支付、分析和开发者工具提供商。我们不对这些第三方的隐私做法负责。向其提供个人数据前，建议您查看相关隐私政策。",
+			"policyUpdates": "我们可能会不时更新本隐私政策。如果变更会实质性影响您的权利或我们使用个人数据的方式，我们会采取合理措施通知您，例如通过电子邮件、网站公告或应用内消息。",
+			"continuedUse": "变更生效后继续使用本服务，即表示您接受更新后的政策。",
+			"contactIntro": "如果您对本隐私政策或我们处理个人数据的方式有任何疑问，请通过以下方式联系我们：",
+			"emailLabel": "电子邮件",
+			"supportLabel": "支持",
+			"regulatorComplaint": "如果您在英国，您还有权向 Information Commissioner’s Office (ICO) 投诉；如果您在欧盟，可以向当地数据保护机构投诉。我们希望先有机会处理您的问题，因此请考虑先与我们联系。"
+		},
+		"termsBody": {
+			"operator": "本服务由 <person>Daniel Butler</person> 以 <brand>Phaseo</brand> 名义运营（“Phaseo”“我们”）。",
+			"acceptance": "访问或使用本服务即表示你同意遵守本条款和我们的<privacy>隐私政策</privacy>。如果你不同意，请勿使用本服务。",
+			"serviceIntro": "Phaseo 提供：",
+			"features": [
+				"AI 模型、提供商、基准测试、价格及其他元数据的公开目录；",
+				"以及一个可选的 API Gateway，允许你通过统一接口向部分第三方 AI 提供商发送请求。"
+			],
+			"availability": "我们可以随时添加、更改或移除模型、提供商、endpoint 或其他功能。具体模型或提供商是否可用取决于第三方，我们不作保证。",
+			"changeNotice": "在合理可行的情况下，我们会提前通知你有关服务的重大变更，包括从目录或 Gateway 中移除模型或提供商。不过，出于安全、法律或提供商方面的原因，我们有时必须立即变更服务，因此无法保证服务始终不中断。",
+			"accountAge": "您必须年满 13 周岁才能使用本服务。未满 18 周岁的用户只能在父母或法定监护人许可下使用本服务。",
+			"accountBusiness": "如果您代表公司或组织使用本服务，即表示您确认自己有权使该实体受本条款约束。",
+			"accountRegistration": "我们会按照<privacy>《隐私政策》</privacy>的说明存储和使用这些信息。",
+			"accountResponsibilitiesIntro": "您有责任：",
+			"accountResponsibilities": [
+				"确保账户信息准确且保持最新；",
+				"对密码、API 密钥及其他凭据保密；以及",
+				"对账户下发生的所有活动负责，包括使用您的密钥调用 Gateway。"
+			],
+			"accountCompromise": "如果您认为账户或密钥已遭泄露，请尽快通过 <email>support@phaseo.app</email> 通知我们。您还应立即在自己的系统中轮换受影响的密钥。因您未能妥善保护凭据而造成的损失，我们不承担责任。",
+			"credits": "本服务的某些部分（例如通过 Phaseo Gateway 路由请求）可能需要通过预付的存款钱包或额度余额（“Credits”）付款。适用价格会提前显示，目前以美元（USD）计价。",
+			"creditsPurchase": "购买 Credits 后，您获得的余额可用于支付符合条件的服务用量。因账户中的 Credits 被消耗而产生的所有用量均由您负责。",
+			"paymentProcessing": "Credits 的所有付款均由 Stripe 等第三方支付提供商处理。提供付款方式即表示您授权我们及支付处理商收取结账页面显示的金额。",
+			"cardStorage": "我们不会在自己的服务器上存储完整的银行卡信息。Stripe 会依据其安全标准和条款存储并处理银行卡信息。",
+			"autoTopUpIntro": "您可以为钱包启用自动充值（“Auto Top-Up”）。启用后，您：",
+			"autoTopUpActions": [
+				"授权我们及支付处理商在余额低于您设定的阈值时，自动从已保存的付款方式扣取您指定的美元金额；并且",
+				"在账户设置中关闭 Auto Top-Up 前，仍需对产生的费用负责。"
+			],
+			"autoTopUpCard": "即使启用了 Auto Top-Up，我们也不会在自己的服务器上存储完整的银行卡信息。",
+			"refundIntro": "在法律允许的范围内：",
+			"refundRules": [
+				"已使用的 Credits 不予退款；",
+				"我们可自行决定为未使用的 Credits 设置有效期，例如自购买之日起 12 个月；如设置，我们会提前告知；以及",
+				"如果您在购买 Credits 后 24 小时内联系我们，且我们能够核实交易和用量，通常会退还全部未使用的 Credits。"
+			],
+			"refundRequest": "如需在 24 小时期限内申请退还未使用的 Credits，请发送电子邮件至 <email>support@phaseo.app</email>。这项自愿政策不影响适用法律赋予您的任何强制性消费者权利。",
+			"pricingChanges": "我们可能会不时调整价格。如果重大变更会影响您，我们会提前合理时间通知，例如通过电子邮件或产品内通知。变更生效后继续使用付费功能，即表示您接受新价格。",
+			"billingCorrections": "如果我们发现账单错误（例如费率或 token 数量不正确），可能会通过调整您的 Credits 余额来更正。如果您认为收费有误，请尽快联系我们。若确认错误对您有利，我们会补入或退还多收的金额。",
+			"contentIntro": "使用本服务时，您可能会提交文本、提示词、数据或其他材料（“Inputs”），并收到模型生成的回复（“Outputs”）。Inputs 和 Outputs 统称为“User Content”。",
+			"contentOwnershipIntro": "您保留 User Content 的所有权，但须遵守：",
+			"contentOwnershipConditions": [
+				"您依据本条款授予我们的任何许可；以及",
+				"OpenAI、Anthropic、Google 或 SpaceXAI 等底层第三方模型提供商施加的条款。"
+			],
+			"contentHandling": "我们会通过 Gateway 将您的 Inputs 路由至第三方提供商，并将 Outputs 返回给您。除有限的存储例外情况外，我们不会在主要请求数据库和分析工具中保留原始 Inputs 或完整 Outputs：符合条件的非流式 Outputs 默认缓存五分钟，配置后最长可缓存 24 小时；启用私有 I/O 日志后，Inputs 和 Outputs 可能保留 90 至 365 天；您选择加入的数据贡献最多保留 30 天。",
+			"contentTelemetryIntro": "我们会存储高层级遥测信息和账单元数据，以支持分析功能并保障服务运行。这些遥测信息可能包括：",
+			"contentTelemetryItems": [
+				"时间戳、模型标识符和提供商标识符；",
+				"请求指标，例如 token 数量、延迟、吞吐量和错误代码；以及",
+				"用于改进性能和产品的汇总或匿名用量统计数据。"
+			],
+			"contentTelemetryUse": "我们使用这些遥测信息来运营、维护和改进服务，并向您提供用量洞察。我们不会使用您的提示词或 Outputs 训练自有模型。如果您选择加入数据贡献，配置的样本可能会发送给第三方模型进行分类，详情请参阅<privacy>《隐私政策》</privacy>。",
+			"providerTermsIntro": "使用 Gateway 调用模型时，您的请求会由相应的第三方提供商处理。通过本服务使用这些模型，即表示您也同意遵守所访问提供商适用的条款、政策和可接受使用规则。",
+			"providerTermsResponsibility": "您有责任查看并遵守这些第三方条款。对于提供商如何处理您的数据，或其服务和价格的变更，我们不承担责任。",
+			"userResponsibilityIntro": "您应对自己的 Inputs 及 Outputs 的使用负责，并确认：",
+			"userResponsibilityItems": [
+				"您拥有提交 Inputs 和使用 Outputs 所需的全部权利、许可和同意；以及",
+				"您的 Inputs 和对本服务的使用不会侵犯知识产权、隐私权或其他权利，也不会导致我们违反任何法律或第三方条款。"
+			],
+			"contentModeration": "我们没有义务监控 User Content。但如果我们合理地认为其违反本条款或适用法律，可能会将其删除或限制访问。",
+			"prohibitedIntro": "您不得：",
+			"prohibitedActions": [
+				"以非法方式使用本服务，或违反适用法律、法规或第三方提供商条款；",
+				"使用本服务生成或传播有害、辱骂、歧视、欺诈或其他不当内容；",
+				"干扰或破坏本服务，包括引入恶意软件、使基础设施过载，或试图绕过速率限制或安全控制；",
+				"未经我们事先书面许可，使用 bot、脚本或爬虫等自动化工具访问或抓取本服务，但文档化 API 明确允许的情况除外；",
+				"对本服务进行逆向工程、反编译或以其他方式尝试获取源代码，但法律禁止此类限制的情况除外；",
+				"使用他人账户或与他人共享您的凭据；或",
+				"试图规避本条款，或协助他人这样做。"
+			],
+			"accountClosure": "您可以随时停止使用本服务。如需关闭账户，请通过 <email>support@phaseo.app</email> 联系我们。",
+			"suspensionIntro": "如果出现以下情况，我们可能会暂停或终止您对全部或部分服务的访问：",
+			"suspensionConditions": [
+				"您严重或反复违反本条款；",
+				"法律或第三方提供商要求我们这样做；或",
+				"我们因技术、业务或法律原因决定停止提供全部或部分服务。"
+			],
+			"suspensionNotice": "在合理情况下，我们会提前通知您暂停或终止服务。如果我们永久停止服务，会尽合理努力让您在关闭前导出重要数据。",
+			"suspensionRefund": "在法律允许的最大范围内，如果因您违反本条款而暂停或终止您的访问，我们无需退还费用或未使用的 Credits。",
+			"privacyClause": "有关我们如何收集、使用和共享个人数据，请参阅<privacy>《隐私政策》</privacy>。《隐私政策》是本条款的一部分。",
+			"serviceImprovements": "我们会持续改进 Phaseo，并可能不时更改、添加或移除功能。",
+			"termsUpdates": "我们也可能不时更新本条款。如有重大变更，我们会尽量提前合理时间通知您，例如通过电子邮件、网站横幅或应用内消息。如果您在更新后的条款生效后继续使用本服务，即视为您接受这些变更。",
+			"ipOwnership": "本服务及其设计、内容、文档和软件归我们或许可方所有，并受知识产权法律保护。",
+			"openSourceLicense": "我们也会使用和发布开源软件。使用开源代码库须遵守其中的许可证（例如 MIT 或 Apache），而非本条款。如果开源许可证与本条款冲突，则相关组件以开源许可证为准。",
+			"trademarks": "本条款不授予您使用我们的商号、徽标或商标的权利；未经我们事先书面许可，不得使用。",
+			"feedback": "如果您提供有关本服务的反馈、想法或建议（“Feedback”），即表示您同意我们可以不受限制且无需对您承担义务地使用这些内容。您授予我们永久、不可撤销、全球范围、免版税的许可，以便我们为与产品和服务相关的任何目的使用、复制、修改和利用 Feedback。",
+			"indemnityIntro": "如果您代表企业使用本服务，即表示您同意就因以下事项引起或与之相关的索赔、损失、损害、责任、成本和费用（包括合理的律师费）向 Daniel Butler（以 Phaseo 名义经营）提供赔偿并使其免受损害：",
+			"indemnityItems": [
+				"您对本服务的使用；",
+				"您的 User Content；或",
+				"您违反本条款或适用法律。"
+			],
+			"consumerIndemnity": "如果您是消费者，本条款仅在适用法律允许的范围内适用。",
+			"disclaimerIntro": "本服务按“现状”和“可用状态”提供。在法律允许的最大范围内，我们不对以下事项作出任何明示或默示的承诺或保证：",
+			"disclaimerItems": [
+				"任何模型 Outputs 的准确性或完整性；",
+				"本服务或任何第三方提供商的可用性、可靠性或性能；或",
+				"本服务不会出现错误、漏洞或中断。"
+			],
+			"aiGenerated": "AI 生成的内容可能不准确、不完整或具有误导性。在依赖 Outputs 或本服务展示的其他信息之前，您有责任自行评估。",
+			"catalogAccuracy": "我们维护涵盖模型、提供商、benchmark 和价格的综合数据库，并尽合理努力确保信息准确且及时更新。但 AI 生态变化迅速，因此我们无法保证每条记录、价格或 benchmark 都准确、最新或完整。对于采购或合规等重要决定，请勿仅依赖本站，应自行核实一手来源。",
+			"mandatoryRights": "本条款无意排除或限制适用法律规定不得排除或限制的保证或权利，包括某些消费者权利。",
+			"liabilityIntro": "本条款不排除或限制以下责任：",
+			"liabilityExceptions": [
+				"因过失造成的死亡或人身伤害；",
+				"欺诈或欺诈性失实陈述；或",
+				"适用法律规定不得排除或限制的其他责任。"
+			],
+			"liabilityLimitIntro": "在遵守上述规定且法律允许的最大范围内：",
+			"liabilityLoss": "对于因您使用或无法使用本服务而产生或相关的利润、业务、数据、商誉损失，或任何间接或后果性损失，我们不承担责任。这包括服务故障、数据库错误，或您未能保护密钥、密码及其他凭据造成的损失；并且",
+			"liabilityCapIntro": "我们对所有与本服务或本条款有关的索赔所承担的累计责任，以以下两者中的较高金额为限：",
+			"liabilityCaps": [
+				"在引发索赔的事件发生前 12 个月内，您为本服务向我们支付的总金额；或",
+				"100 英镑。"
+			],
+			"liabilityPricing": "如果出现具体的价格或账单问题（例如系统应用了错误费率），您的主要救济方式是按照第 3.5 节所述，对相关金额进行适当更正、返还额度或退款。",
+			"governingLawIntro": "本条款以及与本条款或本服务有关的任何争议或索赔，均受英格兰和威尔士法律管辖。",
+			"businessCourt": "如果您是企业用户，您与我们同意由英格兰和威尔士法院享有专属管辖权。",
+			"consumerCourt": "如果您是消费者，根据适用的消费者法律，您也可能有权在居住国提起诉讼。本条款不限制这些法律赋予您的任何强制性权利。",
+			"severability": "如果本条款的任何部分被认定为无效或不可执行，其余部分仍完全有效。",
+			"assignment": "未经我们事先书面同意，您不得转让本条款项下的权利或义务。因业务重组或出售，我们可能会将权利和义务转移给其他组织。",
+			"waiver": "我们未执行本条款中的任何权利或规定，不代表我们放弃该权利或规定。",
+			"survival": "您对本服务的访问终止后，第 2、3、4、5 和 8–15 节仍继续适用。",
+			"contactQuestions": "如果您对本条款有任何疑问，请联系我们：",
+			"contactEmailLabel": "电子邮件",
+			"operatorDetails": "本服务由 <person>Daniel Butler</person> 以 <brand>Phaseo</brand> 名义提供。",
+			"autoTopUpSecurity": "出于安全考虑，我们可能要求您在启用自动充值前使用双重身份验证。如果我们提供不使用双重身份验证而继续的选项，您必须完成单独的风险承认和确认步骤。这样做即表示您承认未经授权扣款的风险会增加，且任何退款或扣款争议均将依据本条款及适用法律进行评估。本节的任何内容均不限制消费者依法享有的强制性权利。"
+		}
+	},
+	"brandMenu": {
+		"logoPreviewMode": "Logo 预览模式",
+		"useLightLogo": "使用浅色 Logo",
+		"lightLogo": "浅色 Logo",
+		"useDarkLogo": "使用深色 Logo",
+		"darkLogo": "深色 Logo",
+		"assets": {
+			"wordmark": "字标",
+			"logo": "标志"
+		},
+		"copyMenuLabel": "将{asset}复制为 SVG 或 PNG",
+		"downloadMenuLabel": "将{asset}下载为 SVG 或 PNG",
+		"copyFormatLabel": "复制为 {format}",
+		"downloadFormatLabel": "下载为 {format}",
+		"assetAlt": "Phaseo 的{asset}",
+		"copySuccess": "已将{asset}（{format}）复制到剪贴板",
+		"copyFailure": "无法将{asset}复制为 {format}",
+		"downloadSuccess": "已下载{asset}（{format}）",
+		"downloadFailure": "无法将{asset}下载为 {format}"
+	},
+	"supportPage": {
+		"description": "就账户、账单和产品问题联系 Phaseo 支持，获得创始人的直接回复，并查看文档、社区资源和当前支持服务时间。"
+	},
+	"landingGaps": {
+		"copy001": "目前正在经过审核的提供商之间路由。",
+		"copy002": "登录Phaseo Gateway后，即可访问不断扩充的精选模型目录。",
+		"copy003": "Gateway是否取代Conduit？",
+		"copy004": "是的。Phaseo Gateway是Conduit的新名称和新定位，专注于通过单一API访问所有模型，同时保持兼容性承诺。",
+		"copy005": "能否继续使用现有的OpenAI或Anthropic SDK？",
+		"copy006": "可以。Gateway保留兼容OpenAI和Anthropic的端点，因此大多数迁移只需更改基础URL和密钥。",
+		"copy007": "如何监控弃用和发布？",
+		"copy008": "Gateway集中提供模型状态和停用信号，便于在变更影响生产环境前主动迁移。",
+		"copy009": "合规和密钥安全方面如何？",
+		"copy010": "支持限定权限的密钥、审计日志和加密BYOK流程。Enterprise可添加自定义路由策略和控制。",
+		"copy011": "常见问题",
+		"copy012": "为正在迁移的团队解答疑问。",
+		"copy013": "为生产发布、兼容性和治理提供明确指引。",
+		"copy014": "任意模型，统一接口。",
+		"copy015": "在切换提供商、添加模型和扩展模态时保持同一集成，无需重写客户端。",
+		"copy016": "OpenAI、Anthropic、Google以及其他50多家。",
+		"copy017": "文本、视觉、音频、视频、嵌入",
+		"copy018": "一致的响应结构。",
+		"copy019": "统一API",
+		"copy020": "可靠性融入设计。",
+		"copy021": "依据健康状态路由、自动故障转移和防护措施，在提供商性能下降时保护生产流量。",
+		"copy022": "实时健康监控",
+		"copy023": "自动故障转移路由",
+		"copy024": "熔断机制",
+		"copy025": "正常运行时间",
+		"copy026": "智能路由",
+		"copy027": "按延迟、价格、地域、能力或自定义规则路由，对所有提供商应用一致的行为。",
+		"copy028": "延迟优化路由",
+		"copy029": "基于成本的负载均衡",
+		"copy030": "自定义路由策略",
+		"copy031": "路由",
+		"copy032": "妥善处理弃用",
+		"copy033": "模型停用和破坏性变更更可预见。Gateway在停机前提供警告和迁移路径。",
+		"copy034": "主动弃用警告",
+		"copy035": "自动版本映射",
+		"copy036": "零停机迁移",
+		"copy037": "始终最新",
+		"copy038": "为多模态而构建",
+		"copy039": "文本、视觉、音频、视频、嵌入、工具调用和实时能力都是核心功能，而非附加项。",
+		"copy040": "原生多模态支持",
+		"copy041": "流式传输和实时API",
+		"copy042": "内置函数调用",
+		"copy043": "模态",
+		"copy044": "安全优先的运维",
+		"copy045": "限定权限的密钥、审计记录和加密BYOK流程。专为无法承受意外的团队设计。",
+		"copy046": "细粒度API密钥权限",
+		"copy047": "完整请求审计日志",
+		"copy048": "加密BYOK支持",
+		"copy049": "安全",
+		"copy050": "用统一控制平面应对每周变化的提供商市场。",
+		"copy051": "网关面向重视模型可移植性、路由质量和运维规范，而不只是演示文稿中提供商数量的团队。",
+		"copy052": "基于健康状态的路由，让提供商性能下降不再成为深夜事故。",
+		"copy053": "切换模型和云平台，无需重写产品集成。",
+		"copy054": "将策略、支出控制和审计能力与执行放在同一处。",
+		"copy055": "查看文档",
+		"copy056": "阅读快速入门",
+		"copy057": "了解统一的请求结构和直接迁移路径。",
+		"copy058": "查看代码仓库",
+		"copy059": "直接查看开源网关、SDK和公开变更。",
+		"copy060": "先试用Chat",
+		"copy061": "如果在集成前还需比较模型行为，可先在浏览器中测试。",
+		"copy062": "基于网关构建",
+		"copy063": "集成也应从容简单。",
+		"copy064": "实验版简化了设置部分：清晰的请求结构、直达文档的入口，以及几个明确的后续步骤。",
+		"copy065": "快速请求",
+		"copy066": "兼容OpenAI",
+		"copy067": "获取 API 密钥",
+		"copy068": "迁移指南",
+		"copy069": "清晰聚焦的模型洞察",
+		"copy070": "在投入工程时间前，用更清晰的视图查看基准、价格、提供商覆盖和发布动态。",
+		"copy071": "探索数据库",
+		"copy072": "始终清晰的网关控制",
+		"copy073": "通过兼容OpenAI的统一接口交付，并在提供商变化时灵活调整路由、回退和BYOK决策。",
+		"copy074": "查看平台概览",
+		"copy075": "网关路由",
+		"copy076": "正常",
+		"copy078": "延迟策略已选择主路由。",
+		"copy079": "回退已就绪",
+		"copy080": "无需更改客户端代码，Anthropic和DeepSeek仍可用。",
+		"copy081": "最新模型动态",
+		"copy082": "简短了解市场，而非再添一个内容块。",
+		"copy083": "实验版用更紧凑的更新条结束此部分，让页面保持流畅，而非堆积更多通用卡片。",
+		"copy084": "查看所有模型更新",
+		"copy085": "开源与专有",
+		"copy086": "超过我们重要性门槛的新发布占比",
+		"copy087": "开源",
+		"copy088": "专有",
+		"copy089": "机构发布次数（前6名）",
+		"copy090": "各机构重要发布的频率（滚动30天）",
+		"copy091": "美国与中国 — 综合SOTA",
+		"copy092": "基准领先席位占比（所跟踪排行榜的百分比）",
+		"copy093": "美国",
+		"copy094": "中国",
+		"copy095": "占比{share}",
+		"copy096": "{count}次发布",
+		"providers": "提供商",
+		"latency": "延迟"
+	}
+}

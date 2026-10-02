@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import { useEffect, useState, type ReactNode } from "react";
 import { createClient } from "@/utils/supabase/client";
@@ -8,6 +9,7 @@ import { hideDocumentForSessionReset } from "@/lib/query/historyPrivacy";
 
 /** Do not mount history readers or draft writers until browser auth is known. */
 export function ChatStorageBoundary({ children }: { children: ReactNode }) {
+	const tAuditCopy = useTranslations();
 	const [ready, setReady] = useState(false);
 	const [failed, setFailed] = useState(false);
 	useEffect(() => {
@@ -47,6 +49,6 @@ export function ChatStorageBoundary({ children }: { children: ReactNode }) {
 		}).catch(() => { if (active) setFailed(true); });
 		return () => { active = false; subscription.unsubscribe(); };
 	}, []);
-	if (!ready) return <p role="status" className="p-4 text-sm text-muted-foreground">{failed ? "Unable to prepare your chat history. Reload to retry." : "Loading chat…"}</p>;
+	if (!ready) return <p role="status" className="p-4 text-sm text-muted-foreground">{failed ? tAuditCopy("Common.ui.auditCopy.chatHistoryFailed") : tAuditCopy("Common.ui.auditCopy.loadingChat")}</p>;
 	return children;
 }

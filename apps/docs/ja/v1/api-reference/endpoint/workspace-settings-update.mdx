@@ -1,0 +1,10 @@
+---
+title: "ワークスペース設定を更新"
+sidebarTitle: "設定を更新"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /settings"
+description: "ワークスペースのルーティング、プロバイダー、プライバシー、Gatewayのデフォルト設定を更新します。"
+---
+<Note>このエンドポイントには `settings:write` 権限を持つ管理APIキーが必要です。</Note>
+
+ルーティングとプロバイダーポリシーの変更により、該当するGatewayキャッシュが更新され、ワークスペース監査ログに記録されます。

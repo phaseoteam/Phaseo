@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "Trabajar con elementos"
+description: "Representa mensajes tipados, razonamiento, actividad de herramientas, errores y salidas finales."
+---
+
+Usa elementos para crear una cronología estructurada del agente sin analizar eventos específicos de cada proveedor. Las ejecuciones en streaming y las completadas exponen el mismo contrato ordenado `AgentItem<TOutput>`.
+
+## Tipos de elementos
+
+`AgentItem<TOutput>` es una unión discriminada:
+
+| tipo | Campos importantes | Representa |
+| --- | --- | --- |
+| `message` | `role`, `content` | Texto del asistente o de la conversación |
+| `reasoning` | `text` | Razonamiento proporcionado por el modelo |
+| `tool_call` | `toolCallId`, `name`, `input` | Una invocación propuesta de herramienta |
+| `tool_result` | `toolCallId`, `name`, `output` | Una invocación de herramienta completada |
+| `error` | `message`, detalles opcionales de la herramienta | Un error del proveedor o de una herramienta |
+| `output` | `value` | La salida final analizada del agente |
+
+## Mostrar una cronología en streaming
+
+TypeScript determina el tipo de cada elemento a partir de su propiedad `type`:
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## Leer elementos tras la finalización
+
+El resultado completado contiene los mismos tipos de elementos en el mismo orden:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+Esto permite mostrar la actividad en tiempo real y reconstruir después la misma cronología a partir del estado de ejecución guardado.
+
+## Acceder a datos específicos del proveedor
+
+La salida del proveedor se normaliza en tipos de elementos portátiles. Si una integración necesita un campo específico del proveedor, los elementos normalizados conservan la carga original en `rawProviderItem`.
+
+Mantén la lógica del producto en los campos portátiles siempre que sea posible. Trata `rawProviderItem` como una vía de escape para integraciones específicas del proveedor, no como el contrato predeterminado de la aplicación.
+
+## Guías relacionadas
+
+- [Transmisión](./agent-sdk-streaming.mdx)
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,62 @@
+---
+title: "Verwendung"
+description: "Definiere Tools, führe einen Java-Agenten aus und setze ihn nach einer menschlichen Überprüfung fort."
+---
+
+## Tool-Schleife
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## Menschliche Überprüfung
+
+Gib `HumanReviewRequest` über `AgentDefinition.humanReview` zurück, um einen Lauf als Checkpoint zu speichern. Persistiere das zurückgegebene `RunResult`, erfasse eine Entscheidung in deiner Anwendung und rufe anschließend `continueRun(...)` mit `humanInput` auf. Das Agent SDK benötigt keinen verborgenen gehosteten Zustand.
+
+## Optionen der Responses-API
+
+Übergib zusätzliche Responses-API-Felder über `GatewayOptions.requestOptions`. Der Adapter setzt die vom Agent verwalteten Felder `model`, `input`, `instructions` und lokale Function-Tools.
+
+## Erweiterte Laufzeit
+
+Java unterstützt Validator- und Freigabeschnittstellen, HITL- und manuelle Tools, Fortschritt, behebbare Fehler, wiederabspielbare Iterables, Abbruchfunktionen, dynamische Turns, persistierte `NextTurnParams`, normalisierte Nutzung und Kosten sowie `StateAccessor`.
+
+## Streaming und Abbruch
+
+`Agent.stream(...)` und `Agent.continueStream(...)` lesen den Responses-SSE-Stream des Gateways. Lies `textStream()` oder `fullStream()` für wiederabspielbare Ergebnisse und rufe `cancel()` auf, um den aktiven Worker und den HTTP-Read abzubrechen. Abgeschlossene Schritte behalten Request-IDs, Provider-Metadaten, Beendigungsgründe, Warnungen, Nutzung und Kosten.
+
+## Verwandte Seiten
+
+- [Übersicht zum Agent SDK](../agent-sdk/overview.mdx)
+- [Java Client SDK](./overview.mdx)

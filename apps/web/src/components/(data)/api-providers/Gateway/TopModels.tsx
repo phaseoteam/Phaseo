@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { fetchFrontendAPIProviderTopModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
@@ -18,6 +19,10 @@ export default async function TopModels({
 	count?: number;
 	apiProviderId: string;
 }) {
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.providers"),
+		getLocale(),
+	]);
 	const topModels = await fetchFrontendAPIProviderTopModels(
 		apiProviderId,
 		count,
@@ -25,17 +30,17 @@ export default async function TopModels({
 
 	return (
 		<section className="space-y-4">
-			<h3 className="text-xl font-semibold">Top models</h3>
+			<h3 className="text-xl font-semibold">{t("topModels")}</h3>
 
 			{topModels.length > 0 ? (
 				<div className="overflow-x-auto">
 					<table className="w-full min-w-[640px] text-sm">
 						<thead>
 							<tr className="text-xs text-muted-foreground border-b border-border">
-								<th className="text-left font-medium py-2 px-2">Model</th>
-								<th className="text-right font-medium py-2 px-2">Tokens</th>
-								<th className="text-right font-medium py-2 px-2">Latency</th>
-								<th className="text-right font-medium py-2 px-2">Throughput</th>
+								<th className="text-left font-medium py-2 px-2">{t("modelLabel")}</th>
+								<th className="text-right font-medium py-2 px-2">{t("tokensLabel")}</th>
+								<th className="text-right font-medium py-2 px-2">{t("latencyMetric")}</th>
+								<th className="text-right font-medium py-2 px-2">{t("throughputMetric")}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -87,10 +92,9 @@ export default async function TopModels({
 						<EmptyMedia variant="icon">
 							<Trophy />
 						</EmptyMedia>
-						<EmptyTitle>No model data yet</EmptyTitle>
+						<EmptyTitle>{t("noModelDataYet")}</EmptyTitle>
 						<EmptyDescription className="max-w-md mx-auto">
-							Performance data appears here once requests are processed
-							through the gateway.
+							{t("modelDataAppearsAfterRequests")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

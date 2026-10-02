@@ -1,0 +1,51 @@
+---
+title: "LangChain"
+icon: "link"
+description: "استخدم LangChain مع Phaseo عبر واجهة الدردشة المتوافقة مع OpenAI."
+---
+
+استخدم هذا الدليل إذا أردت أن تستدعي سلاسل LangChain أو الوكلاء أو مسارات LangGraph النماذج عبر Phaseo.
+
+## التثبيت
+
+```bash
+pip install -U langchain langchain-openai
+```
+
+## إعداد ChatOpenAI
+
+```python
+import os
+from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    model="openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+result = llm.invoke("Write one sentence about routing reliability.")
+print(result.content)
+```
+
+## الاستخدام مع LangGraph
+
+مرّر `llm` نفسه إلى عقد الرسم البياني أو منشئ الوكيل:
+
+```python
+def call_model(state):
+    response = llm.invoke(state["messages"])
+    return {"messages": [response]}
+```
+
+## ملاحظات
+
+- يستخدم مسار LangChain المتوافق مع OpenAI واجهة Chat Completions. استخدم ميزات Phaseo المتاحة على `/v1/chat/completions`.
+- إذا احتجت إلى أدوات الخادم المتاحة فقط عبر Responses مثل `phaseo:apply_patch`، فاتصل بـ Phaseo مباشرة أو راجع دليل OpenAI SDK.
+- للتتبّع، اجمع هذا الإعداد مع [قابلية الرصد](./observability.mdx).
+
+## صفحات ذات صلة
+
+- [OpenAI SDK](./openai-sdk.mdx)
+- [استدعاء الأدوات](../tool-calling.mdx)
+- [التوجيه والرجوع الاحتياطي](../routing-and-fallbacks.mdx)

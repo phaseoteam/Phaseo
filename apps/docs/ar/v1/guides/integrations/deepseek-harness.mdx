@@ -1,0 +1,108 @@
+---
+title: "DeepSeek Harness"
+icon: "/icons/brands/deepseek.svg"
+description: "أضف Phaseo كمزوّد مخصص متوافق مع OpenAI في DeepSeek Harness."
+---
+
+اربط DeepSeek Harness بـ Phaseo لاستخدام نماذج Phaseo وتوجيهه من واجهة Harness على الويب. لا يلزم محوّل مخصص؛ إذ يمكن لـ Harness إرسال طلبات Chat Completions المتوافقة مع OpenAI مباشرة إلى Phaseo.
+
+**النتيجة:** يظهر Phaseo كمزوّد في قائمة نماذج Harness، ويمكن للجلسات الجديدة استخدام نموذج يقدمه Phaseo.
+
+## المتطلبات المسبقة
+
+- Phaseo CLI وحساب Phaseo وإصدار مثبّت من DeepSeek Harness
+
+يستخدم الطلب الفعلي في هذا الدليل بيانات اعتماد المزوّد وقد يترتب عليه رسوم لاستخدام النموذج.
+
+## الإعداد باستخدام Phaseo CLI
+
+هيّئ المزوّد وعنوان URL الأساسي والبروتوكول وكتالوج النماذج والنموذج الافتراضي بأمر واحد:
+
+```bash
+phaseo login
+phaseo dsh
+```
+
+تحافظ CLI على الإدخالات الأخرى في `$DSH_HOME/cordis.patch.yml` وتضع علامة على كتلة Phaseo كي تحدّث الإعدادات التي تديرها أو تحذفها فقط. وتزامن كل نماذج Phaseo النصية النشطة المتوافقة مع Chat Completions. استخدم نموذجًا افتراضيًا آخر عند الحاجة:
+
+```bash
+phaseo dsh --model YOUR_PHASEO_MODEL_ID
+```
+
+ينشئ الإعداد أيضًا مفتاح Gateway غير منتهي الصلاحية باسم `Phaseo CLI: DeepSeek Harness API Key` ويكتبه مباشرةً في مخزن Harness المحمي `$DSH_HOME/.credentials.yaml`. استخدم `--catalog default` لتهيئة النموذج المحدد فقط.
+
+يؤدي حذف التكامل عبر `phaseo integrations remove deepseek-harness` إلى إزالة إعداد Phaseo فقط وإلغاء المفتاح الذي أنشأته CLI.
+
+## أضف Phaseo يدويًا في واجهة Harness
+
+1. في DeepSeek Harness، افتح **Settings > Models**.
+2. اختر **Add a custom provider**.
+3. أدخل القيم التالية:
+
+| الحقل | القيمة |
+| --- | --- |
+| Provider ID | `phaseo` |
+| Display name | `Phaseo` |
+| Base URL | `https://api.phaseo.app/v1` |
+| API protocol | `OpenAI Completions` |
+| API key | مفتاح API الخاص بك من Phaseo |
+
+4. ضمن **Model catalog**، اختر **Fetch available models**.
+5. اختر نموذج Chat Completions يدعم الأدوات، مثل `anthropic/claude-sonnet-4.6`، ثم احفظ المزوّد.
+6. عُد إلى المحرر، واختر نموذج Phaseo، وابدأ جلسة جديدة.
+
+يحفظ Harness معرّف المزوّد في الجلسات المحفوظة ومراجع بيانات الاعتماد، لذا اعتبر `phaseo` ثابتًا. ويمكن تعديل الاسم المعروض وعنوان URL وبيانات الاعتماد وقائمة النماذج لاحقًا.
+
+## تهيئة Phaseo باستخدام YAML
+
+يمكنك تهيئة المزوّد نفسه مباشرةً في `$DSH_HOME/settings.yaml`. لا تضع مفتاح API في هذا الملف؛ إذ يحدد `apiKeyEnv` بيانات الاعتماد التي ينبغي لـ Harness حلّها.
+
+```yaml
+llm-pi-ai:
+  providers:
+    phaseo:
+      displayName: Phaseo
+      apiKeyEnv: PHASEO_API_KEY
+      api: openai-completions
+      baseURL: https://api.phaseo.app/v1
+      models:
+        - id: YOUR_PHASEO_MODEL_ID
+```
+
+وفّر `PHASEO_API_KEY` في البيئة التي تشغّل Harness، أو خزّن بيانات الاعتماد نفسها عبر صفحة Models. استبدل `YOUR_PHASEO_MODEL_ID` بالمعرّف الدقيق الذي يعيده اكتشاف نماذج Phaseo. ابدأ بـ `anthropic/claude-sonnet-4.6` لسير عمل وكلاء البرمجة.
+
+<Note>
+  قائمة `models` في `settings.yaml` هي كتالوج محفوظ وليست استعلامًا مباشرًا. حدّثها عند الرغبة في عرض مزيد من نماذج Phaseo في Harness.
+</Note>
+
+## التحقق من الاتصال
+
+قبل اختبار Harness، تحقق بشكل مستقل من بيانات الاعتماد ومسار اكتشاف النماذج:
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+بعد ذلك، اختر نموذج Phaseo في جلسة Harness جديدة وأرسل:
+
+```text
+Reply with exactly: Phaseo is connected.
+```
+
+تؤكد الاستجابة الناجحة المسار الكامل من Harness عبر Phaseo إلى مزوّد النموذج المحدد.
+
+## استكشاف الأخطاء وإصلاحها
+
+- **يعيد جلب النماذج الرمز `401`** - تحقق من صلاحية مفتاح Phaseo API ومن تضمين `/v1` في عنوان URL الأساسي.
+- **النموذج غير موجود في القائمة** - أعد جلب الكتالوج أو أضف معرّف نموذج Phaseo الدقيق ضمن `models` في `$DSH_HOME/settings.yaml`.
+- **يبلغ Harness عن `MISSING_CREDENTIAL`** - خزّن المفتاح في صفحة Models أو أتِح `PHASEO_API_KEY` لعملية Harness.
+- **يستخدم الطلب نقطة نهاية خاطئة** - اختر `OpenAI Completions` / `openai-completions`. يستخدم هذا التكامل مسار التوافق في Phaseo `/v1/chat/completions`.
+- **يرفض النموذج أدوات الوظائف مع تفعيل الاستدلال** - اختر نموذجًا يدعم الأدوات عبر Chat Completions. النماذج التي تتطلب Responses API للاستدلال باستخدام الأدوات لا تتوافق مع بروتوكول مزوّد Harness هذا.
+- **تحتفظ جلسة موجودة بالنموذج القديم** - ابدأ جلسة جديدة. يسجل Harness المزوّد والنموذج المحددين في الجلسات التي أرسلت طلبًا بالفعل.
+
+## أدلة ذات صلة
+
+- [البدء السريع](../../quickstart.mdx)
+- [أنشئ تطبيق REST لاختبار Node](../../cookbook/build-a-node-rest-smoke-app.mdx)
+- [التوجيه والبدائل الاحتياطية](../routing-and-fallbacks.mdx)

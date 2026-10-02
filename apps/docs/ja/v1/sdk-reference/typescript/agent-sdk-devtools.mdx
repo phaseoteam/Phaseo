@@ -1,0 +1,56 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "開発やデバッグ用に、Agent SDKのローカル実行を記録します。"
+---
+
+開発中にAgent SDK DevToolsで実行を記録すると、入力、ステップ、ツール、出力、時間、ゲートウェイ相関IDをローカルに保存できます。
+
+## 1回の実行で記録を有効にする
+
+```typescript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+デフォルトでは、ファイルは現在の作業ディレクトリ内の`.phaseo-devtools`に保存されます。
+
+## 出力ディレクトリを設定する
+
+```typescript
+const devtools = createAgentDevtools({
+  directory: ".local/agent-runs",
+});
+
+await agent.run({ input, client, devtools });
+```
+
+ローカル開発プロセスでは、`PHASEO_DEVTOOLS=true`を設定し、必要に応じて`PHASEO_DEVTOOLS_DIR`も指定できます。
+
+## 記録される情報
+
+各`agent.run`または`agent.continue`の記録には、次の情報が含まれます。
+
+- エージェントIDと実行ID
+- 実行状態と所要時間
+- 入力とアプリケーションコンテキスト
+- 利用可能な場合は、モデルとプロバイダーの詳細
+- ゲートウェイリクエストIDとネイティブ応答ID
+- ステップ数とツール数
+- 完了した実行状態、メッセージ、ステップ、出力
+- 実行で例外が発生した場合の構造化エラー詳細
+
+<Warning>
+エージェントの入力、メッセージ、ツールの結果、アプリケーションコンテキストには機密データが含まれる場合があります。DevToolsディレクトリをソース管理から除外し、他の開発ログと同じアクセス制御を適用してください。
+</Warning>
+
+## 関連ガイド
+
+- [ライフサイクルフック](./agent-sdk-lifecycle-hooks.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-events-and-errors.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)

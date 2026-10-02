@@ -1,0 +1,27 @@
+---
+icon: "braces"
+title: "Saídas e novas tentativas"
+description: "Valide saídas de agentes .NET e tente novamente falhas limitadas do modelo."
+---
+
+Valide a saída final quando o código .NET subsequente espera um valor estruturado. Trate falhas de validação como erros de contrato, não como falhas temporárias de transporte.
+
+Configure novas tentativas limitadas com `ModelRetryConfig`:
+
+```csharp
+ModelRetry = new ModelRetryConfig
+{
+    MaxRetries = 2,
+    Backoff = TimeSpan.FromMilliseconds(250),
+}
+```
+
+A etapa concluída mantém a contagem final de tentativas do modelo. Falhas de ferramentas locais são tratadas separadamente e não são repetidas como solicitações ao modelo.
+
+`GatewayAgentClientOptions` reúne opções de resposta estruturada, roteamento, provedor, raciocínio, escolha de ferramentas, cache de prompt e outras opções de solicitação.
+
+## Conteúdo relacionado
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Condições de parada](./agent-sdk-stop-conditions.mdx)
+- [Erros e solução de problemas](./agent-sdk-observability.mdx)

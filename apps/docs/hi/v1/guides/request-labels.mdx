@@ -1,0 +1,42 @@
+---
+title: "अनुरोध लेबल"
+description: "Gateway requests को code-defined teams, features या environments से जोड़ें और label के अनुसार खर्च देखें।"
+icon: "tags"
+---
+
+जब application code को API key या application से अधिक specific और स्थिर cost dimension चाहिए, तब request labels उपयोग करें। Labels request audit में दर्ज होते हैं और model request बदले बिना analytics में filter किए जा सकते हैं।
+
+## लेबल भेजें
+
+`X-Phaseo-Metadata` को अधिकतम 32 unique key/value labels वाले JSON object पर सेट करें:
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+TypeScript और Python SDKs custom headers लेते हैं, इसलिए वही header client पर configure किया जा सकता है। Labels providers को forward नहीं होते।
+
+## खर्च का विश्लेषण करें
+
+`label_key` और `label_value` के साथ analytics endpoint उपयोग करें:
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+Response में unfiltered analytics जैसा grouped-spend format होता है, लेकिन केवल वही requests शामिल होते हैं जिन पर यही सटीक label pair लगा हो।
+
+## नियम
+
+- Keys में केवल letters, numbers, `_`, `.`, `:` या `-` का उपयोग कर सकते हैं; अधिकतम लंबाई 64 characters है।
+- Values 256 characters तक की strings होते हैं।
+- एक request में अधिकतम 32 labels हो सकते हैं और header की सीमा 8 KiB है।
+- Duplicate keys या गलत format वाला metadata `400 invalid_request` के साथ reject होता है।
+- Labels में prompts, secrets, email addresses या अन्य personal data न डालें।

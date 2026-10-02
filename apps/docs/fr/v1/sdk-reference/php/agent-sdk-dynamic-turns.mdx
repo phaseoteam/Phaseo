@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez le routage, les instructions, les outils et les paramètres d’échantillonnage entre les tours d’un agent PHP."
+---
+
+Les callbacks dynamiques recalculent les paramètres du modèle à partir de l’état actuel de l’exécution avant chaque requête au modèle.
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+Les outils dynamiques et les valeurs d’échantillonnage peuvent utiliser le même contexte de tour. Un outil peut également définir `nextTurnParams` pour modifier uniquement la requête suivante. Ces remplacements sont conservés lorsque l’exécution est mise en pause pour approbation et expirent après le tour suivant.
+
+Utilisez des callbacks dynamiques pour les règles à recalculer à chaque tour. Utilisez `nextTurnParams` pour transmettre un réglage propre à un outil.

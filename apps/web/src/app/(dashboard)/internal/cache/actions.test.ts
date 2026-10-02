@@ -2,7 +2,7 @@ import { revalidatePath, updateTag } from "next/cache";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
-import { purgeCacheScopeAction, revalidatePublicModelCatalogueAction } from "./actions";
+import { purgeCacheScopeAction, revalidatePublicModelCatalogueAction } from "@/app/[locale]/(dashboard)/internal/cache/actions";
 
 jest.mock("next/cache", () => ({ revalidatePath: jest.fn(), updateTag: jest.fn() }));
 jest.mock("@/lib/fetchers/internal/serverAccountContext", () => ({ getServerAccountContext: jest.fn() }));

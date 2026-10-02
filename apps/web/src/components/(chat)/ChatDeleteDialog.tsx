@@ -10,6 +10,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useTranslations } from "next-intl";
 
 type ChatDeleteDialogProps = {
     open: boolean;
@@ -24,27 +25,28 @@ export function ChatDeleteDialog({
     onConfirm,
     count = 1,
 }: ChatDeleteDialogProps) {
+	const t = useTranslations("Product.chat");
     const multiple = count > 1;
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>
-                        {multiple ? `Delete ${count} chats` : "Delete chat"}
+                        {multiple ? t("deleteChats", { count }) : t("deleteChat")}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         {multiple
-                            ? "This will permanently delete the selected chats and their messages. This action is irreversible and cannot be undone."
-                            : "This will permanently delete the chat and its messages. This action is irreversible and cannot be undone."}
+                            ? t("deleteChatsDescription")
+                            : t("deleteChatDescription")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                         variant="destructive"
                         onClick={onConfirm}
                     >
-                        Delete
+                        {t("delete")}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

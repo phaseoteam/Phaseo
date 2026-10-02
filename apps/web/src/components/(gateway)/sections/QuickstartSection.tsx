@@ -7,7 +7,8 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronDown, Copy, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,9 +81,6 @@ type EndpointId =
 
 type EndpointConfig = {
 	id: EndpointId;
-	label: string;
-	summary: string;
-	highlight: string;
 	path: string;
 	body: (model: string) => Record<string, unknown>;
 };
@@ -98,10 +96,6 @@ function resolveSpeechVoiceForModel(model: string): string {
 const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	{
 		id: "completions",
-		label: "Completions",
-		summary:
-			"Chat, reasoning, and tool-calling with instant provider failover.",
-		highlight: "Streaming + structured output supported out of the box.",
 		path: "/chat/completions",
 		body: (model) => ({
 			model,
@@ -121,9 +115,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "decisions",
-		label: "Decisions",
-		summary: "Evaluate typed questions against structured application state.",
-		highlight: "Native TypeSafe Jev route with named answers.",
 		path: "/decisions",
 		body: (model) => ({
 			model,
@@ -165,10 +156,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "images",
-		label: "Image Gen",
-		summary:
-			"Generate high-fidelity imagery with routing that understands provider quirks.",
-		highlight: "Unified prompt schema with automatic upscaling options.",
 		path: "/images/generations",
 		body: (model) => ({
 			model,
@@ -179,10 +166,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "video",
-		label: "Video Gen",
-		summary:
-			"Launch product teasers or walkthroughs without juggling bespoke video APIs.",
-		highlight: "Duration, format, and seed controls stay consistent.",
 		path: "/videos",
 		body: (model) => ({
 			model,
@@ -193,10 +176,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "audio",
-		label: "Audio Gen",
-		summary:
-			"Programmatic voice generation with unified input and format parameters.",
-		highlight: "BYOK compatible for provider-specific voices.",
 		path: "/audio/speech",
 		body: (model) => ({
 			model,
@@ -207,10 +186,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "embeddings",
-		label: "Embeddings",
-		summary:
-			"Vector representations from any provider with consistent batching semantics.",
-		highlight: "Deterministic fallbacks keep retrieval pipelines steady.",
 		path: "/embeddings",
 		body: (model) => ({
 			model,
@@ -222,10 +197,6 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 	},
 	{
 		id: "moderations",
-		label: "Moderations",
-		summary:
-			"Run safety checks without reshaping payloads for each moderation API.",
-		highlight: "Granular category scores and community-reviewed defaults.",
 		path: "/moderations",
 		body: (model) => ({
 			model,
@@ -553,6 +524,8 @@ interface QuickstartSectionProps {
 }
 
 export function QuickstartSection({ metrics }: QuickstartSectionProps) {
+	const t = useTranslations("Site.gatewayQuickstart");
+	const endpointCopy = t.raw("endpoints" as never) as Record<EndpointId, { label: string; summary: string }>;
 	const [selectedEndpoint, setSelectedEndpoint] =
 		useState<EndpointId>("completions");
 	const [selectedLanguage, setSelectedLanguage] = useState<Language>("curl");
@@ -656,11 +629,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 			<div className="mx-auto max-w-7xl space-y-6 px-6 lg:px-8">
 				<div className="max-w-3xl space-y-2">
 					<h2 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-						Quickstart: key, endpoint, request
+						{t("title")}
 					</h2>
 					<p className="text-sm text-slate-600 dark:text-slate-400">
-						Pick the endpoint you need, choose a sample model, and copy a
-						working request for the Gateway, SDKs, or OpenAI-compatible clients.
+						{t("description")}
 					</p>
 				</div>
 
@@ -668,10 +640,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 					<div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
 						<div className="space-y-1">
 							<p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-								Setup steps
+								{t("setupHeading")}
 							</p>
 							<h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-								From zero to first call
+								{t("fromZeroHeading")}
 							</h3>
 						</div>
 						<div className="mt-4 space-y-3">
@@ -681,11 +653,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								</span>
 								<div className="space-y-1">
 									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-										Create or copy an API key
+										{t("step1Title")}
 									</p>
 									<p className="text-sm text-slate-600 dark:text-slate-400">
-										Use a server-side workspace key, then expose it to your
-										runtime as{" "}
+										{t("step1Description")}{" "}
 										<code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs dark:bg-slate-900">
 											PHASEO_API_KEY
 										</code>
@@ -694,7 +665,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 									<Button asChild size="sm" variant="outline" className="h-8">
 										<Link href="/settings/keys">
 											<KeyRound className="h-3.5 w-3.5" />
-											API Keys
+												{t("apiKeys")}
 										</Link>
 									</Button>
 								</div>
@@ -705,11 +676,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								</span>
 								<div>
 									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-										Choose an endpoint and model
+										{t("step2Title")}
 									</p>
 									<p className="text-sm text-slate-600 dark:text-slate-400">
-										The endpoint selector updates path, payload, and supported
-										example models together.
+										{t("step2Description")}
 									</p>
 								</div>
 							</div>
@@ -719,11 +689,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								</span>
 								<div>
 									<p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-										Copy the request
+										{t("step3Title")}
 									</p>
 									<p className="text-sm text-slate-600 dark:text-slate-400">
-										Switch language or SDK style, then copy the compact snippet
-										into your app or agent instructions.
+										{t("step3Description")}
 									</p>
 								</div>
 							</div>
@@ -735,10 +704,10 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 						<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 							<div className="space-y-1">
 								<CardTitle className="text-xl">
-									{currentConfig.label}
+									{endpointCopy[currentConfig.id].label}
 								</CardTitle>
 								<p className="text-sm text-slate-600 dark:text-slate-400">
-									{currentConfig.summary}
+									{endpointCopy[currentConfig.id].summary}
 								</p>
 							</div>
 							<DropdownMenu>
@@ -747,7 +716,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 										size="sm"
 										className="flex items-center gap-2" />}>
 
-										{currentConfig.label}
+										{endpointCopy[currentConfig.id].label}
 										<ChevronDown className="h-4 w-4" />
 
 								</DropdownMenuTrigger>
@@ -761,9 +730,9 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											className="rounded-lg"
 										>
 											<div className="flex flex-col">
-												<span>{config.label}</span>
+													<span>{endpointCopy[config.id].label}</span>
 												<span className="text-xs text-slate-500 dark:text-slate-300">
-													{config.summary}
+														{endpointCopy[config.id].summary}
 												</span>
 											</div>
 										</DropdownMenuItem>
@@ -829,18 +798,18 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								onClick={handleCopyCode}
 							>
 								<Copy className="h-4 w-4" />
-								{copied ? "Copied" : "Copy code"}
+									{copied ? t("copied") : t("copyCode")}
 							</Button>
 							{availableLanguageOptions.some(
 								(option) =>
 									option === "typescript-openai" || option === "python-openai",
 							) ? (
 								<p className="text-xs text-slate-500 dark:text-slate-300">
-									OpenAI options (Beta) may change as adapters mature.
+									{t("openAiBetaNotice")}
 								</p>
 							) : null}
 							<p className="text-xs text-slate-500 dark:text-slate-300">
-								Base URL: {BASE_URL}
+								{t("baseUrl")}: {BASE_URL}
 								{currentConfig.path}
 							</p>
 						</div>
@@ -867,7 +836,7 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 								<div className="space-y-3">
 									<div className="space-y-2">
 										<p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
-											Model
+														{t("model")}
 										</p>
 										<DropdownMenu>
 											<DropdownMenuTrigger render={<Button
@@ -902,9 +871,9 @@ export function QuickstartSection({ metrics }: QuickstartSectionProps) {
 											</DropdownMenuContent>
 										</DropdownMenu>
 										<p className="text-xs text-slate-500 dark:text-slate-300">
-											Every model uses the same base
-											request payload—swap the `model`
-											value.
+											{t.rich("modelPayloadHelp", {
+												model: (chunks) => <code>{chunks}</code>,
+											})}
 										</p>
 									</div>
 									<CodeBlock

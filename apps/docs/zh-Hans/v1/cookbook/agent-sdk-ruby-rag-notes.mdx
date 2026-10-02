@@ -1,0 +1,64 @@
+---
+title: "使用 Ruby Agent SDK 总结内部笔记"
+icon: "notebook-tabs"
+description: "使用 Ruby Agent SDK 查询本地笔记，并通过 Phaseo Gateway 返回范围明确的摘要。"
+---
+
+当 Ruby 服务需要一个小型内部笔记助手、又不想把编排交给其他系统时，可使用此示例。
+
+## 1. 准备 SDK
+
+<Note type="warning">Ruby Agent SDK 包尚未发布到 RubyGems。请参阅[从源代码安装说明](../sdk-reference/ruby/agent-sdk-installation.mdx)。</Note>
+
+## 2. 定义笔记查询工具
+
+```ruby
+lookup_note = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "lookup-note",
+    description: "Look up one internal note by topic.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+      },
+      required: ["topic"],
+    },
+    execute: lambda do |input, _context|
+      {
+        topic: input["topic"],
+        summary: "Presets centralize routing defaults so app code stays smaller.",
+      }
+    end
+  )
+)
+```
+
+## 3. 创建并运行 Agent
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "notes-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Use tools when helpful and answer in one short paragraph.",
+  tools: [lookup_note]
+)
+
+result = agent.run(
+  input: "Summarize our note about presets.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## 适用场景
+
+- 工具输入简单且行为确定
+- Ruby 应用已拥有数据源
+- 你想为范围明确的工作流采用易用的本地工具模式
+
+## 相关内容
+
+- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
+- [构建持久化 Agent 循环](./agent-sdk-durable-loop.mdx)

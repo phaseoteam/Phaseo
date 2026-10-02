@@ -1,0 +1,9 @@
+---
+title: "プライベートモデルを更新"
+sidebarTitle: "プライベートモデルを更新"
+badge: "ベータ版"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /private-models/{id}"
+description: "エンドポイント設定を更新するか、書き込み専用の認証情報をローテーションします。"
+---
+
+`private_models:write`権限と、所有者または管理者の認証情報が必要です。ワークスペース内のモデル名を変更するには`slug`を送信します。`model_id`を直接指定することはできません。

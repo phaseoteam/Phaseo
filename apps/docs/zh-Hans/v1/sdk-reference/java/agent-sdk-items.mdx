@@ -1,0 +1,23 @@
+---
+icon: "layers"
+title: "使用结果和项目"
+description: "根据消息、步骤、工具和供应商事件构建 Java 运行时间线。"
+---
+
+使用 `RunResult` 作为 Java Agent 的持久化结果，其中包含运行记录、已保存的消息、步骤记录、规范化用量和成本、警告、结束原因以及最终输出。
+
+`StreamResult.fullStream()` 除模型、工具、步骤和运行事件外，还包含供应商项目事件。Java 目前通过通用对象公开供应商项目，而不是 TypeScript 的判别联合类型 `AgentItem`。
+
+如需构建产品时间线：
+
+1. Agent 运行期间渲染 `textStream()` 的文本。
+2. 根据工具生命周期事件渲染工具卡片。
+3. 持久化已完成的 `RunResult`。
+4. 根据已保存的消息和步骤重建最终时间线。
+
+请通过应用适配器封装供应商专属项目数据，避免供应商格式变更影响界面的其他部分。
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card } from "@/components/ui/card";
 import AuthorizationCard from "./AuthorizationCard";
 
@@ -13,14 +14,14 @@ export default function AuthorizedAppsPanel({
 	authorizedApps,
 	userId,
 }: AuthorizedAppsPanelProps) {
+	const t = useTranslations("SettingsUI");
 	if (!authorizedApps || authorizedApps.length === 0) {
 		return (
 			<Card className="p-8 text-center">
 				<div className="text-muted-foreground">
-					<p className="text-lg font-medium mb-2">No authorized apps</p>
+					<p className="text-lg font-medium mb-2">{t("strings.No authorized apps" as never)}</p>
 					<p className="text-sm">
-						You haven&apos;t authorized any third-party applications yet.
-						When you do, they&apos;ll appear here.
+						{t("strings.phraseYouHavenAposTAuthorizedAnyThirdPartyApplicationsYetWhenYouDoTheyAposLlAppearHere" as never)}
 					</p>
 				</div>
 			</Card>

@@ -1,0 +1,49 @@
+---
+title: "Principes"
+description: "Les principes qui guident Phaseo Gateway, le routage, l’observabilité et les données des modèles."
+icon: "scale"
+---
+
+Consultez cette présentation pour comprendre les choix de conception de Gateway et du catalogue de modèles.
+
+Phaseo repose sur quelques principes simples : préserver la portabilité des intégrations, rendre visibles le comportement des modèles et des fournisseurs, et donner aux équipes un contrôle suffisant du routage pour exploiter leurs services en production en toute sécurité.
+
+## Ouverture et transparence
+
+Dans la mesure du possible, les prix, la disponibilité des fournisseurs, le comportement du routage et les données de performance doivent être visibles.
+
+Phaseo doit ainsi faciliter les réponses à des questions concrètes :
+
+- quels fournisseurs peuvent exécuter ce modèle ?
+- combien coûte la requête ?
+- quelle a été la latence de la route ?
+- qu’est-ce qui a changé après la mise à jour d’un modèle ou d’un fournisseur ?
+
+## Une API pour tous les modèles
+
+Les fournisseurs de modèles n’exposent pas tous les mêmes API. Phaseo fournit à votre application une couche stable couvrant différents écosystèmes de fournisseurs, familles de modèles et modalités.
+
+L’objectif n’est pas de masquer toutes les différences entre fournisseurs. Il s’agit de garder les processus courants cohérents et de rendre explicites les comportements propres à chaque fournisseur lorsqu’ils comptent.
+
+## Portabilité et résilience
+
+Les systèmes d’IA en production doivent résister aux changements de modèles, aux incidents chez les fournisseurs, aux variations de prix et aux limites de compte.
+
+Phaseo préserve la portabilité des intégrations grâce à des routes compatibles avec les fournisseurs et leur résilience grâce aux contrôles de routage et de repli.
+
+## Observabilité intégrée
+
+Chaque requête en production devrait être plus facile à diagnostiquer après son exécution.
+
+Phaseo collecte l’usage, la latence, le coût, les détails des erreurs et les identifiants de requête. Les équipes peuvent ainsi comprendre le fonctionnement du système sans devoir d’abord créer leur propre couche d’observabilité.
+
+## Une communauté bienveillante
+
+Phaseo propose une documentation publique, des données de modèles, des exemples et des moyens de contribuer. Les retours doivent être précis, constructifs et utiles aux personnes qui maintiennent la plateforme et le catalogue.
+
+## Pour aller plus loin
+
+- Commencez par le [Guide de démarrage rapide](../quickstart.mdx).
+- Découvrez le [routage et les replis](./routing-and-fallbacks.mdx).
+- Consultez la [gestion des erreurs](../api-reference/errors.mdx).
+- Parcourez la [référence de l’API](../api-reference/introduction.mdx).

@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "Fichiers"
+description: "Utilisez le SDK Go pour consulter les métadonnées et récupérer le contenu des fichiers."
+---
+
+**Méthodes** : `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+`ListFiles()` est disponible dans le wrapper, mais `GET /files` renvoie actuellement `file_list_not_supported_with_shared_gateway_key`
+avec la clé de passerelle partagée. Enregistrez les identifiants des fichiers téléversés et récupérez-les directement.
+</Note>
+
+<Note>
+Le wrapper Go ne propose pas encore de fonction dédiée au téléversement multipart pour `POST /files`. Utilisez REST directement ou le client généré
+si vous devez expérimenter le téléversement de fichiers.
+</Note>
+

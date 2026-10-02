@@ -1,0 +1,63 @@
+---
+title: "Transmissão"
+description: "Receba saída incremental, trate eventos específicos do endpoint e recupere fluxos interrompidos."
+icon: "radio"
+---
+
+Defina `stream: true` para receber a saída como eventos enviados pelo servidor (SSE). Mantenha a chave de API Phaseo no servidor e encaminhe a saída à interface.
+
+## Envie uma solicitação em streaming
+
+```bash
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello in one sentence.",
+    "stream": true
+  }'
+```
+
+Confira o status HTTP antes de ler o fluxo. Uma falha anterior ao streaming retorna a [resposta de erro JSON](../api-reference/errors.mdx) normal.
+
+## Leia os eventos
+
+Use o formato de eventos do endpoint chamado:
+
+| Endpoint | Saída incremental | Conclusão |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | Eventos como `response.output_text.delta` | Examine o evento final de resposta e seu status |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Examine `finish_reason`; `[DONE]` encerra o fluxo |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, e eventos relacionados | `message_stop` |
+
+Eventos SSE são separados por linhas em branco. Um fragmento de rede pode conter parte de um evento ou vários eventos; não analise cada fragmento como JSON independente. Armazene quadros incompletos ou use um auxiliar de streaming do SDK. Não presuma que todo endpoint envia `[DONE]`.
+
+Os auxiliares do SDK tratam o transporte do fluxo:
+
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` com `@phaseo/ai-sdk-provider`.
+
+Veja o [guia TypeScript](../sdk-reference/typescript/usage.mdx) ou o [guia Python](../sdk-reference/python/usage.mdx) para configurar o cliente.
+
+## Transmita chamadas de ferramentas
+
+O Gateway aceita streaming com ferramentas, mas o suporte depende do modelo e provedor escolhidos. Acumule os fragmentos de argumentos até concluir a chamada e depois analise, valide e autorize os argumentos antes de executar. Nunca execute argumentos parciais.
+
+Siga os [padrões de chamadas de ferramentas](./tool-calling-patterns.mdx) para solicitações de continuação e a [segurança de ferramentas](./tool-calling-safety.mdx) para validação e aprovação.
+
+## Cancele e recupere
+
+Passe um `AbortSignal` ao cliente HTTP do servidor e cancele quando o usuário parar ou desconectar. Defina um prazo adequado. Cancelar não garante que o provedor pare imediatamente nem que a saída gerada seja gratuita.
+
+Exiba o texto parcial progressivamente, mas marque a resposta como concluída só após o evento final bem-sucedido do endpoint. Uma conexão fechada não comprova conclusão.
+
+Se o fluxo falhar após começar a saída:
+
+1. Marque a resposta parcial como interrompida.
+2. Mantenha ID da solicitação ou geração, endpoint e modelo nos logs.
+3. Ofereça uma nova tentativa explícita. Uma nova solicitação pode gerar outra saída e nova cobrança.
+4. Não execute novamente ferramentas já executadas nem acrescente automaticamente a resposta repetida à saída parcial.
+
+Para falhas anteriores à saída, limite as tentativas e respeite os [cabeçalhos de limites](../api-reference/limits.mdx). Se o aplicativo precisa validar toda a saída antes de exibir, use uma solicitação sem streaming ou armazene o resultado no servidor.

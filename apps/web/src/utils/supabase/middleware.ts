@@ -1,18 +1,27 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { canUpgradeCookieAuth } from './cookieAuthRequest'
+import { isPublicLocale } from '@/i18n/routing'
+
+function withoutLocalePrefix(pathname: string): string {
+    const segments = pathname.split('/').filter(Boolean)
+    if (isPublicLocale(segments[0])) segments.shift()
+    return `/${segments.join('/')}`
+}
 
 const ACTIVE_WORKSPACE_COOKIE_NAME = 'activeWorkspaceId'
 const ACTIVE_WORKSPACE_COOKIE_MAX_AGE = 60 * 60 * 24 * 30
 
 export async function updateSession(request: NextRequest) {
     const forwardedHeaders = new Headers(request.headers)
+    const responseHeaders = new Headers()
     const responseCookies = new Map<string, {
         name: string
         value: string
         options?: CookieOptions
     }>()
-    const pathname = request.nextUrl.pathname
+    const requestPathname = request.nextUrl.pathname
+    const pathname = withoutLocalePrefix(requestPathname)
 
     const finishResponse = (response?: NextResponse) => {
         const nextResponse = response ?? NextResponse.next({
@@ -21,6 +30,7 @@ export async function updateSession(request: NextRequest) {
         responseCookies.forEach(({ name, value, options }) => {
             nextResponse.cookies.set(name, value, options)
         })
+        responseHeaders.forEach((value, name) => nextResponse.headers.set(name, value))
         return nextResponse
     }
 
@@ -30,7 +40,8 @@ export async function updateSession(request: NextRequest) {
         {
             cookies: {
                 getAll: () => request.cookies.getAll(),
-                setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>) => {
+                setAll: (cookiesToSet: Array<{ name: string; value: string; options?: CookieOptions }>, headers: Record<string, string> = {}) => {
+                    Object.entries(headers).forEach(([name, value]) => responseHeaders.set(name, value))
                     cookiesToSet.forEach((cookie) => {
                         request.cookies.set(cookie.name, cookie.value)
                         responseCookies.set(cookie.name, cookie)
@@ -137,7 +148,7 @@ export async function updateSession(request: NextRequest) {
         if (mustVerifyMfa && pathname !== '/auth/verify-mfa') {
             const url = request.nextUrl.clone()
             url.pathname = '/auth/verify-mfa'
-            url.searchParams.set('returnUrl', pathname + request.nextUrl.search)
+            url.searchParams.set('returnUrl', requestPathname + request.nextUrl.search)
             return finishResponse(NextResponse.redirect(url))
         }
     }

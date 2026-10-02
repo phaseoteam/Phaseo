@@ -2,6 +2,8 @@
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 
 import {
 	useCallback,
@@ -181,13 +183,6 @@ type ChatSettingsTab =
 	| "shortcuts"
 	| "admin";
 
-const CHAT_SETTINGS_TAB_LABELS: Record<ChatSettingsTab, string> = {
-	personalization: "Personalization",
-	"data-controls": "Data Controls",
-	shortcuts: "Shortcuts",
-	admin: "Admin",
-};
-
 function ChatSettingsTabIcon({ tab }: { tab: ChatSettingsTab }) {
 	const Icon =
 		tab === "personalization"
@@ -245,15 +240,28 @@ function AccentColorSwatch({
 	);
 }
 
-const CAPABILITY_LABELS: Record<UnifiedChatEndpoint, string> = {
-	responses: "Text",
-	"images.generations": "Image",
-	"video.generation": "Video",
-	"audio.speech": "Audio",
-	"audio.transcription": "Transcription",
-	"audio.translation": "Translation",
-	moderations: "Moderation",
-	embeddings: "Embeddings",
+type ChatCapabilityTranslationKey =
+	| "text"
+	| "image"
+	| "video"
+	| "audio"
+	| "transcription"
+	| "translation"
+	| "moderation"
+	| "embeddings";
+
+const CAPABILITY_MESSAGE_KEYS: Record<
+	UnifiedChatEndpoint,
+	ChatCapabilityTranslationKey
+> = {
+	responses: "text",
+	"images.generations": "image",
+	"video.generation": "video",
+	"audio.speech": "audio",
+	"audio.transcription": "transcription",
+	"audio.translation": "translation",
+	moderations: "moderation",
+	embeddings: "embeddings",
 };
 
 const getModelBadgeProps = (suffix: string) => {
@@ -377,6 +385,18 @@ export function ChatHeader({
 	requiredCapability = null,
 	requireAudioInput = false,
 }: ChatHeaderProps) {
+	const tUi = useTranslations("Common.ui");
+	const tChat = useTranslations("Product.chat");
+	const tModelPicker = useTranslations("Product.chat.modelPicker");
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const tPolicy = useTranslations("Common.ui.localisationGaps");
+	const tRooms = useTranslations("Product.chatRooms");
+	const settingsTabLabels = {
+		personalization: tUi("chatSettings.personalization"),
+		"data-controls": tUi("chatSettings.dataControls"),
+		shortcuts: tUi("chatSettings.shortcuts"),
+		admin: tUi("chatSettings.admin"),
+	} satisfies Record<ChatSettingsTab, string>;
 	const format = useDisplayFormatters();
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const [settingsTab, setSettingsTab] = useState<ChatSettingsTab>(
@@ -444,16 +464,16 @@ export function ChatHeader({
 		selectedAccentSelectValue === CUSTOM_ACCENT_SELECT_VALUE;
 	const selectedAccentColor = isCustomAccentSelected
 		? {
-				label: "Custom",
+				label: tUi("select.custom"),
 				value: customAccentColor,
 			}
 		: selectedPresetAccentColor;
 	const customBaseUrl = baseUrl.trim();
 	const effectiveBaseUrl =
 		apiTarget === "default"
-			? "Server default"
+			? tChat("apiTarget.serverDefault")
 			: apiTarget === "staging"
-				? STAGING_CHAT_API_BASE_URL || "Staging API unavailable"
+				? STAGING_CHAT_API_BASE_URL || tChat("apiTarget.stagingUnavailable")
 				: apiTarget === "local"
 					? LOCAL_CHAT_API_BASE_URL
 					: apiTarget === "custom" && customBaseUrl
@@ -595,7 +615,7 @@ export function ChatHeader({
 				? [
 						{
 							key: "favorites",
-							heading: "Favourites",
+							heading: tModelPicker("favorites"),
 							items: favoriteActiveOptions,
 						},
 					]
@@ -608,12 +628,12 @@ export function ChatHeader({
 		];
 		const comingSoonSections = groupedComingSoonOptions.map((group, index) => ({
 			key: `coming-soon-${group.heading}-${index}`,
-			heading: `Coming soon · ${group.heading}`,
+				heading: tModelPicker("comingSoonGroup", { month: group.heading }),
 			items: group.items,
 			separatorBefore: index === 0,
 		}));
 		return [...activeSections, ...comingSoonSections];
-	}, [favoriteActiveOptions, groupedActiveOptions, groupedComingSoonOptions]);
+	}, [favoriteActiveOptions, groupedActiveOptions, groupedComingSoonOptions, tModelPicker]);
 	const allModelOptions = useMemo(
 		() => [
 			...filteredActive,
@@ -798,16 +818,16 @@ export function ChatHeader({
 	}, [activeBrowseModelId, selectableBrowseModelOptions]);
 	const getIncompatibleCapabilityLabel = (modelId: string) => {
 		if (requireAudioInput && !supportsModelAudioInput(modelId)) {
-			return "Audio input";
+			return tChat("capabilities.audioInput");
 		}
 		const labels = Array.from(
 			new Set(
-				getModelCapabilities(modelId).map(
-					(capability) => CAPABILITY_LABELS[capability] ?? "Text",
+				getModelCapabilities(modelId).map((capability) =>
+					tChat(`capabilities.${CAPABILITY_MESSAGE_KEYS[capability]}`),
 				),
 			),
 		);
-		if (labels.length === 0) return "Text";
+		if (labels.length === 0) return tChat("capabilities.text");
 		if (labels.length === 1) return labels[0];
 		return labels.slice(0, 2).join("/");
 	};
@@ -991,7 +1011,7 @@ export function ChatHeader({
 							variant="ghost"
 							size="sm"
 							onClick={() => handleOpenModelSettings(modelId)}
-							aria-label={`${label}. Right click for model actions.`}
+							aria-label={tModelPicker("modelActionsHint", { model: label })}
 							className={cn(
 								"h-7 max-w-[220px] gap-1.5 rounded-md pl-2",
 								!modelEnabled && "opacity-55",
@@ -1016,7 +1036,7 @@ export function ChatHeader({
 									event.stopPropagation();
 									handleRemoveModel(modelId);
 								}}
-								aria-label={`Remove ${label}`}
+								aria-label={tModelPicker("removeModel", { model: label })}
 							>
 								<X className="h-3.5 w-3.5" />
 							</button>
@@ -1034,7 +1054,7 @@ export function ChatHeader({
 						}}
 					>
 						<Settings2 className="h-4 w-4" />
-						Model settings
+						{tUi("actions.modelSettings")}
 					</ContextMenuItem>
 					{canToggleModelEnabled ? (
 						<ContextMenuItem
@@ -1050,7 +1070,9 @@ export function ChatHeader({
 							) : (
 								<Power className="h-4 w-4" />
 							)}
-							{modelEnabled ? "Disable model" : "Enable model"}
+							{modelEnabled
+								? tUi("chatSettings.disableModel")
+								: tUi("chatSettings.enableModel")}
 						</ContextMenuItem>
 					) : null}
 					{canReorderModels ? (
@@ -1064,7 +1086,7 @@ export function ChatHeader({
 								}}
 							>
 								<ChevronsLeft className="h-4 w-4" />
-								Move to front
+								{tUi("chat.moveToFront")}
 							</ContextMenuItem>
 							<ContextMenuItem
 								disabled={!canMoveLeft}
@@ -1077,7 +1099,7 @@ export function ChatHeader({
 								}}
 							>
 								<ArrowLeft className="h-4 w-4" />
-								Move left
+								{tUi("chat.moveLeft")}
 							</ContextMenuItem>
 							<ContextMenuItem
 								disabled={!canMoveRight}
@@ -1090,7 +1112,7 @@ export function ChatHeader({
 								}}
 							>
 								<ArrowRight className="h-4 w-4" />
-								Move right
+								{tUi("chat.moveRight")}
 							</ContextMenuItem>
 						</>
 					) : null}
@@ -1105,7 +1127,7 @@ export function ChatHeader({
 							}}
 						>
 							<X className="h-4 w-4" />
-							Remove
+							{tUi("actions.remove")}
 						</ContextMenuItem>
 					) : null}
 					{canRemoveModel ? (
@@ -1117,7 +1139,7 @@ export function ChatHeader({
 							variant="destructive"
 						>
 							<Trash2 className="h-4 w-4" />
-							Remove all
+							{tUi("actions.removeAll")}
 						</ContextMenuItem>
 					) : null}
 				</ContextMenuContent>
@@ -1297,7 +1319,7 @@ export function ChatHeader({
 				</span>
 				{option.modelId.includes(":") ? (
 					<Badge {...getModelBadgeProps(option.modelId.split(":")[1])}>
-						{option.modelId.split(":")[1].replace(/^free$/, "Free")}
+						{option.modelId.split(":")[1].replace(/^free$/, tUi("chatSettings.free"))}
 					</Badge>
 				) : null}
 				{isModelSelected(option.modelId) ? (
@@ -1305,19 +1327,19 @@ export function ChatHeader({
 				) : null}
 				{option.chatBlockedReasons.length ? (
 					<Badge variant="destructive" className="h-4 rounded-sm px-1.5 text-[10px] font-medium">
-						Blocked
+						{tUi("chatSettings.blocked")}
 					</Badge>
 				) : withComingSoonBadge ? (
 					<Badge
 						variant="outline"
 						className="h-4 rounded-full border-dashed px-1.5 text-[10px] font-medium"
 					>
-						Coming soon
+						{tUi("chatSettings.comingSoon")}
 					</Badge>
 				) : null}
 				{!isModelCapabilityCompatible(option.modelId) ? (
 					<Badge variant="outline" className="text-[10px] px-1.5 py-0">
-						{getIncompatibleCapabilityLabel(option.modelId)} only
+						{tUi("chatSettings.onlyCapability", { capability: getIncompatibleCapabilityLabel(option.modelId) })}
 					</Badge>
 				) : null}
 			</div>
@@ -1341,13 +1363,13 @@ export function ChatHeader({
 					}}
 					aria-label={
 						favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
-							? `Remove ${option.label} from favorites`
-							: `Add ${option.label} to favorites`
+							? tUi("chatSettings.removeFavorite", { model: option.label })
+							: tUi("chatSettings.addFavorite", { model: option.label })
 					}
 					title={
 						favoriteModelIdSet.has(normalizeFavoriteModelId(option.modelId))
-							? "Remove from favorites"
-							: "Add to favorites"
+							? tUi("chatSettings.removeFavorite", { model: option.label })
+							: tUi("chatSettings.addFavorite", { model: option.label })
 					}
 				>
 					<Star
@@ -1477,7 +1499,7 @@ export function ChatHeader({
 							size="icon"
 							className="group -ml-1"
 							onClick={toggleSidebar}
-							aria-label={sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+							aria-label={sidebarState === "expanded" ? tRooms("collapseSidebar") : tRooms("openSidebar")}
 						>
 							{sidebarState === "expanded" ? (
 								<PanelLeftClose className="h-5 w-5" />
@@ -1491,7 +1513,7 @@ export function ChatHeader({
 						align="center"
 						sideOffset={8}
 					>
-						{sidebarState === "expanded" ? "Collapse sidebar" : "Open sidebar"}
+						{sidebarState === "expanded" ? tRooms("collapseSidebar") : tRooms("openSidebar")}
 					</TooltipContent>
 				</Tooltip>
 				{selectedModelIds.length > 0 ? (
@@ -1513,8 +1535,8 @@ export function ChatHeader({
 						<Button
 							variant="ghost"
 							size="sm"
-							aria-label="Add model"
-							title="Add model (Ctrl/Cmd+Shift+M)"
+							aria-label={tUi("accessibility.addModel")}
+							title={tUi("accessibility.addModelShortcut", { shortcut: "Ctrl/Cmd+Shift+M" })}
 							className={cn(
 								"h-8 gap-1.5 rounded-md",
 								selectedModelIds.length === 0 ? "px-2 text-xs" : "w-8 px-0",
@@ -1522,12 +1544,12 @@ export function ChatHeader({
 						>
 							<Plus className="h-4 w-4" />
 							{selectedModelIds.length === 0 ? (
-								<span className="truncate text-xs">Add Model</span>
+								<span className="truncate text-xs">{tUi("accessibility.addModel")}</span>
 							) : null}
 						</Button>
 					</ModelSelectorTrigger>
 					<ModelSelectorContent
-						title="Select a model"
+						title={tChat("selectModel")}
 						className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
 						commandProps={{ shouldFilter: false }}
 					>
@@ -1535,7 +1557,7 @@ export function ChatHeader({
 							ref={modelSearchInputRef}
 							data-chat-model-selector-search="true"
 							autoFocus
-							placeholder="Search models..."
+							placeholder={tUi("accessibility.searchModels")}
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
 							onKeyDown={handleModelSearchKeyDown}
@@ -1549,9 +1571,9 @@ export function ChatHeader({
 					/>
 					{Array.from(new Map([...modelOptions.active, ...modelOptions.comingSoon].flatMap((option) => option.chatBlockedReasons).map((reason) => [reason.settingsHref, reason])).values()).length ? (
 						<div className="flex flex-wrap gap-x-3 gap-y-1 border-b px-4 py-2 text-xs text-muted-foreground">
-							<span>Some models are unavailable under your effective Chat policy.</span>
+			<span>{tUi("chatSettings.policyUnavailable")}</span>
 							{Array.from(new Map([...modelOptions.active, ...modelOptions.comingSoon].flatMap((option) => option.chatBlockedReasons).map((reason) => [reason.settingsHref, reason])).values()).map((reason) => (
-								<Link key={reason.settingsHref} href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{reason.label}</Link>
+								<Link key={reason.settingsHref} href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{localizedWorkspacePolicyReason(tPolicy, reason)}</Link>
 							))}
 						</div>
 					) : null}
@@ -1569,7 +1591,7 @@ export function ChatHeader({
 										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
 							>
-								Free
+				{tUi("chatSettings.free")}
 							</Button>
 							<Button
 								type="button"
@@ -1584,7 +1606,7 @@ export function ChatHeader({
 										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
 							>
-								New
+				{tUi("chatSettings.new")}
 							</Button>
 							<Button
 								type="button"
@@ -1598,13 +1620,13 @@ export function ChatHeader({
 										? "border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 hover:text-white dark:border-sky-300 dark:bg-sky-300 dark:text-slate-950 dark:hover:border-sky-200 dark:hover:bg-sky-200 dark:hover:text-slate-950"
 										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
-								title="Hide models that are unavailable in this chat"
+								title={tCopy("hideUnavailableHelp")}
 							>
-								Hide Unavailable
+								{tCopy("hideUnavailable")}
 							</Button>
 							{allowModelCompare ? (
 								<span className="ml-auto hidden text-[11px] text-muted-foreground sm:inline">
-									Ctrl/⌘-click to add multiple
+									{tCopy("addMultipleShortcut")}
 								</span>
 							) : null}
 						</div>
@@ -1614,10 +1636,12 @@ export function ChatHeader({
 								viewportClassName="p-3"
 							>
 								<ModelSelectorEmpty>
-									No models found.
+								{tRooms("noModelsFound")}
 								</ModelSelectorEmpty>
 								<ModelSelectorGroup
-									heading={`Results (${Math.min(25, searchResultTotalCount)}${searchResultTotalCount > 25 ? ` of ${searchResultTotalCount}` : ""})`}
+									heading={searchResultTotalCount > 25
+										? tModelPicker("resultsWithTotal", { count: 25, total: searchResultTotalCount })
+										: tModelPicker("results", { count: searchResultTotalCount })}
 									className="pb-2 [&_[cmdk-group-heading]]:text-foreground [&_[cmdk-group-heading]]:font-semibold"
 								>
 									{rankedSearchResults.map(({ option }) =>
@@ -1660,7 +1684,7 @@ export function ChatHeader({
 										variant="outline"
 										size="sm"
 										className="h-8 gap-1.5 rounded-md bg-muted/40 px-2.5 text-xs font-medium shadow-none"
-										aria-label="Response layout" />}>
+										aria-label={tUi("responseLayout.label")} />}>
 
 										{responseLayout === "side-by-side" ? (
 											<Columns2 className="h-4 w-4" />
@@ -1669,8 +1693,8 @@ export function ChatHeader({
 										)}
 										<span className="hidden xl:inline">
 											{responseLayout === "side-by-side"
-												? "Side by side"
-												: "Sequential"}
+												? tUi("responseLayout.sideBySide")
+												: tUi("responseLayout.sequential")}
 										</span>
 										<ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
 
@@ -1680,13 +1704,13 @@ export function ChatHeader({
 								<div className="grid gap-1">
 									<p className="text-xs font-medium">
 										{responseLayout === "side-by-side"
-											? "Side-by-side responses"
-											: "Sequential responses"}
+											? tUi("responseLayout.sideBySideTitle")
+											: tUi("responseLayout.sequentialTitle")}
 									</p>
 									<p className="text-xs text-muted-foreground">
 										{responseLayout === "side-by-side"
-											? "Show each model in its own column for direct comparison."
-											: "Stack every model response in the chat timeline."}
+											? tUi("responseLayout.sideBySideDescription")
+											: tUi("responseLayout.sequentialDescription")}
 									</p>
 								</div>
 							</TooltipContent>
@@ -1698,9 +1722,9 @@ export function ChatHeader({
 							>
 								<List className="mt-0.5 h-4 w-4 text-muted-foreground" />
 								<span className="grid min-w-0 flex-1 gap-0.5">
-									<span>Sequential</span>
+									<span>{tUi("responseLayout.sequential")}</span>
 									<span className="whitespace-normal text-xs leading-4 text-muted-foreground">
-										Responses appear one after another.
+										{tUi("responseLayout.sequentialOptionDescription")}
 									</span>
 								</span>
 								{responseLayout === "sequential" ? (
@@ -1713,9 +1737,9 @@ export function ChatHeader({
 							>
 								<Columns2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
 								<span className="grid min-w-0 flex-1 gap-0.5">
-									<span>Side by side</span>
+									<span>{tUi("responseLayout.sideBySide")}</span>
 									<span className="whitespace-normal text-xs leading-4 text-muted-foreground">
-										Responses sit in model columns.
+										{tUi("responseLayout.sideBySideOptionDescription")}
 									</span>
 								</span>
 								{responseLayout === "side-by-side" ? (
@@ -1734,15 +1758,15 @@ export function ChatHeader({
 							onClick={onToggleTemporaryMode}
 							aria-label={
 								temporaryMode
-									? "Turn off temporary chat"
-									: "Turn on temporary chat"
+									? tUi("temporaryChat.turnOff")
+									: tUi("temporaryChat.turnOn")
 							}
 						>
 							<MessageCircleDashed className="h-4 w-4" />
 						</Button>
 					</TooltipTrigger>
 					<TooltipContent>
-						Temporary chat (Ctrl/Cmd+Shift+U)
+						{tUi("temporaryChat.tooltip")}
 					</TooltipContent>
 				</Tooltip>
 				<Tooltip>
@@ -1751,21 +1775,21 @@ export function ChatHeader({
 							variant="ghost"
 							size="icon"
 							onClick={() => onSettingsOpenChange(true)}
-							aria-label="Open chat settings"
+							aria-label={tUi("chatSettings.open")}
 						>
 							<Settings className="h-5 w-5" />
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent>Settings</TooltipContent>
+					<TooltipContent>{tUi("chatSettings.title")}</TooltipContent>
 				</Tooltip>
 				<Dialog open={settingsOpen} onOpenChange={onSettingsOpenChange}>
 					<DialogContent
 						showCloseButton={false}
 						className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] overflow-hidden p-0 md:max-h-[520px] md:w-[760px] md:max-w-[760px] lg:w-[820px] lg:max-w-[820px]"
 					>
-						<DialogTitle className="sr-only">Settings</DialogTitle>
+						<DialogTitle className="sr-only">{tUi("chatSettings.title")}</DialogTitle>
 						<DialogDescription className="sr-only">
-							Chat settings and diagnostics.
+							{tUi("chatSettings.description")}
 						</DialogDescription>
 						<div className="flex h-[calc(100dvh-1rem)] max-h-[520px] flex-1 flex-col overflow-hidden">
 							<div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3 sm:px-4">
@@ -1788,7 +1812,7 @@ export function ChatHeader({
 												<span className="flex min-w-0 items-center gap-2">
 													<ChatSettingsTabIcon tab={settingsTab} />
 													<span className="truncate">
-														{CHAT_SETTINGS_TAB_LABELS[settingsTab]}
+														{settingsTabLabels[settingsTab]}
 													</span>
 												</span>
 											</SelectValue>
@@ -1796,31 +1820,31 @@ export function ChatHeader({
 										<SelectContent align="start">
 											<SelectItem value="personalization">
 												<ChatSettingsTabIcon tab="personalization" />
-												<span>Personalization</span>
+												<span>{tUi("chatSettings.personalization")}</span>
 											</SelectItem>
 											<SelectItem value="data-controls">
 												<ChatSettingsTabIcon tab="data-controls" />
-												<span>Data Controls</span>
+												<span>{tUi("chatSettings.dataControls")}</span>
 											</SelectItem>
 											<SelectItem value="shortcuts">
 												<ChatSettingsTabIcon tab="shortcuts" />
-												<span>Shortcuts</span>
+												<span>{tUi("chatSettings.shortcuts")}</span>
 											</SelectItem>
 											{isAdmin ? (
 												<SelectItem value="admin">
 													<ChatSettingsTabIcon tab="admin" />
-													<span>Admin</span>
+													<span>{tUi("chatSettings.admin")}</span>
 												</SelectItem>
 											) : null}
 										</SelectContent>
 									</Select>
 								</div>
-								<p className="hidden text-sm font-semibold lg:block">Settings</p>
+				<p className="hidden text-sm font-semibold lg:block">{tUi("chatSettings.title")}</p>
 								<DialogClose asChild>
 									<Button
 										variant="ghost"
 										size="icon-sm"
-										aria-label="Close settings"
+										aria-label={tUi("chatSettings.close")}
 										className="shrink-0"
 									>
 										<X className="h-4 w-4" />
@@ -1841,7 +1865,7 @@ export function ChatHeader({
 									}
 								>
 									<Paintbrush className="h-4 w-4" />
-									Personalization
+									{tUi("chatSettings.personalization")}
 								</Button>
 								<Button
 									variant={
@@ -1856,7 +1880,7 @@ export function ChatHeader({
 									}}
 								>
 									<Database className="h-4 w-4" />
-									Data Controls
+									{tUi("chatSettings.dataControls")}
 								</Button>
 								<Button
 									variant={
@@ -1868,7 +1892,7 @@ export function ChatHeader({
 									onClick={() => setSettingsTab("shortcuts")}
 								>
 									<Keyboard className="h-4 w-4" />
-									Shortcuts
+									{tUi("chatSettings.shortcuts")}
 								</Button>
 								{isAdmin && (
 									<Button
@@ -1881,7 +1905,7 @@ export function ChatHeader({
 										onClick={() => setSettingsTab("admin")}
 									>
 										<Shield className="h-4 w-4" />
-										Admin
+										{tUi("chatSettings.admin")}
 									</Button>
 								)}
 							</div>
@@ -1894,16 +1918,15 @@ export function ChatHeader({
 										<div className="grid gap-3">
 											<div className="grid gap-1">
 												<p className="text-sm font-semibold text-foreground">
-													Personalization
+													{tUi("chatSettings.personalization")}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													Stored locally and applied
-													to your system prompt.
+								{tUi("chatSettings.profileStorageDescription")}
 												</p>
 											</div>
 											<div className="grid gap-2">
 												<Label htmlFor="personal-name">
-													Name
+								{tUi("chatComposer.name")}
 												</Label>
 												<Input
 													id="personal-name"
@@ -1918,12 +1941,12 @@ export function ChatHeader({
 															}
 														)
 													}
-													placeholder="Jane Doe"
+												placeholder={tUi("chatSettings.displayNamePlaceholder")}
 												/>
 											</div>
 											<div className="grid gap-2">
 												<Label htmlFor="personal-role">
-													Role
+								{tUi("chatSettings.role")}
 												</Label>
 												<Input
 													id="personal-role"
@@ -1938,12 +1961,12 @@ export function ChatHeader({
 															}
 														)
 													}
-													placeholder="Product manager"
+												placeholder={tUi("chatSettings.rolePlaceholder")}
 												/>
 											</div>
 											<div className="grid gap-2">
 												<Label htmlFor="personal-notes">
-													Notes
+								{tUi("chatSettings.notes")}
 												</Label>
 												<Textarea
 													id="personal-notes"
@@ -1960,13 +1983,13 @@ export function ChatHeader({
 															}
 														)
 													}
-													placeholder="I like short, actionable responses."
+												placeholder={tUi("chatSettings.personalInstructionsPlaceholder")}
 													rows={3}
 												/>
 											</div>
 											<div className="grid gap-2">
 												<Label htmlFor="accent-color">
-													Accent color
+								{tUi("chatSettings.accentColor")}
 												</Label>
 												<Select
 													value={
@@ -1981,7 +2004,7 @@ export function ChatHeader({
 															id="accent-color"
 															className="w-full sm:w-44"
 														>
-															<SelectValue placeholder="Select a color">
+										<SelectValue placeholder={tUi("select.color")}>
 																<span className="flex items-center gap-2">
 																	<AccentColorSwatch
 																		unknown={
@@ -2027,7 +2050,7 @@ export function ChatHeader({
 																		);
 																	}}
 																	placeholder="#111111"
-																	aria-label="Custom accent hex color"
+											aria-label={tUi("accessibility.customAccentHexColor")}
 																	className="min-w-0 flex-1 font-mono text-xs"
 																/>
 																<Popover>
@@ -2038,7 +2061,7 @@ export function ChatHeader({
 																			type="button"
 																			variant="outline"
 																			size="icon"
-																			aria-label="Choose custom accent color"
+												aria-label={tUi("accessibility.chooseCustomAccentColor")}
 																			className="h-8 w-10 shrink-0 rounded-md"
 																		>
 																			<AccentColorSwatch
@@ -2059,7 +2082,7 @@ export function ChatHeader({
 																	>
 																		<PopoverHeader>
 																			<PopoverTitle className="text-sm">
-																				Custom accent
+												{tUi("chatSettings.customAccent")}
 																			</PopoverTitle>
 																		</PopoverHeader>
 																		<ColorPicker
@@ -2114,7 +2137,7 @@ export function ChatHeader({
 																		undefined
 																	}
 																/>
-																Custom
+																{tUi("select.custom")}
 															</span>
 														</SelectItem>
 												</SelectContent>
@@ -2122,7 +2145,7 @@ export function ChatHeader({
 										</div>
 										<div className="grid gap-2">
 											<Label htmlFor="new-chat-model-preference">
-												New chats
+												{tUi("chatSettings.newChats")}
 											</Label>
 											<Select
 												value={newChatModelPreference}
@@ -2138,22 +2161,21 @@ export function ChatHeader({
 												>
 													<SelectValue>
 														{newChatModelPreference === "selected"
-															? "Keep selected model(s)"
-															: "Start without models"}
+										? tUi("chat.keepSelectedModels")
+										: tUi("chat.startWithoutModels")}
 													</SelectValue>
 												</SelectTrigger>
 												<SelectContent>
 													<SelectItem value="blank">
-														Start without models
+									{tUi("chat.startWithoutModels")}
 													</SelectItem>
 													<SelectItem value="selected">
-														Keep selected model(s)
+									{tUi("chat.keepSelectedModels")}
 													</SelectItem>
 												</SelectContent>
 											</Select>
 											<p className="text-xs text-muted-foreground">
-												Choose whether a new chat starts empty or reuses
-												the current model selection.
+												{tUi("chatSettings.newChatsDescription")}
 											</p>
 										</div>
 									</div>
@@ -2162,20 +2184,19 @@ export function ChatHeader({
 										<div className="grid gap-3">
 											<div className="grid gap-1">
 												<p className="text-sm font-semibold text-foreground">
-													Data Controls
+													{tUi("chatSettings.dataControls")}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													Import and export chat data
-													stored locally in your browser.
+													{tUi("chatSettings.dataTransferDescription")}
 												</p>
 											</div>
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
 												<div>
 													<p className="text-sm font-medium text-foreground">
-														Export chats
+										{tUi("chatSettings.exportChats")}
 													</p>
 													<p className="text-xs text-muted-foreground">
-														Download all chats stored in this browser.
+										{tUi("chatSettings.downloadAllChats")}
 													</p>
 												</div>
 												<Button
@@ -2184,16 +2205,16 @@ export function ChatHeader({
 													size="sm"
 													onClick={onExportChats}
 												>
-													Export
+										{tUi("chatSettings.export")}
 												</Button>
 											</div>
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
 												<div>
 													<p className="text-sm font-medium text-foreground">
-														Import chats
+										{tUi("chatSettings.importChats")}
 													</p>
 													<p className="text-xs text-muted-foreground">
-														Upload a previously exported chat file.
+										{tUi("chatSettings.uploadExportedChats")}
 													</p>
 												</div>
 												<Button
@@ -2215,7 +2236,7 @@ export function ChatHeader({
 																const data = JSON.parse(text);
 
 																if (!data.chats || !Array.isArray(data.chats)) {
-																	throw new Error("Invalid file format. Expected { chats: [...] }");
+													throw new Error(tUi("chatSettings.invalidImportFormat"));
 																}
 
 																const { upsertChat } = await import("@/lib/indexeddb/chats");
@@ -2275,19 +2296,25 @@ export function ChatHeader({
 
 																if (importedCount > 0) {
 																	setImportResult({
-																		message: `Successfully imported ${importedCount} chats${skippedCount > 0 ? ` (${skippedCount} skipped)` : ''}`,
+														message:
+															skippedCount > 0
+															? tUi("chatSettings.importSuccessWithSkipped", {
+																	imported: importedCount,
+																	skipped: skippedCount,
+																})
+															: tUi("chatSettings.importSuccess", { count: importedCount }),
 																		type: "success"
 																	});
 																	// Refresh the page to show imported chats
 																	setTimeout(() => window.location.reload(), 1500);
 																} else if (skippedCount > 0) {
 																	setImportResult({
-																		message: `All ${skippedCount} chats were invalid and skipped`,
+														message: tUi("chatSettings.allChatsSkipped", { count: skippedCount }),
 																		type: "error"
 																	});
 																} else {
 																	setImportResult({
-																		message: "No chats found in file",
+														message: tUi("chatSettings.noChatsInFile"),
 																		type: "info"
 																	});
 																}
@@ -2298,7 +2325,9 @@ export function ChatHeader({
 															} catch (error) {
 																console.error("Import error:", error);
 																setImportResult({
-																	message: `Import failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+														message: tUi("chatSettings.importFailed", {
+														error: tUi("chatSettings.unknownError"),
+													}),
 																	type: "error"
 																});
 															}
@@ -2306,7 +2335,7 @@ export function ChatHeader({
 														input.click();
 													}}
 												>
-													Import
+									{tUi("chatSettings.import")}
 												</Button>
 											</div>
 											{importResult && (
@@ -2328,11 +2357,10 @@ export function ChatHeader({
 										<div className="grid gap-4">
 											<div className="grid gap-1">
 												<p className="text-sm font-semibold text-foreground">
-													Keyboard shortcuts
+													{tUi("chatSettings.shortcutsHeading")}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													Fast actions for chat,
-													models, and the composer.
+								{tUi("chatSettings.shortcutActionsDescription")}
 												</p>
 											</div>
 											<ChatShortcutReference />
@@ -2342,27 +2370,24 @@ export function ChatHeader({
 										<div className="grid gap-3">
 											<div className="grid gap-1">
 												<p className="text-sm font-semibold text-foreground">
-													Admin
+													{tUi("chatSettings.admin")}
 												</p>
 												<p className="text-xs text-muted-foreground">
-													Diagnostic settings for
-													debugging gateway issues.
+								{tUi("chatSettings.gatewayDiagnosticsDescription")}
 												</p>
 											</div>
 											<div className="grid gap-3 rounded-lg border border-border px-3 py-3">
 												<div className="grid gap-1">
 													<p className="text-sm font-medium">
-														API target
+									{tUi("chatSettings.apiTarget")}
 													</p>
 													<p className="text-xs text-muted-foreground">
-														Choose the gateway base
-														URL used by chat
-														requests.
+									{tUi("chatSettings.apiTargetDescription")}
 													</p>
 												</div>
 												<div className="grid gap-2">
 													<Label htmlFor="api-target">
-														Environment
+										{tUi("chatSettings.environment")}
 													</Label>
 													<Select
 														value={apiTargetValue}
@@ -2389,38 +2414,38 @@ export function ChatHeader({
 														}}
 													>
 														<SelectTrigger id="api-target">
-															<SelectValue placeholder="Select API target" />
+										<SelectValue placeholder={tUi("select.apiTarget")} />
 														</SelectTrigger>
 														<SelectContent>
 															<SelectItem value="default">
-																App default
+											{tUi("select.appDefault")}
 															</SelectItem>
 													<SelectItem value="public">
-														Public API
+									{tUi("select.publicApi")}
 													</SelectItem>
 													{STAGING_CHAT_API_BASE_URL && (
 														<SelectItem value="staging">
-															Staging API
+											{tUi("select.stagingApi")}
 														</SelectItem>
 													)}
 															<SelectItem
 																value="local"
 															>
-																Local API
+											{tUi("select.localApi")}
 															</SelectItem>
 															<SelectItem
 																value={
 																	CUSTOM_API_SELECT_VALUE
 																}
 															>
-																Custom
+											{tUi("select.custom")}
 															</SelectItem>
 														</SelectContent>
 													</Select>
 												</div>
 												<div className="grid gap-2">
 													<Label htmlFor="api-base-url">
-														Base URL
+									{tUi("chatSettings.baseUrl")}
 													</Label>
 													<Input
 														id="api-base-url"
@@ -2447,7 +2472,7 @@ export function ChatHeader({
 														className="font-mono text-xs"
 													/>
 													<p className="text-xs text-muted-foreground">
-														Current target:{" "}
+									{tUi("chatSettings.currentTarget")}{" "}
 														<span className="font-mono">
 															{effectiveBaseUrl}
 														</span>
@@ -2457,11 +2482,10 @@ export function ChatHeader({
 											<div className="flex items-center justify-between rounded-lg border border-border px-3 py-3">
 												<div>
 													<p className="text-sm font-medium">
-														Debug mode
+									{tUi("chatSettings.debugMode")}
 													</p>
 													<p className="text-xs text-muted-foreground">
-														Send `x-gateway-debug`
-														headers.
+									{tUi("chatSettings.debugHeadersDescription")}
 													</p>
 												</div>
 												<Switch
@@ -2477,7 +2501,7 @@ export function ChatHeader({
 								<div className="border-t border-border px-3 py-3 sm:px-4">
 									<div className="flex justify-end">
 										<Button onClick={onSaveSettings}>
-											Save
+						{tChat("save")}
 										</Button>
 									</div>
 								</div>

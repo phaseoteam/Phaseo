@@ -354,7 +354,7 @@ export async function fetchFrontendModelPendingApiReleaseState(
 		})) ?? false;
 		return {
 			isPendingApiRelease: header?.status === "Available" && providers !== null && !hasActiveProvider,
-			modelName: header?.name ?? "This model",
+			modelName: header?.name ?? modelId,
 		};
 	}
 	return getModelPendingApiReleaseState(modelId, includeHidden);
@@ -1008,6 +1008,18 @@ export async function fetchFrontendRankingToolCallTimeseries(
 		`/api/_web/rankings/tool-calls?time_range=${encodeURIComponent(timeRange)}&bucket_size=${encodeURIComponent(bucketSize)}&top_n=${encodeURIComponent(String(topN))}`,
 	);
 }
+
+export type PublicIntelligenceValueEntry = PublicBenchmarkRankingEntry & {
+	configuration_id?: string;
+	variant?: string | null;
+	intelligence_score: number;
+	evaluation_cost: number;
+};
+
+export type PublicIntelligenceValue = {
+	benchmark_id: string;
+	entries: PublicIntelligenceValueEntry[];
+};
 
 export type PublicBenchmarkRankingEntry = {
 	other_info?: string | null;

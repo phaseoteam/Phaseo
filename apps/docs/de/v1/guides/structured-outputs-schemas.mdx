@@ -1,0 +1,62 @@
+---
+icon: "database"
+title: "Schemas für strukturierte Ausgaben"
+description: "So entwirfst du praktische JSON-Schemas für Modellausgaben."
+---
+
+Für zuverlässige strukturierte Ausgaben ist ein gutes Schema wichtiger als die Wahl des Modells.
+
+## Einfach anfangen
+
+- Bevorzuge flache Objekte statt tief verschachtelter Strukturen.
+- Setze jedes benötigte Feld in `required`.
+- Setze `additionalProperties: false`, wenn du die Struktur strikt vorgeben musst.
+
+## Anfrage
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## Antwort
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## Häufige Fehler
+
+- Felder optional lassen, die erforderlich sein sollten.
+- Zu offene Textfelder statt `enum`-Einschränkungen verwenden.
+- Abweichungen zwischen dem Schema in der Dokumentation und dem serverseitigen Validator zulassen.
+

@@ -1,0 +1,23 @@
+---
+title: "الحصول على عملية توليد"
+sidebarTitle: "الحصول على عملية توليد"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /generations"
+---
+يجلب سجل التدقيق المخزّن لـ `request_id` تابع لفريقك.
+
+استخدم:
+- `GET /v1/generations?id=<request_id>`
+
+إذا التقطت البوابة تفاصيل الطلب كاملةً لهذه العملية، فستتضمن الاستجابة أيضًا:
+
+- `replay_supported`: يحدد ما إذا كانت هناك حمولة جاهزة لإعادة التشغيل
+- `replay_request`: جسم الطلب المخزّن الذي يمكنك إرساله إلى المسار الأصلي لإعادة التنفيذ بصورة مضبوطة
+
+تدفق إعادة التشغيل المعتاد:
+
+1. اقرأ سجل التوليد باستخدام `GET /v1/generations?id=<request_id>`.
+2. تحقق من أن `replay_supported === true`.
+3. أعد إرسال `replay_request` إلى المسار الأصلي الذي يحدده `endpoint` مثل `/v1/chat/completions` أو `/v1/responses`.
+
+

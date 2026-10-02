@@ -1,5 +1,6 @@
 "use client";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import type { SettingsGuardrailEditorData } from "@/lib/fetchers/internal/settingsTypes";
 import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";
@@ -15,11 +16,12 @@ export default function GuardrailEditorPage(props: {
 
 function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: string; data: SettingsGuardrailEditorData }) {
 	const { data } = props;
+	const t = useTranslations("SettingsUI.settingsCopy.guardrails");
 
 	if (!data.workspaceId) {
 		return (
 			<div className="rounded-lg border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-				Select a workspace to manage guardrails.
+				{t("selectWorkspace")}
 			</div>
 		);
 	}
@@ -27,9 +29,9 @@ function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: 
 	if (props.mode === "edit" && !data.guardrail) {
 		return (
 			<div className="rounded-xl border bg-muted/10 p-6 text-sm text-muted-foreground">
-				Guardrail not found.{" "}
+				{t("notFound")}{" "}
 				<Link className="underline underline-offset-4" href="/settings/guardrails">
-					Back to guardrails
+					{t("back")}
 				</Link>
 				.
 			</div>
@@ -39,7 +41,7 @@ function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: 
 	if (!data.canManageGuardrails) {
 		return (
 			<div className="rounded-xl border bg-muted/10 p-6 text-sm text-muted-foreground">
-				Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members.
+				{t("permissions")}
 			</div>
 		);
 	}

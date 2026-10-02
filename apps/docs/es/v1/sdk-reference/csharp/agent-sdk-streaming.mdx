@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Transmisión"
+description: "Transmite texto y eventos del ciclo de vida del agente con enumerables asíncronos que se pueden volver a recorrer."
+---
+
+`Agent.Stream(...)` ejecuta la misma máquina de estados que `Run(...)` y devuelve `AgentStreamResult`:
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+Usa `FullStream()` para obtener eventos del modelo, las herramientas, los pasos y la ejecución. Los consumidores pueden volver a recorrer la secuencia asíncrona capturada de forma independiente. Llama a `Cancel()` cuando el producto deba detener la ejecución activa; la cancelación se transmite a las solicitudes del modelo y a las herramientas locales.
+
+## Relacionado
+
+- [Herramientas](./agent-sdk-tools.mdx)
+- [Observabilidad y DevTools](./agent-sdk-observability.mdx)

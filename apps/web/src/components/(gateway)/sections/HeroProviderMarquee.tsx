@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Logo } from "@/components/Logo";
 import {
 	Marquee,
@@ -11,11 +12,13 @@ interface HeroProviderMarqueeProps {
 }
 
 export function HeroProviderMarquee({ logos }: HeroProviderMarqueeProps) {
+	const tCopy = useTranslations("Site.landingGaps");
+
 	if (!logos.length) {
 		return (
 			<div className="rounded-2xl border border-slate-200 px-5 py-6 text-center text-sm text-slate-500 dark:text-slate-300">
-				Routing across vetted providers right now.
-			</div>
+{tCopy("copy001")}
+</div>
 		);
 	}
 

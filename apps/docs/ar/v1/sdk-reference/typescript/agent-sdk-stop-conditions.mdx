@@ -1,0 +1,65 @@
+---
+icon: "circle-check"
+title: "شروط الإيقاف"
+description: "قيّد عمل الوكيل بعدد الخطوات أو الرموز أو التكلفة أو المدة أو استدعاءات الأدوات أو سبب الإنهاء."
+---
+
+استخدم شروط الإيقاف لتحديد ميزانية تنفيذ واضحة لكل وكيل. تُفحص الشروط مقابل الخطوات المكتملة والاستخدام التراكمي.
+
+## الجمع بين الحدود المضمنة
+
+```typescript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+يسجّل أول شرط مطابق سببه ويعيد عملية تشغيل بالحالة `status: "stopped"`.
+
+## الوظائف المساعدة المتاحة
+
+| الدالة المساعدة | تتوقف عندما… |
+| --- | --- |
+| `stepCountIs(limit)` | يصل عدد الخطوات المكتملة إلى الحد |
+| `maxTokensUsed(limit)` | يصل استخدام الرموز التراكمي إلى الحد |
+| `maxCost(limit)` | تصل التكلفة التراكمية المُبلّغ عنها إلى الحد |
+| `maxDuration(ms)` | تصل مدة التشغيل المنقضية إلى الحد |
+| `hasToolCall(name)` | تحتوي خطوة على استدعاء الأداة المحدد |
+| `finishReasonIs(reason)` | تبلغ خطوة النموذج عن سبب الإنهاء |
+
+## إضافة شرط مخصص
+
+يمكن للشرط إعادة `false` أو `true` أو سلسلة نصية للسبب:
+
+```typescript
+const stopAfterRepeatedFailures = ({ steps }) => {
+  const failures = steps.filter((step) => step.status === "failed").length;
+  return failures >= 2 ? "repeated_failures" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedFailures],
+});
+```
+
+استخدم سلسلة توضح السبب عندما تحتاج الواجهات أو المشغّلون إلى تفسير سبب انتهاء التشغيل.
+
+## أدلة ذات صلة
+
+- [الجولات الديناميكية](./agent-sdk-dynamic-turns.mdx)
+- [المخرجات وإعادة المحاولة](./agent-sdk-run-controls.mdx)
+- [خطافات دورة الحياة](./agent-sdk-lifecycle-hooks.mdx)

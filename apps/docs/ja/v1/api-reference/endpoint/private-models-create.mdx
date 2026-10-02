@@ -1,0 +1,9 @@
+---
+title: "プライベートモデルを作成"
+sidebarTitle: "プライベートモデルを作成"
+badge: "ベータ版"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /private-models"
+description: "OpenAI互換のエンドポイントを認証済みワークスペースに接続します。"
+---
+
+`private_models:write`権限と、所有者または管理者の認証情報が必要です。`model_reference`には、カタログの正確なモデルIDまたはワークスペース内の短いスラッグを指定します。Phaseoが最終的なモデルIDを割り当てます。`credential`は暗号化され、書き込み専用です。

@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "Erros e solução de problemas"
+description: "Trate falhas do gateway, erros de validação e execuções malsucedidas do agente."
+---
+
+Use os erros estruturados do Agent SDK quando o aplicativo precisar decidir se deve tentar novamente, pedir outra entrada ao usuário ou mostrar detalhes da solicitação a um operador.
+
+## Tratar falhas do gateway
+
+As falhas do gateway são relançadas como `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Execuções e etapas malsucedidas mantêm os detalhes do erro do gateway quando disponíveis.
+
+## Tratar erros de esquema
+
+`AgentSchemaValidationError` identifica entradas ou saídas inválidas de ferramentas, eventos de progresso ou resultados finais. Trate-os como falhas de contrato, não como falhas temporárias do modelo.
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## Inspecionar a execução malsucedida
+
+Quando o runtime puder salvar um checkpoint da falha, inspecione:
+
+- `result.run.status`
+- `result.run.error`
+- `status`, `error` e `modelAttempts` da etapa mais recente
+- `requestId` e `nativeResponseId` para correlacionar com os logs do gateway
+
+## Verificações comuns
+
+- Confirme que o processo do servidor tenha acesso a `PHASEO_API_KEY`.
+- Atribua a cada ferramenta um `id` exclusivo e estável.
+- Use os IDs exatos das chamadas de ferramentas ao aprovar, rejeitar ou fornecer uma saída manual.
+- Limite as tentativas do modelo; não repita cegamente em caso de falhas de validação ou aprovação.
+- Persista o estado da execução pausada antes de devolver o controle ao navegador ou ao worker da fila.
+
+## Guias relacionados
+
+- [Hooks do ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)

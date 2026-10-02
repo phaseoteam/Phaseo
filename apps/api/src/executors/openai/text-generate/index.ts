@@ -66,6 +66,8 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-6-luna-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6-sol": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6-sol-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.1-sol": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.1-sol-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -426,7 +428,7 @@ function normalizeOpenAIProModelSlug(model?: string | null): {
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra))-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra)|gpt-6\.1-sol)-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
@@ -768,11 +770,15 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 	const requestedRoutingModel = args.providerModelSlug ?? (args.ir as IRChatRequest).model;
 	const normalizedRoutingModel = normalizeOpenAIProModelSlug(requestedRoutingModel);
 	const modelForRouting = normalizedRoutingModel.model ?? requestedRoutingModel;
+	const normalizedModel = normalizeModelName(modelForRouting).toLowerCase();
+	const requiresResponsesRoute = normalizedModel === "gpt-6.1-sol" ||
+		(normalizedModel === "gpt-6-astra" && (args.ir as IRChatRequest).serviceTier === "ultrafast");
 	const hasAsyncTool = (args.ir as IRChatRequest).tools?.some((tool) => tool.async === true) ?? false;
 	const useNativeChatRoute =
 		isOpenAIProviderOffer(args.providerId) &&
 		args.protocol === "openai.chat.completions" &&
 		!(args.ir as IRChatRequest).reasoning &&
+		!requiresResponsesRoute &&
 		!hasAsyncTool;
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
 		args.ir as IRChatRequest,

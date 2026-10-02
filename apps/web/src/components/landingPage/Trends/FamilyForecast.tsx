@@ -7,6 +7,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { useLocale, useTranslations } from "next-intl";
 
 const SAMPLE_ROWS = [
 	{
@@ -45,28 +46,40 @@ export default function FamilyForecastCard({
 		predictedNext: string;
 	}>;
 }) {
+	const locale = useLocale();
+	const t = useTranslations("Site.home.familyForecast");
+	const formatDate = (value: string) => {
+		const date = new Date(value);
+		return Number.isNaN(date.getTime())
+			? value
+			: new Intl.DateTimeFormat(locale, {
+					dateStyle: "medium",
+					timeZone: "UTC",
+				}).format(date);
+	};
+
 	return (
 		<Card className="border-none bg-white/70 shadow-sm ring-1 ring-inset ring-zinc-200/60 backdrop-blur-sm dark:bg-zinc-950/60 dark:ring-zinc-800/60">
 			<CardHeader className="pb-2">
 				<CardTitle className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
-					Upcoming Model Family Releases
+					{t("title")}
 				</CardTitle>
 				<CardDescription className="text-xs text-zinc-500 dark:text-zinc-400">
-					Median cadence based on the past four launches per family
+					{t("description")}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="overflow-x-auto">
 				<table className="w-full min-w-[520px] text-sm">
 					<thead className="text-left text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
 						<tr className="border-b border-zinc-200/70 dark:border-zinc-800/70">
-							<th className="py-3 pr-4">Family</th>
-							<th className="py-3 pr-4 text-right">Median gap</th>
-							<th className="py-3 pr-4 text-right">Last release</th>
-							<th className="py-3 text-right">Predicted next</th>
+							<th className="py-3 pr-4">{t("family")}</th>
+							<th className="py-3 pr-4 text-right">{t("medianGap")}</th>
+							<th className="py-3 pr-4 text-right">{t("lastRelease")}</th>
+							<th className="py-3 text-right">{t("predictedNext")}</th>
 						</tr>
 					</thead>
 					<tbody>
-						{rows.map((row, index) => (
+						{rows.map((row) => (
 							<tr
 								key={row.family}
 								className="border-b border-zinc-200/50 text-zinc-700 last:border-none dark:border-zinc-800/50 dark:text-zinc-300"
@@ -75,20 +88,20 @@ export default function FamilyForecastCard({
 									{row.family}
 								</td>
 								<td className="py-3 pr-4 text-right text-sm font-medium">
-									{row.medianDays} days
+									{new Intl.NumberFormat(locale).format(row.medianDays)} {t("daysUnit")}
 								</td>
 								<td className="py-3 pr-4 text-right text-sm">
-									{row.lastRelease}
+								{formatDate(row.lastRelease)}
 								</td>
 								<td className="py-3 text-right text-sm font-medium text-emerald-600 dark:text-emerald-300">
-									{row.predictedNext}
+									{formatDate(row.predictedNext)}
 								</td>
 							</tr>
 						))}
 					</tbody>
 				</table>
 				<p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
-					Predictions update automatically when the watcher records a new family release.
+					{t("predictionNotice")}
 				</p>
 			</CardContent>
 		</Card>

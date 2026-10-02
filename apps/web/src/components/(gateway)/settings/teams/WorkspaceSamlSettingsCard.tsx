@@ -2,6 +2,8 @@
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { CheckCircle2, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateTeamSsoSettingsAction } from "@/app/(dashboard)/settings/teams/actions";
@@ -32,6 +34,7 @@ export default function WorkspaceSamlSettingsCard({
 	canEdit,
 	preview = false,
 }: Props) {
+	const t = useTranslations("SettingsUI");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [enabled, setEnabled] = React.useState(Boolean(initialSettings?.sso_enabled));
 	const [providerId, setProviderId] = React.useState(
@@ -63,7 +66,7 @@ export default function WorkspaceSamlSettingsCard({
 	async function copyMetadataUrl() {
 		if (!metadataUrl) return;
 		await navigator.clipboard.writeText(metadataUrl);
-		toast.success("Metadata URL copied");
+	toast.success(t("saml.urlCopied"));
 	}
 
 	async function save() {
@@ -78,11 +81,9 @@ export default function WorkspaceSamlSettingsCard({
 			});
 			await updateTeamSsoSettingsAction(workspaceId, normalized);
 			void invalidateSettings();
-			toast.success("SAML settings saved");
+			toast.success(t("saml.saved"));
 		} catch (error) {
-			toast.error(
-				error instanceof Error ? error.message : "Could not save SAML settings",
-			);
+			toast.error(localizedSettingsError(error, t, "Action failed", t("saml.saveFailed")));
 		} finally {
 			setSaving(false);
 		}
@@ -92,11 +93,11 @@ export default function WorkspaceSamlSettingsCard({
 		<section className="space-y-6">
 			<div className="grid max-w-2xl gap-6">
 				<div className="grid gap-2">
-					<div className="flex items-center justify-between gap-3"><Label htmlFor="samlMetadataUrl">Phaseo metadata URL</Label><Badge variant={enabled ? "default" : configured ? "secondary" : "outline"}>{enabled ? "Enabled" : configured ? "Ready" : "Not configured"}</Badge></div>
+					<div className="flex items-center justify-between gap-3"><Label htmlFor="samlMetadataUrl">{t("saml.metadataUrl")}</Label><Badge variant={enabled ? "default" : configured ? "secondary" : "outline"}>{enabled ? t("saml.enabled") : configured ? t("saml.ready") : t("saml.notConfigured")}</Badge></div>
 					<div className="flex gap-2">
 						<Input
 							id="samlMetadataUrl"
-							value={metadataUrl ?? "Unavailable in this environment"}
+							value={metadataUrl ?? t("saml.unavailable")}
 							readOnly
 							className="font-mono text-xs"
 						/>
@@ -106,32 +107,32 @@ export default function WorkspaceSamlSettingsCard({
 							size="icon"
 							onClick={copyMetadataUrl}
 							disabled={!metadataUrl}
-							aria-label="Copy SAML metadata URL"
+							aria-label={t("saml.copyMetadata")}
 						>
 							<Copy className="h-4 w-4" />
 						</Button>
 					</div>
 					<p className="text-xs text-muted-foreground">
-						Add this service-provider metadata URL to your identity provider.
+					{t("saml.metadataHelp")}
 					</p>
 				</div>
 
 				<div className="grid gap-2">
-					<Label htmlFor="samlDomains">Verified domains</Label>
+					<Label htmlFor="samlDomains">{t("saml.verifiedDomains")}</Label>
 					<Input
 						id="samlDomains"
 						value={domains}
 						onChange={(event) => setDomains(event.target.value)}
-						placeholder="example.com, example.org"
+						placeholder={t("saml.domainsPlaceholder")}
 						disabled={!canEdit || saving}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Comma-separated domains used to discover this connection at sign-in.
+						{t("saml.domainsHelp")}
 					</p>
 				</div>
 
 				<div className="grid gap-2">
-					<Label htmlFor="samlProviderId">Supabase SSO provider ID</Label>
+					<Label htmlFor="samlProviderId">{t("saml.providerId")}</Label>
 					<Input
 						id="samlProviderId"
 						value={providerId}
@@ -141,29 +142,29 @@ export default function WorkspaceSamlSettingsCard({
 						className="font-mono text-xs"
 					/>
 					<p className="text-xs text-muted-foreground">
-						The provider identifier returned when the SAML connection is created.
+						{t("saml.providerIdHelp")}
 					</p>
 				</div>
 
 				<div className="flex items-center justify-between gap-4 rounded-md border border-border/70 px-4 py-3">
 					<div>
-						<p className="text-sm font-medium">Enable SAML sign-in</p>
+						<p className="text-sm font-medium">{t("saml.enableSignIn")}</p>
 						<p className="text-xs text-muted-foreground">
-							A provider ID and at least one verified domain are required.
+							{t("saml.enableHelp")}
 						</p>
 					</div>
 					<Switch
 						checked={enabled}
 						onCheckedChange={setEnabled}
 						disabled={!canEdit || saving || (!configured && !enabled)}
-						aria-label="Enable SAML sign-in"
+						aria-label={t("saml.enableSignIn")}
 					/>
 				</div>
 			</div>
 			<div className="flex items-center justify-between gap-4 border-t border-border/60 pt-5">
 				<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<CheckCircle2 className="h-3.5 w-3.5" />
-					Available to every workspace during rollout.
+					{t("saml.availableRollout")}
 				</p>
 				<Button
 					type="button"
@@ -171,7 +172,7 @@ export default function WorkspaceSamlSettingsCard({
 					disabled={!canEdit || !hasChanges || saving}
 				>
 					{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-					Save SAML settings
+					{t("saml.save")}
 				</Button>
 			</div>
 		</section>

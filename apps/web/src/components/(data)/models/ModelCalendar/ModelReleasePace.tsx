@@ -2,6 +2,7 @@
 
 import * as Recharts from "recharts";
 import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { TooltipProps } from "recharts";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import {
@@ -16,11 +17,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-
-const CONFIG = {
-	releases: { label: "Monthly releases", color: "#22c55e" },
-	trend: { label: "3-mo average", color: "#3b82f6" },
-};
 
 // Predictions removed per request; only actuals and 3-mo avg
 
@@ -44,41 +40,43 @@ type ModelReleasePaceProps = {
 	monthsWindow?: number;
 };
 
-const KEY_LABELS: Record<string, string> = {
-	releases: "Releases",
-	trend: "3-mo avg",
-};
-
 type RechartsTooltipContentProps = TooltipProps<number, string> & {
 	active?: boolean;
 	payload?: Array<any>;
 	label?: string | number;
 };
 
+type ReleaseTooltipProps = RechartsTooltipContentProps & {
+	locale: string;
+	labels: Record<string, string>;
+	currentLabel: string;
+	inProgressLabel: string;
+	predictedLabel: string;
+};
+
 const ReleaseTooltip = ({
 	active,
 	payload,
 	label,
-}: RechartsTooltipContentProps) => {
+	locale,
+	labels,
+	currentLabel,
+	inProgressLabel,
+	predictedLabel,
+}: ReleaseTooltipProps) => {
 	const format = useDisplayFormatters();
 	if (!active || !payload?.length) return null;
 
 	const rows = payload.filter((item) => item.value !== undefined);
-	const currentLabel = format.dateParts(new Date(), {
-		month: "short",
-		year: "2-digit",
-		timeZone: "UTC",
-	});
-
 	return (
 		<div className="rounded-2xl border border-zinc-200 bg-white p-3 text-xs text-zinc-900 shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:text-white">
 			<p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-				{label} {label === currentLabel ? "(in progress)" : ""}
+				{label} {label === currentLabel ? `(${inProgressLabel})` : ""}
 			</p>
 			<div className="mt-2 space-y-1">
 				{rows.map((entry) => {
 					const key = entry.dataKey ?? "";
-					const labelText = KEY_LABELS[key] ?? String(key);
+					const labelText = labels[key] ?? String(key);
 					const isPred = entry.payload?.isPrediction;
 					return (
 						<div
@@ -87,7 +85,7 @@ const ReleaseTooltip = ({
 						>
 							<span className="text-[11px] text-zinc-600 dark:text-zinc-400">
 								{labelText}
-								{isPred ? " (predicted)" : ""}
+								{isPred ? ` (${predictedLabel})` : ""}
 							</span>
 							<span className="font-mono">
 								{format.number(Number(entry.value ?? 0))}
@@ -105,8 +103,18 @@ export default function ModelReleasePace({
 	events,
 	monthsWindow = 24,
 }: ModelReleasePaceProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.updatesCalendar.releasePace");
 	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
+	const config = {
+		releases: { label: t("monthlyReleases"), color: "#22c55e" },
+		trend: { label: t("threeMonthAverage"), color: "#3b82f6" },
+	};
+	const tooltipLabels = {
+		releases: t("releases"),
+		trend: t("threeMonthAverage"),
+	};
 
 	const data = useMemo<ReleasePaceData[]>(() => {
 		const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -170,13 +178,14 @@ export default function ModelReleasePace({
 	const diff = recentAvg - previousAvg;
 	const trendLabel =
 		Math.abs(diff) < 0.1
-			? "Stable releases"
+			? t("stableReleases")
 			: diff > 0
-			? `Speeding up +${diff.toFixed(1)}`
-			: `Slowing down ${diff.toFixed(1)}`;
-	const badgeTooltip = `Recent 3-mo avg ${recentAvg.toFixed(
-		1
-	)}, prior ${previousAvg.toFixed(1)}.`;
+			? t("speedingUp", { value: Math.abs(diff).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })
+			: t("slowingDown", { value: Math.abs(diff).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) });
+	const badgeTooltip = t("trendTooltip", {
+		recent: recentAvg.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+		previous: previousAvg.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+	});
 
 	// No predictions: only actual data
 	const chartData = data;
@@ -187,7 +196,7 @@ export default function ModelReleasePace({
 				<div className="flex items-center justify-between gap-4">
 					<div className="flex flex-col gap-1">
 						<h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-							Releases per month
+							{t("releasesPerMonth")}
 						</h3>
 					</div>
 					<Tooltip delayDuration={400}>
@@ -215,7 +224,7 @@ export default function ModelReleasePace({
 					</Tooltip>
 				</div>
 				<ChartContainer
-					config={CONFIG}
+					config={config}
 					className="!aspect-[4/3] sm:!aspect-[3/1]"
 				>
 					<Recharts.LineChart
@@ -273,7 +282,17 @@ export default function ModelReleasePace({
 							)}
 							verticalAlign="bottom"
 						/>
-						<ChartTooltip content={<ReleaseTooltip />} />
+						<ChartTooltip
+							content={
+								<ReleaseTooltip
+									locale={locale}
+									labels={tooltipLabels}
+									currentLabel={format.dateParts(now, { month: "short", year: "2-digit", timeZone: "UTC" })}
+									inProgressLabel={t("inProgress")}
+									predictedLabel={t("predicted")}
+								/>
+							}
+						/>
 					</Recharts.LineChart>
 				</ChartContainer>
 			</div>

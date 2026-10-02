@@ -14,6 +14,8 @@ The request contains:
 - `questions`: a map of named questions. Each question sets `type` to `noul`, `choice`, or `score` and includes `instructions`; supported types depend on the selected model.
 - `model`: the Phaseo model ID. Use `typesafe/jev-1.13.0` for Jev 1.13, or `typesafe/jev-latest` to follow the latest Jev release.
 
+Liquid D1 (`liquid-ai/d1:free`, also available as `liquid-ai/d1`) and Perplexity Decider 27B (`perplexity/decider-27b`) support all three question types. D1 is free during experimental early access. Decider costs $0.04 per million input tokens, including image tokens; output tokens are free. Add a Perplexity provider credential in Phaseo to use Decider. Its image state uses PNG, JPEG, or WebP base64 data URLs; remote image URLs are unsupported. Each choice question accepts up to 255 options, and each score question accepts up to 10 levels. Check model availability before calling either model.
+
 For Respan Span-01, `state` must be a conversation span with an `input` array of preceding messages and an `output` assistant message. Span-01 supports `noul` questions only. The `noul` answer is the probability that the behavior is present; `probabilities` also includes absent and not-observable probabilities.
 
 ```json
@@ -57,3 +59,22 @@ For the Respan example, a response looks like this:
 Jev supports mixing all three question types in one request; Span-01 supports `noul` questions only. See the [Quickstart](../../quickstart) for copy-pasteable cURL, JavaScript, TypeScript SDK, and Python SDK examples. Jev 1.13 is billed at $0.042 per 1M input tokens; output tokens are free.
 
 For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
+
+### Image decisions with Clef
+
+`cloudflare/clef` and `cloudflare/clef-flash` support all three question types and embedded images through Cloudflare Workers AI. Each has a 65,536-token context window. Input costs $0.24 per million tokens for Clef and $0.09 for Clef Flash.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+You can also supply a `data:image/png;base64,...` string in `images`. Clef accepts up to four PNG, JPEG, or WebP images, each at most 4 MiB and 16 megapixels, with at most 8 MiB of decoded image data and a 13 MiB request body. Remote URLs are unsupported. Cloudflare validates image formats and dimensions. Models without image support reject image requests.
+
+Clef accepts at most 64 questions, with IDs of up to 100 letters, digits, underscores, dots, or hyphens. Choice questions require 2–255 options; score questions require 2–10 levels. See Cloudflare's [Clef documentation](https://developers.cloudflare.com/workers-ai/models/clef/).

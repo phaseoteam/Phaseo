@@ -8,6 +8,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ArrowUpRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
@@ -37,6 +38,7 @@ export function TierBadge({
 	remainingFormatted,
 	topTier = false,
 }: TierBadgeProps) {
+	const t = useTranslations("SettingsUI.credits");
 	const format = useDisplayFormatters();
 	const percent = (value: number) =>
 		format.number(value, {
@@ -45,7 +47,7 @@ export function TierBadge({
 			notation: "standard",
 		});
 	const hasSavings = savingsPoints > 0;
-	const displayTierName = HIDE_ENTERPRISE_REFERENCES ? "Standard" : tierName;
+	const displayTierName = HIDE_ENTERPRISE_REFERENCES ? t("standard") : tierName;
 	const showNextTierHint =
 		!HIDE_ENTERPRISE_REFERENCES && nextTierName && remainingFormatted;
 	return (
@@ -55,7 +57,7 @@ export function TierBadge({
 					href={href}
 					className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-800 transition hover:border-indigo-300 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:border-indigo-900/60 dark:bg-indigo-900/40 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-900/60"
 				>
-					<span>Tier: {displayTierName}</span>
+					<span>{t("tierLabel", { tier: displayTierName })}</span>
 					<Badge
 						variant="secondary"
 						className="flex items-center gap-1 rounded-full bg-white/70 px-2 py-0 text-[11px] text-indigo-800 shadow-sm dark:bg-zinc-900/70 dark:text-indigo-200"
@@ -70,44 +72,45 @@ export function TierBadge({
 				<div className="space-y-2">
 					<div>
 						<div className="font-medium text-foreground">
-							Current tier: {displayTierName}
+							{t("currentTierLower")}: {displayTierName}
 						</div>
 						<div className="text-xs text-muted-foreground">
-							Credit top-up fee: {percent(feePct)}%{" "}
+							{t("topUpFee")}: {percent(feePct)}%{" "}
 							{hasSavings
-								? `(save ${percent(savingsPoints)}% vs Basic)`
+								? `(${t("saveVsBasic", { percent: percent(savingsPoints) })})`
 								: ""}
 						</div>
 					</div>
 
 					{hasSavings && savingsAmountFormatted && (
 						<p className="text-xs text-muted-foreground">
-							Approx. savings so far this month:{" "}
-							<span className="font-medium text-foreground">
-								{savingsAmountFormatted}
-							</span>
+							{t("approxSavingsThisMonth", { amount: savingsAmountFormatted })}
 						</p>
 					)}
 
 					{topTier ? (
 						!HIDE_ENTERPRISE_REFERENCES ? (
 							<p className="text-xs text-muted-foreground">
-								You're on Enterprise tier. Reach out if you
-								need custom pricing or dedicated support.
+								{t("enterpriseTierDisclosure")}
 							</p>
 						) : null
 					) : (
 						<>
 							{showNextTierHint && (
 								<p className="text-xs text-muted-foreground">
-									Spend {remainingFormatted} more this month to
-									unlock {nextTierName} tier next month
+									{t("spendToUnlockTier", {
+										amount: remainingFormatted,
+										tier: nextTierName,
+									})}
 									{nextFeePct !== undefined && nextFeePct !== null ? (
 										<>
 											{" "}
-											({percent(nextFeePct)}% top-up fee
+											(
+											{t("topUpFeePercent", {
+												percent: percent(nextFeePct),
+											})}
 											{nextDiscountDelta
-												? `, save ${percent(nextDiscountDelta)}%`
+												? `, ${t("saveVsBasic", { percent: percent(nextDiscountDelta) })}`
 												: ""}
 											)
 										</>
@@ -119,7 +122,7 @@ export function TierBadge({
 					)}
 
 					<p className="text-xs text-muted-foreground">
-						Click to view pricing details.
+						{t("clickPricingDetails")}
 					</p>
 				</div>
 			</HoverCardContent>

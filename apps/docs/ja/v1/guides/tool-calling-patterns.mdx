@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "ツール呼び出しのパターン"
+description: "Chat CompletionsおよびResponsesエンドポイント向けの、信頼性の高いツール呼び出しループです。"
+---
+
+これらのパターンを使うと、ツール呼び出しループを決定的に保ち、デバッグしやすくできます。
+
+## パターン1：Chat Completionsループ
+
+1. ユーザーメッセージとツール定義を送信します。
+2. `finish_reason`が`tool_calls`の場合は、各ツール呼び出しを実行します。
+3. ツールの結果を`role: "tool"`のメッセージとして返します。
+4. アシスタントの最終回答を読み取ります。
+
+### リクエスト（続き）
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## パターン2：Responsesループ
+
+`/v1/responses`では、モデルのツール呼び出しは`function_call`型の出力アイテムとして表示されます。
+続けて、`function_call_output`入力アイテムを含むフォローアップリクエストを送信します。
+
+### リクエスト（フォローアップ）
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## エンドポイントを選ぶ
+
+- OpenAI形式のメッセージループをすでに使っている場合は、`/v1/chat/completions`を選びます。
+- アプリケーションがResponses APIに統一されている場合は、`/v1/responses`を選びます。
+- アプリケーションがAnthropic中心の場合は、`/v1/messages`を使います。
+

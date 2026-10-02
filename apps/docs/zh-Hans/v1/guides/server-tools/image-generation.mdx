@@ -1,0 +1,92 @@
+---
+icon: "image"
+title: "图像生成"
+description: "让模型通过 Phaseo 服务器工具生成图像。"
+---
+
+当模型需要在回答过程中生成图像时，请使用 `phaseo:image_generation`。Phaseo 会向模型提供托管工具，在服务器端执行图像请求，并将结果送回模型循环。
+
+## 请求
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Design a wide product concept image for a compact desktop synthesizer.",
+    "tools": [
+      {
+        "type": "phaseo:image_generation",
+        "parameters": {
+          "model": "openai/gpt-image-2",
+          "quality": "high",
+          "aspect_ratio": "16:9",
+          "output_format": "png"
+        }
+      }
+    ]
+  }'
+```
+
+## 参数
+
+| 参数 | 类型 | 说明 |
+| --- | --- | --- |
+| `model` | string | 可选的图像生成模型 ID。如果工具和工具调用都未指定模型，则默认为 `openai/gpt-image-2`。 |
+| `quality` | string | 可选的供应商质量提示，例如 `low`、`medium` 或 `high`。 |
+| `size` | string | 可选的图像尺寸提示。 |
+| `aspect_ratio` | string | 可选的宽高比，例如 `1:1`、`16:9` 或 `9:16`。 |
+| `background` | string | 可选的背景模式提示。 |
+| `output_format` | string | 可选的输出格式，例如 `png`、`jpeg` 或 `webp`。 |
+| `output_compression` | integer | 可选的供应商压缩提示。 |
+| `moderation` | string | 可选的供应商审核提示。 |
+
+模型调用工具时会提供最终的 `prompt`。工具级参数会为该调用设置默认值和限制。
+
+工具调用也可以发送 `description` 来代替 `prompt`。为兼容模型生成的图像描述，Phaseo 会将 `description` 视为 prompt 的别名。
+
+## 工具结果
+
+结果会以 JSON 格式返回模型：
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "imageUrl": "https://...",
+  "mime_type": "image/png"
+}
+```
+
+有些供应商会改为返回 base64 图像数据：
+
+```json
+{
+  "status": "ok",
+  "model": "openai/gpt-image-2",
+  "b64_json": "...",
+  "mime_type": "image/png"
+}
+```
+
+## 用量与定价
+
+当图像模型报告 token 用量时，图像生成用量会计入父响应的用量。Phaseo 还会记录：
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "image_generation_requests": 1
+    }
+  }
+}
+```
+
+价格卡可通过 `server_tool_image_generation_requests` 计量项对此计费。底层图像模型的用量也可能按其常规定价计费。
+
+## 相关内容
+
+- [服务器工具](./index.mdx)
+- [工具调用](../tool-calling.mdx)

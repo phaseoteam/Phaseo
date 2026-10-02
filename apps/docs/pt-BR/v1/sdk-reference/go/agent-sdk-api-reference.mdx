@@ -1,0 +1,25 @@
+---
+icon: "braces"
+title: "Referência da API"
+description: "Consulte os principais tipos e métodos do Agent SDK para Go."
+---
+
+| API | Finalidade |
+| --- | --- |
+| `CreateAgent(...)` | Definir um agente |
+| `DefineTool(...)` | Definir uma ferramenta local ou manual |
+| `CreateGatewayAgentClient(...)` | Conectar os turnos do modelo ao Phaseo |
+| `Agent.Run(...)` | Executar até concluir ou pausar |
+| `Agent.Stream(...)` | Executar com consumidores de fluxo reutilizáveis |
+| `Agent.Continue(...)` | Continuar um estado salvo ou pausado |
+| `StreamResult.Result()` | Ler a execução concluída |
+| `StreamResult.Text()` | Ler os fragmentos de texto |
+| `StreamResult.Events()` | Ler todos os eventos |
+| `StreamResult.Cancel()` | Cancelar a execução ativa |
+
+Entre os tipos importantes estão `AgentDefinition`, `RunOptions`, `RunResult`, `RunRecord`, `RunStep`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor`, `ModelRetryConfig` e `ToolExecutionConfig`.
+
+## Relacionados
+
+- [Crie seu primeiro agente](./agent-sdk.mdx)
+- [Observabilidade e DevTools](./agent-sdk-observability.mdx)

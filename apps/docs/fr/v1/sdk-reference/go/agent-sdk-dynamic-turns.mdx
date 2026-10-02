@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Changez le modèle, les instructions, les outils et les paramètres d’échantillonnage entre les tours d’un agent Go."
+---
+
+Les fonctions de rappel des tours dynamiques permettent au routage de réagir à l’état de l’exécution sans reconstruire l’agent. Elles s’exécutent avant chaque requête au modèle et reçoivent le contexte du tour actuel.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+Vous pouvez également configurer des outils dynamiques et les valeurs de `Temperature`, `MaxOutputTokens` et `TopP` pour chaque tour.
+
+## Laisser un outil influencer le tour suivant
+
+Définissez `NextTurn` sur un outil pour modifier la prochaine requête au modèle. Ces remplacements sont enregistrés dans l’état en pause : ils survivent donc à un point de contrôle d’approbation et expirent après le tour suivant.
+
+Utilisez des fonctions de rappel dynamiques pour les règles à recalculer à chaque tour. Utilisez `NextTurn` pour un transfert propre à un outil, par exemple changer de modèle après l’inspection d’un dépôt.

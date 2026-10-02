@@ -1,0 +1,52 @@
+---
+title: "LlamaIndex"
+icon: "database"
+description: "LlamaIndexのRAGワークフローでPhaseoを使います。"
+---
+
+LlamaIndexアプリの生成処理や埋め込み処理をPhaseo経由でルーティングする場合に、このガイドを使います。
+
+## インストール
+
+```bash
+pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
+```
+
+## OpenAI互換LLMを設定する
+
+```python
+import os
+from llama_index.llms.openai_like import OpenAILike
+
+llm = OpenAILike(
+    model="openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    is_chat_model=True,
+)
+
+response = llm.complete("Write one sentence about retrieval quality.")
+print(response)
+```
+
+## インデックスで使う
+
+```python
+from llama_index.core import Settings
+
+Settings.llm = llm
+```
+
+その後、通常どおりインデックスを構築またはクエリします。
+
+## 注意事項
+
+- サードパーティのOpenAI互換APIには`OpenAILike`を使います。
+- 生成モデルと埋め込みモデルのIDは明示します。LlamaIndexのデフォルトがPhaseoを指すとは限りません。
+- Phaseoの埋め込みを使う場合は、PhaseoモデルIDと同じBase URLで埋め込みモデルを設定します。
+
+## 関連項目
+
+- [埋め込み](../../api-reference/endpoint/embeddings.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)

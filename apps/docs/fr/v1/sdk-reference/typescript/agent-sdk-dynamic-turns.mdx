@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez les modèles, les instructions, l’échantillonnage et les outils entre les tours de l’agent."
+---
+
+Utilisez des valeurs dynamiques lorsque les tours suivants doivent tenir compte du contexte de l’application ou de resultats d’outils precedents. La valeur peut etre fixe ou calculee pour le tour actuel.
+
+## Choisir un modèle a l’exécution
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+La définition de l’agent accepte des valeurs dynamiques pour `model`, `models`, `instructions`, `temperature`, `maxOutputTokens` et `topP`.
+
+## Mettre a jour le contexte de l’application depuis un outil
+
+Les outils peuvent enregistrer des informations pour les tours suivants avec `context.setContext()` :
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+Gardez le contexte compact et sérialisable si une exécution peut etre enregistree puis reprise.
+
+## Remplacer uniquement le tour suivant
+
+Utilisez `nextTurnParams` lorsqu’un outil doit modifier la requête suivante sans changer definitivement la définition de l’agent :
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+Les valeurs du tour suivant peuvent modifier le modèle, les instructions, la temperature, le nombre maximal de jetons, l’échantillonnage top-p ou les outils disponibles.
+
+## Guides associes
+
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Sorties et nouvelles tentatives](./agent-sdk-run-controls.mdx)

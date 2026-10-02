@@ -1,0 +1,11 @@
+---
+title: "Criar chave de gerenciamento"
+sidebarTitle: "Criar chave de gerenciamento"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /management-keys"
+description: "Criar uma chave de gerenciamento com escopos para automatizar o plano de controle."
+---
+<Note>Este endpoint requer uma identidade de proprietário ou administrador e `management_keys:write`.</Note>
+
+Escolha um modelo de permissões ou forneça uma lista explícita de escopos. A `key` em texto simples só é retornada na resposta de criação; armazene-a imediatamente em um cofre de segredos no servidor.
+

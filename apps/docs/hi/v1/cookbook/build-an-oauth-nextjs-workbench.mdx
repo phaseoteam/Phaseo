@@ -1,0 +1,193 @@
+---
+title: "OAuth Next.js workbench बनाएं"
+icon: "key-round"
+description: "एकीकृत proxy वाले signed-in Gateway ऐप के लिए पूरे OAuth Next.js उदाहरण को गाइड के रूप में इस्तेमाल करें।"
+---
+
+जब आपके product को sign-in, session-आधारित Gateway access और एक से अधिक chat route चाहिए, तो यह पेज इस्तेमाल करें।
+
+**लक्ष्य:** signed-in workbench चलाएं और एक सुरक्षित server-side proxy से Phaseo अनुरोध भेजें।
+
+**परिणाम:** OAuth sign-in, session-आधारित tokens, मॉडल खोज, chat और endpoint tester वाला स्थानीय ऐप।
+
+<Prompt
+  description="OAuth और एकीकृत Phaseo proxy वाला **साइन-इन किया हुआ Next.js कार्यक्षेत्र** बनाएँ।"
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`आप Phaseo Gateway पर signed-in Next.js ऐप बना रहे हैं।
+
+इन सुविधाओं वाला workbench-style ऐप बनाएं:
+- OAuth 2.1 + PKCE से साइन-इन
+- session-आधारित token storage
+- सर्वर पर एक एकीकृत Gateway proxy route
+- मॉडल खोज
+- Responses API का उपयोग करने वाला एक चैट फ़्लो
+- अन्य Phaseo endpoints के लिए एक सामान्य endpoint जाँच-उपकरण
+
+आवश्यकताएं:
+- Gateway credentials और access tokens केवल server-side रखें।
+- सुरक्षा के लिए proxy allowlist इस्तेमाल करें।
+- token refresh का समर्थन करें।
+- workbench को जरूरत से ज्यादा जटिल न बनाएं और समझने योग्य रखें।
+- setup, env vars और चलाने के चरणों वाला छोटा README जोड़ें।
+
+सत्यापन:
+- संभव हो तो ऐप चलाएं
+- स्थानीय setup की सीमा तक sign-in flow सत्यापित करें
+- कम-से-कम एक proxied Gateway request path सत्यापित करें
+- क्या verify हुआ और क्या अभी भी external OAuth configuration पर निर्भर है, इसकी सटीक जानकारी दें।`}
+</Prompt>
+
+## सैंपल प्रोजेक्ट
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- रिपॉज़िटरी में स्थानीय पथ: `examples/oauth-client-nextjs`
+
+## इस ऐप में क्या शामिल है
+
+- OAuth 2.1 + PKCE लॉगिन
+- session-आधारित token संग्रहण और refresh
+- control और generation routes के लिए एकीकृत proxy
+- मॉडल खोज
+- `/responses` पर एक चैट फ़्लो
+- अन्य Gateway routes के लिए एक सामान्य endpoint जाँच-उपकरण
+
+## इस उदाहरण से कब शुरू करें
+
+इन स्थितियों में इसका उपयोग करें:
+
+- अंतिम उपयोगकर्ताओं को delegated access के साथ साइन इन करना हो
+- आपको साधारण चैट पेज से अधिक चाहिए
+- कई Phaseo endpoints के लिए एक सुरक्षित server route चाहिए
+
+इन स्थितियों में यहां से शुरू न करें:
+
+- आपको केवल साधारण API-key चैट UI चाहिए
+- आप पहले script या CLI चाहते हैं
+
+## मुख्य फ़ाइलें
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## सैंपल की संरचना ऐसी क्यों है
+
+### 1. OAuth को Gateway logic से अलग रखें
+
+ऐप इन चीज़ों को अलग रखता है:
+
+- प्रमाणीकरण शुरू करने और callback संभालने का लॉजिक
+- एन्क्रिप्टेड session का प्रबंधन
+- token refresh
+
+इससे AI integration code सरल रहता है और sign-in समस्याओं को डीबग करना आसान होता है।
+
+### 2. एक proxy route Gateway calls संभालता है
+
+catch-all proxy route:
+
+- endpoint allowlist जांचता है
+- मौजूदा bearer token जोड़ता है
+- ज़रूरत पड़ने पर tokens refresh करता है
+- request और response bodies आगे भेजता है
+
+हर route में auth logic कॉपी किए बिना कई Phaseo endpoints चाहिए हों, तो यह अच्छा pattern है।
+
+### 3. Dashboard एक internal workbench का काम भी करता है
+
+workbench page केवल chat के लिए नहीं है:
+
+- मॉडल खोजता है
+- का परीक्षण करता है `/responses`
+- non-chat endpoints भी जांच सकता है
+
+ज्यादा polished end-user UI बनाने से पहले onboarding, QA और internal debugging के लिए यह उपयोगी है।
+
+## ज़रूरी चीज़ें
+
+- - Node.js और समर्थित package manager
+- - local callback URL वाला OAuth client
+- - मज़बूत session secret
+
+## सैंपल चलाएं
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+यह सेट करें:
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+फिर चलाएं:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+खोलें `http://localhost:3000`.
+
+## काम की जांच करें
+
+- Sign-in configured callback पर लौटता है और session बनाता है।
+- Dashboard proxy से मॉडल खोज सकता है।
+- एक Responses API अनुरोध browser में access token उजागर किए बिना पूरा होता है।
+- Proxy allowlist के बाहर का endpoint अस्वीकार हो जाता है।
+
+## इसे अपने मुताबिक कैसे बनाएं
+
+- - proxy allowlist को केवल product के ज़रूरी endpoints तक सीमित करें
+- - साफ़ user-facing UI बनाते समय workbench को internal इस्तेमाल के लिए रखें
+- - integration स्थिर होने पर generic tester को product के लिए बने flows से बदलें
+
+## संबंधित गाइड
+
+- [Next.js वेब चैट ऐप बनाएं](./build-a-nextjs-web-chat-app.mdx)
+- [मिनी ऐप के लिए शुरुआती prompts](./mini-app-starter-prompts.mdx)
+- [उदाहरण](../guides/examples.mdx)

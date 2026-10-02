@@ -1,0 +1,87 @@
+---
+title: "Cursor"
+icon: "/icons/brands/cursor.svg"
+description: "اربط Cursor بـ Phaseo عبر مفتاح OpenAI API وإعداد تجاوز عنوان URL الأساسي."
+---
+
+استخدم هذا الدليل لتوجيه نماذج دردشة Cursor المدعومة عبر Phaseo. استخدم Phaseo CLI لإنشاء مفتاح مخصص وإلغائه ثم أكمل الإعداد في Cursor، أو استخدم مفتاح Phaseo الخاص بك واتبع الإعدادات اليدوية نفسها.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo cursor --model openai/gpt-5.6-terra
+```
+
+ينشئ الإعداد مفتاحًا غير منتهي الصلاحية باسم `Phaseo CLI: Cursor API Key` ويعرض الإعدادات أدناه. ولا يعدّل مخزن بيانات الاعتماد الخاص في Cursor.
+
+## تهيئة Cursor
+
+1. افتح **Cursor Settings**.
+2. اختر **Models**.
+3. ابحث عن قسم **OpenAI API Key** وفعّله.
+4. انسخ المفتاح المخصص:
+
+```bash
+phaseo integrations credential cursor
+```
+
+5. الصق المفتاح في حقل OpenAI API في Cursor.
+6. فعّل **Override OpenAI Base URL**.
+7. أدخل `https://api.phaseo.app/v1` دون شرطة مائلة في النهاية.
+8. أضف نموذج Phaseo الذي تريد استخدامه أو فعّله.
+
+| حقل Cursor | القيمة |
+| --- | --- |
+| OpenAI API Key | ناتج `phaseo integrations credential cursor` |
+| Override OpenAI Base URL | `https://api.phaseo.app/v1` |
+| Model | معرّف نموذج Phaseo الذي يدعمه حقل Model في Cursor |
+
+تُطبق إعدادات المزوّد المخصص الحالية في Cursor على مستوى عام لا على كل مزوّد على حدة. يُرسل اسم النموذج إلى نقطة النهاية المُهيأة، بينما يحدد مفتاح API وعنوان URL الأساسي النشطان وجهة الطلب.
+
+<Warning>
+يطبق Cursor حاليًا تجاوز عنوان URL الأساسي لـ OpenAI على نطاق واسع. أوقف التجاوز قبل العودة إلى النماذج المستضافة في Cursor إذا تعطلت أثناء تفعيل Phaseo. وقد يرفض Cursor أيضًا المعرّفات المخصصة التي تتعارض مع أسماء النماذج المدمجة أو لا تناسب توجيه عائلة OpenAI.
+</Warning>
+
+## التحقق
+
+1. أبقِ مفتاح Phaseo وتجاوز عنوان URL الأساسي مفعّلين.
+2. اختر النموذج المُهيأ من قائمة نماذج Cursor.
+3. ابدأ محادثة جديدة واطلب الرد بـ `PHASEO_CURSOR_OK`.
+4. تحقق من ظهور الطلب في نشاط Phaseo أو سجلاته.
+
+مسار الدردشة القياسي في Cursor هو هدف التوافق المعني. وقد تظل الميزات التي تستخدم نماذج Cursor المتخصصة، مثل الإكمال عبر Tab، تستخدم البنية التحتية الخاصة بـ Cursor.
+
+## الإزالة
+
+أوقف أولًا مفتاح OpenAI API وتجاوز عنوان URL الأساسي ضمن **Cursor Settings → Models**، ثم ألغِ مفتاح Phaseo المخصص:
+
+```bash
+phaseo integrations remove cursor
+```
+
+لا تستطيع الإزالة مسح مخزن بيانات الاعتماد الآمن في Cursor تلقائيًا. إذا ظل المفتاح مُهيأً، فاحذفه من إعدادات Models في Cursor.
+
+## استكشاف الأخطاء وإصلاحها
+
+### تتوقف النماذج المستضافة في Cursor عن العمل
+
+أوقف **Override OpenAI Base URL** قبل اختيار نموذج مستضاف في Cursor. لا يعزل Cursor حاليًا عنوان URL مخصصًا لكل نموذج.
+
+### يُرفض النموذج
+
+جرّب نموذج Phaseo يقبله Cursor كنموذج مخصص من عائلة OpenAI. قد يرفض Cursor المعرّفات المتعارضة مع كتالوجه المدمج، وقد لا تقبل بعض الإصدارات معرّفات تتضمن بادئة المزوّد.
+
+### لا يظهر زر Verify
+
+تحفظ بعض إصدارات Cursor المفتاح دون إجراء Verify منفصل. أدخل المفتاح وعنوان URL الأساسي واختبرهما في محادثة جديدة.
+
+### فشل المصادقة
+
+شغّل `phaseo integrations credential cursor` مجددًا، واستبدل القيمة المحفوظة في Cursor، وتأكد من أن عنوان URL الأساسي هو `https://api.phaseo.app/v1` تمامًا.
+
+## مواضيع ذات صلة
+
+- [توثيق مفتاح Cursor API](https://docs.cursor.com/settings/api-keys)
+- [وكلاء البرمجة](./coding-assistants.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Itens do fluxo"
+description: "Consuma eventos de texto, raciocínio, ferramentas e itens do provedor em execuções de agentes PHP."
+---
+
+O resultado do fluxo oferece consumidores reutilizáveis para texto e eventos estruturados.
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->itemStream() as $item) {
+    renderItem($item);
+}
+
+$result = $stream->getResult();
+```
+
+Use o fluxo completo de eventos se a interface precisar, além dos itens do provedor, de fragmentos de raciocínio, progresso das ferramentas, pontos de verificação de aprovação ou mudanças do ciclo de vida.
+
+<Note>
+Os valores dos itens em PHP são arrays ou objetos genéricos, não uma união fechada de itens tipados. Valide os campos usados pela interface e mantenha um fallback para itens desconhecidos e futuros eventos do provedor.
+</Note>
+
+PHP consome o fluxo do provedor de forma síncrona e permite percorrer novamente a sequência coletada. Isso é adequado para workers de requisição e programas CLI, mas não cria por si só um canal de envio em segundo plano.

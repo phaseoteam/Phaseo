@@ -1,0 +1,38 @@
+---
+icon: "mic"
+title: "STT（音声テキスト変換）"
+description: "PHP SDKで/audio/transcriptionsを呼び出します。"
+---
+
+**メソッド**: `$client->generateTranscription(...)`または`$client->createTranscription(...)`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateTranscription([
+    'model' => 'openai/gpt-4o-transcribe',
+    'audio_url' => 'https://example.com/audio.mp3', // or 'audio_b64' for base64 data
+    'language' => 'en'
+]);
+echo $response['text'] ?? '';
+```
+
+### 主なパラメーター
+
+- `model`（必須）：文字起こしに対応したモデルのID。
+- `audio_url`または`audio_b64`（必須）：URLまたはBase64形式の音声データ。
+- `language`：ヒントとして指定する言語コード（例：`en`）。
+- `prompt`：精度向上のための任意のコンテキスト。
+- `temperature`（0～2）：サンプリングのランダム性。
+- `response_format`：`json`、`text`、`srt`、`verbose_json`など。
+
+### 戻り値
+
+AudioTranscriptionResponse

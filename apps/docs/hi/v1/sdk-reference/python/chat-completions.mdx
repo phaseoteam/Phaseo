@@ -1,0 +1,78 @@
+---
+icon: "messages-square"
+title: "चैट कंप्लीशन"
+description: "Python SDK से /chat/completions call करें।"
+---
+
+**Method**: `client.generate_text()` (`client.stream_chat()` से parsed chunks stream करें)।
+
+### उदाहरण
+```python
+chat = client.generate_text({
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "Write a limerick about lighthouses."},
+    ],
+    "temperature": 0.5,
+})
+```
+
+### स्ट्रीमिंग
+```python
+for chunk in client.stream_chat({
+    "model": "openai/gpt-4o-mini",
+    "messages": [{"role": "user", "content": "Stream a story"}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+### मुख्य parameters
+- `model` (आवश्यक): लक्ष्य मॉडल ID।
+- `messages` (आवश्यक): `system|user|assistant|tool` भूमिकाओं वाले क्रमबद्ध संदेश; सामग्री पाठ या हिस्सों में हो सकती है।
+- नमूना चयन: `temperature` (0–2), `top_p` (0–1), `top_k` (>=1), `seed` (वैकल्पिक पूर्णांक)।
+- लंबाई/दंड: `max_output_tokens` (पूर्णांक), `presence_penalty` और `frequency_penalty` (-2 से 2), `stop` (string|string[])।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (auto/none/विशिष्ट टूल), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20)।
+- आउटपुट: `response_format` (json/text), `metadata` (पास-थ्रू ऑब्जेक्ट), `stream` (बूलियन), `service_tier`।
+- Gateway के अतिरिक्त विकल्प: `usage` (उपयोग आँकड़े माँगने के लिए बूलियन), `meta` (मेटा ब्लॉक शामिल करने के लिए बूलियन)।
+
+### रिटर्न मान
+`ChatCompletionsResponse`
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+या streaming के दौरान SSE lines
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"gpt-3.5-turbo-0125","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

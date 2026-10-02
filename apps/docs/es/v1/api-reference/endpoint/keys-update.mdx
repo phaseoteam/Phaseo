@@ -1,0 +1,10 @@
+---
+title: "Actualizar clave de API"
+sidebarTitle: "Actualizar clave de API"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /keys/{id}"
+description: "Actualiza los metadatos y el estado de una clave de API."
+---
+<Note>Este endpoint requiere una clave de API de gestión. No se aceptan las claves de API estándar de la pasarela.</Note>
+
+Usa esta ruta para cambiar el nombre de una clave, ajustar sus ámbitos, definir su caducidad, deshabilitarla o establecer un límite de gasto con `limit` y `limit_reset`.

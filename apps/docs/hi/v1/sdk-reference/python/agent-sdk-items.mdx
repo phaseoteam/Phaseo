@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "नतीजों और आइटम के साथ काम करना"
+description: "मैसेज, स्टेप, टूल और streamed items से Python रन टाइमलाइन बनाएँ।"
+---
+
+`AgentRunResult` में स्थायी रन स्थिति, मैसेज, स्टेप, usage और लागत, चेतावनियाँ, समाप्ति के कारण और अंतिम आउटपुट शामिल हैं।
+
+जवाब के टेक्स्ट के लिए `text_stream()` और provider तथा runtime items के लिए `item_stream()` उपयोग करें। Python items अभी dictionary के रूप में होते हैं, TypeScript के discriminated union `AgentItem` के रूप में नहीं।
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+provider-विशिष्ट dictionary access को एक application adapter के पीछे रखें, फिर बाद में दोबारा बनाने के लिए पूरा परिणाम सहेजें।
+
+## संबंधित विषय
+
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)

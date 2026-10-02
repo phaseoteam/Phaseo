@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "Salidas y reintentos"
+description: "Valida las salidas finales, reintenta errores transitorios del modelo y aplica valores predeterminados de enrutamiento administrados."
+---
+
+Usa el análisis de salidas cuando el resto de tu aplicación necesite un valor tipado en lugar de texto libre. Añade reintentos limitados para errores transitorios del modelo, pero deja que la aplicación gestione los errores de validación y de políticas.
+
+## Analizar una salida tipada
+
+`parseOutput` convierte el texto final cuando termina el ciclo del agente:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+Para aplicar reglas más estrictas al comportamiento del modelo, combina el análisis con una respuesta estructurada del cliente de gateway:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Reintentar solicitudes al modelo
+
+Usa `modelRetry` cuando debas reintentar un error transitorio del modelo dentro de la ejecución actual:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` cuenta los intentos posteriores a la primera solicitud. El número final de intentos se guarda en el paso como `modelAttempts`.
+
+## Usar valores predeterminados de enrutamiento administrados
+
+Usa `preset` cuando quieras mantener en el dashboard los valores predeterminados de enrutamiento, prompt o parámetros:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+El adaptador de gateway también puede incluir `responseFormat`, `plugins`, `gatewayTools`, `toolChoice`, `webSearchOptions`, `providerOptions`, `promptCacheKey` e `includeMeta`.
+
+## Guías relacionadas
+
+- [Cambiar los turnos posteriores del modelo](./agent-sdk-dynamic-turns.mdx)
+- [Detener un agente de forma segura](./agent-sdk-stop-conditions.mdx)
+- [Gestionar errores](./agent-sdk-events-and-errors.mdx)

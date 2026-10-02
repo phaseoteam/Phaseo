@@ -1,0 +1,63 @@
+---
+icon: "list-checks"
+title: "Lista de verificação de recursos para migração"
+description: "Confira os recursos do Phaseo que costumam afetar uma migração de gateway."
+---
+
+# Lista de verificação de recursos para migração
+
+Use esta lista para identificar quais partes de uma integração de gateway existente podem ser migradas sem alterações e quais precisam de validação explícita. Revisada pela última vez em 23 de agosto de 2026.
+
+## Compatibilidade das solicitações principais
+
+| Recurso | Suporte do Phaseo | Ação de migração |
+| --- | --- | --- |
+| Autenticação compatível com OpenAI | Compatível | Altere a URL base e a chave de API e faça uma solicitação autenticada. |
+| Chat Completions | Compatível | Teste solicitações normais, em streaming, com chamadas de ferramentas e saídas estruturadas. |
+| Responses | Compatível | Teste formatos de entrada, eventos de streaming, ferramentas e análise da resposta. |
+| Anthropic Messages | Compatível | Verifique cabeçalhos, prompts de sistema e eventos de streaming específicos da Anthropic. |
+| Identificadores de modelo | IDs do catálogo Phaseo | Valide cada ID de produção com `GET /v1/models`; não presuma que os aliases correspondem. |
+| Endpoints de embeddings, imagem e áudio | Suporte varia por modelo e provedor | Verifique se o modelo oferece suporte à operação necessária antes da migração. |
+
+## Controles de roteamento e políticas
+
+| Recurso | Suporte do Phaseo | Ação de migração |
+| --- | --- | --- |
+| Ordem dos provedores | `provider.order` | Recrie apenas as regras de ordem ainda necessárias para a carga de trabalho. |
+| Listas de provedores permitidos e ignorados | `provider.only` e `provider.ignore` | Valide os IDs e confirme que pelo menos uma rota continue disponível. |
+| Ordenação por preço, latência ou throughput | `provider.sort` | Inspecione o provedor selecionado no uso do Gateway após o teste. |
+| Retenção zero de dados | `provider.require_zero_data_retention` | Confirme que existe um provedor compatível com o modelo antes de exigir esse recurso. |
+| Execução regional e residência de dados | Campos da solicitação e padrões de privacidade do workspace | Teste o roteamento bem-sucedido e o erro quando não houver provedor correspondente. |
+| Prompts e padrões reutilizáveis | Predefinições | Mova a configuração compartilhada para uma predefinição, em vez de duplicá-la em cada cliente. |
+
+## Operações e implantação
+
+| Recurso | Suporte do Phaseo | Ação de migração |
+| --- | --- | --- |
+| Atribuição de solicitações | ID, nome, URL e categorias do aplicativo | Mantenha os cabeçalhos de atribuição durante a migração e verifique o agrupamento no painel. |
+| Detalhes da solicitação e do provedor | Uso do Gateway e registros de geração | Compare provedor, latência, uso de tokens e preço com prompts representativos. |
+| Lotes e trabalhos assíncronos | APIs de lote, arquivo, vídeo, webhook e websocket | Valide transições de status, cobrança final, cancelamento e recuperação de resultados. |
+| Suporte à reprodução | Registros de geração expõem metadados de reprodução quando disponíveis | Confirme que o endpoint e o payload originais possam ser recuperados para solicitações com falha. |
+| Implantação gradual | Divisão de tráfego no cliente ou na infraestrutura | Mantenha a reversão limitada à troca da URL base e das credenciais até que a migração esteja estável. |
+
+## Recursos que exigem validação específica da carga de trabalho
+
+Não considere a compatibilidade da API como prova de que estes comportamentos são idênticos:
+
+- seleção automática de provedores e ordem de fallback
+- afinidade do cache de prompts e preços de cache
+- campos de solicitação específicos do provedor
+- metadados disponíveis apenas na resposta
+- limites de taxa e tempo de repetição
+- políticas de retenção, residência e treinamento de dados
+- disponibilidade e preço exatos dos modelos
+
+Execute prompts e casos de falha semelhantes aos de produção antes de transferir um volume significativo de tráfego.
+
+## Guias relacionados
+
+- [Guias de migração](./index.mdx)
+- [Revisão de prontidão para migração](./gateway-parity-review.mdx)
+- [Roteamento e fallback](../guides/routing-and-fallbacks.mdx)
+- [Predefinições](../guides/presets.mdx)
+- [Atribuição do aplicativo](../guides/app-attribution.mdx)

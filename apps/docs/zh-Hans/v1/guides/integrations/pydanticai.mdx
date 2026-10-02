@@ -1,0 +1,46 @@
+---
+title: "PydanticAI"
+icon: "braces"
+description: "使用 PydanticAI 和 Phaseo 构建类型化 Python Agent。"
+---
+
+如果需要类型化输出、验证和简洁的 OpenAI 兼容模型配置，可使用 PydanticAI 构建 Python Agent。
+
+## 安装
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## 配置模型
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## 说明
+
+- PydanticAI 的 OpenAI 兼容路径使用 OpenAI 风格的聊天行为。
+- 对于 `phaseo:apply_patch` 等 Responses 专属功能，请直接调用 Phaseo Responses。
+- 结构化输出模式应足够小，以适应所选模型的上下文窗口。
+
+## 相关内容
+
+- [结构化输出](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

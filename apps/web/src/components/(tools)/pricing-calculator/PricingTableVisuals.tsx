@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import type { PricingMeter } from "@/components/(data)/model/pricing/pricingHelpers";
+import { useTranslations } from "next-intl";
 import {
 	Activity,
 	AudioLines,
@@ -60,13 +61,16 @@ function modelHref(model: ComparisonPricingModel) {
 }
 
 export function PricingModelHeader({ model }: { model: ComparisonPricingModel }) {
+	const t = useTranslations("Product.tools.pricing");
 	const href = modelHref(model);
 	const tier = getTierFilterMeta(model.pricingPlan);
 	const TierIcon = tier.icon;
 	const normalizedPlan = model.pricingPlan.replace(/[-_]+/g, " ").trim().toLowerCase();
-	const planLabel = normalizedPlan
-		? normalizedPlan[0].toUpperCase() + normalizedPlan.slice(1)
-		: "Standard";
+	const planLabel = normalizedPlan === "standard"
+		? t("standardPlan")
+		: normalizedPlan
+			? normalizedPlan[0].toUpperCase() + normalizedPlan.slice(1)
+			: t("standardPlan");
 	const label = <span className="truncate text-sm font-semibold">{model.label}</span>;
 	return (
 		<div className="min-w-[210px] py-1">

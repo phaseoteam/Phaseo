@@ -1,0 +1,85 @@
+---
+title: "Atribución de aplicaciones"
+description: "Agrupa el uso de Gateway por aplicación mediante ID, nombres, URL y categorías estables."
+icon: "badge-check"
+---
+
+Usa la atribución de aplicaciones para separar el uso entre productos, entornos o experiencias de cara al cliente. La atribución aparece en los análisis de aplicaciones y en las auditorías de solicitudes sin modificar la respuesta de inferencia.
+
+## Añadir encabezados de atribución
+
+Envía un ID de aplicación estable en cada solicitud. Añade un nombre, una URL y hasta tres categorías para obtener una agrupación más detallada en el panel.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Usa el mismo `X-App-Id` en todas las solicitudes de una aplicación. Phaseo lo usa como identidad estable cuando no hay una URL disponible.
+
+## Usar el SDK de TypeScript
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## Encabezados compatibles
+
+| Encabezado | Finalidad |
+| --- | --- |
+| `X-App-Id` | Identificador estable elegido por tu aplicación. |
+| `X-App-Name` | Nombre legible que aparece en las vistas de aplicaciones y uso. |
+| `HTTP-Referer` | URL pública de la página o del despliegue asociada a la aplicación. |
+| `X-App-Categories` | Lista separada por comas con hasta tres categorías compatibles. |
+| `X-Title` | Alias de compatibilidad para un nombre de aplicación legible. |
+
+`HTTP-Referer` es metadato de atribución; no tiene que coincidir con el encabezado `Referer` automático del navegador. Configúralo explícitamente en integraciones del servidor si quieres usar una única URL canónica para la aplicación.
+
+## Categorías
+
+Elige hasta tres valores:
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+Los valores no distinguen mayúsculas y minúsculas. Phaseo ignora los valores desconocidos, elimina duplicados y conserva las tres primeras categorías válidas. Las categorías de solicitudes posteriores se combinan con las ya guardadas para la aplicación; no eliminan las selecciones del panel.
+
+También puedes editar las categorías en **Gateway → Configuración → Aplicaciones**. Usa el panel cuando la clasificación se administre de forma centralizada y no desde el código de la aplicación.
+
+## Recomendaciones de atribución
+
+- Mantén los ID estables entre despliegues para que el uso siga agrupado.
+- Usa ID distintos para las aplicaciones que necesiten informes de costes o uso independientes.
+- No incluyas ID de clientes, direcciones de correo ni otros datos personales en los encabezados de atribución.
+- Trata la URL como metadato público si la aplicación puede aparecer en vistas compartidas o públicas.

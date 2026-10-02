@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+import { getLocale, getTranslations } from "next-intl/server";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
 import { SearchWithCapabilities as SearchWrapper } from "@/components/header/Search/SearchWithCapabilities";
@@ -12,16 +13,20 @@ import HeaderShell from "./HeaderShell";
 import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
 import { BrandMenu } from "./BrandMenu";
 import { autoRoutingFlag } from "@/lib/flags";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
-const releaseMessage = "Introducing Phaseo Gateway";
-const docsLink = "https://phaseo.app/docs/v1";
 const showHeaderAnnouncement = false;
 
 async function GatedSettingsSidebarTrigger() {
 	return <SettingsSidebarTrigger showAutoRouting={await autoRoutingFlag()} />;
 }
 
-export default function Header() {
+export default async function Header() {
+	const [t, locale] = await Promise.all([
+		getTranslations("Common.nav"),
+		getLocale(),
+	]);
+	const docsLink = getLocalizedDocsHref(locale, "/v1");
 	const headerContent = (
 		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
 			<div className="flex min-w-0 items-center gap-[var(--site-header-left-gap,1.25rem)] overflow-hidden max-[22rem]:gap-1 lg:shrink-0">
@@ -31,7 +36,7 @@ export default function Header() {
 				<BrandMenu>
 					<Link
 						href="/"
-						aria-label="Phaseo home"
+						aria-label={t("home")}
 						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-2 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
 					>
 						<Image
@@ -96,7 +101,7 @@ export default function Header() {
 								variant="ghost"
 								className="h-[var(--site-header-control-h,2.25rem)] rounded-lg px-2 text-[13px] font-medium text-zinc-600 shadow-none hover:bg-zinc-100/70 xl:px-2.5 dark:text-zinc-300 dark:hover:bg-zinc-900/60"
 							>
-								Docs
+								{t("documentation")}
 							</Button>
 						</Link>
 					</Suspense>
@@ -143,11 +148,11 @@ export default function Header() {
 
 			{showHeaderAnnouncement ? (
 				<HeaderAnnouncements
-					message={releaseMessage}
+					message={t("releaseAnnouncement")}
 					href="/"
-					tertiaryLabel="Read the docs"
+					tertiaryLabel={t("readDocs")}
 					tertiaryHref={docsLink}
-					label="New release"
+					label={t("newRelease")}
 				/>
 			) : null}
 		</header>

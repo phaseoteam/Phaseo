@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "動的なターン"
+description: "PHPエージェントのターン間で、ルーティング、指示、ツール、サンプリング設定を変更します。"
+---
+
+動的コールバックは、モデルへのリクエストごとに現在の実行状態からモデルパラメーターを再計算します。
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+動的ツールとサンプリング値は同じターンコンテキストを使用できます。ツールは`nextTurnParams`を設定して、直後のリクエストだけを変更することもできます。実行が承認待ちで一時停止しても上書き値は保持され、次のターン後に失効します。
+
+各ターンで再計算するポリシーには動的コールバックを使います。ツール固有の設定を次へ引き継ぐには`nextTurnParams`を使います。

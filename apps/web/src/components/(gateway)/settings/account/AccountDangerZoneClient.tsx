@@ -1,10 +1,14 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 import { deleteAccount } from "@/app/(dashboard)/settings/account/actions";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +27,8 @@ import {
 import { Loader2, ShieldAlert, Trash2 } from "lucide-react";
 
 export default function AccountDangerZoneClient() {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const router = useRouter();
 	const [deleting, setDeleting] = React.useState(false);
 
@@ -30,9 +36,10 @@ export default function AccountDangerZoneClient() {
 		setDeleting(true);
 		try {
 			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
-				loading: "Starting account deletion...",
-				success: "Account access removed. Deletion is in progress.",
-				error: (err: any) => err?.message || "Could not delete account",
+				loading: s("phraseStartingAccountDeletion"),
+				success: s("phraseAccountAccessRemovedDeletionIsInProgress"),
+				error: (error: unknown) =>
+					localizedSettingsError(error, t, "Could not delete account"),
 			});
 			router.replace("/");
 			router.refresh();
@@ -48,12 +55,10 @@ export default function AccountDangerZoneClient() {
 			<div className="min-w-0">
 				<h3 className="text-sm font-medium flex items-center gap-2 text-destructive">
 					<ShieldAlert className="h-4 w-4" />
-					Danger Zone
+					{s("Danger Zone")}
 				</h3>
 				<p className="text-sm text-muted-foreground mt-1">
-					Deleting your account immediately removes access and starts permanent
-					deletion from Phaseo&apos;s active systems. The process must complete within
-					30 days and cannot be undone.
+					{s("phraseDeletingYourAccountImmediatelyRemovesAccessAndStartsPermanentDeletionFromPhaseoSActiveSystemsTheProcessMustCompleteWithin30DaysAndCannotBeUndone")}
 				</p>
 			</div>
 
@@ -62,23 +67,19 @@ export default function AccountDangerZoneClient() {
 					<AlertDialogTrigger asChild>
 						<Button variant="destructive">
 							<Trash2 className="mr-2 h-4 w-4" />
-							Delete account
+							{s("Delete account")}
 						</Button>
 					</AlertDialogTrigger>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Delete account?</AlertDialogTitle>
+							<AlertDialogTitle>{s("Delete account?")}</AlertDialogTitle>
 							<AlertDialogDescription>
-								This removes your account, owned workspaces, keys, stored Gateway data,
-								and linked Stripe customer records. Other members will lose access to any
-								workspace you own. Database backups expire through the seven-day backup
-								cycle. Records that must be retained by law and data held by customer-directed
-								providers are handled separately. Type{" "}
-								<span className="font-semibold">DELETE</span> to confirm.
+								{s("phraseThisRemovesYourAccountOwnedWorkspacesKeysStoredGatewayDataAndLinkedStripeCustomerRecordsOtherMembersWillLoseAccessToAnyWorkspaceYouOwnDatabaseBackupsExpireThroughTheSevenDayBackupCycleRecordsThatMustBeRetainedByLawAndDataHeldByCustomerDirectedProvidersAreHandledSeparatelyType")}{" "}
+						<span className="font-semibold">DELETE</span> {s("phraseToConfirm")}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 
-						<ConfirmDelete onConfirm={handleDeleteAccount} deleting={deleting} />
+						<ConfirmDelete onConfirm={handleDeleteAccount} deleting={deleting} translate={s} />
 					</AlertDialogContent>
 				</AlertDialog>
 			</div>
@@ -89,44 +90,47 @@ export default function AccountDangerZoneClient() {
 function ConfirmDelete({
 	onConfirm,
 	deleting,
+	translate,
 }: {
 	onConfirm: (confirmation: string, currentPassword: string) => void;
 	deleting: boolean;
+	translate: (key: string) => string;
 }) {
+	const s = translate;
 	const [text, setText] = React.useState("");
 	const [currentPassword, setCurrentPassword] = React.useState("");
 	const ok = text.trim().toUpperCase() === "DELETE";
 	return (
 		<div className="grid gap-3">
 			<div className="grid gap-2">
-				<Label htmlFor="confirmDelete">Confirmation</Label>
+						<Label htmlFor="confirmDelete">{s("Confirmation")}</Label>
 				<Input
 					id="confirmDelete"
-					placeholder='Type "DELETE" to confirm'
+						placeholder={s('Type "DELETE" to confirm')}
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					autoFocus
 				/>
 			</div>
 			<div className="grid gap-2">
-				<Label htmlFor="deleteCurrentPassword">Current password</Label>
+						<Label htmlFor="deleteCurrentPassword">{s("Current password")}</Label>
 				<Input id="deleteCurrentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
-				<p className="text-xs text-muted-foreground">Passwordless accounts require a recent provider sign-in.</p>
+					<p className="text-xs text-muted-foreground">{s("phrasePasswordlessAccountsRequireARecentProviderSignIn")}</p>
 			</div>
 			<AlertDialogFooter>
 				<div className="flex w-full items-center justify-end gap-2">
 					<AlertDialogCancel className="w-auto" disabled={deleting}>
-						Cancel
+						{s("Cancel")}
 					</AlertDialogCancel>
 
 					<Button variant="destructive" onClick={() => onConfirm(text, currentPassword)} disabled={!ok || deleting}>
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting...
+								{s("phraseDeleting")}
 							</>
 						) : (
-							"Yes, delete my account"
+							s("Yes, delete my account")
 						)}
 					</Button>
 

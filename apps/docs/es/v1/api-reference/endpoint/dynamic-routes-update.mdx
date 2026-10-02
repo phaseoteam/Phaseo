@@ -1,0 +1,10 @@
+---
+title: "Actualizar ruta dinámica"
+sidebarTitle: "Actualizar ruta"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "Actualiza los metadatos de la ruta o crea una nueva versión de configuración."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `settings:write`.</Note>
+
+Cambiar `config` crea una nueva versión inmutable. Los cambios que solo afectan a los metadatos no crean una versión.

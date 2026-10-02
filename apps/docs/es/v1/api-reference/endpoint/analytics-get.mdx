@@ -1,0 +1,13 @@
+---
+title: "Obtener analíticas del espacio de trabajo"
+sidebarTitle: "Obtener analíticas"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml GET /analytics"
+description: "Obtener agregados filtrados de costes, solicitudes y tokens del espacio de trabajo."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `analytics:read`.</Note>
+
+Filtra por fecha, etiqueta de solicitud, clave de API, usuario final, modelo, proveedor, endpoint, origen de credenciales o resultado. Los resultados se agrupan por fecha, modelo, proveedor y endpoint, con paginación estable.
+
+Los intervalos se limitan a los últimos 30 días completos en UTC y a un máximo de 10 000 solicitudes de origen.
+

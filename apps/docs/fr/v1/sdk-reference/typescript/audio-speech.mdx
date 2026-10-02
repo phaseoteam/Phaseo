@@ -1,0 +1,57 @@
+---
+icon: "music"
+title: "TTS (synthèse vocale)"
+description: "Appelez /audio/speech avec le SDK TypeScript."
+---
+
+**Méthode** : `client.generateSpeech()`.
+
+### Exemple
+```typescript
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  response_format: "mp3",
+});
+```
+
+### Paramètres clés
+- `model` (obligatoire) : ID d’un modèle compatible avec la synthèse vocale.
+- `input` (obligatoire) : texte à synthétiser.
+- `voice` : alias de voix normalisé par le fournisseur (recommandé) ou valeur vocale native du fournisseur.
+- `response_format` : `mp3`, `wav`, `flac`, etc.
+- `speed` : multiplicateur de vitesse de lecture (généralement entre 0,25 et 4).
+
+Si `voice` n’est pas valide pour la correspondance fournisseur/modèle sélectionnée, l’API renvoie `400` avec `param: "voice"`.
+
+### Exemples de configuration des fournisseurs
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
+
+### Retour
+Données audio binaires (Blob)

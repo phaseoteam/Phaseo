@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "状態と承認"
+description: "人による判断のためにJavaエージェントを一時停止し、アプリケーション管理の状態から続行します。"
+---
+
+一般的なチェックポイントを設けるには、`AgentDefinition.humanReview`から`HumanReviewRequest`を返します。ツールの承認や手動作業では、正確な呼び出しIDが一時停止中の結果に記録されます。
+
+`Agent.continueRun(...)`を使い、次の値を指定して続行します。
+
+- 承認または却下を表す`ToolDecision`エントリー
+- 手動ツールに対する`ToolOutput`エントリー
+- 一般的なレビュー一時停止に対する人間の入力
+- シリアライズ済みの`RunResult`、または`StateAccessor`に保存された実行ID
+
+SDKはホスト型Agent SDKの状態には依存しません。リクエストやサービス再起動をまたいで実行を保持する必要がある場合は、`StateAccessor`を実装します。
+
+## 関連項目
+
+- [ツール](./agent-sdk-tools.mdx)
+- [実行制御](./agent-sdk-run-controls.mdx)

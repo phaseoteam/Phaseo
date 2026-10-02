@@ -1,0 +1,68 @@
+---
+title: "Transmisión"
+description: "Transmite en tiempo real la salida del modelo mediante SSE en los principales endpoints de texto."
+icon: "radio"
+---
+
+El streaming permite que tu interfaz muestre tokens a medida que se generan, sin esperar a recibir la respuesta completa.
+
+## Endpoints compatibles
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## Activar el streaming
+
+Establece `stream: true` en el cuerpo de la solicitud.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## Formato de los mensajes SSE
+
+El streaming devuelve mensajes SSE:
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## Gestionar errores durante el streaming
+
+- Si una solicitud falla antes de iniciar el streaming, recibirás una respuesta de error JSON normal.
+- Si falla después de enviar parte de la salida, considera que el flujo quedó incompleto y ofrece en la interfaz una opción para reintentar.
+- Registra siempre `generation_id` cuando esté presente para facilitar el soporte y la correlación.
+
+## Cancelación
+
+Usa controles de cancelación (`AbortController` en JavaScript o un tiempo de espera de solicitud en los workers del backend) para evitar que los flujos abandonados consuman capacidad innecesariamente.
+
+## Limitación conocida
+
+La capa actual de validación de solicitudes del Gateway rechaza `stream: true` junto con llamadas a herramientas. Usa el modo no streaming para los ciclos que emplean herramientas.
+
+## Páginas relacionadas
+
+- [Endpoint Responses](./endpoint/responses.mdx)
+- [Endpoint Chat Completions](./endpoint/chat-completions.mdx)
+- [Endpoint Messages](./endpoint/anthropic-messages.mdx)
+- [Errores y depuración](./errors.mdx)
+
+<Visibility for="agents">
+Si implementas streaming como agente:
+
+- Usa las habilidades del repositorio para procesar SSE, reintentos y cancelaciones.
+- Consulta primero los esquemas específicos de cada endpoint y evita asumir comportamientos propios de un proveedor.
+- Separa la representación incremental de la salida de su persistencia final.
+</Visibility>

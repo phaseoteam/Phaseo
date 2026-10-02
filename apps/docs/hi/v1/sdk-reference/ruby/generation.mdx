@@ -1,0 +1,70 @@
+---
+icon: "search-check"
+title: "जनरेशन रिकॉर्ड प्राप्त करना"
+description: "पिछला जनरेशन प्राप्त करने के लिए /generations को कॉल करें।"
+---
+
+**मेथड**: `client.get_generation(...)`
+
+### उदाहरण
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+record = client.get_generation('G-01ABC...')
+```
+
+### पैरामीटर
+
+- `id` (string, आवश्यक): पिछली कॉल से मिला अनुरोध ID।
+
+### रिटर्न
+
+जनरेशन रिकॉर्ड (JSON)
+
+यदि गेटवे ने अनुरोध के सभी विवरण सहेजे थे, तो लौटाए गए रिकॉर्ड में `replay_supported` और `replay_request` भी शामिल होते हैं। इनसे कैप्चर किए गए payload को मूल endpoint पर दोबारा भेजकर नियंत्रित री-रन किया जा सकता है।
+
+समय फ़ील्ड गेटवे की साझा परिभाषा का पालन करते हैं:
+
+- `latency_ms`: रिकॉर्ड किए जाने पर, पहले token या पहले आउटपुट byte/frame तक का समय
+- `generation_ms`: रिकॉर्ड किए जाने पर, latency के बाद का जनरेशन समय
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```

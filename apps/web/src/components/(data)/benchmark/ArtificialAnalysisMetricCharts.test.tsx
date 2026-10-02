@@ -1,3 +1,9 @@
+import site from "../../../../messages/en-GB/site.json";
+import catalogue from "../../../../messages/en-GB/catalogue.json";
+import product from "../../../../messages/en-GB/product.json";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactNode } from "react";
+import common from "../../../../messages/en-GB/common.json";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import ArtificialAnalysisMetricCharts from "./ArtificialAnalysisMetricCharts";
@@ -16,9 +22,13 @@ const ranking = (benchmarkId: string, label: string): PublicBenchmarkRanking => 
 	],
 });
 
+function renderLocalized(node: ReactNode) {
+	return renderToStaticMarkup(<NextIntlClientProvider timeZone="UTC" locale="en-GB" messages={{ Common: common, Catalogue: catalogue, Product: product, Site: site }}>{node}</NextIntlClientProvider>);
+}
+
 describe("Artificial Analysis metric charts", () => {
 	it("renders all four index comparisons from the rankings payload", () => {
-		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[
+		const html = renderLocalized(<ArtificialAnalysisMetricCharts rankings={[
 			ranking("aa-intelligence-index-v4", "Intelligence Index"),
 			ranking("aa-coding-index-v4", "Coding Index"),
 			ranking("aa-agentic-index-v4", "Agentic Index"),
@@ -36,7 +46,7 @@ describe("Artificial Analysis metric charts", () => {
 	});
 
 	it("uses a dark score label for light organisation colours", () => {
-		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")] .map((item) => ({
+		const html = renderLocalized(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")] .map((item) => ({
 			...item,
 			entries: item.entries.map((entry) => ({ ...entry, organisation_colour: "#d4f0da" })),
 		}))} />);
@@ -44,7 +54,7 @@ describe("Artificial Analysis metric charts", () => {
 	});
 
 	it("uses the neutral fallback colour for invalid organisation colours", () => {
-		const html = renderToStaticMarkup(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")].map((item) => ({
+		const html = renderLocalized(<ArtificialAnalysisMetricCharts rankings={[ranking("aa-intelligence-index-v4", "Intelligence Index")].map((item) => ({
 			...item,
 			entries: item.entries.map((entry) => ({ ...entry, organisation_colour: "not-a-colour" })),
 		}))} />);

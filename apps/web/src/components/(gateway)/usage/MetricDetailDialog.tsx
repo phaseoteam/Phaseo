@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogContent,
@@ -118,6 +119,7 @@ export default function MetricDetailDialog({
 	format,
 	modelMetadata,
 }: MetricDetailDialogProps) {
+	const t = useTranslations("SettingsUI");
 	const [activeSeriesKey, setActiveSeriesKey] = useState<string | null>(null);
 	const [showHeavyContent, setShowHeavyContent] = useState(false);
 
@@ -147,12 +149,12 @@ export default function MetricDetailDialog({
 		const config: Record<string, { label: string; color: string }> = {};
 		seriesKeys.forEach((key) => {
 			config[key] = {
-				label: key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(key, modelMetadata),
+				label: key === OTHER_SERIES_KEY ? t("usageGaps.copyOther") : getModelDisplayName(key, modelMetadata),
 				color: getColor(key, colorMap, modelMetadata),
 			};
 		});
 		return config;
-	}, [seriesKeys, colorMap, modelMetadata]);
+	}, [seriesKeys, colorMap, modelMetadata, t]);
 
 	const topModels = React.useMemo(() => {
 		if (!chartData.length) return [] as TopModelRow[];
@@ -268,7 +270,7 @@ export default function MetricDetailDialog({
 												}
 												getLabel={(key) =>
 													key === OTHER_SERIES_KEY
-														? "Other"
+														? t("usageGaps.copyOther")
 														: getModelDisplayName(key, modelMetadata)
 												}
 												topN={10}
@@ -280,7 +282,7 @@ export default function MetricDetailDialog({
 										<Bar
 											key={key}
 											dataKey={key}
-											name={key === OTHER_SERIES_KEY ? "Other" : getModelDisplayName(key, modelMetadata)}
+											name={key === OTHER_SERIES_KEY ? t("usageGaps.copyOther") : getModelDisplayName(key, modelMetadata)}
 											stackId="a"
 											fill={getColor(key, colorMap, modelMetadata)}
 											radius={[0, 0, 0, 0]}
@@ -296,11 +298,11 @@ export default function MetricDetailDialog({
 							<Table>
 								<TableHeader>
 									<TableRow>
-										<TableHead className="w-[40%]">Model</TableHead>
-										<TableHead className="text-right">Min</TableHead>
-										<TableHead className="text-right">Max</TableHead>
-										<TableHead className="text-right">Avg</TableHead>
-										<TableHead className="text-right">Sum</TableHead>
+										<TableHead className="w-[40%]">{t("strings.Model" as never)}</TableHead>
+										<TableHead className="text-right">{t("strings.Min" as never)}</TableHead>
+										<TableHead className="text-right">{t("strings.Max" as never)}</TableHead>
+										<TableHead className="text-right">{t("strings.Avg" as never)}</TableHead>
+										<TableHead className="text-right">{t("strings.Sum" as never)}</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>

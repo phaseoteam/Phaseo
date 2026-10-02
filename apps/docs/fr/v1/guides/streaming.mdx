@@ -1,0 +1,63 @@
+---
+title: "Diffusion en continu"
+description: "Recevez une sortie incrémentale, traitez les événements propres au point d’accès et gérez les flux interrompus."
+icon: "radio"
+---
+
+Définissez `stream: true` pour recevoir la sortie sous forme d’événements envoyés par le serveur (SSE). Gardez votre clé API Phaseo sur le serveur et transmettez la sortie à l’interface.
+
+## Envoyer une requête en streaming
+
+```bash
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello in one sentence.",
+    "stream": true
+  }'
+```
+
+Vérifiez le statut HTTP avant de lire le flux. Un échec avant le début du streaming renvoie la [réponse d’erreur JSON](../api-reference/errors.mdx) habituelle.
+
+## Lire les événements
+
+Utilisez le format d’événements du point d’accès appelé :
+
+| Point d’accès | Sortie incrémentale | Fin |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | Événements tels que `response.output_text.delta` | Examinez l’événement final de réponse et son statut |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Examinez `finish_reason` ; `[DONE]` termine le flux |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, et les événements associés | `message_stop` |
+
+Les événements SSE sont séparés par des lignes vides. Un fragment réseau peut contenir une partie d’événement ou plusieurs événements ; ne l’analysez pas comme un JSON autonome. Mettez en tampon les trames incomplètes ou utilisez un outil de streaming du SDK. Ne supposez pas que chaque point d’accès envoie `[DONE]`.
+
+Les outils du SDK gèrent le transport du flux :
+
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` avec `@phaseo/ai-sdk-provider`.
+
+Consultez le [guide TypeScript](../sdk-reference/typescript/usage.mdx) ou le [guide Python](../sdk-reference/python/usage.mdx) pour configurer le client.
+
+## Diffuser les appels d’outils
+
+Le Gateway accepte le streaming avec des outils, mais sa prise en charge dépend du modèle et du fournisseur choisis. Accumulez les fragments d’arguments jusqu’à la fin de l’appel, puis analysez, validez et autorisez les arguments avant l’exécution. N’exécutez jamais des arguments partiels.
+
+Suivez les [schémas d’appels d’outils](./tool-calling-patterns.mdx) pour les requêtes de continuation et la [sécurité des outils](./tool-calling-safety.mdx) pour les contrôles de validation et d’approbation.
+
+## Annuler et récupérer
+
+Passez un `AbortSignal` au client HTTP serveur et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée. L’annulation ne garantit ni l’arrêt immédiat du fournisseur ni la gratuité de la sortie générée.
+
+Affichez progressivement le texte partiel, mais ne marquez la réponse terminée qu’après l’événement final réussi du point d’accès. Une connexion fermée ne prouve pas son achèvement.
+
+Si le flux échoue après le début de la sortie :
+
+1. Marquez la réponse partielle comme interrompue.
+2. Conservez l’identifiant de requête ou de génération, le point d’accès et le modèle dans vos journaux.
+3. Proposez une nouvelle tentative explicite. Une nouvelle requête peut générer une autre sortie et de nouveaux frais.
+4. Ne réexécutez pas les outils déjà exécutés et n’ajoutez pas automatiquement la nouvelle réponse à la sortie partielle.
+
+Pour les échecs avant la sortie, limitez les tentatives et respectez les [en-têtes de limitation](../api-reference/limits.mdx). Si l’application doit valider toute la sortie avant affichage, utilisez une requête sans streaming ou mettez le résultat en tampon sur le serveur.

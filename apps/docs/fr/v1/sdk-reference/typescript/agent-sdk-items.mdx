@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "Travailler avec les éléments"
+description: "Affichez les messages typés, le raisonnement, l’activité des outils, les erreurs et les sorties finales."
+---
+
+Utilisez les éléments pour créer une chronologie structurée de l’agent sans analyser les événements propres à chaque fournisseur. Les exécutions en streaming et terminées exposent le même contrat ordonné `AgentItem<TOutput>`.
+
+## Types d’éléments
+
+`AgentItem<TOutput>` est une union discriminée :
+
+| type | Champs importants | Représente |
+| --- | --- | --- |
+| `message` | `role`, `content` | Texte de l’assistant ou de la conversation |
+| `reasoning` | `text` | Raisonnement fourni par le modèle |
+| `tool_call` | `toolCallId`, `name`, `input` | Invocation d’outil proposée |
+| `tool_result` | `toolCallId`, `name`, `output` | Invocation d’outil terminée |
+| `error` | `message`, détails d’outil facultatifs | Erreur du fournisseur ou de l’outil |
+| `output` | `value` | Sortie finale analysée de l’agent |
+
+## Afficher une chronologie en streaming
+
+TypeScript affine le type de chaque élément à partir de sa propriété `type` :
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## Lire les éléments après la fin
+
+Le résultat terminé contient les mêmes types d’éléments, dans le même ordre :
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+Vous pouvez ainsi afficher l’activité en direct, puis reconstruire la même chronologie à partir de l’état d’exécution enregistré.
+
+## Accéder aux données propres au fournisseur
+
+La sortie du fournisseur est normalisée en types d’éléments portables. Lorsqu’une intégration a encore besoin d’un champ propre au fournisseur, les éléments normalisés conservent la charge utile d’origine dans `rawProviderItem`.
+
+Privilégiez les champs portables dans la logique du produit. Considérez `rawProviderItem` comme une solution de secours pour les intégrations propres à un fournisseur, pas comme le contrat par défaut de l’application.
+
+## Guides associés
+
+- [Diffusion en continu](./agent-sdk-streaming.mdx)
+- [Outils](./agent-sdk-tools.mdx)
+- [Hooks du cycle de vie](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,43 @@
+---
+title: "تثبيت SDK Java (قيد التطوير)"
+description: "ابنِ SDK Java الذي ما زال قيد التطوير من المصدر."
+---
+
+<Note type="warning">ما يزال SDK Java قيد التطوير ولم يُنشر بعد على Maven Central.</Note>
+
+## المتطلبات
+
+- Java 17+
+- Maven 3.8+
+
+## البناء محليًا
+
+```bash
+cd packages/sdk/sdk-java
+mvn -DskipTests package
+```
+
+ينشئ ذلك الملف `target/sdk-java-0.0.0-local.jar`.
+
+## استخدامه في مشروعك
+
+ثبّت ملف JAR المُنشأ في ذاكرة Maven المحلية:
+
+```bash
+mvn install:install-file \
+  -Dfile=target/sdk-java-0.0.0-local.jar \
+  -DgroupId=app.phaseo \
+  -DartifactId=sdk-java \
+  -Dversion=0.0.0-local \
+  -Dpackaging=jar
+```
+
+ثم أضفه كاعتمادية في ملف `pom.xml` الخاص بتطبيقك:
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>sdk-java</artifactId>
+  <version>0.0.0-local</version>
+</dependency>
+```

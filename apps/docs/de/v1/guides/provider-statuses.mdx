@@ -1,0 +1,96 @@
+---
+title: "Anbieter- und Phaseo-Status"
+description: "Unterschiede zwischen der Verfügbarkeit beim Anbieter, dem Integrationsstatus von Phaseo und dem Zustand des Routings."
+icon: "activity"
+---
+
+Ein Anbieter-Modell-Angebot hat getrennte Statuswerte für den Anbieter und für Phaseo. Das ist wichtig, wenn ein Anbieter ein Modell veröffentlicht hat, Phaseo den zugehörigen Endpunkt aber noch nicht implementiert oder aktiviert hat.
+
+Diese Felder findest du auf Modellseiten, Preiskarten von Anbietern und zugehörigen Verfügbarkeitsansichten.
+
+## Verfügbarkeit beim Anbieter
+
+Die Verfügbarkeit beim Anbieter beschreibt das Angebot beim ursprünglichen Anbieter.
+
+| Status | Bedeutung |
+| --- | --- |
+| `Available` | Der Anbieter nimmt aktuell Anfragen für das Angebot an. |
+| `Preview` | Der Anbieter stellt das Angebot als Vorschau bereit. |
+| `Limited Access` | Das Angebot ist vorhanden, aber der Zugriff hängt von Konto, Region, Zulassungsliste oder Kapazität ab. |
+| `Coming Soon` | Der Anbieter hat das Angebot angekündigt oder aufgeführt, es ist aber noch nicht nutzbar. |
+| `Deprecated` | Das Angebot ist weiterhin verfügbar, der Anbieter empfiehlt jedoch eine Migration. |
+| `Removed` | Der Anbieter stellt das Angebot nicht mehr bereit. |
+| `Unknown` | Phaseo hat die Verfügbarkeit beim ursprünglichen Anbieter noch nicht überprüft. |
+
+Die Verfügbarkeit beim Anbieter bedeutet nicht, dass Phaseo die Anfrage routen kann.
+
+## Phaseo-Integrationsstatus
+
+Der Phaseo-Status beschreibt unsere Implementierung und deren Rollout.
+
+| Status | Bedeutung | Phaseo-Routing |
+| --- | --- | --- |
+| `Unsupported` | Phaseo hat keine kompatible Integration für das Angebot. | Nicht routbar. |
+| `Planned` | Die Integration wurde eingeplant, aber die Arbeit hat noch nicht begonnen. | Nicht routbar. |
+| `Implementing` | Die Integration wird gerade entwickelt. | Nicht routbar. |
+| `Testing` | Die Integration ist implementiert und wird in Vertrags-, Staging- oder Canary-Tests geprüft. | Nicht öffentlich routbar. |
+| `Enabled` | Die Integration wird unterstützt und ist für den Produktionseinsatz aktiviert. | Routbar, sofern Routing-Schalter und Zustand es zulassen. |
+| `Disabled` | Phaseo hat die Integration bewusst deaktiviert. | Nicht routbar. |
+| `Blocked` | Eine externe oder noch offene Abhängigkeit verhindert den Rollout. | Nicht routbar. |
+
+Nur bei Integrationen mit Status `Enabled` kann öffentliches Routing aktiviert werden.
+
+## Interner Zugriff
+
+Der Zugriffsumfang ist unabhängig vom Phaseo-Integrationsstatus:
+
+| Umfang | Bedeutung |
+| --- | --- |
+| `Public` | Normale Kundenanfragen können die Route verwenden, wenn alle Routing-Prüfungen erfolgreich sind. |
+| `Internal` | Nur authentifizierter Phaseo-Testverkehr kann die Route verwenden. |
+
+Für eine interne Route sind das interne Token mit hoher Entropie und eine Anfrage im ausdrücklich gesetzten Testmodus erforderlich. Ein Kunde kann sie nicht nur mit dem Test-Header aktivieren. Normale Anfragen suchen nicht in der Datenbank nach internen Routen, sondern nutzen den vorhandenen Standard-Kontextcache. Interne Tests verwenden ein separates Cache-Segment und berücksichtigen nur ausdrücklich interne Routen, deren Anbieterangebot nutzbar ist und deren Phaseo-Status `Testing` oder `Enabled` lautet.
+
+## Routing-Zustand
+
+Der Routing-Zustand ist ein drittes Betriebssignal. Er gibt an, wie eine aktivierte Route jetzt ausgewählt werden sollte.
+
+| Status | Bedeutung | Routing-Verhalten |
+| --- | --- | --- |
+| `Active` | Die Route ist gesund genug für die normale Auswahl. | Jetzt routbar. |
+| `Deranked L1` | Die aktuelle Gesundheit stuft die Route leicht zurück. | Jetzt routbar. |
+| `Deranked L2` | Die aktuelle Gesundheit stuft die Route deutlich zurück. | Jetzt routbar, hinter gesünderen Routen. |
+| `Deranked L3` | Die aktuelle Gesundheit stuft die Route stark zurück. | Jetzt routbar, mit deutlich geringerer Priorität. |
+| `Disabled` | Der Routing-Schalter ist ausgeschaltet. | Wird nicht geroutet. |
+
+Eine Zurückstufung verändert weder die Verfügbarkeit des Anbieters noch den Lebenszyklus der Phaseo-Integration. Aktuelle Gesundheitsdaten ändern diese Lebenszyklusfelder ebenfalls nicht.
+
+## Beispiele
+
+Ein neu veröffentlichtes Anbieterangebot kann diese Werte haben:
+
+- Verfügbarkeit beim Anbieter: `Available`
+- Phaseo-Status: `Implementing`
+- Routing-Zustand: nicht anwendbar, weil Routing deaktiviert ist
+
+Eine etablierte, vorübergehend beeinträchtigte Route kann diese Werte haben:
+
+- Verfügbarkeit beim Anbieter: `Available`
+- Phaseo-Status: `Enabled`
+- Routing-Zustand: `Deranked L2`
+
+Eine Ankündigung des Anbieters kann diese Werte haben:
+
+- Verfügbarkeit beim Anbieter: `Coming Soon`
+- Phaseo-Status: `Planned`
+- Routing-Zustand: nicht anwendbar
+
+## Kompatibilität
+
+Vorhandene API-Felder wie `availability_status`, `routing_status`, `is_active_gateway` und `routable` bleiben während des schrittweisen Rollouts verfügbar. Neue Integrationen sollten die expliziten Anbieter- und Phaseo-Felder verwenden.
+
+## Verwandte Seiten
+
+- [Routing und Fallbacks](./routing-and-fallbacks.mdx)
+- [Service-Stufen](./service-tiers.mdx)
+- [Modelle-API-Referenz](../api-reference/endpoint/models.mdx)

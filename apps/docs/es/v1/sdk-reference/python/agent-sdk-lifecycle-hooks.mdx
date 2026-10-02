@@ -1,0 +1,20 @@
+---
+icon: "radio-tower"
+title: "Hooks del ciclo de vida"
+description: "Reacciona a los eventos de ejecución, modelo, paso, herramienta y punto de control de Python."
+---
+
+Pasa `on_event` para actualizar cronologías del producto, registros de auditoría o un sistema de telemetría existente:
+
+```python
+def on_event(event):
+    logger.info("%s %s", event.type, event.run_id)
+```
+
+Los eventos abarcan el estado de la ejecución, las llamadas a modelos, pasos, puntos de control, ejecución y progreso de herramientas, esperas humanas, cancelaciones y errores. Mantén rápida la función de devolución de llamada y envía las tareas lentas a una cola externa.
+
+## Relacionado
+
+- [Transmisión en continuo](./agent-sdk-streaming.mdx)
+- [Herramientas de desarrollo](./agent-sdk-devtools.mdx)
+

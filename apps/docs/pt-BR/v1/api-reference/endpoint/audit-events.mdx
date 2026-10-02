@@ -1,0 +1,14 @@
+---
+title: "Listar eventos de auditoria do espaço de trabalho"
+sidebarTitle: "Eventos de auditoria"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /audit-events"
+description: "Listar alterações sensíveis à segurança no plano de controle do espaço de trabalho autenticado."
+---
+
+<Note>
+Este endpoint requer a permissão de gerenciamento `activity:read`. Chamadas OAuth também devem ter a função de proprietário ou administrador do espaço de trabalho.
+</Note>
+
+Os eventos contêm apenas metadados sanitizados. Credenciais em texto simples, hashes de credenciais, cabeçalhos de autorização, listas completas de escopos e corpos de solicitações nunca são retornados.
+

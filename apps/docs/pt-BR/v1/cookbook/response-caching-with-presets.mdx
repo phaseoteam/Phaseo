@@ -1,0 +1,92 @@
+---
+title: "Usar cache de respostas com presets"
+icon: "database"
+description: "Combine padrões de preset com cache determinístico de respostas para retornar solicitações repetidas com rapidez e previsibilidade."
+---
+
+Use esta receita quando houver solicitações repetidas com prompts estáveis e você quiser reduzir a latência e o custo de inferências repetidas.
+
+## 1. Comece com um preset, não com solicitações avulsas
+
+Crie um preset para manter estáveis:
+
+- o modelo de destino
+- as preferências de provedor
+- a temperatura e outros parâmetros de geração
+- as configurações de raciocínio
+- o prompt do sistema
+
+Isso mantém a chave de cache estável porque a solicitação também permanece estável.
+
+## 2. Ative o cache de respostas no preset
+
+Configure:
+
+- `response_caching.enabled = true`
+- um valor adequado para `ttl_seconds`
+
+Padrões recomendados:
+
+- TTL curto para prompts factuais que mudam rapidamente
+- TTL mais longo para saídas estruturadas estáveis
+
+## 3. Mantenha a solicitação determinística
+
+O cache de respostas funciona melhor quando você evita alterações desnecessárias nas solicitações.
+
+Evite alterar:
+
+- o texto do prompt do sistema
+- a temperatura
+- as substituições de provedor
+- a configuração de raciocínio
+- as listas de ferramentas
+
+Se um chamador mudar esses valores constantemente, use outro preset para ele em vez de impedir a reutilização do cache por todos os demais.
+
+## 4. Confira o comportamento do cache nos detalhes da solicitação
+
+Os detalhes de solicitações que passam pelo cache devem mostrar informações sobre ele.
+
+Verifique:
+
+- acertos e falhas de cache
+- comportamento do TTL
+- contexto do provedor quando uma resposta em cache é retornada
+
+## 5. Combine cache e roteamento de forma intencional
+
+Padrões recomendados:
+
+1. use um preset com cache ativado para saídas estruturadas determinísticas
+2. use outro preset sem cache para solicitações exploratórias ou com temperatura mais alta
+
+Assim, o cache mantém sinal útil em vez de misturar tráfego incompatível.
+
+## 6. Investigue falhas antes de aumentar o TTL
+
+Se você espera acertos, mas continua tendo falhas, compare:
+
+- o texto do prompt
+- o ID do modelo
+- as opções do provedor
+- o formato da resposta
+- as ferramentas e a seleção de ferramentas
+- o slug e a configuração do preset
+
+Aumentar o TTL não corrige divergências de fingerprint.
+
+## 7. Quando evitar o cache
+
+Não ative o cache de respostas por padrão para:
+
+- prompts que dependem de estado externo em tempo real
+- respostas específicas de usuários cujo contexto muda rapidamente
+- solicitações com saídas variáveis de ferramentas
+- gerações muito estocásticas em que a reprodução exata não seja desejável
+
+## Conteúdo relacionado
+
+- [Lançar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
+- [Exemplos](../guides/examples.mdx)
+- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)

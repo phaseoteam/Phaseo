@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "Sorties et nouvelles tentatives"
+description: "Validez les sorties des agents Python et réessayez les échecs du modèle dans une limite définie."
+---
+
+Utilisez la validation de sortie finale si le code Python en aval attend des données structurées. Les callbacks de validation doivent être déterministes et lever une erreur lorsque la valeur finale ne respecte pas le contrat de l’application.
+
+Configurez des nouvelles tentatives limitées avec `AgentModelRetryConfig` :
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+L’étape terminée conserve le nombre final de tentatives du modèle. Les erreurs d’outils suivent leur propre règle et ne sont pas réessayées comme des requêtes au modèle.
+
+Le client de la passerelle accepte les sorties structurées, le routage, le fournisseur, le raisonnement, les outils gérés, les extensions, le cache de prompts et d’autres options de requête.
+
+## À lire aussi
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)
+- [Erreurs et dépannage](./agent-sdk-observability.mdx)

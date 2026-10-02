@@ -11,6 +11,11 @@ export type PricingContextTier = {
 	key: string;
 	label: string;
 	detail: string;
+	labelKey: "publishedRate" | "standardContext" | "longContext" | "contextTier";
+	detailKey: "noContextPriceChange" | "upToInputTokens" | "overInputTokens" | "inputTokenRange";
+	labelIndex?: number;
+	lowerTokenCount?: string;
+	upperTokenCount?: string;
 	inputTokens: number;
 	meters: PricingMeter[];
 };
@@ -139,6 +144,8 @@ export function getPricingContextTiers(meters: PricingMeter[]): PricingContextTi
 			key: "current",
 			label: "Published rate",
 			detail: "No context-based price change",
+			labelKey: "publishedRate",
+			detailKey: "noContextPriceChange",
 			inputTokens: 0,
 			meters: standardMeters,
 		}];
@@ -157,6 +164,11 @@ export function getPricingContextTiers(meters: PricingMeter[]): PricingContextTi
 			key: index === 0 ? "standard-context" : `context-${inputTokens}`,
 			label: index === 0 ? "Standard context" : index === samples.length - 1 ? "Long context" : `Context tier ${index + 1}`,
 			detail,
+			labelKey: index === 0 ? "standardContext" : index === samples.length - 1 ? "longContext" : "contextTier",
+			detailKey: lowerThreshold === null ? "upToInputTokens" : upperThreshold === null ? "overInputTokens" : "inputTokenRange",
+			labelIndex: index + 1,
+			...(lowerThreshold !== null ? { lowerTokenCount: compactTokenCount(lowerThreshold) } : {}),
+			...(upperThreshold !== null ? { upperTokenCount: compactTokenCount(upperThreshold) } : {}),
 			inputTokens,
 			meters: selectPricingMetersForUsage(meters, { input_tokens: inputTokens }),
 		};

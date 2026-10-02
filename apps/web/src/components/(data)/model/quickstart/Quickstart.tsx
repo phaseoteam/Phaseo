@@ -1,6 +1,6 @@
 // src/components/gateway/Quickstart.tsx
 "use client";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
 	Check,
 	Copy,
@@ -35,8 +35,10 @@ import {
 	resolveRoutingPreference,
 } from "./quickstartPayloads";
 import { useEffect, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import type { QuickstartRequestContext } from "./requestContext";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import type { ByokOnlyProvider } from "./byokOnly";
 
@@ -174,11 +176,6 @@ const LANGUAGE_VARIANT_LABELS: Partial<Record<string, string>> = {
 	"anthropic-python": "Anthropic",
 };
 
-const SERVICE_TIER_LABELS: Record<ServiceTier, string> = {
-	standard: "Standard",
-	priority: "Fast",
-	flex: "Flex",
-};
 const STREAMING_SNIPPET_LANGUAGES = new Set([
 	"curl",
 	"node-fetch",
@@ -327,6 +324,8 @@ export default function Quickstart({
 	requestContext,
 	byokOnlyProviders = [],
 }: QuickstartProps) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
+	const locale = useLocale();
 	const { preferences } = useDisplayPreferences();
 	const preferredLanguage = {
 		typescript: "typescript-sdk",
@@ -1802,37 +1801,46 @@ ${payloadObjectNode}
 
 console.log(response);`
 			: null;
-	const selectedLanguageLabel = selectedLanguageOption?.label ?? "Selected language";
+	const selectedLanguageLabel = selectedLanguageOption?.label ?? t("selectedLanguage");
 	const selectedEndpointLabel =
-		selectedEndpointOption?.label ?? "Selected endpoint";
+		selectedEndpointOption?.label ?? t("selectedEndpoint");
 	const selectedLanguageVariantLabel =
 		LANGUAGE_VARIANT_LABELS[selectedLanguage] ?? selectedLanguageLabel;
-	const serviceTierLabel = SERVICE_TIER_LABELS[selectedServiceTier];
+	const serviceTierLabel = t(
+		selectedServiceTier === "priority"
+			? "tierFast"
+			: selectedServiceTier === "standard"
+				? "tierStandard"
+				: "tierFlex",
+	);
 	const docsLinks = Array.from(
 		new Map(
 			[
 				LANGUAGE_DOCS_BY_VALUE[selectedLanguage] ?? null,
 				ENDPOINT_DOCS_BY_VALUE[selectedEndpoint] ?? null,
 				shouldIncludeServiceTier
-					? { label: "Service tiers", href: SERVICE_TIERS_DOCS_HREF }
+					? { label: t("serviceTiersDocs"), href: SERVICE_TIERS_DOCS_HREF }
 					: null,
 				shouldStream
-					? { label: "Streaming", href: STREAMING_DOCS_HREF }
+					? { label: t("streaming"), href: STREAMING_DOCS_HREF }
 					: null,
 			]
 				.filter(
 					(link): link is { label: string; href: string } => Boolean(link),
 				)
-				.map((link) => [link.href, link]),
+				.map((link) => {
+					const href = getLocalizedDocsHref(locale, link.href);
+					return [href, { ...link, href }] as const;
+				}),
 		).values(),
 	);
 	const requestModeLabel = batchEnabled
-		? `Batch request for ${selectedEndpointLabel}`
+		? t("batchRequest", { endpoint: selectedEndpointLabel })
 		: shouldStream
-			? `${serviceTierLabel} tier · Streaming enabled`
+			? t("streamingRequestMode", { tier: serviceTierLabel })
 			: supportsServiceTier
-				? `${serviceTierLabel} tier`
-				: "Standard request";
+				? t("tierRequestMode", { tier: serviceTierLabel })
+				: t("standardRequestMode");
 	const requiresByok = !isModelMetadataQuickstart && byokOnlyProviders.length > 0;
 	const requestStep = requiresByok ? 3 : 2;
 
@@ -1842,10 +1850,10 @@ console.log(response);`
 				<header className="space-y-1">
 					<h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
 						<TerminalSquare className="h-5 w-5 text-primary" />
-						Quickstart
+						{t("title")}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						Create a key, choose a supported route, and copy a ready request.
+						{t("description")}
 					</p>
 				</header>
 			) : null}
@@ -1858,11 +1866,11 @@ console.log(response);`
 						>
 							1
 						</Badge>
-						<h3 className="text-base font-semibold">Get an API key</h3>
+						<h3 className="text-base font-semibold">{t("getApiKey")}</h3>
 					</div>
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-							<span>Create an API key in</span>
+							<span>{t("createApiKeyIn")}</span>
 							<Link
 								href="/settings/keys"
 								onClick={() =>
@@ -1874,15 +1882,15 @@ console.log(response);`
 							>
 								<span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs">
 									<Settings2 className="h-3 w-3" />
-									Settings
+										{t("settings")}
 								</span>
 								<span className="h-4 w-px bg-border/80" />
 								<span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs">
 									<KeyRound className="h-3 w-3" />
-									Keys
+										{t("keys")}
 								</span>
 							</Link>
-							<span>and store it as</span>
+							<span>{t("andStoreItAs")}</span>
 							<code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
 								PHASEO_API_KEY
 							</code>
@@ -1917,15 +1925,14 @@ console.log(response);`
 								) : (
 									<Copy className="h-3.5 w-3.5" />
 								)}
-								{apiKeyCommandCopied ? "Copied" : "Copy"}
+								{apiKeyCommandCopied ? t("copied") : t("copy")}
 							</Button>
 						</div>
 						<Alert className="rounded-lg border-amber-200 bg-amber-50 py-2 text-amber-950 dark:border-amber-900/60 dark:bg-amber-900/20 dark:text-amber-50">
 							<Shield className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-							<AlertTitle className="sr-only">Keep your API key secret</AlertTitle>
+							<AlertTitle className="sr-only">{t("protectApiKey")}</AlertTitle>
 							<AlertDescription className="text-sm text-amber-900/90 dark:text-amber-100/90">
-								Keep it server-side, never commit it, and rotate it immediately
-								if exposed.
+								{t("protectApiKeyDescription")}
 							</AlertDescription>
 						</Alert>
 					</div>
@@ -1940,7 +1947,7 @@ console.log(response);`
 							>
 								2
 							</Badge>
-							<h3 className="text-base font-semibold">Add a provider key</h3>
+							<h3 className="text-base font-semibold">{t("addProviderKey")}</h3>
 						</div>
 						<div className="flex flex-col gap-3 rounded-lg border border-border/70 bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between">
 							<div className="flex min-w-0 items-start gap-3">
@@ -1948,9 +1955,9 @@ console.log(response);`
 									<KeyRound className="h-4 w-4" />
 								</div>
 								<div>
-									<p className="text-sm font-medium">Provider key required</p>
+									<p className="text-sm font-medium">{t("providerKeyRequired")}</p>
 									<p className="mt-0.5 text-sm text-muted-foreground">
-										Add your own {byokOnlyProviders.map((provider) => provider.providerName).join(" or ")} credential before sending this request.
+										{t("byokCredential", {providers: new Intl.ListFormat(locale, {style: "long", type: "disjunction"}).format(byokOnlyProviders.map((provider) => provider.providerName))})}
 									</p>
 								</div>
 							</div>
@@ -1958,7 +1965,7 @@ console.log(response);`
 								{byokOnlyProviders.map((provider) => (
 									<Button key={provider.providerId} asChild size="sm" variant="outline" className="bg-background">
 										<Link href={`/settings/byok/${provider.providerId}`}>
-											Add {provider.providerName} key
+											{t("addNamedProviderKey", {provider: provider.providerName})}
 										</Link>
 									</Button>
 								))}
@@ -1977,16 +1984,16 @@ console.log(response);`
 						</Badge>
 						<h3 className="text-base font-semibold">
 							{isModelMetadataQuickstart
-								? "Retrieve model metadata"
-								: "Send the request"}
+								? t("retrieveModelMetadata")
+								: t("sendRequest")}
 						</h3>
 					</div>
 					<div className="min-w-0 space-y-3">
 						<div className="space-y-1">
 							<p className="text-sm text-muted-foreground">
 								{isModelMetadataQuickstart
-									? "Query GET /v1/models by model ID, including records that are not currently routable."
-									: "Choose a supported endpoint, pick a main language, then select the example style you want to copy."}
+									? t("retrieveModelMetadataDescription")
+									: t("sendRequestDescription")}
 							</p>
 						</div>
 
@@ -2015,8 +2022,8 @@ console.log(response);`
 						selectedServiceTier={selectedServiceTier}
 						docsLinks={docsLinks}
 						requestModeLabel={requestModeLabel}
-						serviceTierDocsHref={supportsServiceTier ? SERVICE_TIERS_DOCS_HREF : null}
-						streamingDocsHref={shouldStream ? STREAMING_DOCS_HREF : null}
+						serviceTierDocsHref={supportsServiceTier ? getLocalizedDocsHref(locale, SERVICE_TIERS_DOCS_HREF) : null}
+						streamingDocsHref={shouldStream ? getLocalizedDocsHref(locale, STREAMING_DOCS_HREF) : null}
 						onSelectEndpoint={(value) => {
 							setSelectedEndpoint(value);
 							captureProductEvent("quickstart_endpoint_selected", {

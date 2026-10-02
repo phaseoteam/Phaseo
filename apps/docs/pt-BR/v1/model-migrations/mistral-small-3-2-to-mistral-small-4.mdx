@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "O que considerar ao adotar Mistral Small 4, incluindo controles de raciocínio e campos de resposta normalizados."
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+Use este guia para adotar Mistral Small 4 com segurança pelo Phaseo Gateway:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## Novidades
+
+- Mistral Small 4 permite controlar o modo de raciocínio por `reasoning_effort`.
+- O Gateway envia ao provedor somente dois valores para essa rota:
+  - `none` (raciocínio desativado)
+  - `high` (raciocínio ativado)
+- O Gateway normaliza blocos de pensamento do Mistral para campos de resposta padrão:
+  - `message.content` para o texto visível do assistente
+  - `message.reasoning_content` e `message.reasoning_details` para o texto de raciocínio
+
+## Início rápido da migração
+
+Por padrão, o raciocínio fica desativado nessa rota.
+
+Regras de mapeamento do Gateway:
+
+- Sem controles de raciocínio, o Gateway envia `reasoning_effort: "none"`.
+- Com `reasoning.enabled: true`, envia `reasoning_effort: "high"`.
+- Com `reasoning.effort: "none"`, envia `reasoning_effort: "none"`.
+- Qualquer outro valor de `reasoning.effort` é convertido em `reasoning_effort: "high"`.
+
+Uso recomendado:
+
+- `reasoning.effort: "none"` para tarefas leves.
+- `reasoning.effort: "high"` para raciocínio profundo.
+
+Exemplo:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## Observações sobre respostas
+
+O Mistral pode retornar blocos de conteúdo mistos para o assistente (por exemplo, `thinking` e `text`). O Gateway os converte para um formato estável:
+
+- Resposta final visível ao usuário em `choices[0].message.content`.
+- Texto de raciocínio em `choices[0].message.reasoning_content`.
+
+Assim, o comportamento posterior que espera campos de chat completion no padrão OpenAI continua funcionando.
+
+## Lista de verificação do rollout
+
+1. Atualize o ID do modelo para `mistral/mistral-small-4-2026-03-16`.
+2. Valide os controles de raciocínio usando somente `none` e `high`.
+3. Execute novamente testes de qualidade e esquema nas rotas de alto esforço.
+4. Compare latência e custo com `none` e `high` antes da migração completa.

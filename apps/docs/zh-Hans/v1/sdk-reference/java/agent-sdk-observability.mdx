@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "错误与故障排查"
+description: "排查 Java Agent 失败、无效工具数据和中断的运行。"
+---
+
+请区分传输或网关故障与无效工具或输出数据。运行失败后仍会保留状态、当前步骤、重试次数、请求 ID、原生响应 ID 和可用的网关详情。
+
+## 常见检查
+
+- 确认 Java 进程可以访问 `PHASEO_API_KEY`。
+- 为每个工具分配唯一且稳定的 ID。
+- 使用确切的工具调用 ID 提供审批、拒绝和手动输出。
+- 将控制权交给其他请求或工作进程前，先持久化暂停的 `RunResult`。
+- 验证器应具有确定性且不产生副作用。
+- 除非应用明确启动新运行，否则应将取消和超时异常视为终止状态。
+
+使用生命周期钩子记录应用遥测，并使用 DevTools 保存本地运行记录，不要只依赖控制台输出。
+
+## 相关内容
+
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)

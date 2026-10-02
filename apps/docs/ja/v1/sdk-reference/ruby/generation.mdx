@@ -1,0 +1,70 @@
+---
+icon: "search-check"
+title: "生成の取得"
+description: "/generations を呼び出して、過去の生成を取得します。"
+---
+
+**メソッド**: `client.get_generation(...)`
+
+### 例
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+record = client.get_generation('G-01ABC...')
+```
+
+### パラメーター
+
+- `id` （string、必須）：以前の呼び出しで返されたリクエスト ID。
+
+### 戻り値
+
+生成レコード（JSON）
+
+Gateway にリクエストの詳細がすべて保存されている場合、返されるレコードには `replay_supported` と `replay_request` も含まれます。これを使うと、記録されたペイロードを元のエンドポイントに再送信して、制御された再実行を行えます。
+
+時間フィールドは Gateway 共通の定義に従います。
+
+- `latency_ms`: 計測されている場合、最初のトークンまたは最初の出力バイト/フレームまでの時間
+- `generation_ms`: 計測されている場合、レイテンシー後の生成時間
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-4o-mini",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```

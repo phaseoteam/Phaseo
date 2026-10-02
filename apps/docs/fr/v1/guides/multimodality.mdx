@@ -1,0 +1,27 @@
+---
+title: "Multimodalité"
+description: "Utilisez du texte, des images, de l’audio, de la vidéo et d’autres modalités via la passerelle."
+icon: "shapes"
+---
+
+La passerelle expose plusieurs modalités via une API unifiée. Chaque endpoint correspond à une capacité différente et la prise en charge des modèles varie selon le fournisseur.
+
+## Modalités et endpoints
+
+| Modalité | Endpoints principaux | Remarques |
+| --- | --- | --- |
+| Texte | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Sorties structurées et conversationnelles. |
+| Images | `/v1/images/generations`, `/v1/images/edits` | Génération d’images à partir de texte et retouche d’images. |
+| Audio (TTS/STT/traductions) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Synthèse vocale, reconnaissance vocale et traduction audio. |
+| Vidéo | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Créez des tâches vidéo asynchrones, consultez leur statut, récupérez leur contenu et supprimez-les. |
+| Musique | `/v1/music/generate` | Génération musicale via les fournisseurs pris en charge. |
+| OCR | `/v1/ocr` | Extrait le texte des images lorsque cette fonction est prise en charge. |
+
+## Vérifier la prise en charge des modèles
+
+Utilisez l’[endpoint des modèles](../api-reference/endpoint/models.mdx) pour voir les modèles disponibles et les endpoints qu’ils prennent en charge. La couverture des fournisseurs est indiquée par l’[endpoint des fournisseurs](../api-reference/endpoint/providers.mdx).
+
+## Bonnes pratiques
+
+- Choisissez l’endpoint selon la modalité nécessaire, même si un même nom de modèle est utilisé pour plusieurs modalités.
+- Avant la mise en production, validez les charges utiles à l’aide de la [référence de l’API](../api-reference/introduction.mdx).

@@ -1,0 +1,132 @@
+---
+title: "Strukturiertes JSON mit dem Python-SDK und Voreinstellungen bereitstellen"
+icon: "braces"
+description: "Verwende das offizielle Python-SDK mit Voreinstellungen, strukturierten Ausgaben und Anfrage-Debugging, ohne auf rohe HTTP-Aufrufe zurückzugreifen."
+---
+
+Verwende dieses Rezept, wenn ein Python-Dienst Standardwerte aus dem Dashboard nutzen soll, statt Prompt-, Routing- und Parameterkonfiguration in jeder Anfrage zu wiederholen.
+
+## Ziel
+
+- den Python-Aufrufer schlank halten
+- über einen Voreinstellungs-Slug statt über ein fest codiertes Modell routen
+- eine streng strukturierte Ausgabe anfordern
+- genügend Antwortmetadaten behalten, um Routing- oder Plugin-Verhalten zu untersuchen
+
+## 1. Mit einem gemeinsam genutzten Client beginnen
+
+```python
+import os
+
+from phaseo import Phaseo
+
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+```
+
+Verwende einen gemeinsam genutzten Client, statt für jede Anfrage einen neuen zu erstellen.
+
+## 2. Stabile Standardwerte in eine Voreinstellung verschieben
+
+Erstelle unter **Dashboard -> Einstellungen -> Voreinstellungen** eine Voreinstellung, wenn diese Werte für mehrere Aufrufer stabil bleiben sollen:
+
+- der System-Prompt
+- das Modell oder die Liste erlaubter Modelle
+- Provider-Präferenzen
+- Reasoning-Konfiguration
+- Temperatur und weitere zugehörige Generierungsparameter
+- Richtlinie für das Antwort-Caching, wenn deterministische Wiederholung wichtig ist
+
+Sobald die Voreinstellung eingerichtet ist, kann der Python-Aufrufer schlank bleiben.
+
+## 3. Eine strenge JSON-Form anfordern
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+Warum diese Form gut funktioniert:
+
+- `preset` hält Routing- und Prompt-Standardwerte aus dem Anwendungscode heraus
+- `response_format` macht den Vertrag eindeutig
+- `plugins` kann fast gültiges, fehlerhaftes JSON wiederherstellen, sofern der Workflow das zulässt
+- `meta` erhält Routing- und Plugin-Ausführungsdetails für die Untersuchung
+
+## 4. JSON parsen und Betriebskennungen protokollieren
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+Für Python-Worker reicht das normalerweise aus, um eine Anwendungs-Protokollzeile diesen Informationen zuzuordnen:
+
+- dem Dialog mit den Anfragedetails im Dashboard
+- den Routing-Diagnosen
+- den Ausführungsmetadaten der Plugins
+
+## 5. Erst untersuchen, dann überschreiben
+
+Wenn eine Anfrage anders geroutet wird als erwartet:
+
+1. öffne sie unter **Gateway -> Nutzung**
+2. prüfe Routing-Diagnosen und mögliche Provider
+3. prüfe bei strukturiertem JSON die Ausführungsmetadaten der Plugins
+4. ändere die Voreinstellung erst, wenn die Protokolle den tatsächlichen Ablauf zeigen
+
+Versuche nicht, eine fehlerhafte Anfrage mit vielen inline gesetzten Überschreibungen zu korrigieren. Das macht den Zweck von Voreinstellungen meist zunichte.
+
+## 6. Caching-Kompatibilität für die Wiederverwendung erhalten
+
+Wenn die Voreinstellung Antwort-Caching aktiviert:
+
+- formuliere den Prompt stets gleich
+- behalte das Antwortschema bei
+- vermeide unnötige Provider-Überschreibungen pro Anfrage
+- vermeide häufig wechselnde Tool-Listen
+
+Wenn ein Aufrufer wirklich ein anderes Verhalten benötigt, verwende eine eigene Voreinstellung, statt die Cache-Wiederverwendung des gemeinsamen Workflows zu beeinträchtigen.
+
+## Verwandte Anleitungen
+
+- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
+- [Antwort-Caching mit Voreinstellungen verwenden](./response-caching-with-presets.mdx)
+- [Antworten für strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)
+- [Überblick über das Python-SDK](../sdk-reference/python/overview.mdx)

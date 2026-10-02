@@ -35,6 +35,7 @@ export default function ModelUpdatesFilters({
 	selectedEvents,
 	setSelectedEvents,
 }: ModelUpdatesFiltersProps) {
+	const t = useTranslations("Catalogue.updates.models");
 	const isMobile = useIsMobile();
 	const clearAll = () => {
 		setSelectedProviders([]);
@@ -54,14 +55,14 @@ export default function ModelUpdatesFilters({
 					{/* Clear filters */}
 					<div className="ml-auto">
 						<Button size="sm" variant="ghost" onClick={clearAll}>
-							Clear
+							{t("clear")}
 						</Button>
 					</div>
 
 					{/* Provider Filter */}
 					<div className="w-full">
 						<div className="font-semibold text-sm mb-2">
-							Provider
+										{t("provider")}
 						</div>
 						{isMobile ? (
 							<Sheet>
@@ -70,7 +71,7 @@ export default function ModelUpdatesFilters({
 										variant="outline"
 										className="w-full flex items-center justify-between"
 									>
-										<span>Filter Providers</span>
+										<span>{t("filterProviders")}</span>
 										<span className="flex items-center gap-1 ml-2">
 											{selectedProviders.length === 0
 												? [
@@ -129,7 +130,7 @@ export default function ModelUpdatesFilters({
 									className="max-h-[90vh] overflow-y-auto p-4 space-y-6"
 								>
 									<div className="font-semibold text-sm mb-2">
-										Select Providers
+										{t("selectProviders")}
 									</div>
 									<ToggleGroup
 										type="multiple"
@@ -207,7 +208,7 @@ export default function ModelUpdatesFilters({
 					</div>
 					{/* Event Type Filter */}
 					<div className="w-full">
-						<div className="font-semibold text-sm mb-2">Event</div>
+						<div className="font-semibold text-sm mb-2">{t("event")}</div>
 						{isMobile ? (
 							<Sheet>
 								<SheetTrigger asChild>
@@ -215,7 +216,7 @@ export default function ModelUpdatesFilters({
 										variant="outline"
 										className="w-full flex items-center justify-between"
 									>
-										<span>Filter Events</span>
+										<span>{t("filterEvents")}</span>
 										<span className="flex items-center gap-1 ml-2">
 											{selectedEvents.length === 0
 												? eventTypeOptions
@@ -273,7 +274,7 @@ export default function ModelUpdatesFilters({
 									className="max-h-[90vh] overflow-y-auto p-4 space-y-6"
 								>
 									<div className="font-semibold text-sm mb-2">
-										Select Events
+										{t("selectEvents")}
 									</div>
 									<ToggleGroup
 										type="multiple"
@@ -335,3 +336,4 @@ export default function ModelUpdatesFilters({
 		</Card>
 	);
 }
+import { useTranslations } from "next-intl";

@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condições de parada"
+description: "Limite o trabalho do agente Python por etapas, tokens, custo, duração, ferramentas ou motivo de conclusão."
+---
+
+Combine as funções auxiliares de parada usando `stop_when`:
+
+```python
+stop_when = [
+    step_count_is(12),
+    max_tokens_used(40_000),
+    max_cost(2),
+    max_duration(60_000),
+]
+```
+
+Outras funções auxiliares incluem `has_tool_call(...)` e `finish_reason_is(...)`. Mantenha um limite de etapas ou duração mesmo ao usar limites de custo ou tokens, pois eles dependem do uso informado.
+
+## Relacionados
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Resultados e novas tentativas](./agent-sdk-run-controls.mdx)
+

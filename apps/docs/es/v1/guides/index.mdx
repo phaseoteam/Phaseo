@@ -1,0 +1,66 @@
+---
+title: "Guías"
+description: "Encuentra la guía de Phaseo adecuada para la configuración inicial, el desarrollo de funciones, las integraciones y las operaciones en producción."
+icon: "book-open"
+---
+
+Si sabes qué tipo de trabajo vas a realizar y quieres encontrar la guía adecuada rápidamente, empieza aquí.
+
+## Primera integración
+
+Si es tu primera integración con Phaseo, sigue estos pasos en orden:
+
+1. [Inicio rápido](../quickstart.mdx): realiza una solicitud correcta.
+2. [Autenticación](../developers/authentication.mdx): guarda y envía las claves de forma segura.
+3. [Ejemplos](./examples.mdx): copia patrones de solicitudes en tu aplicación.
+
+<Note>
+Puedes llamar a modelos `:free` sin depositar créditos. Para los modelos de pago, el saldo de la cartera debe estar disponible.
+</Note>
+
+## Desarrollar funciones de la aplicación
+
+Usa estas guías cuando ya tengas una solicitud básica en funcionamiento y quieras añadir comportamiento al producto.
+
+<Columns cols={2}>
+	<Card title="Recetario" icon="chef-hat" href="../cookbook/index.mdx">
+		Recetas prácticas para el enrutamiento gratuito, los ajustes preestablecidos, los trabajos asíncronos y la configuración de agentes de programación.
+	</Card>
+	<Card title="Enrutamiento y alternativas" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		Controla el orden de los proveedores, el comportamiento de conmutación por error y el equilibrio entre fiabilidad y otros factores.
+	</Card>
+	<Card title="Llamadas a herramientas" icon="wrench" href="./tool-calling.mdx">
+		Implementa herramientas de funciones, comprobaciones de seguridad y ciclos de herramientas estables.
+	</Card>
+	<Card title="Herramientas del servidor" icon="sparkles" href="./server-tools/index.mdx">
+		Usa las herramientas de fecha y hora, búsqueda web, recuperación web y Advisor operadas por Phaseo.
+	</Card>
+	<Card title="Salidas estructuradas" icon="braces" href="./structured-outputs.mdx">
+		Usa esquemas para obtener respuestas predecibles y legibles por máquina.
+	</Card>
+	<Card title="Streaming" icon="radio" href="./streaming.mdx">
+		Publica respuestas de baja latencia con SSE y protecciones para producción.
+	</Card>
+	<Card title="Almacenamiento en caché de prompts" icon="database-zap" href="./prompt-caching.mdx">
+		Reutiliza el contexto estable de los prompts en Chat Completions, Responses y Anthropic Messages.
+	</Card>
+</Columns>
+
+## Operar en producción
+
+Usa estas guías cuando el tráfico, la fiabilidad, la seguridad y el ciclo de vida de las claves empiecen a ser importantes.
+
+<Columns cols={2}>
+	<Card title="Gestión de errores" icon="triangle-alert" href="../api-reference/errors.mdx">
+		Depura por código de estado, formato del error y estrategia de reintentos.
+	</Card>
+	<Card title="Límites de frecuencia" icon="gauge" href="../api-reference/limits.mdx">
+		Planifica el rendimiento y el retroceso exponencial bajo carga.
+	</Card>
+	<Card title="Buenas prácticas" icon="shield-check" href="../developers/best-practices.mdx">
+		Lista de comprobación para reforzar la fiabilidad y la seguridad.
+	</Card>
+	<Card title="Claves de API de gestión" icon="key-round" href="../developers/management-api-keys.mdx">
+		Automatiza el ciclo de vida de las claves y el aislamiento de entornos.
+	</Card>
+</Columns>

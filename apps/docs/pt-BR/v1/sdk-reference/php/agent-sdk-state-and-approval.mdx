@@ -1,0 +1,20 @@
+---
+icon: "database"
+title: "Estado e aprovação"
+description: "Pause agentes PHP para obter decisões humanas e continuar o estado gerenciado pela aplicação."
+---
+
+Use `AgentDefinition::$humanReview` para criar um ponto de revisão geral. Ferramentas que exigem aprovação ou são manuais preenchem `$result->run->pause->pendingToolCalls` com os IDs exatos das chamadas.
+
+Continue com `Agent::continueRun(...)` usando:
+
+- valores `ToolDecision` para aprovações ou rejeições
+- valores `ToolOutput` para tarefas manuais
+- entrada humana para uma pausa de revisão geral
+
+Use `continueRunById(...)` com um `StateAccessor` quando a aplicação precisar recarregar a execução do armazenamento. As decisões são associadas ao ID da chamada, não ao nome da ferramenta.
+
+## Relacionados
+
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Controles da execução](./agent-sdk-run-controls.mdx)

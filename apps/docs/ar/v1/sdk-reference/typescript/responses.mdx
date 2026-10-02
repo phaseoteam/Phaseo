@@ -1,0 +1,84 @@
+---
+icon: "message-square"
+title: "Responses API"
+description: "استدعِ Responses API باستخدام حزمة TypeScript SDK."
+---
+
+**الطريقة**: `client.generateResponse()` (لبث الأجزاء التي جرى تحليلها استخدم `client.streamResponses()`).
+
+### مثال
+```typescript
+const resp = await client.generateResponse({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+  temperature: 0.7,
+  stream: false,
+});
+```
+
+### البث
+```typescript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+  stream: true,
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### المعلمات الأساسية
+- `model` (required): معرّف النموذج المستهدف.
+- `input` (required): مصفوفة مرتبة لعناصر الإدخال (الرسائل واستدعاءات الأدوات وغيرها).
+- `temperature` (0-2): تزيد القيمة الأعلى من العشوائية.
+- `top_p` (0-1) / `top_k` (>=1): عناصر التحكم في أخذ عينات النواة / أفضل k.
+- `max_output_tokens` (int): حد أقصى ثابت لعدد الرموز التي يتم توليدها لكل استجابة.
+- الأدوات: `tools` (التعريفات), `tool_choice` (`auto`/`none`/محدد), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+- Logprobs: `logprobs` (bool), `top_logprobs` (0-20) لإرجاع قيم logprob لكل رمز.
+- الإخراج: `response_format` (json/text), `service_tier`, `store` (bool), `stream` (bool).
+- البيانات الوصفية: `metadata` (object) لتمريرها كما هي, `reasoning` (object) لتحديد مستوى الاستدلال.
+- خيارات Gateway الإضافية: `usage` (bool لطلب بيانات الاستخدام), `meta` (bool لتضمين كتلة meta).
+
+### القيمة المعادة
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+أو إطارات SSE مفصولة بأسطر عند ضبط `stream: true`:
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

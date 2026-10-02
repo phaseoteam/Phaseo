@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "Dynamische Turns"
+description: "Ändere Modelle, Anweisungen, Sampling und Tools zwischen Agent-Turns."
+---
+
+Verwende dynamische Werte, wenn spätere Modell-Turns auf Anwendungskontext oder frühere Tool-Ergebnisse reagieren sollen. Ein Wert kann fest sein oder anhand des aktuellen Turns berechnet werden.
+
+## Modell zur Laufzeit auswählen
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+Die Agent-Definition unterstützt dynamische Werte für `model`, `models`, `instructions`, `temperature`, `maxOutputTokens` und `topP`.
+
+## Anwendungskontext über ein Tool aktualisieren
+
+Tools können mit `context.setContext()` Informationen für spätere Turns speichern:
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+Halte den Kontext klein und serialisierbar, wenn ein Lauf gespeichert und später fortgesetzt werden kann.
+
+## Nur den nächsten Turn überschreiben
+
+Verwende `nextTurnParams`, wenn ein Tool die nächste Anfrage ändern soll, ohne die Agent-Definition dauerhaft anzupassen:
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+Werte für den nächsten Turn können Modell, Anweisungen, Temperatur, maximale Ausgabe-Tokens, Top-p-Sampling oder verfügbare Tools ändern.
+
+## Zugehörige Anleitungen
+
+- [Abbruchbedingungen](./agent-sdk-stop-conditions.mdx)
+- [Status und Freigabe](./agent-sdk-state-and-approval.mdx)
+- [Ausgaben und Wiederholungen](./agent-sdk-run-controls.mdx)

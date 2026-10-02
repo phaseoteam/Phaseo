@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "Fehler und Fehlerbehebung"
+description: "Diagnostiziere Fehler von Java-Agenten, ungültige Tool-Daten und unterbrochene Läufe."
+---
+
+Unterscheide Transport- und Gateway-Fehler von ungültigen Tool- oder Ausgabedaten. Ein fehlgeschlagener Lauf enthält weiterhin Status, aktiven Schritt, Anzahl der Wiederholungen, Anfragen-ID, native Response-ID und verfügbare Gateway-Details.
+
+## Häufige Prüfungen
+
+- Stelle sicher, dass der Java-Prozess auf `PHASEO_API_KEY` zugreifen kann.
+- Gib jedem Tool eine eindeutige, stabile ID.
+- Übergib Genehmigungen, Ablehnungen und manuelle Ausgaben über die exakten Tool-Aufruf-IDs.
+- Speichere ein pausiertes `RunResult`, bevor die Kontrolle an eine andere Anfrage oder einen Worker übergeht.
+- Halte Validatoren deterministisch und frei von Seiteneffekten.
+- Behandle Abbruch- und Timeout-Ausnahmen als endgültig, sofern die Anwendung nicht ausdrücklich einen neuen Lauf startet.
+
+Verwende Lifecycle-Hooks für Anwendungstelemetrie und DevTools für lokale Laufdatensätze, statt dich allein auf Konsolenausgaben zu verlassen.
+
+## Weiterführende Themen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Status und Genehmigung](./agent-sdk-state-and-approval.mdx)

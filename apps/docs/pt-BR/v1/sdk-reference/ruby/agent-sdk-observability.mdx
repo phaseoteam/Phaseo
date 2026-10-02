@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Erros e solução de problemas"
+description: "Lide com falhas de modelo, ferramentas, validação, timeout e continuação em agentes Ruby."
+---
+
+Falhas do agente normalmente vêm de uma solicitação ao modelo, ferramenta local, validação de esquema, timeout ou decisão humana pendente.
+
+## Recuperar de erros de ferramentas
+
+Defina `on_error: "return-to-model"` quando o modelo puder se recuperar de uma falha de ferramenta. O erro vira um resultado de ferramenta e o agente pode escolher outra ação. Mantenha o comportamento fail-run para operações inseguras ou irrecuperáveis.
+
+## Entender a execução do Ruby
+
+O Ruby consome fluxos do modelo por meio de iteração síncrona normal. Defina timeouts explícitos para ferramentas de rede e processos e evite bloquear callbacks do ciclo de vida com operações lentas de persistência.
+
+## Diagnosticar erros de continuação
+
+Cada chamada pendente precisa de aprovação, rejeição ou saída fornecida externamente, identificada pelo ID da chamada da ferramenta. Persista todo o estado de execução retornado antes de exibir uma interface de aprovação.
+
+## Registrar campos úteis
+
+Registre o ID da execução, índice da etapa, ID da solicitação, provedor, modelo, motivo de conclusão, ID da chamada de ferramenta e motivo da parada. Prefira hooks do ciclo de vida ou o DevTools ao registro bruto de prompts.

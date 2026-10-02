@@ -1,0 +1,78 @@
+---
+title: "OpenAI GPT-5.4"
+description: "À connaître pour adopter GPT-5.4, notamment les contrôles de raisonnement, la vision et l’utilisation de l’ordinateur."
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.4
+
+Suivez ce guide pour adopter `openai/gpt-5.4` en production en toute sécurité.
+
+GPT-5.4 concerne surtout l’évolution des contrôles de raisonnement, du traitement des images et de l’utilisation d’outils, plutôt qu’un nouveau format de requête. Au 10 mars 2026, la documentation officielle d’OpenAI met en avant `reasoning.effort`, une meilleure utilisation de l’ordinateur et une entrée d’image plus fidèle. Elle ne documente pas de paramètre `phase` propre à GPT-5.4.
+
+## Démarrage rapide de la migration
+
+1. Remplacez l’identifiant du modèle par `openai/gpt-5.4` sans modifier le reste de la requête.
+2. Choisissez et testez le niveau d’effort adapté au budget de latence de la route.
+3. Retestez la vision, les sorties structurées et l’utilisation de l’ordinateur, le cas échéant.
+4. Testez GPT-5.4 progressivement en gardant l’ancienne route en solution de repli.
+
+## Nouveautés
+
+- `reasoning.effort` accepte `none`, `low`, `medium`, `high` et `xhigh`.
+- GPT-5.4 introduit le niveau de détail d’image `original` pour une perception visuelle plus fidèle.
+- L’outil `computer` mis à jour est la méthode officielle pour les flux d’utilisation de l’ordinateur avec GPT-5.4.
+- GPT-5.4 améliore l’utilisation d’outils sur la durée, le travail avec de grands contextes et les flux de documents professionnels.
+
+## Changements à apporter à votre intégration
+
+### 1. Revoyez les paramètres de raisonnement
+
+Depuis GPT-4.1 ou une ancienne variante GPT-5, ne supposez pas que vos anciens réglages restent les meilleurs. Retestez chaque route avec un niveau d’effort adapté à son budget de latence :
+
+- `none` ou `low` pour les routes à faible latence
+- `medium` ou `high` pour la plupart des tâches structurées
+- `xhigh` pour le raisonnement approfondi ou les flux agentiques
+
+### 2. Revoyez les flux de vision
+
+Si votre workflow dépend de captures d’écran détaillées, de documents ou de la localisation d’interfaces, testez le niveau de détail d’image `original`. Il modifie à la fois la fidélité et le coût.
+
+### 3. Revérifiez les routes d’utilisation de l’ordinateur
+
+Pour migrer des tâches d’automatisation de navigateur ou de bureau, passez à la route actuelle de l’outil `computer` et retestez la réalisation complète des étapes.
+
+## Points à tester
+
+### Compatibilité des prompts
+
+- longs prompts système
+- prompts d’extraction et de classification
+- sorties sensibles au format
+- prompts qui nécessitaient auparavant des tentatives supplémentaires pour rester ciblés
+
+### Outils et sorties structurées
+
+- respect des schémas à chaque niveau d’effort
+- qualité du choix des outils
+- complétude des arguments
+- stabilité des flux d’utilisation de l’ordinateur en plusieurs étapes
+
+### Vision et exploitation
+
+- compréhension de captures et de documents avec le détail `high` et `original`
+- latence et consommation de tokens sous une charge réaliste
+- taux de nouvelle tentative et d’expiration
+- coût par tâche réussie par rapport au modèle remplacé
+
+## Déploiement sûr
+
+1. Évaluez GPT-5.4 avec les niveaux d’effort exacts que vous comptez utiliser.
+2. Si vous utilisez des images, testez `original` séparément, car il change la qualité et le coût.
+3. Exécutez les prompts de production en parallèle avant de modifier une route par défaut.
+4. Augmentez le trafic progressivement en gardant un ancien modèle OpenAI ou un autre fournisseur en solution de repli.
+
+## Sources
+
+- [Présentation de GPT-5.4](https://openai.com/index/introducing-gpt-5-4/)
+- [Documentation du modèle GPT-5.4](https://developers.openai.com/api/docs/models/gpt-5.4)

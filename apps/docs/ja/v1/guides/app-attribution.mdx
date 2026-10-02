@@ -1,0 +1,85 @@
+---
+title: "アプリの帰属情報"
+description: "安定した ID、名前、URL、カテゴリーを使って、Gateway の使用状況をアプリごとにまとめます。"
+icon: "badge-check"
+---
+
+アプリの帰属情報を使うと、製品、環境、顧客向け体験ごとに使用状況を分けられます。推論の応答を変更せずに、アプリ分析やリクエスト監査へ表示されます。
+
+## 帰属情報のヘッダーを追加する
+
+すべてのリクエストで安定したアプリ ID を送信します。ダッシュボードでより詳しく分類するには、名前、URL、最大 3 つのカテゴリーを追加します。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+同じアプリケーションからのすべてのリクエストで、同じ `X-App-Id` を使います。URL がない場合、Phaseo はこれを安定した識別子として使用します。
+
+## TypeScript SDK を使う
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## 対応ヘッダー
+
+| ヘッダー | 用途 |
+| --- | --- |
+| `X-App-Id` | アプリケーションで指定する安定した識別子。 |
+| `X-App-Name` | アプリと使用状況の画面に表示される人が読める名前。 |
+| `HTTP-Referer` | アプリに関連付ける公開ページまたはデプロイの URL。 |
+| `X-App-Categories` | 対応する最大 3 つのカテゴリーをカンマ区切りで指定します。 |
+| `X-Title` | 人が読めるアプリ名を指定する互換エイリアス。 |
+
+`HTTP-Referer` は帰属情報のメタデータであり、ブラウザーが自動で送信する `Referer` ヘッダーと一致する必要はありません。アプリの正規 URL を 1 つに統一する場合は、サーバー側の統合で明示的に設定します。
+
+## カテゴリー
+
+最大 3 つの値を選びます。
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+値の大文字・小文字は区別されません。Phaseo は不明な値を無視し、重複を取り除いて、最初の有効なカテゴリー 3 つを保持します。後続リクエストのカテゴリーはアプリに保存済みのカテゴリーと統合され、ダッシュボードでの選択は削除されません。
+
+カテゴリーは **Gateway → 設定 → アプリ** からも編集できます。アプリケーションコードではなく、中央で分類を管理する場合はダッシュボードを使います。
+
+## 帰属情報のガイドライン
+
+- デプロイ間で ID を固定し、使用状況が同じグループに集約されるようにします。
+- コストや使用状況を個別に報告する必要があるアプリには、別々の ID を使います。
+- 帰属情報ヘッダーに顧客 ID、メールアドレス、その他の個人データを入れないでください。
+- アプリが共有または公開ビューに表示される場合、URL は公開メタデータとして扱ってください。

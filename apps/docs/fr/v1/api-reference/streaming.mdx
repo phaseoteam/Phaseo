@@ -1,0 +1,68 @@
+---
+title: "Diffusion en continu"
+description: "Diffusez la sortie des modèles en temps réel par SSE sur les principaux endpoints texte."
+icon: "radio"
+---
+
+Le streaming permet à votre interface d’afficher les tokens à mesure de leur génération, sans attendre la réponse complète.
+
+## Endpoints compatibles
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## Activer le streaming
+
+Définissez `stream: true` dans le corps de la requête.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## Format des trames SSE
+
+Le flux est renvoyé sous forme de trames SSE :
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## Gérer les erreurs pendant le streaming
+
+- Si une requête échoue avant le début du flux, vous recevez une réponse d’erreur JSON classique.
+- Si elle échoue après l’envoi d’une partie de la sortie, considérez le flux comme incomplet et proposez une nouvelle tentative dans votre interface.
+- Enregistrez toujours `generation_id` lorsqu’il est présent afin de faciliter le support et le suivi.
+
+## Annulation
+
+Utilisez des mécanismes d’annulation (`AbortController` en JavaScript ou un délai d’expiration des requêtes dans les workers backend) pour éviter que les flux abandonnés consomment inutilement des ressources.
+
+## Limite connue
+
+La validation actuelle des requêtes du Gateway rejette `stream: true` avec l’appel d’outils. Utilisez le mode sans streaming pour les boucles qui appellent des outils.
+
+## Pages associées
+
+- [Endpoint Responses](./endpoint/responses.mdx)
+- [Endpoint Chat Completions](./endpoint/chat-completions.mdx)
+- [Endpoint Messages](./endpoint/anthropic-messages.mdx)
+- [Erreurs et débogage](./errors.mdx)
+
+<Visibility for="agents">
+Si vous implémentez le streaming en tant qu’agent :
+
+- Utilisez les compétences du dépôt pour analyser SSE, gérer les nouvelles tentatives et annuler les requêtes.
+- Consultez les schémas propres à chaque endpoint avant d’ajouter des hypothèses spécifiques à un fournisseur.
+- Séparez l’affichage progressif de la sortie de son enregistrement final.
+</Visibility>

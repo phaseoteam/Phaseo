@@ -1,0 +1,10 @@
+---
+title: "Mettre à jour le brouillon du préréglage"
+sidebarTitle: "Mettre à jour le préréglage"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /presets/{id}"
+description: "Met à jour les métadonnées et la configuration du brouillon d’un préréglage."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion avec `presets:write`.</Note>
+
+Utilisez `replace_config` pour remplacer toute la configuration du brouillon. Sinon, les champs de configuration fournis sont fusionnés au niveau supérieur.

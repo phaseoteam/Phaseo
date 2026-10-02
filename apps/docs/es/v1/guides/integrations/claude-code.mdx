@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "/icons/brands/claude-code.svg"
+description: "Conecta Claude Code a Phaseo Gateway mediante la API compatible con Anthropic."
+---
+
+Claude Code admite gateways de LLM de terceros mediante variables de entorno. Phaseo ofrece una interfaz compatible con Anthropic en `/v1/messages`, así que puedes dirigir Claude Code a Phaseo sin cambiar tus prompts.
+
+Si quieres que Claude Code consulte la documentación actual de Phaseo durante una sesión, añade también el servidor [Docs MCP](./docs-mcp.mdx).
+
+## Configura con Phaseo CLI
+
+```bash
+phaseo login
+phaseo claude-code
+claude
+```
+
+Primero instala Claude Code desde su versión oficial. La configuración crea una `Phaseo CLI: Claude Code API Key` sin fecha de caducidad, la guarda en el almacén de credenciales del sistema operativo y configura el gateway y el asistente de claves de API de Claude Code. No se escribe ninguna clave en texto plano en la configuración de Claude Code.
+
+## Configuración manual
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## Elige un modelo (opcional)
+
+Configura `ANTHROPIC_MODEL` si quieres un valor predeterminado fijo. Usa los identificadores incluidos en [Modelos](../../api-reference/endpoint/models.mdx).
+
+## Inicia Claude Code
+
+```bash
+claude
+```
+
+## Correspondencia de endpoints
+
+- Claude Code llama a endpoints de estilo Anthropic (`/v1/messages`).
+- Phaseo procesa esas solicitudes mediante [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## Notas de compatibilidad
+
+- `ANTHROPIC_AUTH_TOKEN` se envía en el encabezado `Authorization`, que Phaseo acepta.
+- También puedes asignar a `ANTHROPIC_MODEL` el ID de un modelo de Phaseo si quieres que Claude Code use siempre un único modelo predeterminado.
+- Limitación actual: el streaming junto con herramientas en Anthropic Messages puede devolver `400 invalid_request`. Si tu flujo depende de ciclos de herramientas en streaming, prueba esta ruta antes de ampliarlo.

@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "Arquivos"
+description: "Use o SDK Go para consultar metadados e recuperar o conteúdo de arquivos."
+---
+
+**Métodos**: `client.ListFiles()`, `client.RetrieveFile()`, `client.RetrieveFileContent()`.
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+`ListFiles()` está disponível no wrapper, mas `GET /files` retorna atualmente `file_list_not_supported_with_shared_gateway_key`
+ao usar a chave compartilhada do gateway. Armazene os IDs dos arquivos enviados e recupere-os diretamente.
+</Note>
+
+<Note>
+O wrapper Go ainda não oferece um helper multipart específico para `POST /files`. Use REST diretamente ou o cliente gerado
+se precisar experimentar o fluxo de upload.
+</Note>
+

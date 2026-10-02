@@ -9,7 +9,7 @@ function readSource(relativePath: string): string {
 
 describe("settings UI contracts", () => {
 	it("uses the sidebar as the single settings navigation hierarchy", () => {
-		const layoutSource = readSource("src/app/(dashboard)/settings/layout.tsx");
+		const layoutSource = readSource("src/app/[locale]/(dashboard)/settings/layout.tsx");
 		const sidebarSource = readSource(
 			"src/components/(gateway)/settings/Sidebar.tsx",
 		);
@@ -41,11 +41,11 @@ describe("settings UI contracts", () => {
 		const pageHeaderSource = readSource(
 			"src/components/(gateway)/settings/SettingsPageHeader.tsx",
 		);
-		const keysPageSource = readSource("src/app/(dashboard)/settings/keys/KeysContent.tsx");
+		const keysPageSource = readSource("src/app/[locale]/(dashboard)/settings/keys/KeysContent.tsx");
 
 		expect(headerSource).toContain("<SettingsSidebarTrigger");
 		expect(headerSource.indexOf("<SettingsSidebarTrigger")).toBeLessThan(
-			headerSource.indexOf('aria-label="Phaseo home"'),
+			headerSource.indexOf('aria-label={t("home")}'),
 		);
 		expect(headerSource.match(/<SearchWrapper/g)).toHaveLength(1);
 		expect(headerSource.indexOf("<SearchWrapper")).toBeLessThan(
@@ -55,7 +55,7 @@ describe("settings UI contracts", () => {
 		expect(headerSource).toContain('className="size-9');
 		expect(searchSource).toContain("mobileGhost &&");
 		expect(searchSource).toContain("border-transparent bg-transparent");
-		expect(searchSource).toContain("lg:border-zinc-200/80");
+		expect(searchSource).toContain("xl:border-border xl:bg-background");
 		expect(menuSource).toContain("<Sheet");
 		expect(menuSource).toContain('side="left"');
 		expect(menuSource).toContain("<Collapsible");
@@ -66,8 +66,8 @@ describe("settings UI contracts", () => {
 		expect(menuSource).toContain("group.scope === visibleScope");
 		expect(menuSource).toContain('selectScope("personal")');
 		expect(menuSource).toContain('selectScope("workspace")');
-		expect(menuSource).toContain("Close settings menu");
-		expect(menuSource).toContain("Open settings menu");
+		expect(menuSource).toContain("settingsCopy.settingsSidebar.close");
+		expect(menuSource).toContain("settingsCopy.settingsSidebar.open");
 		expect(menuSource).toContain("<MenuIcon");
 		expect(menuSource).toContain("<X");
 		expect(menuSource).not.toContain("uppercase");
@@ -75,8 +75,8 @@ describe("settings UI contracts", () => {
 		expect(menuSource).toContain('className="flex items-center lg:hidden"');
 		expect(menuSource).toContain("const Icon = item.icon");
 		expect(menuSource).toContain("<Icon className=");
-		expect(menuSource).toContain("Account");
-		expect(menuSource).toContain("Workspace");
+		expect(menuSource).toContain("settingsCopy.settingsSidebar.accountScope");
+		expect(menuSource).toContain("settingsCopy.settingsSidebar.workspaceScope");
 		expect(menuSource).toContain("visibleGroups.map");
 		expect(pageHeaderSource).toContain("sm:justify-between");
 		expect(pageHeaderSource).toContain("sm:justify-end");
@@ -94,13 +94,13 @@ describe("settings UI contracts", () => {
 			"src/components/(gateway)/settings/teams/TeamSettingsPanel.tsx",
 		);
 		const accountWorkspacesSource = readSource(
-			"src/app/(dashboard)/settings/account/workspaces/WorkspacesContent.tsx",
+			"src/app/[locale]/(dashboard)/settings/account/workspaces/WorkspacesContent.tsx",
 		);
 
 		expect(containerSource).not.toContain('settings/CreateTeamDialog');
 		expect(containerSource).toContain('tab !== "settings"');
 		expect(containerSource).toContain("<CreateTeamInviteDialog");
-		expect(containerSource).toContain("Manage Invites");
+		expect(containerSource).toContain("settingsCopy.teams.manageInvites");
 		expect(containerSource).toContain('className="min-w-0 flex-1"');
 		expect(accountWorkspacesSource).toContain("<CreateTeamDialog");
 		expect(panelSource).toContain('aria-labelledby="workspace-danger-zone-title"');
@@ -133,30 +133,32 @@ describe("settings UI contracts", () => {
 		expect(membersSource).toContain("hiddenSampleMemberIds");
 		expect(membersSource).toContain("cycleSpendSort");
 		expect(membersSource).toContain('aria-sort={');
-		expect(membersSource).toContain("items={ROLE_OPTIONS}");
+		expect(membersSource).toContain("items={roleOptions}");
 	});
 
 	it("provides display-label collections for ID-backed settings selects", () => {
 		const expectedItemCollections: Record<string, string[]> = {
 			"src/components/(gateway)/settings/account/AccountSettingsClient.tsx": [
-				"items={teams.map",
+				"{teams.map((team) => (",
+				"key={team.id}",
+				"{team.name}",
 			],
 			"src/components/(gateway)/settings/routing/DynamicRoutesStudio.tsx": [
 				"items={options}",
 				"items={items}",
 			],
 			"src/components/(gateway)/settings/routing/RoutingSettingsClient.tsx": [
-				"items={ROUTING_OPTIONS}",
-				"items={RESPONSE_HEALING_OPTIONS}",
+				"items={routingOptions}",
+				"items={responseHealingOptions}",
 			],
 			"src/components/(gateway)/usage/UsageHeader/UsageHeader.tsx": [
-				"items={RANGE_ITEMS}",
+				"items={rangeItems}",
 			],
 			"src/components/(gateway)/usage/UsageTableFilters.tsx": [
 				"items={modelFilterItems}",
 				"items={providerFilterItems}",
 				"items={keyFilterItems}",
-				"items={STATUS_FILTER_ITEMS}",
+				"items={statusFilterItems}",
 			],
 		};
 
@@ -175,8 +177,8 @@ describe("settings UI contracts", () => {
 			"src/components/(gateway)/settings/guardrails/GuardrailEditorPageClient.tsx",
 		);
 
-		expect(editorSource).toContain('pickerTitle="Select providers"');
-		expect(editorSource).toContain('pickerTitle="Select models"');
+		expect(editorSource).toContain('pickerTitle={t("strings.Select Providers" as never)}');
+		expect(editorSource).toContain('pickerTitle={s("Models")}');
 		expect(editorSource).toContain("function SelectionCombobox");
 		expect(editorSource).not.toContain(
 			'disabled={form.providerRestrictionMode === "none"}',
@@ -192,8 +194,11 @@ describe("settings UI contracts", () => {
 		expect(editorSource).toContain("const [expandedSections, setExpandedSections] = useQueryState(");
 		expect(editorSource).toContain('"sections",');
 		expect(editorSource).toContain("value={validExpandedSections}");
-		expect(editorSource).toContain("onValueChange={(sections) => void setExpandedSections(sections)}");
+		expect(editorSource).toContain("onValueChange={(sections) => void setExpandedSections(sections.slice(-1))}");
 		expect(editorSource).toContain("groupActions");
+		expect(editorSource).toContain('"availabilityModelRestriction"');
+		expect(editorSource).toContain('"availabilityPassesCurrentRules"');
+		expect(editorSource).not.toContain("Blocked by the account provider rule.");
 	});
 });
 

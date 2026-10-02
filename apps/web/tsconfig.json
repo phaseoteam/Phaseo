@@ -14,6 +14,7 @@
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
+    "allowArbitraryExtensions": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": false,
     "jsx": "react-jsx",
@@ -28,6 +29,16 @@
       "node"
     ],
     "paths": {
+      "@/app/(auth)/*": [
+        "./src/app/[locale]/(auth)/*"
+      ],
+      "@/app/(dashboard)/*": [
+        "./src/app/[locale]/(dashboard)/*",
+        "./src/app/(dashboard)/*"
+      ],
+      "@/app/(legal)/*": [
+        "./src/app/[locale]/(legal)/*"
+      ],
       "@/*": [
         "./src/*",
         "../../packages/data/catalog/src/*"

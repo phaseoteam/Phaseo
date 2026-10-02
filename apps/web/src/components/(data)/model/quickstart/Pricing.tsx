@@ -9,6 +9,7 @@ import {
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { PricingRule } from "@/lib/fetchers/models/getModelPricing";
 import { fetchFrontendModelPricing } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getTranslations } from "next-intl/server";
 
 interface PricingProps {
 	metadata: ModelGatewayMetadata;
@@ -111,6 +112,7 @@ function formatPricingMeterLabel(meter: string): string {
 }
 
 export default async function Pricing({ metadata, includeHidden }: PricingProps) {
+	const t = await getTranslations("Catalogue.models.detail.quickstart");
 	const pricingData = await fetchFrontendModelPricing(metadata.modelId);
 
 	if (!pricingData || pricingData.length === 0) {
@@ -120,9 +122,9 @@ export default async function Pricing({ metadata, includeHidden }: PricingProps)
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Pricing</CardTitle>
+				<CardTitle>{t("pricingTitle")}</CardTitle>
 				<CardDescription>
-					Pricing details for this model across different providers and modalities.
+					{t("pricingDescription")}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-6">

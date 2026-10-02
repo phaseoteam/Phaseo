@@ -12,6 +12,7 @@ import { finalizeRequest, settleNonBillableFailure } from "../after";
 import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
+import { createToolTraceRetention } from "./server-tool-trace";
 import type { PipelineRunnerArgs } from "./types";
 import { createManagedToolLiveResponse, type ManagedToolLiveSink } from "./server-tools.live";
 import {
@@ -881,6 +882,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		}> = [];
 
 		if (preparedServerTools.config.enabled && exec.result.kind === "completed" && exec.result.ir) {
+			const retainToolOutput = createToolTraceRetention();
 			const serverToolExecutionTrace: NonNullable<typeof pre.ctx.serverToolTrace> = [];
 			const maxServerToolRounds = 8;
 			const maxServerToolCalls = Math.min(100, Math.max(1, irForExecution.maxToolCalls ?? 30));
@@ -1032,7 +1034,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						...(result.isError ? { isError: true } : {}),
 					};
 					serverToolTrace.push(tracedCall);
-					serverToolRound.calls.push(tracedCall);
+					serverToolRound.calls.push({ ...tracedCall, arguments: tracedCall.arguments?.slice(0, 4096), output: retainToolOutput(tracedCall.output) });
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
 				}
 				if (serverToolRound.calls.length > 0) {

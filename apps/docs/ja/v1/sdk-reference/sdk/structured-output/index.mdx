@@ -1,0 +1,31 @@
+---
+icon: "braces"
+title: "構造化出力（AI SDK）"
+description: "PhaseoとVercel AI SDKで、スキーマ検証済みのJSONオブジェクトを生成します。"
+---
+
+型付きの出力には`generateObject`を使います。
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateObject } from "ai";
+import { z } from "zod";
+
+const { object } = await generateObject({
+  model: phaseo("openai/gpt-5-nano"),
+  schema: z.object({
+    title: z.string(),
+    priority: z.enum(["low", "medium", "high"]),
+    actions: z.array(z.string()),
+  }),
+  prompt: "Create a short incident follow-up plan.",
+});
+
+console.log(object);
+```
+
+## 注意事項
+
+- スキーマでは、明示的な列挙型と必須フィールドを優先します。
+- プロンプトがスキーマの形状に合っていることを確認します。
+- 呼び出し元のコードで解析エラーと検証エラーを処理します。

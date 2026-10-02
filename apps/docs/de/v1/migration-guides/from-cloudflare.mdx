@@ -1,0 +1,95 @@
+---
+title: "Von Cloudflare AI Gateway migrieren"
+sidebarTitle: "Cloudflare AI Gateway"
+description: "Ersetze eine Cloudflare-AI-Gateway-Route durch Phaseo und behalte den Anfrageablauf deiner Anwendung bei."
+icon: "/icons/brands/cloudflare.svg"
+---
+
+Nutze diese Anleitung, wenn deine Anwendung bereits OpenAI-kompatible Anfragen über Cloudflare AI Gateway sendet. Ersetze zuerst die Gateway-Grenze und richte anschließend nur das Routing, Caching und die Observability neu ein, die dein Produktionsverkehr tatsächlich benötigt.
+
+## Was sich ändert
+
+| Einstellung | Vorher | Nachher |
+| --- | --- | --- |
+| Gateway-URL | Konto- und Gateway-spezifische Cloudflare-URL | `https://api.phaseo.app/v1` |
+| Authentifizierung | Cloudflare- und Anbieter-Zugangsdaten | `PHASEO_API_KEY` |
+| Routing-Richtlinie | Cloudflare-Gateway-Konfiguration | Phaseo-Routing-Einstellungen und Presets |
+| Einblick in Anfragen | Cloudflare-Analysen | Phaseo-Aktivität und Anfragedetails |
+
+<Steps>
+<Step title="Erfasse die aktuelle Gateway-Konfiguration">
+
+Notiere die Cloudflare-Gateway-URL, Anbieterrouten, benutzerdefinierten Header, Cache-Regeln, Wiederholungsverhalten und Analysen, von denen deine Anwendung abhängt. So kannst du erforderliches Verhalten von Einstellungen unterscheiden, die nicht übernommen werden müssen.
+
+</Step>
+
+<Step title="Ersetze Endpunkt und Zugangsdaten">
+
+Lass den Request-Inhalt nach Möglichkeit unverändert und aktualisiere die OpenAI-kompatible Client-Verbindung.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Richte Routing und gemeinsame Standardwerte neu ein">
+
+Verschiebe dauerhafte Anbietereinschränkungen, Standard-Prompts und Generierungsparameter in [Presets](../guides/presets.mdx). Konfiguriere Anbieterrangfolge und Fallbacks über [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx).
+
+Cloudflare-Einstellungen für Cache und Analysen werden nicht automatisch übertragen. Entscheide für jedes Verhalten ausdrücklich, ob es zu Phaseo, deiner Anwendung oder deiner Edge-Schicht gehört.
+
+</Step>
+
+<Step title="Prüfe alles vor der Umstellung">
+
+Teste je nach Bedarf Anfragen ohne Streaming, Streaming, Fehler, Tools und strukturierte Ausgaben. Vergleiche Latenz, Ausgabe, Tokenverbrauch und Kosten, bevor du den Datenverkehr schrittweise umleitest.
+
+</Step>
+</Steps>
+
+## Migrations-Checkliste
+
+- Cloudflare-spezifische Gateway-URLs und Header wurden entfernt.
+- Produktionsmodell-IDs wurden mit `GET /v1/models` überprüft.
+- Erforderliches Cache-Verhalten wurde bewusst neu eingerichtet oder beendet.
+- Aktivität und Anfragedetails liefern deinem Team die benötigte Übersicht.
+- Ein Rollback erfordert weiterhin nur eine Änderung von Endpunkt und Schlüssel.
+
+## Nächste Schritte
+
+- [Presets](../guides/presets.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Observability](../guides/integrations/observability.mdx)

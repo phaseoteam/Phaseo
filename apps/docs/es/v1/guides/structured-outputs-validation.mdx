@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "Validación de salidas estructuradas"
+description: "Validación en el servidor, reintentos y estrategias alternativas para salidas estructuradas."
+---
+
+Aunque la generación esté restringida por un esquema, valida siempre la salida en tu servidor.
+
+## Flujo recomendado
+
+1. Solicita una salida restringida por un esquema.
+2. Analiza el JSON.
+3. Valídalo con el esquema de tu servidor.
+4. Si no es válido, reintenta una vez con un prompt correctivo.
+5. Si sigue sin ser válida, aplica un fallo alternativo seguro.
+
+## Ejemplo de validación (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## Prompt correctivo para el reintento
+
+Cuando la validación falle, envía una instrucción correctiva breve:
+
+`Tu salida anterior no cumplía el esquema. Devuelve solo JSON válido, con los campos obligatorios y sin claves adicionales.`
+
+## Recomendaciones para producción
+
+- Mantén un esquema por caso de uso y aplícale versiones.
+- Registra las tasas de fallos de validación por ID de modelo.
+- Avisa si los fallos de esquema aumentan de repente después de cambios en el modelo.
+

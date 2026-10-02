@@ -1,0 +1,42 @@
+---
+icon: "square-terminal"
+title: "使用例"
+description: "調査、サポート、コーディング、並列ツールに対応したAgent SDKの実例を紹介します。"
+---
+
+構築中のプロダクトに合う最小限の例を選んでください。どのパターンでも、状態の保存とユーザーインターフェイスはアプリケーション側で管理し、モデルのターンにPhaseoを使います。
+
+## パッケージに含まれる例
+
+| 例 | 用途 |
+| --- | --- |
+| `research-brief-agent.ts` | 管理された検索を使って調査し、型付きの最終ブリーフを作成する |
+| `support-triage-agent.ts` | 管理されたプリセットでサポート案件を振り分け、分類する |
+| `coding-review-agent.ts` | ローカル実行ツールでコードをレビューする |
+| `parallel-tool-agent.ts` | 独立したローカルツールを並列実行する |
+
+## クックブックガイド
+
+<CardGroup cols={2}>
+  <Card title="永続エージェントループ" icon="database" href="../../cookbook/agent-sdk-durable-loop.mdx">
+    返された実行状態を保存し、後続のリクエストで再開します。
+  </Card>
+  <Card title="調査ブリーフ" icon="search-check" href="../../cookbook/agent-sdk-research-brief.mdx">
+    エージェントと根拠に基づくウェブ調査を組み合わせます。
+  </Card>
+  <Card title="サポート案件のトリアージ" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage.mdx">
+    ルーティングとプロンプトの既定値を管理プリセットに保持します。
+  </Card>
+  <Card title="コードレビュー" icon="code-2" href="../../cookbook/agent-sdk-coding-review.mdx">
+    必要なローカルツールをコーディングワークフローに接続します。
+  </Card>
+  <Card title="並列ツール" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools.mdx">
+    独立したツール呼び出しを並列に実行し、結果の順序は維持します。
+  </Card>
+</CardGroup>
+
+## 関連リファレンス
+
+- [最初のエージェントを作る](./agent-sdk.mdx)
+- [ツール](./agent-sdk-tools.mdx)
+- [状態と承認](./agent-sdk-state-and-approval.mdx)

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
@@ -26,7 +27,7 @@ import {
 } from "@/components/(rankings)/chart-colors";
 import { formatModelDisplayName } from "@/lib/models/displayName";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
-import { formatCompactAxisTick } from "@/lib/formatRoundedCount";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
 	data: TimeseriesData[];
@@ -47,16 +48,16 @@ type LeaderboardPeriod = "today" | "week" | "month" | "trending";
 type ModelFilter = "all" | "open" | "closed";
 type ChartScale = "linear" | "log";
 const TOP_MODELS = 10;
-const PERIOD_OPTIONS: Array<{ label: string; value: LeaderboardPeriod }> = [
-	{ label: "Past 24 hours", value: "today" },
-	{ label: "Past 7 days", value: "week" },
-	{ label: "Past 30 days", value: "month" },
-	{ label: "Trending", value: "trending" },
+const PERIOD_OPTIONS: Array<{ labelKey: string; value: LeaderboardPeriod }> = [
+	{ labelKey: "usagePeriodToday", value: "today" },
+	{ labelKey: "usagePeriodWeek", value: "week" },
+	{ labelKey: "usagePeriodMonth", value: "month" },
+	{ labelKey: "usagePeriodTrending", value: "trending" },
 ];
-const MODEL_FILTER_OPTIONS: Array<{ label: string; value: ModelFilter }> = [
-	{ label: "All Models", value: "all" },
-	{ label: "Open Models", value: "open" },
-	{ label: "Closed Models", value: "closed" },
+const MODEL_FILTER_OPTIONS: Array<{ labelKey: string; value: ModelFilter }> = [
+	{ labelKey: "usageFilterAll", value: "all" },
+	{ labelKey: "usageFilterOpen", value: "open" },
+	{ labelKey: "usageFilterClosed", value: "closed" },
 ];
 const CLOSED_LICENSE_VALUES = new Set([
 	"closed",
@@ -80,10 +81,11 @@ function timeseriesValue(
 		: Number(row.requests ?? 0);
 }
 
-function formatChange(value: number | null) {
-	if (value == null || !Number.isFinite(value)) return "New";
-	if (Math.abs(value) < 0.5) return "0%";
-	return `${value > 0 ? "↑" : "↓"} ${Math.abs(value).toFixed(0)}%`;
+function formatChange(value: number | null, locale: string, newLabel: string) {
+	if (value == null || !Number.isFinite(value)) return newLabel;
+	const percent = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 });
+	if (Math.abs(value) < 0.5) return percent.format(0);
+	return `${value > 0 ? "↑" : "↓"} ${percent.format(Math.abs(value) / 100)}`;
 }
 
 function changeClassName(value: number | null) {
@@ -191,20 +193,32 @@ export function UsageStackedBar({
 	logoIdMap = {},
 	organisationNameMap = {},
 	modelLicenseMap = {},
-	leaderboardTitle = "Model Leaderboard",
-	leaderboardDescription = "Compare the most popular models by weekly gateway usage.",
+	leaderboardTitle,
+	leaderboardDescription,
 	valueUnit,
 	showScaleToggle = false,
 }: UsageStackedBarProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const locale = useLocale();
+	const periodOptions = PERIOD_OPTIONS.map(({ labelKey, value }) => ({
+		label: t(labelKey as never),
+		value,
+	}));
+	const modelFilterOptions = MODEL_FILTER_OPTIONS.map(({ labelKey, value }) => ({
+		label: t(labelKey as never),
+		value,
+	}));
+	const displayedLeaderboardTitle = leaderboardTitle ?? t("usageDefaultLeaderboardTitle");
+	const displayedLeaderboardDescription = leaderboardDescription ?? t("usageDefaultLeaderboardDescription");
 	const format = useDisplayFormatters();
-	const formatBucketLabel = (value: string) => format.calendarDate(value, value);
-	const formatNumber = (value: number) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
-	const formatPaceGain = (value: number) => `+${format.number(
-		Number.isFinite(value) ? Math.max(0, value) : 0,
-		{ maximumFractionDigits: 2 },
-	)}`;
+	const formatBucketLabel = (value: string, _locale?: string) => format.calendarDate(value, value);
+	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value) ? format.number(value, { maximumFractionDigits: 1 }) : "--";
+	const compactTokenCounts = metric === "tokens" && (!valueUnit || valueUnit === "tokens" || valueUnit === t("usageTokensUnit"));
+	const formatTooltipNumber = (value: number) => compactTokenCounts ? formatRoundedCount(value, locale) : formatNumber(value);
+	const formatPaceGain = (value: number) => {
+		const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+		return `+${compactTokenCounts ? formatRoundedCount(safeValue, locale) : format.number(safeValue, { maximumFractionDigits: 2 })}`;
+	};
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
@@ -223,12 +237,10 @@ export function UsageStackedBar({
 		});
 	const [modelFilter, setModelFilter] = useState<ModelFilter>("all");
 	const [chartScale, setChartScale] = useState<ChartScale>("linear");
-	const emptyTitle =
-		metric === "users" ? "No unique-user data yet" : "No weekly usage data yet";
-	const emptyDescription =
-		metric === "users"
-			? "Unique-user rankings appear once the public actor rollup is refreshed."
-			: "Usage appears once enough requests are aggregated to meet privacy thresholds.";
+	const emptyTitle = metric === "users" ? t("usageNoUniqueUserData") : t("usageNoWeeklyData");
+	const emptyDescription = metric === "users"
+		? t("usageUniqueUserRefresh")
+		: t("usagePrivacyThreshold");
 
 	if (!data.length) {
 		return (
@@ -257,7 +269,7 @@ export function UsageStackedBar({
 		const entry =
 			bucketMap.get(bucketTs) ??
 			({
-				bucket: formatBucketLabel(row.bucket),
+				bucket: formatBucketLabel(row.bucket, locale),
 				bucketTs,
 			} as Record<string, number> & { bucket: string; bucketTs: number });
 
@@ -294,7 +306,7 @@ export function UsageStackedBar({
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
 			bucketMap.set(ts, {
-				bucket: formatBucketLabel(new Date(ts).toISOString()),
+				bucket: formatBucketLabel(new Date(ts).toISOString(), locale),
 				bucketTs: ts,
 			} as Record<string, number> & { bucket: string; bucketTs: number });
 		}
@@ -302,13 +314,9 @@ export function UsageStackedBar({
 
 	const modelOrder = hasOther ? [...topModels, "Other"] : topModels;
 	const currentWeekStartTs = endWeek.getTime();
-	const leaderboardUnit =
-		valueUnit ??
-		(metric === "tokens"
-			? "tokens"
-			: metric === "users"
-				? "users"
-				: "requests");
+	const leaderboardUnit = valueUnit ?? t(
+		(metric === "tokens" ? "usageTokensUnit" : metric === "users" ? "usageUsersUnit" : "usageRequestsUnit") as never,
+	);
 	const { currentStart, currentEnd, previousStart, previousEnd } = periodWindows(
 		leaderboardPeriod,
 		nowMs,
@@ -378,7 +386,7 @@ export function UsageStackedBar({
 	);
 	const canExpandList = rankedLeaderboardModels.length > TOP_MODELS;
 	const hasLeaderboardEntries = listEntries.length > 0;
-	const selectedPeriodLabel = optionLabel(PERIOD_OPTIONS, leaderboardPeriod);
+	const selectedPeriodLabel = optionLabel(periodOptions, leaderboardPeriod);
 	const listColumnSplit = Math.ceil(listEntries.length / 2);
 	const listColumns = [
 		listEntries.slice(0, listColumnSplit),
@@ -405,7 +413,7 @@ export function UsageStackedBar({
 	});
 	if (hasOther) {
 		seriesStyle.other = {
-			label: "Other",
+			label: t("usageOtherSeries"),
 			color: "hsl(0 0% 70% / 0.6)",
 			stroke: "hsl(0 0% 50%)",
 		};
@@ -451,7 +459,7 @@ export function UsageStackedBar({
 	}
 
 	const chartConfig = {
-		value: { label: "Usage", color: "hsl(var(--primary))" },
+		value: { label: t("usageValueLabel"), color: "hsl(var(--primary))" },
 		...Object.fromEntries(
 			Object.entries(seriesStyle).map(([k, v]) => [
 				k,
@@ -466,7 +474,7 @@ export function UsageStackedBar({
 				{showScaleToggle ? (
 					<div
 						role="group"
-						aria-label="Chart scale"
+							aria-label={t("usageChartScale")}
 						className="absolute right-2 top-0 z-10 inline-flex rounded-md border border-border/70 bg-background/90 p-0.5 backdrop-blur-sm"
 					>
 						{(["linear", "log"] as const).map((scale) => (
@@ -481,7 +489,7 @@ export function UsageStackedBar({
 										: "text-muted-foreground hover:text-foreground"
 								}`}
 							>
-								{scale === "linear" ? "Lin" : "Log"}
+								{scale === "linear" ? t("usageLinearScale") : t("usageLogScale")}
 							</button>
 						))}
 					</div>
@@ -524,7 +532,7 @@ export function UsageStackedBar({
 						axisLine={false}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatCompactAxisTick(Number(value))}
+						tickFormatter={(value) => formatCompactAxisTick(Number(value), locale)}
 						width={60}
 						tickLine={false}
 						axisLine={false}
@@ -610,7 +618,7 @@ export function UsageStackedBar({
 														{cfg?.label ?? String(item?.name ?? "")}
 													</span>
 													<span className="pl-3 font-medium tabular-nums">
-														{formatNumber(val)}
+														{formatTooltipNumber(val)}
 													</span>
 												</div>
 											);
@@ -619,17 +627,17 @@ export function UsageStackedBar({
 									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
 										<div className="flex items-center justify-between gap-4">
 											<span className="text-muted-foreground">
-												{isCurrentWeek ? "So far" : "Total"}
+													{isCurrentWeek ? t("usageSoFar") : t("usageTotal")}
 											</span>
 											<span className="whitespace-nowrap tabular-nums">
-												{formatNumber(weeklyTotal)}
+												{formatTooltipNumber(weeklyTotal)}
 											</span>
 										</div>
 										{isCurrentWeek ? (
 											<div className="flex items-center justify-between gap-4">
-												<span className="text-muted-foreground">Weekly pace</span>
+												<span className="text-muted-foreground">{t("usageWeeklyPace")}</span>
 												<span className="whitespace-nowrap tabular-nums">
-													{formatNumber(projectedTotal)} ({formatPaceGain(weeklyPaceGain)})
+													{formatTooltipNumber(projectedTotal)} ({formatPaceGain(weeklyPaceGain)})
 												</span>
 											</div>
 										) : null}
@@ -663,7 +671,7 @@ export function UsageStackedBar({
 					})}
 					<Bar
 						dataKey="projected_pace"
-						name="Projected pace"
+						name={t("usageProjectedPace")}
 						stackId="usage"
 						fill="url(#rankingsProjectedPacePattern)"
 						stroke="hsl(0 0% 55% / 0.7)"
@@ -677,9 +685,9 @@ export function UsageStackedBar({
 			<div className="space-y-8 pt-3">
 				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="min-w-0 max-w-xl space-y-1">
-						<h3 className="text-lg font-semibold lg:text-xl">{leaderboardTitle}</h3>
+						<h3 className="text-lg font-semibold lg:text-xl">{displayedLeaderboardTitle}</h3>
 						<p className="text-xs text-muted-foreground lg:text-sm">
-							{leaderboardDescription}
+							{displayedLeaderboardDescription}
 						</p>
 					</div>
 					<div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -690,12 +698,12 @@ export function UsageStackedBar({
 									size="sm"
 									className="h-8 min-w-36 shrink-0 justify-between whitespace-nowrap rounded-md px-3 text-xs font-normal text-muted-foreground lg:h-9 lg:min-w-40 lg:px-4 lg:text-sm" />}>
 
-									{optionLabel(MODEL_FILTER_OPTIONS, modelFilter)}
+									{optionLabel(modelFilterOptions, modelFilter)}
 									<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
 
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-max min-w-40 rounded-md">
-								{MODEL_FILTER_OPTIONS.map((option) => (
+								{modelFilterOptions.map((option) => (
 									<DropdownMenuItem
 										key={option.value}
 										onClick={() => {
@@ -721,12 +729,12 @@ export function UsageStackedBar({
 									size="sm"
 									className="h-8 min-w-32 shrink-0 justify-between whitespace-nowrap rounded-md px-3 text-xs font-normal text-muted-foreground lg:h-9 lg:min-w-36 lg:px-4 lg:text-sm" />}>
 
-									{optionLabel(PERIOD_OPTIONS, leaderboardPeriod)}
+									{optionLabel(periodOptions, leaderboardPeriod)}
 									<ChevronDown className="ml-2 h-4 w-4 opacity-60" />
 
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-max min-w-36 rounded-md">
-								{PERIOD_OPTIONS.map((option) => (
+								{periodOptions.map((option) => (
 									<DropdownMenuItem
 										key={option.value}
 										onClick={() =>
@@ -770,7 +778,7 @@ export function UsageStackedBar({
 									(organisationId
 										? organisationNameMap[model] ?? organisationNameMap[organisationId]
 										: null) ?? organisationId;
-								const changeLabel = formatChange(entry.changePct);
+								const changeLabel = formatChange(entry.changePct, locale, t("usageChangeNew"));
 								return (
 									<div
 										key={model}
@@ -782,7 +790,7 @@ export function UsageStackedBar({
 										{logoHref ? (
 											<Link
 												href={logoHref}
-												aria-label={`${modelName} organization`}
+											aria-label={t("usageOrganisationAriaLabel", { name: modelName })}
 												className="flex h-6 w-6 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800 lg:h-7 lg:w-7"
 											>
 												<span className="relative h-3 w-3 lg:h-4 lg:w-4">
@@ -816,12 +824,11 @@ export function UsageStackedBar({
 												</Link>
 												{organisationId ? (
 													<div className="text-xs text-muted-foreground lg:text-sm">
-														by{" "}
 														<Link
-															href={`/organisations/${encodeURIComponent(organisationId)}`}
+														href={`/organisations/${encodeURIComponent(organisationId)}`}
 															className="underline underline-offset-2 hover:text-foreground"
-														>
-															{organisationName}
+													>
+															{t("usageByOrganisation", { name: organisationName ?? organisationId ?? modelName })}
 														</Link>
 													</div>
 												) : null}
@@ -833,17 +840,14 @@ export function UsageStackedBar({
 												</div>
 												{organisationId ? (
 													<div className="text-xs text-muted-foreground lg:text-sm">
-														by {organisationName}
+														{t("usageByOrganisation", { name: organisationName ?? organisationId ?? modelName })}
 													</div>
 												) : null}
 											</div>
 										)}
 										<div className="text-right">
 											<div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground lg:text-sm">
-											{formatNumber(entry.current)}{" "}
-											{entry.current === 1 && leaderboardUnit.endsWith("s")
-												? leaderboardUnit.slice(0, -1)
-												: leaderboardUnit}
+													{formatTooltipNumber(entry.current)} {leaderboardUnit}
 											</div>
 											<div className={changeClassName(entry.changePct)}>
 												{changeLabel}
@@ -857,8 +861,8 @@ export function UsageStackedBar({
 					</div>
 				) : (
 					<EmptyLeaderboardPreview
-						title={`No data for ${selectedPeriodLabel.toLowerCase()}`}
-						description="Leaderboard entries appear once public gateway aggregates include usage in this rolling period."
+						title={t("usageNoDataForPeriod", { period: selectedPeriodLabel })}
+						description={t("usageLeaderboardEmpty")}
 					/>
 				)}
 				{canExpandList ? (
@@ -871,7 +875,7 @@ export function UsageStackedBar({
 							aria-expanded={listExpanded}
 							className="text-muted-foreground"
 						>
-							{listExpanded ? "Show less" : "Show more"}
+							{listExpanded ? t("usageShowLess") : t("usageShowMore")}
 						</Button>
 					</div>
 				) : null}

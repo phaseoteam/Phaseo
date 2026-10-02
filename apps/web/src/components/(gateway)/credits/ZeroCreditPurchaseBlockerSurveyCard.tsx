@@ -8,15 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { useTranslations } from "next-intl";
 
 const REASON_OPTIONS = [
-	{ key: "setup_unclear", label: "Setup is unclear" },
-	{ key: "pricing_unclear", label: "Pricing is unclear" },
-	{ key: "model_choice_unclear", label: "I don't know which model to pick" },
-	{ key: "payment_issue", label: "I hit a payment issue" },
-	{ key: "just_exploring", label: "I'm just exploring" },
-	{ key: "not_ready_yet", label: "I'm not ready yet" },
-	{ key: "other", label: "Other" },
+	{ key: "setup_unclear", labelKey: "surveySetup" },
+	{ key: "pricing_unclear", labelKey: "surveyPricing" },
+	{ key: "model_choice_unclear", labelKey: "surveyModel" },
+	{ key: "payment_issue", labelKey: "surveyPayment" },
+	{ key: "just_exploring", labelKey: "surveyExploring" },
+	{ key: "not_ready_yet", labelKey: "surveyNotReady" },
+	{ key: "other", labelKey: "other" },
 ] as const;
 
 const LOCAL_STORAGE_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
@@ -28,6 +29,7 @@ function getStorageKey(workspaceId: string | null | undefined): string {
 export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 	workspaceId?: string | null;
 }) {
+	const t = useTranslations("SettingsUI.credits");
 	const [reasonKey, setReasonKey] = React.useState<
 		(typeof REASON_OPTIONS)[number]["key"] | null
 	>(null);
@@ -87,7 +89,7 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 			}
 
 			setSubmitted(true);
-			toast.success("Thanks for the feedback");
+			toast.success(t("thanksFeedback"));
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -98,16 +100,15 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 			<Card>
 				<CardHeader className="pb-3">
 					<div className="flex items-center gap-2">
-						<Badge variant="secondary">Feedback received</Badge>
+						<Badge variant="secondary">{t("feedbackReceived")}</Badge>
 						<CardTitle className="text-base">
-							Thanks for telling us where the friction is.
+							{t("surveyThanks")}
 						</CardTitle>
 					</div>
 				</CardHeader>
 				<CardContent>
 					<p className="text-sm text-muted-foreground">
-						We'll use this to improve setup, pricing clarity, model guidance,
-						and checkout.
+						{t("surveyThanksBody")}
 					</p>
 				</CardContent>
 			</Card>
@@ -120,17 +121,15 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 		<Card>
 			<CardHeader className="pb-3">
 				<div className="flex flex-wrap items-center gap-2">
-					<Badge variant="secondary">15-second survey</Badge>
+					<Badge variant="secondary">{t("surveyBadge")}</Badge>
 					<CardTitle className="text-base">
-						What's stopping you from purchasing credits?
+						{t("surveyTitle")}
 					</CardTitle>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<p className="text-sm text-muted-foreground">
-					If something is blocking your first top-up, tell us which part is
-					frictional. This only shows for zero-balance workspaces that have not
-					completed a credit purchase yet.
+					{t("surveyDescription")}
 				</p>
 
 				<div className="flex flex-wrap gap-2">
@@ -149,32 +148,31 @@ export default function ZeroCreditPurchaseBlockerSurveyCard(props: {
 								)}
 								onClick={() => setReasonKey(option.key)}
 							>
-								{option.label}
+								{t(option.labelKey)}
 							</button>
 						);
 					})}
 				</div>
 
 				<div className="space-y-2">
-					<div className="text-sm font-medium">Optional detail</div>
+					<div className="text-sm font-medium">{t("optionalDetail")}</div>
 					<Textarea
 						value={details}
 						onChange={(event) => setDetails(event.target.value)}
-						placeholder="Anything specific that made you stop?"
+						placeholder={t("surveyPlaceholder")}
 						maxLength={2000}
 					/>
 				</div>
 
 				<div className="flex items-center justify-between gap-3">
 					<p className="text-xs text-muted-foreground">
-						Answers are tied to this workspace so we can fix the right part of
-						the flow.
+						{t("surveyPrivacy")}
 					</p>
 					<Button
 						onClick={handleSubmit}
 						disabled={!reasonKey || isSubmitting}
 					>
-						{isSubmitting ? "Sending..." : "Send feedback"}
+						{isSubmitting ? t("sending") : t("sendFeedback")}
 					</Button>
 				</div>
 			</CardContent>

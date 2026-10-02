@@ -1,0 +1,31 @@
+---
+icon: "music"
+title: "TTS (Text zu Sprache)"
+description: "Rufe `/audio/speech` mit dem Go-Wrapper auf."
+---
+
+Verwende die Wrapper-Methode:
+
+- `client.CreateSpeech(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello from Phaseo",
+  "voice": "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+

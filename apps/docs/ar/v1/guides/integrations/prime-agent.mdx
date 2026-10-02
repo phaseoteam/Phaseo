@@ -1,0 +1,43 @@
+---
+title: "Prime Agent"
+icon: "/icons/brands/prime-agent.svg"
+description: "اربط كتالوج نماذج Prime Agent المثبّت بـ Phaseo."
+---
+
+## الإعداد باستخدام CLI الخاصة بـ Phaseo
+
+تتطلب هذه الأوامر الجاهزة للإنتاج حساب Phaseo؛ وتنشئ CLI بيانات اعتماد مخصصة للبوابة أثناء تسجيل الدخول والإعداد.
+
+```bash
+phaseo login
+phaseo prime-agent
+```
+
+ثبّت Prime Agent أولًا من إصداره الرسمي. يكتب الإعداد مزوّد `phaseo` مُدارًا في `~/.prime/agent/models.json`. ويعرض جميع نماذج Phaseo النصية النشطة المتوافقة مع Chat Completions، ويحصل على مفتاح API المخصص من CLI الخاصة بـ Phaseo عند كل طلب.
+
+يدعم Prime Agent حاليًا macOS وLinux. على Windows، شغّل الإعداد داخل WSL بعد تثبيت الملف التنفيذي هناك.
+
+اختر إدخالًا أوليًا من الكتالوج أو هيّئ نموذجًا واحدًا فقط عند الحاجة:
+
+```bash
+phaseo prime-agent --model anthropic/claude-sonnet-4.6
+phaseo prime-agent --catalog default
+```
+
+## التشغيل والتحقق
+
+```bash
+prime-agent
+```
+
+افتح `/model`، واختر المزوّد `phaseo`، وأرسل طلبًا بسيطًا. يستخدم المزوّد المُنشأ تنسيق المفتاح المعتمد على الأوامر الذي يدعمه Prime Agent:
+
+```text
+!phaseo integrations credential prime-agent
+```
+
+لإزالة المزوّد المُدار من Phaseo وحده وإلغاء مفتاحه المخصص، شغّل:
+
+```bash
+phaseo integrations remove prime-agent
+```

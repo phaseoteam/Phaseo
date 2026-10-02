@@ -1,0 +1,117 @@
+---
+title: "Node RESTスモークアプリを作成する"
+icon: "server"
+description: "Nodeクイックスタートのサンプルを使って、HTTPを直接扱う統合とスモークテスト用スクリプトを説明します。"
+---
+
+最小構成のNode統合を作り、すべてのHTTPリクエストを確認したい場合にこのページを使います。
+
+**目標:** HTTPを直接使い、Phaseoの稼働状況、モデル検出、生成リクエスト1件を確認します。
+
+**成果:** デプロイや統合のスモークテストとして使える、依存関係の少ないスクリプトを用意します。
+
+<Prompt
+  description="HTTPを直接使ってPhaseo向けの**Node RESTスモークアプリ**を作成します。"
+  icon="terminal"
+  actions={["copy", "cursor"]}
+>
+{`HTTPを直接使ってPhaseo Gatewayと連携する小規模なNode.jsアプリを作成します。
+
+次の処理を行うスクリプト型アプリを作成します。
+- 環境変数からPHASEO_API_KEYを読み取る
+- healthとモデル検出のルートを呼び出す
+- テキスト生成リクエストを1回送信する
+- 必要に応じてembeddingsなど別のAPIも呼び出す
+
+要件:
+- SDKではなくfetchを直接使います。
+- コードの依存関係を少なく保ちます。
+- リクエスト本文を明示的にし、監査しやすくします。
+- ターミナルに成功とエラーを明確に出力します。
+簡易スモークモードと、より包括的なエンドツーエンドモードに対応します。
+
+成果物:
+- スクリプト
+- package.jsonのコマンド
+- 短いREADME
+- .env.exampleのエントリ
+
+確認項目:
+- 可能であればスモークモードを実行します
+- 可能であればリクエスト経路を一通り実行します
+- 検証した内容と残っている前提を報告します。`}
+</Prompt>
+
+## サンプルプロジェクト
+
+- GitHub: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
+- リポジトリ内のパス: `examples/gateway-node-quickstart`
+
+## このアプリの機能
+
+- を呼び出す `GET /v1/health`
+- を呼び出す `GET /v1/models`
+- 次のような生成ルートを試す `POST /v1/responses`
+- スモークテスト、スクリプト、バックエンド確認に使えるHTTP直接呼び出しの例を示す
+
+## このサンプルが適しているケース
+
+次のような場合はここから始めます。
+
+- API呼び出しを直接デバッグしたい
+- まだSDKの抽象化を使いたくない
+- Web UIではなく、スクリプト、worker、CLIを作成している
+
+## 前提条件
+
+- 組み込みの`fetch` support
+- Phaseo APIキー
+
+## サンプルを実行する
+
+```bash
+cd examples/gateway-node-quickstart
+cp .env.example .env.local
+```
+
+次を設定します。
+
+- `PHASEO_API_KEY`
+
+次のいずれかを実行します。
+
+```bash
+npm run smoke
+```
+
+または:
+
+```bash
+npm run start
+```
+
+## 動作を確認する
+
+- スモークモードでAPIに接続できることを確認できます。
+- モデル検出で少なくとも1つのモデルが返されます。
+- 完全実行で生成成功のレスポンスが1件出力されます。
+- 認証エラーや200以外のレスポンスを、分かりやすいターミナルエラーとして表示します。
+
+## コード内で確認すること
+
+- スクリプトによる読み込み方法 `.env.local`
+- Authorizationヘッダーの設定方法
+- 各リクエストを明示的に組み立てる方法
+- 200以外のレスポンスを無視せず表示する方法
+
+## 独自の用途に合わせる方法
+
+- サービスに必要なルートだけにスクリプトを絞る
+- 複数のスクリプトで使う共通リクエストコードをヘルパーに移す
+- HTTPを直接扱うコードが重複してきたらTypeScript SDKに移行する
+
+## 関連ガイド
+
+- [ミニアプリ用の開始プロンプト](./mini-app-starter-prompts.mdx)
+- [無料ルーターで始める](./free-router-first-deploy.mdx)
+- [サンプル](../guides/examples.mdx)

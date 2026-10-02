@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 import type { BenchmarkComparisonChart } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { ModelBenchmarksComparisonGrid } from "./ModelBenchmarksComparisonGrid";
 
@@ -9,11 +10,12 @@ interface ModelBenchmarksComparisonProps {
 export default function ModelBenchmarksComparison({
 	comparisons,
 }: ModelBenchmarksComparisonProps) {
+	const tUi = useTranslations("Common.ui");
+
 	if (!comparisons.length) {
 		return (
 			<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-				No comparison data yet. Once we have benchmark scores for this
-				model and its competitors, we will visualise them here.
+				{tUi("benchmarkComparison.noComparisonData")}
 			</Card>
 		);
 	}
@@ -21,10 +23,11 @@ export default function ModelBenchmarksComparison({
 	return (
 		<section className="mt-12 space-y-4">
 			<div>
-				<h3 className="text-lg font-medium">Benchmark comparisons</h3>
+				<h3 className="text-lg font-medium">
+					{tUi("benchmarkComparison.comparisonHeading")}
+				</h3>
 				<p className="text-sm text-muted-foreground">
-					Use the selector to switch benchmarks and see how this model
-					stacks up against its closest competitors.
+					{tUi("benchmarkComparison.description")}
 				</p>
 			</div>
 			<ModelBenchmarksComparisonGrid comparisons={comparisons} />

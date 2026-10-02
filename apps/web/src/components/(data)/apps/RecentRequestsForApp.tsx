@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchFrontendRecentAppRequests } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { Clock, Zap } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayDateTime, DisplayNumber } from "@/components/display/DisplayValue";
 
 type RangeKey = "1h" | "1d" | "1w" | "4w" | "1m" | "1y";
@@ -13,7 +14,11 @@ export default async function RecentRequestsForApp({
 	range?: RangeKey;
 }) {
 	void range;
-	const rows = await fetchFrontendRecentAppRequests(appId, 25);
+	const locale = await getLocale();
+	const [rows, t] = await Promise.all([
+		fetchFrontendRecentAppRequests(appId, 25),
+		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
+	]);
 
 	// Get recent successful requests
 	const recentRequests = rows
@@ -25,10 +30,10 @@ export default async function RecentRequestsForApp({
 		return (
 			<Card>
 				<CardHeader>
-					<CardTitle>Recent Requests</CardTitle>
+					<CardTitle>{t("recentRequests")}</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<p className="text-muted-foreground">No recent requests found for this time period.</p>
+					<p className="text-muted-foreground">{t("noRecentRequests")}</p>
 				</CardContent>
 			</Card>
 		);
@@ -37,9 +42,9 @@ export default async function RecentRequestsForApp({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Recent Requests</CardTitle>
+				<CardTitle>{t("recentRequests")}</CardTitle>
 				<p className="text-sm text-muted-foreground">
-					Latest API calls made by this app
+					{t("latestApiCalls")}
 				</p>
 			</CardHeader>
 			<CardContent>
@@ -61,7 +66,7 @@ export default async function RecentRequestsForApp({
 							<div className="text-right space-y-1">
 								<div className="flex items-center gap-1 text-sm">
 									<Zap className="h-3 w-3" />
-									<DisplayNumber value={Number(request.usage?.total_tokens ?? 0)} /> tokens
+									<DisplayNumber value={Number(request.usage?.total_tokens ?? 0)} /> {t("tokensUnit")}
 								</div>
 							</div>
 						</div>

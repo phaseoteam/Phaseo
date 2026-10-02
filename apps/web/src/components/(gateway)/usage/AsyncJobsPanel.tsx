@@ -1,6 +1,9 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { JOB_COLUMNS } from "./logColumns";
 import dynamic from "next/dynamic";
@@ -68,7 +71,7 @@ import {
 	formatWordyDateTime,
 } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
-import { formatRoomError } from "@/lib/chat/formatRoomError";
+import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import {
 	getModelDetailsHref,
 	getModelDisplayName,
@@ -93,6 +96,11 @@ function AsyncJobHeader({
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
 	const modelHref = getModelDetailsHref(job.model ?? null, modelMetadata, job.provider);
 	const modelLabel = getModelDisplayName(job.model ?? null, modelMetadata);
 	const modelLogoId = getModelLogoId(job.model ?? null, modelMetadata);
@@ -123,11 +131,11 @@ function AsyncJobHeader({
 								href={modelHref}
 								className="min-w-0 truncate underline decoration-transparent transition-colors duration-200 hover:text-primary hover:decoration-current"
 							>
-								{job.model ? modelLabel : "Async job"}
+				{job.model ? modelLabel : s("Async job")}
 							</Link>
 						) : (
 							<span className="min-w-0 truncate">
-								{job.model ? modelLabel : "Async job"}
+								{job.model ? modelLabel : s("Async job")}
 							</span>
 						)}
 			</ProviderInspectorSheetTitle>
@@ -136,11 +144,14 @@ function AsyncJobHeader({
 	);
 }
 
-function formatTimestamp(value: string | null | undefined): string {
+function formatLocalizedTimestamp(
+	value: string | null | undefined,
+	locale: string,
+): string {
 	if (!value) return "-";
 	const parsed = Date.parse(value);
 	if (!Number.isFinite(parsed)) return value;
-	return formatWordyDateTime(new Date(parsed), { includeTime: true });
+	return formatWordyDateTime(new Date(parsed), { includeTime: true, locale });
 }
 
 function stopRowClick(event: React.MouseEvent<HTMLElement>) {
@@ -212,35 +223,36 @@ function buildUsageLogsFilterHref(args: {
 	return next.size ? `${path}?${next.toString()}` : path;
 }
 
-function formatMoneyFromNanos(value: number | null | undefined): string {
+function formatMoneyFromNanos(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return formatMoneyFromUsd(value / 1e9);
+	return formatMoneyFromUsd(value / 1e9, locale);
 }
 
-function formatMoneyFromUsd(value: number | null | undefined): string {
+function formatMoneyFromUsd(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	return `$${value.toFixed(value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5)}`;
+	const digits = value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5;
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
-function formatMilliseconds(value: number | null | undefined): string {
+function formatMilliseconds(value: number | null | undefined, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
-	if (value < 1000) return `${Math.round(value)} ms`;
-	return `${(value / 1000).toFixed(2)} s`;
+	if (value < 1000) return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value);
+	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 1000);
 }
 
-function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow): string {
-	if (job.settled_cost_nanos != null) return formatMoneyFromNanos(job.settled_cost_nanos);
-	if (job.settled_cost_usd != null) return formatMoneyFromUsd(job.settled_cost_usd);
+function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow, locale: string): string {
+	if (job.settled_cost_nanos != null) return formatMoneyFromNanos(job.settled_cost_nanos, locale);
+	if (job.settled_cost_usd != null) return formatMoneyFromUsd(job.settled_cost_usd, locale);
 	return "-";
 }
 
-function formatRequestCountSummary(job: AsyncJobDetailRow): string {
+function formatRequestCountSummary(job: AsyncJobDetailRow, translate: (key: "usageGaps.requestCounts", values: Record<string, number>) => string): string {
 	const counts = job.request_counts;
 	if (!counts) return "-";
 	const total = counts.total ?? 0;
 	const completed = counts.completed ?? 0;
 	const failed = counts.failed ?? 0;
-	return `${completed}/${total} completed, ${failed} failed`;
+	return translate("usageGaps.requestCounts", { completed, total, failed });
 }
 
 function formatRequestPricingLine(line: AsyncJobRequestPricingLine): string {
@@ -379,18 +391,21 @@ function kindIcon(kind: string) {
 }
 
 function AttemptStatusBadge({ status }: { status: string | null | undefined }) {
+	const t = useTranslations("SettingsUI");
+	const labels: Record<string, string> = { completed: t("realtimeCopy.copyCompleted"), delivered: t("usageGaps.delivered"), scheduled_retry: t("usageGaps.scheduledRetry"), pending: t("usageGaps.copyPending"), in_progress: t("realtimeCopy.copyInProgress"), failed: t("realtimeCopy.copyFailed"), failed_permanently: t("usageGaps.failedPermanently"), cancelled: t("realtimeCopy.copyCancelled") };
 	return (
 		<Badge variant="outline" className={webhookStatusBadgeClass(status)}>
-			{status ?? "unknown"}
+			{status ? labels[status] ?? status : t("realtimeCopy.copyUnknown")}
 		</Badge>
 	);
 }
 
 function JobStatusBadge({ status }: { status: string | null | undefined }) {
+	const t = useTranslations("SettingsUI");
 	const presentation = jobStatusPresentation(status);
 	return (
 		<Badge variant="outline" className={presentation.className}>
-			{presentation.label}
+			{t(settingsStringKey(presentation.label) as never)}
 		</Badge>
 	);
 }
@@ -478,6 +493,14 @@ function AsyncJobDetailSheet({
 	onInspectRequest: ((requestId: string) => void) | null;
 	isInspectingRequest: boolean;
 }) {
+	const tAuditCopy = useTranslations();
+	const t = useTranslations("SettingsUI");
+	const roomErrorT = useTranslations("Product.chatRooms");
+	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
 	const requestFilterHref = job?.request_id
 		? buildUsageLogsFilterHref({
 				view: "logs",
@@ -496,9 +519,9 @@ function AsyncJobDetailSheet({
 			? appMetadata.get(job.app_id)?.title?.trim() || job.app_id
 			: null;
 	const formattedRequestError = job?.request_error_payload
-		? formatRoomError(JSON.stringify(job.request_error_payload))
+		? formatRoomError(JSON.stringify(job.request_error_payload), roomErrorTranslator)
 		: job?.request_error_message?.trim()
-			? formatRoomError(job.request_error_message)
+			? formatRoomError(job.request_error_message, roomErrorTranslator)
 			: null;
 	const failedRequestProviders = formattedRequestError?.failedProviders ?? [];
 	const failedRequestStatuses = formattedRequestError?.failedStatuses ?? [];
@@ -527,49 +550,49 @@ function AsyncJobDetailSheet({
 							<div className="grid grid-cols-2 gap-2 md:grid-cols-3">
 								<DetailMetricTile
 									icon={Clock3}
-									label="Request cost"
-									value={<span className="font-mono">{formatMoneyFromNanos(job.request_cost_nanos)}</span>}
+									label={s("Request cost")}
+									value={<span className="font-mono">{formatMoneyFromNanos(job.request_cost_nanos, locale)}</span>}
 									tone="amber"
 									compact
 								/>
 								<DetailMetricTile
 									icon={Layers3}
-									label="Settled cost"
-									value={<span className="font-mono">{formatSettledCost(job)}</span>}
+									label={s("Settled cost")}
+									value={<span className="font-mono">{formatSettledCost(job, locale)}</span>}
 									tone={job.charged ? "emerald" : "slate"}
 									compact
 								/>
 								<DetailMetricTile
 									icon={Send}
-									label="Delivered events"
+									label={s("Delivered events")}
 									value={job.webhook.delivered_events}
 									tone="emerald"
 									compact
 								/>
 								<DetailMetricTile
 									icon={AlertTriangle}
-									label="Pending retries"
+									label={s("Pending retries")}
 									value={job.webhook.pending_retries}
 									tone={job.webhook.pending_retries > 0 ? "rose" : "slate"}
 									compact
 								/>
 								<DetailMetricTile
 									icon={Clock3}
-									label="Next retry"
+									label={s("Next retry")}
 									value={job.webhook.next_retry_at ? formatTimestamp(job.webhook.next_retry_at) : "-"}
 									tone="slate"
 									compact
 								/>
 								<DetailMetricTile
 									icon={Layers3}
-									label={job.kind === "video" ? "Resolution" : "Endpoint"}
+										label={job.kind === "video" ? s("Resolution") : s("Endpoint")}
 									value={job.kind === "video" ? (job.resolution ?? "-") : (job.endpoint ?? "-")}
 									tone="violet"
 									compact
 								/>
 								<DetailMetricTile
 									icon={Video}
-									label={job.kind === "video" ? "Output duration" : "Completion window"}
+										label={job.kind === "video" ? s("Output duration") : s("Completion window")}
 									value={
 										job.kind === "video"
 											? job.duration_seconds != null
@@ -583,8 +606,8 @@ function AsyncJobDetailSheet({
 								{job.kind === "video" ? (
 									<DetailMetricTile
 										icon={Clock3}
-										label="Total duration"
-										value={formatMilliseconds(job.total_duration_ms)}
+										label={s("Total duration")}
+										value={formatMilliseconds(job.total_duration_ms, locale)}
 										tone="slate"
 										compact
 									/>
@@ -592,8 +615,8 @@ function AsyncJobDetailSheet({
 								{job.kind === "video" ? (
 									<DetailMetricTile
 										icon={Clock3}
-										label="Latency"
-										value={formatMilliseconds(job.latency_ms)}
+										label={s("Latency")}
+										value={formatMilliseconds(job.latency_ms, locale)}
 										tone="amber"
 										compact
 									/>
@@ -601,8 +624,8 @@ function AsyncJobDetailSheet({
 								{job.kind === "video" ? (
 									<DetailMetricTile
 										icon={Clock3}
-										label="Generation"
-										value={formatMilliseconds(job.generation_ms)}
+										label={s("Generation")}
+										value={formatMilliseconds(job.generation_ms, locale)}
 										tone="violet"
 										compact
 									/>
@@ -610,7 +633,7 @@ function AsyncJobDetailSheet({
 								{job.kind === "video" ? (
 									<DetailMetricTile
 										icon={Layers3}
-										label="Reservation"
+										label={s("Reservation")}
 										value={job.reservation_status ?? "-"}
 										tone={job.charged ? "emerald" : "slate"}
 										compact
@@ -619,7 +642,7 @@ function AsyncJobDetailSheet({
 								{job.key_source ? (
 									<DetailMetricTile
 										icon={Layers3}
-										label="Key source"
+										label={s("Key source")}
 										value={job.key_source ?? "-"}
 										tone={job.key_source === "byok" ? "amber" : "slate"}
 										compact
@@ -628,7 +651,7 @@ function AsyncJobDetailSheet({
 								{job.kind === "video" ? (
 									<DetailMetricTile
 										icon={Clock3}
-										label="Polled status"
+										label={s("Polled status")}
 										value={job.polled_status ?? "-"}
 										tone="slate"
 										compact
@@ -637,20 +660,20 @@ function AsyncJobDetailSheet({
 								{job.kind === "batch" ? (
 									<DetailMetricTile
 										icon={Send}
-										label="Request counts"
-										value={formatRequestCountSummary(job)}
+										label={s("Request counts")}
+										value={formatRequestCountSummary(job, t)}
 										tone="slate"
 										compact
 									/>
 								) : null}
 							</div>
 
-							<DetailSection title="Job details" className="border-none bg-transparent p-0">
+							<DetailSection title={s("Job details")} className="border-none bg-transparent p-0">
 								<DetailKeyValueGrid
 									columns={2}
 									items={[
 										{
-											label: "Job ID",
+													label: s("Job ID"),
 											value: (
 												<div className="flex items-center gap-2">
 													<code className="min-w-0 truncate font-mono text-xs">
@@ -661,13 +684,13 @@ function AsyncJobDetailSheet({
 														variant="ghost"
 														className="text-muted-foreground hover:text-foreground"
 														content={job.internal_id}
-														aria-label="Copy job id"
+															aria-label={s("Copy job id")}
 													/>
 												</div>
 											),
 										},
 										{
-											label: "Request ID",
+													label: s("Request ID"),
 											value: job.request_id ? (
 												<div className="flex items-center gap-2">
 													{requestFilterHref ? (
@@ -687,7 +710,7 @@ function AsyncJobDetailSheet({
 														variant="ghost"
 														className="text-muted-foreground hover:text-foreground"
 														content={job.request_id}
-														aria-label="Copy request id"
+															aria-label={s("Copy request id")}
 													/>
 													{onInspectRequest ? (
 														<Button
@@ -698,7 +721,7 @@ function AsyncJobDetailSheet({
 															onClick={() => onInspectRequest(job.request_id!)}
 															disabled={isInspectingRequest}
 														>
-															{isInspectingRequest ? "Loading..." : "Inspect"}
+																	{isInspectingRequest ? s("phraseLoading") : s("Inspect")}
 														</Button>
 													) : null}
 												</div>
@@ -707,16 +730,16 @@ function AsyncJobDetailSheet({
 											),
 										},
 										{
-											label: "Native ID",
+										label: s("Native ID"),
 											value: (
 												<CopyableCodeValue
 													value={job.native_id}
-													copyLabel="Copy native id"
+															copyLabel={s("Copy native id")}
 												/>
 											),
 										},
 										{
-											label: "Session ID",
+										label: s("Session ID"),
 											value: job.session_id ? (
 												<div className="flex items-center gap-2">
 													{sessionFilterHref ? (
@@ -736,7 +759,7 @@ function AsyncJobDetailSheet({
 														variant="ghost"
 														className="text-muted-foreground hover:text-foreground"
 														content={job.session_id}
-														aria-label="Copy session id"
+															aria-label={s("Copy session id")}
 													/>
 												</div>
 											) : (
@@ -744,11 +767,11 @@ function AsyncJobDetailSheet({
 											),
 										},
 									{
-										label: "Source",
-										value: job.client_source_name ?? job.client_source_id ?? "Direct HTTP",
+										label: s("Source"),
+											value: job.client_source_name ?? job.client_source_id ?? s("Direct HTTP"),
 									},
 									{
-										label: "App",
+										label: s("App"),
 											value: job.app_id ? (
 												<div className="flex items-center gap-2">
 													{appHref ? (
@@ -768,7 +791,7 @@ function AsyncJobDetailSheet({
 														variant="ghost"
 														className="text-muted-foreground hover:text-foreground"
 														content={job.app_id}
-														aria-label="Copy app id"
+															aria-label={s("Copy app id")}
 													/>
 												</div>
 											) : (
@@ -776,7 +799,7 @@ function AsyncJobDetailSheet({
 											),
 										},
 										{
-											label: "Provider",
+										label: s("Provider"),
 											value: job.provider ? (
 												<Link
 													href={`/api-providers/${encodeURIComponent(job.provider)}`}
@@ -795,7 +818,7 @@ function AsyncJobDetailSheet({
 											),
 										},
 										{
-											label: "Model ID",
+										label: s("Model ID"),
 											value: job.model ? (
 												<code className="font-mono text-xs">{job.model}</code>
 											) : (
@@ -803,11 +826,11 @@ function AsyncJobDetailSheet({
 											),
 										},
 										{
-											label: "Status",
+										label: s("Status"),
 											value: <JobStatusBadge status={job.status} />,
 										},
 										{
-											label: "Lifecycle state",
+										label: s("Lifecycle state"),
 											value: job.lifecycle_status ? (
 												<span className="capitalize">{job.lifecycle_status}</span>
 											) : (
@@ -815,7 +838,7 @@ function AsyncJobDetailSheet({
 											),
 										},
 										{
-											label: "Job type",
+										label: s("Job type"),
 											value: (
 												<span className="inline-flex items-center gap-2 capitalize">
 													{React.createElement(kindIcon(job.kind), {
@@ -839,147 +862,147 @@ function AsyncJobDetailSheet({
 													: job.completion_window ?? "-",
 										},
 										{
-											label: "Total duration",
+											label: s("Total duration"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.total_duration_ms)
+													? formatMilliseconds(job.total_duration_ms, locale)
 													: "-",
 										},
 										{
-											label: "Latency",
+											label: s("Latency"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.latency_ms)
+													? formatMilliseconds(job.latency_ms, locale)
 													: "-",
 										},
 										{
-											label: "Generation",
+											label: s("Generation"),
 											value:
 												job.kind === "video"
-													? formatMilliseconds(job.generation_ms)
+													? formatMilliseconds(job.generation_ms, locale)
 													: "-",
 										},
 										{
-											label: "Output access",
+											label: s("Output access"),
 											value:
 												job.kind === "video"
 													? job.output_access ?? "-"
 													: "-",
 										},
 										{
-											label: "Key source",
+											label: s("Key source"),
 											value:
 												job.kind === "video" || job.kind === "batch"
 													? job.key_source ?? "-"
 													: "-",
 										},
 										{
-											label: "BYOK key ID",
+											label: s("BYOK key ID"),
 											value:
 												job.kind === "video" || job.kind === "batch" ? (
 													<CopyableCodeValue
 														value={job.byok_key_id}
-														copyLabel="Copy BYOK key id"
+														copyLabel={s("Copy BYOK key id")}
 													/>
 												) : (
 													"-"
 												),
 										},
 										{
-											label: "Reservation ID",
+											label: s("Reservation ID"),
 											value:
 												job.kind === "video" ? (
 													<CopyableCodeValue
 														value={job.reservation_id}
-														copyLabel="Copy reservation id"
+														copyLabel={s("Copy reservation id")}
 													/>
 												) : (
 													"-"
 												),
 										},
 										{
-											label: "Reservation status",
+											label: s("Reservation status"),
 											value:
 												job.kind === "video"
 													? job.reservation_status ?? "-"
 													: "-",
 										},
 										{
-											label: "Finalized",
+											label: s("Finalized"),
 											value:
 												job.kind === "video" || job.kind === "batch"
 													? formatTimestamp(job.finalized_at)
 													: "-",
 										},
 										{
-											label: "Last polled",
+											label: s("Last polled"),
 											value:
 												job.kind === "video"
 													? formatTimestamp(job.last_polled_at)
 													: "-",
 										},
 										{
-											label: "Polled status",
+											label: s("Polled status"),
 											value:
 												job.kind === "video"
 													? job.polled_status ?? "-"
 													: "-",
 										},
 										{
-											label: "Last reconciled",
+											label: s("Last reconciled"),
 											value:
 												job.kind === "video"
 													? formatTimestamp(job.last_reconciled_at)
 													: "-",
 										},
-										{ label: "Created", value: formatTimestamp(job.created_at) },
-										{ label: "Updated", value: formatTimestamp(job.updated_at) },
+										{ label: s("Created"), value: formatTimestamp(job.created_at) },
+										{ label: s("Updated"), value: formatTimestamp(job.updated_at) },
 										{
-											label: "Billed",
+											label: s("Billed"),
 											value: job.billed_at ? formatTimestamp(job.billed_at) : "Not billed",
 										},
 										{
-											label: "Billing reason",
+											label: s("Billing reason"),
 											value: job.billing_reason ?? "-",
 										},
 										{
-											label: "Provider submission",
+											label: s("Provider submission"),
 											value: job.submission_state === "submitting" || job.submission_state === "unknown"
-												? "Awaiting confirmation"
+												? s("Awaiting confirmation")
 												: job.submission_state ?? "-",
 										},
 										{
-											label: "Charged",
+											label: s("Charged"),
 											value:
 												job.charged == null ? "-" : job.charged ? "Yes" : "No",
 										},
 										{
-											label: "Settled cost",
-											value: <span className="font-mono">{formatSettledCost(job)}</span>,
+											label: s("Settled cost"),
+											value: <span className="font-mono">{formatSettledCost(job, locale)}</span>,
 										},
 										{
-											label: "Request created",
+											label: s("Request created"),
 											value: formatTimestamp(job.request_created_at),
 										},
 										{
-											label: "Batch request counts",
-											value: job.kind === "batch" ? formatRequestCountSummary(job) : "-",
+											label: s("Batch request counts"),
+											value: job.kind === "batch" ? formatRequestCountSummary(job, t) : "-",
 										},
 									]}
 								/>
 							</DetailSection>
 
 							{job.kind === "batch" ? (
-								<DetailSection title="Batch settlement">
+							<DetailSection title={s("Batch settlement")}>
 									<DetailKeyValueGrid
 										columns={2}
 										items={[
 											{
-												label: "Settled cost",
-												value: <span className="font-mono">{formatSettledCost(job)}</span>,
+													label: s("Settled cost"),
+												value: <span className="font-mono">{formatSettledCost(job, locale)}</span>,
 											},
 											{
-												label: "Pricing total nanos",
+													label: s("Pricing total nanos"),
 												value: job.pricing_breakdown?.total_nanos != null ? (
 													<code className="font-mono text-xs">
 														{job.pricing_breakdown.total_nanos.toLocaleString()}
@@ -989,28 +1012,28 @@ function AsyncJobDetailSheet({
 												),
 											},
 											{
-												label: "Completed requests",
+													label: s("Completed requests"),
 												value:
 													job.request_counts?.completed ??
 													job.pricing_breakdown?.completed_requests ??
 													"-",
 											},
 											{
-												label: "Failed requests",
+													label: s("Failed requests"),
 												value:
 													job.request_counts?.failed ??
 													job.pricing_breakdown?.failed_requests ??
 													"-",
 											},
 											{
-												label: "Total requests",
+													label: s("Total requests"),
 												value:
 													job.request_counts?.total ??
 													job.pricing_breakdown?.total_requests ??
 													"-",
 											},
 											{
-												label: "Pricing total USD",
+													label: s("Pricing total USD"),
 												value: job.pricing_breakdown?.total_usd_str ? (
 													<code className="font-mono text-xs">
 														${job.pricing_breakdown.total_usd_str}
@@ -1020,7 +1043,7 @@ function AsyncJobDetailSheet({
 												),
 											},
 											{
-												label: "Pricing lines",
+													label: s("Pricing lines"),
 												value: job.batch_pricing_lines.length.toLocaleString(),
 											},
 										]}
@@ -1028,7 +1051,7 @@ function AsyncJobDetailSheet({
 
 									{job.batch_pricing_lines.length > 0 ? (
 										<div className="mt-4 space-y-2 rounded-xl border border-border/60 p-4">
-											<div className="text-sm font-medium">Batch pricing lines</div>
+											<div className="text-sm font-medium">{s("Batch pricing lines")}</div>
 											<div className="space-y-2">
 												{job.batch_pricing_lines.map((line, index) => (
 													<div
@@ -1058,34 +1081,34 @@ function AsyncJobDetailSheet({
 							job.request_generation_ms != null ||
 							job.request_pricing_lines.length > 0 ||
 							job.request_provider_attempts.length > 0 ? (
-								<DetailSection title="Create request execution">
+								<DetailSection title={s("Create request execution")}>
 									<DetailKeyValueGrid
 										columns={2}
 										items={[
 											{
-												label: "Native request ID",
+													label: s("Native request ID"),
 												value: (
 													<CopyableCodeValue
 														value={job.request_native_response_id}
-														copyLabel="Copy native request id"
+															copyLabel={s("Copy native request id")}
 													/>
 												),
 											},
 											{
-												label: "Request endpoint",
+													label: s("Request endpoint"),
 												value: job.request_endpoint ?? "-",
 											},
 											{
-												label: "Request model ID",
+													label: s("Request model ID"),
 												value: (
 													<CopyableCodeValue
 														value={job.request_model_id}
-														copyLabel="Copy request model id"
+															copyLabel={s("Copy request model id")}
 													/>
 												),
 											},
 											{
-												label: "Request success",
+													label: s("Request success"),
 												value:
 													job.request_success == null
 														? "-"
@@ -1094,34 +1117,34 @@ function AsyncJobDetailSheet({
 															: "false",
 											},
 											{
-												label: "Status code",
+													label: s("Status code"),
 												value:
 													job.request_status_code != null
 														? String(job.request_status_code)
 														: "-",
 											},
 											{
-												label: "Error code",
+													label: s("Error code"),
 												value: job.request_error_code ?? "-",
 											},
 											{
-												label: "Finish reason",
+													label: s("Finish reason"),
 												value: job.request_finish_reason ?? "-",
 											},
 											{
-												label: "Request latency",
-												value: formatMilliseconds(job.request_latency_ms),
+													label: s("Request latency"),
+												value: formatMilliseconds(job.request_latency_ms, locale),
 											},
 											{
-												label: "Request generation",
-												value: formatMilliseconds(job.request_generation_ms),
+													label: s("Request generation"),
+												value: formatMilliseconds(job.request_generation_ms, locale),
 											},
 											{
-												label: "Provider attempts",
+													label: s("Provider attempts"),
 												value: job.request_provider_attempts.length.toLocaleString(),
 											},
 											{
-												label: "Pricing lines",
+													label: s("Pricing lines"),
 												value: job.request_pricing_lines.length.toLocaleString(),
 											},
 										]}
@@ -1129,7 +1152,7 @@ function AsyncJobDetailSheet({
 
 									{job.request_pricing_lines.length > 0 ? (
 										<div className="mt-4 space-y-2 rounded-xl border border-border/60 p-4">
-											<div className="text-sm font-medium">Request pricing lines</div>
+											<div className="text-sm font-medium">{s("Request pricing lines")}</div>
 											<div className="space-y-2">
 												{job.request_pricing_lines.map((line, index) => (
 													<div
@@ -1150,14 +1173,14 @@ function AsyncJobDetailSheet({
 											<div className="text-sm font-medium">
 												{formattedRequestError?.title?.trim()
 													? formattedRequestError.title
-													: "Request error message"}
+													: tAuditCopy("Common.ui.auditCopy.requestErrorMessage")}
 											</div>
 											<div className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
 												{formattedRequestError?.message ?? job.request_error_message}
 											</div>
 											{formattedRequestError?.hint ? (
 												<div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-													<div className="mb-1 font-medium text-amber-900">Hint</div>
+									<div className="mb-1 font-medium text-amber-900">{s("Hint")}</div>
 													<div className="whitespace-pre-wrap break-words">
 														{formattedRequestError.hint}
 													</div>
@@ -1165,24 +1188,24 @@ function AsyncJobDetailSheet({
 											) : null}
 											{formattedRequestError?.generationId ? (
 												<div className="flex items-center gap-2 text-xs text-muted-foreground">
-													<span>Generation ID:</span>
+									<span>{s("Generation ID:")}</span>
 													<code className="font-mono">
 														{formattedRequestError.generationId}
 													</code>
 													<CopyButton
 														size="sm"
 														content={formattedRequestError.generationId}
-														aria-label="Copy generation id"
+														aria-label={s("Copy generation id")}
 													/>
 												</div>
 											) : null}
 											{formattedRequestError?.upstreamError ? (
 												<div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
-													<div className="mb-1 font-medium">Upstream error</div>
+									<div className="mb-1 font-medium">{s("Upstream error")}</div>
 													<div className="space-y-1 text-slate-800">
 														{formattedRequestError.upstreamError.code ? (
 															<div>
-																<span className="font-medium">Code:</span>{" "}
+											<span className="font-medium">{s("Code:")}</span>{" "}
 																<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 																	{formattedRequestError.upstreamError.code}
 																</code>
@@ -1190,19 +1213,19 @@ function AsyncJobDetailSheet({
 														) : null}
 														{formattedRequestError.upstreamError.message ? (
 															<div>
-																<span className="font-medium">Message:</span>{" "}
+											<span className="font-medium">{s("Message:")}</span>{" "}
 																{formattedRequestError.upstreamError.message}
 															</div>
 														) : null}
 														{formattedRequestError.upstreamError.description ? (
 															<div>
-																<span className="font-medium">Detail:</span>{" "}
+											<span className="font-medium">{s("Detail:")}</span>{" "}
 																{formattedRequestError.upstreamError.description}
 															</div>
 														) : null}
 														{formattedRequestError.upstreamError.param ? (
 															<div>
-																<span className="font-medium">Param:</span>{" "}
+											<span className="font-medium">{s("Param:")}</span>{" "}
 																<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 																	{formattedRequestError.upstreamError.param}
 																</code>
@@ -1216,11 +1239,11 @@ function AsyncJobDetailSheet({
 											failedRequestProviders.length > 0 ||
 											failedRequestStatuses.length > 0 ? (
 												<div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
-													<div className="mb-1 font-medium">Routing failure summary</div>
+									<div className="mb-1 font-medium">{s("Routing failure summary")}</div>
 													<div className="space-y-1 text-slate-800">
 														{formattedRequestError?.reason ? (
 															<div>
-																<span className="font-medium">Reason:</span>{" "}
+											<span className="font-medium">{s("Reason:")}</span>{" "}
 																<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 																	{formattedRequestError.reason}
 																</code>
@@ -1228,19 +1251,19 @@ function AsyncJobDetailSheet({
 														) : null}
 														{formattedRequestError?.attemptCount != null ? (
 															<div>
-																<span className="font-medium">Attempts:</span>{" "}
+											<span className="font-medium">{s("Attempts:")}</span>{" "}
 																{formattedRequestError.attemptCount}
 															</div>
 														) : null}
 														{failedRequestProviders.length > 0 ? (
 															<div>
-																<span className="font-medium">Failed providers:</span>{" "}
+											<span className="font-medium">{s("Failed providers:")}</span>{" "}
 																{failedRequestProviders.join(", ")}
 															</div>
 														) : null}
 														{failedRequestStatuses.length > 0 ? (
 															<div>
-																<span className="font-medium">Failed statuses:</span>{" "}
+											<span className="font-medium">{s("Failed statuses:")}</span>{" "}
 																{failedRequestStatuses.join(", ")}
 															</div>
 														) : null}
@@ -1260,12 +1283,12 @@ function AsyncJobDetailSheet({
 											<Table wrapInContainer={false} className="min-w-[720px]">
 												<TableHeader>
 													<TableRow>
-														<TableHead>Attempt</TableHead>
-														<TableHead>Provider</TableHead>
-														<TableHead>Status</TableHead>
-														<TableHead>Outcome</TableHead>
-														<TableHead>Duration</TableHead>
-														<TableHead>Upstream error</TableHead>
+													<TableHead>{s("Attempt")}</TableHead>
+													<TableHead>{s("Provider")}</TableHead>
+													<TableHead>{s("Status")}</TableHead>
+													<TableHead>{s("Outcome")}</TableHead>
+													<TableHead>{s("Duration")}</TableHead>
+													<TableHead>{s("Upstream error")}</TableHead>
 													</TableRow>
 												</TableHeader>
 												<TableBody>
@@ -1279,7 +1302,7 @@ function AsyncJobDetailSheet({
 																	: "-"}
 															</TableCell>
 															<TableCell>{attempt.outcome ?? "-"}</TableCell>
-															<TableCell>{formatMilliseconds(attempt.duration_ms)}</TableCell>
+															<TableCell>{formatMilliseconds(attempt.duration_ms, locale)}</TableCell>
 															<TableCell>
 																<div className="space-y-1">
 																	<div>{attempt.upstream_error_code ?? "-"}</div>
@@ -1306,24 +1329,24 @@ function AsyncJobDetailSheet({
 							) : null}
 
 							{hasJobFailureDiagnostics ? (
-								<DetailSection title="Job failure diagnostics">
+								<DetailSection title={s("Job failure diagnostics")}>
 									<DetailKeyValueGrid
 										columns={2}
 										items={[
 											{
-												label: "Failure category",
+													label: s("Failure category"),
 												value: job.job_provider_failure_diagnostics?.category ?? "-",
 											},
 											{
-												label: "Failure provider",
+													label: s("Failure provider"),
 												value: job.job_provider_failure_diagnostics?.provider ?? "-",
 											},
 											{
-												label: "Failure hint",
+													label: s("Failure hint"),
 												value: job.job_provider_failure_diagnostics?.hint ?? "-",
 											},
 											{
-												label: "Failure samples",
+													label: s("Failure samples"),
 												value: job.job_failure_sample.length.toLocaleString(),
 											},
 										]}
@@ -1331,11 +1354,11 @@ function AsyncJobDetailSheet({
 
 									{job.job_upstream_error ? (
 										<div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
-											<div className="mb-1 font-medium">Upstream error</div>
+									<div className="mb-1 font-medium">{s("Upstream error")}</div>
 											<div className="space-y-1 text-slate-800">
 												{job.job_upstream_error.code ? (
 													<div>
-														<span className="font-medium">Code:</span>{" "}
+												<span className="font-medium">{s("Code:")}</span>{" "}
 														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 															{job.job_upstream_error.code}
 														</code>
@@ -1343,7 +1366,7 @@ function AsyncJobDetailSheet({
 												) : null}
 												{job.job_upstream_error.type ? (
 													<div>
-														<span className="font-medium">Type:</span>{" "}
+												<span className="font-medium">{s("Type:")}</span>{" "}
 														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 															{job.job_upstream_error.type}
 														</code>
@@ -1351,25 +1374,25 @@ function AsyncJobDetailSheet({
 												) : null}
 												{job.job_upstream_error.status != null ? (
 													<div>
-														<span className="font-medium">Status:</span>{" "}
+												<span className="font-medium">{s("Status:")}</span>{" "}
 														{job.job_upstream_error.status}
 													</div>
 												) : null}
 												{job.job_upstream_error.message ? (
 													<div>
-														<span className="font-medium">Message:</span>{" "}
+												<span className="font-medium">{s("Message:")}</span>{" "}
 														{job.job_upstream_error.message}
 													</div>
 												) : null}
 												{job.job_upstream_error.description ? (
 													<div>
-														<span className="font-medium">Detail:</span>{" "}
+												<span className="font-medium">{s("Detail:")}</span>{" "}
 														{job.job_upstream_error.description}
 													</div>
 												) : null}
 												{job.job_upstream_error.param ? (
 													<div>
-														<span className="font-medium">Param:</span>{" "}
+												<span className="font-medium">{s("Param:")}</span>{" "}
 														<code className="rounded bg-slate-200 px-1.5 py-0.5 text-xs">
 															{job.job_upstream_error.param}
 														</code>
@@ -1381,7 +1404,7 @@ function AsyncJobDetailSheet({
 
 									{job.job_failure_sample.length > 0 ? (
 										<div className="mt-4 space-y-2 rounded-xl border border-border/60 p-4">
-											<div className="text-sm font-medium">Failure samples</div>
+									<div className="text-sm font-medium">{s("Failure samples")}</div>
 											<div className="space-y-2">
 												{job.job_failure_sample.map((sample, index) => (
 													<div
@@ -1389,17 +1412,19 @@ function AsyncJobDetailSheet({
 														className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
 													>
 														<div className="font-medium">
-															{sample.provider ?? "Unknown provider"}
+										{sample.provider ?? s("Unknown provider")}
 															{sample.type ? ` · ${sample.type}` : ""}
 															{sample.status != null ? ` · ${sample.status}` : ""}
 														</div>
 														<div className="mt-1 space-y-1 text-muted-foreground">
 															{sample.retryable != null ? (
-																<div>Retryable: {sample.retryable ? "true" : "false"}</div>
+										<div>
+											{t("credits.Retryable")}: {sample.retryable ? "true" : "false"}
+										</div>
 															) : null}
 															{sample.upstream_error_code ? (
 																<div>
-																	Code:{" "}
+											{s("Code:")}{" "}
 																	<code className="font-mono text-xs">
 																		{sample.upstream_error_code}
 																	</code>
@@ -1414,7 +1439,7 @@ function AsyncJobDetailSheet({
 															) : null}
 															{sample.upstream_error_param ? (
 																<div>
-																	Param:{" "}
+											{s("Param:")}{" "}
 																	<code className="font-mono text-xs">
 																		{sample.upstream_error_param}
 																	</code>
@@ -1433,7 +1458,7 @@ function AsyncJobDetailSheet({
 										<div className="mt-4 grid gap-4 xl:grid-cols-3">
 											{job.job_routing_diagnostics ? (
 												<div className="rounded-xl border border-border/60 p-4">
-													<div className="mb-2 text-sm font-medium">Routing diagnostics</div>
+											<div className="mb-2 text-sm font-medium">{s("Routing diagnostics")}</div>
 													<code className="whitespace-pre-wrap break-words font-mono text-xs">
 														{formatStructuredDiagnostic(job.job_routing_diagnostics)}
 													</code>
@@ -1441,7 +1466,7 @@ function AsyncJobDetailSheet({
 											) : null}
 											{job.job_provider_enablement ? (
 												<div className="rounded-xl border border-border/60 p-4">
-													<div className="mb-2 text-sm font-medium">Provider enablement</div>
+											<div className="mb-2 text-sm font-medium">{s("Provider enablement")}</div>
 													<code className="whitespace-pre-wrap break-words font-mono text-xs">
 														{formatStructuredDiagnostic(job.job_provider_enablement)}
 													</code>
@@ -1449,7 +1474,7 @@ function AsyncJobDetailSheet({
 											) : null}
 											{job.job_provider_candidate_diagnostics ? (
 												<div className="rounded-xl border border-border/60 p-4">
-													<div className="mb-2 text-sm font-medium">Candidate diagnostics</div>
+											<div className="mb-2 text-sm font-medium">{s("Candidate diagnostics")}</div>
 													<code className="whitespace-pre-wrap break-words font-mono text-xs">
 														{formatStructuredDiagnostic(job.job_provider_candidate_diagnostics)}
 													</code>
@@ -1461,48 +1486,48 @@ function AsyncJobDetailSheet({
 							) : null}
 
 							{job.kind === "batch" || job.content_url ? (
-								<DetailSection title="Artifacts and actions">
+								<DetailSection title={s("Artifacts and actions")}>
 									<DetailKeyValueGrid
 										columns={2}
 										items={[
 											{
-												label: "Output file ID",
+													label: s("Output file ID"),
 												value: (
 													<CopyableCodeValue
 														value={job.output_file_id}
-														copyLabel="Copy output file id"
+															copyLabel={s("Copy output file id")}
 													/>
 												),
 											},
 											{
-												label: "Output content endpoint",
+													label: s("Output content endpoint"),
 												value: (
 													<CopyableCodeValue
 														value={buildFileContentPath(job.output_file_id)}
-														copyLabel="Copy output file content endpoint"
+															copyLabel={s("Copy output file content endpoint")}
 													/>
 												),
 											},
 											{
-												label: "Error file ID",
+													label: s("Error file ID"),
 												value: (
 													<CopyableCodeValue
 														value={job.error_file_id}
-														copyLabel="Copy error file id"
+															copyLabel={s("Copy error file id")}
 													/>
 												),
 											},
 											{
-												label: "Error content endpoint",
+													label: s("Error content endpoint"),
 												value: (
 													<CopyableCodeValue
 														value={buildFileContentPath(job.error_file_id)}
-														copyLabel="Copy error file content endpoint"
+															copyLabel={s("Copy error file content endpoint")}
 													/>
 												),
 											},
 											{
-												label: "Content URL",
+													label: s("Content URL"),
 												value: job.content_url ? (
 													<div className="flex flex-wrap items-center gap-2">
 														<Link
@@ -1518,7 +1543,7 @@ function AsyncJobDetailSheet({
 															variant="ghost"
 															className="text-muted-foreground hover:text-foreground"
 															content={job.content_url}
-															aria-label="Copy content url"
+															aria-label={s("Copy content url")}
 														/>
 													</div>
 												) : (
@@ -1526,11 +1551,11 @@ function AsyncJobDetailSheet({
 												),
 											},
 											{
-												label: "Cancel endpoint",
+													label: s("Cancel endpoint"),
 												value: (
 													<CopyableCodeValue
 														value={job.cancel_url}
-														copyLabel="Copy cancel endpoint"
+															copyLabel={s("Copy cancel endpoint")}
 													/>
 												),
 											},
@@ -1540,37 +1565,37 @@ function AsyncJobDetailSheet({
 							) : null}
 
 							<div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-								<DetailSection title="Webhook configuration">
+								<DetailSection title={s("Webhook configuration")}>
 									<DetailKeyValueGrid
 										columns={1}
 										items={[
 											{
-												label: "Webhook destination",
-												value: job.webhook.url ?? (job.webhook.configured ? "Workspace endpoint" : "No webhook configured"),
+												label: s("Webhook destination"),
+												value: job.webhook.url ?? (job.webhook.configured ? s("Workspace endpoint") : s("No webhook configured")),
 											},
 											{
-												label: "Subscribed events",
+													label: s("Subscribed events"),
 												value:
 													job.webhook.events.length > 0
 														? job.webhook.events.join(", ")
 														: "-",
 											},
 											{
-												label: "Signing",
+													label: s("Signing"),
 												value: job.webhook.configured
-													? !job.webhook.url ? "Managed by endpoint" : job.webhook.has_secret
-														? "Enabled"
-														: "Disabled"
+													? !job.webhook.url ? s("Managed by endpoint") : job.webhook.has_secret
+														? s("Enabled")
+														: s("Disabled")
 													: "-",
 											},
 											{
-												label: "Last attempt",
+													label: s("Last attempt"),
 												value: job.webhook.last_attempt_at
 													? formatTimestamp(job.webhook.last_attempt_at)
 													: "-",
 											},
 											{
-												label: "Last attempt status",
+													label: s("Last attempt status"),
 												value: job.webhook.last_attempt_status ? (
 													<AttemptStatusBadge status={job.webhook.last_attempt_status} />
 												) : (
@@ -1578,60 +1603,60 @@ function AsyncJobDetailSheet({
 												),
 											},
 											{
-												label: "Last response status",
+													label: s("Last response status"),
 												value: job.webhook.last_response_status ?? "-",
 											},
 											{
-												label: "Last delivered",
+													label: s("Last delivered"),
 												value: formatTimestamp(job.webhook.last_delivered_at),
 											},
 											{
-												label: "Last failure",
+													label: s("Last failure"),
 												value: formatTimestamp(job.webhook.last_failure_at),
 											},
 											{
-												label: "Last dispatched",
+													label: s("Last dispatched"),
 												value: formatTimestamp(job.last_webhook_dispatched_at),
 											},
 											{
-												label: "Last progress",
+													label: s("Last progress"),
 												value:
 													job.last_webhook_progress != null
 														? `${job.last_webhook_progress}%`
 														: "-",
 											},
 											{
-												label: "Last progress update",
+													label: s("Last progress update"),
 												value: formatTimestamp(job.last_webhook_progress_at),
 											},
 										]}
 									/>
 								</DetailSection>
-								<DetailSection title="Webhook summary">
+								<DetailSection title={s("Webhook summary")}>
 									<DetailKeyValueGrid
 										columns={1}
 										items={[
 											{
-												label: "Delivered events",
+													label: s("Delivered events"),
 												value: job.webhook.delivered_events.toLocaleString(),
 											},
 											{
-												label: "Delivered event types",
+													label: s("Delivered event types"),
 												value:
 													job.webhook.delivered_event_types.length > 0
 														? job.webhook.delivered_event_types.join(", ")
 														: "-",
 											},
 											{
-												label: "Pending retries",
+													label: s("Pending retries"),
 												value: job.webhook.pending_retries.toLocaleString(),
 											},
 											{
-												label: "Attempts recorded",
+													label: s("Attempts recorded"),
 												value: job.webhook_attempts.length.toLocaleString(),
 											},
 											{
-												label: "Next retry",
+													label: s("Next retry"),
 												value: formatTimestamp(
 													job.next_webhook_retry_at ?? job.webhook.next_retry_at,
 												),
@@ -1641,10 +1666,10 @@ function AsyncJobDetailSheet({
 								</DetailSection>
 							</div>
 
-							<DetailSection title="Webhook attempts">
+							<DetailSection title={s("Webhook attempts")}>
 								{job.webhook_attempts.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-										No webhook attempts recorded yet.
+										{t("strings.phraseNoWebhookAttemptsRecordedYet")}
 									</div>
 								) : (
 									<ScrollArea
@@ -1656,13 +1681,13 @@ function AsyncJobDetailSheet({
 										<Table wrapInContainer={false} className="min-w-[840px]">
 											<TableHeader>
 												<TableRow>
-													<TableHead>Event</TableHead>
-													<TableHead>Status</TableHead>
-													<TableHead>Attempt</TableHead>
-													<TableHead>Tried</TableHead>
-													<TableHead>Response</TableHead>
-													<TableHead>Next retry</TableHead>
-													<TableHead>Error</TableHead>
+													<TableHead>{s("Event")}</TableHead>
+													<TableHead>{s("Status")}</TableHead>
+													<TableHead>{s("Attempt")}</TableHead>
+													<TableHead>{s("Tried")}</TableHead>
+													<TableHead>{s("Response")}</TableHead>
+													<TableHead>{s("Next retry")}</TableHead>
+													<TableHead>{s("Error")}</TableHead>
 												</TableRow>
 											</TableHeader>
 											<TableBody>
@@ -1695,9 +1720,9 @@ function AsyncJobDetailSheet({
 export default function AsyncJobsPanel({
 	settingsTargetId,
 	initialJobs,
-	title = "Async job webhooks",
-	description = "Recent video and batch jobs with webhook delivery history, pending retries, and failures.",
-	emptyMessage = "No async jobs with webhook activity yet.",
+	title,
+	description,
+	emptyMessage,
 	refreshLimit = 20,
 	includeWithoutWebhook = false,
 	variant = "card",
@@ -1727,6 +1752,15 @@ export default function AsyncJobsPanel({
 	statusFilter?: string | null;
 	providerFilter?: string | null;
 }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
+	const locale = useLocale();
+	const formatTimestamp = (value: string | null | undefined) =>
+		formatLocalizedTimestamp(value, locale);
+	const tTime = useTranslations("Common.ui.time");
+	const resolvedTitle = title ?? s("Async job webhooks");
+	const resolvedDescription = description ?? s("phraseRecentVideoAndBatchJobsWithWebhookDeliveryHistoryPendingRetriesAndFailures");
+	const resolvedEmptyMessage = emptyMessage ?? s("phraseNoAsyncJobsWithWebhookActivityYet");
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -1925,26 +1959,14 @@ export default function AsyncJobsPanel({
 		variant === "logs" ? (
 			<ConfigurableLogTable
 				key={kindFilter ?? "jobs"}
-				tableId={
-					kindFilter === "video"
-						? "videos"
-						: kindFilter === "batch"
-							? "batches"
-							: "jobs"
-				}
-				label={
-					kindFilter === "video"
-						? "videos"
-						: kindFilter === "batch"
-							? "batches"
-							: "jobs"
-				}
+				tableId={kindFilter === "video" ? "videos" : kindFilter === "batch" ? "batches" : "jobs"}
+				label={kindFilter === "video" ? s("Videos") : kindFilter === "batch" ? s("Batches") : s("Jobs")}
 				definitions={JOB_COLUMNS}
 				rows={jobs}
 				rowKey={(job) => `${job.kind}:${job.internal_id}`}
 				settingsTargetId={settingsTargetId}
 				onRowClick={openDetail}
-				emptyMessage={emptyMessage}
+				emptyMessage={resolvedEmptyMessage}
 				renderCell={(job, column) => {
 					const timestamp = job.request_created_at ?? job.created_at;
 					const failureSummary = formatAsyncJobFailureSummary(job);
@@ -1995,18 +2017,16 @@ export default function AsyncJobsPanel({
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Relative
-																</div>
+																	{t("usageGaps.copyRelative")}</div>
 																<div className="font-mono">
 																	{relativeNowMs
-																		? formatRelativeToNow(date, relativeNowMs)
+																		? formatRelativeToNow(date, relativeNowMs, locale)
 																		: "-"}
 																</div>
 															</div>
 															<div className="grid grid-cols-[120px_1fr] gap-2">
 																<div className="text-muted-foreground">
-																	Timestamp
-																</div>
+																	{t("usageGaps.copyTimestamp")}</div>
 																<div className="font-mono">{unixSeconds}</div>
 															</div>
 														</div>
@@ -2092,8 +2112,8 @@ export default function AsyncJobsPanel({
 								<>
 									{job.settled_cost_nanos != null ||
 									job.settled_cost_usd != null
-										? formatSettledCost(job)
-										: formatMoneyFromNanos(job.request_cost_nanos)}
+										? formatSettledCost(job, locale)
+										: formatMoneyFromNanos(job.request_cost_nanos, locale)}
 								</>
 							);
 					}
@@ -2101,7 +2121,7 @@ export default function AsyncJobsPanel({
 			/>
 		) : jobs.length === 0 ? (
 			<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-				{emptyMessage}
+				{resolvedEmptyMessage}
 			</div>
 		) : (
 			<div className="overflow-hidden rounded-lg border">
@@ -2113,11 +2133,11 @@ export default function AsyncJobsPanel({
 					<Table wrapInContainer={false} className="min-w-[860px]">
 						<TableHeader>
 							<TableRow>
-								<TableHead>Job</TableHead>
-								<TableHead>Status</TableHead>
-								<TableHead>Webhook</TableHead>
-								<TableHead>Last attempt</TableHead>
-								<TableHead>Next retry</TableHead>
+								<TableHead>{s("Job")}</TableHead>
+								<TableHead>{s("Status")}</TableHead>
+								<TableHead>{s("Webhook")}</TableHead>
+								<TableHead>{s("Last attempt")}</TableHead>
+								<TableHead>{s("Next retry")}</TableHead>
 							</TableRow>
 						</TableHeader>
 						<TableBody>
@@ -2149,7 +2169,7 @@ export default function AsyncJobsPanel({
 													</span>
 												</div>
 												<div className="text-xs text-muted-foreground">
-													{job.provider ?? "Unknown provider"}
+													{job.provider ?? s("Unknown provider")}
 													{job.model ? ` · ${job.model}` : ""}
 												</div>
 												{failureSummary ? (
@@ -2176,13 +2196,13 @@ export default function AsyncJobsPanel({
 										</TableCell>
 										<TableCell>
 											<div className="space-y-1 text-xs">
-												<div>{job.webhook.delivered_events} delivered</div>
+												<div>{t("usageGaps.deliveredCount", { count: job.webhook.delivered_events })}</div>
 												<div className="text-muted-foreground">
 													{job.webhook.pending_retries > 0
-														? `${job.webhook.pending_retries} pending retry`
+														? t("usageGaps.pendingRetries", { count: job.webhook.pending_retries })
 														: job.webhook.configured
-															? "No pending retries"
-															: "No webhook configured"}
+															? t("usageGaps.noPendingRetries")
+															: t("usageGaps.noWebhook")}
 												</div>
 											</div>
 										</TableCell>
@@ -2227,13 +2247,13 @@ export default function AsyncJobsPanel({
 				<Card>
 					<CardHeader className="flex flex-row items-start justify-between gap-4">
 						<div className="space-y-1">
-							<CardTitle>{title}</CardTitle>
-							<CardDescription>{description}</CardDescription>
+							<CardTitle>{resolvedTitle}</CardTitle>
+							<CardDescription>{resolvedDescription}</CardDescription>
 						</div>
 						{showRefreshButton ? (
 							<Button type="button" variant="outline" size="sm" onClick={refresh} disabled={isRefreshing}>
 								<RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-								Refresh
+								{s("Refresh")}
 							</Button>
 						) : null}
 					</CardHeader>
@@ -2249,7 +2269,7 @@ export default function AsyncJobsPanel({
 								size="icon"
 								onClick={refresh}
 								disabled={isRefreshing}
-								aria-label="Refresh jobs"
+								aria-label={t("strings.Refresh jobs" as never)}
 							>
 								<RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
 							</Button>
@@ -2301,8 +2321,8 @@ export default function AsyncJobsPanel({
 			{isLoadingDetail || isLoadingRequestDetail ? (
 				<div className="sr-only">
 					{isLoadingDetail
-						? "Loading async job details..."
-						: "Loading request details..."}
+						? t("strings.phraseLoadingAsyncJobDetails" as never)
+						: t("strings.Loading request details" as never)}
 				</div>
 			) : null}
 		</>

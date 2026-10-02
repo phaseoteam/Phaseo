@@ -8,22 +8,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type {
 	MigrationPost,
 } from "@/lib/content/migrations";
+import type { PublicLocale } from "@/i18n/routing";
+import { getTranslations } from "next-intl/server";
 
-export function MigrationPostView({ post }: { post: MigrationPost }) {
+export async function MigrationPostView({
+	post,
+	locale,
+}: {
+	post: MigrationPost;
+	locale: PublicLocale;
+}) {
+	const t = await getTranslations({ locale, namespace: "Content.migrate.ui" });
+	const updatedDate = new Intl.DateTimeFormat(locale, {
+		dateStyle: "medium",
+		timeZone: "UTC",
+	}).format(new Date(post.updatedAt));
+	const openRouterMigration = post.slug === "openrouter";
+	const ctaTitle = openRouterMigration
+		? t("openrouterCtaTitle")
+		: t("customMigrationCtaTitle");
+	const ctaBody = openRouterMigration
+		? t("openrouterCtaBody")
+		: t("customMigrationCtaBody");
+	const ctaLabel = openRouterMigration
+		? t("getFreeMigrationHelp")
+		: t("openMigrationAssistant");
+
 	return (
 		<article className="container mx-auto max-w-5xl space-y-10 px-4 py-8 sm:px-6 lg:px-8">
-			<nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-muted-foreground">
+			<nav aria-label={t("breadcrumb")} className="flex items-center gap-2 text-sm text-muted-foreground">
 				<Link href="/migrate" className="inline-flex items-center gap-1 hover:text-foreground">
 					<ArrowLeft className="h-4 w-4" />
-					Back to all migration guides
+					{t("backToAllGuides")}
 				</Link>
 			</nav>
 
 			<header className="space-y-4">
 				<div className="flex flex-wrap items-center gap-2">
 					<Badge className="rounded-md" variant="secondary">{post.sourceLabel}</Badge>
-					<Badge className="rounded-md" variant="outline">{post.readTimeMinutes} min read</Badge>
-					<Badge className="rounded-md" variant="outline">Updated {post.updatedAt}</Badge>
+					<Badge className="rounded-md" variant="outline">{t("readTime", { minutes: post.readTimeMinutes })}</Badge>
+					<Badge className="rounded-md" variant="outline">{t("updatedAt", { date: updatedDate })}</Badge>
 				</div>
 				<h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
 					{post.title}
@@ -33,11 +57,11 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 				</p>
 				<div className="flex flex-wrap gap-3 pt-2">
 					<Button asChild className="rounded-md">
-						<Link href="/sign-up">Try Phaseo <ArrowRight className="size-4" /></Link>
+						<Link href="/sign-up">{t("tryPhaseo")} <ArrowRight className="size-4" /></Link>
 					</Button>
 					{post.slug === "openrouter" ? (
 						<Button asChild className="rounded-md" variant="outline">
-							<Link href="/compare/openrouter">Compare Phaseo and OpenRouter</Link>
+							<Link href="/compare/openrouter">{t("comparePhaseoOpenRouter")}</Link>
 						</Button>
 					) : null}
 				</div>
@@ -46,7 +70,7 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 			{post.slug === "openrouter" ? <AgentMigrationPrompt /> : null}
 
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">Prerequisites</h2>
+				<h2 className="text-xl font-semibold">{t("prerequisites")}</h2>
 				<ul className="list-disc space-y-2 pl-5 text-sm leading-7 text-muted-foreground">
 					{post.prerequisites.map((item) => (
 						<li key={item}>{item}</li>
@@ -68,7 +92,7 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 
 						{section.checklist?.length ? (
 							<div className="rounded-md border border-border/60 p-4">
-								<p className="text-sm font-semibold">Checklist</p>
+								<p className="text-sm font-semibold">{t("checklist")}</p>
 								<ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
 									{section.checklist.map((item) => (
 										<li key={item}>{item}</li>
@@ -99,20 +123,24 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 			</div>
 
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">Validation steps</h2>
+				<h2 className="text-xl font-semibold">{t("validationSteps")}</h2>
 				<ol className="list-decimal space-y-3 pl-5 text-sm leading-7 text-muted-foreground">
 					{post.validationSteps.map((step) => (
 						<li key={step}>
-							<code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
-								{step}
-							</code>
+							{step.trimStart().startsWith("curl ") ? (
+								<code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+									{step}
+								</code>
+							) : (
+								<span>{step}</span>
+							)}
 						</li>
 					))}
 				</ol>
 			</section>
 
 			<section className="space-y-4">
-				<h2 className="text-xl font-semibold">Frequently asked questions</h2>
+				<h2 className="text-xl font-semibold">{t("faqHeading")}</h2>
 				<div className="grid gap-3">
 					{post.faq.map((faqItem) => (
 						<Card className="gap-1 rounded-md" key={faqItem.question}>
@@ -129,7 +157,7 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 
 			{post.references?.length ? (
 				<section className="space-y-4 border-t border-border pt-8">
-					<h2 className="text-xl font-semibold">Migration resources</h2>
+					<h2 className="text-xl font-semibold">{t("migrationResources")}</h2>
 					<ul className="space-y-2 text-sm">
 						{post.references.map((reference) => {
 							const external = reference.href.startsWith("http");
@@ -153,21 +181,15 @@ export function MigrationPostView({ post }: { post: MigrationPost }) {
 
 			<section className="rounded-md border border-border/60 p-5">
 				<p className="text-sm font-semibold">
-					{post.slug === "openrouter"
-						? "Want us to handle your migration?"
-						: "Need a custom migration diff?"}
+					{ctaTitle}
 				</p>
 				<p className="mt-1 text-sm text-muted-foreground">
-					{post.slug === "openrouter"
-						? "Get in touch and we'll help move your OpenRouter integration to Phaseo for free, including the endpoint switch, model checks, and migration review."
-						: "Use the interactive assistant for before/after snippets tailored to your current SDK and language."}
+					{ctaBody}
 				</p>
 				<div className="mt-4">
 					<Button asChild className="rounded-md">
 						<Link href={post.slug === "openrouter" ? "/contact" : "/migrate"}>
-							{post.slug === "openrouter"
-								? "Get Free Migration Help"
-								: "Open Migration Assistant"}
+							{ctaLabel}
 						</Link>
 					</Button>
 				</div>

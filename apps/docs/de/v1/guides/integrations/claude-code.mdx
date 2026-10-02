@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "/icons/brands/claude-code.svg"
+description: "Verbinde Claude Code über die Anthropic-kompatible API mit dem Phaseo Gateway."
+---
+
+Claude Code unterstützt LLM-Gateways von Drittanbietern über Umgebungsvariablen. Phaseo stellt unter `/v1/messages` eine Anthropic-kompatible Schnittstelle bereit, sodass du Claude Code ohne Änderungen an deinen Prompts auf Phaseo ausrichten kannst.
+
+Wenn Claude Code während einer Sitzung die aktuelle Phaseo-Dokumentation lesen soll, füge auch den Server [Docs MCP](./docs-mcp.mdx) hinzu.
+
+## Mit der Phaseo CLI einrichten
+
+```bash
+phaseo login
+phaseo claude-code
+claude
+```
+
+Installiere zuerst die offizielle Version von Claude Code. Bei der Einrichtung wird ein nicht ablaufender `Phaseo CLI: Claude Code API Key` erstellt, im sicheren Anmeldedatenspeicher des Betriebssystems abgelegt und das Gateway sowie der API-Schlüsselhelfer von Claude Code konfiguriert. In den Claude-Code-Einstellungen wird kein Schlüssel im Klartext gespeichert.
+
+## Manuelle Konfiguration
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## Modell auswählen (optional)
+
+Lege `ANTHROPIC_MODEL` fest, wenn du ein dauerhaftes Standardmodell verwenden möchtest. Nutze die IDs aus [Modelle](../../api-reference/endpoint/models.mdx).
+
+## Claude Code starten
+
+```bash
+claude
+```
+
+## Zuordnung der Endpoints
+
+- Claude Code ruft Anthropic-kompatible Endpoints auf (`/v1/messages`).
+- Phaseo verarbeitet diese Anfragen über [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+
+## Hinweise zur Kompatibilität
+
+- `ANTHROPIC_AUTH_TOKEN` wird im von Phaseo unterstützten `Authorization`-Header gesendet.
+- Du kannst `ANTHROPIC_MODEL` auch auf die ID eines Phaseo-Modells setzen, wenn Claude Code immer dasselbe Standardmodell verwenden soll.
+- Aktuelle Einschränkung: Streaming mit Tools über Anthropic Messages kann `400 invalid_request` zurückgeben. Wenn dein Workflow auf gestreamte Tool-Schleifen angewiesen ist, teste diesen Pfad vor einem breiten Rollout.

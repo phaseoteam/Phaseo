@@ -1,0 +1,22 @@
+---
+icon: "scroll-text"
+title: "वर्कस्पेस ऑडिट लॉग"
+description: "सुरक्षा-संवेदनशील workspace प्रशासन बदलावों की समीक्षा करें।"
+---
+
+Workspace owners और admins **सेटिंग्स → वर्कस्पेस → गतिविधि** में key lifecycle बदलाव देख सकते हैं। Events मौजूदा workspace तक सीमित होते हैं और नए से पुराने क्रम में दिखते हैं।
+
+पहले release में ये operations दर्ज होते हैं:
+
+- API key बनाना, नाम बदलना, रोकना, फिर शुरू करना, limits बदलना, rotate करना और हटाना
+- Management keys बनाना और हटाना; नाम बदलना, रोकना, फिर शुरू करना, access templates, limits और expiry बदलना
+
+हर event में actor, action, target, timestamp और बदलाव का थोड़ा सुरक्षित metadata होता है। Audit events केवल append किए जा सकते हैं। Phaseo इस log में plaintext keys, credential hashes, authorization headers, पूरी scope lists या request bodies नहीं रखता।
+
+Audit log का access केवल workspace owners और admins को है। सामान्य members events नहीं पढ़ सकते, और underlying table authenticated database clients के लिए उपलब्ध नहीं है।
+
+Automation के लिए `activity:read` अनुमति वाली management key से `GET /v1/audit-events` call करें। Timestamp gaps के बिना पुराने events पाने के लिए लौटाए गए `next_cursor` का उपयोग करें।
+
+<Note>
+  Request और generation logs बताते हैं कि कौन-सा traffic चला। Workspace audit log बताता है कि किसने कौन-सा प्रशासनिक नियंत्रण कब बदला।
+</Note>

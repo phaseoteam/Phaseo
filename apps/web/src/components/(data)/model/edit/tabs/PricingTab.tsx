@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import { Copy, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -303,6 +304,8 @@ function FieldRow({
 }
 
 export default function PricingTab({ modelId, onPricingRulesChange }: PricingTabProps) {
+  const tUi = useTranslations("Common.ui")
+  const tEditor = useTranslations("Common.ui.modelEditor")
   const [pricingRules, setPricingRules] = useState<PricingRuleEditor[]>([])
   const [providerModels, setProviderModels] = useState<ProviderModelRef[]>([])
   const [providerNames, setProviderNames] = useState<Record<string, string>>({})
@@ -573,21 +576,20 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm font-semibold">Pricing Rules</Label>
+          <Label className="text-sm font-semibold">{tEditor("pricingRules")}</Label>
           <p className="text-xs text-muted-foreground">
-            Build rule-based pricing by provider model, capability, and optional conditions.
-            Changes are staged locally and saved when you click Save Pricing.
+            {tEditor("pricingRulesDescription")}
           </p>
         </div>
         <Button type="button" variant="outline" size="sm" onClick={() => addRule()}>
           <Plus className="mr-1 h-4 w-4" />
-          Add pricing rule
+          {tEditor("addPricingRule")}
         </Button>
       </div>
 
       {pricingRules.length === 0 ? (
         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-          No pricing rules yet.
+          {tEditor("noPricingRules")}
         </div>
       ) : null}
 
@@ -598,7 +600,9 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
               <div>
                 <div className="text-sm font-semibold">{group.providerName}</div>
                 <p className="text-xs text-muted-foreground">
-                  {group.rules.length} pricing {group.rules.length === 1 ? "rule" : "rules"}
+                  {group.rules.length === 1
+                    ? tEditor("pricingRuleCountOne")
+                    : tEditor("pricingRuleCountMany", { count: group.rules.length })}
                 </p>
               </div>
               {group.providerId !== "__unassigned__" ? (
@@ -609,7 +613,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                   onClick={() => addRule(group.providerId)}
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  Add rule for provider
+                  {tEditor("addRuleForProvider")}
                 </Button>
               ) : null}
             </div>
@@ -633,7 +637,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     {rule.api_model_id || modelId}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Rule {index + 1} in {group.providerName}
+                    {tEditor("ruleInProvider", { index: index + 1, provider: group.providerName })}
                   </p>
                 </div>
                 <div className="flex gap-1">
@@ -644,7 +648,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     onClick={() => duplicateRule(rule.id)}
                   >
                     <Copy className="mr-1 h-3.5 w-3.5" />
-                    Duplicate
+                    {tEditor("duplicate")}
                   </Button>
                   <Button
                     type="button"
@@ -657,7 +661,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 </div>
               </div>
 
-              <FieldRow label="Provider model">
+              <FieldRow label={tEditor("providerModel")}>
                 <Select
                   value={
                     providerPairOptions.some(
@@ -669,7 +673,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                   onValueChange={(value) => setRulePair(rule.id, value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select provider + model" />
+                    <SelectValue placeholder={tEditor("selectProviderModel")} />
                   </SelectTrigger>
                   <SelectContent>
                     {providerPairOptions.map((row) => {
@@ -685,7 +689,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 </Select>
               </FieldRow>
 
-              <FieldRow label="Capability">
+              <FieldRow label={tEditor("capability")}>
                 <Select
                   value={rule.capability_id || "text.generate"}
                   onValueChange={(value) => setRuleField(rule.id, "capability_id", value)}
@@ -703,7 +707,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 </Select>
               </FieldRow>
 
-              <FieldRow label="Pricing plan">
+              <FieldRow label={tEditor("pricingPlan")}>
                 <Select
                   value={rule.pricing_plan}
                   onValueChange={(value) => setRuleField(rule.id, "pricing_plan", value)}
@@ -729,8 +733,8 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
               </FieldRow>
 
               <FieldRow
-                label="Meter"
-                description="Selecting a meter can auto-fill default unit + unit size."
+                label={tEditor("meter")}
+                description={tEditor("meterDescription")}
               >
                 <Select value={rule.meter} onValueChange={(value) => setRuleField(rule.id, "meter", value)}>
                   <SelectTrigger>
@@ -746,35 +750,35 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 </Select>
               </FieldRow>
 
-              <FieldRow label="Pricing values">
+              <FieldRow label={tEditor("pricingValues")}>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                   <Input
                     value={rule.unit}
                     onChange={(event) => setRuleField(rule.id, "unit", event.target.value)}
-                    placeholder="Unit (token, image, request)"
+                    placeholder={tEditor("unitPlaceholder")}
                   />
                   <Input
                     type="number"
                     value={rule.unit_size}
                     onChange={(event) => setRuleField(rule.id, "unit_size", event.target.value)}
-                    placeholder="Unit size"
+                    placeholder={tEditor("unitSize")}
                   />
                   <Input
                     type="number"
                     step="0.000001"
                     value={rule.price_per_unit}
                     onChange={(event) => setRuleField(rule.id, "price_per_unit", event.target.value)}
-                    placeholder="Price per unit"
+                    placeholder={tEditor("pricePerUnit")}
                   />
                   <Input
                     value={rule.currency}
                     onChange={(event) => setRuleField(rule.id, "currency", event.target.value)}
-                    placeholder="Currency (USD)"
+                    placeholder={tEditor("currencyPlaceholder")}
                   />
                 </div>
               </FieldRow>
 
-              <FieldRow label="Priority">
+              <FieldRow label={tEditor("priority")}>
                 <Input
                   type="number"
                   value={rule.priority}
@@ -783,32 +787,32 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                 />
               </FieldRow>
 
-              <FieldRow label="Effective window">
+              <FieldRow label={tEditor("effectiveWindow")}>
                 <div className="grid gap-2 sm:grid-cols-2">
                   <DatePickerInput
                     value={rule.effective_from}
                     onChange={(value) => setRuleField(rule.id, "effective_from", value)}
-                    placeholder="Effective from"
+                    placeholder={tEditor("effectiveFrom")}
                   />
                   <DatePickerInput
                     value={rule.effective_to}
                     onChange={(value) => setRuleField(rule.id, "effective_to", value)}
-                    placeholder="Effective to"
+                    placeholder={tEditor("effectiveTo")}
                   />
                 </div>
               </FieldRow>
 
-              <FieldRow label="Rule note">
+              <FieldRow label={tEditor("ruleNote")}>
                 <Input
                   value={rule.note}
                   onChange={(event) => setRuleField(rule.id, "note", event.target.value)}
-                  placeholder="Optional note"
+                  placeholder={tEditor("optionalNote")}
                 />
               </FieldRow>
 
               <section className="space-y-3 rounded-md border border-dashed p-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-semibold">Conditions</Label>
+                  <Label className="text-sm font-semibold">{tEditor("conditions")}</Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -816,14 +820,13 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     onClick={() => addCondition(rule.id)}
                   >
                     <Plus className="mr-1 h-3.5 w-3.5" />
-                    Add condition
+                    {tEditor("addCondition")}
                   </Button>
                 </div>
 
                 {rule.conditions.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    No conditions means this rule is an unconditional fallback for the selected
-                    provider model + capability.
+                    {tEditor("conditionFallback")}
                   </p>
                 ) : null}
 
@@ -831,7 +834,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                   <div key={condition.id} className="space-y-3 rounded-md border p-3">
                     <div className="flex items-center justify-between">
                       <div className="text-xs font-medium text-muted-foreground">
-                        Condition {conditionIndex + 1}
+                        {tEditor("conditionIndex", { index: conditionIndex + 1 })}
                       </div>
                       <Button
                         type="button"
@@ -844,19 +847,19 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                     </div>
 
                     <FieldRow
-                      label="Path"
-                      description="Example: usage.context.max_tokens or image_params.quality"
+                      label={tEditor("path")}
+                      description={tEditor("pathDescription")}
                     >
                       <Input
                         value={condition.path}
                         onChange={(event) =>
                           setConditionField(rule.id, condition.id, "path", event.target.value)
                         }
-                        placeholder="request field path"
+                        placeholder={tEditor("requestFieldPath")}
                       />
                     </FieldRow>
 
-                    <FieldRow label="Operation">
+                    <FieldRow label={tEditor("operation")}>
                       <Select
                         value={condition.op}
                         onValueChange={(value) =>
@@ -876,7 +879,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                       </Select>
                     </FieldRow>
 
-                    <FieldRow label="Value type">
+                    <FieldRow label={tEditor("valueType")}>
                       <Select
                         value={condition.value_type}
                         onValueChange={(value) =>
@@ -887,14 +890,14 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="list">List</SelectItem>
+                          <SelectItem value="text">{tUi("formTypes.text")}</SelectItem>
+                          <SelectItem value="number">{tUi("formTypes.number")}</SelectItem>
+                          <SelectItem value="list">{tUi("formTypes.list")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </FieldRow>
 
-                    <FieldRow label="Value">
+                    <FieldRow label={tEditor("value")}>
                       {condition.value_type === "number" ? (
                         <Input
                           type="number"
@@ -910,7 +913,7 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                           onChange={(event) =>
                             setConditionField(rule.id, condition.id, "value_list", event.target.value)
                           }
-                          placeholder="comma list or JSON array"
+                          placeholder={tEditor("listPlaceholder")}
                         />
                       ) : (
                         <Input
@@ -918,14 +921,14 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                           onChange={(event) =>
                             setConditionField(rule.id, condition.id, "value_text", event.target.value)
                           }
-                          placeholder="text value"
+                          placeholder={tEditor("textValue")}
                         />
                       )}
                     </FieldRow>
 
                     <FieldRow
-                      label="Logic"
-                      description="Use group to combine AND/OR clauses."
+                      label={tEditor("logic")}
+                      description={tEditor("logicDescription")}
                     >
                       <div className="grid gap-2 sm:grid-cols-2">
                         <Select
@@ -938,8 +941,8 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="and">AND</SelectItem>
-                            <SelectItem value="or">OR</SelectItem>
+                            <SelectItem value="and">{tUi("formTypes.and")}</SelectItem>
+                            <SelectItem value="or">{tUi("formTypes.or")}</SelectItem>
                           </SelectContent>
                         </Select>
                         <Input
@@ -948,18 +951,18 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
                           onChange={(event) =>
                             setConditionField(rule.id, condition.id, "group", event.target.value)
                           }
-                          placeholder="Group index (optional)"
+                          placeholder={tEditor("groupIndexOptional")}
                         />
                       </div>
                     </FieldRow>
 
-                    <FieldRow label="Condition note">
+                    <FieldRow label={tEditor("conditionNote")}>
                       <Input
                         value={condition.note}
                         onChange={(event) =>
                           setConditionField(rule.id, condition.id, "note", event.target.value)
                         }
-                        placeholder="Optional note"
+                        placeholder={tEditor("optionalNote")}
                       />
                     </FieldRow>
                   </div>
@@ -975,4 +978,3 @@ export default function PricingTab({ modelId, onPricingRulesChange }: PricingTab
     </div>
   )
 }
-

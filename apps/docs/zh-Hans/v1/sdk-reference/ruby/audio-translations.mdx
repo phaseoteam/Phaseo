@@ -1,0 +1,29 @@
+---
+icon: "arrow-right-left"
+title: "翻译"
+description: "使用 Ruby SDK 调用 /audio/translations。"
+---
+
+**方法**：`client.generate_translation(...)` 或 `client.create_translation(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+translated = client.generate_translation(
+  model: 'openai/gpt-4o-translate',
+  audio_b64: 'base64_audio_data'
+)
+```
+
+### 关键参数
+- `model`（必填）：支持翻译的模型 ID。
+- `audio_url` 或 `audio_b64`（必填）：要翻译的音频数据。
+- `prompt`：用于指导翻译的可选上下文。
+- `temperature`（0–2）：采样随机度。
+- `response_format`：`json`、`text`、`srt`、`verbose_json` 等。
+
+### 返回值
+`AudioTranscriptionResponse`
+

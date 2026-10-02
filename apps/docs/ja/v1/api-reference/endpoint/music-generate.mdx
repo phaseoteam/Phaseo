@@ -1,0 +1,69 @@
+---
+title: "音楽を生成"
+sidebarTitle: "音楽を生成"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /music/generate"
+---
+
+プロバイダーに依存しない1つのAPIで音楽を生成します。Phaseoが同期レスポンスとプロバイダーキューのポーリングをバックグラウンドで処理します。
+
+生成が完了すると、レスポンスには`audio_url`または`audio_base64`が含まれます。プロバイダーが未完了のジョブを返した場合は、同じレスポンスの`id`を使って`GET /music/generate/{music_id}`を呼び出してください。
+
+## リクエストの形式
+
+```json
+{
+  "model": "minimax/music-3.0:free",
+  "prompt": "Warm jazz trio with brushed drums",
+  "format": "mp3"
+}
+```
+
+## Sunoのオプション
+
+- `suno.customMode` （boolean、既定値: `false`）
+- `suno.instrumental` （boolean、既定値: `false`）
+- `suno.prompt` （トップレベルの`prompt`を任意で上書き）
+- `suno.style`, `suno.title` （`customMode = true`の場合に必須）
+- `suno.personaId`, `suno.personaModel`
+- `suno.negativeTags`, `suno.vocalGender`
+- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
+
+## 検証ルール
+
+- `customMode = false`の場合、`prompt`が必要です。
+- `customMode = true`の場合、`style`と`title`の両方が必要です。
+- `customMode = true`かつ`instrumental = false`の場合、`prompt`が必要です。
+
+検証エラーは`400`と次の内容を返します。
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```
+
+## 応答
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "gmicloud",
+  "model": "minimax/music-3.0:free",
+  "nativeResponseId": "5c30b275-d669-4a25-8151-de6d60214853",
+  "audio_url": "https://.../generated-music.mp3",
+  "usage": {
+    "requests": 1,
+    "output_audio_seconds": 25.364
+  }
+}
+```
+
+- `id` は Phaseo の固定リクエスト ID です。`GET /music/generate/{music_id}` でリクエストを取得できます。
+- `nativeResponseId` は上流プロバイダーの識別子で、プロバイダーとの照合やサポート時に使用します。
+- `status` は `queued`、`in_progress`、`completed`、`failed` のいずれかです。
+- プロバイダーが生成時間を返す場合、`usage` に `output_audio_seconds` が含まれることがあります。
+

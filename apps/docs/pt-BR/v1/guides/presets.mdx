@@ -1,0 +1,140 @@
+---
+title: "Predefinições"
+description: "Salve configurações reutilizáveis do Gateway para sua equipe."
+icon: "sliders-horizontal"
+---
+
+Predefinições são configurações reutilizáveis que ajudam as equipes a padronizar prompts, preferências de modelo e padrões de roteamento. Elas são gerenciadas no painel da Phaseo e podem ser compartilhadas com a equipe.
+
+## Início rápido
+
+<Steps>
+<Step title="Crie uma predefinição">
+
+Abra **Painel -> Configurações -> Predefinições** e crie uma predefinição com um slug claro, como `release-summary`. Adicione somente os padrões que devem ser compartilhados entre os solicitantes.
+
+</Step>
+
+<Step title="Referencie a predefinição em uma solicitação">
+
+Deixe o solicitante se concentrar na entrada do usuário enquanto a predefinição fornece padrões estáveis para prompt, parâmetros e roteamento.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+	  -d '{
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours."
+	  }'
+```
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+	  model: "@release-summary",
+	  input: "Generate a release summary for the last 24 hours.",
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response({
+	    "model": "@release-summary",
+	    "input": "Generate a release summary for the last 24 hours.",
+})
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Confira o resultado do roteamento">
+
+Abra a solicitação em **Gateway -> Uso** para confirmar quais padrões foram aplicados e qual provedor a atendeu.
+
+</Step>
+</Steps>
+
+## O que uma predefinição pode incluir
+
+- Um prompt de sistema anexado ao início de cada solicitação.
+- Modelos ou famílias de modelos permitidos.
+- Listas de provedores permitidos ou ignorados para preferências de roteamento.
+- Parâmetros padrão, como temperature, top_p, max_tokens e configurações semelhantes.
+- Padrões opcionais de raciocínio para modelos compatíveis.
+
+Os nomes das predefinições começam com `@` para facilitar a identificação.
+
+Invoque uma predefinição somente pelo campo `model` da solicitação. A Phaseo não oferece um campo `preset` separado.
+
+- Predefinições privadas e do espaço de trabalho usam `@{slug}` e são resolvidas no espaço de trabalho da chave de API.
+- Predefinições públicas usam `@{username}/{slug}` e podem ser resolvidas em qualquer espaço de trabalho. Por exemplo, `@octavia/release-summary`.
+
+A publicação pública exige um perfil público habilitado e um nome de usuário. Conflitos de slug público são limitados a cada publicador; portanto, dois publicadores podem usar o mesmo slug sem ambiguidade. Os nomes de usuário são únicos globalmente. Os slugs são normalizados para letras minúsculas e aceitam letras, números, hífens, sublinhados, pontos e dois-pontos.
+
+## Versões e cópias do marketplace
+
+Salvar alterações atualiza um rascunho privado. Quando estiverem prontas, use **Publicar nova versão**. A Phaseo cria uma versão numerada e imutável, mantendo todas as versões anteriores disponíveis para revisão.
+
+Os proprietários podem escolher como os rótulos de versão são exibidos:
+
+- **Sequencial:** `v1`, `v2`, `v3`.
+- **Versionamento semântico:** rótulos SemVer explícitos, como `1.2.0`, `2.0.0-beta.1` ou `1.4.2+build.7`.
+- **Por data:** `YYYY.MM.DD`, com um sufixo numérico quando várias versões são publicadas na mesma data, como `2026.08.02.2`.
+
+Internamente, a Phaseo mantém um número de versão monotônico separado, para que a cronologia, as comparações com a origem e a linhagem continuem determinísticas independentemente do formato público escolhido.
+
+Cópias do marketplace permanecem vinculadas à versão exata da origem copiada. Quando o publicador lança uma atualização, a cópia exibe um aviso. Aplicá-la atualiza somente o rascunho da cópia; o proprietário do espaço de trabalho pode revisá-la e publicá-la explicitamente sem que um autor upstream altere o comportamento de produção.
+
+A Phaseo mantém a origem imediata e toda a ancestralidade de cada fork. Assim, as páginas do marketplace distinguem forks diretos de todos os descendentes, mesmo que uma predefinição tenha sido copiada e republicada várias vezes.
+
+## Como as predefinições são mescladas
+
+Quando uma solicitação é resolvida com uma predefinição no contexto do Gateway, a predefinição é aplicada antes do roteamento do provedor:
+
+- Parâmetros padrão preenchem somente campos ausentes no corpo da solicitação. Eles não substituem valores enviados pelo solicitante.
+- Se a solicitação já tiver uma mensagem de sistema, o prompt da predefinição será acrescentado antes dela. Se houver um campo `system` no estilo Anthropic, o prompt será acrescentado nesse campo.
+- As listas de provedores permitidos e ignorados são aplicadas antes da seleção, restringindo o conjunto de alternativas em vez de funcionar como rótulo decorativo.
+- Solicitações fora da lista de modelos permitidos da predefinição são rejeitadas cedo, em vez de serem redirecionadas sem aviso.
+
+Assim, as predefinições são a principal interface pública para padrões de solicitação reutilizáveis e transformações leves de compatibilidade, sem obrigar cada solicitante a duplicar a mesma lógica de prompt e parâmetros.
+
+## Superfície pública atual das predefinições
+
+O fluxo de predefinições do painel é intencionalmente limitado a um subconjunto estável e explícito de ajustes de solicitação:
+
+- injeção de prompt de sistema
+- listas de modelos permitidos
+- restrições de roteamento com listas de provedores permitidos ou ignorados
+- padrões de decodificação e geração
+- padrões de raciocínio
+
+Se precisar de transformações mais complexas específicas do solicitante, mantenha-as em uma camada de fronteira do aplicativo e use predefinições para compartilhar os padrões reutilizáveis da equipe.
+
+## Gerencie predefinições
+
+Crie e gerencie predefinições em **Painel -> Configurações -> Predefinições**. Use slugs separados quando os fluxos de trabalho exigirem diferenças significativas de prompt, roteamento ou cache.
+
+## Quando usar predefinições
+
+- Padronizar prompts de sistema entre vários serviços.
+- Restringir o roteamento a provedores aprovados para atender aos requisitos de conformidade.
+- Manter parâmetros padrão consistentes entre ambientes.
+- Oferecer aos projetos de migração um local duradouro para padrões de prompt, roteamento e parâmetros, mantendo o código do aplicativo praticamente igual.
+
+## Guias relacionados
+
+- [Colete feedback sobre predefinições](./preset-feedback.mdx)
+- [Roteamento e alternativas](./routing-and-fallbacks.mdx)
+- [Parâmetros de inferência](./inference-parameters.mdx)
+- [Matriz de paridade de recursos](../migration-guides/feature-parity-matrix.mdx)
+

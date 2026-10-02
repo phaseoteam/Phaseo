@@ -8,6 +8,7 @@ import { RefreshCw } from "lucide-react";
 import { RefreshCredits } from "@/app/(dashboard)/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditAmount } from "./CreditAmount";
+import { useTranslations } from "next-intl";
 
 interface Props {
 	balance: number;
@@ -18,10 +19,13 @@ interface Props {
 
 export default function CurrentCredits({
 	balance,
-	title = "Current Balance",
+	title,
 	subtitle = null,
-	refreshAriaLabel = "refresh balance",
+	refreshAriaLabel,
 }: Props) {
+	const t = useTranslations("SettingsUI.credits");
+	title ??= t("currentBalance");
+	refreshAriaLabel ??= t("refreshBalance");
 	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
 
@@ -33,9 +37,9 @@ export default function CurrentCredits({
 		try {
 			// Call the API route which triggers server revalidation
 			await toast.promise(RefreshCredits(), {
-				loading: "Refreshing credits...",
-				success: "Credits refreshed",
-				error: () => "Failed to refresh credits",
+					loading: t("refreshing"),
+					success: t("refreshed"),
+					error: () => t("refreshFailed"),
 			});
 			// Pull fresh server component data for the current route.
 			router.refresh();

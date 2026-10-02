@@ -1,0 +1,45 @@
+---
+icon: "folder-open"
+title: "仓库结构"
+description: "查找 Phaseo 应用代码、文档、SDK 和目录导出。"
+---
+
+Phaseo 是 pnpm 和 Turborepo 单体仓库。使用此参考查找代码或文档更改所需文件。目录记录更改请[创建问题](./overview.mdx)。
+
+## 应用和软件包
+
+| 路径 | 用途 |
+| --- | --- |
+| `apps/web` | Next.js 16 网站、仪表板和内部目录编辑器。 |
+| `apps/web-api` | 公开目录读取和经身份验证的账户及管理 API。 |
+| `apps/api` | 在 Cloudflare Workers 上进行网关路由和提供商执行。 |
+| `apps/docs` | Mintlify 文档；MDX 页面位于 `v1`，导航位于 `docs.json`。 |
+| `packages/data/catalog` | 目录架构、兼容性测试夹具和生成的公开快照。 |
+| `packages/sdk` | TypeScript、Python、Go、C#、PHP、Ruby、Java、Rust 和 C++ SDK。 |
+| `supabase/migrations` | 数据库架构和权限迁移。 |
+| `scripts` | 验证、SDK 生成和自动化工具。 |
+| `.github/workflows` | CI、部署、目录同步和快照计划。 |
+| `.changeset` | 已版本化软件包的发布元数据。 |
+
+## 目录数据
+
+数据库是模型、提供商、组织、价格、基准测试及相关目录设置的权威来源。管理员通过[内部数据](https://phaseo.app/internal/data)管理记录。公开贡献通过 GitHub 问题进行审核。
+
+- `packages/data/catalog/generated/database-v2` 包含每日公开快照和 OpenAPI、SDK 工具使用的已生成模型枚举索引。
+- `packages/data/catalog/src/data` 包含归档的兼容性测试夹具。
+- 编辑任一目录都不会更新实时目录记录。旧版 JSON 到数据库导入器已停用。
+
+架构和应用更改仍使用迁移和拉取请求。生成的快照和 SDK 产物应通过对应生成命令更新。
+
+## 目录自动化
+
+提供商同步会将建议价格排队等待在[提供商更新](https://phaseo.app/internal/data/imports)中审核。基准测试和模型生命周期任务使用数据库。每日公开导出会生成可审核的快照拉取请求。
+
+仅存在于目录中的记录不会自动启用网关路由。路由和价格更改需要相应管理员审核。
+
+## 从哪里开始
+
+- [报告模型更新](./editing-a-model.mdx)。
+- [报告组织更新](./editing-an-organisation.mdx)。
+- [提交基准测试分数](../research/submitting-scores.mdx)。
+- [贡献代码或文档](./how-to-contribute.mdx)。

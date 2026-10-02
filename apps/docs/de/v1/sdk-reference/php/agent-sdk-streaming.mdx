@@ -1,0 +1,26 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Konsumiere Text-, Reasoning-, Element- und Lifecycle-Streams von PHP-Agenten."
+---
+
+`Agent::stream(...)` gibt ein `AgentStreamResult` zurück:
+
+```php
+$stream = $agent->stream($input, $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->result;
+```
+
+Verwende `reasoningStream()`, `itemStream()` oder `fullStream()` für weitere Projektionen. Jedes Iterable lässt sich erneut durchlaufen, nachdem die Ereignisse aus dem synchronen Provider-Stream konsumiert wurden.
+
+PHP-Elementwerte bleiben generische Arrays und Objekte und sind keine diskriminierte TypeScript-Element-Union.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

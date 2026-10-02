@@ -1,0 +1,38 @@
+---
+icon: "music"
+title: "文本转语音（TTS）"
+description: "使用 PHP SDK 调用 /audio/speech。"
+---
+
+**方法**：`$client->createSpeech(...)`
+
+### 示例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$audioFile = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3'
+]);
+file_put_contents('output.mp3', $audioFile->fread($audioFile->getSize()));
+```
+
+### 关键参数
+
+-   `model`（必填）：支持 TTS 的模型 ID。
+-   `input`（必填）：要合成的文本。
+-   `voice`：语音预设（取决于模型，例如 `alloy`）。
+-   `format`：`mp3`、`wav`、`flac` 等。
+-   `speed`：播放速度倍数（通常为 0.25–4）。
+
+### 返回值
+
+音频二进制数据（`\SplFileObject`）

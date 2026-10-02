@@ -1,5 +1,6 @@
 // src/components/gateway/Hero.tsx
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { CheckCircle2, CircleSlash, Clock3 } from "lucide-react";
 import { DOCS_VERSION } from "./config";
 import {
@@ -17,7 +18,8 @@ interface HeroProps {
 	metadata: ModelGatewayMetadata;
 }
 
-export default function Hero({ metadata }: HeroProps) {
+export default async function Hero({ metadata }: HeroProps) {
+	const t = await getTranslations("Catalogue.models.detail.quickstart");
 	const groupedProviders = groupProviders(metadata);
 	const activeCount = groupedProviders.filter(
 		(provider) => provider.state.availability === "active"
@@ -32,10 +34,10 @@ export default function Hero({ metadata }: HeroProps) {
 
 	const StatusIcon = isAvailable ? CheckCircle2 : CircleSlash;
 	const statusText = isAvailable
-		? `Available via ${activeCount} provider${activeCount === 1 ? "" : "s"}`
+		? t("availableVia", { count: activeCount })
 		: previewCount > 0
-			? "Known in the catalog, but not publicly routable yet"
-			: "Currently unavailable in the gateway";
+			? t("knownButNotRoutable")
+			: t("currentlyUnavailableInGateway");
 
 	return (
 		<Card>
@@ -43,17 +45,17 @@ export default function Hero({ metadata }: HeroProps) {
 				<div className="flex items-center justify-between w-full">
 					<div className="flex-1">
 						<CardTitle className="text-3xl">
-							Get Started With Gateway
+							{t("gatewayTitle")}
 						</CardTitle>
 						<CardDescription className="mt-2 text-muted-foreground">
-							Access and manage any model through our unified API.
+							{t("gatewayDescription")}
 						</CardDescription>
 					</div>
 
 					<div className="flex-shrink-0 ml-6">
 						<Link
 							href={`https://phaseo.app/`}
-							aria-label={`Read the docs (v${DOCS_VERSION})`}
+							aria-label={t("readDocsVersion", { version: DOCS_VERSION })}
 							className="inline-flex items-center"
 						>
 							<span className="text-xs rounded-full border px-2 py-0.5 font-medium">
@@ -77,18 +79,18 @@ export default function Hero({ metadata }: HeroProps) {
 					</div>
 					<div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
 						<Badge variant="outline" className="bg-background">
-							Active: {activeCount}
+							{t("activeCount", { count: activeCount })}
 						</Badge>
 						{previewCount > 0 ? (
 							<Badge variant="outline" className="bg-background">
 								<span className="inline-flex items-center gap-1">
 									<Clock3 className="h-3 w-3" />
-									Preview: {previewCount}
+												{t("previewCount", { count: previewCount })}
 								</span>
 							</Badge>
 						) : null}
 						<Badge variant="outline" className="bg-background">
-							Unavailable: {inactiveCount}
+							{t("unavailableCount", { count: inactiveCount })}
 						</Badge>
 					</div>
 				</div>

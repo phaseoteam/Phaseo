@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useEffect, useMemo } from "react";
 import { Label } from "@/components/ui/label";
 import {
@@ -55,16 +57,21 @@ export function ImageModelSettingsDialog({
 	onUpdateParams,
 	onReset,
 }: ImageModelSettingsDialogProps) {
+	const t = useTranslations("Product.chatRooms");
 	const schema = getImageModelSchema(selectedModelId ?? "");
 	const isGoogleImageSchema = schema.variant.startsWith("google-");
-	const sizeLabel = isGoogleImageSchema ? "Aspect ratio" : "Resolution";
+	const sizeLabel = isGoogleImageSchema
+		? t("mediaStudio.aspectRatio")
+		: t("resolution");
 	const sizePlaceholder = isGoogleImageSchema
-		? "Select aspect ratio"
-		: "Select resolution";
-	const qualityLabel = isGoogleImageSchema ? "Image size" : "Quality";
+		? t("selectAspectRatio")
+		: t("selectResolution");
+	const qualityLabel = isGoogleImageSchema
+		? t("mediaStudio.imageSize")
+		: t("mediaStudio.quality");
 	const qualityPlaceholder = isGoogleImageSchema
-		? "Select image size"
-		: "Select quality";
+		? t("selectImageSize")
+		: t("selectQuality");
 	const normalizedParams = useMemo(() => {
 		const size = schema.sizeOptions.includes(settings.params.size)
 			? settings.params.size
@@ -101,8 +108,8 @@ export function ImageModelSettingsDialog({
 		<RoomModelSettingsShell
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Image model settings"
-			description="Configure image generation options for the selected model."
+			title={t("imageSettings")}
+			description={t("imageSettingsDescription")}
 			settings={settings}
 			modelChoices={modelChoices}
 			selectedModelId={selectedModelId}
@@ -153,13 +160,13 @@ export function ImageModelSettingsDialog({
 				) : null}
 				{schema.styleOptions.length > 0 ? (
 					<div className="grid gap-1.5">
-						<Label>Style</Label>
+						<Label>{t("mediaStudio.style")}</Label>
 						<Select
 							value={normalizedParams.style}
 							onValueChange={(value) => onUpdateParams({ style: value })}
 						>
 							<SelectTrigger>
-								<SelectValue placeholder="Select style" />
+								<SelectValue placeholder={t("selectStyle")} />
 							</SelectTrigger>
 							<SelectContent>
 								{schema.styleOptions.map((style) => (

@@ -1,0 +1,10 @@
+---
+title: "動的ルートを更新"
+sidebarTitle: "ルートを更新"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "ルートのメタデータを更新するか、新しい設定バージョンを作成します。"
+---
+<Note>このエンドポイントには `settings:write` 権限を持つ管理APIキーが必要です。</Note>
+
+`config` を変更すると、新しい変更不可のバージョンが作成されます。メタデータのみの変更ではバージョンは作成されません。

@@ -1,0 +1,81 @@
+---
+title: "Infisical"
+icon: "key-round"
+description: "جهّز التدوير التلقائي لمفاتيح Phaseo API باستخدام Infisical."
+---
+
+يمكن لـ Infisical تدوير مفاتيح Phaseo Gateway API باستخدام مفتاح Phaseo Management API محدود الصلاحيات. ويوفر Phaseo بالفعل دورة حياة المفاتيح اللازمة للتدوير على مرحلتين دون توقف.
+
+<Warning>
+لا يتوفر Phaseo بعد كاتصال App Connection قابل للاختيار في Infisical. توثق هذه الصفحة عقد Phaseo المدعوم والإعداد الذي سيُستخدم عند توفر اتصال Infisical.
+</Warning>
+
+## آلية التدوير
+
+1. يصادق Infisical لدى Phaseo باستخدام مفتاح Management API.
+2. ينشئ Infisical مفتاح Gateway API بديلًا عبر `POST /v1/keys`.
+3. يخزن Infisical المفتاح النصي المُعاد في السر المُهيأ.
+4. يبدأ التطبيق باستخدام المفتاح البديل.
+5. يلغي Infisical المفتاح السابق عبر `DELETE /v1/keys/{id}`.
+
+يعيد Phaseo قيمة مفتاح Gateway API كنص عادي عند إنشائه فقط. ويمكن تداخل المفتاح القديم والبديل أثناء تحديث السر.
+
+## إنشاء مفتاح Management API محدود الصلاحيات
+
+أنشئ مفتاحًا بهذه الصلاحيات ضمن **Dashboard → Settings → Management Keys**:
+
+- `keys:read` للتحقق من الاتصال وفحص المفاتيح المُدارة
+- `keys:write` لإنشاء مفاتيح بديلة
+- `keys:delete` لإلغاء المفاتيح السابقة
+
+خزّن السر `phaseo_v1_mk_...` الناتج في Infisical. مفاتيح Management API بيانات اعتماد لمستوى التحكم ولا تُستخدم للاستدلال.
+
+## تفاصيل الاتصال
+
+| الحقل | القيمة |
+| --- | --- |
+| عنوان URL الأساسي | `https://api.phaseo.app/v1` |
+| المصادقة | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| التحقق | `GET /keys` |
+| سرد مفاتيح Gateway | `GET /keys` |
+| إنشاء مفتاح Gateway | `POST /keys` |
+| إلغاء مفتاح Gateway | `DELETE /keys/{id}` |
+
+## إنشاء مفتاح بالتدوير
+
+```bash
+curl https://api.phaseo.app/v1/keys \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "infisical-production",
+    "limit": 100,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false
+  }'
+```
+
+تتضمن الاستجابة مفتاح Gateway الجديد مرة واحدة في `data.key` ومعرّفه الثابت في `data.id`.
+
+## إلغاء المفتاح السابق
+
+```bash
+curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+الحذف عملية تكرارية آمنة. يعيد المفتاح المحذوف مسبقًا حالة حذف ناجحة، مما يجعل إعادة محاولة التدوير آمنة.
+
+## الحدود وBYOK
+
+يقبل Phaseo حقول التوافق `limit` و`limit_reset` و`include_byok_in_limit`. فترات إعادة الضبط المدعومة هي يومية وأسبوعية وشهرية. ويُستخدم `include_byok_in_limit` حاليًا للتوافق فقط؛ إذ يستثني Phaseo استخدام BYOK من حد المفتاح هذا.
+
+## حالة الشراكة
+
+يتطلب الاتصال الأصلي في Infisical قبول Phaseo App Connection وتنفيذ Phaseo API Key Rotation لدى Infisical. تتوفر بالفعل واجهات إدارة Phaseo ودورة حياة المفاتيح؛ ويتبقى الموصل في جانب Infisical والاختبارات ومدخل الواجهة والتوثيق.
+
+## مواضيع ذات صلة
+
+- [مفاتيح Management API](../../developers/management-api-keys.mdx)
+- [إنشاء مفتاح API](../../api-reference/endpoint/keys-create.mdx)
+- [حذف مفتاح API](../../api-reference/endpoint/keys-delete.mdx)

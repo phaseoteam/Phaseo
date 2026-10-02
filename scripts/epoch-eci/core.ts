@@ -1,3 +1,5 @@
+import { benchmarkSourceId } from "../benchmark-source-ids";
+
 export type EpochEciRow = {
 	model: string;
 	displayName: string;
@@ -46,13 +48,50 @@ export function parseEpochEciCsv(input: string): EpochEciRow[] {
 	}).sort((left, right) => right.score - left.score);
 }
 
-export function matchEpochRows(models: Array<{ model_slug: string; name: string }>, rows: EpochEciRow[]) {
-	const byName = new Map<string, Array<{ model_slug: string; name: string }>>();
+type EpochCatalogModel = { model_slug: string; name: string; metadata?: unknown };
+
+type EpochResultIdentity = { result_id: string; model_slug: string; result_key: string | null };
+
+export function staleEpochResultIds(activeRows: EpochResultIdentity[], currentRows: EpochResultIdentity[]) {
+	const currentIds = new Set(currentRows.map((row) => row.result_id));
+	const matchedModels = new Set(currentRows.map((row) => row.model_slug));
+	const sourceOwners = new Map<string, string>();
+	const sourceId = (row: EpochResultIdentity) => {
+		const prefix = `${row.model_slug}:epoch-capabilities-index:`;
+		return row.result_key?.startsWith(prefix) ? row.result_key.slice(prefix.length) : null;
+	};
+	for (const row of currentRows) {
+		const id = sourceId(row);
+		if (id) sourceOwners.set(id, row.model_slug);
+	}
+	return activeRows.filter((row) => {
+		if (currentIds.has(row.result_id)) return false;
+		const id = sourceId(row);
+		const owner = id ? sourceOwners.get(id) : undefined;
+		return matchedModels.has(row.model_slug) || (owner !== undefined && owner !== row.model_slug);
+	}).map((row) => row.result_id);
+}
+
+export function matchEpochRows(models: EpochCatalogModel[], rows: EpochEciRow[]) {
+	const explicit = new Map<string, EpochCatalogModel>();
+	const byName = new Map<string, EpochCatalogModel[]>();
+	const sourceIds = new Set(rows.map((row) => row.model));
+	if (sourceIds.size !== rows.length) throw new Error("Duplicate Epoch source IDs; no data was written.");
 	for (const model of models) {
+		const id = benchmarkSourceId(model.metadata, "epoch_ai", model.model_slug);
+		if (id !== undefined) {
+			if (id === null) continue;
+			if (!sourceIds.has(id)) throw new Error(`Epoch mapping for ${model.model_slug} refers to missing source ID ${id}.`);
+			if (explicit.has(id)) throw new Error(`Epoch source ${id} maps to both ${explicit.get(id)!.model_slug} and ${model.model_slug}.`);
+			explicit.set(id, model);
+			continue;
+		}
 		const key = normalizeEpochModelName(model.name);
 		byName.set(key, [...(byName.get(key) ?? []), model]);
 	}
 	return rows.map((row) => {
+		const mapped = explicit.get(row.model);
+		if (mapped) return { row, model: mapped, candidates: [mapped] };
 		const candidates = [...new Map([
 			...(byName.get(normalizeEpochModelName(row.displayName)) ?? []),
 			...(byName.get(normalizeEpochModelName(row.model)) ?? []),

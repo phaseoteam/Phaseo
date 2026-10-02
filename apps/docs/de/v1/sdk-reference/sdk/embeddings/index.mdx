@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "Einbettungen (AI SDK)"
+description: "Erzeuge Embeddings mit Phaseo-Providermodellen in Vercel AI SDK."
+---
+
+Verwende `phaseo.textEmbeddingModel(...)` (oder `embeddingModel`) mit `embed` und `embedMany`.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## Hinweise
+
+- Verwende für Query- und Corpus-Embeddings dieselbe Modellversion.
+- Normalisiere Vektoren vor der Ähnlichkeitsbewertung einheitlich.
+- Speichere stabile Embeddings für wiederkehrende Inhalte im Cache.

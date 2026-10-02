@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,10 @@ import {
 } from "@/app/(dashboard)/settings/management-api-keys/actions";
 type KeyLimitPayload = ManagementKeyLimitPayload;
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 export default function ManagementKeyLimitsItem({ k }: any) {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
 	const [dailyRequests, setDailyRequests] = useState(
 		k.daily_limit_requests?.toString() || ""
@@ -48,11 +51,11 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 		const promise = updateManagementKeyLimitsAction(k.id, payload);
 		try {
 			await toast.promise(promise, {
-				loading: "Saving limits...",
-				success: "Limits updated",
+					loading: t("strings.phraseSavingLimits" as never),
+					success: t("strings.Limits updated" as never),
 				error: (err) => {
 					const message =
-						(err && (err as any).message) || "Failed to update limits";
+							localizedSettingsError(err, t, "Failed to update limits");
 					return message;
 				},
 			});
@@ -72,55 +75,55 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 					}} />}>
 
 					<Settings className="mr-2" />
-					Limits
+					{t("labels.limit")}
 
 			</DropdownMenuItem>
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Management API Key Limits
+						{t("strings.Management API Key Limits" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						Set request limits for this elevated-privilege key.
+						{t("strings.phraseSetRequestLimitsForThisElevatedPrivilegeKey" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">
 					<div className="grid grid-cols-3 gap-4">
 						<div className="space-y-2">
-							<Label>Daily</Label>
+							<Label>{t("strings.Daily" as never)}</Label>
 							<Input
 								type="number"
 								value={dailyRequests}
 								onChange={(e) => setDailyRequests(e.target.value)}
-								placeholder="Unlimited"
+								placeholder={t("teams.unlimited")}
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>Weekly</Label>
+							<Label>{t("strings.Weekly" as never)}</Label>
 							<Input
 								type="number"
 								value={weeklyRequests}
 								onChange={(e) => setWeeklyRequests(e.target.value)}
-								placeholder="Unlimited"
+								placeholder={t("teams.unlimited")}
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>Monthly</Label>
+							<Label>{t("strings.Monthly" as never)}</Label>
 							<Input
 								type="number"
 								value={monthlyRequests}
 								onChange={(e) => setMonthlyRequests(e.target.value)}
-								placeholder="Unlimited"
+								placeholder={t("teams.unlimited")}
 							/>
 						</div>
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
-							<Button variant="ghost">Cancel</Button>
+							<Button variant="ghost">{t("labels.cancel")}</Button>
 						</DialogClose>
 						<Button type="submit" disabled={loading}>
-							{loading ? "Saving..." : "Save"}
+							{loading ? t("labels.saving") : t("labels.save")}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -128,4 +131,3 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 		</Dialog>
 	);
 }
-

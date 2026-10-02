@@ -1,0 +1,155 @@
+---
+title: "使用托管网页搜索为 TypeScript SDK 工作流提供依据"
+icon: "search"
+description: "结合官方 TypeScript SDK、托管网页搜索和响应元数据，构建有依据且易于调试的工作流。"
+---
+
+如果 TypeScript 或 JavaScript 服务需要组合以下能力，请使用此方案：
+
+- 由预设定义的路由默认值
+- 托管的 `phaseo:web_search` 工具
+- 严格的响应解析
+- 用于调试的请求级元数据
+
+## 目标
+
+- 让调用方继续使用官方 SDK
+- 避免手动重建原始兼容性负载
+- 保留足够的元数据，以便调试搜索结果、路由和插件行为
+
+## 1. 从共享客户端开始
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. 先将稳定的默认值放入预设
+
+如果多个调用方需要共享以下内容，请创建一个预设：
+
+- 模型策略
+- 提供方偏好
+- 推理默认值
+- 系统提示词
+- 确定性的缓存行为
+
+之后，只在 SDK 请求中保留本次调用会变化的值。
+
+## 3. 通过托管搜索工具请求有依据的输出
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+这样可以获得：
+
+- 由预设管理的路由和提示词默认值
+- 由服务器管理的搜索，不依赖提供方是否支持原生搜索
+- 便于可靠地解析下游数据的结构化输出
+- 进行运行诊断所需的元数据
+
+## 4. 解析输出并保留调试字段
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+借助这些字段，你可以轻松确认：
+
+- 实际处理请求的提供方
+- 托管搜索是否运行
+- 响应修复是否运行
+- 应在控制台中检查哪个请求
+
+## 5. 在日志中验证有依据的请求
+
+在 **Gateway -> 用量** 中打开请求，并检查：
+
+- 标准化的搜索结果
+- 引用
+- 提供方选择
+- 插件执行元数据
+
+如果搜索行为或排序不正确，请根据日志证据调整预设或工具参数，避免盲目添加覆盖项。
+
+## 6. 拆分探索型和确定型工作流
+
+建议采用以下模式：
+
+1. 一个预设用于确定性的结构化研究结果
+2. 另一个预设用于探索型请求或更高 temperature 的请求
+
+这样可以保持：
+
+- 响应缓存更整洁
+- 路由行为更容易理解
+- 将搜索密集型工作流与通用生成流量分开
+
+## 相关指南
+
+- [调试网页搜索请求](./web-search-debugging.mdx)
+- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)
+- [修复结构化 JSON 响应](./response-healing-for-structured-json.mdx)
+- [TypeScript SDK 概览](../sdk-reference/typescript/overview.mdx)

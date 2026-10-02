@@ -1,0 +1,207 @@
+---
+title: "معرّفات النماذج المؤهلة بمزوّد"
+description: "وجّه طلبًا إلى مزوّد ونموذج محددين باستخدام معرّف نموذج واحد."
+icon: "route"
+---
+
+تتيح لك معرّفات النماذج المؤهلة بمزوّد اختيار مزوّد محدد ونموذج قياسي في حقل `model`. استخدمها عندما يكون اختيار المزوّد جزءًا من عقد الطلب وليس مجرد تفضيل للتوجيه.
+
+## الصياغة
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+على سبيل المثال:
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+تفصل النقطتان الأولى بين المزوّد ومعرّف النموذج القياسي. أما النقطتان اللاحقتان لمساحة أسماء النموذج فتبقيان ضمن لواحق النموذج، لذا لا يوجد التباس:
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+في هذا المثال:
+
+- `baseten` هو المزوّد المطلوب
+- `google/gemma-4-26b-a4b:free` هو معرّف نموذج Phaseo القياسي
+
+## إرسال طلب
+
+استخدم المعرّف المؤهل في أي نقطة نهاية تقبل معرّف نموذج.
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## سلوك التوجيه المحدد
+
+مؤهل المزوّد قيد دقيق. تقلّص Phaseo مجموعة المزوّدين المؤهلين إلى المزوّد المطلوب ولا تنتقل إلى مزوّد آخر لهذا الطلب.
+
+لا يتجاوز المؤهل عناصر التحكم الأخرى. يجب أن يستوفي المزوّد أيضًا ما يلي:
+
+- إتاحة النموذج القياسي على نقطة النهاية المطلوبة
+- تفعيله لإمكانية نقطة النهاية
+- استيفاء سياسات مساحة العمل ومفتاح API
+- استيفاء قيود الإعداد المسبق والخصوصية
+- دعم مستوى الخدمة والمعلمات المطلوبة
+- إعداد أسعار صالحة له
+
+إذا أخفق أي من هذه الفحوص، ترفض Phaseo الطلب بدل اختيار مزوّد آخر بصمت.
+
+## التفاعل مع حقول التوجيه
+
+يجب أن يتوافق المزوّد المؤهل مع حقول التوجيه الصريحة.
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+يُقبل تطابق القيمة في `provider.only` أو `routing.only`. وتؤدي قائمة سماح متعارضة أو قائمة تجاهل تتضمن المزوّد المؤهل إلى خطأ تحقق.
+
+على سبيل المثال، يتعارض هذا الطلب ويُرفض:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+إذا كان المزوّد مجرد تفضيل وكان التراجع بين المزوّدين مرغوبًا، فاستمر في استخدام معرّف نموذج قياسي غير مؤهل مع [عناصر التحكم المعتادة للتوجيه والبدائل](./routing-and-fallbacks.mdx).
+
+## النماذج المجانية المؤهلة بمزوّد
+
+لا يُقبل طلب مؤهل يتضمن `:free` إلا عندما يوفر ذلك المزوّد المحدد مسارًا مجانيًا مؤهلًا للنموذج القياسي ونقطة النهاية.
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+ترفض Phaseo الطلب ما لم يتضمن المسار المحدد بطاقة أسعار غير فارغة وتكن كل قاعدة أسعار حالية:
+
+- موسومة صراحةً بـ `free`
+- بسعر يساوي صفرًا تمامًا
+
+يؤدي غياب الأسعار أو كونها مدفوعة أو مختلطة أو سالبة، أو وجود قاعدة سعرها صفر من دون وسم مجاني صريح، إلى رفض الطلب قبل تنفيذ المزوّد.
+
+<Note>
+وجود نموذج قياسي يتضمن `:free` لا يعني أن كل المزوّدين الذين يقدمون النموذج الأساسي يوفرون مسارًا مجانيًا.
+</Note>
+
+## معرّفات المزوّدين البديلة
+
+استخدم معرّفًا بديلًا ظاهرًا في كتالوج مزوّدي Phaseo. تُحوّل المعرّفات إلى أحرف صغيرة، وتُربط الأسماء القديمة أو التجارية المدعومة بمعرّف المزوّد القياسي.
+
+على سبيل المثال، يتحول `NovitaAI` و`novita-ai` حاليًا إلى `novita`.
+
+تُرفض المعرّفات المشوهة أو غير المعروفة قبل اختيار المزوّد. ولا ترسلها Phaseo إلى المزوّد الأساسي كجزء من اسم النموذج.
+
+## أخطاء التحقق
+
+تستخدم أخطاء المعرّفات المؤهلة بمزوّد HTTP `400` ورمز الخطأ الأعلى `validation_error`. افحص `reason` أو `details[].keyword` لمعرفة السبب الدقيق.
+
+| السبب | المعنى |
+| --- | --- |
+| `invalid_provider_slug` | جزء المزوّد فارغ أو يحتوي محارف غير مدعومة. |
+| `unknown_provider_slug` | صياغة المعرّف سليمة لكنه ليس مزوّدًا معروفًا في Phaseo. |
+| `invalid_provider_qualified_model` | لا يطابق المعرّف المركب النمط `<provider>:<publisher>/<model>`. |
+| `provider_qualified_model_conflict` | يتعارض `provider.only` أو `provider.ignore` أو `routing.only` أو `routing.ignore` مع المؤهل. |
+| `qualified_provider_unavailable` | المزوّد معروف لكنه لا يتيح هذا النموذج على نقطة النهاية المطلوبة. |
+| `qualified_free_provider_unavailable` | لم يتم التحقق من أن مسار المزوّد المحدد مجاني صراحةً وبأسعار صفرية في جميع القواعد. |
+
+مثال على خطأ:
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## الاختيار بين الصيغتين
+
+| المتطلب | قيمة النموذج الموصى بها |
+| --- | --- |
+| ترك اختيار المزوّد والبدائل بين المزوّدين لـ Phaseo | `thinking-machines/inkling-small` |
+| اشتراط Baseten من دون التبديل بين المزوّدين | `baseten:thinking-machines/inkling-small` |
+| اشتراط مسار مجاني تم التحقق منه لدى المزوّد | `baseten:google/gemma-4-26b-a4b:free` |
+
+## أدلة ذات صلة
+
+- [التوجيه والبدائل الاحتياطية](./routing-and-fallbacks.mdx)
+- [مزوّدو API](../exploring/api-providers.mdx)
+- [النماذج](../exploring/models.mdx)
+- [معالجة الأخطاء](../api-reference/errors.mdx)
+- [الإعدادات المسبقة](./presets.mdx)
+

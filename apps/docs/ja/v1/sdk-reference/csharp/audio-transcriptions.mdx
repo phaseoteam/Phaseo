@@ -1,0 +1,32 @@
+---
+icon: "mic"
+title: "音声認識（STT）"
+description: "C# SDKで/audio/transcriptionsを呼び出します。"
+---
+
+**メソッド**: `client.CreateTranscription(...)`
+
+### 例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateTranscription(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-transcribe",
+    ["audio_b64"] = "base64-audio",
+    ["language"] = "en"
+});
+```
+
+### 主なパラメーター
+- `model`（必須）：文字起こしに対応するモデルのID。
+- `file`（必須）：音声データ（ストリームまたはファイル）。
+- `language`：言語コードのヒント（例：`en`）。
+- `prompt`：精度を高めるための任意のコンテキスト。
+- `temperature`（0～2）：サンプリングのランダム性。
+- `response_format`：`json`、`text`、`srt`、`verbose_json`など。
+
+### 戻り値
+`AudioTranscriptionResponse`
+

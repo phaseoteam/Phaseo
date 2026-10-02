@@ -134,3 +134,13 @@ export function formatSupportWait(minutes: number | null): string | null {
 	const hours = Math.ceil(minutes / 60);
 	return `${hours} hour${hours === 1 ? "" : "s"}`;
 }
+
+export function getSupportWaitParts(
+	minutes: number | null,
+): { count: number; unit: "minutes" | "hours" } | null {
+	if (minutes == null) return null;
+	if (minutes <= 60) {
+		return { count: Math.ceil(minutes), unit: "minutes" };
+	}
+	return { count: Math.ceil(minutes / 60), unit: "hours" };
+}

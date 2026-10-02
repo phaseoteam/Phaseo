@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import { Eye, EyeOff } from "lucide-react";
 
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
@@ -11,7 +12,7 @@ export function SensitiveValue({
 	className,
 	contentClassName,
 	inline = false,
-	label = "sensitive value",
+	label,
 }: {
 	children: React.ReactNode;
 	className?: string;
@@ -19,6 +20,15 @@ export function SensitiveValue({
 	inline?: boolean;
 	label?: string;
 }) {
+	const t = useTranslations("SettingsUI");
+	const knownLabels: Record<string, string> = {
+		"sensitive value": t("sensitiveValues.value"),
+		"email address": t("strings.Email"),
+		"new email address": t("strings.New email"),
+		"card number": t("billingCopy.cardNumber"),
+		"card expiry": t("sensitiveValues.cardExpiry"),
+	};
+	const translatedLabel = label ? knownLabels[label] ?? label : t("sensitiveValues.value");
 	const { preferences } = useDisplayPreferences();
 	const [revealed, setRevealed] = React.useState(false);
 	const Tag = inline ? "span" : "div";
@@ -35,9 +45,9 @@ export function SensitiveValue({
 			{preferences.maskSensitiveData ? (
 				<button
 					type="button"
-					aria-label={`${revealed ? "Mask" : "Reveal"} ${label}`}
+					aria-label={t(revealed ? "sensitiveValues.mask" : "sensitiveValues.reveal", { label: translatedLabel })}
 					aria-pressed={revealed}
-					title={`${revealed ? "Mask" : "Reveal"} ${label}`}
+					title={t(revealed ? "sensitiveValues.mask" : "sensitiveValues.reveal", { label: translatedLabel })}
 					onClick={() => setRevealed((current) => !current)}
 					className={cn(
 						"z-10 inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",

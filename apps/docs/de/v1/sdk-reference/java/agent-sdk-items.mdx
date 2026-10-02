@@ -1,0 +1,23 @@
+---
+icon: "layers"
+title: "Mit Ergebnissen und Elementen arbeiten"
+description: "Erstelle Java-Laufzeitachsen aus Nachrichten, Schritten, Tools und Provider-Ereignissen."
+---
+
+Verwende `RunResult` als dauerhaftes Ergebnis eines Java-Agents. Es enthält den Laufdatensatz, gespeicherte Nachrichten, Schritt-Datensätze, normalisierten Verbrauch und Kosten, Warnungen, Beendigungsgründe und die endgültige Ausgabe.
+
+`StreamResult.fullStream()` enthält Provider-Elementereignisse sowie Modell-, Tool-, Schritt- und Laufereignisse. Java stellt Provider-Elemente derzeit als generische Objekte bereit und nicht als diskriminierte TypeScript-Union `AgentItem`.
+
+So erstellst du eine Produktzeitachse:
+
+1. Stelle während des aktiven Laufs den Text aus `textStream()` dar.
+2. Stelle Tool-Karten anhand der Tool-Lifecycle-Ereignisse dar.
+3. Speichere das abgeschlossene `RunResult`.
+4. Rekonstruiere die endgültige Zeitachse aus gespeicherten Nachrichten und Schritten.
+
+Kapsle anbieterspezifische Elementdaten in einem Anwendungsadapter, damit eine Änderung des Provider-Formats den Rest der Benutzeroberfläche nicht beeinträchtigt.
+
+## Weiterführende Themen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)

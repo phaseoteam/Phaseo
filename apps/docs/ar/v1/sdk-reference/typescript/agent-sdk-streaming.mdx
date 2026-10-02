@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "البث"
+description: "ابث النص والاستدلال ونشاط الأدوات وأحداث الوكيل كاملةً."
+---
+
+استخدم `stream()` عندما تحتاج الواجهة إلى عرض استجابة الوكيل أو نشاط الأدوات أثناء استمرار التشغيل. يبدأ آلة الحالات القابلة للاستئناف نفسها التي يبدأها `run()` مع عميل نموذج يدعم البث.
+
+## بث النص
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## قراءة النتيجة في أكثر من موضع
+
+يمكن إعادة تشغيل مستهلكات التدفق، لذا يمكن لرمز العرض والقياس عن بُعد والاستمرارية استهلاك التشغيل نفسه بالتزامن:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## اختيار تدفق
+
+- يعرض `getTextStream()` نص الإجابة.
+- يعرض `getReasoningStream()` تحديثات الاستدلال عندما يوفرها النموذج.
+- يعرض `getItemsStream()` قيَم `AgentItem<TOutput>` ذات أنواع محددة للرسائل والاستدلال ونشاط الأدوات والأخطاء والمخرجات النهائية.
+- يعرض `getToolStream()` نشاط الأدوات.
+- يعرض `getFullStream()` جميع أحداث بيئة التشغيل.
+
+استخدم `cancel()` لإلغاء التشغيل. وتتلقى الأدوات المحلية الإلغاء عبر إشارة بيئة التشغيل.
+
+## بث تقدم الأدوات
+
+يمكن للأدوات المنفّذة كمولدات غير متزامنة نشر نتائج أولية. تظهر في التدفق الكامل كأحداث `tool.preliminary_result` وتظل مرتبطة بالخطوة المكتملة.
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## أدلة ذات صلة
+
+- [تعريف الأدوات وتشغيلها](./agent-sdk-tools.mdx)
+- [العمل باستخدام عناصر محددة الأنواع](./agent-sdk-items.mdx)
+- [خطافات دورة الحياة](./agent-sdk-lifecycle-hooks.mdx)
+- [إنشاء حلقة وكيل دائمة](../../cookbook/agent-sdk-durable-loop.mdx)

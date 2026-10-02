@@ -1,0 +1,47 @@
+---
+icon: "settings-2"
+title: "Quantisierungsmethoden"
+description: "Wie sich Quantisierungsmethoden von Zahlenformaten unterscheiden und warum die Wahl der Methode wichtig ist."
+---
+
+Das Zahlenformat (`FP8`, `INT8`, `INT4`) gibt die Genauigkeit an.
+
+Die Quantisierungsmethode beschreibt, **wie** diese Genauigkeit erreicht wurde.
+
+## Warum Methoden wichtig sind
+
+Zwei `INT4`-Varianten können sich sehr unterschiedlich verhalten, weil die Wahl der Methode Folgendes beeinflusst:
+
+- Erhalt der Genauigkeit
+- Kompatibilität mit der Laufzeitumgebung
+- Speicherlayout und Bereitstellungsleistung
+- Kalibrierungsanforderungen
+
+## Gängige Methodenfamilien
+
+| Methodenfamilie | Typischer Zweck | Hinweise |
+| --- | --- | --- |
+| `AWQ` | Erhält Gewichte, die besonders empfindlich auf Aktivierungen reagieren | Häufig für ein ausgewogenes Verhältnis von Inferenzqualität und Effizienz |
+| `GPTQ` | Quantisierung nach dem Training mit Fehlerminimierung | Beliebt für kompakte Varianten zur lokalen Inferenz |
+| `GGUF` | Paketformat im llama.cpp-Ökosystem | Wird oft mit verschiedenen Quantisierungsstufen (`Q4`, `Q5` usw.) kombiniert |
+| `EXL2` | Aggressive Varianten mit niedriger Bitzahl im ExLlama-Ökosystem | Hoher Durchsatz, jedoch mit Einschränkungen bei Architektur und Laufzeitumgebung |
+
+## Beispiel: Methode und Format
+
+`INT4` ist das angestrebte Genauigkeitsniveau.  
+`AWQ INT4` und `GPTQ INT4` setzen dieses Ziel auf unterschiedliche Weise um.
+
+## Praktische Empfehlungen
+
+1. Wähle zuerst eine Laufzeitumgebung, die du zuverlässig bereitstellen kannst.
+2. Grenze die Methodenfamilien auf diejenigen ein, die diese Laufzeitumgebung unterstützt.
+3. Vergleiche mehrere Quantisierungsmethoden mit demselben Genauigkeitsziel.
+4. Erfasse Fehlermuster und nicht nur durchschnittliche Benchmarkwerte.
+
+## Checkliste für die Bewertung
+
+- Korrektheit strukturierter Ausgaben
+- Zuverlässigkeit bei langen Kontexten
+- Zuverlässigkeit von Tool-Aufrufen
+- Sicherheits- und Moderationsverhalten
+- Tail-Latenz unter Last

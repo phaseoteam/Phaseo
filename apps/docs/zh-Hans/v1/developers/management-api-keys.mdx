@@ -1,0 +1,83 @@
+---
+title: 管理 API 密钥
+description: 创建权限范围明确的管理密钥，以访问 Phaseo 控制平面 API。
+icon: "key-round"
+---
+
+管理 API 密钥是用于 Phaseo 控制平面的服务器端凭证，适用于积分、活动、工作区管理、密钥管理、预设、设置和护栏。它们不能用于发送推理请求。
+
+请前往**控制台 → 设置 → 管理密钥**创建密钥。密钥仅显示一次；关闭对话框前，请将其保存到密钥管理器中。
+
+## 凭证类型
+
+| 凭证 | 用途 | 控制内容 |
+| --- | --- | --- |
+| Gateway API 密钥 | 模型和生成请求 | 路由策略、预算、限制和已关联的护栏 |
+| 管理 API 密钥 | 控制平面请求 | 明确的管理能力和工作区角色检查 |
+| OAuth 访问令牌 | 委托访问控制平面 | 已批准的 OAuth 范围和工作区角色检查 |
+
+管理路由仅接受 `phaseo_v1_mk_<kid>_<secret>`。Gateway API 密钥使用 `phaseo_v1_sk_<kid>_<secret>`，仅供推理使用，无法访问控制平面端点。
+
+请仅在服务器端代码中使用管理密钥：
+
+```http
+Authorization: Bearer phaseo_v1_mk_<kid>_<secret>
+```
+
+生产环境的基础 URL：
+
+```text
+https://api.phaseo.app/v1
+```
+
+## 选择访问级别
+
+控制台提供明确的模板。创建密钥时，每个模板都会展开为所列的能力；Phaseo 不会存储 `all` 之类的通配符。因此，日后新增的权限不会自动授予现有密钥。
+
+| 模板 | 授予的权限 |
+| --- | --- |
+| **Read** | 所有当前管理能力 `*:read` |
+| **Write** | 所有当前 `*:read` 和 `*:write` 能力；不包含删除权限 |
+| **All** | 当前所有读取、写入和删除管理能力 |
+
+## 能力参考
+
+常见情况可使用访问模板。如果集成只需要更小、更专用的授权，请明确选择具体能力。
+
+| 类别 | 读取 | 写入 | 删除 |
+| --- | --- | --- | --- |
+| 身份和目录 | `me:read`、`models:read`、`providers:read`、`pricing:read` | — | — |
+| 使用情况和可观测性 | `credits:read`、`activity:read`、`analytics:read`、`generations:read`、`feedback:read` | `feedback:write` | — |
+| 工作区 | `workspaces:read` | `workspaces:write` | `workspaces:delete` |
+| Gateway API 密钥 | `keys:read` | `keys:write` | `keys:delete` |
+| 管理 API 密钥 | `management_keys:read` | `management_keys:write` | `management_keys:delete` |
+| 预设 | `presets:read` | `presets:write` | `presets:delete` |
+| 设置 | `settings:read` | `settings:write` | — |
+| 提供商凭证 | `provider_credentials:read` | `provider_credentials:write` | `provider_credentials:delete` |
+| 私有模型 | `private_models:read` | `private_models:write` | `private_models:delete` |
+| 护栏 | `guardrails:read` | `guardrails:write` | `guardrails:delete` |
+| 预算 | `budgets:read` | `budgets:write` | `budgets:delete` |
+| OAuth 客户端 | `oauth_clients:read` | `oauth_clients:write` | `oauth_clients:delete` |
+
+`Write` 模板包含对应的读取能力，以便集成在更新资源前先进行检查。`All` 包含删除能力；仅将其用于可信的管理自动化。
+
+## 范围和工作区角色
+
+范围是必要条件，但并非充分条件。Phaseo 还会验证密钥或 OAuth 主体是否属于所请求的工作区，以及是否具有所需的工作区角色。范围受限的密钥不能利用某项能力访问其他工作区，也不能绕过所有权和管理员检查。
+
+例如，`keys:write` 授权执行密钥管理操作，而工作区角色检查会确定调用方能否管理该工作区中的密钥。
+
+## 护栏用途不同
+
+护栏适用于 **Gateway API 密钥**，用于控制推理流量，包括路由限制、预算、提示注入处理和敏感信息规则。管理密钥的范围决定凭证可以调用哪些管理 API。这些控制相互补充，不能互相替代。
+
+如需为推理密钥部署护栏，请参阅[为 API 密钥部署护栏](../cookbook/guardrails-for-api-keys.mdx)。
+
+## 安全与轮换
+
+- 请勿在浏览器、桌面日志、源代码管理或聊天中暴露管理密钥。
+- 每个集成使用一个专用密钥，并优先选择权限范围最小的模板。
+- 如果集成不需要永久访问，请为密钥设置过期时间。
+- 立即暂停或删除不再使用的密钥。
+- 如果密钥泄露，请先轮换密钥，再继续调查事件。
+

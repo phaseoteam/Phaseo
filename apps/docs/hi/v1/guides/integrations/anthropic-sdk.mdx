@@ -1,0 +1,67 @@
+---
+title: "Anthropic SDK"
+icon: "message-square"
+description: "Phaseo के साथ Anthropic-संगत client उपयोग करें।"
+---
+
+जब आपका ऐप, agent या coding tool Claude-शैली के `/v1/messages` requests की अपेक्षा करे, तो Anthropic-संगत API उपयोग करें।
+
+## TypeScript
+
+```bash
+npm install @anthropic-ai/sdk
+```
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app",
+});
+
+const message = await client.messages.create({
+	model: "anthropic/claude-sonnet-4.5",
+	max_tokens: 512,
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+
+console.log(message.content);
+```
+
+## Python
+
+```bash
+pip install anthropic
+```
+
+```python
+import os
+from anthropic import Anthropic
+
+client = Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
+)
+
+message = client.messages.create(
+    model="anthropic/claude-sonnet-4.5",
+    max_tokens=512,
+    messages=[{"role": "user", "content": "Reply with only: ok"}],
+)
+
+print(message.content)
+```
+
+## नोट्स
+
+- Root host `https://api.phaseo.app` उपयोग करें; Anthropic client `/v1/messages` जोड़ते हैं।
+- Endpoint की जानकारी के लिए [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) देखें।
+- Phaseo जहाँ समर्थन करता है वहाँ Anthropic के native tool shapes काम कर सकते हैं; cross-provider server tools के लिए Phaseo tool names उपयोग करें।
+- Stream हो रहे tool loop पर निर्भर workflow को production में भेजने से पहले जाँचें; Anthropic-संगत client tool event के क्रम को अधिक सख्ती से लागू करते हैं।
+
+## संबंधित विषय
+
+- [Claude Code](./claude-code.mdx)
+- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
+- [टूल कॉलिंग](../tool-calling.mdx)

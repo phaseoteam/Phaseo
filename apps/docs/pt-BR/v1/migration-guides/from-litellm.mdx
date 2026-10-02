@@ -1,0 +1,96 @@
+---
+title: "Migração do LiteLLM"
+sidebarTitle: "LiteLLM"
+description: "Substitua o proxy LiteLLM pelo Phaseo sem alterar o caminho de solicitações compatível com OpenAI usado pelo aplicativo."
+icon: "blocks"
+---
+
+Use este guia se seu aplicativo chama um proxy LiteLLM por meio de um cliente compatível com OpenAI. Primeiro troque o limite do proxy e, em seguida, mapeie aliases, regras de roteamento e padrões compartilhados de forma intencional.
+
+## O que muda
+
+| Configuração | Antes | Depois |
+| --- | --- | --- |
+| URL base | Seu proxy LiteLLM | `https://api.phaseo.app/v1` |
+| Chave de API | Chave do proxy LiteLLM | `PHASEO_API_KEY` |
+| Aliases de modelos | Configuração do LiteLLM | IDs de modelos do Phaseo ou aliases do aplicativo |
+| Padrões de roteamento | Configuração do LiteLLM | Presets e configurações de roteamento do Phaseo |
+
+<Steps>
+<Step title="Faça o inventário da configuração do proxy">
+
+Liste todos os aliases de modelos, fallbacks, regras de provedores, políticas de repetição, orçamentos, callbacks e variáveis de ambiente usados na implantação atual do LiteLLM. Identifique quais configurações são políticas compartilhadas e quais pertencem a um único aplicativo.
+
+</Step>
+
+<Step title="Substitua o endpoint do proxy">
+
+Mantenha o código de solicitação compatível com OpenAI e altere a URL base e a chave.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Mapeie aliases e regras de roteamento">
+
+Verifique cada modelo de produção com `GET /v1/models`. Se os clientes dependerem de aliases internos, normalize-os em um único limite do aplicativo em vez de editar cada solicitação.
+
+Mova prompts, parâmetros e restrições de provedores reutilizáveis para [Presets](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
+
+</Step>
+
+<Step title="Valide os fluxos de produção">
+
+Teste streaming, ferramentas, saídas estruturadas, novas tentativas, mapeamento de erros e qualquer observabilidade baseada em callbacks gerenciada pela implantação do LiteLLM. Compare latência, saída, uso de tokens e custo antes de transferir o tráfego gradualmente.
+
+</Step>
+</Steps>
+
+## Lista de verificação da migração
+
+- URLs, chaves e dependências de implantação do LiteLLM foram identificadas.
+- Cada modelo e alias de produção tem um mapeamento explícito no Phaseo.
+- Os padrões compartilhados foram movidos para presets ou para um único limite do aplicativo.
+- Streaming, ferramentas e saídas estruturadas passam no staging quando usados.
+- Callbacks e telemetria necessários têm uma substituição planejada.
+- A reversão continua limitada à alteração do endpoint e da chave.
+
+## Próximas etapas
+
+- [Presets](../guides/presets.mdx)
+- [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Observabilidade](../guides/integrations/observability.mdx)

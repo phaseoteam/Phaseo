@@ -1,0 +1,45 @@
+---
+icon: "message-square"
+title: "聊天补全"
+description: "使用 Rust SDK 发送兼容 OpenAI 的 Chat Completions 请求。"
+---
+
+如果现有集成已使用基于消息的 Chat Completions 载荷，请使用 `chat_completions(...)`。
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+对于新的集成，建议使用 [Responses API](./responses.mdx)。它为文本、多模态输入、工具和更丰富的输出项提供统一的请求模型。
+
+## 相关内容
+
+- [Chat Completions API 参考](../../api-reference/endpoint/chat-completions.mdx)
+- [Rust API 参考](./api-reference.mdx)

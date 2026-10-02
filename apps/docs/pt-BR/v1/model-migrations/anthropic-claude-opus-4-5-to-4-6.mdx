@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "O que considerar ao adotar Claude Opus 4.6, incluindo saída estruturada, pensamento adaptativo e prefills."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+Use este guia para adotar `anthropic/claude-opus-4.6` com segurança em produção.
+
+A migração para Claude Opus 4.6 não é apenas trocar o ID do modelo. As orientações da Anthropic incluem mudanças nas requisições, remoção de flags beta e regras mais rígidas para prefills.
+
+## Novidades
+
+- Prefills do assistente não são mais compatíveis com modelos Claude 4.6 e agora retornam `400`.
+- A saída estruturada passou de `output_format` para `output_config.format`.
+- O pensamento adaptativo agora usa `output_config.effort`.
+- Cabeçalhos beta antigos devem ser removidos.
+- Opus 4.6 não precisa mais do cabeçalho beta `interleaved-thinking-2025-05-14`.
+- Opus 4.6 adiciona uma janela de contexto de 1 milhão de tokens em beta e melhora tarefas longas de programação e agentes.
+
+## Início rápido da migração
+
+### 1. Remova os prefills do assistente
+
+Se você forçava JSON ou um prefixo de resposta preenchendo parcialmente o turno do assistente, esse padrão deixa de funcionar no 4.6. Mova esse controle para:
+
+- instruções de sistema mais claras
+- exemplos no prompt do usuário ou do sistema
+- saída estruturada por `output_config.format`
+
+### 2. Migre a saída estruturada
+
+Se ainda envia `output_format`, atualize o corpo da requisição para usar `output_config.format`.
+
+### 3. Revise a configuração de pensamento
+
+Se dependia de betas antigas de pensamento, migre para a configuração atual `effort` em `output_config` e teste novamente as rotas sensíveis à latência.
+
+### 4. Remova flags beta obsoletas
+
+Revise cabeçalhos beta fixos em wrappers do SDK, middleware e predefinições do Gateway. Manter flags obsoletas gera falhas desnecessárias no rollout.
+
+## O que testar
+
+### Comportamento dos prompts
+
+- Prompts longos de programação e refatoração.
+- Fluxos de pesquisa ou documentos com várias etapas.
+- Prompts que dependiam de prefills do assistente.
+- Tarefas com contexto longo se você pretende usar a janela beta de 1 milhão de tokens.
+
+### Contratos e ferramentas
+
+- Taxa de aprovação de esquemas depois de migrar para `output_config.format`.
+- Qualidade dos argumentos de chamadas de ferramentas em tarefas multi-etapas de agentes.
+- Comportamento de novas tentativas quando o modelo recusa ou reformata a saída.
+- Regressões em fluxos de revisão de código e depuração.
+
+### Operações
+
+- Latência mediana e p95 com as novas configurações de pensamento.
+- Consumo de tokens em execuções longas.
+- Taxa de timeout em tarefas com contexto grande.
+- Taxa de sucesso versus Opus 4.5 na avaliação de produção.
+
+## Rollout seguro
+
+1. Remova prefills e migre a configuração de saída estruturada antes de direcionar tráfego.
+2. Execute Opus 4.6 em paralelo com os prompts de produção importantes.
+3. Faça canário do tráfego mantendo Opus 4.5 como fallback.
+4. Aumente o tráfego somente quando aprovação de esquemas, latência e conclusão de tarefas estiverem estáveis.
+
+## Fontes
+
+- [Guia de migração da Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Apresentação do Claude Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6)

@@ -1,0 +1,85 @@
+---
+title: "应用归因"
+description: "使用稳定的 ID、名称、URL 和类别按应用对 Gateway 用量分组。"
+icon: "badge-check"
+---
+
+使用应用归因区分不同产品、环境或面向客户的体验的用量。归因信息会显示在应用分析和请求审计中，不会改变推理响应。
+
+## 添加归因请求头
+
+在每个请求中发送稳定的应用 ID。若要在控制台中进行更细致的分组，可添加名称、URL 和最多三个类别。
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+同一应用的所有请求都使用相同的 `X-App-Id`。当 URL 不可用时，Phaseo 会将其用作稳定身份标识。
+
+## 使用 TypeScript SDK
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## 支持的请求头
+
+| 请求头 | 用途 |
+| --- | --- |
+| `X-App-Id` | 由应用指定的稳定标识符。 |
+| `X-App-Name` | 应用和用量视图中显示的易读名称。 |
+| `HTTP-Referer` | 与应用关联的公开页面或部署 URL。 |
+| `X-App-Categories` | 以逗号分隔的列表，最多包含三个受支持的类别。 |
+| `X-Title` | 易读应用名称的兼容别名。 |
+
+`HTTP-Referer` 是归因元数据，不必与浏览器自动生成的 `Referer` 请求头一致。若希望应用使用唯一的规范 URL，请在服务端集成中显式设置。
+
+## 类别
+
+最多选择三个值：
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+值不区分大小写。Phaseo 会忽略未知值、删除重复项，并保留最先出现的三个有效类别。后续请求中的类别会与已保存的应用类别合并，不会移除控制台中的选择。
+
+也可以在 **Gateway → 设置 → 应用** 中编辑类别。如果分类由中央统一管理而非应用代码管理，请使用控制台。
+
+## 归因指南
+
+- 在不同部署中保持 ID 稳定，以便用量持续归为同一组。
+- 对需要单独报告成本或用量的应用使用不同 ID。
+- 不要在归因请求头中放入客户 ID、电子邮件地址或其他个人数据。
+- 如果应用可能出现在共享或公开视图中，请将 URL 视为公开元数据。

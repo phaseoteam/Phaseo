@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "Status und Genehmigung"
+description: "Pausiere C#-Agenten für menschliche Entscheidungen und setze den anwendungseigenen Zustand fort."
+---
+
+Verwende `AgentDefinition.HumanReview` für einen allgemeinen Prüfpunkt. Genehmigungspflichtige und manuelle Tools füllen `Run.Pause.PendingToolCalls` mit den exakten Aufruf-IDs.
+
+Setze den Lauf mit `Agent.ContinueRun(...)` fort und übergib:
+
+- `ToolDecision`-Datensätze in `Approvals` oder `Rejections`
+- `ToolOutput`-Datensätze für von deiner Anwendung erledigte Arbeit
+- `HumanInput` für eine allgemeine Prüfungspause
+- das vorherige `RunResult` oder `RunId` mit einem `IStateAccessor`
+
+Entscheidungen werden anhand der Aufruf-ID zugeordnet, sodass gleichzeitige Aufrufe desselben Tools unterscheidbar bleiben.
+
+Implementiere `IStateAccessor.Load(...)` und `Save(...)`, wenn Läufe Anfragen oder Prozessneustarts überdauern müssen. Phaseo hostet keinen Agent-SDK-Laufzustand.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

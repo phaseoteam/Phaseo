@@ -1,0 +1,29 @@
+---
+title: "常见问题"
+description: "解答有关 Phaseo 和 Gateway 的常见问题。"
+icon: "life-buoy"
+---
+
+## 在哪里获取 API 密钥？
+
+在 Phaseo 控制台中创建密钥。请参阅[身份验证](../developers/authentication.mdx)。
+
+## 应该使用哪个基础 URL？
+
+Gateway 的基础 URL 为 `https://api.phaseo.app/v1`。
+
+## 应该从哪个端点开始？
+
+大多数文本工作流使用 `/responses`。为兼容现有集成，也可以使用 `/chat/completions` 和 `/messages`。
+
+## 如何查看受支持的模型？
+
+使用 [Models 端点](../api-reference/endpoint/models.mdx)查看最新列表。
+
+## BYOK 如何运作？
+
+自带密钥（Bring Your Own Key，BYOK）可让你使用 Phaseo 的路由和可观测性，同时由模型提供商直接向你收取模型用量费用。每个 UTC 月的前 250,000 个已完成请求不收取 Phaseo 服务费；之后 Phaseo 会收取相当于提供商费用 2.5% 的服务费。请参阅[路由和回退](../guides/routing-and-fallbacks.mdx#byok-considerations)。
+
+## 在哪里可以寻求帮助？
+
+请参阅[联系与支持](./contact-and-support.mdx)了解支持渠道。

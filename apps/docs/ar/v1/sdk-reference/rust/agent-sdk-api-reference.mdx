@@ -1,0 +1,174 @@
+---
+icon: "braces"
+title: "مرجع Rust Agent SDK API"
+description: "البنى والسمات والأساليب العامة في phaseo-agent 0.1."
+---
+
+تصف هذه الصفحة واجهة API العامة لـ [`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/).
+
+## تعريف الوكيل
+
+| واجهة API | الغرض |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | إنشاء تعريف وكيل بحد افتراضي من ثماني خطوات. |
+| `.instructions(text)` | تعيين تعليمات النموذج. |
+| `.tool(tool)` | إضافة أداة. |
+| `.max_steps(limit)` | تعيين حد أدوار النموذج، على ألا يقل عن واحد. |
+| `.model_retries(count, backoff)` | إعادة طلبات النموذج الفاشلة بفاصل `Duration` ثابت. |
+| `.human_review(callback)` | إيقاف الجولة مؤقتًا بعد رد النموذج إذا أعادت دالة callback القيمة `Some(HumanReviewRequest)`. |
+| `create_agent(definition)` | إنشاء `Agent`. |
+
+## التشغيل والمتابعة
+
+| الأسلوب | الغرض |
+| --- | --- |
+| `Agent::run(client, options)` | التشغيل بالتزامن من دون callback للأحداث. |
+| `Agent::run_with_events(client, options, callback)` | التشغيل بالتزامن وإصدار قيم `AgentEvent`. |
+| `Agent::continue_run(client, options)` | متابعة جولة متوقفة مؤقتًا. |
+| `Agent::continue_with_events(client, options, callback)` | متابعة الجولة وإصدار الأحداث. |
+
+حقول `RunOptions`:
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+أنشئ القيم الافتراضية باستخدام `RunOptions::new(input)`.
+
+حقول `ContinueOptions`:
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+أنشئ القيم الافتراضية باستخدام `ContinueOptions::new(result)`.
+
+## الأدوات
+
+| واجهة API | الغرض |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | تعريف أداة محلية متزامنة. |
+| `Tool::external(id, description, parameters)` | تعريف أداة يقدّم التطبيق نتيجتها بعد إيقاف مؤقت. |
+| `Tool::require_approval()` | اشتراط موافقة تحمل المعرّف نفسه تمامًا قبل التنفيذ المحلي. |
+| `define_tool(tool)` | إعادة `Tool` المقدّمة للحفاظ على أسلوب موحّد للتعريف. |
+
+توقيع المنفّذ هو:
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+يكشف `Tool` الحقول `id` و`description` و`parameters` و`execute` و`require_approval`. فضّل استخدام البُناة وطريقة builder للحفاظ على اتساق أنواع المنفّذات والقيم الافتراضية.
+
+يحتوي `RuntimeContext` الذي يُمرّر إلى المنفّذ على:
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## الرسائل واستدعاءات الأدوات
+
+يحتوي `Message` على `role` و`content` و`tool_calls` و`tool_call_id` اختياري و`name` اختياري و`is_error`. أنشئ الرسائل العادية باستخدام:
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+يحتوي `ToolCall` على معرّف الاستدعاء `id` واسم الأداة `name` ومدخل JSON `input`.
+
+يحتوي `ToolSpec` على معرّف الأداة `id` ووصفها `description` ومعلمات JSON Schema `parameters` المرسلة إلى عميل النموذج.
+
+## عملاء النماذج
+
+نفّذ `ModelClient` لاستخدام وسيلة نقل أخرى للنموذج:
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+يتوفر محوّل Gateway المضمّن عبر:
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+يرسل المحوّل قيم `ModelRequest` إلى `POST /responses`، ويوحّد نص المخرجات واستدعاءات الوظائف وبيانات الطلب الوصفية والاستخدام.
+
+يحتوي `ModelRequest` على معرّف الوكيل والنموذج الفعلي والتعليمات والرسائل الحالية ومواصفات الأدوات وسياق التطبيق.
+
+يحتوي `ModelResponse` على:
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## أنواع المراجعة والإيقاف المؤقت
+
+يحتوي `HumanReviewContext` على معرّفي الجولة والوكيل وفهرس الخطوة والرسائل الحالية واستجابة النموذج الموحّدة وسياق التطبيق.
+
+أعِد `HumanReviewRequest { reason, payload }` من callback المراجعة لإيقاف الجولة مؤقتًا.
+
+يحتوي `HumanPause` على:
+
+- `reason`
+- حمولة JSON `payload`
+- `kind`
+- `pending_tool_calls`
+
+يحتوي كل `PendingToolCall` على `ToolCall` الأصلي ونوع الإدخال المطلوب `kind` وسبب مكتوب بلغة واضحة.
+
+يوفّر `ToolDecision` معرّف `tool_call_id` الموافق عليه وسببًا اختياريًا. ويوفّر `ToolOutput` معرّف `tool_call_id` ومخرجات JSON.
+
+## سجلات الجولات
+
+يحتوي `RunResult` على:
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+يحتوي `RunRecord` على معرّفي الجولة والوكيل والنموذج الفعلي وحد الخطوات والحالة والمدخل الأصلي وسياق التطبيق وعدد الخطوات وإيقاف مؤقت اختياري وسبب توقف اختياري وطوابع زمنية.
+
+يحتوي `RunStep` على الفهرس والحالة وعدد محاولات النموذج واستدعاءات الأدوات ومعرّف الطلب والمزوّد والنموذج وسبب الإنهاء وخطأ اختياري والاستخدام.
+
+يحتوي `UsageSummary` على `input_tokens` و`output_tokens` و`cached_tokens` و`total_tokens` و`cost`.
+
+يوفّر عميل النموذج قيمة `cost`. ولا يربط محوّل Gateway 0.1 المضمّن حاليًا قيم `cost_nanos` أو `cost_cents` من Gateway بهذا الحقل.
+
+تدعم الأنواع `RunResult` و`RunRecord` و`RunStep` و`Message` و`ToolCall` و`HumanPause` و`PendingToolCall` و`ToolDecision` و`ToolOutput` و`UsageSummary` تسلسل Serde عندما تشتق تعريفاتها السمات `Serialize` و`Deserialize`.
+
+## الأحداث والأخطاء
+
+حقول `AgentEvent`:
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+ينفّذ `AgentError` السمات `std::error::Error` و`Display`. استخدم `AgentError::new(...)` لإنشاء خطأ، و`message()` لقراءة رسالته.
+
+## مراجع خارجية
+
+- [حزمة `phaseo-agent` على crates.io](https://crates.io/crates/phaseo-agent)
+- [حزمة `phaseo-agent` على docs.rs](https://docs.rs/phaseo-agent)

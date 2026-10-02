@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "डायनेमिक टर्न"
+description: "Ruby एजेंट टर्न के बीच routing, instructions, tools और sampling settings बदलें।"
+---
+
+Agent के callable fields हर model turn से पहले मौजूदा run state से request parameters फिर तय करते हैं।
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+Dynamic tools और sampling values भी यही pattern अपना सकते हैं। कोई tool `next_turn_params` सेट करके केवल तुरंत अगले request को बदल सकता है। ये override approval checkpoint के बाद भी बने रहते हैं और अगले turn के बाद समाप्त हो जाते हैं।
+
+हर टर्न में फिर से तय होने वाली policy के लिए callable उपयोग करें। किसी tool का अपना बदलाव अगले turn तक पहुँचाने के लिए `next_turn_params` उपयोग करें।

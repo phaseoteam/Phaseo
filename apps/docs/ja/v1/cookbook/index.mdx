@@ -1,0 +1,63 @@
+---
+title: "クックブック"
+icon: "chef-hat"
+description: "Phaseoを使った開発に役立つ、実践的なシナリオ別レシピ。"
+---
+
+作りたいものが決まっていて、セットアップから動作確認までの手順が必要なときに、このクックブックを使います。
+
+## まずリクエストを動かす
+
+<Columns cols={2}>
+	<Card title="無料ルーターで公開する" icon="route" href="./free-router-first-deploy.mdx">
+		特定のモデルを選んだり事前に入金したりせずに、実際のリクエストを送信できます。
+	</Card>
+	<Card title="Next.jsでWebチャットアプリを作る" icon="message-square" href="./build-a-nextjs-web-chat-app.mdx">
+		Phaseo APIキーをサーバーに保持したまま、ブラウザー用チャット画面を作成します。
+	</Card>
+	<Card title="Node RESTの簡易テストアプリを作る" icon="terminal" href="./build-a-node-rest-smoke-app.mdx">
+		最小限の実用例で、HTTPを直接使ったバックエンド連携を確認します。
+	</Card>
+	<Card title="PythonでGateway CLIを作る" icon="terminal-square" href="./build-a-python-gateway-cli.mdx">
+		Python SDKを使ったコマンドラインのワークフローを作成します。
+	</Card>
+</Columns>
+
+<Tip>
+  コーディングエージェントにプロジェクトのひな形を作らせますか？[ミニアプリ用スタータープロンプト](./mini-app-starter-prompts.mdx)から始めてください。
+</Tip>
+
+## 目的に合わせてレシピを選ぶ
+
+<Columns cols={2}>
+	<Card title="アプリケーションを作る" icon="layout-template" href="./build-a-nextjs-web-chat-app.mdx">
+		Webアプリ、認証付きワークベンチ、バックエンドスクリプト、CLIの一連の手順を紹介します。
+	</Card>
+	<Card title="ルーティングとポリシーを制御する" icon="route" href="./preset-rollout-and-routing-debug.mdx">
+		プリセットを段階的に導入し、プロバイダーを選び、データ所在要件とAPIキーを管理します。
+	</Card>
+	<Card title="検索して構造化データを返す" icon="search-check" href="./sdk-typescript-managed-search.mdx">
+		Web検索や取得機能でリクエストに情報を補い、構造化出力を検証・修復します。
+	</Card>
+	<Card title="Agent SDKを使い始める" icon="bot" href="./agent-sdk-durable-loop.mdx">
+		TypeScript、Python、Go、C#、Java、PHP、Rubyで、範囲を限定したツールループを作成します。
+	</Card>
+	<Card title="高度なエージェントワークフローを作る" icon="workflow" href="./agent-sdk-research-brief.mdx">
+		リサーチ、人によるレビュー、並列ツール、構造化出力、コーディングワークフローを追加します。
+	</Card>
+</Columns>
+
+## 人気のレシピ
+
+- [価格、レイテンシ、スループットでプロバイダーを並べ替える](./sort-providers-by-price-latency-or-throughput.mdx)
+- [EUまたはZDRプロバイダーのみにルーティングする](./route-only-to-eu-or-zdr-providers.mdx)
+- [不正な構造化JSONを修復する](./response-healing-for-structured-json.mdx)
+- [エージェント型Web検索で調査する](./agent-sdk-research-brief.mdx)
+- [ローカルエージェントツールを並列実行する](./agent-sdk-parallel-tools.mdx)
+
+## 関連ガイド
+
+- [クイックスタート](../quickstart.mdx)
+- [サンプル](../guides/examples.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [Agent SDKの概要](../sdk-reference/agent-sdk/overview.mdx)

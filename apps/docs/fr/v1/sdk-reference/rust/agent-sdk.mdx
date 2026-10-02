@@ -1,0 +1,132 @@
+---
+icon: "blocks"
+title: "Développer avec le SDK Agent pour Rust"
+description: "Créez un agent Rust synchrone qui appelle un outil local via Phaseo Gateway."
+---
+
+Suivez ce guide pour créer un petit agent qui utilise des outils et examiner son exécution une fois terminée.
+
+## Définir un outil
+
+```rust
+use phaseo_agent::{define_tool, Tool};
+use serde_json::json;
+
+let lookup = define_tool(Tool::new(
+    "lookup_docs",
+    "Look up a Phaseo documentation topic",
+    json!({
+        "type": "object",
+        "properties": {
+            "topic": { "type": "string" }
+        },
+        "required": ["topic"]
+    }),
+    |input, context| {
+        Ok(json!({
+            "topic": input["topic"],
+            "run_id": context.run_id,
+            "found": true
+        }))
+    },
+));
+```
+
+La fermeture s’exécute localement. Son `RuntimeContext` contient l’identifiant de l’exécution, celui de l’agent, l’index de l’étape, le contexte de l’application et l’appel d’outil d’origine.
+
+## Créer l’agent
+
+```rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+let agent = create_agent(
+    AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+        .instructions("Use lookup_docs when it helps. Finish with a concise answer.")
+        .max_steps(6)
+        .tool(lookup),
+);
+```
+
+## Exécuter via Phaseo Gateway
+
+```rust
+use phaseo_agent::{create_gateway_agent_client, RunOptions};
+
+let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.context = serde_json::json!({
+    "workspace": "docs"
+});
+
+let result = agent.run(&mut client, options)?;
+println!("{}", result.output);
+```
+
+## Exemple complet
+
+```rust
+use phaseo_agent::{
+    create_agent, create_gateway_agent_client, define_tool, AgentDefinition,
+    RunOptions, Tool,
+};
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let lookup = define_tool(Tool::new(
+        "lookup_docs",
+        "Look up a Phaseo documentation topic",
+        json!({
+            "type": "object",
+            "properties": {
+                "topic": { "type": "string" }
+            },
+            "required": ["topic"]
+        }),
+        |input, context| {
+            Ok(json!({
+                "topic": input["topic"],
+                "run_id": context.run_id,
+                "found": true
+            }))
+        },
+    ));
+
+    let agent = create_agent(
+        AgentDefinition::new("docs-agent", "openai/gpt-6-astra")
+            .instructions("Use lookup_docs when helpful. Answer concisely.")
+            .max_steps(6)
+            .tool(lookup),
+    );
+
+    let mut client = create_gateway_agent_client("openai/gpt-6-astra")?;
+    let result = agent.run(
+        &mut client,
+        RunOptions::new("Explain when to use routing presets."),
+    )?;
+
+    println!("{}", result.output);
+    println!("steps: {}", result.run.step_count);
+    println!("tokens: {}", result.usage.total_tokens);
+    Ok(())
+}
+```
+
+## État d’une exécution
+
+`RunResult` contient :
+
+- `run` : l’état, les identifiants, le modèle effectif, la limite d’étapes, le contexte et l’état de pause
+- `steps` : chaque tour du modèle, l’identifiant de requête, le fournisseur, le modèle, la raison de fin, les appels d’outil et l’utilisation
+- `messages` : l’historique complet des messages du modèle et des outils
+- `output` : la valeur finale produite
+- `usage` : les totaux de jetons et tout coût fourni par le client de modèle
+
+## Modèle d’exécution actuel
+
+Les exécutions du SDK Agent pour Rust sont synchrones. Les outils locaux s’exécutent un par un. Si une exécution ne doit pas bloquer un gestionnaire de requête, utilisez un thread de travail de l’application ou une tâche distincte.
+
+## Suite
+
+- [Outils et approbations](./agent-sdk-tools.mdx)
+- [Enregistrer et reprendre des exécutions](./agent-sdk-state-and-approval.mdx)
+- [Événements, nouvelles tentatives et erreurs](./agent-sdk-events-and-errors.mdx)

@@ -1,0 +1,120 @@
+---
+title: "Caso você tenha perdido: O que lançamos em junho de 2026"
+shortTitle: "Caso você tenha perdido: junho de 2026"
+description: Junho aprimorou a descoberta de modelos, os sinais do ciclo de vida, o monitoramento, a integração inicial e a cobertura de provedores.
+publishedAt: 2026-06-30
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-june-2026.png
+tags:
+  - Resumo mensal
+  - Resumo mensal
+  - Produto
+  - Modelos
+draft: false
+---
+
+Em junho, o foco foi manter a Phaseo útil enquanto o mercado de modelos mudava rapidamente. Houve bastante trabalho no catálogo, mas a história principal foi a confiabilidade: melhor descoberta, sinais de ciclo de vida mais claros, páginas de monitoramento mais completas e maior cobertura de provedores.
+
+Este resumo cobre o que foi lançado entre **1º e 30 de junho de 2026**, com base no histórico de lançamentos, no histórico de commits e nos dados do catálogo do mês.
+
+## O que lançamos
+
+### A descoberta de modelos ficou mais confiável
+
+Em junho, trabalhamos bastante na descoberta de modelos, nas verificações de provedores e nas importações do catálogo. A descoberta passou a usar tarefas agendadas da Cloudflare, a recuperação melhorou, a sincronização de issues foi reativada e os avisos de modelos desatualizados começaram a ser removidos durante a importação.
+
+Com isso, o catálogo depende menos de verificações manuais e as atualizações dos provedores passam pelo sistema de forma mais consistente.
+
+Isso não é apenas manutenção interna. Se um provedor adiciona um modelo, muda preços, descontinua um alias ou altera a disponibilidade, a Phaseo precisa perceber. Em junho, reduzimos a chance de essas mudanças passarem despercebidas até alguém fazer uma verificação manual.
+
+### As páginas dos modelos mostram melhor o ciclo de vida
+
+Adicionamos avisos nas páginas dos modelos, cartões com tempo relativo para datas do ciclo de vida, uma ordenação de datas mais clara e correções no comportamento de rolagem dos detalhes dos modelos. Também melhoramos a seleção de modelos no início rápido e simplificamos esses fluxos.
+
+A meta era tornar cada página de modelo mais confiável à primeira vista: o que está disponível, o que mudou, o que foi descontinuado e o que usar em seguida.
+
+Isso importa porque páginas de modelos não são páginas estáticas. São registros em constante evolução. Um modelo pode passar de rumor a prévia, de prévia a ativo, de ativo a descontinuado ou sair de um provedor para vários. Em junho, o produto passou a explicar essas transições com mais clareza.
+
+### As telas de monitoramento e uso melhoraram
+
+O histórico de monitoramento foi transferido para o Supabase, os cartões foram refinados e as datas de status e os links ficaram mais visíveis. Também aprimoramos a observabilidade nas configurações, e o Gateway ganhou mais rotas de API e métricas de uso.
+
+Assim, as equipes entendem melhor o comportamento atual sem precisar começar investigando registros brutos.
+
+Em junho, também aprimoramos a observabilidade do roteamento no playground e mantivemos a visibilidade antecipada de erros no Axiom. Essas mudanças ajudam a fechar o intervalo entre “uma solicitação falhou” e “sabemos por que ela falhou”.
+
+### A integração inicial e a base da CLI avançaram
+
+Em junho, adicionamos um fluxo interativo de integração inicial e a base para o trabalho da CLI beta com OAuth. Também corrigimos a adaptação do início rápido na página inicial e continuamos tratando casos extremos de contas e cobrança.
+
+O objetivo era facilitar a primeira utilização e preparar futuros fluxos de desenvolvimento local.
+
+O trabalho da CLI com OAuth mostra por que isso importa. É mais fácil adotar um Gateway quando desenvolvedores podem conectar ferramentas locais, autenticar sem complicações e passar do primeiro teste a um fluxo repetível sem copiar etapas de configuração espalhadas.
+
+### A cobertura de provedores continuou crescendo
+
+A cobertura de provedores mudou rapidamente em junho. O catálogo adicionou ou atualizou dados de Alibaba Cloud, Cloudflare Workers AI, DigitalOcean, Fireworks, Together, Bedrock, xAI, Moonshot, Z.AI, CrofAI, ByteDance, Venice, AtlasCloud, AkashML, GMICloud e outros.
+
+Também adicionamos atualizações de preços, roteamento e benchmarks para vários lançamentos importantes, incluindo Kimi K2.7 Code, GLM 5.2, Claude Fable 5, Claude Sonnet 5 e LongCat 2.0.
+
+É aqui que a Phaseo precisa ser útil como infraestrutura, e não apenas como uma lista. As pessoas precisam saber quais provedores oferecem suporte a um modelo, quanto custa cada rota, se o modelo está ativo e como o lançamento se compara às alternativas próximas.
+
+## Também lançamos
+
+- O changelog foi reunido em uma única linha do tempo.
+- Os issues de descoberta de modelos foram transferidos para tarefas agendadas da Cloudflare.
+- Os dados do catálogo de planos de assinatura foram atualizados.
+- O rodapé ganhou um link para o Monitor.
+- O agendamento e a recuperação do observador de modelos foram corrigidos.
+- Avisos das páginas de modelos passaram a ser importados dos dados do catálogo.
+- O início rápido beta da página inicial ficou mais adaptável a diferentes telas.
+- Os preços de modelos futuros ficaram visíveis quando disponíveis.
+- Dependências foram atualizadas em pacotes de interface, ferramentas de configuração do Actions e bibliotecas de execução.
+
+## Destaques de modelos
+
+Junho teve vários lançamentos importantes. Kimi K2.7 Code recebeu suporte no catálogo, links do Hugging Face, preços de provedores e atualizações dos SDKs gerados. GLM 5.2 ganhou disponibilidade de provedores, preços, suporte a esforço de raciocínio, correções de roteamento e preparação para implantação. Claude Fable 5 e Claude Mythos 5 avançaram pelas entradas de lançamento, avisos, preços, implantação em provedores e revisão de benchmarks.
+
+O mês terminou com uma sequência intensa de lançamentos em 30 de junho: Claude Sonnet 5, Gemini Omni Flash Preview, Leanstral 1.5 e OCR 4. LongCat 2.0 também chegou no fim do mês, com suporte do observador adicionado antes do lançamento.
+
+Confira os dados de lançamentos mais recentes:
+
+- [Ver atualizações recentes](/updates)
+
+## Resumo do mês
+
+O histórico local do Git registra **163 commits** em junho. O mês se concentrou na confiabilidade da descoberta de modelos, cobertura de provedores, telas de monitoramento e uso, integração inicial, ferramentas do Gateway e uma sequência intensa de lançamentos de modelos.
+
+## Modelos lançados em junho de 2026
+
+O catálogo inclui os seguintes modelos com datas de lançamento em junho de 2026:
+
+- 1º de junho: MiniMax M3 (`minimax/minimax-m3`)
+- 1º de junho: Nemotron 3 Ultra (`nvidia/nemotron-3-ultra-550b-a55b`)
+- 1º de junho: Qwen 3.7 Plus (`qwen/qwen3.7-plus`)
+- 3 de junho: Gemma 4 12B (`google/gemma-4-12b`)
+- 5 de junho: Nex N2 Mini (`nex-agi/nex-n2-mini`)
+- 5 de junho: Nex N2 Pro (`nex-agi/nex-n2-pro`)
+- 9 de junho: Claude Fable 5 (`anthropic/claude-fable-5`)
+- 9 de junho: Claude Mythos 5 (`anthropic/claude-mythos-5`)
+- 9 de junho: Gemini 3.5 Live Translate Preview (`google/gemini-3.5-live-translate-preview`)
+- 10 de junho: DiffusionGemma 26B A4B IT (`google/diffusiongemma-26b-a4b-it`)
+- 12 de junho: Kimi K2.7 Code (`moonshotai/kimi-k2.7-code`)
+- 14 de junho: Greg 2 Super (`crofai/greg-2-super`)
+- 14 de junho: Greg 2 Ultra (`crofai/greg-2-ultra`)
+- 15 de junho: Seedance 2.0 Mini (2026-06-15) (`bytedance/seedance-2.0-mini-260615`)
+- 16 de junho: GLM 5.2 (`z-ai/glm-5.2`)
+- 17 de junho: Grok Imagine Video 1.5 (`x-ai/grok-imagine-video-1.5`)
+- 23 de junho: Gemini 3.1 Flash Lite image (Nano Banana 2 Lite) (`google/gemini-3.1-flash-lite-image`)
+- 29 de junho: LongCat 2.0 (`meituan/longcat-2.0`)
+- 30 de junho: Claude Sonnet 5 (`anthropic/claude-sonnet-5`)
+- 30 de junho: Gemini Omni Flash Preview (`google/gemini-omni-flash-preview`)
+- 30 de junho: Leanstral 1.5 (`mistral/leanstral-1.5`)
+- 30 de junho: OCR 4 (`mistral/ocr-4`)
+
+## Próximos passos
+
+Junho leva diretamente ao trabalho de migração da Phaseo: uma marca mais clara, uma seção de blog mais completa e uma estrutura de site capaz de reunir atualizações do produto, notas de lançamento de modelos, guias e artigos de dados.
+

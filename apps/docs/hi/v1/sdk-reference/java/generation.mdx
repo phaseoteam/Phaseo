@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "जनरेशन रिकॉर्ड देखें"
+description: "पहला जनरेशन रिकॉर्ड पाने के लिए `/generations` कॉल करें।"
+---
+
+**मेथड**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+यदि अनुरोध विवरण संग्रहीत किए गए थे, तो लौटाए गए जनरेशन रिकॉर्ड में `replay_supported` और `replay_request` भी होते हैं, जिनसे कैप्चर किए गए payload को मूल एंडपॉइंट पर दोबारा भेजा जा सकता है।
+

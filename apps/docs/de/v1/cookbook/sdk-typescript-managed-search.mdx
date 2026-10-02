@@ -1,0 +1,155 @@
+---
+title: "Einen TypeScript-SDK-Workflow mit verwalteter Websuche fundieren"
+icon: "search"
+description: "Verwende das offizielle TypeScript-SDK mit Voreinstellungen, verwalteter Websuche und Antwortmetadaten für einen fundierten und leicht zu untersuchenden Workflow."
+---
+
+Verwende dieses Rezept, wenn ein TypeScript- oder JavaScript-Dienst Folgendes kombinieren soll:
+
+- routingbezogene Standardwerte aus einer Voreinstellung
+- das verwaltete Tool `phaseo:web_search`
+- striktes Parsen der Antwort
+- Metadaten auf Anfrageebene zum Debuggen
+
+## Ziel
+
+- den Aufrufer beim offiziellen SDK belassen
+- keine rohen Kompatibilitätsnutzlasten von Hand neu aufbauen
+- genügend Metadaten für die Untersuchung von Suchergebnissen, Routing und Plugin-Verhalten behalten
+
+## 1. Mit einem gemeinsam genutzten Client beginnen
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. Stabile Standardwerte zuerst in einer Voreinstellung festlegen
+
+Erstelle eine Voreinstellung, wenn mehrere Aufrufer Folgendes gemeinsam verwenden sollen:
+
+- Modellrichtlinien
+- Provider-Präferenzen
+- Reasoning-Standardwerte
+- System-Prompt
+- deterministisches Caching-Verhalten
+
+Beschränke die SDK-Anfrage anschließend auf die Werte, die sich bei diesem Aufruf ändern.
+
+## 3. Eine fundierte Antwort mit dem verwalteten Such-Tool anfordern
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+Damit erhältst du:
+
+- von der Voreinstellung verwaltete Routing- und Prompt-Standardwerte
+- eine serverseitig verwaltete Suche, die nicht von nativer Suchunterstützung des Providers abhängt
+- strukturierte Ausgabe für eine zuverlässige nachgelagerte Verarbeitung
+- die Metadaten, die für betriebliche Analysen nötig sind
+
+## 4. Die Ausgabe parsen und Debug-Felder beibehalten
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+Diese Felder erleichtern die folgenden Prüfungen:
+
+- welcher Provider die Anfrage tatsächlich ausgeführt hat
+- ob die verwaltete Suche ausgeführt wurde
+- ob die Antwortreparatur ausgeführt wurde
+- welche Anfrage du im Dashboard untersuchen solltest
+
+## 5. Die fundierte Anfrage in den Protokollen prüfen
+
+Öffne die Anfrage unter **Gateway -> Nutzung** und prüfe:
+
+- normalisierte Suchergebnisse
+- Zitate
+- ausgewählten Provider
+- Ausführungsmetadaten des Plugins
+
+Wenn Suchverhalten oder Rangfolge nicht stimmen, passe die Voreinstellung oder Tool-Parameter anhand der Protokolle an, statt unüberlegt Überschreibungen hinzuzufügen.
+
+## 6. Explorative und deterministische Workflows trennen
+
+Empfohlenes Muster:
+
+1. eine Voreinstellung für deterministische strukturierte Rechercheergebnisse
+2. eine weitere Voreinstellung für explorative Anfragen oder eine höhere Temperatur
+
+So bleiben:
+
+- der Antwortcache übersichtlicher
+- das Routing-Verhalten leichter nachvollziehbar
+- suchintensive Workflows vom allgemeinen Generierungsverkehr getrennt
+
+## Verwandte Anleitungen
+
+- [Websuchanfragen untersuchen](./web-search-debugging.mdx)
+- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
+- [Antworten für strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)
+- [Überblick über das TypeScript-SDK](../sdk-reference/typescript/overview.mdx)

@@ -1,0 +1,24 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "Python SDKで `/moderations` を呼び出します。"
+---
+
+**メソッド**: `client.generate_moderation()`.
+
+### 例
+```python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation-latest",
+    "input": "Text to classify",
+})
+```
+
+### 主なパラメーター
+- `model`（必須）: モデレーションモデルのID（例: `openai/omni-moderation-latest`）。
+- `input`（必須）: 文字列またはコンテンツ項目の配列（テキストまたは `image_url`）。
+- 任意: `categories`/`severity`フィルター（対応している場合）と`user`タグ。
+
+### 戻り値
+`ModerationResponse`
+

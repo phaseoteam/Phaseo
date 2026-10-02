@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { mergeAppsAction } from "@/app/(dashboard)/settings/apps/actions";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type AppItem = {
 	id: string;
@@ -50,6 +52,7 @@ export default function MergeAppDialog({
 	hideTrigger,
 	trigger,
 }: MergeAppDialogProps) {
+	const t = useTranslations("SettingsUI");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const [targetId, setTargetId] = useState<string>("");
@@ -76,9 +79,10 @@ export default function MergeAppDialog({
 		try {
 			const promise = mergeAppsAction(app.id, targetId);
 			toast.promise(promise, {
-				loading: "Merging apps...",
-				success: "Apps merged",
-				error: (err) => err?.message ?? "Failed to merge apps",
+				loading: t("strings.phraseMergingApps" as never),
+				success: t("strings.Apps merged" as never),
+				error: (err) =>
+					localizedSettingsError(err, t, "Failed to merge apps"),
 			});
 			await promise;
 			onMerged();
@@ -95,7 +99,7 @@ export default function MergeAppDialog({
 		if (hideTrigger) return null;
 		return (
 			<Button variant="outline" size="sm" disabled>
-				Merge
+					{t("strings.Merge" as never)}
 			</Button>
 		);
 	}
@@ -106,25 +110,24 @@ export default function MergeAppDialog({
 				<DialogTrigger asChild>
 					{trigger ?? (
 						<Button variant="outline" size="sm" disabled={disabled}>
-							Merge
+										{t("strings.Merge" as never)}
 						</Button>
 					)}
 				</DialogTrigger>
 			) : null}
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Merge apps</DialogTitle>
+					<DialogTitle>{t("strings.Merge apps" as never)}</DialogTitle>
 					<DialogDescription>
-						Move all requests from this app into another and remove the source
-						afterwards.
+						{t("strings.phraseMoveAllRequestsFromThisAppIntoAnotherAndRemoveTheSourceAfterwards" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onMerge} className="space-y-4">
 					<div className="space-y-2">
-						<Label htmlFor="merge-target">Merge into</Label>
+						<Label htmlFor="merge-target">{t("strings.Merge into" as never)}</Label>
 						<Select value={targetId} onValueChange={setTargetId}>
 							<SelectTrigger id="merge-target">
-								<SelectValue placeholder="Choose target app" />
+								<SelectValue placeholder={t("strings.Choose target app" as never)} />
 							</SelectTrigger>
 							<SelectContent>
 								{options.map((option) => (
@@ -136,15 +139,14 @@ export default function MergeAppDialog({
 						</Select>
 					</div>
 					<div className="rounded-lg border border-amber-200/70 bg-amber-50/60 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-						This will move all historical requests to the selected app and
-						delete "{app.title}".
+						{(t as unknown as (key: string, values?: Record<string, string>) => string)("strings.phraseThisWillMoveAllHistoricalRequestsToTheSelectedAppAndDeleteAppName", { appName: app.title })}
 					</div>
 					<DialogFooter>
 						<Button type="button" variant="ghost" onClick={() => setOpen(false)}>
-							Cancel
+							{t("strings.Cancel" as never)}
 						</Button>
 						<Button type="submit" disabled={loading || !targetId}>
-							{loading ? "Merging..." : "Merge app"}
+							{loading ? t("strings.phraseMerging" as never) : t("strings.Merge app" as never)}
 						</Button>
 					</DialogFooter>
 				</form>

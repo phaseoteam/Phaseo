@@ -1,0 +1,46 @@
+---
+icon: "rocket"
+title: "Descripción general"
+description: "Para qué sirve el TypeScript Agent SDK y cuándo usarlo."
+---
+
+Usa el TypeScript Agent SDK cuando tu aplicación necesite algo más que una generación puntual:
+
+- bucles locales de herramientas con varios pasos
+- estado de ejecución reanudable
+- turnos de modelo respaldados por el gateway
+- salidas estructuradas validadas, progreso en streaming y enrutamiento compatible con plugins
+
+Se basa en `@phaseo/sdk` y define el contrato de ejecución de referencia que comparten los demás lenguajes del Agent SDK.
+
+## Matriz de capacidades del runtime
+
+| Capacidad | Compatibilidad del SDK |
+| --- | --- |
+| Herramientas ejecutables y concurrentes | Incluidas, con orden determinista de resultados y tiempos de espera por herramienta |
+| Validación en runtime | Esquemas de entrada, salida, eventos y resultado final del agente mediante `parse`, `safeParse` o funciones validadoras |
+| Aprobación humana | Aprobación por herramienta o llamada, con aprobación mediante el ID exacto de llamada y rechazo al reanudar |
+| Herramientas con intervención humana | Pausa con `onToolCalled` y transformación con `onResponseReceived` |
+| Herramientas manuales | `execute: false` y `toolOutputs` proporcionados externamente |
+| Herramientas que informan del progreso | Herramientas de generador asíncrono y eventos `tool.preliminary_result` |
+| Recuperación ante errores de herramientas | Falla la ejecución o devuelve al modelo un error de herramienta estructurado |
+| Streaming | Diferenciales del modelo y consumidores reproducibles de texto, razonamiento, elementos, herramientas y eventos completos |
+| Controles de detención | Pasos, duración, tokens, costo, llamadas a herramientas, motivo de finalización y predicados personalizados |
+| Turnos dinámicos | Modelo, instrucciones, valores de muestreo, conjuntos de herramientas, modificación del contexto y `nextTurnParams` dinámicos |
+| Continuación duradera | Resultados de ejecución serializables o acceso a `state` con carga y guardado a cargo de la aplicación |
+| Observabilidad | Uso y costos normalizados, advertencias, motivos de finalización, resultados de pasos, eventos del ciclo de vida y herramientas de desarrollo locales |
+
+## Qué incluye
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+- `run()`, `stream()`, `continueRun()` y `continueStream()`
+- herramientas ejecutables, manuales, sujetas a aprobación y con intervención humana
+- esquemas de entrada y salida en runtime, progreso de generadores, condiciones de detención combinables y resúmenes de uso y costo
+- accesores de estado opcionales propiedad de la aplicación y eventos del ciclo de vida para las herramientas de desarrollo
+
+## Siguiente
+
+- [Instalación](./agent-sdk-installation.mdx)
+- [Uso](./agent-sdk.mdx)

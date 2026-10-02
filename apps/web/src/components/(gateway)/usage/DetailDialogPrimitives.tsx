@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -128,20 +129,28 @@ export function DetailTimingBar({
 		colorClass: string;
 	}>;
 }) {
+	const locale = useLocale();
 	const format = useDisplayFormatters();
+	const unit = (value: number, name: string) => {
+		let numberWritten = false;
+		return new Intl.NumberFormat(locale, { style: "unit", unit: name, unitDisplay: "short", maximumFractionDigits: 2 }).formatToParts(value).map(part => {
+			if (!["integer", "group", "decimal", "fraction"].includes(part.type)) return part.value;
+			if (numberWritten) return "";
+			numberWritten = true;
+			return format.number(value, { maximumFractionDigits: 2 });
+		}).join("");
+	};
 	function formatDuration(ms: number): string {
-		if (ms < 1000) return `${format.number(ms)} ms`;
+		if (ms < 1000) return unit(ms, "millisecond");
 		if (ms < 60_000) {
 			const seconds = ms / 1000;
-			return `${format.number(seconds, {
-				maximumFractionDigits: seconds >= 10 ? 1 : 2,
-			})} s`;
+			return unit(Number(seconds.toFixed(seconds >= 10 ? 1 : 2)), "second");
 		}
 		const minutes = Math.floor(ms / 60_000);
 		const seconds = Math.round((ms % 60_000) / 1000);
 		return seconds > 0
-			? `${format.number(minutes)}m ${format.number(seconds)}s`
-			: `${format.number(minutes)}m`;
+			? `${unit(minutes, "minute")} ${unit(seconds, "second")}`
+			: unit(minutes, "minute");
 	}
 
 	const safeItems = items
@@ -151,11 +160,12 @@ export function DetailTimingBar({
 				? Math.round(item.duration) : null,
 		}));
 	const total = safeItems.reduce((sum, item) => sum + (item.duration ?? 0), 0);
+	const t = useTranslations("SettingsUI");
 
 	if (!safeItems.length) {
 		return (
 			<div className="text-sm text-muted-foreground">
-				No timing metrics available for this request.
+				{t("strings.phraseNoTimingMetricsAvailableForThisRequest" as never)}
 			</div>
 		);
 	}
@@ -187,7 +197,7 @@ export function DetailTimingBar({
 								/>
 							</div>
 							<div className="text-right font-mono text-muted-foreground">
-								{item.duration === null ? <span className="font-sans text-[10px]">Not recorded</span> : formatDuration(item.duration)}
+								{item.duration === null ? <span className="font-sans text-[10px]">{t("usageGaps.copyNotRecorded")}</span> : formatDuration(item.duration)}
 							</div>
 						</div>
 					);
@@ -198,7 +208,7 @@ export function DetailTimingBar({
 				<div />
 				<div className="text-right font-mono text-muted-foreground">
 					<div className="mb-1 border-t border-border/70" />
-					<div className="text-[10px] font-sans">Measured</div>
+					<div className="text-[10px] font-sans">{t("usageGaps.measured")}</div>
 					<div>{safeItems.every((item) => item.duration === null) ? "—" : formatDuration(total)}</div>
 				</div>
 			</div>

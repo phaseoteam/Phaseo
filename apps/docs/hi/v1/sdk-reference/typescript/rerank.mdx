@@ -1,0 +1,26 @@
+---
+icon: "list-ordered"
+title: "दस्तावेज़ों को फिर से रैंक करें"
+description: "TypeScript SDK से query के लिए candidate दस्तावेज़ों को प्रासंगिकता के क्रम में रखें।"
+---
+
+`client.rerank.create()` का उपयोग करके candidate दस्तावेज़ों को query से उनकी प्रासंगिकता के अनुसार क्रमबद्ध करें।
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+Production में उपयोग करने से पहले `GET /v1/models` से model ID की पुष्टि करें।

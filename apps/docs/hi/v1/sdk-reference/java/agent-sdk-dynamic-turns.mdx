@@ -1,0 +1,24 @@
+---
+icon: "shuffle"
+title: "डायनेमिक टर्न"
+description: "Java एजेंट टर्न के बीच मॉडल सेटिंग और टूल बदलें।"
+---
+
+जब अगले टर्न को ऐप context, पहले के tool results या पूरे हुए टर्न की संख्या के अनुसार जवाब देना हो, तो dynamic callback उपयोग करें।
+
+Dynamic values ये चुन सकते हैं:
+
+- मॉडल या fallback मॉडल
+- निर्देश
+- temperature, top-p और अधिकतम output tokens
+- अगले model request के लिए tool list
+
+Tools `RuntimeContext` से ऐप context अपडेट कर सकते हैं और तुरंत अगले request के लिए `NextTurnParams` लौटा सकते हैं। अगले टर्न के override paused state के साथ सहेजे जाते हैं, इसलिए approval tool के routing या sampling निर्णय को नहीं हटाता।
+
+यदि रन को `StateAccessor` से दोबारा लोड किया जा सकता है, तो context और अगले टर्न के values को serializable रखें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)

@@ -34,6 +34,8 @@ import BYOKInputDialog from "@/components/(gateway)/settings/byok/BYOKInputDialo
 import DeleteKeyButton from "@/components/(gateway)/settings/byok/DeleteKeyButton";
 import { reorderByokKeyAction, updateByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
 import { MAX_BYOK_KEYS_PER_MODE } from "@/lib/byok/constants";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 export type ByokKeyEntry = {
 	id: string;
@@ -61,21 +63,22 @@ function maskKey(prefix?: string, suffix?: string) {
 
 function KeySummary({ entry }: { entry: ByokKeyEntry }) {
 	const format = useDisplayFormatters();
+	const t = useTranslations("SettingsUI");
 	const modelCount = entry.allowedModelSlugs?.length ?? 0;
 	const apiKeyCount = entry.allowedApiKeyIds?.length ?? 0;
 	return (
 		<div className="min-w-0 rounded-lg px-2 py-1.5">
 			<div className="flex min-w-0 flex-wrap items-center gap-2">
 				<span className="truncate text-sm font-medium">{entry.name}</span>
-				{!entry.enabled ? <Badge variant="secondary">Disabled</Badge> : null}
-				{entry.errorMessage ? <Badge variant="destructive">Needs attention</Badge> : null}
-				{entry.sample ? <Badge variant="outline">Sample</Badge> : null}
+				{!entry.enabled ? <Badge variant="secondary">{t("byokControls.disabled")}</Badge> : null}
+				{entry.errorMessage ? <Badge variant="destructive">{t("byokControls.needsAttention")}</Badge> : null}
+				{entry.sample ? <Badge variant="outline">{t("byokControls.sample")}</Badge> : null}
 			</div>
 			<div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
 				<span className="font-mono">{maskKey(entry.prefix, entry.suffix)}</span>
-				<span>{entry.lastUsedAt ? `Last used ${format.dateTime(entry.lastUsedAt)}` : "Never used"}</span>
-				<span>{modelCount ? `${modelCount} models` : "All models"}</span>
-				<span>{apiKeyCount ? `${apiKeyCount} API keys` : "All API keys"}</span>
+				<span>{entry.lastUsedAt && Number.isFinite(Date.parse(entry.lastUsedAt)) ? t("byokControls.lastUsed", { date: format.dateTime(entry.lastUsedAt) }) : t("byokControls.neverUsed")}</span>
+				<span>{modelCount ? t("byokControls.models", { count: format.number(modelCount) }) : t("byokControls.allModels")}</span>
+				<span>{apiKeyCount ? t("byokControls.apiKeys", { count: format.number(apiKeyCount) }) : t("byokControls.allApiKeys")}</span>
 			</div>
 		</div>
 	);
@@ -93,22 +96,23 @@ function SortableKeyRow({ entry, index, count, provider, modelOptions, apiKeyOpt
 	onToggle: () => void;
 	onMove: (direction: "up" | "down") => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: entry.id, disabled });
 	const [testModel, setTestModel] = useState(entry.allowedModelSlugs?.[0] ?? modelOptions[0]?.value ?? "");
 	return (
 		<div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={`rounded-xl border bg-background ${isDragging ? "opacity-30" : ""}`}>
 			<div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2">
-				<button type="button" className="cursor-grab touch-none rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing" aria-label={`Drag ${entry.name} to reorder`} {...attributes} {...listeners}><GripVertical className="h-4 w-4" /></button>
+				<button type="button" className="cursor-grab touch-none rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing" aria-label={t("byokControls.dragKey", { name: entry.name })} {...attributes} {...listeners}><GripVertical className="h-4 w-4" /></button>
 				<Badge variant="outline" className="min-w-8 justify-center px-1.5 tabular-nums">{index + 1}</Badge>
 				<button type="button" className="min-w-0 text-left" onClick={onToggle} aria-expanded={expanded}><KeySummary entry={entry} /></button>
 				<div className="flex items-center gap-1">
-					{entry.sample ? null : <><Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={disabled || index === 0} onClick={() => onMove("up")} aria-label="Move key up"><ArrowUp className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={disabled || index === count - 1} onClick={() => onMove("down")} aria-label="Move key down"><ArrowDown className="h-3.5 w-3.5" /></Button><DeleteKeyButton id={entry.id} /></>}
-					<Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle} aria-label={expanded ? "Collapse key" : "Expand key"}><ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} /></Button>
+					{entry.sample ? null : <><Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={disabled || index === 0} onClick={() => onMove("up")} aria-label={t("byokControls.moveUp")}><ArrowUp className="h-3.5 w-3.5" /></Button><Button type="button" variant="ghost" size="icon" className="h-7 w-7" disabled={disabled || index === count - 1} onClick={() => onMove("down")} aria-label={t("byokControls.moveDown")}><ArrowDown className="h-3.5 w-3.5" /></Button><DeleteKeyButton id={entry.id} /></>}
+					<Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle} aria-label={expanded ? t("byokControls.collapseKey") : t("byokControls.expandKey")}><ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} /></Button>
 				</div>
 			</div>
 			{expanded ? <div className="space-y-4 border-t px-4 py-4">
-				{testModel ? <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-medium">Test this key</div><p className="text-xs text-muted-foreground">Open a model covered by this key in Chat.</p></div><div className="flex items-center gap-2"><Select value={testModel} onValueChange={setTestModel}><SelectTrigger className="h-9 w-[220px] rounded-lg"><SelectValue /></SelectTrigger><SelectContent>{modelOptions.filter((option) => !entry.allowedModelSlugs?.length || entry.allowedModelSlugs.includes(option.value)).map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select><Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`/chat?model=${encodeURIComponent(testModel)}&prompt=${encodeURIComponent(`Test ${entry.name} for ${provider.name} BYOK routing with a brief response.`)}`}>Test<ExternalLink className="ml-1.5 h-3.5 w-3.5" /></Link></Button></div></div> : null}
-				{entry.sample ? <p className="text-sm text-muted-foreground">Sample keys are read-only. Add a real key to manage its settings and routing scopes here.</p> : <BYOKInputDialog embedded providerId={provider.id} providerName={provider.name} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} initial={{ id: entry.id, providerId: entry.providerId, name: entry.name, prefix: entry.prefix, suffix: entry.suffix, enabled: entry.enabled, always_use: entry.alwaysUse, allowedModelSlugs: entry.allowedModelSlugs, allowedApiKeyIds: entry.allowedApiKeyIds }} onCancel={onToggle} />}
+				{testModel ? <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><div><div className="text-sm font-medium">{t("byokControls.testKey")}</div><p className="text-xs text-muted-foreground">{t("byokControls.testKeyDescription")}</p></div><div className="flex items-center gap-2"><Select value={testModel} onValueChange={setTestModel}><SelectTrigger className="h-9 w-[220px] rounded-lg"><SelectValue /></SelectTrigger><SelectContent>{modelOptions.filter((option) => !entry.allowedModelSlugs?.length || entry.allowedModelSlugs.includes(option.value)).map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select><Button asChild variant="outline" size="sm" className="rounded-lg"><Link href={`/chat?model=${encodeURIComponent(testModel)}&prompt=${encodeURIComponent(`Test ${entry.name} for ${provider.name} BYOK routing with a brief response.`)}`}>{t("byokControls.test")}<ExternalLink className="ml-1.5 h-3.5 w-3.5" /></Link></Button></div></div> : null}
+				{entry.sample ? <p className="text-sm text-muted-foreground">{t("byokControls.sampleReadOnly")}</p> : <BYOKInputDialog embedded providerId={provider.id} providerName={provider.name} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} initial={{ id: entry.id, providerId: entry.providerId, name: entry.name, prefix: entry.prefix, suffix: entry.suffix, enabled: entry.enabled, always_use: entry.alwaysUse, allowedModelSlugs: entry.allowedModelSlugs, allowedApiKeyIds: entry.allowedApiKeyIds }} onCancel={onToggle} />}
 			</div> : null}
 		</div>
 	);
@@ -128,6 +132,7 @@ function KeySection({ provider, mode, entries, modelOptions, apiKeyOptions, savi
 	onCancelDraft: () => void;
 	onMove: (id: string, direction: "up" | "down") => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const { setNodeRef, isOver } = useDroppable({ id: `section-${mode}` });
 	const isPriority = mode === "priority";
 	const atLimit = entries.length >= MAX_BYOK_KEYS_PER_MODE;
@@ -135,19 +140,19 @@ function KeySection({ provider, mode, entries, modelOptions, apiKeyOptions, savi
 		<section ref={setNodeRef} className={`space-y-3 rounded-xl transition-colors ${isOver ? "bg-muted/30 ring-1 ring-ring/40" : ""}`}>
 			<div className="flex items-start justify-between gap-4">
 				<div>
-					<div className="flex items-center gap-2"><h2 className="text-base font-semibold">{isPriority ? "Prioritized" : "Fallback"}</h2><span className="text-xs tabular-nums text-muted-foreground">{entries.length}/{MAX_BYOK_KEYS_PER_MODE}</span></div>
-					<p className="mt-0.5 text-sm text-muted-foreground">{isPriority ? "Phaseo tries these credentials first, from top to bottom." : "These credentials take over only when the managed route cannot complete the request."}</p>
+					<div className="flex items-center gap-2"><h2 className="text-base font-semibold">{isPriority ? t("byokControls.prioritized") : t("byokControls.fallback")}</h2><span className="text-xs tabular-nums text-muted-foreground">{entries.length}/{MAX_BYOK_KEYS_PER_MODE}</span></div>
+					<p className="mt-0.5 text-sm text-muted-foreground">{isPriority ? t("byokControls.prioritizedDescription") : t("byokControls.fallbackDescription")}</p>
 				</div>
-				<Button type="button" variant="outline" size="sm" className="rounded-lg" disabled={atLimit} onClick={() => onAdd(mode)}>{atLimit ? "Key limit reached" : "Add key"}</Button>
+				<Button type="button" variant="outline" size="sm" className="rounded-lg" disabled={atLimit} onClick={() => onAdd(mode)}>{atLimit ? t("byokControls.keyLimitReached") : t("byokControls.addKey")}</Button>
 			</div>
 			<SortableContext items={entries.map((entry) => entry.id)} strategy={verticalListSortingStrategy}>
 				{entries.length === 0 ? (
-					<div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-border/70 px-4 py-6 text-center"><div><KeyRound className="mx-auto h-4 w-4 text-muted-foreground" /><div className="mt-2 text-sm font-medium">No {isPriority ? "prioritized" : "fallback"} keys</div><p className="mt-1 text-xs text-muted-foreground">Drop a key here or add a new credential.</p></div></div>
+					<div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed border-border/70 px-4 py-6 text-center"><div><KeyRound className="mx-auto h-4 w-4 text-muted-foreground" /><div className="mt-2 text-sm font-medium">{t("byokControls.noKeys", { mode: isPriority ? t("byokControls.prioritized") : t("byokControls.fallback") })}</div><p className="mt-1 text-xs text-muted-foreground">{t("byokControls.dropOrAdd")}</p></div></div>
 				) : (
 					<div className="space-y-2">{entries.map((entry, index) => <SortableKeyRow key={entry.id} entry={entry} index={index} count={entries.length} provider={provider} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} disabled={saving} expanded={expandedId === entry.id} onToggle={() => onToggle(entry.id)} onMove={(direction) => onMove(entry.id, direction)} />)}</div>
 				)}
 			</SortableContext>
-			{draftMode === mode ? <div className="rounded-xl border bg-background p-4"><div className="mb-4 flex items-center gap-2"><Badge variant="outline">New</Badge><span className="text-sm font-medium">{isPriority ? "Prioritized" : "Fallback"} key</span></div><BYOKInputDialog embedded providerId={provider.id} providerName={provider.name} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} defaultAlwaysUse={isPriority} onCancel={onCancelDraft} onSaved={onCancelDraft} /></div> : null}
+			{draftMode === mode ? <div className="rounded-xl border bg-background p-4"><div className="mb-4 flex items-center gap-2"><Badge variant="outline">{t("byokControls.newKey")}</Badge><span className="text-sm font-medium">{t("byokControls.key", { mode: isPriority ? t("byokControls.prioritized") : t("byokControls.fallback") })}</span></div><BYOKInputDialog embedded providerId={provider.id} providerName={provider.name} modelOptions={modelOptions} apiKeyOptions={apiKeyOptions} defaultAlwaysUse={isPriority} onCancel={onCancelDraft} onSaved={onCancelDraft} /></div> : null}
 		</section>
 	);
 }
@@ -179,6 +184,7 @@ export function reorderByokEntries(entries: ByokKeyEntry[], activeId: string, ov
 }
 
 export default function ByokProviderKeys({ provider, entries, modelOptions, apiKeyOptions }: { provider: { id: string; name: string }; entries: ByokKeyEntry[]; modelOptions: Option[]; apiKeyOptions: Option[] }) {
+	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
 	const [displayEntries, setDisplayEntries] = useState(() => [...entries].sort((a, b) => a.sortOrder - b.sortOrder));
 	const [activeId, setActiveId] = useState<string | null>(null);
@@ -216,7 +222,7 @@ export default function ByokProviderKeys({ provider, entries, modelOptions, apiK
 			})());
 		} catch (error) {
 			setEntries(before);
-			toast.error(error instanceof Error ? error.message : "Failed to reorder key");
+			toast.error(localizedSettingsError(error, t, "Action failed", t("byokControls.failedReorder")));
 		} finally { setSaving(false); }
 	}
 

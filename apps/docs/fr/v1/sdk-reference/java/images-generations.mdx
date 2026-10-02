@@ -1,0 +1,24 @@
+---
+icon: "image"
+title: "Génération d’images"
+description: "Appelez `/images/generations` avec le SDK Java."
+---
+
+**Méthode**: `client.createImage(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+String body = """
+{
+  "model": "openai/gpt-image-1",
+  "prompt": "A minimalist poster of a lighthouse at dawn"
+}
+""";
+
+Object response = client.createImage(body);
+System.out.println(String.valueOf(response));
+```
+

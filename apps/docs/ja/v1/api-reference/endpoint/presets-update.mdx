@@ -1,0 +1,10 @@
+---
+title: "プリセットの下書きを更新"
+sidebarTitle: "プリセットを更新"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /presets/{id}"
+description: "プリセットの下書きメタデータと設定を更新します。"
+---
+<Note>このエンドポイントには `presets:write` 権限を持つ管理APIキーが必要です。</Note>
+
+`replace_config` を使うと、下書き設定全体を置き換えます。それ以外の場合、指定した設定フィールドはトップレベルでマージされます。

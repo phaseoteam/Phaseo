@@ -7,6 +7,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	return {
 		model: req.model,
 		state: req.state,
+		...(req.images === undefined ? {} : { images: req.images }),
 		// Zod's discriminated-union inference marks the shared instruction field
 		// optional here even though the runtime schema requires it.
 		questions: req.questions as IRDecisionsRequest["questions"],

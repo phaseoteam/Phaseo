@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "Saídas e novas tentativas"
+description: "Valide as saídas de agentes Python e tente novamente falhas limitadas do modelo."
+---
+
+Use a validação da saída final quando o código Python downstream esperar dados estruturados. Callbacks de validação devem ser determinísticos e gerar uma exceção quando o valor final não atender ao contrato da aplicação.
+
+Configure novas tentativas limitadas com `AgentModelRetryConfig`:
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+A etapa concluída mantém a contagem final de tentativas do modelo. Erros de ferramentas seguem uma política própria e não são repetidos como solicitações ao modelo.
+
+O cliente do gateway aceita saída estruturada, opções de roteamento, provedor, raciocínio, ferramentas gerenciadas, plugins, cache de prompts e opções adicionais de solicitação.
+
+## Relacionados
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Condições de parada](./agent-sdk-stop-conditions.mdx)
+- [Erros e solução de problemas](./agent-sdk-observability.mdx)

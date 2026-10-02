@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "Salidas y reintentos"
+description: "Valida las salidas de agentes Java y reintenta los fallos transitorios del modelo con un límite."
+---
+
+Usa la validación de salida final cuando el código Java posterior espera un valor estructurado y no texto del modelo sin validar. Añade un validador final a la definición del agente y trata los fallos de validación como errores de contrato.
+
+Usa `ModelRetryConfig` para los fallos transitorios del modelo o del proveedor:
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+El recuento de reintentos indica los intentos adicionales después de la primera solicitud. Los pasos completados conservan el número final de intentos del modelo para la depuración y la telemetría.
+
+Usa `ToolExecutionConfig` por separado para controlar la concurrencia de herramientas locales. Los reintentos del modelo no repiten los efectos secundarios fallidos dentro de las herramientas.
+
+Puedes proporcionar opciones adicionales de Responses API mediante `GatewayOptions.requestOptions`; el adaptador sigue controlando el modelo, la entrada, las instrucciones y las herramientas de función locales.
+
+## Contenido relacionado
+
+- [Turnos dinámicos](./agent-sdk-dynamic-turns.mdx)
+- [Condiciones de detención](./agent-sdk-stop-conditions.mdx)
+- [Errores y solución de problemas](./agent-sdk-observability.mdx)

@@ -1,0 +1,64 @@
+---
+title: "使用 Go 构建运维手册 Agent"
+icon: "clipboard-check"
+description: "使用 Go Agent SDK 将少量确定性的本地工具组合成范围明确的故障排查循环。"
+---
+
+当 Go 服务需要结合本地上下文回答运维问题时，可使用此示例。
+
+## 1. 准备 SDK
+
+<Note type="warning">Go Agent SDK 尚无公开的模块版本。请参阅[从源代码安装说明](../sdk-reference/go/agent-sdk-installation.mdx)。</Note>
+
+## 2. 定义小型运行时工具
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. 创建 Agent
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. 执行一次范围明确的故障排查轮次
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## 适用场景
+
+- 工作流属于单个 Go 服务
+- 支持上下文已可通过本地或内部调用获取
+- 你想先使用 Agent 循环，而暂不引入更大的任务系统
+
+## 相关内容
+
+- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
+- [使用 web fetch 为提取结果提供依据](./tool-grounding-with-web-fetch.mdx)

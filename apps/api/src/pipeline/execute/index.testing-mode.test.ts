@@ -333,7 +333,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(ctx.meta.generation_ms).toBe(17);
 	});
 
-	it("retains executor timing for a successful decisions response", async () => {
+	it.each([false, true])("retains executor timing for successful decisions (images: %s)", async withImages => {
 		const candidate = {
 			providerId: "typesafe",
 			pricingCard: {
@@ -345,7 +345,8 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			},
 			byokMeta: [],
 			providerModelSlug: "jev-1.13.0",
-			capabilityParams: {},
+			capabilityParams: withImages ? { images: true } : {},
+			inputModalities: withImages ? ["text", "image"] : ["text"],
 			maxInputTokens: null,
 			maxOutputTokens: null,
 		};
@@ -368,7 +369,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 
 		const result = await doRequestWithIR(
 			ctx,
-			{ model: "typesafe/jev-1.13.0", state: {}, questions: {} } as any,
+			{ model: "typesafe/jev-1.13.0", state: {}, questions: {}, ...(withImages ? { images: ["data:image/png;base64,AQID"] } : {}) } as any,
 			createTiming(),
 		);
 
@@ -376,6 +377,17 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(ctx.meta.latency_ms).toBe(41);
 		expect(ctx.meta.generation_ms).toBeGreaterThanOrEqual(41);
 		expect(ctx.meta.end_to_end_ms).toBeUndefined();
+	});
+
+	it("rejects decision images before ranking or execution when no route supports them", async () => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "typesafe", inputModalities: ["text"], capabilityParams: {} }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
+			model: "typesafe/jev-1.13.0", state: "Photo", questions: {}, images: ["data:image/png;base64,AQID"],
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {

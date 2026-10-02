@@ -1,0 +1,37 @@
+---
+icon: "brain-circuit"
+title: "模型"
+description: "使用 Go 封装列出模型。"
+---
+
+使用封装方法：
+
+- `client.GetModels(ctx, query)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider": "anthropic",
+  "provider_status": "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status": "coming_soon,internal_testing",
+  "availability": "all",
+  "limit": "10",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(models)
+```
+
+支持的查询键包括 `provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`、`organisation`、`endpoints`、`input_types`、`output_types`、`params`、`availability`、`limit` 和 `offset`。
+
+使用 `provider_availability_reason` 和 `availability=all` 可查询 `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused` 或 `soft_blocked` 等发布状态。使用 `capability_status` 和 `availability=all` 可查询 `coming_soon` 或 `internal_testing` 等不可路由的端点映射。
+

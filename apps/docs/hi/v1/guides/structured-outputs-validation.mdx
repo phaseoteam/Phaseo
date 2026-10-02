@@ -1,0 +1,44 @@
+---
+icon: "circle-check"
+title: "स्ट्रक्चर्ड आउटपुट validation"
+description: "Structured outputs के लिए server-side validation, retries और fallback strategies।"
+---
+
+Schema-constrained generation के बाद भी server पर output validate करें।
+
+## सुझाया गया क्रम
+
+1. Schema-constrained output माँगें।
+2. JSON parse करें।
+3. अपने server schema से validate करें।
+4. Invalid होने पर corrective prompt के साथ एक बार retry करें।
+5. फिर भी invalid हो, तो सुरक्षित failure fallback अपनाएँ।
+
+## वैलिडेशन का उदाहरण (TypeScript)
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## पुनः प्रयास के लिए सुधारात्मक प्रॉम्प्ट
+
+Validation विफल होने पर छोटा corrective instruction भेजें:
+
+`आपका पिछला output schema से मेल नहीं खाता। केवल valid JSON लौटाएँ; आवश्यक fields हों और अतिरिक्त keys न हों।`
+
+## प्रोडक्शन संबंधी सुझाव
+
+- हर use case के लिए एक schema रखें और उसे version करें।
+- Model ID के अनुसार validation failure rates track करें।
+- Model changes के बाद schema failures अचानक बढ़ें तो alert करें।

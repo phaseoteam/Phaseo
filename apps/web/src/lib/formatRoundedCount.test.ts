@@ -28,3 +28,24 @@ describe("formatCompactAxisTick", () => {
 		expect(formatCompactAxisTick(value)).toBe(expected);
 	});
 });
+
+describe("localized public counts", () => {
+	const locales = ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"];
+	it.each(locales)("preserves floored counts and distinct axis ticks in %s", (locale) => {
+		if (locale === "en-GB") {
+			expect(formatRoundedCount(15_999, locale)).toBe("15K");
+			expect(formatRoundedCount(1_999_999_999, locale)).toBe("1B");
+		} else {
+			const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 20 });
+			expect(formatRoundedCount(15_999, locale)).toBe(compact.format(15_000));
+			expect(formatRoundedCount(1_999_999_999, locale)).toBe(compact.format(1_000_000_000));
+		}
+		expect(formatRoundedCount(999.9, locale)).toBe(new Intl.NumberFormat(locale).format(999));
+		expect(formatCompactAxisTick(1_250_000, locale)).not.toBe(formatCompactAxisTick(1_500_000, locale));
+		expect(formatRoundedCount(Number.NaN, locale)).toBe("--");
+		expect(formatCompactAxisTick(Number.POSITIVE_INFINITY, locale)).toBe("--");
+	});
+	it("does not round Japanese counts up to the next ten-thousand unit", () => {
+		expect(formatRoundedCount(15_999, "ja")).toBe("1.5万");
+	});
+});

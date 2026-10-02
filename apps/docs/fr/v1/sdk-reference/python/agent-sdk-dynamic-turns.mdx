@@ -1,0 +1,19 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez les paramètres du modèle Python et les outils entre les tours de l’agent."
+---
+
+Le modèle, les modèles de secours, les instructions, la température, le nombre maximal de tokens de sortie, top-p et les outils peuvent être des valeurs fixes ou des callbacks évalués à chaque tour.
+
+Utilisez `runtime.set_context(value)` lorsqu’un outil découvre des informations nécessaires par la suite. Utilisez `next_turn_params` pour un remplacement qui ne s’applique qu’à la requête de modèle suivante.
+
+Les remplacements du tour suivant sont enregistrés avec l’état en pause : un point de contrôle d’approbation ne supprime donc pas la décision de routage ou d’échantillonnage.
+
+Gardez le contexte sérialisable lorsque vous utilisez `AgentStateAccessor`.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Conditions d’arrêt](./agent-sdk-stop-conditions.mdx)

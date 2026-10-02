@@ -13,6 +13,7 @@ import { BASE_URL } from "./config";
 import { safeDecodeURIComponent } from "@/lib/utils/safe-decode";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
+import { getTranslations } from "next-intl/server";
 
 export default async function Streaming({
         modelId,
@@ -21,6 +22,7 @@ export default async function Streaming({
         modelId?: string;
         endpoint?: string | null;
 }) {
+	const t = await getTranslations("Catalogue.models.detail.quickstart");
         const model = safeDecodeURIComponent(modelId) || "model_id_here";
         const normalizedEndpoint = endpoint?.toLowerCase() ?? null;
         const streamingPaths = new Set(["/chat/completions", "/responses"]);
@@ -102,19 +104,15 @@ with requests.post(url, json=payload, headers={
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Streaming (SSE)</CardTitle>
+				<CardTitle>{t("streamingTitle")}</CardTitle>
 				<CardDescription>
-					Token-by-token output from chat completions. Streaming is
-					enabled by including "stream: true" in the request body — it
-					really is that easy, and it can be used with any model.
+					{t("streamingDescription")}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="space-y-3">
 					<p className="text-sm text-muted-foreground">
-						Note: Streaming returns token-by-token output from the
-						server. Use the example for your preferred language
-						below.
+						{t("streamingNote")}
 					</p>
 				</div>
 

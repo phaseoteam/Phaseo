@@ -1,0 +1,81 @@
+---
+title: "Infisical"
+icon: "key-round"
+description: "Infisical के साथ Phaseo API key के automatic rotation की तैयारी करें।"
+---
+
+Infisical सीमित permissions वाली Phaseo Management API key से authenticate करके Phaseo Gateway API keys rotate कर सकता है। Phaseo zero-downtime दो-चरण rotation के लिए आवश्यक key lifecycle पहले से देता है।
+
+<Warning>
+Infisical में Phaseo अभी selectable App Connection नहीं है। यह पृष्ठ समर्थित Phaseo contract और Infisical connection उपलब्ध होने पर उपयोग होने वाली configuration बताता है।
+</Warning>
+
+## कुंजी बदलने की प्रक्रिया कैसे काम करती है
+
+1. Infisical Management API key से Phaseo में authenticate करता है।
+2. Infisical `POST /v1/keys` से replacement Gateway API key बनाता है।
+3. Infisical लौटाई गई plain-text key को configured secret में सहेजता है।
+4. ऐप replacement key का उपयोग शुरू करता है।
+5. Infisical `DELETE /v1/keys/{id}` से पिछली key revoke करता है।
+
+Phaseo Gateway API key की plain-text value केवल बनाते समय लौटाता है। Secret update के दौरान पुरानी और replacement keys साथ रह सकती हैं।
+
+## सीमित scope वाली Management API key बनाएँ
+
+**Dashboard → Settings → Management Keys** में इन capabilities वाली key बनाएँ:
+
+- Connection जाँचने और managed keys देखने के लिए `keys:read`
+- Replacement keys बनाने के लिए `keys:write`
+- पुरानी keys revoke करने के लिए `keys:delete`
+
+बनी हुई `phaseo_v1_mk_...` secret को Infisical में रखें। Management API keys control-plane credentials हैं और inference के लिए उपयोग नहीं हो सकतीं।
+
+## कनेक्शन विवरण
+
+| Field | मान |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| Authentication | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| जाँचें | `GET /keys` |
+| Gateway keys की सूची | `GET /keys` |
+| Gateway key बनाएँ | `POST /keys` |
+| Gateway key revoke करें | `DELETE /keys/{id}` |
+
+## नई rotated key बनाएँ
+
+```bash
+curl https://api.phaseo.app/v1/keys \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "infisical-production",
+    "limit": 100,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false
+  }'
+```
+
+Response में नई Gateway key एक बार `data.key` में और उसका stable identifier `data.id` में होता है।
+
+## पिछली key revoke करें
+
+```bash
+curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+Deletion idempotent है। पहले से deleted key सफल deleted state लौटाती है, इसलिए rotation retry सुरक्षित है।
+
+## सीमाएँ और BYOK
+
+Phaseo compatibility fields `limit`, `limit_reset` और `include_byok_in_limit` स्वीकार करता है। Reset अवधि daily, weekly और monthly हैं। `include_byok_in_limit` अभी केवल compatibility के लिए है; Phaseo इस key limit से BYOK usage को बाहर रखता है।
+
+## साझेदार स्थिति
+
+Infisical का मूल कनेक्शन तभी उपलब्ध होगा जब Infisical, Phaseo App Connection और Phaseo API Key Rotation के कार्यान्वयन को स्वीकार करे। Phaseo के प्रबंधन और कुंजी-जीवनचक्र API उपलब्ध हैं; Infisical कनेक्टर, परीक्षण, UI प्रविष्टि और दस्तावेज़ अभी बाकी हैं।
+
+## संबंधित विषय
+
+- [Management API keys](../../developers/management-api-keys.mdx)
+- [API key बनाएँ](../../api-reference/endpoint/keys-create.mdx)
+- [API key हटाएँ](../../api-reference/endpoint/keys-delete.mdx)

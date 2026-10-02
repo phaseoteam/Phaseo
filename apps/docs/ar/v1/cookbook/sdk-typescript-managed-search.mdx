@@ -1,0 +1,155 @@
+---
+title: "إسناد سير عمل TypeScript SDK باستخدام البحث المُدار على الويب"
+icon: "search"
+description: "استخدم TypeScript SDK الرسمي والبحث المُدار على الويب وبيانات الاستجابة الوصفية لإنشاء سير عمل موثوق يسهل تصحيح أخطائه."
+---
+
+استخدم هذه الوصفة عندما تحتاج خدمة TypeScript أو JavaScript إلى الجمع بين:
+
+- إعدادات التوجيه الافتراضية المحددة مسبقًا
+- أداة البحث المُدارة `phaseo:web_search`
+- تحليل صارم للاستجابة
+- بيانات وصفية على مستوى الطلب لتصحيح الأخطاء
+
+## الهدف
+
+- إبقاء المستدعي على SDK الرسمي
+- تجنب إعادة إنشاء حمولات التوافق الخام يدويًا
+- الاحتفاظ ببيانات وصفية كافية لتصحيح أخطاء نتائج البحث والتوجيه وسلوك الإضافات
+
+## 1. ابدأ بعميل مشترك
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. ضع الإعدادات الافتراضية المستقرة في إعداد مُسبق أولًا
+
+أنشئ إعدادًا مسبقًا عندما تحتاج عدة جهات مستدعية إلى مشاركة ما يلي:
+
+- سياسة النماذج
+- تفضيلات المزوّد
+- إعدادات الاستدلال الافتراضية
+- مطالبة النظام
+- سلوك تخزين مؤقت حتمي
+
+بعد ذلك، أبقِ في طلب SDK القيم التي تختلف لهذا الاستدعاء فقط.
+
+## 3. اطلب مخرجات موثوقة باستخدام أداة البحث المُدارة
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+يوفر لك هذا:
+
+- إعدادات التوجيه والمطالبات الافتراضية التي يديرها الإعداد المسبق
+- بحثًا يديره الخادم ولا يعتمد على دعم البحث الأصلي لدى الموفّر
+- مخرجات منظّمة لتسهيل التحليل اللاحق بطريقة متوقعة
+- البيانات الوصفية المطلوبة لتصحيح أخطاء التشغيل
+
+## 4. حلّل المخرجات واحتفظ بحقول تصحيح الأخطاء
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+تسهّل هذه الحقول معرفة ما يلي:
+
+- الموفّر الذي عالج الطلب فعليًا
+- ما إذا كان البحث المُدار قد نُفّذ
+- ما إذا كان إصلاح الاستجابة قد نُفّذ
+- الطلب الذي ينبغي فحصه في لوحة التحكم
+
+## 5. تحقّق من الطلب الموثوق في السجلات
+
+افتح الطلب ضمن **Gateway -> الاستخدام** وافحص:
+
+- نتائج البحث الموحّدة
+- الاستشهادات
+- الموفّر المحدد
+- البيانات الوصفية لتنفيذ الإضافة
+
+إذا بدا سلوك البحث أو ترتيبه غير صحيح، فعدّل الإعداد المسبق أو معاملات الأداة استنادًا إلى أدلة السجلات بدلًا من إضافة تجاوزات عشوائية.
+
+## 6. افصل بين مسارات الاستكشاف والمسارات الحتمية
+
+النمط الموصى به:
+
+1. إعداد مسبق واحد لمخرجات البحث المنظّمة والحتمية
+2. إعداد مسبق آخر للطلبات الاستكشافية أو ذات درجة حرارة أعلى
+
+وهذا يحافظ على:
+
+- تنظيم أفضل لذاكرة الاستجابات المؤقتة
+- سهولة فهم سلوك التوجيه
+- فصل مسارات البحث المكثف عن حركة التوليد العامة
+
+## أدلة ذات صلة
+
+- [تصحيح أخطاء طلبات البحث على الويب](./web-search-debugging.mdx)
+- [إطلاق الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
+- [إصلاح استجابات JSON المنظّمة](./response-healing-for-structured-json.mdx)
+- [نظرة عامة على TypeScript SDK](../sdk-reference/typescript/overview.mdx)

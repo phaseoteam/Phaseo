@@ -1,0 +1,9 @@
+---
+title: "Workspace-Budget aktualisieren"
+sidebarTitle: "Budget aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /budgets/{id}"
+description: "Ändert das Intervall oder die Ausgabenobergrenze eines Workspace-Budgets."
+---
+
+Erfordert `budgets:write`. Wird ein Limit unter die aktuelle Nutzung gesenkt, werden neue Anfragen sofort blockiert.

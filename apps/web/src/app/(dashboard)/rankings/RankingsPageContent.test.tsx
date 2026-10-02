@@ -1,4 +1,4 @@
-import { ModalityLeaderboardsServer, type RankingModality } from "./RankingsPageContent";
+import { ModalityLeaderboardsServer, type RankingModality } from "@/app/[locale]/(dashboard)/rankings/RankingsPageContent";
 import { fetchFrontendRankingModalityTimeseries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 jest.mock("@/lib/seo", () => ({}));

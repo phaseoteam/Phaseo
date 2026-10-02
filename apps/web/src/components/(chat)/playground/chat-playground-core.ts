@@ -8,6 +8,7 @@ import type {
 	ChatMessage,
 	ChatAdvisorServerToolConfig,
 	ChatModelSettings,
+	ChatServiceTier,
 	ChatServerToolConfigs,
 	ChatServerToolType,
 	ChatSettings,
@@ -36,10 +37,8 @@ export type NewChatModelPreference = "blank" | "selected";
 
 export function getRequestedChatServiceTier(
 	settings: Pick<ChatModelSettings, "serviceTier">,
-): "priority" | "flex" | null {
-	return settings.serviceTier === "priority" || settings.serviceTier === "flex"
-		? settings.serviceTier
-		: null;
+): ChatServiceTier {
+	return settings.serviceTier ?? "standard";
 }
 
 export function normalizeServerTools(
@@ -342,10 +341,32 @@ export function nowIso() {
 	return new Date().toISOString();
 }
 
-export function buildTitle(messages: ChatMessage[]) {
+export function createInitialChatThread(
+	existing: ChatThread[],
+	modelId: string | null,
+	title = "New chat",
+): ChatThread | null {
+	if (existing.length > 0 && modelId === null) return null;
+	const createdAt = nowIso();
+	return {
+		id: generateId(),
+		title,
+		titleLocked: false,
+		modelId: modelId ?? "",
+		createdAt,
+		updatedAt: createdAt,
+		messages: [],
+		settings: {
+			...DEFAULT_SETTINGS,
+			systemPrompt: buildDefaultSystemPrompt(modelId ?? ""),
+		},
+	};
+}
+
+export function buildTitle(messages: ChatMessage[], emptyTitle: string) {
 	const first = messages.find((msg) => msg.role === "user");
-	if (!first) return "New chat";
-	return first.content.trim().slice(0, 48) || "New chat";
+	if (!first) return emptyTitle;
+	return first.content.trim().slice(0, 48) || emptyTitle;
 }
 
 export function buildPersonalizationPrompt(

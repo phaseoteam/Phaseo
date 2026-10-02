@@ -1,0 +1,10 @@
+---
+title: "ワークスペースの招待を一覧表示"
+sidebarTitle: "招待を一覧表示"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /workspaces/{id}/invites"
+description: "ワークスペースの招待メタデータを一覧表示します。"
+---
+このエンドポイントには `workspaces:read` 権限を持つ管理APIキーが必要です。
+
+返されるのはマスク済みのトークンプレビューのみです。招待トークンの平文は後から取得できません。

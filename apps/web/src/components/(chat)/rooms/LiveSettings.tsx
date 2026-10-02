@@ -1,3 +1,4 @@
+import { useTranslations, useLocale } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,38 +47,40 @@ export const DEFAULT_LIVE_SETTINGS: LiveSettingsValue = {
 };
 
 export function LiveSettings({ value, onChange }: { value: LiveSettingsValue; onChange: (value: LiveSettingsValue) => void }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const optionLabel = (option: string) => ({ none: tCopy("copyNone"), low: tCopy("copyLow"), medium: tCopy("copyMedium"), high: tCopy("copyHigh"), xhigh: tCopy("copyExtraHigh"), auto: tCopy("copyAuto"), concise: tCopy("copyConcise"), detailed: tCopy("copyDetailed"), default: tCopy("copyDefault"), flex: "Flex", priority: tCopy("copyPriority"), required: tCopy("copyRequired") } as Record<string, string>)[option] ?? option;
 	const selectors: Array<{ key: "reasoning_effort" | "reasoning_summary" | "verbosity" | "service_tier" | "tool_choice"; label: string; options: string[]; defaultLabel?: string }> = [
-		{ key: "reasoning_effort", label: "Reasoning effort", options: ["none", "low", "medium", "high", "xhigh"], defaultLabel: "Model default" },
-		{ key: "reasoning_summary", label: "Reasoning summary", options: ["auto", "concise", "detailed"], defaultLabel: "Off" },
-		{ key: "verbosity", label: "Backend detail", options: ["low", "medium", "high"], defaultLabel: "Model default" },
-		{ key: "service_tier", label: "Service tier", options: ["default", "flex", "priority"] },
-		{ key: "tool_choice", label: "Tool choice", options: value.web_search ? ["auto", "none", "required"] : ["auto", "none"] },
+		{ key: "reasoning_effort", label: tCopy("copyReasoningEffort"), options: ["none", "low", "medium", "high", "xhigh"], defaultLabel: tCopy("modelDefault") },
+		{ key: "reasoning_summary", label: tCopy("reasoningSummary"), options: ["auto", "concise", "detailed"], defaultLabel: tCopy("copyOff") },
+		{ key: "verbosity", label: tCopy("backendDetail"), options: ["low", "medium", "high"], defaultLabel: tCopy("modelDefault") },
+		{ key: "service_tier", label: tCopy("copyServiceTier"), options: ["default", "flex", "priority"] },
+		{ key: "tool_choice", label: tCopy("toolChoice"), options: value.web_search ? ["auto", "none", "required"] : ["auto", "none"] },
 	];
-	return <section className="grid gap-4 rounded-lg border p-3" aria-label="Live delegation settings">
-		<div><h3 className="text-sm font-semibold">Responses delegation</h3>
-			<p className="text-xs text-muted-foreground">Backend work is billed separately. Changes apply to the next session.</p></div>
-		<div className="grid gap-2"><Label htmlFor="live-backend-instructions">Backend instructions</Label>
+	return <section className="grid gap-4 rounded-lg border p-3" aria-label={tCopy("liveSettings")}>
+		<div><h3 className="text-sm font-semibold">{tCopy("responsesDelegation")}</h3>
+			<p className="text-xs text-muted-foreground">{tCopy("backendBilling")}</p></div>
+		<div className="grid gap-2"><Label htmlFor="live-backend-instructions">{tCopy("backendInstructions")}</Label>
 			<Textarea id="live-backend-instructions" value={value.instructions} maxLength={16000} className="min-h-28"
 				onChange={(event) => onChange({ ...value, instructions: event.target.value })} /></div>
 		<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 			{selectors.map(({ key, label, options, defaultLabel }) => <div className="grid gap-2" key={key}>
 				<Label htmlFor={`live-${key}`}>{label}</Label>
 				<Select value={value[key] ?? "unset"} onValueChange={(selected) => onChange({ ...value, [key]: selected === "unset" ? undefined : selected })}>
-					<SelectTrigger id={`live-${key}`} className="w-full"><SelectValue>{value[key] ?? defaultLabel}</SelectValue></SelectTrigger>
+					<SelectTrigger id={`live-${key}`} className="w-full"><SelectValue>{value[key] ? optionLabel(value[key]) : defaultLabel}</SelectValue></SelectTrigger>
 					<SelectContent>{defaultLabel ? <SelectItem value="unset">{defaultLabel}</SelectItem> : null}
-						{options.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+						{options.map((option) => <SelectItem key={option} value={option}>{optionLabel(option)}</SelectItem>)}</SelectContent>
 				</Select></div>)}
-			<div className="grid gap-2"><Label htmlFor="live-output-limit">Output token limit</Label>
+			<div className="grid gap-2"><Label htmlFor="live-output-limit">{tCopy("outputLimit")}</Label>
 				<Input id="live-output-limit" type="number" min={16} max={32768} step={1} value={value.max_output_tokens}
 					onChange={(event) => onChange({ ...value, max_output_tokens: Number(event.target.value) })} /></div>
 		</div>
-		<div className="flex items-center justify-between gap-3"><Label htmlFor="live-web-search">Web search</Label>
+		<div className="flex items-center justify-between gap-3"><Label htmlFor="live-web-search">{tCopy("copyWebSearch")}</Label>
 			<Switch id="live-web-search" checked={value.web_search} onCheckedChange={(checked) => onChange({ ...value, web_search: checked,
 				tool_choice: !checked && value.tool_choice === "required" ? "auto" : value.tool_choice })} /></div>
-		<div className="flex items-center justify-between gap-3"><Label htmlFor="live-parallel-tools">Parallel tool calls</Label>
+		<div className="flex items-center justify-between gap-3"><Label htmlFor="live-parallel-tools">{tCopy("parallelTools")}</Label>
 			<Switch id="live-parallel-tools" checked={value.parallel_tool_calls} disabled={!value.web_search}
 				onCheckedChange={(checked) => onChange({ ...value, parallel_tool_calls: checked })} /></div>
-		<p className="text-xs text-muted-foreground">Web search adds $0.01 per call plus backend tokens. Tier pricing must be available before starting. Custom functions and client delegation are not enabled.</p>
+		<p className="text-xs text-muted-foreground">{tCopy("searchBilling")}</p>
 	</section>;
 }
 
@@ -89,25 +92,29 @@ export type LiveUsageView = {
 };
 
 export function LiveUsageDetails({ usage, pending }: { usage?: LiveUsageView; pending?: number }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const locale = useLocale();
+	const responseStatus: Record<string, string> = { completed: tCopy("copyCompleted"), failed: tCopy("copyFailed"), incomplete: tCopy("incomplete"), in_progress: tCopy("copyInProgress"), cancelled: tCopy("copyCancelled"), queued: tCopy("copyQueued") };
+	const tiers: Record<string, string> = { default: tCopy("copyDefault"), priority: tCopy("copyPriority"), flex: "Flex" };
 	if (!usage) return null;
 	return <Collapsible className="w-full min-w-0 rounded-lg border text-xs">
 		<CollapsibleTrigger className="group flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring">
-			<span className="flex-1 text-sm font-medium">Delegation usage</span>
-			{pending ? <span className="text-muted-foreground">{pending} running</span> : null}
+			<span className="flex-1 text-sm font-medium">{tCopy("delegationUsage")}</span>
+			{pending ? <span className="text-muted-foreground">{tCopy("runningCount", { count: pending })}</span> : null}
 			<ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-aria-expanded:rotate-180 motion-reduce:transition-none" />
 		</CollapsibleTrigger>
 		<CollapsibleContent keepMounted>
-		<ScrollArea className="border-t" viewportClassName="max-h-64 overscroll-contain" viewportProps={{ role: "region", "aria-label": "Delegation usage details", tabIndex: 0 }}>
+		<ScrollArea className="border-t" viewportClassName="max-h-64 overscroll-contain" viewportProps={{ role: "region", "aria-label": tCopy("delegationUsageDetails"), tabIndex: 0 }}>
 		<div className="px-4 py-3">
 		<dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-			{[["Input tokens", usage.input_tokens], ["Cache reads", usage.cached_read_text_tokens], ["Cache writes", usage.cached_write_text_tokens],
-				["Output tokens", usage.output_tokens], ["Reasoning (included)", usage.output_reasoning_tokens], ["Web searches", usage.native_web_search_requests]]
-				.map(([label, count]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 font-medium tabular-nums">{Number(count ?? 0).toLocaleString()}</dd></div>)}
+			{[[tCopy("copyInputTokens"), usage.input_tokens], [tCopy("copyCacheReads"), usage.cached_read_text_tokens], [tCopy("copyCacheWrites"), usage.cached_write_text_tokens],
+				[tCopy("copyOutputTokens"), usage.output_tokens], [tCopy("reasoningIncluded"), usage.output_reasoning_tokens], [tCopy("webSearches"), usage.native_web_search_requests]]
+				.map(([label, count]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 font-medium tabular-nums">{Number(count ?? 0).toLocaleString(locale)}</dd></div>)}
 		</dl>
 		{usage.live_responses?.map((response) => <div key={response.id} className="mt-3 border-t pt-2">
 			<div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-				<p className="font-medium">{response.status.replace("response.", "")} · {response.service_tier ?? "default"}</p>
-				<p className="tabular-nums text-muted-foreground">{response.usage.input_tokens ?? 0} input · {response.usage.output_tokens ?? 0} output</p>
+				<p className="font-medium">{responseStatus[response.status.replace("response.", "")] ?? response.status} · {tiers[response.service_tier ?? "default"] ?? response.service_tier}</p>
+				<p className="tabular-nums text-muted-foreground">{tCopy("inputOutput", { input: response.usage.input_tokens ?? 0, output: response.usage.output_tokens ?? 0 })}</p>
 			</div>
 			<p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">{response.id}</p>
 		</div>)}

@@ -1,0 +1,20 @@
+{
+  "countries": {
+    "description": "Explore AI organizations and their models grouped by country.",
+    "organisations": "Organizations"
+  },
+  "performance": {
+    "optimiseLongest": "Optimize the longest stage first.",
+    "outputSpeedDescription": "How quickly text arrives after generation starts. It determines whether a long answer feels fluid or labored.",
+    "optimiseStart": "Optimize the start",
+    "optimiseWholeRequest": "Optimize the whole request",
+    "optimiseUsefulWork": "Optimize useful work",
+    "waitDescription": "Total latency is a chain, not a single model measurement. Breaking the request into stages shows where optimization will actually help.",
+    "longestStage": "Optimize the longest stage first.",
+    "conversationalAnswer": "Prioritize time to first token.",
+    "longAnswersAnswer": "Prioritize sustained throughput."
+  },
+  "monitor": {
+    "searchPlaceholder": "Search models, organizations, providers..."
+  }
+}

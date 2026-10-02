@@ -1,0 +1,55 @@
+---
+icon: "message-square"
+title: "Réponses"
+description: "Appelez l’API Responses avec le SDK PHP."
+---
+
+**Méthodes** : `generateResponse()`, `createResponse()`
+
+### Exemple
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-4.1',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                [
+                    'type' => 'output_text',
+                    'text' => 'Summarise this text'
+                ]
+            ]
+        ]
+    ],
+    'temperature' => 0.7,
+    'stream' => false
+]);
+echo $response['output'][0]['content'][0]['text'];
+```
+
+### Paramètres clés
+
+- `model` (obligatoire) : ID du modèle cible.
+- `input` (obligatoire) : tableau ordonné d’éléments d’entrée (messages, appels d’outils, etc.).
+- `temperature` (0–2) : plus la valeur est élevée, plus le résultat est aléatoire.
+- `top_p` (0–1) : contrôle de l’échantillonnage par noyau.
+- `max_output_tokens` (entier) : nombre maximal de jetons générés par réponse.
+- Outils : `tools` (définitions), `tool_choice` (auto/none/spécifique), `max_tool_calls` (entier), `parallel_tool_calls` (booléen).
+- Logprobs : `top_logprobs` (0–20) pour renvoyer les logprobs par jeton.
+- Sortie : `service_tier`, `store` (booléen), `stream` (booléen).
+- Métadonnées : `metadata` (objet transmis), `reasoning` (objet indiquant le niveau d’effort).
+- Options de la passerelle : `usage` (booléen pour demander les données d’utilisation), `meta` (booléen pour inclure le bloc meta).
+
+### Retour
+
+Objet JSON `ResponsesResponse`.

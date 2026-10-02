@@ -1,0 +1,49 @@
+---
+title: "Notificaciones del espacio de trabajo"
+description: "Envía alertas del espacio de trabajo por correo electrónico, canales de chat o un webhook HTTPS."
+icon: "bell-ring"
+---
+
+Usa los destinos de notificación para enviar las alertas habilitadas del espacio de trabajo a las herramientas que tu equipo ya supervisa. Los destinos se comparten en todo el espacio de trabajo y puedes probarlos antes de confiarles alertas operativas.
+
+## Añadir un destino
+
+1. Abre **Gateway → Configuración → Notificaciones**.
+2. Selecciona **Añadir destino**.
+3. Introduce un nombre y elige uno o varios canales.
+4. Añade los datos del destino y, si quieres, las menciones.
+5. Selecciona **Enviar prueba** para cada canal configurado.
+6. Crea los destinos cuando todas las pruebas se hayan completado correctamente.
+
+Phaseo admite:
+
+- direcciones de correo electrónico y listas de distribución
+- canales de Discord mediante un token de bot
+- webhooks de Discord
+- webhooks entrantes de Slack
+- URL de flujos de trabajo de Microsoft Teams
+- webhooks HTTPS personalizados
+
+Las credenciales y las URL de los webhooks se cifran antes de guardarse. Limita las credenciales de canal al envío de notificaciones y rótalas si quedan expuestas.
+
+## Activar alertas de producto
+
+La página de notificaciones muestra los tipos de alertas disponibles para tu espacio de trabajo. Activa **Alertas de retirada de modelos** para recibir un aviso antes de que se retire un modelo usado por el espacio de trabajo.
+
+Además de los destinatarios integrados que se muestren en el panel, las alertas se envían a los destinos configurados.
+
+## Menciones
+
+Los campos de mención opcionales permiten que una alerta avise a destinatarios específicos:
+
+- Discord acepta ID de usuario e ID de rol.
+- Slack acepta ID de usuario e ID de grupos de usuarios.
+- Microsoft Teams acepta direcciones de correo de Microsoft 365 o ID de objeto de Entra.
+
+Usa las menciones con moderación. Las alertas frecuentes del espacio de trabajo suelen enviarse a un canal supervisado, en lugar de avisar a un grupo amplio.
+
+## Probar y eliminar destinos
+
+Usa **Enviar prueba** junto a un destino existente después de rotar las credenciales o cambiar la configuración del canal. Elimina los destinos que ya no se supervisen para que las alertas no parezcan enviarse a un canal abandonado.
+
+Los webhooks personalizados deben usar HTTPS y validar la solicitud antes de procesarla. Devuelve una respuesta correcta sin demora y traslada las tareas más lentas a un proceso en segundo plano.

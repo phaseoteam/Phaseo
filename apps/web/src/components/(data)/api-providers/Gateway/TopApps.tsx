@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Users } from "lucide-react";
 import { fetchFrontendAPIProviderTopApps } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { getLocale, getTranslations } from "next-intl/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 import {
@@ -21,6 +22,10 @@ export default async function TopApps({
 	apiProviderId: string;
 	period?: "day" | "week" | "month";
 }) {
+	const [t, locale] = await Promise.all([
+		getTranslations("Catalogue.providers"),
+		getLocale(),
+	]);
 	const topApps = await fetchFrontendAPIProviderTopApps(
 		apiProviderId,
 		period,
@@ -29,16 +34,16 @@ export default async function TopApps({
 
 	return (
 		<section className="space-y-4">
-			<h3 className="text-xl font-semibold">Top apps</h3>
+			<h3 className="text-xl font-semibold">{t("topApps")}</h3>
 
 			{topApps.length > 0 ? (
 				<div className="overflow-x-auto">
 					<table className="w-full min-w-[640px] text-sm">
 						<thead>
 							<tr className="text-xs text-muted-foreground border-b border-border">
-								<th className="text-left font-medium py-2 px-2">App</th>
-								<th className="text-right font-medium py-2 px-2">Tokens</th>
-								<th className="text-right font-medium py-2 px-2">Website</th>
+								<th className="text-left font-medium py-2 px-2">{t("appLabel")}</th>
+								<th className="text-right font-medium py-2 px-2">{t("tokensLabel")}</th>
+								<th className="text-right font-medium py-2 px-2">{t("websiteLabel")}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -84,9 +89,7 @@ export default async function TopApps({
 												target="_blank"
 												rel="noopener noreferrer"
 												className="text-foreground hover:text-primary text-xs font-medium"
-											>
-												Visit
-											</a>
+											>{t("visitWebsite")}</a>
 										) : (
 											<span className="text-muted-foreground text-xs">-</span>
 										)}
@@ -102,10 +105,9 @@ export default async function TopApps({
 						<EmptyMedia variant="icon">
 							<Users />
 						</EmptyMedia>
-						<EmptyTitle>No app data yet</EmptyTitle>
+						<EmptyTitle>{t("noAppDataYet")}</EmptyTitle>
 						<EmptyDescription className="max-w-md mx-auto">
-							App usage data appears here once requests are processed through
-							the gateway.
+							{t("appDataAppearsAfterRequests")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

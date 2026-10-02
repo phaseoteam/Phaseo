@@ -1,0 +1,33 @@
+---
+icon: "mic"
+title: "STT (reconnaissance vocale)"
+description: "Appelez /audio/transcriptions avec le SDK TypeScript."
+---
+
+**Méthode** : `client.generateTranscription()`.
+
+### Exemple
+```typescript
+const transcript = await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+  language: "en",
+});
+```
+
+### Paramètres principaux
+- `model` (obligatoire) : identifiant d’un modèle capable de transcription.
+- `file` (obligatoire) : données audio (URL, base64 ou binaire).
+- `language` : code de langue indicatif (par exemple, `en`).
+- `prompt` : contexte facultatif pour améliorer la précision.
+- `temperature` (0–2) : caractère aléatoire de l’échantillonnage.
+- `response_format` : `json`, `text`, `srt`, `verbose_json`, etc.
+
+### Valeur renvoyée
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

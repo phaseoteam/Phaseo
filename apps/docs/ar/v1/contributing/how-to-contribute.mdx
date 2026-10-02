@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "المساهمة بالكود أو الوثائق"
+description: "جهّز Phaseo محليًا وتحقق من تغيير محدد وافتح طلب سحب."
+---
+
+استخدم هذا المسار لتغييرات الكود والوثائق. بالنسبة إلى سجلات النماذج أو المزوّدين أو الأسعار أو المؤسسات أو الاختبارات المعيارية، [أرسل بلاغًا للكتالوج](./overview.mdx) بدلًا من ذلك؛ لا يلزم إعداد محلي.
+
+## إعداد نسختك المتفرعة
+
+ثبّت Git وNode.js 22.12 أو أحدث وpnpm. أنشئ نسخة متفرعة من [مستودع Phaseo](https://github.com/phaseoteam/Phaseo)، ثم استنسخها وأنشئ فرعًا جديدًا:
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## إجراء التغيير ومعاينته
+
+راجع [بنية المستودع](./repo-structure.mdx) للتطبيق أو الحزمة المناسبة. لتعديلات Markdown فقط، يمكنك أيضًا استخدام محرر ملفات GitHub وفتح طلب سحب هناك.
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+اتبع تعليمات `AGENTS.md` ذات الصلة. احفظ الأسرار في ملفات البيئة المحلية ولا تدرجها في عمليات الالتزام. قد تتطلب معاينات التطبيق المحلية خدمات خلفية مضبوطة وتسجيل دخول عاديًا.
+
+## التحقق من تغييراتك
+
+شغّل الفحوص المناسبة للملفات التي غيّرتها. للوثائق:
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+لتغييرات الويب:
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+شغّل بناءً للإنتاج عند تغيير العرض أو التوجيه. تتطلب تغييرات API وSDK والمخططات الاختبارات وخطوات التوليد المقابلة. راجع [دليل المساهمة](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) في الجذر.
+
+## فتح طلب سحب
+
+أضف الملفات التي غيّرتها فقط إلى منطقة التجهيز، واستخدم رسالة التزام وصفية، وادفع فرعك:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+افتح طلب سحب من نسختك المتفرعة. اشرح المشكلة والتغييرات والفحوص الناجحة. اربط البلاغات ذات الصلة وأرفق لقطات شاشة لتغييرات الواجهة المرئية. عالج ملاحظات المراجعة قبل الدمج؛ تصبح التغييرات متاحة بعد اكتمال النشر المناسب.
+
+اتبع [مدونة السلوك](../community/code-of-conduct.mdx). للتغييرات الكبيرة أو غير المؤكدة، ناقش المقترح قبل كتابة الكود.

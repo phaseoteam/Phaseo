@@ -1,0 +1,61 @@
+---
+icon: "compass"
+title: "SDK Rust"
+description: "أرسل طلبات إلى بوابة Phaseo من Rust باستخدام crate الرسمي phaseo."
+---
+
+استخدم crate المنشور [`phaseo`](https://crates.io/crates/phaseo) لاستدعاء بوابة Phaseo من تطبيق Rust.
+
+يدعم العميل عالي المستوى ما يلي:
+
+- طلبات Responses API باستخدام `Phaseo::responses(...)`
+- طلبات Chat Completions باستخدام `Phaseo::chat_completions(...)`
+- نقاط نهاية JSON أخرى باستخدام `Phaseo::post(...)`
+- اكتشاف مسارات النماذج مباشرةً باستخدام `Phaseo::model_endpoint_capabilities(...)`
+- تقارير دعم المعلمات باستخدام `Phaseo::check_model_parameters(...)`
+- إعداد يستند إلى البيئة باستخدام `Phaseo::from_env()`
+- نقاط نهاية HTTPS مخصصة وخوادم تطوير loopback
+- حالة منظّمة وجسم JSON ومعرّف الطلب وتفاصيل الخطأ
+
+تصنّف تقارير المعلمات كل معلمة مطلوبة على أنها `supported` أو `partial` أو `unsupported` أو `unknown`، وتتحقق من القيم والنطاقات المعلنة، وتعرض المسارات التي تقبل مجموعة المعلمات كاملةً.
+
+```rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+<Note>
+  الإصدار `0.1` مدعوم ومنشور، لكن واجهة Rust قد تتغير قبل `1.0`. ثبّت إصدارًا فرعيًا متوافقًا في بيئة الإنتاج.
+</Note>
+
+## النطاق الحالي
+
+العميل عالي المستوى متزامن ويقبل أجسام طلبات من نوع `serde_json::Value`. تظل الوحدات منخفضة المستوى المُنشأة متاحة ضمن `phaseo::gen`، مع إعادة تصدير مريحة ضمن `phaseo::client` و`phaseo::models` و`phaseo::operations`.
+
+لا يوفر عميل Rust حاليًا نقلًا غير متزامن أو أداة بث عالية المستوى. استخدم HTTP API الخام إذا احتاج التطبيق إلى البث قبل إضافة هذه الأدوات.
+
+<Columns cols={2}>
+  <Card title="تثبيت SDK الخاص بـ Rust" icon="package" href="./installation.mdx">
+    أضف crate وأعد إعداد مفتاح API.
+  </Card>
+  <Card title="إرسال الطلبات" icon="play" href="./usage.mdx">
+    استدعِ Responses وChat Completions ونقاط نهاية JSON الأخرى.
+  </Card>
+  <Card title="مرجع API الخاص بـ Rust" icon="book-open" href="./api-reference.mdx">
+    راجع الأنواع والطرق العامة الدقيقة في `phaseo 0.1`.
+  </Card>
+  <Card title="docs.rs" icon="arrow-up-right-from-square" href="https://docs.rs/phaseo">
+    تصفّح وثائق Rust API المُنشأة.
+  </Card>
+</Columns>

@@ -1,0 +1,155 @@
+---
+title: "Ancrer un flux du SDK TypeScript avec la recherche Web gérée"
+icon: "search"
+description: "Utilisez le SDK TypeScript officiel avec des préréglages, la recherche Web gérée et les métadonnées de réponse pour obtenir un flux ancré et facile à déboguer."
+---
+
+Utilisez cette recette lorsqu’un service TypeScript ou JavaScript doit combiner :
+
+- des valeurs de routage par défaut définies dans un préréglage
+- l’outil géré `phaseo:web_search`
+- une analyse stricte des réponses
+- des métadonnées au niveau de la requête pour le débogage
+
+## Objectif
+
+- conserver le client dans le SDK officiel
+- éviter de reconstruire manuellement des charges utiles de compatibilité brutes
+- conserver suffisamment de métadonnées pour déboguer les résultats de recherche, le routage et le comportement des plugins
+
+## 1. Commencer avec un client partagé
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. Définir d’abord les valeurs par défaut stables dans un préréglage
+
+Créez un préréglage pour partager les éléments suivants entre plusieurs appelants :
+
+- la politique de modèles
+- les préférences de fournisseur
+- les valeurs par défaut du raisonnement
+- le prompt système
+- le comportement déterministe de mise en cache
+
+Limitez ensuite la requête du SDK aux valeurs qui varient pour cet appel.
+
+## 3. Demander une réponse ancrée avec l’outil de recherche gérée
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+Vous obtenez ainsi :
+
+- le routage et les prompts par défaut gérés par le préréglage
+- une recherche gérée par le serveur qui ne dépend pas de la prise en charge de la recherche native par le fournisseur
+- une sortie structurée qui facilite l’analyse prévisible en aval
+- les métadonnées nécessaires au débogage opérationnel
+
+## 4. Analyser la sortie et conserver les champs de débogage
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+Ces champs permettent de savoir facilement :
+
+- quel fournisseur a réellement traité la requête
+- si la recherche gérée s’est exécutée
+- si la réparation de réponse s’est exécutée
+- quelle requête examiner dans le tableau de bord
+
+## 5. Vérifier les journaux de la requête ancrée
+
+Ouvrez la requête dans **Gateway -> Utilisation** et examinez :
+
+- les résultats de recherche normalisés
+- les citations
+- la sélection du fournisseur
+- les métadonnées d’exécution du plugin
+
+Si le comportement ou le classement de la recherche vous semble incorrect, ajustez le préréglage ou les paramètres de l’outil en vous appuyant sur les journaux plutôt que d’ajouter des remplacements à l’aveugle.
+
+## 6. Séparer les flux exploratoires des flux déterministes
+
+Modèle recommandé :
+
+1. un préréglage pour les résultats de recherche structurés et déterministes
+2. un autre préréglage pour les requêtes exploratoires ou utilisant une température plus élevée
+
+Cela permet de garder :
+
+- un cache de réponses plus propre
+- un comportement de routage plus facile à comprendre
+- les flux gourmands en recherche séparés du trafic de génération généraliste
+
+## Guides associés
+
+- [Déboguer les requêtes de recherche Web](./web-search-debugging.mdx)
+- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
+- [Réparer les réponses JSON structurées](./response-healing-for-structured-json.mdx)
+- [Présentation du SDK TypeScript](../sdk-reference/typescript/overview.mdx)

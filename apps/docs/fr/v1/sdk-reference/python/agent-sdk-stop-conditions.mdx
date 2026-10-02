@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Conditions d’arrêt"
+description: "Limitez le travail de l’agent Python par nombre d’étapes, jetons, coût, durée, outils ou motif de fin."
+---
+
+Combinez les fonctions d’arrêt avec `stop_when` :
+
+```python
+stop_when = [
+    step_count_is(12),
+    max_tokens_used(40_000),
+    max_cost(2),
+    max_duration(60_000),
+]
+```
+
+Vous pouvez aussi utiliser `has_tool_call(...)` et `finish_reason_is(...)`. Conservez une limite d’étapes ou de durée même si vous limitez le coût ou les jetons, car ces limites dépendent de l’utilisation déclarée.
+
+## Pages associées
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Résultats et nouvelles tentatives](./agent-sdk-run-controls.mdx)
+

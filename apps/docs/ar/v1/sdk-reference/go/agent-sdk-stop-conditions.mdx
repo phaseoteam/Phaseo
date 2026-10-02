@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "شروط الإيقاف"
+description: "قيّد عمل وكلاء Go بعدد الخطوات أو الرموز أو التكلفة أو المدة أو الأدوات أو سبب الإنهاء."
+---
+
+يمثل `MaxSteps` شبكة أمان مفيدة. ويضيف `StopWhen` حدودًا مركبة للمنتج تُقيّم مع تقدم التشغيل.
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+تشمل الأدوات المساعدة الأخرى `HasToolCall("publish_report")` و`FinishReasonIs("content_filter")`. ويمكنك أيضًا تقديم شرط `StopCondition` مخصص عندما يعتمد القرار على سياق التطبيق.
+
+عند تطابق شرط، افحص `result.Run.StopReason` وإجماليات الاستخدام الموحدة وآخر خطوة مكتملة. ويُعد التوقف نتيجة ناجحة ضمن حد ما لم يقرر التطبيق التعامل مع السبب كخطأ.

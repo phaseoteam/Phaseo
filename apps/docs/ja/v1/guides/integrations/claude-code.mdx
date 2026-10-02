@@ -1,0 +1,54 @@
+---
+title: "Claude Code"
+icon: "/icons/brands/claude-code.svg"
+description: "Anthropic 互換 API を使って Claude Code を Phaseo Gateway に接続します。"
+---
+
+Claude Code は環境変数を使ったサードパーティ LLM ゲートウェイに対応しています。Phaseo は `/v1/messages` で Anthropic 互換の API を提供するため、プロンプトを変更せずに Claude Code の接続先を Phaseo にできます。
+
+セッション中に Claude Code が Phaseo の最新ドキュメントを参照できるようにするには、[Docs MCP](./docs-mcp.mdx) サーバーも追加します。
+
+## Phaseo CLI でセットアップ
+
+```bash
+phaseo login
+phaseo claude-code
+claude
+```
+
+まず Claude Code の公式リリースをインストールします。セットアップで有効期限のない `Phaseo CLI: Claude Code API Key` を作成し、OS の資格情報ストアに保存して、Claude Code のゲートウェイと API キーヘルパーを設定します。Claude Code の設定に平文のキーは書き込まれません。
+
+## 手動で設定する
+
+```bash
+export ANTHROPIC_BASE_URL="https://api.phaseo.app"
+export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
+export ANTHROPIC_API_KEY=""
+```
+
+```powershell
+$env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
+$env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
+$env:ANTHROPIC_API_KEY = ""
+```
+
+## モデルを選ぶ（任意）
+
+固定の既定モデルを使う場合は `ANTHROPIC_MODEL` を設定します。[モデル](../../api-reference/endpoint/models.mdx) に記載されたモデル ID を使ってください。
+
+## Claude Code を起動する
+
+```bash
+claude
+```
+
+## エンドポイントの対応
+
+- Claude Code は Anthropic 形式のエンドポイント（`/v1/messages`）を呼び出します。
+- Phaseo は [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) 経由でこれらのリクエストを処理します。
+
+## 互換性に関する注意
+
+- `ANTHROPIC_AUTH_TOKEN` は `Authorization` ヘッダーとして送信され、Phaseo が受け付けます。
+- Claude Code で既定のモデルを固定するには、`ANTHROPIC_MODEL` に Phaseo モデルの ID を設定できます。
+- 現在の制限: Anthropic Messages でストリーミングとツールを併用すると、`400 invalid_request` が返る場合があります。ストリーミングでのツール呼び出しループに依存する場合は、広く展開する前にこの経路をテストしてください。

@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import EditManagementKeyItem from "./EditManagementKeyItem";
 import DeleteManagementKeyItem from "./DeleteManagementKeyItem";
+import { useTranslations } from "next-intl";
 
 type ManagementKeyState = "active" | "paused" | "expired" | "unknown";
 type ManagementKeyDialogType = "edit" | "delete";
@@ -132,6 +133,7 @@ function formatKeyReference(prefix?: string | null) {
 }
 
 export default function ManagementKeysPanel({ teamsWithKeys }: any) {
+	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	const [activeDialog, setActiveDialog] =
 		useState<ActiveManagementKeyDialog>(null);
@@ -141,7 +143,7 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 			const keys = Array.isArray(team?.keys) ? team.keys : [];
 			return keys.map((key: any) => ({
 				key,
-				workspaceName: team?.name ?? "Workspace",
+						workspaceName: team?.name ?? t("labels.workspace"),
 			}));
 		});
 	}, [teamsWithKeys]);
@@ -153,9 +155,9 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 					<EmptyMedia variant="icon">
 						<KeyRound className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>No management keys yet</EmptyTitle>
+					<EmptyTitle>{t("strings.No management keys yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						Create a management key when you need elevated automation access.
+						{t("strings.phraseCreateAManagementKeyWhenYouNeedElevatedAutomationAccess" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -169,23 +171,33 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 				<TableHeader className="bg-muted/30">
 					<TableRow>
 						<TableHead className="w-[34%]">
-							Key{" "}
+							{t("keys.keyName")}{" "}
 							<span className="ml-1 text-xs font-normal text-muted-foreground">
 								({rows.length})
 							</span>
 						</TableHead>
-						<TableHead className="w-[18%]">Workspace</TableHead>
-						<TableHead className="w-[14%]">Status</TableHead>
-						<TableHead className="w-[13%]">Created</TableHead>
-						<TableHead className="w-[13%]">Last Used</TableHead>
-						<TableHead className="w-[10%]">Expires</TableHead>
+						<TableHead className="w-[18%]">{t("labels.workspace")}</TableHead>
+						<TableHead className="w-[14%]">{t("strings.Status" as never)}</TableHead>
+						<TableHead className="w-[13%]">{t("strings.Created" as never)}</TableHead>
+						<TableHead className="w-[13%]">{t("strings.Last Used" as never)}</TableHead>
+						<TableHead className="w-[10%]">{t("strings.Expires" as never)}</TableHead>
 						<TableHead className="w-[5%] text-right" />
 					</TableRow>
 				</TableHeader>
 				<TableBody>
 					{rows.map(({ key: k, workspaceName }: any) => {
 						const state = getManagementKeyState(k);
-						const meta = stateMeta(state);
+						const metaBase = stateMeta(state);
+						const meta = {
+							...metaBase,
+							label: state === "active"
+								? t("labels.active")
+								: state === "paused"
+									? t("labels.disabled")
+									: state === "expired"
+										? t("labels.expired")
+										: t("strings.Unknown" as never),
+						};
 
 						return (
 							<TableRow key={k.id}>
@@ -233,7 +245,7 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 										<DropdownMenuTrigger render={<Button
 												variant="ghost"
 												size="icon"
-												aria-label="Actions" />}>
+													aria-label={t("labels.actions")} />}>
 
 												<MoreVertical />
 
@@ -244,12 +256,12 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 											className="w-40"
 										>
 											<ManagementDialogMenuItem
-												label="Edit"
+														label={t("labels.edit")}
 												Icon={Edit2}
 												onOpen={() => setActiveDialog({ type: "edit", key: k })}
 											/>
 											<ManagementDialogMenuItem
-												label="Delete"
+														label={t("labels.delete")}
 												Icon={Trash2}
 												variant="destructive"
 												onOpen={() => setActiveDialog({ type: "delete", key: k })}

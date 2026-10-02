@@ -71,7 +71,9 @@ export function supplementalProviderPricing(value: unknown, key = "", pricingCon
 		const entries = value
 			.map((entry) => supplementalProviderPricing(entry, "", nestedPricingContext))
 			.filter((entry): entry is unknown => entry !== null)
-			.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+			.map((entry) => ({ value: entry, sortKey: JSON.stringify(entry) }))
+			.sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+			.map((entry) => entry.value);
 		return entries.length > 0 ? entries : null;
 	}
 	if (value && typeof value === "object") {

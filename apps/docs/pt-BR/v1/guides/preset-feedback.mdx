@@ -1,0 +1,98 @@
+---
+title: "Coletar feedback de predefinições"
+description: "Registre avaliações de respostas e compare a qualidade das predefinições no painel do Phaseo."
+icon: "message-square-more"
+---
+
+O Preset Feedback permite associar avaliações do seu aplicativo à predefinição que gerou uma resposta. Use-o para comparar alterações em prompts e roteamento com sinais reais dos usuários, em vez de considerar apenas latência e custo.
+
+<Note>
+O Preset Feedback está em Alpha. Estamos aprimorando a API e o painel com base em como as equipes avaliam respostas de IA em produção. Use o botão **Feedback** na [página Preset Feedback](https://phaseo.app/settings/presets/experiments) para contar o que tornaria o recurso mais útil.
+</Note>
+
+## Antes de começar
+
+Você precisa de:
+
+- Uma chave de API do Phaseo com a capacidade `feedback:write`
+- O ID da solicitação retornado pelo Phaseo
+- O UUID da predefinição que você quer analisar
+
+Inclua o ID da predefinição ao registrar o feedback. Assim, o evento aparecerá nas comparações de predefinições e na análise de coortes.
+
+## Registrar uma avaliação
+
+Envie feedback depois que um usuário avaliar uma resposta ou quando o aplicativo determinar um resultado.
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+Um evento de feedback deve apontar para pelo menos uma solicitação, sessão, predefinição ou execução de teste. A pontuação é opcional e deve ficar entre `0` e `1`.
+
+## Escolha uma avaliação
+
+Use uma avaliação que descreva o sinal realmente coletado:
+
+- `thumbs_up` ou `thumbs_down` para reações simples dos usuários
+- `correct`, `partly_correct` ou `incorrect` para respostas avaliadas
+- `bad_format`, `too_slow` ou `too_expensive` para problemas operacionais
+- `unsafe` ou `refused_incorrectly` para resultados de segurança
+- `not_helpful` ou `other` quando as outras opções não se aplicarem
+
+Evite converter todos os sinais em pontuações numéricas. Avaliações explícitas facilitam a explicação das comparações no painel.
+
+## Comparar predefinições
+
+Acesse [Configurações → Predefinições → Feedback](https://phaseo.app/settings/presets/experiments) para:
+
+- comparar as taxas de avaliações positivas, parciais e negativas
+- selecionar uma predefinição de referência
+- filtrar por data, avaliação e dimensões de metadados
+- inspecionar a solicitação, a sessão, os comentários e as tags por trás de um evento
+
+Adicione valores de baixa cardinalidade, como plano, implantação, localidade ou superfície do aplicativo, em `metadataDimensions`. Mantenha contextos arbitrários ou de alta cardinalidade em `metadata`.
+
+## Ler feedback pela API
+
+Liste eventos recentes:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Solicite um resumo no servidor:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+As operações de leitura exigem `feedback:read`. Os resultados ficam limitados ao workspace autenticado e às predefinições visíveis para quem fez a chamada.
+
+## Limites atuais da Alpha
+
+O painel analisa no máximo as 10.000 linhas de feedback correspondentes mais recentes no período selecionado.
+As comparações de predefinições usam avaliações explícitas; pontuações numéricas aparecem como informação complementar.
+As APIs para execuções de teste e eventos de resultado personalizados estão disponíveis, mas os fluxos no painel ainda estão evoluindo.
+
+## Guias relacionados
+
+- [Predefinições](./presets.mdx)
+- [Implantar predefinições e depurar o roteamento](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [Atribuição do aplicativo](./app-attribution.mdx)

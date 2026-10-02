@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "停止条件"
+description: "Javaエージェントの処理を、ステップ数、トークン数、コスト、時間、ツール、終了理由で制限します。"
+---
+
+`AgentDefinition.stopWhen`で停止関数を組み合わせます。
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+`hasToolCall(...)`や`finishReasonIs(...)`などのヘルパーもあります。最初に一致した条件は停止理由として記録され、暗黙に続行せずに停止した実行を返します。
+
+コストとトークンの上限は、選択したモデルルートがその情報を返す場合にのみ使います。代替の実行上限として、必ずステップ数または時間の制限を設定してください。
+
+## 関連項目
+
+- [動的なターン](./agent-sdk-dynamic-turns.mdx)
+- [出力と再試行](./agent-sdk-run-controls.mdx)

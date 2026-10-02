@@ -1,0 +1,81 @@
+---
+title: "Infisical"
+icon: "key-round"
+description: "使用 Infisical 准备 Phaseo API 密钥自动轮换。"
+---
+
+Infisical 可使用权限受限的 Phaseo Management API 密钥进行身份验证，并轮换 Phaseo Gateway API 密钥。Phaseo 已提供双阶段、零停机轮换所需的密钥生命周期功能。
+
+<Warning>
+目前还无法在 Infisical 中选择 Phaseo 作为 App Connection。本页介绍 Phaseo 支持的接口约定，以及 Infisical 连接可用后的配置方式。
+</Warning>
+
+## 轮换流程
+
+1. Infisical 使用 Management API 密钥向 Phaseo 进行身份验证。
+2. Infisical 使用 `POST /v1/keys` 创建替换用 Gateway API 密钥。
+3. Infisical 将返回的明文密钥存入已配置的密钥项。
+4. 应用开始使用替换密钥。
+5. Infisical 使用 `DELETE /v1/keys/{id}` 撤销旧密钥。
+
+Phaseo 仅在创建 Gateway API 密钥时返回其明文值。更新密钥项期间，新旧密钥可以同时有效。
+
+## 创建权限受限的 Management API 密钥
+
+在 **Dashboard → Settings → Management Keys** 中创建具有以下权限的密钥：
+
+- `keys:read`：验证连接并查看受管理的密钥
+- `keys:write`：创建替换密钥
+- `keys:delete`：撤销旧密钥
+
+将生成的 `phaseo_v1_mk_...` 密钥存入 Infisical。Management API 密钥属于控制平面凭据，不能用于推理。
+
+## 连接信息
+
+| 字段 | 值 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| 身份验证 | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| 验证 | `GET /keys` |
+| 列出 Gateway 密钥 | `GET /keys` |
+| 创建 Gateway 密钥 | `POST /keys` |
+| 撤销 Gateway 密钥 | `DELETE /keys/{id}` |
+
+## 创建轮换密钥
+
+```bash
+curl https://api.phaseo.app/v1/keys \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "infisical-production",
+    "limit": 100,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false
+  }'
+```
+
+响应会在 `data.key` 中一次性返回新的 Gateway 密钥，并在 `data.id` 中返回其稳定标识符。
+
+## 撤销旧密钥
+
+```bash
+curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+删除操作具有幂等性。已删除的密钥会返回成功的已删除状态，因此可以安全重试轮换。
+
+## 限额与 BYOK
+
+Phaseo 接受兼容字段 `limit`、`limit_reset` 和 `include_byok_in_limit`。支持的重置周期为每日、每周和每月。目前 `include_byok_in_limit` 仅为兼容性保留；Phaseo 不会将 BYOK 用量计入此密钥限额。
+
+## 合作状态
+
+原生 Infisical 连接需要 Infisical 接受 Phaseo App Connection 和 Phaseo API Key Rotation 实现。Phaseo 的管理及密钥生命周期 API 已可用；剩余工作包括 Infisical 侧连接器、测试、界面入口和文档。
+
+## 相关内容
+
+- [Management API 密钥](../../developers/management-api-keys.mdx)
+- [创建 API 密钥](../../api-reference/endpoint/keys-create.mdx)
+- [删除 API 密钥](../../api-reference/endpoint/keys-delete.mdx)

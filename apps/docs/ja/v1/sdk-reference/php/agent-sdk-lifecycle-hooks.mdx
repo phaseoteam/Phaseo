@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "PHPエージェントの実行、モデルのターン、ツール、一時停止、完了を監視します。"
+---
+
+実行中に構造化されたライフサイクルイベントを受け取るには、`onEvent`コールバックを渡します。
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+実行の開始・完了・失敗、モデルの試行、テキストと推論の差分、ツールの開始・進行・完了・失敗、人による確認ポイントなどのイベントを利用できます。
+
+コールバックは短時間で処理します。時間のかかる永続化処理はキューに入れ、外部のテレメトリーにイベントを送る前にツール入力の機密情報をマスキングします。

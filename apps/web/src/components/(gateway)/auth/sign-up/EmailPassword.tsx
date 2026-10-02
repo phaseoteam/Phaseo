@@ -3,12 +3,15 @@
 import { useEffect, useMemo, useState, type FormEventHandler } from "react";
 import Link from "next/link";
 import { useFormStatus } from "react-dom";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
+import { buildLocalizedAuthPath } from "@/lib/auth/localized-paths";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
 const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
@@ -23,13 +26,16 @@ type PasswordChecks = {
 type EmailPasswordProps = {
 	onEmailFlowChange?: (active: boolean) => void;
 	returnUrl?: string;
+	locale?: PublicLocale;
 };
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
 	const { pending } = useFormStatus();
+	const t = useTranslations("Auth.signUp");
+
 	return (
 		<Button type="submit" className="w-full" disabled={disabled || pending}>
-			{pending ? "Creating account..." : "Sign up with email"}
+			{pending ? t("pending") : t("emailSubmit")}
 		</Button>
 	);
 }
@@ -37,7 +43,10 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 export default function EmailPassword({
 	onEmailFlowChange,
 	returnUrl,
+	locale = defaultLocale,
 }: EmailPasswordProps) {
+	const shared = useTranslations("Auth.shared");
+	const t = useTranslations("Auth.signUp");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
@@ -81,9 +90,7 @@ export default function EmailPassword({
 	const handleSubmit: FormEventHandler<HTMLFormElement> = (event) => {
 		if (!passwordValid) {
 			event.preventDefault();
-			setFormError(
-				"Password must include lowercase, uppercase, a number, and a symbol."
-			);
+			setFormError(t("invalidPassword"));
 			return;
 		}
 		try {
@@ -108,22 +115,31 @@ export default function EmailPassword({
 						: "text-muted-foreground font-normal tracking-normal opacity-90 -translate-y-0.5"
 					}`}
 				>
-					{showEmailHeading ? "Email Sign Up" : "Or sign up with email"}
+					{showEmailHeading ? t("emailHeading") : t("emailDivider")}
 				</span>
 				<div className="flex-1 border-t border-border" />
 			</div>
 
-			<form action={handleEmailSignup} onSubmit={handleSubmit} className="grid gap-3">
+			<form
+				action={handleEmailSignup}
+				onSubmit={handleSubmit}
+				className="grid gap-3"
+			>
+				<input type="hidden" name="locale" value={locale} />
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
 				<div className="grid gap-3">
-					<Label htmlFor="email">Email</Label>
+					<Label htmlFor="email">{shared("email")}</Label>
 					<Input
 						id="email"
 						name="email"
 						type="email"
-						placeholder="you@example.com"
+						dir="ltr"
+						autoComplete="email"
+						autoCapitalize="none"
+						spellCheck={false}
+						placeholder={shared("emailPlaceholder")}
 						value={email}
 						onChange={(event) => setEmail(event.target.value)}
 						required
@@ -132,15 +148,17 @@ export default function EmailPassword({
 
 				<div className="grid gap-3">
 					<div className="flex items-center">
-						<Label htmlFor="password">Password</Label>
+						<Label htmlFor="password">{shared("password")}</Label>
 					</div>
-					<div className="relative">
+					<div className="relative" dir="ltr">
 						<Input
 							id="password"
 							name="password"
 							type={showPassword ? "text" : "password"}
+							dir="ltr"
+							autoComplete="new-password"
 							value={password}
-							className={password.length > 0 ? "pr-10" : undefined}
+							className={password.length > 0 ? "pe-10" : undefined}
 							onChange={(event) => {
 								const next = event.target.value;
 								setPassword(next);
@@ -153,9 +171,13 @@ export default function EmailPassword({
 							<button
 								type="button"
 								onClick={() => setShowPassword((value) => !value)}
-								aria-label={showPassword ? "Hide password" : "Show password"}
+								aria-label={
+									showPassword
+										? shared("hidePassword")
+										: shared("showPassword")
+								}
 								aria-pressed={showPassword}
-								className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+								className="absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 							>
 								{showPassword ? (
 									<EyeOff className="h-4 w-4" />
@@ -174,7 +196,9 @@ export default function EmailPassword({
 				>
 					<div className="overflow-hidden">
 						<div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
-							<p className="mb-2 font-medium text-foreground">Password requirements</p>
+							<p className="mb-2 font-medium text-foreground">
+								{t("passwordRequirements")}
+							</p>
 							<ul className="space-y-1">
 								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasLower)}`}>
 									{checks.hasLower ? (
@@ -182,7 +206,7 @@ export default function EmailPassword({
 									) : (
 										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 									)}
-									Contains a lowercase letter
+									{t("lowercaseRequirement")}
 								</li>
 								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasUpper)}`}>
 									{checks.hasUpper ? (
@@ -190,7 +214,7 @@ export default function EmailPassword({
 									) : (
 										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 									)}
-									Contains an uppercase letter
+									{t("uppercaseRequirement")}
 								</li>
 								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasNumber)}`}>
 									{checks.hasNumber ? (
@@ -198,7 +222,7 @@ export default function EmailPassword({
 									) : (
 										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 									)}
-									Contains a number
+									{t("numberRequirement")}
 								</li>
 								<li className={`flex items-center gap-2 ${checkItemClass(checks.hasSymbol)}`}>
 									{checks.hasSymbol ? (
@@ -206,7 +230,7 @@ export default function EmailPassword({
 									) : (
 										<X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 									)}
-									Contains a symbol
+									{t("symbolRequirement")}
 								</li>
 							</ul>
 						</div>
@@ -223,12 +247,12 @@ export default function EmailPassword({
 			</form>
 
 			<div className="text-center text-sm">
-				Already have an account?{" "}
+				{t("existingAccount")} {" "}
 				<Link
-					href={returnUrl ? `/sign-in?returnUrl=${encodeURIComponent(returnUrl)}` : "/sign-in"}
+					href={buildLocalizedAuthPath(locale, "/sign-in", { returnUrl })}
 					className="underline underline-offset-4"
 				>
-					Sign in
+					{t("signInLink")}
 				</Link>
 			</div>
 		</div>

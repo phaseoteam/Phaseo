@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import * as React from "react";
 import { createPortal } from "react-dom";
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import TableSettings from "./TableSettings";
+import { useLocalizedLogColumns } from "./localizedLogColumns";
 import {
 	normalizeTableColumns,
 	type TableColumnDefinition,
@@ -27,7 +29,7 @@ import {
 export default function ConfigurableLogTable<Row, Id extends string>({
 	tableId,
 	label,
-	definitions,
+	definitions: sourceDefinitions,
 	rows,
 	rowKey,
 	renderCell,
@@ -45,6 +47,8 @@ export default function ConfigurableLogTable<Row, Id extends string>({
 	emptyMessage: string;
 	settingsTargetId?: string;
 }) {
+	const tAuditCopy = useTranslations();
+	const definitions = useLocalizedLogColumns(sourceDefinitions);
 	const columnsKey = `phaseo.${tableId}.columns.v1`;
 	const densityKey = `phaseo.${tableId}.density.v1`;
 	const [columns, setColumns] = React.useState(() =>
@@ -230,8 +234,7 @@ export default function ConfigurableLogTable<Row, Id extends string>({
 														aria-label={`Open details for ${label}: ${rowKey(row)}`}
 														onClick={(event) => { event.stopPropagation(); onRowClick(row); }}
 													>
-														Open details
-													</button>
+														{tAuditCopy("Common.ui.auditCopy.openDetails")}</button>
 												)}
 												{renderCell(row, id)}
 											</TableCell>

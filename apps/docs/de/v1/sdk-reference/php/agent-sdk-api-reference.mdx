@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "API-Referenz"
+description: "Referenz der wichtigsten Klassen und Methoden des PHP Agent SDK."
+---
+
+| API | Zweck |
+| --- | --- |
+| `AgentSdk::createAgent(...)` | Agent definieren |
+| `AgentSdk::defineTool(...)` | Lokales oder manuelles Tool definieren |
+| `AgentSdk::createGatewayAgentClient(...)` | Modell-Turns mit Phaseo verbinden |
+| `Agent::run(...)` | Bis zum Abschluss oder Pausieren ausführen |
+| `Agent::stream(...)` | Mit erneut durchlaufbaren Iterables ausführen |
+| `Agent::continueRun(...)` | Gespeicherten oder pausierten Zustand fortsetzen |
+| `Agent::continueRunById(...)` | Über einen State-Accessor neu laden und fortsetzen |
+| `AgentStreamResult::textStream()` | Textdeltas lesen |
+| `AgentStreamResult::fullStream()` | Alle Ereignisse lesen |
+
+Zu den wichtigen Klassen gehören `AgentDefinition`, `RunResult`, `RunRecord`, `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `StateAccessor` und `GatewayAgentClientOptions`.
+
+## Weiterführende Themen
+
+- [Erstelle deinen ersten Agent](./agent-sdk.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

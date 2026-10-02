@@ -119,6 +119,18 @@ describe("providerPlanRouting", () => {
 		expect(hasSelectedAlternativeServiceTier("batch", "batch")).toBe(false);
 	});
 
+    it("keeps Ultrafast availability separate from the standard route", () => {
+        const provider = makeProviderPricing();
+        const base = { ...provider.provider_models[0], service_tier: "standard" };
+        const ultrafast = { ...base, service_tier: "ultrafast", is_active_gateway: false, provider_availability_status: "coming_soon" as const };
+        provider.provider_models = [base, ultrafast];
+        provider.pricing_rules.push({ ...provider.pricing_rules[0], pricing_plan: "ultrafast" });
+        expect(getProviderModelScopeForPlan(provider, "standard")).toEqual([base]);
+        expect(getProviderModelScopeForPlan(provider, "ultrafast")).toEqual([ultrafast]);
+        provider.provider_models[1] = { ...ultrafast, is_active_gateway: true, provider_availability_status: "available" };
+        expect(getProviderModelScopeForPlan(provider, "ultrafast")[0].is_active_gateway).toBe(true);
+    });
+
     it("prefers explicit priority pricing on the base model over hidden fast sibling rows", () => {
         const provider = makeProviderPricing();
 

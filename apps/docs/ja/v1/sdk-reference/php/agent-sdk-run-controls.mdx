@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "出力と再試行"
+description: "最終出力を検証し、モデルリクエストを再試行して、完了したPHP実行を確認します。"
+---
+
+後続のPHPコードで予測可能な形式が必要な場合は出力を検証します。モデルの再試行は一時的なリクエスト障害を対象とします。副作用を伴うツールの再試行はツール内で実装し、冪等にしてください。
+
+## 再試行を設定する
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+実行結果には、ステータス、ステップ、メッセージ、正規化された使用量、停止理由、最終出力が含まれます。最終テキストだけを実行記録全体と見なさず、これらの項目を確認してください。
+
+## 最終結果を検証する
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+予算の強制には[停止条件](./agent-sdk-stop-conditions)を使い、回復可能な失敗への対応は[エラーとトラブルシューティング](./agent-sdk-observability)を参照してください。

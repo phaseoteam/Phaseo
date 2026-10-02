@@ -1,0 +1,97 @@
+---
+title: "AI SDK"
+icon: "bolt"
+description: "Verwende den offiziellen Phaseo-Provider für Vercel AI SDK."
+---
+
+Phaseo bietet mit dem Paket `@phaseo/ai-sdk-provider` einen offiziellen Provider für Vercel AI SDK an.
+
+## Installation
+
+AI SDK 7 und die native Phaseo-Implementierung `ProviderV4` sind die Standardoptionen für neue Projekte:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+Das Phaseo-Paket ohne Versionsnummer folgt dem npm-Tag `latest` und wählt daher die aktive Provider-Version aus, die mit AI SDK 7 kompatibel ist. Das Paket gibt AI SDK 7 als Peer-Abhängigkeit an, die npm automatisch installiert.
+
+### Wartungsversion für AI SDK 6
+
+AI SDK 6 verwendet den vorherigen Vertrag `ProviderV3`. Installiere die entsprechend markierte Kompatibilitätsversion:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v6
+```
+
+Phaseo Provider 1.x bleibt in Wartung, solange AI SDK 7 aktuell ist. Sobald AI SDK 8 eine stabile Version erreicht, kennzeichnet Phaseo die 1.x-Version auf npm als veraltet. Dadurch werden bestehende Versionen nicht entfernt. Eine spätere Entscheidung zum Supportende wird separat angekündigt.
+
+### Kompatibilität mit AI SDK 5
+
+AI SDK 5 unterstützt den älteren Vertrag `ProviderV2`. Installiere die eigens dafür vorgesehene Kompatibilitätsversion von Phaseo:
+
+```bash
+npm install @phaseo/ai-sdk-provider@ai-sdk-v5
+```
+
+Wenn dein Paketmanager Peer-Abhängigkeiten nicht automatisch installiert, installiere die passende Hauptversion von `ai` separat (`ai@^7`, `ai@^6` oder `ai@^5`).
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+Die v5-Version unterstützt Textgenerierung und Streaming, Tools, strukturierte Ausgabe, Embeddings, Bilder, Transkription und Sprachausgabe. Standardisiertes Neusortieren ist in den Provider-Verträgen von AI SDK 6 und 7 verfügbar.
+
+## Grundlegende Verwendung
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+	model: phaseo("openai/gpt-4o"),
+	prompt: "Summarize this in one sentence.",
+});
+```
+
+## Unterstützte Funktionen von AI SDK 7
+
+Provider 2.x implementiert und testet die nativen v4-Verträge von AI SDK 7 für:
+
+- Textgenerierung und Streaming
+- Provider-unabhängige Reasoning-Einstellungen und Reasoning-Ausgabe
+- Standard-Funktionstools, gestreamte Tool-Eingaben und Tool-Ergebnisrunden
+- strukturierte JSON- und JSON-Schema-Ausgabe
+- Text- und Bilddatei-Eingaben im markierten Dateidatenformat von V7
+- URL-Quellen für Zitate
+- Embeddings und Bildgenerierung
+- Neusortierung
+- Transkription und Sprachausgabe
+- Provider-Metadaten, Nutzung, Request-Header, Abbruchsignale und unbearbeitete Stream-Chunks
+
+Verwende Modell-IDs vom [Models-Endpunkt](../../api-reference/endpoint/models.mdx). Welche Funktionen verfügbar sind, hängt außerdem vom ausgewählten Modell und dem vorgelagerten Provider ab.
+
+## Neusortierung und Funktionsgrenzen
+
+Neusortierung ist über die AI-SDK-Hilfsfunktion `rerank()` und `phaseo.rerankingModel(modelId)` verfügbar. ProviderV4-Funktionen, für die derzeit nicht verfügbare Phaseo-API-Funktionen erforderlich wären, werden nicht angeboten: verwaltete Datei-Uploads und -Referenzen, Skills sowie vom Provider ausgeführte Tool-Definitionen, -Ergebnisse oder -Freigabeantworten. Von der Anwendung ausgeführte Funktionstools verwenden weiterhin den normalen Ausführungs- und Freigabeablauf von AI SDK. Nicht unterstützte providerspezifische oder benutzerdefinierte Prompt-Bestandteile führen zu einem klaren Fehler, statt stillschweigend verworfen zu werden.
+
+```typescript
+import { rerank } from "ai";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+const result = await rerank({
+  model: phaseo.rerankingModel("voyage/rerank-2"),
+  query: "Which document is about TypeScript?",
+  documents: [
+    "TypeScript adds static types to JavaScript.",
+    "Rust is a systems programming language.",
+  ],
+  topN: 1,
+});
+```

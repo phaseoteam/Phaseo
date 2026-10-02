@@ -1,0 +1,81 @@
+---
+title: "Infisical"
+icon: "key-round"
+description: "InfisicalによるPhaseo APIキーの自動ローテーションを準備します。"
+---
+
+Infisicalは、権限を限定したPhaseo Management APIキーで認証し、Phaseo Gateway APIキーをローテーションできます。Phaseoは停止時間なしで2段階ローテーションを行うためのキーライフサイクルをすでに提供しています。
+
+<Warning>
+InfisicalではPhaseoをApp Connectionとしてまだ選択できません。このページでは、Infisical接続が利用可能になった際に使う、サポート対象のPhaseo契約と設定を説明します。
+</Warning>
+
+## ローテーションの仕組み
+
+1. InfisicalがManagement APIキーでPhaseoに認証します。
+2. Infisicalが`POST /v1/keys`でGateway APIの新しいキーを作成します。
+3. Infisicalが返された平文キーを設定済みシークレットに保存します。
+4. アプリケーションが新しいキーを使い始めます。
+5. Infisicalが`DELETE /v1/keys/{id}`で以前のキーを失効します。
+
+PhaseoがGateway APIキーを平文で返すのは作成時だけです。シークレットを更新する間、旧キーと新キーを併用できます。
+
+## 権限を絞ったManagement APIキーを作成する
+
+**Dashboard → Settings → Management Keys**で次の機能を持つキーを作成します。
+
+- 接続の検証と管理キーの確認に使う`keys:read`
+- 交換用キーの作成に使う`keys:write`
+- 旧キーの失効に使う`keys:delete`
+
+生成された`phaseo_v1_mk_...`シークレットをInfisicalに保存します。Management APIキーはコントロールプレーンの認証情報であり、推論には使えません。
+
+## 接続情報
+
+| 項目 | 値 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| 認証 | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
+| 検証 | `GET /keys` |
+| Gatewayキーの一覧 | `GET /keys` |
+| Gatewayキーを作成 | `POST /keys` |
+| Gatewayキーを失効 | `DELETE /keys/{id}` |
+
+## ローテーション後のキーを作成する
+
+```bash
+curl https://api.phaseo.app/v1/keys \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "infisical-production",
+    "limit": 100,
+    "limit_reset": "monthly",
+    "include_byok_in_limit": false
+  }'
+```
+
+レスポンスの`data.key`に新しいGatewayキーが一度だけ含まれ、安定したIDは`data.id`に含まれます。
+
+## 以前のキーを失効する
+
+```bash
+curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+削除操作は冪等です。すでに削除されたキーは削除済みの成功状態を返すため、ローテーションを安全に再試行できます。
+
+## 制限とBYOK
+
+Phaseoは互換性のために`limit`、`limit_reset`、`include_byok_in_limit`を受け付けます。リセット期間は日次、週次、月次です。現在`include_byok_in_limit`は互換性目的のみであり、Phaseoはこのキー上限にBYOK使用量を含めません。
+
+## パートナー連携の状況
+
+ネイティブのInfisical接続には、Infisical側でPhaseo App ConnectionとPhaseo API Key Rotationの実装が承認される必要があります。Phaseoの管理APIとキーライフサイクルAPIは利用可能ですが、Infisical側コネクター、テスト、UI項目、ドキュメントは未完了です。
+
+## 関連項目
+
+- [Management APIキー](../../developers/management-api-keys.mdx)
+- [APIキーを作成する](../../api-reference/endpoint/keys-create.mdx)
+- [APIキーを削除する](../../api-reference/endpoint/keys-delete.mdx)

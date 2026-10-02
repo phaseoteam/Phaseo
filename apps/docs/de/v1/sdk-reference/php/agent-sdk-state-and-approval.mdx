@@ -1,0 +1,20 @@
+---
+icon: "database"
+title: "Status und Genehmigung"
+description: "Pausiere PHP-Agenten für menschliche Entscheidungen und setze den anwendungseigenen Zustand fort."
+---
+
+Verwende `AgentDefinition::$humanReview` für einen allgemeinen Prüfpunkt. Genehmigungspflichtige und manuelle Tools füllen `$result->run->pause->pendingToolCalls` mit den exakten Aufruf-IDs.
+
+Setze den Lauf mit `Agent::continueRun(...)` fort und übergib:
+
+- `ToolDecision`-Werte für Genehmigungen oder Ablehnungen
+- `ToolOutput`-Werte für manuelle Arbeit
+- menschliche Eingaben für eine allgemeine Prüfungspause
+
+Verwende `continueRunById(...)` mit einem `StateAccessor`, wenn die Anwendung den Lauf erneut aus dem Speicher laden soll. Entscheidungen werden der Aufruf-ID zugeordnet, nicht dem Tool-Namen.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Laufsteuerung](./agent-sdk-run-controls.mdx)

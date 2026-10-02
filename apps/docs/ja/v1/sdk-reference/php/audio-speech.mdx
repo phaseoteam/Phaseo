@@ -1,0 +1,38 @@
+---
+icon: "music"
+title: "音声合成（TTS）"
+description: "PHP SDKで/audio/speechを呼び出します。"
+---
+
+**メソッド**: `$client->createSpeech(...)`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$audioFile = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3'
+]);
+file_put_contents('output.mp3', $audioFile->fread($audioFile->getSize()));
+```
+
+### 主なパラメーター
+
+-   `model`（必須）：TTS対応モデルのID。
+-   `input`（必須）：音声に変換するテキスト。
+-   `voice`：音声プリセット（モデルに依存。例：`alloy`）。
+-   `format`：`mp3`、`wav`、`flac`など。
+-   `speed`：再生速度の倍率（通常0.25～4）。
+
+### 戻り値
+
+音声バイナリ（`\SplFileObject`）

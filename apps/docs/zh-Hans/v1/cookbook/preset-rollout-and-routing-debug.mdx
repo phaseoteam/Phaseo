@@ -1,0 +1,111 @@
+---
+title: "上线预设并调试路由"
+icon: "route"
+description: "使用预设统一提示词和路由默认值，然后检查请求详情，了解 Phaseo 为何以这种方式路由请求。"
+---
+
+如果希望多个服务复用同一个预设，而不是到处复制相同的提示词、模型和路由默认值，请使用此操作指南。
+
+## 目标
+
+- 统一提示词和参数的默认值。
+- 在发布或合规边界内限制可使用的提供商。
+- 保留足够的请求上下文，以解释请求为何以这种方式路由。
+
+## 1. 创建预设
+
+在**控制台 -> 设置 -> 预设**中创建预设，并设置：
+
+- 清晰的名称和 slug
+- 系统提示词
+- 已批准的模型
+- 提供商偏好
+- `temperature` 等参数默认值
+
+在调用代码中使用预设 slug，即可在不同环境中复用同一请求策略。
+
+## 2. 保持请求正文简洁
+
+预设的主要优势是调用方无需在每个请求中重复相同的路由和提示词默认值。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4-5",
+    "input": "Generate a release summary for the last 24 hours.",
+    "preset": "release-summary"
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "anthropic/claude-sonnet-4-5",
+  input: "Generate a release summary for the last 24 hours.",
+  preset: "release-summary",
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "anthropic/claude-sonnet-4-5",
+        "input": "Generate a release summary for the last 24 hours.",
+        "preset": "release-summary",
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+## 3. 了解预设会更改哪些内容
+
+预设会在提供商路由前应用：
+
+- 请求中缺失的参数会由预设补齐
+- 预设提示词会添加到系统层开头
+- 提供商偏好会在排序前缩小可用提供商列表
+- 模型限制会提前检查，而不是静默改用其他路由
+
+## 4. 调试路由结果
+
+如果请求的路由结果不符合预期，请在 **Gateway -> 用量** 中打开请求并检查：
+
+- 纳入考虑的提供商
+- 排序后的候选项
+- 每个候选项关联的路由因素
+- 工作区策略或护栏导致的阻止
+
+这是查明以下问题最快的方法：
+
+- 提供商为何被跳过
+- 请求为何被阻止
+- 成本更低或延迟更低的目标为何排名靠前
+
+## 5. 运维模式
+
+更改路由行为时，请按此模式逐步上线：
+
+1. 为新策略创建新的预设 slug。
+2. 将一个低风险调用方切换到新预设。
+3. 检查请求详情和活动趋势。
+4. 只有在路由结果符合预期后才扩大上线范围。
+
+## 相关指南
+
+- [预设](../guides/presets.mdx)
+- [路由与回退](../guides/routing-and-fallbacks.mdx)
+- [错误处理](../api-reference/errors.mdx)

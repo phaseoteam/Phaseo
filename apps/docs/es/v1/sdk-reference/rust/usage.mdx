@@ -1,0 +1,126 @@
+---
+icon: "book-open"
+title: "Uso"
+description: "Crea un cliente Rust, envía solicitudes a Gateway y gestiona respuestas y errores."
+---
+
+Usa `Phaseo` cuando tu servicio Rust necesite un cliente síncrono de Phaseo Gateway.
+
+## Crea un cliente
+
+Carga la clave de API y la URL base opcional desde el entorno:
+
+```rust
+use phaseo::Phaseo;
+
+let client = Phaseo::from_env()?;
+```
+
+O pasa la clave directamente:
+
+```rust
+use phaseo::Phaseo;
+
+let client = Phaseo::new("phaseo_v1_sk_...")?;
+```
+
+`Phaseo` oculta la clave de API y los valores de encabezados personalizados en su salida `Debug`.
+
+## Envía una solicitud a Responses
+
+```rust
+use phaseo::Phaseo;
+use serde_json::{json, Value};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Summarize why provider fallbacks improve reliability."
+    }))?;
+
+    let text = response.body
+        .get("output")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+        .flat_map(|item| {
+            item.get("content")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+        })
+        .find_map(|part| {
+            (part.get("type").and_then(Value::as_str) == Some("output_text"))
+                .then(|| part.get("text").and_then(Value::as_str))
+                .flatten()
+        })
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+La respuesta JSON completa sigue disponible en `response.body`.
+
+## Envía una solicitud a Chat Completions
+
+```rust
+let response = client.chat_completions(&json!({
+    "model": "openai/gpt-6-astra",
+    "messages": [{
+        "role": "user",
+        "content": "Reply with exactly: chat works"
+    }]
+}))?;
+
+println!("{}", response.body);
+```
+
+## Llama a otro endpoint JSON
+
+Usa `post(...)` para llamar a un endpoint de Phaseo que todavía no tenga una función de alto nivel:
+
+```rust
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-small",
+    "input": "Phaseo routes across AI providers"
+}))?;
+```
+
+La ruta puede incluir o no la barra inicial.
+
+## Añade un encabezado a la solicitud
+
+```rust
+let client = Phaseo::from_env()?
+    .with_header("x-phaseo-workspace-id", "workspace_123");
+```
+
+## Gestiona errores de Gateway
+
+```rust
+let request = serde_json::json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Handle this request"
+});
+
+match client.responses(&request) {
+    Ok(response) => println!("{}", response.body),
+    Err(error) => {
+        eprintln!("message: {}", error.message);
+        eprintln!("status: {:?}", error.status);
+        eprintln!("body: {:?}", error.body);
+    }
+}
+```
+
+`PhaseoError` incluye el estado HTTP y el cuerpo JSON analizado cuando Gateway devuelve un error. Los errores de transporte y configuración no tienen estado HTTP.
+
+## Siguiente
+
+- [API Responses](./responses.mdx)
+- [Chat Completions](./chat-completions.mdx)
+- [Referencia de la API de Rust](./api-reference.mdx)

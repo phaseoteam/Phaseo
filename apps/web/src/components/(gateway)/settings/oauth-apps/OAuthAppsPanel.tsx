@@ -10,6 +10,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 import { AppWindow } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface OAuthAppsPanelProps {
 	oauthApps: any[];
@@ -18,6 +19,7 @@ interface OAuthAppsPanelProps {
 export default function OAuthAppsPanel({
 	oauthApps,
 }: OAuthAppsPanelProps) {
+	const t = useTranslations("SettingsUI");
 	if (!oauthApps || oauthApps.length === 0) {
 		return (
 			<Empty className="rounded-xl border border-dashed border-border/80 p-8">
@@ -25,10 +27,9 @@ export default function OAuthAppsPanel({
 					<EmptyMedia variant="icon">
 						<AppWindow className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>No OAuth apps yet</EmptyTitle>
+					<EmptyTitle>{t("strings.No OAuth apps yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						Create your first OAuth app to enable third-party integrations with
-						your Phaseo account.
+						{t("strings.phraseCreateYourFirstOAuthAppToEnableThirdPartyIntegrationsWithYourPhaseoAccount" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>

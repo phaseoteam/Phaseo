@@ -1,0 +1,120 @@
+---
+title: "दस्तावेज़ MCP"
+icon: "plug-zap"
+description: "Phaseo दस्तावेज़ MCP सर्वर को Codex, Claude Code, Cursor या VS Code से कनेक्ट करें।"
+---
+
+अगर आप चाहते हैं कि आपका कोडिंग एजेंट पुराने प्रशिक्षण डेटा के बजाय लाइव दस्तावेज़ों से Phaseo के सवालों के जवाब दे, तो Phaseo दस्तावेज़ MCP सर्वर कनेक्ट करें।
+
+यह MCP सर्वर केवल पढ़ने के लिए है। यह एजेंटों को काम करते समय दस्तावेज़ खोजने और पूरे पेज पढ़ने में मदद करता है。
+
+## सर्वर URL
+
+`https://phaseo.app/docs/mcp`
+
+## इसमें क्या मिलता है
+
+- Phaseo दस्तावेज़ों में लाइव खोज
+- एजेंट को अधिक जानकारी चाहिए तो पूरे पेज की सामग्री
+- होस्ट किए गए क्षमता सारांश [skill.md](https://phaseo.app/docs/skill.md) तक पहुँच
+
+## Codex
+
+सर्वर जोड़ें:
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+जाँचें:
+
+```bash
+codex mcp list
+```
+
+## Claude Code
+
+मौजूदा प्रोजेक्ट के लिए सर्वर जोड़ें:
+
+```bash
+claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
+```
+
+इसे सभी प्रोजेक्ट में उपलब्ध करें:
+
+```bash
+claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
+```
+
+जाँचें:
+
+```bash
+claude mcp list
+```
+
+## Cursor
+
+Cursor में MCP सर्वर इंस्टॉल करने के लिए दस्तावेज़ों का contextual menu इस्तेमाल करें या इसे मैन्युअल रूप से जोड़ें:
+
+```json
+{
+  "mcpServers": {
+    "phaseoDocs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## OpenCode
+
+Phaseo दस्तावेज़ सर्वर को `opencode.json` में जोड़ें:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## VS Code
+
+VS Code में MCP सर्वर इंस्टॉल करने के लिए दस्तावेज़ों का contextual menu इस्तेमाल करें या इसे मैन्युअल रूप से जोड़ें:
+
+```json
+{
+  "servers": {
+    "phaseoDocs": {
+      "type": "http",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
+
+## इसका उपयोग कब करें
+
+जब आप चाहते हैं कि आपका एजेंट यह करे, तब Docs MCP का उपयोग करें:
+
+- कोड लिखने से पहले अनुरोध का नवीनतम प्रारूप देखे
+- किसी मॉडल या प्रदाता के लिए एंडपॉइंट समर्थन की पुष्टि करे
+- रूटिंग, प्रीसेट, गार्डरेल या async जॉब का व्यवहार जाँचे
+- एडिटर छोड़े बिना दस्तावेज़ों से उदाहरण ले
+
+## अच्छे प्रॉम्प्ट
+
+- `Phaseo दस्तावेज़ों में Responses अनुरोध प्रारूप देखें और मुझे एक छोटा उदाहरण दें।`
+- `इस अनुरोध को बदलने से पहले Phaseo Docs MCP सर्वर से जाँचें कि provider.sort कैसे काम करता है।`
+- `Phaseo के guardrails दस्तावेज़ ढूँढें और प्रदाता रूटिंग पर असर डालने वाले हिस्सों का सार दें।`
+
+## संबंधित गाइड
+
+- [Codex](./codex.mdx)
+- [Claude Code](./claude-code.mdx)
+- [त्वरित शुरुआत](../../quickstart.mdx)
+- [API संदर्भ](../../api-reference/introduction.mdx)

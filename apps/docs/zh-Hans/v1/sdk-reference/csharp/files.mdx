@@ -1,0 +1,26 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 C# SDK 上传文件、查看元数据并获取文件内容。"
+---
+
+**方法**：`client.UploadFile()`、`client.ListFiles()`、`client.RetrieveFile()`、`client.RetrieveFileContent()`。
+
+### 示例
+```csharp
+var client = new Phaseo(apiKey: apiKey);
+
+var uploaded = await client.UploadFile(new Dictionary<string, object>
+{
+    ["purpose"] = "batch",
+    ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+});
+
+var file = await client.RetrieveFile("file_123");
+var content = await client.RetrieveFileContent("file_123");
+```
+
+<Note>
+`ListFiles()` 已接入 SDK，但使用共享网关密钥时，`GET /files` 当前会返回 `file_list_not_supported_with_shared_gateway_key`
+保存已上传文件的 ID，并直接获取文件。
+</Note>

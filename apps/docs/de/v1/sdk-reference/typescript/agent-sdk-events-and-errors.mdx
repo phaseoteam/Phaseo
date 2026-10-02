@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "Fehlerbehebung"
+description: "Behandle Gateway-Fehler, Validierungsfehler und fehlgeschlagene Agent-Läufe."
+---
+
+Verwende strukturierte Agent-SDK-Fehler, wenn deine Anwendung entscheiden muss, ob sie es erneut versucht, den Nutzer um andere Eingaben bittet oder einer zuständigen Person Request-Details anzeigt.
+
+## Gateway-Fehler behandeln
+
+Gateway-Fehler werden als `AgentGatewayError` erneut ausgelöst:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Fehlgeschlagene Läufe und Schritte behalten Gateway-Fehlerdetails bei, sofern verfügbar.
+
+## Schema-Fehler behandeln
+
+`AgentSchemaValidationError` kennzeichnet ungültige Tool-Eingaben oder -Ausgaben, Fortschrittsereignisse oder Endausgaben. Behandle sie als Vertragsfehler und nicht als vorübergehende Modellfehler.
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## Fehlgeschlagenen Lauf untersuchen
+
+Wenn die Laufzeitumgebung für den Fehler einen Checkpoint speichern kann, untersuche:
+
+- `result.run.status`
+- `result.run.error`
+- `status`, `error` und `modelAttempts` des letzten Schritts
+- `requestId` und `nativeResponseId` für den Abgleich mit Gateway-Logs
+
+## Häufige Prüfungen
+
+- Stelle sicher, dass der Serverprozess auf `PHASEO_API_KEY` zugreifen kann.
+- Weise jedem Tool eine eindeutige, stabile `id` zu.
+- Verwende beim Freigeben, Ablehnen oder Bereitstellen manueller Ausgaben die exakten Tool-Aufruf-IDs.
+- Begrenze Modell-Retries; wiederhole Validierungs- oder Freigabefehler nicht blind.
+- Speichere den Status eines pausierten Laufs, bevor du die Kontrolle an einen Browser oder Queue-Worker zurückgibst.
+
+## Zugehörige Anleitungen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [Status und Freigabe](./agent-sdk-state-and-approval.mdx)

@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "输出与重试"
+description: "验证最终输出、重试模型请求，并检查已完成的 PHP 运行。"
+---
+
+当后续 PHP 代码需要可预测的结构时，请验证输出。模型重试用于处理暂时性请求故障；会产生副作用的工具必须在工具内部进行重试，并确保幂等。
+
+## 配置重试
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+运行结果包含状态、步骤、消息、规范化用量、停止原因和最终输出。请检查这些字段，不要将最终文本视为完整的运行记录。
+
+## 验证最终结果
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+使用[停止条件](./agent-sdk-stop-conditions)强制执行预算，并参考[错误与故障排查](./agent-sdk-observability)选择可恢复故障的处理方式。

@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { updateBetaPreferences } from "@/app/(dashboard)/settings/beta/actions";
 import {
@@ -29,6 +31,7 @@ export default function BetaSettingsClient({
 	features: readonly BetaFeatureDefinition[];
 }) {
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
 	const [betaFeatures, setBetaFeatures] = React.useState(initialProfile.betaFeatures);
 	const [savingKey, setSavingKey] = React.useState<string | null>(null);
@@ -44,12 +47,15 @@ export default function BetaSettingsClient({
 			}));
 
 			toast.promise(savePromise, {
-				loading: "Saving beta preferences...",
-				success: "Beta preferences updated",
+				loading: t("settingsPageCopy.betaSaving"),
+				success: t("settingsPageCopy.betaSaveSuccess"),
 				error: (error: unknown) =>
-					error instanceof Error
-						? error.message
-						: "Could not save beta preferences",
+						localizedSettingsError(
+							error,
+							t,
+							"Action failed",
+							t("settingsPageCopy.betaSaveError"),
+						),
 			});
 
 			const result = await savePromise;
@@ -57,7 +63,7 @@ export default function BetaSettingsClient({
 			dispatchStoredBetaProfileChanged(result.profile);
 			router.refresh();
 		},
-		[router, write]
+		[router, t, write]
 	);
 
 	const toggleFeature = React.useCallback(
@@ -108,13 +114,11 @@ export default function BetaSettingsClient({
 								</p>
 								{feature.kind && feature.kind !== "toggle" ? (
 									<Badge variant="outline" className="text-[10px] capitalize">
-										{feature.kind}
+										{feature.kind === "range" ? t("settingsPageCopy.rangeKind") : feature.kind}
 									</Badge>
 								) : null}
 								{isSaving ? (
-									<Badge variant="secondary" className="text-[10px]">
-										Saving
-									</Badge>
+									<Badge variant="secondary" className="text-[10px]">{t("settingsPageCopy.saving")}</Badge>
 								) : null}
 							</div>
 							<p

@@ -1,0 +1,63 @@
+---
+title: "ストリーミング"
+description: "増分出力を受け取り、エンドポイント固有のイベントを処理して、中断したストリームに対処します。"
+icon: "radio"
+---
+
+`stream: true`を設定するとServer-Sent Events（SSE）として出力を受け取れます。Phaseo APIキーはサーバーに保持し、出力をUIへ転送してください。
+
+## ストリーミングリクエストを送る
+
+```bash
+curl --no-buffer https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello in one sentence.",
+    "stream": true
+  }'
+```
+
+ストリームを読む前にHTTPステータスを確認します。開始前の失敗は通常の[JSONエラー応答](../api-reference/errors.mdx)を返します。
+
+## イベントを読む
+
+呼び出したエンドポイントのイベント形式を使ってください。
+
+| エンドポイント | 増分出力 | 完了 |
+| --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta`などのイベント | 最終応答イベントとその状態を確認 |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | `finish_reason`を確認。`[DONE]`でストリーム終了 |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, および関連イベント | `message_stop` |
+
+SSEイベントは空行で区切られます。ネットワークチャンクはイベントの一部や複数イベントを含むため、各チャンクを独立したJSONとして解析しないでください。不完全なフレームをバッファリングするか、SDKのストリーミングヘルパーを使います。すべてのエンドポイントが`[DONE]`を送るとは限りません。
+
+SDKのヘルパーがストリーム転送を処理します。
+
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
+- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
+- Vercel AI SDK: `streamText()` を使って `@phaseo/ai-sdk-provider`.
+
+クライアントの設定は[TypeScript使用ガイド](../sdk-reference/typescript/usage.mdx)または[Python使用ガイド](../sdk-reference/python/usage.mdx)を参照してください。
+
+## ツール呼び出しをストリーミングする
+
+Gatewayはツールを伴うストリーミングを受け付けますが、対応状況はモデルとプロバイダーに依存します。呼び出し完了まで引数の差分を蓄積し、実行前に解析、検証、認可を行ってください。部分的な引数を実行しないでください。
+
+継続リクエストは[ツール呼び出しパターン](./tool-calling-patterns.mdx)、検証と承認の制御は[ツールの安全性](./tool-calling-safety.mdx)に従ってください。
+
+## キャンセルと復旧
+
+サーバー側HTTPクライアントに`AbortSignal`を渡し、ユーザーの停止や切断時にキャンセルします。処理に適した期限を設定してください。キャンセルしてもプロバイダーの即時停止や生成済み出力の無料化は保証されません。
+
+部分テキストは順次表示できますが、エンドポイントの正常な最終イベントを受け取ってから完了としてください。接続の切断だけでは完了を証明できません。
+
+出力開始後にストリームが失敗した場合：
+
+1. 部分応答を中断として記録します。
+2. リクエストまたは生成ID、エンドポイント、モデルをログに残します。
+3. 明示的な再試行を提示します。新しいリクエストは異なる出力と追加料金を生じる場合があります。
+4. 実行済みツールの再実行や、部分出力への再試行応答の自動追加をしないでください。
+
+出力開始前の失敗には回数を制限した再試行を行い、[レート制限ヘッダー](../api-reference/limits.mdx)に従います。表示前に出力全体の検証が必要な場合は、非ストリーミングリクエストかサーバーでの結果バッファリングを使ってください。

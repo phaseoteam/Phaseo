@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "Éléments du flux"
+description: "Consommez les événements de texte, de raisonnement, d’outil et d’élément fournisseur des agents PHP."
+---
+
+Le résultat du flux expose des consommateurs réutilisables pour le texte et les événements structurés.
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->itemStream() as $item) {
+    renderItem($item);
+}
+
+$result = $stream->getResult();
+```
+
+Utilisez le flux complet d’événements si l’interface a besoin des fragments de raisonnement, de la progression des outils, des points de contrôle d’approbation ou des changements de cycle de vie, en plus des éléments du fournisseur.
+
+<Note>
+Les valeurs d’élément PHP sont des tableaux ou des objets génériques, et non une union fermée d’éléments typés. Validez les champs utilisés par votre interface et prévoyez un traitement de secours pour les éléments inconnus et les futurs événements du fournisseur.
+</Note>
+
+PHP consomme le flux du fournisseur de façon synchrone et permet de relire la séquence collectée. Cette approche convient aux workers de requête et aux programmes CLI, mais ne constitue pas à elle seule un canal d’envoi en arrière-plan.

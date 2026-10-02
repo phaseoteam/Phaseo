@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "实时观察 Go Agent 的运行、模型轮次、工具、暂停和完成事件。"
+---
+
+在 `RunOptions` 或 `ContinueOptions` 中设置 `OnEvent`，即可接收结构化生命周期事件，同时避免应用与模型传输层耦合。
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+常见事件包括运行开始、完成和失败，模型尝试，输出文本与推理增量，工具开始、进度、完成和失败，以及人工检查点。
+
+处理器应快速返回且不阻塞。持久化可能耗时较长时，将事件发送到自己的队列或遥测层；对外转发前，清除工具输入中的敏感信息。

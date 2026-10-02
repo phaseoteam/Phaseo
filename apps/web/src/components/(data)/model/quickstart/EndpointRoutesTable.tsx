@@ -4,13 +4,13 @@ import { HttpMethodBadge } from "@/components/HttpMethodBadge";
 import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import {
 	ENDPOINT_ROUTE_PREVIEW_LIMIT,
 	getVisibleEndpointRoutes,
 	type EndpointRoute,
 } from "./endpointRoutes";
-
-const DOCS_BASE_URL = "https://phaseo.app/docs/v1";
 
 const ENDPOINT_DOCS_SLUGS: Record<string, string> = {
 	responses: "responses",
@@ -29,22 +29,31 @@ const ENDPOINT_DOCS_SLUGS: Record<string, string> = {
 	"music.generate": "music-generate",
 };
 
-function getEndpointDocsHref(endpoint: string) {
+function getEndpointDocsHref(endpoint: string, locale: string) {
 	const slug = ENDPOINT_DOCS_SLUGS[endpoint];
-	return slug
-		? `${DOCS_BASE_URL}/api-reference/endpoint/${slug}`
-		: `${DOCS_BASE_URL}/api-reference/introduction`;
+	const path = slug
+		? `/v1/api-reference/endpoint/${slug}`
+		: "/v1/api-reference/introduction";
+	return getLocalizedDocsHref(locale, path);
 }
 
-function EndpointRouteRow({ route }: { route: EndpointRoute }) {
-	const docsHref = getEndpointDocsHref(route.value);
+function EndpointRouteRow({
+	route,
+	t,
+	locale,
+}: {
+	route: EndpointRoute;
+	t: ReturnType<typeof useTranslations>;
+  locale: string;
+}) {
+	const docsHref = getEndpointDocsHref(route.value, locale);
 
 	return (
 		<Link
 			href={docsHref}
 			target="_blank"
 			rel="noopener noreferrer"
-			aria-label={`Open ${route.title} API reference`}
+			aria-label={t("openApiReference", { endpoint: route.title })}
 			className="group grid w-full grid-cols-[72px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
 		>
 			<HttpMethodBadge method={route.method} />
@@ -54,7 +63,7 @@ function EndpointRouteRow({ route }: { route: EndpointRoute }) {
 					{route.path}
 				</div>
 				<div className="mt-0.5 truncate text-xs text-muted-foreground">
-					{route.title} API reference
+					{t("endpointApiReference", { endpoint: route.title })}
 				</div>
 			</div>
 
@@ -79,6 +88,8 @@ export function EndpointRoutesTable({
 	showAllEndpointRoutes: boolean;
 	onToggleShowAllEndpointRoutes: () => void;
 }) {
+	const t = useTranslations("Catalogue.models.detail.quickstart");
+	const locale = useLocale();
 	const visibleEndpointRoutes = getVisibleEndpointRoutes(
 		endpointRoutes,
 		selectedEndpoint,
@@ -93,9 +104,9 @@ export function EndpointRoutesTable({
 		<div className="space-y-2">
 			<div className="flex items-center justify-between gap-3">
 				<div>
-					<h3 className="text-base font-semibold">Supported endpoints</h3>
+					<h3 className="text-base font-semibold">{t("supportedEndpoints")}</h3>
 					<p className="text-xs text-muted-foreground">
-						Supported API reference routes for this model.
+						{t("supportedEndpointsDescription")}
 					</p>
 				</div>
 				{endpointRoutes.length > ENDPOINT_ROUTE_PREVIEW_LIMIT ? (
@@ -106,15 +117,15 @@ export function EndpointRoutesTable({
 						onClick={onToggleShowAllEndpointRoutes}
 					>
 						{showAllEndpointRoutes
-							? "Show fewer"
-							: `Show ${hiddenEndpointRouteCount} more`}
+							? t("showFewer")
+							: t("showMore", { count: hiddenEndpointRouteCount })}
 					</Button>
 				) : null}
 			</div>
 			<div className="overflow-hidden rounded-lg border bg-card">
 				<div className="divide-y">
 					{visibleEndpointRoutes.map((route) => (
-						<EndpointRouteRow key={route.value} route={route} />
+						<EndpointRouteRow key={route.value} route={route} t={t} locale={locale} />
 					))}
 				</div>
 			</div>

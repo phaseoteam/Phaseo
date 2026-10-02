@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import { type LucideIcon, XIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes } from "react";
 
@@ -46,21 +47,25 @@ export const ArtifactClose = ({
   size = "sm",
   variant = "ghost",
   ...props
-}: ArtifactCloseProps) => (
-  <Button
-    className={cn(
-      "size-8 p-0 text-neutral-500 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-neutral-50",
-      className
-    )}
-    size={size}
-    type="button"
-    variant={variant}
-    {...props}
-  >
-    {children ?? <XIcon className="size-4" />}
-    <span className="sr-only">Close</span>
-  </Button>
-);
+}: ArtifactCloseProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <Button
+      className={cn(
+        "size-8 p-0 text-neutral-500 hover:text-neutral-950 dark:text-neutral-400 dark:hover:text-neutral-50",
+        className
+      )}
+      size={size}
+      type="button"
+      variant={variant}
+      {...props}
+    >
+      {children ?? <XIcon className="size-4" />}
+      <span className="sr-only">{t("close")}</span>
+    </Button>
+  );
+};
 
 export type ArtifactTitleProps = HTMLAttributes<HTMLParagraphElement>;
 
@@ -105,6 +110,7 @@ export const ArtifactAction = ({
   variant = "ghost",
   ...props
 }: ArtifactActionProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
   const button = (
     <Button
       className={cn(
@@ -117,7 +123,7 @@ export const ArtifactAction = ({
       {...props}
     >
       {Icon ? <Icon className="size-4" /> : children}
-      <span className="sr-only">{label || tooltip}</span>
+      <span className="sr-only">{label || tooltip || t("action")}</span>
     </Button>
   );
 

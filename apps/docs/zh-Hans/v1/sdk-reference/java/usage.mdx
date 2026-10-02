@@ -1,0 +1,37 @@
+---
+icon: "square-terminal"
+title: "Java SDK 使用方法"
+description: "如何初始化和使用 Java SDK 封装。"
+---
+
+## 设置
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+String apiKey = System.getenv("PHASEO_API_KEY");
+Phaseo client = new Phaseo(apiKey);
+```
+
+## 用法模式
+
+常见的封装调用如下：
+
+```java
+Object response = client.createChatCompletion("""
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Say hello from Java" }
+  ]
+}
+""");
+```
+
+对于大多数 JSON 端点，封装方法会返回已解析的 JSON 节点；文件和视频内容辅助方法则返回字节数组。
+
+## 建议
+
+- 常见网关功能请优先使用 `app.phaseo.sdk.Phaseo`。
+- 只有在需要尚未纳入封装的底层操作时，才使用 `app.phaseo.gen.Client` 和 `app.phaseo.gen.Operations`。
+- 请先查看本节中各端点的示例，了解当前封装方法名称。

@@ -1,0 +1,118 @@
+---
+title: "Dedizierte Modellbereitstellungen verbinden"
+description: "Füge dem Modellkatalog deines Arbeitsbereichs einen privaten OpenAI-kompatiblen Endpunkt hinzu."
+icon: "lock-keyhole"
+---
+
+Mit privaten Modellen kann dein Team eine dedizierte oder selbst gehostete Bereitstellung über die normale Phaseo-API aufrufen. Das Modell ist nur für authentifizierte Mitglieder des Arbeitsbereichs sichtbar und kann überall verwendet werden, wo du eine öffentliche Modell-ID nutzen würdest.
+
+Typische Quellen sind dedizierte Bereitstellungen auf Baseten, Modal, RunPod, Fireworks oder Together sowie Dienste mit vLLM oder einem anderen OpenAI-kompatiblen Server.
+
+## Bevor du beginnst
+
+Deine Bereitstellung muss Folgendes bieten:
+
+- eine öffentliche HTTPS-Basis-URL;
+- einen OpenAI-kompatiblen `/chat/completions`-Endpunkt;
+- Authentifizierung mit Bearer-Token und
+- eine vom Endpunkt akzeptierte Modell- oder Bereitstellungs-ID des Anbieters.
+
+Die Unterstützung für `/responses` ist optional. Lass sie deaktiviert, sofern die Bereitstellung diesen Endpunkt nicht ausdrücklich implementiert.
+
+<Warning>
+Private Modelle passen keine rein anbietereigenen Protokolle oder benutzerdefinierten Authentifizierungsverfahren an. Schalte eine OpenAI-kompatible Schicht vor diese Bereitstellungen oder nutze eine unterstützte Phaseo-Anbieterintegration.
+</Warning>
+
+## Eine Bereitstellung verbinden
+
+<Steps>
+<Step title="Private Modelle öffnen">
+
+Öffne **Dashboard → Einstellungen → Arbeitsbereich → Private Modelle** und wähle **Modell hinzufügen**. Du musst Eigentümer oder Administrator des Arbeitsbereichs sein.
+
+</Step>
+
+<Step title="Das Modell benennen">
+
+Wähle ein vorhandenes Katalogmodell, um die Bereitstellung zu seiner Anbieterliste hinzuzufügen, oder gib einen kurzen Modell-Slug wie `legal-assistant` ein. Wenn kein Katalogmodell diesen eindeutigen Slug hat, kombiniert Phaseo ihn mit dem vertrauenswürdigen Namespace des Arbeitsbereichs:
+
+```text
+acme/legal-assistant
+```
+
+Du kannst den Namespace des Arbeitsbereichs weder wählen noch ersetzen. Exakte Katalog-IDs werden dem jeweiligen Modell zugeordnet, ohne seine öffentliche Identität zu ändern.
+
+</Step>
+
+<Step title="Den Endpunkt konfigurieren">
+
+Gib die Basis-URL ohne den Inferenzpfad ein. Zum Beispiel:
+
+```text
+https://model.example.com/v1
+```
+
+Füge weder `/chat/completions` noch `/responses` hinzu. Gib die exakte Modell- oder Bereitstellungs-ID des Anbieters separat ein; Phaseo setzt sie beim Weiterleiten der Anfragen ein.
+
+</Step>
+
+<Step title="Die Zugangsdaten speichern">
+
+Gib den API-Schlüssel der Bereitstellung ein. Phaseo verschlüsselt die Zugangsdaten und gibt sie nach dem Speichern nie zurück. Du kannst sie später in den Modelleinstellungen ersetzen.
+
+</Step>
+
+<Step title="Das Modell aufrufen">
+
+Verwende die erzeugte Modell-ID mit dem normalen Chat Completions-Endpunkt:
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "acme/legal-assistant",
+    "messages": [{"role": "user", "content": "Summarize this contract."}]
+  }'
+```
+
+Der aufrufende API-Schlüssel muss zum selben Arbeitsbereich wie das private Modell gehören.
+
+</Step>
+</Steps>
+
+## So funktioniert das Routing
+
+Private Modelle verwenden dieselbe Phaseo-Anfrageschnittstelle wie Katalogmodelle. Ein eigenständiges Arbeitsbereichsmodell wird nur zu seinem konfigurierten Endpunkt geroutet. Ein Endpunkt, der einem Katalogmodell zugeordnet ist, wird gemäß seiner Richtlinie **Bevorzugt**, **Normaler Pool** oder **Nur Fallback** Teil der Anbieterliste. Phaseo sendet die gespeicherten Zugangsdaten als Bearer-Token und setzt die konfigurierte Modell-ID des Anbieters ein.
+
+Ein privates Modell wird keine öffentliche Anbieterroute und ist für andere Arbeitsbereiche nicht sichtbar. Aktivierte private Modelle sind im authentifizierten Modellkatalog enthalten und erscheinen unter dem Filter **Privat**.
+
+<Note>
+Warte nach dem Hinzufügen oder Aktivieren einer privaten Bereitstellung bei einem vorhandenen Katalogmodell 5–10 Sekunden, bis die Änderung in der API-Schicht wirksam wird, bevor du das Routing testest. In dieser Zeit können Anfragen weiterhin die vorhandenen öffentlichen Anbieter des Modells nutzen. Bereits laufende Anfragen werden nicht neu geroutet.
+</Note>
+
+## Anbieterbeispiele
+
+| Bereitstellung | Eingaben |
+| --- | --- |
+| Dedizierter Baseten-Endpunkt | Seine OpenAI-kompatible Basis-URL, Bereitstellungsmodell-ID und sein API-Schlüssel |
+| Modal-Webendpunkt | Ein öffentlicher HTTPS-Endpunkt, der den OpenAI Chat Completions-Vertrag implementiert |
+| Serverloser RunPod-Endpunkt | Eine OpenAI-kompatible Proxy-URL und Bearer-Zugangsdaten |
+| Dedizierte Fireworks- oder Together-Bereitstellung | Die dedizierte OpenAI-kompatible URL und die Modell-ID des Anbieters |
+| vLLM | Die öffentliche URL mit der Endung `/v1` und der von vLLM bereitgestellte Modellname |
+
+Anbieterprodukte und URL-Formate können sich ändern. Prüfe Basis-URL, Modell-ID, Authentifizierungsmethode und unterstützte Endpunkte in der aktuellen Bereitstellungsdokumentation des Anbieters.
+
+## Private Modelle über die API verwalten
+
+Die serverseitige Verwaltung kann die [API für private Modelle](../api-reference/endpoint/private-models-list) mit einem Verwaltungsschlüssel nutzen, der je nach Bedarf `private_models:read`, `private_models:write` oder `private_models:delete` besitzt.
+
+Erstellungs- und Aktualisierungsanfragen akzeptieren `model_reference` als exakte Katalogmodell-ID oder kurzen Slug. Phaseo leitet `model_id` daraus ab; Clients können diese ID nicht direkt übermitteln. Verwende `host_provider_id` für einen vorhandenen Phaseo-Anbieter oder `custom_provider_name` und optional `custom_provider_url` für einen anderen Betreiber.
+
+## Fehlerbehebung
+
+- **404 vom Anbieter:** Prüfe, ob die Basis-URL vor dem Inferenzpfad endet.
+- **Unbekanntes Modell:** Kopiere die Bereitstellungs-ID des Anbieters in **Modell-ID des Anbieters**. Verwende dort nicht die Phaseo-Arbeitsbereichsmodell-ID.
+- **Nicht autorisierte Anbieteranfrage:** Ersetze die gespeicherten Zugangsdaten und prüfe, ob der Anbieter Bearer-Authentifizierung akzeptiert.
+- **Chat funktioniert, Responses schlägt fehl:** Deaktiviere **Responses API**, sofern der Anbieter `/responses` nicht nativ implementiert.
+- **Modell fehlt im Katalog:** Prüfe, ob das Modell aktiviert und der Aufrufer im selben Arbeitsbereich authentifiziert ist.

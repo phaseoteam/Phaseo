@@ -2,7 +2,8 @@
 
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
@@ -35,7 +36,7 @@ import {
 	Trophy,
 } from "lucide-react";
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, isSearchDestinationEnabled, type SearchCapabilities } from "@/components/header/Search/Search.navigation";
-import documentationPages from "./Search.docs.generated.json";
+import { loadDocumentationPages } from "./Search.documentation";
 import {
 	EXTERNAL_RESOURCE_ITEMS,
 	getContextItems,
@@ -77,6 +78,7 @@ import {
 } from "./Search.freshness";
 import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 import { useSearchShortcutLabel } from "./SearchShortcut";
+import { getLocalizedDocsHref } from "@/lib/docs";
 
 interface Props {
 	className?: string;
@@ -307,10 +309,10 @@ async function fetchSearchData(path: string, signal?: AbortSignal): Promise<Sear
 
 let lastSearchRefreshAt = 0;
 const EMPTY_WORKSPACE_ITEMS: PaletteItem[] = [];
+const EMPTY_DOCUMENTATION_ITEMS: PaletteItem[] = [];
 
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
-const DOCUMENTATION_SEARCH_INDEX = createSearchIndex(documentationPages);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -432,6 +434,40 @@ function SearchBrowseRow({
 	isPinned?: boolean;
 	onTogglePin?: (item: SearchableItem) => void;
 }) {
+	const t = useTranslations("Common.search");
+	let displayTitle = item.title;
+	let displaySubtitle = item.subtitle;
+	if (item.id.startsWith("action-") || item.id.startsWith("resource-")) {
+		displayTitle = t(`palette.items.${item.id}.title` as never);
+		displaySubtitle = item.subtitle
+			? t(`palette.items.${item.id}.subtitle` as never)
+			: item.subtitle;
+	} else if (item.id.startsWith("nav-")) {
+		displayTitle = t(`palette.navigationItems.${item.id}` as never);
+		displaySubtitle = null;
+	} else if (item.id === "context-internal-cache") {
+		displayTitle = t("palette.context.cacheControlCentre" as never);
+		displaySubtitle = t("palette.context.purgeCacheScopes" as never);
+	} else if (item.id.startsWith("context-model-chat-")) {
+		displayTitle = t("palette.context.chatWithModel" as never);
+	} else if (item.id.startsWith("context-model-compare-")) {
+		displayTitle = t("palette.context.compareThisModel" as never);
+	} else if (item.id.startsWith("context-model-copy-")) {
+		displayTitle = t("palette.context.copyModelId" as never);
+	} else if (item.id.startsWith("context-cache-")) {
+		const entity = item.id.split("-")[2] ?? "model";
+		displayTitle = t("palette.context.openCacheControlsForEntity" as never, {
+			entity: t(`palette.context.entities.${entity}` as never),
+		} as never);
+	} else {
+		const entity = item.id.match(/^context-(provider|organisation|benchmark)-copy-/)?.[1];
+		if (entity) {
+			displayTitle = t("palette.context.copyEntityId" as never, {
+				entity: t(`palette.context.entities.${entity}` as never),
+			} as never);
+		}
+	}
+	const displayItem = { ...item, title: displayTitle, subtitle: displaySubtitle };
 	return (
 		<div
 			data-search-row-key={rowKey}
@@ -447,14 +483,14 @@ function SearchBrowseRow({
 				onFocus={onActive}
 				className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-left outline-hidden"
 			>
-				<SearchBrowseIcon item={item} type={type} />
+				<SearchBrowseIcon item={displayItem} type={type} />
 				<div className="min-w-0 flex flex-1 items-baseline gap-2 overflow-hidden">
-					<span className="max-w-full shrink-0 truncate font-medium text-foreground" title={item.title}>
-						{item.title}
+					<span className="max-w-full shrink-0 truncate font-medium text-foreground" title={displayTitle}>
+						{displayTitle}
 					</span>
-					{showSubtitle && item.subtitle ? (
+					{showSubtitle && displaySubtitle ? (
 						<span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-							{item.subtitle}
+							{displaySubtitle}
 						</span>
 					) : null}
 				</div>
@@ -462,9 +498,9 @@ function SearchBrowseRow({
 					<KeyboardShortcut
 						keys={item.shortcut}
 						type="sequence"
-						label={`Press ${item.shortcut[0]}, then ${item.shortcut[1]}`}
+						label={t("pressShortcut", { first: item.shortcut[0], second: item.shortcut[1] })}
 						className="hidden shrink-0 items-center gap-1 sm:flex"
-						title={`Press ${item.shortcut[0]}, then ${item.shortcut[1]}`}
+						title={t("pressShortcut", { first: item.shortcut[0], second: item.shortcut[1] })}
 					/>
 				) : null}
 				{onTogglePin ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
@@ -478,7 +514,7 @@ function SearchBrowseRow({
 				<button
 					type="button"
 					onClick={() => onTogglePin(item)}
-					aria-label={isPinned ? `Unpin ${item.title}` : `Pin ${item.title}`}
+				aria-label={isPinned ? t("unpin", { title: displayTitle }) : t("pin", { title: displayTitle })}
 					className={cn(
 						"absolute right-7 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground opacity-0 outline-hidden transition hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover/search-row:opacity-100",
 						isPinned && "opacity-100 text-foreground",
@@ -498,6 +534,7 @@ function SearchFooter({
 	count: number;
 	label: string;
 }) {
+	const t = useTranslations("Common.search");
 	return (
 		<div className="-mx-2 -mb-2 mt-1 flex h-8 items-center justify-between rounded-b-[1.35rem] border-t border-border/60 bg-popover px-3 text-[11px] text-muted-foreground">
 			<div className="flex min-w-0 items-center gap-2">
@@ -508,13 +545,13 @@ function SearchFooter({
 					<Kbd className="size-4 rounded p-0">
 						<ArrowDown className="size-3" />
 					</Kbd>
-					<span>move</span>
+					<span>{t("move")}</span>
 				</span>
 				<span className="inline-flex items-center gap-1">
 					<Kbd className="size-4 rounded p-0">
 						<CornerDownLeft className="size-3" />
 					</Kbd>
-					<span>select</span>
+					<span>{t("select")}</span>
 				</span>
 			</div>
 			<span className="shrink-0 tabular-nums">
@@ -624,6 +661,7 @@ function SearchEmptyState({
 	isLoading: boolean;
 	error: string | null;
 }) {
+	const t = useTranslations("Common.search");
 	return (
 		<div className="flex flex-col items-center gap-3 py-12">
 			<div className="flex size-12 items-center justify-center rounded-lg bg-muted">
@@ -633,10 +671,10 @@ function SearchEmptyState({
 				{isLoading ? (
 					<>
 						<p className="text-sm font-medium text-foreground">
-							Loading search index...
+							{t("loadingIndex")}
 						</p>
 						<p className="mt-1 text-xs text-muted-foreground">
-							This only loads once per session.
+							{t("loadsOnce")}
 						</p>
 					</>
 				) : error ? (
@@ -645,16 +683,16 @@ function SearchEmptyState({
 							{error}
 						</p>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Close and reopen search to retry.
+							{t("retry")}
 						</p>
 					</>
 				) : (
 					<>
 						<p className="text-sm font-medium text-foreground">
-							No results found
+							{t("noResults")}
 						</p>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Try different keywords or check your spelling.
+							{t("tryDifferent")}
 						</p>
 					</>
 				)}
@@ -669,6 +707,8 @@ export default function Search({
 	capabilities = DEFAULT_SEARCH_CAPABILITIES,
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: Props) {
+	const t = useTranslations("Common.search");
+	const locale = useLocale();
 	const router = useRouter();
 	const shortcutLabel = useSearchShortcutLabel();
 	const pathname = usePathname() ?? "/";
@@ -704,6 +744,16 @@ export default function Search({
 	const searchData = searchQuery.data;
 	const searchDataFetchError = searchQuery.error;
 	const isLoadingSearchData = searchQuery.isLoading;
+	const documentationQuery = useQuery({
+		queryKey: webQueryKeys.public.documentationSearch(locale),
+		queryFn: () => loadDocumentationPages(locale),
+		staleTime: Infinity,
+		enabled: open,
+	});
+	const documentationSearchIndex = useMemo(
+		() => createSearchIndex(documentationQuery.data ?? EMPTY_DOCUMENTATION_ITEMS),
+		[documentationQuery.data],
+	);
 	if (searchData) hasLoadedSearchRef.current = true;
 	const workspaceQuery = useQuery({
 		queryKey: webQueryKeys.account.workspaceSearch(scope),
@@ -713,8 +763,8 @@ export default function Search({
 		enabled: open && Boolean(scope.userId),
 	});
 	const workspaceItems = workspaceQuery.data ?? EMPTY_WORKSPACE_ITEMS;
-	const searchDataError = searchDataFetchError
-		? "Unable to load search data."
+	const searchDataError = searchDataFetchError || documentationQuery.error
+		? t("searchDataUnavailable")
 		: null;
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
 	const [pinnedItems, setPinnedItems] = useState<PaletteItem[]>([]);
@@ -868,12 +918,12 @@ export default function Search({
 					clearAccountQueryScope(queryClient, scope);
 					router.push("/settings/workspaces/settings");
 					router.refresh();
-					toast.success(`Switched to ${item.title} workspace`, {
+						toast.success(t("switchedWorkspace", { workspace: item.title }), {
 						position: "bottom-right",
 					});
 				})
 				.catch(() => {
-					toast.error(`Failed to switch to ${item.title} workspace`, {
+						toast.error(t("failedSwitchWorkspace", { workspace: item.title }), {
 						position: "bottom-right",
 					});
 				});
@@ -883,14 +933,17 @@ export default function Search({
 		if (!item.href) return;
 		setOpen(false);
 		if (item.external) {
-			window.open(item.href, "_blank", "noopener,noreferrer");
+			const href = item.href.startsWith("https://phaseo.app/docs/")
+				? getLocalizedDocsHref(locale, item.href)
+				: item.href;
+			window.open(href, "_blank", "noopener,noreferrer");
 			return;
 		}
 		setRecentItems((currentItems) =>
 			writeRecentItems(addRecentItem(currentItems, item)),
 		);
 		router.push(item.href);
-	}, [queryClient, resolvedTheme, router, scope, setTheme]);
+	}, [locale, queryClient, resolvedTheme, router, scope, setTheme, t]);
 
 	const handleTogglePin = useCallback((item: SearchableItem) => {
 		setPinnedItems((currentItems) => {
@@ -1011,7 +1064,7 @@ export default function Search({
 			? filterAndSortIndexed(RESOURCE_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
 			: [];
 		const documentation = includesScope("resources")
-			? filterAndSortIndexed(DOCUMENTATION_SEARCH_INDEX, searchTerm, resultLimit, showAllWhenScoped)
+			? filterAndSortIndexed(documentationSearchIndex, searchTerm, resultLimit, showAllWhenScoped)
 			: [];
 		const models = includesScope("models") && searchIndex
 			? filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit, showAllWhenScoped)
@@ -1055,7 +1108,7 @@ export default function Search({
 			{
 				name: "documentation" as const,
 				items: documentation,
-				score: getFirstResultScore(DOCUMENTATION_SEARCH_INDEX, documentation, searchTerm),
+				score: getFirstResultScore(documentationSearchIndex, documentation, searchTerm),
 			},
 			{
 				name: "models" as const,
@@ -1105,6 +1158,7 @@ export default function Search({
 			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
 		contextSearchIndex,
+		documentationSearchIndex,
 		navigationItems,
 		navigationSearchIndex,
 		pathname,
@@ -1125,7 +1179,7 @@ export default function Search({
 		return [
 			{
 				key: "recent",
-				heading: "Recent",
+				heading: t("recent"),
 				items: recentItems.filter((item) =>
 					item.workspaceId
 						? workspaceItems.some((workspace) => workspace.workspaceId === item.workspaceId)
@@ -1136,56 +1190,56 @@ export default function Search({
 			},
 			{
 				key: "nearby",
-				heading: pathname.startsWith("/settings") ? "Settings" : "In This Area",
+				heading: pathname.startsWith("/settings") ? t("settings") : t("inThisArea"),
 				items: nearbyPages,
 				type: "navigation" as const,
 			},
 			{
 				key: "models",
-				heading: "Models",
+				heading: t("models"),
 				items: searchData?.models ?? [],
 				showSubtitle: false,
 			},
 			{
 				key: "pinned",
-				heading: "Pinned",
+				heading: t("pinned"),
 				items: pinnedItems.filter((item) => isSearchDestinationEnabled(item.href, capabilities)),
 			},
 			{
 				key: "context",
-				heading: "On This Page",
+				heading: t("onThisPage"),
 				items: contextItems,
 				type: "context" as const,
 			},
 			{
 				key: "quick-actions",
-				heading: "Quick Actions",
+				heading: t("quickActions"),
 				items: GLOBAL_ACTION_ITEMS.slice(0, 7),
 				type: "action" as const,
 			},
 			{
 				key: "workspaces",
-				heading: "Workspaces",
+				heading: t("workspaces"),
 				items: workspaceItems,
 				type: "workspace" as const,
 				showSubtitle: false,
 			},
 			{
 				key: "resources",
-				heading: "Resources",
+				heading: t("resources"),
 				items: EXTERNAL_RESOURCE_ITEMS.slice(0, 4),
 				type: "resource" as const,
 			},
 			{
 				key: "apiProviders",
-				heading: "API Providers",
+				heading: t("apiProviders"),
 				items: searchData?.apiProviders ?? [],
 			},
 		].filter((category) => category.items.length > 0).sort((left, right) => {
 			const order = ["recent", "models", "pinned", "context", "nearby", "quick-actions", "workspaces", "apiProviders", "resources"];
 			return order.indexOf(left.key) - order.indexOf(right.key);
 		});
-	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, recentItems, searchData, workspaceItems]);
+	}, [capabilities, navigationItems, pathname, contextItems, hasQuery, pinnedItems, recentItems, searchData, workspaceItems, t]);
 
 	const defaultBrowseRows = useMemo<DefaultBrowseRow[]>(() => {
 		if (hasQuery) return [];
@@ -1265,9 +1319,9 @@ export default function Search({
 		: selectableRows.length;
 	const footerLabel = hasQuery
 		? footerCount === 1
-			? "result"
-			: "results"
-		: "items";
+			? t("result")
+			: t("results")
+		: t("items");
 
 	useEffect(() => {
 		setActiveRowIndex(0);
@@ -1348,12 +1402,12 @@ export default function Search({
 				className={cn(
 					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground max-[25rem]:justify-center max-[25rem]:px-0 lg:pl-9 lg:pr-14",
 				)}
-				aria-label="Open global search"
+				aria-label={t("openPalette")}
 			>
 				<SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground max-[25rem]:left-1/2 max-[25rem]:-translate-x-1/2 lg:left-3" />
 				<span className="min-w-0 flex-1 truncate font-medium max-[25rem]:hidden">
-					<span className="xl:hidden">Search</span>
-					<span className="hidden whitespace-nowrap xl:inline">Search Phaseo</span>
+					<span className="xl:hidden">{t("search")}</span>
+					<span className="hidden whitespace-nowrap xl:inline">{t("searchPhaseo")}</span>
 				</span>
 				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
 					{shortcutLabel}
@@ -1368,7 +1422,7 @@ export default function Search({
 					showCloseButton={false}
 					className="top-1/2 flex w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)]! -translate-y-1/2 flex-col gap-0 overflow-hidden rounded-3xl! border-border bg-popover p-2 text-popover-foreground sm:top-1/2 sm:w-[34rem] sm:max-w-[34rem]!"
 				>
-					<DialogTitle className="sr-only">Search</DialogTitle>
+					<DialogTitle className="sr-only">{t("dialogTitle")}</DialogTitle>
 					<div className="mb-1">
 						<InputGroup className="h-9! border-border bg-muted/50">
 							<InputGroupAddon>
@@ -1379,8 +1433,8 @@ export default function Search({
 								key={open ? "global-search-open" : "global-search-closed"}
 								onChange={(event) => handleQueryChange(event.currentTarget.value)}
 								onKeyDown={handleSearchKeyDown}
-								placeholder="Search, or use > / @ ? ..."
-								aria-label="Search Phaseo and run commands"
+								placeholder={t("placeholder")}
+								aria-label={t("ariaLabel")}
 								autoFocus
 								className="text-sm"
 							/>
@@ -1391,12 +1445,12 @@ export default function Search({
 					</div>
 					<div
 						className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-1 text-[11px] text-muted-foreground"
-						aria-label="Command prefixes"
+						aria-label={t("prefixes")}
 					>
-						<span className="inline-flex items-center gap-1"><Kbd>&gt;</Kbd> actions</span>
-						<span className="inline-flex items-center gap-1"><Kbd>/</Kbd> pages</span>
-						<span className="inline-flex items-center gap-1"><Kbd>@</Kbd> models</span>
-						<span className="inline-flex items-center gap-1"><Kbd>?</Kbd> resources</span>
+						<span className="inline-flex items-center gap-1"><Kbd>&gt;</Kbd> {t("actions")}</span>
+						<span className="inline-flex items-center gap-1"><Kbd>/</Kbd> {t("pages")}</span>
+						<span className="inline-flex items-center gap-1"><Kbd>@</Kbd> {t("models")}</span>
+						<span className="inline-flex items-center gap-1"><Kbd>?</Kbd> {t("resources")}</span>
 					</div>
 					<div ref={listRef} className="overflow-hidden outline-none">
 						<ScrollArea
@@ -1414,18 +1468,18 @@ export default function Search({
 								) : (
 									orderedCategories.map((category, index) => {
 										const categoryConfig = {
-											countries: { heading: "Countries", type: undefined, showSubtitle: true },
-											subscriptionPlans: { heading: "Subscription Plans", type: undefined, showSubtitle: true },
-											actions: { heading: "Actions", type: "action" as const, showSubtitle: true },
-											context: { heading: "On This Page", type: "context" as const, showSubtitle: true },
-											navigation: { heading: "Navigation", type: "navigation" as const, showSubtitle: true },
-											resources: { heading: "External Resources", type: "resource" as const, showSubtitle: true },
-											documentation: { heading: "Documentation", type: "resource" as const, showSubtitle: true },
-											workspaces: { heading: "Workspaces", type: "workspace" as const, showSubtitle: true },
-											models: { heading: "Models", type: undefined, showSubtitle: false },
-											apiProviders: { heading: "API Providers", type: undefined, showSubtitle: true },
-											organisations: { heading: "Labs", type: undefined, showSubtitle: true },
-											benchmarks: { heading: "Benchmarks", type: "benchmark" as const, showSubtitle: true },
+											countries: { heading: t("countries"), type: undefined, showSubtitle: true },
+											subscriptionPlans: { heading: t("subscriptionPlans"), type: undefined, showSubtitle: true },
+											actions: { heading: t("actions"), type: "action" as const, showSubtitle: true },
+											context: { heading: t("onThisPage"), type: "context" as const, showSubtitle: true },
+											navigation: { heading: t("navigation"), type: "navigation" as const, showSubtitle: true },
+											resources: { heading: t("resources"), type: "resource" as const, showSubtitle: true },
+											documentation: { heading: t("documentation"), type: "resource" as const, showSubtitle: true },
+											workspaces: { heading: t("workspaces"), type: "workspace" as const, showSubtitle: true },
+											models: { heading: t("models"), type: undefined, showSubtitle: false },
+											apiProviders: { heading: t("apiProviders"), type: undefined, showSubtitle: true },
+											organisations: { heading: t("labs"), type: undefined, showSubtitle: true },
+											benchmarks: { heading: t("benchmarks"), type: "benchmark" as const, showSubtitle: true },
 										}[category.name];
 
 										const isLast = index === orderedCategories.length - 1;
@@ -1487,12 +1541,12 @@ export default function Search({
 														{row.clearable ? (
 															<button
 																type="button"
-																aria-label="Clear recent items"
+																aria-label={t("clearRecent")}
 																onMouseDown={(event) => event.preventDefault()}
 																onClick={handleClearRecentItems}
 																className="rounded-sm text-[11px] font-normal text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 															>
-																Clear
+																{t("clear")}
 															</button>
 														) : null}
 													</div>

@@ -1,0 +1,65 @@
+---
+title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
+description: "OpenAI互換プロファイルを使ってRoo CodeをPhaseoに接続します。"
+---
+
+Phaseo CLIで専用キーを作成し、Roo Codeのプロバイダープロファイルを手動で設定してください。認証情報はVS Codeのシークレットストレージに保存されるため、最後の入力は拡張機能の画面で行います。
+
+## Phaseo CLIで設定する
+
+```bash
+phaseo login
+phaseo roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Roo Codeを手動で設定する
+
+1. VS CodeでRoo Codeを開きます。
+2. **Settings**を開き、次に**Providers**を開きます。
+3. プロバイダー設定プロファイルを作成し、**OpenAI Compatible**を選びます。
+4. 次の値を入力します。
+
+| Roo Codeの項目 | 値 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | 次のコマンドの出力 `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` またはセットアップ時に表示されたモデル |
+
+5. プロファイルを保存して有効にします。
+
+バージョンによって項目名は多少異なる場合がありますが、プロファイルにはエンドポイント、キー、正確なモデルIDが必要です。
+
+## 動作確認
+
+Roo Codeに`PHASEO_ROO_OK`と返答するよう依頼し、Phaseoのアクティビティにリクエストが表示されることを確認します。
+
+## 削除
+
+Phaseoプロファイルを削除するか別のプロファイルに切り替えてから、次を実行します。
+
+```bash
+phaseo integrations remove roo-code
+```
+
+CLIからVS Code拡張機能のプライベートストレージ内の値は削除できませんが、削除操作でキーは失効します。
+
+## トラブルシューティング
+
+### 認証に失敗する
+
+`phaseo integrations credential roo-code`を使ってキーを再取得します。Base URLが`/v1`で終わることを確認します。
+
+### Roo Codeでモデルが見つからない
+
+プロバイダーのプレフィックスを含むPhaseoモデルの正確なIDを手動で入力します。
+
+### チャットは動くがツールが失敗する
+
+ツール呼び出しに対応したモデルに切り替えます。
+
+## 関連項目
+
+- [Roo Codeのモデルプロバイダー](https://docs.roocode.com/providers/)
+- [コーディングエージェント](./coding-assistants.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)

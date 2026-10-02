@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "Vectores de incrustación (AI SDK)"
+description: "Crea embeddings con modelos del proveedor Phaseo en Vercel AI SDK."
+---
+
+Usa `phaseo.textEmbeddingModel(...)` (o `embeddingModel`) con `embed` y `embedMany.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## Notas
+
+- Mantén las incrustaciones de consultas y corpus en la misma versión del modelo.
+- Normaliza los vectores de forma coherente antes de calcular la similitud.
+- Almacena en caché los embeddings estables del contenido que se repite.

@@ -1,0 +1,67 @@
+---
+title: "PHP Agent SDK से CMS सामग्री की समीक्षा करें"
+icon: "file-check"
+description: "सीमित समीक्षा loop में स्थानीय content lookup tool जोड़ने के लिए PHP Agent SDK उपयोग करें।"
+---
+
+किसी PHP ऐप या admin backend में orchestration कहीं और भेजे बिना सामग्री की त्वरित समीक्षा चाहिए, तो यह रेसिपी उपयोग करें।
+
+## 1. SDK तैयार करें
+
+<Note type="warning">PHP Agent SDK पैकेज अभी Packagist पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/php/agent-sdk-installation.mdx) देखें।</Note>
+
+## 2. सामग्री lookup टूल तय करें
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. एजेंट बनाएँ और चलाएँ
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## यह रेसिपी कब उपयुक्त है
+
+- PHP ऐप पहले से सामग्री के स्रोत का स्वामी हो
+- एक या दो स्थानीय टूल पर्याप्त हों
+- बड़े orchestration platform के बजाय सीमित loop चाहिए
+
+## संबंधित विषय
+
+- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
+- [गलत संरचना वाले JSON को ठीक करें](./response-healing-for-structured-json.mdx)

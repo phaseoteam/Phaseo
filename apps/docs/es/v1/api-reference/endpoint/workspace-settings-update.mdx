@@ -1,0 +1,10 @@
+---
+title: "Actualizar la configuración del espacio de trabajo"
+sidebarTitle: "Actualizar configuración"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /settings"
+description: "Actualiza los valores predeterminados de enrutamiento, proveedor, privacidad y pasarela del espacio de trabajo."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `settings:write`.</Note>
+
+Los cambios en el enrutamiento y las políticas de proveedores actualizan las cachés de la pasarela afectadas y quedan registrados en el registro de auditoría del espacio de trabajo.

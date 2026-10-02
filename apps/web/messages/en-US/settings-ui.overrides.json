@@ -1,0 +1,19 @@
+{
+  "headers": {
+    "departmentsDescription": "Organize members and map groups from your identity provider."
+  },
+  "routingStudioLegacy": {
+    "modelCatalogueError": "Could not load the model catalog."
+  },
+  "routingStudio": {
+    "modelCatalogueError": "Could not load the model catalog."
+  },
+  "strings": {
+    "Organisation": "Organization",
+    "Passkey registration was cancelled": "Passkey registration was canceled",
+    "Catalogue Games": "Catalog Games"
+  },
+  "credits": {
+    "checkoutCancelled": "Checkout canceled. No charges were made."
+  }
+}

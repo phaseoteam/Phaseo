@@ -1,0 +1,10 @@
+---
+title: "إضافة أعضاء إلى مساحة العمل"
+sidebarTitle: "إضافة أعضاء"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/members/add"
+description: "يضيف مستخدمين موجودين إلى مساحة العمل."
+---
+<Note>تتطلب نقطة النهاية هذه مفتاح API للإدارة يتضمن `workspaces:write` ودور مالك أو مسؤول.</Note>
+
+يمكن أن يكون الدور `admin` أو `member`. لا يمكن تعيين ملكية مساحة العمل عبر نقطة النهاية هذه.

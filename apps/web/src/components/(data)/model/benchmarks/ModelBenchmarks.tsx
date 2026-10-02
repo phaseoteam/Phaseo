@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { getTranslations } from "next-intl/server";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type {
 	ModelBenchmarkHighlight,
@@ -22,7 +23,7 @@ type Props = {
 	mode?: "summary" | "full";
 };
 
-export default function ModelBenchmarks({
+export default async function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
 	benchmarkResults = [],
@@ -31,6 +32,7 @@ export default function ModelBenchmarks({
 	modelName,
 	mode = "full",
 }: Props) {
+	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
 	const otherHighlights = highlightCards.filter(
 		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
@@ -42,7 +44,7 @@ export default function ModelBenchmarks({
 		<ModelBenchmarksGrid highlights={otherHighlights} />
 	) : (
 		<Card className="border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-			No benchmark highlights available yet.
+			{t("noHighlights")}
 		</Card>
 	);
 
@@ -52,10 +54,10 @@ export default function ModelBenchmarks({
 			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (
-					<section aria-label="Other Benchmarks">
+					<section aria-label={t("otherBenchmarks")}>
 						<Accordion className="border-t" type="single">
 							<AccordionItem value="other-benchmarks" className="border-0">
-								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">Other Benchmarks</AccordionTrigger>
+								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">{t("otherBenchmarks")}</AccordionTrigger>
 								<AccordionContent className="pt-1">{otherBenchmarks}</AccordionContent>
 							</AccordionItem>
 						</Accordion>
@@ -69,7 +71,7 @@ export default function ModelBenchmarks({
 				<>
 					<section className="space-y-3">
 						<div>
-							<h2 className="text-xl font-semibold">Benchmark table</h2>
+							<h2 className="text-xl font-semibold">{t("tableTitle")}</h2>
 						</div>
 						<ModelBenchmarksTable grouped={benchmarkTableData ?? {}} />
 					</section>

@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "रोकने की शर्तें"
+description: "Go एजेंट के काम को steps, tokens, लागत, अवधि, tools या finish reason से सीमित करें।"
+---
+
+`MaxSteps` उपयोगी safety net है। `StopWhen` ऐसे product limits जोड़ता है जिन्हें साथ मिलाकर रन के दौरान जाँचा जाता है।
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "bounded-research",
+  Model: "openai/gpt-5.4-nano",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+अन्य helper में `HasToolCall("publish_report")` और `FinishReasonIs("content_filter")` शामिल हैं। निर्णय ऐप context पर निर्भर हो तो custom `StopCondition` भी दें।
+
+शर्त मिलने पर `result.Run.StopReason`, सामान्यीकृत usage totals और आखिरी पूरे हुए step देखें। जब तक ऐप उस वजह को error न माने, रुकना सफल सीमित परिणाम है।

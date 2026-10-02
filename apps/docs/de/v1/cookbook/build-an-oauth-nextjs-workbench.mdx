@@ -1,0 +1,193 @@
+---
+title: "Eine OAuth-Next.js-Workbench erstellen"
+icon: "key-round"
+description: "Nutze das vollständige OAuth-Next.js-Beispiel als Anleitung für eine angemeldete Gateway-App mit einem einheitlichen Proxy."
+---
+
+Nutze diese Seite, wenn dein Produkt Anmeldung, sitzungsbasierten Gateway-Zugriff und mehr als eine Chat-Route benötigt.
+
+**Ziel:** Führe die angemeldete Workbench aus und sende Phaseo-Anfragen über einen geschützten serverseitigen Proxy.
+
+**Ergebnis:** Eine lokale Anwendung mit OAuth-Anmeldung, sitzungsgebundenen Tokens, Modellerkennung, Chat und Endpoint-Tester.
+
+<Prompt
+  description="Erstelle eine **angemeldete Next.js-Workbench** mit OAuth und einem einheitlichen Phaseo-Proxy."
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`Du erstellst eine angemeldete Next.js-App mit Phaseo Gateway.
+
+Erstelle eine Workbench-App mit:
+- OAuth-2.1- und PKCE-Anmeldung
+- sitzungsgebundene Token-Speicherung
+- eine einheitliche Gateway-Proxy-Route auf dem Server
+- Modellerkennung
+- ein Chat-Ablauf mit der Responses API
+- einen allgemeinen Endpoint-Tester für weitere Phaseo-Endpoints
+
+Anforderungen:
+Bewahre Gateway-Zugangsdaten und Zugriffstokens nur auf dem Server auf.
+Verwende aus Sicherheitsgründen eine Proxy-Allowlist.
+Unterstütze die Token-Erneuerung.
+Halte die Workbench verständlich und vermeide unnötige Komplexität.
+Ergänze eine kurze README mit Einrichtung, Umgebungsvariablen und Ausführungsschritten.
+
+Überprüfung:
+- führe die App nach Möglichkeit aus
+- prüfe den Anmeldeablauf soweit es die lokale Einrichtung zulässt
+- prüfe mindestens einen Gateway-Anfragepfad über den Proxy
+Berichte genau, was du geprüft hast und was noch von einer externen OAuth-Konfiguration abhängt.`}
+</Prompt>
+
+## Beispielprojekt
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- Lokaler Repository-Pfad: `examples/oauth-client-nextjs`
+
+## Was die App abdeckt
+
+- OAuth-2.1- und PKCE-Anmeldung
+- sitzungsgebundene Token-Speicherung und -Erneuerung
+- einen einheitlichen Proxy für Steuerungs- und Generierungsrouten
+- Modellerkennung
+- einen Chat-Ablauf über `/responses`
+- einen allgemeinen Endpoint-Tester für weitere Gateway-Routen
+
+## Wann du mit diesem Beispiel starten solltest
+
+Nutze dieses Beispiel, wenn:
+
+- Endnutzer sich mit delegiertem Zugriff anmelden sollen
+- du mehr als eine einfache Chat-Seite brauchst
+- du eine sichere Serverroute für mehrere Phaseo-Endpoints möchtest
+
+Starte nicht hier, wenn:
+
+- du nur eine einfache Chat-UI mit API-Schlüssel brauchst
+- du zuerst ein Skript oder eine CLI möchtest
+
+## Wichtige Dateien
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## Warum das Beispiel so aufgebaut ist
+
+### 1. OAuth bleibt von der Gateway-Logik getrennt
+
+Die App trennt:
+
+- Start- und Callback-Logik der Authentifizierung
+- verschlüsselte Sitzungsverwaltung
+- Token-Erneuerung
+
+Dadurch bleibt der KI-Integrationscode übersichtlich und Anmeldeprobleme lassen sich leichter beheben.
+
+### 2. Eine Proxy-Route verarbeitet die Gateway-Aufrufe
+
+Die Catch-all-Proxy-Route:
+
+- prüft die Endpoint-Allowlist
+- fügt das aktuelle Bearer-Token ein
+- erneuert Tokens bei Bedarf
+- leitet Anfrage- und Antwort-Bodies weiter
+
+Das ist ein gutes Muster, wenn du mehrere Phaseo-Endpoints nutzen möchtest, ohne die Authentifizierungslogik in jede Route zu kopieren.
+
+### 3. Das Dashboard dient zugleich als interne Workbench
+
+Die Workbench-Seite bietet mehr als Chat:
+
+- sie ermittelt Modelle
+- sie testet `/responses`
+- sie kann auch Nicht-Chat-Endpoints testen
+
+So eignet sie sich für Onboarding, Qualitätssicherung und interne Fehlerbehebung, bevor du eine ausgefeiltere Nutzeroberfläche entwickelst.
+
+## Voraussetzungen
+
+- - Node.js und ein unterstützter Paketmanager
+- - ein OAuth-Client mit konfigurierter lokaler Callback-URL
+- - ein starkes Sitzungsgeheimnis
+
+## Beispiel ausführen
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Setze:
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Starte dann:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Öffne `http://localhost:3000`.
+
+## Ergebnis prüfen
+
+- Nach der Anmeldung wird die konfigurierte Callback-URL aufgerufen und eine Sitzung erstellt.
+- Das Dashboard kann Modelle über den Proxy ermitteln.
+- Eine Responses-API-Anfrage wird abgeschlossen, ohne ein Zugriffstoken im Browser offenzulegen.
+- Ein Endpoint außerhalb der Proxy-Allowlist wird abgelehnt.
+
+## Das Beispiel anpassen
+
+- - kürze die Proxy-Allowlist auf die Endpoints, die dein Produkt wirklich benötigt
+- - behalte die Workbench intern und entwickle darauf eine übersichtlichere Nutzeroberfläche
+- - ersetze den allgemeinen Tester durch produktspezifische Abläufe, sobald die Integration stabil ist
+
+## Verwandte Anleitungen
+
+- [Eine Web-Chat-App mit Next.js erstellen](./build-a-nextjs-web-chat-app.mdx)
+- [Prompts für den Einstieg mit einer Mini-App](./mini-app-starter-prompts.mdx)
+- [Beispiele](../guides/examples.mdx)

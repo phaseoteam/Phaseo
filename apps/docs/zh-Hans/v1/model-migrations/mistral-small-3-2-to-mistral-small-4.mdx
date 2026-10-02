@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "介绍采用 Mistral Small 4 时需要了解的推理控制和标准化响应字段。"
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+使用本指南，通过 Phaseo Gateway 安全采用 Mistral Small 4：
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## 新功能
+
+- Mistral Small 4 通过 `reasoning_effort` 控制推理模式。
+- Gateway 对此模型路由只向上游发送两个值：
+  - `none`（关闭推理）
+  - `high`（开启推理）
+- Gateway 会将 Mistral 思考块规范化为标准响应字段：
+  - `message.content`：面向用户的助手文本
+  - `message.reasoning_content` 和 `message.reasoning_details`：推理文本
+
+## 迁移快速入门
+
+此路由默认关闭推理。
+
+Gateway 映射规则：
+
+- 未提供推理控制项时，Gateway 发送 `reasoning_effort: "none"`。
+- 传入 `reasoning.enabled: true` 时，Gateway 发送 `reasoning_effort: "high"`。
+- 传入 `reasoning.effort: "none"` 时，Gateway 发送 `reasoning_effort: "none"`。
+- `reasoning.effort` 传入其他任何值时，Gateway 发送 `reasoning_effort: "high"`。
+
+建议用法：
+
+- 轻量任务使用 `reasoning.effort: "none"`。
+- 深度推理使用 `reasoning.effort: "high"`。
+
+示例：
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## 响应处理说明
+
+Mistral 可能返回混合的助手内容块（例如 `thinking` 和 `text`）。Gateway 会将其转换为稳定格式：
+
+- 用户可见的最终回答：`choices[0].message.content`。
+- 推理文本：`choices[0].message.reasoning_content`。
+
+因此，依赖 OpenAI 风格聊天补全字段的下游逻辑可以保持不变。
+
+## 发布检查清单
+
+1. 将模型 ID 更新为 `mistral/mistral-small-4-2026-03-16`。
+2. 仅使用 `none` 和 `high` 验证推理控制。
+3. 为高强度路由重新运行输出质量和 Schema 测试。
+4. 全量切换前比较 `none` 和 `high` 的延迟与成本。

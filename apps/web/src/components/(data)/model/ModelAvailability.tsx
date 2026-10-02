@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ModelAvailabilityItem } from "@/lib/fetchers/models/getModelAvailability";
 import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { Logo } from "@/components/Logo";
@@ -29,11 +30,17 @@ interface ModelAvailabilityProps {
 	model: ModelOverviewPage | null;
 }
 
-export default function ModelAvailability({
+export default async function ModelAvailability({
 	availability,
 	subscriptionPlans,
 	model,
 }: ModelAvailabilityProps) {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.modelDetail");
+	const tAvailability = await getTranslations(
+		"Catalogue.modelDetail.availabilityLabels",
+	);
+	const countryNames = new Intl.DisplayNames([locale], { type: "region" });
 	const organisationName = model?.organisation?.name;
 
 	const providerGroups = new Map<
@@ -87,7 +94,9 @@ export default function ModelAvailability({
 	return (
 		<div className="w-full mx-auto space-y-4">
 			<div className="space-y-4">
-				<h3 className="text-xl font-semibold">API Providers</h3>
+				<h3 className="text-xl font-semibold">
+					{t("sections.providerAvailability")}
+				</h3>
 				{providerCards.length > 0 ? (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 						{providerCards.map((group) => {
@@ -113,7 +122,9 @@ export default function ModelAvailability({
 																id={
 																	group.providerId
 																}
-																alt={`${group.providerName} logo`}
+												alt={tAvailability("providerLogo", {
+													provider: group.providerName,
+												})}
 																className="group-hover:opacity-80 transition object-contain"
 																fill
 															/>
@@ -132,18 +143,26 @@ export default function ModelAvailability({
 													<p className="text-xs text-muted-foreground font-mono break-all">
 														{slugs.length > 0
 															? slugs.join(", ")
-															: "No model slug listed."}
+										: tAvailability("noModelSlug")}
 													</p>
 												</div>
 											</div>
 											{group.providerCountry ? (
-												<Link
-													href={`/countries/${group.providerCountry.toLowerCase()}`}
-													aria-label={`View ${group.providerCountry} details`}
-												>
-													<Image
-														src={`/flags/${group.providerCountry.toLowerCase()}.svg`}
-														alt={`${group.providerCountry} flag`}
+								<Link
+									href={`/countries/${group.providerCountry.toLowerCase()}`}
+									aria-label={tAvailability("viewCountryDetails", {
+										country:
+											countryNames.of(group.providerCountry) ??
+											group.providerCountry,
+									})}
+								>
+									<Image
+										src={`/flags/${group.providerCountry.toLowerCase()}.svg`}
+										alt={tAvailability("countryFlag", {
+											country:
+												countryNames.of(group.providerCountry) ??
+												group.providerCountry,
+										})}
 														width={24}
 														height={16}
 														className="h-8 w-auto rounded-sm border"
@@ -158,14 +177,16 @@ export default function ModelAvailability({
 					</div>
 				) : (
 					<SectionEmpty
-						title="No API providers listed yet"
-						description="This model does not currently show any API provider availability."
+						title={t("emptyStates.noProvidersTitle")}
+						description={t("emptyStates.noProvidersDescription")}
 					/>
 				)}
 			</div>
 
 			<div className="space-y-4">
-				<h3 className="text-xl font-semibold">Subscription Plans</h3>
+						<h3 className="text-xl font-semibold">
+							{t("sections.subscriptions")}
+						</h3>
 
 				{subscriptionPlans && subscriptionPlans.length > 0 ? (
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -184,14 +205,14 @@ export default function ModelAvailability({
 										</span>
 									</Link>
 									<p className="text-xs text-muted-foreground mb-3">
-										via{" "}
-										{plan.organisation?.name ??
-											"Unknown Provider"}
+											{tAvailability("via")} {" "}
+											{plan.organisation?.name ??
+												tAvailability("unknownProvider")}
 									</p>
 									<div className="space-y-3">
 										<div>
 											<p className="text-[0.65rem] uppercase text-muted-foreground mb-1">
-												Price
+												{tAvailability("price")}
 											</p>
 											<RotatingPricing
 												prices={plan.prices}
@@ -203,7 +224,7 @@ export default function ModelAvailability({
 											plan.model_info.rate_limit.trim() && (
 												<div>
 													<p className="text-[0.65rem] uppercase text-muted-foreground mb-1">
-														Rate limit
+														{tAvailability("rateLimit")}
 													</p>
 													<p className="text-xs text-muted-foreground">
 														{
@@ -219,7 +240,7 @@ export default function ModelAvailability({
 											plan.model_info.model_info.trim() && (
 												<div>
 													<p className="text-[0.65rem] uppercase text-muted-foreground mb-1">
-														Notes
+														{tAvailability("notes")}
 													</p>
 													<p className="text-xs text-muted-foreground line-clamp-3">
 														{
@@ -232,7 +253,7 @@ export default function ModelAvailability({
 										{plan.description && (
 											<div>
 												<p className="text-[0.65rem] uppercase text-muted-foreground mb-1">
-													Description
+													{tAvailability("description")}
 												</p>
 												<p className="text-xs text-muted-foreground line-clamp-3">
 													{plan.description}
@@ -246,8 +267,10 @@ export default function ModelAvailability({
 					</div>
 				) : (
 					<SectionEmpty
-						title="No subscription plans listed yet"
-						description="This model does not currently show any subscription plan availability."
+						title={t("emptyStates.noSubscriptions")}
+						description={t(
+							"emptyStates.noSubscriptionPricingDescription",
+						)}
 					/>
 				)}
 			</div>

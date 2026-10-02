@@ -1,0 +1,11 @@
+---
+title: "ऑब्ज़र्वेबिलिटी डेस्टिनेशन अपडेट करें"
+sidebarTitle: "डेस्टिनेशन अपडेट करें"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "डेस्टिनेशन अपडेट करें policy, filters, or credentials."
+---
+<Note>इस एंडपॉइंट के लिए `settings:write` वाली प्रबंधन API कुंजी आवश्यक है।</Note>
+
+मौजूदा एन्क्रिप्टेड कॉन्फ़िगरेशन बनाए रखने के लिए `config` छोड़ दें। इसे देने पर डेस्टिनेशन रिकॉर्ड का कॉन्फ़िगरेशन एटॉमिक रूप से बदल दिया जाएगा।
+

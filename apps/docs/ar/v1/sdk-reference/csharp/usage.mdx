@@ -1,0 +1,67 @@
+---
+icon: "square-terminal"
+title: "استخدام SDK الخاص بـ C#"
+description: "أساليب الغلاف المدعومة حاليًا في SDK الخاص بـ C#."
+---
+
+## الإعداد
+
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo("<API_KEY>");
+```
+
+## إكمال المحادثة
+
+```csharp
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["messages"] = new[]
+  {
+    new Dictionary<string, object>
+    {
+      ["role"] = "user",
+      ["content"] = "Hello"
+    }
+  }
+});
+```
+
+## Responses
+
+```csharp
+var resp = await client.GenerateResponse(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-5-nano",
+  ["input"] = "Reply with: csharp sdk works"
+});
+```
+
+## الصور
+
+```csharp
+var image = await client.GenerateImage(new Dictionary<string, object>
+{
+  ["model"] = "openai/gpt-image-1",
+  ["prompt"] = "A lighthouse at golden hour"
+});
+```
+
+## الإشراف
+
+```csharp
+var moderation = await client.GenerateModeration(new Dictionary<string, object>
+{
+  ["model"] = "openai/omni-moderation-latest",
+  ["input"] = "Some text to check"
+});
+```
+
+## النماذج والحالة
+
+```csharp
+var models = await client.ListModels(new Dictionary<string, string> { ["limit"] = "10" });
+var health = await client.Health();
+```

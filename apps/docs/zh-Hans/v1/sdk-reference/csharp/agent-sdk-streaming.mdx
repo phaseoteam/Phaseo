@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "使用可重放的异步可枚举序列流式传输 Agent 文本和生命周期事件。"
+---
+
+`Agent.Stream(...)` 与 `Run(...)` 使用相同的状态机，并返回 `AgentStreamResult`：
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+使用 `FullStream()` 获取模型、工具、步骤和运行事件。多个消费者可以独立重放已捕获的异步序列。产品需要停止当前运行时调用 `Cancel()`；取消信号会传递给模型请求和本地工具。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

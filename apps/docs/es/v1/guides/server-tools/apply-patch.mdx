@@ -1,0 +1,87 @@
+---
+title: "Aplicar parche"
+description: "Permite que los modelos de Responses devuelvan operaciones de parche validadas."
+icon: "file-pen-line"
+---
+
+Usa `phaseo:apply_patch` cuando un flujo de Responses deba devolver cambios de archivos como operaciones de parche estructuradas. Phaseo valida la operación y la devuelve a tu cliente; no modifica el sistema de archivos ni el repositorio.
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## Solicitud
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## Estructura de la operación
+
+Cuando el modelo llama a la herramienta, envía un objeto de operación:
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+Tipos de operación compatibles:
+
+| Tipo | Campos obligatorios |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## Resultado de la herramienta
+
+Phaseo devuelve la operación validada al ciclo del modelo:
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+Tu aplicación sigue siendo responsable de aplicar el parche, mostrárselo a un usuario, rechazarlo o pedir al modelo una operación revisada.
+
+## Uso y precios
+
+Phaseo registra:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+Las tarjetas de precios pueden cobrarlo con el contador `server_tool_apply_patch_requests`.
+
+## Relacionado
+
+- [Herramientas del servidor](./index.mdx)
+- [API de Responses](../../api-reference/endpoint/responses.mdx)

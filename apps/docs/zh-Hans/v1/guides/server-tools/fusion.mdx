@@ -1,0 +1,69 @@
+---
+icon: "workflow"
+title: "Fusion 服务器工具"
+description: "运行多个分析模型并综合其结果。"
+---
+
+当回答需要多个独立模型的视角时，请使用 `phaseo:fusion`。Phaseo 会并行运行分析模型，然后让选定的分析模型综合结果并返回给调用模型。
+
+## 在 Playground 中配置
+
+在 Playground 的服务器工具菜单中，Fusion 可让你选择：
+
+- 独立分析请求的模型
+- 一个可选的评审模型，用于比较分析结果
+- Fusion 顾问工具的最大调用次数
+
+主模型会在同一工具循环中看到这些具名顾问，并可在撰写最终响应前使用其结果。
+
+## API 结构
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:fusion",
+      "parameters": {
+        "analysis_models": ["anthropic/claude-opus-5", "openai/gpt-5"],
+        "model": "google/gemini-pro-latest",
+        "instructions": "Reconcile disagreements and return concise synthesis guidance.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## 何时使用 Fusion
+
+适合在以下场景使用 Fusion：
+
+- 第二或第三个模型可能发现遗漏假设的规划决策
+- 模型可能以不同方式权衡证据的研究综合
+- 需要独立审查意见的代码或架构评审
+- 可以接受略微增加延迟的重要响应
+
+如果只需要一轮评审，请改用单个 Advisor。
+
+## 用量与定价
+
+每次调用 Fusion 都会增加：
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "fusion_requests": 1
+    }
+  }
+}
+```
+
+顾问模型的 token 会计入总用量，并可按所选模型各自的费率计费。服务器工具也可使用 `server_tool_advisor_requests` 计量项定价。
+
+## 相关内容
+
+- [Advisor](./advisor.mdx)
+- [子代理](./subagent.mdx)
+- [服务器工具](./index.mdx)

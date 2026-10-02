@@ -1,0 +1,25 @@
+---
+icon: "files"
+title: "文件"
+description: "使用 Python SDK 调用 `/files`。"
+---
+
+**方法**：`client.upload_file()`、`client.list_files()`、`client.get_file()`、`client.get_file_content()`。
+
+```python
+uploaded = client.upload_file(
+    purpose="batch",
+    file="data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+)
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])
+
+print(uploaded)
+print(file_obj)
+print(file_bytes[:20])
+```
+
+<Note>
+  SDK 已接入 `list_files()`，但目前 `GET /files` 会返回 `file_list_not_supported_with_shared_gateway_key`
+  （使用共享网关密钥时）。请保存已上传文件的 ID，并直接通过 ID 检索。
+</Note>

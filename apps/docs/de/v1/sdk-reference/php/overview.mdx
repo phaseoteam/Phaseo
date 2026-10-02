@@ -1,0 +1,48 @@
+---
+icon: "book-open"
+title: "PHP-SDK"
+description: "Offizieller PHP-Client für das Phaseo-Gateway."
+---
+
+Installiere das veröffentlichte Paket [`phaseo/sdk`](https://packagist.org/packages/phaseo/sdk) von Packagist.
+
+Der lokale Wrapper unter `packages/sdk/sdk-php/src/index.php` bietet derzeit folgende Methoden:
+
+- `generateText(...)`
+- `generateResponse(...)`
+- `createAnthropicMessage(...)`
+- `generateImage(...)`
+- `generateImageEdit(...)`
+- `generateVideo(...)`, `getVideo(...)`, `cancelVideo(...)`, `deleteVideo(...)`, `listVideoModels(...)`, `listVideos(...)`
+- `generateEmbedding(...)`
+- `generateModeration(...)`
+- `createSpeech(...)`
+- `generateTranscription(...)`
+- `generateTranslation(...)`
+- `createBatch(...)`, `retrieveBatch(...)`, `cancelBatch(...)`
+- `getAsyncJobWebSocketUrl(...)`, `getBatchWebSocketUrl(...)`, `getVideoWebSocketUrl(...)`, `asyncJobs()->websocketUrl(...)`
+- `listFiles(...)`, `retrieveFile(...)`, `retrieveFileContent(...)`, `retrieveVideoContent(...)`, `getVideoDownloadUrl(...)`, `uploadFile(...)`
+- `listModels(...)`
+- `getModelEndpointCapabilities(...)`, `checkModelParameters(...)`
+- `listApiKeys(...)`, `createApiKey(...)`, `updateApiKey(...)`, `deleteApiKey(...)`
+- `getApiKey(...)`
+- `listWorkspaces(...)`, `getWorkspace(...)`, `createWorkspace(...)`, `updateWorkspace(...)`, `deleteWorkspace(...)`
+- `listEndpoints()`
+- `listOrganisations(...)`
+- `listPricingModels(...)`
+- `calculatePricing(...)`
+- `getCurrentApiKey()`
+- `listProviders(...)`, `getAnalytics(...)`, `getCredits(...)`, `getActivity(...)`
+- `getGeneration(...)`
+- `health()`, `healthz()`
+
+```php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo('YOUR_KEY');
+$models = $client->listModels(['limit' => 5]);
+```
+
+`checkModelParameters(...)` nutzt aktuelle Metadaten zu Anbieterrouten, um nicht unterstützte oder ungültige Werte hervorzuheben und die Routen zu liefern, die den vollständigen Parametersatz akzeptieren.

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { Activity, ArrowUpRight, Gauge, Timer } from "lucide-react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
@@ -13,35 +14,45 @@ type Metric = {
 	value: (model: OrganisationModelCards) => number | null | undefined;
 };
 
-const metrics: Metric[] = [
-	{
-		icon: Gauge,
-		id: "throughput",
-		label: "Throughput",
-		format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
-		value: (model) => model.throughput_week,
-	},
-	{
-		icon: Timer,
-		id: "latency",
-		label: "Time to first token",
-		format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
-		value: (model) => model.latency_week,
-	},
-	{
-		icon: Activity,
-		id: "usage",
-		label: "Weekly usage",
-		format: (value, model) => <><DisplayNumber value={value} /> {model.weekly_usage_unit ?? "units"}</>,
-		value: (model) => model.weekly_usage_quantity,
-	},
-];
-
-export default function LabPerformance({
+export default async function LabPerformance({
 	models,
 }: {
 	models: OrganisationModelCards[];
 }) {
+	const locale = await getLocale();
+	const t = await getTranslations("Catalogue.organisations");
+	const compactNumber = new Intl.NumberFormat(locale, {
+		compactDisplay: "short",
+		notation: "compact",
+		maximumFractionDigits: 1,
+	});
+	const metrics: Metric[] = [
+		{
+			icon: Gauge,
+			id: "throughput",
+			label: t("throughput"),
+			format: (value) => <><DisplayNumber value={value} options={{ maximumFractionDigits: 1, notation: "standard" }} /> t/s</>,
+			value: (model) => model.throughput_week,
+		},
+		{
+			icon: Timer,
+			id: "latency",
+			label: t("timeToFirstToken"),
+			format: (value) => <><DisplayNumber value={Math.round(value)} options={{ maximumFractionDigits: 0, notation: "standard" }} /> ms</>,
+			value: (model) => model.latency_week,
+		},
+		{
+			icon: Activity,
+			id: "usage",
+			label: t("weeklyUsage"),
+			format: (value, model) => {
+				const unit = model.weekly_usage_unit?.toLowerCase();
+				const unitLabel = unit === "tokens" ? t("unitTokens") : unit === "requests" ? t("unitRequests") : model.weekly_usage_unit || t("unitGeneric");
+				return <><DisplayNumber value={value} /> {unitLabel}</>;
+			},
+			value: (model) => model.weekly_usage_quantity,
+		},
+	];
 	const panels = metrics.map((metric) => ({
 		...metric,
 		models: models
@@ -90,7 +101,7 @@ export default function LabPerformance({
 								))}
 								{panel.models.length === 0 ? (
 									<p className="px-2 py-1.5 text-xs text-muted-foreground">
-										No recent data
+										{t("noRecentData")}
 									</p>
 								) : null}
 							</div>
@@ -100,7 +111,7 @@ export default function LabPerformance({
 			</div>
 			{!hasTelemetry ? (
 				<p className="border-t border-border/70 px-5 py-3 text-sm text-muted-foreground">
-					Performance metrics will appear after this lab&apos;s models serve gateway traffic.
+				{t("gatewayMetricsWillAppear")}
 				</p>
 			) : null}
 		</div>

@@ -1,0 +1,42 @@
+---
+icon: "square-terminal"
+title: "Exemplos"
+description: "Comece com padrões completos do Agent SDK para pesquisa, suporte, programação e ferramentas paralelas."
+---
+
+Escolha o exemplo mais simples que corresponda ao produto que você está criando. Cada padrão mantém a persistência e a interface do usuário na aplicação e usa o Phaseo para os turnos do modelo.
+
+## Exemplos incluídos no pacote
+
+| Exemplo | Uso |
+| --- | --- |
+| `research-brief-agent.ts` | Pesquisar com busca gerenciada e um resumo final tipado |
+| `support-triage-agent.ts` | Encaminhar e classificar solicitações de suporte com um preset gerenciado |
+| `coding-review-agent.ts` | Revisar código com ferramentas locais de execução |
+| `parallel-tool-agent.ts` | Executar ferramentas locais independentes em paralelo |
+
+## Guias do cookbook
+
+<CardGroup cols={2}>
+  <Card title="Loop durável do agente" icon="database" href="../../cookbook/agent-sdk-durable-loop.mdx">
+    Persista uma execução retornada e continue-a em uma solicitação posterior.
+  </Card>
+  <Card title="Resumo de pesquisa" icon="search-check" href="../../cookbook/agent-sdk-research-brief.mdx">
+    Combine um agente com pesquisa na web baseada em fontes.
+  </Card>
+  <Card title="Triagem de suporte" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage.mdx">
+    Mantenha o roteamento e os prompts padrão em um preset gerenciado.
+  </Card>
+  <Card title="Revisão de código" icon="code-2" href="../../cookbook/agent-sdk-coding-review.mdx">
+    Conecte ferramentas locais específicas a um fluxo de trabalho de programação.
+  </Card>
+  <Card title="Ferramentas paralelas" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools.mdx">
+    Distribua chamadas independentes a ferramentas sem alterar a ordem dos resultados.
+  </Card>
+</CardGroup>
+
+## Referências relacionadas
+
+- [Crie seu primeiro agente](./agent-sdk.mdx)
+- [Ferramentas](./agent-sdk-tools.mdx)
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)

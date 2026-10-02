@@ -1,0 +1,14 @@
+---
+icon: "search-check"
+title: "Generationsabfrage"
+description: "Rufe die /generations-Abfrage mit dem Python-SDK auf."
+---
+
+```python
+record = client.get_generation("G-01ABC...")
+
+print(record)
+```
+
+Wenn Anfragedetails gespeichert wurden, enthält der zurückgegebene Datensatz auch `replay_supported` und `replay_request`, sodass du die erfasste Nutzlast erneut an den ursprünglichen Endpunkt senden kannst.
+

@@ -1,0 +1,28 @@
+---
+icon: "shuffle"
+title: "डायनामिक टर्न"
+description: "Go agent के turns के बीच model, instructions, tools और sampling settings बदलें।"
+---
+
+Dynamic turn callbacks agent को दोबारा बनाए बिना routing को run state के अनुसार प्रतिक्रिया देने देते हैं। वे हर model request से पहले चलते हैं और मौजूदा turn context पाते हैं।
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "support-agent",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.Run.StepCount > 3 { return "openai/gpt-5.4" }
+    return "openai/gpt-5.4-nano"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+Dynamic tools और हर turn के लिए `Temperature`, `MaxOutputTokens` व `TopP` values भी configure कर सकते हैं।
+
+## अगले turn को tool से प्रभावित करें
+
+अगली model request बदलने के लिए tool पर `NextTurn` सेट करें। ये overrides paused state में सहेजे जाते हैं, इसलिए approval checkpoint के बाद भी बने रहते हैं और अगले turn के बाद समाप्त होते हैं।
+
+हर turn पर दोबारा calculate होने वाली policy के लिए dynamic callbacks उपयोग करें। Repository की जाँच के बाद model बदलने जैसे tool-specific handoff के लिए `NextTurn` उपयोग करें।

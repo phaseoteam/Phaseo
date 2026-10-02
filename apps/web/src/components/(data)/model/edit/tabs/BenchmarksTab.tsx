@@ -1,6 +1,7 @@
 "use client"
 
 import { type ReactNode, useEffect, useState } from "react"
+import { useTranslations } from "next-intl"
 import { Plus } from "lucide-react"
 import { DatePickerInput } from "@/components/ui/date-picker-input"
 import { Button } from "@/components/ui/button"
@@ -45,6 +46,7 @@ function FieldRow({
 }
 
 export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingChange }: BenchmarksTabProps) {
+  const t = useTranslations("Common.ui.modelEditor")
   const [benchmarks, setBenchmarks] = useState<BenchmarkResult[]>([])
   const [availableBenchmarks, setAvailableBenchmarks] = useState<Array<{ id: string; name: string }>>([])
   const [newBenchmarkId, setNewBenchmarkId] = useState("")
@@ -135,9 +137,9 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <Label className="text-sm font-semibold">Benchmark Results</Label>
+          <Label className="text-sm font-semibold">{t("benchmarkResults")}</Label>
           <p className="text-xs text-muted-foreground">
-            Changes are staged locally and saved when you click Save Benchmarks.
+            {t("benchmarkResultsDescription")}
           </p>
         </div>
         <Button
@@ -150,12 +152,12 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
             ])
           }
         >
-          <Plus className="h-4 w-4 mr-1" /> Add
+          <Plus className="h-4 w-4 mr-1" /> {t("add")}
         </Button>
       </div>
 
       <div className="rounded-lg border p-3 space-y-2">
-        <Label className="text-sm font-semibold">Create and Attach Benchmark</Label>
+        <Label className="text-sm font-semibold">{t("createAndAttachBenchmark")}</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           <Input
             value={newBenchmarkId}
@@ -165,7 +167,7 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
           <Input
             value={newBenchmarkName}
             onChange={(event) => setNewBenchmarkName(event.target.value)}
-            placeholder="Benchmark name"
+            placeholder={t("benchmarkName")}
           />
         </div>
         <div className="flex justify-end">
@@ -176,14 +178,14 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
             onClick={handleCreateBenchmark}
             disabled={creatingBenchmark || !newBenchmarkId.trim() || !newBenchmarkName.trim()}
           >
-            {creatingBenchmark ? "Creating..." : "Create and attach"}
+            {creatingBenchmark ? t("creating") : t("createAndAttach")}
           </Button>
         </div>
       </div>
 
       {benchmarks.length === 0 ? (
         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-          No benchmark entries yet.
+          {t("noBenchmarkEntries")}
         </div>
       ) : null}
 
@@ -191,26 +193,26 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
         {benchmarks.map((benchmark, index) => (
           <div key={benchmark.id} className="border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">Entry {index + 1}</div>
+              <div className="text-sm font-medium">{t("entry", { index: index + 1 })}</div>
               <Button variant="ghost" disabled={Boolean(benchmark.effective_to)} onClick={() => removeBenchmark(benchmark.id)}>
-                {benchmark.effective_to ? "End-dated" : benchmark.id.startsWith("new-") ? "Discard draft" : "End now"}
+                {benchmark.effective_to ? t("endDated") : benchmark.id.startsWith("new-") ? t("discardDraft") : t("endNow")}
               </Button>
             </div>
 
-            <FieldRow label="Ends"><DatePickerInput value={benchmark.effective_to?.slice(0, 10) ?? ""} onChange={(value) => updateBenchmark(benchmark.id, "effective_to", value ? `${value}T00:00:00Z` : null)} placeholder="No end date" /></FieldRow>
-            <FieldRow label="Benchmark">
-              <SearchableSelect label="Benchmark" value={benchmark.benchmark_id} options={availableBenchmarks.map((benchmark) => ({ value: benchmark.id, label: benchmark.name }))} onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)} />
+            <FieldRow label={t("ends")}><DatePickerInput value={benchmark.effective_to?.slice(0, 10) ?? ""} onChange={(value) => updateBenchmark(benchmark.id, "effective_to", value ? `${value}T00:00:00Z` : null)} placeholder={t("noEndDate")} /></FieldRow>
+            <FieldRow label={t("benchmark")}>
+              <SearchableSelect label={t("benchmark")} value={benchmark.benchmark_id} options={availableBenchmarks.map((benchmark) => ({ value: benchmark.id, label: benchmark.name }))} onValueChange={(value) => updateBenchmark(benchmark.id, "benchmark_id", value)} />
             </FieldRow>
 
-            <FieldRow label="Score">
+            <FieldRow label={t("score")}>
               <Input
                 value={benchmark.score}
                 onChange={(e) => updateBenchmark(benchmark.id, "score", e.target.value)}
-                placeholder="Score"
+                placeholder={t("score")}
               />
             </FieldRow>
 
-            <FieldRow label="Source link">
+            <FieldRow label={t("sourceLink")}>
               <Input
                 value={benchmark.source_link || ""}
                 onChange={(e) => updateBenchmark(benchmark.id, "source_link", e.target.value)}
@@ -218,21 +220,21 @@ export default function BenchmarksTab({ modelId, onBenchmarksChange, onPendingCh
               />
             </FieldRow>
 
-            <FieldRow label="Variant">
+            <FieldRow label={t("variant")}>
               <Input
                 value={benchmark.variant || ""}
                 onChange={(e) => updateBenchmark(benchmark.id, "variant", e.target.value)}
-                placeholder="e.g., Max"
+                placeholder={t("exampleMax")}
               />
             </FieldRow>
 
-            <FieldRow label="Self-reported">
+            <FieldRow label={t("selfReported")}>
               <label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={benchmark.is_self_reported}
                   onCheckedChange={(checked) => updateBenchmark(benchmark.id, "is_self_reported", checked === true)}
                 />
-                <span>Benchmark result is self-reported</span>
+                <span>{t("benchmarkSelfReported")}</span>
               </label>
             </FieldRow>
           </div>

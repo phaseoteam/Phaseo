@@ -1,0 +1,136 @@
+---
+title: "Migração do Vercel AI Gateway"
+sidebarTitle: "Vercel AI Gateway"
+description: "Substitua o roteamento do Vercel AI Gateway pelo Phaseo Gateway e mantenha o comportamento de aplicações que usam o AI SDK ou uma interface compatível com OpenAI."
+icon: "/icons/brands/vercel.svg"
+---
+
+Se você já usa o Vercel AI Gateway pelo Vercel AI SDK ou por um cliente compatível com OpenAI, mantenha a lógica do aplicativo e troque primeiro apenas o ponto de integração com o provedor.
+
+## O que muda
+
+| Configuração | Antes | Depois |
+| --- | --- | --- |
+| URL do gateway | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| Chave de API | Chave do Vercel AI Gateway | `PHASEO_API_KEY` |
+| Provedor do AI SDK | Configuração atual | `@phaseo/ai-sdk-provider` para uso direto do AI SDK |
+| Fluxo do aplicativo | Lógica de geração atual | Mantenha sem alterações na primeira etapa |
+
+## Antes de começar
+
+- URL base e configuração atual da chave do Vercel AI Gateway.
+- `PHASEO_API_KEY` disponível nos ambientes local, de teste e de produção.
+- Um conjunto pequeno de prompts ou testes que cubra requisições sem e com streaming e os caminhos de chamada de ferramentas usados.
+
+## 1) Documente o ponto de integração atual com o gateway
+
+Encontre onde o aplicativo cria provedores de modelos ou clientes de API. Esse é o ponto recomendado para a migração.
+
+- Localize a fábrica de provedores ou clientes.
+- Liste os IDs de modelo usados em produção.
+- Registre os padrões de novas tentativas, tempos limite e alternativas.
+- Anote se os ambientes edge e de servidor precisam da mesma alteração.
+- Identifique padrões compartilhados de prompts ou parâmetros que deveriam virar predefinições do Gateway, em vez de ficarem embutidos em chamadas do AI SDK.
+
+## 2) Troque o endpoint e a chave
+
+Na maioria dos clientes compatíveis com OpenAI, basta substituir a URL base e a chave.
+
+<CodeGroup>
+```typescript TypeScript
+// OpenAI-compatible client before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
+  baseURL: "https://ai-gateway.vercel.sh/v1",
+});
+```
+
+```typescript TypeScript
+// OpenAI-compatible client after
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```typescript TypeScript
+// Official Phaseo provider for the Vercel AI SDK
+import { generateText } from "ai";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const { text } = await generateText({
+  model: phaseo("openai/gpt-4.1-mini"),
+  prompt: "Generate a migration checklist.",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) Confirme a paridade de comportamento
+
+Execute o mesmo conjunto de prompts nos caminhos antigo e novo e compare latência, formato de saída e uso de tokens.
+
+- Verifique a geração de texto sem streaming.
+- Verifique os fragmentos de streaming pelo mesmo caminho de código usado em produção.
+- Verifique chamadas de ferramentas se o aplicativo depender delas.
+- Confirme que o mapeamento de erros no aplicativo não mudou.
+- Mova padrões duradouros de roteamento e restrições de provedores para [Predefinições](../guides/presets.mdx) ou [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx), em vez de recriá-los em cada fábrica de modelos.
+
+## 4) Lista de verificação do Vercel AI SDK e do Gateway
+
+Use esta lista antes de aumentar o tráfego:
+
+- URL base atualizada para `https://api.phaseo.app/v1`.
+- `PHASEO_API_KEY` configurada em todos os ambientes que usavam a chave do gateway da Vercel.
+- Provedor oficial `@phaseo/ai-sdk-provider` integrado se o aplicativo usa Vercel AI SDK diretamente.
+- O principal caminho de geração de texto do AI SDK funciona no ambiente de teste.
+- Um teste de streaming no aplicativo passa sem alterações.
+- Chamadas de ferramentas e saídas estruturadas verificadas novamente, se usadas.
+- Saídas antiga e nova comparadas com um pequeno conjunto de prompts.
+- Rollback possível somente por alteração de configuração ou feature flag.
+- Padrões compartilhados de prompts e roteamento movidos para predefinições quando apropriado.
+- Consultas verificadas com `GET /v1/generations?id=<request_id>` para reproduzir falhas pelo payload `replay_request` armazenado quando `replay_supported=true`.
+
+## 5) Plano de lançamento de baixo risco
+
+1. Publique atrás de uma feature flag ou faça uma liberação gradual.
+2. Comece com tráfego interno ou uma parcela pequena do tráfego de produção.
+3. Monitore latência, taxa de erros e variações de tokens e custos.
+4. Mantenha as duas configurações disponíveis por pelo menos um ciclo de lançamento.
+
+## Comandos de validação
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Depois:
+
+- Execute o principal teste de integração de geração de texto do aplicativo.
+- Execute um teste de streaming no ambiente de teste.
+- Compare as saídas dos principais prompts antes da migração completa.
+
+## Próximas etapas
+
+- [Migração do OpenRouter](./from-openrouter.mdx)
+- [Início rápido](../quickstart.mdx)
+- [Exemplos](../guides/examples.mdx)

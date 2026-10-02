@@ -1,0 +1,75 @@
+---
+title: "Cline"
+icon: "/icons/brands/cline.svg"
+description: "通过其 OpenAI 兼容供应商将 Cline 连接到 Phaseo。"
+---
+
+选择 Phaseo CLI 启动器来运行隔离会话，或使用 CLI 创建专用密钥并手动配置现有的 Cline 安装。Cline 将凭据保存在 VS Code 的安全密钥存储中，因此最后的输入需在扩展界面中完成。
+
+## 通过 Phaseo CLI 运行 Cline
+
+对于 Cline CLI，让 Phaseo 为单个会话准备提供商配置：
+
+```bash
+phaseo login
+phaseo cline --model openai/gpt-5.6-terra -- --tui
+```
+
+使用 `--catalog all` 提供所有活跃的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划。显式命令形式为 `phaseo run cline ...`。启动器使用临时的 Cline 设置和数据目录，因此不会覆盖现有 Cline 或 VS Code 设置。
+
+## 使用 Phaseo CLI 创建凭据
+
+```bash
+phaseo login
+phaseo setup cline --model anthropic/claude-sonnet-4.6
+```
+
+## 手动配置 Cline
+
+1. 在 VS Code 中打开 Cline 面板。
+2. 选择设置图标，或选择聊天框下方的供应商。
+3. 选择 **OpenAI Compatible**。
+4. 输入以下值：
+
+| Cline 字段 | 值 |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | 以下命令的输出 `phaseo integrations credential cline` |
+| Model ID | `anthropic/claude-sonnet-4.6` 或设置过程中显示的模型 |
+
+5. 保存供应商。如果你的版本显示 **Verify**，请点击。
+6. 为下一个任务选择已配置的模型。
+
+## 验证
+
+让 Cline 回复 `PHASEO_CLINE_OK`，并确认请求出现在 Phaseo 活动记录中。
+
+## 移除
+
+在 Cline 中删除或切换 Phaseo 供应商，然后运行：
+
+```bash
+phaseo integrations remove cline
+```
+
+CLI 无法清除 VS Code 的扩展私有存储，但移除操作会撤销已保存的密钥。
+
+## 故障排查
+
+### 验证失败
+
+Base URL 必须与显示内容完全一致，包括 `/v1`；请粘贴新获取的密钥，且不要带引号或空格。
+
+### 模型列表为空
+
+手动输入 Phaseo 模型 ID。无需进行模型发现。
+
+### 聊天正常，但工具失败
+
+选择支持工具调用的 Phaseo 模型。连通性和模型的工具支持需要分别检查。
+
+## 相关内容
+
+- [Cline OpenAI 兼容配置](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
+- [编程智能体](./coding-assistants.mdx)
+- [模型](../../api-reference/endpoint/models.mdx)

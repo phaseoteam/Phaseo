@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "टूल"
+description: "जाँचे गए, approval-gated, manual और progress देने वाले Java tools परिभाषित करें।"
+---
+
+`AgentSdk.Tool` ये सुविधाएँ देता है:
+
+- मॉडल को दिखाए जाने वाले JSON `parameters`
+- input, output और progress-event जाँचने वाले `Validator` फ़ंक्शन
+- हर tool के लिए `Duration` timeout
+- बिना शर्त या शर्त आधारित approval
+- आपके ऐप द्वारा पूरे किए जाने वाले manual tools
+- `RuntimeContext.emitProgress()` से शुरुआती प्रगति
+- `fail-run` या `return-to-model` error handling
+- tool सफल होने के बाद अगले टर्न के लिए override
+
+tool records को `AgentSdk.defineTool(...)` से दें और side effects के लिए स्पष्ट approval या ऐप-प्रबंधित manual execution अनिवार्य रखें।
+
+## संबंधित विषय
+
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

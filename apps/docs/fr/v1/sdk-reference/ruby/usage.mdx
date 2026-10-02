@@ -1,0 +1,86 @@
+---
+icon: "square-terminal"
+title: "Utilisation du SDK Ruby"
+description: "Méthodes wrapper actuellement prises en charge par le SDK Ruby."
+---
+
+## Configuration
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY'))
+```
+
+## Complétions de chat
+
+```ruby
+chat = client.generate_text(
+  model: 'openai/gpt-5-nano',
+  messages: [{ role: 'user', content: 'Hello' }]
+)
+```
+
+## Responses
+
+```ruby
+response = client.generate_response(
+  model: 'openai/gpt-5-nano',
+  input: 'Reply with: ruby sdk works'
+)
+```
+
+## Images
+
+```ruby
+image = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour'
+)
+
+edit = client.generate_image_edit(
+  model: 'openai/gpt-image-1',
+  prompt: 'Make it sunset',
+  image: 'data:image/png;base64,...'
+)
+```
+
+## Audio
+
+```ruby
+speech = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world'
+)
+
+transcription = client.generate_transcription(
+  model: 'openai/gpt-4o-transcribe',
+  audio_b64: 'base64-audio'
+)
+
+translation = client.generate_translation(
+  model: 'openai/gpt-4o-transcribe',
+  audio_b64: 'base64-audio'
+)
+```
+
+## Embeddings et modération
+
+```ruby
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+
+moderation = client.generate_moderation(
+  model: 'openai/omni-moderation-latest',
+  input: 'Some text to check'
+)
+```
+
+## Modèles et état
+
+```ruby
+models = client.list_models(limit: 10)
+health = client.health
+```

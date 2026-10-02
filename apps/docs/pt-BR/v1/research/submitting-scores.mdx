@@ -1,0 +1,29 @@
+---
+icon: "upload"
+title: "Enviar resultados de benchmarks"
+description: "Informe resultados de benchmarks novos ou corrigidos com as evidências necessárias à revisão."
+---
+
+Envie resultados de benchmarks por uma issue no GitHub. Os mantenedores verificam as evidências e publicam os resultados aprovados pelo editor do banco de dados.
+
+## Prepare as evidências
+
+Inclua:
+
+- ID do modelo, provedor e página do Phaseo, se houver.
+- Nome do benchmark, versão, partição, pontuação e unidades.
+- Data da avaliação, formato do prompt, ambiente de avaliação e configurações relevantes de hardware ou amostragem.
+- Um artigo público, página de resultados, conjunto de dados ou registro de avaliação reproduzível.
+- Se o resultado foi informado pelo provedor ou medido de forma independente.
+
+## Envie a issue
+
+[Solicite novos dados de benchmarks](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) para um novo resultado ou benchmark. [Informe informações incorretas](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) para corrigir uma pontuação existente, incluindo os valores atual e proposto.
+
+Não inclua credenciais, prompts privados ou dados de clientes em relatos públicos.
+
+## Acompanhe a publicação
+
+Os mantenedores podem pedir esclarecimentos na issue antes de atualizar o banco de dados. Os snapshots diários de JSON refletem os dados publicados; editar JSON arquivado de benchmarks não publica uma pontuação.
+
+Para ajudar a preparar o envio, use o [Discord da comunidade](https://discord.gg/aQyywCvgZ5).

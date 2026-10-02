@@ -1,0 +1,51 @@
+---
+title: "Muse Code"
+icon: "/icons/brands/meta.svg"
+description: "Execute Muse Code pelo Phaseo Gateway com a Phaseo CLI."
+---
+
+A Phaseo CLI pode iniciar Muse Code com uma chave dedicada do gateway e configurações temporárias de provedor.
+
+## Configurar com a Phaseo CLI
+
+```bash
+phaseo login
+phaseo muse --model meta/muse-spark-1.3 --
+```
+
+Use `--catalog all` para disponibilizar todos os modelos ativos de texto/chat da Phaseo ou `--dry-run --json` para visualizar o plano de execução sem criar uma chave nem iniciar Muse Code:
+
+```bash
+phaseo muse --catalog all --dry-run --json
+```
+
+Use `phaseo run muse ...` para a forma explícita do comando. Coloque as opções de Muse Code depois de `--` para que a Phaseo processe suas próprias opções primeiro.
+
+Em sistemas do tipo Unix, a primeira execução interativa oferece instalar Muse Code com o instalador da Meta. No Windows, instale Muse Code separadamente, verifique `muse --version` e use `--skip-install`.
+
+## Configuração manual
+
+A configuração pública de Muse Code se baseia na Model API e no fluxo de autenticação da Meta. Atualmente, a Meta não documenta uma configuração persistente estável para substituir esse endpoint por um gateway de terceiros compatível com OpenAI; por isso, o executor da Phaseo CLI é a forma suportada de rotear Muse Code pela Phaseo.
+
+Para usar manualmente um modelo da Phaseo em outro cliente, use a [integração compatível com OpenAI](./openai-sdk) com `https://api.phaseo.app/v1` e uma chave de API da Phaseo. Não copie as configurações temporárias de Muse do executor para seu perfil habitual de Muse; esses arquivos são detalhes de implementação e são removidos quando o executor termina.
+
+## Verificar
+
+Envie um prompt curto pelo ambiente iniciado e confirme que a solicitação aparece na atividade da Phaseo. O executor grava `settings.json` em um `XDG_CONFIG_HOME` temporário e o remove quando Muse Code termina.
+
+## Solução de problemas
+
+### Muse Code não está instalado
+
+Instale Muse Code separadamente, verifique `muse --version` e execute novamente com `--skip-install`.
+
+### O modelo não aparece
+
+Use `--catalog all` ou informe um identificador de modelo com `--model`. A descoberta de modelos não é necessária para o gateway da Phaseo.
+
+## Relacionados
+
+- [Phaseo CLI](./phaseo-cli)
+- [Meta Model API](https://ai.meta.com/llama)
+- [Modelos](../../api-reference/endpoint/models.mdx)
+- [Atividade](../../api-reference/endpoint/activity.mdx)

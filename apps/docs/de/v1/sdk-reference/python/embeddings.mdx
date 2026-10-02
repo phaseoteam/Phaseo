@@ -1,0 +1,40 @@
+---
+icon: "binary"
+title: "Einbettungen"
+description: "Rufe /embeddings mit dem Python-SDK auf."
+---
+
+**Methode**: `client.generate_embedding()`.
+
+### Beispiel
+```python
+embedding = client.generate_embedding({
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID des Embedding-Modells (z. B. `openai/text-embedding-3-large`).
+- `input` (erforderlich): eine Zeichenfolge oder ein Array aus Zeichenfolgen.
+- `encoding_format`: `float` (Standard) oder `base64`.
+- `dimensions`: optionale Ganzzahl zum Kürzen der Embedding-Länge (modellabhängig).
+- `user`: optionales Endnutzer-Tag.
+
+### Rückgabewert
+Embedding-Payload (JSON)
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 5,
+    "total_tokens": 5
+  }
+}
+```

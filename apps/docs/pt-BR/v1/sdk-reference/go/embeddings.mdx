@@ -1,0 +1,30 @@
+---
+icon: "binary"
+title: "Vetores de incorporação"
+description: "Chame `/embeddings` usando o wrapper Go."
+---
+
+Use o método wrapper:
+
+- `client.GenerateEmbedding(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "sample text",
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(resp)
+```
+
+

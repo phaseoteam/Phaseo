@@ -1,0 +1,45 @@
+---
+icon: "circle-check"
+title: "结构化输出验证"
+description: "结构化输出的服务端验证、重试和回退策略。"
+---
+
+即使生成过程受模式约束，也务必在服务器上验证输出。
+
+## 建议流程
+
+1. 请求生成符合模式约束的输出。
+2. 解析 JSON。
+3. 根据服务器端模式进行验证。
+4. 如果无效，请使用纠正提示词重试一次。
+5. 如果仍然无效，则回退到安全失败处理。
+
+## 验证示例（TypeScript）
+
+```typescript
+import { z } from "zod";
+
+const Summary = z.object({
+  order_id: z.string(),
+  total_usd: z.number(),
+  status: z.enum(["pending", "paid", "failed"]),
+});
+
+function parseStructuredContent(content: string) {
+  const data = JSON.parse(content);
+  return Summary.parse(data);
+}
+```
+
+## 重试时使用的纠正提示词
+
+验证失败时，发送一条简短的纠正指令：
+
+`上一次输出不符合模式。请仅返回有效 JSON，包含必需字段且不含额外键。`
+
+## 生产环境建议
+
+- 每种使用场景维护一个模式，并对其进行版本管理。
+- 按模型 ID 记录验证失败率。
+- 模型变更后如果模式失败率突然上升，请触发告警。
+

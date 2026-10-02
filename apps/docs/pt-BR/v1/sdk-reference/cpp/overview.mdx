@@ -1,0 +1,13 @@
+---
+title: "SDK de C++ (em andamento)"
+description: "Consulte os cabeçalhos C++ em desenvolvimento."
+---
+
+<Note type="warning">
+  O SDK de C++ está em desenvolvimento e ainda não está disponível por um gerenciador de pacotes. Use os cabeçalhos do código-fonte somente para avaliação.
+</Note>
+
+- Status: em andamento (ainda não publicado).
+- O código-fonte está em `packages/sdk/sdk-cpp`.
+- Os cabeçalhos gerados estão em `packages/sdk/sdk-cpp/src/gen`.
+- `src/phaseo.hpp` adiciona a consulta de capacidades de modelos em tempo real e relatórios de suporte de parâmetros. O transporte de prévia retorna JSON bruto; portanto, desserialize a resposta em `ModelEndpointCapabilities` antes de verificá-la.

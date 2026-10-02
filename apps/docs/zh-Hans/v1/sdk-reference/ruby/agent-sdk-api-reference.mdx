@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "Ruby Agent SDK 的主要类和方法参考。"
+---
+
+| API | 用途 |
+| --- | --- |
+| `PhaseoAgentSdk.create_agent(...)` | 定义 Agent |
+| `PhaseoAgentSdk.define_tool(...)` | 定义本地或手动工具 |
+| `PhaseoAgentSdk.create_gateway_agent_client(...)` | 将模型轮次连接到 Phaseo |
+| `Agent#run` | 运行至结束或暂停 |
+| `Agent#stream` | 使用可重放的序列运行 |
+| `Agent#continue_run` | 继续已保存或已暂停的状态 |
+| `StreamResult#result` | 读取已完成的运行 |
+| `StreamResult#text_stream` | 读取文本增量 |
+| `StreamResult#full_stream` | 读取所有事件 |
+
+重要类和值包括 `Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`RunResult`、重试配置、工具执行配置和状态访问器。
+
+## 相关内容
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [可观测性与 DevTools](./agent-sdk-observability.mdx)

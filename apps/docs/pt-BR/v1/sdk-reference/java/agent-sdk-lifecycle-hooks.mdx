@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "Hooks do ciclo de vida"
+description: "Reaja a eventos de execução, modelo, etapas, ferramentas e pontos de verificação em Java."
+---
+
+Passe um consumidor de eventos em `RunOptions` para conectar um agente à linha do tempo do produto, ao log de auditoria ou ao pipeline de telemetria:
+
+```java
+event -> logger.info("{} {}", event.type(), event.runId())
+```
+
+As categorias de eventos incluem:
+
+- início, retomada, espera humana, conclusão, cancelamento e falha da execução
+- início, ponto de verificação, conclusão, cancelamento e falha da etapa
+- solicitação, conclusão e falha do modelo
+- início, progresso preliminar, conclusão e falha da ferramenta
+
+Mantenha o callback rápido. Enfile operações lentas de armazenamento ou rede fora do loop de execução.
+
+## Relacionados
+
+- [Transmissão contínua](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

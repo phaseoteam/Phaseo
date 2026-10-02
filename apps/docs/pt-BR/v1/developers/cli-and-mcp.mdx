@@ -1,0 +1,103 @@
+---
+title: "CLI e MCP"
+description: "Use a CLI da Phaseo para automatizar tarefas no terminal ou conecte o servidor MCP autenticado a clientes de IA para acessar dados atuais da Phaseo em modo somente leitura."
+icon: "square-terminal"
+---
+
+# CLI e MCP
+
+Use o Phaseo no terminal com a CLI ou conecte um cliente de IA por MCP. Ambos usam o Phaseo OAuth, mas foram criados para tarefas diferentes.
+
+| Interface | Ideal para | Acesso |
+| --- | --- | --- |
+| Phaseo CLI | Fluxos no terminal, CI, administração e automação | Leitura e gravação, limitadas pelos escopos e pelo papel no workspace |
+| Phaseo MCP | Dados atuais da Phaseo no Codex, Claude, ChatGPT e outros clientes MCP | Autenticado e somente leitura |
+| Docs MCP | Consultar a documentação atual da Phaseo durante o desenvolvimento | Somente documentação e somente leitura |
+
+## Phaseo CLI
+
+Use a CLI para criar ou alterar recursos da Phaseo, automatizar fluxos ou inspecionar dados da conta pelo shell.
+
+### Instalar e entrar
+
+```bash
+npm install -g @phaseo/cli
+phaseo login
+phaseo whoami
+```
+
+Por padrão, terminais interativos usam OAuth no navegador. Para SSH, CI e ambientes sem interface, use a autorização por dispositivo:
+
+```bash
+phaseo login --device-code
+```
+
+### Fluxos comuns
+
+```bash
+phaseo models list --limit 20
+phaseo pricing models
+phaseo credits get
+phaseo workspaces list
+phaseo keys create --name "Local development"
+phaseo logs list --since 1h --status error --json
+```
+
+Use `--json` quando outra ferramenta ou script precisar de uma saída estruturada. Valores secretos só são exibidos por comandos que os criam ou revelam explicitamente.
+
+<Card title="Guia da CLI da Phaseo" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
+	Veja opções de autenticação, gerenciamento de chaves, workspaces, guardrails e o fluxo completo de comandos.
+</Card>
+
+## Phaseo MCP
+
+Conecte o servidor MCP da Phaseo quando quiser que um cliente de IA responda usando dados atuais sobre modelos, preços, provedores, uso e workspaces.
+
+### URL do servidor
+
+`https://mcp.phaseo.app/mcp`
+
+### Conectar pelo Codex
+
+```bash
+codex mcp add phaseo --url https://mcp.phaseo.app/mcp
+codex mcp login phaseo
+```
+
+O comando de login abre o Phaseo OAuth. Escolha um workspace, aprove os escopos de leitura solicitados e confirme a conexão:
+
+```bash
+codex mcp list
+```
+
+Para outro cliente MCP, adicione a mesma URL como um servidor HTTP remoto com streaming. O cliente precisa oferecer descoberta OAuth, código de autorização com S256 PKCE e o parâmetro MCP `resource`.
+
+### Dados que o MCP pode ler
+
+- modelos, provedores, organizações, famílias de endpoints e preços
+- créditos, atividade, análises, registros de solicitações e metadados de geração
+- workspaces, membros, predefinições, configurações e guardrails
+- metadados de chaves de API e de gerenciamento, aplicativos OAuth e webhooks, sem valores secretos
+
+O MCP não executa inferências faturáveis, não retorna valores secretos e não altera recursos da Phaseo. Use o painel, a CLI ou a API de gerenciamento para essas operações.
+
+## Docs MCP
+
+O Docs MCP é um endpoint separado para pesquisar e ler a documentação da Phaseo. Ele não acessa sua conta nem seu workspace.
+
+```bash
+codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
+```
+
+Use-o quando um assistente de programação precisar de exemplos atuais de API, orientações de integração ou documentação de recursos.
+
+<Card title="Guia do Docs MCP" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+	Conecte o servidor de documentação ao Codex, Claude Code, Cursor, OpenCode ou VS Code.
+</Card>
+
+## Escolha a interface certa
+
+- Use a **CLI** para criar chaves, alterar configurações, gerenciar workspaces ou automatizar tarefas administrativas.
+- Use o **Phaseo MCP** para dar a um cliente de IA acesso seguro aos dados atuais da Phaseo.
+- Use o **Docs MCP** para dar a um assistente de programação acesso à documentação atual da Phaseo sem acesso à conta.
+

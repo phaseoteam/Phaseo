@@ -1,0 +1,32 @@
+---
+title: "Como o Phaseo funciona"
+description: "Entenda modelos, provedores, roteamento e cobrança antes de integrar o Phaseo."
+icon: "terminal"
+---
+
+O Phaseo roteia solicitações de modelos do aplicativo aos provedores por uma API. O aplicativo escolhe modelo e endpoint; as configurações do espaço de trabalho e os controles da solicitação determinam quais provedores podem atendê-la.
+
+## Modelos e provedores
+
+O modelo é o sistema que gera a saída. O provedor hospeda o modelo e determina disponibilidade, parâmetros compatíveis, preços e desempenho. O mesmo modelo pode ter várias ofertas de provedores.
+
+O catálogo público também inclui modelos indisponíveis atualmente no Gateway. Confira a [disponibilidade do modelo](../exploring/models.mdx) antes de usar um ID na solicitação.
+
+## Solicitações e roteamento
+
+Use [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) conforme o protocolo do aplicativo. As capacidades variam por provedor; um endpoint comum não significa que todo modelo aceite todo parâmetro.
+
+Os [controles de roteamento](../guides/routing-and-fallbacks.mdx) permitem restringir provedores e escolher sua classificação. As alternativas continuam sujeitas às restrições e capacidade disponível; não garantem sucesso.
+
+## Cobrança e acesso
+
+Solicitações gerenciadas usam o saldo do espaço de trabalho Phaseo. Modelos `:free` funcionam sem créditos depositados. Com credenciais do provedor (BYOK), valem a cobrança e os limites da conta do provedor; revise [preços e cobrança](../pricing/tiers.mdx) antes do lançamento.
+
+As [tarefas de vídeo e lotes](../guides/async-video-and-batch.mdx) retornam uma tarefa antes de concluir o processamento. O acesso de prévia é gerenciado por espaço de trabalho. Consulte o status ou receba atualizações por webhook e baixe o resultado.
+
+## Crie sua integração
+
+- [Início rápido](../quickstart.mdx): faça sua primeira solicitação.
+- [Integre o Gateway](./integrating-with-the-gateway.mdx): mantenha credenciais no backend e configure o aplicativo.
+- [Confiabilidade e status](./reliability-and-status.mdx): investigue disponibilidade e solicitações com falha.
+- [Logs e observabilidade](../guides/integrations/observability.mdx): examine uso, latência, custo e erros.

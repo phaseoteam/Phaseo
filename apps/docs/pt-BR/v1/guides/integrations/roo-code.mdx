@@ -1,0 +1,65 @@
+---
+title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
+description: "Conecte o Roo Code ao Phaseo por meio de um perfil compatível com OpenAI."
+---
+
+Use a CLI Phaseo para criar uma chave dedicada e configure manualmente o perfil do provedor no Roo Code. O Roo Code mantém credenciais no armazenamento de segredos do VS Code, então a entrada final é feita na interface da extensão.
+
+## Configure com a CLI Phaseo
+
+```bash
+phaseo login
+phaseo roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Configure o Roo Code manualmente
+
+1. Abra o Roo Code no VS Code.
+2. Abra **Settings** e depois **Providers**.
+3. Crie um perfil de configuração do provedor e escolha **OpenAI Compatible**.
+4. Insira estes valores:
+
+| Campo do Roo Code | Valor |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | Saída de `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` ou o modelo informado pela configuração |
+
+5. Salve o perfil e deixe-o ativo.
+
+Os rótulos dos campos podem variar um pouco entre versões, mas o perfil precisa do endpoint, da chave e do ID exato do modelo.
+
+## Verificar
+
+Peça ao Roo Code que responda `PHASEO_ROO_OK` e confirme se a solicitação aparece na atividade do Phaseo.
+
+## Remover
+
+Exclua o perfil do Phaseo ou troque de perfil e execute:
+
+```bash
+phaseo integrations remove roo-code
+```
+
+A CLI não pode excluir valores do armazenamento privado da extensão no VS Code, mas a remoção revoga a chave.
+
+## Solução de problemas
+
+### Falha na autenticação
+
+Obtenha a chave novamente com `phaseo integrations credential roo-code`. Confirme se a URL base termina em `/v1`.
+
+### O Roo Code não encontra o modelo
+
+Insira manualmente o ID exato do modelo do Phaseo, incluindo o prefixo do provedor.
+
+### O chat funciona, mas as ferramentas falham
+
+Troque para um modelo compatível com chamadas de ferramentas.
+
+## Conteúdo relacionado
+
+- [Provedores de modelos do Roo Code](https://docs.roocode.com/providers/)
+- [Agentes de programação](./coding-assistants.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

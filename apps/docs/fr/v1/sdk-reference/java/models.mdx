@@ -1,0 +1,30 @@
+---
+icon: "brain-circuit"
+title: "Modèles"
+description: "Listez /models avec le SDK Java."
+---
+
+**Méthode** : `client.listModels(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+Object models = client.listModels(query);
+System.out.println(String.valueOf(models));
+```
+
+Les clés de requête courantes comprennent `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, `organisation`, `endpoints`, `input_types`, `output_types`, `params`, `availability`, `limit` et `offset`.
+
+Utilisez `provider_availability_reason` avec `availability=all` pour obtenir des états de déploiement comme `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` ou `soft_blocked`. Utilisez `capability_status` avec `availability=all` pour obtenir des correspondances d’endpoints non routables, comme `coming_soon` ou `internal_testing`.

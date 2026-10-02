@@ -1,0 +1,24 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "Java एजेंट की विफलता, अमान्य tool data और बाधित रन की जाँच करें।"
+---
+
+Transport और gateway failures को अमान्य tool या output data से अलग रखें। विफल रन में status, सक्रिय step, retry count, request ID, native response ID और gateway की उपलब्ध जानकारी बनी रहती है।
+
+## आम जाँच
+
+- Java process को `PHASEO_API_KEY` उपलब्ध है, यह जाँचें।
+- हर tool को अद्वितीय और स्थिर ID दें।
+- approval, rejection और manual output के लिए सटीक tool-call IDs दें।
+- किसी दूसरे request या worker को control लौटाने से पहले paused `RunResult` सहेजें।
+- Validators deterministic और side effect से मुक्त रखें।
+- जब तक ऐप स्पष्ट रूप से नया रन शुरू न करे, cancellation और timeout exceptions को अंतिम मानें।
+
+application telemetry के लिए lifecycle hook और स्थानीय run record के लिए DevTools उपयोग करें; केवल console output पर निर्भर न रहें।
+
+## संबंधित विषय
+
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)
+- [स्थिति और अनुमोदन](./agent-sdk-state-and-approval.mdx)

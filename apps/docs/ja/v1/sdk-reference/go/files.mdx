@@ -1,0 +1,41 @@
+---
+icon: "files"
+title: "ファイル"
+description: "Go SDKでファイルのメタデータと内容を取得します。"
+---
+
+**メソッド**: `client.ListFiles()`、`client.RetrieveFile()`、`client.RetrieveFileContent()`。
+
+```go
+import (
+  "fmt"
+  "context"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+<Note>
+`ListFiles()`はラッパーで利用できますが、現在`GET /files`は`file_list_not_supported_with_shared_gateway_key`を返します。
+共有ゲートウェイキーではこのエラーになります。アップロードしたファイルのIDを保存し、個別に取得してください。
+</Note>
+
+<Note>
+Goラッパーには、`POST /files`用の専用マルチパートアップロードヘルパーはまだありません。RESTを直接使うか、生成クライアントを利用してください。
+アップロードの動作を試す場合に使ってください。
+</Note>
+

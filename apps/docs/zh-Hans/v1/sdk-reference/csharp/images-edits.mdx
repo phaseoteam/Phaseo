@@ -1,0 +1,35 @@
+---
+icon: "pencil"
+title: "图像编辑"
+description: "使用 C# SDK 调用 /images/edits。"
+---
+
+**方法**：`client.CreateImageEdit(...)`
+
+### 示例
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.CreateImageEdit(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "Make it sunset",
+    ["image"] = "data:image/png;base64,...",
+    ["mask"] = "data:image/png;base64,..."
+});
+```
+
+### 关键参数
+- `model`（必填）：支持图像编辑的模型 ID。
+- `image`（必填）：源图像的流或文件。
+- `prompt`：可选的新编辑指令。
+- `mask`：可选蒙版（透明区域会被编辑）。
+- `n`（1–10）：编辑后生成的变体数量。
+- `size`：例如 `1024x1024`、`1024x1792`、`1792x1024`。
+- `response_format`：`url` 或 `b64_json`。
+- `user`：可选的终端用户标记。
+
+### 返回值
+`ImageGenerationResponse`
+

@@ -1,0 +1,30 @@
+---
+icon: "files"
+title: "Fichiers"
+description: "Utilisez le SDK Java pour téléverser des fichiers et récupérer leurs métadonnées et leur contenu."
+---
+
+**Méthodes** : `Phaseo#uploadFile(...)`, `Phaseo#listFiles(...)`, `Phaseo#retrieveFile(...)`, `Phaseo#retrieveFileContent(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(apiKey, "https://api.phaseo.app/v1");
+
+Object uploaded = client.uploadFile("""
+  {"purpose":"batch","file":"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="}
+  """);
+
+Object file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+
+System.out.println(String.valueOf(file));
+System.out.println(new String(content));
+```
+
+<Note>
+`listFiles(...)` est disponible dans le SDK, mais `GET /files` renvoie actuellement `file_list_not_supported_with_shared_gateway_key` avec la clé de passerelle partagée.
+Enregistrez les identifiants des fichiers téléversés et récupérez-les directement.
+</Note>

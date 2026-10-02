@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "Contribuir com código ou documentação"
+description: "Configure o Phaseo localmente, valide uma alteração focada e abra uma solicitação de alteração."
+---
+
+Use este fluxo para alterações de código e documentação. Para registros de modelos, provedores, preços, organizações ou benchmarks, [envie uma issue do catálogo](./overview.mdx); não é necessário configurar um ambiente local.
+
+## Configurar seu fork
+
+Instale Git, Node.js 22.12 ou mais recente e pnpm. Crie um fork do [repositório do Phaseo](https://github.com/phaseoteam/Phaseo), clone-o e crie uma nova branch:
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## Fazer e visualizar a alteração
+
+Consulte a [estrutura do repositório](./repo-structure.mdx) para localizar a aplicação ou pacote relevante. Para edições apenas em Markdown, você também pode usar o editor de arquivos do GitHub e abrir uma solicitação de alteração lá.
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+Siga as instruções relevantes de `AGENTS.md`. Mantenha segredos em arquivos de ambiente locais e fora dos commits. Prévias locais da aplicação podem exigir serviços de backend configurados e login normal.
+
+## Validar suas alterações
+
+Execute as verificações relevantes para os arquivos alterados. Para documentação:
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+Para alterações na web:
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+Execute uma compilação de produção para alterações de renderização ou roteamento. Alterações de API, SDK e esquema precisam dos testes e etapas de geração correspondentes. Consulte o [guia de contribuição](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md) na raiz.
+
+## Abrir uma solicitação de alteração
+
+Prepare apenas os arquivos alterados, use uma mensagem de commit descritiva e envie sua branch:
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+Abra uma solicitação de alteração a partir do seu fork. Explique o problema, o que mudou e quais verificações passaram. Inclua issues relacionadas e capturas para alterações visíveis de interface. Resolva os comentários da revisão antes da integração; as alterações ficam disponíveis após concluir a implantação correspondente.
+
+Siga o [Código de conduta](../community/code-of-conduct.mdx). Para alterações grandes ou incertas, discuta a proposta antes de escrever código.

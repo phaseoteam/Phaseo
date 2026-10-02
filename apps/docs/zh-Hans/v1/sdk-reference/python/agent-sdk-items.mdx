@@ -1,0 +1,22 @@
+---
+icon: "layers"
+title: "使用结果和项目"
+description: "根据消息、步骤、工具和流式项目构建 Python 运行时间线。"
+---
+
+`AgentRunResult` 包含持久化的运行状态、消息、步骤、用量和成本、警告、结束原因以及最终输出。
+
+使用 `text_stream()` 获取回答文本，使用 `item_stream()` 获取供应商和运行时项目。Python 项目目前采用字典结构，而不是 TypeScript 的判别联合类型 `AgentItem`。
+
+```python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+请将供应商专属字典的访问封装在一个应用适配器中，然后持久化完成结果，以便日后重建。
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)

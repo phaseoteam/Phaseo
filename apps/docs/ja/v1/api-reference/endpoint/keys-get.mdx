@@ -1,0 +1,13 @@
+---
+title: "APIキーを取得"
+sidebarTitle: "APIキーを取得"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /keys/{id}"
+description: "IDまたはハッシュでAPIキーを1つ取得します。"
+---
+<Note>
+このエンドポイントには管理APIキーが必要です。標準のGateway APIキーは使用できません。
+</Note>
+
+認証済みワークスペース内のAPIキー1つのメタデータを返します。パスの`{id}`には、キーの内部IDまたはAPIが返したキーのハッシュを指定できます。
+

@@ -1,0 +1,10 @@
+---
+title: "Mettre à jour une clé API"
+sidebarTitle: "Mettre à jour la clé API"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /keys/{id}"
+description: "Met à jour les métadonnées et l’état d’une clé API."
+---
+<Note>Ce point de terminaison nécessite une clé API de gestion. Les clés API Gateway standard ne sont pas acceptées.</Note>
+
+Utilisez cette route pour renommer une clé, ajuster ses périmètres, définir son expiration, la désactiver ou fixer un plafond de dépenses avec `limit` et `limit_reset`.

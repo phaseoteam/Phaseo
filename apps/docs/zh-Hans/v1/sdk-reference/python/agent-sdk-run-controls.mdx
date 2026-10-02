@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "输出与重试"
+description: "验证 Python Agent 输出，并对模型失败进行有限重试。"
+---
+
+如果下游 Python 代码需要结构化数据，请验证最终输出。验证回调应具有确定性，并在最终值不符合应用约定时抛出错误。
+
+使用 `AgentModelRetryConfig` 配置有限重试：
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+已完成步骤会保留最终模型尝试次数。工具错误遵循自己的策略，不会作为模型请求重试。
+
+网关客户端接受结构化输出、路由、供应商、推理、托管工具、插件、提示缓存和其他请求选项。
+
+## 相关内容
+
+- [动态轮次](./agent-sdk-dynamic-turns.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [错误与故障排查](./agent-sdk-observability.mdx)

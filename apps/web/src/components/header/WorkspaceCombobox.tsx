@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useState } from "react";
 import type { UIEvent } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -62,6 +63,8 @@ export function WorkspaceCombobox({
 	align = "end",
 	onSelect,
 }: WorkspaceComboboxProps) {
+	const t = useTranslations("Common.ui.workspaceSwitcher");
+	const tNav = useTranslations("Common.nav");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -142,9 +145,9 @@ export function WorkspaceCombobox({
 						type="button"
 						variant="ghost"
 						size="icon"
-						aria-label={`Choose workspace: ${activeWorkspace?.name ?? "Personal Workspace"}`}
+						aria-label={t("chooseNamed", { workspace: activeWorkspace?.name ?? tNav("personalWorkspace") })}
 						aria-expanded={open}
-						title={activeWorkspace?.name ?? "Personal Workspace"}
+						title={activeWorkspace?.name ?? tNav("personalWorkspace")}
 						className={cn(
 							"size-[var(--site-header-control-h,2.25rem)] rounded-full p-0",
 							"bg-transparent hover:bg-zinc-100/70 dark:hover:bg-zinc-900/60",
@@ -157,7 +160,7 @@ export function WorkspaceCombobox({
 				) : (
 					<Button
 						variant="ghost"
-						aria-label="Choose workspace"
+						aria-label={tNav("openWorkspaceSwitcher")}
 						aria-expanded={open}
 						className={cn(
 							"inline-flex h-[var(--site-header-control-h,2.25rem)] max-w-56 items-center gap-2 rounded-lg px-3 leading-none",
@@ -166,7 +169,7 @@ export function WorkspaceCombobox({
 						)}
 					>
 						<span className="max-w-40 truncate text-sm font-medium" title={activeWorkspace?.name}>
-							{activeWorkspace?.name ?? "Personal Workspace"}
+							{activeWorkspace?.name ?? tNav("personalWorkspace")}
 						</span>
 						<ChevronDown className={cn("size-4 shrink-0 text-zinc-500 transition-transform", open && "rotate-180")} aria-hidden="true" />
 					</Button>
@@ -183,8 +186,8 @@ export function WorkspaceCombobox({
 						wrapperClassName="p-2 pb-0"
 						value={search}
 						onValueChange={setSearch}
-						placeholder="Search all workspaces"
-						aria-label="Search all workspaces"
+						placeholder={t("searchAll")}
+						aria-label={t("searchAll")}
 						autoFocus
 					/>
 					<ScrollArea
@@ -197,23 +200,23 @@ export function WorkspaceCombobox({
 						<CommandList className="max-h-none scroll-py-1 overflow-visible p-0">
 							{isSearching ? (
 								isDebouncing || isLoading ? (
-									<div role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">Searching workspaces…</div>
+									<div role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">{t("searching")}</div>
 								) : isSearchingError ? (
 									<div role="alert" className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-										<span>Unable to search workspaces.</span>
-										<button type="button" className="font-medium text-foreground underline underline-offset-4" onClick={() => void searchQuery.refetch()}>Try again</button>
+										<span>{t("searchFailed")}</span>
+										<button type="button" className="font-medium text-foreground underline underline-offset-4" onClick={() => void searchQuery.refetch()}>{t("tryAgain")}</button>
 									</div>
 								) : listedWorkspaces.length === 0 ? (
-									<CommandEmpty>No workspaces found.</CommandEmpty>
+									<CommandEmpty>{t("noResults")}</CommandEmpty>
 								) : null
 							) : normalizedSearch.length === 1 ? (
-								<div role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">Enter one more character to search all workspaces.</div>
+								<div role="status" className="px-3 py-6 text-center text-sm text-muted-foreground">{t("enterMore")}</div>
 							) : workspaces.length === 0 ? (
-								<CommandEmpty>No workspaces available.</CommandEmpty>
+								<CommandEmpty>{t("noneAvailable")}</CommandEmpty>
 							) : null}
 							{(!isSearching || (!isDebouncing && !isLoading && !isSearchingError)) && listedWorkspaces.length > 0 ? (
 								<CommandGroup
-									heading={isSearching ? "Search results" : undefined}
+									heading={isSearching ? t("searchResults") : undefined}
 									className="flex flex-col gap-1 p-2 pr-4 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-1"
 								>
 									{listedWorkspaces.map((workspace) => {
@@ -233,7 +236,7 @@ export function WorkspaceCombobox({
 								</CommandGroup>
 							) : null}
 							{isSearching && listedWorkspaces.length > 0 && searchQuery.isFetchingNextPage ? (
-								<div role="status" className="px-3 py-2 text-center text-xs text-muted-foreground">Loading more…</div>
+								<div role="status" className="px-3 py-2 text-center text-xs text-muted-foreground">{t("loadingMore")}</div>
 							) : null}
 						</CommandList>
 					</ScrollArea>
@@ -244,7 +247,7 @@ export function WorkspaceCombobox({
 					className="flex min-h-11 shrink-0 items-center gap-2 border-t px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					<Users className="size-4" aria-hidden="true" />
-					Manage Workspaces
+					{tNav("workspaces")}
 				</Link>
 			</PopoverContent>
 		</Popover>

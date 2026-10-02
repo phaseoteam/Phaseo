@@ -1,0 +1,271 @@
+---
+title: "エラーとデバッグ"
+description: "Phaseo のエラーの意味を理解し、リクエスト、プロバイダー、ルーティングの一般的な問題をすばやく解決します。"
+icon: "bug"
+---
+
+このページでは、Phaseo のエラーの意味と、次に取るべき対応を確認できます。
+
+すべてのエラーレスポンスは共通の JSON 形式です。モデルやプロバイダーにかかわらず、アプリケーションで一貫して失敗を処理できます。
+
+## エラーレスポンスの例
+
+```json
+{
+  "generation_id": "G-abc123",
+  "status_code": 502,
+  "error": "upstream_error",
+  "error_type": "system",
+  "error_origin": "upstream",
+  "reason": "all_candidates_failed",
+  "description": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+  "attempt_count": 1,
+  "failed_providers": ["google-ai-studio"],
+  "failed_statuses": [403],
+  "provider_failure_diagnostics": {
+    "category": "provider_access_missing",
+    "hint": "The provider account appears not to have access to this model or feature yet. Verify account entitlements and provider-side access.",
+    "provider": "google-ai-studio"
+  },
+  "upstream_error": {
+    "code": "PERMISSION_DENIED",
+    "message": "The caller does not have permission.",
+    "description": null,
+    "param": null
+  },
+  "failure_sample": [
+    {
+      "provider": "google-ai-studio",
+      "type": "upstream_non_2xx",
+      "status": 403,
+      "upstream_error_code": "PERMISSION_DENIED",
+      "upstream_error_message": "The caller does not have permission.",
+      "upstream_error_description": null,
+      "upstream_error_param": null,
+      "upstream_payload_preview": "{\"error\":{\"status\":\"PERMISSION_DENIED\"}}",
+      "retryable": false
+    }
+  ]
+}
+```
+
+## 常に含まれるフィールド
+
+- `generation_id`: サポートに共有できる安定したリクエスト ID。
+- `status_code`: HTTP ステータスコードと同じ値。
+- `error`: `validation_error` などの機械可読なエラーコード。
+- `error_type`: 通常 `user` または `system` の大分類。
+- `error_origin`: 主な原因が呼び出し元、Phaseo、上流プロバイダーのいずれかを示します。
+- `description`: 発生した内容を平易に説明します。
+- `details`（任意）: リクエスト検証エラーの構造化された詳細。
+
+## 追加で表示されるフィールド
+
+問題を早く解決できるよう、エラーによっては次の情報も含まれます。
+
+- `reason`: `all_candidates_failed` や `pricing_not_configured` など、より具体的な理由。
+- `provider_candidate_diagnostics` と `provider_enablement`: 指定されたエンドポイントでモデルを使用できなかった理由。
+- `routing_diagnostics`: ルーティングや可用性チェックで候補が絞り込まれた詳細。
+- `provider_failure_diagnostics`: 認証情報やアクセスの不足、地域制限、レート制限など、プロバイダー側の失敗に関するヒント。
+- `upstream_error` と `failure_sample`: リクエストがプロバイダーまで届いた場合に、最初のプロバイダーエラーを可能な範囲で要約します。
+- `failed_providers`、`failed_statuses`、`attempt_count`: 再試行とフェイルオーバーに関する追加情報。
+
+## ステータスクラスの見方
+
+| ステータス | 意味 | 推奨する対応 |
+| --- | --- | --- |
+| `400-499` | リクエスト、認証、権限の問題 | 再試行する前にリクエストまたは認証情報を修正します。 |
+| `429` | プロバイダーまたはルート単位のスロットリング | バックオフして再試行し、`Retry-After` に従います。 |
+| `500-599` | Phaseo または上流プロバイダーの障害 | ジッター付きバックオフで再試行し、リクエスト ID をログに記録します。 |
+
+## よくあるエラーコード
+
+| 種類 | HTTP ステータス | 説明 |
+| --- | --- | --- |
+| `authentication_error` | `401` | API キーがないか、無効です。 |
+| `authorization_error` | `403` | このキーには対象のリソースへのアクセス権がありません。 |
+| `not_found_error` | `404` | エンドポイントまたはリソースが見つかりません。 |
+| `rate_limit_error` | `429` | リクエストが多すぎます。指定された時間が経過してから再試行してください。 |
+| `validation_error` | `400` | パラメーターまたはリクエスト本文が無効です。 |
+| `provider_error` | `502` | 上流のモデルプロバイダーが正しく応答しませんでした。 |
+| `server_error` | `500` | Phaseo 内部で予期しない問題が発生しました。 |
+
+## プロバイダーのエラー
+
+Phaseo がプロバイダーに到達したものの、リクエストが失敗した場合は、次の情報が表示されることがあります。
+
+- `provider_failure_diagnostics.category`
+- `provider_failure_diagnostics.hint`
+- `provider_failure_diagnostics.provider`
+
+現在のカテゴリは次のとおりです。
+
+- `credentials_not_configured`
+- `credentials_invalid_or_forbidden`
+- `provider_access_missing`
+- `region_or_project_restriction`
+- `model_unavailable_for_endpoint`
+- `rate_limited`
+- `server_error`
+
+これらのフィールドを使うと、完全なデバッグモードを有効にせずに問題を解決できます。
+
+## モデルまたはエンドポイントが利用できない場合
+
+`unsupported_model_or_endpoint` のレスポンスには、次の情報が含まれる場合があります。
+
+- `provider_candidate_diagnostics`
+- `provider_enablement`
+- `missing_pricing_providers`
+- `routing_diagnostics`
+
+これらの情報を使って、次の状態を見分けます。
+
+- 既知だが、まだ有効になっていないモデル
+- 要求されたエンドポイントに対応していないモデル
+- 料金データの不足
+- ロールアウトまたは内部可用性の制限
+
+よく使われるフィールド：
+
+- `provider_candidate_diagnostics.totalProviders`: エンドポイントのフィルタリング前に、そのモデルで認識されていたプロバイダーの数。
+- `provider_candidate_diagnostics.supportsEndpointCount`: 要求されたエンドポイントに対応するプロバイダーの数。
+- `provider_candidate_diagnostics.candidateCount`: アダプターの確認後に残ったプロバイダーの数。
+- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: そのエンドポイントに対応していないため除外されたプロバイダー。
+- `provider_candidate_diagnostics.droppedMissingAdapter`: そのエンドポイント用の Gateway アダプターがまだ存在せず、除外されたプロバイダーとエンドポイントの組み合わせ。
+- `provider_enablement.capability`: `video_generation` など、適用される機能ゲート。
+- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: 機能または有効化フィルター適用前後のプロバイダー。
+- `provider_enablement.dropped[].reason`: `pricing_missing` などの機械可読な理由。
+- `routing_diagnostics.filterStages[].stage`: 機能、ロールアウト、ルーティング状態などのルーティング段階。
+- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: 各段階の前後に残ったプロバイダー数。
+- `routing_diagnostics.filterStages[].droppedProviders[].reason`: ロールアウトやルーティングの制限などの機械可読な理由。
+
+### 例
+
+```json
+{
+  "generation_id": "G-unsupported123",
+  "status_code": 400,
+  "error": "unsupported_model_or_endpoint",
+  "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+  "provider_candidate_diagnostics": {
+    "totalProviders": 3,
+    "supportsEndpointCount": 2,
+    "candidateCount": 1,
+    "droppedUnsupportedEndpoint": ["provider-a"],
+    "droppedMissingAdapter": [
+      {
+        "providerId": "provider-b",
+        "endpoint": "responses"
+      }
+    ]
+  },
+  "provider_enablement": {
+    "capability": "responses",
+    "providersBefore": ["provider-b", "provider-c"],
+    "providersAfter": ["provider-c"],
+    "dropped": [
+      {
+        "providerId": "provider-b",
+        "reason": "pricing_missing"
+      }
+    ]
+  },
+  "routing_diagnostics": {
+    "filterStages": [
+      {
+        "stage": "provider_routing_status",
+        "beforeCount": 1,
+        "afterCount": 0,
+        "droppedProviders": [
+          {
+            "providerId": "provider-c",
+            "reason": "provider_status_not_ready"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## 任意のデバッグモード
+
+ほとんどのリクエストスキーマは、制御されたトラブルシューティング用の `debug` オブジェクトに対応しています。
+
+```json
+{
+  "debug": {
+    "enabled": true,
+    "return_upstream_request": true,
+    "return_upstream_response": false,
+    "trace": true,
+    "trace_level": "summary"
+  }
+}
+```
+
+利用可能なフィールド：
+
+- `enabled`
+- `return_upstream_request`
+- `return_upstream_response`
+- `trace`
+- `trace_level`（`summary` または `full`）
+
+デバッグモードは、開発時または厳格に管理された環境でのみ使用してください。
+
+## 再試行の方針
+
+- **429 以外の 400 番台のエラー：**再試行する前に、リクエスト、認証情報、またはアクセスポリシーを修正してください。
+- **429:** 指数バックオフを実装し、`Retry-After` ヘッダーに従います。
+- **500 番台のエラー：**操作を安全に繰り返せる場合に限り、上限を設けて再試行してください。結果が不明な送信でも、すでにジョブが作成されたり料金が発生したりしている可能性があります。受け付け済みのジョブは、再送信せずに取得してください。
+
+試行回数の上限と全体の期限を設定し、バックオフの待機時間にランダムな揺らぎを加えてください。レスポンスヘッダーと再試行の処理については、[レート制限](./limits.mdx)を参照してください。
+
+## ストリーミング固有の注意点
+
+- ストリーミング開始前に失敗すると、通常の JSON エラーペイロードが返されます。
+- ストリームの途中で失敗した場合は、部分的なストリームを未完了として扱い、再試行を提案します。
+- 必ず `generation_id` とエンドポイント、モデルのメタデータをログに記録します。
+
+## トラブルシューティングのヒント
+
+- [Gateway のステータスページ](https://status.phaseo.app)で進行中のインシデントを確認します。
+- リクエスト本文をエンドポイントのドキュメントと照合します。
+- サポートに連絡する際は `generation_id` を共有してください。
+
+## 関連リソース
+
+<Columns cols={2}>
+	<Card
+		title="認証"
+		icon="key"
+		href="../developers/authentication.mdx"
+	>
+		Bearer API キーで認証します。
+	</Card>
+	<Card
+		title="制限"
+		icon="gauge"
+		href="./limits.mdx"
+	>
+		プロバイダーが適用するスロットリングと再試行を処理します。
+	</Card>
+	<Card
+		title="ストリーミング"
+		icon="radio"
+		href="../guides/streaming.mdx"
+	>
+		本番ワークフローで SSE を安全に使用します。
+	</Card>
+</Columns>
+
+<Visibility for="agents">
+エージェントとしてエラー処理を実装する場合：
+
+- 再試行ロジック、構造化ログ、スキーマに沿った安全なエラー解析にはリポジトリのスキルを使用します。
+- デバッグペイロードは機密情報を含む可能性があるため、永続ログに保存する前にマスキングします。
+- 無制限のループではなく、上限付き試行とジッターによる決定的な再試行を優先します。
+</Visibility>
+

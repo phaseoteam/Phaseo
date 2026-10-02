@@ -1,0 +1,65 @@
+---
+title: "Roo Code"
+icon: "/icons/brands/roo-code.svg"
+description: "OpenAI-संगत profile के ज़रिए Roo Code को Phaseo से जोड़ें।"
+---
+
+Phaseo CLI से समर्पित कुंजी बनाएँ और Roo Code का प्रदाता प्रोफ़ाइल हाथ से सेट करें। Roo Code क्रेडेंशियल VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
+
+## Phaseo CLI से सेटअप करें
+
+```bash
+phaseo login
+phaseo roo-code --model anthropic/claude-sonnet-4.6
+```
+
+## Roo Code को हाथ से सेट करें
+
+1. VS Code में Roo Code खोलें।
+2. **Settings** खोलें, फिर **Providers** पर जाएँ।
+3. Provider configuration profile बनाएँ और **OpenAI Compatible** चुनें।
+4. ये मान दर्ज करें:
+
+| Roo Code field | मान |
+| --- | --- |
+| Base URL | `https://api.phaseo.app/v1` |
+| API Key | इस कमांड का आउटपुट `phaseo integrations credential roo-code` |
+| Model | `anthropic/claude-sonnet-4.6` या सेटअप में दिखाया गया मॉडल |
+
+5. Profile save करें और उसे active करें।
+
+अलग-अलग releases में field labels थोड़े बदल सकते हैं, लेकिन profile में endpoint, key और exact model ID होना चाहिए।
+
+## जाँचें
+
+Roo Code से `PHASEO_ROO_OK` जवाब देने को कहें, फिर Phaseo activity में request दिखने की पुष्टि करें।
+
+## हटाएँ
+
+Phaseo profile delete करें या दूसरा profile चुनें, फिर यह चलाएँ:
+
+```bash
+phaseo integrations remove roo-code
+```
+
+CLI, VS Code के private extension storage से values delete नहीं कर सकता, लेकिन removal से key revoke हो जाती है।
+
+## समस्या निवारण
+
+### प्रमाणीकरण विफल
+
+`phaseo integrations credential roo-code` से key फिर प्राप्त करें। सुनिश्चित करें कि Base URL का अंत `/v1` से हो।
+
+### Roo Code को मॉडल नहीं मिलता
+
+Provider prefix सहित Phaseo model की exact ID manually दर्ज करें।
+
+### चैट काम करता है, लेकिन टूल विफल होते हैं
+
+Tool calling support वाले model पर switch करें।
+
+## संबंधित विषय
+
+- [Roo Code के मॉडल प्रदाता](https://docs.roocode.com/providers/)
+- [कोडिंग एजेंट](./coding-assistants.mdx)
+- [मॉडल](../../api-reference/endpoint/models.mdx)

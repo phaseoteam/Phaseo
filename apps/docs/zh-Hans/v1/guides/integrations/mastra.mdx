@@ -1,0 +1,44 @@
+---
+title: "Mastra"
+icon: "workflow"
+description: "在 Mastra Agent 和工作流中使用 Phaseo 模型。"
+---
+
+Mastra 支持 AI SDK 供应商，因此最简单的方式是创建一个指向 Phaseo 的 OpenAI 兼容供应商。
+
+## 安装
+
+```bash
+npm install @mastra/core @ai-sdk/openai ai
+```
+
+## 配置 Agent
+
+```ts
+import { Agent } from "@mastra/core/agent";
+import { createOpenAI } from "@ai-sdk/openai";
+
+const phaseo = createOpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+	compatibility: "compatible",
+});
+
+export const agent = new Agent({
+	name: "support-agent",
+	instructions: "Answer in two short paragraphs.",
+	model: phaseo("openai/gpt-5-nano"),
+});
+```
+
+## 说明
+
+- 只使用 Base URL，不要添加 `/chat/completions` 或 `/responses`。
+- Mastra Agent 的行为取决于 AI SDK 供应商路径。上线前请测试工具和流式传输。
+- 需要设置供应商偏好时，可按请求使用 Phaseo 路由控制，也可通过 presets 设置。
+
+## 相关内容
+
+- [AI SDK](./ai-sdk.mdx)
+- [预设](../presets.mdx)
+- [工具调用](../tool-calling.mdx)

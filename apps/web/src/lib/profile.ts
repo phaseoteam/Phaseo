@@ -16,8 +16,6 @@ export type HeatmapDay = {
 	requests: number
 	tokens: number
 	spendNanos: number
-	monthLabel: string | null
-	weekdayLabel: string | null
 	inTrailingWindow: boolean
 	isFuture: boolean
 }
@@ -107,15 +105,20 @@ export function calculatePeriodChange(current: number, previous: number): number
 	return ((current - previous) / previous) * 100
 }
 
-export function formatCompactNumber(value: number): string {
-	return new Intl.NumberFormat("en", {
+export function formatCompactNumber(value: number, locale = "en"): string {
+	return new Intl.NumberFormat(locale, {
 		maximumFractionDigits: value >= 100 ? 0 : 1,
 		notation: value >= 1000 ? "compact" : "standard",
 	}).format(value)
 }
 
-export function formatUsdFromNanos(nanos: number): string {
-	return `$${(nanos / 1_000_000_000).toFixed(4)}`
+export function formatUsdFromNanos(nanos: number, locale = "en"): string {
+	return new Intl.NumberFormat(locale, {
+		style: "currency",
+		currency: "USD",
+		minimumFractionDigits: 4,
+		maximumFractionDigits: 4,
+	}).format(nanos / 1_000_000_000)
 }
 
 export function buildHeatmapDays(
@@ -131,7 +134,6 @@ export function buildHeatmapDays(
 	const gridStart = shiftUtcDays(gridEnd, -(weeks * 7) + 1)
 
 	const days: HeatmapDay[] = []
-	let previousMonth = ""
 
 	for (let cursor = new Date(gridStart); cursor <= gridEnd; cursor = shiftUtcDays(cursor, 1)) {
 		const key = toUtcDateKey(cursor)
@@ -139,32 +141,14 @@ export function buildHeatmapDays(
 		const requests = totals?.requests ?? 0
 		const tokens = totals?.tokens ?? 0
 		const spendNanos = totals?.spendNanos ?? 0
-		const month = cursor.toLocaleString("en", { month: "short", timeZone: "UTC" })
-		const isMonthAnchor = cursor.getUTCDate() <= 7 && month !== previousMonth
-
 		days.push({
 			date: key,
 			requests,
 			tokens,
 			spendNanos,
-			monthLabel: isMonthAnchor ? month : null,
-			weekdayLabel:
-				cursor.getUTCDay() === 1
-					? "M"
-					: cursor.getUTCDay() === 2
-						? "T"
-						: cursor.getUTCDay() === 3
-							? "W"
-							: cursor.getUTCDay() === 4
-								? "T"
-								: cursor.getUTCDay() === 5
-									? "F"
-									: "S",
 			inTrailingWindow: key >= trailingStartKey && key <= todayKey,
 			isFuture: key > todayKey,
 		})
-
-		previousMonth = month
 	}
 
 	return days

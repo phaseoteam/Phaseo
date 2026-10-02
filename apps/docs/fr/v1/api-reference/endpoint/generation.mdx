@@ -1,0 +1,23 @@
+---
+title: "Récupérer une génération"
+sidebarTitle: "Récupérer une génération"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /generations"
+---
+Récupère l’enregistrement d’audit stocké pour un `request_id` associé à votre équipe.
+
+Utilisez :
+- `GET /v1/generations?id=<request_id>`
+
+Si la passerelle a enregistré tous les détails de la requête de cette génération, la réponse inclut également :
+
+- `replay_supported` : indique si une charge utile prête à être rejouée est disponible
+- `replay_request` : le corps de requête stocké que vous pouvez renvoyer au point de terminaison d’origine pour une nouvelle exécution contrôlée
+
+Procédure habituelle de rejeu :
+
+1. Lisez l’enregistrement de génération avec `GET /v1/generations?id=<request_id>`.
+2. Vérifiez que `replay_supported === true`.
+3. Renvoyez `replay_request` au point de terminaison d’origine indiqué par `endpoint`, par exemple `/v1/chat/completions` ou `/v1/responses`.
+
+

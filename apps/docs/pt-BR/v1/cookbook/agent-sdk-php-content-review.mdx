@@ -1,0 +1,67 @@
+---
+title: "Revise conteúdo de CMS com o Agent SDK para PHP"
+icon: "file-check"
+description: "Use o Agent SDK para PHP para incluir uma ferramenta local de consulta de conteúdo em um loop de revisão limitado."
+---
+
+Use esta receita quando um app PHP ou seu painel administrativo precisar de ajuda para revisar conteúdo rapidamente, sem delegar a orquestração a outro sistema.
+
+## 1. Prepare os SDKs
+
+<Note type="warning">O pacote PHP Agent SDK ainda não está disponível no Packagist. Siga as [instruções de instalação a partir do código-fonte](../sdk-reference/php/agent-sdk-installation.mdx).</Note>
+
+## 2. Defina uma ferramenta de consulta de conteúdo
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. Crie e execute o agente
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## Quando esta receita é adequada
+
+- o app PHP já controla a fonte do conteúdo
+- uma ou duas ferramentas locais são suficientes
+- você quer um loop limitado em vez de uma plataforma de orquestração mais ampla
+
+## Relacionados
+
+- [Agent SDK para PHP](../sdk-reference/php/agent-sdk.mdx)
+- [Recupere JSON estruturado malformado](./response-healing-for-structured-json.mdx)

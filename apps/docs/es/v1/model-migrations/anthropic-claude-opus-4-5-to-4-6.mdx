@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "Aspectos clave para adoptar Claude Opus 4.6, incluidas las salidas estructuradas, el pensamiento adaptativo y los prefills."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+Usa esta guía para incorporar `anthropic/claude-opus-4.6` de forma segura en producción.
+
+La migración a Claude Opus 4.6 no consiste solo en cambiar el ID del modelo. La guía de Anthropic incluye cambios en las solicitudes, la retirada de indicadores beta y un comportamiento más estricto con los prefills.
+
+## Novedades
+
+- Los prefills del asistente ya no son compatibles con Claude 4.6 y ahora devuelven `400`.
+- Las salidas estructuradas pasan de `output_format` a `output_config.format`.
+- El pensamiento adaptativo se configura mediante `output_config.effort`.
+- Se deben quitar las cabeceras beta obsoletas.
+- Opus 4.6 ya no necesita la cabecera beta `interleaved-thinking-2025-05-14`.
+- Opus 4.6 añade una ventana de contexto de 1 millón de tokens en beta y mejora las tareas largas de programación y agentes.
+
+## Inicio rápido de la migración
+
+### 1. Quita los prefills del asistente
+
+Si forzabas JSON o un prefijo de respuesta iniciando parcialmente el turno del asistente, ese patrón falla en 4.6. Traslada ese control a:
+
+- instrucciones del sistema más claras
+- ejemplos en el prompt del usuario o del sistema
+- salidas estructuradas mediante `output_config.format`
+
+### 2. Migra las salidas estructuradas
+
+Si aún envías `output_format`, actualiza el cuerpo de la solicitud para usar `output_config.format`.
+
+### 3. Revisa la configuración del pensamiento
+
+Si dependías de versiones beta antiguas del pensamiento, migra al ajuste `effort` actual dentro de `output_config` y vuelve a probar las rutas sensibles a la latencia.
+
+### 4. Quita los indicadores beta obsoletos
+
+Revisa las cabeceras beta codificadas en wrappers de SDK, middleware y presets de Gateway. Mantener indicadores obsoletos provoca errores innecesarios durante el despliegue.
+
+## Qué probar
+
+### Comportamiento de los prompts
+
+- Prompts largos de programación y refactorización.
+- Flujos de investigación o documentos con varios pasos.
+- Prompts que antes dependían de prefills del asistente.
+- Tareas con mucho contexto si planeas usar la ventana beta de 1 millón de tokens.
+
+### Contratos y herramientas
+
+- Tasa de validación de esquemas después de migrar a `output_config.format`.
+- Calidad de los argumentos de llamadas a herramientas en tareas de agentes con varios pasos.
+- Reintentos cuando el modelo rechaza o reformatea una salida.
+- Manejo de regresiones en revisión de código y depuración.
+
+### Operaciones
+
+- Latencia mediana y p95 con los nuevos ajustes de pensamiento.
+- Consumo de tokens en ejecuciones largas.
+- Tasa de tiempo de espera en tareas con contexto amplio.
+- Tasa de éxito frente a Opus 4.5 con tu conjunto de evaluaciones de producción.
+
+## Despliegue seguro
+
+1. Quita los prefills y migra la configuración de salida estructurada antes de desviar tráfico.
+2. Ejecuta Opus 4.6 en paralelo con los prompts de producción que más te importan.
+3. Prueba el tráfico gradualmente y conserva Opus 4.5 como alternativa.
+4. Aumenta el tráfico solo cuando las tasas de esquemas, latencia y finalización de tareas sean estables.
+
+## Fuentes
+
+- [Guía de migración de Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Presentación de Claude Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6)

@@ -1,6 +1,7 @@
 import type { ElementType } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface ModelTypeHeaderProps {
 	title: string;
@@ -21,6 +22,7 @@ export default function ModelTypeHeader({
 	accentClass,
 	badgeClass,
 }: ModelTypeHeaderProps) {
+	const t = useTranslations("Catalogue.providerModelList");
 	return (
 		<div className="rounded-2xl border border-neutral-200 bg-gradient-to-br from-white via-white to-neutral-50 p-4 shadow-sm sm:p-6">
 			<div className="flex flex-wrap items-start justify-between gap-3">
@@ -44,7 +46,7 @@ export default function ModelTypeHeader({
 					variant="secondary"
 					className={cn("text-xs", badgeClass)}
 				>
-					{count} models
+					{t("modelsCount", {count})}
 				</Badge>
 			</div>
 			{helper && (

@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "PHP एजेंट में model, tool, validation, timeout और continuation failures संभालें।"
+---
+
+Agent की विफलता आम तौर पर model request, स्थानीय tool, schema validation, timeout या मानवीय निर्णय की कमी से होती है।
+
+## टूल की त्रुटि से उबरना
+
+जब मॉडल tool error से उबर सकता हो, तो `onError: "return-to-model"` सेट करें। error structured tool result बन जाता है और रन दूसरी कार्रवाई चुन सकता है। असुरक्षित या recover न हो सकने वाले कामों के लिए fail-run व्यवहार रखें।
+
+## PHP का निष्पादन समझें
+
+PHP tool callback synchronous चलते हैं। इसलिए tool concurrency और interruption PHP runtime तथा underlying I/O client से सीमित होते हैं। network और process tools पर स्पष्ट timeout सेट करें और यह न मानें कि timed-out callback को हमेशा ज़बरन रोका जा सकता है।
+
+## आगे जारी रखने के दौरान आई त्रुटियों की जाँच करें
+
+हर pending call के लिए tool-call ID से जुड़ा approval, rejection या बाहर से दिया गया output चाहिए। approval UI दिखाने से पहले लौटाई गई पूरी run state सहेजें।
+
+## उपयोगी फ़ील्ड लॉग करें
+
+रन ID, चरण इंडेक्स, अनुरोध ID, प्रदाता, मॉडल, समाप्ति कारण, टूल-कॉल ID और रुकने का कारण दर्ज करें। कच्चे प्रॉम्प्ट और क्रेडेंशियल लॉग करने के बजाय जीवनचक्र हुक या DevTools का उपयोग करें। raw prompt और credentials log करने के बजाय lifecycle hook या DevTools उपयोग करें।

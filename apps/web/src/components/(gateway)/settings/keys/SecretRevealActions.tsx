@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useTranslations } from "next-intl";
 import {
 	Check,
 	ChevronDown,
@@ -10,6 +11,7 @@ import {
 	TestTube2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +66,7 @@ function CopyTextButton({
 	onCopied,
 	variant = "outline",
 }: CopyTextButtonProps) {
+	const t = useTranslations("SettingsUI");
 	const [copied, setCopied] = React.useState(false);
 
 	async function copy() {
@@ -73,14 +76,14 @@ function CopyTextButton({
 			window.setTimeout(() => setCopied(false), 2000);
 			onCopied?.();
 		} catch {
-			toast.error("Could not copy to clipboard");
+			toast.error(t("strings.Could not copy to clipboard" as never));
 		}
 	}
 
 	return (
 		<Button type="button" variant={variant} size="sm" onClick={copy}>
 			{copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-			{copied ? "Copied" : children}
+			{copied ? t("strings.Copied" as never) : children}
 		</Button>
 	);
 }
@@ -95,6 +98,7 @@ export function SecretRevealActions({
 	baseUrl = AI_STATS_GATEWAY_BASE_URL,
 	enableTest = kind === "api-key",
 }: SecretRevealActionsProps) {
+	const t = useTranslations("SettingsUI");
 	const [testState, setTestState] = React.useState<
 		"idle" | "testing" | "success" | "error"
 	>("idle");
@@ -124,16 +128,14 @@ export function SecretRevealActions({
 			});
 			if (body?.ok === false) {
 				throw new Error(
-					body?.message || "The key could not be verified right now.",
+					body?.message || t("strings.phraseTheKeyCouldNotBeVerifiedRightNow" as never),
 				);
 			}
 			setTestState("success");
-			toast.success("Key works");
+			toast.success(t("strings.Key works" as never));
 		} catch (error) {
 			setTestState("error");
-			toast.error(
-				error instanceof Error ? error.message : "Could not test API key",
-			);
+			toast.error(localizedSettingsError(error, t, "Could not test API key"));
 		}
 	}
 
@@ -143,22 +145,22 @@ export function SecretRevealActions({
 				<CopyTextButton
 					value={secret}
 					variant="default"
-					onCopied={() => toast.success("Copied key")}
+					onCopied={() => toast.success(t("strings.Copied key" as never))}
 				>
-					Copy key
+					{t("strings.Copy key" as never)}
 				</CopyTextButton>
 				<CopyTextButton
 					value={envFile}
-					onCopied={() => toast.success("Copied .env")}
+					onCopied={() => toast.success(t("strings.phraseCopiedEnv" as never))}
 				>
-					Copy .env
+					{t("strings.phraseCopyEnv" as never)}
 				</CopyTextButton>
 
 				{kind === "api-key" ? (
 					<DropdownMenu>
 						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
 
-								Copy config
+								{t("strings.Copy config" as never)}
 								<ChevronDown className="h-4 w-4" />
 
 						</DropdownMenuTrigger>
@@ -170,7 +172,7 @@ export function SecretRevealActions({
 										void navigator.clipboard
 											.writeText(snippet.value)
 											.then(() => toast.success(`Copied ${snippet.label}`))
-											.catch(() => toast.error("Could not copy config"));
+											.catch(() => toast.error(t("strings.Could not copy config" as never)));
 									}}
 									className="rounded-lg"
 								>
@@ -186,7 +188,7 @@ export function SecretRevealActions({
 						<DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
 
 								<Download className="h-4 w-4" />
-								Export
+								{t("strings.Export" as never)}
 								<ChevronDown className="h-4 w-4" />
 
 						</DropdownMenuTrigger>
@@ -200,7 +202,7 @@ export function SecretRevealActions({
 											item.content,
 											item.mimeType,
 										);
-										toast.success(`Downloaded ${item.label} collection`);
+										toast.success(`${t("strings.Downloaded" as never)} ${item.label} ${t("strings.collection" as never)}`);
 									}}
 									className="rounded-lg"
 								>
@@ -224,26 +226,25 @@ export function SecretRevealActions({
 						) : (
 							<TestTube2 className="h-4 w-4" />
 						)}
-						{testState === "testing" ? "Testing..." : "Test key"}
+						{testState === "testing" ? t("strings.phraseTesting" as never) : t("strings.Test key" as never)}
 					</Button>
 				) : null}
 			</div>
 
 			<div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-t border-border/60 pt-3">
 				<OnePasswordSaveButton
-					title={name || "AI Stats API key"}
+					title={name || t("finalSettingsCopy.apiKeyTitle")}
 					secret={secret}
 					notes={
 						kind === "management-key"
-							? "AI Stats management API key. Store securely and use only for management API calls."
-							: "AI Stats Gateway API key. Keep server-side and rotate if exposed."
+							? t("finalSettingsCopy.managementKeyNote")
+							: t("finalSettingsCopy.gatewayKeyNote")
 					}
 					urls={onePasswordUrls}
 				/>
 				{kind === "api-key" ? (
-					<p className="max-w-sm text-xs leading-4 text-muted-foreground">
-						Downloaded collections use placeholders, so they never contain the
-						secret.
+							<p className="max-w-sm text-xs leading-4 text-muted-foreground">
+								{t("strings.phraseExportsUsePlaceholdersSoDownloadedCollectionsDoNotContainTheSecret" as never)}
 					</p>
 				) : null}
 			</div>

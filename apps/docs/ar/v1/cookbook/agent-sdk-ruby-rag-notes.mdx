@@ -1,0 +1,64 @@
+---
+title: "لخّص الملاحظات الداخلية باستخدام Ruby Agent SDK"
+icon: "notebook-tabs"
+description: "استخدم Ruby Agent SDK للبحث في الملاحظات المحلية وإرجاع ملخص محدود عبر Phaseo Gateway."
+---
+
+استخدم هذه الوصفة عندما تحتاج خدمة Ruby إلى مساعد صغير للملاحظات الداخلية دون نقل التنسيق إلى نظام آخر.
+
+## 1. جهّز حزم SDK
+
+<Note type="warning">لم تُنشر حزمة Ruby Agent SDK على RubyGems بعد. اتبع [تعليمات التثبيت من المصدر](../sdk-reference/ruby/agent-sdk-installation.mdx).</Note>
+
+## 2. عرّف أداة للبحث في الملاحظات
+
+```ruby
+lookup_note = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "lookup-note",
+    description: "Look up one internal note by topic.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: { type: "string" },
+      },
+      required: ["topic"],
+    },
+    execute: lambda do |input, _context|
+      {
+        topic: input["topic"],
+        summary: "Presets centralize routing defaults so app code stays smaller.",
+      }
+    end
+  )
+)
+```
+
+## 3. أنشئ الوكيل وشغّله
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "notes-agent",
+  model: "openai/gpt-5.4-nano",
+  instructions: "Use tools when helpful and answer in one short paragraph.",
+  tools: [lookup_note]
+)
+
+result = agent.run(
+  input: "Summarize our note about presets.",
+  client: PhaseoAgentSdk.create_gateway_agent_client
+)
+
+puts result.output
+```
+
+## متى تناسب هذه الوصفة
+
+- تكون مدخلات الأداة بسيطة وحتمية
+- يكون تطبيق Ruby مسؤولًا بالفعل عن مصدر البيانات
+- تريد نمطًا عمليًا للأدوات المحلية ضمن سير عمل محدود
+
+## مواضيع ذات صلة
+
+- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
+- [أنشئ حلقة وكيل مستديمة](./agent-sdk-durable-loop.mdx)

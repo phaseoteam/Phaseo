@@ -1,0 +1,21 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "Phaseo DevToolsのイベント形式でRuby Agent SDKの実行をローカルに記録します。"
+---
+
+ツールのタイムライン、承認画面、実行インスペクターを作成する際に DevTools の記録を有効にします。
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(
+    directory: ".phaseo-devtools"
+  )
+)
+```
+
+各実行と再開時に、状態、使用量、モデルへの試行、ツール呼び出し、一時停止、リクエストのメタデータ、エラーを含む構造化 JSONL が記録されます。
+
+ローカル記録は開発用であり、本番環境の監査ログとして使うものではありません。アプリに応じてデータのマスキング、アクセス制御、暗号化、保持期間を設定してください。

@@ -1,0 +1,21 @@
+---
+icon: "chart-spline"
+title: "开发工具"
+description: "在本地以 Phaseo DevTools 事件格式捕获 Ruby Agent SDK 运行记录。"
+---
+
+构建工具时间线、审批界面和运行检查器时，启用 DevTools 捕获。
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(
+    directory: ".phaseo-devtools"
+  )
+)
+```
+
+每次运行和续接都会写入结构化 JSONL 记录，其中包含状态、用量、模型尝试、工具调用、暂停、请求元数据和错误。
+
+本地捕获用于开发，不是生产环境的审计存储。请根据应用需求进行脱敏，并设置访问控制、加密和保留期限。

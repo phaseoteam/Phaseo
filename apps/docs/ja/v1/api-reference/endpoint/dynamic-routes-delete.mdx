@@ -1,0 +1,10 @@
+---
+title: "動的ルートを削除"
+sidebarTitle: "ルートを削除"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml DELETE /routing/dynamic-routes/{id}"
+description: "動的ルートとそのバージョン履歴を削除します。"
+---
+<Note>このエンドポイントには `settings:write` 権限を持つ管理APIキーが必要です。</Note>
+
+任意で `confirm_name` を渡すと、完全一致の名前を確認できます。削除後に関連付けられたキーのコンテキストが更新されます。

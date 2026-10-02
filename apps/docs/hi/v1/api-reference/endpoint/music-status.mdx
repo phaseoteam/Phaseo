@@ -1,0 +1,46 @@
+---
+title: "संगीत जनरेशन प्राप्त करें"
+sidebarTitle: "संगीत जनरेशन प्राप्त करें"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "Phaseo अनुरोध ID का उपयोग करके संगीत जनरेशन प्राप्त करें।"
+---
+
+`POST /music/generate` से बनाया गया संगीत परिणाम प्राप्त करें。 प्रदाता का काम पूरा होने पर यह एंडपॉइंट संग्रहीत सामान्यीकृत परिणाम लौटाता है; जॉब अब भी एसिंक्रोनस होने पर अपस्ट्रीम प्रदाता की जाँच करता है।
+
+## प्रतिक्रिया का स्वरूप
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## नोट्स
+
+- `status` इनमें से हो सकता है: `queued`, `in_progress`, `completed`, `failed`।
+- जनरेशन पूरा होने पर `usage` शामिल होता है।
+- `nativeResponseId` के बजाय `POST /music/generate` द्वारा लौटाया गया Phaseo `id` दें।
+- प्रदाता-विशिष्ट स्थिति और पुनर्प्राप्ति API इस एंडपॉइंट के पीछे संभाली जाती हैं।
+

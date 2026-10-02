@@ -1,0 +1,61 @@
+---
+icon: "database"
+title: "संरचित आउटपुट स्कीमा"
+description: "Model outputs के लिए व्यावहारिक JSON schemas कैसे बनाएँ।"
+---
+
+भरोसेमंद structured outputs के लिए model चुनने से ज़्यादा schema design अहम है।
+
+## सरल शुरुआत करें
+
+- बहुत गहरे nested structures के बजाय flat objects चुनें।
+- हर ज़रूरी field के लिए `required` उपयोग करें।
+- Structure पर सख़्त नियंत्रण चाहिए, तो `additionalProperties: false` सेट करें।
+
+## अनुरोध
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## जवाब
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## आम गलतियाँ
+
+- ऐसे fields optional छोड़ना जिन्हें required होना चाहिए।
+- `enum` constraints के बजाय बहुत broad string fields उपयोग करना।
+- Docs schema और server-side validator में अंतर होने देना।

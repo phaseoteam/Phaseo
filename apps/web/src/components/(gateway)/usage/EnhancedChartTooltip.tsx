@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { OTHER_SERIES_KEY } from "./chartSeries";
 
 interface EnhancedChartTooltipProps {
@@ -26,6 +27,7 @@ export function EnhancedChartTooltip({
 	getLabel,
 	topN = 10,
 }: EnhancedChartTooltipProps) {
+	const t = useTranslations("SettingsUI");
 	if (!active || !payload || payload.length === 0) {
 		return null;
 	}
@@ -164,7 +166,7 @@ export function EnhancedChartTooltip({
 			</div>
 
 			<div className="mt-2 pt-1.5 border-t flex items-center justify-between px-1.5">
-				<span className="text-[10px] font-medium text-muted-foreground">Total</span>
+				<span className="text-[10px] font-medium text-muted-foreground">{t("strings.Total" as never)}</span>
 				<span className="font-mono text-[11px]">{format(total)}</span>
 			</div>
 		</div>

@@ -1,0 +1,64 @@
+---
+title: "Crea un agente de operaciones con runbooks en Go"
+icon: "clipboard-check"
+description: "Usa el Agent SDK de Go para combinar unas pocas herramientas locales deterministas en un ciclo de resolución de problemas acotado."
+---
+
+Usa esta receta cuando un servicio Go necesite responder preguntas operativas con contexto local.
+
+## 1. Prepara los SDK
+
+<Note type="warning">Go Agent SDK aún no tiene una versión pública del módulo. Sigue las [instrucciones de instalación desde el código fuente](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+
+## 2. Define herramientas pequeñas para el runtime
+
+```go
+statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "read-status",
+  Description: "Read the current service status page summary.",
+  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+    return map[string]any{
+      "status": "degraded",
+      "summary": "Latency is elevated on one provider route.",
+    }, nil
+  },
+})
+```
+
+## 3. Crea el agente
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:           "ops-runbook-agent",
+  Model:        "openai/gpt-5.4-nano",
+  Instructions: "Use tools when helpful and answer briefly.",
+  Tools:        []phaseoagent.Tool{statusTool},
+})
+```
+
+## 4. Ejecuta un turno de resolución de problemas acotado
+
+```go
+client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+
+result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+  Input:  "What is happening with provider latency right now?",
+  Client: client,
+})
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(result.Output)
+```
+
+## Cuándo encaja esta receta
+
+- el flujo de trabajo pertenece a un único servicio Go
+- el contexto complementario ya está disponible mediante llamadas locales o internas
+- quieres un ciclo de agente sin introducir todavía un sistema de trabajos más amplio
+
+## Relacionados
+
+- [Agent SDK de Go](../sdk-reference/go/agent-sdk.mdx)
+- [Fundamenta las extracciones con web fetch](./tool-grounding-with-web-fetch.mdx)

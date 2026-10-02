@@ -1,0 +1,193 @@
+---
+title: "Support-Triage mit Presets und Guardrail-bewussten Fehlern"
+icon: "life-buoy"
+description: "Führe einen Preset-gesteuerten Support-Triage-Agenten aus, der striktes JSON zurückgibt, Hochrisikofälle zur Prüfung anhält und Guardrail-Fehler sichtbar hält."
+---
+
+Nutze dieses Rezept, wenn ein Support-Workflow Folgendes leisten soll:
+
+- Routing- und Prompt-Standards aus einem Dashboard-Preset übernehmen
+- eine strikt strukturierte Ausgabe zurückgeben
+- riskante Fälle zur Prüfung durch Menschen anhalten
+- Gateway-Fehler in den Logs sichtbar halten, statt sie im Agent-Code zu verbergen
+
+## 1. Mit einem Preset beginnen
+
+Erstelle ein Preset wie `support-triage`, das Folgendes festlegt:
+
+- das standardmäßig geroutete Modell oder Router-Ziel
+- Anbieterpräferenzen
+- den Support-System-Prompt
+- stabile Decoding-Parameter
+
+So bleibt der Agent-Code auf die Workflow-Steuerung fokussiert, statt Anfragerichtlinien zu duplizieren.
+
+## 2. Einen klar abgegrenzten Triage-Vertrag definieren
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+Halte die erste Ausgabe so kompakt, dass das Betriebsteam sie schnell prüfen kann.
+
+## 3. Den Preset-gesteuerten Agenten erstellen
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+Das SDK löst `preset: "support-triage"` in die Gateway-Aliasform `@support-triage` auf.
+
+## 4. Den Gateway-gestützten Adapter konfigurieren
+
+Verwende Adapter-Standards für Einstellungen, die bei jedem Triage-Lauf gleich bleiben sollen:
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. Den Workflow mit begrenzten Wiederholungsversuchen ausführen
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+Wenn der Run zur Prüfung pausiert, setze ihn ausdrücklich fort:
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. Gateway-Fehler als Betriebsereignisse behandeln
+
+Verbirg Fehler nicht, indem du sie in der Agent-Callback-Kette abfängst und unterdrückst.
+
+Fange stattdessen `AgentGatewayError` ausdrücklich ab:
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+Anschließend:
+
+1. Lass die Runtime den `failed`-Status von Lauf und Schritten speichern.
+2. Prüfe bei späteren Wiederherstellungsabläufen `loaded.run.errorDetails` oder `loaded.steps[n].errorDetails`, wenn die ursprüngliche Exception nicht mehr im Speicher liegt.
+3. Prüfe in den Anfragedetails:
+   - die Durchsetzung der Guardrails
+   - Routing-Details
+   - Plugin-Ausführung
+   - Request-IDs und Anbieterdaten
+
+Das ist besonders wichtig, wenn:
+
+- eine Guardrail die Anfrage blockiert
+- die Zulassungsliste des Presets das angeforderte Modell ablehnt
+- Anbieterzugangsdaten oder Aktivierungsfilter die gerouteten Kandidaten entfernen
+- Response-Healing kein schema-konformes JSON wiederherstellen kann
+
+## 7. Was zu prüfen ist
+
+Prüfe nach einem erfolgreichen und einem gezielt riskanten Lauf Folgendes:
+
+- die Anfragedetails das durch das Preset festgelegte Ziel anzeigen
+- Hochrisikofälle mit `waiting_for_human` angehalten werden
+- Wiederholungen von Modellschritten `modelAttempts` speichern
+- Guardrail- oder Preset-Fehler in den Anfragedetails sichtbar bleiben und nicht in Agent-Ausnahmen verborgen werden
+
+## Verwandte Leitfäden
+
+- [TypeScript-Agent-SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Voreinstellungen](../guides/presets.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Strukturierte Ausgaben validieren](../guides/structured-outputs.mdx)
+- [Presets ausrollen und Routing debuggen](./preset-rollout-and-routing-debug.mdx)
+- [Fehlerhaftes strukturiertes JSON wiederherstellen](./response-healing-for-structured-json.mdx)
+- [Eine dauerhafte Agent-Schleife in TypeScript erstellen](./agent-sdk-durable-loop.mdx)

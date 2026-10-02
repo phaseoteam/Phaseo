@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "Ausgaben und Wiederholungen"
+description: "Validiere endgültige Ausgaben, wiederhole vorübergehende Modellfehler und wende verwaltete Routing-Standardwerte an."
+---
+
+Verwende die Ausgabeverarbeitung, wenn der Rest deiner Anwendung einen typisierten Wert statt Freitext benötigt. Begrenze Wiederholungen bei vorübergehenden Modellfehlern; Validierungs- und Richtlinienfehler sollen für deine Anwendung sichtbar bleiben.
+
+## Typisierte Ausgabe verarbeiten
+
+`parseOutput` wandelt den endgültigen Text nach Abschluss der Agent-Schleife um:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+Für ein strengeres Modellverhalten kombinierst du die Verarbeitung mit einer strukturierten Antwort des Gateway-Clients:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## Modellanfragen wiederholen
+
+Verwende `modelRetry`, wenn ein vorübergehender Modellfehler im aktuellen Lauf erneut versucht werden soll:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` zählt die Versuche nach der ersten Anfrage. Die endgültige Anzahl wird im Schritt unter `modelAttempts` gespeichert.
+
+## Verwaltete Routing-Standardwerte verwenden
+
+Verwende `preset`, wenn Routing-, Prompt- oder Parameter-Standardwerte im Dashboard verwaltet werden sollen:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Der Gateway-Adapter kann außerdem `responseFormat`, `plugins`, `gatewayTools`, `toolChoice`, `webSearchOptions`, `providerOptions`, `promptCacheKey` und `includeMeta` übertragen.
+
+## Weiterführende Anleitungen
+
+- [Spätere Modellschritte ändern](./agent-sdk-dynamic-turns.mdx)
+- [Agent sicher anhalten](./agent-sdk-stop-conditions.mdx)
+- [Fehler behandeln](./agent-sdk-events-and-errors.mdx)

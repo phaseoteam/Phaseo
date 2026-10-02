@@ -1,0 +1,156 @@
+---
+title: "Mit dem kostenlosen Router starten"
+icon: "rocket"
+description: "Starte mit phaseo/free, damit deine erste Integration ohne die vorherige Auswahl eines bestimmten kostenlosen Modells funktioniert."
+---
+
+Mit dieser Anleitung bringst du deine erste Phaseo-Integration zum Laufen, ohne zunächst ein kostenpflichtiges Modell auszuwählen.
+
+Anstatt selbst ein kostenloses Modell auszuwählen, sendest du Anfragen an `phaseo/free`. Phaseo wählt ein verfügbares kostenloses Modell aus, das die jeweilige Anfrage unterstützt.
+## Beispielanfrage
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "phaseo/free",
+    "input": "Summarize why provider-aware free routing helps prototypes.",
+    "temperature": 0.2
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Summarize why provider-aware free routing helps prototypes.",
+  temperature: 0.2,
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "phaseo/free",
+        "input": "Summarize why provider-aware free routing helps prototypes.",
+        "temperature": 0.2,
+    }
+)
+
+print(response.get("output_text"))
+```
+
+```go Go SDK
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+    Model: "phaseo/free",
+    Input: map[string]interface{}{
+      "role": "user",
+      "content": []map[string]string{
+        {
+          "type": "input_text",
+          "text": "Summarize why provider-aware free routing helps prototypes.",
+        },
+      },
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C# SDK
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "phaseo/free",
+    ["input"] = "Summarize why provider-aware free routing helps prototypes.",
+    ["temperature"] = 0.2
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP SDK
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->generateResponse([
+    'model' => 'phaseo/free',
+    'input' => 'Summarize why provider-aware free routing helps prototypes.',
+    'temperature' => 0.2,
+]);
+
+print_r($response);
+```
+
+```ruby Ruby SDK
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.generate_response(
+  model: 'phaseo/free',
+  input: 'Summarize why provider-aware free routing helps prototypes.',
+  temperature: 0.2
+)
+
+puts response
+```
+</CodeGroup>
+## Was im Hintergrund geschieht
+
+1. Deine Anfrage geht an den gemeinsamen Alias `phaseo/free`.
+2. Phaseo prüft, welche kostenlosen Modelle die Anfrage verarbeiten können.
+3. Ein verfügbares kostenloses Modell wird ausgewählt und für die Antwort verwendet.
+4. In den Anfragedetails steht weiterhin das genaue Modell, das ausgeführt wurde. So kannst du es später prüfen oder Fehler beheben.
+
+## Nach deiner ersten Anfrage
+
+- Öffne unter **Gateway -> Nutzung** die Anfragedetails und prüfe, welches Modell verwendet wurde.
+- Wenn eine Workspace-Richtlinie die Anfrage blockiert, findest du in den Details den ausschlaggebenden Parameter.
+- Unterstützt kein kostenloses Modell die benötigte Funktion, wechsle zu einem bestimmten kostenpflichtigen Modell, statt dieselbe Anfrage erneut zu senden.
+
+## Hinweise für den Produktionseinsatz
+
+- Nutze `phaseo/free` für Prototypen, Demos und unkritischen Datenverkehr.
+- Wenn du eine vorhersehbare Latenz, Ausgabe oder Anbieterauswahl brauchst, wechsle zu einem bestimmten Modell, sobald du weißt, welches am besten funktioniert.
+- Für einheitliches Prompt-Verhalten über mehrere Dienste hinweg kannst du diese Anleitung mit [Presets](../guides/presets.mdx) kombinieren.
+
+## Verwandte Anleitungen
+
+- [Schnellstart](../quickstart.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [API-Fehler](../api-reference/errors.mdx)

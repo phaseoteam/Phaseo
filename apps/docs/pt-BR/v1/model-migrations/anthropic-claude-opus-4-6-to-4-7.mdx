@@ -1,0 +1,89 @@
+---
+title: "Anthropic Claude Opus 4.7"
+description: "O que considerar ao adotar Claude Opus 4.7, incluindo pensamento adaptativo, controles de amostragem e uso de tokens."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.7
+
+Use este guia para adotar `anthropic/claude-opus-4.7` com segurança em produção.
+
+Claude Opus 4.7 altera o formato das requisições. Padrões do 4.6 podem falhar se não forem atualizados.
+
+## Novidades
+
+- Novo nível de esforço: `xhigh` (API Messages).
+- Os orçamentos de pensamento estendido foram removidos; `thinking: { type: "enabled", budget_tokens: ... }` agora falha.
+- Parâmetros de amostragem com valores diferentes do padrão não são mais aceitos: `temperature`, `top_p` e `top_k`.
+- O conteúdo de pensamento é omitido por padrão, a menos que seja ativado explicitamente.
+- O tokenizador atualizado pode aumentar o uso de tokens em relação ao Opus 4.6.
+
+## Compatibilidade do Phaseo Gateway
+
+Para reduzir problemas de migração, o Phaseo aceita campos antigos do Opus 4.6 para o Opus 4.7 e os normaliza antes de encaminhar:
+
+- `temperature`, `top_p` e `top_k` são aceitos, mas removidos.
+- Orçamentos antigos de pensamento não são encaminhados.
+- O pensamento do Opus 4.7 sempre é enviado como `thinking: { "type": "adaptive", "display": "summarized" }`.
+- `reasoning.effort` continua válido e é mapeado para `output_config.effort`; `xhigh` é aceito.
+
+## Início rápido da migração
+
+### 1. Atualize o ID do modelo
+
+Defina o ID como `anthropic/claude-opus-4.7`.
+
+### 2. Use pensamento adaptativo com exibição resumida
+
+Para o Opus 4.7, use:
+
+- `thinking: { "type": "adaptive", "display": "summarized" }`
+
+Evite os antigos orçamentos de pensamento estendido.
+
+### 3. Remova controles de amostragem
+
+Não envie:
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+Ajuste os prompts e as instruções no lugar desses controles.
+
+### 4. Recalibre os níveis de esforço
+
+Se usa controles de raciocínio, teste novamente com:
+
+- `output_config.effort = "high"` como referência.
+- `output_config.effort = "xhigh"` para os fluxos mais exigentes de programação e agentes.
+
+Com payloads no padrão OpenAI, `reasoning.effort` é mapeado para o mesmo valor de `output_config.effort` no Opus 4.7.
+
+### 5. Revise os limites de tokens
+
+Como a tokenização mudou, confira:
+
+- `max_tokens` / `max_output_tokens`
+- limites de tempo
+- controles e alertas de custo
+
+## O que testar
+
+- Taxa de aprovação estrita de esquemas com prompts de produção.
+- Fluxos longos com ferramentas: quantidade de chamadas, taxa de conclusão e latência.
+- Diferenças de qualidade entre `high` e `xhigh`.
+- Variação de custo de tokens nas classes de prompts de maior volume.
+
+## Rollout seguro
+
+1. Publique as mudanças no formato das requisições antes de direcionar tráfego.
+2. Avalie Opus 4.7 com sua suíte de produção.
+3. Faça canário mantendo a opção de voltar ao Opus 4.6.
+4. Aumente o tráfego quando as diferenças de qualidade, latência e custo estiverem dentro das metas.
+
+## Fontes
+
+- [Novidades do Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [Guia de migração da Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Cartão do sistema Claude Opus 4.7 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

@@ -2,6 +2,7 @@
 
 import { Fragment, createContext, useContext, useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -51,6 +52,7 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 	parameters?: string;
 	workspaceId?: string;
 }) {
+	const t = useTranslations("SettingsUI.privateQuery");
 	const context = useContext(SettingsScopeContext);
 	const [refreshVersion, setRefreshVersion] = useState(0);
 	if (!context) throw new Error("Missing private settings scope");
@@ -93,17 +95,17 @@ export function PrivateSettingsQuery<T>({ path, children, workspace = true, reso
 		setInitialRead({ identity, stale: query.isStale });
 		return <SettingsSectionFallback />;
 	}
-	if (workspace && !scope.workspaceId) return <p>Select a workspace to manage these settings.</p>;
+	if (workspace && !scope.workspaceId) return <p>{t("selectWorkspace")}</p>;
 	const denied = query.error instanceof WebApiError && [401, 402, 403, 404].includes(query.error.status);
-	if (denied || (!query.data && query.error)) return <div role="alert"><p>{denied ? "Your session or workspace access changed. Reload to continue." : "Settings could not be loaded."}</p><Button variant="outline" onClick={() => void query.refetch()}>Try again</Button></div>;
+	if (denied || (!query.data && query.error)) return <div role="alert"><p>{denied ? t("accessChanged") : t("loadFailed")}</p><Button variant="outline" onClick={() => void query.refetch()}>{t("retry")}</Button></div>;
 	// Editors often initialize drafts once. On an expired-cache revisit, wait for
 	// the initial read so a draft cannot retain stale values after revalidation.
 	// Later mutation refetches must not unmount drafts or one-time secret dialogs.
 	if (initialRead.stale && !query.isFetchedAfterMount && query.isFetching) return <SettingsSectionFallback />;
 	if (!query.data) return <SettingsSectionFallback />;
 	return <>
-		<div className="mb-2 flex justify-end"><Button variant="ghost" size="icon" aria-label="Refresh settings" disabled={query.isFetching} onClick={() => void query.refetch().then((result) => { if (result.isSuccess) setRefreshVersion((version) => version + 1); })}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} /></Button></div>
-		{query.error ? <p role="status">Refresh failed. Showing the last loaded settings.</p> : null}
+		<div className="mb-2 flex justify-end"><Button variant="ghost" size="icon" aria-label={t("refresh")} disabled={query.isFetching} onClick={() => void query.refetch().then((result) => { if (result.isSuccess) setRefreshVersion((version) => version + 1); })}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} /></Button></div>
+		{query.error ? <p role="status">{t("refreshFailed")}</p> : null}
 		<Fragment key={refreshVersion}>{children(query.data)}</Fragment>
 	</>;
 }

@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "./ProviderLogo";
+import { useTranslations } from "next-intl";
 
 export function ProviderLogoName({
 	id,
@@ -23,6 +24,7 @@ export function ProviderLogoName({
 	className?: string;
 	mobilePopover?: boolean;
 }) {
+	const t = useTranslations("Catalogue.compare");
 	if (!href) {
 		return (
 			<ProviderLogo id={id} alt={name} size={size} className={className} />
@@ -52,7 +54,7 @@ export function ProviderLogoName({
 						<button
 							type="button"
 							className={cn("inline-flex lg:hidden items-center", className)}
-							aria-label={`Show ${name}`}
+							aria-label={t("showProvider", { name })}
 						>
 							<ProviderLogo id={id} alt={name} size={size} />
 						</button>
@@ -60,14 +62,14 @@ export function ProviderLogoName({
 					<PopoverContent align="center" className="w-64 p-3">
 						<div className="flex items-center justify-between gap-3">
 							<div className="min-w-0">
-								<div className="text-xs text-muted-foreground">Provider</div>
+								<div className="text-xs text-muted-foreground">{t("provider")}</div>
 								<div className="truncate font-medium">{name}</div>
 							</div>
 							<Link
 								href={href}
 								className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
 							>
-								Open
+								{t("openProvider")}
 								<ExternalLink className="h-3.5 w-3.5" />
 							</Link>
 						</div>
@@ -85,4 +87,3 @@ export function ProviderLogoName({
 		</>
 	);
 }
-

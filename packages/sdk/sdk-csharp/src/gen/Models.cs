@@ -1751,6 +1751,16 @@ public sealed class DecisionChoiceQuestion
 
 }
 
+public sealed class DecisionImage
+{
+	[JsonPropertyName("base64")]
+	public string Base64 { get; set; }
+
+	[JsonPropertyName("content_type")]
+	public string ContentType { get; set; }
+
+}
+
 public sealed class DecisionInstructions { }
 
 public sealed class DecisionNoulQuestion
@@ -1786,6 +1796,9 @@ public sealed class DecisionsRequest
 
 	[JsonPropertyName("echo_upstream_request")]
 	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<object>? Images { get; set; }
 
 	[JsonPropertyName("meta")]
 	public bool? Meta { get; set; }

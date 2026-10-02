@@ -1,0 +1,6 @@
+---
+title: "APIキーをローテーション"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /keys/{id}/rotate"
+---
+<Note>置き換え後のシークレットは一度だけ返されます。ロールアウト中に旧資格情報と新資格情報を同時に使えるよう、`previous_key_expires_at` を設定してください。</Note>

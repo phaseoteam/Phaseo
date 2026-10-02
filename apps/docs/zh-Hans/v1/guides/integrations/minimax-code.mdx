@@ -1,0 +1,67 @@
+---
+title: "MiniMax Code"
+icon: "/icons/brands/minimax.svg"
+description: "使用 Phaseo CLI 通过 Phaseo Gateway 运行 MiniMax Code。"
+---
+
+Phaseo CLI 可以使用专用网关密钥和临时提供商设置启动 MiniMax Code。
+
+## 使用 Phaseo CLI 配置
+
+```bash
+phaseo login
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+启动器通过 MiniMax Code 的 `mcode provider add` 命令配置 Phaseo 的 OpenAI 兼容端点，然后使用所选提供商启动 `mcode`。使用 `--catalog all` 注册所有兼容 Chat Completions 的有效 Phaseo 文本/聊天模型，或预览安装和启动计划而不创建密钥：
+
+```bash
+phaseo minimax --catalog all --dry-run --json
+```
+
+使用 `phaseo run minimax ...` 这一显式命令形式。将 MiniMax Code 的选项放在 `--` 后，让 Phaseo 先处理自己的选项。
+
+在类 Unix 系统上，首次交互式运行会提示使用 MiniMax 的官方安装程序安装 MiniMax Code。在 Windows 上，Phaseo 使用官方 PowerShell 安装程序。如果 MiniMax Code 已单独管理，请自行安装，检查 `mcode --version`，并使用 `--skip-install` 重新运行。
+
+启动器将 `MINIMAX_DATA_DIR` 设置为临时目录，并在 `mcode` 退出时删除。常规的 `~/.minimax` 配置不会改变，专用 Phaseo 密钥仅传递给临时提供商配置进程。
+
+## 手动配置
+
+要持久配置 MiniMax Code 提供商，请直接使用 MiniMax Code 的提供商命令：
+
+```bash
+export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
+mcode provider add \
+  --name "Phaseo" \
+  --base-url "https://api.phaseo.app/v1" \
+  --api-format openai-completions \
+  --model "openai/gpt-5.6-terra" \
+  --use
+```
+
+MiniMax Code 将持久提供商设置保存在配置的数据目录中。如果希望将这些设置隔离到单个会话，请使用 Phaseo CLI 运行器。
+
+## 验证
+
+通过 MiniMax Code 发送简短提示词，然后确认请求出现在 Phaseo 活动中。要查看可用模型 ID，请使用 `--catalog all` 或通过 `--model` 指定某个 Phaseo 模型。
+
+## 故障排除
+
+### 未安装 MiniMax Code
+
+在交互式终端中运行命令并批准官方安装程序，或单独安装 MiniMax Code 后使用 `--skip-install` 重新运行。
+
+### 未列出提供商或模型
+
+使用 `phaseo minimax --catalog all`，或通过 `--model` 传入所需模型 ID。CLI 会在启动 `mcode` 前，在临时 MiniMax 数据目录中创建提供商。
+
+### 我需要 ACP 而非交互式 CLI
+
+MiniMax Code 还通过 `mcode acp` 提供 ACP 进程，用于编辑器和宿主集成。`phaseo minimax` 是交互式 CLI 运行器；如果宿主直接使用 ACP 通信，请使用 MiniMax Code 的 ACP 配置。
+
+## 相关内容
+
+- [Phaseo CLI](./phaseo-cli)
+- [编程智能体](./coding-assistants)
+- [模型](../../api-reference/endpoint/models.mdx)
+- [活动](../../api-reference/endpoint/activity.mdx)

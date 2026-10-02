@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef } from "react";
+import { useTranslations } from "next-intl";
 import { createPortal } from "react-dom";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
@@ -59,6 +60,7 @@ export default function RequestsSection({
 	detailBasePath,
 	columnSettingsTargetId,
 }: RequestsSectionProps) {
+	const t = useTranslations("SettingsUI");
 	const { columns, updateColumns, density, updateDensity } =
 		useRequestColumns();
 	const [columnSettingsTarget, setColumnSettingsTarget] =
@@ -91,9 +93,9 @@ export default function RequestsSection({
 		try {
 			setRefreshing(true);
 			await runUsageViewRefresh("logs");
-			toast.success("Refresh Successful");
+			toast.success(t("strings.Refresh Successful" as never));
 		} catch {
-			toast.error("Refresh Failed");
+			toast.error(t("strings.Refresh Failed" as never));
 		} finally {
 			setRefreshing(false);
 		}
@@ -116,7 +118,7 @@ export default function RequestsSection({
 									variant="outline"
 									size="icon"
 									onClick={onRefresh}
-									aria-label="Refresh"
+								aria-label={t("strings.Refresh" as never)}
 									disabled={refreshing}
 								>
 									{refreshing ? (
@@ -126,7 +128,7 @@ export default function RequestsSection({
 									)}
 								</Button>
 							</TooltipTrigger>
-							<TooltipContent sideOffset={6}>Refresh</TooltipContent>
+							<TooltipContent sideOffset={6}>{t("strings.Refresh" as never)}</TooltipContent>
 						</Tooltip>
 					</div>
 				</div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
@@ -19,11 +20,12 @@ import {
 } from "@/lib/query/queryKeys";
 
 const ModelsDisplay = dynamic(() => import("./ModelsDisplay"), {
-	loading: () => <ModelsPageSkeleton />,
+	loading: function Loading() { const t = useTranslations("Catalogue.models"); return <ModelsPageSkeleton title={t("title")} />; },
 });
 
 type ModelsPageClientProps = {
 	catalogueVersion?: "v1" | "v2";
+	title: string;
 	initialProviderPreviews?: AuthenticatedProviderCatalogPreview[];
 	previewCacheScope?: string;
 	accountQueryScope?: AccountQueryScope | null;
@@ -31,6 +33,7 @@ type ModelsPageClientProps = {
 
 export default function ModelsPageClient({
 	catalogueVersion = "v1",
+	title,
 	initialProviderPreviews,
 	previewCacheScope = "public",
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
@@ -67,7 +70,7 @@ export default function ModelsPageClient({
 	}, []);
 
 	if (query.error && !query.data) throw query.error;
-	if (!query.data) return <ModelsPageSkeleton />;
+	if (!query.data) return <ModelsPageSkeleton title={title} />;
 
 	return <ModelsDisplay modelsPageData={query.data} />;
 }

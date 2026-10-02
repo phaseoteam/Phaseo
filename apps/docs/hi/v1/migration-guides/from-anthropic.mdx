@@ -1,0 +1,102 @@
+---
+title: "Anthropic SDK से माइग्रेट करें"
+sidebarTitle: "Anthropic SDK"
+description: "Messages API का परिचित वर्कफ़्लो बनाए रखते हुए Anthropic SDK इंटीग्रेशन को Phaseo पर माइग्रेट करें।"
+icon: "/icons/brands/anthropic.svg"
+---
+
+Phaseo के ज़रिए अनुरोध भेजते हुए Anthropic SDK वर्कफ़्लो बनाए रखने के लिए इस गाइड का उपयोग करें। पहले क्लाइंट कॉन्फ़िगरेशन बदलें, फिर मॉडल ID और उन Anthropic-विशिष्ट व्यवहारों की जांच करें जिन पर आपका ऐप निर्भर है।
+
+## क्या बदलेगा
+
+| सेटिंग | पहले | बाद में |
+| --- | --- | --- |
+| बेस URL | Anthropic का डिफ़ॉल्ट | `https://api.phaseo.app/v1` |
+| API कुंजी | Anthropic कुंजी | `PHASEO_API_KEY` |
+| मॉडल | Anthropic मॉडल का नाम | `GET /v1/models` से मिला Phaseo मॉडल ID |
+| Messages कॉल | मौजूदा SDK कॉल | आमतौर पर अपरिवर्तित |
+
+<Steps>
+<Step title="Phaseo API कुंजी बनाएं">
+
+[Gateway Keys](https://phaseo.app/gateway/keys) में एक कुंजी बनाएं और इसे अपने ऐप में `PHASEO_API_KEY` के रूप में उपलब्ध कराएं।
+
+</Step>
+
+<Step title="Anthropic क्लाइंट अपडेट करें">
+
+SDK को Phaseo बेस URL पर सेट करें और अपनी Phaseo कुंजी का उपयोग करें।
+
+<CodeGroup>
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-sonnet-4.6",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-sonnet-4.6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Anthropic-विशिष्ट व्यवहार की जांच करें">
+
+अपने ऐप में उपयोग किए जाने वाले सटीक मॉडल के साथ सिस्टम प्रॉम्प्ट, स्ट्रीमिंग, टूल उपयोग, रीजनिंग विकल्प और संरचित आउटपुट का परीक्षण करें। पुराने beta हेडर या अनुरोध फ़ील्ड को बिना जांचे नए पथ में ले जाने के बजाय हटाएं।
+
+</Step>
+
+<Step title="धीरे-धीरे रोल आउट करें">
+
+दोनों कॉन्फ़िगरेशन में प्रतिनिधि प्रॉम्प्ट सेट की तुलना करें। प्रोडक्शन ट्रैफ़िक बदलने से पहले आउटपुट का प्रारूप, विलंबता, टोकन उपयोग, त्रुटियां और लागत जांचें।
+
+</Step>
+</Steps>
+
+## माइग्रेशन चेकलिस्ट
+
+- हर डिप्लॉयमेंट वातावरण में Phaseo कुंजी कॉन्फ़िगर है।
+- Anthropic क्लाइंट `https://api.phaseo.app/v1` का उपयोग करता है।
+- हर प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
+- स्टेजिंग में स्ट्रीमिंग और टूल उपयोग के फ़्लो सफल होते हैं।
+- Anthropic-विशिष्ट beta हेडर और पैरामीटर की समीक्षा की गई है।
+- रोलबैक अब भी केवल कुंजी और एंडपॉइंट कॉन्फ़िगरेशन बदलने तक सीमित है।
+
+## अगले चरण
+
+- [Anthropic मॉडल माइग्रेशन](../model-migrations/index.mdx)
+- [मॉडल](../exploring/models.mdx)
+- [टूल कॉलिंग](../guides/tool-calling.mdx)

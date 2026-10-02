@@ -1,0 +1,25 @@
+---
+icon: "building-2"
+title: "Comunicar una actualización de organización"
+description: "Solicita correcciones o incorporaciones a las empresas y organizaciones de investigación del catálogo."
+---
+
+Comunica datos de organizaciones que falten o estén desactualizados mediante una incidencia en GitHub. Los responsables revisan las pruebas y aplican los cambios aprobados en el editor de la base de datos.
+
+## Comunicar una corrección
+
+1. Copia la URL de la página de la organización en Phaseo o su ID.
+2. [Comunica información incorrecta](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) con el campo afectado y el valor propuesto.
+3. Añade un enlace a un sitio web oficial, un anuncio u otra fuente verificable.
+
+Las correcciones habituales incluyen el nombre, la descripción, el sitio web, la ubicación y las relaciones con modelos o proveedores de API.
+
+## Solicitar una organización que falte
+
+[Abre una solicitud de datos](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) con el nombre de la organización, su sitio web oficial y los enlaces pertinentes a modelos o proveedores.
+
+## Después del envío
+
+Sigue la revisión y la publicación en la incidencia. Para cambiar un registro del catálogo no hace falta editar JSON ni abrir una solicitud de incorporación. Los archivos JSON diarios son exportaciones; no se importan a la base de datos en producción.
+
+Los administradores gestionan las organizaciones mediante el [editor interno del catálogo](https://phaseo.app/internal/data), que requiere acceso de administrador.

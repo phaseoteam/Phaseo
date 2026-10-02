@@ -1,0 +1,94 @@
+---
+icon: "shapes"
+title: "संरचित आउटपुट"
+description: "json_object या json_schema output formats के साथ predictable JSON लौटाएँ।"
+---
+
+Structured outputs से free-form text के बजाय machine-readable output लागू कर सकते हैं।
+
+## एंडपॉइंट समर्थन
+
+Structured outputs इन पर उपयोग करें:
+
+- `/v1/chat/completions` के साथ `response_format`
+- `/v1/responses` के साथ `text.format`
+- `/v1/messages` अब भी JSON text लौटा सकता है, लेकिन वही `response_format` contract उपयोग नहीं करता।
+
+## अनुरोध
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "weather_schema",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+
+## जवाब
+
+```json
+{
+  "id": "chatcmpl_...",
+  "choices": [
+    {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+        "role": "assistant",
+        "content": "{\"city\":\"London\",\"weather\":\"Cloudy\"}"
+      }
+    }
+  ]
+}
+```
+
+## कॉन्ट्रैक्ट संबंधी नोट
+
+- `response_format.type` `text`, `json_object` या `json_schema` होना चाहिए।
+- `json_schema` के लिए schema object शामिल करें (chat-style payload में `response_format.json_schema.schema`, Responses-style payload में `text.format.schema`)।
+- आगे उपयोग करने से पहले अपने server पर JSON validate करें।
+
+## अपना स्कीमा बनाएँ
+
+छोटे ऑब्जेक्ट से शुरू करें, आवश्यक फ़ील्ड स्पष्ट बताएँ और ज्ञात श्रेणियों के लिए एनम इस्तेमाल करें। अतिरिक्त कुंजियाँ अस्वीकार करनी हों तो `additionalProperties: false` सेट करें। अनुरोध स्कीमा और सर्वर वैलिडेटर को समन्वित रखें और साथ में संस्करण दें।
+
+## परिणाम सत्यापित करें
+
+आगे उपयोग से पहले पूरा परिणाम पार्स और सत्यापित करें। यह TypeScript उदाहरण Zod इस्तेमाल करता है और ऊपर के मौसम स्कीमा से मेल खाता है:
+
+```typescript
+import { z } from "zod";
+
+const Weather = z.object({
+  city: z.string(),
+  weather: z.string(),
+}).strict();
+
+function parseWeather(content: string) {
+  return Weather.parse(JSON.parse(content));
+}
+```
+
+पार्स करने से पहले इनकार, गायब सामग्री और कटे हुए उत्तर सँभालें। सत्यापन विफल हो तो केवल सीमित सुधारात्मक पुनः प्रयास दें, फिर सुरक्षित विफलता लौटाएँ। दोबारा जनरेशन पर अतिरिक्त शुल्क लग सकता है। वैध JSON से मानों की तथ्यात्मक सटीकता या किसी कार्रवाई की अनुमति साबित नहीं होती।
+
+मॉडल और स्कीमा संस्करण के अनुसार सत्यापन विफलता दर्ज करें। इनमें से कुछ भी बदले तो मूल्यांकन केस फिर जाँचें। गलत प्रारूप वाले JSON की बहाली के लिए [प्रतिक्रिया सुधार](../cookbook/response-healing-for-structured-json.mdx) देखें।

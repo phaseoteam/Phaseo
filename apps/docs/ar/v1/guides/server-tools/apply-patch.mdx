@@ -1,0 +1,87 @@
+---
+title: "تطبيق التصحيح"
+description: "اسمح لنماذج Responses بإرجاع عمليات تصحيح تم التحقق منها."
+icon: "file-pen-line"
+---
+
+استخدم `phaseo:apply_patch` عندما يحتاج سير عمل Responses إلى إرجاع تغييرات الملفات كعمليات تصحيح منظّمة. يتحقق Phaseo من العملية ويعيدها إلى العميل؛ ولا يغيّر نظام الملفات أو المستودع.
+
+<Note>
+`phaseo:apply_patch` is available on `/v1/responses`.
+</Note>
+
+## الطلب
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Create a small README patch for this project.",
+    "tools": [
+      { "type": "phaseo:apply_patch" }
+    ]
+  }'
+```
+
+## بنية العملية
+
+عندما يستدعي النموذج الأداة، يرسل كائن عملية:
+
+```json
+{
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  }
+}
+```
+
+أنواع العمليات المدعومة:
+
+| النوع | الحقول المطلوبة |
+| --- | --- |
+| `create_file` | `path`, `diff` |
+| `update_file` | `path`, `diff` |
+| `delete_file` | `path` |
+
+## نتيجة الأداة
+
+يعيد Phaseo العملية التي تم التحقق منها إلى حلقة النموذج:
+
+```json
+{
+  "status": "completed",
+  "operation": {
+    "type": "update_file",
+    "path": "/README.md",
+    "diff": "@@ ...\n-Old text\n+New text\n"
+  },
+  "message": "Patch operation validated. The client must apply or reject this patch and report the result."
+}
+```
+
+تظل مسؤولية تطبيق التصحيح أو عرضه على المستخدم أو رفضه أو طلب عملية منقّحة من النموذج على عاتق تطبيقك.
+
+## الاستخدام والأسعار
+
+يسجّل Phaseo:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "apply_patch_requests": 1
+    }
+  }
+}
+```
+
+يمكن لبطاقات الأسعار احتساب ذلك باستخدام مقياس `server_tool_apply_patch_requests`.
+
+## صفحات ذات صلة
+
+- [أدوات الخادم](./index.mdx)
+- [واجهة Responses](../../api-reference/endpoint/responses.mdx)

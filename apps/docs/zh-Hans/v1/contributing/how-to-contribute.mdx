@@ -1,0 +1,65 @@
+---
+icon: "users-round"
+title: "贡献代码或文档"
+description: "在本地设置 Phaseo，验证一项范围明确的更改，然后创建拉取请求。"
+---
+
+此流程适用于代码和文档更改。对于模型、提供商、价格、组织或基准测试记录，请改为[提交目录问题](./overview.mdx)，无需本地设置。
+
+## 设置你的派生仓库
+
+安装 Git、Node.js 22.12 或更新版本，以及 pnpm。派生 [Phaseo 仓库](https://github.com/phaseoteam/Phaseo)，然后克隆你的派生仓库并创建新分支：
+
+```bash
+git clone https://github.com/yourusername/Phaseo.git
+cd Phaseo
+git switch -c docs/improve-quickstart
+pnpm install
+```
+
+## 更改并预览
+
+查看[仓库结构](./repo-structure.mdx)，找到相关应用或软件包。若仅编辑 Markdown，也可以使用 GitHub 文件编辑器并在那里创建拉取请求。
+
+```bash
+# Web app at http://localhost:3100
+pnpm --filter @phaseo/web dev
+
+# Documentation at http://localhost:3101
+pnpm --filter @phaseo/docs dev
+```
+
+遵循相关的 `AGENTS.md` 指令。将密钥保存在本地环境文件中，不要提交。应用的本地预览可能需要已配置的后端服务和正常登录。
+
+## 验证更改
+
+运行适用于已修改文件的检查。对于文档：
+
+```bash
+pnpm docs:links
+pnpm docs:build
+```
+
+对于网页更改：
+
+```bash
+pnpm --filter @phaseo/web lint
+pnpm --filter @phaseo/web typecheck
+pnpm --filter @phaseo/web test
+```
+
+渲染或路由更改需要运行生产构建。API、SDK 和架构更改需要对应的测试与生成步骤。请参阅根目录的[贡献指南](https://github.com/phaseoteam/Phaseo/blob/main/CONTRIBUTING.md)。
+
+## 创建拉取请求
+
+仅暂存修改过的文件，使用描述性提交消息，然后推送分支：
+
+```bash
+git add apps/docs/v1/quickstart.mdx
+git commit -m "docs: clarify the quickstart"
+git push -u origin docs/improve-quickstart
+```
+
+从派生仓库创建拉取请求。说明问题、更改内容及通过的检查。链接相关问题，并为可见的界面更改提供截图。合并前处理评审反馈；更改会在相应部署完成后上线。
+
+遵循[行为准则](../community/code-of-conduct.mdx)。对于大型或不确定的更改，请先讨论提案再编写代码。

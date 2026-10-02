@@ -1,0 +1,40 @@
+---
+title: "Fehlerbehandlung"
+description: "Erfahre mehr über Fehlertypen und Wiederherstellungsstrategien für zuverlässige Gateway-Integrationen."
+icon: "triangle-alert"
+---
+
+Auch die besten Modelle fallen gelegentlich aus. Diese Anleitung erklärt, wie das Gateway Fehler meldet und wie du darauf reagieren solltest.
+
+---
+
+## Fehlerkategorien
+
+Fehler können vom Gateway, vom Anbieter oder von deiner Anfrage ausgehen. Die Fehlerantwort enthält Metadaten, die dir bei der Diagnose helfen.
+
+| Statusbereich | Bedeutung                                  | Typische Maßnahme                        |
+| ----------- | ---------------------------------------- | ------------------------------------- |
+| 400-499     | Ungültige Anfrage oder Authentifizierungsproblem | Korrigiere den Anfrageinhalt oder die Zugangsdaten.       |
+| 429         | Limit erreicht                             | Wiederhole die Anfrage mit Backoff und beachte die Limits. |
+| 500-599     | Gateway- oder Anbieterausfall              | Wiederhole die Anfrage mit Backoff und protokolliere die Details.    |
+
+---
+
+## Wiederholungsverhalten
+
+- Implementiere exponentielles Backoff mit Jitter.
+- Beachte den `Retry-After`-Header, wenn er vorhanden ist.
+- Vermeide Endlosschleifen durch eine maximale Zahl von Wiederholungen.
+
+---
+
+## Anbieterfehler
+
+Manchmal entstehen Fehler beim Anbieter. Wir versuchen, das in der Fehlerantwort kenntlich zu machen. Falls die Fehler anhalten, sollte der Router diesen Anbieter nach Möglichkeit umgehen.
+
+---
+
+## Nächste Schritte
+
+- Sieh dir die [Rate Limits](./rate-limits.mdx) an, um dich auf Drosselungen vorzubereiten.
+- Hier erfährst du, wie [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx) funktionieren.

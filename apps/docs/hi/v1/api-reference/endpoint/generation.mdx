@@ -1,0 +1,23 @@
+---
+title: "जनरेशन प्राप्त करें"
+sidebarTitle: "जनरेशन प्राप्त करें"
+badge: "Beta"
+openapi: "/hi/openapi/v1/openapi.localized.yaml GET /generations"
+---
+आपकी टीम से जुड़े `request_id` का संग्रहीत ऑडिट रिकॉर्ड प्राप्त करता है।
+
+उपयोग करें:
+- `GET /v1/generations?id=<request_id>`
+
+यदि गेटवे ने उस जनरेशन के अनुरोध का पूरा विवरण दर्ज किया है， तो प्रतिक्रिया में यह भी शामिल होगा:
+
+- `replay_supported`: क्या रीप्ले के लिए तैयार पेलोड उपलब्ध है
+- `replay_request`: संग्रहीत अनुरोध बॉडी, जिसे नियंत्रित तरीके से फिर चलाने के लिए मूल एंडपॉइंट पर वापस भेज सकते हैं
+
+रीप्ले की सामान्य प्रक्रिया:
+
+1. `GET /v1/generations?id=<request_id>` से जनरेशन रिकॉर्ड पढ़ें।
+2. जाँचें कि `replay_supported === true` है।
+3. `endpoint` से बताए गए मूल एंडपॉइंट, जैसे `/v1/chat/completions` या `/v1/responses`, पर `replay_request` फिर भेजें।
+
+

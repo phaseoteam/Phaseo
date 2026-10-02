@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { SquareTerminal } from "lucide-react";
 import { CopyButton } from "@/components/ui/copy-button";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ export default function CliInstallTabs({
 	mode?: CommandMode;
 	title?: string;
 }) {
+	const t = useTranslations("Content.announcementComponents");
 	const [packageManager, setPackageManager] = useState<PackageManager>("npm");
 	const command = useMemo(
 		() => commandFor(packageName, packageManager, mode),
@@ -37,10 +39,10 @@ export default function CliInstallTabs({
 		<div className="my-6">
 			<div className="mb-3">
 				<p className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-					{title ?? (mode === "install" ? "Install the CLI" : "Update the CLI")}
+					{title ?? (mode === "install" ? t("installCli") : t("updateCli"))}
 				</p>
 				<p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-					Choose your package manager, then copy the command.
+					{t("choosePackageManager")}
 				</p>
 			</div>
 			<div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 text-sm text-zinc-950 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-100">
@@ -70,7 +72,7 @@ export default function CliInstallTabs({
 						content={command}
 						variant="ghost"
 						className="text-zinc-500 hover:bg-zinc-200 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-						aria-label={`Copy ${packageManager} ${mode} command`}
+						aria-label={t("copyCommand", { packageManager })}
 					/>
 				</div>
 				<code className="block min-w-0 overflow-x-auto whitespace-pre-wrap break-all px-4 py-4 font-mono">

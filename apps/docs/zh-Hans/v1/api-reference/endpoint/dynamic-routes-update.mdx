@@ -1,0 +1,10 @@
+---
+title: "更新动态路由"
+sidebarTitle: "更新路由"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /routing/dynamic-routes/{id}"
+description: "更新路由元数据或创建新的配置版本。"
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+更改 `config` 会创建新的不可变版本。仅更改元数据不会创建新版本。

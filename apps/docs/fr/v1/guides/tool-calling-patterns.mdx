@@ -1,0 +1,95 @@
+---
+icon: "waypoints"
+title: "Modèles d’appel d’outils"
+description: "Boucles d’appel d’outils fiables pour les points de terminaison chat completions et responses."
+---
+
+Utilisez ces modèles pour rendre les boucles d’appel d’outils déterministes et faciles à déboguer.
+
+## Modèle 1 : boucle Chat Completions
+
+1. Envoyez le message utilisateur et les définitions des outils.
+2. Si `finish_reason` vaut `tool_calls`, exécutez chaque appel d’outil.
+3. Renvoyez les résultats des outils dans des messages `role: "tool"`.
+4. Lisez la réponse finale de l’assistant.
+
+### Requête (suite)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "What is the weather in Seattle?" },
+    {
+      "role": "assistant",
+      "content": null,
+      "tool_calls": [
+        {
+          "id": "call_123",
+          "type": "function",
+          "function": {
+            "name": "get_weather",
+            "arguments": "{\"city\":\"Seattle\"}"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "call_123",
+      "content": "72F and sunny"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "parameters": {
+          "type": "object",
+          "properties": { "city": { "type": "string" } },
+          "required": ["city"]
+        }
+      }
+    }
+  ]
+}
+```
+
+## Modèle 2 : boucle Responses
+
+Sur `/v1/responses`, les appels d’outils du modèle apparaissent sous forme d’éléments de sortie de type `function_call`.
+Envoyez ensuite une requête de suivi avec des éléments d’entrée `function_call_output`.
+
+### Requête (suivi)
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "What's the weather in Seattle?" }]
+    },
+    {
+      "type": "function_call",
+      "call_id": "call_123",
+      "name": "get_weather",
+      "arguments": "{\"city\":\"Seattle\"}"
+    },
+    {
+      "type": "function_call_output",
+      "call_id": "call_123",
+      "output": "72F and sunny"
+    }
+  ]
+}
+```
+
+## Choisir un point de terminaison
+
+- Privilégiez `/v1/chat/completions` si vous utilisez déjà des boucles de messages de type OpenAI.
+- Privilégiez `/v1/responses` si votre application est standardisée sur l’API Responses.
+- Utilisez `/v1/messages` si votre application repose sur Anthropic.
+

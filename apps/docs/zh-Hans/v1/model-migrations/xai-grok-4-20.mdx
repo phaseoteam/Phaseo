@@ -1,0 +1,78 @@
+---
+title: "SpaceXAI Grok 4.20"
+description: "介绍采用 Grok 4.20 时需要了解的推理和多代理强度控制。"
+icon: "/icons/brands/grok.svg"
+---
+
+# SpaceXAI Grok 4.20
+
+使用本指南，通过 Phaseo Gateway 安全采用 Grok 4.20。
+
+目录中的主要路由：
+
+- `spacex-ai/grok-4-20-2026-02-17`
+
+通过提供商模型 ID 提供的可选多代理路由：
+
+- `spacex-ai/grok-4.20-multi-agent-beta-0309`
+
+## 迁移快速入门
+
+大多数集成只需更新模型 ID 并重新运行常规验证，无需其他迁移工作。
+
+现有请求和响应模式可以保持不变。
+
+## 新功能
+
+Phaseo Gateway 的基础 Grok 4.20 路由无需迁移行为变更。
+
+实际需要注意的是多代理版本的调节方式。
+
+在 Phaseo Gateway 中：
+
+- 基础 Grok 4.20 仍可通过 `reasoning.enabled` 开关推理。
+- 多代理 Grok 4.20 使用 `reasoning.effort` 调节。
+- 可用值为 `low`、`medium`、`high` 和 `extra high`。
+- 根据 SpaceXAI 指南，`low` 和 `medium` 使用 4 个代理；`high` 和 `extra high` 使用更大的多代理配置。
+
+Gateway 请求中不会直接使用 `agent_count`。
+
+### 通过推理开关使用基础 Grok 4.20
+
+使用基础模型并直接设置 `reasoning.enabled`：
+
+```json
+{
+  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "input": "Explain this architecture",
+  "reasoning": {
+    "enabled": true
+  }
+}
+```
+
+### 通过强度控制使用多代理 Grok 4.20
+
+使用多代理模型，并通过 `reasoning.effort` 控制深度：
+
+```json
+{
+  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "input": "Evaluate three rollout options with tradeoffs",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+推理强度级别：
+
+- `low`
+- `medium`
+- `high`
+- `extra high`
+
+## 来源
+
+- [SpaceXAI 多代理能力](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [SpaceXAI 新模型迁移指南](https://docs.x.ai/docs/guides/migrating-to-new-models)

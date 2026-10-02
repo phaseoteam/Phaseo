@@ -1,0 +1,44 @@
+---
+title: "TanStack AI"
+icon: "layers"
+description: "Use o Phaseo com o adaptador compatível com OpenAI do TanStack AI."
+---
+
+Use o TanStack AI quando quiser fluxos de chat com segurança de tipos em React, Solid, Preact, Vue, Svelte ou TypeScript no servidor.
+
+## Instalar
+
+```bash
+npm install @tanstack/ai @tanstack/ai-openai
+```
+
+## Configure o adaptador
+
+```ts
+import { chat } from "@tanstack/ai";
+import { openaiCompatible } from "@tanstack/ai-openai/compatible";
+
+const phaseo = openaiCompatible({
+	name: "phaseo",
+	baseURL: "https://api.phaseo.app/v1",
+	apiKey: process.env.PHASEO_API_KEY!,
+	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
+});
+
+const stream = chat({
+	adapter: phaseo("openai/gpt-5-nano"),
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+```
+
+## Observações
+
+- Declare no array `models` os IDs de modelo do Phaseo que pretende usar.
+- O adaptador compatível com OpenAI usa Chat Completions por padrão. Use chamadas diretas à API para recursos exclusivos do Responses.
+- Se um modelo não oferecer suporte a ferramentas ou imagens no seu fluxo, declare capacidades mais limitadas no TanStack AI para que o TypeScript detecte chamadas incompatíveis mais cedo.
+
+## Relacionados
+
+- [SDK da OpenAI](./openai-sdk.mdx)
+- [Chamadas de ferramentas](../tool-calling.mdx)
+- [Modelos](../../api-reference/endpoint/models.mdx)

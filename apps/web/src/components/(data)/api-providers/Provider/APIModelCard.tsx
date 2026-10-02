@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -111,17 +112,6 @@ function normalizeModality(value: string): string {
 	return normalized.replace(/\s+/g, "_");
 }
 
-function formatModalityLabel(value: string): string {
-	if (value === "decisions") return "Decisions";
-	if (value === "audio_stt") return "Transcription";
-	if (value === "audio_tts") return "Speech";
-	if (value === "audio_music") return "Music";
-	return value
-		.replace(/[_-]+/g, " ")
-		.trim()
-		.replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 function toList(v?: string[] | string | null) {
 	if (!v) return [] as string[];
 	const values = Array.isArray(v) ? v.map((s) => String(s)) : String(v).split(/[,\s]+/);
@@ -142,95 +132,95 @@ const ENDPOINT_META: Record<
 	{ label: string; icon: React.ElementType; className: string }
 > = {
 	"/chat/completions": {
-		label: "Chat Completions",
+		label: "endpointChatCompletions",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/responses": {
-		label: "Responses",
+		label: "endpointResponses",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/messages": {
-		label: "Messages",
+		label: "endpointMessages",
 		icon: MessageSquareText,
 		className: "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200",
 	},
 	"/images/generations": {
-		label: "Image Generations",
+		label: "endpointImageGeneration",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/images/edits": {
-		label: "Image Edits",
+		label: "endpointImageEditing",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/images/variations": {
-		label: "Image Variations",
+		label: "endpointImageVariations",
 		icon: ImageIcon,
 		className: "bg-violet-50 text-violet-700 ring-1 ring-inset ring-violet-200",
 	},
 	"/embeddings": {
-		label: "Embeddings",
+		label: "endpointEmbeddings",
 		icon: Braces,
 		className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	},
 	"/audio/transcriptions": {
-		label: "Audio Transcriptions",
+		label: "endpointTranscription",
 		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/translations": {
-		label: "Audio Translations",
+		label: "endpointTranslation",
 		icon: Captions,
 		className: "bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200",
 	},
 	"/audio/speech": {
-		label: "Audio Speech",
+		label: "endpointTextToSpeech",
 		icon: Speech,
 		className: "bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200",
 	},
 	"/audio/realtime": {
-		label: "Audio Realtime",
+		label: "endpointRealtime",
 		icon: Headphones,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 	"/video/generations": {
-		label: "Video Generations",
+		label: "endpointVideoGeneration",
 		icon: Video,
 		className: "bg-fuchsia-50 text-fuchsia-700 ring-1 ring-inset ring-fuchsia-200",
 	},
 	"/moderations": {
-		label: "Moderations",
+		label: "endpointModerations",
 		icon: Eye,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 	"/batches": {
-		label: "Batch",
+		label: "tierBatch",
 		icon: Workflow,
 		className: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
 	},
 	"/music/generations": {
-		label: "Music Generations",
+		label: "endpointMusicGeneration",
 		icon: Music4,
 		className: "bg-pink-50 text-pink-700 ring-1 ring-inset ring-pink-200",
 	},
 	"/decisions": {
-		label: "Decisions",
+		label: "decisions",
 		icon: Scale,
 		className: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
 	},
 };
 
-function getEndpointMeta(endpoint?: string | null): {
+function getEndpointMeta(endpoint?: string | null, fallbackLabel = "Endpoint"): {
 	label: string;
 	icon: React.ElementType;
 	className: string;
 } {
 	if (!endpoint) {
 		return {
-			label: "Endpoint",
+			label: fallbackLabel,
 			icon: Link2,
 			className: "bg-neutral-50 text-neutral-700 ring-1 ring-neutral-200",
 		};
@@ -244,8 +234,11 @@ function getEndpointMeta(endpoint?: string | null): {
 	};
 }
 
-function EndpointPill({ endpoint }: { endpoint?: string | null }) {
-	const meta = getEndpointMeta(endpoint);
+function EndpointPill({ endpoint, fallbackLabel }: { endpoint?: string | null; fallbackLabel: string }) {
+	const t = useTranslations("Catalogue.models.filtersUi");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const meta = getEndpointMeta(endpoint, fallbackLabel);
+	const label = meta.label === "decisions" ? tMetadata("modalityDecisions") : endpoint && ENDPOINT_META[endpoint] ? t(meta.label as never) : meta.label;
 	const Icon = meta.icon;
 	return (
 		<span
@@ -255,7 +248,7 @@ function EndpointPill({ endpoint }: { endpoint?: string | null }) {
 			)}
 		>
 			<Icon className="h-3.5 w-3.5" />
-			{meta.label}
+			{label}
 		</span>
 	);
 }
@@ -263,6 +256,30 @@ function EndpointPill({ endpoint }: { endpoint?: string | null }) {
 // --- main card ---------------------------------------------------------------
 
 export default function APIModelCard({ model }: { model: APIProviderModels }) {
+	const t = useTranslations("Catalogue.apiModelCard");
+	const tx = useTranslations();
+	const tProviderModelList = useTranslations("Catalogue.providerModelList");
+	const tModelMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tStatus = useTranslations("Catalogue.modelDetail.providerTable.statusDescriptions");
+	const formatModalityLabel = (value: string) => {
+		if (value === "audio_stt") return tModelMetadata("modalityTranscription");
+		if (value === "audio_tts") return tModelMetadata("modalitySpeech");
+		if (value === "audio_music") return tModelMetadata("modalityMusic");
+		if (value === "text") return tModelMetadata("modalityText");
+		if (value === "image") return tModelMetadata("modalityImage");
+		if (value === "audio") return tModelMetadata("modalityAudio");
+		if (value === "video") return tModelMetadata("modalityVideo");
+		if (value === "embeddings") return tProviderModelList("capabilities.embeddings");
+		if (value === "rerank") return tProviderModelList("capabilities.rerank");
+		if (value === "moderation") return tModelMetadata("modalityModeration");
+		if (value === "decisions") return tModelMetadata("modalityDecisions");
+		if (value === "structured") return tModelMetadata("modalityStructured");
+		if (value === "tool") return t("modalityTool");
+		return value
+			.replace(/[_-]+/g, " ")
+			.trim()
+			.replace(/\b\w/g, (char) => char.toUpperCase());
+	};
 	const isComingSoon = model.availability_status === "coming_soon";
 	const inputs = useMemo(
 		() => toList(model.input_modalities),
@@ -321,7 +338,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						</div>
 					</TooltipTrigger>
 					<TooltipContent>
-						{isComingSoon ? "Coming soon: not routable yet" : model.is_active_gateway ? "Gateway: Active" : "Gateway: Inactive"}
+						{isComingSoon ? tStatus("comingSoon") : model.is_active_gateway ? t("gatewayActive") : t("gatewayInactive")}
 					</TooltipContent>
 				</Tooltip>
 			</div>
@@ -330,7 +347,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 			<div className="pr-10">
 				{isComingSoon ? (
 					<Badge variant="secondary" className="mb-2 border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
-						Coming soon
+						{tx("Catalogue.common.comingSoon")}
 					</Badge>
 				) : null}
 				<h3 className="text-base sm:text-lg font-semibold leading-tight line-clamp-2">
@@ -348,7 +365,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 					variant="ghost"
 					size="sm"
 					className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-					onCopy={() => toast.success("Copied model ID")}
+					onCopy={() => toast.success(t("copiedModelId"))}
 				/>
 			</div>
 
@@ -362,22 +379,22 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<button className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
 							<Link2 className="h-3.5 w-3.5" />
 							<span className="font-medium">
-								{endpoints.length === 1 ? "1 endpoint" : `${endpoints.length} endpoints`}
+								{t("endpointsCount", { count: endpoints.length })}
 							</span>
 						</button>
 					</HoverCardTrigger>
 					<HoverCardContent className="w-80 text-xs">
 						<div className="space-y-2">
 							<div className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-								Supported endpoints
+								{t("supportedEndpoints")}
 							</div>
 							<div className="flex flex-wrap gap-1.5">
 								{endpoints.length > 0 ? (
 									endpoints.map((ep) => (
-										<EndpointPill key={ep} endpoint={ep} />
+										<EndpointPill key={ep} endpoint={ep} fallbackLabel={t("endpoint")} />
 									))
 								) : (
-									<EndpointPill endpoint={null} />
+										<EndpointPill endpoint={null} fallbackLabel={t("endpoint")} />
 								)}
 							</div>
 						</div>
@@ -390,12 +407,12 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 						<HoverCardTrigger asChild>
 							<button className="flex items-center gap-1.5 text-neutral-600 hover:text-neutral-900 transition-colors">
 								<Bot className="h-3.5 w-3.5" />
-								<span className="font-medium">Alias</span>
+								<span className="font-medium">{t("alias")}</span>
 							</button>
 						</HoverCardTrigger>
 						<HoverCardContent className="w-80 text-xs">
 							<div className="space-y-2">
-								<div className="text-xs font-medium">Provider alias</div>
+								<div className="text-xs font-medium">{t("providerAlias")}</div>
 								<div className="flex items-center gap-2">
 									<code className="font-mono text-xs break-all flex-1">
 										{model.provider_model_slug}
@@ -405,12 +422,11 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 										variant="outline"
 										size="sm"
 										className="shrink-0"
-										onCopy={() => toast.success("Copied provider alias")}
+										onCopy={() => toast.success(t("copiedProviderAlias"))}
 									/>
 								</div>
 								<p className="text-xs text-neutral-500">
-									This is what the provider calls this model. Use it when
-									calling their native API.
+									{t("providerAliasDescription")}
 								</p>
 							</div>
 						</HoverCardContent>
@@ -425,7 +441,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 				{/* Input modalities */}
 				<div className="space-y-2">
 					<span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-						Input
+						{tProviderModelList("input")}
 					</span>
 					<div className="flex flex-wrap gap-1.5">
 						{availableInputsOrdered.map((mod) => {
@@ -455,7 +471,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 				{/* Output modalities */}
 				<div className="space-y-2">
 					<span className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
-						Output
+						{tProviderModelList("output")}
 					</span>
 					<div className="flex flex-wrap gap-1.5">
 						{availableOutputsOrdered.map((mod) => {

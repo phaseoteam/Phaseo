@@ -1,0 +1,47 @@
+---
+title: "Pi"
+icon: "/icons/brands/pi.svg"
+description: "इंस्टॉल किए गए Pi model catalog को Phaseo Gateway से जोड़ें।"
+---
+
+## Phaseo CLI से सेटअप करें
+
+इन उत्पादन-तैयार कमांडों के लिए Phaseo खाते की ज़रूरत है। CLI में लॉग इन और सेटअप करते समय गेटवे का अलग क्रेडेंशियल बनाया जाता है।
+
+```bash
+phaseo login
+phaseo pi
+```
+
+पहले Pi का आधिकारिक release install करें। Setup `~/.pi/agent/extensions/phaseo.ts` में managed provider extension लिखता है। यह Chat Completions-संगत सभी active Phaseo text models उपलब्ध कराता है और हर request के समय Phaseo CLI से dedicated API key प्राप्त करता है।
+
+शुरुआती model चुनें या ज़रूरत पड़ने पर सिर्फ़ एक model configure करें:
+
+```bash
+phaseo pi --model anthropic/claude-sonnet-4.6
+phaseo pi --catalog default
+```
+
+File changes का preview देखने के लिए `--dry-run` उपयोग करें।
+
+## शुरू करें और जाँचें
+
+```bash
+pi
+```
+
+`/model` खोलें, `phaseo` provider चुनें और एक छोटा prompt भेजें। केवल managed extension हटाकर उसकी dedicated key revoke करने के लिए यह चलाएँ:
+
+```bash
+phaseo integrations remove pi
+```
+
+## क्रेडेंशियल को मैन्युअल रूप से ऐक्सेस करें
+
+बनाया गया extension, Pi के command-backed key syntax का उपयोग करता है:
+
+```text
+!phaseo integrations credential pi
+```
+
+Extension में कोई plaintext key नहीं लिखी जाती।

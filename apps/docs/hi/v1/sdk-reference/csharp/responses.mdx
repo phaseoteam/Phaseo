@@ -1,0 +1,35 @@
+---
+icon: "message-square"
+title: "रिस्पॉन्स"
+description: "C# SDK से Responses API call करें।"
+---
+
+**तरीका**: `client.GenerateResponse(...)` या `client.CreateResponse(...)`
+
+### उदाहरण
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-5-nano",
+    ["input"] = "Summarise this text",
+    ["temperature"] = 0.7
+});
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): लक्ष्य model ID।
+- `input` (आवश्यक): संदेशों और टूल कॉल जैसे इनपुट आइटमों की क्रमबद्ध सूची।
+- `temperature` (0–2): मान जितना अधिक होगा, यादृच्छिकता उतनी बढ़ेगी।
+- `top_p` (0–1) / `top_k` (>=1): न्यूक्लियस और top-k सैंपलिंग नियंत्रण।
+- `max_output_tokens` (integer): हर प्रतिक्रिया में जनरेट होने वाले टोकन की सख्त सीमा; हर संदेश को सीमित करने के लिए `max_output_tokens_per_message` उपयोग करें।
+- टूल: `tools` (परिभाषाएँ), `tool_choice` (auto/none/विशिष्ट), `max_tool_calls` (पूर्णांक), `parallel_tool_calls` (बूलियन)।
+- लॉग प्रायिकताएँ: `logprobs` (बूलियन), `top_logprobs` (0–20), हर टोकन की लॉग प्रायिकता लौटाने के लिए।
+- आउटपुट: `response_format` (json/text), `service_tier`, `store` (बूलियन), `stream` (बूलियन)।
+- मेटाडेटा: `metadata` (बिना बदलाव आगे भेजा जाने वाला ऑब्जेक्ट), `reasoning` (प्रयास-सूचना वाला ऑब्जेक्ट)।
+- Gateway के अतिरिक्त विकल्प: `usage` (उपयोग आँकड़े माँगने के लिए बूलियन), `meta` (मेटा ब्लॉक शामिल करने के लिए बूलियन)।
+
+### लौटाया गया मान
+`ResponsesResponse`

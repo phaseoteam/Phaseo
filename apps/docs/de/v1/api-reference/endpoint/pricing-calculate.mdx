@@ -1,0 +1,19 @@
+---
+title: "Preise berechnen"
+sidebarTitle: "Preise berechnen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
+description: "Die Kosten für eine konkrete Nutzung eines Anbieters, Modells und Endpunkts schätzen."
+---
+
+Berechnet die Kosten für eine angegebene Nutzung anhand der aktiven Gateway-Preisregeln.
+
+Gib Folgendes an:
+
+- `provider`: Anbieter-ID, zum Beispiel `openai`
+- `model`: ID des gerouteten Modells
+- `endpoint`: Endpunktfamilie, zum Beispiel `responses` oder `chat.completions`
+- `usage`: das abzurechnende Nutzungsobjekt, etwa Tokenzahlen oder andere Messwerte
+
+Verwende diese Route, wenn Anbieter, Modell und Endpunkt feststehen und du die Kosten einer konkreten Nutzung schätzen möchtest. `GET /pricing/models` listet dagegen die aktuellen öffentlichen Preisangaben des Katalogs auf.
+

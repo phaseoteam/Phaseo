@@ -1,0 +1,96 @@
+---
+title: "Status do provedor e do Phaseo"
+description: "Entenda as diferenças entre a disponibilidade no provedor, a prontidão da integração do Phaseo e a saúde do roteamento."
+icon: "activity"
+---
+
+Uma oferta de provedor e modelo tem status separados no provedor de origem e no Phaseo. Isso importa quando o provedor lança um modelo, mas o Phaseo ainda não implementou ou habilitou o endpoint correspondente.
+
+Você verá esses campos nas páginas de modelos, nos cartões de preços dos provedores e nas telas relacionadas à disponibilidade.
+
+## Disponibilidade do provedor
+
+A disponibilidade do provedor descreve a oferta na origem.
+
+| Status | Significado |
+| --- | --- |
+| `Available` | O provedor aceita solicitações para a oferta no momento. |
+| `Preview` | O provedor disponibiliza a oferta em prévia. |
+| `Limited Access` | A oferta existe, mas o acesso depende da conta, região, lista de permissões ou capacidade. |
+| `Coming Soon` | O provedor anunciou ou listou a oferta, mas ela ainda não pode ser usada. |
+| `Deprecated` | A oferta continua disponível, mas o provedor recomenda a migração. |
+| `Removed` | O provedor deixou de disponibilizar a oferta. |
+| `Unknown` | O Phaseo ainda não verificou a disponibilidade na origem. |
+
+A disponibilidade no provedor não significa que o Phaseo pode rotear a solicitação.
+
+## Status da integração do Phaseo
+
+O status do Phaseo descreve nossa implementação e rollout.
+
+| Status | Significado | Roteamento do Phaseo |
+| --- | --- | --- |
+| `Unsupported` | O Phaseo não tem uma integração compatível com a oferta. | Não roteável. |
+| `Planned` | O trabalho de integração foi aprovado, mas ainda não começou. | Não roteável. |
+| `Implementing` | O trabalho de integração está em andamento. | Não roteável. |
+| `Testing` | Implementada e em testes de contrato, staging ou canário. | Não roteável publicamente. |
+| `Enabled` | Compatível e habilitada para uso em produção. | Pode ser roteada se as chaves de roteamento e a saúde permitirem. |
+| `Disabled` | O Phaseo desativou a integração intencionalmente. | Não roteável. |
+| `Blocked` | Uma dependência externa ou ainda não resolvida impede o rollout. | Não roteável. |
+
+Somente integrações `Enabled` podem ter o roteamento público habilitado.
+
+## Acesso interno
+
+O escopo de acesso é separado do status da integração do Phaseo:
+
+| Escopo | Significado |
+| --- | --- |
+| `Public` | Solicitações normais de clientes podem usar a rota quando todas as verificações de roteamento forem aprovadas. |
+| `Internal` | Somente tráfego de teste autenticado do Phaseo pode usar a rota. |
+
+Uma rota interna exige o token interno de alta entropia e uma solicitação que indique explicitamente o modo de teste. Um cliente não pode habilitá-la somente com o cabeçalho de teste. Solicitações normais não consultam o banco de dados em busca de rotas internas; elas usam o cache de contexto padrão existente. Os testes internos usam um segmento de cache separado e consideram apenas rotas explicitamente internas, com uma oferta de origem utilizável e status do Phaseo `Testing` ou `Enabled`.
+
+## Saúde do roteamento
+
+A saúde do roteamento é um terceiro sinal operacional. Ela indica como uma rota habilitada deve ser selecionada neste momento.
+
+| Status | Significado | Comportamento do roteamento |
+| --- | --- | --- |
+| `Active` | A rota está saudável o bastante para ser selecionada normalmente. | Roteável agora. |
+| `Deranked L1` | A saúde recente reduziu um pouco a prioridade. | Roteável agora. |
+| `Deranked L2` | A saúde recente reduziu claramente a prioridade. | Roteável agora, depois de rotas mais saudáveis. |
+| `Deranked L3` | A saúde recente reduziu bastante a prioridade. | Roteável agora, com prioridade bem menor. |
+| `Disabled` | A chave de roteamento está desligada. | Não é roteada. |
+
+A redução de prioridade não altera a disponibilidade do provedor nem o ciclo de vida da integração do Phaseo. As observações de saúde em tempo real também não modificam esses campos do ciclo de vida.
+
+## Exemplos
+
+Uma oferta de provedor recém-lançada pode ter:
+
+- disponibilidade do provedor: `Available`
+- status do Phaseo: `Implementing`
+- saúde do roteamento: não aplicável porque o roteamento está desativado
+
+Uma rota estabelecida, mas temporariamente degradada, pode ter:
+
+- disponibilidade do provedor: `Available`
+- status do Phaseo: `Enabled`
+- saúde do roteamento: `Deranked L2`
+
+Um anúncio do provedor pode ter:
+
+- disponibilidade do provedor: `Coming Soon`
+- status do Phaseo: `Planned`
+- saúde do roteamento: não aplicável
+
+## Compatibilidade
+
+Campos de API existentes, como `availability_status`, `routing_status`, `is_active_gateway` e `routable`, continuam disponíveis durante o rollout aditivo. Novas integrações devem usar os campos explícitos de provedor e Phaseo.
+
+## Páginas relacionadas
+
+- [Roteamento e fallbacks](./routing-and-fallbacks.mdx)
+- [Níveis de serviço](./service-tiers.mdx)
+- [Referência da API de modelos](../api-reference/endpoint/models.mdx)

@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "出力と再試行"
+description: "最終出力を検証し、モデルリクエストを再試行して、完了したGo実行を確認します。"
+---
+
+エージェントが返す値がアプリケーションの契約に合うよう、出力を検証します。モデルの再試行は失敗したリクエストに適用されます。ツールの再試行は、実装内で明示し、安全な場合にのみ行ってください。
+
+## モデルの再試行を設定する
+
+```go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "research-agent",
+  Model: "openai/gpt-5.4-nano",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    BaseDelay:  500 * time.Millisecond,
+    MaxDelay:   4 * time.Second,
+  },
+})
+```
+
+実行レコードには、各ステップでのモデル試行回数が保持されます。再試行しても完了済みのツール結果は破棄されません。
+
+## 最終結果を検証する
+
+後続コードで構造化された結果が必要な場合は、`AgentDefinition`に`OutputSchema`を設定します。検証は結果を完了とする前に実行されるため、無効な出力はアプリケーション内の後工程ではなく、エージェント境界で失敗します。
+
+## 結果を確認する
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil { return err }
+
+fmt.Println(result.Output)
+fmt.Println(result.Run.Status)
+fmt.Println(result.Usage.TotalTokens)
+fmt.Println(result.Usage.Cost)
+```
+
+予算と厳格な上限の設定には[停止条件](./agent-sdk-stop-conditions.mdx)を、失敗への対応には[エラーとトラブルシューティング](./agent-sdk-observability.mdx)を参照してください。

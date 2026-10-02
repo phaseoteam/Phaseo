@@ -1,0 +1,9 @@
+---
+title: "创建私有模型"
+sidebarTitle: "创建私有模型"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /private-models"
+description: "将 OpenAI 兼容端点连接到已认证的工作区。"
+---
+
+需要 `private_models:write` 权限以及所有者或管理员身份。将 `model_reference` 设置为目录中的精确模型 ID 或工作区内的短标识。Phaseo 会分配最终模型 ID；`credential` 会被加密且仅可写入。

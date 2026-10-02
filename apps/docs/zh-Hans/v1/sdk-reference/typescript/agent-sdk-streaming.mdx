@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "流式传输"
+description: "流式传输文本、推理、工具活动和完整 Agent 事件。"
+---
+
+如果界面需要在运行期间显示 Agent 响应或工具活动，请使用 `stream()`。它会通过支持流式传输的模型客户端启动与 `run()` 相同的可恢复状态机。
+
+## 流式传输文本
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## 在多个位置读取结果
+
+流消费者支持重放，因此渲染、遥测和持久化代码可以同时消费同一次运行：
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## 选择流
+
+- `getTextStream()` 输出回答文本。
+- 如果模型提供推理更新，`getReasoningStream()` 会输出这些更新。
+- `getItemsStream()` 会输出带类型的 `AgentItem<TOutput>` 值，涵盖消息、推理、工具活动、错误和最终输出。
+- `getToolStream()` 输出工具活动。
+- `getFullStream()` 输出完整运行时事件。
+
+使用 `cancel()` 中止运行。本地工具会通过运行时信号接收取消通知。
+
+## 流式传输工具进度
+
+以异步生成器实现的工具可以发布初步结果。这些结果会以 `tool.preliminary_result` 事件的形式出现在完整流中，并保留在已完成步骤上。
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## 相关指南
+
+- [定义并运行工具](./agent-sdk-tools.mdx)
+- [使用类型化条目](./agent-sdk-items.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)
+- [构建持久化 Agent 循环](../../cookbook/agent-sdk-durable-loop.mdx)

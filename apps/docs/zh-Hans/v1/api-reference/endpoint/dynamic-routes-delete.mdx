@@ -1,0 +1,10 @@
+---
+title: "删除动态路由"
+sidebarTitle: "删除路由"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /routing/dynamic-routes/{id}"
+description: "删除动态路由及其版本历史。"
+---
+<Note>此端点需要具有 `settings:write` 权限的管理 API 密钥。</Note>
+
+可传入 `confirm_name` 以选择性确认完全匹配的名称。删除后会刷新关联密钥的上下文。

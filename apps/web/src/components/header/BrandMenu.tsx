@@ -11,6 +11,7 @@ import {
 	Sun,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import {
 	cloneElement,
 	type KeyboardEvent,
@@ -30,8 +31,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const brandAssets = [
-	{ name: "Wordmark", file: "wordmark", width: 1441, height: 300 },
-	{ name: "Logo", file: "logo", width: 64, height: 64 },
+	{ key: "wordmark", file: "wordmark", width: 1441, height: 300 },
+	{ key: "logo", file: "logo", width: 64, height: 64 },
 ] as const;
 
 type BrandAsset = (typeof brandAssets)[number];
@@ -104,15 +105,20 @@ function AssetFormatMenu({
 	onCopy: (asset: BrandAsset, format: AssetFormat) => void;
 	onDownload: (asset: BrandAsset, format: AssetFormat) => void;
 }) {
+	const t = useTranslations("Site.brandMenu");
 	const isCopy = action === "copy";
 	const ActionIcon = isCopy ? Copy : Download;
-	const actionLabel = isCopy ? "Copy" : "Download";
+	const assetLabel = t(`assets.${asset.key}` as never);
+	const menuLabel = t(
+		isCopy ? "copyMenuLabel" : "downloadMenuLabel",
+		{ asset: assetLabel },
+	);
 
 	return (
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger
-				aria-label={`${actionLabel} ${asset.name.toLowerCase()} as SVG or PNG`}
-				title={`${actionLabel} ${asset.name.toLowerCase()} as SVG or PNG`}
+				aria-label={menuLabel}
+				title={menuLabel}
 				className="flex size-7 min-h-7 justify-center p-0 [&>svg:last-child]:hidden"
 			>
 				<ActionIcon className="size-4" aria-hidden="true" />
@@ -124,8 +130,8 @@ function AssetFormatMenu({
 					}
 				>
 					<FileCode2 className="size-4" aria-hidden="true" />
-					{actionLabel} SVG
-					{isCopy && copiedAsset === assetActionKey(asset.name, "svg") ? (
+					{t(isCopy ? "copyFormatLabel" : "downloadFormatLabel", { format: "SVG" })}
+					{isCopy && copiedAsset === assetActionKey(asset.key, "svg") ? (
 						<Check className="ml-auto size-4 text-emerald-500" aria-hidden="true" />
 					) : null}
 				</DropdownMenuItem>
@@ -135,8 +141,8 @@ function AssetFormatMenu({
 					}
 				>
 					<FileImage className="size-4" aria-hidden="true" />
-					{actionLabel} PNG
-					{isCopy && copiedAsset === assetActionKey(asset.name, "png") ? (
+					{t(isCopy ? "copyFormatLabel" : "downloadFormatLabel", { format: "PNG" })}
+					{isCopy && copiedAsset === assetActionKey(asset.key, "png") ? (
 						<Check className="ml-auto size-4 text-emerald-500" aria-hidden="true" />
 					) : null}
 				</DropdownMenuItem>
@@ -150,6 +156,8 @@ export function BrandMenu({
 }: {
 	children: ReactElement<BrandMenuTriggerProps>;
 }) {
+	const t = useTranslations("Site.brandMenu");
+	const themeT = useTranslations("Common.theme");
 	const { resolvedTheme } = useTheme();
 	const [open, setOpen] = useState(false);
 	const [copiedAsset, setCopiedAsset] = useState<string | null>(null);
@@ -192,11 +200,17 @@ export function BrandMenu({
 				]);
 			}
 
-			setCopiedAsset(assetActionKey(asset.name, format));
-			toast.success(`${asset.name} ${format.toUpperCase()} copied to clipboard`);
+			setCopiedAsset(assetActionKey(asset.key, format));
+			toast.success(t("copySuccess", {
+				asset: t(`assets.${asset.key}` as never),
+				format: format.toUpperCase(),
+			}));
 			window.setTimeout(() => setCopiedAsset(null), 2000);
 		} catch {
-			toast.error(`Could not copy ${asset.name.toLowerCase()} as ${format.toUpperCase()}`);
+			toast.error(t("copyFailure", {
+				asset: t(`assets.${asset.key}` as never),
+				format: format.toUpperCase(),
+			}));
 		}
 	}
 
@@ -215,9 +229,15 @@ export function BrandMenu({
 			link.click();
 			link.remove();
 			window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
-			toast.success(`${asset.name} ${format.toUpperCase()} downloaded`);
+			toast.success(t("downloadSuccess", {
+				asset: t(`assets.${asset.key}` as never),
+				format: format.toUpperCase(),
+			}));
 		} catch {
-			toast.error(`Could not download ${asset.name.toLowerCase()} as ${format.toUpperCase()}`);
+			toast.error(t("downloadFailure", {
+				asset: t(`assets.${asset.key}` as never),
+				format: format.toUpperCase(),
+			}));
 		}
 	}
 
@@ -239,47 +259,48 @@ export function BrandMenu({
 					<div
 						className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-900"
 						role="group"
-						aria-label="Logo preview mode"
+						aria-label={t("logoPreviewMode")}
 					>
 						<button
 							type="button"
-							aria-label="Use light logo"
+							aria-label={t("useLightLogo")}
 							aria-pressed={assetTheme === "light"}
 							onClick={() => setAssetTheme("light")}
-							title="Light logo"
+							title={t("lightLogo")}
 							className={`relative flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md px-2 text-xs text-zinc-500 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 dark:text-zinc-400 dark:focus-visible:ring-zinc-700 ${assetTheme === "light" ? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-50" : "hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"}`}
 						>
 							<Sun className="h-4 w-4" aria-hidden="true" />
-							Light
+							{themeT("light")}
 						</button>
 						<button
 							type="button"
-							aria-label="Use dark logo"
+							aria-label={t("useDarkLogo")}
 							aria-pressed={assetTheme === "dark"}
 							onClick={() => setAssetTheme("dark")}
-							title="Dark logo"
+							title={t("darkLogo")}
 							className={`relative flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md px-2 text-xs text-zinc-500 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-300 dark:text-zinc-400 dark:focus-visible:ring-zinc-700 ${assetTheme === "dark" ? "bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-50" : "hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"}`}
 						>
 							<Moon className="h-4 w-4" aria-hidden="true" />
-							Dark
+							{themeT("dark")}
 						</button>
 					</div>
 				</div>
 				<div className="grid grid-cols-1 gap-2 min-[22rem]:grid-cols-2">
 					{brandAssets.map((asset) => {
-						const { name, file, width, height } = asset;
+						const { key, file, width, height } = asset;
 						const assetPath = `/${file}_${assetTheme}.svg`;
 						const previewBackgroundClass = assetTheme === "dark" ? "bg-black" : "bg-white";
+						const assetLabel = t(`assets.${key}` as never);
 
 						return (
 							<div
-								key={name}
+								key={key}
 								className="overflow-hidden rounded-lg border bg-muted/30"
 							>
 								<div className={`flex h-14 items-center justify-center px-4 ${previewBackgroundClass}`}>
 									<Image
 										src={assetPath}
-										alt={`Phaseo ${name.toLowerCase()}`}
+										alt={t("assetAlt", { asset: assetLabel })}
 										width={width}
 										height={height}
 										className={file === "logo" ? "size-8" : "h-6 w-auto"}
@@ -287,7 +308,7 @@ export function BrandMenu({
 								</div>
 								<div className="flex items-center gap-1 border-t px-2 py-1.5">
 									<span className="min-w-0 flex-1 truncate text-xs font-medium">
-										{name}
+										{assetLabel}
 									</span>
 									<AssetFormatMenu
 										action="copy"

@@ -1,0 +1,66 @@
+---
+title: "Tickets mit dem C# Agent SDK priorisieren"
+icon: "ticket-check"
+description: "Nutze das C# Agent SDK für eine Ticket-Triage mit lokalen Tools innerhalb eines einzelnen .NET-Dienstes."
+---
+
+Verwende dieses Rezept, wenn ein .NET-Dienst eingehende Support-Tickets klassifizieren oder zusammenfassen soll.
+
+## 1. SDKs vorbereiten
+
+<Note type="warning">Das C# Agent SDK ist noch nicht auf NuGet verfügbar. Folge der [Installationsanleitung aus dem Quellcode](../sdk-reference/csharp/agent-sdk-installation.mdx).</Note>
+
+## 2. Ein internes Such-Tool definieren
+
+```csharp
+var loadTicket = AgentSdk.DefineTool(new Tool(
+    Id: "load-ticket",
+    Description: "Load one support ticket by id.",
+    Parameters: new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?>
+        {
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+        },
+        ["required"] = new[] { "ticketId" },
+    },
+    Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
+    {
+        ["ticketId"] = "T-1042",
+        ["severity"] = "medium",
+        ["summary"] = "Customer cannot find preset routing settings.",
+    })
+));
+```
+
+## 3. Agent erstellen und ausführen
+
+```csharp
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "ticket-triage-agent",
+    Model = "openai/gpt-5.4-nano",
+    Instructions = "Use tools when helpful and answer with a short triage summary.",
+    Tools = new[] { loadTicket },
+});
+
+var result = await agent.Run(new RunOptions
+{
+    Input = "Review ticket T-1042 and summarize the next action.",
+    Client = AgentSdk.CreateGatewayAgentClient(),
+});
+
+Console.WriteLine(result.Output);
+```
+
+## Wann dieses Rezept passt
+
+- der Ablauf in einem einzelnen ASP.NET-Dienst oder Worker läuft
+- deine lokale Laufzeit den internen Ticketstatus bereits abrufen kann
+- du einen begrenzten Agent-Ablauf möchtest, bevor du Warteschlangen oder Genehmigungen hinzufügst
+
+## Weiterführende Themen
+
+- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
+- [Supportanfragen mit presetgesteuerten Agents priorisieren](./agent-sdk-support-triage.mdx)

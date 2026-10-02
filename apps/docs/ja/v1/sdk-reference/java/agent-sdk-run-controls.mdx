@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "出力と再試行"
+description: "Javaエージェントの出力を検証し、一時的なモデル障害を上限付きで再試行します。"
+---
+
+後続のJavaコードが未検証のモデルテキストではなく構造化された値を必要とする場合は、最終出力を検証します。エージェント定義に最終バリデーターを追加し、検証失敗を契約違反として扱います。
+
+モデルまたはプロバイダーの一時的な障害には`ModelRetryConfig`を使います。
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+再試行回数は、最初のリクエストの後に行われた追加試行の数です。完了したステップには、デバッグとテレメトリー用にモデルの最終試行回数が保持されます。
+
+ローカルツールの並列実行は、`ToolExecutionConfig`で別に設定します。モデルの再試行では、ツール内部で失敗した副作用は再実行されません。
+
+追加のResponses APIオプションは`GatewayOptions.requestOptions`から渡せます。モデル、入力、指示、ローカル関数ツールは引き続きアダプターが管理します。
+
+## 関連項目
+
+- [動的なターン](./agent-sdk-dynamic-turns.mdx)
+- [停止条件](./agent-sdk-stop-conditions.mdx)
+- [エラーとトラブルシューティング](./agent-sdk-observability.mdx)

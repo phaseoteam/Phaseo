@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "État et approbation"
+description: "Mettez les agents C# en pause pour obtenir une décision humaine et reprendre l’état géré par l’application."
+---
+
+Utilisez `AgentDefinition.HumanReview` pour créer un point de contrôle général. Les outils soumis à approbation ou exécutés manuellement renseignent `Run.Pause.PendingToolCalls` avec les identifiants exacts des appels.
+
+Continuez avec `Agent.ContinueRun(...)` en fournissant :
+
+- des enregistrements `ToolDecision` dans `Approvals` ou `Rejections`
+- des enregistrements `ToolOutput` pour le travail effectué par votre application
+- `HumanInput` pour une pause de révision générale
+- le `RunResult` précédent ou `RunId` avec un `IStateAccessor`
+
+Les décisions sont associées à l’identifiant de l’appel : les appels simultanés au même outil restent donc distincts.
+
+Implémentez `IStateAccessor.Load(...)` et `Save(...)` si les exécutions doivent survivre aux requêtes ou aux redémarrages du processus. Phaseo n’héberge pas l’état d’exécution de l’Agent SDK.
+
+## À lire aussi
+
+- [Outils](./agent-sdk-tools.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "生成记录查询"
+description: "调用 `/generations` 检索之前的生成记录。"
+---
+
+**方法**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+如果已保存请求详情，返回的生成记录还会包含 `replay_supported` 和 `replay_request`，以便将捕获的请求负载重新提交到原端点。
+

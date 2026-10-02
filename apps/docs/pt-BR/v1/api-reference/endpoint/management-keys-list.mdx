@@ -1,0 +1,10 @@
+---
+title: "Listar chaves de gerenciamento"
+sidebarTitle: "Listar chaves de gerenciamento"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /management-keys"
+description: "Lista os metadados das chaves de gerenciamento do espaço de trabalho autenticado."
+---
+<Note>Este endpoint requer uma identidade de proprietário ou administrador e `management_keys:read`.</Note>
+
+Os valores brutos das chaves nunca são incluídos. Use `limit` e `offset` para paginar os resultados.

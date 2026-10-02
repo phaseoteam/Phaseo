@@ -83,8 +83,8 @@
 			background-position: 0% 0%;
 		}
 	}
-	--font-heading: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-	--font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+	--font-heading: var(--font-phaseo-sans);
+	--font-sans: var(--font-phaseo-sans);
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--radius-3xl: calc(var(--radius) * 2.2);
 	--radius-4xl: calc(var(--radius) * 2.6);
@@ -144,6 +144,7 @@
 */
 
 :root {
+	--font-phaseo-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
 	--sidebar: oklch(0.985 0 0);
 	--sidebar-foreground: oklch(0.145 0 0);
 	--sidebar-primary: oklch(0.588 0.158 241.966);
@@ -180,6 +181,22 @@
 	--background: oklch(1 0 0);
 
 	--foreground: oklch(0.145 0 0);
+}
+
+html[data-font="han-simplified"] {
+	--font-phaseo-sans: var(--font-noto-sans-simplified-chinese), "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+html[data-font="devanagari"] {
+	--font-phaseo-sans: var(--font-noto-sans-devanagari), "Nirmala UI", "Mangal", sans-serif;
+}
+
+html[data-font="japanese"] {
+	--font-phaseo-sans: var(--font-noto-sans-japanese), "Yu Gothic", "Hiragino Kaku Gothic ProN", sans-serif;
+}
+
+html[data-font="arabic"] {
+	--font-phaseo-sans: var(--font-noto-sans-arabic), Tahoma, Arial, sans-serif;
 }
 
 /*

@@ -1,0 +1,31 @@
+---
+icon: "binary"
+title: "التضمينات"
+description: "استدعِ /embeddings باستخدام SDK Ruby."
+---
+
+**الطرق**: `client.generate_embedding(...)` أو `client.create_embedding(...)`.
+
+### مثال
+
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+embedding = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+### المعلمات الأساسية
+
+-   `model` (مطلوب): معرّف نموذج التضمينات (مثل `openai/text-embedding-3-large`).
+-   `input` (مطلوب): سلسلة نصية أو مصفوفة من السلاسل.
+-   `encoding_format`: `float` (الافتراضي) أو `base64`.
+-   `dimensions`: عدد صحيح اختياري لاقتطاع طول التضمين (يعتمد على النموذج).
+-   `user`: وسم اختياري للمستخدم النهائي.
+
+### القيمة المعادة
+
+محتوى التضمينات (JSON)

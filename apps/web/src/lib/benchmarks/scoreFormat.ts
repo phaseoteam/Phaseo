@@ -82,8 +82,9 @@ export function formatBenchmarkScore(args: {
 	value: number | null;
 	isPercentage: boolean;
 	fallback?: string | number | null;
+	locale?: string;
 }): string {
-	const { value, isPercentage, fallback = null } = args;
+	const { value, isPercentage, fallback = null, locale } = args;
 	const normalizedValue = normalizeBenchmarkScoreValue(value, isPercentage);
 
 	if (normalizedValue == null || !Number.isFinite(normalizedValue)) {
@@ -95,6 +96,14 @@ export function formatBenchmarkScore(args: {
 		normalizedValue % 1 === 0 || Math.abs(normalizedValue) >= 100
 			? normalizedValue.toFixed(0)
 			: normalizedValue.toFixed(2);
+	if (locale) {
+		const decimals = formatted.includes(".") ? 2 : 0;
+		return new Intl.NumberFormat(locale, {
+			...(isPercentage ? { style: "percent" as const } : {}),
+			minimumFractionDigits: decimals,
+			maximumFractionDigits: decimals,
+		}).format(Number(formatted) / (isPercentage ? 100 : 1));
+	}
 	return isPercentage ? `${formatted}%` : formatted;
 }
 

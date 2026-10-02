@@ -1,0 +1,17 @@
+---
+icon: "arrow-right-left"
+title: "الترجمات"
+description: "استدعِ /audio/translations باستخدام Python SDK."
+---
+
+**الطريقة**: `client.generate_translation()`
+
+```python
+result = client.generate_translation({
+    "model": "openai/gpt-4o-transcribe",
+    "audio_b64": "base64-audio",
+})
+
+print(result)
+```
+

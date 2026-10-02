@@ -61,6 +61,18 @@ describe("auth origin helpers", () => {
 		);
 	});
 
+	it("carries an explicit UI locale through the technical callback", () => {
+		expect(
+			buildAuthCallbackUrl(
+				"https://example.com",
+				"/settings/account",
+				"de-DE",
+			),
+		).toBe(
+			"https://example.com/auth/callback?returnUrl=%2Fsettings%2Faccount&locale=de-DE",
+		);
+	});
+
 	it("drops unsafe returnUrl values", () => {
 		expect(buildAuthCallbackUrl("https://example.com", "https://evil.com")).toBe(
 			"https://example.com/auth/callback",

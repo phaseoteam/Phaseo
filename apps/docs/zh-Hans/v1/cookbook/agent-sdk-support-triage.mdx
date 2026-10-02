@@ -1,0 +1,193 @@
+---
+title: "使用预设和了解护栏的失败处理进行支持分流"
+icon: "life-buoy"
+description: "运行由预设驱动的支持分流代理，返回严格 JSON，将高风险案例暂停以供审核，并使护栏失败保持可见。"
+---
+
+当支持工作流需要满足以下要求时，可以使用此方案：
+
+- 从仪表板预设继承路由和提示默认值
+- 返回严格的结构化输出
+- 暂停高风险案例以供人工审核
+- 将网关失败保留在日志中，而不是隐藏在代理代码里
+
+## 1. 从预设开始
+
+创建一个名为 `support-triage` 的预设，用于管理：
+
+- 默认路由模型或路由器目标
+- 提供商偏好
+- 支持系统提示
+- 稳定的解码参数
+
+这样代理代码就可以专注于工作流控制，而无需重复请求策略。
+
+## 2. 定义范围明确的分流契约
+
+```ts
+type SupportTriageDecision = {
+  queue: "billing" | "reliability" | "product" | "security";
+  severity: "low" | "medium" | "high";
+  needsHumanReview: boolean;
+  summary: string;
+};
+```
+
+首次输出结构应尽量精简，便于操作人员快速检查。
+
+## 3. 创建由预设驱动的代理
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const supportTriageAgent = createAgent<string, SupportTriageDecision>({
+  id: "support-triage-agent",
+  preset: "support-triage",
+  parseOutput(text) {
+    return JSON.parse(text) as SupportTriageDecision;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsHumanReview
+      ? {
+          reason: "support_triage_review_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+SDK 会将 `preset: "support-triage"` 解析为网关别名形式 `@support-triage`。
+
+## 4. 配置网关适配器
+
+对于每次分流都应保持固定的部分，请使用适配器默认值：
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "support_triage_decision",
+    schema: {
+      type: "object",
+      properties: {
+        queue: {
+          type: "string",
+          enum: ["billing", "reliability", "product", "security"],
+        },
+        severity: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        needsHumanReview: { type: "boolean" },
+        summary: { type: "string" },
+      },
+      required: ["queue", "severity", "needsHumanReview", "summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. 以有限次重试运行工作流
+
+```ts
+const result = await supportTriageAgent.run({
+  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+  client,
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+  onEvent(event) {
+    console.log(event.type, event.runId, event.attempt);
+  },
+});
+```
+
+如果运行暂停等待审核，请显式恢复：
+
+```ts
+if (result.run.status === "waiting_for_human") {
+  const continued = await supportTriageAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the triage decision.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. 将网关失败视为运行事件
+
+不要在代理回调链中吞掉失败，从而将其隐藏。
+
+应显式捕获 `AgentGatewayError`：
+
+```ts
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await supportTriageAgent.run({
+    input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
+    client,
+    store,
+  });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error("Gateway request failed", {
+      status: error.status,
+      requestId: error.requestId,
+      generationId: error.generationId,
+      reason: error.reason,
+      providerFailureDiagnostics: error.providerFailureDiagnostics,
+      routingDiagnostics: error.routingDiagnostics,
+    });
+  }
+  throw error;
+}
+```
+
+然后：
+
+1. 让运行时持久化 `failed` 的运行和步骤状态
+2. 在后续恢复流程中，如果原始异常已不在内存中，请检查 `loaded.run.errorDetails` 或 `loaded.steps[n].errorDetails`
+3. 检查请求详情中的以下内容：
+   - 护栏执行情况
+   - 路由详情
+   - 插件执行情况
+   - 请求 ID 和提供商数据
+
+以下情况尤其需要注意：
+
+- 护栏拦截了请求
+- 预设允许列表拒绝了所请求的模型
+- 提供商凭证或启用筛选条件移除了可路由候选项
+- response healing 无法恢复符合 schema 的 JSON
+
+## 7. 验证事项
+
+分别完成一次成功运行和一次故意设置为高风险的运行后，确认：
+
+- 请求详情视图显示由预设驱动的请求目标
+- 高风险案例会暂停在 `waiting_for_human` 状态
+- 重试的模型步骤会持久化 `modelAttempts`
+- 护栏或预设导致的失败会显示在请求详情中，而不会隐藏在代理异常里
+
+## 相关指南
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [预设](../guides/presets.mdx)
+- [路由和回退](../guides/routing-and-fallbacks.mdx)
+- [验证结构化输出](../guides/structured-outputs.mdx)
+- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)
+- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
+- [构建持久型 TypeScript 代理循环](./agent-sdk-durable-loop.mdx)

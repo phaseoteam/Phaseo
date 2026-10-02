@@ -1,0 +1,11 @@
+---
+title: "Beitrittsanfrage zum Arbeitsbereich genehmigen"
+sidebarTitle: "Beitrittsanfrage genehmigen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/join-requests/{request_id}/approve"
+description: "Eine ausstehende Beitrittsanfrage atomar genehmigen."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `workspaces:write` erforderlich.</Note>
+
+Bei der Genehmigung werden der Ablauf und die verbleibenden Nutzungen der Einladung geprüft, die Einladungsrolle angewendet und die Entscheidung in einer Transaktion gespeichert.
+

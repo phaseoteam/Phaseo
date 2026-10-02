@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { useTranslations } from "next-intl";
 
 const SUCCESS_BANNER_AUTO_DISMISS_MS = 10_000;
 
@@ -23,6 +24,7 @@ export default function Banner({
 	queryString,
 	latestPaymentSuccessAt,
 }: Props) {
+	const t = useTranslations("SettingsUI.credits");
 	const [banner, setBanner] = useState<Banner>(null);
 	const [successCountdownSeconds, setSuccessCountdownSeconds] = useState<number | null>(null);
 	const router = useRouter();
@@ -53,8 +55,8 @@ export default function Banner({
 					type: refund === "succeeded" ? "success" : "info",
 					message:
 						refund === "succeeded"
-							? "Your refund is confirmed. Most banks post refunds in 5-10 business days."
-							: "Your refund request is processing. Once confirmed, most banks post refunds in 5-10 business days.",
+							? t("refundConfirmed")
+							: t("refundProcessing"),
 				});
 				return;
 			}
@@ -74,13 +76,13 @@ export default function Banner({
 				if (hasConfirmedPayment) {
 					setBanner({
 						type: "success",
-						message: "Payment confirmed. Your credits have been added.",
+						message: t("paymentConfirmed"),
 					});
 				} else {
 					setBanner({
 						type: "info",
 						message:
-							"Processing payment - we are attempting to charge your card. Click Refresh to check the latest status.",
+							t("paymentProcessing"),
 					});
 				}
 				return;
@@ -90,7 +92,7 @@ export default function Banner({
 			if (checkout === "success" && kind === "save_only") {
 				setBanner({
 					type: "success",
-					message: "Card saved successfully.",
+					message: t("cardSaved"),
 				});
 				return;
 			}
@@ -100,18 +102,18 @@ export default function Banner({
 				setBanner({
 					type: "info",
 					message:
-						"Checkout completed. Waiting for payment confirmation. Click Refresh to check the latest status.",
+						t("checkoutProcessing"),
 				});
 			} else if (checkout === "cancelled") {
 				setBanner({
 					type: "error",
-					message: "Checkout cancelled. No charges were made.",
+					message: t("checkoutCancelled"),
 				});
 			}
 		} catch {
 			// ignore parse errors
 		}
-	}, [queryString, latestPaymentSuccessAt]);
+	}, [queryString, latestPaymentSuccessAt, t]);
 
 	// Keep a tiny countdown visible while a success banner is auto-dismissing.
 	useEffect(() => {
@@ -163,8 +165,8 @@ export default function Banner({
 								onClick={dismissBanner}
 								aria-label={
 									banner.type === "success" && successCountdownSeconds != null
-										? `dismiss (auto closes in ${successCountdownSeconds}s)`
-										: "dismiss"
+						? t("dismissCountdown", { seconds: successCountdownSeconds })
+						: t("dismiss")
 								}
 							>
 								<X className="h-4 w-4" />

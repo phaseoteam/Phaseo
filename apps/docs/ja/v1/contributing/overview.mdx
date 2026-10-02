@@ -1,0 +1,35 @@
+---
+title: "Phaseoに貢献する"
+description: "カタログの報告、ドキュメント編集、コード貢献に適した手順を選びます。"
+sidebarTitle: "貢献"
+icon: "handshake"
+---
+
+カタログの訂正や追加は、対象レコードと根拠となる情報源を添えてIssueを開いてください。コードやドキュメントの変更は、[Phaseoリポジトリ](https://github.com/phaseoteam/Phaseo)にプルリクエストを提出してください。
+
+## 貢献の種類を選ぶ
+
+| 変更 | 開始場所 |
+| --- | --- |
+| モデルのメタデータ、機能、利用可否、料金 | [モデル更新を報告](./editing-a-model.mdx) |
+| 企業や研究組織の詳細 | [組織更新を報告](./editing-an-organisation.mdx) |
+| ベンチマーク結果 | [スコアを提出](../research/submitting-scores.mdx) |
+| その他のカタログ訂正 | [誤った情報を報告](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| 不足しているプロバイダーやその他のカタログデータ | [新しいデータを依頼](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
+| ドキュメントまたはコード | [貢献手順](./how-to-contribute.mdx)と[リポジトリ構成](./repo-structure.mdx) |
+
+## カタログの報告が公開される流れ
+
+メンテナーはIssueの根拠を確認し、管理者専用の[内部エディター](https://phaseo.app/internal/data)で承認済みの変更を適用します。プロバイダー料金の更新には、公開前の明示的なレビューが必要です。
+
+カタログの正本はデータベースです。毎日の公開JSONスナップショットは引き続き利用できますが、スナップショットの編集やアーカイブJSONのプルリクエストで本番カタログは更新されません。従来のJSONインポーターは廃止されました。
+
+## 提出前に
+
+- 対象のページまたはレコードIDを添え、提案する訂正を説明してください。
+- 公式の情報源を引用し、公表されたベンチマーク結果と独立した測定を区別してください。
+- 各報告やプルリクエストは対象を絞ってください。
+- 認証情報や顧客の非公開データを含めないでください。
+- [行動規範](../community/code-of-conduct.mdx)に従ってください。
+
+大きなスキーマ変更や機能変更は、実装前にメンテナーと相談してください。変更先が不明な場合は[Discord](https://discord.gg/aQyywCvgZ5)で質問できます。

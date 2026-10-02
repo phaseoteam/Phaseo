@@ -21,6 +21,8 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface PresetsPanelProps {
 	teamsWithPresets: any[];
@@ -33,6 +35,7 @@ export default function PresetsPanel({
 	currentUserId,
 	workspacePublisherHandle,
 }: PresetsPanelProps) {
+	const t = useTranslations("SettingsUI");
 	const [publishingPresetId, setPublishingPresetId] = useState<string | null>(null);
 	const [deletingPresetId, setDeletingPresetId] = useState<string | null>(null);
 	const sortedTeams = useMemo(() => {
@@ -51,22 +54,22 @@ export default function PresetsPanel({
 		const slug = String(preset.slug ?? preset.name ?? "").replace(/^@+/, "");
 		const reference = preset.visibility === "public" && workspacePublisherHandle ? `@${workspacePublisherHandle}/${slug}` : `@${slug}`;
 		navigator.clipboard.writeText(reference);
-		toast.success("Preset reference copied", { duration: 2000 });
+		toast.success(t("strings.Preset reference copied" as never), { duration: 2000 });
 	}
 
 	async function onPublishVersion(preset: any) {
 		if (publishingPresetId) return;
-		const releaseNotes = window.prompt("What changed in this version? (optional)") ?? undefined;
-		const versionLabel = preset.versioning_method === "semver" ? window.prompt("Semantic version (for example 1.2.0 or 2.0.0-beta.1)") ?? undefined : undefined;
+		const releaseNotes = window.prompt(t("strings.What changed in this version? (optional)" as never)) ?? undefined;
+		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)) ?? undefined : undefined;
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
-		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`Published ${result.version?.version_label ?? `release ${result.version?.version_number ?? "next"}`}`); window.location.reload(); }
-		catch (error) { toast.error(error instanceof Error ? error.message : "Failed to publish version"); setPublishingPresetId(null); }
+		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("strings.Published" as never)} ${result.version?.version_label ?? `${t("strings.release" as never)} ${result.version?.version_number ?? t("strings.next" as never)}`}`); window.location.reload(); }
+		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to publish version")); setPublishingPresetId(null); }
 	}
 
 	async function onApplyUpstream(id: string, versionId: string, versionNumber: number) {
-		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`Upstream v${versionNumber} applied to your draft`); window.location.reload(); }
-		catch (error) { toast.error(error instanceof Error ? error.message : "Failed to apply upstream update"); }
+		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("strings.Upstream" as never)} v${versionNumber} ${t("strings.applied to your draft" as never)}`); window.location.reload(); }
+		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to apply upstream update")); }
 	}
 
 	if (!sortedTeams || sortedTeams.length === 0) {
@@ -76,9 +79,9 @@ export default function PresetsPanel({
 					<EmptyMedia variant="icon">
 						<AtSign className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>No presets yet</EmptyTitle>
+					<EmptyTitle>{t("strings.No presets yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						Create a preset to reuse model, provider, and prompt configuration.
+						{t("strings.phraseCreateAPresetToReuseModelProviderAndPromptConfiguration" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -99,9 +102,9 @@ export default function PresetsPanel({
 								<EmptyMedia variant="icon">
 									<AtSign className="h-5 w-5" />
 								</EmptyMedia>
-								<EmptyTitle className="text-base">No presets for this workspace</EmptyTitle>
+					<EmptyTitle className="text-base">{t("strings.No presets for this workspace" as never)}</EmptyTitle>
 								<EmptyDescription>
-									Create one to standardize request settings across apps.
+									{t("strings.phraseCreateOneToStandardizeRequestSettingsAcrossApps" as never)}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -119,23 +122,23 @@ export default function PresetsPanel({
 													<span className="truncate">{p.name}</span>
 													{p.visibility && (
 														<Badge variant="outline" className="text-[10px] capitalize">
-															{p.visibility}
+										{p.visibility === "private" ? t("strings.Only Me" as never) : p.visibility === "team" ? t("strings.Share With Workspace" as never) : p.visibility === "public" ? t("strings.Public" as never) : p.visibility}
 														</Badge>
 													)}
 													{p.source_preset_id && (
 														<Badge variant="secondary" className="text-[10px] capitalize">
-															Fork
+											{t("strings.Fork" as never)}
 														</Badge>
 													)}
 													{p.hasDraftChanges && (
 														<Badge variant="secondary" className="text-[10px]">
-															Unpublished changes
+											{t("strings.Unpublished changes" as never)}
 														</Badge>
 													)}
 												</div>
 												{p.slug && (
 													<p className="mt-1 text-xs text-muted-foreground">
-												Invoke with <span className="font-mono">{p.visibility === "public" && workspacePublisherHandle ? `@${workspacePublisherHandle}/${p.slug}` : `@${p.slug}`}</span>
+														{t("strings.Invoke with" as never)} <span className="font-mono">{p.visibility === "public" && workspacePublisherHandle ? `@${workspacePublisherHandle}/${p.slug}` : `@${p.slug}`}</span>
 													</p>
 												)}
 											</div>
@@ -146,7 +149,7 @@ export default function PresetsPanel({
 												<Button
 														variant="ghost"
 														size="icon"
-														aria-label="Actions"
+									aria-label={t("labels.actions")}
 													className="h-8 w-8"
 												>
 
@@ -162,20 +165,20 @@ export default function PresetsPanel({
 													<DropdownMenuItem onClick={() => onCopyPresetReference(p)}>
 
 															<Copy className="mr-2 h-4 w-4" />
-													Copy preset reference
+															{t("strings.Copy preset reference" as never)}
 
 													</DropdownMenuItem>
 													<DropdownMenuItem asChild>
 														<Link href={`/settings/presets/${encodeURIComponent(p.slug)}`}>
 															<Edit2 className="mr-2 h-4 w-4" />
-															Edit
+																{t("strings.Edit" as never)}
 														</Link>
 													</DropdownMenuItem>
-											{p.canPublish && p.hasDraftChanges && <DropdownMenuItem disabled={publishingPresetId === p.id} onClick={() => onPublishVersion(p)}><Upload className="mr-2 h-4 w-4" />{publishingPresetId === p.id ? "Publishing…" : "Publish new version"}</DropdownMenuItem>}
-											{p.created_by === currentUserId && p.hasUpstreamUpdate && p.latestUpstreamVersion && <DropdownMenuItem onClick={() => onApplyUpstream(p.id, p.latestUpstreamVersion.id, p.latestUpstreamVersion.version_number)}><GitBranch className="mr-2 h-4 w-4" />Apply upstream v{p.latestUpstreamVersion.version_number} to draft</DropdownMenuItem>}
+									{p.canPublish && p.hasDraftChanges && <DropdownMenuItem disabled={publishingPresetId === p.id} onClick={() => onPublishVersion(p)}><Upload className="mr-2 h-4 w-4" />{publishingPresetId === p.id ? t("strings.Publishing…" as never) : t("strings.Publish new version" as never)}</DropdownMenuItem>}
+									{p.created_by === currentUserId && p.hasUpstreamUpdate && p.latestUpstreamVersion && <DropdownMenuItem onClick={() => onApplyUpstream(p.id, p.latestUpstreamVersion.id, p.latestUpstreamVersion.version_number)}><GitBranch className="mr-2 h-4 w-4" />{t("strings.Apply upstream" as never)} v{p.latestUpstreamVersion.version_number} {t("strings.to draft" as never)}</DropdownMenuItem>}
 													<DropdownMenuItem variant="destructive" onClick={() => setDeletingPresetId(p.id)}>
 														<Trash2 className="mr-2 h-4 w-4" />
-														Delete
+																{t("strings.Delete" as never)}
 													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>

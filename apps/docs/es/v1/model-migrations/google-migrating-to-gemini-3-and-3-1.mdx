@@ -1,0 +1,80 @@
+---
+title: "Google Gemini 3.1"
+description: "Aspectos clave para adoptar Gemini 3.1, incluidos los controles de razonamiento, el manejo multimodal y las firmas de pensamiento."
+icon: "/icons/brands/google.svg"
+---
+
+# Google Gemini 3.1
+
+Usa esta guía para incorporar de forma segura la familia Gemini 3.1 en producción:
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 introdujo cambios reales en la API para controlar el razonamiento y manejar contenido multimodal. Gemini 3.1 amplió estas capacidades, sobre todo para tareas complejas que requieren mucho razonamiento.
+
+## Novedades
+
+- Gemini 3 introdujo `thinking_level` como control principal de la profundidad del razonamiento.
+- Gemini 3 añadió `media_resolution` para gestionar imágenes multimodales.
+- Gemini 3 usa firmas de pensamiento para conservar el contexto de razonamiento entre llamadas.
+- En flujos más estrictos, la ausencia de firmas puede reducir la calidad o producir errores `400`.
+- Gemini 3.1 Pro es una mejora de razonamiento para tareas complejas y flujos de agentes.
+
+## Inicio rápido de la migración
+
+### 1. Vuelve a asignar los controles de razonamiento
+
+Si tu aplicación ofrece un control genérico de razonamiento, asígnalo cuidadosamente para las rutas de Gemini 3. En flujos compatibles con OpenAI, `reasoning_effort` se corresponde conceptualmente con `thinking_level`, pero no se comportan igual y debes volver a probarlos.
+
+### 2. Maneja correctamente las firmas de pensamiento
+
+Con los SDK oficiales de Gemini y el historial de chat estándar, las firmas suelen gestionarse automáticamente. Si creas solicitudes de bajo nivel, sobre todo para llamadas a funciones o generación y edición de imágenes, conserva las firmas devueltas y reenvíalas exactamente como se requiere.
+
+### 3. Revisa el estilo de los prompts
+
+Las recomendaciones de Gemini 3 favorecen prompts directos y controles mediante parámetros, en lugar de instrucciones largas. Si tus prompts actuales compensan en exceso el comportamiento de modelos anteriores, simplifícalos y vuelve a evaluarlos.
+
+### 4. Ajusta la configuración multimodal
+
+Si tus rutas incluyen imágenes, documentos o medios mixtos, vuelve a probar `media_resolution` en lugar de asumir que los valores predeterminados anteriores siguen siendo adecuados.
+
+## Qué probar
+
+### Comportamiento de prompts y razonamiento
+
+- prompts concisos frente a prompts con mucha estructura
+- tareas de razonamiento paso a paso
+- síntesis con contexto largo
+- flujos de agentes que deben conservar la continuidad del razonamiento
+
+### Manejo de respuestas
+
+- conservación de firmas entre turnos
+- tasa de éxito de llamadas a funciones
+- tasa de aprobación de esquemas
+- salidas vacías, parciales o malformadas después de cambiar los controles de pensamiento
+
+### Métricas de producción
+
+- latencia en cada nivel de `thinking_level`
+- uso de tokens y coste
+- rendimiento de rutas multimodales con distintos valores de `media_resolution`
+- éxito de tareas al comparar Gemini 3 con Gemini 3.1 Pro
+
+## Recomendaciones para el despliegue
+
+Trata Gemini 3 y Gemini 3.1 como migraciones distintas.
+
+1. Primero migra el formato de solicitud y el manejo de firmas.
+2. Después vuelve a ejecutar las evaluaciones de prompts y esquemas en Gemini 3.
+3. Promueve Gemini 3.1 Pro por separado para las rutas que necesitan un razonamiento más profundo.
+4. Mantén una alternativa más sencilla o económica para las cargas de gran volumen.
+
+## Fuentes
+
+- [Guía para desarrolladores de Gemini 3](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [Novedades de la API de Gemini para Gemini 3](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Anuncio de Gemini 3.1 Pro](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

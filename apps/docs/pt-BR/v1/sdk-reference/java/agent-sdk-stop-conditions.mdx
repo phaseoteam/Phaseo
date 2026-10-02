@@ -1,0 +1,25 @@
+---
+icon: "circle-check"
+title: "Condições de parada"
+description: "Limite o trabalho de agentes Java por etapas, tokens, custo, duração, ferramentas ou motivo de conclusão."
+---
+
+Combine funções de parada em `AgentDefinition.stopWhen`:
+
+```java
+var stopWhen = List.of(
+    AgentSdk.stepCountIs(12),
+    AgentSdk.maxTokensUsed(40_000),
+    AgentSdk.maxCost(2),
+    AgentSdk.maxDuration(Duration.ofMinutes(1))
+);
+```
+
+Outros helpers incluem `hasToolCall(...)` e `finishReasonIs(...)`. A primeira condição correspondente registra um motivo de parada e retorna uma execução interrompida em vez de continuar silenciosamente.
+
+Use limites de custo e tokens somente quando a rota de modelo selecionada fornecer essas informações. Mantenha sempre um limite de etapas ou duração como proteção alternativa da execução.
+
+## Relacionados
+
+- [Turnos dinâmicos](./agent-sdk-dynamic-turns.mdx)
+- [Saídas e novas tentativas](./agent-sdk-run-controls.mdx)

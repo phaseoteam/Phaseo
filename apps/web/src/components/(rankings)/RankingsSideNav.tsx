@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import {
 	ArrowUpDown,
@@ -25,20 +26,28 @@ import { getModalityTone } from "@/lib/models/modalityStyles";
 
 type RankingsNavItem = {
 	id: string;
-	label: string;
+	labelKey:
+		| "text"
+		| "image"
+		| "embeddings"
+		| "rerank"
+		| "audio"
+		| "video"
+		| "speech"
+		| "transcription";
 	href: string;
 	icon: LucideIcon;
 };
 
 const ITEMS: RankingsNavItem[] = [
-	{ id: "text", label: "Text", href: "/rankings", icon: TypeIcon },
-	{ id: "image", label: "Image", href: "/rankings/image", icon: ImageIcon },
-	{ id: "embeddings", label: "Embeddings", href: "/rankings/embeddings", icon: Binary },
-	{ id: "rerank", label: "Rerank", href: "/rankings/rerank", icon: ArrowUpDown },
-	{ id: "audio", label: "Audio", href: "/rankings/audio", icon: Headphones },
-	{ id: "video", label: "Video", href: "/rankings/video", icon: Video },
-	{ id: "speech", label: "Speech", href: "/rankings/speech", icon: Speech },
-	{ id: "transcription", label: "Transcription", href: "/rankings/transcription", icon: Captions },
+	{ id: "text", labelKey: "text", href: "/rankings", icon: TypeIcon },
+	{ id: "image", labelKey: "image", href: "/rankings/image", icon: ImageIcon },
+	{ id: "embeddings", labelKey: "embeddings", href: "/rankings/embeddings", icon: Binary },
+	{ id: "rerank", labelKey: "rerank", href: "/rankings/rerank", icon: ArrowUpDown },
+	{ id: "audio", labelKey: "audio", href: "/rankings/audio", icon: Headphones },
+	{ id: "video", labelKey: "video", href: "/rankings/video", icon: Video },
+	{ id: "speech", labelKey: "speech", href: "/rankings/speech", icon: Speech },
+	{ id: "transcription", labelKey: "transcription", href: "/rankings/transcription", icon: Captions },
 ];
 
 export function RankingsSideNav({
@@ -48,6 +57,8 @@ export function RankingsSideNav({
 	className?: string;
 	currentModality?: string;
 }) {
+	const tUi = useTranslations("Common.ui");
+	const tNav = useTranslations("Common.nav");
 	const router = useRouter();
 	const activeItem =
 		ITEMS.find((item) => item.id === currentModality) ?? ITEMS[0];
@@ -58,7 +69,7 @@ export function RankingsSideNav({
 		<div className={cn("min-w-0 lg:h-full", className)}>
 			<div className="lg:hidden">
 				<div className="mb-2 px-1 text-sm font-medium text-foreground">
-					Rankings
+					{tNav("rankings")}
 				</div>
 				<div className="rounded-2xl border border-border/70 bg-background/90 p-2.5">
 					<Select
@@ -69,12 +80,14 @@ export function RankingsSideNav({
 						}}
 					>
 						<SelectTrigger className="h-10 rounded-xl border-0 bg-transparent px-3 text-left shadow-none focus:ring-0">
-							<SelectValue placeholder="Choose leaderboard">
+							<SelectValue placeholder={tUi("select.leaderboard")}>
 								<span className="flex min-w-0 items-center gap-2 text-sm font-medium text-foreground">
 									<ActiveIcon
 										className={cn("size-4 shrink-0", activeTone.iconClassName)}
 									/>
-									<span className="truncate">{activeItem.label}</span>
+									<span className="truncate">
+										{tUi(`modality.${activeItem.labelKey}`)}
+									</span>
 								</span>
 							</SelectValue>
 						</SelectTrigger>
@@ -92,7 +105,7 @@ export function RankingsSideNav({
 													isSelected ? tone.iconClassName : "text-muted-foreground",
 												)}
 											/>
-											<span>{item.label}</span>
+											<span>{tUi(`modality.${item.labelKey}`)}</span>
 										</span>
 									</SelectItem>
 								);
@@ -106,7 +119,7 @@ export function RankingsSideNav({
 				<div className="sticky top-[calc(var(--site-header-height,3.75rem)+4.25rem)]">
 					<nav className="space-y-3">
 						<div className="px-2.5 text-sm font-medium text-foreground">
-							Rankings
+							{tNav("rankings")}
 						</div>
 						<div className="relative flex flex-col gap-1">
 							{ITEMS.map((item) => {
@@ -131,7 +144,9 @@ export function RankingsSideNav({
 												isActive ? tone.iconClassName : "text-muted-foreground",
 											)}
 										/>
-										<span className="truncate">{item.label}</span>
+										<span className="truncate">
+											{tUi(`modality.${item.labelKey}`)}
+										</span>
 									</Link>
 								);
 							})}

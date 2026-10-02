@@ -1,0 +1,127 @@
+---
+title: "使用 SKILL.md 配置编程代理"
+icon: "file-code"
+description: "将 SDK 与 SKILL.md 文件配合使用，让本地编程代理以一致的方式调用 Phaseo 集成。"
+---
+
+本指南适用于基于 Gateway SDK 构建内部工具、CLI 或编程代理工作流的团队。
+
+<Visibility for="humans">
+<Note>
+如果你想从可复用的基础开始，而不是从头编写每个技能，请从 [phaseoteam/skills](https://github.com/phaseoteam/skills) 安装 Phaseo 的公开技能：
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+然后，将项目专属说明保存在本地 `SKILL.md` 文件中。
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+可复用的 Phaseo 技能位于 [phaseoteam/skills](https://github.com/phaseoteam/skills)。请先运行以下命令安装：
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+
+然后，将项目专属说明补充到仓库的 `SKILL.md` 文件中。
+</Note>
+</Visibility>
+
+核心思路很简单：
+
+- 将 SDK 设置保存在仓库中
+- 添加 `SKILL.md` 文件，说明项目期望代理如何发送请求
+- 设置代理时让它读取该文件，确保请求模式一致
+
+## 1. 安装 SDK
+
+如果你使用 TypeScript 或 JavaScript：
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk
+```
+
+```bash bun
+bun add @phaseo/sdk
+```
+
+</CodeGroup>
+
+如果你使用 Python：
+
+```bash
+pip install phaseo
+```
+
+## 2. 添加项目本地技能文件
+
+在仓库根目录或团队使用的代理技能目录中创建 `SKILL.md`。
+
+```md
+# Phaseo Gateway
+
+- Use `https://api.phaseo.app/v1` as the gateway base URL.
+- Read the API key from `PHASEO_API_KEY`.
+- Prefer the Responses API for new text integrations.
+- Use preset slugs when the repository defines shared request defaults.
+- Log request ids and model ids for debugging.
+- For async video jobs, store the returned id and poll status until terminal.
+```
+
+## 3. 首次集成保持精简
+
+对于编程代理，小型请求辅助函数比大型封装更容易复用。
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+然后，为每种接口保留一条明确的调用路径：
+
+- 文本生成
+- 异步视频
+- 嵌入
+- 图像生成
+
+## 4. 技能文件应包含什么
+
+`SKILL.md` 应回答最容易浪费代理时间的问题：
+
+- 应优先使用哪类端点
+- 哪个环境变量存放凭证
+- 哪些模型 ID 或预设标识符已获批准
+- 如何记录请求 ID
+- 如何跟踪异步任务
+
+## 5. 推荐的仓库模式
+
+- 在一个共享模块中放置 SDK 辅助函数
+- 将 `SKILL.md` 放在集成代码旁边或仓库根目录
+- 为每个主要端点提供一个简短示例
+- 补充一条说明，介绍请求日志和错误处理
+
+这样，团队成员和编程代理都能使用相同的操作入口。
+
+## 相关指南
+
+- [Codex](../guides/integrations/codex.mdx)
+- [AI SDK 集成](../guides/integrations/ai-sdk.mdx)
+- [示例](../guides/examples.mdx)
+

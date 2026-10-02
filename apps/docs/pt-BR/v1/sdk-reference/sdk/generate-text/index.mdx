@@ -1,0 +1,63 @@
+---
+icon: "message-square"
+title: "Gerar texto (AI SDK)"
+description: "Geração de texto sem streaming com o Vercel AI SDK e a Phaseo."
+---
+
+Use `generateText` com `phaseo(modelId)` para gerar uma resposta em uma única chamada.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "Write a concise summary of Phaseo Gateway.",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## Com histórico de chat
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  messages: [
+    { role: "system", content: "You are a terse assistant." },
+    { role: "user", content: "Give me three bullet points on retrieval augmentation." },
+  ],
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## Configurações por modelo
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano", {
+    temperature: 0.2,
+    topP: 0.9,
+    maxTokens: 300,
+  }),
+  prompt: "Draft a release note for an API update.",
+});
+
+console.log(result.text);
+console.log(result.providerMetadata);
+```
+
+## Prompt ou mensagens
+
+- Use `prompt` para solicitações rápidas de um único turno.
+- Use `messages` para contexto de vários turnos e controle de funções.
+- Consulte `/v1/models` para manter os IDs de modelo atualizados (veja [Descoberta de modelos](../get-models/index.mdx)).

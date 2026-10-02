@@ -1,0 +1,47 @@
+---
+title: "Pi"
+icon: "/icons/brands/pi.svg"
+description: "将已安装的 Pi 模型目录连接到 Phaseo Gateway。"
+---
+
+## 使用 Phaseo CLI 设置
+
+这些可用于生产环境的命令需要 Phaseo 账户；CLI 会在登录和设置期间创建专用网关凭据。
+
+```bash
+phaseo login
+phaseo pi
+```
+
+先从官方版本安装 Pi。设置过程会在 `~/.pi/agent/extensions/phaseo.ts` 写入受管理的供应商扩展。该扩展会提供所有兼容 Chat Completions 的活动 Phaseo 文本模型，并在每次请求时从 Phaseo CLI 获取专用 API 密钥。
+
+选择一个初始模型，或按需仅配置一个模型：
+
+```bash
+phaseo pi --model anthropic/claude-sonnet-4.6
+phaseo pi --catalog default
+```
+
+使用 `--dry-run` 预览文件更改。
+
+## 启动并验证
+
+```bash
+pi
+```
+
+打开 `/model`，选择 `phaseo` 供应商并发送一个简单提示。如需仅移除受管理的扩展并撤销其专用密钥，请运行：
+
+```bash
+phaseo integrations remove pi
+```
+
+## 手动访问凭据
+
+生成的扩展使用 Pi 的命令式密钥语法：
+
+```text
+!phaseo integrations credential pi
+```
+
+扩展中不会写入明文密钥。

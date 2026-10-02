@@ -1,0 +1,122 @@
+---
+title: "Eine robuste Agent-Schleife mit TypeScript erstellen"
+icon: "repeat-2"
+description: "Führe mit dem TypeScript Agent SDK eine fortsetzbare Agent-Schleife auf Phaseo Gateway aus."
+---
+
+Verwende dieses Rezept, wenn du mehr als eine einzelne Textanfrage brauchst:
+
+- mehrstufige Tool-Schleifen
+- lokale Laufzeit-Tools
+- fortsetzbare Läufe
+- einen einzigen Gateway-Einstiegspunkt für Agent-Aufgaben
+
+## 1. SDKs installieren
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/sdk @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/sdk @phaseo/agent-sdk
+```
+</CodeGroup>
+
+## 2. Ein kleines Laufzeit-Tool definieren
+
+Halte das erste Tool deterministisch und leicht überprüfbar.
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+export const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up internal docs by slug.",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+```
+
+## 3. Agent erstellen
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+import { lookupDocs } from "./tools";
+
+export const supportDocsAgent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+```
+
+## 4. Den Gateway-Adapter verwenden
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+import { supportDocsAgent } from "./agent";
+
+const result = await supportDocsAgent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## 5. Was zwischen den Schritten erhalten bleibt
+
+Jeder abgeschlossene Schritt aktualisiert den zurückgegebenen Laufstatus um:
+
+- die Lauf-ID
+- den Nachrichtenverlauf
+- alle zurückgegebenen Tool-Aufrufe
+- alle lokalen Tool-Ergebnisse
+- die endgültige Ausgabe nach Abschluss des Laufs
+
+Wenn du Läufe über Anfragen oder Prozesse hinweg fortsetzen möchtest, speichere diesen Rückgabewert in deiner Anwendung und übergib ihn später an `continueRun()`.
+
+## 6. Wann die erste Version einfach bleiben sollte
+
+- ein Agent pro Workflow
+- Serialisierung durch die Anwendung vor dem Fortsetzen über mehrere Anfragen hinweg
+- eine kleine Tool-Liste statt eines allgemeinen Tool-Registers
+- eine Protokollzeile pro Lauf mit Lauf-ID und Gateway-Anfrage-ID
+
+## 7. Wann du über dieses Rezept hinausgehen solltest
+
+Erweitere die erste robuste Schleife, wenn du Folgendes benötigst:
+
+- Unterbrechungen zur Genehmigung
+- Persistenz des zurückgegebenen Laufstatus durch die Anwendung
+- mehrere Agent-Definitionen mit gemeinsamen Laufzeit-Tools
+
+Behalte dann denselben Gateway-Adapter bei und entwickle Speicher und Orchestrierung weiter.
+
+## Weiterführende Anleitungen
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [Presets](../guides/presets.mdx)
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Programmieragenten mit SKILL.md einrichten](./coding-agents-skill-md.mdx)
+- [Mit dem kostenlosen Router starten](./free-router-first-deploy.mdx)

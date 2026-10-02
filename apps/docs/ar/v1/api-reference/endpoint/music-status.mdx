@@ -1,0 +1,46 @@
+---
+title: "الحصول على عملية توليد الموسيقى"
+sidebarTitle: "الحصول على عملية توليد الموسيقى"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
+description: "استرداد عملية توليد موسيقى باستخدام معرّف طلب Phaseo."
+---
+
+استرداد نتيجة موسيقية أُنشئت عبر `POST /music/generate`. يعيد هذا المسار النتيجة الموحّدة المخزنة بعد اكتمال المزوّد، ويستطلع المزوّد المصدر إذا ظلت المهمة غير متزامنة.
+
+## بنية الاستجابة
+
+```json
+{
+  "id": "req_01JY6MUSIC123",
+  "object": "music",
+  "status": "completed",
+  "provider": "suno",
+  "model": "V4_5PLUS",
+  "nativeResponseId": "task_123",
+  "output": [
+    {
+      "index": 0,
+      "id": "clip_1",
+      "audio_url": "https://...",
+      "stream_audio_url": "https://...",
+      "image_url": "https://...",
+      "title": "Midnight Blue",
+      "tags": "jazz, piano",
+      "duration": 8
+    }
+  ],
+  "usage": {
+    "output_audio_count": 1,
+    "output_audio_seconds": 8
+  }
+}
+```
+
+## ملاحظات
+
+- يمكن أن تكون قيمة `status`: `queued` أو `in_progress` أو `completed` أو `failed`.
+- يُدرج `usage` عند اكتمال التوليد.
+- مرّر معرّف Phaseo `id` الذي أعاده `POST /music/generate`، وليس `nativeResponseId`.
+- يتولى هذا المسار داخليًا معالجة واجهات الحالة والاسترداد الخاصة بالمزوّد.
+

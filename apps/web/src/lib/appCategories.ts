@@ -1,24 +1,17 @@
 export const APP_CATEGORY_OPTIONS = [
-	{ value: "chat", label: "Chat" },
-	{ value: "developer-tools", label: "Developer Tools" },
-	{ value: "research", label: "Research" },
-	{ value: "productivity", label: "Productivity" },
-	{ value: "education", label: "Education" },
-	{ value: "commerce", label: "Commerce" },
-	{ value: "media", label: "Media" },
-	{ value: "finance", label: "Finance" },
-	{ value: "other", label: "Other" },
+	{ value: "chat" },
+	{ value: "developer-tools" },
+	{ value: "research" },
+	{ value: "productivity" },
+	{ value: "education" },
+	{ value: "commerce" },
+	{ value: "media" },
+	{ value: "finance" },
+	{ value: "other" },
 ] as const;
 
 export type AppCategory = (typeof APP_CATEGORY_OPTIONS)[number]["value"];
 export const MAX_APP_CATEGORIES = 3;
-
-export function getAppCategoryLabel(category: string | null | undefined) {
-	return (
-		APP_CATEGORY_OPTIONS.find((option) => option.value === category)?.label ??
-		null
-	);
-}
 
 export function normalizeAppCategory(
 	category: string | null | undefined

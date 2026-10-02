@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const MAX_FILE_BYTES = 20 * 1024 * 1024;
 
@@ -49,6 +50,7 @@ function resultLabel(type: string): string {
 }
 
 export default function ContentProvenanceTool() {
+	const t = useTranslations("Product.tools.provenance");
 	const format = useDisplayFormatters();
 	const inputRef = useRef<HTMLInputElement>(null);
 	const previewUrlRef = useRef<string | null>(null);
@@ -80,12 +82,12 @@ export default function ContentProvenanceTool() {
 		}
 		if (!nextFile.type.startsWith("image/") && !nextFile.type.startsWith("audio/")) {
 			setFile(null);
-			setError("Choose an image or audio file.");
+			setError(t("fileTypeError"));
 			return;
 		}
 		if (nextFile.size > MAX_FILE_BYTES) {
 			setFile(null);
-			setError("Choose a file no larger than 20 MB.");
+			setError(t("fileSizeError"));
 			return;
 		}
 		setFile(nextFile);
@@ -127,14 +129,24 @@ export default function ContentProvenanceTool() {
 				signal: controller.signal,
 			});
 			const payload = await response.json().catch(() => null) as (ProvenanceResponse & { message?: string }) | null;
-			if (!response.ok) throw new Error(payload?.message || "Verification failed. Try again.");
+			if (!response.ok) {
+				console.error("Content provenance verification failed:", payload?.message);
+				throw new Error("verificationFailed");
+			}
 			if (!payload || payload.object !== "content_provenance_check" || !Array.isArray(payload.results)) {
-				throw new Error("The verification service returned an invalid response.");
+				throw new Error(t("invalidResponse"));
 			}
 			setResult(payload);
 		} catch (caught) {
 			if (controller.signal.aborted) return;
-			setError(caught instanceof Error ? caught.message : "Verification failed. Try again.");
+			if (caught instanceof Error && caught.message === t("invalidResponse")) {
+				setError(caught.message);
+			} else {
+				if (caught instanceof Error && caught.message !== "verificationFailed") {
+					console.error("Content provenance verification failed:", caught);
+				}
+				setError(t("verificationFailed"));
+			}
 		} finally {
 			if (requestControllerRef.current === controller) {
 				requestControllerRef.current = null;
@@ -156,8 +168,8 @@ export default function ContentProvenanceTool() {
 								<ShieldCheck className="size-5 text-primary" />
 							</div>
 							<div>
-								<CardTitle>Check a file</CardTitle>
-								<CardDescription className="mt-1">Drop, choose, or paste an image—or upload audio. 20 MB maximum.</CardDescription>
+									<CardTitle>{t("checkFile")}</CardTitle>
+									<CardDescription className="mt-1">{t("description")}</CardDescription>
 							</div>
 						</div>
 					</CardHeader>
@@ -199,13 +211,13 @@ export default function ContentProvenanceTool() {
 								<button type="button" onClick={() => inputRef.current?.click()} className="flex flex-col items-center rounded-xl px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 									<span className="mb-4 rounded-2xl border bg-background p-3 shadow-xs"><FileIcon className="size-7 text-primary" /></span>
 									<span className="max-w-full truncate font-medium">{file.name}</span>
-									<span className="mt-1 text-sm text-muted-foreground">{formatBytes(file.size)} · Click to replace</span>
+									<span className="mt-1 text-sm text-muted-foreground">{formatBytes(file.size)} · {t("replace")}</span>
 								</button>
 							) : (
 								<button type="button" onClick={() => inputRef.current?.click()} className="flex flex-col items-center rounded-xl px-4 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 									<span className="mb-4 rounded-2xl border bg-background p-3 shadow-xs transition-transform group-hover:-translate-y-0.5"><UploadCloud className="size-7 text-primary" /></span>
-									<span className="font-medium hover:text-primary">Drop, choose, or paste an image</span>
-									<span className="mt-1 text-sm text-muted-foreground">Images and audio · Ctrl/Cmd+V · 20 MB maximum</span>
+									<span className="font-medium hover:text-primary">{t("chooseImage")}</span>
+									<span className="mt-1 text-sm text-muted-foreground">{t("imageHelp")}</span>
 								</button>
 							)}
 						</div>
@@ -215,14 +227,14 @@ export default function ContentProvenanceTool() {
 									<p className="truncate text-sm font-medium">{file.name}</p>
 									<p className="text-xs text-muted-foreground">{formatBytes(file.size)}</p>
 								</div>
-								<Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>Change image</Button>
+								<Button type="button" variant="outline" size="sm" onClick={() => inputRef.current?.click()}>{t("changeImage")}</Button>
 							</div>
 						) : null}
-						{error ? <Alert variant="destructive"><ShieldQuestion className="size-4" /><AlertTitle>Couldn&apos;t check this file</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
+						{error ? <Alert variant="destructive"><ShieldQuestion className="size-4" /><AlertTitle>{t("errorTitle")}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
 						<div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-							<p className="text-xs leading-relaxed text-muted-foreground">Your file is sent to OpenAI for this check. Phaseo does not store it.</p>
+							<p className="text-xs leading-relaxed text-muted-foreground">{t("privacy")}</p>
 							<Button onClick={checkFile} disabled={!file || checking} className="sm:min-w-36">
-								{checking ? <><Loader2 className="animate-spin" />Checking</> : result ? <><RefreshCw />Check again</> : <><ShieldCheck />Check file</>}
+								{checking ? <><Loader2 className="animate-spin" />{t("checking")}</> : result ? <><RefreshCw />{t("checkAgain")}</> : <><ShieldCheck />{t("check")}</>}
 							</Button>
 						</div>
 					</CardContent>
@@ -230,13 +242,13 @@ export default function ContentProvenanceTool() {
 
 				<div className="space-y-4">
 					<Card className="border-border/80">
-						<CardHeader><CardTitle className="text-base">What this checks</CardTitle></CardHeader>
+						<CardHeader><CardTitle className="text-base">{t("whatChecks")}</CardTitle></CardHeader>
 						<CardContent className="space-y-4 text-sm text-muted-foreground">
-							<div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /><p>Known OpenAI C2PA credentials and SynthID provenance signals.</p></div>
-							<div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /><p>Images can return C2PA and SynthID results; audio returns SynthID when applicable.</p></div>
+							<div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /><p>{t("credentials")}</p></div>
+							<div className="flex gap-3"><CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /><p>{t("results")}</p></div>
 						</CardContent>
 					</Card>
-					<Alert><ShieldQuestion className="size-4" /><AlertTitle>A negative result is not proof</AlertTitle><AlertDescription>Signals can be removed or degraded, and this check does not detect content from other AI providers.</AlertDescription></Alert>
+						<Alert><ShieldQuestion className="size-4" /><AlertTitle>{t("negativeTitle")}</AlertTitle><AlertDescription>{t("negativeDescription")}</AlertDescription></Alert>
 				</div>
 			</div>
 
@@ -244,26 +256,26 @@ export default function ContentProvenanceTool() {
 				<Card className="border-border/80" aria-live="polite">
 					<CardHeader>
 						<div className="flex flex-wrap items-center justify-between gap-3">
-							<div><CardTitle>{detected.length ? "Provenance signal detected" : "No supported signal detected"}</CardTitle><CardDescription className="mt-1">Checked {format.dateTime(result.created_at * 1000)}</CardDescription></div>
-							<Badge variant={detected.length ? "default" : "secondary"}>{detected.length ? "Detected" : "Not detected"}</Badge>
+								<div><CardTitle>{detected.length ? t("detectedTitle") : t("notDetectedTitle")}</CardTitle><CardDescription className="mt-1">{t("checked", { date: format.dateTime(result.created_at * 1000) })}</CardDescription></div>
+								<Badge variant={detected.length ? "default" : "secondary"}>{detected.length ? t("detected") : t("notDetected")}</Badge>
 						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="grid gap-3 sm:grid-cols-2">
 							{result.results.map((item, index) => (
 								<div key={`${item.type}-${index}`} className="rounded-xl border bg-muted/15 p-4">
-									<div className="flex items-center justify-between gap-3"><p className="font-medium capitalize">{resultLabel(item.type)}</p><Badge variant={item.outcome === "detected" ? "default" : "outline"}>{item.outcome === "detected" ? "Detected" : "Not detected"}</Badge></div>
+									<div className="flex items-center justify-between gap-3"><p className="font-medium capitalize">{resultLabel(item.type)}</p><Badge variant={item.outcome === "detected" ? "default" : "outline"}>{item.outcome === "detected" ? t("detected") : t("notDetected")}</Badge></div>
 									{item.model || item.issuer || item.validation_state ? <dl className="mt-4 grid gap-2 text-sm">
-										{item.model ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Model</dt><dd className="text-right font-medium">{item.model}</dd></div> : null}
-										{item.issuer ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Issuer</dt><dd className="text-right font-medium">{item.issuer}</dd></div> : null}
-										{item.validation_state ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">Validation</dt><dd className="text-right font-medium capitalize">{item.validation_state.replaceAll("_", " ")}</dd></div> : null}
+										{item.model ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("model")}</dt><dd className="text-right font-medium">{item.model}</dd></div> : null}
+										{item.issuer ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("issuer")}</dt><dd className="text-right font-medium">{item.issuer}</dd></div> : null}
+										{item.validation_state ? <div className="flex justify-between gap-4"><dt className="text-muted-foreground">{t("validation")}</dt><dd className="text-right font-medium capitalize">{item.validation_state.replaceAll("_", " ")}</dd></div> : null}
 									</dl> : null}
 								</div>
 							))}
 						</div>
 						<details className="group mt-4 overflow-hidden rounded-xl border">
 							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
-								<span>View raw response</span>
+								<span>{t("rawResponse")}</span>
 								<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
 							</summary>
 							<div className="border-t bg-zinc-950 text-zinc-100">

@@ -1,0 +1,33 @@
+---
+icon: "files"
+title: "ファイル"
+description: "PHP SDKでファイルのアップロード、メタデータの取得、内容の取得を行います。"
+---
+
+**メソッド**: `uploadFile()`、`listFiles()`、`retrieveFile()`、`retrieveFileContent()`
+
+### 例
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$uploaded = $client->uploadFile([
+    'purpose' => 'batch',
+    'file' => 'data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==',
+]);
+
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+<Note>
+`listFiles()`はSDKから呼び出せますが、共有Gatewayキーでは現在`GET /files`が`file_list_not_supported_with_shared_gateway_key`を返します
+アップロードしたファイルIDを保存し、個別に取得してください。
+</Note>

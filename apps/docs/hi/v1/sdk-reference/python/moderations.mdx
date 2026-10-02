@@ -1,0 +1,24 @@
+---
+icon: "shield-check"
+title: "मॉडरेशन"
+description: "Python SDK से `/moderations` कॉल करें।"
+---
+
+**मेथड**: `client.generate_moderation()`.
+
+### उदाहरण
+```python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation-latest",
+    "input": "Text to classify",
+})
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): मॉडरेशन मॉडल ID (जैसे `openai/omni-moderation-latest`)।
+- `input` (ज़रूरी): टेक्स्ट या `image_url` जैसे कंटेंट आइटम की स्ट्रिंग या ऐरे।
+- वैकल्पिक: `categories`/`severity` फ़िल्टर (समर्थित होने पर) और `user` टैग।
+
+### रिटर्न
+`ModerationResponse`
+

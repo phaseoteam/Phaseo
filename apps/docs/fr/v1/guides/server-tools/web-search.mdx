@@ -1,0 +1,164 @@
+---
+icon: "search-check"
+title: "Outil serveur de recherche Web"
+description: "Permettez aux modèles d’effectuer des recherches sur le Web pendant une requête."
+---
+
+Utilisez `phaseo:web_search` lorsque le modèle a besoin d’informations récentes ou étayées par des sources. Le modèle choisit le moment de la recherche, formule la requête et peut effectuer plusieurs recherches au cours d’une même requête.
+
+Phaseo fournit au modèle des URL, des titres, des extraits, des passages mis en évidence et, éventuellement, le texte des pages afin qu’il rédige une réponse étayée.
+
+<Note>
+TinyFish Search est disponible comme moteur géré facultatif. La recherche native du fournisseur reste disponible via `engine: "native"` sur les routes compatibles.
+</Note>
+
+## Fonctionnement
+
+1. Ajoutez `{ "type": "phaseo:web_search" }` à `tools`.
+2. Le modèle décide s’il doit effectuer une recherche et émet une requête.
+3. Phaseo effectue la recherche avec le moteur configuré.
+4. Les résultats sont renvoyés au modèle dans le contexte de l’outil.
+5. Le modèle rédige la réponse finale et peut relancer une recherche si nécessaire.
+
+## Démarrage rapide
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "What were the major AI announcements this week?" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_search" }
+    ]
+  }'
+```
+
+## Configuration
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "exa",
+    "max_results": 5,
+    "max_total_results": 15,
+    "search_context_size": "medium",
+    "max_characters": 2048,
+    "allowed_domains": ["arxiv.org", "nature.com"],
+    "excluded_domains": ["reddit.com"],
+    "include_highlights": true,
+    "include_text": false
+  }
+}
+```
+
+| Paramètre | Type | Par défaut | Description |
+| --- | --- | --- | --- |
+| `engine` | string | `exa` | Moteur de recherche : `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` ou `tinyfish`. |
+| `max_results` | integer | `5` | Nombre maximal de résultats renvoyés par recherche. |
+| `max_total_results` | integer | `10` | Nombre maximal cumulé de résultats sur toute la boucle des outils serveur. |
+| `max_uses` | integer | `10` | Nombre maximal d’appels de recherche sur la boucle des outils serveur. |
+| `search_context_size` | string | `medium` | Taille du contexte pour les moteurs qui permettent de régler le niveau des extraits : `low`, `medium` ou `high`. |
+| `max_characters` | integer | engine default | Nombre maximal de caractères de texte par résultat lorsque le texte est inclus. |
+| `allowed_domains` | string[] | none | Ne renvoyer que les résultats de ces domaines. Alias : `include_domains`. |
+| `excluded_domains` | string[] | none | Exclure les résultats de ces domaines. Alias : `exclude_domains`. |
+| `include_highlights` | boolean | `true` | Inclure les passages mis en évidence ou extraits fournis par le moteur, le cas échéant. |
+| `include_text` | boolean | `false` | Inclure un texte de résultat plus complet si le moteur le permet. |
+| `user_location` | object | none | Indication facultative de lieu pour les moteurs qui prennent en charge la recherche localisée. |
+| `language` | chaîne | aucun | Indication de langue TinyFish, par exemple `en`. |
+| `page` | entier | `0` | Page de résultats TinyFish, de `0` à `10`. |
+
+## Choix du moteur
+
+| Engine | Comportement |
+| --- | --- |
+| `exa` | Recherche Exa gérée. Exa doit être configuré par Phaseo pour l’environnement d’exécution de la passerelle. |
+| `auto` | Utilise le moteur géré par défaut configuré, actuellement Exa. |
+| `parallel` | Utilise Parallel Search lorsque le service est configuré. |
+| `firecrawl` | Utilise Firecrawl Search lorsque le service est configuré. |
+| `perplexity` | Utilise l’API de recherche Perplexity officielle lorsqu’elle est configurée. Prend en charge le classement des résultats, `search_context_size`, la recherche régionale à partir de `user_location.country` et les domaines autorisés ou exclus. |
+| `tinyfish` | Utilise TinyFish Search lorsque `TINYFISH_API_KEY` est configuré. Fournit des résultats classés, localisés et paginés et convertit `allowed_domains` / `excluded_domains` en opérateurs de recherche. TinyFish Search ne fournit pas le texte intégral des pages ; utilisez `phaseo:web_fetch` pour davantage de contenu. |
+| `native` | Convertit la déclaration en outil de recherche Web natif du fournisseur avant l’appel au modèle en amont, si la surface de requête le permet. |
+
+Utilisez `engine: "native"` uniquement dans la déclaration de l’outil. Si un modèle tente de transmettre `engine: "native"` dans un appel de recherche de passerelle déjà émis, Phaseo renvoie une erreur : les outils natifs doivent être sélectionnés avant l’envoi de la requête en amont.
+
+## TinyFish Search
+
+Activez le moteur en configurant `TINYFISH_API_KEY` dans les secrets d’exécution de votre passerelle Phaseo, puis sélectionnez-le dans les paramètres de l’outil :
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "engine": "tinyfish",
+    "language": "en",
+    "page": 0,
+    "max_results": 5,
+    "allowed_domains": ["phaseo.app", "github.com"],
+    "excluded_domains": ["reddit.com"]
+  }
+}
+```
+
+`language` fournit une indication de langue et `page` sélectionne une page de résultats de `0` à `10`. TinyFish prend en charge les deux listes de filtres de domaines ; Phaseo les convertit en opérateurs de recherche. Les résultats comprennent des URL, des titres et des extraits/passages mis en évidence. Utilisez `phaseo:web_fetch` pour fournir au modèle un texte plus complet.
+
+## Filtrage des domaines
+
+Utilisez `allowed_domains` lorsque la réponse doit provenir d’un ensemble de sources défini :
+
+```json
+{
+  "type": "phaseo:web_search",
+  "parameters": {
+    "allowed_domains": ["phaseo.app", "github.com"]
+  }
+}
+```
+
+Utilisez `excluded_domains` lorsque la recherche Web peut être étendue, mais que certains domaines doivent être exclus des résultats.
+
+Perplexity et Firecrawl acceptent soit `allowed_domains`, soit `excluded_domains` dans un appel de recherche, pas les deux. Perplexity accepte jusqu’à 20 filtres de domaines par requête et convertit les domaines exclus dans son format de liste de refus. TinyFish convertit les deux tableaux en opérateurs `site:` et `-site:` dans la requête.
+
+TinyFish Search est gratuit dans ses offres publiées ; Phaseo n’ajoute donc aucun frais d’utilisation fournisseur pour `engine: "tinyfish"`. La tarification normale des requêtes et des jetons Phaseo s’applique toujours.
+
+## API Responses
+
+La même structure d’outil fonctionne avec `/v1/responses` :
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Find the latest release notes for Phaseo.",
+  "tools": [
+    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
+  ]
+}
+```
+
+## Utilisation et tarification
+
+Les appels de recherche Web incrémentent :
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_search_requests": 1,
+      "web_search_results": 5,
+      "web_search_extra_results": 0
+    }
+  }
+}
+```
+
+La tarification de la recherche gérée peut utiliser les compteurs `server_tool_web_search_requests` et `server_tool_web_search_extra_results`. La recherche native du fournisseur peut utiliser `native_web_search_requests` si la fiche tarifaire du modèle définit ce compteur.
+
+## Pages associées
+
+- [Récupération Web](./web-fetch.mdx)
+- [Outils serveur](./index.mdx)
+- [Étayer les réponses avec la recherche et la récupération Web](../../cookbook/tool-grounding-with-web-fetch.mdx)

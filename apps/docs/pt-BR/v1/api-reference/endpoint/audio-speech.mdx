@@ -1,0 +1,36 @@
+---
+title: "Criar fala"
+sidebarTitle: "Criar fala"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /audio/speech"
+description: "Gere áudio TTS a partir de texto usando a voz e o formato especificados."
+---
+
+## Mapeamento de vozes
+
+`voice` é normalizado por provedor usando um mapa interno de aliases:
+
+- `openai`: vozes comuns (por exemplo `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `cedar`, `marin`).
+- `google` (AI Studio / Gemini TTS): vozes pré-criadas canônicas:
+  `Zephyr`, `Puck`, `Charon`, `Kore`, `Fenrir`, `Leda`, `Orus`, `Aoede`, `Callirrhoe`, `Autonoe`, `Enceladus`, `Iapetus`, `Umbriel`, `Algieba`, `Despina`, `Erinome`, `Algenib`, `Rasalgethi`, `Laomedeia`, `Achernar`, `Alnilam`, `Schedar`, `Gacrux`, `Pulcherrima`, `Achird`, `Zubenelgenubi`, `Vindemiatrix`, `Sadachbia`, `Sadaltager`, `Sulafat`.
+- `elevenlabs`: vozes públicas comuns de início são mapeadas (por exemplo `rachel`, `domi`, `bella`, `antoni`, `elli`, `josh`, `arnold`, `adam`, `sam`).
+
+Para `eleven-labs/eleven-v4` e `eleven-labs/eleven-v4-turbo`, informe qualquer identificador de 20 caracteres da biblioteca de vozes ElevenLabs, incluindo clones personalizados. Ajuste `config.elevenlabs.voice_settings.stability` e `similarity_boost` conforme necessário. Eleven v4 não suporta `speed` nem `voice_settings.style`.
+
+Se `voice` não for válido para o provedor e modelo da rota, a solicitação retornará `400 invalid_request_error` com `param: "voice"`.
+
+## Substituições do provedor
+
+Você também pode enviar configurações de voz específicas do provedor:
+
+- ElevenLabs: `config.elevenlabs.voice_id` / `config.elevenlabs.voice` / `config.elevenlabs.voiceName`
+- Google: `config.google.voice_name` / `config.google.voiceName`
+
+Use `voice` no nível superior como padrão para facilitar a portabilidade.
+
+## Exemplos de voz
+
+- OpenAI: [openai.fm](https://www.openai.fm/)
+- Exemplos de vozes do Google TTS: [documentação do Gemini sobre conversão de texto em fala](https://ai.google.dev/gemini-api/docs/speech-generation#voices)
+- Biblioteca de vozes da ElevenLabs: [ElevenLabs Voice Library](https://elevenlabs.io/voice-library)
+

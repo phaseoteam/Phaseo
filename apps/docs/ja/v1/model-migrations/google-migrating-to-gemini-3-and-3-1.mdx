@@ -1,0 +1,80 @@
+---
+title: "Google Gemini 3.1"
+description: "推論制御、マルチモーダル処理、Thought Signature など、Gemini 3.1 の導入時に確認する内容です。"
+icon: "/icons/brands/google.svg"
+---
+
+# Google Gemini 3.1
+
+Gemini 3.1 ファミリーを本番環境に安全に導入するには、このガイドを使います。
+
+- `google/gemini-3-pro-preview`
+- `google/gemini-3-flash-preview`
+- `google/gemini-3.1-pro-preview`
+- `google/gemini-3.1-flash-lite-preview`
+
+Gemini 3 では推論制御とマルチモーダル処理に関する API の仕様が変更されました。Gemini 3.1 では特に複雑で推論負荷の高いタスクの基準性能がさらに向上しています。
+
+## 新機能
+
+- Gemini 3 では推論の深さを制御する主な項目として `thinking_level` が導入されました。
+- マルチモーダルの画像処理向けに `media_resolution` が追加されました。
+- Thought Signature により、呼び出し間で推論コンテキストが保持されます。
+- 厳密なワークフローでは Thought Signature が欠けると品質低下や `400` エラーが発生することがあります。
+- Gemini 3.1 Pro は複雑なタスクやエージェントワークフロー向けの、より強力な推論モデルです。
+
+## 移行クイックスタート
+
+### 1. 推論制御の対応付けを見直す
+
+汎用の推論設定をアプリで公開している場合は、Gemini 3 の経路に慎重に割り当てます。OpenAI 互換フローでは `reasoning_effort` は概念上 `thinking_level` に対応しますが、動作は一対一ではないため再テストが必要です。
+
+### 2. Thought Signature を正しく扱う
+
+公式 Gemini SDK と標準のチャット履歴では、通常シグネチャーは自動的に処理されます。低レベルのリクエストを構築する場合、特に関数呼び出しや画像の生成・編集では、返された署名を保持し、指定どおりそのまま返送します。
+
+### 3. プロンプトの書き方を見直す
+
+Gemini 3 では長いプロンプトの枠組みより、直接的なプロンプトとパラメーターによる制御が推奨されています。古いモデルの挙動を補うため複雑になっている場合は、簡素化して再評価します。
+
+### 4. マルチモーダル設定を調整する
+
+画像、文書、複合メディアを含む経路では、以前のデフォルトが適切とは限らないため `media_resolution` を再テストします。
+
+## テスト項目
+
+### プロンプトと推論の動作
+
+- 簡潔なプロンプトと詳細なプロンプトの比較
+- 段階的な推論タスク
+- 長いコンテキストの統合
+- 推論の連続性を保つ必要があるエージェント処理
+
+### 応答の処理
+
+- ターン間での署名の保持
+- 関数呼び出しの成功率
+- スキーマ成功率
+- thinking 制御変更後の空、部分的、形式不正な出力
+
+### 本番メトリクス
+
+- `thinking_level` ごとのレイテンシ
+- トークン使用量とコスト
+- `media_resolution` 設定ごとのマルチモーダル経路の性能
+- Gemini 3 と Gemini 3.1 Pro のタスク成功率の比較
+
+## ロールアウトの推奨事項
+
+Gemini 3 と Gemini 3.1 は別々の移行として扱います。
+
+1. まずリクエスト形式と署名の処理を移行します。
+2. 次に Gemini 3 でプロンプトとスキーマの評価を再実行します。
+3. より深い推論が必要な経路では Gemini 3.1 Pro を個別に導入します。
+4. トラフィックの多い処理には、より簡単または低コストのフォールバックを用意します。
+
+## 参考資料
+
+- [Gemini 3 開発者ガイド](https://ai.google.dev/gemini-api/docs/gemini-3)
+- [Gemini 3 向け Gemini API の新しい更新](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Gemini 3.1 Pro の発表](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "Referencia de API"
+description: "Referencia las principales clases y métodos de Ruby Agent SDK."
+---
+
+| API | Propósito |
+| --- | --- |
+| `PhaseoAgentSdk.create_agent(...)` | Define un agente |
+| `PhaseoAgentSdk.define_tool(...)` | Define una herramienta local o manual |
+| `PhaseoAgentSdk.create_gateway_agent_client(...)` | Conecta los turnos del modelo con Phaseo |
+| `Agent#run` | Ejecuta hasta finalizar o quedar en pausa |
+| `Agent#stream` | Ejecuta con secuencias que se pueden volver a recorrer |
+| `Agent#continue_run` | Continúa un estado guardado o pausado |
+| `StreamResult#result` | Lee la ejecución completada |
+| `StreamResult#text_stream` | Lee los fragmentos de texto |
+| `StreamResult#full_stream` | Lee todos los eventos |
+
+Entre las clases y los valores importantes se incluyen `Tool`, `ToolDecision`, `ToolOutput`, `RuntimeContext`, `RunResult`, la configuración de reintentos, la configuración de ejecución de herramientas y los accesos al estado.
+
+## Relacionado
+
+- [Crea tu primer agente](./agent-sdk.mdx)
+- [Observabilidad y DevTools](./agent-sdk-observability.mdx)

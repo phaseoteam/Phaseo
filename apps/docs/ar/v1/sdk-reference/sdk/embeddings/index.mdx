@@ -1,0 +1,32 @@
+---
+icon: "binary"
+title: "التضمينات (AI SDK)"
+description: "أنشئ تضمينات باستخدام نماذج مزوّد Phaseo في Vercel AI SDK."
+---
+
+استخدم `phaseo.textEmbeddingModel(...)` (أو `embeddingModel`) مع `embed` و`embedMany`.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { embed, embedMany } from "ai";
+
+const single = await embed({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  value: "Embeddings power semantic search.",
+});
+
+console.log(single.embedding.length);
+
+const batch = await embedMany({
+  model: phaseo.textEmbeddingModel("google/gemini-embedding-001"),
+  values: ["pricing", "latency", "quality"],
+});
+
+console.log(batch.embeddings.length);
+```
+
+## ملاحظات
+
+- استخدم إصدار النموذج نفسه لتضمينات الاستعلامات والمتن.
+- طبّع المتجهات بطريقة متسقة قبل حساب التشابه.
+- خزّن التضمينات الثابتة للمحتوى المتكرر مؤقتًا.

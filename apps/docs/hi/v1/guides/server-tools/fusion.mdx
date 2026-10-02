@@ -1,0 +1,69 @@
+---
+icon: "workflow"
+title: "Fusion सर्वर टूल"
+description: "कई analysis models चलाएँ और उनके निष्कर्षों का synthesis करें।"
+---
+
+जब जवाब को कई independent model perspectives से लाभ हो, तो `phaseo:fusion` उपयोग करें। Phaseo analysis models को parallel चलाता है, फिर चुने गए analyst model से निष्कर्षों का synthesis करवाकर calling model को देता है।
+
+## प्लेग्राउंड सेटअप
+
+Playground के server-tools menu में Fusion से ये चुन सकते हैं:
+
+- ऐसे analysis models जो request को अलग-अलग जाँचते हैं
+- एक optional judge model जो analysis outputs की तुलना करता है
+- Fusion advisor tools के लिए अधिकतम tool-call limit
+
+Main model को इसी tool loop में नाम वाले advisors दिखते हैं और वह final response लिखने से पहले उनके outputs का उपयोग कर सकता है।
+
+## API संरचना
+
+```json
+{
+  "tools": [
+    {
+      "type": "phaseo:fusion",
+      "parameters": {
+        "analysis_models": ["anthropic/claude-opus-5", "openai/gpt-5"],
+        "model": "google/gemini-pro-latest",
+        "instructions": "Reconcile disagreements and return concise synthesis guidance.",
+        "max_uses": 1,
+        "max_completion_tokens": 1400
+      }
+    }
+  ]
+}
+```
+
+## Fusion कब उपयोग करें
+
+इन कामों के लिए Fusion उपयोग करें:
+
+- planning decisions जहाँ दूसरा या तीसरा model छूटी हुई assumptions पकड़ सकता हो
+- research synthesis जहाँ models evidence को अलग-अलग तौल सकते हों
+- कोड या आर्किटेक्चर की समीक्षा, जहाँ स्वतंत्र आलोचना की आवश्यकता हो
+- high-value responses जहाँ थोड़ी अतिरिक्त latency स्वीकार्य हो
+
+केवल एक review pass चाहिए, तो एक Advisor उपयोग करें।
+
+## उपयोग और मूल्य निर्धारण
+
+हर Fusion invocation इस संख्या को बढ़ाता है:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "fusion_requests": 1
+    }
+  }
+}
+```
+
+Advisor models के tokens total usage में जुड़ते हैं और चुने गए हर model की दर से bill हो सकते हैं। Server-tool pricing में `server_tool_advisor_requests` meter भी उपयोग किया जा सकता है।
+
+## संबंधित
+
+- [Advisor](./advisor.mdx)
+- [Subagent](./subagent.mdx)
+- [Server tools](./index.mdx)

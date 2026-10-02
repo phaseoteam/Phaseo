@@ -1,0 +1,29 @@
+---
+icon: "arrow-right-left"
+title: "अनुवाद"
+description: "Go wrapper से `/audio/translations` कॉल करें।"
+---
+
+Wrapper मेथड का उपयोग करें:
+
+- `client.CreateTranslation(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.CreateTranslation(context.Background(), map[string]interface{}{
+  "model": "openai/gpt-4o-transcribe",
+  "audio_b64": "data:audio/wav;base64,...",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+

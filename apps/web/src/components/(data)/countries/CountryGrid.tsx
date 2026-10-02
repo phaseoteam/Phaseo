@@ -1,15 +1,17 @@
 import CountryCard from "./CountryCard";
 import type { CountryListSummary } from "@/lib/fetchers/countries/types";
+import { getTranslations } from "next-intl/server";
 
 interface CountriesGridProps {
 	countries: CountryListSummary[];
 }
 
-export default function CountriesGrid({ countries }: CountriesGridProps) {
+export default async function CountriesGrid({ countries }: CountriesGridProps) {
 	if (!countries.length) {
+		const t = await getTranslations("Catalogue.countries");
 		return (
 			<p className="text-sm text-muted-foreground">
-				Country data is not available yet.
+				{t("noCountryData")}
 			</p>
 		);
 	}

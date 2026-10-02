@@ -2,16 +2,27 @@
 
 // components/(gateway)/auth/sign-up/SignUp.tsx
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 
-export function SignUp({ returnUrl }: { returnUrl?: string }) {
+export function SignUp({
+	returnUrl,
+	locale = defaultLocale,
+}: {
+	returnUrl?: string;
+	locale?: PublicLocale;
+}) {
+	const t = useTranslations("Auth.signUp");
 	const [emailFlowActive, setEmailFlowActive] = useState(false);
 
 	return (
-		<div className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-6"}`}>
+		<div
+			className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-6"}`}
+		>
 			<div className="flex flex-col items-center gap-2 text-center">
-				<h1 className="text-2xl font-bold">Welcome to Phaseo</h1>
+				<h1 className="text-2xl font-bold">{t("heading")}</h1>
 			</div>
 
 			<div
@@ -19,13 +30,14 @@ export function SignUp({ returnUrl }: { returnUrl?: string }) {
 				aria-hidden={emailFlowActive}
 			>
 				<div className="overflow-hidden">
-					<OAuthButtons returnUrl={returnUrl} />
+					<OAuthButtons returnUrl={returnUrl} locale={locale} />
 				</div>
 			</div>
 
 			<EmailPassword
 				onEmailFlowChange={setEmailFlowActive}
 				returnUrl={returnUrl}
+				locale={locale}
 			/>
 		</div>
 	);

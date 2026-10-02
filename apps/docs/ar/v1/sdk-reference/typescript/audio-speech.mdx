@@ -1,0 +1,57 @@
+---
+icon: "music"
+title: "تحويل النص إلى كلام (TTS)"
+description: "استدعِ /audio/speech باستخدام SDK الخاص بـ TypeScript."
+---
+
+**الطريقة**: `client.generateSpeech()`.
+
+### مثال
+```typescript
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  response_format: "mp3",
+});
+```
+
+### المعلمات الأساسية
+- `model` (مطلوب): معرّف نموذج يدعم تحويل النص إلى كلام.
+- `input` (مطلوب): النص المراد تحويله إلى كلام.
+- `voice`: اسم صوت موحّد من مزود الخدمة (موصى به) أو قيمة صوت أصلية للمزود.
+- `response_format`: `mp3` و`wav` و`flac` وغيرها.
+- `speed`: معامل سرعة التشغيل (عادةً من 0.25 إلى 4).
+
+إذا كانت `voice` غير صالحة لتعيين مزود الخدمة والنموذج الذي جرى التوجيه إليه، فتعيد API الرمز `400` مع `param: "voice"`.
+
+### أمثلة على إعداد مزودي الخدمة
+
+```typescript
+// ElevenLabs explicit override
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM"
+    }
+  }
+});
+
+// Google explicit override
+await client.generateSpeech({
+  model: "google/gemini-2.5-flash-preview-tts",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore"
+    }
+  }
+});
+```
+
+### القيمة المعادة
+بيانات صوتية ثنائية (Blob)

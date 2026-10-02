@@ -1,0 +1,45 @@
+---
+icon: "folder-open"
+title: "Repositorystruktur"
+description: "Anwendungscode, Dokumentation, SDKs und Katalogexporte von Phaseo finden."
+---
+
+Phaseo ist ein pnpm- und Turborepo-Monorepo. Finden Sie mit dieser Referenz die Dateien für Code- oder Dokumentationsänderungen. Für Katalogdatensatzänderungen [öffnen Sie ein Issue](./overview.mdx).
+
+## Anwendungen und Pakete
+
+| Pfad | Zweck |
+| --- | --- |
+| `apps/web` | Next.js-16-Website, Dashboard und interner Katalogeditor. |
+| `apps/web-api` | Öffentliche Katalogabfragen und authentifizierte Konto- und Admin-APIs. |
+| `apps/api` | Gateway-Routing und Anbieterausführung auf Cloudflare Workers. |
+| `apps/docs` | Mintlify-Dokumentation; MDX-Seiten in `v1`, Navigation in `docs.json`. |
+| `packages/data/catalog` | Katalogschemata, Kompatibilitätsfixtures und generierte öffentliche Snapshots. |
+| `packages/sdk` | SDKs für TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust und C++. |
+| `supabase/migrations` | Migrationen für Datenbankschema und Berechtigungen. |
+| `scripts` | Hilfsprogramme für Validierung, SDK-Generierung und Automatisierung. |
+| `.github/workflows` | CI, Bereitstellung, Katalogsynchronisierung und Snapshot-Zeitpläne. |
+| `.changeset` | Releasemetadaten versionierter Pakete. |
+
+## Katalogdaten
+
+Die Datenbank ist die maßgebliche Quelle für Modelle, Anbieter, Organisationen, Preise, Benchmarks und unterstützende Katalogeinstellungen. Administratoren verwalten Datensätze über [Interne Daten](https://phaseo.app/internal/data). Öffentliche Beiträge werden über GitHub-Issues geprüft.
+
+- `packages/data/catalog/generated/database-v2` enthält tägliche öffentliche Snapshots und den generierten Modell-Enum-Index für OpenAPI- und SDK-Werkzeuge.
+- `packages/data/catalog/src/data` enthält archivierte Kompatibilitätsfixtures.
+- Änderungen an einem dieser Verzeichnisse aktualisieren keine Livekatalogdatensätze. Der alte JSON-zu-Datenbank-Importer wurde eingestellt.
+
+Schema- und Anwendungsänderungen verwenden weiterhin Migrationen und Pull Requests. Generierte Snapshots und SDK-Artefakte sollten mit den jeweiligen Generierungsbefehlen aktualisiert werden.
+
+## Katalogautomatisierung
+
+Die Anbietersynchronisierung stellt vorgeschlagene Preise unter [Anbieteraktualisierungen](https://phaseo.app/internal/data/imports) zur Prüfung in die Warteschlange. Benchmark- und Modelllebenszyklusaufträge verwenden die Datenbank. Tägliche öffentliche Exporte erzeugen überprüfbare Snapshot-Pull-Requests.
+
+Reine Katalogdatensätze aktivieren Gateway-Routing nicht automatisch. Routen- und Preisänderungen erfordern die entsprechende Adminprüfung.
+
+## Wo beginnen
+
+- [Modellaktualisierung melden](./editing-a-model.mdx).
+- [Organisationsaktualisierung melden](./editing-an-organisation.mdx).
+- [Benchmark-Ergebnisse einreichen](../research/submitting-scores.mdx).
+- [Code oder Dokumentation beitragen](./how-to-contribute.mdx).

@@ -1,0 +1,77 @@
+---
+icon: "database"
+title: "الحالة والموافقة"
+description: "احفظ حالة التشغيل، ووافق على استدعاءات الأدوات، وتابع الوكلاء المتوقفين مؤقتًا."
+---
+
+استخدم المتابعة عندما يحتاج الوكيل إلى انتظار شخص أو مهمة خارجية أو أداة يديرها التطبيق قبل الاستمرار. تعيد Agent SDK حالة التشغيل الكاملة اللازمة للمتابعة لاحقًا.
+
+<Note>
+لا تحفظ Phaseo عمليات Agent SDK في خدمة وكلاء مستضافة. خزّن حالة التشغيل القابلة للاستئناف في تطبيقك إذا كان يجب أن تبقى بعد انتهاء طلب أو إعادة تشغيل عملية.
+</Note>
+
+## الموافقة على استدعاء أداة
+
+اطلب الموافقة فقط على الاستدعاءات التي تحتاج إليها:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+يتوقف التشغيل مؤقتًا مع الاستدعاءات المعلقة في `run.pause.pendingToolCalls`. استأنفه باستخدام معرّف الاستدعاء الدقيق حتى لا تختلط الاستدعاءات المتزامنة:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [
+    { toolCallId: "call_delete_17", reason: "Not authorized" },
+  ],
+});
+```
+
+## الإيقاف مؤقتًا للمراجعة البشرية
+
+استخدم `humanReview` عندما ينبغي مراجعة استجابة النموذج المكتملة قبل بدء جولة أخرى:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+تابع بإدخال بشري صريح:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## حفظ حالة التشغيل
+
+احفظ `AgentRunResult` المُعاد مباشرة، أو وفّر أداة وصول `state` مع الطريقتين غير المتزامنتين `load(runId)` و`save(result)`. عندها يمكن للتشغيل المتابع استخدام `runId` بدل تمرير السجل المتسلسل عبر كل طبقة.
+
+لا تتضمن SDK محوّلات للحفظ أو خلفية حالة مستضافة. يمكن لتطبيقك إبقاء عمليات التشغيل لمرة واحدة في الذاكرة وحفظ العمليات المتوقفة أو غير المكتملة فقط.
+
+## أدلة ذات صلة
+
+- [تعريف الأدوات وتشغيلها](./agent-sdk-tools.mdx)
+- [التحكم في عمليات الوكيل](./agent-sdk-run-controls.mdx)
+- [إنشاء حلقة وكيل دائمة](../../cookbook/agent-sdk-durable-loop.mdx)

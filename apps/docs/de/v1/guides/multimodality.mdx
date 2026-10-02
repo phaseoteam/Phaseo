@@ -1,0 +1,27 @@
+---
+title: "Multimodalität"
+description: "Nutze Text, Bilder, Audio, Video und weitere Modalitäten über das Gateway."
+icon: "shapes"
+---
+
+Das Gateway stellt über eine einheitliche API mehrere Modalitäten bereit. Jeder Endpunkt gehört zu einer anderen Funktion, und die Modellunterstützung unterscheidet sich je nach Provider.
+
+## Modalitäten und Endpunkte
+
+| Modalität | Zentrale Endpunkte | Hinweise |
+| --- | --- | --- |
+| Text | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Strukturierte und dialogorientierte Ausgaben. |
+| Bilder | `/v1/images/generations`, `/v1/images/edits` | Bilderzeugung aus Text und Bildbearbeitung. |
+| Audio (TTS/STT/Übersetzungen) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Text-zu-Sprache, Sprache-zu-Text und Übersetzung gesprochener Audiodaten. |
+| Video | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Erstelle asynchrone Videojobs, frage ihren Status ab, rufe Inhalte ab und lösche Jobs. |
+| Musik | `/v1/music/generate` | Musikgenerierung über unterstützte Provider. |
+| OCR | `/v1/ocr` | Extrahiere Text aus Bildern, sofern unterstützt. |
+
+## Modellunterstützung prüfen
+
+Mit dem [Modelle-Endpunkt](../api-reference/endpoint/models.mdx) kannst du verfügbare Modelle und ihre unterstützten Endpunkte abrufen. Die Abdeckung der Provider zeigt der [Provider-Endpunkt](../api-reference/endpoint/providers.mdx).
+
+## Bewährte Vorgehensweisen
+
+Wähle den Endpunkt passend zur benötigten Modalität, auch wenn der Modellname modalitätsübergreifend gleich ist.
+Validiere Payloads vor dem Go-live anhand der [API-Referenz](../api-reference/introduction.mdx).

@@ -1,10 +1,17 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const monorepoRoot = path.join(__dirname, "..", "..");
+const withNextIntl = createNextIntlPlugin({
+  requestConfig: "./src/i18n/request.ts",
+  experimental: {
+    createMessagesDeclaration: "./messages/en-GB/auth.json",
+  },
+});
 
 // Skip remote font downloads in offline or locked-down environments so builds don't fail.
 process.env.NEXT_FONT_IGNORE_FAILED_DOWNLOADS ||= "true";
@@ -42,6 +49,18 @@ const nextConfig = {
     : {}),
   cacheComponents: true,
   partialPrefetching: true,
+  experimental: {
+    globalNotFound: true,
+  },
+  transpilePackages: [
+    "@formatjs/fast-memoize",
+    "@formatjs/intl-localematcher",
+    "@formatjs/icu-messageformat-parser",
+    "@formatjs/icu-skeleton-parser",
+    "intl-messageformat",
+    "next-intl",
+    "use-intl",
+  ],
   images: {
     qualities: [75, 90],
   },
@@ -76,7 +95,7 @@ const nextConfig = {
         ],
       },
       {
-        source: "/oauth/consent",
+        source: "/:locale(en-GB|en-US|es-ES|fr-FR|de-DE|pt-BR|ja|zh-Hans|hi|ar-SA)?/oauth/consent",
         headers: [
           {
             key: "Content-Security-Policy",
@@ -221,4 +240,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

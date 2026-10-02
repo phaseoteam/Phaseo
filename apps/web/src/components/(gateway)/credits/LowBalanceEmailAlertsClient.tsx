@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import NotificationRouteSelector from "@/components/(gateway)/settings/notifications/NotificationRouteSelector";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 function parseThreshold(value: string): number | null {
 	const normalized = value.trim();
@@ -32,6 +34,8 @@ export default function LowBalanceEmailAlertsClient(props: {
 	destinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 }) {
+	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const [autoTopUpFailureEnabled, setAutoTopUpFailureEnabled] = React.useState(props.autoTopUpFailureEmailEnabled);
 	const write = useSettingsWrite();
 	const [enabled, setEnabled] = React.useState(Boolean(props.enabled));
@@ -55,25 +59,27 @@ export default function LowBalanceEmailAlertsClient(props: {
 			if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
 			debounceRef.current = window.setTimeout(() => {
 				toast.promise(write(setLowBalanceEmailAlert(next)), {
-					loading: "Saving low balance alert...",
-					success: "Saved",
-					error: (e: any) => e?.message ?? "Failed to save alert",
+					loading: t("savingAlert"),
+					success: t("saved"),
+					error: (e: unknown) =>
+						localizedSettingsError(e, settingsT, "Action failed", t("saveAlertFailed")),
 				});
 			}, 500);
 		},
-		[write],
+		[t, settingsT, write],
 	);
 	const schedulePreferenceSave = React.useCallback((preference: "autoTopUpFailure" | "paymentMethodExpiring", nextEnabled: boolean) => {
 		const existing = preferenceDebounceRef.current[preference];
 		if (existing != null) window.clearTimeout(existing);
 		preferenceDebounceRef.current[preference] = window.setTimeout(() => {
 			toast.promise(write(setBillingNotificationPreference({ preference, enabled: nextEnabled })), {
-				loading: "Saving notification preference...",
-				success: "Saved",
-				error: (error: any) => error?.message ?? "Failed to save notification preference",
+				loading: t("savingPreference"),
+				success: t("saved"),
+					error: (error: unknown) =>
+						localizedSettingsError(error, settingsT, "Action failed", t("savePreferenceFailed")),
 			});
 		}, 500);
-	}, [write]);
+	}, [t, settingsT, write]);
 
 	const parsedThresholdUsd = React.useMemo(() => parseThreshold(threshold), [threshold]);
 	const thresholdInvalid = enabled && parsedThresholdUsd == null;
@@ -81,22 +87,22 @@ export default function LowBalanceEmailAlertsClient(props: {
 	return (
 		<section aria-labelledby="notifications-title" className="space-y-3">
 			<h2 id="notifications-title" className="font-heading text-base font-medium">
-				Notifications
+			{t("notifications")}
 			</h2>
 			<div className="overflow-hidden rounded-xl border bg-background/40">
 				<div className="px-4 py-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 						<div className="min-w-0">
-							<h3 className="text-sm font-medium">Low Balance Alerts</h3>
+							<h3 className="text-sm font-medium">{t("lowBalanceAlerts")}</h3>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								Alert when workspace credit reaches the configured threshold.
+								{t("lowBalanceDescription")}
 							</p>
 						</div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 							<NotificationRouteSelector destinations={props.destinations} eventKind="low_balance" initialDestinationIds={props.notificationRoutes.low_balance ?? []} />
 							<Switch
 								checked={enabled}
-								aria-label="Enable low balance alerts"
+								aria-label={t("enableLowBalance")}
 								onCheckedChange={(nextEnabled) => {
 									const next = Boolean(nextEnabled);
 									setEnabled(next);
@@ -121,10 +127,10 @@ export default function LowBalanceEmailAlertsClient(props: {
 							<div className="flex flex-col gap-2.5 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
 								<div className="min-w-0">
 									<Label htmlFor="low-balance-threshold" className="text-xs font-medium">
-										Credit threshold
+										{t("creditThreshold")}
 									</Label>
 									<p className="mt-0.5 text-xs text-muted-foreground">
-										Alert at or below this balance. Limited to one email every six hours.
+										{t("thresholdDescription")}
 									</p>
 								</div>
 								<div className="w-full shrink-0 sm:w-32">
@@ -153,7 +159,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 									</div>
 									{thresholdInvalid ? (
 										<p className="mt-1.5 text-xs text-destructive">
-											Use a non-negative amount with up to two decimal places.
+												{t("thresholdInvalid")}
 										</p>
 									) : null}
 								</div>
@@ -163,14 +169,14 @@ export default function LowBalanceEmailAlertsClient(props: {
 				</div>
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
-						<h3 className="text-sm font-medium">Auto Top-Up Failed</h3>
-						<p className="mt-0.5 text-sm text-muted-foreground">Alert when an automatic credit charge fails.</p>
+						<h3 className="text-sm font-medium">{t("autoTopUpFailed")}</h3>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("autoTopUpDescription")}</p>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 						<NotificationRouteSelector destinations={props.destinations} eventKind="auto_top_up_failed" initialDestinationIds={props.notificationRoutes.auto_top_up_failed ?? []} />
 						<Switch
 							checked={autoTopUpFailureEnabled}
-							aria-label="Enable auto top-up failure alerts"
+							aria-label={t("enableAutoTopUp")}
 							onCheckedChange={(nextEnabled) => {
 								const next = Boolean(nextEnabled);
 								setAutoTopUpFailureEnabled(next);
@@ -181,14 +187,14 @@ export default function LowBalanceEmailAlertsClient(props: {
 				</div>
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
 					<div className="min-w-0">
-						<h3 className="text-sm font-medium">Payment Method Expiring</h3>
-						<p className="mt-0.5 text-sm text-muted-foreground">Alert before a saved payment method expires.</p>
+						<h3 className="text-sm font-medium">{t("paymentMethodExpiring")}</h3>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("paymentMethodExpiringDescription")}</p>
 					</div>
 					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
 						<NotificationRouteSelector destinations={props.destinations} eventKind="payment_method_expiring" initialDestinationIds={props.notificationRoutes.payment_method_expiring ?? []} />
 						<Switch
 							checked={paymentMethodExpiringEnabled}
-							aria-label="Enable payment method expiry alerts"
+							aria-label={t("enablePaymentMethodExpiring")}
 							onCheckedChange={(nextEnabled) => {
 								const next = Boolean(nextEnabled);
 								setPaymentMethodExpiringEnabled(next);

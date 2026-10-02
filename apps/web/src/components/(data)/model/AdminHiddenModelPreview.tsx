@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import type { AdminModelPreview } from "@/lib/models/adminModelPreview";
 import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
 import CatalogNotFoundState from "@/components/(data)/CatalogNotFoundState";
@@ -20,6 +21,18 @@ export default function AdminHiddenModelPreview({
 	initial: AdminModelPreview;
 	accountQueryScope?: AccountQueryScope | null;
 }) {
+	const t = useTranslations("Common.ui.localisationGaps");
+	const tModel = useTranslations("Common.ui.modelEditor.modelStatuses");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable.statuses");
+	const tStatus = useTranslations("Common.status");
+	const modelStatus = (value: string) => {
+		const key = value.toLowerCase().replace(/limited[ _]access/, "limitedAccess");
+		return tModel.has(key as never) ? tModel(key as never) : key === "unknown" ? tStatus("unknown") : value;
+	};
+	const providerStatus = (value: string) => {
+		const key = value.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+		return tProvider.has(key as never) ? tProvider(key as never) : modelStatus(value);
+	};
 	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const path = `/api/internal/model-preview/${encodeURIComponent(initial.modelId)}` as const;
 	const { data } = useQuery<AdminModelPreview | null>({
@@ -46,20 +59,20 @@ export default function AdminHiddenModelPreview({
 	return (
 		<div className="container mx-auto space-y-8 px-4 py-8">
 			<div>
-				<p className="text-sm text-muted-foreground">Admin preview · Hidden model</p>
+				<p className="text-sm text-muted-foreground">{t("hiddenPreview")}</p>
 				<h1 className="mt-2 text-3xl font-bold">{model.name}</h1>
 				<p className="mt-2 font-mono text-sm text-muted-foreground">{model.modelId}</p>
-				{model.status ? <p className="mt-2 text-sm">{model.status}</p> : null}
+				{model.status ? <p className="mt-2 text-sm">{modelStatus(model.status)}</p> : null}
 			</div>
 			<section aria-labelledby="hidden-model-providers" className="space-y-3">
-				<h2 id="hidden-model-providers" className="text-xl font-semibold">Providers ({model.providers.length})</h2>
+				<h2 id="hidden-model-providers" className="text-xl font-semibold">{t("providersCount", {count: model.providers.length})}</h2>
 				<div className="divide-y rounded-lg border">
 					{model.providers.length ? model.providers.map((provider) => (
 						<div key={provider.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
 							<span>{provider.name}</span>
-							<span className="font-mono text-muted-foreground">{provider.modelId} · {provider.status}</span>
+							<span className="font-mono text-muted-foreground">{provider.modelId} · {providerStatus(provider.status)}</span>
 						</div>
-					)) : <p className="px-4 py-3 text-sm text-muted-foreground">No providers yet.</p>}
+					)) : <p className="px-4 py-3 text-sm text-muted-foreground">{t("noProviders")}</p>}
 				</div>
 			</section>
 		</div>

@@ -7,7 +7,9 @@ import {
 	type ComponentProps,
 	type ReactNode,
 } from "react";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { getLocalizedDocsHref } from "@/lib/docs";
 import {
 	ArrowRight,
 	AudioLines,
@@ -36,10 +38,8 @@ import {
 } from "./homeModelIntel";
 
 type Benefit = {
-	title: string;
-	body: string;
+	id: "database" | "gateway" | "modalities" | "observability";
 	href: string;
-	cta: string;
 	visual: "models" | "uptime" | "observability" | "database" | "modalities";
 };
 
@@ -63,7 +63,7 @@ function HydratedNumberFlow({
 }) {
 	const isHydrated = useIsHydrated();
 	const display = useDisplayFormatters();
-	const { preferences } = useDisplayPreferences();
+	const { preferences, formattingPreferences } = useDisplayPreferences();
 	const resolvedFormat = {
 		...format,
 		notation: format?.notation ?? preferences.numberNotation,
@@ -77,38 +77,30 @@ function HydratedNumberFlow({
 		<NumberFlow
 			value={value}
 			format={resolvedFormat}
-			locales={preferences.locale === "system" ? undefined : preferences.locale}
+			locales={formattingPreferences.locale}
 		/>
 	);
 }
 
 const BENEFITS_DEFAULT: Benefit[] = [
 	{
-		title: "Open Model Intelligence",
-		body: "Explore benchmarks, pricing, and provider coverage to make better build decisions.",
+		id: "database",
 		href: "/models",
-		cta: "Explore database",
 		visual: "database",
 	},
 	{
-		title: "Unified AI Gateway",
-		body: "Integrate once and access hundreds of models through one OpenAI-compatible API.",
+		id: "gateway",
 		href: "/models",
-		cta: "Browse models",
 		visual: "models",
 	},
 	{
-		title: "Every AI Workload",
-		body: "Build with text, images, video, audio, moderation, embeddings, and more through one API.",
+		id: "modalities",
 		href: "https://phaseo.app/docs/v1",
-		cta: "Explore Gateway",
 		visual: "modalities",
 	},
 	{
-		title: "Request Observability",
-		body: "Monitor pricing, reliability, usage, and performance for every request in one place.",
+		id: "observability",
 		href: "/settings/usage",
-		cta: "View activity",
 		visual: "observability",
 	},
 ];
@@ -369,6 +361,8 @@ function RequestPulse({
 }
 
 function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) {
+	const landingT = useTranslations("SettingsUI.landingGaps");
+	const t = useTranslations("Site.homeQuickstart");
 	if (variant === "beta") {
 		return (
 			<VisualStage>
@@ -436,7 +430,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 					<div className="rounded-2xl border border-zinc-200/80 bg-white/96 px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950/96">
 						<div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">App</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">{landingT("copyApp")}</p>
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
@@ -444,7 +438,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							</div>
 							<span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">↔</span>
 							<div className="rounded-xl border border-zinc-200/80 bg-zinc-50/70 px-2 py-2 text-center dark:border-zinc-800 dark:bg-zinc-900/70">
-								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">Providers</p>
+								<p className="text-[10px] font-semibold text-zinc-800 dark:text-zinc-100">{landingT("copyProviders")}</p>
 							</div>
 						</div>
 						<div className="mt-2.5 flex items-center justify-center gap-1.5">
@@ -455,7 +449,7 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 							<LogoToken id="deepseek" label="DeepSeek" shape="card" compact size={12} />
 						</div>
 						<div className="mt-2 rounded-lg border border-zinc-200/80 bg-zinc-50/70 px-2 py-1.5 text-center text-[10px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-300">
-							Health-aware routing with automatic failover
+							{t("healthAwareRouting")}
 						</div>
 					</div>
 				</div>
@@ -516,18 +510,20 @@ function UptimeVisual({ variant = "default" }: { variant?: QuickstartVariant }) 
 }
 
 const WORKLOADS = [
-	{ label: "Text", detail: "Chat & responses", icon: MessageSquareText, tone: "text" },
-	{ label: "Decisions", detail: "Typed answers", icon: Scale, tone: "decisions" },
-	{ label: "Images", detail: "Generate & edit", icon: ImageIcon, tone: "image" },
-	{ label: "Video", detail: "Prompt to video", icon: Video, tone: "video" },
-	{ label: "Text to Speech", detail: "Natural voice", icon: Mic, tone: "audio_tts" },
-	{ label: "Transcription", detail: "Speech to text", icon: Subtitles, tone: "audio_stt" },
-	{ label: "Music", detail: "Generate audio", icon: Music2, tone: "audio_music" },
-	{ label: "Moderation", detail: "Text & images", icon: BadgeCheck, tone: "moderations" },
-	{ label: "Embeddings", detail: "Vector search", icon: Sparkles, tone: "embeddings" },
-	{ label: "Realtime", detail: "Live interactions", icon: Radio, tone: "rerank" },
-	{ label: "Batch", detail: "Async processing", icon: Workflow, tone: "file" },
+	{ id: "text", icon: MessageSquareText, tone: "text" },
+	{ id: "decisions", icon: Scale, tone: "decisions" },
+	{ id: "images", icon: ImageIcon, tone: "image" },
+	{ id: "video", icon: Video, tone: "video" },
+	{ id: "textToSpeech", icon: Mic, tone: "audio_tts" },
+	{ id: "transcription", icon: Subtitles, tone: "audio_stt" },
+	{ id: "music", icon: Music2, tone: "audio_music" },
+	{ id: "moderation", icon: BadgeCheck, tone: "moderations" },
+	{ id: "embeddings", icon: Sparkles, tone: "embeddings" },
+	{ id: "realtime", icon: Radio, tone: "rerank" },
+	{ id: "batch", icon: Workflow, tone: "file" },
 ] as const;
+
+type WorkloadId = (typeof WORKLOADS)[number]["id"];
 
 function ModalityTicker({
 	workloads,
@@ -537,6 +533,8 @@ function ModalityTicker({
 	speed: number;
 }) {
 	const loopedWorkloads = [...workloads, ...workloads];
+	const t = useTranslations("Site.homeQuickstart");
+	const workloadCopy = t.raw("workloads" as never) as Record<WorkloadId, { label: string; detail: string }>;
 
 	return (
 		<div className="h-[150px] overflow-hidden">
@@ -547,19 +545,20 @@ function ModalityTicker({
 				{loopedWorkloads.map((workload, index) => {
 					const Icon = workload.icon;
 					const tone = getModalityTone(workload.tone);
+					const copy = workloadCopy[workload.id];
 
 					return (
 						<div
-							key={`${workload.label}-${index}`}
+							key={`${workload.id}-${index}`}
 							className="flex h-[46px] items-center gap-2 rounded-xl border border-zinc-200/80 bg-white/80 px-2.5 py-2 dark:border-zinc-800/80 dark:bg-zinc-950/80"
 						>
 							<Icon className={`h-3.5 w-3.5 shrink-0 ${tone.iconClassName}`} />
 							<span className="min-w-0 flex-1">
 								<span className="block whitespace-nowrap text-[10px] font-semibold leading-tight text-zinc-950 dark:text-zinc-50">
-									{workload.label}
+									{copy.label}
 								</span>
 								<span className="mt-0.5 block whitespace-nowrap text-[9px] leading-tight text-zinc-500 dark:text-zinc-400">
-									{workload.detail}
+									{copy.detail}
 								</span>
 							</span>
 						</div>
@@ -571,6 +570,7 @@ function ModalityTicker({
 }
 
 function ModalitiesVisual() {
+	const t = useTranslations("Site.homeQuickstart");
 	const columns = [
 		WORKLOADS.filter((_, index) => index % 2 === 0),
 		WORKLOADS.filter((_, index) => index % 2 === 1),
@@ -581,10 +581,10 @@ function ModalitiesVisual() {
 			<div className="w-full max-w-[340px] space-y-2.5">
 				<div className="flex items-center justify-between px-1">
 					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-						Gateway capabilities
+						{t("gatewayCapabilities")}
 					</span>
 					<span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-						{WORKLOADS.length} workloads
+						{t("workloadsCount", { count: WORKLOADS.length })}
 					</span>
 				</div>
 				<div className="grid grid-cols-2 gap-2">
@@ -597,6 +597,7 @@ function ModalitiesVisual() {
 }
 
 function ObservabilityVisual() {
+	const t = useTranslations("Site.homeQuickstart");
 	const requests = [
 		{
 			providerId: "openai",
@@ -724,21 +725,21 @@ function ObservabilityVisual() {
 					</div>
 					<div className="mt-2 grid gap-1 text-[9px] leading-none">
 						<div className="flex justify-between gap-2">
-							<span className="text-zinc-500 dark:text-zinc-400">Latency</span>
+							<span className="text-zinc-500 dark:text-zinc-400">{t("latency")}</span>
 							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
 								{selectedRequest.latency}
 							</span>
 						</div>
 						<div className="flex justify-between gap-2">
 							<span className="text-zinc-500 dark:text-zinc-400">
-								Throughput
+								{t("throughput")}
 							</span>
 							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
 								{selectedRequest.throughput}
 							</span>
 						</div>
 						<div className="flex justify-between gap-2">
-							<span className="text-zinc-500 dark:text-zinc-400">Cost</span>
+							<span className="text-zinc-500 dark:text-zinc-400">{t("cost")}</span>
 							<span className="font-semibold text-zinc-950 dark:text-zinc-50">
 								{selectedRequest.cost}
 							</span>
@@ -763,12 +764,13 @@ function BetaModelHeader({
 	nameSlot?: ReactNode;
 	showLabel?: boolean;
 }) {
+	const t = useTranslations("Site.homeQuickstart");
 	return (
 		<div className="border-b border-zinc-200/80 pb-1.5 dark:border-zinc-800/80">
 			<div className="min-w-0">
 				{showLabel ? (
 					<span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-						Model
+						{t("model")}
 					</span>
 				) : null}
 				{nameSlot ?? (
@@ -796,6 +798,7 @@ function BetaModelHeader({
 }
 
 function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
+	const t = useTranslations("Site.homeQuickstart");
 	const [activeIndex, setActiveIndex] = useState(0);
 	const [nextIndex, setNextIndex] = useState<number | null>(null);
 	const [isSliding, setIsSliding] = useState(false);
@@ -874,7 +877,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 				>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Latency
+							{t("latency")}
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							<HydratedNumberFlow value={currentModel.latencyMs} />
@@ -885,7 +888,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 					</div>
 					<div>
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Throughput
+							{t("throughput")}
 						</span>
 						<p className="mt-1 text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							<HydratedNumberFlow value={currentModel.throughputTps} />
@@ -896,7 +899,7 @@ function BetaDatabaseVisual({ modelPrices }: { modelPrices: HomeModelPrices }) {
 					</div>
 					<div className="hidden text-right xl:block">
 						<span className="text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
-							Pricing / 1M tokens
+							{t("pricingPerMillionTokens")}
 						</span>
 						<p className="mt-1 whitespace-nowrap text-[12px] font-semibold leading-none text-zinc-950 dark:text-zinc-50">
 							{currentPrice ? (
@@ -923,6 +926,7 @@ function DatabaseVisual({
 	variant?: QuickstartVariant;
 	modelPrices: HomeModelPrices;
 }) {
+	const t = useTranslations("Site.homeQuickstart");
 	if (variant === "beta") {
 		return (
 			<VisualStage>
@@ -937,10 +941,10 @@ function DatabaseVisual({
 		<VisualStage>
 			<div className="w-full max-w-[232px] space-y-1.5">
 				{[
-					["Latency", "472ms"],
-					["Throughput", "184 tok/s"],
-					["GPQA Score", "86.4"],
-					["Rank", "#7 Overall"],
+					[t("latency"), "472ms"],
+					[t("throughput"), "184 tok/s"],
+					[t("gpqaScore"), "86.4"],
+					[t("rank"), t("rankOverall")],
 				].map(([label, value], index) => (
 					<div
 						key={label}
@@ -994,15 +998,21 @@ export default function HomeQuickstartSection({
 	variant?: QuickstartVariant;
 	modelPrices?: HomeModelPrices;
 }) {
-	const benefits = variant === "beta" ? BENEFITS_BETA : BENEFITS_DEFAULT;
+	const t = useTranslations("Site.homeQuickstart");
+	const locale = useLocale();
+	const benefitCopy = t.raw("benefits" as never) as Record<Benefit["id"], { title: string; body: string; cta: string }>;
+	const benefits = (variant === "beta" ? BENEFITS_BETA : BENEFITS_DEFAULT).map((benefit) => ({
+		...benefit,
+		...benefitCopy[benefit.id],
+	}));
 
 	return (
 		<div className="mx-auto mt-6 max-w-7xl">
 			<div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
 				{benefits.map((benefit) => (
 					<Link
-						key={benefit.title}
-						href={benefit.href}
+						key={benefit.id}
+						href={benefit.href.startsWith("https://phaseo.app/docs/") ? getLocalizedDocsHref(locale, benefit.href) : benefit.href}
 						className="group min-w-0 overflow-hidden rounded-[1.75rem] border border-zinc-200/80 bg-white transition-colors hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/10 dark:focus-visible:ring-zinc-100/10"
 					>
 						<div

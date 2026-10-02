@@ -1,0 +1,76 @@
+---
+title: "oh-my-pi"
+icon: "/icons/brands/oh-my-pi.svg"
+description: "Phaseo CLI を使って Phaseo Gateway 経由で oh-my-pi を実行します。"
+---
+
+Phaseo CLI は、専用のゲートウェイキーと一時的な OpenAI 互換プロバイダーカタログを使って oh-my-pi を起動できます。
+
+## Phaseo CLI でセットアップ
+
+```bash
+phaseo login
+phaseo omp --model openai/gpt-5.6-terra --
+```
+
+初回の対話実行では、`omp` コマンドが未インストールの場合にインストールを提案します。`--catalog all` で Phaseo のすべての有効なテキスト・チャットモデルを利用可能にできます。`--dry-run --json` では、キーを作成したり oh-my-pi を起動したりせずに、インストールと起動の計画を確認できます。
+
+```bash
+phaseo omp --catalog all --dry-run --json
+```
+
+明示的なコマンド形式は `phaseo run omp ...` です。Phaseo が自身のオプションを先に処理できるよう、oh-my-pi のオプションは `--` の後に指定してください。
+
+## oh-my-pi を手動で設定
+
+すべての oh-my-pi セッションで Phaseo を利用するには、永続的なプロバイダーを設定します。Phaseo キーを作成し、oh-my-pi を起動するシェルでエクスポートして、`~/.omp/agent/models.yml` にプロバイダーを追加してください。
+
+```bash
+phaseo login
+phaseo keys create --name "oh-my-pi Phaseo key" --json
+export PHASEO_OMP_API_KEY="<your Phaseo API key>"
+mkdir -p ~/.omp/agent
+```
+
+```yaml title="~/.omp/agent/models.yml"
+providers:
+  phaseo:
+    baseUrl: https://api.phaseo.app/v1
+    api: openai-completions
+    apiKey: PHASEO_OMP_API_KEY
+    authHeader: true
+    models:
+      - id: openai/gpt-5.6-terra
+        name: GPT-5.6 Terra via Phaseo
+        contextWindow: 32768
+        maxTokens: 8192
+```
+
+プロバイダー名付きのモデル ID で oh-my-pi を起動します。
+
+```bash
+omp --model phaseo/openai/gpt-5.6-terra
+```
+
+必要に応じて同じプロバイダーにモデルを追加してください。キーを `models.yml` に直接書き込まず、`apiKey` は環境変数を参照するようにしてください。
+
+## 確認
+
+起動した環境から短いプロンプトを送信し、Phaseo のアクティビティにリクエストが表示されることを確認します。ランナーは一時的な `PI_CODING_AGENT_DIR` 内に `models.yml` を作成し、oh-my-pi の終了時に削除します。
+
+## トラブルシューティング
+
+### oh-my-pi がインストールされていない
+
+対話型ターミナルでコマンドを実行してインストールを承認するか、oh-my-pi を別途インストールし、`--skip-install` を指定して再実行してください。
+
+### モデルが表示されない
+
+`--catalog all` を使うか、`--model` でモデル ID を指定してください。Phaseo ゲートウェイではモデルの自動検出は必須ではありません。
+
+## 関連情報
+
+- [Phaseo CLI](./phaseo-cli)
+- [oh-my-pi のプロバイダー設定](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
+- [モデル](../../api-reference/endpoint/models.mdx)
+- [アクティビティ](../../api-reference/endpoint/activity.mdx)

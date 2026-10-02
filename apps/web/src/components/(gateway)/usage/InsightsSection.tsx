@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Trophy,
@@ -37,27 +38,28 @@ export default function InsightsSection({
 	fastestModel,
 }: InsightsSectionProps) {
 	const format = useDisplayFormatters();
+	const t = useTranslations("SettingsUI");
 	const quickStats = [
 		{
 			icon: Target,
-			title: "Top Provider",
-			value: topProvider?.name || "No data",
-			subtitle: topProvider ? `${format.number(topProvider.requests)} requests` : null,
+			title: t("strings.Top Provider" as never),
+			value: topProvider?.name || t("strings.No data" as never),
+			subtitle: topProvider ? `${format.number(topProvider.requests)} ${t("strings.requests" as never)}` : null,
 			color: "text-blue-600",
 			bgColor: "bg-blue-50",
 		},
 		{
 			icon: DollarSign,
-			title: "Most Expensive",
-			value: mostExpensive?.name || "No data",
+			title: t("strings.Most Expensive" as never),
+			value: mostExpensive?.name || t("strings.No data" as never),
 			subtitle: mostExpensive ? `$${mostExpensive.cost.toFixed(5)}` : null,
 			color: "text-red-600",
 			bgColor: "bg-red-50",
 		},
 		{
 			icon: Zap,
-			title: "Fastest Model",
-			value: fastestModel?.name || "No data",
+			title: t("strings.Fastest Model" as never),
+			value: fastestModel?.name || t("strings.No data" as never),
 			subtitle: fastestModel ? `${fastestModel.speedMs}ms avg` : null,
 			color: "text-green-600",
 			bgColor: "bg-green-50",
@@ -68,7 +70,7 @@ export default function InsightsSection({
 		<div className="space-y-6">
 			<div className="flex items-center gap-2">
 				<Sparkles className="h-5 w-5 text-muted-foreground" />
-				<h2 className="text-xl font-semibold">Insights & Trends</h2>
+				<h2 className="text-xl font-semibold">{t("strings.Insights & Trends" as never)}</h2>
 			</div>
 
 			{/* Quick Stats Row */}
@@ -104,12 +106,12 @@ export default function InsightsSection({
 				<CardHeader>
 					<div className="flex items-center gap-2">
 						<Trophy className="h-5 w-5 text-yellow-600" />
-						<CardTitle>Top Models by Spend</CardTitle>
+						<CardTitle>{t("strings.Top Models by Spend" as never)}</CardTitle>
 					</div>
 				</CardHeader>
 				<CardContent>
 					{topModels.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No data available</p>
+						<p className="text-sm text-muted-foreground">{t("strings.No data available" as never)}</p>
 					) : (
 						<div className="space-y-3">
 							{topModels.map((model, idx) => (
@@ -153,7 +155,7 @@ export default function InsightsSection({
 												<ArrowUpRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
 											</div>
 											<div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-												<span>{format.number(model.requests)} requests</span>
+												<span>{format.number(model.requests)} {t("strings.requests" as never)}</span>
 												{model.avgLatency && (
 													<span>{Math.round(model.avgLatency)}ms avg</span>
 												)}
@@ -165,7 +167,7 @@ export default function InsightsSection({
 											<div className="font-mono font-semibold text-lg">
 												${model.spend.toFixed(2)}
 											</div>
-											<div className="text-xs text-muted-foreground">total spend</div>
+							<div className="text-xs text-muted-foreground">{t("strings.total spend" as never)}</div>
 										</div>
 									</div>
 								</Link>

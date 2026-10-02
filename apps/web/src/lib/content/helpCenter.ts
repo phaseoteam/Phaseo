@@ -14,8 +14,9 @@ const FALLBACK_ARTICLE_PARAM = "__placeholder__";
 const HELP_CONTENT_ROOT = path.join(process.cwd(), "src", "content", "help");
 
 function helpContentRoot(locale: PublicLocale): string {
-	if (locale === "en-GB") return HELP_CONTENT_ROOT;
-	return path.join(HELP_CONTENT_ROOT, "locales", locale);
+	return locale === "en-GB"
+		? HELP_CONTENT_ROOT
+		: path.join(HELP_CONTENT_ROOT, "locales", locale);
 }
 
 type MarkdownFrontmatter = {
@@ -139,7 +140,6 @@ async function resolveHelpContentRoot(locale: PublicLocale): Promise<string | nu
 }
 
 const loadHelpCenter = cache(async (locale: PublicLocale): Promise<HelpCenterData> => {
-	const requestedRoot = helpContentRoot(locale);
 	const helpRoot = (await resolveHelpContentRoot(locale)) ??
 		(await resolveHelpContentRoot("en-GB"));
 	if (!helpRoot) {
@@ -309,7 +309,7 @@ export async function getLocalizedHelpArticle(
 }
 
 export async function getHelpCategoryParams(): Promise<Array<{ category: string }>> {
-	const categories = await getLocalizedHelpCategories("en-GB");
+	const categories = await getHelpCategories();
 	if (!categories.length) {
 		return [{ category: FALLBACK_CATEGORY_PARAM }];
 	}
@@ -319,7 +319,7 @@ export async function getHelpCategoryParams(): Promise<Array<{ category: string 
 export async function getHelpArticleParams(): Promise<
 	Array<{ category: string; slug: string }>
 > {
-	const categories = await getLocalizedHelpCategories("en-GB");
+	const categories = await getHelpCategories();
 	const params = categories.flatMap((category) =>
 		category.articles.map((article) => ({
 			category: category.slug,

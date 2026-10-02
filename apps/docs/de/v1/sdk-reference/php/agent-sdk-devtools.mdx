@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Erfasse PHP-Agent-SDK-Läufe im lokalen Phaseo-DevTools-Ereignisformat."
+---
+
+Aktiviere die DevTools-Aufzeichnung beim Erstellen von Tool-Zeitachsen, Genehmigungsoberflächen und Laufinspektoren.
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+Jeder Lauf und jede Fortsetzung schreibt einen strukturierten JSONL-Datensatz mit Status, Verbrauch, Modellversuchen, Tool-Aufrufen, Pausen, Anfragemetadaten und Fehlern.
+
+Die lokale Aufzeichnung ist eine Entwicklungshilfe und kein Audit-Speicher für die Produktion. Wende vor dem Speichern sensibler Inhalte anwendungsspezifische Schwärzung, Zugriffskontrollen, Verschlüsselung und Aufbewahrungsregeln an.

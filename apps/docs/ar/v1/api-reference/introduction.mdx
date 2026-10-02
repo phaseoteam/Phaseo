@@ -1,0 +1,71 @@
+---
+title: "نظرة عامة على Gateway API"
+sidebarTitle: "نظرة عامة"
+description: "عنوان URL الأساسي والمصادقة وعائلات نقاط النهاية في Phaseo Gateway."
+icon: "map"
+---
+
+استخدم هذه الصفحة للعثور على مسار API الصحيح قبل فتح مرجع نقطة النهاية. تشترك جميع نقاط نهاية Phaseo Gateway في عنوان URL أساسي واحد وتستخدم مصادقة Bearer.
+
+## اختيار المسار
+
+| إذا أردت | ابدأ من |
+| --- | --- |
+| إرسال طلبك الأول | [البدء السريع](../quickstart.mdx) |
+| توليد النص أو استخدام الأدوات | `POST /responses` |
+| اتخاذ قرارات ذات أنواع محددة | [`POST /decisions`](./endpoint/decisions) |
+| الإبقاء على تكامل OpenAI متوافق موجود | `POST /chat/completions` |
+| تصفح النماذج والمزوّدين | `GET /models` و`GET /providers` |
+| إنشاء الموسيقى أو إدارة الملفات | `POST /music/generations` و`POST /files` |
+| توليد فيديو (تجريبي) | [`POST /videos`](./endpoint/video-create) |
+| إرسال دفعة أو تنزيل النتائج (تجريبي) | [`POST /batches`](./endpoint/batches-create) و[`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+
+## عنوان URL الأساسي
+
+عنوان URL الأساسي للإنتاج:
+
+```http
+https://api.phaseo.app/v1
+```
+
+جميع مسارات نقاط النهاية في هذا المرجع نسبية إلى عنوان `/v1` الأساسي.
+
+## OpenAPI
+
+استخدم ملف OpenAPI لاستيراد API إلى Postman أو Hoppscotch أو مولّد SDK.
+
+<Card
+  title="OpenAPI الخاص بـ Phaseo Gateway"
+  icon="list-bullet"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
+>
+  عرض ملف المواصفات
+</Card>
+
+يستخدم التوثيق وSDKs المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
+## المصادقة
+
+استخدم مفتاح API قياسيًا للبوابة للاستدلال ومفتاح API للإدارة بالأذونات المناسبة للمهام الإدارية. راجع [المصادقة](../developers/authentication.mdx) و[مفاتيح API للإدارة](../developers/management-api-keys.mdx).
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+عند فشل المصادقة، تعيد API الرمز `401`.
+
+## موارد API
+
+| المورد | وظيفته |
+| --- | --- |
+| الاستدلال | ولّد نصوصًا وصورًا وصوتًا وتضمينات؛ واتخذ قرارات وأعد الترتيب وراجع المحتوى أو حلّله. ابدأ بـ[Responses](./endpoint/responses.mdx) أو[Decisions](./endpoint/decisions.mdx). |
+| المهام غير المتزامنة والملفات | أرسل مهام [فيديو](./endpoint/video-create.mdx) أو[دفعات](./endpoint/batches-create.mdx)، وانقل الملفات واضبط Webhooks. |
+| النماذج والتسعير | اكتشف [النماذج](./endpoint/models.mdx) وعروض المزوّدين و[التكاليف التقديرية](./endpoint/pricing-calculate.mdx). |
+| التوجيه والسياسات | اضبط الإعدادات المسبقة وبيانات اعتماد المزوّدين والنماذج الخاصة و[ضوابط الحماية](./endpoint/guardrails.mdx). |
+| الاستخدام والمراقبة | افحص [السجلات](./endpoint/logs-list.mdx) والنشاط والتحليلات والتقييمات وحالة الخدمة. |
+| إدارة مساحة العمل | أدِر [مساحات العمل](./endpoint/workspaces-list.mdx) والمفاتيح والميزانيات والهويات والتكاملات. |
+
+## الفوترة وحدود المعدل
+
+- تعامل مع تقييد المزوّد وسياسات الوصول المعمول بها باستخدام [دليل حدود الطلبات](./limits.mdx).
+- تتطلب الطلبات المدفوعة رصيدًا كافيًا في المحفظة لاجتياز فحص الرصيد المسبق.
+- لا تتطلب النماذج المجانية التي تحمل `:free` رصيدًا مودعًا.

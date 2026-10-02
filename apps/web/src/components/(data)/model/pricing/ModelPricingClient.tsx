@@ -15,6 +15,7 @@ import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
@@ -438,9 +439,10 @@ function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): n
 }
 
 function UptimeHeaderHoverContent() {
+	const t = useTranslations("Catalogue.modelDetail.providerTable");
 	return (
 		<div className="space-y-2">
-			<p className="text-sm font-medium text-foreground">3-day uptime</p>
+			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
 			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
 				<div className="flex items-center gap-1.5">
 					<span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -606,6 +608,8 @@ function ProviderServiceTierInfoIcons({
 	provider: ProviderPricing;
 	plan: string;
 }) {
+	const tx = useTranslations();
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>
@@ -624,6 +628,33 @@ function ProviderServiceTierInfoIcons({
 		),
 	);
 	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
+	const statusLabelKey = statusKey === "active"
+		? "statuses.active"
+		: statusKey === "disabled"
+			? "statuses.disabled"
+			: statusKey === "coming_soon"
+				? "statuses.comingSoon"
+				: statusKey === "external"
+					? "statuses.external"
+				: statusKey === "internal_testing"
+					? "statuses.internalTesting"
+					: statusKey.startsWith("deranked_")
+						? "statuses.rateLimited"
+						: "statuses.inactive";
+	const statusLabel = tProvider(statusLabelKey as never);
+	const statusDescriptionKey = statusKey === "active"
+		? "statusDescriptions.active"
+		: statusKey === "disabled"
+			? "statusDescriptions.disabled"
+			: statusKey === "coming_soon"
+				? "statusDescriptions.comingSoon"
+				: statusKey === "external"
+					? "statusDescriptions.external"
+				: statusKey === "internal_testing"
+					? "statusDescriptions.internalTesting"
+					: statusKey.startsWith("deranked_")
+						? "statusDescriptions.rateLimited"
+						: "statusDescriptions.inactive";
 	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
 	const capabilityPolicies = providerModels
 		.map((providerModel) => providerModel.data_policy)
@@ -650,15 +681,15 @@ function ProviderServiceTierInfoIcons({
 					<HoverCardTrigger asChild>
 						<button
 							type="button"
-							aria-label="BYOK only: requires your provider key"
+							aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
 							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
 						>
 							<KeyRound className="h-3.5 w-3.5" />
 						</button>
 					</HoverCardTrigger>
 					<HoverCardContent align="start" className="w-auto p-2 text-xs">
-						<p className="font-semibold">BYOK only</p>
-						<p className="mt-1 text-muted-foreground">Requires your provider key.</p>
+						<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
+						<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
 					</HoverCardContent>
 				</HoverCard>
 			) : null}
@@ -666,7 +697,7 @@ function ProviderServiceTierInfoIcons({
 				<HoverCardTrigger asChild>
 					<button
 						type="button"
-						aria-label={`Provider status: ${statusMeta.label}`}
+						aria-label={tProvider("providerStatus", { status: statusLabel })}
 						className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
 					>
 						{React.createElement(statusMeta.icon, {
@@ -675,8 +706,8 @@ function ProviderServiceTierInfoIcons({
 					</button>
 				</HoverCardTrigger>
 				<HoverCardContent align="start" className="w-auto p-2 text-xs">
-					<p className="font-semibold">{statusMeta.label}</p>
-					<p className="mt-1 text-muted-foreground">{statusMeta.description}</p>
+					<p className="font-semibold">{statusLabel}</p>
+					<p className="mt-1 text-muted-foreground">{tProvider(statusDescriptionKey as never)}</p>
 				</HoverCardContent>
 			</HoverCard>
 			<ProviderInfoHoverIcons
@@ -732,7 +763,12 @@ function ProviderServiceTierRow({
 	) as Record<string, ReturnType<typeof buildProviderTablePriceSummaryForColumn>>;
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
-	const discountBadge = getProviderTableDiscountBadge(sections);
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const discountBadge = getProviderTableDiscountBadge(sections, {
+		discount: tSections("discount"),
+		off: tSections("off"),
+		upToDiscount: (percent) => tSections("upToDiscount", { percent }),
+	});
 	const openTier = () => {
 		dispatchProviderInspectorOpen(
 			provider.provider.api_provider_id,
@@ -841,6 +877,8 @@ export default function ModelPricingClient({
     headerDescription?: string | null;
     emptyState?: React.ReactNode;
 }) {
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tPricingEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
 	const pricingPath = `/api/_web/models/${encodeURIComponent(modelId)}/pricing` as const;
 	const pricingQuery = useQuery<ProviderPricing[]>({
@@ -1684,7 +1722,7 @@ export default function ModelPricingClient({
                         "group inline-flex w-full items-center gap-1.5 text-left text-xs font-medium transition-colors hover:text-foreground justify-start",
                         isActive ? "text-foreground" : "text-muted-foreground"
                     )}
-					aria-label={`Sort providers by ${label.toLowerCase()}${subLabel ? ` ${subLabel}` : ""}`}
+                    aria-label={tProvider("sortBy", { metric: label })}
                 >
                     {labelNode}
                     {icon}
@@ -1700,7 +1738,7 @@ export default function ModelPricingClient({
                     "group inline-flex w-full items-center justify-end gap-1.5 text-right text-xs font-medium transition-colors hover:text-foreground",
                     isActive ? "text-foreground" : "text-muted-foreground"
                 )}
-				aria-label={`Sort providers by ${label.toLowerCase()}${subLabel ? ` ${subLabel}` : ""}`}
+                aria-label={tProvider("sortBy", { metric: label })}
             >
                 {icon}
                 {labelNode}
@@ -1726,7 +1764,7 @@ export default function ModelPricingClient({
                 {showHeader ? (
                     <div className="space-y-1">
                         <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                            Providers
+                            {tProvider("heading")}
                         </h2>
                         {headerDescription ? (
                             <p className="text-sm text-muted-foreground">{headerDescription}</p>
@@ -1742,7 +1780,7 @@ export default function ModelPricingClient({
                                 }
                             >
                                 <Filter className="size-3.5" />
-                                Filters
+                                {tProvider("filterButton")}
                                 {activeFilterCount > 0 ? (
                                     <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                                         {activeFilterCount}
@@ -1751,12 +1789,12 @@ export default function ModelPricingClient({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-72 rounded-md">
                                 <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                                    Filter providers
+                                    {tProvider("filterProviders")}
                                 </div>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                         <ListFilter className="size-4 text-muted-foreground" />
-                                        <span className="whitespace-nowrap">Status</span>
+                                        <span className="whitespace-nowrap">{tProvider("status")}</span>
                                         <span className="ml-auto text-xs text-muted-foreground">
                                             {providerStatusFilters.length}/4
                                         </span>
@@ -1773,7 +1811,7 @@ export default function ModelPricingClient({
                                                     }
                                                 >
                                                     <CheckCircle2 className="size-4 text-emerald-600" />
-                                                    <span className="whitespace-nowrap">Routable</span>
+                                                    <span className="whitespace-nowrap">{tProvider("routable")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={providerStatusFilters.includes("preview")}
@@ -1784,7 +1822,7 @@ export default function ModelPricingClient({
                                                     }
                                                 >
                                                     <Clock3 className="size-4 text-blue-600" />
-                                                    <span className="whitespace-nowrap">Preview / coming soon</span>
+                                                    <span className="whitespace-nowrap">{tProvider("previewComingSoon")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={providerStatusFilters.includes("inactive")}
@@ -1795,7 +1833,7 @@ export default function ModelPricingClient({
                                                     }
                                                 >
                                                     <Ban className="size-4 text-zinc-500" />
-                                                    <span className="whitespace-nowrap">Inactive / disabled</span>
+                                                    <span className="whitespace-nowrap">{tProvider("inactiveDisabled")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={providerStatusFilters.includes("external")}
@@ -1806,7 +1844,7 @@ export default function ModelPricingClient({
                                                     }
                                                 >
                                                     <Globe2 className="size-4 text-violet-600" />
-                                                    <span className="whitespace-nowrap">External providers</span>
+                                                    <span className="whitespace-nowrap">{tProvider("externalProviders")}</span>
                                                 </DropdownMenuCheckboxItem>
                                             </DropdownMenuGroup>
                                         </DropdownMenuSubContent>
@@ -1815,8 +1853,8 @@ export default function ModelPricingClient({
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                         <ShieldCheck className="size-4 text-muted-foreground" />
-                                        <span className="whitespace-nowrap">Data privacy</span>
-                                        <span className="ml-auto text-xs text-muted-foreground">{privacyFilter === "workspace" ? "Workspace" : "Custom"}</span>
+                                        <span className="whitespace-nowrap">{tProvider("dataPrivacy")}</span>
+                                        <span className="ml-auto text-xs text-muted-foreground">{privacyFilter === "workspace" ? tProvider("workspace") : tProvider("custom")}</span>
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuPortal>
                                         <DropdownMenuSubContent className="w-80 rounded-md">
@@ -1826,28 +1864,28 @@ export default function ModelPricingClient({
                                                     onCheckedChange={(checked) => checked && setPrivacyFilter("workspace")}
                                                 >
                                                     <ShieldCheck className="size-4 text-emerald-600" />
-                                                    <span className="whitespace-nowrap">Respect workspace settings</span>
+                                                    <span className="whitespace-nowrap">{tProvider("respectWorkspaceSettings")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={privacyFilter === "zdr"}
                                                     onCheckedChange={(checked) => checked && setPrivacyFilter("zdr")}
                                                 >
                                                     <Database className="size-4 text-blue-600" />
-                                                    <span className="whitespace-nowrap">Zero data retention only</span>
+                                                    <span className="whitespace-nowrap">{tProvider("zeroDataRetentionOnly")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={privacyFilter === "no_training"}
                                                     onCheckedChange={(checked) => checked && setPrivacyFilter("no_training")}
                                                 >
                                                     <GraduationCap className="size-4 text-amber-600" />
-                                                    <span className="whitespace-nowrap">No training on inputs</span>
+                                                    <span className="whitespace-nowrap">{tProvider("noTrainingInputs")}</span>
                                                 </DropdownMenuCheckboxItem>
                                                 <DropdownMenuCheckboxItem
                                                     checked={privacyFilter === "all"}
                                                     onCheckedChange={(checked) => checked && setPrivacyFilter("all")}
                                                 >
                                                     <CircleDot className="size-4 text-zinc-500" />
-                                                    <span className="whitespace-nowrap">Show all privacy policies</span>
+                                                    <span className="whitespace-nowrap">{tProvider("showAllPrivacyPolicies")}</span>
                                                 </DropdownMenuCheckboxItem>
                                             </DropdownMenuGroup>
                                         </DropdownMenuSubContent>
@@ -1861,7 +1899,7 @@ export default function ModelPricingClient({
                                     }}
                                 >
                                     <RotateCcw className="size-4 text-muted-foreground" />
-                                    Reset filters
+                                    {tProvider("resetFilters")}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -1869,7 +1907,7 @@ export default function ModelPricingClient({
                             value={selectedPercentile}
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
-                            ariaLabel="Select provider percentile"
+                            ariaLabel={tProvider("selectPercentile")}
                             className="min-w-0 flex-1 justify-center sm:flex-none"
                         />
                     </div>
@@ -1915,7 +1953,7 @@ export default function ModelPricingClient({
 									<TableHeader>
 										<TableRow className="hover:bg-transparent">
 											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
-												{renderTableSortHead("Provider", "provider", "left")}
+												{renderTableSortHead(tProvider("provider"), "provider", "left")}
 											</TableHead>
 											{visiblePriceColumns.map((column) => (
 												<TableHead key={column.key} className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
@@ -1923,13 +1961,13 @@ export default function ModelPricingClient({
 												</TableHead>
 											))}
 											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Latency", "latency")}
+												{renderTableSortHead(tProvider("latency"), "latency")}
 											</TableHead>
 											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Throughput", "throughput")}
+												{renderTableSortHead(tProvider("throughput"), "throughput")}
 											</TableHead>
 											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
-												{renderTableSortHead("Uptime", "uptime")}
+												{renderTableSortHead(tProvider("uptime"), "uptime")}
 											</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -2009,21 +2047,21 @@ export default function ModelPricingClient({
                             <EmptyMedia variant="icon">
                                 <Shield className="size-5" />
                             </EmptyMedia>
-                            <EmptyTitle>All providers hidden</EmptyTitle>
+                            <EmptyTitle>{tPricingEmpty("allProvidersHiddenTitle")}</EmptyTitle>
                             <EmptyDescription>
-                                Your workspace privacy preferences are currently filtering out every provider for this model.
+                                {tPricingEmpty("allProvidersHiddenDescription")}
                             </EmptyDescription>
                         </EmptyHeader>
                         <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
                             <Button asChild type="button" variant="outline">
-                                <Link href="/settings/privacy">Update Privacy Settings</Link>
+                                <Link href="/settings/privacy">{tPricingEmpty("updatePrivacySettings")}</Link>
                             </Button>
                             <Button
                                 type="button"
                                 variant="ghost"
                                 onClick={() => setPrivacyFilter("all")}
                             >
-                                Show Hidden Providers
+                                {tProvider("showHiddenProviders")}
                             </Button>
                         </div>
                     </Empty>
@@ -2033,9 +2071,9 @@ export default function ModelPricingClient({
                             <EmptyMedia variant="icon">
                                 <Shield className="size-5" />
                             </EmptyMedia>
-                            <EmptyTitle>No visible API providers</EmptyTitle>
+                            <EmptyTitle>{tPricingEmpty("noVisibleProvidersTitle")}</EmptyTitle>
                             <EmptyDescription>
-                                No providers match your current filters. Open Filters to adjust provider statuses or include External Providers.
+                                {tPricingEmpty("noVisibleProvidersDescription")}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>
@@ -2045,9 +2083,9 @@ export default function ModelPricingClient({
                             <EmptyMedia variant="icon">
                                 <Server className="size-5" />
                             </EmptyMedia>
-                            <EmptyTitle>No API providers listed yet</EmptyTitle>
+                            <EmptyTitle>{tPricingEmpty("noProvidersTitle")}</EmptyTitle>
                             <EmptyDescription>
-                                No API provider availability is listed for this model yet.
+                                {tPricingEmpty("noProvidersDescription")}
                             </EmptyDescription>
                         </EmptyHeader>
                     </Empty>

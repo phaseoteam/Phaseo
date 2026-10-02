@@ -1,6 +1,9 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import {
 	HoverCard,
@@ -19,8 +22,10 @@ type ResetWindowHoverProps = {
 };
 
 export default function ResetWindowHover({ iso, triggerText }: ResetWindowHoverProps) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const format = useDisplayFormatters();
-	const { preferences } = useDisplayPreferences();
+	const { formattingPreferences: preferences } = useDisplayPreferences();
 	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
 	const userTimeZone = useMemo(
 		() =>
@@ -67,7 +72,7 @@ export default function ResetWindowHover({ iso, triggerText }: ResetWindowHoverP
 						</div>
 					</div>
 					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">Relative</div>
+						<div className="text-muted-foreground">{s("Relative")}</div>
 						<div className="font-mono">
 							{relativeNowMs
 								? formatDisplayTimestamp(

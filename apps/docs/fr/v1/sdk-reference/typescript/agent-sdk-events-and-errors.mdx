@@ -1,0 +1,66 @@
+---
+icon: "triangle-alert"
+title: "Erreurs et dépannage"
+description: "Gérez les échecs de la passerelle, les erreurs de validation et les exécutions d’agent qui échouent."
+---
+
+Utilisez les erreurs structurées du SDK Agent lorsque votre application doit décider de réessayer, de demander une autre saisie à l’utilisateur ou d’afficher les détails de la requête à un opérateur.
+
+## Gérer les échecs de la passerelle
+
+Les échecs de la passerelle sont relancés sous forme de `AgentGatewayError` :
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+Les exécutions et étapes en échec conservent les détails de l’erreur de la passerelle lorsqu’ils sont disponibles.
+
+## Gérer les erreurs de schéma
+
+`AgentSchemaValidationError` identifie les entrées ou sorties d’outil, les événements de progression ou les résultats finaux non valides. Traitez-les comme des ruptures de contrat, et non comme des échecs temporaires du modèle.
+
+```typescript
+import { AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+## Examiner l’exécution en échec
+
+Lorsque l’environnement d’exécution peut enregistrer un point de contrôle de l’échec, examinez :
+
+- `result.run.status`
+- `result.run.error`
+- `status`, `error` et `modelAttempts` de la dernière étape
+- `requestId` et `nativeResponseId` pour les corréler aux journaux de la passerelle
+
+## Vérifications courantes
+
+- Vérifiez que le processus serveur dispose de `PHASEO_API_KEY`.
+- Attribuez à chaque outil un `id` unique et stable.
+- Utilisez les ID exacts des appels d’outil pour approuver, rejeter ou fournir une sortie manuelle.
+- Limitez les nouvelles tentatives du modèle ; ne réessayez pas à l’aveugle après un échec de validation ou d’approbation.
+- Enregistrez l’état d’une exécution en pause avant de rendre le contrôle au navigateur ou au worker de file d’attente.
+
+## Guides associés
+
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [Outils de développement](./agent-sdk-devtools.mdx)
+- [État et approbation](./agent-sdk-state-and-approval.mdx)

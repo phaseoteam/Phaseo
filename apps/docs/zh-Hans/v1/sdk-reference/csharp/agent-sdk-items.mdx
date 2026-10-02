@@ -1,0 +1,16 @@
+---
+icon: "layers"
+title: "使用结果和项目"
+description: "根据消息、步骤、工具和流事件构建 .NET 运行时间线。"
+---
+
+`RunResult` 是 Agent 的持久化结果，其中包含运行记录、消息、步骤、用量和成本、警告、结束原因以及最终输出。
+
+使用 `TextStream()` 获取实时回答文本，使用 `FullStream()` 获取模型、工具、步骤、运行和供应商项目事件。C# 目前通过通用对象公开供应商项目，而不是 TypeScript 的判别联合类型 `AgentItem`。
+
+运行期间可根据生命周期事件构建产品时间线，之后再根据持久化的消息和步骤重建最终状态。
+
+## 相关内容
+
+- [流式传输](./agent-sdk-streaming.mdx)
+- [生命周期钩子](./agent-sdk-lifecycle-hooks.mdx)

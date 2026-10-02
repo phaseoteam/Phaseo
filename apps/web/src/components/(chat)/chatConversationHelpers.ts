@@ -366,7 +366,3 @@ export function getInlineAttachmentPreviewsFromMeta(
 		})
 		.filter((entry): entry is InlineAttachmentPreview => Boolean(entry));
 }
-
-export function getRandomPlaceholder() {
-	return DEFAULT_CHAT_PLACEHOLDER;
-}

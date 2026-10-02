@@ -1,0 +1,19 @@
+---
+icon: "search-check"
+title: "البحث عن سجل التوليد"
+description: "استدعِ `/generations` لاسترجاع سجل توليد سابق."
+---
+
+**الطريقة**: `client.getGeneration(...)`
+
+```java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Object generation = client.getGeneration("G-01ABC123");
+System.out.println(String.valueOf(generation));
+```
+
+عند حفظ تفاصيل الطلب، يتضمن سجل التوليد المُعاد أيضًا `replay_supported` و`replay_request` لإعادة إرسال الحمولة المسجلة إلى المسار الأصلي.
+

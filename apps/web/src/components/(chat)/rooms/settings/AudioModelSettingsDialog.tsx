@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,6 +63,7 @@ export function AudioModelSettingsDialog({
 	onReset,
 	modeSupport,
 }: AudioModelSettingsDialogProps) {
+	const t = useTranslations("Product.chatRooms");
 	const schema = getAudioModelSchema(selectedModelId ?? "", capabilityParamsById);
 	const speechVoice = schema.voiceOptions.includes(settings.params.speechVoice)
 		? settings.params.speechVoice
@@ -72,8 +75,8 @@ export function AudioModelSettingsDialog({
 		<RoomModelSettingsShell
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Audio model settings"
-			description="Configure speech, transcription, and translation defaults for this model."
+			title={t("audioSettings")}
+			description={t("audioSettingsDescription")}
 			settings={settings}
 			modelChoices={modelChoices}
 			selectedModelId={selectedModelId}
@@ -86,16 +89,16 @@ export function AudioModelSettingsDialog({
 			<div className="grid gap-4">
 				{modeSupport.speech ? (
 					<div className="space-y-2">
-						<p className="text-sm font-medium">Speech defaults</p>
+						<p className="text-sm font-medium">{t("speechDefaults")}</p>
 						<div className="grid gap-2">
 							<div className="grid gap-1.5">
-								<Label>Voice</Label>
+								<Label>{t("voice")}</Label>
 								<Select
 									value={speechVoice}
 									onValueChange={(value) => onUpdateParams({ speechVoice: value })}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder="Select voice" />
+										<SelectValue placeholder={t("selectVoice")} />
 									</SelectTrigger>
 									<SelectContent>
 										{schema.voiceOptions.map((voice) => (
@@ -107,14 +110,14 @@ export function AudioModelSettingsDialog({
 								</Select>
 							</div>
 							<div className="grid gap-1.5">
-								<Label>Format</Label>
+								<Label>{t("format")}</Label>
 								<div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-									{CHAT_AUDIO_SPEECH_FORMAT} (fixed in chat)
+									{t("audioFormatFixedInChat", { format: CHAT_AUDIO_SPEECH_FORMAT })}
 								</div>
 							</div>
 							{schema.supportsSpeechSpeed ? (
 								<div className="grid gap-1.5">
-									<Label htmlFor="speech-speed">Speed</Label>
+									<Label htmlFor="speech-speed">{t("speed")}</Label>
 									<Input
 										id="speech-speed"
 										type="number"
@@ -138,11 +141,11 @@ export function AudioModelSettingsDialog({
 				) : null}
 				{modeSupport.transcription ? (
 					<div className="space-y-2">
-						<p className="text-sm font-medium">Transcription defaults</p>
+						<p className="text-sm font-medium">{t("transcriptionDefaults")}</p>
 						<div className="grid gap-2">
 							{schema.supportsLanguageHint ? (
 								<div className="grid gap-1.5">
-									<Label htmlFor="transcription-language">Language hint</Label>
+									<Label htmlFor="transcription-language">{t("languageHint")}</Label>
 									<Input
 										id="transcription-language"
 										value={settings.params.transcriptionLanguage}
@@ -156,7 +159,7 @@ export function AudioModelSettingsDialog({
 								</div>
 							) : null}
 							<div className="grid gap-1.5">
-								<Label htmlFor="transcription-prompt">Prompt</Label>
+								<Label htmlFor="transcription-prompt">{t("prompt")}</Label>
 								<Textarea
 									id="transcription-prompt"
 									rows={2}
@@ -169,7 +172,7 @@ export function AudioModelSettingsDialog({
 								/>
 							</div>
 							<div className="grid gap-1.5">
-								<Label>Response format</Label>
+								<Label>{t("responseFormat")}</Label>
 								<Select
 									value={transcriptionResponseFormat}
 									onValueChange={(value) =>
@@ -193,10 +196,10 @@ export function AudioModelSettingsDialog({
 				) : null}
 				{modeSupport.translation ? (
 					<div className="space-y-2">
-						<p className="text-sm font-medium">Translation defaults</p>
+						<p className="text-sm font-medium">{t("translationDefaults")}</p>
 						<div className="grid gap-2">
 							<div className="grid gap-1.5">
-								<Label htmlFor="translation-prompt">Prompt</Label>
+								<Label htmlFor="translation-prompt">{t("prompt")}</Label>
 								<Textarea
 									id="translation-prompt"
 									rows={2}
@@ -207,7 +210,7 @@ export function AudioModelSettingsDialog({
 								/>
 							</div>
 							<div className="grid gap-1.5">
-								<Label>Response format</Label>
+								<Label>{t("responseFormat")}</Label>
 								<Select
 									value={translationResponseFormat}
 									onValueChange={(value) =>

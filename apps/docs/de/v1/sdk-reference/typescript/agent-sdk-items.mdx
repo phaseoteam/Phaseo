@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "Mit Elementen arbeiten"
+description: "Stelle typisierte Nachrichten, Reasoning, Tool-Aktivitäten, Fehler und endgültige Ausgaben dar."
+---
+
+Verwende Elemente, um eine strukturierte Agent-Zeitleiste ohne das Parsen anbieterspezifischer Ereignisse aufzubauen. Streaming- und abgeschlossene Läufe verwenden denselben geordneten Vertrag `AgentItem<TOutput>`.
+
+## Elementtypen
+
+`AgentItem<TOutput>` ist eine diskriminierte Union:
+
+| Typ | Wichtige Felder | Bedeutung |
+| --- | --- | --- |
+| `message` | `role`, `content` | Assistenten- oder Konversationstext |
+| `reasoning` | `text` | Vom Modell bereitgestelltes Reasoning |
+| `tool_call` | `toolCallId`, `name`, `input` | Vorgeschlagener Tool-Aufruf |
+| `tool_result` | `toolCallId`, `name`, `output` | Abgeschlossener Tool-Aufruf |
+| `error` | `message`, optionale Tool-Details | Anbieter- oder Tool-Fehler |
+| `output` | `value` | Geparste endgültige Agent-Ausgabe |
+
+## Eine Streaming-Zeitleiste darstellen
+
+TypeScript leitet den Typ jedes Elements anhand seiner `type`-Eigenschaft ein:
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## Elemente nach Abschluss lesen
+
+Das abgeschlossene Ergebnis enthält dieselben geordneten Elementtypen:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+So kann ein Produkt Aktivitäten live darstellen und dieselbe Zeitleiste später aus gespeichertem Ausführungsstatus wiederherstellen.
+
+## Auf anbieterspezifische Daten zugreifen
+
+Anbieterausgaben werden in portable Elementtypen normalisiert. Wenn eine Integration weiterhin ein anbieterspezifisches Feld benötigt, bewahren normalisierte Elemente die ursprüngliche Nutzlast in `rawProviderItem` auf.
+
+Verwende nach Möglichkeit portable Felder in der Produktlogik. Betrachte `rawProviderItem` als Ausweichmöglichkeit für anbieterspezifische Integrationen, nicht als standardmäßigen Anwendungsvertrag.
+
+## Weiterführende Anleitungen
+
+- [Datenstrom](./agent-sdk-streaming.mdx)
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)

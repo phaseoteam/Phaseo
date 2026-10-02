@@ -1,0 +1,29 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "暂停 Python Agent 以等待人工决策，并继续应用程序管理的状态。"
+---
+
+可使用 `human_review` 作为通用检查点。需要审批的工具和手动工具会将确切的调用 ID 放入 `paused.run.pause.pending_tool_calls`。
+
+```python
+from phaseo_agent import AgentToolDecision, AgentToolOutput
+
+pending = paused.run.pause.pending_tool_calls
+
+continued = agent.continue_run(
+    run=paused,
+    client=client,
+    approvals=[AgentToolDecision(pending[0].call.id)],
+    tool_outputs=[AgentToolOutput(pending[1].call.id, {"status": "complete"})],
+)
+```
+
+拒绝调用时传入 `rejections`，需要通用人工审核暂停时传入 `human_input`。决策按调用 ID 匹配，而非按工具名称匹配。
+
+如果运行状态需要跨请求或进程重启保留，请实现 `AgentStateAccessor.load(run_id)` 和 `save(result)`。继续运行时便可通过 `run_id` 加载状态。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

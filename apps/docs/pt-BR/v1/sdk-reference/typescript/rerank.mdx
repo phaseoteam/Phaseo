@@ -1,0 +1,26 @@
+---
+icon: "list-ordered"
+title: "Reordenar documentos"
+description: "Reordene documentos candidatos por relevância usando o SDK TypeScript."
+---
+
+Use `client.rerank.create()` para ordenar documentos candidatos por relevância em relação a uma consulta.
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+Confirme o ID do modelo com `GET /v1/models` antes de usá-lo em produção.

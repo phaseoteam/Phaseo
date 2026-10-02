@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,14 +37,6 @@ import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
 type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
 type GroupBy = "model" | "key";
 
-const RANGE_ITEMS: Array<{ value: RangeKey; label: string }> = [
-	{ value: "1h", label: "Last 1 Hour" },
-	{ value: "1d", label: "Last 1 Day" },
-	{ value: "1w", label: "Last 1 Week" },
-	{ value: "1m", label: "Last 1 Month" },
-	{ value: "1y", label: "Last 1 Year" },
-];
-
 type ApiKeyOption = {
 	id: string;
 	name?: string | null;
@@ -65,13 +58,13 @@ function parseGroup(group?: string | null): GroupBy {
 	return group === "key" ? "key" : "model";
 }
 
-function formatKeyLabel(key?: ApiKeyOption | null): string {
-	if (!key) return "API key";
+function formatKeyLabel(key?: ApiKeyOption | null, fallback = "API key"): string {
+	if (!key) return fallback;
 	const name = key.name?.trim();
 	const prefix = key.prefix?.trim();
 	if (name) return name;
 	if (prefix) return prefix;
-	return "API key";
+	return fallback;
 }
 
 function formatKeySubtitle(key?: ApiKeyOption | null): string | null {
@@ -85,6 +78,14 @@ function formatKeySubtitle(key?: ApiKeyOption | null): string | null {
 export default function UsageHeader({
 	keys = [],
 }: UsageHeaderProps) {
+	const t = useTranslations("SettingsUI");
+	const rangeItems: Array<{ value: RangeKey; label: string }> = [
+		{ value: "1h", label: t("strings.Last 1 Hour" as never) },
+		{ value: "1d", label: t("strings.Last 1 Day" as never) },
+		{ value: "1w", label: t("strings.Last 1 Week" as never) },
+		{ value: "1m", label: t("strings.Last 1 Month" as never) },
+		{ value: "1y", label: t("strings.Last 1 Year" as never) },
+	];
 	const router = useRouter();
 	const [range, setRange] = useQueryState<RangeKey>("range", {
 		defaultValue: "1m",
@@ -118,12 +119,12 @@ export default function UsageHeader({
 	const groupLabel = React.useMemo(() => {
 		if (groupBy === "key") {
 			if (selectedKey) {
-				return `By ${formatKeyLabel(selectedKey)}`;
+				return `${t("strings.By Key" as never)}: ${formatKeyLabel(selectedKey, t("strings.API key" as never))}`;
 			}
-			return "By Key";
+			return t("strings.By Key" as never);
 		}
-		return "By Model";
-	}, [groupBy, selectedKey]);
+		return t("strings.By Model" as never);
+	}, [groupBy, selectedKey, t]);
 
 	function handleGroupByModel() {
 		void setGroupBy("model");
@@ -140,10 +141,10 @@ export default function UsageHeader({
                         setRefreshing(true);
                         const res = await revalidateUsage("dashboard");
                         router.refresh();
-                        if (res?.ok) toast.success("Refresh Successful");
-                        else toast.error("Refresh Failed");
+						if (res?.ok) toast.success(t("strings.Refresh Successful" as never));
+						else toast.error(t("strings.Refresh Failed" as never));
 		} catch {
-			toast.error("Refresh Failed");
+			toast.error(t("strings.Refresh Failed" as never));
 		} finally {
 			setRefreshing(false);
 		}
@@ -151,7 +152,7 @@ export default function UsageHeader({
 
 	return (
 		<div className="flex items-center justify-between mb-6">
-			<h1 className="font-bold text-2xl">Usage Dashboard</h1>
+			<h1 className="font-bold text-2xl">{t("strings.Usage Dashboard" as never)}</h1>
 			<div className="flex items-center gap-2">
 				<DropdownMenu>
 					<DropdownMenuTrigger render={<Button variant="outline" className="flex items-center gap-2" />}>
@@ -161,22 +162,22 @@ export default function UsageHeader({
 
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-64">
-						<DropdownMenuLabel>Breakdown view</DropdownMenuLabel>
+						<DropdownMenuLabel>{t("strings.Breakdown view" as never)}</DropdownMenuLabel>
 						<DropdownMenuGroup>
 							<DropdownMenuItem onClick={handleGroupByModel} className="justify-between">
-								<span>By model</span>
+								<span>{t("strings.By model" as never)}</span>
 								{groupBy === "model" && <Check className="h-4 w-4" />}
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuSub>
-								<DropdownMenuSubTrigger>By API key</DropdownMenuSubTrigger>
+								<DropdownMenuSubTrigger>{t("strings.By API key" as never)}</DropdownMenuSubTrigger>
 								<DropdownMenuPortal>
 									<DropdownMenuSubContent className="w-64 max-h-72 overflow-y-auto">
 										<DropdownMenuItem
 											onClick={() => handleGroupByKey(null)}
 											className="justify-between"
 										>
-											<span>All keys</span>
+											<span>{t("strings.All keys" as never)}</span>
 											{groupBy === "key" && !selectedKeyId && (
 												<Check className="h-4 w-4" />
 											)}
@@ -184,7 +185,7 @@ export default function UsageHeader({
 										<DropdownMenuSeparator />
 										{keys.length === 0 ? (
 											<DropdownMenuItem disabled>
-												No API keys available
+												{t("strings.No API keys available" as never)}
 											</DropdownMenuItem>
 										) : (
 											keys.map((key) => {
@@ -196,7 +197,7 @@ export default function UsageHeader({
 														className="flex-col items-start gap-1"
 													>
 														<div className="flex items-center justify-between w-full">
-															<span>{formatKeyLabel(key)}</span>
+																<span>{formatKeyLabel(key, t("strings.API key" as never))}</span>
 															{groupBy === "key" && selectedKeyId === key.id && (
 																<Check className="h-4 w-4" />
 															)}
@@ -218,14 +219,14 @@ export default function UsageHeader({
 				</DropdownMenu>
 				<Select
 					value={range}
-					items={RANGE_ITEMS}
+					items={rangeItems}
 					onValueChange={(v) => setRange(v as RangeKey)}
 				>
 					<SelectTrigger className="w-[180px]">
-						<SelectValue placeholder="Range" />
+						<SelectValue placeholder={t("strings.Range" as never)} />
 					</SelectTrigger>
 					<SelectContent>
-						{RANGE_ITEMS.map((item) => (
+						{rangeItems.map((item) => (
 							<SelectItem key={item.value} value={item.value} label={item.label}>
 								{item.label}
 							</SelectItem>
@@ -238,7 +239,7 @@ export default function UsageHeader({
 							variant="outline"
 							size="icon"
 							onClick={onRefresh}
-							aria-label="Refresh"
+							aria-label={t("strings.Refresh" as never)}
 							disabled={refreshing}
 						>
 							{refreshing ? (
@@ -248,7 +249,7 @@ export default function UsageHeader({
 							)}
 						</Button>
 					</TooltipTrigger>
-					<TooltipContent sideOffset={6}>Refresh</TooltipContent>
+						<TooltipContent sideOffset={6}>{t("strings.Refresh" as never)}</TooltipContent>
 				</Tooltip>
 			</div>
 		</div>

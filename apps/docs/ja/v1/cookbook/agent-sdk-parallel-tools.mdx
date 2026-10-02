@@ -1,0 +1,104 @@
+---
+title: "ローカルエージェントツールを並行実行する"
+icon: "network"
+description: "TypeScript Agent SDKでローカルツールの同時実行数を制限し、各ツール呼び出しを直列化せずに1回のモデルターンで独立した情報を収集します。"
+---
+
+1回のエージェントターンで複数の独立したローカルツールを安全に呼び出せる場合に、このレシピを使います。結果の順序を保ちながらランタイムで並行実行できます。
+
+## 使用する場面
+
+次の場合は`toolExecution.toolConcurrency`を使います。
+
+- 1回のターンでモデルが複数のローカルツール呼び出しを出力できる
+- 各ツールが互いの出力に依存しない
+- 直列実行ではワーカーの時間が無駄になる
+- 保存されるツール結果メッセージを元の呼び出し順に保ちたい
+
+共有状態を変更するツールがある場合や、後続ツールが先行ツールの結果に依存する場合は、同時実行数を増やさないでください。
+
+## 例
+
+```ts
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const fetchDocs = defineTool({
+  id: "fetch-docs",
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      summary: `Docs summary for ${input.slug}`,
+    };
+  },
+});
+
+const fetchStatus = defineTool({
+  id: "fetch-status",
+  async execute(input: { component: string }) {
+    return {
+      component: input.component,
+      status: "operational",
+    };
+  },
+});
+
+const fetchIncidents = defineTool({
+  id: "fetch-incidents",
+  async execute(input: { service: string }) {
+    return {
+      service: input.service,
+      openIncidents: 0,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "parallel-tool-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to gather context, then return one concise operational summary.",
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+});
+
+const result = await agent.run({
+  input:
+    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+```
+
+同梱の実装は次を参照してください。 `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+
+## ランタイムが保証すること
+
+- ローカルツールは設定された`toolConcurrency`の上限まで並行実行できる
+- 各ツールについて`tool.started`と`tool.completed`イベントが引き続き出力される
+- 保存されるツール結果メッセージは元の呼び出し順を保つ
+- ツール処理の完了後にチェックポイントが保存される
+- `timeoutMs`によるタイムアウトが各ツールに適用される
+
+## 運用上のガイダンス
+
+- `2`や`3`などの小さい値から始める
+- ローカルツールは冪等にし、副作用を抑える
+- 依存先が停止しても全ワーカーを占有しないよう`timeoutMs`を設定する
+- 実行の再開やリモート調整が本当に必要な場合にのみ`store`を追加する
+
+## 検証
+
+この方法を有効にした後：
+
+- 複数ツールを使うターンを対象としたエージェントループのテストを実行する
+- ツール結果のメッセージが引き続き正しい順序で生成されることを確認する
+- 運用ログに想定どおり`tool.started`および`tool.completed`イベントが記録されることを確認する

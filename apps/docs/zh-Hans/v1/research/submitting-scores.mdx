@@ -1,0 +1,29 @@
+---
+icon: "upload"
+title: "提交基准测试分数"
+description: "附上审核所需证据，报告新增或修正的基准测试结果。"
+---
+
+通过 GitHub 问题提交基准测试结果。维护者核实证据，并通过数据库编辑器发布获批分数。
+
+## 准备证据
+
+请包含：
+
+- 模型 ID、提供商以及对应的 Phaseo 页面（如有）。
+- 基准测试名称、版本、数据划分、分数和单位。
+- 评估日期、提示格式、评估框架以及相关硬件或采样设置。
+- 公开论文、结果页面、数据集或可复现的评估日志。
+- 结果是由提供商报告还是独立测量。
+
+## 提交问题
+
+对于新结果或基准测试，请[请求新增基准测试数据](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml)。修正现有分数时，请[报告错误信息](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml)，并包含当前值和建议值。
+
+请勿在公开报告中包含凭据、私有提示或客户数据。
+
+## 跟踪发布
+
+更新数据库之前，维护者可能会在问题中要求澄清。每日 JSON 快照反映已发布数据；编辑归档的基准测试 JSON 不会发布分数。
+
+如需帮助准备提交内容，请使用[社区 Discord](https://discord.gg/aQyywCvgZ5)。

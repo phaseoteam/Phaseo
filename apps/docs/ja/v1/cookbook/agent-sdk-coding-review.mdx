@@ -1,0 +1,155 @@
+---
+title: "ランタイムツールを使ってコードレビューエージェントを実行する"
+icon: "code-xml"
+description: "ローカルランタイムツール、厳密な JSON、人による承認チェックポイントを使って、中断後に再開できるコードレビューワークフローを作成します。"
+---
+
+次のようなワークフローを作成する場合は、このレシピを使います。
+
+- ローカルランタイムツールでコードに関するコンテキストを調べる
+- 自由形式の文章ではなく、厳密に構造化された出力を返す
+- リスクの高い判断を一時停止して人の承認を求める
+- モデルターンとツール呼び出しの間で進捗をチェックポイントに保存する
+
+## 1. 範囲を限定した出力契約を定義する
+
+```ts
+type CodeReviewPlan = {
+  risk: "low" | "medium" | "high";
+  summary: string;
+  recommendedActions: string[];
+  needsApproval: boolean;
+};
+```
+
+最初のコードレビューワークフローをログで確認しやすくし、後続の worker ステップにも渡しやすくできます。
+
+## 2. 小さなランタイムツールを定義する
+
+```ts
+import { defineTool } from "@phaseo/agent-sdk";
+
+const lookupDiffSummary = defineTool({
+  id: "lookup-diff-summary",
+  description: "Return a short summary of the changed files in one pull request.",
+  async execute(input: { pullRequestId: string }) {
+    return {
+      pullRequestId: input.pullRequestId,
+      files: ["apps/api/src/pipeline/before/index.ts"],
+      summary: "Changes touch request validation.",
+    };
+  },
+});
+
+const lookupFailingChecks = defineTool({
+  id: "lookup-failing-checks",
+  description: "Return the failing CI checks for one pull request.",
+  async execute(input: { pullRequestId: string }) {
+    return {
+      pullRequestId: input.pullRequestId,
+      failingChecks: ["web-typecheck"],
+    };
+  },
+});
+```
+
+worker が後で再開したときも、チェックポイントに保存されたステップのデータを使えるように、これらのツールを決定的かつ冪等にしてください。
+
+## 3. 人によるレビューの境界を持つエージェントを作成する
+
+```ts
+import { createAgent } from "@phaseo/agent-sdk";
+
+const codingReviewAgent = createAgent<string, CodeReviewPlan>({
+  id: "coding-review-agent",
+  model: "phaseo/free",
+  instructions:
+    "Use the available tools to inspect the coding task, then return a strict JSON review plan.",
+  tools: [lookupDiffSummary, lookupFailingChecks],
+  parseOutput(text) {
+    return JSON.parse(text) as CodeReviewPlan;
+  },
+  humanReview: ({ parsedOutput }) =>
+    parsedOutput?.needsApproval
+      ? {
+          reason: "coding_review_approval_required",
+          payload: parsedOutput,
+        }
+      : null,
+});
+```
+
+## 4. Gateway アダプターで厳密な JSON を要求する
+
+```ts
+import {
+  createGatewayAgentClient,
+} from "@phaseo/agent-sdk";
+
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "code_review_plan",
+    schema: {
+      type: "object",
+      properties: {
+        risk: {
+          type: "string",
+          enum: ["low", "medium", "high"],
+        },
+        summary: { type: "string" },
+        recommendedActions: {
+          type: "array",
+          items: { type: "string" },
+          minItems: 1,
+        },
+        needsApproval: { type: "boolean" },
+      },
+      required: ["risk", "summary", "recommendedActions", "needsApproval"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "strict" }],
+});
+```
+
+## 5. ワークフローを実行して再開する
+
+```ts
+const result = await codingReviewAgent.run({
+  input: "Review pull request pr_482 and produce a remediation plan.",
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+
+if (result.run.status === "waiting_for_human") {
+  const continued = await codingReviewAgent.continueRun({
+    run: result,
+    client,
+    humanInput: "Approved. Finalize the plan.",
+  });
+
+  console.log(continued.output);
+}
+```
+
+## 6. 確認する内容
+
+ツールを使う実行と承認待ちで停止する実行をそれぞれ1回行った後、次の点を確認します。
+
+- リクエスト詳細にランタイムツールのループが明確に表示される
+- 一時停止した実行の状態が `waiting_for_human` になる
+- ツール実行後にステップレコードがチェックポイントを保存する
+- スキーマエラーやプラグイン修復の実行内容がログで確認できる
+
+## 関連ガイド
+
+- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+- [永続化可能なエージェントループを作る](./agent-sdk-durable-loop.mdx)
+- [構造化出力を検証する](../guides/structured-outputs.mdx)
+- [不正な構造化 JSON を復元する](./response-healing-for-structured-json.mdx)

@@ -1,0 +1,10 @@
+---
+title: "ワークスペース分析をエクスポート"
+sidebarTitle: "分析をエクスポート"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /analytics/export"
+description: "フィルター済みのワークスペース分析をCSVとしてエクスポートします。"
+---
+<Note>このエンドポイントには `analytics:read` 権限を持つ管理APIキーが必要です。</Note>
+
+分析エンドポイントと同じフィルターを受け付け、一致する集計行をすべて表計算ソフトで安全に扱えるCSVで返します。

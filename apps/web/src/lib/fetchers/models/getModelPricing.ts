@@ -8,6 +8,10 @@ export interface PricingRule {
     model_key: string;          // `${provider}:${model}:${endpoint}`
     pricing_plan: string;       // standard|fast|priority|ultrafast|batch|flex
     meter: string;              // e.g. input_text_tokens
+    modality?: string | null;
+    direction?: string | null;
+    display_label?: string | null;
+    display_unit?: string | null;
     unit: string;               // token|image|second|minute|...
     unit_size: number;
     price_per_unit: number;     // numeric -> number (cast below)
@@ -76,6 +80,7 @@ function isWithinActiveOrUpcomingPricingWindow(
     return true;
 }
 export interface ProviderModel {
+    service_tier?: string | null;
     id: string;                 // provider_api_model_id
     api_provider_id: string;
     provider_model_slug?: string | null;
@@ -646,6 +651,10 @@ export default async function getModelPricing(
             x.note ?? null
         ),
         meter: x.meter,
+        modality: x.modality ?? null,
+        direction: x.direction ?? null,
+        display_label: x.display_label ?? null,
+        display_unit: x.display_unit ?? null,
         unit: x.unit ?? "token",
         unit_size: Number(x.unit_size ?? 1),
         price_per_unit: Number(x.price_per_unit),

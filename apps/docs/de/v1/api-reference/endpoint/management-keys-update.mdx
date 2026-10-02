@@ -1,0 +1,10 @@
+---
+title: "Management-Schlüssel aktualisieren"
+sidebarTitle: "Management-Schlüssel aktualisieren"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "Aktualisiert Berechtigungsbereiche, Limits, Ablaufdatum, Namen oder Pausenstatus eines Management-Schlüssels."
+---
+<Note>Für diesen Endpunkt sind eine Inhaber- oder Admin-Identität und `management_keys:write` erforderlich.</Note>
+
+Aufrufer können keine Berechtigungsbereiche vergeben, über die sie selbst nicht verfügen. Nicht angegebene Felder behalten ihre aktuellen Werte.

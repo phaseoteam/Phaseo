@@ -1,0 +1,75 @@
+---
+title: "Codex"
+icon: "/icons/brands/codex.svg"
+description: "将 Phaseo Gateway 用作 Codex CLI、Codex App 和 Codex IDE 扩展的自定义提供商。"
+---
+
+Codex 通过 `config.toml` 支持自定义模型提供商。这样你可以将 Codex 请求路由到 Phaseo，同时继续使用原有的 CLI、应用或 IDE 工作流。
+
+如果还希望 Codex 在工作时读取最新的 Phaseo 文档，请同时添加 [Docs MCP](./docs-mcp.mdx) 服务器。
+
+<Visibility for="humans">
+<Note>
+除了配置提供商，还需要可复用的智能体设置帮助？从 [`phaseoteam/skills`](https://github.com/phaseoteam/skills) 安装 Phaseo 公共 skills：
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+<Visibility for="agents">
+<Note>
+除了配置提供商，还需要可复用的智能体设置帮助？从 [`phaseoteam/skills`](https://github.com/phaseoteam/skills) 安装 Phaseo 公共 skills：
+
+```bash
+npx skills add phaseoteam/skills --agent codex --skill '*'
+```
+</Note>
+</Visibility>
+
+## 使用 Phaseo CLI 设置
+
+```bash
+phaseo login
+phaseo codex --model openai/gpt-5.6-terra
+```
+
+请先安装 Codex 官方版本。设置过程会创建一个永不过期的 `Phaseo CLI: Codex API Key`，将其保存到操作系统凭据库，并写入专用的 Phaseo 配置档案。Codex 通过 CLI 助手读取密钥，因此不会将明文密钥写入 `config.toml`。
+
+### 使用以下命令启动 Codex：
+
+```bash
+codex --profile phaseo
+```
+
+同一 Phaseo CLI 工作流也可启动 [Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code) 和 [MiniMax Code](./minimax-code)，并使用隔离的临时提供商配置。
+## 手动配置
+
+创建或更新用户配置文件 `~/.codex/config.toml`。对于可信项目，也可以将相同设置放在仓库中的 `.codex/config.toml`。
+
+```toml
+model = "openai/gpt-5.5"
+model_provider = "phaseo"
+
+[model_providers.phaseo]
+name = "Phaseo"
+base_url = "https://api.phaseo.app/v1"
+env_key = "PHASEO_API_KEY"
+wire_api = "responses"
+```
+
+Codex 当前通过 Responses 协议连接自定义提供商。请保留 `wire_api = "responses"`，或省略此项以使用默认值。
+
+Codex App 和 IDE 扩展共用相同的配置层。在 IDE 扩展中，可通过 `Codex Settings > Open config.toml` 打开配置文件。
+
+## 验证
+
+- 启动前，请在[模型](../../api-reference/endpoint/models.mdx)中确认模型 ID 存在。
+- Codex 默认工作流请使用 [Responses](../../api-reference/endpoint/responses.mdx)。
+
+## 故障排查
+
+- `401 Unauthorized`：运行 `phaseo whoami`，然后重新运行 `phaseo codex`。
+- `model_not_found`：从[模型](../../api-reference/endpoint/models.mdx)获取当前 ID 并更新 `model`。
+- 提供商特有问题：查看[路由与回退](../routing-and-fallbacks.mdx)了解故障转移行为。

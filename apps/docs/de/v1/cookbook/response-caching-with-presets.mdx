@@ -1,0 +1,92 @@
+---
+title: "Response-Caching mit Presets verwenden"
+icon: "database"
+description: "Kombiniere Preset-Standardwerte mit deterministischem Response-Caching, damit wiederholte Anfragen schnell und zuverlässig beantwortet werden."
+---
+
+Verwende dieses Rezept bei wiederholten Anfragen mit stabilen Prompts, wenn du Latenz und wiederholte Inferenzkosten senken möchtest.
+
+## 1. Mit einem Preset statt mit Ad-hoc-Anfragen beginnen
+
+Erstelle ein Preset, wenn Folgendes stabil bleiben soll:
+
+- Zielmodell
+- Anbieterpräferenzen
+- Temperatur und andere Generierungsparameter
+- Reasoning-Einstellungen
+- System-Prompt
+
+Dadurch bleibt die Anfrage und damit auch der Cache-Schlüssel stabil.
+
+## 2. Response-Caching auf Preset-Ebene aktivieren
+
+Konfiguriere:
+
+- `response_caching.enabled = true`
+- einen passenden Wert für `ttl_seconds`
+
+Empfohlene Standardwerte:
+
+- kurze TTL für schnell veraltende Fakten-Prompts
+- längere TTL für stabile strukturierte Ausgaben
+
+## 3. Anfragen deterministisch halten
+
+Response-Caching funktioniert am besten, wenn sich Anfragen nicht unnötig unterscheiden.
+
+Ändere möglichst nicht:
+
+- die Formulierung des System-Prompts
+- die Temperatur
+- Anbieterüberschreibungen
+- die Reasoning-Konfiguration
+- Tool-Listen
+
+Wenn ein Aufrufer diese Werte häufig ändert, weise ihm ein anderes Preset zu, statt die Cache-Wiederverwendung für alle zu beeinträchtigen.
+
+## 4. Cache-Verhalten in den Anfragedetails prüfen
+
+Die Details von Anfragen, die den Cache durchlaufen, sollten Cache-Informationen enthalten.
+
+Prüfe:
+
+- Cache-Treffer oder Cache-Fehlschlag
+- TTL-Verhalten
+- Anbieterkontext bei einer Antwort aus dem Cache
+
+## 5. Caching gezielt mit Routing kombinieren
+
+Empfohlene Muster:
+
+1. Verwende ein Preset mit aktiviertem Cache für deterministische strukturierte Ausgaben.
+2. Verwende ein zweites Preset ohne Cache für explorative Anfragen oder höhere Temperaturen.
+
+So bleibt der Cache aussagekräftig, statt inkompatible Anfragen zu vermischen.
+
+## 6. Cache-Fehlschläge untersuchen, bevor du die TTL erhöhst
+
+Wenn du Treffer erwartest, aber weiterhin Fehlschläge erhältst, vergleiche:
+
+- Prompt-Text
+- Modell-ID
+- Anbieteroptionen
+- Antwortformat
+- Tools und Tool-Auswahl
+- Preset-Slug und -Konfiguration
+
+Eine längere TTL behebt keine abweichenden Fingerprints.
+
+## 7. Wann du Caching vermeiden solltest
+
+Aktiviere Response-Caching nicht standardmäßig für:
+
+- Prompts, die von aktuellen externen Daten abhängen
+- benutzerspezifische Antworten mit schnell wechselndem Kontext
+- Anfragen mit wechselhaften Tool-Ausgaben
+- stark stochastische Generierungen, bei denen eine exakte Wiederholung unerwünscht ist
+
+## Weiterführende Themen
+
+- [Presets einführen und Routing überprüfen](./preset-rollout-and-routing-debug.mdx)
+- [Beispiele](../guides/examples.mdx)
+- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)

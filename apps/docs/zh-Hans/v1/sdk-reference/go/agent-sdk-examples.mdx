@@ -1,0 +1,34 @@
+---
+icon: "square-terminal"
+title: "示例"
+description: "参考 Go 示例，了解工具、审批、流式传输和受限运行。"
+---
+
+## 需审批的部署
+
+```go
+deploy := phaseoagent.Tool{
+  ID: "deploy",
+  Description: "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(runtime.Context, input)
+  },
+}
+```
+
+运行 Agent，并在状态变为 `waiting_for_human` 时保存返回的记录。继续运行时，决策须关联待处理的工具调用 ID。
+
+## 流式输出到终端
+
+```go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() { fmt.Print(delta) }
+result, err := stream.Result()
+```
+
+## 限制自主研究
+
+组合使用 `StepCountIs`、`MaxTokensUsed`、`MaxCost` 和 `MaxDuration`，确保长时间运行的 Agent 即使不断找到有用任务，也不会超出产品预算。
+
+完整约定请参阅[工具](./agent-sdk-tools.mdx)、[状态与审批](./agent-sdk-state-and-approval.mdx)和[停止条件](./agent-sdk-stop-conditions.mdx)。

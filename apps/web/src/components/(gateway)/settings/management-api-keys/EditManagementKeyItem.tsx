@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -24,6 +25,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
+import { useTranslations } from "next-intl";
 
 const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
 	{ value: "read-only", label: "Read", description: "All control-plane reads." },
@@ -76,6 +78,7 @@ export default function EditManagementKeyItem({
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 }) {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = useState(false);
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const dialogOpen = controlledOpen ?? open;
@@ -109,11 +112,11 @@ export default function EditManagementKeyItem({
 		const promise = Promise.all(updates);
 		try {
 			await toast.promise(promise, {
-				loading: "Saving management API key...",
-				success: "Management API key updated",
+					loading: t("strings.phraseSavingManagementAPIKey" as never),
+					success: t("strings.Management API key updated" as never),
 				error: (err) => {
 					const message =
-						(err && (err as any).message) || "Failed to update key";
+							localizedSettingsError(err, t, "Failed to update key");
 					return message;
 				},
 			});
@@ -141,7 +144,7 @@ export default function EditManagementKeyItem({
 						}} />}>
 
 						<Edit2 className="mr-2" />
-						Edit
+						{t("labels.edit")}
 
 				</DropdownMenuItem>
 			) : null}
@@ -149,21 +152,21 @@ export default function EditManagementKeyItem({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						Edit Management API Key
+						{t("strings.Edit Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
-					Update the lifecycle and access level for this elevated-privilege key.
+					{t("strings.phraseUpdateTheLifecycleAndAccessLevelForThisElevatedPrivilegeKey" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">
-					<Label>Key Name</Label>
+					<Label>{t("keys.keyName")}</Label>
 					<Input
 						value={name}
 						onChange={(e) => setName(e.target.value)}
 					/>
 					<div className="space-y-2">
-						<Label>Access level</Label>
-		<div className="grid grid-cols-3 overflow-hidden rounded-md border border-input" role="group" aria-label="Management key access level">
+						<Label>{t("strings.Access level" as never)}</Label>
+		<div className="grid grid-cols-3 overflow-hidden rounded-md border border-input" role="group" aria-label={t("strings.Management key access level" as never)}>
 							{KEY_TEMPLATES.map((option) => (
 								<Button
 									key={option.value}
@@ -176,27 +179,27 @@ export default function EditManagementKeyItem({
 										setTemplateChanged(true);
 									}}
 								>
-									{option.label}
+									{option.label === "All" ? t("strings.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
 								</Button>
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							{KEY_TEMPLATES.find((option) => option.value === template)?.description ?? "Custom scopes are preserved until you select a new access level."}
+							{template === "read-only" ? t("keys.readOnlyDescription") : template === "read-write" ? t("keys.readWriteDescription") : template === "full-control" ? t("keys.fullControlDescription") : t("strings.phraseCustomScopesArePreservedUntilYouSelectANewAccessLevel" as never)}
 						</p>
 					</div>
 					<div className="space-y-2">
-						<Label>Expiry</Label>
+						<Label>{t("keys.optionalExpiry")}</Label>
 						<Input
 							type="datetime-local"
 							value={expiresAtLocal}
 							onChange={(e) => setExpiresAtLocal(e.target.value)}
 						/>
 						<p className="text-xs text-muted-foreground">
-							Optional. Clear this field to remove the expiry date.
+							{t("strings.phraseOptionalClearThisFieldToRemoveTheExpiryDate" as never)}
 						</p>
 					</div>
 					<div className="flex items-center justify-between">
-						<div className="text-sm">Paused</div>
+						<div className="text-sm">{t("strings.Paused" as never)}</div>
 						<Switch
 							checked={paused}
 							onCheckedChange={(v: any) => setPaused(Boolean(v))}
@@ -204,10 +207,10 @@ export default function EditManagementKeyItem({
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
-							<Button variant="ghost">Cancel</Button>
+							<Button variant="ghost">{t("labels.cancel")}</Button>
 						</DialogClose>
 						<Button type="submit" disabled={loading}>
-							{loading ? "Saving..." : "Save"}
+							{loading ? t("labels.saving") : t("labels.save")}
 						</Button>
 					</DialogFooter>
 				</form>

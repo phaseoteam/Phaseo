@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "त्रुटियाँ और समस्या निवारण"
+description: "Python एजेंट की विफलता, अमान्य tool data और बाधित रन की जाँच करें।"
+---
+
+विफल परिणाम में सक्रिय चरण, पुनः प्रयासों की संख्या, अनुरोध ID, मूल response ID, प्रदाता मेटाडेटा और Gateway से उपलब्ध जानकारी बनी रहती है।
+
+यह जाँचें:
+
+- process को `PHASEO_API_KEY` उपलब्ध है
+- tool ID अद्वितीय हैं
+- approval decisions सटीक call IDs उपयोग करते हैं
+- दूसरा request जारी करने से पहले paused state सहेजी जाती है
+- validators के side effects नहीं होते
+- cancellation tools के अंदर network या storage काम तक पहुँचता है
+
+application telemetry के लिए lifecycle events और रन को स्थानीय रूप से देखने के लिए DevTools उपयोग करें।
+
+## संबंधित विषय
+
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

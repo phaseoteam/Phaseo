@@ -1,0 +1,50 @@
+---
+icon: "blocks"
+title: "Utilisation"
+description: "Exécutez des boucles d’outils, une validation humaine, des tentatives répétées et des agents reprenables avec le SDK Agent pour Python."
+---
+
+## Préparer l’environnement d’exécution
+
+Le package autonome n’est pas encore disponible sur PyPI. Suivez les [instructions d’installation depuis les sources](./agent-sdk-installation.mdx).
+
+## Démarrage rapide
+
+```python
+from phaseo_agent import create_agent, create_gateway_agent_client
+
+agent = create_agent({
+    "id": "quickstart-agent",
+    "model": "openai/gpt-5.4-nano",
+    "instructions": "Answer concisely and helpfully.",
+})
+
+result = agent.run(
+    input="Give me one fun fact about cURL.",
+    client=create_gateway_agent_client(),
+)
+
+print(result.output)
+```
+
+## Fonctionnalités incluses
+
+- `create_agent(...)`
+- `define_tool(...)`
+- `create_gateway_agent_client(...)`
+- tentatives répétées, outils concurrents, délais d’attente et événements de cycle de vie
+- pauses pour validation humaine avec `continue_run(...)`
+- état sérialisable et capture dans Phaseo Devtools
+
+## Environnement d’exécution avancé
+
+Python prend en charge les schémas et approbations sous forme de fonctions, les outils HITL et manuels, le suivi de progression, les erreurs récupérables, les flux rejouables, les helpers d’arrêt, les tours dynamiques, les remplacements persistés du tour suivant, l’usage et le coût normalisés, ainsi que l’accès à l’état géré par l’application.
+
+## Diffusion et annulation
+
+`agent.stream(...)` et `agent.continue_stream(...)` utilisent le flux SSE Responses de la passerelle. Consommez `text_stream()`, `reasoning_stream()`, `item_stream()`, `tool_stream()` ou `full_stream()` ; appelez `cancel()` pour fermer la requête active. Les étapes terminées conservent les ID de requête, les métadonnées du fournisseur, les raisons de fin, les avertissements, l’usage et le coût.
+
+## Pages associées
+
+- [Présentation générale de l’Agent SDK](../agent-sdk/overview.mdx)
+- [Agent SDK pour TypeScript](../typescript/agent-sdk.mdx)

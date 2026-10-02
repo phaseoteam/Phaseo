@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Conditions d’arrêt"
+description: "Limitez le travail des agents .NET par nombre d’étapes, jetons, coût, durée, outils ou motif de fin."
+---
+
+Composez les fonctions auxiliaires d’arrêt dans `AgentDefinition.StopWhen` :
+
+```csharp
+StopWhen = new[]
+{
+    AgentSdk.StepCountIs(12),
+    AgentSdk.MaxTokensUsed(40_000),
+    AgentSdk.MaxCost(2),
+    AgentSdk.MaxDuration(TimeSpan.FromMinutes(1)),
+};
+```
+
+`HasToolCall(...)` et `FinishReasonIs(...)` provide event-based limits. Conservez une limite d’étapes ou de durée même avec des limites de jetons ou de coût, car elles dépendent de l’utilisation déclarée.
+
+## Pages associées
+
+- [Tours dynamiques](./agent-sdk-dynamic-turns.mdx)
+- [Outputs et retries](./agent-sdk-run-controls.mdx)

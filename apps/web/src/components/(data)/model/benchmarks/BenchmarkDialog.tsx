@@ -21,6 +21,7 @@ import {
 import type { RectangleProps } from "recharts";
 
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTranslations } from "next-intl";
 import type {
 	BenchmarkComparisonModel,
 	BenchmarkComparisonScoreDetail,
@@ -33,6 +34,7 @@ interface BenchmarkDialogProps {
 	models: BenchmarkComparisonModel[];
 	isLowerBetter: boolean;
 	currentScoreDisplay: string | null;
+	unknownProvider: string;
 }
 
 interface ChartRow {
@@ -84,7 +86,8 @@ function CustomBarShape(props: BarShapeProps) {
 
 function buildRows(
 	models: BenchmarkComparisonModel[],
-	isLowerBetter: boolean
+	isLowerBetter: boolean,
+	unknownProvider: string,
 ): ChartRow[] {
 	const validModels = models.filter(
 		(model): model is BenchmarkComparisonModel & { topScore: number } =>
@@ -102,7 +105,7 @@ function buildRows(
 		return {
 			modelId: model.modelId,
 			modelName: model.modelName,
-			provider: model.organisation?.name ?? "Unknown",
+			provider: model.organisation?.name ?? unknownProvider,
 			score: transformedScore,
 			scoreDisplay: model.topScoreDisplay,
 			isCurrent: model.isCurrent,
@@ -202,7 +205,9 @@ export function BenchmarkDialog({
 	models,
 	isLowerBetter,
 	currentScoreDisplay,
+	unknownProvider,
 }: BenchmarkDialogProps) {
+	const tUi = useTranslations("Common.ui");
 	const isMobile = useIsMobile();
 	const windowedModels = React.useMemo(() => {
 		const currentIndex = models.findIndex((model) => model.isCurrent);
@@ -211,7 +216,7 @@ export function BenchmarkDialog({
 		}
 		return sliceAroundIndex(models, currentIndex, 10, 10);
 	}, [models]);
-	const rows = buildRows(windowedModels, isLowerBetter);
+	const rows = buildRows(windowedModels, isLowerBetter, unknownProvider);
 	const domain = getDomain(rows);
 	const domainSpan = Math.max(Math.abs(domain[1] - domain[0]), 0);
 	const formatAxisValue = React.useCallback(
@@ -258,7 +263,7 @@ export function BenchmarkDialog({
 								variant="outline"
 								className="text-xs text-blue-600"
 							>
-								Lower is better
+								{tUi("benchmarkComparison.lowerIsBetter")}
 							</Badge>
 						)}
 					</DialogTitle>
@@ -366,7 +371,7 @@ export function BenchmarkDialog({
 																	) : null}
 																	{detail.isSelfReported ? (
 																		<span className="ml-1 text-amber-600">
-																			Self-reported
+															{tUi("benchmarkComparison.selfReported")}
 																		</span>
 																	) : null}
 																</div>
@@ -384,7 +389,7 @@ export function BenchmarkDialog({
 												) : null}
 												{data.isCurrent && (
 													<div className="mt-1 text-xs font-semibold text-indigo-600">
-														Selected Model
+										{tUi("benchmarkComparison.selectedModel")}
 													</div>
 												)}
 											</div>
@@ -408,7 +413,7 @@ export function BenchmarkDialog({
 						</ResponsiveContainer>
 					) : (
 						<div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-							No numeric benchmark data to display yet.
+							{tUi("benchmarkComparison.noNumericData")}
 						</div>
 					)}
 				</div>

@@ -1,0 +1,98 @@
+---
+title: "Recueillir des commentaires sur les préréglages"
+description: "Enregistrez des évaluations de réponses et comparez la qualité des préréglages dans le tableau de bord Phaseo."
+icon: "message-square-more"
+---
+
+Preset Feedback vous permet d’associer les évaluations de votre application au préréglage qui a produit une réponse. Utilisez-le pour comparer les modifications de prompts et de routage à partir de signaux réels des utilisateurs, plutôt que de vous appuyer uniquement sur la latence et le coût.
+
+<Note>
+Preset Feedback est en phase Alpha. Nous améliorons activement l’API et le tableau de bord selon la façon dont les équipes évaluent les réponses d’IA en production. Utilisez le bouton **Commentaires** de la [page Preset Feedback](https://phaseo.app/settings/presets/experiments) pour nous dire comment rendre cette fonctionnalité plus utile.
+</Note>
+
+## Avant de commencer
+
+Vous avez besoin de :
+
+- Une clé API Phaseo dotée de la capacité `feedback:write`
+- L’identifiant de requête renvoyé par Phaseo
+- L’UUID du préréglage que vous souhaitez analyser
+
+Incluez l’identifiant du préréglage lors de l’enregistrement d’un commentaire. L’événement apparaîtra ainsi dans les comparaisons de préréglages et l’analyse par cohorte.
+
+## Enregistrer une évaluation
+
+Envoyez un commentaire après l’évaluation d’une réponse par un utilisateur ou lorsque votre application détermine un résultat.
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+Un événement de feedback doit cibler au moins une requête, une session, un préréglage ou un test. Le score est facultatif et doit être compris entre `0` et `1`.
+
+## Choisir une évaluation
+
+Choisissez une évaluation qui décrit le signal réellement recueilli :
+
+- `thumbs_up` ou `thumbs_down` pour les réactions simples des utilisateurs
+- `correct`, `partly_correct` ou `incorrect` pour les réponses évaluées
+- `bad_format`, `too_slow` ou `too_expensive` pour les problèmes opérationnels
+- `unsafe` ou `refused_incorrectly` pour les résultats liés à la sécurité
+- `not_helpful` ou `other` lorsque les autres valeurs ne conviennent pas
+
+Évitez de convertir chaque signal en score numérique. Les évaluations explicites facilitent l’explication des comparaisons dans le tableau de bord.
+
+## Comparer les préréglages
+
+Ouvrez [Paramètres → Préréglages → Feedback](https://phaseo.app/settings/presets/experiments) pour :
+
+- comparer les taux d’évaluations positives, partielles et négatives
+- sélectionner un préréglage de référence
+- filtrer par date, évaluation et dimensions de métadonnées
+- examiner la requête, la session, les commentaires et les tags associés à un événement
+
+Ajoutez à `metadataDimensions` des valeurs à faible cardinalité, comme le forfait, le déploiement, la langue ou la surface de l’application. Conservez le contexte arbitraire ou à forte cardinalité dans `metadata`.
+
+## Lire le feedback via l’API
+
+Lister les événements récents :
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Demander un résumé côté serveur :
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Les opérations de lecture nécessitent `feedback:read`. Les résultats sont limités à l’espace de travail authentifié et aux préréglages visibles par l’appelant.
+
+## Limites actuelles de la version Alpha
+
+- Le tableau de bord analyse au maximum les 10 000 lignes de feedback correspondantes les plus récentes dans la période sélectionnée.
+- Les comparaisons de préréglages utilisent des évaluations explicites ; les scores numériques sont présentés à titre complémentaire.
+- Les API d’événements de test et de résultats personnalisés sont disponibles, mais leurs workflows dans le tableau de bord évoluent encore.
+
+## Guides associés
+
+- [Préréglages](./presets.mdx)
+- [Déployer des préréglages et déboguer le routage](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [Attribution de l’application](./app-attribution.mdx)

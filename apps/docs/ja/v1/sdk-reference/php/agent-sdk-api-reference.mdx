@@ -1,0 +1,24 @@
+---
+icon: "braces"
+title: "APIリファレンス"
+description: "PHP Agent SDKの主なクラスとメソッドを参照できます。"
+---
+
+| API | 目的 |
+| --- | --- |
+| `AgentSdk::createAgent(...)` | エージェントを定義 |
+| `AgentSdk::defineTool(...)` | ローカルまたは手動ツールを定義 |
+| `AgentSdk::createGatewayAgentClient(...)` | モデルターンをPhaseoに接続 |
+| `Agent::run(...)` | 完了または一時停止まで実行 |
+| `Agent::stream(...)` | 再走査可能なイテラブルを使って実行 |
+| `Agent::continueRun(...)` | 保存済みまたは一時停止中の状態から続行 |
+| `Agent::continueRunById(...)` | 状態アクセサー経由で再読み込みして続行 |
+| `AgentStreamResult::textStream()` | テキスト差分を読み取る |
+| `AgentStreamResult::fullStream()` | すべてのイベントを読み取る |
+
+主なクラスは、`AgentDefinition`、`RunResult`、`RunRecord`、`Tool`、`ToolDecision`、`ToolOutput`、`RuntimeContext`、`StateAccessor`、`GatewayAgentClientOptions`です。
+
+## 関連項目
+
+- [最初のエージェントを作成する](./agent-sdk.mdx)
+- [オブザーバビリティとDevTools](./agent-sdk-observability.mdx)

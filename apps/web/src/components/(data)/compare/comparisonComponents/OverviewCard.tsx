@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ProviderLogo } from "../ProviderLogo";
+import { useLocale, useTranslations } from "next-intl";
 
 function bestNumber(
 	models: ExtendedModel[],
@@ -44,42 +45,64 @@ function toTypeList(value: ExtendedModel["input_types"]): string[] {
 		.filter(Boolean);
 }
 
-function normalizeTypeLabel(value: string): string {
+function normalizeTypeLabel(
+	value: string,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
 	const v = value.trim().toLowerCase();
-	if (v === "text") return "Text";
-	if (v === "image") return "Image";
-	if (v === "audio_stt") return "Transcription";
-	if (v === "audio_tts") return "Speech";
-	if (v === "audio_music") return "Music";
-	if (v === "audio") return "Audio";
-	if (v === "video") return "Video";
-	if (v === "embedding" || v === "embeddings") return "Embeddings";
-	return value;
+	if (v === "text") return t("modalityText");
+	if (v === "image") return t("modalityImage");
+	if (v === "audio_stt") return t("modalityTranscription");
+	if (v === "audio_tts") return t("modalitySpeech");
+	if (v === "audio_music") return t("modalityMusic");
+	if (v === "audio") return t("modalityAudio");
+	if (v === "video") return t("modalityVideo");
+	if (v === "embedding" || v === "embeddings") return t("modalityEmbeddings");
+	return t("unknown");
 }
 
-function formatLicenseLabel(value: string | null | undefined): string {
+function formatLicenseLabel(
+	value: string | null | undefined,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
 	const raw = typeof value === "string" ? value.trim() : "";
 	if (!raw) return "-";
 	const lower = raw.toLowerCase();
 	if (lower === "unknown" || lower === "n/a" || lower === "na" || lower === "tbd")
-		return "Unknown";
+		return t("unknown");
 	return raw;
 }
 
-function formatStatusLabel(value: string | null | undefined): string {
+function formatStatusLabel(
+	value: string | null | undefined,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
 	const raw = typeof value === "string" ? value.trim() : "";
-	if (!raw) return "Unknown";
-	return raw
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (char) => char.toUpperCase());
+	const normalized = raw.toLowerCase().replace(/[_-]+/g, " ");
+	const statusKeys: Record<string, Parameters<typeof t>[0]> = {
+		available: "statusAvailable",
+		active: "statusAvailable",
+		preview: "statusPreview",
+		deprecated: "statusDeprecated",
+		retired: "statusRetired",
+		announced: "statusAnnounced",
+		rumoured: "statusRumoured",
+		rumored: "statusRumoured",
+		"limited access": "statusLimitedAccess",
+		withheld: "statusWithheld",
+	};
+	return statusKeys[normalized] ? t(statusKeys[normalized]) : t("unknown");
 }
 
-function capabilityChips(model: ExtendedModel): string[] {
+function capabilityChips(
+	model: ExtendedModel,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string[] {
 	return [
-		model.reasoning ? "Reasoning" : null,
-		model.web_access ? "Web access" : null,
-		model.fine_tunable ? "Fine-tunable" : null,
-		model.multimodal ? "Multimodal" : null,
+		model.reasoning ? t("reasoningCapability") : null,
+		model.web_access ? t("webAccessCapability") : null,
+		model.fine_tunable ? t("fineTunableCapability") : null,
+		model.multimodal ? t("multimodalCapability") : null,
 	].filter((value): value is string => Boolean(value));
 }
 
@@ -88,6 +111,8 @@ export default function OverviewCard({
 }: {
 	selectedModels: ExtendedModel[];
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatMonthYear = (value: string | null | undefined) => format.calendarDate(value);
 	const formatCount = (value: number | null | undefined) => value == null || !Number.isFinite(value)
@@ -113,18 +138,18 @@ export default function OverviewCard({
 	return (
 		<section className="space-y-3">
 			<header className="space-y-1">
-				<h2 className="text-lg font-semibold">Overview</h2>
+				<h2 className="text-lg font-semibold">{t("overview")}</h2>
 				<p className="text-sm text-muted-foreground">
-					Input/output modalities and key model metadata from the catalog.
+					{t("overviewDescription")}
 				</p>
 			</header>
 
 			<div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 				{selectedModels.map((m) => {
-					const inputTypes = toTypeList(m.input_types).map(normalizeTypeLabel);
-					const outputTypes = toTypeList(m.output_types).map(normalizeTypeLabel);
+					const inputTypes = toTypeList(m.input_types).map((value) => normalizeTypeLabel(value, t));
+					const outputTypes = toTypeList(m.output_types).map((value) => normalizeTypeLabel(value, t));
 					const providers = providerCounts.get(m.id) ?? 0;
-					const capabilities = capabilityChips(m);
+					const capabilities = capabilityChips(m, t);
 
 					return (
 						<div
@@ -134,7 +159,7 @@ export default function OverviewCard({
 							<div className="flex items-start gap-2">
 								<Link
 									href={`/organisations/${m.provider.provider_id}`}
-									aria-label={`View ${m.provider.name}`}
+					aria-label={t("viewProvider", { name: m.provider.name })}
 									className="shrink-0 pt-0.5"
 								>
 									<ProviderLogo
@@ -158,7 +183,7 @@ export default function OverviewCard({
 
 							<div className="mt-3 flex flex-wrap gap-1.5">
 								<Badge variant="secondary" className="text-[10px]">
-									{formatStatusLabel(m.status)}
+								{formatStatusLabel(m.status, t)}
 								</Badge>
 								<Badge
 									variant="outline"
@@ -168,11 +193,15 @@ export default function OverviewCard({
 											"border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300"
 									)}
 								>
-									{providers ? `${providers} priced provider${providers === 1 ? "" : "s"}` : "No priced providers"}
+									{providers === 0
+										? t("noPricedProviders")
+										: providers === 1
+											? t("pricedProviderSingle")
+											: t("pricedProviders", { count: providers })}
 								</Badge>
 								{m.open_router_model_id ? (
 									<Badge variant="outline" className="text-[10px]">
-										OpenRouter mapped
+						{t("openRouterMapped")}
 									</Badge>
 								) : null}
 							</div>
@@ -194,7 +223,7 @@ export default function OverviewCard({
 						<div className="mt-4 space-y-3 text-sm">
 							<div className="space-y-1">
 								<div className="text-[11px] font-medium text-muted-foreground">
-									Input Modalities
+									{t("inputModalities")}
 								</div>
 								<div className="flex flex-wrap gap-1.5">
 									{inputTypes.length ? (
@@ -214,7 +243,7 @@ export default function OverviewCard({
 							</div>
 							<div className="space-y-1">
 								<div className="text-[11px] font-medium text-muted-foreground">
-									Output Modalities
+									{t("outputModalities")}
 								</div>
 								<div className="flex flex-wrap gap-1.5">
 									{outputTypes.length ? (
@@ -236,21 +265,21 @@ export default function OverviewCard({
 
 						<div className="mt-4 space-y-2 text-sm">
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">Release</span>
+								<span className="text-xs text-muted-foreground">{t("release")}</span>
 								<span className="font-mono text-xs text-foreground">
 									{formatMonthYear(m.release_date)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
 								<span className="text-xs text-muted-foreground">
-									Knowledge Cutoff
+									{t("knowledgeCutoff")}
 								</span>
 								<span className="font-mono text-xs text-foreground">
 									{formatMonthYear(m.knowledge_cutoff)}
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">Context</span>
+								<span className="text-xs text-muted-foreground">{t("context")}</span>
 								<span
 									className={cn(
 										"rounded-md px-1.5 py-0.5 font-mono text-xs text-foreground",
@@ -262,7 +291,7 @@ export default function OverviewCard({
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">Max Output</span>
+								<span className="text-xs text-muted-foreground">{t("maxOutput")}</span>
 								<span
 									className={cn(
 										"rounded-md px-1.5 py-0.5 font-mono text-xs text-foreground",
@@ -274,11 +303,11 @@ export default function OverviewCard({
 								</span>
 							</div>
 							<div className="flex items-center justify-between gap-3">
-								<span className="text-xs text-muted-foreground">License</span>
+								<span className="text-xs text-muted-foreground">{t("license")}</span>
 								<span className="text-xs text-foreground">
-									{formatLicenseLabel(m.license) !== "-" ? (
+										{formatLicenseLabel(m.license, t) !== "-" ? (
 										<Badge variant="outline" className="text-[10px]">
-											{formatLicenseLabel(m.license)}
+											{formatLicenseLabel(m.license, t)}
 										</Badge>
 									) : (
 										"-"

@@ -1,0 +1,26 @@
+---
+icon: "radio-tower"
+title: "Lebenszyklus-Hooks"
+description: "Beobachte Ruby-Agent-Läufe, Modellrunden, Tools, Pausen und den Abschluss."
+---
+
+Übergib `on_event`, um während eines Laufs strukturierte Lifecycle-Ereignisse zu erhalten.
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) {
+    logger.info(
+      "agent event",
+      type: event[:type],
+      run_id: event[:run_id],
+      details: event[:details]
+    )
+  }
+)
+```
+
+Nützliche Ereignisse umfassen Start, Abschluss und Fehler eines Laufs, Modellversuche, Text- und Reasoning-Deltas, Start, Fortschritt, Abschluss und Fehler von Tools sowie menschliche Prüfpunkte.
+
+Halte Handler schnell. Stelle langsame Speicherarbeiten in eine Warteschlange und schwärze vertrauliche Tool-Eingaben, bevor du Ereignisse extern weiterleitest.

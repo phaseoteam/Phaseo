@@ -1,0 +1,78 @@
+---
+title: "SpaceXAI Grok 4.20"
+description: "Wichtige Hinweise zur Einführung von Grok 4.20, einschließlich Reasoning- und Multi-Agenten-Aufwandssteuerung."
+icon: "/icons/brands/grok.svg"
+---
+
+# SpaceXAI Grok 4.20
+
+Mit diesem Leitfaden führen Sie Grok 4.20 sicher über Phaseo Gateway ein.
+
+Primäre Route im Katalog:
+
+- `spacex-ai/grok-4-20-2026-02-17`
+
+Optionale Multi-Agenten-Route mit der Modell-ID des Anbieters:
+
+- `spacex-ai/grok-4.20-multi-agent-beta-0309`
+
+## Schnelleinstieg für die Migration
+
+Bei den meisten Integrationen müssen Sie nur die Modell-ID aktualisieren und Ihre üblichen Prüfungen wiederholen.
+
+Die vorhandenen Anfrage- und Antwortmuster können unverändert bleiben.
+
+## Neuerungen
+
+Für die Basisroute von Grok 4.20 ist in Phaseo Gateway keine Verhaltensänderung erforderlich.
+
+Die praktische Änderung betrifft die Feinabstimmung der Multi-Agenten-Variante.
+
+Bei Verwendung von Phaseo Gateway gilt:
+
+- Das Reasoning des Basis-Grok-4.20 lässt sich wie gewohnt über `reasoning.enabled` ein- und ausschalten.
+- Die Multi-Agenten-Variante wird über `reasoning.effort` gesteuert.
+- Unterstützt werden `low`, `medium`, `high` und `extra high`.
+- Laut SpaceXAI-Dokumentation verwenden `low` und `medium` vier Agenten; `high` und `extra high` verwenden umfangreichere Multi-Agenten-Konfigurationen.
+
+`agent_count` wird nicht direkt in Gateway-Anfragen verwendet.
+
+### Basis-Grok 4.20 mit Reasoning-Steuerung
+
+Verwenden Sie das Basismodell und setzen Sie `reasoning.enabled` direkt:
+
+```json
+{
+  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "input": "Explain this architecture",
+  "reasoning": {
+    "enabled": true
+  }
+}
+```
+
+### Multi-Agenten-Grok 4.20 mit Aufwandssteuerung
+
+Verwenden Sie das Multi-Agenten-Modell und steuern Sie die Tiefe über `reasoning.effort`:
+
+```json
+{
+  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "input": "Evaluate three rollout options with tradeoffs",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+Reasoning-Aufwandsstufen:
+
+- `low`
+- `medium`
+- `high`
+- `extra high`
+
+## Quellen
+
+- [Multi-Agenten-Funktionen von SpaceXAI](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [SpaceXAI: Migration auf neue Modelle](https://docs.x.ai/docs/guides/migrating-to-new-models)

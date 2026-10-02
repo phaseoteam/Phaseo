@@ -1,0 +1,39 @@
+---
+icon: "sliders-horizontal"
+title: "Parâmetros de inferência"
+description: "Como os principais parâmetros da solicitação afetam a qualidade, o determinismo, a latência e o custo."
+---
+
+A quantização é uma metade do comportamento do modelo.  
+Os parâmetros de inferência são a outra metade.
+
+## Parâmetros principais
+
+| Parâmetro | O que controla | Efeito típico |
+| --- | --- | --- |
+| `temperature` | Aleatoriedade na seleção de tokens | Um valor mais alto gera respostas mais criativas e variáveis; um valor menor, respostas mais determinísticas |
+| `top_p` | Limite da amostragem de núcleo | Um valor menor tende a gerar respostas mais seguras e focadas |
+| `top_k` | Tamanho do conjunto de tokens candidatos (quando compatível) | Um valor menor gera respostas mais restritas e previsíveis |
+| `max_tokens` / `max_output_tokens` | Comprimento máximo da resposta gerada | Limita custo e latência, mas pode truncar respostas |
+| `stop` | Sequências explícitas de parada | Melhora o enquadramento da saída e a confiabilidade da análise |
+| `seed` | Semente aleatória (quando compatível) | Melhora a reprodutibilidade em depurações e testes |
+
+## Interações a observar
+
+- `temperature` e `top_p` afetam a aleatoriedade. Altere um parâmetro por vez durante o ajuste.
+- A quantização agressiva com poucos bits, combinada com alta aleatoriedade, pode aumentar a instabilidade da saída.
+- Um valor baixo de `max_tokens` pode parecer uma falha do modelo quando a resposta foi apenas truncada.
+
+## Valores iniciais recomendados
+
+- `temperature`: de `0.2` a `0.7`, conforme a criatividade necessária
+- `top_p`: de `0.9` a `1.0`
+- `max_tokens`: dimensione conforme o tamanho esperado da resposta, em vez de usar um valor enorme para tudo
+
+## Fluxo de ajuste
+
+1. Ajuste primeiro a quantização.
+2. Fixe um conjunto de avaliação.
+3. Varie um parâmetro por vez.
+4. Compare qualidade, latência e uso de tokens.
+5. Mantenha predefinições separadas por endpoint e caso de uso.

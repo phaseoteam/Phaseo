@@ -1,0 +1,23 @@
+---
+icon: "braces"
+title: "Ausgaben und Wiederholungen"
+description: "Validiere Python-Agent-Ausgaben und wiederhole begrenzte Modellfehler."
+---
+
+Verwende die Validierung der Endausgabe, wenn nachgelagerter Python-Code strukturierte Daten erwartet. Validierungs-Callbacks sollten deterministisch sein und einen Fehler auslösen, wenn der Endwert den Anwendungsvertrag nicht erfüllt.
+
+Konfiguriere begrenzte Wiederholungen mit `AgentModelRetryConfig`:
+
+```python
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+```
+
+Der abgeschlossene Schritt enthält weiterhin die endgültige Anzahl der Modellversuche. Tool-Fehler folgen ihrer eigenen Richtlinie und werden nicht als Modellanfragen wiederholt.
+
+Der Gateway-Client akzeptiert strukturierten Output sowie Optionen für Routing, Provider, Reasoning, verwaltete Tools, Plugins, Prompt-Cache und zusätzliche Anfrageparameter.
+
+## Weiterführende Themen
+
+- [Dynamische Turns](./agent-sdk-dynamic-turns.mdx)
+- [Stoppbedingungen](./agent-sdk-stop-conditions.mdx)
+- [Fehler und Fehlerbehebung](./agent-sdk-observability.mdx)

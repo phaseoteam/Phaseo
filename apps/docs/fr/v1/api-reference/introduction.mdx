@@ -1,0 +1,71 @@
+---
+title: "Présentation de l’API Gateway"
+sidebarTitle: "Présentation"
+description: "URL de base, authentification et familles de points de terminaison de Phaseo Gateway."
+icon: "map"
+---
+
+Utilisez cette page pour trouver le chemin d’API adapté avant d’ouvrir la référence d’un point de terminaison. Tous les points de terminaison Phaseo Gateway partagent la même URL de base et utilisent l’authentification Bearer.
+
+## Choisir un chemin
+
+| Pour | Commencez par |
+| --- | --- |
+| Envoyer votre première requête | [Guide de démarrage rapide](../quickstart.mdx) |
+| Générer du texte ou utiliser des outils | `POST /responses` |
+| Prendre des décisions typées | [`POST /decisions`](./endpoint/decisions) |
+| Conserver une intégration OpenAI compatible existante | `POST /chat/completions` |
+| Parcourir les modèles et les fournisseurs | `GET /models` et `GET /providers` |
+| Créer de la musique ou gérer des fichiers | `POST /music/generations` et `POST /files` |
+| Générer une vidéo (Bêta) | [`POST /videos`](./endpoint/video-create) |
+| Soumettre un lot ou télécharger les résultats (Bêta) | [`POST /batches`](./endpoint/batches-create) et [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+
+## URL de base
+
+URL de base de production :
+
+```http
+https://api.phaseo.app/v1
+```
+
+Tous les chemins de points de terminaison de cette référence sont relatifs à cette URL de base `/v1`.
+
+## OpenAPI
+
+Utilisez le fichier OpenAPI pour importer l’API dans Postman, Hoppscotch ou un générateur de SDK.
+
+<Card
+  title="OpenAPI Phaseo Gateway"
+  icon="list-bullet"
+	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
+>
+  Afficher le fichier de spécification
+</Card>
+
+La documentation et les SDK utilisent cette même spécification. Les points d’accès Video, Batch et Decisions sont marqués **Bêta** ; un accès de préversion pour l’espace de travail peut être nécessaire.
+## Authentification
+
+Utilisez une clé API Gateway standard pour l’inférence et une clé API de gestion disposant des autorisations appropriées pour l’administration. Consultez [Authentification](../developers/authentication.mdx) et [Clés API de gestion](../developers/management-api-keys.mdx).
+
+```http
+Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
+```
+
+En cas d’échec de l’authentification, l’API renvoie `401`.
+
+## Ressources de l’API
+
+| Ressource | Fonction |
+| --- | --- |
+| Inférence | Générez du texte, des images, de l’audio et des embeddings ; prenez des décisions, reclassez, modérez ou analysez le contenu. Commencez par [Responses](./endpoint/responses.mdx) ou [Decisions](./endpoint/decisions.mdx). |
+| Tâches asynchrones et fichiers | Soumettez des tâches [vidéo](./endpoint/video-create.mdx) ou [par lots](./endpoint/batches-create.mdx), transférez des fichiers et configurez des webhooks. |
+| Modèles et tarifs | Découvrez les [modèles](./endpoint/models.mdx), les offres fournisseurs et les [coûts estimés](./endpoint/pricing-calculate.mdx). |
+| Routage et politiques | Configurez les préréglages, identifiants fournisseurs, modèles privés et [garde-fous](./endpoint/guardrails.mdx). |
+| Utilisation et surveillance | Examinez les [journaux](./endpoint/logs-list.mdx), l’activité, les analyses, les évaluations et l’état du service. |
+| Gestion des espaces de travail | Gérez les [espaces de travail](./endpoint/workspaces-list.mdx), clés, budgets, identités et intégrations. |
+
+## Facturation et limites de débit
+
+- Gérez la limitation des requêtes fournisseur et les politiques d’accès applicables avec le [guide des limites](./limits.mdx).
+- Les requêtes payantes nécessitent un solde de portefeuille suffisant pour réussir la vérification préalable des crédits.
+- Les modèles gratuits avec `:free` ne nécessitent pas de crédits déposés.

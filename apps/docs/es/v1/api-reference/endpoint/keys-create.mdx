@@ -1,0 +1,13 @@
+---
+title: "Crear una clave de API"
+sidebarTitle: "Crear una clave de API"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /keys"
+description: "Crear una clave de API en el espacio de trabajo autenticado."
+---
+<Note>
+Este endpoint requiere una clave de API de gestión. No se aceptan las claves de API estándar de Gateway.
+</Note>
+
+La clave de API en texto sin formato se devuelve una sola vez, al crearla. Se aceptan los campos de compatibilidad `limit`, `limit_reset` e `include_byok_in_limit`; actualmente, Phaseo trata `include_byok_in_limit` solo por compatibilidad y siempre excluye BYOK del límite de esta clave.
+

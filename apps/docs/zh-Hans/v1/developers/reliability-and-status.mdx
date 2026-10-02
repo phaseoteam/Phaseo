@@ -1,0 +1,98 @@
+---
+title: "检查 Gateway 的可靠性和状态"
+sidebarTitle: "可靠性与状态"
+description: "查看事故信息、确认模型是否可路由、解读 Gateway 指标，并根据你的工作负载验证 Phaseo。"
+icon: "shield-check"
+---
+
+如果你需要回答以下三个问题之一，请使用本指南：Phaseo 是否正常、模型现在是否可路由，或者某条路由是否达到应用的可靠性目标？
+
+## 检查当前服务状态
+
+1. 打开 [Phaseo 状态页](https://status.phaseo.app)，查看当前事故和历史记录。
+2. 调用 `GET /v1/health` 执行最基本的 Gateway 健康检查。
+3. 如果某个请求失败，请保留其 request ID 并检查活动记录或生成记录，再判断整个服务是否不可用。
+
+```bash
+curl https://api.phaseo.app/v1/health
+```
+
+```json
+{
+  "status": "ok"
+}
+```
+
+<Note>
+公共状态页会报告服务健康情况。Phaseo 目前未承诺具有合同约束力的公共正常运行时间 SLA。
+</Note>
+
+## 确认模型是否可路由
+
+Phaseo 目录收录的模型多于 Gateway 当前可用的模型。模型出现在目录中只表示 Phaseo 正在跟踪该模型，并不代表存在公共路由。
+
+`GET /v1/models` 默认只返回当前可路由的模型：
+
+```bash
+curl https://api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+仅在确实要检查即将推出或已停用的映射时，才使用 `availability=all`。除非 `availability_status` 为 `active` 且 `is_active_gateway` 为 `true`，否则不要向该提供商路由发送生产流量。
+
+| 状态 | 含义 |
+| --- | --- |
+| `active` | 目前至少有一条公共 Gateway 路由可用。 |
+| `coming_soon` | Phaseo 跟踪的是计划中或预览阶段的路由，但该路由尚未开放公共访问。 |
+| `inactive` | 已知路由已停用、不可用、过期或因其他原因无法路由。 |
+| `not_listed` | 目前未列出该模型的 Gateway 提供商映射。 |
+
+可用性并不保证服务始终在线、所有地区都能访问，也不保证各工作区的商业条款完全相同。
+
+## 解读性能指标
+
+Phaseo 的性能数据属于观测数据：它汇总经由 Gateway 路由的请求，而非受控实验室基准测试的结果。
+
+| 指标 | 定义 |
+| --- | --- |
+| Gateway TTFT | 从 Gateway 请求开始到首次生成包含内容的输出所用的时间。 |
+| Provider TTFT | 从请求发送到提供商到首次生成包含内容的输出所用的时间。 |
+| 提供商耗时 | 从请求发送到提供商到最终响应所用的时间。 |
+| Gateway E2E | 从 Gateway 请求开始到完成所用的时间。 |
+| Phaseo 开销 | Gateway E2E 与提供商耗时之间的非负差值。 |
+| 有效吞吐量 | 所有输出 token 数除以提供商总耗时。 |
+| 输出速度 | 首个 token 之后的输出 token 数除以 TTFT 之后的提供商耗时。 |
+
+TTFT 和输出速度需要流式响应，并且首个输出必须包含内容。非流式请求仍可用于测量耗时和有效吞吐量，但不应虚构 TTFT。
+
+查看指标时，始终结合时间范围、路由、地区、流式模式和百分位数。提供商负载、提示词长度、输出长度、重试次数和传输条件都可能改变结果。
+
+完整定义请参阅 [价格与性能](../exploring/pricing-performance.mdx) 和[Phaseo 如何衡量延迟和吞吐量](https://phaseo.app/how-phaseo-measures-latency-throughput).
+
+## 使用你的工作负载进行验证
+
+公共遥测只能提供参考，不能证明路由满足你的生产目标。上线前应进行小规模、可复现的测试：
+
+1. 移除敏感的生产数据，并保留有代表性的提示词组合。
+2. 记录模型 ID、端点、提供商限制、地区、流式模式和并发数。
+3. 运行足够多次，以便比较分布，而不是只看单个请求。
+4. 记录成功率、Gateway TTFT、提供商耗时、Gateway E2E、输出 token 数和最终成本。
+5. 测试无效密钥、无效模型、速率限制和提供商不可用导致的失败。
+6. 保存 request ID 和准确的时间范围，以便其他工程师复现结果。
+
+未经许可且没有记录在案的方法时，不要公开客户名称、引述、工作负载结果或可靠性百分比。
+
+## 排查失败的请求
+
+- 查看 [服务状态](https://status.phaseo.app)。
+- 确认该模型仍显示在 `GET /v1/models` 的默认响应中。
+- 查看以下内容中的 HTTP 状态和错误代码：[错误处理](../api-reference/errors.mdx).
+- 临时遇到 `429` 和 `5xx` 错误时，请采用有界指数退避后重试。
+- 联系[支持团队](https://phaseo.app/help)时，请保留请求 ID。
+
+## 相关指南
+
+- [模型 API](../api-reference/endpoint/models.mdx)
+- [模型端点](../api-reference/endpoint/model-endpoints.mdx)
+- [路由与回退](../guides/routing-and-fallbacks.mdx)
+- [速率限制](../api-reference/limits.mdx)

@@ -1,0 +1,37 @@
+---
+icon: "binary"
+title: "Vectores de incrustación"
+description: "Llama a /embeddings con el SDK de PHP."
+---
+
+**Métodos**: `$client->generateEmbedding(...)` o `$client->createEmbedding(...)`
+
+### Ejemplo
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+
+echo $response['data'][0]['embedding'][0] ?? '';
+```
+
+### Parámetros principales
+
+-   `model` (obligatorio): ID del modelo de embeddings (por ejemplo, `openai/text-embedding-3-large`).
+-   `input` (obligatorio): una cadena o una matriz de cadenas.
+-   `encoding_format`: `float` (predeterminado) o `base64`.
+-   `dimensions`: entero opcional para truncar la longitud del embedding (depende del modelo).
+-   `user`: etiqueta opcional para el usuario final.
+
+### Valor devuelto
+
+Carga de embeddings (JSON)

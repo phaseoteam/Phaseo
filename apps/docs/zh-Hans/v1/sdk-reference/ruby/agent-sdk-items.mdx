@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "流项目"
+description: "使用 Ruby Agent 运行中的文本、推理、工具和供应商项目事件。"
+---
+
+流结果提供可重放的文本和供应商项目消费者。
+
+```ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.item_stream.each do |item|
+  render_item(item)
+end
+
+result = stream.result
+```
+
+如果界面还需要推理增量、工具进度、审批检查点或生命周期事件，请使用 `full_stream`。
+
+<Note>
+Ruby 项目值是通用哈希，并非封闭的类型化项目联合。请验证界面使用的字段，并保留未知项目和未来供应商事件的回退处理。
+</Note>
+
+Ruby 会同步消费供应商流，并使收集到的序列可重放。这本身不会创建后台推送服务。

@@ -1,0 +1,93 @@
+---
+title: "Von Helicone AI Gateway migrieren"
+sidebarTitle: "Helicone"
+description: "Migriere eine OpenAI-kompatible Helicone-Proxy-Integration zu Phaseo und entferne nicht mehr benötigte Observability-Header."
+icon: "activity"
+---
+
+Nutze diese Anleitung, wenn Helicone zwischen deiner Anwendung und einem KI-Anbieter sitzt. Die Änderung an der Anfrage ist meist klein. Plane die Umstellung der Observability aber ebenso sorgfältig wie den Wechsel des Endpunkts.
+
+## Was sich ändert
+
+| Einstellung | Vorher | Nachher |
+| --- | --- | --- |
+| Basis-URL | Helicone-Proxy-URL | `https://api.phaseo.app/v1` |
+| Authentifizierung | Anbieterschlüssel plus Helicone-Authentifizierung | `PHASEO_API_KEY` |
+| Helicone-Header | Werden zu Anfragen hinzugefügt | Werden entfernt |
+| Einblick in Anfragen | Helicone-Dashboard | Phaseo-Aktivität und Anfragedetails |
+
+<Steps>
+<Step title="Erfasse die genutzten Helicone-Funktionen">
+
+Notiere benutzerdefinierte Eigenschaften, Sitzungen, Benutzerkennungen, Caching, Ratenbegrenzungen, Warnmeldungen und Dashboards, die den Produktionsbetrieb beeinflussen. Gehe nicht davon aus, dass das Entfernen des Proxys diese Abläufe automatisch an anderer Stelle wiederherstellt.
+
+</Step>
+
+<Step title="Ersetze die Proxy-Konfiguration">
+
+Richte deinen OpenAI-kompatiblen Client auf Phaseo aus und entferne `Helicone-Auth` sowie alle weiteren Helicone-spezifischen Header.
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Übertrage die Einsicht in Anfragen">
+
+Nutze für die Betriebsdiagnose Phaseo-Aktivität, Request-IDs, Anbieter-Versuche und Preisinformationen. Wenn dein Team Telemetrie an anderer Stelle exportiert, richte vor der Umstellung die passende [Observability](../guides/integrations/observability.mdx)-Integration ein.
+
+</Step>
+
+<Step title="Teste und rolle aus">
+
+Prüfe, ob Anfragen ohne Helicone-Header abgeschlossen werden und dein Team bei Vorfällen weiterhin die nötigen Betriebsfragen beantworten kann. Leite den Datenverkehr schrittweise um, sobald Inferenz und Observability erfolgreich geprüft wurden.
+
+</Step>
+</Steps>
+
+## Migrations-Checkliste
+
+- Helicone-Proxy-URL und Authentifizierungsheader wurden entfernt.
+- Produktionsmodell-IDs wurden mit `GET /v1/models` überprüft.
+- Erforderliche Request-Metadaten sind weiterhin in Phaseo oder deinem Telemetrie-Stack verfügbar.
+- Für Warnmeldungen und Dashboards gibt es bei Bedarf einen geplanten Ersatz.
+- Ein Rollback erfordert weiterhin nur eine Änderung von Endpunkt und Schlüssel.
+
+## Nächste Schritte
+
+- [Observability](../guides/integrations/observability.mdx)
+- [Anbieterstatus](../guides/provider-statuses.mdx)
+- [Fehlerbehandlung](../api-reference/errors.mdx)

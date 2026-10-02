@@ -1,0 +1,10 @@
+---
+title: "Observability-Ziel erstellen"
+sidebarTitle: "Ziel erstellen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml POST /observability/destinations"
+description: "Erstellt ein Webhook- oder OpenTelemetry-Ziel."
+---
+<Note>Für diesen Endpunkt ist ein Management-API-Schlüssel mit `settings:write` erforderlich.</Note>
+
+Das Objekt `config` ist schreibgeschützt und wird vor der Speicherung verschlüsselt. Endpunkte müssen öffentliche HTTPS-Adressen verwenden.

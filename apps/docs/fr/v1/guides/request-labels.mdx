@@ -1,0 +1,42 @@
+---
+title: "Libellés de requête"
+description: "Attribuez les requêtes de la passerelle à des équipes, fonctionnalités ou environnements définis dans le code, puis ventilez les dépenses par libellé."
+icon: "tags"
+---
+
+Utilisez des libellés de requête lorsque le code de l’application a besoin d’une dimension de coût stable, plus précise qu’une clé API ou qu’une application. Les libellés sont enregistrés avec l’audit de la requête et peuvent être filtrés dans les analyses sans modifier la requête au modèle.
+
+## Envoyer des libellés
+
+Définissez `X-Phaseo-Metadata` comme un objet JSON contenant jusqu’à 32 paires clé-valeur uniques :
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Les SDK TypeScript et Python acceptent les en-têtes personnalisés ; vous pouvez donc configurer le même en-tête sur le client. Les libellés ne sont pas transmis aux fournisseurs.
+
+## Ventiler les dépenses
+
+Utilisez le point de terminaison des analyses avec `label_key` et `label_value` :
+
+```text
+GET /v1/analytics?label_key=team&label_value=support
+```
+
+La réponse conserve le même format de dépenses regroupées que les analyses non filtrées, mais n’inclut que les requêtes portant exactement cette paire de libellés.
+
+## Règles
+
+- Les clés ne peuvent contenir que des lettres, des chiffres, `_`, `.`, `:` ou `-`, et sont limitées à 64 caractères.
+- Les valeurs sont des chaînes limitées à 256 caractères.
+- Une requête peut contenir jusqu’à 32 libellés et l’en-tête est limité à 8 Kio.
+- Les clés en double ou les métadonnées mal formées sont rejetées avec `400 invalid_request`.
+- Ne placez pas de prompts, de secrets, d’adresses e-mail ni d’autres données personnelles dans les libellés.

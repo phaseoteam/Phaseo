@@ -1,0 +1,62 @@
+---
+title: "Utilisation"
+description: "Définissez des outils, exécutez un agent Java et reprenez-le après une révision humaine."
+---
+
+## Boucle d’outils
+
+```java
+import app.phaseo.agent.AgentSdk;
+import java.util.List;
+import java.util.Map;
+
+var lookup = AgentSdk.defineTool(new AgentSdk.Tool(
+    "lookup_docs",
+    (input, context) -> Map.of("article", "Presets keep routing stable."),
+    "Look up a documentation article",
+    Map.of("type", "object"),
+    java.time.Duration.ofSeconds(10)
+));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent",
+    "openai/gpt-5.4-nano",
+    null,
+    "Use tools when useful and answer concisely.",
+    List.of(lookup),
+    12,
+    null,
+    null,
+    new AgentSdk.ModelRetryConfig(2, java.time.Duration.ofMillis(250)),
+    new AgentSdk.ToolExecutionConfig(4)
+));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Explain presets",
+    AgentSdk.createGatewayAgentClient(),
+    null, null, null, null, null, null,
+    event -> System.out.println(event.type()),
+    AgentSdk.createAgentDevtools(".phaseo-devtools")
+));
+```
+
+## Révision humaine
+
+Renvoyez `HumanReviewRequest` depuis `AgentDefinition.humanReview` pour créer un point de contrôle. Enregistrez le `RunResult` renvoyé, recueillez une décision dans votre application, puis appelez `continueRun(...)` avec `humanInput`. Le SDK Agent ne dépend pas d’un état hébergé caché.
+
+## Options de l’API Responses
+
+Transmettez les champs supplémentaires de l’API Responses via `GatewayOptions.requestOptions`. L’adaptateur applique les outils de fonction locaux `model`, `input`, `instructions` et ceux gérés par l’agent.
+
+## Environnement d’exécution avancé
+
+Java prend en charge les interfaces de validation et d’approbation, les outils HITL et manuels, la progression, les erreurs récupérables, les itérables rejouables, les fonctions d’arrêt, les tours dynamiques, `NextTurnParams` persistants, l’utilisation et le coût normalisés, ainsi que `StateAccessor`.
+
+## Streaming et annulation
+
+`Agent.stream(...)` et `Agent.continueStream(...)` consomment le flux SSE Responses de la passerelle. Lisez `textStream()` ou `fullStream()` pour obtenir des résultats rejouables, et appelez `cancel()` pour interrompre le worker actif et la lecture HTTP. Les étapes terminées conservent les ID de requête, les métadonnées du fournisseur, les motifs de fin, les avertissements, l’utilisation et le coût.
+
+## Ressources associées
+
+- [Présentation du SDK Agent](../agent-sdk/overview.mdx)
+- [SDK client Java](./overview.mdx)

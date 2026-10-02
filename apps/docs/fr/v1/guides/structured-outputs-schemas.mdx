@@ -1,0 +1,62 @@
+---
+icon: "database"
+title: "Schémas de sortie structurée"
+description: "Comment concevoir des schémas JSON pratiques pour les réponses des modèles."
+---
+
+Pour obtenir des sorties structurées fiables, la conception du schéma compte plus que le choix du modèle.
+
+## Commencez simplement
+
+- Préférez les objets plats aux structures profondément imbriquées.
+- Utilisez `required` pour chaque champ nécessaire.
+- Définissez `additionalProperties: false` si vous devez contrôler strictement la structure.
+
+## Requête
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## Réponse
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## Erreurs fréquentes
+
+- Laisser facultatifs des champs qui devraient être obligatoires.
+- Utiliser des champs texte trop larges au lieu de contraintes `enum`.
+- Laisser le schéma de la documentation diverger du validateur côté serveur.
+

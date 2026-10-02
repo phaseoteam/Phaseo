@@ -1,0 +1,25 @@
+---
+icon: "wrench"
+title: "Outils"
+description: "Définissez des outils PHP avec validation, approbation, exécution manuelle et remontée de progression."
+---
+
+Créez des valeurs `Tool` et transmettez-les via `AgentSdk::defineTool(...)`. Les outils peuvent inclure :
+
+- les `parameters` JSON présentés au modèle
+- des fonctions de validation `inputSchema`, `outputSchema` et `eventSchema`
+- `timeoutMs` et un rappel `execute`
+- `requireApproval` sous forme booléenne ou de rappel
+- `onToolCalled` et `onResponseReceived` pour les interactions
+- `nextTurnParams` et `onError: "return-to-model"`
+
+Utilisez `RuntimeContext::$emitProgress` pour les résultats préliminaires et `$setContext` pour le contexte de l’application.
+
+<Note>
+Les rappels d’outil s’exécutent de façon synchrone dans l’environnement PHP standard. La concurrence et l’interruption dépendent donc des capacités du processus PHP qui héberge le SDK.
+</Note>
+
+## À lire aussi
+
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

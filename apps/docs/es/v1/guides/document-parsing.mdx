@@ -1,0 +1,78 @@
+---
+icon: "scan-text"
+title: "Analizar imágenes de documentos"
+description: "Extrae texto ordenado, tablas, imágenes y metadatos de diseño de imágenes de documentos con Cohere Parse v5.0."
+---
+
+Usa el endpoint Parse cuando necesites algo más que OCR básico. Conserva el orden de las páginas y puede devolver Markdown o bloques estructurados de texto, imágenes y tablas.
+
+<Warning>
+  La API pública de Parse de Cohere solo acepta actualmente URL de imágenes y URI de datos de imagen en base64. Convierte las páginas de PDF en imágenes antes de enviarlas. Cada imagen debe pesar como máximo 20 MB, tener 50 megapíxeles o menos y ocupar como máximo 200 MB al decodificarse.
+</Warning>
+
+## Analizar y devolver Markdown
+
+Markdown conserva el orden de lectura, incluye las tablas como HTML y enlaza las imágenes detectadas con los metadatos de la página.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/parse \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cohere/parse-v5.0",
+    "document": {
+      "type": "image_url",
+      "image_url": "https://example.com/invoice.png"
+    },
+    "output_format": "markdown"
+  }'
+```
+
+```ts TypeScript
+const response = await fetch("https://api.phaseo.app/v1/parse", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "cohere/parse-v5.0",
+    document: {
+      type: "image_url",
+      image_url: "https://example.com/invoice.png",
+    },
+    output_format: "markdown",
+  }),
+});
+
+const parsed = await response.json();
+console.log(parsed.pages[0].markdown.content);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/parse",
+    headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+    json={
+        "model": "cohere/parse-v5.0",
+        "document": {
+            "type": "image_url",
+            "image_url": "https://example.com/invoice.png",
+        },
+        "output_format": "markdown",
+    },
+)
+response.raise_for_status()
+print(response.json()["pages"][0]["markdown"]["content"])
+```
+</CodeGroup>
+
+## Devolver bloques estructurados
+
+Establece `output_format` en `blocks` para recibir regiones ordenadas de texto, imágenes y tablas. Cuando están disponibles, los bloques de imagen y tabla incluyen cuadros delimitadores en píxeles y normalizados.
+
+El uso de Parse se calcula por página. La respuesta incluye metadatos de Cohere y un valor normalizado de `usage.input_pages` cuando el proveedor informa de las páginas facturadas. Cohere ofrece actualmente acceso gratuito de evaluación a la API, con límites de frecuencia, y aún no ha publicado una tarifa de producción para Parse.

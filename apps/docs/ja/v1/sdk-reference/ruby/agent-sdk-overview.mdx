@@ -1,0 +1,25 @@
+---
+icon: "rocket"
+title: "概要"
+description: "Ruby Agent SDKの用途と、現在利用できる機能を紹介します。"
+---
+
+Ruby Agent SDKはPhaseo Gateway向けの完全なローカルエージェントランタイムです。再試行、並行ツール、タイムアウト、人によるレビュー、再開可能な状態、ライフサイクルイベント、DevTools記録を備えています。
+
+次の用途に使えます。
+
+- 軽量で上限のあるツールループ
+- ゲートウェイ経由の`responses`リクエスト
+- 永続化とオーケストレーションをアプリケーション側で制御すること
+
+## 提供機能
+
+- `PhaseoAgentSdk.create_agent(...)`
+- `PhaseoAgentSdk.define_tool(...)`
+- `PhaseoAgentSdk.create_gateway_agent_client(...)`
+- Phaseoの`responses` API上で動作する上限付きツールループ
+
+## 次のステップ
+
+- [インストール](./agent-sdk-installation.mdx)
+- [使い方](./agent-sdk.mdx)

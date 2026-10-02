@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "Hooks del ciclo de vida"
+description: "Reacciona a los eventos de ejecución, modelo, paso, herramienta y punto de control de .NET."
+---
+
+Pass `RunOptions.OnEvent` para actualizar una cronología del producto, un registro de auditoría o un flujo de telemetría.
+
+Las categorías de eventos abarcan el inicio, la reanudación y los estados finales de las ejecuciones, las solicitudes a modelos, los puntos de control, la ejecución y el progreso de las herramientas, la espera de intervención humana, las cancelaciones y los errores.
+
+Mantén rápida la función de devolución de llamada. Envía el trabajo lento de almacenamiento o red a una cola fuera del bucle del agente.
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## Relacionado
+
+- [Transmisión en continuo](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

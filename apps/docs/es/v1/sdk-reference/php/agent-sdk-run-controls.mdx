@@ -1,0 +1,41 @@
+---
+icon: "rotate-cw"
+title: "Salidas y reintentos"
+description: "Valida las salidas finales, reintenta solicitudes al modelo y consulta ejecuciones completadas de PHP."
+---
+
+Usa la validación de salida cuando el código PHP posterior necesite una estructura predecible. Los reintentos del modelo cubren fallos transitorios de solicitudes; los reintentos de herramientas con efectos secundarios deben ejecutarse dentro de la propia herramienta y ser idempotentes.
+
+## Configurar los reintentos
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-5.4-nano",
+    modelRetry: new ModelRetryConfig(
+        maxRetries: 3,
+        baseDelayMs: 500,
+        maxDelayMs: 4000
+    )
+));
+```
+
+El resultado de la ejecución contiene su estado, pasos, mensajes, uso normalizado, motivo de detención y salida final. Consulta estos campos en vez de tratar el texto final como el registro completo de la ejecución.
+
+## Validar el resultado final
+```php
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+echo $result->output;
+echo $result->run->status;
+echo $result->usage["total_tokens"];
+echo $result->usage["cost"];
+```
+
+Usa las [condiciones de detención](./agent-sdk-stop-conditions) para aplicar límites y [errores y solución de problemas](./agent-sdk-observability) para elegir el comportamiento ante fallos recuperables.

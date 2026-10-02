@@ -1,0 +1,96 @@
+---
+title: "LiteLLM からの移行"
+sidebarTitle: "LiteLLM"
+description: "アプリケーションが現在使っている OpenAI 互換のリクエスト経路を維持しながら、LiteLLM プロキシを Phaseo に置き換えます。"
+icon: "blocks"
+---
+
+OpenAI互換クライアントから LiteLLM プロキシを呼び出している場合は、このガイドを使ってください。まずプロキシとの接続境界を切り替え、その後エイリアス、ルーティングルール、共有デフォルトを明示的に対応付けます。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| ベースURL | LiteLLM プロキシ | `https://api.phaseo.app/v1` |
+| APIキー | LiteLLM プロキシキー | `PHASEO_API_KEY` |
+| モデルエイリアス | LiteLLM の設定 | Phaseo モデルIDまたはアプリケーションのエイリアス |
+| ルーティングの既定値 | LiteLLM の設定 | Phaseo のプリセットとルーティング設定 |
+
+<Steps>
+<Step title="プロキシ設定を洗い出す">
+
+現在の LiteLLM デプロイで使われているモデルエイリアス、フォールバック、プロバイダールール、再試行ポリシー、予算、コールバック、環境変数をすべて記録します。共通ポリシーと、単一アプリケーションに属する設定を区別してください。
+
+</Step>
+
+<Step title="プロキシのエンドポイントを置き換える">
+
+OpenAI互換のリクエストコードはそのままにし、ベースURLとキーを変更します。
+
+<CodeGroup>
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "openai/gpt-4.1-mini",
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="エイリアスとルーティングルールを対応付ける">
+
+すべての本番モデルを `GET /v1/models` で確認します。呼び出し側が内部エイリアスに依存している場合、各リクエストを変更するのではなく、アプリケーションの1か所で正規化します。
+
+再利用するプロンプト、パラメーター、プロバイダー制限は[プリセット](../guides/presets.mdx)に移します。プロバイダーの優先順位とフォールバックは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)で設定します。
+
+</Step>
+
+<Step title="本番ワークフローを検証する">
+
+ストリーミング、ツール、構造化出力、再試行、エラー変換、LiteLLM デプロイが担っていたコールバック型の可観測性をテストします。トラフィックを段階的に移す前に、レイテンシ、出力、トークン使用量、コストを比較してください。
+
+</Step>
+</Steps>
+
+## 移行チェックリスト
+
+- LiteLLM の URL、キー、デプロイ依存関係を洗い出した。
+- 本番の各モデルとエイリアスに明示的な Phaseo の対応先がある。
+- 共有デフォルトをプリセットまたはアプリケーションの一か所に移した。
+- 使用する場合、ストリーミング、ツール、構造化出力がステージングで動作する。
+- 必要なコールバックとテレメトリに代替手段がある。
+- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
+
+## 次のステップ
+
+- [プリセット](../guides/presets.mdx)
+- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
+- [可観測性](../guides/integrations/observability.mdx)

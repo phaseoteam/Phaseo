@@ -1,0 +1,29 @@
+---
+title: "Häufige Fragen"
+description: "Antworten auf häufige Fragen zu Phaseo und dem Gateway."
+icon: "life-buoy"
+---
+
+## Wo erhalte ich einen API-Schlüssel?
+
+Erstelle Schlüssel im Phaseo-Dashboard. Weitere Informationen findest du unter [Authentifizierung](../developers/authentication.mdx).
+
+## Welche Basis-URL soll ich verwenden?
+
+Verwende `https://api.phaseo.app/v1` als Basis-URL für das Gateway.
+
+## Mit welchem Endpoint sollte ich beginnen?
+
+Verwende `/responses` für die meisten Textabläufe. `/chat/completions` und `/messages` sind aus Kompatibilitätsgründen ebenfalls verfügbar.
+
+## Wie sehe ich unterstützte Modelle?
+
+Nutze den [Models-Endpoint](../api-reference/endpoint/models.mdx), um die aktuelle Liste abzurufen.
+
+## Wie funktioniert BYOK?
+
+Bring Your Own Key (BYOK) ermöglicht dir das Routing und die Beobachtbarkeit von Phaseo, während dein Anbieter die Modellnutzung direkt abrechnet. Für die ersten 250.000 abgeschlossenen Anfragen pro UTC-Monat fällt keine Phaseo-Servicegebühr an; danach berechnet Phaseo 2,5 % der entsprechenden Anbieter-Kosten. Weitere Informationen findest du unter [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx#byok-considerations).
+
+## Wo bekomme ich Hilfe?
+
+Unter [Kontakt und Support](./contact-and-support.mdx) findest du die verfügbaren Hilfekanäle.

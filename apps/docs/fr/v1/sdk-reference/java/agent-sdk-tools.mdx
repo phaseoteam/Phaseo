@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "Outils"
+description: "Définissez des outils Java validés, soumis à approbation, manuels et capables de produire des événements de progression."
+---
+
+`AgentSdk.Tool` prend en charge :
+
+- des `parameters` JSON présentés au modèle
+- des fonctions `Validator` pour les entrées, les sorties et les événements de progression
+- des délais `Duration` propres à chaque outil
+- une approbation inconditionnelle ou conditionnelle
+- des outils manuels exécutés par votre application
+- une progression préliminaire via `RuntimeContext.emitProgress()`
+- une gestion des erreurs `fail-run` ou `return-to-model`
+- des remplacements pour le tour suivant après l’exécution réussie d’un outil
+
+Transmettez les enregistrements d’outils via `AgentSdk.defineTool(...)` et soumettez les effets de bord à une approbation explicite ou à une exécution manuelle gérée par l’application.
+
+## À lire aussi
+
+- [État et approbation](./agent-sdk-state-and-approval.mdx)
+- [Contrôles d’exécution](./agent-sdk-run-controls.mdx)

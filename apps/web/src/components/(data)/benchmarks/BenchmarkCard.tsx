@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 import type { BenchmarkCard as BenchmarkCardType } from "@/lib/fetchers/benchmarks/types";
 
 export default function BenchmarkCard({
@@ -10,6 +11,9 @@ export default function BenchmarkCard({
 	benchmark_name,
 	total_models,
 }: BenchmarkCardType) {
+	const t = useTranslations("Catalogue.benchmarks");
+	const tProviderModelList = useTranslations("Catalogue.providerModelList");
+
 	return (
 		<Card className="h-full flex flex-col shadow-lg relative dark:shadow-zinc-900/25 dark:bg-zinc-950 transition-transform transform hover:scale-105 duration-200 ease-in-out border">
 			<CardContent className="flex flex-row items-center gap-3 pt-6">
@@ -23,7 +27,7 @@ export default function BenchmarkCard({
 
 					<div className="mt-2">
 						<Badge variant="secondary" className="text-xs">
-							{total_models} model{total_models !== 1 ? "s" : ""}
+							{tProviderModelList("modelsCount", { count: total_models })}
 						</Badge>
 					</div>
 				</div>
@@ -38,7 +42,7 @@ export default function BenchmarkCard({
 					>
 						<Link
 							href={`benchmarks/${benchmark_id}`}
-							aria-label={`Go to ${benchmark_name} details`}
+							aria-label={t("viewDetails")}
 							tabIndex={-1}
 						>
 							<ArrowRight className="w-5 h-5 transition-colors group-hover:text-primary" />

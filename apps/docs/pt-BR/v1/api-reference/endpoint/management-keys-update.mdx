@@ -1,0 +1,10 @@
+---
+title: "Atualizar chave de gerenciamento"
+sidebarTitle: "Atualizar chave de gerenciamento"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /management-keys/{id}"
+description: "Atualiza escopos, limites, expiração, nome ou estado pausado de uma chave de gerenciamento."
+---
+<Note>Este endpoint requer uma identidade de proprietário ou administrador e `management_keys:write`.</Note>
+
+Quem faz a chamada não pode conceder escopos que não possui. Os campos omitidos mantêm os valores atuais.

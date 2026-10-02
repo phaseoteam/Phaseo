@@ -1,6 +1,7 @@
 "use client";
 
 import { Maximize2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogContent,
@@ -23,39 +24,27 @@ type QualityMetric =
 	| "cacheHitRatePct";
 
 const METRICS: Record<QualityMetric, {
-	label: string;
-	description: string;
-	emptyMessage: string;
+	messageKey: string;
 	color: string;
 }> = {
 	toolCallSuccessPct: {
-		label: "Tool call success",
-		description: "Share of observed tool-calling requests that completed with a successful tool call.",
-		emptyMessage: "No tool-call attempts were recorded in this period.",
+		messageKey: "toolCallSuccess",
 		color: "hsl(221, 83%, 53%)",
 	},
 	toolCallErrorPct: {
-		label: "Tool Call Errors",
-		description: "Share of generated tool calls with invalid JSON arguments, a schema mismatch, or an unknown tool name. Historical traffic without response validation is shown as 0%.",
-		emptyMessage: "No validated tool-call responses were recorded in this period.",
+		messageKey: "toolCallErrors",
 		color: "hsl(0, 72%, 51%)",
 	},
 	structuredOutputSuccessPct: {
-		label: "Structured output",
-		description: "Share of structured-output attempts that returned a valid structured response.",
-		emptyMessage: "No structured-response attempts were recorded in this period.",
+		messageKey: "structuredOutput",
 		color: "hsl(262, 83%, 58%)",
 	},
 	structuredOutputErrorPct: {
-		label: "Structured Response Errors",
-		description: "Share of requested structured responses with invalid JSON, a schema mismatch, or no structured output. Historical traffic without response validation is shown as 0%.",
-		emptyMessage: "No validated structured responses were recorded in this period.",
+		messageKey: "structuredResponseErrors",
 		color: "hsl(25, 95%, 53%)",
 	},
 	cacheHitRatePct: {
-		label: "Cache Hit Rate",
-		description: "Cached read tokens as a percentage of reported input tokens.",
-		emptyMessage: "Not enough input-token and cache-read telemetry was recorded in this period.",
+		messageKey: "cacheHitRate",
 		color: "hsl(142, 71%, 45%)",
 	},
 };
@@ -69,11 +58,15 @@ export default function ModelQualityTrendChart({
 	data: ModelPerformanceQualityPoint[];
 	metric: QualityMetric;
 }) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
 	const config = METRICS[metric];
+	const label = t(`qualityMetrics.${config.messageKey}.label` as never);
+	const description = t(`qualityMetrics.${config.messageKey}.description` as never);
+	const emptyMessage = t(`qualityMetrics.${config.messageKey}.emptyMessage` as never);
 	const metricData: ModelProviderHourlyPoint[] = data.map((point) => ({
 		bucket: point.bucket,
 		provider: "all-providers",
-		providerName: "All providers",
+		providerName: t("allProviders"),
 		providerColor: config.color,
 		avgThroughput: null,
 		avgLatencyMs: null,
@@ -89,9 +82,10 @@ export default function ModelQualityTrendChart({
 					title={title}
 					data={metricData}
 					metric="cachedInput"
-					metricInfoLabel={config.label}
-					metricDescription={config.description}
-					emptyMessage={config.emptyMessage}
+					metricInfoLabel={label}
+					metricDescription={description}
+					metricAxisLabel={t("axisPercent")}
+					emptyMessage={emptyMessage}
 					maxSeries={1}
 					timeResolution="hour"
 					headerAction={
@@ -99,7 +93,7 @@ export default function ModelQualityTrendChart({
 							<button
 								type="button"
 								className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-								aria-label={`Expand ${title}`}
+								aria-label={t("expandMetric", { metric: title } as never)}
 							>
 								<Maximize2 className="size-3.5" />
 							</button>
@@ -110,16 +104,17 @@ export default function ModelQualityTrendChart({
 			<DialogContent className="h-[min(90vh,850px)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-5xl">
 				<DialogHeader className="pr-10">
 					<DialogTitle className="text-xl">{title}</DialogTitle>
-					<DialogDescription>{config.description}</DialogDescription>
+					<DialogDescription>{description}</DialogDescription>
 				</DialogHeader>
 				<div className="h-full min-h-0 overflow-hidden rounded-lg border border-border/70 bg-background p-4">
 					<ModelProviderTrendChart
 						title={title}
 						data={metricData}
 						metric="cachedInput"
-						metricInfoLabel={config.label}
-						metricDescription={config.description}
-						emptyMessage={config.emptyMessage}
+						metricInfoLabel={label}
+						metricDescription={description}
+						metricAxisLabel={t("axisPercent")}
+						emptyMessage={emptyMessage}
 						maxSeries={1}
 						timeResolution="hour"
 						detailed

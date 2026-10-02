@@ -1,0 +1,20 @@
+---
+icon: "database"
+title: "状态与审批"
+description: "暂停 PHP Agent 以等待人工决策，并从应用管理的状态继续运行。"
+---
+
+如需通用检查点，请使用 `AgentDefinition::$humanReview`。需要审批或手动执行的工具会将确切的调用 ID 填入 `$result->run->pause->pendingToolCalls`。
+
+使用 `Agent::continueRun(...)` 继续，并传入：
+
+- 用于批准或拒绝的 `ToolDecision` 值
+- 用于手动工作的 `ToolOutput` 值
+- 用于通用审核暂停的人工输入
+
+应用需要从存储中重新加载运行时，请将 `continueRunById(...)` 与 `StateAccessor` 搭配使用。决策按调用 ID 匹配，而不是按工具名称匹配。
+
+## 相关内容
+
+- [工具](./agent-sdk-tools.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

@@ -87,11 +87,14 @@ function formatRelativeDistance(absDays: number): string {
 	return pluralize(Math.round(absDays / 365.25), "year");
 }
 
-export function formatModelLifecycleDate(dateStr?: string | null): string {
+export function formatModelLifecycleDate(
+	dateStr?: string | null,
+	locale = "en-GB",
+): string {
 	if (!dateStr) return "-";
 	const date = new Date(dateStr);
 	if (Number.isNaN(date.getTime())) return "-";
-	return date.toLocaleDateString("en-GB", {
+	return date.toLocaleDateString(locale, {
 		timeZone: "UTC",
 		day: "2-digit",
 		month: "short",

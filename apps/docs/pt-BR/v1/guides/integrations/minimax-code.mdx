@@ -1,0 +1,67 @@
+---
+title: "MiniMax Code"
+icon: "/icons/brands/minimax.svg"
+description: "Execute MiniMax Code pelo Phaseo Gateway com a Phaseo CLI."
+---
+
+A Phaseo CLI pode iniciar MiniMax Code com uma chave dedicada do gateway e configurações temporárias de provedor.
+
+## Configurar com a Phaseo CLI
+
+```bash
+phaseo login
+phaseo minimax --model openai/gpt-5.6-terra --
+```
+
+O executor usa o comando `mcode provider add` de MiniMax Code com o endpoint da Phaseo compatível com OpenAI e depois inicia `mcode` com o provedor selecionado. Use `--catalog all` para registrar todos os modelos ativos de texto/chat da Phaseo compatíveis com Chat Completions ou visualize o plano de instalação e execução sem criar uma chave:
+
+```bash
+phaseo minimax --catalog all --dry-run --json
+```
+
+Use `phaseo run minimax ...` para a forma explícita do comando. Coloque as opções de MiniMax Code depois de `--` para que a Phaseo processe suas próprias opções primeiro.
+
+Em sistemas do tipo Unix, a primeira execução interativa oferece instalar MiniMax Code com o instalador oficial da MiniMax. No Windows, a Phaseo usa o instalador oficial do PowerShell. Se MiniMax Code já for gerenciado separadamente, instale-o por conta própria, verifique `mcode --version` e execute novamente com `--skip-install`.
+
+O executor define `MINIMAX_DATA_DIR` como um diretório temporário e o remove quando `mcode` termina. Sua configuração habitual de `~/.minimax` não é alterada, e a chave dedicada da Phaseo só é passada ao processo de configuração temporária do provedor.
+
+## Configuração manual
+
+Para um provedor persistente de MiniMax Code, use diretamente os comandos de provedor de MiniMax Code:
+
+```bash
+export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
+mcode provider add \
+  --name "Phaseo" \
+  --base-url "https://api.phaseo.app/v1" \
+  --api-format openai-completions \
+  --model "openai/gpt-5.6-terra" \
+  --use
+```
+
+MiniMax Code armazena as configurações persistentes de provedor em seu diretório de dados configurado. Use o executor da Phaseo CLI se quiser isolar essas configurações em uma única sessão.
+
+## Verificar
+
+Envie um prompt curto pelo MiniMax Code e confirme que a solicitação aparece na atividade da Phaseo. Para consultar os identificadores de modelos disponíveis, use `--catalog all` ou informe um modelo específico da Phaseo com `--model`.
+
+## Solução de problemas
+
+### MiniMax Code não está instalado
+
+Execute o comando em um terminal interativo para aprovar o instalador oficial ou instale MiniMax Code separadamente e execute novamente com `--skip-install`.
+
+### O provedor ou modelo não aparece
+
+Use `phaseo minimax --catalog all` ou informe o identificador do modelo desejado com `--model`. A CLI cria o provedor em um diretório temporário de dados da MiniMax antes de iniciar `mcode`.
+
+### Preciso de ACP em vez da CLI interativa
+
+MiniMax Code também disponibiliza um processo ACP por meio de `mcode acp` para integrações com editores e aplicativos hospedeiros. `phaseo minimax` é o executor da CLI interativa; use a configuração ACP de MiniMax Code quando o aplicativo hospedeiro se comunicar diretamente por ACP.
+
+## Relacionados
+
+- [Phaseo CLI](./phaseo-cli)
+- [Agentes de programação](./coding-assistants)
+- [Modelos](../../api-reference/endpoint/models.mdx)
+- [Atividade](../../api-reference/endpoint/activity.mdx)

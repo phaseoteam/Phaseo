@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "Migraciones de modelos"
+description: "Orientación específica para adoptar nuevas versiones de modelos de forma segura en producción."
+---
+
+# Migraciones de modelos
+
+Usa estas guías para actualizar el modelo y seguir en la misma plataforma.
+
+Se centran en los cambios que suelen afectar primero a las integraciones reales:
+
+- cambios en los parámetros de solicitud
+- cambios en el comportamiento de prompts y razonamiento
+- regresiones en salidas estructuradas y llamadas a herramientas
+- estrategias de despliegue gradual, alternativas y reversión
+
+## Guías de modelos
+
+Las guías están ordenadas por fecha de lanzamiento del modelo de destino, de la más reciente a la más antigua.
+
+| Modelo | Lanzamiento | Útil para |
+| --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 24 de julio de 2026 | Razonamiento complejo y agentes con tareas de larga duración |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 9 de julio de 2026 | Razonamiento por niveles, programación y trabajo profesional |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 28 de mayo de 2026 | Contexto extenso y pensamiento adaptativo |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 16 de abril de 2026 | Razonamiento de alto esfuerzo con controles de solicitud más estrictos |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 16 de marzo de 2026 | Cargas eficientes con razonamiento opcional |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 5 de marzo de 2026 | Razonamiento, visión y uso del ordenador |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 26 de febrero de 2026 | Generación y edición de imágenes en producción |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 19 de febrero de 2026 | Cargas multimodales y con mucho razonamiento |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 17 de febrero de 2026 | Programación, uso del ordenador y planificación de agentes |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 17 de febrero de 2026 | Razonamiento y cargas multiagente |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 5 de febrero de 2026 | Programación de larga duración y tareas con agentes |
+
+## Cómo usar esta sección
+
+1. Empieza por la guía de la familia exacta del modelo al que vas a migrar.
+2. Actualiza los parámetros de solicitud antes de evaluar la calidad de las respuestas.
+3. Vuelve a ejecutar las evaluaciones de prompts y esquemas con ejemplos similares a producción.
+4. Desvía el tráfico gradualmente, con reglas explícitas de alternativas y reversión.
+
+Si vas a cambiar de proveedor, SDK o pasarela, y no solo de modelo, consulta la sección [Guías de migración](../migration-guides/index.mdx).

@@ -4,11 +4,13 @@ import * as React from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function ThemeToggle() {
 	const { resolvedTheme, setTheme } = useTheme();
+	const t = useTranslations("Common.theme");
 	const isDark = resolvedTheme === "dark";
 
 	return (
@@ -37,7 +39,7 @@ export function ThemeToggle() {
 				className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
 				aria-hidden="true"
 			/>
-			<span className="sr-only">Toggle theme</span>
+			<span className="sr-only">{t("toggle")}</span>
 		</Button>
 	);
 }
@@ -54,6 +56,7 @@ export function ThemeSelector({
 	showSelectedLabel = true,
 }: ThemeSelectorProps = {}) {
 	const { theme, setTheme } = useTheme();
+	const t = useTranslations("Common.theme");
 	const reduceMotion = useReducedMotion();
 	const [mounted, setMounted] = React.useState(false);
 	const [showLabel, setShowLabel] = React.useState(false);
@@ -73,9 +76,9 @@ export function ThemeSelector({
 			: "system";
 	const order = ["system", "light", "dark"] as const;
 	const labels: Record<(typeof order)[number], string> = {
-		system: "System",
-		light: "Light",
-		dark: "Dark",
+		system: t("system"),
+		light: t("light"),
+		dark: t("dark"),
 	};
 	const iconByTheme: Record<
 		(typeof order)[number],
@@ -106,7 +109,7 @@ export function ThemeSelector({
 		<div className={cn("inline-flex items-center gap-2", className)}>
 			<div
 				role="radiogroup"
-				aria-label="Theme"
+				aria-label={t("group")}
 				className="inline-flex items-center gap-0.5 rounded-lg"
 			>
 				{order.map((themeOption) => {
@@ -119,7 +122,7 @@ export function ThemeSelector({
 							type="button"
 							role="radio"
 							aria-checked={active}
-							aria-label={`Use ${labels[themeOption]} theme`}
+							aria-label={t("use", { theme: labels[themeOption] })}
 							onClick={() => {
 								setTheme(themeOption);
 								if (showSelectedLabel) {

@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "Turnos dinámicos"
+description: "Cambia modelos, instrucciones, muestreo y herramientas entre turnos del agente."
+---
+
+Usa valores dinámicos cuando los siguientes turnos del modelo deban responder al contexto de la aplicación o a resultados previos de herramientas. El valor puede ser fijo o calcularse para el turno actual.
+
+## Elegir un modelo en tiempo de ejecución
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+La definición del agente acepta valores dinámicos para `model`, `models`, `instructions`, `temperature`, `maxOutputTokens` y `topP`.
+
+## Actualizar el contexto de la aplicación desde una herramienta
+
+Las herramientas pueden guardar información para turnos posteriores mediante `context.setContext()`:
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+Mantén el contexto pequeño y serializable si una ejecución puede guardarse y reanudarse más tarde.
+
+## Anular solo el siguiente turno
+
+Usa `nextTurnParams` cuando una herramienta deba cambiar la siguiente solicitud sin modificar permanentemente la definición del agente:
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+Los valores del siguiente turno pueden cambiar el modelo, las instrucciones, temperature, el máximo de tokens, el muestreo top-p o las herramientas disponibles.
+
+## Guías relacionadas
+
+- [Condiciones de detención](./agent-sdk-stop-conditions.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [Salidas y reintentos](./agent-sdk-run-controls.mdx)

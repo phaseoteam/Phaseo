@@ -84,6 +84,28 @@ describe("buildSensitiveInfoPreview", () => {
 		expect(issue).toBeTruthy();
 	});
 
+	test("uses localized copy for custom pattern validation issues", () => {
+		const translate = (key: string, values?: { name: string }) =>
+			key === "customPatternInvalidRegex"
+				? `Patrón no válido: ${values?.name}`
+				: `Error traducido: ${key}`;
+
+		const issue = validateSensitiveInfoRulePayload(
+			{
+				id: "custom-bad",
+				kind: "custom",
+				enabled: true,
+				action: "redact",
+				name: "Patrón roto",
+				pattern: "[unterminated",
+				flags: "i",
+			},
+			translate,
+		);
+
+		expect(issue).toBe("Patrón no válido: Patrón roto");
+	});
+
 	test("keeps higher-latency entity heuristics disabled by default", () => {
 		const preview = buildSensitiveInfoPreview({
 			text: "My name is John Smith and I live at 123 Market Street.",

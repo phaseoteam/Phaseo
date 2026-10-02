@@ -1,0 +1,36 @@
+---
+icon: "messages-square"
+title: "聊天补全"
+description: "使用 Ruby SDK 调用 /chat/completions。"
+---
+
+**方法**：`client.generate_text(...)`、`client.create_chat_completion(...)`。
+
+### 示例
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+
+response = client.create_chat_completion(
+  "model" => "openai/gpt-4o-mini",
+  messages: [
+    { "role" => "user", "content" => "Write a limerick about lighthouses." }
+  ],
+  "temperature" => 0.5
+)
+```
+
+### 关键参数
+- `model`（必填）：目标模型 ID。
+- `messages`（必填）：按顺序排列的消息，角色为 `user`/`system`/`assistant`/`tool`，内容为字符串。
+- 采样：`temperature`（0–2）、`top_p`（0–1）、`top_k`（>=1）、`seed`（可选整数）。
+- 长度/惩罚：`max_output_tokens`（整数）、`presence_penalty` 和 `frequency_penalty`（-2 到 2）、`stop`（字符串或字符串数组）。
+- 工具：`tools`（定义）、`tool_choice`（自动/无/指定工具）、`max_tool_calls`（整数）、`parallel_tool_calls`（布尔值）。
+- 对数概率：`logprobs`（布尔值）、`top_logprobs`（0–20）。
+- 输出：`response_format`（json/text）、`metadata`（透传对象）、`stream`（布尔值）、`service_tier`。
+- 网关附加项：`usage`（布尔值，用于请求用量）、`meta`（布尔值，用于包含 meta 块）。
+
+### 返回值
+`ChatCompletionsResponse`
+

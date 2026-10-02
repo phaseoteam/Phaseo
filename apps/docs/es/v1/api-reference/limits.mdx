@@ -1,0 +1,29 @@
+---
+title: "Límites de solicitudes"
+description: "Gestiona las limitaciones, las cuotas de proveedores y los reintentos limitados."
+icon: "gauge"
+---
+
+El proveedor seleccionado o una política aplicable del espacio de trabajo o de la clave pueden limitar una solicitud. El enrutamiento y las alternativas pueden reducir los fallos del proveedor, pero una solicitud aún puede devolver `429`.
+
+## Límites del proveedor
+
+Las solicitudes BYOK usan los límites de tu cuenta del proveedor. Las solicitudes gestionadas usan capacidad compartida del proveedor; esa capacidad no es una cuota individual del espacio de trabajo.
+
+Phaseo reenvía un valor validado de `Retry-After` cuando el proveedor al que se dirige la solicitud lo proporciona. Las respuestas BYOK también pueden incluir cabeceras `X-Phaseo-Upstream-RateLimit-*`. Estas cabeceras de cuota se omiten en las solicitudes gestionadas porque describen la capacidad compartida del proveedor. No se reenvían otras cabeceras del proveedor.
+
+## Gestionar una solicitud limitada
+
+1. Revisa el [código de error](./errors.mdx) para distinguir una limitación temporal del proveedor de una restricción de política o presupuesto que requiera cambios de configuración.
+2. Respeta `Retry-After` cuando esté presente. Puede ser un retraso en segundos o una fecha HTTP; valida el valor antes de programar un reintento.
+3. De lo contrario, usa espera exponencial con variación aleatoria y un retraso máximo.
+4. Limita los reintentos tanto por número de intentos como por un plazo total. Cancela el trabajo abandonado y libera el cuerpo de cada respuesta fallida antes de reintentar.
+5. Reduce la concurrencia si persiste la limitación.
+
+No reintentes automáticamente el envío de un trabajo con resultado incierto ni repitas acciones de herramientas ya completadas. Una solicitud puede haber llegado al proveedor aunque el cliente haya perdido la respuesta; los reintentos pueden duplicar el trabajo y los cargos. Para un trabajo de vídeo o por lotes aceptado, usa su endpoint de estado en lugar de enviarlo de nuevo.
+
+## Supervisar las limitaciones
+
+Supervisa la frecuencia de `429` por endpoint y modelo, y revisa la frecuencia de las alternativas en los registros de solicitudes. Compara los registros de tu aplicación con los [ajustes de enrutamiento](../guides/routing-and-fallbacks.mdx) y las cuotas de la cuenta del proveedor para el tráfico BYOK.
+
+Consulta los [presupuestos](./endpoint/budgets-list.mdx) y las [salvaguardas](./endpoint/guardrails.mdx) para controlar el gasto y el acceso del espacio de trabajo.

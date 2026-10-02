@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BlogTocItem } from "@/lib/content/blogToc";
+import { useTranslations } from "next-intl";
 
 type BlogTableOfContentsProps = {
 	items: BlogTocItem[];
@@ -13,12 +14,14 @@ type BlogTableOfContentsProps = {
 function TableOfContentsLinks({
 	activeId,
 	items,
+	label,
 }: {
 	activeId: string;
 	items: BlogTocItem[];
+	label: string;
 }) {
 	return (
-		<nav aria-label="Table of contents">
+		<nav aria-label={label}>
 			<ul className="space-y-1">
 				{items.map((item) => (
 					<li key={item.id}>
@@ -43,6 +46,7 @@ function TableOfContentsLinks({
 }
 
 export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
+	const t = useTranslations("Content.blog");
 	const [activeId, setActiveId] = useState(items[0]?.id ?? "");
 	const desktopListRef = useRef<HTMLDivElement>(null);
 
@@ -111,21 +115,25 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 			<div className="lg:hidden">
 				<details className="group border-y border-zinc-200 py-4 dark:border-zinc-800">
 					<summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
-						<span>On this page</span>
+						<span>{t("onThisPage")}</span>
 						<ChevronDown
 							aria-hidden="true"
 							className="size-4 text-zinc-500 transition-transform duration-200 group-open:rotate-180 dark:text-zinc-400"
 						/>
 					</summary>
 					<div className="mt-4">
-						<TableOfContentsLinks activeId={activeId} items={items} />
+						<TableOfContentsLinks
+							activeId={activeId}
+							items={items}
+							label={t("tableOfContents")}
+						/>
 					</div>
 				</details>
 			</div>
 
 			<aside className="sticky top-[calc(var(--site-header-height,3.75rem)+1rem)] hidden max-h-[calc(100vh-5rem)] w-56 shrink-0 overflow-y-auto lg:block">
 				<p className="mb-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-					On this page
+					{t("onThisPage")}
 				</p>
 				<div ref={desktopListRef} data-blog-toc-list className="relative">
 					<span
@@ -133,7 +141,11 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 						aria-hidden="true"
 						className="pointer-events-none absolute left-0 top-0 z-10 h-6 w-0.5 rounded-full bg-sky-500 transition-[height,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
 					/>
-					<TableOfContentsLinks activeId={activeId} items={items} />
+					<TableOfContentsLinks
+						activeId={activeId}
+						items={items}
+						label={t("tableOfContents")}
+					/>
 				</div>
 			</aside>
 		</>

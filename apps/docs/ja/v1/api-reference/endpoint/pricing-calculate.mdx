@@ -1,0 +1,19 @@
+---
+title: "料金を計算"
+sidebarTitle: "料金を計算"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
+description: "特定のプロバイダー、モデル、エンドポイントの使用量ペイロードから料金を見積もります。"
+---
+
+指定された使用量ペイロードを、現在有効なゲートウェイ料金ルールに基づいて計算します。
+
+次を指定します。
+
+- `provider`: プロバイダーID（例: `openai`）
+- `model`: ルーティング先のモデルID
+- `endpoint`: エンドポイントの種類（例: `responses`、`chat.completions`）
+- `usage`: 料金計算に使う使用量オブジェクト（トークン数などの計量値）
+
+対象のプロバイダー、モデル、エンドポイントが決まっており、特定の使用量ペイロードの請求額を見積もりたい場合にこのルートを使います。`GET /pricing/models`は、現在公開されているカタログ料金を一覧表示します。
+

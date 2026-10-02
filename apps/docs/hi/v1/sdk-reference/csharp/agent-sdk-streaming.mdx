@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "स्ट्रीमिंग"
+description: "दोबारा चलाए जा सकने वाले async enumerable के साथ एजेंट टेक्स्ट और लाइफ़साइकल इवेंट स्ट्रीम करें।"
+---
+
+`Agent.Stream(...)` वही state machine चलाता है जो `Run(...)` चलाता है और `AgentStreamResult` लौटाता है:
+
+```csharp
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+मॉडल, टूल, स्टेप और रन इवेंट पाने के लिए `FullStream()` उपयोग करें। अलग-अलग consumer कैप्चर की गई async sequence को स्वतंत्र रूप से दोबारा चला सकते हैं। सक्रिय रन रोकने के लिए `Cancel()` कॉल करें; cancel मॉडल अनुरोधों और स्थानीय टूल तक पहुँचता है।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [Observability और DevTools](./agent-sdk-observability.mdx)

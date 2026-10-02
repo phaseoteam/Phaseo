@@ -1,0 +1,78 @@
+---
+title: "SpaceXAI Grok 4.20"
+description: "O que considerar ao adotar Grok 4.20, incluindo controles de raciocínio e esforço multiagente."
+icon: "/icons/brands/grok.svg"
+---
+
+# SpaceXAI Grok 4.20
+
+Use este guia para adotar Grok 4.20 com segurança pelo Phaseo Gateway.
+
+Rota principal no catálogo:
+
+- `spacex-ai/grok-4-20-2026-02-17`
+
+Rota multiagente opcional, disponível pelo ID de modelo do provedor:
+
+- `spacex-ai/grok-4.20-multi-agent-beta-0309`
+
+## Início rápido da migração
+
+Na maioria das integrações, basta atualizar o ID do modelo e executar novamente as validações habituais.
+
+Os padrões atuais de requisição e resposta podem continuar iguais.
+
+## Novidades
+
+A rota básica do Grok 4.20 não exige mudanças de comportamento no Phaseo Gateway.
+
+A mudança prática é como ajustar a variante multiagente.
+
+No Phaseo Gateway:
+
+- O raciocínio do Grok 4.20 básico pode ser ativado por `reasoning.enabled` como de costume.
+- Ajuste o Grok 4.20 multiagente com `reasoning.effort`.
+- Use `low`, `medium`, `high` ou `extra high`.
+- Segundo a documentação da SpaceXAI, `low` e `medium` usam 4 agentes; `high` e `extra high` usam configurações multiagente maiores.
+
+Não usamos `agent_count` diretamente nas requisições do Gateway.
+
+### Grok 4.20 básico com controle de raciocínio
+
+Use o modelo básico e defina `reasoning.enabled` diretamente:
+
+```json
+{
+  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "input": "Explain this architecture",
+  "reasoning": {
+    "enabled": true
+  }
+}
+```
+
+### Grok 4.20 multiagente com controle de esforço
+
+Use o modelo multiagente e controle a profundidade com `reasoning.effort`:
+
+```json
+{
+  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "input": "Evaluate three rollout options with tradeoffs",
+  "reasoning": {
+    "effort": "medium"
+  }
+}
+```
+
+Níveis de esforço de raciocínio:
+
+- `low`
+- `medium`
+- `high`
+- `extra high`
+
+## Fontes
+
+- [Recursos multiagente da SpaceXAI](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [Migração da SpaceXAI para novos modelos](https://docs.x.ai/docs/guides/migrating-to-new-models)

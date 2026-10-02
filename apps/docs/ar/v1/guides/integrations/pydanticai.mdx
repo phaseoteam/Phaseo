@@ -1,0 +1,46 @@
+---
+title: "PydanticAI"
+icon: "braces"
+description: "أنشئ وكلاء Python محددي الأنواع باستخدام PydanticAI وPhaseo."
+---
+
+استخدم PydanticAI عندما تريد وكلاء Python بمخرجات محددة الأنواع والتحقق وإعداد نموذج موجز متوافق مع OpenAI.
+
+## التثبيت
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## تهيئة النموذج
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## ملاحظات
+
+- يستخدم مسار PydanticAI المتوافق مع OpenAI سلوك دردشة بأسلوب OpenAI.
+- استخدم استدعاءات Phaseo Responses المباشرة للميزات الخاصة بـ Responses مثل `phaseo:apply_patch`.
+- اجعل مخططات المخرجات المنظّمة صغيرة بما يكفي لنافذة سياق النموذج المحدد.
+
+## مواضيع ذات صلة
+
+- [المخرجات المنظّمة](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [النماذج](../../api-reference/endpoint/models.mdx)

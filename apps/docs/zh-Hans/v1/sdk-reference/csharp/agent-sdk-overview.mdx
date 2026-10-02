@@ -1,0 +1,25 @@
+---
+icon: "rocket"
+title: "概览"
+description: "了解 C# Agent SDK 的用途及其当前提供的功能。"
+---
+
+C# Agent SDK 是 Phaseo Gateway 的完整本地 Agent 运行时，包含重试、并发任务、取消与超时、人工审核、可恢复状态、生命周期事件和 DevTools 捕获。
+
+适用于以下场景：
+
+- 轻量且有界的工具循环
+- 由网关支持的 `responses` 请求
+- 由应用控制持久化和编排
+
+## 提供的功能
+
+- `AgentSdk.CreateAgent(...)`
+- `AgentSdk.DefineTool(...)`
+- `AgentSdk.CreateGatewayAgentClient(...)`
+- 基于 Phaseo `responses` API 的有界工具循环
+
+## 下一步
+
+- [安装](./agent-sdk-installation.mdx)
+- [用法](./agent-sdk.mdx)

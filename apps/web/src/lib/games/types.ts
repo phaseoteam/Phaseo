@@ -85,37 +85,52 @@ export type PriceleResult = {
 
 export const GAME_INFO: Record<
   GameKey,
-  { title: string; description: string; path: string }
+  {
+    titleKey: GameTitleKey;
+    descriptionKey: GameDescriptionKey;
+    path: string;
+  }
 > = {
   modele: {
-    title: "Modele",
-    description:
-      "Find the model from developer, origin, access, release and modality clues.",
+    titleKey: "modeleTitle",
+    descriptionKey: "modeleGameDescription",
     path: "/games/modele",
   },
   timeline: {
-    title: "Model Timeline",
-    description: "Put five models in release order, oldest to newest.",
+    titleKey: "timelineTitle",
+    descriptionKey: "timelineGameDescription",
     path: "/games/timeline",
   },
   pricele: {
-    title: "Pricele",
-    description:
-      "Identify the model by its standard input and output token prices.",
+    titleKey: "priceleTitle",
+    descriptionKey: "priceleGameDescription",
     path: "/games/pricele",
   },
   "head-to-head": {
-    title: "Head-to-Head",
-    description: "Pick the winner across five catalogue comparisons.",
+    titleKey: "headToHeadTitle",
+    descriptionKey: "headToHeadGameDescription",
     path: "/games/head-to-head",
   },
   sprint: {
-    title: "Model Sprint",
-    description:
-      "Name as many models as you can from one daily category in 60 seconds.",
+    titleKey: "sprintTitle",
+    descriptionKey: "sprintGameDescription",
     path: "/games/sprint",
   },
 };
+
+export type GameTitleKey =
+  | "modeleTitle"
+  | "timelineTitle"
+  | "priceleTitle"
+  | "headToHeadTitle"
+  | "sprintTitle";
+
+export type GameDescriptionKey =
+  | "modeleGameDescription"
+  | "timelineGameDescription"
+  | "priceleGameDescription"
+  | "headToHeadGameDescription"
+  | "sprintGameDescription";
 
 export function isGameKey(value: string): value is GameKey {
   return (GAME_KEYS as readonly string[]).includes(value);

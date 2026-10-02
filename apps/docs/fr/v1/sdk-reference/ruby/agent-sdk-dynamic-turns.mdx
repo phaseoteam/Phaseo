@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "Tours dynamiques"
+description: "Modifiez le routage, les instructions, les outils et les paramètres d’échantillonnage entre les tours d’un agent Ruby."
+---
+
+Les champs appelables de l’agent recalculent les paramètres de requête à partir de l’état actuel de l’exécution avant chaque tour du modèle.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+Les outils dynamiques et les valeurs d’échantillonnage peuvent suivre le même modèle. Un outil peut définir `next_turn_params` pour modifier uniquement la requête suivante. Ces remplacements sont conservés après un point de contrôle d’approbation et expirent après le tour suivant.
+
+Utilisez des fonctions appelables pour les règles à recalculer à chaque tour. Utilisez `next_turn_params` pour transmettre un réglage propre à un outil.

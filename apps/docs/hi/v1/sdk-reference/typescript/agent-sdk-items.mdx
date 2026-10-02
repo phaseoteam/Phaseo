@@ -1,0 +1,77 @@
+---
+icon: "layers"
+title: "आइटम के साथ काम करना"
+description: "टाइप किए हुए संदेश, reasoning, टूल गतिविधि, त्रुटियाँ और अंतिम आउटपुट दिखाएँ।"
+---
+
+प्रदाता-विशिष्ट इवेंट पार्स किए बिना संरचित एजेंट टाइमलाइन बनाने के लिए आइटम उपयोग करें। स्ट्रीमिंग और पूर्ण रन एक ही क्रमबद्ध `AgentItem<TOutput>` कॉन्ट्रैक्ट देते हैं।
+
+## आइटम के प्रकार
+
+`AgentItem<TOutput>` एक discriminated union है:
+
+| प्रकार | महत्वपूर्ण फ़ील्ड | क्या दर्शाता है |
+| --- | --- | --- |
+| `message` | `role`, `content` | सहायक या बातचीत का टेक्स्ट |
+| `reasoning` | `text` | मॉडल द्वारा दिया गया reasoning |
+| `tool_call` | `toolCallId`, `name`, `input` | प्रस्तावित टूल कॉल |
+| `tool_result` | `toolCallId`, `name`, `output` | पूर्ण टूल कॉल |
+| `error` | `message`, वैकल्पिक टूल विवरण | प्रदाता या टूल की त्रुटि |
+| `output` | `value` | पार्स किया गया अंतिम एजेंट आउटपुट |
+
+## स्ट्रीमिंग टाइमलाइन दिखाएँ
+
+TypeScript हर आइटम के `type` से उसका प्रकार निर्धारित करता है:
+
+```typescript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+## पूरा होने के बाद आइटम पढ़ें
+
+पूर्ण परिणाम में वही क्रमबद्ध आइटम प्रकार होते हैं:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+इससे प्रोडक्ट लाइव गतिविधि दिखा सकता है और बाद में सहेजे गए रन स्टेट से वही टाइमलाइन फिर बना सकता है।
+
+## प्रदाता-विशिष्ट डेटा तक पहुँचें
+
+प्रदाता आउटपुट को पोर्टेबल आइटम प्रकारों में सामान्यीकृत किया जाता है। यदि किसी इंटीग्रेशन को अब भी प्रदाता-विशिष्ट फ़ील्ड चाहिए, तो सामान्यीकृत आइटम मूल payload को `rawProviderItem` में रखते हैं।
+
+जहाँ संभव हो, प्रोडक्ट लॉजिक को पोर्टेबल फ़ील्ड पर रखें। `rawProviderItem` को प्रदाता-विशिष्ट इंटीग्रेशन का वैकल्पिक रास्ता मानें, ऐप्लिकेशन का सामान्य कॉन्ट्रैक्ट नहीं।
+
+## संबंधित गाइड
+
+- [स्ट्रीमिंग](./agent-sdk-streaming.mdx)
+- [टूल](./agent-sdk-tools.mdx)
+- [लाइफ़साइकल हुक](./agent-sdk-lifecycle-hooks.mdx)

@@ -1,0 +1,71 @@
+---
+title: "Aider"
+icon: "/icons/brands/aider.png"
+description: "設定を自動管理してAiderをPhaseoに接続します。"
+---
+
+Phaseo CLIで専用キーと管理されたAider設定を作成するか、同じプロバイダー値を既存のAider設定に手動でコピーしてください。
+
+## Phaseo CLIで設定する
+
+```bash
+phaseo login
+phaseo aider --model anthropic/claude-sonnet-4.6
+```
+
+`~/.aider.conf.yml`が存在しない場合、セットアップによってPhaseo管理の次のファイルが作成されます。
+
+```yaml
+model: openai/anthropic/claude-sonnet-4.6
+openai-api-base: https://api.phaseo.app/v1
+openai-api-key: <dedicated Phaseo key>
+```
+
+カスタムモデルをOpenAI互換アダプター経由でルーティングするには、Aiderで`openai/`プレフィックスが必要です。Phaseoに送信されるモデル名は`anthropic/claude-sonnet-4.6`のままです。
+
+<Warning>
+`.aider.conf.yml`はAiderが認める認証情報の保存先の1つであるため、APIキーは平文で保存されます。通常のユーザー権限でファイルを保護し、リポジトリにコミットしないでください。
+</Warning>
+
+既存のAider設定がある場合、CLIは変更せずに終了します。Aiderに読み込ませたい設定に上記3つの値を追加してください。Aiderはホーム、リポジトリルート、現在のディレクトリを確認し、後から読み込まれるファイルが優先されます。
+
+## 確認する
+
+リポジトリを開き、Aiderを起動します。
+
+```bash
+aider
+```
+
+起動時の出力に`openai/anthropic/claude-sonnet-4.6`と表示されることを確認し、`PHASEO_AIDER_OK`だけを返すようAiderに依頼します。リクエストはPhaseoのアクティビティにも表示されます。
+
+不明なモデルに関する警告が出てもリクエストは送信できます。トークン上限やコストを正確に見積もる必要がある場合に限り、Aiderにモデルメタデータを追加してください。
+
+## 削除する
+
+```bash
+phaseo integrations remove aider
+```
+
+削除時に専用キーを失効し、`~/.aider.conf.yml`にPhaseo CLIの所有者マーカーが残っている場合に限りファイルを削除します。既存ファイルにPhaseoの設定を手動で追加した場合は、Phaseo関連の3つの値を手動で削除してください。
+
+## トラブルシューティング
+
+### Aiderが別のエンドポイントまたはモデルを使う
+
+リポジトリルートと現在のディレクトリに`.aider.conf.yml`がないか確認します。これらのファイルはホームディレクトリの設定より優先されます。環境変数やコマンドラインオプションも保存済みの値を上書きする場合があります。
+
+### 認証に失敗する
+
+`phaseo integrations credential aider`を実行し、出力を`openai-api-key`と照合します。`openai-api-base`は`https://api.phaseo.app/v1`のままにしてください。
+
+### モデルを解決できない
+
+Aider専用の`openai/`プレフィックスを付けたままにします。たとえばPhaseoモデル`openai/gpt-5.6-terra`はAiderでは`openai/openai/gpt-5.6-terra`になります。
+
+## 関連項目
+
+- [AiderのOpenAI互換APIドキュメント](https://aider.chat/docs/llms/openai-compat.html)
+- [AiderのYAML設定](https://aider.chat/docs/config/aider_conf.html)
+- [コーディングエージェント](./coding-assistants.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,25 @@
+---
+icon: "radio"
+title: "Datenstromübertragung"
+description: "Übertrage Text, Reasoning, Elemente, Tools und Lifecycle-Ereignisse von Python-Agenten."
+---
+
+`Agent.stream(...)` führt dieselbe Zustandsmaschine wie `run(...)` aus und gibt ein erneut durchlaufbares `AgentStreamResult` zurück:
+
+```python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+Verwende `reasoning_stream()`, `item_stream()`, `tool_stream()` oder `full_stream()` für weitere Projektionen. Python-Elemente sind derzeit Dictionaries und keine native diskriminierte Union.
+
+Rufe `cancel()` auf, um den aktiven Modell-Stream zu stoppen und den Abbruch an lokale Runtime-Arbeiten weiterzugeben.
+
+## Weiterführende Themen
+
+- [Werkzeuge](./agent-sdk-tools.mdx)
+- [Observability und DevTools](./agent-sdk-observability.mdx)

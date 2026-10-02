@@ -1,0 +1,42 @@
+---
+icon: "square-terminal"
+title: "示例"
+description: "从完整的 Agent SDK 模式入手，涵盖研究、支持、编程和并行工具。"
+---
+
+选择与你构建的产品相匹配的最小示例。每种模式都由你的应用负责持久化和用户界面，并使用 Phaseo 处理模型轮次。
+
+## 包中示例
+
+| 示例 | 用途 |
+| --- | --- |
+| `research-brief-agent.ts` | 使用托管搜索进行研究，并生成类型化的最终简报 |
+| `support-triage-agent.ts` | 使用托管预设路由和分类支持请求 |
+| `coding-review-agent.ts` | 使用本地运行时工具审查代码 |
+| `parallel-tool-agent.ts` | 并行运行相互独立的本地工具 |
+
+## Cookbook 指南
+
+<CardGroup cols={2}>
+  <Card title="持久化 Agent 循环" icon="database" href="../../cookbook/agent-sdk-durable-loop.mdx">
+    保存返回的运行状态，并在后续请求中继续运行。
+  </Card>
+  <Card title="研究简报" icon="search-check" href="../../cookbook/agent-sdk-research-brief.mdx">
+    将 Agent 与有依据的网络研究结合起来。
+  </Card>
+  <Card title="支持请求分流" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage.mdx">
+    将路由和提示词默认值保存在托管预设中。
+  </Card>
+  <Card title="代码审查" icon="code-2" href="../../cookbook/agent-sdk-coding-review.mdx">
+    将专用本地工具接入编程工作流。
+  </Card>
+  <Card title="并行工具" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools.mdx">
+    并行发起相互独立的工具调用，同时保持结果顺序不变。
+  </Card>
+</CardGroup>
+
+## 相关参考
+
+- [构建你的第一个 Agent](./agent-sdk.mdx)
+- [工具](./agent-sdk-tools.mdx)
+- [状态与审批](./agent-sdk-state-and-approval.mdx)

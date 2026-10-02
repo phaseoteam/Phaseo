@@ -1,6 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
+import { localizedGatewayMetricWindow } from "@/components/landingPage/gatewayMetricWindow";
 import {
 	BarChart3,
 	Boxes,
@@ -35,6 +38,7 @@ type HeroStatItem = {
 };
 
 function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
+	const t = useTranslations("Site.gatewayHero");
 	return (
 		<div className="mt-10 flex flex-wrap items-center gap-4">
 			<Button
@@ -47,7 +51,7 @@ function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" })
 				}
 			>
 				<Link href={SALES_HREF}>
-					Start free
+					{t("startFree")}
 					<ArrowRight className="h-4 w-4" />
 				</Link>
 			</Button>
@@ -59,7 +63,7 @@ function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" })
 			>
 				<Link href={DOCS_HREF}>
 					<Globe2 className="h-4 w-4" />
-					View documentation
+					{t("viewDocumentation")}
 				</Link>
 			</Button>
 		</div>
@@ -71,31 +75,24 @@ function ClassicHeroIntro({
 }: {
 	heroStats: HeroStatItem[];
 }) {
+	const t = useTranslations("Site.gatewayHero");
 	const [tokensStat, modelsStat, providersStat] = heroStats;
 
 	return (
 		<div className="space-y-10">
 			<div className="mx-auto max-w-4xl text-center">
 				<h1 className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
-					The Unified AI Gateway for{" "}
+					{t("classicTitle")}{" "}
 					<span className="relative text-sky-700 dark:text-sky-300">
 						<WordRotate
-							words={[
-								"AI Models",
-								"LLMs",
-								"Vision Models",
-								"Audio Models",
-								"Embeddings",
-								"Agents",
-							]}
+							words={t.raw("classicRotatingWords") as string[]}
 							duration={4000}
 						/>
 					</span>
 				</h1>
 
 				<p className="mt-6 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-					Keep your existing SDK shape, route across providers, and control
-					latency, pricing, and failover from one OpenAI-compatible surface.
+					{t("classicDescription")}
 				</p>
 
 				<div className="flex justify-center">
@@ -105,7 +102,7 @@ function ClassicHeroIntro({
 			<div className="mx-auto grid max-w-3xl gap-8 border-t border-zinc-200/80 pt-6 text-center text-sm dark:border-zinc-800 md:grid-cols-3">
 				<div className="space-y-1">
 					<p className="text-zinc-500 dark:text-zinc-400">
-						{tokensStat?.label ?? "Monthly tokens"}
+						{tokensStat?.label ?? t("monthlyTokens")}
 					</p>
 					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
 						{tokensStat?.value ?? "--"}
@@ -113,7 +110,7 @@ function ClassicHeroIntro({
 				</div>
 				<div className="space-y-1">
 					<p className="text-zinc-500 dark:text-zinc-400">
-						{modelsStat?.label ?? "Models"}
+						{modelsStat?.label ?? t("models")}
 					</p>
 					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
 						{modelsStat?.value ?? "--"}
@@ -121,7 +118,7 @@ function ClassicHeroIntro({
 				</div>
 				<div className="space-y-1">
 					<p className="text-zinc-500 dark:text-zinc-400">
-						{providersStat?.label ?? "Providers"}
+						{providersStat?.label ?? t("providers")}
 					</p>
 					<p className="text-3xl font-semibold tracking-[-0.04em] text-zinc-950 dark:text-zinc-50">
 						{providersStat?.value ?? "--"}
@@ -133,33 +130,27 @@ function ClassicHeroIntro({
 }
 
 function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
+	const t = useTranslations("Site.gatewayHero");
 	return (
 		<div className="rounded-[2.25rem] border border-zinc-200/70 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950 sm:p-10">
 			<div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
 				<div>
 					<Badge className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs uppercase tracking-[0.22em] text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
-						Experimental Gateway Hero
+						{t("experimentalBadge")}
 					</Badge>
 
 					<h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-5xl lg:text-6xl">
-						Routing Infrastructure For{" "}
+						{t("experimentalTitle")}{" "}
 						<span className="relative whitespace-nowrap text-emerald-700 dark:text-emerald-300">
 							<WordRotate
-								words={[
-									"Production AI",
-									"Latency SLAs",
-									"Multi-Cloud Failover",
-									"Cost Controls",
-								]}
+								words={t.raw("experimentalRotatingWords") as string[]}
 								duration={4200}
 							/>
 						</span>
 					</h1>
 
 					<p className="mt-5 max-w-2xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-						Keep your current model stack, remove provider lock-in, and ship
-						with tighter control over routing, reliability, and spend under one
-						unified API contract.
+					{t("experimentalDescription")}
 					</p>
 
 					<HeroActions ctaVariant="experimental" />
@@ -183,7 +174,7 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 
 				<div className="rounded-3xl border border-zinc-200/80 bg-zinc-950 p-6 text-zinc-100 dark:border-zinc-800">
 					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-						Routing cockpit
+						{t("routingCockpit")}
 					</p>
 					<div className="mt-5 space-y-4">
 						<div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
@@ -191,10 +182,9 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 								<Route className="h-4 w-4 text-emerald-300" />
 							</div>
 							<div>
-								<p className="text-sm font-semibold">Policy-driven routing</p>
+								<p className="text-sm font-semibold">{t("policyDrivenRouting")}</p>
 								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Route by latency budget, model quality, and provider health
-									in real time.
+									{t("policyDrivenRoutingDescription")}
 								</p>
 							</div>
 						</div>
@@ -203,9 +193,9 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 								<Cpu className="h-4 w-4 text-sky-300" />
 							</div>
 							<div>
-								<p className="text-sm font-semibold">Model portability</p>
+								<p className="text-sm font-semibold">{t("modelPortability")}</p>
 								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Swap providers without rewriting your SDK integration layer.
+									{t("modelPortabilityDescription")}
 								</p>
 							</div>
 						</div>
@@ -214,10 +204,9 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 								<ShieldCheck className="h-4 w-4 text-amber-300" />
 							</div>
 							<div>
-								<p className="text-sm font-semibold">Production guardrails</p>
+								<p className="text-sm font-semibold">{t("productionGuardrails")}</p>
 								<p className="mt-1 text-xs leading-relaxed text-zinc-400">
-									Enforce rate limits, spending boundaries, and fallback rules
-									with one control plane.
+									{t("productionGuardrailsDescription")}
 								</p>
 							</div>
 						</div>
@@ -225,10 +214,10 @@ function ExperimentalHeroIntro({ heroStats }: { heroStats: HeroStatItem[] }) {
 
 					<div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/70 p-4">
 						<div className="mb-2 flex items-center justify-between text-xs font-medium text-zinc-400">
-							<span>Live request efficiency</span>
+							<span>{t("liveRequestEfficiency")}</span>
 							<span className="inline-flex items-center gap-1 text-emerald-300">
 								<Zap className="h-3.5 w-3.5" />
-								Stable
+								{t("stable")}
 							</span>
 						</div>
 						<div className="h-2 overflow-hidden rounded-full bg-zinc-800">
@@ -250,6 +239,9 @@ export function Hero({
 	tokensWindowHours?: number;
 	heroVariant?: GatewayHeroVariant;
 }) {
+	const t = useTranslations("Site.gatewayHero");
+	const tLanding = useTranslations("SettingsUI.landingGaps");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const roundTo = (value: number | null, step: number) => {
 		if (value == null) return null;
@@ -261,34 +253,28 @@ export function Hero({
 	};
 	const formatTokens = (value: number | null, fallback = "0+") => {
 		if (value == null) return fallback;
-		return <>{format.number(value, { maximumFractionDigits: 0 })}+</>;
-	};
-	const formatWindow = (hours: number) => {
-		if (!Number.isFinite(hours) || hours <= 0) return "24h";
-		if (hours % (24 * 30) === 0) return `${Math.round(hours / (24 * 30))}mo`;
-		if (hours % 24 === 0) return `${Math.round(hours / 24)}d`;
-		return `${Math.round(hours)}h`;
+		return `${formatRoundedCount(value, locale)}+`;
 	};
 	const tokensWindowLabel =
 		tokensWindowHours >= 24 * 28
-			? "Monthly tokens"
-			: `${formatWindow(tokensWindowHours)} tokens`;
+			? t("monthlyTokens")
+			: tLanding("tokensWindow", { window: localizedGatewayMetricWindow(tokensWindowHours, locale, tLanding("selectedWindow")) });
 
 	const heroStats = [
 		{
-			label: tokensWindowLabel,
+			label: tokensWindowHours >= 24 * 28 ? t("monthlyTokens") : tokensWindowLabel,
 			value: formatTokens(stats?.tokens24h ?? null),
 			icon: BarChart3,
 			accent: "#10b981",
 		},
 		{
-			label: "Models",
+			label: t("models"),
 			value: formatWithPlus(roundTo(stats?.supportedModels ?? null, 25)),
 			icon: Boxes,
 			accent: "#f59e0b",
 		},
 		{
-			label: "Providers",
+			label: t("providers"),
 			value: formatWithPlus(roundTo(stats?.supportedProviders ?? null, 5)),
 			icon: Network,
 			accent: "#8b5cf6",

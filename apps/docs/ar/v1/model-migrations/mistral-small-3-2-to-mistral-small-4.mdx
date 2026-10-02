@@ -1,0 +1,67 @@
+---
+title: "Mistral Small 4"
+description: "ما ينبغي معرفته لاعتماد Mistral Small 4، بما في ذلك ضوابط الاستدلال وحقول الاستجابة الموحّدة."
+icon: "/icons/brands/mistral.svg"
+---
+
+# Mistral Small 4
+
+استخدم هذا الدليل لاعتماد Mistral Small 4 بأمان عبر Phaseo Gateway:
+
+- `mistral/mistral-small-4-2026-03-16`
+
+## الجديد
+
+- يتيح Mistral Small 4 التحكم في وضع الاستدلال عبر `reasoning_effort`.
+- لا يرسل Gateway إلى المزوّد إلا قيمتين لهذا المسار:
+  - `none` (إيقاف الاستدلال)
+  - `high` (تفعيل الاستدلال)
+- يوحّد Gateway كتل التفكير من Mistral ضمن حقول الاستجابة القياسية:
+  - `message.content` للنص الظاهر للمستخدم
+  - `message.reasoning_content` و`message.reasoning_details` لنص الاستدلال
+
+## البدء السريع للترحيل
+
+يكون الاستدلال متوقفًا افتراضيًا لهذا المسار.
+
+قواعد تعيين Gateway:
+
+- عند إغفال ضوابط الاستدلال، يرسل Gateway `reasoning_effort: "none"`.
+- عند تمرير `reasoning.enabled: true`، يرسل Gateway `reasoning_effort: "high"`.
+- عند تمرير `reasoning.effort: "none"`، يرسل Gateway `reasoning_effort: "none"`.
+- عند تمرير أي قيمة أخرى لـ `reasoning.effort`، يرسل Gateway `reasoning_effort: "high"`.
+
+الاستخدام الموصى به:
+
+- استخدم `reasoning.effort: "none"` للمهام الخفيفة.
+- استخدم `reasoning.effort: "high"` للاستدلال المتعمق.
+
+مثال:
+
+```json
+{
+  "model": "mistral/mistral-small-4-2026-03-16",
+  "messages": [
+    { "role": "user", "content": "Why is fast inference important?" }
+  ],
+  "reasoning": {
+    "effort": "high"
+  }
+}
+```
+
+## ملاحظات معالجة الاستجابة
+
+قد يعيد Mistral كتل محتوى مختلطة للمساعد، مثل `thinking` و`text`. يحوّلها Gateway إلى بنية ثابتة:
+
+- الإجابة النهائية الظاهرة للمستخدم في `choices[0].message.content`.
+- نص الاستدلال في `choices[0].message.reasoning_content`.
+
+وهذا يحافظ على سلوك الأنظمة اللاحقة التي تتوقع حقول إكمال المحادثة بأسلوب OpenAI.
+
+## قائمة التحقق للطرح
+
+1. حدّث معرّف النموذج إلى `mistral/mistral-small-4-2026-03-16`.
+2. تحقّق من ضوابط الاستدلال باستخدام `none` و`high` فقط.
+3. أعد اختبارات جودة المخرجات والمخططات لمسارات الجهد العالي.
+4. قارن زمن الاستجابة والتكلفة بين `none` و`high` قبل التحويل الكامل.

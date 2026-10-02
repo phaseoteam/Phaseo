@@ -1,0 +1,58 @@
+---
+title: "Bonnes pratiques"
+description: "Créez des fonctionnalités d’IA fiables grâce à ces recommandations d’architecture, de sécurité et d’observabilité."
+icon: "clipboard-check"
+---
+
+Déployer Gateway en production est simple si vous posez de bonnes bases. Suivez ces recommandations pour améliorer la résilience, la sécurité et la maintenabilité.
+
+---
+
+## Architecture
+
+-   **Isolez la logique des fournisseurs.** Regroupez les appels Gateway dans un service dédié ou un SDK afin de circonscrire les changements.
+-   **Diffusez les réponses en streaming lorsque c’est possible.** Réduisez la latence des assistants en transmettant les tokens à l’interface au fur et à mesure.
+-   **Regroupez les tâches non critiques.** Mettez en file d’attente les générations ou évaluations en arrière-plan pour lisser les pics de trafic.
+
+---
+
+## Sécurité
+
+-   En production, stockez les clés API dans des gestionnaires de secrets (AWS Secrets Manager, Doppler, 1Password) plutôt que dans des fichiers `.env`.
+-   Activez la signature des requêtes sur vos propres API afin que les applications clientes n’exposent jamais les clés Gateway.
+-   Ne journalisez que des clés tronquées (par exemple `sk_prod_abcd...`) pour éviter de divulguer des identifiants.
+
+---
+
+## Fiabilité
+
+-   Appliquez un délai exponentiel avec jitter à toutes les erreurs pouvant être réessayées (HTTP 429 ou 5xx).
+-   Avant de réessayer une requête limitée, respectez l’en-tête [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After).
+-   Surveillez les métadonnées des fournisseurs pour repérer les basculements automatiques d’un prestataire à un autre.
+
+---
+
+## Observabilité
+
+| Indicateur        | Action recommandée                                                |
+| ------------- | ----------------------------------------------------------------- |
+| Latence       | Suivez les temps p95 et p99 pour détecter rapidement les régressions.             |
+| Utilisation des tokens   | Comparez les coûts aux indicateurs métier pour évaluer le retour sur investissement.            |
+| Taux d’erreur   | Déclenchez une alerte si les échecs dépassent 1 % pendant une période prolongée.             |
+| Répartition des fournisseurs  | Vérifiez que le trafic est réparti entre les fournisseurs comme prévu.         |
+
+---
+
+## Collaboration
+
+-   Documentez les modèles de prompts, les paramètres d’entrée et le traitement des sorties dans votre wiki interne.
+-   Partagez des tableaux de bord qui mettent en évidence l’évolution des benchmarks et leur impact sur le produit.
+-   Organisez régulièrement des revues avec les équipes produit, recherche et assistance pour maintenir la cohérence.
+
+---
+
+## Pour aller plus loin
+
+-   Apprenez à [gérer les erreurs](../api-reference/errors.mdx) correctement.
+-   Consultez les [limites de débit](../api-reference/limits.mdx) pour anticiper la montée en charge.
+-   Découvrez les [exemples](../guides/examples.mdx) de référence.

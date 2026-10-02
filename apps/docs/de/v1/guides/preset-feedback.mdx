@@ -1,0 +1,98 @@
+---
+title: "Feedback zu Presets erfassen"
+description: "Erfasse Antwortbewertungen und vergleiche die Preset-Qualität im Phaseo-Dashboard."
+icon: "message-square-more"
+---
+
+Mit Preset Feedback kannst du Bewertungen deiner Anwendung dem Preset zuordnen, das eine Antwort erzeugt hat. Vergleiche damit Prompt- und Routingänderungen anhand echter Nutzersignale, statt dich nur auf Latenz und Kosten zu verlassen.
+
+<Note>
+Preset Feedback befindet sich in der Alpha-Phase. Wir verbessern API und Dashboard laufend anhand der Art, wie Teams KI-Antworten in der Produktion bewerten. Über die Schaltfläche **Feedback** auf der [Preset-Feedback-Seite](https://phaseo.app/settings/presets/experiments) kannst du uns mitteilen, was die Funktion nützlicher machen würde.
+</Note>
+
+## Vor dem Start
+
+Du benötigst:
+
+- Einen Phaseo-API-Schlüssel mit der Fähigkeit `feedback:write`
+- Die von Phaseo zurückgegebene Anfrage-ID
+- Die UUID des Presets, das du analysieren möchtest
+
+Gib beim Erfassen von Feedback die Preset-ID an. Nur so erscheint das Ereignis in Preset-Vergleichen und Kohortenanalysen.
+
+## Bewertung erfassen
+
+Sende Feedback, nachdem ein Benutzer eine Antwort bewertet hat oder deine Anwendung ein Ergebnis ermittelt hat.
+
+```bash cURL
+curl https://api.phaseo.app/v1/feedback \
+  -X POST \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "requestId": "gen_01K...",
+    "presetId": "8f54b2d9-9ba3-4ced-8a7f-9bb70a44dbea",
+    "rating": "thumbs_up",
+    "score": 1,
+    "comment": "The answer resolved the customer question.",
+    "metadataDimensions": {
+      "plan": "pro",
+      "surface": "support_chat"
+    }
+  }'
+```
+
+Ein Feedback-Ereignis muss sich auf mindestens eine Anfrage, Sitzung, ein Preset oder einen Testlauf beziehen. Scores sind optional und müssen zwischen `0` und `1` liegen.
+
+## Bewertung auswählen
+
+Wähle eine Bewertung, die das tatsächlich erfasste Signal beschreibt:
+
+- `thumbs_up` oder `thumbs_down` für einfache Nutzerreaktionen
+- `correct`, `partly_correct` oder `incorrect` für bewertete Antworten
+- `bad_format`, `too_slow` oder `too_expensive` bei Betriebsproblemen
+- `unsafe` oder `refused_incorrectly` bei Sicherheitsergebnissen
+- `not_helpful` oder `other`, wenn keine andere Option passt
+
+Wandle nicht jedes Signal in einen numerischen Score um. Explizite Bewertungen lassen sich im Dashboard leichter vergleichen und erklären.
+
+## Presets vergleichen
+
+Öffne [Einstellungen → Presets → Feedback](https://phaseo.app/settings/presets/experiments), um:
+
+- positive, teilweise und negative Bewertungen vergleichen
+- ein Baseline-Preset auswählen
+- nach Datum, Bewertung und Metadaten-Dimensionen filtern
+- die Anfrage, Sitzung, Kommentare und Tags eines Ereignisses untersuchen
+
+Füge Werte mit niedriger Kardinalität wie Tarif, Deployment, Sprache oder Anwendungsoberfläche zu `metadataDimensions` hinzu. Beliebigen oder hochkardinalen Kontext speicherst du stattdessen in `metadata`.
+
+## Feedback über die API abrufen
+
+Aktuelle Ereignisse auflisten:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Eine serverseitige Zusammenfassung anfordern:
+
+```bash
+curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+Lesezugriffe erfordern `feedback:read`. Die Ergebnisse sind auf den authentifizierten Workspace und die für den Aufrufer sichtbaren Presets beschränkt.
+
+## Aktuelle Alpha-Grenzen
+
+Das Dashboard analysiert im ausgewählten Zeitraum höchstens die 10.000 neuesten passenden Feedback-Zeilen.
+Preset-Vergleiche verwenden explizite Bewertungen; numerische Scores dienen als ergänzende Details.
+APIs für Testläufe und benutzerdefinierte Ergebnisereignisse sind verfügbar, die zugehörigen Dashboard-Workflows werden jedoch noch weiterentwickelt.
+
+## Zugehörige Anleitungen
+
+- [Presets](./presets.mdx)
+- [Presets ausrollen und Routing untersuchen](../cookbook/preset-rollout-and-routing-debug.mdx)
+- [App-Zuordnung](./app-attribution.mdx)

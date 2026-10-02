@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "输出与重试"
+description: "验证最终输出，重试临时模型故障，并应用托管的路由默认值。"
+---
+
+如果应用的其他部分需要有类型的值而不是自由文本，请使用输出解析。针对临时模型故障设置有限次数的重试，同时让应用能够处理验证和策略错误。
+
+## 解析类型化输出
+
+`parseOutput` 代理循环完成后，`parseOutput` 会转换最终文本：
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+如需更严格地约束模型行为，可将解析与 Gateway 客户端的结构化响应结合使用：
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## 重试模型请求
+
+如果需要在当前运行中重试临时模型故障，请使用 `modelRetry`：
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` 表示首次请求后的重试次数。最终尝试次数会作为 `modelAttempts` 存储在步骤中。
+
+## 使用托管的路由默认值
+
+如果路由、提示词或参数默认值应保留在控制台中，请使用 `preset`：
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Gateway 适配器还可以传递 `responseFormat`、`plugins`、`gatewayTools`、`toolChoice`、`webSearchOptions`、`providerOptions`、`promptCacheKey` 和 `includeMeta`。
+
+## 相关指南
+
+- [更改后续模型轮次](./agent-sdk-dynamic-turns.mdx)
+- [安全停止代理](./agent-sdk-stop-conditions.mdx)
+- [处理错误](./agent-sdk-events-and-errors.mdx)

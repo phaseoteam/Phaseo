@@ -1,0 +1,29 @@
+---
+icon: "image"
+title: "الصور (AI SDK)"
+description: "أنشئ الصور باستخدام Vercel AI SDK ومزوّد Phaseo."
+---
+
+استخدم `generateImage` مع `phaseo.imageModel(...)`.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateImage } from "ai";
+
+const result = await generateImage({
+  model: phaseo.imageModel("openai/gpt-image-1"),
+  prompt: "A minimalist poster of a lighthouse at dawn.",
+  size: "1024x1024",
+});
+
+console.log(result.images[0].mediaType);
+console.log(result.images[0].uint8Array.length);
+console.log(result.providerMetadata);
+```
+
+## ملاحظات
+
+- تعتمد قيم `size` المتاحة على النموذج المحدد.
+- تُحوّل استجابات الصور في البوابة المعتمدة على URL إلى صيغة ملفات AI SDK؛ لذا اقرأ أولًا الحقلين الثابتين `uint8Array` و`mediaType`.
+- لسير العمل الحتمي، احفظ الموجّه والنموذج والمعلمات معًا.
+- احفظ بيانات الصورة الوصفية المعادة مع مراجع الأصول.

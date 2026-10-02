@@ -1,0 +1,126 @@
+---
+icon: "book-open"
+title: "الاستخدام"
+description: "أنشئ عميل Rust وأرسل طلبات Gateway وتعامل مع الاستجابات والأخطاء."
+---
+
+استخدم `Phaseo` عندما تحتاج خدمة Rust إلى عميل متزامن لـ Phaseo Gateway.
+
+## إنشاء عميل
+
+حمّل مفتاح API وعنوان URL الأساسي الاختياري من البيئة:
+
+```rust
+use phaseo::Phaseo;
+
+let client = Phaseo::from_env()?;
+```
+
+أو مرّر المفتاح مباشرةً:
+
+```rust
+use phaseo::Phaseo;
+
+let client = Phaseo::new("phaseo_v1_sk_...")?;
+```
+
+يحجب `Phaseo` مفتاح API وقيم الترويسات المخصصة في مخرجات `Debug`.
+
+## إرسال طلب Responses
+
+```rust
+use phaseo::Phaseo;
+use serde_json::{json, Value};
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Summarize why provider fallbacks improve reliability."
+    }))?;
+
+    let text = response.body
+        .get("output")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+        .flat_map(|item| {
+            item.get("content")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+        })
+        .find_map(|part| {
+            (part.get("type").and_then(Value::as_str) == Some("output_text"))
+                .then(|| part.get("text").and_then(Value::as_str))
+                .flatten()
+        })
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+تظل استجابة JSON الكاملة متاحة في `response.body`.
+
+## إرسال طلب Chat Completions
+
+```rust
+let response = client.chat_completions(&json!({
+    "model": "openai/gpt-6-astra",
+    "messages": [{
+        "role": "user",
+        "content": "Reply with exactly: chat works"
+    }]
+}))?;
+
+println!("{}", response.body);
+```
+
+## استدعاء نقطة نهاية JSON أخرى
+
+استخدم `post(...)` لنقطة نهاية Phaseo التي لا تملك بعد دالة مساعدة عالية المستوى:
+
+```rust
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-small",
+    "input": "Phaseo routes across AI providers"
+}))?;
+```
+
+يمكن أن يتضمن المسار الشرطة المائلة الأولى أو يحذفها.
+
+## إضافة ترويسة للطلب
+
+```rust
+let client = Phaseo::from_env()?
+    .with_header("x-phaseo-workspace-id", "workspace_123");
+```
+
+## التعامل مع أخطاء Gateway
+
+```rust
+let request = serde_json::json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Handle this request"
+});
+
+match client.responses(&request) {
+    Ok(response) => println!("{}", response.body),
+    Err(error) => {
+        eprintln!("message: {}", error.message);
+        eprintln!("status: {:?}", error.status);
+        eprintln!("body: {:?}", error.body);
+    }
+}
+```
+
+يتضمن `PhaseoError` حالة HTTP ونص JSON الذي جرى تحليله عندما يعيد Gateway خطأً. ولا تتضمن إخفاقات النقل والإعداد حالة HTTP.
+
+## التالي
+
+- [Responses API](./responses.mdx)
+- [Chat Completions](./chat-completions.mdx)
+- [مرجع Rust API](./api-reference.mdx)

@@ -1,0 +1,56 @@
+---
+icon: "files"
+title: "ファイル"
+description: "TypeScript SDKで/filesを呼び出します。"
+---
+
+**メソッド**：`client.uploadFile()`、`client.listFiles()`、`client.getFile()`、`client.getFileContent()`。
+
+### 例
+```typescript
+const uploaded = await client.uploadFile({ purpose: "batch", file: new Blob(["{}"]) });
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id);
+```
+
+<Note>
+`client.listFiles()`は使用できますが、`GET /files`は現在`file_list_not_supported_with_shared_gateway_key`を返します。
+共有ゲートウェイキーを使う場合です。`uploaded.id`の値を保存し、ファイルを直接取得してください。
+</Note>
+
+### 主なパラメーター
+- `file`（アップロード時は必須）：Blob/File/base64/文字列。
+- `purpose`（アップロード時は必須）：例 `batch`。
+
+### 戻り値
+`FileObject`（アップロード／取得）
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```
+
+または`FileListResponse`（基盤プロバイダーのキーがファイル一覧に対応している場合の一覧結果）
+
+```json
+{
+  "data": [
+    {
+      "id": "file-123",
+      "object": "file",
+      "filename": "data.json",
+      "purpose": "batch",
+      "status": "processed",
+      "created_at": 1677610602,
+      "bytes": 123
+    }
+  ]
+}
+```

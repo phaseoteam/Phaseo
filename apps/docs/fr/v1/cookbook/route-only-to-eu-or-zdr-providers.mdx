@@ -1,0 +1,126 @@
+---
+title: "Router uniquement vers des fournisseurs de l’UE ou compatibles ZDR"
+icon: "globe"
+description: "Appliquez des exigences de résidence et de conservation nulle à une requête afin de ne router que vers des offres fournisseurs conformes."
+---
+
+Utilisez cette recette lorsqu’une requête doit filtrer les fournisseurs pour des raisons de conformité ou de traitement des données, sans modifier la politique de tout l’espace de travail.
+
+## Objectif
+
+- Exiger une exécution dans l’UE.
+- Exiger une résidence des données dans l’UE.
+- Exiger des fournisseurs compatibles avec la conservation nulle des données.
+
+## 1. Ajouter les exigences de résidence à la requête
+
+Définissez les exigences du fournisseur directement dans le corps de la requête.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemini-3.1-flash-lite",
+    "input": "Summarize the ticket in one line.",
+    "provider": {
+      "required_execution_region": "eu",
+      "required_data_region": "eu",
+      "require_zero_data_retention": true
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateResponse({
+  model: "google/gemini-3.1-flash-lite",
+  input: "Summarize the ticket in one line.",
+  provider: {
+    required_execution_region: "eu",
+    required_data_region: "eu",
+    require_zero_data_retention: true,
+  },
+});
+
+console.log(response.output_text);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo(api_key="YOUR_API_KEY")
+
+response = client.generate_response(
+    {
+        "model": "google/gemini-3.1-flash-lite",
+        "input": "Summarize the ticket in one line.",
+        "provider": {
+            "required_execution_region": "eu",
+            "required_data_region": "eu",
+            "require_zero_data_retention": True,
+        },
+    }
+)
+
+print(response.get("output_text"))
+```
+</CodeGroup>
+
+Filtres compatibles au niveau de la requête pour ce parcours :
+
+- `required_execution_region`
+- `required_data_region`
+- `require_zero_data_retention`
+
+## 2. Utiliser le jeu de règles minimal adapté à la politique
+
+N’exigez que ce dont la charge de travail a réellement besoin.
+
+Exemples :
+
+- localisation de l’exécution uniquement :
+  - `required_execution_region: "eu"`
+- localisation des données uniquement :
+  - `required_data_region: "eu"`
+- fournisseurs compatibles ZDR uniquement :
+  - `require_zero_data_retention: true`
+
+## 3. Prévoir un nombre réduit de candidats
+
+Ces filtres sont appliqués avant le classement des fournisseurs et peuvent donc en exclure complètement.
+
+Cela signifie que :
+
+- la requête peut être routée vers une offre régionale plus coûteuse
+- la liste des fournisseurs peut fortement diminuer
+- la requête peut échouer si aucun fournisseur de ce modèle ne respecte les exigences
+
+## 4. Vérifier la page du modèle en amont, si possible
+
+Avant de déployer la requête, consultez les cartes fournisseurs de la page du modèle pour examiner :
+
+- les offres régionales, telles que `OpenAI EU` ou `Google Vertex EU`
+- la prise en charge de ZDR
+- les notes et les sources sur les politiques de données des fournisseurs
+
+Vous pouvez ainsi vérifier qu’au moins un fournisseur est admissible avant d’imposer cette exigence au trafic de production.
+
+## 5. Utiliser les paramètres de confidentialité de l’espace de travail comme valeurs par défaut
+
+Si la politique doit s’appliquer à toutes les requêtes d’un espace de travail, configurez-la dans **Paramètres -> Confidentialité** au lieu de recopier les mêmes filtres dans chaque requête.
+
+Utilisez les champs de la requête lorsque la règle concerne :
+
+- un flux de travail
+- un client
+- une requête
+
+## Guides associés
+
+- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
+- [Préréglages](../guides/presets.mdx)

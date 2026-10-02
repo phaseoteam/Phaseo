@@ -1,0 +1,155 @@
+---
+title: "मैनेज्ड वेब सर्च से TypeScript SDK वर्कफ़्लो को आधार दें"
+icon: "search"
+description: "आधारयुक्त और आसानी से डीबग होने वाला वर्कफ़्लो बनाने के लिए आधिकारिक TypeScript SDK, मैनेज्ड वेब सर्च और रिस्पॉन्स मेटाडेटा इस्तेमाल करें।"
+---
+
+जब किसी TypeScript या JavaScript सेवा को ये सुविधाएँ जोड़नी हों, तब यह तरीका अपनाएँ:
+
+- प्रीसेट से मिलने वाले रूटिंग डिफ़ॉल्ट
+- मैनेज्ड `phaseo:web_search` टूल
+- सख्त रिस्पॉन्स पार्सिंग
+- डीबगिंग के लिए अनुरोध-स्तर का मेटाडेटा
+
+## लक्ष्य
+
+- कॉलर को आधिकारिक SDK पर बनाए रखना
+- raw compatibility payload हाथ से फिर से बनाने से बचना
+- सर्च नतीजे, रूटिंग और प्लगइन व्यवहार डीबग करने के लिए पर्याप्त मेटाडेटा रखना
+
+## 1. एक साझा क्लाइंट से शुरू करें
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. स्थिर डिफ़ॉल्ट पहले प्रीसेट में रखें
+
+जब कई कॉलर को ये चीज़ें साझा करनी हों, तो प्रीसेट बनाएँ:
+
+- मॉडल नीति
+- प्रोवाइडर प्राथमिकताएँ
+- रीजनिंग डिफ़ॉल्ट
+- सिस्टम प्रॉम्प्ट
+- नियतात्मक कैशिंग व्यवहार
+
+फिर SDK अनुरोध में केवल वही वैल्यू रखें जो इस कॉल में बदलती हैं।
+
+## 3. मैनेज्ड सर्च टूल से आधारयुक्त आउटपुट माँगें
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+इससे आपको मिलता है:
+
+- प्रीसेट से मैनेज होने वाले रूटिंग और प्रॉम्प्ट डिफ़ॉल्ट
+- सर्वर द्वारा मैनेज्ड सर्च, जो प्रोवाइडर की नेटिव सर्च क्षमता पर निर्भर नहीं है
+- आगे के चरणों में भरोसेमंद पार्सिंग के लिए स्ट्रक्चर्ड आउटपुट
+- ऑपरेशनल डीबगिंग के लिए ज़रूरी मेटाडेटा
+
+## 4. आउटपुट पार्स करें और डीबग फ़ील्ड बनाए रखें
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+इन फ़ील्ड से पता लगाना आसान होता है:
+
+- अनुरोध को वास्तव में किस प्रोवाइडर ने पूरा किया
+- मैनेज्ड सर्च चला या नहीं
+- रिस्पॉन्स सुधार चला या नहीं
+- डैशबोर्ड में किस अनुरोध की जाँच करनी है
+
+## 5. लॉग में आधारयुक्त अनुरोध की पुष्टि करें
+
+अनुरोध को **Gateway -> Usage** में खोलें और देखें:
+
+- सामान्यीकृत सर्च नतीजे
+- उद्धरण
+- प्रोवाइडर चयन
+- प्लगइन रन मेटाडेटा
+
+अगर सर्च का व्यवहार या रैंकिंग गलत लगती है, तो बिना सोचे overrides जोड़ने के बजाय लॉग के प्रमाण के आधार पर प्रीसेट या टूल पैरामीटर ठीक करें।
+
+## 6. खोजपरक और नियतात्मक वर्कफ़्लो अलग रखें
+
+सुझाया गया तरीका:
+
+1. नियतात्मक स्ट्रक्चर्ड रिसर्च आउटपुट के लिए एक प्रीसेट
+2. खोजपरक या अधिक temperature वाले अनुरोधों के लिए दूसरा प्रीसेट
+
+इससे:
+
+- रिस्पॉन्स कैश व्यवस्थित रहता है
+- रूटिंग व्यवहार समझना आसान होता है
+- अधिक सर्च वाले वर्कफ़्लो सामान्य जनरेशन ट्रैफ़िक से अलग रहते हैं
+
+## संबंधित गाइड
+
+- [वेब सर्च अनुरोध डीबग करें](./web-search-debugging.mdx)
+- [प्रीसेट लागू करें और रूटिंग डीबग करें](./preset-rollout-and-routing-debug.mdx)
+- [स्ट्रक्चर्ड JSON के लिए रिस्पॉन्स सुधारें](./response-healing-for-structured-json.mdx)
+- [TypeScript SDK का परिचय](../sdk-reference/typescript/overview.mdx)

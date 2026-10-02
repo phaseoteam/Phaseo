@@ -1,0 +1,132 @@
+---
+title: "使用 Python SDK 和预设输出结构化 JSON"
+icon: "braces"
+description: "使用官方 Python SDK、预设、结构化输出和请求级调试，无需改用原始 HTTP 调用。"
+---
+
+如果 Python 服务需要使用由控制台管理的默认值，而不想在每个请求中重复配置提示词、路由和参数，请使用此方案。
+
+## 目标
+
+- 精简 Python 调用代码
+- 使用预设标识进行路由，而不是在代码中硬编码模型
+- 请求严格的结构化输出
+- 保留足够的响应元数据，以便调试路由或插件行为
+
+## 1. 从共享客户端开始
+
+```python
+import os
+
+from phaseo import Phaseo
+
+gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+```
+
+复用同一个客户端，不要为每个请求重新创建客户端。
+
+## 2. 将稳定的默认值移入预设
+
+如果以下设置需要在多个调用方之间保持一致，请在**控制台 -> 设置 -> 预设**中创建预设：
+
+- 系统提示词
+- 模型或允许使用的模型列表
+- 提供方偏好
+- 推理配置
+- temperature 和相关生成参数
+- 需要确定性重放时使用的响应缓存策略
+
+创建预设后，Python 调用代码可以保持精简。
+
+## 3. 请求一种严格的 JSON 结构
+
+```python
+response = gateway.generate_response(
+    {
+        "preset": "release-summary",
+        "input": "Summarize the last 24 hours of deployment activity.",
+        "response_format": {
+            "type": "json_schema",
+            "name": "release_summary",
+            "schema": {
+                "type": "object",
+                "required": ["summary", "risk_level"],
+                "properties": {
+                    "summary": {"type": "string"},
+                    "risk_level": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high"],
+                    },
+                },
+                "additionalProperties": False,
+            },
+        },
+        "plugins": [{"id": "response-healing"}],
+        "meta": True,
+    }
+)
+```
+
+这种结构的优点：
+
+- `preset` 将路由和提示词默认值放在应用代码之外
+- `response_format` 明确了输出契约
+- 如果工作流允许，`plugins` 可以恢复接近有效但格式错误的 JSON
+- `meta` 保留路由和插件执行详情，便于调试
+
+## 4. 解析 JSON 并记录运行标识
+
+```python
+import json
+
+message_text = ""
+for item in response.get("output", []):
+    if item.get("type") != "message":
+        continue
+    for part in item.get("content", []):
+        if part.get("type") == "output_text":
+            message_text = part.get("text", "")
+            break
+
+payload = json.loads(message_text)
+
+print("response_id:", response.get("id"))
+print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
+print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print(payload)
+```
+
+对于 Python worker，这通常足以将一行应用日志关联到：
+
+- 控制台中的请求详情对话框
+- 路由诊断
+- 插件执行元数据
+
+## 5. 添加覆盖配置前先调试
+
+如果某个请求的路由与预期不同：
+
+1. 在 **Gateway -> 用量** 中打开该请求
+2. 查看路由诊断和候选提供方
+3. 如果涉及结构化 JSON，请检查插件执行元数据
+4. 查看日志确认实际行为后，再更改预设
+
+不要通过添加大量内联请求覆盖配置来修复单个错误请求。这样通常会抵消使用预设的意义。
+
+## 6. 需要复用结果时保持缓存兼容
+
+如果预设启用了响应缓存：
+
+- 保持提示词措辞稳定
+- 保持响应架构稳定
+- 避免不必要的逐请求提供方覆盖
+- 避免频繁变化的工具列表
+
+如果某个调用方确实需要不同的行为，请为它设置另一个预设，不要降低共享工作流的缓存复用率。
+
+## 相关指南
+
+- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)
+- [在预设中使用响应缓存](./response-caching-with-presets.mdx)
+- [修复结构化 JSON 响应](./response-healing-for-structured-json.mdx)
+- [Python SDK 概览](../sdk-reference/python/overview.mdx)

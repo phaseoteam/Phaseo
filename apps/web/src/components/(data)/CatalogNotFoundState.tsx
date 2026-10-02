@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { safelyDecodePathSegments } from "./safePathname";
@@ -12,48 +13,24 @@ export type CatalogResourceType = "model" | "organisation" | "country" | "provid
 const resourceConfig: Record<
 	CatalogResourceType,
 	{
-		articleNoun: string;
 		browseHref: string;
-		browseLabel: string;
-		requestLabel: string;
-		description: string;
 		pathSegments: number;
 	}
 > = {
 	model: {
-		articleNoun: "model",
 		browseHref: "/models",
-		browseLabel: "Browse models",
-		requestLabel: "Request a Model",
-		description:
-			"Recent announcements can arrive before the public catalogue cache catches up. Try again shortly, or tell us where you found the link.",
 		pathSegments: 2,
 	},
 	organisation: {
-		articleNoun: "lab",
 		browseHref: "/organisations",
-		browseLabel: "Browse labs",
-		requestLabel: "Request a Lab",
-		description:
-			"New labs can arrive before their public profile is available. Try again shortly, or tell us where you found the link.",
 		pathSegments: 1,
 	},
 	country: {
-		articleNoun: "country",
 		browseHref: "/countries",
-		browseLabel: "Browse countries",
-		requestLabel: "Request a Country",
-		description:
-			"Country coverage is still expanding. Try again shortly, or tell us which AI ecosystem you would like to see tracked.",
 		pathSegments: 1,
 	},
 	provider: {
-		articleNoun: "API provider",
 		browseHref: "/api-providers",
-		browseLabel: "Browse providers",
-		requestLabel: "Request a Provider",
-		description:
-			"Provider coverage can arrive after a model or route is announced. Try again shortly, or tell us where you found the link.",
 		pathSegments: 1,
 	},
 };
@@ -84,27 +61,50 @@ export default function CatalogNotFoundState({
 	resourceType: CatalogResourceType;
 	resourceId?: string;
 }) {
+	const t = useTranslations("Catalogue.catalogNotFound");
 	const pathname = usePathname();
 	const config = resourceConfig[resourceType];
-	const requestedId = resourceId ?? getResourceIdFromPathname(pathname, resourceType) ?? `the requested ${config.articleNoun}`;
+	const requestedId = resourceId ?? getResourceIdFromPathname(pathname, resourceType) ?? "—";
+	const copy = {
+		model: {
+			heading: t("modelHeading", { id: requestedId }),
+			description: t("modelDescription"),
+			requestLabel: t("requestModel"),
+			browseLabel: t("browseModels"),
+		},
+		organisation: {
+			heading: t("organisationHeading", { id: requestedId }),
+			description: t("organisationDescription"),
+			requestLabel: t("requestLab"),
+			browseLabel: t("browseLabs"),
+		},
+		country: {
+			heading: t("countryHeading", { id: requestedId }),
+			description: t("countryDescription"),
+			requestLabel: t("requestCountry"),
+			browseLabel: t("browseCountries"),
+		},
+		provider: {
+			heading: t("providerHeading", { id: requestedId }),
+			description: t("providerDescription"),
+			requestLabel: t("requestProvider"),
+			browseLabel: t("browseProviders"),
+		},
+	}[resourceType];
 
 	return (
 		<main className="flex flex-1 flex-col">
 			<div className="container mx-auto flex min-h-[62vh] w-full flex-1 items-center justify-center px-4 py-16 sm:px-6 lg:px-8">
 				<div className="w-full max-w-2xl text-center">
 					<h1 className="mx-auto max-w-2xl text-2xl font-bold leading-tight tracking-tight sm:text-3xl">
-						<span className="block break-words">
-							The {config.articleNoun}{" "}
-							<span className="font-mono text-[0.9em]">{requestedId}</span>
-						</span>
-						<span className="block">is not available yet</span>
+						{copy.heading}
 					</h1>
 					<p className="mx-auto mt-5 max-w-lg text-sm leading-6 text-muted-foreground sm:text-base">
-						{config.description}
+						{copy.description}
 					</p>
 
 					<div className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-						<span>{config.requestLabel}</span>
+						<span>{copy.requestLabel}</span>
 						<a
 							href="https://discord.gg/aQyywCvgZ5"
 							target="_blank"
@@ -130,7 +130,7 @@ export default function CatalogNotFoundState({
 						<Button asChild>
 							<Link href={config.browseHref}>
 								<ArrowLeft className="h-4 w-4" />
-								{config.browseLabel}
+								{copy.browseLabel}
 							</Link>
 						</Button>
 					</div>

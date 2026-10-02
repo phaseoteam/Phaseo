@@ -1,0 +1,201 @@
+---
+title: "عرض النماذج"
+sidebarTitle: "عرض النماذج"
+badge: "Beta"
+openapi: "/ar/openapi/v1/openapi.localized.yaml GET /models"
+description: "تصفح النماذج الأصلية في Gateway عبر Phaseo Gateway، مع تفاصيل اختيارية عن توفر النماذج غير القابلة للتوجيه."
+---
+
+تعيد نقطة النهاية هذه افتراضيًا النماذج القابلة للتوجيه حاليًا فقط. اضبط `availability=all` لتضمين النماذج المعروفة غير المتاحة حاليًا.
+
+تُخزّن استجابات الكتالوج مؤقتًا لخمس دقائق، وقد تُقدّم لخمس دقائق إضافية أثناء إعادة التحقق من صلاحية التخزين المؤقت. ينطبق ذلك على صيغ JSON وRSS وAtom للكتالوج الحالي؛ أما موجز الإصدارات فله تخزين مؤقت مستقل وأقصر للاستطلاع.
+
+`GET /models/me` مخصص لتصفية مستقبلية للنماذج وفق ضوابط المتصل الحالي. وهو يعيد حاليًا `501 not implemented`، لذا استخدم `GET /models` للوصول إلى كتالوج Gateway المشترك في الوقت الحالي.
+
+## عوامل تصفية مفيدة
+
+- يستخدم `endpoints` أسماء عامة مثل `chat.completions` و`responses` و`messages`
+- يرشح `status` النماذج حسب دورة حياتها، مثل `active` أو `deprecated` أو `retired`
+- يرشح `provider` حسب معرّف المزوّد العام، مثل `openai` أو `anthropic` أو `google_vertex`
+- يرشح `provider_status` حسب مستوى طرح المزوّد، مثل `active` أو `beta` أو `alpha` أو `not_ready`
+- يرشح `provider_routing_status` حسب حالة توجيه المزوّد
+- يرشح `model_routing_status` حسب حالة توجيه النموذج
+- يرشح `capability_status` حسب حالة إمكانات المزوّد لمطابقة نقطة النهاية المطلوبة
+- يرشح `provider_availability_status` حسب توفر المزوّد، مثل `active` أو `coming_soon` أو `inactive`
+- يرشح `provider_availability_reason` حسب سبب توفر المزوّد، مثل `preview_only` أو `provider_not_ready` أو `gated` أو `access_limited` أو `region_limited`
+- يرشح `organisation` حسب بادئة معرّف النموذج العام، مثل `anthropic` في `anthropic/claude-3-haiku`
+- القيمة الافتراضية هي `availability=active`
+- يتضمن `availability=all` النماذج أو المزوّدين ذوي الحالة `coming_soon` أو `inactive` أو غير القابلين للتوجيه للعامة بعد
+- `input_modalities` اسم بديل لـ `input_types`
+- `output_modalities` اسم بديل لـ `output_types`
+- `supported_parameters` اسم بديل لـ `params`
+
+للاطلاع على عقد نقطة النهاية لنموذج واحد، استدعِ `GET /models/{author}/{slug}/endpoints`. تفصل الاستجابة مسارات المزوّدين وتعرض في كل صف المسار العام والوسائط وتفاصيل المعلمات المدعومة والتوفر وحالة التوجيه واسم النموذج لدى المزوّد وملخص الأسعار.
+
+قد تتضمن إدخالات المزوّد أيضًا:
+
+- `availability_status`
+- `availability_reason`
+- `provider_status`
+- `provider_routing_status`
+- `model_routing_status`
+- `capability_status`
+
+### الاستجابة
+
+```json
+{
+  "ok": true,
+  "privacy_scope": "shared",
+  "availability_mode": "all",
+  "limit": 50,
+  "offset": 0,
+  "total": 99,
+  "models": [
+    {
+      "id": "anthropic/claude-3-haiku",
+      "canonical_slug": "anthropic/claude-3-haiku",
+      "model_id": "anthropic/claude-3-haiku",
+      "name": "anthropic/claude-3-haiku",
+      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
+      "created": null,
+      "release_date": null,
+      "deprecation_date": null,
+      "retirement_date": null,
+      "status": "active",
+      "availability": {
+        "status": "coming_soon",
+        "provider_count": 1,
+        "active_provider_count": 0,
+        "inactive_provider_count": 0
+      },
+      "organisation_id": "anthropic",
+      "organisation_name": null,
+      "organisation_colour": null,
+      "aliases": [],
+      "endpoints": ["chat.completions", "messages", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "architecture": {
+        "modality": "text->text",
+        "input_modalities": ["text"],
+        "output_modalities": ["text"],
+        "tokenizer": null,
+        "instruct_type": "chat"
+      },
+      "providers": [
+        {
+          "api_provider_id": "anthropic",
+          "api_provider_name": "Anthropic",
+          "provider_model_slug": "claude-3-haiku-20240307",
+          "is_active_gateway": false,
+          "availability_status": "coming_soon",
+          "availability_reason": "preview_only",
+          "provider_status": "beta",
+          "provider_routing_status": "active",
+          "model_routing_status": "active",
+          "capability_status": "coming_soon",
+          "effective_from": "2026-06-01T00:00:00Z",
+          "effective_to": null,
+          "endpoints": ["responses"],
+          "input_modalities": ["text"],
+          "output_modalities": ["text"],
+          "params": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters": [
+            "max_tokens",
+            "response_format",
+            "stop",
+            "structured_outputs",
+            "temperature",
+            "tool_choice",
+            "tools",
+            "top_k",
+            "top_p"
+          ],
+          "supported_parameters_detail": {
+            "temperature": {
+              "supported": true,
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            }
+          }
+        }
+      ],
+      "supported_params": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_params_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "supported_parameters": [
+        "max_tokens",
+        "response_format",
+        "stop",
+        "structured_outputs",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_k",
+        "top_p"
+      ],
+      "supported_parameters_detail": {
+        "temperature": {
+          "supported": true,
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "providers": ["openai"]
+        }
+      },
+      "top_provider_id": null,
+      "top_provider": {
+        "context_length": null,
+        "max_completion_tokens": null,
+        "is_moderated": false
+      },
+      "pricing": {
+        "prompt": null,
+        "completion": null,
+        "request": null,
+        "image": null,
+        "input_cache_read": null,
+        "input_cache_write": null,
+        "web_search": null
+      },
+      "pricing_detail": {
+        "pricing_plan": "standard",
+        "meters": {}
+      },
+      "per_request_limits": null
+    }
+  ]
+}
+```
+
+`availability_reason` هو الحقل الوحيد الذي يوضح سبب كون إدخال المزوّد نشطًا أو متاحًا للمعاينة فقط أو غير نشط.
+

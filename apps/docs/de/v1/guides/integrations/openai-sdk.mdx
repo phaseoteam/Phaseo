@@ -1,0 +1,75 @@
+---
+title: "OpenAI-SDK"
+icon: "code"
+description: "Nutze die offiziellen OpenAI-SDKs mit Phaseo."
+---
+
+Nutze diese Anleitung, wenn deine Anwendung OpenAI bereits über TypeScript, JavaScript oder Python aufruft. Ändere nur API-Schlüssel, Basis-URL und Modell-ID.
+
+## TypeScript
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Write one sentence about reliable model routing.",
+});
+
+console.log(response.output_text);
+```
+
+## Python
+
+```bash
+pip install openai
+```
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.responses.create(
+    model="openai/gpt-5-nano",
+    input="Write one sentence about reliable model routing.",
+)
+
+print(response.output_text)
+```
+
+## Chat Completions
+
+Ältere Bibliotheken verwenden möglicherweise noch Chat Completions:
+
+```ts
+const completion = await client.chat.completions.create({
+	model: "openai/gpt-5-nano",
+	messages: [{ role: "user", content: "Reply with only: ok" }],
+});
+```
+
+## Hinweise
+
+- Verwende Phaseo-Modell-IDs einschließlich Anbieterpräfixen wie `openai/`, `anthropic/` oder `google/`.
+- Server-Tools verwenden Phaseo-Toolnamen wie `phaseo:web_search`.
+- Für native Anthropic-Clients nutze stattdessen die Anleitung zum [Anthropic-SDK](./anthropic-sdk.mdx).
+
+## Verwandte Seiten
+
+- [Responses-API](../../api-reference/endpoint/responses.mdx)
+- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- [Server-Tools](../server-tools/index.mdx)

@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ export function TableSortButton({
 	align?: "start" | "end";
 	className?: string;
 }) {
+	const t = useTranslations("Common.ui.finalSharedCopy");
 	const Icon = direction == null
 		? ChevronsUpDown
 		: direction === "desc"
@@ -41,11 +43,7 @@ export function TableSortButton({
 			{align === "end" ? <SortIcon Icon={Icon} direction={direction} /> : null}
 			{children}
 			<span className="sr-only">
-				{direction == null
-					? ", not sorted"
-					: direction === "asc"
-						? ", sorted ascending"
-						: ", sorted descending"}
+				{t(direction == null ? "notSorted" : direction === "asc" ? "sortedAscending" : "sortedDescending")}
 			</span>
 			{align === "start" ? <SortIcon Icon={Icon} direction={direction} /> : null}
 		</Button>

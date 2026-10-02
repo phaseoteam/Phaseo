@@ -709,6 +709,11 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionImage {
+		public String base64;
+		public Object content_type;
+	}
+
 	public static class DecisionInstructions {
 	}
 
@@ -727,6 +732,7 @@ public final class Models {
 	public static class DecisionsRequest {
 		public Object debug;
 		public Boolean echo_upstream_request;
+		public java.util.List<Object> images;
 		public Boolean meta;
 		public Object metadata;
 		public String model;

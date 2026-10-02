@@ -1,6 +1,6 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { fetchModels, matchModel, matchModels, mergeResults, reasoningVariant, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
+import { databaseModelMappings, fetchModels, matchModel, matchModels, mergeResults, methodologyVersionFromHtml, reasoningVariant, reassignedArtificialAnalysisResultIds, resultsFor, resultsForConfigurations, type SourceModel } from "./core";
 import { writeBenchmarks } from "./catalog";
 
 const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
@@ -10,6 +10,28 @@ const source = (overrides: Partial<SourceModel> = {}): SourceModel => ({
 });
 const model = { model_id: "openai/example-1", organisation_id: "openai", name: "Example 1" };
 const config = { models: {}, creators: {} };
+test("reads the full methodology version and preserves the API version separately", () => {
+	assert.equal(methodologyVersionFromHtml('<strong>Current version: v4.3.2.</strong>', 4.3), "4.3.2");
+	assert.throws(() => methodologyVersionFromHtml('Current version: v4.4.1.', 4.3), /does not match/);
+	assert.throws(() => methodologyVersionFromHtml('No version available', 4.3), /missing/);
+	const results = resultsFor(source(), 4.3, [source()], "2026-10-01", "4.3.2");
+	assert.match(results[0].other_info, /Intelligence Index v4\.3\.2; API Intelligence Index version 4\.3$/);
+});
+test("remapping an AA family retires former owners while preserving current and unclaimed sources", () => {
+	const result = (result_id: string, model_slug: string, source: string) => ({ result_id, model_slug, other_info: `Example; Artificial Analysis ID ${source}; Intelligence Index v4.3` });
+	const rows = [result("old-high", "lab/old", "high-id"), result("old-low", "lab/old", "low-id"), result("current", "lab/new", "high-id"), result("unclaimed", "lab/unmatched", "unclaimed-id")];
+	assert.deepEqual(reassignedArtificialAnalysisResultIds(rows, new Map([["high-id", "lab/new"], ["low-id", "lab/new"]])), ["old-high", "old-low"]);
+	assert.deepEqual(reassignedArtificialAnalysisResultIds(rows, new Map()), []);
+});
+test("database IDs attach renamed models and preserve all reasoning configurations", () => {
+	const id = "092a3b0e-c5c8-45dc-bf1b-53673c8ff352";
+	const models = [{ model_id: "openai/new-name", metadata: { external_ids: { artificial_analysis: id } } }];
+	const sources = [source({ id, name: "Example 1 (high)", slug: "example-1-high" }), source({ id: "other", name: "Example 1 (low)", slug: "example-1-low" })];
+	const [match] = matchModels(models, sources, { models: databaseModelMappings(models), creators: {} });
+	assert.equal(match.status, "matched");
+	assert.deepEqual(match.sources.map((entry) => entry.id), [id, "other"]);
+	assert.deepEqual(databaseModelMappings([{ model_id: "openai/excluded", metadata: { external_ids: { artificial_analysis: null } } }, model]), { "openai/excluded": null });
+});
 const page = (models: SourceModel[], number = 1, more = false, version = 4.3) => Response.json({ intelligence_index_version: version, pagination: { page: number, has_more: more }, data: models });
 
 test("fetches all free endpoint pages once and forwards server-side authentication", async () => {

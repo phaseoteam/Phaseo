@@ -1,0 +1,90 @@
+---
+icon: "braces"
+title: "Referencia de la API"
+description: "Consulta los puntos de entrada, métodos, opciones y tipos de resultado del Agent SDK de TypeScript."
+---
+
+Usa esta página si ya conoces el flujo del Agent SDK y necesitas identificar el punto de entrada público o la opción exacta.
+
+## Puntos de entrada
+
+| Exportación | Descripción |
+| --- | --- |
+| `createAgent(definition)` | Define un agente y el comportamiento predeterminado de su entorno de ejecución |
+| `defineTool(definition)` | Define una herramienta local validada, manual, sujeta a aprobación o que notifica su progreso |
+| `tool(definition)` | Alias abreviado de `defineTool()` |
+| `createGatewayAgentClient(options)` | Ejecuta turnos del modelo mediante Phaseo Gateway |
+| `createAgentDevtools(options)` | Activa la captura local de ejecuciones |
+
+## Métodos del agente
+
+| Método | Devuelve | Descripción |
+| --- | --- | --- |
+| `agent.run(options)` | `Promise<AgentRunResult>` | Ejecuta hasta completarse, pausarse, detenerse, cancelarse o fallar |
+| `agent.stream(options)` | `AgentStreamResult` | Inicia el mismo ciclo con consumidores de transmisión que pueden reproducirse |
+| `agent.continueRun(options)` | `Promise<AgentRunResult>` | Continúa un estado guardado o en pausa con decisiones o intervención humana |
+
+## Consumidores de la transmisión
+
+| Método | Valor |
+| --- | --- |
+| `getResult()` | `AgentRunResult` completado |
+| `getText()` | Texto final completo |
+| `getTextStream()` | Fragmentos de texto |
+| `getReasoningStream()` | Fragmentos de razonamiento cuando el modelo los proporciona |
+| `getItemsStream()` | Valores `AgentItem<TOutput>` tipados |
+| `getToolStream()` | Eventos del ciclo de vida de las herramientas |
+| `getFullStream()` | Flujo completo de eventos del Agent SDK |
+| `cancel(reason?)` | Cancela la ejecución activa |
+
+## Opciones de definición
+
+`AgentDefinition` incluye:
+
+- `id`
+- `model` o `models`
+- `preset`
+- `instructions`
+- `tools`
+- `maxSteps` y `stopWhen`
+- `modelRetry` y `toolExecution`
+- `temperature`, `maxOutputTokens` y `topP`
+- `parseOutput` y `outputSchema`
+- `requireApproval` y `humanReview`
+
+Los campos del modelo, las instrucciones y el muestreo pueden tener valores fijos o dinámicos.
+
+## Opciones de ejecución y continuación
+
+`AgentRunOptions` proporciona la entrada, el cliente del modelo, el contexto de la aplicación, los cambios opcionales, la cancelación, los hooks del ciclo de vida, DevTools y un acceso al estado administrado por la aplicación.
+
+`AgentContinueOptions` también acepta:
+
+- una ejecución anterior (`run` o `runId`)
+- `humanInput`
+- aprobaciones y rechazos mediante el ID exacto de la llamada a la herramienta
+- `toolOutputs` generados externamente
+
+## Registros de resultados
+
+`AgentRunResult` contiene:
+
+- `run`: estado persistente de la ejecución, contexto, detalles de pausa y motivo de detención
+- `steps`: registros guardados de pasos del modelo y de las herramientas
+- `stepResults`: resultados normalizados de pasos, cuando estén disponibles
+- `usage`: tokens acumulados y costo informado
+- `output`: salida final analizada
+- `messages`: la conversación completa usada en el ciclo
+- `items`: mensajes tipados en orden, razonamiento, actividad de herramientas, errores y salida final
+
+## Tipos de error
+
+- `AgentGatewayError` describe fallos de solicitudes a Gateway o al proveedor ascendente.
+- `AgentSchemaValidationError` describe datos no válidos de herramientas, progreso o salida final.
+
+## Guías relacionadas
+
+- [Crea tu primer agente](./agent-sdk.mdx)
+- [Transmisión en streaming](./agent-sdk-streaming.mdx)
+- [Trabajar con elementos](./agent-sdk-items.mdx)
+- [Errores y resolución de problemas](./agent-sdk-events-and-errors.mdx)

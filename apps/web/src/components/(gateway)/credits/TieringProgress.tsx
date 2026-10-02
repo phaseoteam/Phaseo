@@ -1,3 +1,4 @@
+import { DisplayMoneyMessage } from "./DisplayMoneyMessage";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -10,6 +11,7 @@ import {
 	computeTierInfo,
 	type GatewayTier,
 } from "@/components/(gateway)/credits/tiers";
+import { getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
@@ -37,6 +39,7 @@ export default async function TieringProgress({
 	currency = "USD",
 	teamId,
 }: Props) {
+	const t = await getTranslations("SettingsUI.credits");
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 
@@ -77,20 +80,20 @@ export default async function TieringProgress({
 			<Card>
 				<CardHeader className="pb-2">
 					<div className="flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-						<CardTitle className="m-0">Pricing</CardTitle>
+						<CardTitle className="m-0">{t("pricing")}</CardTitle>
 						<div className="text-sm text-muted-foreground md:text-right">
-							Last month: {money(lastMonth, currency)}
+							{t("lastMonth")}: {money(lastMonth, currency)}
 						</div>
 					</div>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					<div className="flex items-center justify-between">
-						<span className="text-sm text-muted-foreground">Current top-up fee</span>
+						<span className="text-sm text-muted-foreground">{t("currentTopUpFee")}</span>
 						<span className="text-xl font-semibold">{currentFee.toFixed(1)}%</span>
 					</div>
 					<div className="space-y-2">
 						<div className="flex items-center justify-between">
-							<span className="text-sm text-muted-foreground">This month</span>
+							<span className="text-sm text-muted-foreground">{t("thisMonth")}</span>
 							<span className="text-sm font-medium">{money(mtd, currency)}</span>
 						</div>
 						<div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -100,7 +103,7 @@ export default async function TieringProgress({
 							/>
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Spend {money(Math.max(enterpriseThreshold - mtd, 0), currency)} more this month to reach the next threshold.
+							{<DisplayMoneyMessage messageKey={"spendMoreToThreshold"} amount={Math.max(enterpriseThreshold - mtd, 0)} currency={currency} />}.
 						</p>
 					</div>
 				</CardContent>
@@ -112,9 +115,9 @@ export default async function TieringProgress({
 		<Card>
 			<CardHeader className="pb-2">
 				<div className="flex flex-col gap-2 md:flex-row md:items-baseline md:justify-between">
-					<CardTitle className="m-0">Pricing Tier</CardTitle>
+					<CardTitle className="m-0">{t("pricingTier")}</CardTitle>
 					<div className="text-sm text-muted-foreground md:text-right">
-						Last month: {money(lastMonth, currency)}
+						{t("lastMonth")}: {money(lastMonth, currency)}
 					</div>
 				</div>
 			</CardHeader>
@@ -124,7 +127,7 @@ export default async function TieringProgress({
 				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="space-y-1.5">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Current tier
+							{t("currentTierLower")}
 						</div>
 						<div className="flex items-center gap-2">
 							<div className="text-lg font-semibold md:text-xl">
@@ -132,7 +135,7 @@ export default async function TieringProgress({
 							</div>
 							{isEnterprise && (
 								<Badge variant="secondary" className="text-[11px]">
-									Premium
+									{t("premium")}
 								</Badge>
 							)}
 						</div>
@@ -141,14 +144,14 @@ export default async function TieringProgress({
 						</p>
 						{projectedSavings > 0 && (
 							<p className="text-xs text-emerald-600 dark:text-emerald-400">
-								Saving ~{money(projectedSavings, currency)} this month vs Basic pricing
+							{<DisplayMoneyMessage messageKey={"savingVsBasic"} amount={projectedSavings} currency={currency} />}
 							</p>
 						)}
 					</div>
 
 					<div className="space-y-1 text-left md:text-right">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-							Credit top-up fee
+							{t("topUpFee")}
 						</div>
 						<div className="flex items-center justify-start gap-2 text-lg font-semibold md:justify-end md:text-xl">
 							<span>{currentFee.toFixed(1)}%</span>
@@ -171,8 +174,8 @@ export default async function TieringProgress({
 							)}
 						>
 							{savingVsBase > 0
-								? `Save ${savingVsBase.toFixed(1)}% vs Basic`
-								: "Standard pricing"}
+								? t("saveVsBasic", { percent: savingVsBase.toFixed(1) })
+								: t("standardPricing")}
 						</div>
 					</div>
 				</div>
@@ -182,8 +185,7 @@ export default async function TieringProgress({
 					<Alert>
 						<TrendingUp className="h-4 w-4" />
 						<AlertDescription>
-							Only {money(remainingToNext, currency)} away from Enterprise tier!
-							Spend {money(enterpriseThreshold, currency)}+ this month to qualify for Enterprise tier next month.
+							{<DisplayMoneyMessage messageKey={"onlyAway"} amount={remainingToNext} currency={currency} />} {<DisplayMoneyMessage messageKey={"qualifyNextMonth"} amount={enterpriseThreshold} currency={currency} />}
 						</AlertDescription>
 					</Alert>
 				)}
@@ -193,9 +195,7 @@ export default async function TieringProgress({
 					<Alert variant="destructive">
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							Your month-to-date spend ({money(mtd, currency)}) is below the Enterprise threshold.
-							Spend {money(enterpriseThreshold, currency)}+ to maintain Enterprise top-up fee pricing.
-							Note: Tier downgrades occur after 3 consecutive months below threshold.
+							{<DisplayMoneyMessage messageKey={"belowThreshold"} amount={mtd} currency={currency} />} {<DisplayMoneyMessage messageKey={"maintainPricing"} amount={enterpriseThreshold} currency={currency} />} {t("downgradeNote")}
 						</AlertDescription>
 					</Alert>
 				)}
@@ -204,11 +204,11 @@ export default async function TieringProgress({
 				<div className="space-y-3">
 					<div className="flex items-center justify-between">
 						<span className="text-sm text-muted-foreground">
-							This month: {money(mtd, currency)}
+							{<DisplayMoneyMessage messageKey={"thisMonthAmount"} amount={mtd} currency={currency} />}
 						</span>
 						{!isEnterprise && (
 							<span className="text-xs text-muted-foreground">
-								{progressPct.toFixed(0)}% to Enterprise
+								{t("toEnterprise", { percent: progressPct.toFixed(0) })}
 							</span>
 						)}
 					</div>
@@ -239,7 +239,7 @@ export default async function TieringProgress({
 							</div>
 							<div className="text-sm font-semibold">{basicTier.name}</div>
 							<div className="text-xs text-muted-foreground">
-								{basicTier.feePct.toFixed(1)}% top-up fee
+								{t("topUpFeePercent", { percent: basicTier.feePct.toFixed(1) })}
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
 								{money(basicTier.threshold, currency)}+
@@ -266,14 +266,14 @@ export default async function TieringProgress({
 							</div>
 							<div className="text-sm font-semibold">{enterpriseTier.name}</div>
 							<div className="text-xs text-muted-foreground">
-								{enterpriseTier.feePct.toFixed(1)}% top-up fee
+								{t("topUpFeePercent", { percent: enterpriseTier.feePct.toFixed(1) })}
 							</div>
 							<div className="mt-1 text-xs text-muted-foreground">
-								{money(enterpriseTier.threshold, currency)}+/mo
+								{<DisplayMoneyMessage messageKey={"perMonth"} amount={enterpriseTier.threshold} currency={currency} />}
 							</div>
 							{willUpgradeNextMonth && (
 								<Badge variant="outline" className="mt-2 text-[10px] border-orange-500 text-orange-600">
-									Unlocking
+									{t("unlocking")}
 								</Badge>
 							)}
 						</div>
@@ -284,27 +284,26 @@ export default async function TieringProgress({
 
 				{/* TIER DETAILS */}
 				<div>
-					<div className="mb-2 text-sm font-medium">How it works</div>
+					<div className="mb-2 text-sm font-medium">{t("howItWorks")}</div>
 					<div className="space-y-3 rounded-lg border p-4 text-sm">
 						<div>
-							<div className="font-medium">Basic Tier (5%)</div>
+							<div className="font-medium">{t("basicTierFee")}</div>
 							<p className="text-xs text-muted-foreground">
-								All teams start here. Automatic upgrade after spending {money(enterpriseThreshold, currency)}+ in any month.
+								{<DisplayMoneyMessage messageKey={"basicTierDescription"} amount={enterpriseThreshold} currency={currency} />}
 							</p>
 						</div>
 						<div>
-							<div className="font-medium">Enterprise Tier (5%)</div>
+							<div className="font-medium">{t("enterpriseTierFee")}</div>
 							<p className="text-xs text-muted-foreground">
-								Enterprise qualification is maintained while spending {money(enterpriseThreshold, currency)}+ monthly.
-								Downgrade to Basic after 3 consecutive months below threshold.
+								{<DisplayMoneyMessage messageKey={"enterpriseTierDescription"} amount={enterpriseThreshold} currency={currency} />}
 							</p>
 						</div>
 					</div>
 					<p className="mt-3 text-xs text-muted-foreground">
-						Tiers are automatically updated on the 1st of each month based on the previous-month spend.
+						{t("tiersUpdated")}
 					</p>
 					<p className="mt-2 text-xs text-muted-foreground">
-						Questions? Contact support for custom pricing or volume discounts.
+						{t("questionsContact")}
 					</p>
 				</div>
 			</CardContent>

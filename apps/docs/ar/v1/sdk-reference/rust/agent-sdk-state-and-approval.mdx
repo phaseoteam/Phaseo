@@ -1,0 +1,90 @@
+---
+icon: "blocks"
+title: "حفظ عمليات التشغيل واستئنافها"
+description: "احفظ حالة تشغيل Rust Agent SDK وتابع بعد الأدوات أو المراجعة البشرية."
+---
+
+يمكن تسلسل `RunResult` باستخدام Serde. احفظه في قاعدة بياناتك أو مخزن الكائنات أو سجل المهام إذا كان يجب أن يستمر التوقف بعد إعادة تشغيل العملية.
+
+## حفظ الحالة المتوقفة
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## استعادة الحالة
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+أعِد إنشاء تعريف الوكيل والأدوات نفسها قبل المتابعة. لا تتضمن عملية التشغيل المتسلسلة closures أو `AgentDefinition`.
+
+يُحفظ النموذج الفعلي والحد الأقصى للخطوات في `RunRecord`، لذا تظل التجاوزات الخاصة بالتشغيل فعالة بعد المتابعة.
+
+## المراجعة البشرية
+
+استخدم `human_review(...)` لفحص جولة مكتملة من النموذج وطلب إدخال بشري:
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-6-astra",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+تابع بإدخال بشري:
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## أنواع التوقف
+
+| `pause.kind` | القيمة المطلوبة للمتابعة |
+| --- | --- |
+| `human_review` | قيمة غير فارغة في `ContinueOptions.human_input` |
+| `tool_approval` | عناصر `ToolDecision` حسب معرّف استدعاء الأداة |
+| `external_output` | عناصر `ToolOutput` حسب معرّف استدعاء الأداة |
+| `tool_input` | مزيج من الموافقات والمخرجات الخارجية |
+
+
+## الحفظ الذي يديره التطبيق
+
+لا يوفّر Rust Agent SDK خلفية حالة مستضافة أو محوّل حفظ. يتولى تطبيقك ما يلي:
+
+- تشفير عمليات التشغيل المحفوظة والاحتفاظ بها
+- التفويض للموافقات والمدخلات البشرية
+- إعادة إنشاء منفّذات الأدوات
+- ضمان عدم تكرار الآثار الجانبية عند الاستئناف
+
+## مواضيع ذات صلة
+
+- [الأدوات والموافقات](./agent-sdk-tools.mdx)
+- [الأحداث وإعادات المحاولة والأخطاء](./agent-sdk-events-and-errors.mdx)

@@ -1,0 +1,83 @@
+---
+title: "मैसेज बनाएँ"
+sidebarTitle: "मैसेज बनाएँ"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /messages"
+description: "`/v1/messages` पर Anthropic-संगत Messages endpoint।"
+---
+`/v1/messages` Anthropic Messages API payload स्वीकार करता है और Anthropic फ़ॉर्मैट में प्रतिक्रिया देता है।
+
+## स्ट्रीमिंग
+
+Anthropic फ़ॉर्मैट में server-sent events (`message_start`, `content_block_*`, `message_delta`, `message_stop`) पाने के लिए `stream: true` सेट करें।
+
+## ध्यान दें
+
+- Anthropic tool-use fields समर्थित हैं।
+- `stream: true` tool loops के साथ भी काम करता है। Gateway-प्रबंधित server tools के लिए Phaseo upstream turn को materialize करके loop जारी रख सकता है और synthetic stream फिर से भेज सकता है।
+- Anthropic-native web search tool shape को `tools` में सीधे भी दिया जा सकता है, जैसे `type: "web_search_20250305"`।
+- `X-Phaseo-Strictness` header तय करता है कि असमर्थित parameters को कैसे संभालना है।
+
+## सर्वर टूल
+
+`/v1/messages` इन Gateway-प्रबंधित server tools को भी सपोर्ट करता है:
+
+- `gateway:datetime`
+- `phaseo:web_search`
+- `phaseo:web_fetch`
+- `phaseo:advisor`
+- `phaseo:image_generation`
+
+Phaseo इन tools को upstream provider के लिए Anthropic-संगत फ़ॉर्मैट में बदलता है, सर्वर पर चलाता है और tool loop जारी रखता है।
+
+## प्रदाता की native web search
+
+जब कोई संगत Anthropic model/provider जोड़ी native web search सपोर्ट करती है, तो आप native tool definition सीधे भी भेज सकते हैं:
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "Find the latest Anthropic web search guidance." }
+    ],
+    "tools": [
+      {
+        "type": "web_search_20250305",
+        "name": "web_search",
+        "max_uses": 3,
+        "allowed_domains": ["docs.anthropic.com"]
+      }
+    ],
+    "tool_choice": { "type": "tool", "name": "web_search" }
+  }'
+```
+
+चलाने से पहले provider routing `web_search_options` support की जाँच करता है।
+
+### दिनांक और समय का उदाहरण
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4",
+    "max_tokens": 512,
+    "stream": false,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      {
+        "type": "gateway:datetime",
+        "parameters": { "timezone": "America/New_York" }
+      }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+उपयोग होने पर `usage.server_tool_use.*` counters server-tool invocations बताते हैं।

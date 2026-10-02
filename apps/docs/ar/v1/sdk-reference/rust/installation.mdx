@@ -1,0 +1,76 @@
+---
+icon: "package"
+title: "تثبيت Rust SDK"
+description: "ثبّت phaseo من crates.io واضبط المصادقة في Phaseo Gateway."
+---
+
+استخدم هذا الدليل لإضافة عميل Rust المدعوم وإتاحته لتطبيقك.
+
+## المتطلبات
+
+- Rust 1.86 أو أحدث
+- مفتاح API لـ Phaseo Gateway
+
+## التثبيت
+
+أضف العميل واعتمادية JSON:
+
+```toml
+[dependencies]
+phaseo = "0.1"
+serde_json = "1"
+```
+
+أو شغّل:
+
+```bash
+cargo add phaseo@0.1 serde_json
+```
+
+## إعداد مفتاح API
+
+تقرأ `Phaseo::from_env()` القيمة `PHASEO_API_KEY`:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+في PowerShell:
+
+```powershell
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+احتفظ بالمفتاح على الخادم. لا تضمنه في عميل سطح مكتب أو هاتف أو متصفح أو أي عميل موزّع آخر.
+
+## التحقق من التثبيت
+
+```rust
+use phaseo::Phaseo;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let _client = Phaseo::from_env()?;
+    println!("Phaseo Rust client configured");
+    Ok(())
+}
+```
+
+```bash
+cargo run
+```
+
+## نقاط نهاية مخصصة
+
+اضبط `PHASEO_BASE_URL` عندما تريد استخدام نقطة نهاية تطوير أو وكيل بدلًا من `https://api.phaseo.app/v1`:
+
+```bash
+export PHASEO_BASE_URL="http://localhost:8787/v1"
+```
+
+يجب أن تستخدم نقاط النهاية البعيدة HTTPS. لا يُقبل HTTP غير المشفر إلا إذا كان اسم المضيف بعد التحليل هو `localhost` تمامًا أو عنوان IP للواجهة الراجعة.
+
+## الخطوات التالية
+
+- [إرسال الطلبات](./usage.mdx)
+- [Responses API](./responses.mdx)
+- [مرجع Rust API](./api-reference.mdx)

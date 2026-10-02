@@ -1,0 +1,12 @@
+---
+title: "Lister les budgets de l’espace de travail"
+sidebarTitle: "Lister les budgets"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /budgets"
+description: "Lister les plafonds de dépenses appliqués à l’espace de travail, avec l’utilisation en cours et le montant restant."
+---
+
+Nécessite `budgets:read`. Les utilisateurs OAuth doivent avoir le rôle de propriétaire ou d’administrateur de l’espace de travail.
+
+L’utilisation est calculée à partir des requêtes réussies de la passerelle. Les tâches asynchrones réservées sont incluses tant que leur retenue est active, afin que le montant restant corresponde à la limite appliquée.
+

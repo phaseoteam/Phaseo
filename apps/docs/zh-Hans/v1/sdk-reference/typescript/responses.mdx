@@ -1,0 +1,84 @@
+---
+icon: "message-square"
+title: "响应"
+description: "使用 TypeScript SDK 调用 Responses API。"
+---
+
+**方法**: `client.generateResponse()` (使用以下方法流式传输已解析的内容块： `client.streamResponses()`).
+
+### 示例
+```typescript
+const resp = await client.generateResponse({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+  temperature: 0.7,
+  stream: false,
+});
+```
+
+### 流式传输
+```typescript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-4.1",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+  stream: true,
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+### 主要参数
+- `model` (required): 目标模型 ID。
+- `input` (required): 按顺序排列的输入项数组（消息、工具调用等）。
+- `temperature` (0-2): 值越高，随机性越强。
+- `top_p` (0-1) / `top_k` (>=1): Nucleus / k-best 采样控制。
+- `max_output_tokens` (int): 每个响应生成 Token 数的硬上限。
+- 工具： `tools` (定义), `tool_choice` (`auto`/`none`/指定的), `max_tool_calls` (int), `parallel_tool_calls` (bool).
+- Logprobs： `logprobs` (bool), `top_logprobs` (0-20) 用于返回每个 Token 的 logprob。
+- 输出： `response_format` (json/text), `service_tier`, `store` (bool), `stream` (bool).
+- 元数据： `metadata` (object) 用于透传, `reasoning` (object) 用于提示推理力度.
+- Gateway 附加参数： `usage` (bool 用于请求用量数据), `meta` (bool 用于包含 meta 块).
+
+### 返回值
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true` 时则返回以换行符分隔的 SSE 帧：
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

@@ -1,0 +1,35 @@
+---
+title: "Zu Phaseo beitragen"
+description: "Den richtigen Ablauf für Katalogmeldungen, Dokumentationsänderungen oder Codebeiträge wählen."
+sidebarTitle: "Beiträge"
+icon: "handshake"
+---
+
+Öffnen Sie für Katalogkorrekturen und Ergänzungen ein Issue mit dem betroffenen Datensatz und belegenden Quellen. Reichen Sie für Code- oder Dokumentationsänderungen einen Pull Request im [Phaseo-Repository](https://github.com/phaseoteam/Phaseo) ein.
+
+## Ihren Beitrag auswählen
+
+| Änderung | Hier beginnen |
+| --- | --- |
+| Modellmetadaten, Funktionen, Verfügbarkeit oder Preise | [Modellaktualisierung melden](./editing-a-model.mdx) |
+| Details zu Unternehmen oder Forschungsorganisationen | [Organisationsaktualisierung melden](./editing-an-organisation.mdx) |
+| Benchmark-Ergebnisse | [Ergebnisse einreichen](../research/submitting-scores.mdx) |
+| Andere Katalogkorrekturen | [Falsche Informationen melden](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) |
+| Fehlende Anbieter oder andere Katalogdaten | [Neue Daten anfordern](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) |
+| Dokumentation oder Code | [Beitragsablauf](./how-to-contribute.mdx) und [Repositorystruktur](./repo-structure.mdx) |
+
+## Veröffentlichung von Katalogmeldungen
+
+Die Verantwortlichen prüfen die Belege im Issue und wenden genehmigte Änderungen über den nur Administratoren zugänglichen [internen Editor](https://phaseo.app/internal/data) an. Preisaktualisierungen von Anbietern erfordern vor der Veröffentlichung eine ausdrückliche Prüfung.
+
+Die Datenbank ist die maßgebliche Katalogquelle. Tägliche öffentliche JSON-Snapshots bleiben verfügbar, aber weder Änderungen daran noch Pull Requests für archivierte JSON-Dateien aktualisieren den Livekatalog. Der alte JSON-Importer wurde eingestellt.
+
+## Vor dem Einreichen
+
+- Geben Sie die betroffene Seite oder Datensatz-ID an und beschreiben Sie die vorgeschlagene Korrektur.
+- Zitieren Sie offizielle Quellen und unterscheiden Sie gemeldete Benchmark-Ergebnisse von unabhängigen Messungen.
+- Halten Sie jede Meldung und jeden Pull Request thematisch fokussiert.
+- Fügen Sie niemals Zugangsdaten oder private Kundendaten hinzu.
+- Befolgen Sie den [Verhaltenskodex](../community/code-of-conduct.mdx).
+
+Besprechen Sie größere Schema- oder Funktionsänderungen vor der Umsetzung mit den Verantwortlichen. Fragen Sie in [Discord](https://discord.gg/aQyywCvgZ5) nach Hilfe, wenn unklar ist, wohin eine Änderung gehört.

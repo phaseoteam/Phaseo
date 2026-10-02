@@ -1,0 +1,46 @@
+---
+title: "PydanticAI"
+icon: "braces"
+description: "Erstelle typisierte Python-Agents mit PydanticAI und Phaseo."
+---
+
+Verwende PydanticAI, wenn du Python-Agents mit typisierten Ausgaben, Validierung und einer kompakten OpenAI-kompatiblen Modellkonfiguration möchtest.
+
+## Installieren
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## Das Modell konfigurieren
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## Hinweise
+
+- Der OpenAI-kompatible Pfad von PydanticAI verwendet ein Chat-Verhalten im OpenAI-Stil.
+- Verwende direkte Phaseo-Responses-Aufrufe für Responses-spezifische Funktionen wie `phaseo:apply_patch`.
+- Halte Schemas für strukturierte Ausgaben klein genug für das Kontextfenster des ausgewählten Modells.
+
+## Weiterführende Themen
+
+- [Strukturierte Ausgaben](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [Modelle](../../api-reference/endpoint/models.mdx)

@@ -1,0 +1,129 @@
+---
+icon: "compass"
+title: "Python SDK का परिचय"
+description: "Phaseo Gateway API के लिए आधिकारिक Python क्लाइंट"
+---
+
+PyPI से प्रकाशित [~phaseo~](https://pypi.org/project/phaseo/) पैकेज इंस्टॉल करें।
+
+Phaseo Python SDK सिंक्रोनस `Phaseo` और मूल असिंक्रोनस `AsyncPhaseo` क्लाइंट देता है।
+
+## मूल असिंक्रोनस अनुरोध
+
+```python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-5-nano", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+पार्स किए टेक्स्ट इवेंट के लिए `async for event in client.responses.stream(request)` इस्तेमाल करें।
+मूल asyncio रद्द करना HTTP और पोलिंग रोकता है। संसाधन नेमस्पेस टेक्स्ट,
+छवियाँ, ऑडियो, संगीत, वीडियो, बैच, फ़ाइल, मॉडल, एम्बेडिंग, OCR, पुनः क्रमांकन, पार्स,
+मॉडरेशन और निर्णय सँभालते हैं; अन्य HTTP काम के लिए `await client.request(...)` इस्तेमाल करें।
+दिए गए HTTPX क्लाइंट का स्वामित्व कॉल करने वाले के पास रहता है।
+
+दोनों क्लाइंट `with_options(timeout=30, max_retries=2)` स्वीकार करते हैं, बिना मूल
+क्लाइंट बदले। HTTPX समय सीमाएँ नेटवर्क निष्क्रियता को सेकंड में सीमित करती हैं। पुनः प्रयास डिफ़ॉल्ट
+में शून्य हैं और प्रतिक्रिया पढ़ने से पहले केवल GET/HEAD पर लागू हैं, सबमिशन पर कभी नहीं।
+`PhaseoHTTPError` बॉडी, कोड, अनुरोध ID, डैशबोर्ड ट्रेस URL और पुनः प्रयास देरी देता है।
+
+अपग्रेड करते समय सिंक्रोनस JSON अनुरोध में `urllib.error.HTTPError` पकड़ना
+`PhaseoHTTPError` (या `httpx.HTTPStatusError`) से बदलें, और कनेक्शन त्रुटि पकड़ना
+`httpx.TransportError` से बदलें। `error.status` HTTP स्थिति है; `error.code`
+API त्रुटि कोड है।
+
+## अतिरिक्त सुविधाएँ
+
+जॉब संसाधन `result`, `events` और
+`to_dict` वाले `start` और `resume` हैंडल देते हैं। असिंक्रोनस विधियों की प्रतीक्षा करें और इवेंट `async for` से पढ़ें।
+केवल वीडियो और बैच दूरस्थ रद्द करना स्वीकार करते हैं। मीडिया
+`videos.stream_content(id)` और बैच `batches.results(id)` से स्ट्रीम करें। सिंक्रोनस
+`download_to(chunks, binary_file)` पूरा फ़ाइल बफ़र किए बिना लिखता है।
+अपलोड बाइट, `Path` ऑब्जेक्ट, फ़ाइल ऑब्जेक्ट और HTTPX फ़ाइल टपल स्वीकार करते हैं।
+
+`responses.parse(request, PydanticModel)` पूरा JSON आउटपुट सत्यापित करता है;
+सर्वर प्रतिक्रिया प्रारूप स्पष्ट सेट करें। `collect_stream` और
+`collect_async_stream` पार्स किए टेक्स्ट इवेंट और उपयोग इकट्ठा करते हैं।
+`check_model_capabilities(id, input_types=..., output_types=..., endpoints=...,
+parameters=..., parameter_values=...)` एक उपलब्ध प्रदाता विकल्प की घोषित क्षमताएँ और स्केलर
+सीमाएँ साथ जाँचता है। अज्ञात तथ्य पूर्व-जाँच विफल करते हैं।
+
+मॉडल चयन और पैरामीटर संपादक के लिए वर्तमान एंडपॉइंट मेटाडेटा इस्तेमाल करें:
+
+```python
+support = client.models.check_parameters(
+    "openai/gpt-5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+हर पैरामीटर `supported`, `partial`, `unsupported` या `unknown` होता है,
+साथ में मेल खाते प्रदाता रूट और इनलाइन हाइलाइट के लिए सीमा समस्याएँ होती हैं।
+`client.models.capabilities(model_id)` पूरी एंडपॉइंट क्षमता
+प्रतिक्रिया देता है। `AsyncPhaseo` यही विधियाँ प्रतीक्षा योग्य रूप में देता है।
+
+स्थानीय परीक्षण में `httpx.Client` या
+`httpx.AsyncClient` से `phaseo.testing.MockTransport` दें। अनपेक्षित अनुरोध स्थानीय रूप से विफल होते हैं; `assert_done()` से
+सभी फ़िक्सचर इस्तेमाल होना जाँचें। ये वास्तविक प्रदाता व्यवहार नहीं जाँचते।
+Phaseo रूम **कोड लें** से भेजे अनुरोध का चलने योग्य कोड निर्यात करते हैं।
+
+## सुविधाएँ
+
+-   OpenAPI स्पेसिफ़िकेशन से जनरेट किए गए टाइप्ड अनुरोध मॉडल।
+-   चैट, responses, messages, इमेज, ऑडियो, एम्बेडिंग, मॉडरेशन, फ़ाइल, बैच, जनरेशन और async वीडियो जॉब के लिए अंतर्निहित हेल्पर।
+-   टेक्स्ट, responses और messages के लिए streaming हेल्पर (~stream_*~ iterators)।
+- कंट्रोल-प्लेन हेल्पर से मॉडल, एंडपॉइंट और संगठन देखे जा सकते हैं; कीमतें खोजी और गणना की जा सकती हैं; API कुंजी और वर्कस्पेस का जीवनचक्र प्रबंधित किया जा सकता है; और मौजूदा कुंजी, स्वास्थ्य स्थिति, प्रदाता, क्रेडिट, गतिविधि तथा विश्लेषण की जाँच की जा सकती है।
+
+## त्वरित उदाहरण
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(api_key="your-api-key")
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-5-nano",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.get("id"))
+```
+
+## संगीत, वीडियो या बैच की प्रतीक्षा करें
+
+```python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+वीडियो के लिए `videos.generate_and_wait(request, **options)` और बैच के लिए `batches.create_and_wait(request, **options)` इस्तेमाल करें। सिंक्रोनस सहायक एक बार भेजकर पूरी पूर्ण प्रतिक्रिया देते हैं, केवल ज़रूरत पर पोलिंग करते हैं। `JobFailedError.response` विफल, रद्द या समाप्त जॉब विवरण रखता है। पूरे बैच में अलग अनुरोध विफल हो सकते हैं।
+
+हर संसाधन `wait(id, **options)` से मौजूदा जॉब फिर शुरू करके कोई भी अंतिम प्रतिक्रिया देता है। संगीत में सीधे `create(request)` और `retrieve(id)` भी हैं।
+
+विकल्प हैं `interval` (सेकंड; डिफ़ॉल्ट 5, न्यूनतम 0.25), `timeout` (सेकंड; डिफ़ॉल्ट 1800), `on_poll` और `cancel_event` (एक `threading.Event`)। प्रतीक्षा समय सीमा सबमिशन लौटने के बाद शुरू होती है। सिंक्रोनस क्लाइंट अनुरोधों और कॉलबैक के बीच रद्द करना व समय सीमा जाँचता है; इन विकल्पों से जारी HTTP कॉल नहीं रुक सकती।
+
+`JobTimeoutError` और `JobCancelledError` `job_id` व `last_response` रखते हैं। `.wait(error.job_id)` से फिर शुरू करें। स्थानीय समय सीमा या रद्द करने से दूरस्थ जॉब नहीं रुकता और सबमिशन स्वतः फिर नहीं भेजे जाते। सहायक गेटवे में पृष्ठभूमि निष्पादन नहीं जोड़ते।
+## "इसमें क्या शामिल है"
+
+-   `Phaseo` क्लाइंट
+-   `chat.completions.create(...)` and `responses.create(...)` संगतता हेल्पर
+-   रिसोर्स हेल्पर, जैसे `client.batches`, `client.videos`, `client.files`, and `client.async_jobs`
+-   बैच और वीडियो लाइफ़साइकल स्ट्रीम के लिए async-job WebSocket URL हेल्पर
+-   `client.batches.stream_results(batch_id)` बैच JSONL बाइट खंड के लिए
+-   मॉडल लाइफ़साइकल हेल्पर, जैसे `get_model_deprecation_info(...)` and `validate_model(...)`
+-   टेक्स्ट, responses और messages के लिए streaming iterators
+-   ~phaseo.models~ में जनरेट किए गए अनुरोध/प्रतिक्रिया मॉडल

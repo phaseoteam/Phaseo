@@ -1,0 +1,17 @@
+---
+icon: "image"
+title: "छवि जनरेशन"
+description: "Python SDK से /images/generations कॉल करें।"
+---
+
+**विधि**: `client.generate_image()`
+
+```python
+result = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+})
+
+print(result)
+```
+

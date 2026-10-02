@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Fehler und Fehlerbehebung"
+description: "Behandle Fehler bei Modell, Tools, Validierung, Zeitüberschreitung und Fortsetzung in Ruby-Agenten."
+---
+
+Agent-Fehler entstehen meist durch eine Modellanfrage, ein lokales Tool, Schema-Validierung, eine Zeitüberschreitung oder eine ausstehende menschliche Entscheidung.
+
+## Tool-Fehler beheben
+
+Setze `on_error: "return-to-model"`, wenn sich das Modell von einem Tool-Fehler erholen kann. Der Fehler wird zu einem Tool-Ergebnis und der Agent kann eine andere Aktion auswählen. Behalte fail-run für unsichere oder nicht behebbare Vorgänge bei.
+
+## Ruby-Ausführung verstehen
+
+Ruby konsumiert Modell-Streams über eine normale synchrone Iteration. Setze für Netzwerk- und Prozesstools ausdrückliche Timeouts und blockiere Lifecycle-Callbacks nicht mit langsamen Speicheroperationen.
+
+## Fortsetzungsfehler diagnostizieren
+
+Jeder ausstehende Aufruf benötigt eine Genehmigung, Ablehnung oder extern bereitgestellte Ausgabe, die über die Tool-Aufruf-ID zugeordnet ist. Speichere den vollständig zurückgegebenen Laufzustand, bevor du eine Genehmigungsoberfläche anzeigst.
+
+## Aussagekräftige Felder protokollieren
+
+Protokolliere Lauf-ID, Schrittindex, Anfragen-ID, Provider, Modell, Beendigungsgrund, Tool-Aufruf-ID und Stoppgrund. Verwende lieber Lifecycle-Hooks oder DevTools statt Prompts direkt zu protokollieren.

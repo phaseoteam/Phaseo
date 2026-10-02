@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { publicQueryFetcher } from "@/lib/query/fetchers";
 import { webQueryKeys } from "@/lib/query/queryKeys";
@@ -61,6 +62,30 @@ const STATUS_STYLES: Record<StatusState, { dot: string; text: string }> = {
 type StatusComponent = NonNullable<StatusSummary["components"]>[number];
 
 const GROUP_ORDER = ["API", "Platform", "Other"];
+const STATUS_LABEL_KEYS: Record<StatusState, string> = {
+	operational: "operationalSummary",
+	degraded: "degraded",
+	partial_outage: "partialOutage",
+	major_outage: "majorOutage",
+	maintenance: "maintenance",
+	unknown: "unavailable",
+};
+const COMPONENT_NAME_KEYS: Record<string, string> = {
+	"API health (/v1/health)": "apiHealth",
+	"Models API (/v1/models)": "modelsApi",
+	"Generation API demo": "generationApiDemo",
+	Homepage: "homepage",
+	"Documentation homepage": "documentationHomepage",
+	"Docs page": "docsPage",
+};
+const COMPONENT_STATE_KEYS: Record<StatusState, string> = {
+	operational: "operational",
+	degraded: "degraded",
+	partial_outage: "partialOutage",
+	major_outage: "majorOutage",
+	maintenance: "maintenance",
+	unknown: "unknown",
+};
 const COMPONENT_PRIORITY = [
 	"API health (/v1/health)",
 	"Models API (/v1/models)",
@@ -95,10 +120,6 @@ function statusGroup(component: StatusComponent) {
 	return "Other";
 }
 
-function shortComponentName(component: StatusComponent) {
-	return component.name;
-}
-
 function componentPriority(component: StatusComponent) {
 	const exactIndex = COMPONENT_PRIORITY.indexOf(component.name);
 	if (exactIndex >= 0) {
@@ -109,6 +130,7 @@ function componentPriority(component: StatusComponent) {
 }
 
 export function FooterStatusIndicator() {
+	const t = useTranslations("Common.status");
 	const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const { data, error } = useQuery<StatusSummary>({
 		queryKey: webQueryKeys.public.status(),
@@ -130,6 +152,11 @@ export function FooterStatusIndicator() {
 				components: [],
 			};
 	const [open, setOpen] = useState(false);
+	const statusLabel = data
+		? t(STATUS_LABEL_KEYS[status.state] as never)
+		: error
+			? t("unavailable")
+			: t("checking");
 
 	useEffect(() => {
 		return () => {
@@ -158,6 +185,12 @@ export function FooterStatusIndicator() {
 	};
 
 	const styles = STATUS_STYLES[status.state] ?? STATUS_STYLES.unknown;
+	const localizeComponentName = (name: string) => {
+		const key = COMPONENT_NAME_KEYS[name];
+		return key ? t(`componentNames.${key}` as never) : t("componentNames.other" as never);
+	};
+	const localizeGroup = (group: string) =>
+		t(`groups.${group.toLowerCase()}` as never);
 	const components = status.components ?? [];
 	const groupedComponents = GROUP_ORDER.map((group) => {
 		const groupComponents = components
@@ -205,10 +238,10 @@ export function FooterStatusIndicator() {
 				rel="noopener noreferrer"
 				className={`inline-flex h-8 items-center gap-2 text-xs font-medium leading-none transition-colors ${styles.text}`}
 				aria-live="polite"
-				aria-label={`${status.label}. Open status page.`}
+				aria-label={t("openPage", { status: statusLabel })}
 			>
 				<span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
-				<span>{status.label}</span>
+				<span>{statusLabel}</span>
 				<ArrowUpRight className="h-3.5 w-3.5 opacity-55 transition-transform group-hover/status:-translate-y-0.5 group-hover/status:translate-x-0.5 group-hover/status:opacity-100" />
 			</Link>
 			<span
@@ -219,7 +252,7 @@ export function FooterStatusIndicator() {
 				<span className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-zinc-200/80 bg-white px-3 py-3 dark:border-zinc-800 dark:bg-zinc-950">
 					<span className="min-w-0">
 						<span className={`block text-xs font-semibold ${styles.text}`}>
-							{status.label}
+							{statusLabel}
 						</span>
 					</span>
 					<Link
@@ -228,7 +261,7 @@ export function FooterStatusIndicator() {
 						rel="noopener noreferrer"
 						className="pointer-events-auto inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
 					>
-						Visit status page
+						{t("visitPage")}
 						<ArrowUpRight className="h-3 w-3" />
 					</Link>
 				</span>
@@ -240,19 +273,20 @@ export function FooterStatusIndicator() {
 						groupedComponents.map((group) => (
 							<span key={group.group} className="block">
 								<span className="sticky top-0 z-10 flex items-center justify-between bg-white px-3 py-1.5 text-[11px] font-semibold text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
-									<span>{group.group}</span>
+									<span>{t(`groups.${group.group.toLowerCase()}` as never)}</span>
 									{group.affected ? (
 										<span className="normal-case tracking-normal text-amber-700 dark:text-amber-300">
-											Affected
+											{t("affected")}
 										</span>
 									) : null}
 								</span>
 								{group.components.map((component) => {
 									const componentStyle =
 										STATUS_STYLES[component.state] ?? STATUS_STYLES.unknown;
+									const localizedName = localizeComponentName(component.name);
 									const fullLabel = component.parent
-										? `${component.name} - ${component.parent}`
-										: component.name;
+										? `${localizedName} - ${localizeGroup(statusGroup(component))}`
+										: localizedName;
 
 									return (
 										<span
@@ -266,11 +300,11 @@ export function FooterStatusIndicator() {
 												/>
 												<span className="min-w-0 flex-1">
 													<span className="block whitespace-normal break-words text-xs font-medium leading-snug text-zinc-800 dark:text-zinc-200">
-														{shortComponentName(component)}
+												{localizedName}
 													</span>
 													{component.parent ? (
 														<span className="mt-0.5 block whitespace-normal break-words text-[11px] leading-snug text-zinc-500 dark:text-zinc-500">
-															{component.parent}
+													{localizeGroup(statusGroup(component))}
 														</span>
 													) : null}
 												</span>
@@ -278,9 +312,7 @@ export function FooterStatusIndicator() {
 											<span
 												className={`mt-0.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${componentStyle.text}`}
 											>
-												{component.state === "operational"
-													? "Operational"
-													: component.label}
+											{t(`componentStates.${COMPONENT_STATE_KEYS[component.state]}` as never)}
 											</span>
 										</span>
 									);
@@ -289,7 +321,7 @@ export function FooterStatusIndicator() {
 						))
 					) : (
 						<span className="block px-3 py-2 text-xs text-zinc-500 dark:text-zinc-400">
-							Component-level status is unavailable.
+							{t("componentUnavailable")}
 						</span>
 					)}
 				</ScrollArea>

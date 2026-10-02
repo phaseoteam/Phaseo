@@ -1,0 +1,90 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "查阅 TypeScript Agent SDK 的入口点、方法、选项和结果类型。"
+---
+
+如果你已了解 Agent SDK 工作流，并且需要查找准确的公开入口点或选项，请查看此页面。
+
+## 入口点
+
+| 导出项 | 用途 |
+| --- | --- |
+| `createAgent(definition)` | 定义智能体及其默认运行时行为 |
+| `defineTool(definition)` | 定义经过验证的本地工具、手动工具、需审批工具或可报告进度的工具 |
+| `tool(definition)` | `defineTool()` 的简写别名 |
+| `createGatewayAgentClient(options)` | 通过 Phaseo Gateway 运行模型轮次 |
+| `createAgentDevtools(options)` | 启用本地运行捕获 |
+
+## 智能体方法
+
+| 方法 | 返回值 | 用途 |
+| --- | --- | --- |
+| `agent.run(options)` | `Promise<AgentRunResult>` | 运行至完成、暂停、停止、取消或失败 |
+| `agent.stream(options)` | `AgentStreamResult` | 使用可重放的流消费者启动相同循环 |
+| `agent.continueRun(options)` | `Promise<AgentRunResult>` | 通过决策或人工输入继续已保存或暂停的状态 |
+
+## 流消费者
+
+| 方法 | 值 |
+| --- | --- |
+| `getResult()` | 已完成的 `AgentRunResult` |
+| `getText()` | 完整的最终文本 |
+| `getTextStream()` | 文本增量 |
+| `getReasoningStream()` | 模型提供的推理增量（如有） |
+| `getItemsStream()` | 类型化的 `AgentItem<TOutput>` 值 |
+| `getToolStream()` | 工具生命周期事件 |
+| `getFullStream()` | 完整的 Agent SDK 事件流 |
+| `cancel(reason?)` | 取消当前运行 |
+
+## 定义选项
+
+`AgentDefinition` 包含：
+
+- `id`
+- `model` 或 `models`
+- `preset`
+- `instructions`
+- `tools`
+- `maxSteps` 和 `stopWhen`
+- `modelRetry` 和 `toolExecution`
+- `temperature`、`maxOutputTokens` 和 `topP`
+- `parseOutput` 和 `outputSchema`
+- `requireApproval` 和 `humanReview`
+
+模型、指令和采样字段可以使用固定值或动态值。
+
+## 运行和继续选项
+
+`AgentRunOptions` 提供输入、模型客户端、应用上下文、可选覆盖项、取消操作、生命周期钩子、DevTools，以及由应用管理的状态访问器。
+
+`AgentContinueOptions` 还接受：
+
+- 之前的 `run` 或 `runId`
+- `humanInput`
+- 按确切的工具调用 ID 批准或拒绝
+- 外部生成的 `toolOutputs`
+
+## 结果记录
+
+`AgentRunResult` 包含：
+
+- `run`: 持久运行状态、上下文、暂停详情和停止原因
+- `steps`: 已保存的模型/工具步骤记录
+- `stepResults`: 可用时的标准化步骤结果
+- `usage`: 累计 Token 数和报告的费用
+- `output`: 解析后的最终输出
+- `messages`: 循环使用的完整对话
+- `items`: 按顺序排列的类型化消息、推理、工具活动、错误和最终输出
+
+## 错误类型
+
+- `AgentGatewayError` 描述 Gateway 或上游请求故障。
+- `AgentSchemaValidationError` 描述无效的工具、进度或最终输出数据。
+
+## 相关指南
+
+- [构建你的第一个智能体](./agent-sdk.mdx)
+- [流式传输](./agent-sdk-streaming.mdx)
+- [使用条目](./agent-sdk-items.mdx)
+- [错误与故障排查](./agent-sdk-events-and-errors.mdx)

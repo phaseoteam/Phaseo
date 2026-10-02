@@ -1,0 +1,10 @@
+---
+title: "إنشاء وجهة لقابلية الرصد"
+sidebarTitle: "إنشاء الوجهة"
+badge: "تجريبي"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /observability/destinations"
+description: "ينشئ وجهة webhook أو OpenTelemetry."
+---
+<Note>تتطلب نقطة النهاية هذه مفتاح API للإدارة يتضمن `settings:write`.</Note>
+
+كائن `config` للكتابة فقط ويُشفّر قبل التخزين. يجب أن تستخدم نقاط النهاية عناوين HTTPS عامة.

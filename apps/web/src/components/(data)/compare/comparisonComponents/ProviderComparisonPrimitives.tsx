@@ -6,17 +6,21 @@ import type { ExtendedModel } from "@/data/types";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { Binary, Captions, FileText, Image as ImageIcon, Music4, Radio, Speech, Type, Video, Volume2 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
-function normalizeTypeLabel(value: string): string {
+function normalizeTypeLabel(
+	value: string,
+	t: ReturnType<typeof useTranslations<"Catalogue.compare">>
+): string {
 	const normalized = value.trim().toLowerCase();
-	if (normalized === "text") return "Text";
-	if (normalized === "image") return "Image";
-	if (normalized === "audio_stt") return "Speech-to-text";
-	if (normalized === "audio_tts") return "Text-to-speech";
-	if (normalized === "audio_music") return "Music";
-	if (normalized === "audio") return "Audio";
-	if (normalized === "video") return "Video";
-	if (normalized === "embedding" || normalized === "embeddings") return "Embeddings";
+	if (normalized === "text") return t("modalityText");
+	if (normalized === "image") return t("modalityImage");
+	if (normalized === "audio_stt") return t("modalityTranscription");
+	if (normalized === "audio_tts") return t("modalitySpeech");
+	if (normalized === "audio_music") return t("modalityMusic");
+	if (normalized === "audio") return t("modalityAudio");
+	if (normalized === "video") return t("modalityVideo");
+	if (normalized === "embedding" || normalized === "embeddings") return t("modalityEmbeddings");
 	return value;
 }
 
@@ -57,6 +61,7 @@ export function ColumnGrid({
 }
 
 export function TypeBadges({ values }: { values: string[] }) {
+	const t = useTranslations("Catalogue.compare");
 	if (!values.length) return <span className="text-muted-foreground">-</span>;
 
 	return (
@@ -67,7 +72,7 @@ export function TypeBadges({ values }: { values: string[] }) {
 				return (
 					<Badge key={value} variant="outline" className={cn("h-6 gap-1 rounded-md px-1.5 text-[10px] font-medium", tone.badgeClassName)}>
 						<Icon className={cn("size-3", tone.iconClassName)} />
-						{normalizeTypeLabel(value)}
+						{normalizeTypeLabel(value, t)}
 					</Badge>
 				);
 			})}
@@ -82,6 +87,8 @@ export function MiniBars({
 	modelId: string;
 	points: Array<{ date: string; value: number }>;
 }) {
+	const t = useTranslations("Catalogue.compare");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const compactPoints = points.slice(-18);
 	const maxValue = compactPoints.length
@@ -102,15 +109,12 @@ export function MiniBars({
 							)}%`,
 							opacity: point.value > 0 ? 1 : 0.2,
 						}}
-						title={`${format.number(point.value, {
-							maximumFractionDigits: 0,
-							notation: "standard",
-						})} tokens`}
+						title={t("tokenCountTooltip", { count: format.number(point.value, { maximumFractionDigits: 0, notation: "standard" }) })}
 					/>
 				))
 			) : (
 				<div className="w-full text-right text-xs text-muted-foreground">
-					No activity points
+					{t("noActivityPoints")}
 				</div>
 			)}
 		</div>

@@ -1,0 +1,78 @@
+---
+title: "OpenAI GPT-5.4"
+description: "Wichtige Hinweise zur Einführung von GPT-5.4, einschließlich Reasoning-Steuerung, Vision und Computernutzung."
+icon: "/icons/brands/openai.svg"
+---
+
+# OpenAI GPT-5.4
+
+Mit diesem Leitfaden führen Sie `openai/gpt-5.4` sicher in der Produktion ein.
+
+Bei GPT-5.4 geht es weniger um ein völlig neues Anfrageformat als um aktualisierte Reasoning-Steuerung, Bildverarbeitung und Tool-Nutzung. Stand 10. März 2026 hebt die offizielle OpenAI-Dokumentation `reasoning.effort`, verbesserte Computernutzung und eine detailgetreuere Bildeingabe hervor. Ein GPT-5.4-spezifischer Parameter `phase` ist dort nicht dokumentiert.
+
+## Schnelleinstieg für die Migration
+
+1. Ändern Sie die Modell-ID zu `openai/gpt-5.4` und lassen Sie die übrige Anfrage unverändert.
+2. Wählen und testen Sie die Reasoning-Stufe passend zum Latenzbudget der Route.
+3. Testen Sie Vision, strukturierte Ausgaben und Computernutzung bei Bedarf erneut.
+4. Führen Sie GPT-5.4 schrittweise ein und halten Sie die bisherige Route als Fallback bereit.
+
+## Neuerungen
+
+- `reasoning.effort` unterstützt `none`, `low`, `medium`, `high` und `xhigh`.
+- GPT-5.4 ergänzt den Bilddetailgrad `original` für eine detailgetreuere visuelle Wahrnehmung.
+- Das aktualisierte Tool `computer` ist der offizielle Weg für Computernutzungs-Workflows mit GPT-5.4.
+- GPT-5.4 verbessert lang laufende Tool-Nutzung, Arbeit mit großem Kontext und professionelle Dokumentenabläufe.
+
+## Was Sie an Ihrer Integration ändern sollten
+
+### 1. Reasoning-Einstellungen prüfen
+
+Kommen Sie von GPT-4.1 oder einer älteren GPT-5-Variante, sollten Sie bisherige Standardwerte nicht ungeprüft übernehmen. Testen Sie jede Route mit der Aufwandsstufe, die zu ihrem Latenzbudget passt:
+
+- `none` oder `low` für Routen mit niedriger Latenz
+- `medium` oder `high` für die meisten strukturierten Aufgaben
+- `xhigh` für tiefes Reasoning oder Agenten-Workflows
+
+### 2. Vision-Pipelines überprüfen
+
+Wenn Ihr Workflow von detaillierten Screenshots, Dokumenten oder UI-Lokalisierung abhängt, testen Sie den neuen Bilddetailgrad `original`. Er verändert sowohl die Detailtreue als auch die Kosten.
+
+### 3. Routen zur Computernutzung erneut prüfen
+
+Wenn Sie Browser- oder Desktop-Automatisierung migrieren, aktualisieren Sie auf den aktuellen Pfad des Tools `computer` und testen Sie den vollständigen Abschluss der Schritte.
+
+## Was Sie testen sollten
+
+### Prompt-Kompatibilität
+
+- lange System-Prompts
+- Extraktions- und Klassifizierungs-Prompts
+- formatempfindliche Ausgaben
+- Prompts, die bisher Wiederholungsversuche benötigten, um beim Thema zu bleiben
+
+### Tools und strukturierte Ausgaben
+
+- Schema-Einhaltung auf jeder Aufwandsstufe
+- Qualität der Tool-Auswahl
+- Vollständigkeit der Argumente
+- Stabilität mehrstufiger Workflows zur Computernutzung
+
+### Vision und Betrieb
+
+- Screenshot- und Dokumentverständnis mit Detailgrad `high` und `original`
+- Latenz und Tokenverbrauch unter realistischen Bedingungen
+- Wiederholungs- und Zeitüberschreitungsrate
+- Kosten pro erfolgreicher Aufgabe im Vergleich zum ersetzten Modell
+
+## Sicherer Rollout
+
+1. Bewerten Sie GPT-5.4 mit genau den Aufwandsstufen, die Sie später einsetzen möchten.
+2. Testen Sie bei Bildnutzung `original` separat, da es Qualität und Kosten verändert.
+3. Führen Sie Produktions-Prompts parallel aus, bevor Sie eine Standardroute ändern.
+4. Erhöhen Sie den Traffic schrittweise und halten Sie ein älteres OpenAI-Modell oder einen anderen Anbieter als Fallback bereit.
+
+## Quellen
+
+- [GPT-5.4 vorgestellt](https://openai.com/index/introducing-gpt-5-4/)
+- [GPT-5.4-Modelldokumentation](https://developers.openai.com/api/docs/models/gpt-5.4)

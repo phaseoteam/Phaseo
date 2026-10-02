@@ -1,0 +1,136 @@
+---
+title: "الترحيل من Vercel AI Gateway"
+sidebarTitle: "Vercel AI Gateway"
+description: "استبدل توجيه Vercel AI Gateway بـ Phaseo Gateway مع الحفاظ على سلوك التطبيقات التي تستخدم AI SDK أو واجهة متوافقة مع OpenAI."
+icon: "/icons/brands/vercel.svg"
+---
+
+إذا كنت تستخدم Vercel AI Gateway عبر Vercel AI SDK أو عميل متوافق مع OpenAI، فأبقِ منطق التطبيق كما هو وبدّل نقطة الاتصال بالمزوّد فقط في البداية.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL للبوابة | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| مفتاح API | مفتاح Vercel AI Gateway | `PHASEO_API_KEY` |
+| مزوّد AI SDK | الإعداد الحالي | `@phaseo/ai-sdk-provider` عند استخدام AI SDK مباشرةً |
+| تدفّق التطبيق | منطق التوليد الحالي | اتركه كما هو في المرحلة الأولى |
+
+## قبل البدء
+
+- عنوان URL الأساسي الحالي وإعداد المفتاح لـ Vercel AI Gateway.
+- إتاحة `PHASEO_API_KEY` في بيئات التطوير المحلية والاختبار والإنتاج.
+- مجموعة صغيرة من المطالبات أو اختبارات التكامل تغطي الطلبات دون بث ومع البث واستدعاء الأدوات المستخدم.
+
+## 1) وثّق نقطة الاتصال الحالية بالبوابة
+
+اعثر على الموضع المركزي الذي ينشئ فيه التطبيق مزوّدي النماذج أو عملاء API. ابدأ الترحيل من هناك.
+
+- حدّد مصنع المزوّد أو العميل المستخدم.
+- أدرج معرّفات النماذج المستخدمة في الإنتاج.
+- سجّل القيم الافتراضية لإعادة المحاولة والمهل الزمنية والبدائل.
+- دوّن ما إذا كانت بيئتا edge والخادم تحتاجان إلى التغيير نفسه.
+- حدّد القيم المشتركة للمطالبات أو المعلمات التي ينبغي تحويلها إلى إعدادات Gateway مسبقة بدلًا من تضمينها في كل استدعاء AI SDK.
+
+## 2) بدّل نقطة النهاية والمفتاح
+
+في معظم العملاء المتوافقين مع OpenAI، يكفي استبدال عنوان URL الأساسي والمفتاح.
+
+<CodeGroup>
+```typescript TypeScript
+// OpenAI-compatible client before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
+  baseURL: "https://ai-gateway.vercel.sh/v1",
+});
+```
+
+```typescript TypeScript
+// OpenAI-compatible client after
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```typescript TypeScript
+// Official Phaseo provider for the Vercel AI SDK
+import { generateText } from "ai";
+import { createPhaseo } from "@phaseo/ai-sdk-provider";
+
+const phaseo = createPhaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const { text } = await generateText({
+  model: phaseo("openai/gpt-4.1-mini"),
+  prompt: "Generate a migration checklist.",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) تحقّق من تطابق السلوك
+
+شغّل مجموعة المطالبات نفسها عبر المسارين القديم والجديد، ثم قارن زمن الاستجابة وتنسيق المخرجات واستهلاك الرموز.
+
+- تحقّق من توليد النص دون بث.
+- تحقّق من معالجة أجزاء البث عبر مسار التعليمات البرمجية المستخدم في الإنتاج.
+- تحقّق من استدعاء الأدوات إذا كان التطبيق يعتمد عليه.
+- أكّد أن تعيين الأخطاء على مستوى التطبيق لم يتغير.
+- انقل إعدادات التوجيه الدائمة وقيود المزوّدين إلى [الإعدادات المسبقة](../guides/presets.mdx) أو [التوجيه والبدائل](../guides/routing-and-fallbacks.mdx)، بدلًا من تكرارها في كل مصنع للنماذج.
+
+## 4) قائمة التحقق لـ Vercel AI SDK وGateway
+
+أكمل هذه القائمة قبل زيادة حركة المرور:
+
+- تم تحديث عنوان URL الأساسي إلى `https://api.phaseo.app/v1`.
+- تم إعداد `PHASEO_API_KEY` في كل بيئة استخدمت مفتاح Vercel Gateway.
+- تم دمج المزوّد الرسمي `@phaseo/ai-sdk-provider` إذا كان التطبيق يستخدم Vercel AI SDK مباشرةً.
+- يعمل مسار توليد النص الأساسي في AI SDK في بيئة الاختبار.
+- ينجح اختبار بث على مستوى التطبيق دون تغيير.
+- أُعيد التحقق من استدعاء الأدوات والمخرجات المنظّمة عند استخدامها.
+- قورنت المخرجات القديمة والجديدة بمجموعة صغيرة من المطالبات.
+- يظل التراجع ممكنًا عبر تغيير الإعدادات أو مفتاح ميزة فقط.
+- نُقلت القيم المشتركة للمطالبات والتوجيه إلى الإعدادات المسبقة عند الاقتضاء.
+- أُعيد التحقق من الاستعلام عبر `GET /v1/generations?id=<request_id>`، كي يمكن إعادة تشغيل الطلبات الفاشلة من حمولة `replay_request` المخزّنة عندما تكون `replay_supported=true`.
+
+## 5) خطة إصدار منخفضة المخاطر
+
+1. أطلق التغيير خلف مفتاح ميزة أو عبر طرح تدريجي.
+2. ابدأ بحركة المرور الداخلية أو بجزء صغير من حركة الإنتاج.
+3. راقب زمن الاستجابة ومعدل الأخطاء والتغير في استهلاك الرموز والتكلفة.
+4. أبقِ الإعدادين متاحين خلال دورة إصدار واحدة على الأقل.
+
+## أوامر التحقق
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+بعد ذلك:
+
+- شغّل اختبار التكامل الأساسي لتوليد النص في التطبيق.
+- شغّل اختبار بث في بيئة الاختبار.
+- قارن مخرجات المطالبات الرئيسية عبر المسارين قبل الترحيل الكامل.
+
+## الخطوات التالية
+
+- [الترحيل من OpenRouter](./from-openrouter.mdx)
+- [البدء السريع](../quickstart.mdx)
+- [أمثلة](../guides/examples.mdx)

@@ -1,5 +1,9 @@
 import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
+import productMessages from "../../../../messages/en-GB/product.json";
+const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}>{node}</NextIntlClientProvider>);
 import { RoutingTracePanel } from "./RoutingTracePanel";
 
 jest.mock("@/components/Logo", () => ({ Logo: () => null }));
@@ -18,15 +22,15 @@ test("retains diagnostic values behind collapsed technical details", () => {
             calculation: { formula: "balanced_weighted_additive", finalScore: 0.812345 },
         },
     }]} />);
-    expect(html).toContain("Routing decision");
+    expect(html).toContain("Routing observability");
     expect(html).toContain("Score breakdown");
     expect(html).toContain("Price");
     expect(html).toContain("Reliability");
     expect(html).toContain('title="0.812345"');
     expect(html).toMatch(/<details(?![^>]*\bopen=)[^>]*><summary[^>]*>Technical details<\/summary>/);
     expect(html).toContain("balanced_weighted_additive");
-    expect(html.indexOf("Technical details")).toBeLessThan(html.indexOf("Base Weight"));
-    expect(html).toContain("Rollout Multiplier");
+    expect(html.indexOf("Technical details")).toBeLessThan(html.indexOf("Base weight"));
+    expect(html).toContain("Rollout multiplier");
 });
 
 test("does not invent a selected provider for an incomplete decision record", () => {

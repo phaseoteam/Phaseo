@@ -1,0 +1,13 @@
+---
+title: "获取 API 密钥"
+sidebarTitle: "获取 API 密钥"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /keys/{id}"
+description: "按 ID 或哈希值检索单个 API 密钥。"
+---
+<Note>
+此端点需要管理 API 密钥。不接受标准 Gateway API 密钥。
+</Note>
+
+返回已验证工作区中一个 API 密钥的元数据。路径段 `{id}` 可以是密钥的内部 ID，也可以是 API 返回的密钥哈希值。
+

@@ -1,0 +1,83 @@
+---
+title: "Anthropic Claude Opus 4.8"
+description: "介绍采用 Claude Opus 4.8 时需要了解的自适应思考、采样控制和长上下文。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.8
+
+使用本指南，在生产环境中安全采用 `anthropic/claude-opus-4.8`。
+
+Anthropic 于 2026 年 6 月 5 日弃用 Claude Opus 4.1，并计划于 2026 年 8 月 5 日停止提供。迁移指南是累积式的：先应用 Claude Opus 4.7 的请求格式变更，再检查 Claude Opus 4.8 的行为变化。
+
+## 新功能
+
+- Phaseo 模型 ID 为 `anthropic/claude-opus-4.8`。
+- Opus 4.7 及更高版本会拒绝 `temperature`、`top_p` 和 `top_k` 等非默认采样参数。
+- Opus 4.7 及更高版本会拒绝手动扩展思考预算，请改用自适应思考。
+- Opus 4.8 默认将 `output_config.effort` 设为 `high`。
+- Opus 4.8 支持在对话中途发送系统消息。
+- 在 Claude API、AWS 上的 Claude Platform、Amazon Bedrock 和 Vertex AI 中，Opus 4.8 将基准上下文上限提升至 100 万 token，最大输出提升至 128K token。
+
+## 迁移快速入门
+
+### 1. 更新模型 ID
+
+将模型 ID 设置为 `anthropic/claude-opus-4.8`。
+
+### 2. 移除非默认采样参数
+
+如果 Opus 4.1 请求仍设置以下参数，请在发布前移除：
+
+- `temperature`
+- `top_p`
+- `top_k`
+
+在 Opus 4.7 及更高版本中，这些参数的非默认值会返回 `400`。
+
+### 3. 将手动思考预算改为自适应思考
+
+如果仍发送旧版思考负载，例如：
+
+- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+
+请改用：
+
+- `thinking: { "type": "adaptive" }`
+- 以 `output_config.effort = "high"` 作为基准
+
+### 4. 重新校准强度和长上下文预期
+
+Opus 4.8 默认使用 `high`，并且在 Anthropic 运营的 API 平台上支持远大于 Opus 4.1 的上下文窗口。请重新测试：
+
+- 延迟预算
+- token 用量
+- 提示词缓存行为
+- 长文档和代理轨迹
+
+如果使用 Microsoft Foundry，不要假设发布时即可使用 100 万 token 上下文窗口；Anthropic 文档说明 Foundry 上的 Opus 4.8 上下文窗口为 20 万 token。
+
+### 5. 检查长对话中的指令更新
+
+Opus 4.8 支持在对话中途发送系统消息。如果代理循环当前每轮都会重写完整系统提示词，你可能可以简化流程并保留更多缓存命中。
+
+## 测试内容
+
+- 仍发送 `temperature`、`top_p` 或 `top_k` 的请求。
+- 之前依赖 `budget_tokens` 的思考路由。
+- 长周期代理和工具工作流。
+- 显式指定 `effort` 的 Schema 敏感输出。
+- 高频 Opus 4.1 提示词类别的 token 成本和延迟变化。
+
+## 安全发布
+
+1. 切换流量前移除采样参数和旧思考预算。
+2. 使用接近生产环境的提示词和工具工作流对 Opus 4.8 进行影子测试。
+3. 在 2026 年 8 月 5 日之前的并行期保留回退路由并灰度发布。
+4. 只有延迟、成本和任务完成率差异符合目标后才扩大流量。
+
+## 来源
+
+- [Anthropic 模型弃用信息](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Claude Opus 4.8 新功能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

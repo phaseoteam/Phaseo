@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
 import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
@@ -63,10 +64,10 @@ interface ModelPerformanceDashboardProps {
 
 type PerformanceRangeDays = 1 | 3 | 7;
 
-const PERFORMANCE_RANGES: Array<{ days: PerformanceRangeDays; label: string }> = [
-	{ days: 1, label: "1 day" },
-	{ days: 3, label: "3 days" },
-	{ days: 7, label: "7 days" },
+const PERFORMANCE_RANGES: Array<{ days: PerformanceRangeDays }> = [
+	{ days: 1 },
+	{ days: 3 },
+	{ days: 7 },
 ];
 
 const pointTimestamp = (point: { bucket?: string; day?: string }) =>
@@ -85,9 +86,9 @@ export function filterPerformanceRange<T extends { bucket?: string; day?: string
 	});
 }
 
-function formatSampleTime(value: string | null): string {
-	if (!value) return "Unknown";
-	return new Intl.DateTimeFormat("en-GB", {
+function formatSampleTime(value: string | null, locale: string): string {
+	if (!value) return "";
+	return new Intl.DateTimeFormat(locale, {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
@@ -105,6 +106,9 @@ export default function ModelPerformanceDashboard({
 	availableColos,
 	headerDescription,
 }: ModelPerformanceDashboardProps) {
+	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
+	const locale = useLocale();
 	const [initialSelection] = useState<{
 		colo: string | null;
 		percentile: ModelPercentile;
@@ -171,7 +175,15 @@ export default function ModelPerformanceDashboard({
 	const hasTelemetry = hasPerformanceHistory(activeMetrics);
 	const isStale = hasTelemetry && isPerformanceDataStale(activeMetrics);
 	const latestSampleAt = getLatestPerformanceSampleAt(activeMetrics);
-	const regionLabel = selectedColo?.toUpperCase() ?? "All Locations";
+	const regionLabel = selectedColo?.toUpperCase() ?? t("allLocations");
+	const continentKey: Record<string, "africa" | "asia" | "europe" | "northAmerica" | "oceania" | "southAmerica"> = {
+		Africa: "africa",
+		Asia: "asia",
+		Europe: "europe",
+		"North America": "northAmerica",
+		Oceania: "oceania",
+		"South America": "southAmerica",
+	};
 	const usageByColo = new Map(
 		availableColos
 			.filter((colo) => colo.requests > 0)
@@ -239,24 +251,24 @@ export default function ModelPerformanceDashboard({
 			<div className="flex flex-wrap items-start justify-between gap-4">
 				<div className="space-y-1">
 					<div className="flex flex-wrap items-center gap-2">
-						<h2 className="text-xl font-semibold tracking-tight">Performance</h2>
+						<h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
 						{isStale ? (
 							<HoverCard openDelay={150} closeDelay={100}>
 								<HoverCardTrigger asChild>
-									<button type="button" aria-label="About stale performance data">
+									<button type="button" aria-label={t("aboutStaleData")}>
 										<Badge
 											variant="outline"
 											className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
 										>
 											<CircleAlert aria-hidden="true" data-icon="inline-start" />
-											Stale data
+											{t("staleData")}
 										</Badge>
 									</button>
 								</HoverCardTrigger>
 								<HoverCardContent align="start" className="w-72 rounded-lg p-3">
-									<p className="font-medium text-foreground">Performance data is over 24 hours old</p>
+									<p className="font-medium text-foreground">{t("performanceDataOld")}</p>
 									<p className="mt-1 text-xs text-muted-foreground">
-										Latest observation: {formatSampleTime(latestSampleAt)}. The charts remain visible for historical context.
+										{t("staleDescription", { date: formatSampleTime(latestSampleAt, locale) })}
 									</p>
 								</HoverCardContent>
 							</HoverCard>
@@ -271,7 +283,7 @@ export default function ModelPerformanceDashboard({
 								variant="outline"
 								size="sm"
 								className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:flex-none"
-								aria-label="Select performance time range"
+								aria-label={t("selectTimeRange")}
 							>
 								<CalendarDays className="size-3.5" />
 								{selectedRangeDays}D
@@ -286,7 +298,7 @@ export default function ModelPerformanceDashboard({
 							>
 								{PERFORMANCE_RANGES.map((range) => (
 									<DropdownMenuRadioItem key={range.days} value={String(range.days)}>
-										{range.label}
+										{tx("Common.ui.publicModelCopy.days", { count: range.days })}
 									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>
@@ -297,7 +309,7 @@ export default function ModelPerformanceDashboard({
 							value={selectedPercentile}
 							onChange={handlePercentileChange}
 							isLoading={isLoadingPercentile}
-							ariaLabel="Select performance percentile"
+							ariaLabel={t("selectPercentile")}
 							className="min-w-0 flex-1 justify-center sm:flex-none"
 						/>
 					) : null}
@@ -308,7 +320,7 @@ export default function ModelPerformanceDashboard({
 												size="sm"
 										className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:w-auto sm:flex-none"
 												aria-busy={isLoadingRegion}
-												aria-label="Filter performance by API location"
+												aria-label={t("filterByLocation")}
 											>
 												{isLoadingRegion ? (
 													<Loader2 className="size-3.5 animate-spin" />
@@ -323,7 +335,7 @@ export default function ModelPerformanceDashboard({
 											className="min-w-56 rounded-lg"
 										>
 											<div className="px-2 py-1.5 text-xs text-muted-foreground">
-												API Execution Location
+							{t("apiExecutionLocation")}
 											</div>
 											<DropdownMenuSeparator />
 											<DropdownMenuRadioGroup
@@ -331,20 +343,20 @@ export default function ModelPerformanceDashboard({
 												onValueChange={handleColoChange}
 											>
 												<DropdownMenuRadioItem value="all">
-													All Locations
+								{t("allLocations")}
 												</DropdownMenuRadioItem>
 											</DropdownMenuRadioGroup>
 											<DropdownMenuSeparator />
 											{catalogColosByContinent.length === 0 ? (
 												<DropdownMenuItem disabled>
-													No location data available
+								{t("noLocationData")}
 												</DropdownMenuItem>
 											) : (
 												catalogColosByContinent.map((group) => (
 													<DropdownMenuSub key={group.continent}>
 												<DropdownMenuSubTrigger>
-													<Globe2 className="size-3.5 text-muted-foreground" />
-													{group.continent}
+									<Globe2 className="size-3.5 text-muted-foreground" />
+													{t(`continents.${continentKey[group.continent] ?? "europe"}` as never)}
 												</DropdownMenuSubTrigger>
 														<DropdownMenuSubContent className="max-h-80 min-w-80 rounded-lg">
 															<DropdownMenuRadioGroup
@@ -389,10 +401,9 @@ export default function ModelPerformanceDashboard({
 						<EmptyMedia variant="icon">
 							<Activity className="size-5" />
 						</EmptyMedia>
-						<EmptyTitle>No gateway telemetry in the past 7 days</EmptyTitle>
+						<EmptyTitle>{t("noTelemetry")}</EmptyTitle>
 						<EmptyDescription>
-							Hourly charts will appear when this model processes gateway traffic
-							in the selected location.
+							{t("telemetryHint")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

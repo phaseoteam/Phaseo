@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { debounce, parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import {
 	Activity,
@@ -116,33 +117,19 @@ type ProviderTableColumn = TableColumnDefinition & {
 
 type FilterOption = { value: string; label: string; count: number; icon?: LucideIcon };
 
-const SORT_OPTION_LABELS: Record<ProviderSortOption, string> = {
-	daily_tokens_desc: "Most Used",
-	total_models_desc: "Most Models",
-	free_models_desc: "Most Free Models",
-	a_z: "Name (A–Z)",
-};
+const SORT_OPTIONS: ProviderSortOption[] = ["daily_tokens_desc", "total_models_desc", "free_models_desc", "a_z"];
 
-const MODALITIES: Array<{ value: ProviderModalityKey; label: string; icon: LucideIcon }> = [
-	{ value: "text", label: "Text", icon: Type },
-	{ value: "image", label: "Image", icon: ImageIcon },
-	{ value: "video", label: "Video", icon: Video },
-	{ value: "audio", label: "Audio", icon: AudioLines },
-	{ value: "embedding", label: "Embeddings", icon: Binary },
-	{ value: "moderation", label: "Moderation", icon: BadgeAlert },
+const MODALITIES: Array<{ value: ProviderModalityKey; icon: LucideIcon }> = [
+	{ value: "text", icon: Type },
+	{ value: "image", icon: ImageIcon },
+	{ value: "video", icon: Video },
+	{ value: "audio", icon: AudioLines },
+	{ value: "embedding", icon: Binary },
+	{ value: "moderation", icon: BadgeAlert },
 ];
 
-const DATA_POLICY_LABELS: Record<string, string> = {
-	private: "Private",
-	logs: "Logs",
-	trains: "Trains",
-	unknown: "Unknown",
-};
-
-const ZDR_LABELS: Record<string, string> = { true: "True", false: "False" };
-
-function policyLabel(value: string | null, labels: Record<string, string>): string {
-	return value ? labels[value] ?? value.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : "Unknown";
+function policyLabel(value: string | null, labels: Record<string, string>, unknownLabel: string): string {
+	return value ? labels[value] ?? value.split("_").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ") : unknownLabel;
 }
 
 const arrayParser = parseAsArrayOf(parseAsString).withDefault([]).withOptions({
@@ -181,48 +168,8 @@ function supportsModality(provider: APIProviderCardType, modality: ProviderModal
 	return Number(support?.input ?? 0) + Number(support?.output ?? 0) > 0;
 }
 
-function countryLabel(code: string) {
-	if (!code) return "Unknown";
-	try {
-		return new Intl.DisplayNames(["en"], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
-	} catch {
-		return code.toUpperCase();
-	}
-}
-
 function normalizeRegion(value: string) {
 	return value.trim().toLowerCase();
-}
-
-function datacenterLabel(value: string) {
-	const normalized = normalizeRegion(value);
-	const labels: Record<string, string> = {
-		global: "Global",
-		us: "US",
-		eu: "EU",
-		uk: "UK",
-		apac: "APAC",
-		au: "Australia",
-		ca: "Canada",
-		jp: "Japan",
-		kr: "South Korea",
-		sg: "Singapore",
-	};
-	if (labels[normalized]) return labels[normalized];
-	return value.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function formatTokens(value: number) {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-	for (const unit of [
-		{ value: 1_000_000_000_000, suffix: "T" },
-		{ value: 1_000_000_000, suffix: "B" },
-		{ value: 1_000_000, suffix: "M" },
-		{ value: 1_000, suffix: "K" },
-	]) {
-		if (value >= unit.value) return `${(value / unit.value).toFixed(value / unit.value >= 100 ? 0 : 1).replace(/\.0$/, "")}${unit.suffix}`;
-	}
-	return Math.round(value).toLocaleString("en-US");
 }
 
 function ProviderFilterList({ options, selected, onToggle, showFlags = false }: {
@@ -262,6 +209,59 @@ function ProviderFilterList({ options, selected, onToggle, showFlags = false }: 
 }
 
 export default function APIProvidersDisplay({ providers, showPrimaryHeader = true }: APIProvidersDisplayProps) {
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const providerTableDefinitions = useMemo(() => {
+		const labels: Record<ProviderTableColumnId, string> = {
+			provider: t("providerColumn"), headquarters: t("filterHeadquarters"),
+			models: t("models"), free_models: t("freeModels"),
+			modalities: t("filterModalities"), daily_tokens: t("dailyTokens"),
+			monthly_tokens: t("monthlyTokens"), data_policy: t("filterDataPolicy"),
+			zdr: "ZDR", privacy: t("privacyPolicy"), terms: t("termsOfService"),
+		};
+		return PROVIDER_TABLE_COLUMNS.map((column) => ({ ...column, label: labels[column.id] }));
+	}, [t]);
+	const modalityLabels = useMemo<Record<ProviderModalityKey, string>>(() => ({
+		text: t("modalityText"),
+		image: t("modalityImage"),
+		video: t("modalityVideo"),
+		audio: t("modalityAudio"),
+		embedding: t("modalityEmbeddings"),
+		moderation: t("modalityModeration"),
+	}), [t]);
+	const sortLabels = useMemo<Record<ProviderSortOption, string>>(() => ({
+		daily_tokens_desc: t("sortMostUsed"),
+		total_models_desc: t("sortMostModels"),
+		free_models_desc: t("sortMostFreeModels"),
+		a_z: t("sortNameAscending"),
+	}), [t]);
+	const dataPolicyLabels = useMemo<Record<string, string>>(() => ({
+		private: t("dataPolicyPrivate"),
+		logs: t("dataPolicyLogs"),
+		trains: t("dataPolicyTrains"),
+		unknown: t("unknown"),
+	}), [t]);
+	const zdrLabels = useMemo<Record<string, string>>(() => ({
+		true: t("yes"),
+		false: t("no"),
+		unknown: t("unknown"),
+	}), [t]);
+	const formatTokens = (value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+	const countryLabel = useCallback((code: string) => {
+		if (!code) return t("unknown");
+		try {
+			return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase();
+		} catch {
+			return code.toUpperCase();
+		}
+	}, [locale, t]);
+	const datacenterLabel = useCallback((value: string) => {
+		const normalized = normalizeRegion(value);
+		if (normalized === "global") return t("regionGlobal");
+		if (["us", "eu", "uk", "apac"].includes(normalized)) return normalized.toUpperCase();
+		if (["au", "ca", "jp", "kr", "sg"].includes(normalized)) return countryLabel(normalized);
+		return value.trim().replace(/[-_]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+	}, [countryLabel, t]);
 	const pathname = usePathname();
 	const isTable = pathname.endsWith("/table");
 	const [search, setSearch] = useQueryState("search", { defaultValue: "", shallow: true });
@@ -284,7 +284,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		updateColumns: updateProviderTableColumns,
 		updateDensity: updateProviderTableDensity,
 		resetColumns: resetProviderTableColumns,
-	} = useTablePreferences("providers-table", PROVIDER_TABLE_COLUMNS);
+	} = useTablePreferences("providers-table", providerTableDefinitions);
 	const sortOption = normalizeSortOption(sort);
 	const tableSortField = normalizeTableSortField(tableSort);
 	const normalizedTableSortDirection = tableSortDirection === "asc" ? "asc" : "desc";
@@ -295,9 +295,9 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			const code = provider.country_code?.trim().toLowerCase() || "unknown";
 			counts.set(code, (counts.get(code) ?? 0) + 1);
 		}
-		return Array.from(counts, ([value, count]) => ({ value, count, label: value === "unknown" ? "Unknown" : countryLabel(value) }))
+		return Array.from(counts, ([value, count]) => ({ value, count, label: value === "unknown" ? t("unknown") : countryLabel(value) }))
 			.sort((a, b) => a.label.localeCompare(b.label));
-	}, [providers]);
+	}, [countryLabel, providers, t]);
 
 	const datacenterOptions = useMemo<FilterOption[]>(() => {
 		const counts = new Map<string, number>();
@@ -314,39 +314,40 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		return Array.from(counts, ([value, count]) => ({
 			value,
 			count,
-			label: value === "unknown" ? "Unknown" : datacenterLabel(value),
+			label: value === "unknown" ? t("unknown") : datacenterLabel(value),
 			icon: Server,
 		})).sort((a, b) => a.label.localeCompare(b.label));
-	}, [providers]);
+	}, [datacenterLabel, providers, t]);
 
 	const modalityOptions = useMemo<FilterOption[]>(() => MODALITIES.map((item) => ({
 		...item,
+		label: modalityLabels[item.value],
 		count: providers.filter((provider) => supportsModality(provider, item.value)).length,
-	})).filter((item) => item.count > 0), [providers]);
+	})).filter((item) => item.count > 0), [modalityLabels, providers]);
 
 	const coverageOptions = useMemo<FilterOption[]>(() => [
-		{ value: "active", label: "Gateway Providers", count: providers.filter((provider) => provider.is_gateway_provider).length, icon: Activity },
-		{ value: "free", label: "Has Free Models", count: providers.filter((provider) => provider.free_models > 0).length, icon: CircleDollarSign },
-		{ value: "inactive", label: "Inactive Providers", count: providers.filter((provider) => matchesProviderCoverage(provider, "inactive")).length, icon: CircleOff },
-	], [providers]);
+		{ value: "active", label: t("gatewayProvidersFilter"), count: providers.filter((provider) => provider.is_gateway_provider).length, icon: Activity },
+		{ value: "free", label: t("hasFreeModelsFilter"), count: providers.filter((provider) => provider.free_models > 0).length, icon: CircleDollarSign },
+		{ value: "inactive", label: t("inactiveProvidersFilter"), count: providers.filter((provider) => matchesProviderCoverage(provider, "inactive")).length, icon: CircleOff },
+	], [providers, t]);
 
 	const policyOptions = useMemo<FilterOption[]>(() => [
-		{ value: "byok", label: "BYOK Available", count: providers.filter((provider) => matchesProviderPolicy(provider, "byok")).length, icon: KeyRound },
-		{ value: "privacy", label: "Privacy Policy", count: providers.filter((provider) => matchesProviderPolicy(provider, "privacy")).length, icon: ShieldCheck },
-		{ value: "terms", label: "Terms of Service", count: providers.filter((provider) => matchesProviderPolicy(provider, "terms")).length, icon: ScrollText },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "byok", label: t("byokAvailable"), count: providers.filter((provider) => matchesProviderPolicy(provider, "byok")).length, icon: KeyRound },
+		{ value: "privacy", label: t("privacyPolicy"), count: providers.filter((provider) => matchesProviderPolicy(provider, "privacy")).length, icon: ShieldCheck },
+		{ value: "terms", label: t("termsOfService"), count: providers.filter((provider) => matchesProviderPolicy(provider, "terms")).length, icon: ScrollText },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const dataPolicyOptions = useMemo<FilterOption[]>(() => [
-		{ value: "data_policy:private", label: "Private", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:private")).length },
-		{ value: "data_policy:logs", label: "Logs", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:logs")).length },
-		{ value: "data_policy:trains", label: "Trains", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:trains")).length },
-		{ value: "data_policy:unknown", label: "Unknown", count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:unknown")).length },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "data_policy:private", label: t("dataPolicyPrivate"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:private")).length },
+		{ value: "data_policy:logs", label: t("dataPolicyLogs"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:logs")).length },
+		{ value: "data_policy:trains", label: t("dataPolicyTrains"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:trains")).length },
+		{ value: "data_policy:unknown", label: t("unknown"), count: providers.filter((provider) => matchesProviderPolicy(provider, "data_policy:unknown")).length },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const zdrOptions = useMemo<FilterOption[]>(() => [
-		{ value: "zdr:true", label: "True", count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:true")).length },
-		{ value: "zdr:false", label: "False", count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:false")).length },
-	].filter((option) => option.count > 0), [providers]);
+		{ value: "zdr:true", label: t("yes"), count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:true")).length },
+		{ value: "zdr:false", label: t("no"), count: providers.filter((provider) => matchesProviderPolicy(provider, "zdr:false")).length },
+	].filter((option) => option.count > 0), [providers, t]);
 
 	const filteredProviders = useMemo(() => {
 		const query = deferredSearch.trim().toLowerCase();
@@ -367,7 +368,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							delta = a.api_provider_name.localeCompare(b.api_provider_name);
 							break;
 						case "headquarters":
-							delta = countryLabel(a.country_code).localeCompare(countryLabel(b.country_code));
+							delta = countryLabel(a.country_code ?? "").localeCompare(countryLabel(b.country_code ?? ""));
 							break;
 						case "models":
 							delta = Number(a.total_models ?? 0) - Number(b.total_models ?? 0);
@@ -385,10 +386,10 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							delta = Number(a.total_monthly_tokens ?? 0) - Number(b.total_monthly_tokens ?? 0);
 							break;
 						case "data_policy":
-							delta = policyLabel(a.data_policy_tier, DATA_POLICY_LABELS).localeCompare(policyLabel(b.data_policy_tier, DATA_POLICY_LABELS));
+							delta = policyLabel(a.data_policy_tier, dataPolicyLabels, t("unknown")).localeCompare(policyLabel(b.data_policy_tier, dataPolicyLabels, t("unknown")));
 							break;
 						case "zdr":
-							delta = policyLabel(String(a.zero_data_retention), ZDR_LABELS).localeCompare(policyLabel(String(b.zero_data_retention), ZDR_LABELS));
+							delta = policyLabel(a.zero_data_retention == null ? "unknown" : String(a.zero_data_retention), zdrLabels, t("unknown")).localeCompare(policyLabel(b.zero_data_retention == null ? "unknown" : String(b.zero_data_retention), zdrLabels, t("unknown")));
 							break;
 					}
 					if (delta) return normalizedTableSortDirection === "asc" ? delta : -delta;
@@ -409,7 +410,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 				}
 				return a.api_provider_name.localeCompare(b.api_provider_name);
 			});
-	}, [countries, coverage, datacenters, dataPolicy, deferredSearch, modalities, normalizedTableSortDirection, policies, providers, sortOption, tableSortField, zdr]);
+	}, [countries, countryLabel, coverage, datacenters, dataPolicy, dataPolicyLabels, deferredSearch, modalities, normalizedTableSortDirection, policies, providers, sortOption, tableSortField, t, zdr, zdrLabels]);
 
 	const customCoverageCount = coverage.length === 1 && coverage[0] === "active" ? 0 : coverage.length;
 	const activeFilterCount = modalities.length + customCoverageCount + countries.length + datacenters.length + policies.length + dataPolicy.length + zdr.length;
@@ -417,19 +418,19 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const filtersContent = (
 		<Accordion type="multiple" value={openSections} onValueChange={setOpenSections}>
 			<AccordionItem value="coverage" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Activity className="size-4 text-muted-foreground" />Gateway Coverage</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Activity className="size-4 text-muted-foreground" />{t("filterGatewayCoverage")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={coverageOptions} selected={coverage} onToggle={(value) => void setCoverage(toggleProviderCoverage(coverage, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="modalities" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Layers3 className="size-4 text-muted-foreground" />Modalities</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Layers3 className="size-4 text-muted-foreground" />{t("filterModalities")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={modalityOptions} selected={modalities} onToggle={(value) => void setModalities(toggleValue(modalities, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="policies" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />Policies</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />{t("filterPolicies")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={policyOptions} selected={policies} onToggle={(value) => void setPolicies(toggleValue(policies, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="dataPolicy" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />Data Policy</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><ShieldCheck className="size-4 text-muted-foreground" />{t("filterDataPolicy")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={dataPolicyOptions} selected={dataPolicy} onToggle={(value) => void setDataPolicy(toggleValue(dataPolicy, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="zdr" className="border-border/70">
@@ -437,11 +438,11 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={zdrOptions} selected={zdr} onToggle={(value) => void setZdr(toggleValue(zdr, value))} /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="headquarters" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Globe2 className="size-4 text-muted-foreground" />Headquarters</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Globe2 className="size-4 text-muted-foreground" />{t("filterHeadquarters")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={countryOptions} selected={countries} onToggle={(value) => void setCountries(toggleValue(countries, value))} showFlags /></AccordionContent>
 			</AccordionItem>
 			<AccordionItem value="datacenters" className="border-border/70">
-				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Server className="size-4 text-muted-foreground" />Datacenters</span></AccordionTrigger>
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline"><span className="flex items-center gap-2"><Server className="size-4 text-muted-foreground" />{t("filterDatacentres")}</span></AccordionTrigger>
 				<AccordionContent className="pt-1" disableAnimation><ProviderFilterList options={datacenterOptions} selected={datacenters} onToggle={(value) => void setDatacenters(toggleValue(datacenters, value))} /></AccordionContent>
 			</AccordionItem>
 		</Accordion>
@@ -500,17 +501,17 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			void setTableSort(null);
 			void setTableSortDirection(null);
 		}}>
-			<SelectTrigger className={cn("rounded-md border-border", className)} aria-label="Sort providers"><span className="flex min-w-0 items-center gap-2"><ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{SORT_OPTION_LABELS[sortOption]}</span></span></SelectTrigger>
-			<SelectContent align="end">{(Object.keys(SORT_OPTION_LABELS) as ProviderSortOption[]).map((option) => <SelectItem key={option} value={option}>{SORT_OPTION_LABELS[option]}</SelectItem>)}</SelectContent>
+		<SelectTrigger className={cn("rounded-md border-border", className)} aria-label={t("sort")}><span className="flex min-w-0 items-center gap-2"><ArrowUpDown className="size-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{sortLabels[sortOption]}</span></span></SelectTrigger>
+			<SelectContent align="end">{SORT_OPTIONS.map((option) => <SelectItem key={option} value={option}>{sortLabels[option]}</SelectItem>)}</SelectContent>
 		</Select>
 	);
 	const filterButton = () => (
-		<Button variant="outline" size="sm" className="relative h-8 rounded-md px-2 lg:hidden" onClick={() => setMobileFiltersOpen(true)} aria-label="Open filters"><SlidersHorizontal className="size-3.5" /><span className="sr-only">Filters</span>{activeFilterCount ? <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span> : null}</Button>
+		<Button variant="outline" size="sm" className="relative h-8 rounded-md px-2 lg:hidden" onClick={() => setMobileFiltersOpen(true)} aria-label={t("filters")}><SlidersHorizontal className="size-3.5" /><span className="sr-only">{t("filters")}</span>{activeFilterCount ? <span className="absolute -right-1 -top-1 min-w-4 rounded-sm bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span> : null}</Button>
 	);
 	const viewSwitcher = (
 		<div className="inline-flex h-8 shrink-0 overflow-hidden rounded-md border border-border/70 bg-background shadow-xs">
-			<Link href="/api-providers" prefetch={false} aria-label="Card view" aria-current={!isTable ? "page" : undefined} className={cn("inline-flex h-8 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45", !isTable && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}><LayoutGrid className="size-4" /></Link>
-			<Link href="/api-providers/table" prefetch={false} aria-label="Table view" aria-current={isTable ? "page" : undefined} className={cn("inline-flex h-8 w-9 items-center justify-center border-l border-border/70 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45", isTable && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}><Table2 className="size-4" /></Link>
+			<Link href="/api-providers" prefetch={false} aria-label={t("cardView")} aria-current={!isTable ? "page" : undefined} className={cn("inline-flex h-8 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45", !isTable && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}><LayoutGrid className="size-4" /></Link>
+			<Link href="/api-providers/table" prefetch={false} aria-label={t("tableView")} aria-current={isTable ? "page" : undefined} className={cn("inline-flex h-8 w-9 items-center justify-center border-l border-border/70 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring/45", isTable && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground")}><Table2 className="size-4" /></Link>
 		</div>
 	);
 	const handleTableSort = (field: ProviderTableSortField) => {
@@ -531,7 +532,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		return normalizedTableSortDirection === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
 	};
 	const renderTableSortHead = (label: string, field: ProviderTableSortField, align: "left" | "center" = "left") => (
-		<button type="button" onClick={() => handleTableSort(field)} className={cn("group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", align === "center" ? "justify-center text-center" : "justify-start text-left", tableSortField === field ? "text-foreground" : "text-muted-foreground")} aria-label={`Sort providers by ${label.toLowerCase()}`}>
+		<button type="button" onClick={() => handleTableSort(field)} className={cn("group inline-flex w-full items-center gap-1.5 text-xs font-medium transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", align === "center" ? "justify-center text-center" : "justify-start text-left", tableSortField === field ? "text-foreground" : "text-muted-foreground")} aria-label={t("sortProvidersBy", { metric: label.toLowerCase() })}>
 			<span>{label}</span>
 			{tableSortIcon(field)}
 		</button>
@@ -540,7 +541,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		.filter(({ visible }) => visible)
 		.map((preference) => ({
 			preference,
-			definition: PROVIDER_TABLE_COLUMNS.find(({ id }) => id === preference.id)! as ProviderTableColumn,
+			definition: providerTableDefinitions.find(({ id }) => id === preference.id)! as ProviderTableColumn,
 		}));
 	const providerTableWidth = visibleProviderTableColumns.reduce(
 		(total, { definition }) => total + definition.width,
@@ -637,7 +638,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							{isExternal ? (
 								<span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300">
 									<ArrowUpRight className="size-3" />
-									External
+									{t("external")}
 								</span>
 							) : null}
 						</span>
@@ -647,7 +648,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			case "headquarters": {
 				if (!provider.country_code) return "—";
 				const location =
-					formatLocation(provider.country_code, provider.subdivision_code) ??
+					formatLocation(provider.country_code, provider.subdivision_code, locale) ??
 					countryLabel(provider.country_code);
 				return (
 					<Link
@@ -667,19 +668,19 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 				);
 			}
 			case "models":
-				return provider.total_models.toLocaleString();
+				return provider.total_models.toLocaleString(locale);
 			case "free_models":
-				return provider.free_models ? provider.free_models.toLocaleString() : "—";
+				return provider.free_models ? provider.free_models.toLocaleString(locale) : "—";
 			case "modalities": {
 				const supported = MODALITIES.filter((modality) =>
 					supportsModality(provider, modality.value),
 				);
 				return (
 					<div className="flex items-center gap-1.5">
-						{supported.map(({ value, icon: Icon, label }) => (
+						{supported.map(({ value, icon: Icon }) => (
 							<ProviderModalityBadge
 								key={value}
-								label={label}
+								label={modalityLabels[value]}
 								modality={value}
 								icon={Icon}
 								inputCount={provider.modality_support[value]?.input ?? 0}
@@ -694,9 +695,9 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			case "monthly_tokens":
 				return formatTokens(Number(provider.total_monthly_tokens));
 			case "data_policy":
-				return policyLabel(provider.data_policy_tier, DATA_POLICY_LABELS);
+				return policyLabel(provider.data_policy_tier, dataPolicyLabels, t("unknown"));
 			case "zdr":
-				return policyLabel(String(provider.zero_data_retention), ZDR_LABELS);
+				return policyLabel(String(provider.zero_data_retention), zdrLabels, t("unknown"));
 			case "privacy":
 				return provider.privacy_policy_url ? (
 					<a
@@ -705,7 +706,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 						rel="noreferrer"
 						className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4"
 					>
-						Privacy <ExternalLink className="size-3 text-muted-foreground" />
+						{t("privacyPolicy")} <ExternalLink className="size-3 text-muted-foreground" />
 					</a>
 				) : (
 					<span className="text-muted-foreground">—</span>
@@ -718,7 +719,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 						rel="noreferrer"
 						className="inline-flex items-center gap-1 font-medium hover:underline hover:underline-offset-4"
 					>
-						Terms <ExternalLink className="size-3 text-muted-foreground" />
+						{t("termsOfService")} <ExternalLink className="size-3 text-muted-foreground" />
 					</a>
 				) : (
 					<span className="text-muted-foreground">—</span>
@@ -728,8 +729,8 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const providerTableSettings = isTable ? (
 		<TableSettings
 			columns={providerTableColumns}
-			definitions={PROVIDER_TABLE_COLUMNS}
-			tableLabel="providers"
+			definitions={providerTableDefinitions}
+			tableLabel={t("title")}
 			onReset={resetProviderTableColumns}
 			onChange={updateProviderTableColumns}
 			density={providerTableDensity}
@@ -747,7 +748,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 			<section className="min-w-0 flex flex-1 flex-col">
 				<div ref={toolbarRef} className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky lg:px-8" style={{ top: `${stickyOffsets.toolbarTop}px` }}>
 					<div className="space-y-2 md:hidden">
-						{showPrimaryHeader ? <div className="flex items-center gap-2"><h1 className="font-bold text-xl leading-8">Providers</h1></div> : null}
+						{showPrimaryHeader ? <div className="flex items-center gap-2"><h1 className="font-bold text-xl leading-8">{t("title")}</h1></div> : null}
 						<div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
 							{sortSelect("h-8 min-w-0 bg-background text-sm")}
 							{filterButton()}
@@ -758,37 +759,37 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 						</div>
 						<div className="relative w-full">
 							<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-							<Input placeholder="Search" value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
+							<Input placeholder={t("searchPlaceholder")} value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
 						</div>
 					</div>
 
 					<div className="hidden md:block">
 						<div className="hidden lg:block">
 							<div className="flex flex-wrap items-center justify-between gap-2">
-								<div className="flex h-8 shrink-0 items-center">{showPrimaryHeader ? <h1 className="font-bold text-xl leading-8">Providers</h1> : null}</div>
+								<div className="flex h-8 shrink-0 items-center">{showPrimaryHeader ? <h1 className="font-bold text-xl leading-8">{t("title")}</h1> : null}</div>
 								<div className="flex min-w-[min(100%,30rem)] flex-1 items-center justify-end gap-3">
 									<div className="relative min-w-32 max-w-[22rem] flex-1 2xl:max-w-[28rem]">
 										<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-										<Input placeholder="Search" value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
+										<Input placeholder={t("searchPlaceholder")} value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
 									</div>
 									{sortSelect("h-8 w-[12.5rem] bg-background text-sm 2xl:w-[13.5rem]")}
 									{providerTableSettings}
 									{showPrimaryHeader ? viewSwitcher : null}
-									<Button asChild variant="outline" size="sm" className="h-8 rounded-md px-2.5"><Link href="/api-providers/compare" prefetch={false}><Scale className="size-3.5" /><span className="hidden sm:inline">Compare</span></Link></Button>
+									<Button asChild variant="outline" size="sm" className="h-8 rounded-md px-2.5"><Link href="/api-providers/compare" prefetch={false}><Scale className="size-3.5" /><span className="hidden sm:inline">{t("compareButton")}</span></Link></Button>
 								</div>
 							</div>
 						</div>
 
 						<div className="lg:hidden">
 							<div className="flex h-8 items-center justify-between gap-3">
-								{showPrimaryHeader ? <h1 className="font-bold text-xl leading-8">Providers</h1> : <div />}
+								{showPrimaryHeader ? <h1 className="font-bold text-xl leading-8">{t("title")}</h1> : <div />}
 								<div className="flex shrink-0 items-center justify-end gap-2">{filterButton()}{providerTableSettings}{showPrimaryHeader ? viewSwitcher : null}</div>
 							</div>
 							<div className="mt-2 grid grid-cols-[minmax(9rem,12rem)_minmax(0,1fr)] items-center gap-2">
 								{sortSelect("h-8 min-w-0 bg-background text-sm")}
 								<div className="relative min-w-0">
 									<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-									<Input placeholder="Search" value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
+									<Input placeholder={t("searchPlaceholder")} value={search} onChange={(event) => void setSearch(event.target.value, { limitUrlUpdates: debounce(250) })} className="h-8 w-full rounded-md border border-border bg-background pl-9 pr-2 text-sm focus:outline-hidden focus:ring-2 focus:ring-primary" style={{ minWidth: 0 }} />
 								</div>
 							</div>
 						</div>
@@ -801,7 +802,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 								<div className="relative">
 									<div className="sticky z-30 w-full overflow-hidden bg-background" style={{ top: `${stickyOffsets.tableHeaderTop}px` }}>
 										<div ref={tableHeaderTrackRef} className="will-change-transform" style={{ width: `${providerTableWidth}px`, minWidth: `${providerTableWidth}px` }}>
-											<Table wrapInContainer={false} aria-label="Providers table column headers" className="table-fixed w-max bg-background text-xs" style={{ width: `${providerTableWidth}px`, minWidth: `${providerTableWidth}px` }}>
+											<Table wrapInContainer={false} aria-label={t("providerTableColumnHeadersAria")} className="table-fixed w-max bg-background text-xs" style={{ width: `${providerTableWidth}px`, minWidth: `${providerTableWidth}px` }}>
 												{providerTableColgroup()}
 												{providerTableHeader()}
 											</Table>
@@ -816,7 +817,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 								>
 						<Table
 							wrapInContainer={false}
-							aria-label="Providers table rows"
+							aria-label={t("providerTableRowsAria")}
 							data-density={providerTableDensity}
 							className="table-fixed w-max bg-background text-xs"
 							style={{ width: `${providerTableWidth}px`, minWidth: `${providerTableWidth}px` }}
@@ -855,14 +856,14 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 							{filteredProviders.map((provider) => <APIProviderCard key={provider.api_provider_id} api_provider={provider} />)}
 							{Array.from({ length: mdFillers }).map((_, index) => <div key={`md-filler-${index}`} aria-hidden className="hidden bg-background md:block 2xl:hidden" />)}
 							{Array.from({ length: twoXlFillers }).map((_, index) => <div key={`2xl-filler-${index}`} aria-hidden className="hidden bg-background 2xl:block" />)}
-						</div> : <div className="flex min-h-64 flex-col items-center justify-center gap-2 bg-background px-4 text-center"><Search className="size-5 text-muted-foreground" /><p className="text-sm font-medium">No providers found</p><p className="text-xs text-muted-foreground">Try changing your search or filters.</p>{activeFilterCount ? <Button variant="outline" size="sm" className="mt-2 rounded-md" onClick={resetFilters}>Reset Filters</Button> : null}</div>}
+						</div> : <div className="flex min-h-64 flex-col items-center justify-center gap-2 bg-background px-4 text-center"><Search className="size-5 text-muted-foreground" /><p className="text-sm font-medium">{t("noResults")}</p><p className="text-xs text-muted-foreground">{t("tryDifferent")}</p>{activeFilterCount ? <Button variant="outline" size="sm" className="mt-2 rounded-md" onClick={resetFilters}>{t("reset")}</Button> : null}</div>}
 					</div>
 				</div>
 			</section>
 
 			<Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
 				<SheetContent side="right" className="w-[86vw] max-w-sm gap-0 p-0 lg:hidden">
-					<SheetHeader className="border-b border-border/70 px-4 py-3 text-left"><div className="flex items-start justify-between gap-3 pr-8"><div><SheetTitle>Filters</SheetTitle><SheetDescription>Refine the providers list.</SheetDescription></div>{activeFilterCount ? <Button variant="ghost" size="sm" className="h-8 px-2" onClick={resetFilters}>Reset</Button> : null}</div></SheetHeader>
+					<SheetHeader className="border-b border-border/70 px-4 py-3 text-left"><div className="flex items-start justify-between gap-3 pr-8"><div><SheetTitle>{t("filters")}</SheetTitle><SheetDescription>{t("refine")}</SheetDescription></div>{activeFilterCount ? <Button variant="ghost" size="sm" className="h-8 px-2" onClick={resetFilters}>{t("reset")}</Button> : null}</div></SheetHeader>
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain px-4 py-2"><div className="space-y-4 pb-6">{filtersContent}</div></ScrollArea>
 				</SheetContent>
 			</Sheet>

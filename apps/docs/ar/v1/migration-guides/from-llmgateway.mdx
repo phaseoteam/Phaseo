@@ -1,0 +1,117 @@
+---
+title: "الترحيل من LLM Gateway"
+sidebarTitle: "LLM Gateway"
+description: "انتقل من LLMGateway إلى Phaseo Gateway عبر تبديل نقطة نهاية متوافقة مع OpenAI والتحقق من معرّفات النماذج والإطلاق التدريجي."
+icon: "/icons/brands/llmgateway.svg"
+---
+
+إذا كان تطبيقك يستخدم LLM Gateway بالفعل عبر عميل متوافق مع OpenAI، فيمكنك غالبًا الإبقاء على محتوى الطلبات والبدء باستبدال حد البوابة فقط.
+
+## ما الذي سيتغير
+
+| الإعداد | قبل | بعد |
+| --- | --- | --- |
+| عنوان URL الأساسي | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
+| مفتاح API | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
+| أسماء النماذج المستعارة | الأسماء الحالية للبوابة | تحقّق منها باستخدام `GET /v1/models` أو وحّدها عند حد واحد |
+| محتوى الطلب | الطلب المتوافق مع OpenAI الحالي | أبقه كما هو في مرحلة الترحيل الأولى |
+
+## قبل البدء
+
+- إعداد نقطة نهاية LLM Gateway الحالية ومفتاح API.
+- إتاحة `PHASEO_API_KEY` في البيئات المحلية والتجهيز والإنتاج.
+- عينة مرجعية لجودة المخرجات وزمن الاستجابة ومعدل الأخطاء.
+
+## 1) احصر نقاط التكامل
+
+حدّد الملفات الدقيقة التي تنشئ عميل LLM Gateway وتعدّه.
+
+- ابحث عن جميع مواضع استخدام متغيرات البيئة `LLM_GATEWAY_*`.
+- اعثر على كل مراجع عنوان URL الأساسي في إعدادات وقت التشغيل.
+- سجّل معرّفات النماذج النشطة حاليًا وسلاسل البدائل.
+- دوّن القيم الافتراضية المشتركة للمطالبات وقواعد السماح أو المنع للمزوّدين وإعدادات المعلمات التي ينبغي نقلها إلى إعدادات Gateway المسبقة.
+
+## 2) بدّل نقطة النهاية وبيانات الاعتماد
+
+أبقِ محتوى الطلبات كما هو أولًا. ابدأ بتغيير نقطة النهاية والمفتاح فقط لتقليل المخاطر.
+
+<CodeGroup>
+```typescript TypeScript
+// Before
+import OpenAI from "openai";
+
+const before = new OpenAI({
+  apiKey: process.env.LLM_GATEWAY_API_KEY,
+  baseURL: "https://api.llmgateway.io/v1",
+});
+```
+
+```typescript TypeScript
+// After
+import OpenAI from "openai";
+
+const after = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+```
+
+```bash cURL
+curl -s "https://api.phaseo.app/v1/chat/completions" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-4.1-mini",
+    "messages": [{"role":"user","content":"Hello"}]
+  }'
+```
+</CodeGroup>
+
+## 3) تحقّق من توافق النماذج
+
+استعلم عن كتالوج نماذج Phaseo وتحقّق من كل نموذج مستخدم في الإنتاج.
+
+إذا كان الإعداد الحالي يستخدم أسماء مستعارة بلا بادئة مثل `gpt-4o`، فوحّدها عند حد واحد بدلًا من تغيير كل عميل.
+
+إذا كانت طبقة البوابة الحالية توحّد أيضًا الإعدادات الافتراضية للطلبات أو قيود المزوّدين، فعيّن ذلك السلوك إلى [الإعدادات المسبقة](../guides/presets.mdx) و[التوجيه والرجوع الاحتياطي](../guides/routing-and-fallbacks.mdx) أثناء الترحيل بدلًا من إعادة تنفيذه لكل عميل.
+
+```bash
+curl -s "https://api.phaseo.app/v1/models" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+```
+
+## 4) قائمة التحقق من الترحيل من LLMGateway
+
+- تم تعيين جميع متغيرات `LLM_GATEWAY_*` أو إزالتها.
+- تم تحديث عنوان URL الأساسي إلى `https://api.phaseo.app/v1`.
+- تم إعداد `PHASEO_API_KEY` في جميع بيئات النشر.
+- تم التحقق من معرّفات نماذج الإنتاج باستخدام `/v1/models`.
+- تم التحقق في بيئة التجهيز من طلب متدفق وآخر غير متدفق.
+- أُعيد فحص معالجة فشل المفاتيح والنماذج غير الصالحة.
+- نُقلت القيم الافتراضية المشتركة للمطالبات والتوجيه إلى الإعدادات المسبقة عند الحاجة.
+- أُعيد فحص عمليات البحث عن التوليدات عبر `GET /v1/generations?id=<request_id>` حتى يمكن إعادة تشغيل الطلبات الفاشلة من محتوى `replay_request` المخزّن عند `replay_supported=true`.
+
+## 5) تحقّق وأطلق التغيير
+
+1. شغّل مجموعة المطالبات المرجعية وقارن الجودة وزمن الاستجابة والتكلفة بخط الأساس.
+2. تأكد من إمكانية استعادة طلبات التجهيز الفاشلة باستخدام حمولة إعادة التشغيل التي يعيدها `GET /v1/generations`.
+3. أطلق التغيير خلف علامة canary وزد نسبة حركة المرور تدريجيًا بعد استقرار النتائج.
+4. راقب مقاييس الإنتاج لدورة إصدار واحدة على الأقل قبل إزالة الإعداد القديم.
+
+## أوامر التحقق
+
+```bash
+curl -s "https://api.phaseo.app/v1/health"
+curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+ثم:
+
+- نفّذ طلبًا متدفقًا وآخر غير متدفق في بيئة التجهيز.
+- أعد تشغيل المطالبات المرجعية وقارنها بخط الأساس.
+
+## الخطوات التالية
+
+- [الترحيل من OpenRouter](./from-openrouter.mdx)
+- [الترحيل من Vercel AI Gateway](./from-vercel.mdx)
+- [البدء السريع](../quickstart.mdx)

@@ -1,0 +1,30 @@
+{
+  "tools": {
+    "pricing": {
+      "description": "Estimate the cost of model requests using current catalog rates."
+    }
+  },
+  "games": {
+    "headToHeadInstructions": "Choose the model that wins each catalog comparison across five rounds.",
+    "catalogueGames": "Catalog games",
+    "puzzleUnavailableDescription": "The catalog service could not prepare today’s game. Try again in a moment.",
+    "guessTodayDescription": "Green is exact, amber is partial, and arrows point toward the answer. “Origin” means the developer’s country.",
+    "priceDescription": "{basis}. Arrows point toward the answer’s price."
+  },
+  "experiments": {
+    "description": "Try new Phaseo capabilities and compare model behavior."
+  },
+  "experimentsCouncil": {
+    "chooseSynthesiser": "Choose Synthesizer and Analyze",
+    "synthesiseFailed": "Failed to synthesize run.",
+    "synthesisingIndicator": "Synthesizing...",
+    "synthesising": "Synthesizing",
+    "resynthesise": "Re-synthesize",
+    "favourites": "Favorites"
+  },
+  "feedback": {
+    "reasons": {
+      "reliability": "Bug or unexpected behavior"
+    }
+  }
+}

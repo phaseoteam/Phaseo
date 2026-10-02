@@ -1,0 +1,17 @@
+---
+icon: "shuffle"
+title: "الخطوات الديناميكية"
+description: "غيّر إعدادات نموذج .NET والأدوات بين خطوات الوكيل."
+---
+
+استخدم `DynamicModel` و`DynamicInstructions` و`Temperature` و`MaxOutputTokens` و`TopP` و`DynamicTools` عندما ينبغي للخطوات اللاحقة الاستجابة للسياق أو لنتائج الأدوات السابقة.
+
+يمكن للأدوات تحديث سياق التطبيق عبر `RuntimeContext.SetContext` وتوفير `NextTurnParams` للطلب التالي مباشرةً. وتظل هذه التجاوزات محفوظة مع حالة التشغيل المتوقفة مؤقتًا عند الاستكمال بعد الموافقة.
+
+اجعل سياق التطبيق قابلًا للتسلسل إذا كان من الممكن حفظ حالة التشغيل عبر `IStateAccessor`.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [شروط الإيقاف](./agent-sdk-stop-conditions.mdx)

@@ -1,0 +1,90 @@
+---
+icon: "blocks"
+title: "実行の保存と再開"
+description: "Rust Agent SDK の実行状態を保存し、ツール処理や人によるレビュー後に続行します。"
+---
+
+`RunResult` は Serde でシリアライズできます。一時停止状態をプロセス再起動後も維持する必要がある場合は、データベース、オブジェクトストレージ、またはジョブレコードに保存してください。
+
+## 一時停止状態を保存する
+
+```rust
+let paused_json = serde_json::to_string_pretty(&paused)?;
+std::fs::write("paused-run.json", paused_json)?;
+```
+
+## 状態を復元する
+
+```rust
+use phaseo_agent::RunResult;
+
+let saved = std::fs::read_to_string("paused-run.json")?;
+let paused: RunResult = serde_json::from_str(&saved)?;
+```
+
+続行する前に、同じエージェント定義とツールを再作成してください。クロージャーと `AgentDefinition` はシリアライズされた実行状態には含まれません。
+
+実際に使われたモデルと最大ステップ数は `RunRecord` に保存されるため、実行ごとの上書き設定は再開後も有効です。
+
+## 人によるレビュー
+
+`human_review(...)` を使ってモデルの完了ターンを確認し、人の入力を求めます。
+
+```rust
+use phaseo_agent::{AgentDefinition, HumanReviewRequest};
+use serde_json::json;
+
+let definition = AgentDefinition::new(
+    "review-agent",
+    "openai/gpt-6-astra",
+)
+.human_review(|context| {
+    if context.response.message.content.contains("needs approval") {
+        Some(HumanReviewRequest {
+            reason: "Review the proposed action".to_string(),
+            payload: json!({
+                "draft": context.response.message.content
+            }),
+        })
+    } else {
+        None
+    }
+});
+```
+
+人の入力を指定して再開します。
+
+```rust
+use phaseo_agent::ContinueOptions;
+
+let mut options = ContinueOptions::new(paused);
+options.human_input = Some(
+    "Approved. Continue and return the final result.".to_string(),
+);
+
+let completed = agent.continue_run(&mut client, options)?;
+```
+
+## 一時停止の種類
+
+| `pause.kind` | 続行に必要な値 |
+| --- | --- |
+| `human_review` | 空ではない `ContinueOptions.human_input` |
+| `tool_approval` | ツール呼び出し ID に対応する `ToolDecision` エントリ |
+| `external_output` | ツール呼び出し ID に対応する `ToolOutput` エントリ |
+| `tool_input` | 承認と外部出力の組み合わせ |
+
+
+## アプリケーション側での永続化
+
+Rust Agent SDK にはホスト型の状態バックエンドや永続化アダプターはありません。次の項目はアプリケーション側で管理します。
+
+- 保存する実行状態の暗号化と保持期間
+- 承認と人の入力に対する認可
+- ツール実行器の再作成
+- 再開時の副作用に対する冪等性
+
+## 関連項目
+
+- [ツールと承認](./agent-sdk-tools.mdx)
+- [イベント、再試行、エラー](./agent-sdk-events-and-errors.mdx)

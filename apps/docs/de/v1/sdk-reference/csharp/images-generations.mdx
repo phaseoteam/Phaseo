@@ -1,0 +1,36 @@
+---
+icon: "image"
+title: "Bildgenerierung"
+description: "Rufe /images/generations mit dem C#-SDK auf."
+---
+
+**Methoden**: `client.GenerateImage(...)` oder `client.CreateImage(...)`
+
+### Beispiel
+```csharp
+using PhaseoSdk;
+
+var client = new Phaseo(apiKey);
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+    ["response_format"] = "url"
+});
+```
+
+### Wichtige Parameter
+- `model` (erforderlich): ID eines bildfähigen Modells (z. B. `openai/gpt-image-1`).
+- `prompt` (erforderlich): Textanweisung.
+- `n` (1–10): Anzahl der zu generierenden Bilder.
+- `size`: z. B. `1024x1024`, `1024x1792` oder `1792x1024`.
+- `quality`: `standard` oder `hd` (modellabhängig).
+- `style`: z. B. `vivid` oder `natural` (modellabhängig).
+- `response_format`: `url` oder `b64_json`.
+- `user`: optionales Endnutzer-Tag zur Verfolgung von Sicherheit und Missbrauch.
+
+### Rückgabewert
+`ImageGenerationResponse`
+

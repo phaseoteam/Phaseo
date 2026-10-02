@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
 	ProviderInspectorSheet,
@@ -22,6 +23,7 @@ import type {
 import type { ModelMetadataMap } from "../model-display";
 
 export default function InvestigateGeneration() {
+	const t = useTranslations("SettingsUI");
 	const [open, setOpen] = React.useState(false);
 	const [id, setId] = React.useState("");
 	const [loading, setLoading] = React.useState(false);
@@ -45,7 +47,7 @@ export default function InvestigateGeneration() {
 		e.preventDefault();
 		const trimmedId = id.trim();
 		if (!trimmedId) {
-			toast.error("Please enter a request ID");
+			toast.error(t("strings.Please enter a request ID" as never));
 			return;
 		}
 
@@ -72,7 +74,7 @@ export default function InvestigateGeneration() {
 			const response = await investigateGeneration(trimmedId);
 
 			if (!response.success) {
-				toast.error(response.error || "Failed to fetch request");
+				toast.error(response.error || t("strings.Failed to fetch request" as never));
 				return;
 			}
 
@@ -87,7 +89,7 @@ export default function InvestigateGeneration() {
 			setDetailOpen(true);
 		} catch (error) {
 			console.error("Investigation error:", error);
-			toast.error("Failed to load generation");
+			toast.error(t("strings.Failed to load generation" as never));
 		} finally {
 			setLoading(false);
 		}
@@ -102,28 +104,28 @@ export default function InvestigateGeneration() {
 				onClick={() => setOpen(true)}
 			>
 				<Search className="size-3.5" />
-				Investigate
+				{t("strings.Investigate" as never)}
 			</Button>
 
 			<ProviderInspectorSheet open={open} onOpenChange={setOpen}>
 				<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[44vw] lg:!w-[40vw] xl:!w-[36vw] 2xl:!w-[32vw] data-[side=right]:sm:max-w-none">
 					<ProviderInspectorSheetHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
-						<ProviderInspectorSheetTitle>Investigate generation</ProviderInspectorSheetTitle>
+						<ProviderInspectorSheetTitle>{t("strings.Investigate generation" as never)}</ProviderInspectorSheetTitle>
 						<ProviderInspectorSheetDescription>
-							Enter a request ID to inspect its generation details.
+							{t("strings.phraseEnterARequestIDToInspectItsGenerationDetails" as never)}
 						</ProviderInspectorSheetDescription>
 					</ProviderInspectorSheetHeader>
 					<form onSubmit={onSubmit} className="space-y-4 p-5 sm:p-6">
 						<div className="flex gap-2">
 							<Input
-								placeholder="Request ID"
+								placeholder={t("strings.Request ID" as never)}
 								value={id}
 								onChange={(e) => setId(e.target.value)}
 								className="rounded-md"
 								autoFocus
 							/>
 							<Button type="submit" className="rounded-md" disabled={loading}>
-								{loading ? "Loading..." : "Lookup"}
+								{loading ? t("strings.phraseLoading" as never) : t("strings.Lookup" as never)}
 							</Button>
 						</div>
 					</form>

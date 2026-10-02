@@ -1,0 +1,63 @@
+---
+title: "वर्कफ़्लो ऑटोमेशन"
+icon: "workflow"
+description: "Zapier, n8n, Pipedream और अन्य automation platform से Phaseo उपयोग करें।"
+---
+
+Authenticated HTTP requests भेजने वाले automation products में Phaseo अभी काम करता है। आगे चलकर native marketplace app अधिक guided अनुभव दे सकते हैं।
+
+## साझा अनुरोध
+
+HTTP, webhook या code action में ये settings उपयोग करें:
+
+| सेटिंग | मान |
+| --- | --- |
+| तरीका | `POST` |
+| URL | `https://api.phaseo.app/v1/responses` |
+| Header | `Authorization: Bearer <PHASEO_API_KEY>` |
+| Header | `Content-Type: application/json` |
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "input": "Summarise the supplied workflow data in one paragraph."
+}
+```
+
+Phaseo API key को platform के credential या secret store में रखें। इसे shared workflow definition में सीधे न डालें।
+
+## Zapier
+
+**Webhooks by Zapier → Custom Request** उपयोग करें:
+
+1. `POST` चुनें।
+2. `https://api.phaseo.app/v1/responses` दर्ज करें।
+3. bearer और content-type headers जोड़ें।
+4. पिछले Zap steps के fields को `input` से map करें।
+5. गैर-संवेदनशील data से Zap जाँचें।
+
+Native Phaseo Zapier app में model selection, structured-output actions और Phaseo authentication जोड़ी जा सकती है, लेकिन इसे Zapier developer platform पर प्रकाशित करना होगा।
+
+## n8n
+
+Bearer प्रमाणीकरण और JSON बॉडी वाले **HTTP Request** नोड का उपयोग करें। संरचित कार्यप्रवाह डेटा के लिए n8n एक्सप्रेशन से ऊपर से आए आइटम को `input` फ़ील्ड में मैप करें।
+
+आगे चलकर n8n का आधिकारिक कम्युनिटी नोड बिना मैन्युअल HTTP सेटअप के Generate Response, List Models, Get Model Pricing और Create Embedding जैसी कार्रवाइयाँ दे सकता है।
+
+## Pipedream
+
+HTTP request step या Node.js code step उपयोग करें। `PHASEO_API_KEY` को Pipedream secret में रखें और step environment से पढ़ें।
+
+## प्रोडक्शन संबंधी सुझाव
+
+- हर automation की Gateway API key पर spending limit तय करें।
+- उपयोग और revocation अलग रखने के लिए हर automation को अलग key दें।
+- जब अगले steps को machine-readable fields चाहिए, तो structured output उपयोग करें।
+- `429` और recoverable `5xx` responses के लिए retry handling जोड़ें।
+- केवल model step retry होने के कारण non-idempotent बाहरी actions दोबारा न चलाएँ।
+
+## संबंधित विषय
+
+- [उत्तर](../../api-reference/endpoint/responses.mdx)
+- [Structured Outputs](../structured-outputs.mdx)
+- [त्रुटि प्रबंधन](../../api-reference/errors.mdx)

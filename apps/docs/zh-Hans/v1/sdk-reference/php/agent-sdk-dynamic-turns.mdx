@@ -1,0 +1,21 @@
+---
+icon: "shuffle"
+title: "动态轮次"
+description: "在 PHP Agent 的轮次之间更改路由、指令、工具和采样设置。"
+---
+
+动态回调会在每次模型请求前，根据当前运行状态重新计算模型参数。
+
+```php
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn ($turn) => $turn->run->stepCount > 3
+        ? "openai/gpt-5.4"
+        : "openai/gpt-5.4-nano",
+    instructions: fn ($turn) => "Resolve the request using the current context."
+));
+```
+
+动态工具和采样值可以使用同一轮次上下文。工具还可以设置 `nextTurnParams`，仅修改紧接着的下一次请求。运行因审批而暂停时，这些覆盖项会保留，并在下一轮后失效。
+
+需要在每轮重新计算的策略请使用动态回调。工具专属的交接设置请使用 `nextTurnParams`。

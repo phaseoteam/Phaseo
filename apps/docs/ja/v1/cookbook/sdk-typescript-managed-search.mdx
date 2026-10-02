@@ -1,0 +1,155 @@
+---
+title: "管理された Web 検索で TypeScript SDK のワークフローに根拠を付ける"
+icon: "search"
+description: "公式 TypeScript SDK、管理された Web 検索、応答メタデータを組み合わせ、根拠がありデバッグしやすいワークフローを作成します。"
+---
+
+TypeScript または JavaScript のサービスで次の機能を組み合わせる場合は、このレシピを使います。
+
+- プリセットによるルーティングの既定値
+- 管理された `phaseo:web_search` ツール
+- 厳密な応答解析
+- デバッグ用のリクエスト単位のメタデータ
+
+## 目標
+
+- 呼び出し元で公式 SDK を使い続ける
+- 生の互換ペイロードを手作業で組み立てない
+- 検索結果、ルーティング、プラグインの動作を調べるのに十分なメタデータを保持する
+
+## 1. 共有クライアントから始める
+
+```ts
+import Phaseo from "@phaseo/sdk";
+
+export const gateway = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+```
+
+## 2. 安定した既定値をまずプリセットにまとめる
+
+複数の呼び出し元で共有する値がある場合は、プリセットを作成します。
+
+- モデルポリシー
+- プロバイダーの優先設定
+- 推論の既定値
+- システムプロンプト
+- 決定的なキャッシュ動作
+
+その後、SDK リクエストには今回の呼び出しで変わる値だけを指定します。
+
+## 3. 管理された検索ツールで根拠のある出力を求める
+
+```ts
+const response = await gateway.generateResponse({
+  preset: "research-brief",
+  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  tools: [
+    {
+      type: "phaseo:web_search",
+      parameters: {
+        query: "site:phaseo.app webhook delivery retries",
+        max_results: 5,
+        include_highlights: true,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_search",
+  response_format: {
+    type: "json_schema",
+    name: "research_brief",
+    schema: {
+      type: "object",
+      required: ["summary", "sources"],
+      properties: {
+        summary: { type: "string" },
+        sources: {
+          type: "array",
+          minItems: 1,
+          items: {
+            type: "object",
+            required: ["title", "url"],
+            properties: {
+              title: { type: "string" },
+              url: { type: "string", format: "uri" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+  meta: true,
+});
+```
+
+これにより、次の内容を利用できます。
+
+- プリセットで管理されるルーティングとプロンプトの既定値
+- プロバイダーのネイティブ検索対応に依存しない、サーバー管理の検索
+- 後続処理で予測しやすい構造化出力
+- 運用上のデバッグに必要なメタデータ
+
+## 4. 出力を解析し、デバッグ用フィールドを保持する
+
+```ts
+const firstMessage = Array.isArray(response.output)
+  ? response.output.find((item) => item?.type === "message")
+  : null;
+
+const text = Array.isArray(firstMessage?.content)
+  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
+  : "";
+
+const payload = JSON.parse(text);
+
+console.log({
+  responseId: response.id,
+  selectedProvider: response.meta?.routing?.selected_provider,
+  pluginExecutions: response.meta?.plugin_executions,
+  serverToolUse: response.usage?.server_tool_use,
+});
+
+console.log(payload);
+```
+
+これらのフィールドがあれば、次の内容を確認しやすくなります。
+
+- 実際にリクエストを処理したプロバイダー
+- 管理された検索が実行されたか
+- 応答修復が実行されたか
+- ダッシュボードで調査するリクエスト
+
+## 5. ログで根拠付けされたリクエストを確認する
+
+**Gateway -> 使用量** でリクエストを開き、次の情報を確認します。
+
+- 正規化された検索結果
+- 引用
+- 選択されたプロバイダー
+- プラグインの実行メタデータ
+
+検索の動作や順位が正しくない場合は、根拠のない上書きを追加せず、ログをもとにプリセットまたはツールのパラメーターを調整してください。
+
+## 6. 探索的なワークフローと決定的なワークフローを分ける
+
+推奨するパターン:
+
+1. 決定的で構造化された調査結果用のプリセット
+2. 探索的なリクエストや温度を高くするリクエスト用の別のプリセット
+
+これにより、次の点を維持できます。
+
+- 応答キャッシュを整理しやすい
+- ルーティングの動作を理解しやすい
+- 検索の多いワークフローを一般的な生成トラフィックから分離できる
+
+## 関連ガイド
+
+- [Web 検索リクエストをデバッグする](./web-search-debugging.mdx)
+- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
+- [構造化 JSON の応答を修復する](./response-healing-for-structured-json.mdx)
+- [TypeScript SDK の概要](../sdk-reference/typescript/overview.mdx)

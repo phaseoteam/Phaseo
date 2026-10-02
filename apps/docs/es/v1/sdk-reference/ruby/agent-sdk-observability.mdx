@@ -1,0 +1,23 @@
+---
+icon: "triangle-alert"
+title: "Errores y solución de problemas"
+description: "Gestiona errores del modelo, las herramientas, la validación, los tiempos de espera y la continuación en agentes Ruby."
+---
+
+Los errores de los agentes suelen deberse a una solicitud al modelo, una herramienta local, la validación del esquema, un tiempo de espera o una decisión humana pendiente.
+
+## Recuperarse de errores de herramientas
+
+Configura `on_error: "return-to-model"` cuando el modelo pueda recuperarse de un error de herramienta. El error se convierte en un resultado de herramienta y el agente puede elegir otra acción. Mantén el comportamiento de fail-run para operaciones inseguras o irrecuperables.
+
+## Comprender la ejecución de Ruby
+
+Ruby consume los flujos del modelo mediante una iteración síncrona normal. Configura tiempos de espera explícitos en las herramientas de red y procesos, y evita bloquear los callbacks del ciclo de vida con operaciones lentas de persistencia.
+
+## Diagnosticar errores de continuación
+
+Cada llamada pendiente necesita una aprobación, un rechazo o un resultado proporcionado externamente que se identifique por el ID de llamada a la herramienta. Guarda el estado de ejecución completo que se devuelve antes de mostrar una interfaz de aprobación.
+
+## Registrar campos útiles
+
+Registra el ID de ejecución, el índice del paso, el ID de solicitud, el proveedor, el modelo, el motivo de finalización, el ID de llamada a la herramienta y el motivo de detención. Prefiere los hooks del ciclo de vida o DevTools al registro directo de prompts.

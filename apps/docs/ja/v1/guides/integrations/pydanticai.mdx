@@ -1,0 +1,46 @@
+---
+title: "PydanticAI"
+icon: "braces"
+description: "PydanticAIとPhaseoで型付きPythonエージェントを作成します。"
+---
+
+型付き出力、検証、簡潔なOpenAI互換モデル設定を使うPythonエージェントにはPydanticAIを利用できます。
+
+## インストール
+
+```bash
+pip install "pydantic-ai-slim[openai]"
+```
+
+## モデルを設定する
+
+```python
+import os
+from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
+
+model = OpenAIChatModel(
+    "openai/gpt-5-nano",
+    provider=OpenAIProvider(
+        api_key=os.environ["PHASEO_API_KEY"],
+        base_url="https://api.phaseo.app/v1",
+    ),
+)
+
+agent = Agent(model, system_prompt="Answer concisely.")
+result = agent.run_sync("Reply with only: ok")
+print(result.output)
+```
+
+## 注意事項
+
+- PydanticAIのOpenAI互換経路では、OpenAI形式のチャット動作が使われます。
+- `phaseo:apply_patch`などResponses専用機能には、Phaseo Responsesへの直接呼び出しを使います。
+- 構造化出力のスキーマは、選択したモデルのコンテキストウィンドウに収まるサイズにします。
+
+## 関連項目
+
+- [構造化出力](../structured-outputs.mdx)
+- [OpenAI SDK](./openai-sdk.mdx)
+- [モデル](../../api-reference/endpoint/models.mdx)

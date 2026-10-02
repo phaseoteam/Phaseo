@@ -1,0 +1,53 @@
+---
+icon: "radio-tower"
+title: "أحداث SSE للبث"
+description: "افهم بنية الإطارات وحلّل تدفقات SSE بأمان."
+---
+
+تستخدم جميع نقاط نهاية البث إطارات على نمط SSE:
+
+`data: <json-or-sentinel>`
+
+## تسلسل الإطارات المعتاد
+
+1. إطار واحد أو أكثر للتقدم أو التغييرات الجزئية.
+2. إطار اكتمال يتضمن الحالة النهائية والاستخدام.
+3. علامة النهاية `data: [DONE]`.
+
+## مثال على محلّل JavaScript
+
+```typescript
+for await (const line of client.streamText({
+  model: "openai/gpt-5-nano",
+  messages: [{ role: "user", content: "Say hello." }],
+  stream: true,
+})) {
+  if (!line.startsWith("data:")) continue;
+  const payload = line.slice(5).trim();
+  if (payload === "[DONE]") break;
+  console.log(payload);
+}
+```
+
+## مثال على محلّل Python
+
+```python
+for line in client.stream_response({
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello.",
+    "stream": True,
+}):
+    if not line.startswith("data:"):
+        continue
+    payload = line[5:].strip()
+    if payload == "[DONE]":
+        break
+    print(payload)
+```
+
+## ملاحظات حول تنسيق نقاط النهاية
+
+- `/v1/chat/completions`: أحداث مجزأة على نمط `choices[].delta`.
+- `/v1/responses`: أحداث عناصر المخرجات أو تغييراتها على نمط Responses.
+- `/v1/messages`: أحداث على نمط Anthropic (`message_start` و`content_block_delta` و`message_stop`).
+

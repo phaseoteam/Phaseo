@@ -1,10 +1,12 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { handleOAuthRedirect } from "@/app/(auth)/sign-in/actions";
 import { Logo } from "@/components/Logo";
 import { captureProductEvent } from "@/lib/productAnalytics";
+import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 
 type SocialProviderId = "google" | "github" | "gitlab";
 
@@ -30,14 +32,19 @@ const META: Record<SocialProviderId, ProviderMeta> = {
 
 export default function OAuthButtons({
 	returnUrl,
+	locale = defaultLocale,
 }: {
 	returnUrl?: string;
+	locale?: PublicLocale;
 }) {
+	const shared = useTranslations("Auth.shared");
+	const t = useTranslations("Auth.signUp");
+
 	return (
 		<div className="grid gap-4">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
-				<span className="px-2 text-sm font-medium">Quick sign-up</span>
+				<span className="px-2 text-sm font-medium">{t("quickSignup")}</span>
 				<div className="flex-1 border-t border-border" />
 			</div>
 
@@ -64,13 +71,16 @@ export default function OAuthButtons({
 						>
 							<input type="hidden" name="authFlow" value="signup" />
 							<input type="hidden" name="provider" value={id} />
+							<input type="hidden" name="locale" value={locale} />
 							{returnUrl ? (
 								<input type="hidden" name="returnUrl" value={returnUrl} />
 							) : null}
 							<Button
 								type="submit"
 								variant="outline"
-								aria-label={`Continue with ${meta.label}`}
+								aria-label={shared("providerContinue", {
+									provider: meta.label,
+								})}
 								className="h-12 w-full justify-center gap-2 px-2"
 							>
 								<span className="flex items-center justify-center">
@@ -86,7 +96,9 @@ export default function OAuthButtons({
 											{meta.light ? (
 												<Image
 													src={meta.light}
-													alt={`${meta.label} logo`}
+													alt={shared("providerLogoAlt", {
+														provider: meta.label,
+													})}
 													width={18}
 													height={18}
 													className="h-[18px] w-[18px] shrink-0 dark:hidden"
@@ -97,7 +109,9 @@ export default function OAuthButtons({
 													src={
 														meta.dark ?? meta.light!
 													}
-													alt={`${meta.label} logo`}
+													alt={shared("providerLogoAlt", {
+														provider: meta.label,
+													})}
 													width={18}
 													height={18}
 													className="hidden h-[18px] w-[18px] shrink-0 dark:block"

@@ -1,6 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -19,14 +21,17 @@ export function RankingMetricLeaderboard({
 	description,
 	entries,
 }: RankingMetricLeaderboardProps) {
+	const t = useTranslations("Catalogue.rankings");
+	const tUnits = useTranslations("Catalogue.modelDetail.pricing.units");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const visibleEntries = entries.slice(0, 5);
 	const formatValue = (entry: ModalityLeaderboardEntry) => {
 		if (metricId === "audio-cache") {
-			return `${format.number(entry.value / 60, { maximumFractionDigits: entry.value >= 600 ? 0 : 1 })} min`;
+			return `${format.number(entry.value / 60, { maximumFractionDigits: entry.value >= 600 ? 0 : 1 })} ${tUnits("minute")}`;
 		}
 		if (metricId === "video-seconds" || metricId === "speech-seconds") {
-			return `${format.number(entry.value, { maximumFractionDigits: 1 })} sec`;
+			return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${tUnits("second")}`;
 		}
 		if (metricId === "text-throughput") {
 			return `${format.number(entry.value, { maximumFractionDigits: 1 })} tok/s`;
@@ -34,14 +39,14 @@ export function RankingMetricLeaderboard({
 		if (metricId === "text-latency") {
 			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
 		}
-		const unit = metricId.includes("image") ? "images" : "tokens";
-		return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${unit}`;
+		const unit = metricId.includes("image") ? tUnits("image") : tUnits("token");
+		return `${metricId.includes("image") ? format.number(entry.value, { maximumFractionDigits: 1 }) : formatRoundedCount(entry.value, locale)} ${unit}`;
 	};
 
 	if (!visibleEntries.length) return (
 		<div className="space-y-2">
 			<h3 className="text-lg font-semibold">{title}</h3>
-			<p className="text-sm text-muted-foreground">No measured usage in the last 30 days.</p>
+			<p className="text-sm text-muted-foreground">{t("noMeasuredUsage")}</p>
 		</div>
 	);
 

@@ -1,0 +1,10 @@
+---
+title: "ワークスペースの招待を作成"
+sidebarTitle: "招待を作成"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/invites"
+description: "有効期限付きのワークスペース招待を作成します。"
+---
+<Note>このエンドポイントには `workspaces:write` 権限を持つ管理APIキーが必要です。</Note>
+
+平文の `token` は一度だけ返されます。安全に保管してください。後続の一覧操作ではプレビューのみが返されます。

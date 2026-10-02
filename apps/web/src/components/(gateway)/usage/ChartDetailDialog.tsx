@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useTranslations } from "next-intl";
 import {
 	Dialog,
 	DialogContent,
@@ -35,6 +36,7 @@ export default function ChartDetailDialog({
 	breakdown,
 	metric,
 }: ChartDetailDialogProps) {
+	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	const rows = React.useMemo(() => {
 		return Object.entries(breakdown ?? {})
@@ -89,18 +91,18 @@ export default function ChartDetailDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-3xl">
 				<DialogHeader>
-					<DialogTitle>Breakdown for {bucket}</DialogTitle>
+						<DialogTitle>{t("strings.Breakdown for" as never)} {bucket}</DialogTitle>
 				</DialogHeader>
 
 				<div className="space-y-4">
 					<div className="flex justify-end gap-2">
 						<Button variant="outline" size="sm" onClick={() => handleExport("csv")}>
 							<Download className="mr-2 h-4 w-4" />
-							Export CSV
+									{t("strings.Export CSV" as never)}
 						</Button>
 						<Button variant="outline" size="sm" onClick={() => handleExport("pdf")}>
 							<Download className="mr-2 h-4 w-4" />
-							Export PDF
+									{t("strings.Export PDF" as never)}
 						</Button>
 					</div>
 
@@ -108,10 +110,10 @@ export default function ChartDetailDialog({
 						<Table>
 							<TableHeader>
 								<TableRow>
-									<TableHead>Model</TableHead>
-									<TableHead className="text-right">Requests</TableHead>
-									<TableHead className="text-right">Tokens</TableHead>
-									<TableHead className="text-right">Cost</TableHead>
+									<TableHead>{t("strings.Model" as never)}</TableHead>
+									<TableHead className="text-right">{t("strings.Requests" as never)}</TableHead>
+									<TableHead className="text-right">{t("strings.Tokens" as never)}</TableHead>
+									<TableHead className="text-right">{t("strings.Cost" as never)}</TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
@@ -128,7 +130,7 @@ export default function ChartDetailDialog({
 									</TableRow>
 								))}
 								<TableRow className="bg-muted font-semibold">
-									<TableCell>Total</TableCell>
+									<TableCell>{t("strings.Total" as never)}</TableCell>
 									<TableCell className="text-right font-mono">
 										{format.number(totals.requests)}
 									</TableCell>

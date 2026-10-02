@@ -1,0 +1,207 @@
+---
+title: "プロバイダー修飾モデル ID"
+description: "1 つのモデル識別子で、特定のプロバイダーとモデルにリクエストをルーティングします。"
+icon: "route"
+---
+
+プロバイダー修飾モデル ID を使うと、`model` フィールドで特定のプロバイダーと正規モデルを選択できます。プロバイダーの選択が単なるルーティングの優先設定ではなく、リクエスト契約の一部である場合に使用します。
+
+## 構文
+
+```text
+<provider-id>:<canonical-model-id>
+```
+
+例：
+
+```text
+baseten:thinking-machines/inkling-small
+deepinfra:deepseek/deepseek-v3
+crofai:moonshotai/kimi-k3
+```
+
+最初のコロンでプロバイダーと正規モデル ID を区切ります。モデルの名前空間より後にあるコロンはモデルサフィックスとして扱われるため、曖昧さはありません。
+
+```text
+baseten:google/gemma-4-26b-a4b:free
+```
+
+この例では：
+
+- `baseten` が要求されたプロバイダーです
+- `google/gemma-4-26b-a4b:free` が Phaseo の正規モデル ID です
+
+## リクエストを送信する
+
+モデル ID を受け付ける任意のエンドポイントで、この修飾 ID を使います。
+
+<CodeGroup>
+
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "baseten:thinking-machines/inkling-small",
+    "input": "Explain mixture-of-experts routing in two sentences."
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch("https://api.phaseo.app/v1/responses", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    model: "baseten:thinking-machines/inkling-small",
+    input: "Explain mixture-of-experts routing in two sentences.",
+  }),
+});
+
+const result = await response.json();
+```
+
+```python Python
+import os
+import requests
+
+response = requests.post(
+    "https://api.phaseo.app/v1/responses",
+    headers={
+        "Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "baseten:thinking-machines/inkling-small",
+        "input": "Explain mixture-of-experts routing in two sentences.",
+    },
+)
+
+result = response.json()
+```
+
+</CodeGroup>
+
+## 固定ルーティングの動作
+
+プロバイダー修飾子は厳密な制約です。Phaseo は適格なプロバイダーを指定されたものに絞り、そのリクエストで別のプロバイダーへフォールバックしません。
+
+修飾子によって他の制御が無効になることはありません。プロバイダーは次の条件も満たす必要があります。
+
+- 要求されたエンドポイントで正規モデルを提供している
+- エンドポイントの機能が有効になっている
+- ワークスペースと API キーのポリシーを満たしている
+- プリセットとプライバシーの制約を満たしている
+- 要求されたサービスティアとパラメーターに対応している
+- 有効な料金設定がある
+
+いずれかのチェックに失敗すると、Phaseo は別のプロバイダーを暗黙に選ぶのではなく、リクエストを拒否します。
+
+## ルーティングフィールドとの組み合わせ
+
+修飾されたプロバイダーと明示的なルーティングフィールドは一致している必要があります。
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["baseten"]
+  }
+}
+```
+
+`provider.only` または `routing.only` に一致する値があれば受け付けられます。許可リストが競合する場合や、無視リストに修飾対象のプロバイダーが含まれる場合は、検証エラーになります。
+
+たとえば、次のリクエストは矛盾しているため拒否されます。
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "provider": {
+    "only": ["deepinfra"]
+  }
+}
+```
+
+プロバイダーが単なる優先設定で、プロバイダー間のフォールバックを許可したい場合は、モデルを修飾せず、通常の[ルーティングとフォールバックの制御](./routing-and-fallbacks.mdx)を使ってください。
+
+## プロバイダー修飾の無料モデル
+
+`:free` を含む修飾リクエストは、指定したプロバイダーが正規モデルとエンドポイントに対する適格な無料ルートを提供する場合にのみ受け付けられます。
+
+```json
+{
+  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "input": "Hello"
+}
+```
+
+選択されたルートに空ではない料金表があり、現在のすべての料金ルールが次の条件を満たさない限り、Phaseo はリクエストを拒否します。
+
+- `free` と明示的にラベル付けされている
+- 価格が正確にゼロである
+
+料金情報がない、有料料金、混在料金、負の料金、または無料と明示されていないゼロ料金ルールがある場合、プロバイダーを実行する前にリクエストを拒否します。
+
+<Note>
+正規モデルに `:free` があることは、そのモデルを提供するすべてのプロバイダーが無料ルートを提供する意味ではありません。
+</Note>
+
+## プロバイダーのスラッグとエイリアス
+
+Phaseo のプロバイダーカタログに公開されているスラッグを使用します。スラッグは小文字に正規化され、対応している旧名やブランド名のエイリアスは正規のプロバイダー ID に変換されます。
+
+たとえば、`NovitaAI` と `novita-ai` は現在 `novita` に正規化されます。
+
+形式が正しくないスラッグや未知のスラッグは、プロバイダー選択前に拒否されます。Phaseo はそれらをモデル名の一部として上流へ送信しません。
+
+## 検証エラー
+
+プロバイダー修飾 ID のエラーは HTTP `400` とトップレベルの `validation_error` コードを使います。詳しい原因は `reason` または `details[].keyword` を確認してください。
+
+| 理由 | 意味 |
+| --- | --- |
+| `invalid_provider_slug` | プロバイダー部分が空、または対応していない文字が含まれています。 |
+| `unknown_provider_slug` | スラッグの形式は正しいものの、Phaseo が認識するプロバイダーではありません。 |
+| `invalid_provider_qualified_model` | 結合した ID が `<provider>:<publisher>/<model>` の形式に一致しません。 |
+| `provider_qualified_model_conflict` | `provider.only`、`provider.ignore`、`routing.only`、`routing.ignore` のいずれかが修飾子と矛盾しています。 |
+| `qualified_provider_unavailable` | プロバイダーは認識されましたが、要求されたエンドポイントでそのモデルを提供していません。 |
+| `qualified_free_provider_unavailable` | すべての料金がゼロの明示的な無料ルートとして、指定されたルートが検証されていません。 |
+
+エラー例：
+
+```json
+{
+  "error": "validation_error",
+  "status_code": 400,
+  "reason": "unknown_provider_slug",
+  "description": "Unknown provider slug \"not-a-provider\" in provider-qualified model \"not-a-provider:publisher/model\". Use a provider slug returned by Phaseo's provider catalogue.",
+  "provider": "not-a-provider",
+  "model": "publisher/model",
+  "details": [
+    {
+      "path": ["model"],
+      "keyword": "unknown_provider_slug"
+    }
+  ]
+}
+```
+
+## 2 つの形式から選択する
+
+| 要件 | 推奨するモデル値 |
+| --- | --- |
+| Phaseo にプロバイダー選択とフォールバックを任せる | `thinking-machines/inkling-small` |
+| プロバイダー間のフォールバックなしで Baseten を指定する | `baseten:thinking-machines/inkling-small` |
+| 検証済みの無料プロバイダールートを必須にする | `baseten:google/gemma-4-26b-a4b:free` |
+
+## 関連ガイド
+
+- [ルーティングとフォールバック](./routing-and-fallbacks.mdx)
+- [API プロバイダー](../exploring/api-providers.mdx)
+- [モデル](../exploring/models.mdx)
+- [エラー処理](../api-reference/errors.mdx)
+- [プリセット](./presets.mdx)
+

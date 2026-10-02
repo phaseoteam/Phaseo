@@ -1,0 +1,11 @@
+---
+title: "上流バージョンを適用 preset version"
+sidebarTitle: "上流バージョンを適用"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /presets/{id}/upstream"
+description: "公開されている上流バージョンをローカルフォークのドラフトに適用します。"
+---
+<Note>このエンドポイントには、`presets:write`を持つ管理APIキーと、関連付けられたユーザーIDが必要です。</Note>
+
+上流バージョンを適用する前に、ローカルドラフトの変更を公開するか破棄してください。適用しても、作成されたドラフトは公開されません。
+

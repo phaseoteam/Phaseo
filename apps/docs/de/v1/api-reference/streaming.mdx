@@ -1,0 +1,68 @@
+---
+title: "Datenstromübertragung"
+description: "Modellausgaben über SSE auf den zentralen Textendpunkten in Echtzeit übertragen."
+icon: "radio"
+---
+
+Streaming ermöglicht es deiner Benutzeroberfläche, Tokens bereits während der Generierung anzuzeigen, statt auf die vollständige Antwort zu warten.
+
+## Unterstützte Endpunkte
+
+- `POST /v1/responses`
+- `POST /v1/chat/completions`
+- `POST /v1/messages`
+
+## Streaming aktivieren
+
+Setze `stream: true` im Request-Body.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Write a short greeting.",
+    "stream": true
+  }'
+```
+
+## Aufbau der SSE-Frames
+
+Streams werden als SSE-Frames zurückgegeben:
+
+```text
+data: {"id":"resp_...","status":"in_progress",...}
+data: {"type":"response.output_text.delta","delta":"Hello"}
+data: {"type":"response.completed",...}
+data: [DONE]
+```
+
+## Fehler während des Streamings behandeln
+
+- Schlägt eine Anfrage vor Beginn des Streams fehl, erhältst du eine normale JSON-Fehlerantwort.
+- Schlägt sie nach einer Teilausgabe fehl, behandle den Stream als unvollständig und biete in der UI einen erneuten Versuch an.
+- Protokolliere `generation_id`, sofern vorhanden, immer für Support und Zuordnung.
+
+## Abbrechen
+
+Verwende Abbruchmechanismen (`AbortController` in JavaScript oder ein Request-Timeout in Backend-Workern), damit verlassene Streams nicht unnötig Kapazität verbrauchen.
+
+## Bekannte Einschränkung
+
+Die aktuelle Request-Validierungsschicht des Gateways lehnt `stream: true` zusammen mit Tool-Aufrufen ab. Verwende für Tool-Aufrufschleifen den Nicht-Streaming-Modus.
+
+## Verwandte Seiten
+
+- [Responses-Endpunkt](./endpoint/responses.mdx)
+- [Chat-Completions-Endpunkt](./endpoint/chat-completions.mdx)
+- [Messages-Endpunkt](./endpoint/anthropic-messages.mdx)
+- [Fehler und Debugging](./errors.mdx)
+
+<Visibility for="agents">
+Wenn du Streaming als Agent implementierst:
+
+- Nutze Repository-Skills für SSE-Verarbeitung, Wiederholungen und Abbruch.
+- Prüfe zuerst die Endpunktschemas, statt Annahmen über einzelne Anbieter zu treffen.
+- Trenne die inkrementelle Anzeige von der abschließenden Speicherung.
+</Visibility>

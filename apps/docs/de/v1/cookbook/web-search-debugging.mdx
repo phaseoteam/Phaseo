@@ -1,0 +1,81 @@
+---
+title: "Websuche-Anfragen überprüfen"
+icon: "bug"
+description: "Prüfe Websuche-Anfragen, die Unterstützung durch Anbieter sowie zurückgegebene Suchergebnisse und Quellenangaben."
+---
+
+Verwende dieses Rezept, wenn eine Websuche-Anfrage anders als erwartet funktioniert und du prüfen möchtest, ob Phaseo sie angenommen, korrekt weitergeleitet und saubere Suchergebnisse zurückgegeben hat.
+
+## 1. Die Suchabsicht ausdrücklich angeben
+
+Verlasse dich nicht allein auf die Formulierung des Prompts. Füge die Sucheinstellungen direkt in die Anfrage ein, damit Phaseo weiß, dass du eine Websuche möchtest.
+
+Prüfe, ob Folgendes enthalten ist:
+
+- native Such-Tools unter `tools`
+- `web_search_options`, sofern der Endpunkt sie unterstützt
+
+## 2. Verfügbarkeit eines kompatiblen Anbieters bestätigen
+
+Wenn die Anfrage blockiert oder anders als erwartet geroutet wird, prüfe die Anfragedetails auf:
+
+- Informationen zu möglichen Anbietern
+- Informationen zur Anbieterfreigabe
+- Routing-Erklärung
+
+So erkennst du, ob die Anbieterliste wegen fehlender Suchunterstützung eingeschränkt wurde.
+
+## 3. Nutzungszähler prüfen
+
+Erfolgreiche suchgestützte Anfragen sollten suchbezogene Nutzungszähler anzeigen, zum Beispiel:
+
+- angeforderte native Websuche-Tools
+- Websuche-Ergebnisse
+- Quellenangaben
+
+Daran erkennst du am schnellsten, ob die Anfrage tatsächlich die Suche verwendet hat.
+
+## 4. Abschnitt mit Suchergebnissen prüfen
+
+Öffne bei erfolgreichen Anfragen den Dialog mit den Anfragedetails und suche nach dem Beobachtungsbereich für die Websuche.
+
+Dort siehst du:
+
+- ob die native Suche verwendet wurde
+- Anzahl normalisierter Ergebnisse
+- Anzahl normalisierter Quellenangaben
+- extrahierte Ergebniseinträge
+- extrahierte Quelleinträge
+
+Damit kannst du Anbieter vergleichen, ohne rohe Nutzdaten zu lesen.
+
+## 5. Diese Fälle getrennt behandeln
+
+Native Suche und die Prüfung der Anbieterfähigkeiten sind derzeit verfügbar. Die Planung eines Such-Fallbacks ist davon getrennt.
+
+Unterscheide beim Debugging diese Fälle:
+
+1. Die native Suchanfrage wurde angenommen und geroutet.
+2. Die Anfrage wurde angenommen, aber es blieb kein kompatibler Anbieter übrig.
+3. Die Anfrage war erfolgreich, lieferte aber schwache oder wenige Quellenangaben.
+
+Das sind unterschiedliche Probleme und sie sollten unterschiedlich untersucht werden.
+
+## 6. Was du bei falschen Ergebnissen vergleichen solltest
+
+Vergleiche zwischen Anfragen:
+
+- Modell-ID
+- tatsächlich ausgewählter Anbieter
+- Sucheinstellungen der Anfrage
+- Ergebnisanzahl
+- Anzahl der Quellenangaben
+- Routing-Details
+
+Unterscheidet sich die Ergebnisqualität je nach Anbieter, sollten die normalisierten Protokolle das trotzdem erkennen lassen.
+
+## Weiterführende Themen
+
+- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
+- [Beispiele](../guides/examples.mdx)
+- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)

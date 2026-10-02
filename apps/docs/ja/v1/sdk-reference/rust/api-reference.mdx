@@ -1,0 +1,60 @@
+---
+icon: "braces"
+title: "Rust APIリファレンス"
+description: "phaseo 0.1の公開型とメソッドです。"
+---
+
+このページでは、[`phaseo 0.1`](https://docs.rs/phaseo/0.1.0/phaseo/)でサポートされる高レベルAPIについて説明します。
+
+## `Phaseo`
+
+同期型の認証済みゲートウェイクライアントです。
+
+| メソッド | 戻り値 | 用途 |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | 本番用ベースURLでクライアントを作成します。 |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | `PHASEO_API_KEY`と任意の`PHASEO_BASE_URL`を読み込みます。 |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | ベースURLを置き換えます。リモートURLにはHTTPSが必要ですが、正確なループバックホストではHTTPを使えます。 |
+| `.with_header(name, value)` | `Phaseo` | 後続のリクエストにヘッダーを追加します。 |
+| `.responses(request)` | `Result<PhaseoResponse, PhaseoError>` | JSONを`/responses`にPOSTします。 |
+| `.chat_completions(request)` | `Result<PhaseoResponse, PhaseoError>` | JSONを`/chat/completions`にPOSTします。 |
+| `.post(path, request)` | `Result<PhaseoResponse, PhaseoError>` | 設定済みベースURL配下の別のパスにJSONをPOSTします。 |
+
+すべてのリクエスト本文は`&serde_json::Value`です。
+
+## `PhaseoResponse`
+
+| フィールド | 型 | 意味 |
+| --- | --- | --- |
+| `status` | `u16` | HTTPステータスコード。 |
+| `body` | `serde_json::Value` | 解析済みJSON応答。応答が有効なJSONでなかった場合はJSON文字列です。 |
+| `request_id` | `Option<String>` | 存在する場合の`x-request-id`レスポンスヘッダー。 |
+
+## `PhaseoError`
+
+| フィールド | 型 | 意味 |
+| --- | --- | --- |
+| `message` | `String` | 設定、通信、ゲートウェイエラーのメッセージ。 |
+| `status` | `Option<u16>` | 応答を受信した場合のゲートウェイHTTPステータス。 |
+| `body` | `Option<serde_json::Value>` | 利用可能な場合の、解析済みゲートウェイエラー本文。 |
+
+`PhaseoError`は`std::error::Error`と`Display`を実装します。
+
+## 生成されたモジュール
+
+crateは生成済みOpenAPIクライアントも公開しています。
+
+| モジュール | 用途 |
+| --- | --- |
+| `phaseo::gen` | 生成済みの完全なクライアント、モデル、オペレーションモジュール。 |
+| `phaseo::client` | `phaseo::gen::client`の再エクスポート。 |
+| `phaseo::models` | `phaseo::gen::models`の再エクスポート。 |
+| `phaseo::operations` | `phaseo::gen::operations`の再エクスポート。 |
+| `phaseo::model_ids` | 生成済みのPhaseoモデルID。 |
+
+生成されたオペレーション名と型はOpenAPI出力に準拠し、`Phaseo`のヘルパーより低レベルの場合があります。ResponsesとChat Completionsでは、上記の高レベルメソッドを優先してください。
+
+## 外部リファレンス
+
+- [`phaseo`（crates.io）](https://crates.io/crates/phaseo)
+- [`phaseo`（docs.rs）](https://docs.rs/phaseo)

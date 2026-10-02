@@ -1,0 +1,43 @@
+---
+icon: "compass"
+title: "モデル移行"
+description: "新しいモデルを本番環境に安全に導入するための、モデル別ガイダンスです。"
+---
+
+# モデル移行
+
+同じプラットフォームを使い続けながらモデルをアップグレードする場合は、これらのガイドを使います。
+
+実際の連携で問題になりやすい変更を扱います。
+
+- リクエストパラメーターの変更
+- プロンプトや推論動作の変化
+- 構造化出力やツール呼び出しの不具合
+- 段階的な展開、フォールバック、ロールバックの方法
+
+## モデルガイド
+
+対象モデルのリリース日が新しい順に並んでいます。
+
+| モデル | リリース日 | 用途 |
+| --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 2026年7月24日 | 複雑な推論と長期タスクを実行するエージェント |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 2026年7月9日 | 段階的な推論、コーディング、専門的な業務 |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 2026年5月28日 | 長いコンテキストと適応型思考 |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 2026年4月16日 | 厳格なリクエスト制御を伴う高負荷の推論 |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 2026年3月16日 | 推論を任意で有効にできる効率的な処理 |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 2026年3月5日 | 推論、ビジョン、コンピューター操作 |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 2026年2月26日 | 本番環境での画像生成と編集 |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 2026年2月19日 | マルチモーダル処理と高度な推論 |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 2026年2月17日 | コーディング、コンピューター操作、エージェントの計画 |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 2026年2月17日 | 推論とマルチエージェント処理 |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 2026年2月5日 | 長時間のコーディングとエージェントタスク |
+
+## このセクションの使い方
+
+1. 移行先モデルと同じモデルファミリーのガイドから始めます。
+2. 出力品質を確認する前に、リクエストパラメーターを更新します。
+3. 本番に近いプロンプトで、プロンプトとスキーマの評価を再実行します。
+4. フォールバックとロールバックのルールを明確にして、段階的にトラフィックを移します。
+
+モデルだけでなく、プロバイダー、SDK、Gateway を変更する場合は、[移行ガイド](../migration-guides/index.mdx)を参照してください。

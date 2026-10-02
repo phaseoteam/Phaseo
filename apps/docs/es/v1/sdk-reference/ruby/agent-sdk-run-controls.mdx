@@ -1,0 +1,34 @@
+---
+icon: "rotate-cw"
+title: "Salidas y reintentos"
+description: "Valida las salidas finales, reintenta solicitudes al modelo y consulta ejecuciones completadas de Ruby."
+---
+
+Valida la salida cuando el código Ruby posterior necesita una estructura de resultado predecible. Los reintentos del modelo cubren fallos transitorios de solicitudes; los reintentos de herramientas con efectos secundarios deben ser explícitos e idempotentes.
+
+## Configurar los reintentos
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-5.4-nano",
+  model_retry: PhaseoAgentSdk::ModelRetryConfig.new(
+    max_retries: 3,
+    base_delay_ms: 500,
+    max_delay_ms: 4_000
+  )
+)
+```
+
+El resultado contiene el registro de ejecución, los pasos, los mensajes, el uso normalizado, el motivo de detención y la salida final.
+
+```ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output
+puts result.run.status
+puts result.usage[:total_tokens]
+puts result.usage[:cost]
+```
+
+Usa las [condiciones de detención](./agent-sdk-stop-conditions.mdx) para aplicar límites y [errores y solución de problemas](./agent-sdk-observability.mdx) para elegir el comportamiento ante fallos recuperables.

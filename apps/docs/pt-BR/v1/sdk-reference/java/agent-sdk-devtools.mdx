@@ -1,0 +1,22 @@
+---
+icon: "chart-spline"
+title: "Ferramentas de desenvolvimento"
+description: "Capture localmente execuções do Java Agent SDK para desenvolvimento e depuração."
+---
+
+Ative a captura local de execuções com `AgentSdk.createAgentDevtools(...)`:
+
+```java
+var devtools = AgentSdk.createAgentDevtools(".phaseo-devtools");
+```
+
+Passe esse valor por `RunOptions`. Os registros JSONL capturados incluem status e duração da execução, detalhes do modelo e do provedor, IDs de solicitação, mensagens, etapas, atividade de ferramentas, uso, custo e erros estruturados.
+
+<Warning>
+Entradas, mensagens, contexto e resultados de ferramentas do agente podem conter dados confidenciais. Mantenha o diretório do DevTools fora do controle de versão e das imagens de produção.
+</Warning>
+
+## Relacionados
+
+- [Hooks de ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [Erros e solução de problemas](./agent-sdk-observability.mdx)

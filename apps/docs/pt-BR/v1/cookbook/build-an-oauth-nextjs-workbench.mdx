@@ -1,0 +1,193 @@
+---
+title: "Crie uma bancada de trabalho OAuth com Next.js"
+icon: "key-round"
+description: "Use o exemplo completo de OAuth com Next.js como guia para um aplicativo de gateway autenticado com um proxy unificado."
+---
+
+Use esta página se seu produto precisar de login, acesso ao gateway baseado em sessão e mais de uma rota de chat.
+
+**Objetivo:** Execute a bancada autenticada e envie solicitações à Phaseo por um único proxy protegido no servidor.
+
+**Resultado:** Um aplicativo local com login OAuth, tokens associados à sessão, descoberta de modelos, chat e um testador de endpoints.
+
+<Prompt
+  description="Crie uma **bancada de trabalho autenticada com Next.js**, OAuth e um proxy unificado da Phaseo."
+  icon="shield-user"
+  actions={["copy", "cursor"]}
+>
+{`Você está criando um aplicativo Next.js autenticado sobre o Phaseo Gateway.
+
+Crie um aplicativo no estilo bancada de trabalho com:
+- login com OAuth 2.1 + PKCE
+- armazenamento de tokens associado à sessão
+- uma rota de proxy unificado do gateway no servidor
+- descoberta de modelos
+- um fluxo de chat usando a Responses API
+- um testador genérico para outros endpoints da Phaseo
+
+Requisitos:
+Mantenha as credenciais do gateway e os tokens de acesso no servidor.
+Use uma lista de permissões no proxy por segurança.
+Ofereça suporte à renovação de tokens.
+Mantenha a bancada fácil de entender e evite engenharia excessiva.
+Adicione um README curto com configuração, variáveis de ambiente e etapas de execução.
+
+Verificação:
+- execute o aplicativo, se possível
+- verifique o fluxo de login até onde a configuração local permitir
+- verifique pelo menos um caminho de solicitação ao gateway pelo proxy
+informe exatamente o que foi verificado e o que ainda depende da configuração OAuth externa.`}
+</Prompt>
+
+## Projeto de exemplo
+
+- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
+- Caminho local no repositório: `examples/oauth-client-nextjs`
+
+## O que este aplicativo inclui
+
+- login com OAuth 2.1 + PKCE
+- armazenamento e renovação de tokens associados à sessão
+- um proxy unificado para rotas de controle e geração
+- descoberta de modelos
+- um fluxo de chat por `/responses`
+- um testador genérico para outras rotas do gateway
+
+## Quando começar com este exemplo
+
+Use este exemplo quando:
+
+- usuários finais devem entrar com acesso delegado
+- você precisar de mais do que uma página de chat simples
+- você quiser uma rota segura no servidor para vários endpoints da Phaseo
+
+Não comece por aqui se:
+
+- você só precisar de uma interface de chat simples com chave de API
+- você quiser começar por um script ou CLI
+
+## Arquivos principais
+
+- `app/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/GatewayWorkbench.tsx`
+- `app/api/gateway/[...surface]/route.ts`
+- `lib/oauth.ts`
+- `lib/session.ts`
+
+## Por que o exemplo foi estruturado assim
+
+### 1. O OAuth fica separado da lógica do gateway
+
+O aplicativo separa:
+
+- lógica de início de autenticação e callback
+- gerenciamento de sessão criptografada
+- renovação de tokens
+
+Isso mantém o código de integração com IA mais simples e facilita a depuração de problemas de login.
+
+### 2. Uma única rota de proxy gerencia as chamadas ao gateway
+
+A rota de proxy catch-all:
+
+- verifica a lista de permissões de endpoints
+- inclui o token bearer atual
+- renova os tokens quando necessário
+- encaminha os corpos das solicitações e respostas
+
+Esse padrão é útil quando você precisa de vários endpoints da Phaseo sem copiar a lógica de autenticação para cada rota.
+
+### 3. O painel também funciona como bancada interna
+
+A página da bancada não serve apenas para chat:
+
+- descobre modelos
+- testa `/responses`
+- também pode testar endpoints que não são de chat
+
+Isso a torna útil para integração, QA e depuração interna antes de criar uma interface mais refinada para os usuários.
+
+## Pré-requisitos
+
+- - Node.js e um gerenciador de pacotes compatível
+- - um cliente OAuth configurado com a URL de callback local
+- - um segredo de sessão forte
+
+## Execute o exemplo
+
+<CodeGroup>
+```bash npm
+cd examples/oauth-client-nextjs
+npm install
+cp .env.example .env.local
+```
+
+```bash pnpm
+cd examples/oauth-client-nextjs
+pnpm install
+cp .env.example .env.local
+```
+
+```bash yarn
+cd examples/oauth-client-nextjs
+yarn install
+cp .env.example .env.local
+```
+
+```bash bun
+cd examples/oauth-client-nextjs
+bun install
+cp .env.example .env.local
+```
+</CodeGroup>
+
+Defina:
+
+- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
+- `OAUTH_CLIENT_SECRET`
+- `NEXT_PUBLIC_PHASEO_URL`
+- `NEXT_PUBLIC_REDIRECT_URI`
+- `SESSION_SECRET`
+- `NEXT_PUBLIC_GATEWAY_URL`
+
+Depois execute:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash pnpm
+pnpm dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash bun
+bun run dev
+```
+</CodeGroup>
+
+Abra `http://localhost:3000`.
+
+## Verifique o resultado
+
+- O login retorna ao callback configurado e cria uma sessão.
+- O painel consegue descobrir modelos pelo proxy.
+- Uma solicitação à Responses API é concluída sem expor um token de acesso ao navegador.
+- Um endpoint fora da lista de permissões do proxy é rejeitado.
+
+## Como adaptar o exemplo
+
+- - reduza a lista de permissões do proxy aos endpoints de que seu produto realmente precisa
+- - mantenha a bancada para uso interno enquanto cria uma interface mais simples para os usuários
+- - substitua o testador genérico por fluxos específicos do produto quando a integração estiver estável
+
+## Guias relacionados
+
+- [Crie um aplicativo de chat web com Next.js](./build-a-nextjs-web-chat-app.mdx)
+- [Prompts para iniciar um miniaplicativo](./mini-app-starter-prompts.mdx)
+- [Exemplos](../guides/examples.mdx)

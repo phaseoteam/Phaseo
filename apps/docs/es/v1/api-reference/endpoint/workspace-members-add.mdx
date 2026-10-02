@@ -1,0 +1,10 @@
+---
+title: "Añadir miembros al espacio de trabajo"
+sidebarTitle: "Añadir miembros"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /workspaces/{id}/members/add"
+description: "Añade usuarios existentes a un espacio de trabajo."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `workspaces:write` y el rol de propietario o administrador.</Note>
+
+El rol puede ser `admin` o `member`. Este endpoint no permite asignar la propiedad del espacio de trabajo.

@@ -1,0 +1,33 @@
+---
+icon: "mic"
+title: "音声認識（STT）"
+description: "TypeScript SDKで/audio/transcriptionsを呼び出します。"
+---
+
+**メソッド**: `client.generateTranscription()`。
+
+### 例
+```typescript
+const transcript = await client.generateTranscription({
+  model: "openai/gpt-4o-transcribe",
+  file: "data:audio/mp3;base64,...",
+  language: "en",
+});
+```
+
+### 主なパラメーター
+- `model`（必須）：文字起こしに対応するモデルのID。
+- `file`（必須）：音声データ（URL、base64、バイナリ）。
+- `language`：言語コードのヒント（例：`en`）。
+- `prompt`：精度を高めるための任意のコンテキスト。
+- `temperature`（0～2）：サンプリングのランダム性。
+- `response_format`：`json`、`text`、`srt`、`verbose_json`など。
+
+### 戻り値
+`AudioTranscriptionResponse`
+
+```json
+{
+  "text": "Hello world"
+}
+```

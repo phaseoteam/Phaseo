@@ -279,7 +279,7 @@ function extractServerToolTrace(value: unknown): TraceServerToolRound[] {
 		rounds.push({
 			key: `server-round-${round.round ?? roundIndex + 1}`,
 			round: typeof round.round === "number" ? round.round : roundIndex + 1,
-			durationMs: typeof round.duration_ms === "number" ? round.duration_ms : null,
+			durationMs: typeof round.durationMs === "number" ? round.durationMs : typeof round.duration_ms === "number" ? round.duration_ms : null,
 			calls,
 		});
 	}
@@ -395,6 +395,8 @@ function chooseResponse(payload: Record<string, unknown> | null): {
 		toolCalls: extractToolCalls(candidate.value),
 		toolResults: extractToolResults(candidate.value),
 	}));
+	const gatewayResponse = parsed.find((candidate) => candidate.label === "Gateway response");
+	if (gatewayResponse?.text) return gatewayResponse;
 	return parsed.sort((left, right) =>
 		(Number(right.text.length > 0) + Number(right.toolCalls.length > 0) + Number(right.toolResults.length > 0)) -
 		(Number(left.text.length > 0) + Number(left.toolCalls.length > 0) + Number(left.toolResults.length > 0)),

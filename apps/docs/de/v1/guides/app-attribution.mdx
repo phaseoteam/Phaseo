@@ -1,0 +1,85 @@
+---
+title: "App-Zuordnung"
+description: "Gruppiere die Gateway-Nutzung anhand stabiler IDs, Namen, URLs und Kategorien nach Anwendung."
+icon: "badge-check"
+---
+
+Mit App-Zuordnung kannst du die Nutzung verschiedener Produkte, Umgebungen oder Kundenerlebnisse trennen. Die Zuordnung wird in App-Analysen und Anfrage-Audits angezeigt, ohne die Inferenzantwort zu verändern.
+
+## Attributions-Header hinzufügen
+
+Sende bei jeder Anfrage eine stabile App-ID. Ergänze Name, URL und bis zu drei Kategorien, wenn du die Gruppierung im Dashboard verfeinern möchtest.
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+Verwende für alle Anfragen derselben Anwendung dieselbe `X-App-Id`. Phaseo nutzt sie als stabile Kennung, wenn keine URL verfügbar ist.
+
+## TypeScript-SDK verwenden
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## Unterstützte Header
+
+| Header | Zweck |
+| --- | --- |
+| `X-App-Id` | Stabile, von deiner Anwendung gewählte Kennung. |
+| `X-App-Name` | Menschenlesbarer Name in den App- und Nutzungsansichten. |
+| `HTTP-Referer` | Öffentliche Seiten- oder Deployment-URL der Anwendung. |
+| `X-App-Categories` | Kommagetrennte Liste mit bis zu drei unterstützten Kategorien. |
+| `X-Title` | Kompatibilitätsalias für einen menschenlesbaren App-Namen. |
+
+`HTTP-Referer` ist ein Attributionsmetadatum und muss nicht mit dem automatischen `Referer`-Header des Browsers übereinstimmen. Lege ihn in serverseitigen Integrationen ausdrücklich fest, wenn du eine kanonische App-URL verwenden möchtest.
+
+## Kategorien
+
+Wähle bis zu drei Werte aus:
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+Bei Werten wird nicht zwischen Groß- und Kleinschreibung unterschieden. Phaseo ignoriert unbekannte Werte, entfernt Duplikate und behält die ersten drei gültigen Kategorien. Kategorien aus späteren Anfragen werden mit den bereits für die App gespeicherten Kategorien zusammengeführt; Dashboard-Auswahlen werden dadurch nicht entfernt.
+
+Du kannst Kategorien auch unter **Gateway → Einstellungen → Apps** bearbeiten. Verwende das Dashboard, wenn die Klassifizierung zentral statt im Anwendungscode verwaltet wird.
+
+## Richtlinien zur App-Zuordnung
+
+Behalte IDs über Deployments hinweg bei, damit die Nutzung weiterhin zusammengefasst wird.
+Verwende unterschiedliche IDs für Anwendungen, deren Kosten oder Nutzung getrennt erfasst werden sollen.
+Füge keine Kunden-IDs, E-Mail-Adressen oder andere personenbezogene Daten in Attributions-Header ein.
+Behandle die URL als öffentliche Metadaten, wenn die App in geteilten oder öffentlichen Ansichten erscheinen kann.

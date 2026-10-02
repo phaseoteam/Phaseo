@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "開発ツール"
+description: "PHP Agent SDKの実行をPhaseo DevToolsのローカルイベント形式で記録します。"
+---
+
+ツールのタイムライン、承認インターフェース、実行インスペクターを開発する際にDevToolsの記録を有効にします。
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+各実行と継続処理は、ステータス、使用量、モデルの試行、ツール呼び出し、一時停止、リクエストメタデータ、エラーを含む構造化JSONLレコードを書き込みます。
+
+ローカル記録は開発用であり、本番環境の監査ストアではありません。機密コンテンツを保存する前に、アプリケーションに応じた秘匿化、アクセス制御、暗号化、保持期間の設定を適用してください。

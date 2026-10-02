@@ -16,6 +16,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface RegenerateSecretDialogProps {
 	clientId: string;
@@ -31,6 +33,7 @@ export default function RegenerateSecretDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [newSecret, setNewSecret] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
+	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
 
 	const handleRegenerate = async () => {
@@ -45,16 +48,16 @@ export default function RegenerateSecretDialog({
 			const result = await write(regenerateClientSecretAction(clientId));
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));
 				return;
 			}
 
 			setNewSecret(result.data.client_secret);
 
-			toast.success("Client secret regenerated successfully");
+			toast.success(t("strings.Client secret regenerated successfully" as never));
 
 		} catch (err: any) {
-			setError(err.message || "Failed to regenerate secret");
+			setError(localizedSettingsError(err, t, "Failed to regenerate secret"));
 		} finally {
 			setLoading(false);
 		}
@@ -64,7 +67,7 @@ export default function RegenerateSecretDialog({
 		if (newSecret) {
 			navigator.clipboard.writeText(newSecret);
 			setCopied(true);
-			toast.success("New client secret copied to clipboard");
+			toast.success(t("strings.New client secret copied to clipboard" as never));
 			setTimeout(() => setCopied(false), 2000);
 		}
 	};
@@ -82,26 +85,26 @@ export default function RegenerateSecretDialog({
 			<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
 				<DialogTrigger asChild>
 					<Button variant="outline" size="sm">
-						Regenerate
+						{t("strings.Regenerate" as never)}
 					</Button>
 				</DialogTrigger>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>New Client Secret</DialogTitle>
+						<DialogTitle>{t("strings.New Client Secret" as never)}</DialogTitle>
 						<DialogDescription>
-							Save your new secret now. It will not be shown again.
+							{t("strings.phraseSaveYourNewSecretNowItWillNotBeShownAgain" as never)}
 						</DialogDescription>
 					</DialogHeader>
 
 					<Alert>
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							<strong>Important:</strong> Copy your new secret now. The old secret has been invalidated.
+							<strong>{t("strings.Important:" as never)}</strong> {t("strings.phraseCopyYourNewSecretNowTheOldSecretHasBeenInvalidated" as never)}
 						</AlertDescription>
 					</Alert>
 
 					<div>
-						<label className="text-sm font-medium">New Client Secret</label>
+						<label className="text-sm font-medium">{t("strings.New Client Secret" as never)}</label>
 						<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 							<div className="flex items-center justify-between gap-2">
 								<code className="text-xs break-all flex-1">{newSecret}</code>
@@ -122,7 +125,7 @@ export default function RegenerateSecretDialog({
 					</div>
 
 					<DialogFooter>
-						<Button onClick={handleClose}>Done</Button>
+						<Button onClick={handleClose}>{t("labels.done")}</Button>
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
@@ -133,22 +136,22 @@ export default function RegenerateSecretDialog({
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm">
-					Regenerate
+						{t("strings.Regenerate" as never)}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Regenerate Client Secret?</DialogTitle>
+					<DialogTitle>{t("strings.Regenerate Client Secret?" as never)}</DialogTitle>
 					<DialogDescription>
-						This will invalidate the current secret for <strong>{appName}</strong>.
-						Any apps using the old secret will stop working.
+						{t("oauthCopy.invalidatesCurrentSecret", { appName })}
+						{t("oauthCopy.oldSecretWarning")}
 					</DialogDescription>
 				</DialogHeader>
 
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>Warning:</strong> This action cannot be undone. The old secret will be immediately invalidated.
+						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneTheOldSecretWillBeImmediatelyInvalidated" as never)}
 					</AlertDescription>
 				</Alert>
 
@@ -160,14 +163,14 @@ export default function RegenerateSecretDialog({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={() => setOpen(false)}>
-						Cancel
+						{t("labels.cancel")}
 					</Button>
 					<Button
 						variant="destructive"
 						onClick={handleRegenerate}
 						disabled={loading}
 					>
-						{loading ? "Regenerating..." : "Regenerate Secret"}
+						{loading ? t("strings.phraseRegenerating" as never) : t("strings.Regenerate Secret" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

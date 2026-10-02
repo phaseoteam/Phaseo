@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import type {
 	EventType,
@@ -30,6 +31,16 @@ const TYPE_COLORS: Record<EventType, string> = {
 	Released: "bg-emerald-500",
 	Deprecated: "bg-red-500",
 	Retired: "bg-zinc-500",
+};
+
+const EVENT_TYPE_MESSAGE_KEY: Record<
+	EventType,
+	"announced" | "released" | "deprecated" | "retired"
+> = {
+	Announced: "announced",
+	Released: "released",
+	Deprecated: "deprecated",
+	Retired: "retired",
 };
 
 function padTwo(value: number) {
@@ -64,6 +75,16 @@ export default function ModelCalendarChart({
 	events,
 	monthsWindow = 12,
 }: ModelCalendarChartProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.updatesCalendar.cadence");
+	const calendarT = useTranslations("Catalogue.updatesCalendar.calendar");
+	const eventTypeT = useTranslations("Catalogue.updates.eventTypes");
+	const eventTypeLabels: Record<EventType, string> = {
+		Announced: eventTypeT(EVENT_TYPE_MESSAGE_KEY.Announced),
+		Released: eventTypeT(EVENT_TYPE_MESSAGE_KEY.Released),
+		Deprecated: eventTypeT(EVENT_TYPE_MESSAGE_KEY.Deprecated),
+		Retired: eventTypeT(EVENT_TYPE_MESSAGE_KEY.Retired),
+	};
 	const format = useDisplayFormatters();
 	const now = useMemo(() => new Date(), []);
 
@@ -116,7 +137,7 @@ export default function ModelCalendarChart({
 			const name =
 				event.model.name?.trim() ||
 				event.model.model_id ||
-				"Unknown model";
+				calendarT("unknownModel");
 			const organisationId =
 				event.model.organisation.organisation_id || event.model.organisation_id;
 			entry.models[type].set(event.model.model_id, {
@@ -160,17 +181,17 @@ export default function ModelCalendarChart({
 				}
 			>,
 		}));
-	}, [events, format, now, monthsWindow]);
+	}, [events, format, now, monthsWindow, calendarT]);
 
 	return (
 		<section className="space-y-4 py-6">
 			<div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
 				<div className="flex items-center justify-between">
 					<h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-						Model event cadence
+						{t("title")}
 					</h2>
 					<span className="text-xs text-zinc-500 dark:text-zinc-400">
-						Last 12 months
+						{t("lastMonths", { count: new Intl.NumberFormat(locale).format(monthsWindow) })}
 					</span>
 				</div>
 					<div className="flex flex-wrap gap-3 pb-3 pt-4">
@@ -186,7 +207,7 @@ export default function ModelCalendarChart({
 								)}
 								aria-hidden="true"
 							/>
-							{type}
+							{eventTypeLabels[type]}
 						</div>
 					))}
 				</div>
@@ -224,13 +245,20 @@ export default function ModelCalendarChart({
 														style={{
 															width: `${width}%`,
 														}}
-														aria-label={`${type}: ${count}`}
+										aria-label={t("typeCount", {
+											type: eventTypeLabels[type],
+											count: new Intl.NumberFormat(locale).format(count),
+										})}
 													/>
 												</DialogTrigger>
 												<DialogContent className="max-w-lg rounded-md">
 													<DialogHeader>
 														<DialogTitle>
-															{type} in {entry.label} ({modelsInfo.total})
+											{t("eventsInMonth", {
+												type: eventTypeLabels[type],
+												month: entry.label,
+												count: new Intl.NumberFormat(locale).format(modelsInfo.total),
+											})}
 														</DialogTitle>
 													</DialogHeader>
 													<ScrollArea className="max-h-[420px] pr-3">

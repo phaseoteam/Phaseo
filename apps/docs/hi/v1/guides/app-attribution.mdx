@@ -1,0 +1,85 @@
+---
+title: "ऐप एट्रिब्यूशन"
+description: "स्थिर ID, नाम, URL और श्रेणियों से Gateway उपयोग को ऐप के अनुसार समूहित करें।"
+icon: "badge-check"
+---
+
+अलग-अलग उत्पादों, परिवेशों या ग्राहक-अनुभवों का उपयोग अलग रखने के लिए ऐप एट्रिब्यूशन इस्तेमाल करें। इससे inference response बदले बिना ऐप एनालिटिक्स और अनुरोध ऑडिट में जानकारी दिखती है।
+
+## एट्रिब्यूशन हेडर जोड़ें
+
+हर अनुरोध में स्थिर ऐप ID भेजें। डैशबोर्ड में अधिक विस्तृत समूह बनाने के लिए नाम, URL और अधिकतम तीन श्रेणियाँ जोड़ें।
+
+```bash
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "X-App-Id: acme-support" \
+  -H "X-App-Name: Acme Support" \
+  -H "HTTP-Referer: https://acme.example/support" \
+  -H "X-App-Categories: chat,productivity" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "input": "Summarize this ticket."
+  }'
+```
+
+एक ही ऐप के हर अनुरोध में समान `X-App-Id` रखें। URL उपलब्ध न होने पर Phaseo इसे स्थिर पहचान के रूप में इस्तेमाल करता है।
+
+## TypeScript SDK का उपयोग करें
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const phaseo = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY,
+  app: {
+    id: "acme-support",
+    name: "Acme Support",
+    url: "https://acme.example/support",
+    categories: ["chat", "productivity"],
+  },
+});
+
+const response = await phaseo.generateResponse({
+  model: "openai/gpt-5-nano",
+  input: "Summarize this ticket.",
+});
+```
+
+## समर्थित हेडर
+
+| हेडर | उद्देश्य |
+| --- | --- |
+| `X-App-Id` | आपके ऐप द्वारा चुनी गई स्थिर पहचान। |
+| `X-App-Name` | ऐप और उपयोग दृश्यों में दिखने वाला पढ़ने योग्य नाम। |
+| `HTTP-Referer` | ऐप से जुड़ा सार्वजनिक पेज या डिप्लॉयमेंट URL। |
+| `X-App-Categories` | अधिकतम तीन समर्थित श्रेणियों की कॉमा से अलग की गई सूची। |
+| `X-Title` | ऐप के पढ़ने योग्य नाम के लिए संगतता alias। |
+
+`HTTP-Referer` एट्रिब्यूशन मेटाडेटा है; इसका ब्राउज़र के स्वचालित `Referer` हेडर से मेल खाना ज़रूरी नहीं। ऐप के लिए एक canonical URL चाहिए तो सर्वर-साइड इंटीग्रेशन में इसे स्पष्ट रूप से सेट करें।
+
+## श्रेणियाँ
+
+अधिकतम तीन मान चुनें:
+
+- `chat`
+- `developer-tools`
+- `research`
+- `productivity`
+- `education`
+- `commerce`
+- `media`
+- `finance`
+- `other`
+
+मानों में बड़े-छोटे अक्षरों का अंतर नहीं होता। Phaseo अज्ञात मानों को अनदेखा करता है, डुप्लिकेट हटाता है और पहले तीन वैध श्रेणियाँ रखता है। बाद के अनुरोधों की श्रेणियाँ ऐप में पहले से सहेजी गई श्रेणियों से जुड़ती हैं; वे डैशबोर्ड चयन नहीं हटातीं।
+
+आप **Gateway → सेटिंग → ऐप** में भी श्रेणियाँ संपादित कर सकते हैं। जब वर्गीकरण ऐप कोड के बजाय केंद्रीय रूप से प्रबंधित हो, तब डैशबोर्ड इस्तेमाल करें।
+
+## एट्रिब्यूशन दिशानिर्देश
+
+- उपयोग को एक साथ समूहित रखने के लिए डिप्लॉयमेंट के बीच ID स्थिर रखें।
+- अलग लागत या उपयोग रिपोर्टिंग चाहिए तो ऐप्स के लिए अलग ID इस्तेमाल करें।
+- एट्रिब्यूशन हेडर में ग्राहक ID, ईमेल पते या अन्य निजी डेटा न रखें।
+- ऐप साझा या सार्वजनिक दृश्य में दिख सकता है, इसलिए URL को सार्वजनिक मेटाडेटा मानें।

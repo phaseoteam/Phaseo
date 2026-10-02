@@ -1,0 +1,23 @@
+---
+icon: "database"
+title: "الحالة والموافقة"
+description: "أوقف وكلاء C# مؤقتًا لطلب قرارات بشرية، ثم تابع الحالة التي يديرها التطبيق."
+---
+
+استخدم `AgentDefinition.HumanReview` لنقطة تحقق عامة. وتملأ الأدوات التي تتطلب موافقة أو تُنفذ يدويًا `Run.Pause.PendingToolCalls` بمعرّفات الاستدعاء الدقيقة.
+
+تابع عبر `Agent.ContinueRun(...)` مع توفير:
+
+- سجلات `ToolDecision` ضمن `Approvals` أو `Rejections`
+- سجلات `ToolOutput` للعمل الذي أكمله تطبيقك
+- `HumanInput` لإيقاف المراجعة العامة مؤقتًا
+- قيمة `RunResult` السابقة أو `RunId` مع `IStateAccessor`
+
+تُطابق القرارات بمعرّف الاستدعاء، لذا تظل الاستدعاءات المتزامنة للأداة نفسها متميزة.
+
+نفّذ `IStateAccessor.Load(...)` و`Save(...)` إذا كان ينبغي أن تستمر عمليات التشغيل عبر الطلبات أو إعادة تشغيل العملية. لا تستضيف Phaseo حالة تشغيل Agent SDK.
+
+## مواضيع ذات صلة
+
+- [الأدوات](./agent-sdk-tools.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

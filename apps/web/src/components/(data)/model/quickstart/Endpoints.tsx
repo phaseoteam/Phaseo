@@ -11,26 +11,30 @@ import { BASE_URL } from "./config";
 import { Server } from "lucide-react";
 import PathCell from "./PathCell";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
 export default async function Endpoints() {
+	const t = await getTranslations("Catalogue.models.detail.quickstart");
 	const modelsExample = `curl -s ${BASE_URL}/api/models \\
   -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.[0:5]'`;
 
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					<Server className="h-5 w-5 text-primary" /> Endpoints
+			<CardTitle className="flex items-center gap-2">
+					<Server className="h-5 w-5 text-primary" /> {t("gatewayEndpointsTitle")}
 				</CardTitle>
 				<CardDescription>
-					Our main gateway endpoints. See more on the{" "}
-					<Link
-						href="https://phaseo.app/"
-						className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200"
-					>
-						documentation
-					</Link>
-					.
+					{t.rich("gatewayEndpointsDescription", {
+						documentation: (chunks) => (
+							<Link
+								href="https://phaseo.app/"
+								className="relative underline decoration-transparent transition-colors duration-200 hover:decoration-current"
+							>
+								{chunks}
+							</Link>
+						),
+					})}
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -38,9 +42,9 @@ export default async function Endpoints() {
 					<table className="w-full text-sm">
 						<thead>
 							<tr className="border-b bg-gradient-to-r from-primary/10 to-transparent">
-								<th className="p-3 text-left">Method</th>
-								<th className="p-3 text-left">Path</th>
-								<th className="p-3 text-left">Notes</th>
+								<th className="p-3 text-left">{t("endpointMethod")}</th>
+								<th className="p-3 text-left">{t("endpointPath")}</th>
+								<th className="p-3 text-left">{t("endpointNotes")}</th>
 							</tr>
 						</thead>
 						<tbody className="[&_tr:nth-child(even)]:bg-muted/30">
@@ -50,9 +54,7 @@ export default async function Endpoints() {
 									/v1/api/models
 								</PathCell>
 								<td className="p-3">
-									Access all available models and their
-									metadata (capabilities, provider, and
-									supported formats).
+									{t("modelsEndpointDescription")}
 								</td>
 							</tr>
 							<tr className="border-b">
@@ -61,8 +63,7 @@ export default async function Endpoints() {
 									/v1/chat
 								</PathCell>
 								<td className="p-3">
-									Get a chat-style response from a
-									conversational model; supports streaming.
+									{t("chatEndpointDescription")}
 								</td>
 							</tr>
 							<tr className="border-b">
@@ -71,8 +72,7 @@ export default async function Endpoints() {
 									/v1/images
 								</PathCell>
 								<td className="p-3">
-									Create images using image-capable models
-									(generations, edits, variations).
+									{t("imageEndpointDescription")}
 								</td>
 							</tr>
 
@@ -82,8 +82,7 @@ export default async function Endpoints() {
 									/v1/video
 								</PathCell>
 								<td className="p-3">
-									Create or process videos using video-capable
-									models (generations, transformations).
+									{t("videoEndpointDescription")}
 								</td>
 							</tr>
 							<tr className="border-b">
@@ -92,8 +91,7 @@ export default async function Endpoints() {
 									/v1/embeddings
 								</PathCell>
 								<td className="p-3">
-									Request vector embeddings for text or other
-									supported inputs.
+									{t("embeddingsEndpointDescription")}
 								</td>
 							</tr>
 							<tr>
@@ -102,8 +100,7 @@ export default async function Endpoints() {
 									/v1/moderation
 								</PathCell>
 								<td className="p-3">
-									Moderate text or image content for policy
-									compliance and safety checks.
+									{t("moderationEndpointDescription")}
 								</td>
 							</tr>
 						</tbody>
@@ -111,15 +108,18 @@ export default async function Endpoints() {
 				</div>
 
 				<div className="space-y-2">
-					<h4 className="text-sm font-semibold">List models</h4>
+					<h4 className="text-sm font-semibold">{t("listModels")}</h4>
 					<CodeBlock code={modelsExample} lang="bash" label="bash" />
 				</div>
 
 				<div className="space-y-2">
-					<h4 className="text-sm font-semibold">Auth</h4>
+					<h4 className="text-sm font-semibold">{t("authentication")}</h4>
 					<p className="text-sm text-muted-foreground">
-						Send <code>Authorization: Bearer &lt;your key&gt;</code>{" "}
-						on every request. Keys begin with <code>phaseo_v1_sk_</code>.
+						{t.rich("authenticationDescription", {
+							header: "Authorization: Bearer <your key>",
+							prefix: "phaseo_v1_sk_",
+							code: (chunks) => <code>{chunks}</code>,
+						})}
 					</p>
 				</div>
 			</CardContent>

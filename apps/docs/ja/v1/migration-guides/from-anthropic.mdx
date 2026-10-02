@@ -1,0 +1,102 @@
+---
+title: "Anthropic SDK からの移行"
+sidebarTitle: "Anthropic SDK"
+description: "Messages API の使い慣れたワークフローを保ちながら、Anthropic SDK の連携を Phaseo に移行します。"
+icon: "/icons/brands/anthropic.svg"
+---
+
+Anthropic SDK のワークフローを維持したまま、リクエストを Phaseo 経由にするには、このガイドを使ってください。まずクライアント設定を変更し、次にモデルIDとアプリケーションが依存する Anthropic 固有の動作を確認します。
+
+## 変更点
+
+| 設定 | 変更前 | 変更後 |
+| --- | --- | --- |
+| ベースURL | Anthropic の既定値 | `https://api.phaseo.app/v1` |
+| APIキー | Anthropic のキー | `PHASEO_API_KEY` |
+| モデル | Anthropic のモデル名 | `GET /v1/models` が返す Phaseo モデルID |
+| Messages 呼び出し | 既存の SDK 呼び出し | 通常は変更なし |
+
+<Steps>
+<Step title="Phaseo APIキーを作成する">
+
+[Gateway Keys](https://phaseo.app/gateway/keys)でキーを作成し、アプリケーションから `PHASEO_API_KEY` として利用できるようにします。
+
+</Step>
+
+<Step title="Anthropic クライアントを更新する">
+
+SDK の接続先を Phaseo のベースURLに変更し、Phaseo のキーを設定します。
+
+<CodeGroup>
+```typescript TypeScript
+import Anthropic from "@anthropic-ai/sdk";
+
+const client = new Anthropic({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.messages.create({
+  model: "anthropic/claude-sonnet-4.6",
+  max_tokens: 256,
+  messages: [{ role: "user", content: "Reply with: migration ready" }],
+});
+```
+
+```python Python
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.messages.create(
+    model="anthropic/claude-sonnet-4.6",
+    max_tokens=256,
+    messages=[{"role": "user", "content": "Reply with: migration ready"}],
+)
+```
+
+```bash cURL
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-4.6",
+    "max_tokens": 256,
+    "messages": [{"role": "user", "content": "Reply with: migration ready"}]
+  }'
+```
+</CodeGroup>
+
+</Step>
+
+<Step title="Anthropic 固有の動作を確認する">
+
+アプリケーションで使用する正確なモデルを使って、システムプロンプト、ストリーミング、ツール利用、推論オプション、構造化出力をテストします。古いベータヘッダーやリクエストフィールドは、新しい経路にそのまま持ち込まず削除してください。
+
+</Step>
+
+<Step title="段階的にロールアウトする">
+
+両方の設定で代表的なプロンプトセットを比較します。本番トラフィックを移行する前に、出力形式、レイテンシ、トークン使用量、エラー、コストを確認してください。
+
+</Step>
+</Steps>
+
+## 移行チェックリスト
+
+- すべてのデプロイ環境で Phaseo キーを設定した。
+- Anthropic クライアントが `https://api.phaseo.app/v1` を使用している。
+- 本番で使うすべてのモデルIDを `GET /v1/models` で確認した。
+- ステージング環境でストリーミングとツール利用のフローが動作する。
+- Anthropic 固有のベータヘッダーとパラメーターを確認した。
+- ロールバックは引き続きキーとエンドポイントの設定変更だけで行える。
+
+## 次のステップ
+
+- [Anthropic モデルの移行](../model-migrations/index.mdx)
+- [モデル](../exploring/models.mdx)
+- [ツール呼び出し](../guides/tool-calling.mdx)

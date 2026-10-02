@@ -1,6 +1,7 @@
-import { ExtendedModel, Price } from "@/data/types";
+import { ExtendedModel } from "@/data/types";
 import ModelPriceCard from "@/components/(data)/prices/APIProviderPriceCard";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 interface ModelAPIProvidersProps {
 	model: ExtendedModel;
@@ -8,6 +9,10 @@ interface ModelAPIProvidersProps {
 
 // Note: allModels is currently unused but included for future extensibility
 export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
+	const tEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
+	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tProviders = useTranslations("Catalogue.providers");
+
 	if (!model.prices || model.prices.length === 0) {
 		return (
 			<div className="rounded-lg border border-dashed p-6 md:p-8 text-center bg-muted/30">
@@ -15,11 +20,10 @@ export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
 					<span className="text-xl">🤝</span>
 				</div>
 				<p className="text-base font-medium">
-					No API provider pricing available yet
+					{tEmpty("noProvidersTitle")}
 				</p>
 				<p className="mt-1 text-sm text-muted-foreground">
-					We&apos;re continuously adding providers. Have pricing info
-					to share?
+					{tEmpty("suggestProviders")}
 				</p>
 				<div className="mt-3">
 					<a
@@ -28,17 +32,17 @@ export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
 						rel="noopener noreferrer"
 						className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors"
 					>
-						Contribute on GitHub
+						{tProviders("contribute")}
 						<Image
 							src="/social/github_light.svg"
-							alt="GitHub Logo"
+							alt=""
 							width={16}
 							height={16}
 							className="inline dark:hidden"
 						/>
 						<Image
 							src="/social/github_dark.svg"
-							alt="GitHub Logo"
+							alt=""
 							width={16}
 							height={16}
 							className="hidden dark:inline"
@@ -52,7 +56,7 @@ export default function ModelAPIProviders({ model }: ModelAPIProvidersProps) {
 	return (
 		<div className="space-y-4">
 			<h3 className="text-lg font-semibold mb-2">
-				API Providers & Pricing
+				{tSections("apiProvidersAndPricing")}
 			</h3>
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				<ModelPriceCard model={model} />

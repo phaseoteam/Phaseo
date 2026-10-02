@@ -1,0 +1,40 @@
+---
+icon: "audio-lines"
+title: "تحويل النص إلى كلام / الكلام إلى نص (AI SDK)"
+description: "تحويل الكلام إلى نص (STT) وتحويل النص إلى كلام (TTS) باستخدام نماذج مزوّد Phaseo."
+---
+
+استخدم `experimental_transcribe` مع `transcriptionModel`، و`experimental_generateSpeech` مع `speechModel`.
+
+```ts
+import { readFileSync, writeFileSync } from "node:fs";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { experimental_generateSpeech, experimental_transcribe } from "ai";
+
+const audioInput = readFileSync("./audio.mp3");
+
+const transcription = await experimental_transcribe({
+  model: phaseo.transcriptionModel("openai/whisper-1"),
+  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+});
+
+console.log(transcription.text);
+console.log(transcription.providerMetadata);
+
+const speech = await experimental_generateSpeech({
+  model: phaseo.speechModel("openai/tts-1"),
+  text: "Hello from Phaseo audio.",
+  voice: "alloy",
+  outputFormat: "mp3",
+});
+
+writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
+console.log(speech.providerMetadata);
+```
+
+## ملاحظات
+
+- ما تزال مساعدات الصوت الحالية في AI SDK تجريبية، لذا قد تتغير أسماؤها عند صدور واجهات API مستقرة من المشروع الأصلي.
+- تختلف صيغ إدخال الصوت وإخراجه باختلاف النموذج.
+- اضبط أحجام البيانات ومهل الانتظار بما يناسب الملفات الطويلة.
+- أعد المحاولة عند تلقي استجابات `429` و`5xx` مؤقتة.

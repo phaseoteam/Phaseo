@@ -1,0 +1,144 @@
+---
+title: "Explorer les benchmarks"
+description: "DÃ©couvrez comment les benchmarks des modÃ¨les dâ€™IA sont collectÃ©s, normalisÃ©s et visualisÃ©s sur Phaseo."
+sidebarTitle: "Ã‰valuations comparatives"
+icon: "chart-no-axes-column"
+---
+
+Les benchmarks sont au cÅ“ur de la mesure de la qualitÃ© et des progrÃ¨s des modÃ¨les sur Phaseo.
+Ils fournissent des **mesures objectives et reproductibles** pour comparer les performances des modÃ¨les selon les tÃ¢ches, les domaines et les fournisseurs, du raisonnement et du code Ã  la comprÃ©hension du langage et Ã  la reconnaissance dâ€™images.
+
+---
+
+## Que sont les benchmarks ?
+
+Un **benchmark** est un jeu de donnÃ©es ou une Ã©valuation conÃ§u pour tester les performances dâ€™un modÃ¨le sur une tÃ¢che prÃ©cise.
+En Ã©valuant plusieurs modÃ¨les sur le mÃªme jeu de donnÃ©es, nous pouvons mesurer leurs forces et leurs faiblesses respectives.
+
+Exemples courants :
+
+-   ðŸ§  **MMLU (Massive Multitask Language Understanding)** â€” Ã©value les connaissances gÃ©nÃ©rales et le raisonnement.
+-   ðŸ”¢ **GSM8K** â€” Ã©value le raisonnement mathÃ©matique et la rÃ©solution de problÃ¨mes.
+-   ðŸ’¬ **HellaSwag** â€” Ã©value le bon sens et la comprÃ©hension du contexte.
+-   ðŸ§® **ARC-Challenge** â€” mesure le raisonnement scientifique et la logique.
+-   ðŸ’¡ **HumanEval** â€” Ã©value les compÃ©tences en programmation et en gÃ©nÃ©ration de code.
+
+---
+
+## Comment Phaseo gÃ¨re les benchmarks
+
+Phaseo collecte des donnÃ©es de benchmark Ã  partir de **plusieurs sources publiques** et de **rapports officiels**, puis les normalise dans un format cohÃ©rent.
+
+La section des benchmarks de chaque modÃ¨le comprend :
+
+-   **Valeur du score** â€” gÃ©nÃ©ralement exprimÃ©e en pourcentage ou sur une Ã©chelle normalisÃ©e.
+-   **Source du jeu de donnÃ©es** â€” par exemple MMLU, GSM8K, etc.
+-   **MÃ©thode dâ€™Ã©valuation** â€” indique comment le score a Ã©tÃ© obtenu (rapport officiel, Ã©valuation tierce ou contribution de la communautÃ©).
+-   **DerniÃ¨re mise Ã  jour** â€” indique la date de la derniÃ¨re actualisation des donnÃ©es du benchmark.
+
+---
+
+## Exemple de page de benchmark
+
+---
+
+## CatÃ©gories de benchmarks
+
+Les benchmarks sont regroupÃ©s en catÃ©gories correspondant Ã  la compÃ©tence Ã©valuÃ©e :
+
+| CatÃ©gorie                   | Exemples               | Description                                                           |
+| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
+| **Raisonnement**              | MMLU, GSM8K, ARC       | Ã‰value la logique gÃ©nÃ©rale, le raisonnement en plusieurs Ã©tapes et la rÃ©solution de problÃ¨mes.       |
+| **ComprÃ©hension du langage** | HellaSwag, BoolQ, PIQA | Mesure la comprÃ©hension Ã©crite, le bon sens et les capacitÃ©s linguistiques. |
+| **GÃ©nÃ©ration de code**        | HumanEval, MBPP        | Ã‰value la programmation et la prÃ©cision de la synthÃ¨se de code.                    |
+| **MathÃ©matiques et sciences**         | GSM8K, MATH, SciQ      | Se concentre sur le raisonnement numÃ©rique et scientifique.                        |
+| **Multimodal**             | MathVista, MMMU        | Combine des tÃ¢ches de comprÃ©hension textuelle et visuelle.                         |
+
+---
+
+## Comment interprÃ©ter les scores
+
+| Plage de valeurs | InterprÃ©tation                                                    |
+| ----------- | ----------------------------------------------------------------- |
+| **90-100%** | Exceptionnel â€” des performances proches de lâ€™Ã©tat de lâ€™art.                  |
+| **80-89%**  | Excellent â€” convient Ã  la plupart des cas dâ€™usage en production.                |
+| **60-79%**  | Bon â€” fiable pour les tÃ¢ches gÃ©nÃ©rales, mais peut rencontrer des difficultÃ©s dans les cas limites. |
+| **< 60%**   | En dÃ©veloppement â€” Ã  privilÃ©gier pour lâ€™expÃ©rimentation ou la recherche.         |
+
+Nâ€™oubliez pas que certains benchmarks utilisent des **systÃ¨mes de notation diffÃ©rents**.
+Phaseo les normalise lorsque câ€™est possible afin de rendre les comparaisons plus pertinentes.
+
+---
+
+## Visualiser les benchmarks sur Phaseo
+
+Les rÃ©sultats des benchmarks sont visualisÃ©s Ã  lâ€™aide de :
+
+-   ðŸ“Š **Graphiques Ã  barres** pour comparer des modÃ¨les sur un mÃªme jeu de donnÃ©es.
+-   ðŸ“ˆ **Graphiques de tendance** montrant lâ€™Ã©volution des modÃ¨les au fil du temps.
+-   ðŸ§® **Scores agrÃ©gÃ©s** pour rÃ©sumer les performances sur plusieurs jeux de donnÃ©es.
+
+Chaque jeu de donnÃ©es de benchmark sur Phaseo comporte des filtres pour :
+
+-   Type de modÃ¨le (chat, code, embeddings, etc.)
+-   Fournisseur
+-   AnnÃ©e de sortie
+-   CatÃ©gorie du jeu de donnÃ©es
+
+Vous pouvez ainsi repÃ©rer rapidement des tendances, par exemple les familles qui dominent les tÃ¢ches de raisonnement ou de programmation.
+
+---
+
+## Sources des donnÃ©es et mÃ©thodologie
+
+Phaseo rassemble des donnÃ©es de benchmark issues de :
+
+-   Articles de recherche et rapports de modÃ¨les officiels.
+-   Pages d'Ã©valuation des fournisseurs (OpenAI Evals, Anthropic Reports, etc.).
+-   Jeux de donnÃ©es communautaires ouverts (par exemple les classements Hugging Face).
+-   Contributions directes des utilisateurs via GitHub.
+
+Toutes les donnÃ©es sont normalisÃ©es et vÃ©rifiÃ©es avant leur publication.
+Consultez [Recherche et mÃ©thodologie â†’ MÃ©thodologie des benchmarks](../research/benchmark-methodology.mdx) pour plus de dÃ©tails.
+
+---
+
+## Exemples dâ€™utilisation
+
+| Objectif                                 | Exemple                                                              |
+| ------------------------------------ | -------------------------------------------------------------------- |
+| Comparer des modÃ¨les de raisonnement             | Â« Quel modÃ¨le obtient le meilleur score sur GSM8K ? Â»                               |
+| Ã‰valuer le rapport coÃ»t-performance | Â« GPT-4o justifie-t-il son coÃ»t plus Ã©levÃ© par rapport Ã  Claude 3.5 Sonnet ? Â» |
+| Suivre les progrÃ¨s annuels                | Â« De combien la prÃ©cision sur MMLU sâ€™est-elle amÃ©liorÃ©e depuis 2022 ? Â»                    |
+| Ã‰tudier les benchmarks par catÃ©gorie      | Â« Quels modÃ¨les sont les plus performants en raisonnement multimodal ? Â»                         |
+
+---
+
+## Contribuer aux donnÃ©es de benchmark
+
+Ouvrez une issue GitHub avec des preuves pour les scores de benchmark nouveaux ou corrigÃ©s.
+Chaque contribution est vÃ©rifiÃ©e avant son ajout afin de garantir la cohÃ©rence et lâ€™exactitude.
+
+<Card
+	title="Contribuer aux donnÃ©es de benchmark"
+	icon="github"
+	href="../research/submitting-scores.mdx"
+	horizontal
+>
+	DÃ©couvrez les preuves Ã  inclure dans une issue de benchmark.
+</Card>
+
+---
+
+## Ã‰tapes suivantes
+
+Une fois que vous comprenez le fonctionnement des donnÃ©es de benchmark, vous pouvez dÃ©couvrir les **fournisseurs dâ€™API** qui rendent ces modÃ¨les accessibles par programmation.
+
+<Card
+	title="Explorer les fournisseurs dâ€™API"
+	icon="network"
+	href="./api-providers.mdx"
+	horizontal
+>
+	DÃ©couvrez oÃ¹ et comment les modÃ¨les sont hÃ©bergÃ©s, tarifÃ©s et accessibles.
+</Card>

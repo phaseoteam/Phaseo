@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
+import { getLocale, getTranslations } from "next-intl/server";
 
 const ANNOUNCEMENT_LIMIT = 4;
 
@@ -32,7 +33,9 @@ export function HomeAnnouncementsSectionFallback() {
 }
 
 export default async function HomeAnnouncementsSection() {
-	const posts = await getAnnouncementPosts();
+	const locale = await getLocale();
+	const t = await getTranslations({ locale, namespace: "Content.blog" });
+	const posts = await getAnnouncementPosts({ locale });
 	const latest = posts.slice(0, ANNOUNCEMENT_LIMIT);
 
 	return (
@@ -44,7 +47,7 @@ export default async function HomeAnnouncementsSection() {
 							href="/blog"
 							className="group inline-flex items-center gap-1 text-center text-2xl font-semibold tracking-[-0.04em] text-zinc-950 transition-colors hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-200 sm:text-3xl"
 						>
-							<span>Latest from the Blog</span>
+							<span>{t("latestFromBlog")}</span>
 							<ChevronRight className="h-5 w-5 shrink-0 translate-y-px opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100" />
 						</Link>
 					</h2>
@@ -83,7 +86,7 @@ export default async function HomeAnnouncementsSection() {
 				) : (
 					<Card className="border-dashed">
 						<CardContent className="py-10 text-center text-sm text-zinc-600 dark:text-zinc-400">
-							No blog posts published yet.
+							{t("noPublishedPosts")}
 						</CardContent>
 					</Card>
 				)}

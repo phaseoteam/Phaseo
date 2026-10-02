@@ -1,0 +1,74 @@
+---
+icon: "package"
+title: "Python SDK इंस्टॉलेशन"
+description: "Phaseo Python SDK को install और set up करने का तरीका।"
+---
+
+SDK PyPI पर [`phaseo`](https://pypi.org/project/phaseo/) के रूप में प्रकाशित है।
+
+## इंस्टॉलेशन
+
+अपने पसंदीदा Python package manager से SDK install करें:
+
+<CodeGroup>
+
+    ```bash title="pip"
+    pip install phaseo
+    ```
+
+    ```bash title="uv"
+    uv add phaseo
+    ```
+
+</CodeGroup>
+
+## आवश्यकताएँ
+
+- Python 3.10+
+
+## सेटअप
+
+### API कुंजी
+
+[Phaseo Dashboard](https://phaseo.app/gateway/keys) में API key बनाएँ।
+
+### एनवायरनमेंट वैरिएबल
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+### बुनियादी उपयोग
+
+```python
+from phaseo import Phaseo
+import os
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+
+response = client.generate_text(
+    {
+        "model": "openai/gpt-5-nano",
+        "messages": [{"role": "user", "content": "Hello!"}],
+    }
+)
+
+print(response["choices"][0]["message"]["content"])
+```
+
+### वैकल्पिक क्लाइंट कॉन्फ़िगरेशन
+
+```python
+from phaseo import Phaseo
+
+client = Phaseo(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
+```
+
+## अगले कदम
+
+- [उपयोग मार्गदर्शिका](./usage.mdx) देखें
+- [API संदर्भ](../../api-reference/introduction.mdx) देखें

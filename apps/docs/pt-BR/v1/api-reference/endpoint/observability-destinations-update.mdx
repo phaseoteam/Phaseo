@@ -1,0 +1,11 @@
+---
+title: "Atualizar destino de observabilidade"
+sidebarTitle: "Atualizar destino"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /observability/destinations/{id}"
+description: "Atualizar destino policy, filters, or credentials."
+---
+<Note>Este endpoint requer uma chave de API de gerenciamento com `settings:write`.</Note>
+
+Omita `config` para manter a configuração criptografada existente. Se informado, ele substituirá atomicamente a configuração na linha do destino.
+

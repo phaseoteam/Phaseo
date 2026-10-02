@@ -2,7 +2,7 @@ name: Epoch ECI benchmark sync
 
 on:
     schedule:
-        - cron: "41 4 * * *"
+        - cron: "41 * * * *"
     workflow_dispatch:
 
 concurrency:
@@ -30,7 +30,7 @@ jobs:
                   cache: pnpm
             - run: pnpm install --frozen-lockfile
             - name: Test benchmark matching
-              run: pnpm exec tsx --test scripts/epoch-eci/core.test.ts
+              run: pnpm exec tsx --test scripts/benchmark-source-ids.test.ts scripts/epoch-eci/core.test.ts
             - name: Fetch benchmark snapshot
               env:
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}

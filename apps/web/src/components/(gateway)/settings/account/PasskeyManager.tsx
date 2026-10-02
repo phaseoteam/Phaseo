@@ -1,9 +1,13 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	deletePasskeyAction,
@@ -39,6 +43,8 @@ type PendingPasskeyAction =
 	| { passkeyId: string; type: "remove" };
 
 export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
+	const t = useTranslations("SettingsUI");
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const format = useDisplayFormatters();
 	const router = useRouter();
 	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
@@ -57,7 +63,10 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			if (error) throw error;
 			setPasskeys((data ?? []) as Passkey[]);
 		} catch (error) {
-			const message = error instanceof Error ? error.message : "Could not load passkeys";
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
+					: localizedSettingsError(error, t, "Could not load passkeys", s("Could not load passkeys"));
 			if (!message.includes("passkey_disabled")) toast.error(message);
 		} finally {
 			setLoading(false);
@@ -85,7 +94,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			const publicKey = parsePasskeyCreationOptions(startResult.data.options);
 			const credential = await navigator.credentials.create({ publicKey });
 			if (!(credential instanceof PublicKeyCredential)) {
-				throw new Error("Passkey registration was cancelled");
+				throw new Error(s("Passkey registration was cancelled"));
 			}
 
 			const verifyResult = await verifyPasskeyRegistrationAction(
@@ -95,7 +104,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			);
 			if (!verifyResult.ok) return verifyResult;
 
-			toast.success("Passkey added");
+			toast.success(s("Passkey added"));
 			await load();
 			return verifyResult;
 		}
@@ -108,7 +117,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		setPasskeys((items) =>
 			items.filter((item) => item.id !== action.passkeyId),
 		);
-		toast.success("Passkey removed");
+		toast.success(s("Passkey removed"));
 		return deleteResult;
 	}
 
@@ -123,7 +132,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		event.preventDefault();
 		if (!requestedAction) return;
 		if (hasPassword && !currentPassword) {
-			toast.error("Enter your current password");
+			toast.error(s("Enter your current password"));
 			return;
 		}
 
@@ -150,14 +159,13 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		} catch (error) {
 			const fallback =
 				requestedAction.type === "register"
-					? "Could not add passkey"
-					: "Could not remove passkey";
-			const message = error instanceof Error ? error.message : fallback;
-			toast.error(
-				message.includes("passkey_disabled")
-					? "Passkeys are not enabled for this environment yet."
-					: message,
-			);
+					? s("Could not add passkey")
+					: s("Could not remove passkey");
+			const message =
+				error instanceof Error && error.message.includes("passkey_disabled")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
+					: localizedSettingsError(error, t, "Could not remove passkey", fallback);
+			toast.error(message);
 		} finally {
 			setPending(false);
 		}
@@ -179,15 +187,15 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		<>
 			<section aria-labelledby="passkeys-title" className="space-y-3">
 				<h2 id="passkeys-title" className="font-heading text-base font-medium">
-					Passkeys
+					{s("Passkeys")}
 				</h2>
 				<div className="overflow-hidden rounded-xl border bg-background/40">
 					<div className="px-4 py-4">
 						<div className="flex items-start justify-between gap-4">
 							<div className="min-w-0">
-								<h3 className="text-sm font-medium">Device Passkeys</h3>
+				<h3 className="text-sm font-medium">{s("Device Passkeys")}</h3>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									Sign in with your device biometrics, PIN, or security key.
+					{s("phraseSignInWithYourDeviceBiometricsPINOrSecurityKey")}
 								</p>
 							</div>
 							<Button
@@ -195,16 +203,16 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 								disabled={pending}
 							>
 								{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-								Add Passkey
+								{s("Add Passkey")}
 							</Button>
 						</div>
 
 						<div className="pt-3 pl-3 sm:pl-4">
 							{loading ? (
-								<p className="text-xs text-muted-foreground">Loading passkeys...</p>
+							<p className="text-xs text-muted-foreground">{s("phraseLoadingPasskeys")}</p>
 							) : null}
 							{!loading && passkeys.length === 0 ? (
-								<p className="text-xs text-muted-foreground">No passkeys added yet.</p>
+								<p className="text-xs text-muted-foreground">{s("phraseNoPasskeysAddedYet")}</p>
 							) : null}
 							{passkeys.map((passkey, index) => (
 								<div
@@ -213,16 +221,16 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 								>
 									<div className="min-w-0">
 										<p className="truncate text-xs font-medium">
-											{passkey.friendly_name || "Passkey"}
+										{passkey.friendly_name || s("Passkey")}
 										</p>
 										<p className="mt-0.5 text-xs text-muted-foreground">
-											Added {format.date(passkey.created_at)}
+											{s("Added")} {format.date(passkey.created_at)}
 										</p>
 									</div>
 									<Button
 										variant="ghost"
 										size="icon"
-										aria-label="Remove passkey"
+									aria-label={s("Remove passkey")}
 										onClick={() =>
 											requestAction({ type: "remove", passkeyId: passkey.id })
 										}
@@ -251,23 +259,21 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			>
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
-						<DialogTitle>Verify it&apos;s you</DialogTitle>
+						<DialogTitle>{s("Verify it&apos;s you")}</DialogTitle>
 						<DialogDescription>
-							Adding or removing a passkey changes how your account can be
-							accessed, so recent authentication is required.
+							{s("phraseAddingOrRemovingAPasskeyChangesHowYourAccountCanBeAccessedSoRecentAuthenticationIsRequired")}
 						</DialogDescription>
 					</DialogHeader>
 
 					{freshSignInRequired ? (
 						<div className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								Your last sign-in is too old for this security change. Sign in
-								again, then return here to continue.
+								{s("phraseYourLastSignInIsTooOldForThisSecurityChangeSignInAgainThenReturnHereToContinue")}
 							</p>
 							<DialogFooter>
 								<Button type="button" onClick={restartSignIn} disabled={pending}>
 									{pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-									Sign in again
+									{s("Sign in again")}
 								</Button>
 							</DialogFooter>
 						</div>
@@ -276,7 +282,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 							{hasPassword ? (
 								<div className="grid gap-2">
 									<Label htmlFor="passkey-current-password">
-										Current password
+										{s("Current password")}
 									</Label>
 									<Input
 										id="passkey-current-password"
@@ -290,7 +296,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 								</div>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									Continue using your recent social, SSO, or passkey sign-in.
+									{s("phraseContinueUsingYourRecentSocialSSOOrPasskeySignIn")}
 								</p>
 							)}
 
@@ -301,7 +307,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 									onClick={() => setReauthOpen(false)}
 									disabled={pending}
 								>
-									Cancel
+									{s("Cancel")}
 								</Button>
 								<Button
 									type="submit"
@@ -310,7 +316,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 									{pending ? (
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
 									) : null}
-									Continue
+									{s("Continue")}
 								</Button>
 							</DialogFooter>
 						</form>

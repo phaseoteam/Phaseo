@@ -14,24 +14,14 @@ import {
 	YAxis,
 } from "recharts";
 import type { ModelSuccessPoint } from "@/lib/fetchers/models/getModelPerformance";
+import { useLocale, useTranslations } from "next-intl";
 
-const successChartConfig: ChartConfig = {
-	overall: {
-		label: "Average uptime",
-		color: "hsl(142, 76%, 36%)",
-	},
-	worst: {
-		label: "Without Phaseo Routing",
-		color: "hsl(340, 82%, 52%)",
-	},
-};
-
-function formatBucketLabel(bucket: string) {
+function formatBucketLabel(bucket: string, locale: string) {
 	const date = new Date(bucket);
 	if (!Number.isFinite(date.getTime())) {
 		return bucket;
 	}
-	return date.toLocaleTimeString("en-GB", {
+	return date.toLocaleTimeString(locale, {
 		hour: "2-digit",
 		minute: "2-digit",
 		hour12: false,
@@ -69,6 +59,7 @@ function formatUptime(value: number | null | undefined) {
 export function buildUptimeChartData(
 	successSeries: ModelSuccessPoint[],
 	now = new Date(),
+	locale = "en-GB",
 ) {
 	const pointsByBucket = new Map(
 		successSeries.map((point) => [toHourlyBucket(point.bucket), point]),
@@ -83,7 +74,7 @@ export function buildUptimeChartData(
 		const requests = point?.requests ?? 0;
 
 		return {
-			time: formatBucketLabel(bucket),
+			time: formatBucketLabel(bucket, locale),
 			overall: getDisplayedUptime(point?.overallSuccessPct, requests),
 			worst: point
 				? getDisplayedUptime(point.worstProviderSuccessPct, requests)
@@ -106,7 +97,19 @@ export default function ModelSuccessChart({
 	showLeastStableProvider = true,
 	showTitle = true,
 }: ModelSuccessChartProps) {
-	const chartData = buildUptimeChartData(successSeries).map((point) => ({
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.modelDetail.uptime");
+	const successChartConfig: ChartConfig = {
+		overall: {
+			label: t("title"),
+			color: "hsl(142, 76%, 36%)",
+		},
+		worst: {
+			label: t("leastStableProviderLabel"),
+			color: "hsl(340, 82%, 52%)",
+		},
+	};
+	const chartData = buildUptimeChartData(successSeries, new Date(), locale).map((point) => ({
 		...point,
 		worst: showLeastStableProvider ? point.worst : null,
 	}));
@@ -124,20 +127,20 @@ export default function ModelSuccessChart({
 		<div className="grid gap-4 rounded-lg border border-border/70 bg-background p-4 sm:grid-cols-[10rem_minmax(0,1fr)] sm:items-center">
 			<div className="min-w-0">
 				{showTitle ? (
-					<h3 className="text-sm font-medium text-foreground">Average uptime</h3>
+					<h3 className="text-sm font-medium text-foreground">{t("title")}</h3>
 				) : null}
 				<p className="mt-1 text-3xl font-semibold tracking-tight text-emerald-600 tabular-nums dark:text-emerald-400">
 					{formatUptime(averageUptime)}
 				</p>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Last 24 hours · hourly average
+					{t("hourlyAverage")}
 				</p>
 			</div>
 			<div className="min-w-0">
 				<div
 					className="h-[112px] w-full"
 					role="img"
-					aria-label={`Hourly model uptime over the last 24 hours. Phaseo Routing: ${formatUptime(averageUptime)}.${showLeastStableProvider ? ` Without Phaseo Routing: ${formatUptime(withoutRoutingUptime)}.` : ""}`}
+					aria-label={t("routingChartLabel", { uptime: formatUptime(averageUptime), comparison: showLeastStableProvider ? t("routingComparison", { uptime: formatUptime(withoutRoutingUptime) }) : "" })}
 				>
 				<ChartContainer
 					config={successChartConfig}
@@ -175,14 +178,14 @@ export default function ModelSuccessChart({
 											</p>
 											<p className="text-sm">
 												<span className="font-semibold">
-													Uptime:
+													{t("tooltipUptime")}
 												</span>{" "}
 												{formatUptime(payload[0].payload.overall)}
 											</p>
 											{showLeastStableProvider ? (
 												<p className="text-sm">
 													<span className="font-semibold">
-														Without Phaseo Routing:
+														{t("tooltipWorstProvider")}
 													</span>{" "}
 													{formatUptime(payload[0].payload.worst)}
 												</p>
@@ -219,12 +222,12 @@ export default function ModelSuccessChart({
 				<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
 					<span className="inline-flex items-center gap-1.5">
 						<span className="h-0.5 w-4 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
-						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
+						{t("routingLabel")} <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
 					</span>
 					{showLeastStableProvider ? (
 						<span className="inline-flex items-center gap-1.5">
 							<span className="w-4 border-t-2 border-dashed border-pink-600 dark:border-pink-400" aria-hidden="true" />
-							Without Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
+							{t("leastStableProviderLabel")} <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
 						</span>
 					) : null}
 				</div>

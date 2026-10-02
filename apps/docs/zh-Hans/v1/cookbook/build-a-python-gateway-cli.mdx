@@ -1,0 +1,117 @@
+---
+title: "构建 Python 网关 CLI"
+icon: "terminal"
+description: "使用 Python 快速入门示例，完整了解如何构建以 Python 为主的 CLI 或后端集成。"
+---
+
+如果你准备使用 Python 构建第一个实际的 Phaseo 集成，并希望从 CLI、worker 或后端服务入手，请阅读本页。
+
+**目标：** 通过一个小型 Python 命令行应用调用 Phaseo 控制路由和生成路由。
+
+**结果：** 获得一个依赖较少的 CLI，可按需改造成 worker、脚本或后端集成。
+
+<Prompt
+  description="围绕 Phaseo 路由构建一个 **Python 网关 CLI**。"
+  icon="terminal-square"
+  actions={["copy", "cursor"]}
+>
+{`你正在为 Phaseo Gateway 开发 Python 命令行工具或服务端集成。
+
+创建一个小型 Python 应用，满足以下要求：
+- 从环境变量读取 PHASEO_API_KEY
+- 支持控制路由的快速检查模式
+- 支持一个文本生成命令
+- 尽量减少依赖项
+
+要求：
+- 除非有充分理由，否则优先使用 Python 标准库。
+- 明确展示请求内容。
+- 清楚地输出成功和失败信息。
+- 提供一两个实用命令，避免构建庞大通用的命令行工具。
+- 添加一份包含示例的简短 README。
+
+交付内容：
+- Python 应用代码
+- 简单的使用命令
+- .env.example 文件或同等的环境变量说明
+
+验证：
+- 如果可行，运行一次路由快速检查。
+- 如果可行，成功执行一次文本生成。
+- 准确说明已验证的内容和仍未验证的内容。`}
+</Prompt>
+
+## 示例项目
+
+- GitHub：[examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
+- 仓库本地路径：`examples/gateway-python-quickstart`
+
+## 此应用的功能
+
+- 支持以下控制路由：
+  - `GET /v1/health`
+  - `GET /v1/models`
+  - `GET /v1/providers`
+- 支持以下生成路由：
+  - `POST /v1/responses`
+  - `POST /v1/chat/completions`
+  - `POST /v1/embeddings`
+  - 以及其他多个端点
+
+## 此示例的用途
+
+它提供：
+
+- 无第三方依赖的 Python 实现参考
+- 明确的请求载荷和响应处理方式
+- 可用于 worker、脚本和内部工具的实用模式
+
+## 前置条件
+
+- Python 3
+- Phaseo API 密钥
+
+## 运行示例
+
+```bash
+cd examples/gateway-python-quickstart
+cp .env.example .env.local
+```
+
+设置：
+
+- `PHASEO_API_KEY`
+
+然后运行：
+
+```bash
+python quickstart.py smoke
+python quickstart.py responses --prompt "Return exactly: integration_ok"
+python quickstart.py --help
+```
+
+## 检查结果
+
+- 冒烟测试模式会确认 API 是否可访问。
+- Responses 命令会输出 `integration_ok`。
+- `--help` 会列出可用命令，但不会发送请求。
+- 终端会清晰显示身份验证错误和 API 错误。
+
+## 阅读代码时关注这些内容
+
+- 如何加载环境变量
+- CLI 如何分派命令
+- 如何构建不同的请求载荷
+- 如何将异步视频和音乐路由与一次性文本路由分开处理
+
+## 按需修改示例
+
+- 删除服务不需要的端点
+- 使用一个共享的请求辅助函数，避免重复编写请求头
+- 如果之后需要更高层的客户端，可以改用 Python SDK
+
+## 相关指南
+
+- [迷你应用入门提示词](./mini-app-starter-prompts.mdx)
+- [使用 Python 输出结构化 JSON](./sdk-python-presets-and-json.mdx)
+- [示例](../guides/examples.mdx)

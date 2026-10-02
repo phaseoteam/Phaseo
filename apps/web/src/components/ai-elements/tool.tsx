@@ -7,6 +7,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 import type { ToolUIPart } from "ai";
 import {
   CheckCircleIcon,
@@ -36,17 +37,10 @@ export type ToolHeaderProps = {
   className?: string;
 };
 
-const getStatusBadge = (status: ToolUIPart["state"]) => {
-  const labels: Record<ToolUIPart["state"], string> = {
-    "input-streaming": "Pending",
-    "input-available": "Running",
-    "approval-requested": "Awaiting Approval",
-    "approval-responded": "Responded",
-    "output-available": "Completed",
-    "output-error": "Error",
-    "output-denied": "Denied",
-  };
-
+const getStatusBadge = (
+  status: ToolUIPart["state"],
+  labels: Record<ToolUIPart["state"], string>
+) => {
   const icons: Record<ToolUIPart["state"], ReactNode> = {
     "input-streaming": <CircleIcon className="size-4" />,
     "input-available": <ClockIcon className="size-4 animate-pulse" />,
@@ -71,24 +65,37 @@ export const ToolHeader = ({
   type,
   state,
   ...props
-}: ToolHeaderProps) => (
-  <CollapsibleTrigger
-    className={cn(
-      "flex w-full items-center justify-between gap-4 p-3",
-      className
-    )}
-    {...props}
-  >
-    <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-neutral-500 dark:text-neutral-400" />
-      <span className="font-medium text-sm">
-        {title ?? type.split("-").slice(1).join("-")}
-      </span>
-      {getStatusBadge(state)}
-    </div>
-    <ChevronDownIcon className="size-4 text-neutral-500 transition-transform group-data-[state=open]:rotate-180 dark:text-neutral-400" />
-  </CollapsibleTrigger>
-);
+}: ToolHeaderProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+  const labels: Record<ToolUIPart["state"], string> = {
+    "input-streaming": t("pending"),
+    "input-available": t("running"),
+    "approval-requested": t("awaitingApproval"),
+    "approval-responded": t("responded"),
+    "output-available": t("completed"),
+    "output-error": t("error"),
+    "output-denied": t("denied"),
+  };
+
+  return (
+    <CollapsibleTrigger
+      className={cn(
+        "flex w-full items-center justify-between gap-4 p-3",
+        className
+      )}
+      {...props}
+    >
+      <div className="flex items-center gap-2">
+        <WrenchIcon className="size-4 text-neutral-500 dark:text-neutral-400" />
+        <span className="font-medium text-sm">
+          {title ?? type.split("-").slice(1).join("-")}
+        </span>
+        {getStatusBadge(state, labels)}
+      </div>
+      <ChevronDownIcon className="size-4 text-neutral-500 transition-transform group-data-[state=open]:rotate-180 dark:text-neutral-400" />
+    </CollapsibleTrigger>
+  );
+};
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
@@ -106,16 +113,20 @@ export type ToolInputProps = ComponentProps<"div"> & {
   input: ToolUIPart["input"];
 };
 
-export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
-    <h4 className="font-medium text-neutral-500 text-xs uppercase tracking-wide dark:text-neutral-400">
-      Parameters
-    </h4>
-    <div className="rounded-md bg-neutral-100/50 dark:bg-neutral-800/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
+  return (
+    <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
+      <h4 className="font-medium text-neutral-500 text-xs uppercase tracking-wide dark:text-neutral-400">
+        {t("parameters")}
+      </h4>
+      <div className="rounded-md bg-neutral-100/50 dark:bg-neutral-800/50">
+        <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolUIPart["output"];
@@ -128,6 +139,8 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
+  const t = useTranslations("Product.chatRooms.aiElements");
+
   if (!(output || errorText)) {
     return null;
   }
@@ -145,7 +158,7 @@ export const ToolOutput = ({
   return (
     <div className={cn("space-y-2 p-4", className)} {...props}>
       <h4 className="font-medium text-neutral-500 text-xs uppercase tracking-wide dark:text-neutral-400">
-        {errorText ? "Error" : "Result"}
+        {errorText ? t("error") : t("result")}
       </h4>
       <div
         className={cn(

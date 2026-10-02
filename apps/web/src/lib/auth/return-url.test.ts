@@ -13,8 +13,14 @@ describe("sanitizeReturnUrl", () => {
 		expect(sanitizeReturnUrl("%2Fsign-in%3Ffoo%3Dbar", "/")).toBe("/");
 	});
 
+	it("rejects locale-prefixed auth loops", () => {
+		expect(sanitizeReturnUrl("/de-DE/sign-in?returnUrl=%2Fsettings", "/")).toBe(
+			"/",
+		);
+		expect(sanitizeReturnUrl("%2Far-SA%2Fsign-up", "/")).toBe("/");
+	});
+
 	it("rejects protocol-relative redirects", () => {
 		expect(sanitizeReturnUrl("%2F%2Fevil.example.com", "/")).toBe("/");
 	});
 });
-

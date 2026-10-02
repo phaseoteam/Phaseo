@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { BarChart, Bar, CartesianGrid, XAxis, YAxis } from "recharts";
 import { RankingsEmptyState } from "@/components/(rankings)/RankingsEmptyState";
@@ -20,7 +21,7 @@ type Row = {
 };
 
 const TOP_MODELS = 10;
-const UNKNOWN_MODEL_LABEL = "Unknown model";
+const UNKNOWN_MODEL_KEY = "__unknown_model__";
 const WINDOW_DAYS = 30;
 
 function getTokens(usage: any) {
@@ -52,9 +53,11 @@ export default function AppUsageChart({
 	modelLabels?: Record<string, string>;
 	modelColours?: Record<string, string | null | undefined>;
 }) {
+	const locale = useLocale();
+	const t = useTranslations("Product.appsDetail");
 	const format = useDisplayFormatters();
-	const formatDayLabel = (date: Date) => format.calendarDate(date);
-	const formatNumber = (value: number) => Number.isFinite(value)
+	const formatDayLabel = (date: Date, _locale?: string) => format.calendarDate(date);
+	const formatNumber = (value: number, _locale?: string) => Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export default function AppUsageChart({
 			const dayKey = date.toISOString().slice(0, 10);
 			return {
 				dayKey,
-				label: formatDayLabel(date),
+				label: formatDayLabel(date, locale),
 			};
 		});
 		const bucketKeySet = new Set(dayBuckets.map((bucket) => bucket.dayKey));
@@ -84,7 +87,7 @@ export default function AppUsageChart({
 			const dayKey = date.toISOString().slice(0, 10);
 			if (!bucketKeySet.has(dayKey)) continue;
 
-			const rawModel = row.model_id?.trim() || UNKNOWN_MODEL_LABEL;
+			const rawModel = row.model_id?.trim() || UNKNOWN_MODEL_KEY;
 			const tokens = getTokens(row.usage);
 			if (!tokens || tokens < 0) continue;
 
@@ -106,8 +109,6 @@ export default function AppUsageChart({
 		for (const model of topModels) {
 			keyMap.set(model, keyForSeries(model));
 		}
-		if (hasOther) keyMap.set("Other", "other");
-
 		const generatedColours = assignSeriesColours(topModels);
 		const styles: SeriesStyle = {};
 		for (const model of topModels) {
@@ -115,14 +116,14 @@ export default function AppUsageChart({
 			const explicit = normalizeColour(modelColours[model]);
 			const generated = generatedColours[model];
 			styles[key] = {
-				label: modelLabels[model] ?? model,
+				label: model === UNKNOWN_MODEL_KEY ? t("unknownModel") : modelLabels[model] ?? model,
 				color: explicit ?? generated?.fill ?? "hsl(210 70% 75%)",
 				stroke: explicit ?? generated?.stroke ?? "hsl(210 70% 55%)",
 			};
 		}
 		if (hasOther) {
 			styles.other = {
-				label: "Other",
+				label: t("otherModels"),
 				color: "hsl(0 0% 70% / 0.6)",
 				stroke: "hsl(0 0% 50%)",
 			};
@@ -163,19 +164,19 @@ export default function AppUsageChart({
 			seriesKeys: keys,
 			seriesStyle: styles,
 		};
-	}, [rows, modelLabels, modelColours]);
+	}, [locale, modelColours, modelLabels, rows, t]);
 
 	if (!rows.length || !seriesKeys.length) {
 		return (
 			<RankingsEmptyState
-				title="No usage data yet"
-				description="Usage appears once this app has recent successful requests."
+				title={t("noUsageData")}
+				description={t("noUsageDescription")}
 			/>
 		);
 	}
 
 	const chartConfig = {
-		value: { label: "Tokens", color: "hsl(var(--primary))" },
+		value: { label: t("tokensLabel"), color: "hsl(var(--primary))" },
 		...Object.fromEntries(
 			Object.entries(seriesStyle).map(([k, v]) => [
 				k,
@@ -201,7 +202,7 @@ export default function AppUsageChart({
 						axisLine={false}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatNumber(Number(value))}
+						tickFormatter={(value) => formatNumber(Number(value), locale)}
 						width={60}
 						tickLine={false}
 						axisLine={false}
@@ -253,7 +254,7 @@ export default function AppUsageChart({
 														<span>{cfg?.label ?? String(name ?? "")}</span>
 													</span>
 													<span className="ml-auto pl-3 font-mono">
-														{formatNumber(val)}
+														{formatNumber(val, locale)}
 													</span>
 												</div>
 											);
@@ -261,8 +262,8 @@ export default function AppUsageChart({
 									/>
 									<div className="space-y-0.5 border-t border-border/60 pt-1.5 text-xs">
 										<div className="flex items-center justify-between">
-											<span className="text-muted-foreground">Total</span>
-											<span className="font-mono">{formatNumber(weeklyTotal)}</span>
+													<span className="text-muted-foreground">{t("totalLabel")}</span>
+													<span className="font-mono">{formatNumber(weeklyTotal, locale)}</span>
 										</div>
 									</div>
 								</div>

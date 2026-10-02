@@ -1,0 +1,18 @@
+---
+icon: "pencil"
+title: "Retouche d’image"
+description: "Appelez /images/edits avec le SDK Python."
+---
+
+**Méthode**: `client.generate_image_edit()`
+
+```python
+result = client.generate_image_edit({
+    "model": "openai/gpt-image-1",
+    "prompt": "Make it sunset",
+    "image": "data:image/png;base64,...",
+})
+
+print(result)
+```
+

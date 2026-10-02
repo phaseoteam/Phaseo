@@ -1,0 +1,474 @@
+---
+icon: "blocks"
+title: "الاستخدام"
+description: "أنشئ تطبيقات agent خاصة بك باستخدام TypeScript Agent SDK على Phaseo Gateway."
+---
+
+استخدم `@phaseo/agent-sdk` عندما يحتاج تطبيقك إلى أكثر من توليد نص في طلب واحد:
+
+حلقات أدوات متعددة الخطوات
+أدوات بيئة التشغيل المحلية
+عمليات تشغيل قابلة للاستئناف من الحالة التي يعيدها SDK
+توقفات صريحة لانتظار موافقة بشرية
+مخرجات نهائية محددة النوع
+أدوار نموذجية عبر البوابة باستخدام TypeScript SDK الحالي
+
+هذه الحزمة SDK قابلة للتثبيت وليست منصة agents مستضافة. عليك توفير التطبيق ونموذج النشر واستراتيجية حفظ حالة التشغيل التي تريدها.
+
+## نموذج الحالة
+
+لا يحفظ Agent SDK عمليات التشغيل في أي خدمة تستضيفها Phaseo.
+
+يعيد `run()` الحالة الكاملة اللازمة للمتابعة لاحقًا.
+إذا احتاج تطبيقك إلى استئناف التشغيل بين الطلبات أو بعد إعادة تشغيل العملية، فاحفظ الحالة المعادة في مخزن التطبيق الخاص بك.
+يقبل `continueRun()` حالة التشغيل السابقة مباشرةً.
+
+لا تحفظ Phaseo أي شيء خارج تطبيقك.
+
+## التثبيت
+
+```bash
+pnpm add @phaseo/sdk @phaseo/agent-sdk
+```
+
+## محتويات SDK
+
+- `createAgent()`
+- `defineTool()`
+- `createGatewayAgentClient()`
+`continueRun()` لمتابعة حالة تشغيل أُعيدت سابقًا
+`stream()` و`continueStream()` لإرجاع نتائج تدريجية قابلة لإعادة التشغيل
+مساعدات لشروط الإيقاف مثل `stepCountIs()` و`maxCost()` و`hasToolCall()`
+
+## الوكيل الأول
+
+```typescript
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+} from "@phaseo/agent-sdk";
+
+const lookupDocs = defineTool({
+  id: "lookup-docs",
+  description: "Look up an internal docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: {
+      slug: { type: "string" },
+    },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  async execute(input: { slug: string }) {
+    return {
+      slug: input.slug,
+      url: `https://phaseo.app/docs/v1/${input.slug}`,
+    };
+  },
+});
+
+const agent = createAgent({
+  id: "support-docs-agent",
+  model: "phaseo/free",
+  instructions: "Use tools when helpful and finish with a concise answer.",
+  tools: [lookupDocs],
+});
+
+const result = await agent.run({
+  input: "Find the docs page for presets and explain when to use them.",
+  client: createGatewayAgentClient({
+    clientOptions: {
+      apiKey: process.env.PHASEO_API_KEY!,
+    },
+  }),
+});
+
+console.log(result.output);
+```
+
+## النموذج الذهني
+
+تنفذ حلقة بيئة التشغيل أربع خطوات:
+
+1. ترسل حالة الرسائل الحالية إلى عميل النموذج
+2. تنفذ أي استدعاءات أدوات محلية معادة
+3. تضيف نتائج الأدوات إلى الدور التالي
+4. تعيد حالة التشغيل المحدّثة بعد اكتمال كل خطوة
+
+يمنح ذلك تطبيقك حلقة قابلة للاستئناف دون إلزامك باستخدام منتج تنسيق مستضاف.
+
+## العناصر الأساسية
+
+### `createAgent()`
+
+استخدم `createAgent()` لتعريف:
+
+`id` ثابت
+التعليمات
+نموذج أو إعداد مسبق واحد
+قائمة أدوات صغيرة
+تحليل اختياري للمخرجات
+قواعد اختيارية للمراجعة البشرية
+عناصر تحكم اختيارية لإعادة المحاولة وتنفيذ الأدوات
+
+اجعل نطاق الوكيل الأول محدودًا. يكفي عادةً مسار عمل واحد وأداة أو أداتان.
+
+### `defineTool()`
+
+عرّف أدوات بيئة التشغيل المحلية باستخدام:
+
+- `id`
+- `description`
+`parameters` بصيغة JSON اختيارية
+`timeoutMs` اختياري
+مدققات وقت التشغيل `inputSchema` و`outputSchema`
+`execute()` أو `execute: false` أو عمليات رد نداء بمشاركة بشرية
+`requireApproval` و`onError` و`nextTurnParams` وأحداث التقدم
+
+```typescript
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(`https://internal.example/tickets/${input.ticketId}`, {
+      signal: context.signal,
+    });
+
+    return await response.json();
+  },
+});
+```
+
+عند انتهاء المهلة، توقف بيئة التشغيل `context.signal` وتضع علامة `failed` على التشغيل ثم تعيد إلقاء خطأ المهلة.
+
+يمكن أن تكون المخططات دالة أو أي كائن يوفّر `parse()` أو `safeParse()`. وتفشل وسيطات النموذج ونتائج الأداة غير الصالحة قبل تجاوز حدود الأداة.
+
+## الموافقة وHITL والأدوات اليدوية
+
+تحكم في كل استدعاء لأداة ذات آثار جانبية:
+
+```typescript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployRelease(input.environment);
+  },
+});
+```
+
+يتوقف التشغيل عند `run.pause.pendingToolCalls`. استأنفه باستخدام معرّف الاستدعاء الدقيق لتجنب الخلط بين الاستدعاءات المتزامنة:
+
+```typescript
+const resumed = await agent.continueRun({
+  run: paused,
+  client,
+  approvals: [{ toolCallId: "call_deploy_42" }],
+  rejections: [{ toolCallId: "call_delete_17", reason: "Not authorized" }],
+});
+```
+
+اضبط `execute: false` للعمل الذي تنفذه تطبيقاتك وقدّم النتيجة عبر `toolOutputs`. وبالنسبة إلى أداة تفاعلية، أعد `null` من `onToolCalled`؛ وبعد المتابعة، يمكن لـ `onResponseReceived` التحقق من استجابة الإنسان المقدمة أو تحويلها.
+
+## أدوات تنتج تحديثات التقدم
+
+يمكن لمولّد غير متزامن نشر نتائج أولية ثم إرجاع نتيجة نهائية واحدة:
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+يظهر التقدم كأحداث `tool.preliminary_result` وضمن `preliminaryResults` للخطوة.
+
+## نتائج البث
+
+يبدأ `stream()` آلة الحالات نفسها باستخدام عميل نموذج يدعم البث. ويمكن إعادة تشغيل مخرجاته، لذا تستطيع الواجهة والقياس عن بُعد وكود الحفظ قراءتها بالتزامن:
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const [text, completed] = await Promise.all([result.getText(), result.getResult()]);
+```
+
+استخدم `getReasoningStream()` أو `getItemsStream()` أو `getToolStream()` أو `getFullStream()` للمستهلكين الأكثر تخصصًا. يوقف `cancel()` التشغيل.
+
+### عرض عناصر تشغيل محددة النوع
+
+يعيد `getItemsStream()` النوع `AgentItem<TOutput>`، وهو اتحاد مميّز يمكن استخدامه بأمان مع `switch`:
+
+```typescript
+for await (const item of result.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+يتوفر عقد العناصر المرتبة نفسه في `completed.items` بعد `run()` أو `stream()`. وتُطبّع مخرجات المزوّد إلى عناصر للرسائل والاستدلال واستدعاء الأدوات ونتائجها والأخطاء والمخرجات النهائية. وتظل الحقول الخاصة بالمزوّد متاحة عبر `rawProviderItem` في العناصر المطبّعة.
+
+## شروط الإيقاف والأدوار الديناميكية
+
+تُجمع شروط الإيقاف في مصفوفة؛ ويسجل أول شرط متحقق سببه ويعيد تشغيلًا بحالة `stopped`:
+
+```typescript
+import { maxCost, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [stepCountIs(12), maxTokensUsed(40_000), maxCost(2)],
+  model: ({ context }) => context.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) => `Research turn ${numberOfTurns}`,
+});
+```
+
+يمكن للأدوات ضبط سياق التطبيق عبر `context.setContext()` وتجاوز معاملات الدور التالي مباشرةً عبر `nextTurnParams`.
+
+### `createGatewayAgentClient()`
+
+استخدم المحوّل المرتبط بالبوابة عندما ينبغي تنفيذ أدوار النموذج عبر Phaseo Gateway.
+
+يمكنه تمرير عناصر تحكم أصلية للبوابة مثل:
+
+- `responseFormat`
+- `plugins`
+- `gatewayTools`
+- `toolChoice`
+- `webSearchOptions`
+- `providerOptions`
+- `promptCacheKey`
+- `includeMeta`
+
+يتيح ذلك لتطبيقك إبقاء التوجيه والبحث والمخرجات المنظمة والقيم الافتراضية للإضافات قرب عميل النموذج بدلًا من إعادة بناء حمولة الطلب الخام في كل تشغيل.
+
+## التخزين الذي يديره التطبيق
+
+إذا احتاج تطبيقك إلى استئناف التشغيل، فاحفظ `AgentRunResult` المعاد مباشرةً أو وفّر موصل `state` يتضمن الدالتين غير المتزامنتين `load(runId)` و`save(result)`. عندها يمكن للتشغيل المستأنف استخدام `runId` دون تمرير السجل المتسلسل عبر كل طبقة.
+
+لا يتضمن SDK عمدًا محوّلات للتخزين أو خلفية مستضافة للحالة.
+
+وهذا يعني أنه يمكنك:
+
+إبقاء عمليات التشغيل لمرة واحدة داخل العملية بالكامل
+تسلسل عمليات التشغيل المتوقفة أو غير المكتملة في سجلات التطبيق الخاصة بك
+إعادة تحميل حالة التشغيل المحفوظة وتمريرها إلى `continueRun()` لاحقًا
+
+## المراجعة البشرية والمتابعة
+
+استخدم `humanReview` عندما ينبغي أن يحفظ التشغيل نقطة تحقق وينتظر الموافقة:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  humanReview: ({ response }) =>
+    response.message.content.includes("needs approval")
+      ? {
+          reason: "approval_required",
+          payload: { draft: response.message.content },
+        }
+      : null,
+});
+```
+
+تابع بإدخال بشري صريح:
+
+```typescript
+const continued = await agent.continueRun({
+  run: pausedResult,
+  client,
+  humanInput: "Approved. Continue and return the final answer.",
+});
+```
+
+## المخرجات المحددة النوع
+
+استخدم `parseOutput` عندما يحتاج تطبيقك إلى قيمة نهائية محددة النوع:
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+لضبط سلوك النموذج بصرامة أكبر، ادمج ذلك مع المخرجات المنظمة في محوّل البوابة:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## عناصر التحكم في بيئة التشغيل
+
+### إعادة محاولات النموذج
+
+استخدم `modelRetry` لإعادة المحاولة عند أخطاء النموذج المؤقتة قبل حفظ التشغيل بحالة `failed`:
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+يحسب `maxRetries` المحاولات الإضافية بعد طلب النموذج الأول.
+يخزن سجل الخطوة المحفوظ العدد النهائي للمحاولات في `modelAttempts`.
+
+### الأدوات المحلية المتزامنة
+
+إذا كان دور النموذج يستطيع استدعاء عدة أدوات مستقلة بأمان، فاضبط `toolExecution.toolConcurrency`:
+
+```typescript
+const agent = createAgent({
+  id: "research-agent",
+  toolExecution: {
+    toolConcurrency: 3,
+  },
+  tools: [fetchDocs, fetchStatus, fetchIncidents],
+});
+```
+
+تظل بيئة التشغيل تحافظ على ترتيب رسائل نتائج الأدوات.
+
+### التوجيه باستخدام الإعدادات المسبقة
+
+استخدم `preset` لإدارة القيم الافتراضية للتوجيه أو prompt أو المعلمات في لوحة التحكم بدلًا من تثبيتها في كود التطبيق:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+## خطافات الأحداث
+
+استخدم `onEvent` عندما يحتاج تطبيقك إلى خطافات دورة حياة للسجلات أو القياس عن بُعد أو مسارات العمل الداخلية.
+
+تشمل الأحداث الحالية:
+
+- `run.started`
+- `run.resumed`
+- `step.started`
+- `step.completed`
+- `step.failed`
+- `step.cancelled`
+- `model.requested`
+- `model.completed`
+- `model.failed`
+- `tool.started`
+- `tool.completed`
+- `tool.failed`
+- `checkpoint.saved`
+- `run.waiting_for_human`
+- `run.cancelled`
+- `run.completed`
+- `run.failed`
+
+عند نجاح إحدى الخطوات، تصدر بيئة التشغيل `step.completed` بعد حفظ الخطوة ذات نقطة التحقق.
+
+## معالجة الأخطاء
+
+تُعاد أخطاء البوابة على هيئة `AgentGatewayError`:
+
+```typescript
+import { AgentGatewayError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  }
+  throw error;
+}
+```
+
+إذا كان الخطأ صادرًا عن البوابة، فسيتم أيضًا حفظ `errorDetails` في عمليات التشغيل والخطوات الفاشلة.
+
+## أمثلة مضمنة
+
+تتضمن الحزمة حاليًا الأمثلة التالية:
+
+- `examples/research-brief-agent.ts`
+- `examples/support-triage-agent.ts`
+- `examples/coding-review-agent.ts`
+- `examples/parallel-tool-agent.ts`
+
+## النطاق الحالي
+
+يركز SDK عمدًا على العناصر الأساسية لبناء التطبيقات:
+
+حفظ نقاط التحقق محليًا أو بإدارة التطبيق
+أدوار نموذجية عبر البوابة
+أدوات محلية
+حلقات agent قابلة للاستئناف
+استخدام الرموز والتكلفة والتحذيرات وأسباب الإنهاء ونتائج الأدوات الموحّدة لكل خطوة
+
+لا يحاول أن يكون منصة تنسيق مستضافة أو أن يوفّر خلفية تخزين بعيدة واحدة مفروضة.
+
+## أدلة ذات صلة
+
+- [أنشئ حلقة agent متينة باستخدام TypeScript](../../cookbook/agent-sdk-durable-loop.mdx)
+- [ابحث باستخدام الويب المدعوم بـ agent](../../cookbook/agent-sdk-research-brief.mdx)
+- [صنّف طلبات الدعم باستخدام agents الموجهة بالإعدادات المسبقة](../../cookbook/agent-sdk-support-triage.mdx)
+- [راجع التعليمات البرمجية باستخدام أدوات بيئة التشغيل المحلية](../../cookbook/agent-sdk-coding-review.mdx)
+- [شغّل الأدوات المحلية بالتوازي](../../cookbook/agent-sdk-parallel-tools.mdx)

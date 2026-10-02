@@ -1,0 +1,21 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Zeichne Ruby-Agent-SDK-Läufe lokal im Phaseo-DevTools-Ereignisformat auf."
+---
+
+Aktiviere die DevTools-Aufzeichnung für Werkzeug-Zeitachsen, Freigabeoberflächen und Laufinspektoren.
+
+```ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(
+    directory: ".phaseo-devtools"
+  )
+)
+```
+
+Jeder Lauf und jede Fortsetzung schreibt einen strukturierten JSONL-Eintrag mit Status, Nutzung, Modellversuchen, Werkzeugaufrufen, Pausen, Anfragemetadaten und Fehlern.
+
+Die lokale Aufzeichnung dient der Entwicklung und ist kein Audit-Speicher für die Produktion. Verwende anwendungsspezifische Schwärzung, Zugriffskontrollen, Verschlüsselung und Aufbewahrungsfristen.

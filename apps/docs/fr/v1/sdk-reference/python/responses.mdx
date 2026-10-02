@@ -1,0 +1,83 @@
+---
+icon: "message-square"
+title: "Réponses"
+description: "Appelez l’API Responses avec le SDK Python."
+---
+
+**Méthode** : `client.generate_response()` (diffusez les fragments analysés avec `client.stream_responses()`).
+
+### Exemple
+```python
+resp = client.generate_response({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this"}]}],
+    "temperature": 0.7,
+})
+```
+
+### Diffusion en continu
+```python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-4.1",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+    "stream": True,
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+### Paramètres clés
+- `model` (obligatoire) : ID du modèle cible.
+- `input` (obligatoire) : tableau ordonné d’éléments d’entrée (messages, appels d’outils, etc.).
+- `temperature` (0–2) : plus la valeur est élevée, plus le résultat est aléatoire.
+- `top_p` (0–1) / `top_k` (>=1) : contrôles d’échantillonnage par noyau et des k meilleurs candidats.
+- `max_output_tokens` (entier) : nombre maximal de tokens générés par réponse.
+- Outils : `tools` (définitions), `tool_choice` (auto/none/spécifique), `max_tool_calls` (entier), `parallel_tool_calls` (booléen).
+- Logprobs : `logprobs` (booléen), `top_logprobs` (0–20) pour renvoyer les logprobs par token.
+- Sortie : `response_format` (json/text), `service_tier`, `store` (booléen), `stream` (booléen).
+- Métadonnées : `metadata` (objet transmis), `reasoning` (objet indiquant le niveau d’effort).
+- Options de la passerelle : `usage` (booléen pour demander les données d’utilisation), `meta` (booléen pour inclure le bloc meta).
+
+### Retour
+`ResponsesResponse`
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "gpt-4.1",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+Ou des trames SSE délimitées par des retours à la ligne lorsque `stream: true` :
+
+```
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"in_progress","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"in_progress","role":"assistant","content":[{"type":"output_text","text":"Hello"}]}]}
+
+data: {"id":"resp_123","object":"response","created_at":1677652288,"status":"completed","model":"gpt-4.1","output":[{"type":"message","id":"msg_123","status":"completed","role":"assistant","content":[{"type":"output_text","text":"Hello there, how may I assist you today?"}]}],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

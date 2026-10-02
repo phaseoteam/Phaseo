@@ -1,0 +1,13 @@
+---
+title: "获取工作区分析"
+sidebarTitle: "获取分析"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /analytics"
+description: "获取经过筛选的工作区费用、请求和 token 汇总数据。"
+---
+<Note>此端点需要具有 `analytics:read` 权限的管理 API 密钥。</Note>
+
+可按日期、请求标签、API 密钥、最终用户、模型、供应商、端点、凭据来源或结果筛选。结果按日期、模型、供应商和端点分组，并使用稳定分页。
+
+时间范围最多为最近 30 个已结束的 UTC 日，源请求数最多为 10,000 个。
+

@@ -1,0 +1,22 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: ".NET の実行、モデル、ステップ、ツール、チェックポイントのイベントに応答します。"
+---
+
+Pass `RunOptions.OnEvent` 製品のタイムライン、監査ログ、テレメトリーパイプラインを更新します。
+
+イベントには、実行の開始・再開・終了状態、モデルリクエスト、ステップのチェックポイント、ツールの実行と進行状況、人の応答待ち、キャンセル、失敗が含まれます。
+
+コールバックは短時間で処理します。時間のかかるストレージやネットワーク処理は、エージェントのループ外のキューに送ります。
+
+```csharp
+OnEvent = value => logger.LogInformation(
+    "{EventType} {RunId}", value.Type, value.RunId
+);
+```
+
+## 関連ページ
+
+- [ストリーミング](./agent-sdk-streaming.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

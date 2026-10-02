@@ -1,0 +1,136 @@
+---
+icon: "cloud-download"
+title: "Ferramenta de servidor Web Fetch"
+description: "Permita que os modelos consultem URLs específicas durante uma requisição."
+---
+
+Use `phaseo:web_fetch` quando o modelo precisar ler uma URL conhecida, como uma página de documentação, um artigo, um changelog ou uma fonte de texto semelhante a PDF.
+
+O modelo decide quando consultar, fornece a URL e recebe um trecho limitado da página como contexto da ferramenta.
+
+## Como funciona
+
+1. Adicione `{ "type": "phaseo:web_fetch" }` a `tools`.
+2. O modelo decide se precisa consultar uma URL.
+3. A Phaseo busca e extrai o conteúdo usando o mecanismo configurado.
+4. O texto extraído, o título, a URL e os metadados de truncamento são retornados ao modelo.
+5. O modelo escreve a resposta final e pode consultar outras URLs, se necessário.
+
+## Início rápido
+
+```bash
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-5-nano",
+    "messages": [
+      { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
+    ],
+    "tools": [
+      { "type": "phaseo:web_fetch" }
+    ]
+  }'
+```
+
+## Configuração
+
+```json
+{
+  "type": "phaseo:web_fetch",
+  "parameters": {
+    "engine": "direct",
+    "max_chars": 12000,
+    "allowed_domains": ["phaseo.app"],
+    "blocked_domains": ["internal.example.com"]
+  }
+}
+```
+
+| Parâmetro | Tipo | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `engine` | string | depende da superfície | Mecanismo de busca: `auto`, `native`, `direct`, `exa`, `parallel` ou `firecrawl`. |
+| `max_chars` | inteiro | `12000` | Número máximo de caracteres extraídos retornados ao modelo. |
+| `max_content_tokens` | inteiro | nenhum | Alias por tokens usado quando `max_chars` não é informado. |
+| `max_uses` | inteiro | `10` | Número máximo de chamadas de busca durante o ciclo da ferramenta de servidor. |
+| `allowed_domains` | string[] | nenhum | Permite buscas somente nestes domínios. |
+| `blocked_domains` | string[] | nenhum | Rejeita buscas nesses domínios. Alias: `excluded_domains`. |
+
+## Seleção do mecanismo
+
+| Mecanismo | Comportamento |
+| --- | --- |
+| `auto` | Usa a busca nativa da Anthropic em `/v1/messages`; caso contrário, usa Exa se estiver configurado; se não, usa a busca direta do gateway. |
+| `direct` | Busca diretamente no runtime do gateway e extrai texto com limite. |
+| `exa` | Usa a extração de conteúdo do Exa quando configurada. |
+| `parallel` | Usa o Parallel Extract quando configurado. |
+| `firecrawl` | Usa o Firecrawl Scrape quando configurado. |
+| `native` | Converte para `web_fetch_20260209` nativo da Anthropic em `/v1/messages`. Outras superfícies devem usar `direct` ou um mecanismo gerenciado. |
+
+São compatíveis apenas URLs HTTP(S). A busca direta do gateway aceita tipos de conteúdo textuais e converte HTML em texto simples antes de retorná-lo ao modelo.
+
+## Busca nativa da Anthropic
+
+```json
+{
+  "model": "claude-sonnet-4.6",
+  "max_tokens": 1024,
+  "messages": [
+    { "role": "user", "content": "Read the docs page and summarize the limits." }
+  ],
+  "tools": [
+    {
+      "type": "phaseo:web_fetch",
+      "parameters": {
+        "engine": "native",
+        "max_content_tokens": 9000,
+        "allowed_domains": ["phaseo.app"]
+      }
+    }
+  ],
+  "tool_choice": { "type": "tool", "name": "phaseo:web_fetch" }
+}
+```
+
+## Resultado da ferramenta
+
+A busca gerenciada retorna um resultado JSON da ferramenta com campos como:
+
+```json
+{
+  "provider": "fetch",
+  "engine": "direct",
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "text": "...",
+  "truncated": false,
+  "returned_chars": 8421
+}
+```
+
+Confira `truncated` antes de presumir que o modelo recebeu a página inteira.
+
+## Uso e preços
+
+As chamadas de Web Fetch incrementam:
+
+```json
+{
+  "usage": {
+    "server_tool_use": {
+      "web_fetch_requests": 1
+    }
+  }
+}
+```
+
+A cobrança da busca gerenciada pode usar `server_tool_web_fetch_requests`. O uso da busca nativa do provedor pode usar `native_web_fetch_requests` quando o cartão de preços do modelo define essa métrica.
+
+## Guias relacionados
+
+- [Busca na web](./web-search.mdx)
+- [Ferramentas de servidor](./index.mdx)
+- [Fundamente respostas com Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)

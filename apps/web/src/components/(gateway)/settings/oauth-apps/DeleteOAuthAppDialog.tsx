@@ -18,6 +18,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface DeleteOAuthAppDialogProps {
 	clientId: string;
@@ -33,11 +35,12 @@ export default function DeleteOAuthAppDialog({
 	const [error, setError] = useState<string | null>(null);
 	const [confirmation, setConfirmation] = useState("");
 	const router = useRouter();
+	const t = useTranslations("SettingsUI");
 	const write = useSettingsWrite();
 
 	const handleDelete = async () => {
 		if (confirmation !== appName) {
-			setError("App name doesn't match");
+			setError(t("strings.App name doesn't match" as never));
 			return;
 		}
 
@@ -52,16 +55,16 @@ export default function DeleteOAuthAppDialog({
 			const result = await write(deleteOAuthAppAction(clientId));
 
 			if (result.error) {
-				setError(result.error);
+				setError(localizedSettingsError(result.error, t, "Failed to delete OAuth app"));
 				return;
 			}
 
-			toast.success(`OAuth app "${appName}" deleted successfully`);
+			toast.success(`${t("strings.OAuth app" as never)} "${appName}" ${t("strings.deleted successfully" as never)}`);
 
 			// Navigate back to the list
 			router.push("/settings/oauth-apps");
 		} catch (err: any) {
-			setError(err.message || "Failed to delete OAuth app");
+			setError(localizedSettingsError(err, t, "Failed to delete OAuth app"));
 		} finally {
 			setLoading(false);
 		}
@@ -78,29 +81,27 @@ export default function DeleteOAuthAppDialog({
 			<DialogTrigger asChild>
 				<Button variant="destructive" size="sm">
 					<Trash2 className="h-4 w-4 mr-2" />
-					Delete App
+					{t("oauthCardCopy.deleteApp" as never)}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Delete OAuth App</DialogTitle>
+					<DialogTitle>{t("strings.Delete OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
-						This will permanently delete <strong>{appName}</strong> and revoke
-						all user authorizations.
+						{t("strings.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.phraseAndRevokeAllUserAuthorizations" as never)}
 					</DialogDescription>
 				</DialogHeader>
 
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>Warning:</strong> This action cannot be undone. All users
-						who authorized this app will lose access immediately.
+						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneAllUsersWhoAuthorizedThisAppWillLoseAccessImmediately" as never)}
 					</AlertDescription>
 				</Alert>
 
 				<div className="space-y-2">
 					<Label htmlFor="confirmation">
-						Type <strong>{appName}</strong> to confirm
+						{t("strings.Type" as never)} <strong>{appName}</strong> {t("strings.to confirm" as never)}
 					</Label>
 					<Input
 						id="confirmation"
@@ -121,14 +122,14 @@ export default function DeleteOAuthAppDialog({
 
 				<DialogFooter>
 					<Button variant="outline" onClick={handleClose}>
-						Cancel
+						{t("strings.Cancel" as never)}
 					</Button>
 					<Button
 						variant="destructive"
 						onClick={handleDelete}
 						disabled={loading || confirmation !== appName}
 					>
-						{loading ? "Deleting..." : "Delete App"}
+						{loading ? t("strings.phraseDeleting" as never) : t("oauthCardCopy.deleteApp" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

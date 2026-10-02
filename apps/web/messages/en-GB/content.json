@@ -1,0 +1,463 @@
+{
+	"help": {
+		"title": "Help Center",
+		"description": "Browse support articles for account access, MFA setup, billing, security, and API integration troubleshooting.",
+		"supportResources": "Support Resources",
+		"articleCount": "{count, plural, =0 {No articles} one {# article} other {# articles}}",
+		"viewAll": "View all in {category}",
+		"updated": "Updated {date}",
+		"moreIn": "More in {category}"
+	},
+	"announcementComponents": {
+		"followPhaseo": "Follow Phaseo",
+		"followOn": "Follow Phaseo on {platform}: {handle}",
+		"joinDiscord": "Join Discord",
+		"getStartedTitle": "Start building with Phaseo",
+		"getStartedDescription": "Get a gateway key, run the quickstart, or compare models before moving traffic.",
+		"getGatewayKey": "Create a gateway key",
+		"readQuickstart": "Read the quickstart",
+		"browseModels": "Browse models",
+		"installCli": "Install the CLI",
+		"updateCli": "Update the CLI",
+		"choosePackageManager": "Choose your package manager, then copy the command.",
+		"copyCommand": "Copy {packageManager} command",
+		"incrementCounter": "Increase count",
+		"decrementCounter": "Decrease count"
+	},
+	"blog": {
+		"title": "Phaseo Blog",
+		"categories": {
+			"all": "All posts",
+			"announcements": "Announcements",
+			"guides": "Guides",
+			"data": "Data"
+		},
+		"preview": "Preview",
+		"onThisPage": "On this page",
+		"tableOfContents": "Table of contents",
+		"readPost": "Read post",
+		"showMore": "Show more",
+		"pinned": "Pinned posts",
+		"recent": "Most recent",
+		"showAll": "Show all posts",
+		"emptyTitle": "No posts yet.",
+		"emptyDescription": "New updates will appear here as they are published.",
+		"emptyCategory": "No posts in this category yet.",
+		"back": "Back to blog",
+		"readingTime": "{minutes, plural, one {# min read} other {# mins read}}",
+		"latestFromBlog": "Latest from the blog",
+		"noPublishedPosts": "No blog posts published yet.",
+		"fromJournal": "From the journal",
+		"journalDescription": "Product news, guides, and release notes.",
+		"viewAllPosts": "View all posts",
+		"englishBodyNotice": "This editorial content is currently available in English. The surrounding interface is translated; the original article is shown to preserve its meaning."
+	},
+	"roadmap": {
+		"title": "Phaseo Roadmap",
+		"description": "A transparent look at what we're building next. Track upcoming features and shipped milestones for the AI model database, gateway, and analytics tools.",
+		"intro": "A transparent look at what we're building next. Timelines are indicative and may shift as we ship faster or incorporate feedback.",
+		"feedback": "Got an idea, found an error, or want to prioritise a feature? We read everything and ship fast.",
+		"giveFeedback": "Give feedback",
+		"upcoming": "Upcoming",
+		"shipped": "Shipped",
+		"latestShipped": "Latest shipped",
+		"target": "Target: {date}",
+		"continuous": "Continuous",
+		"learnMore": "Learn more",
+		"nothingShipped": "Nothing shipped yet - check back soon.",
+		"shippedDate": "Shipped: {date}",
+		"view": "View",
+		"comingSoon": "Coming soon",
+		"activeDevelopment": "This page is under active development.",
+		"shippingFast": "We’re shipping fast. Check back shortly or see the full roadmap.",
+		"viewRoadmap": "View roadmap",
+		"continuousImprovements": "Continuous improvements ahead",
+		"currentlyBuilt": "Currently being built",
+		"availableBeta": "Available in beta",
+		"plannedFeature": "Planned feature",
+		"seeRoadmapItem": "See roadmap item",
+		"goHome": "Go Home",
+		"status": {
+			"Planned": "Planned",
+			"In Progress": "In Progress",
+			"Beta": "Beta",
+			"Shipped": "Shipped",
+			"Ongoing": "Ongoing"
+		},
+		"milestones": {
+			"gateway": {
+				"title": "Gateway Coverage Expansion",
+				"description": "Continuous expansion of supported providers, models, and modalities with smarter routing defaults."
+			},
+			"expanded-database": {
+				"title": "Database Coverage",
+				"description": "Continuous ingestion and validation of model, provider, pricing, and release data across the catalog."
+			},
+			"usage-limits": {
+				"title": "Usage Limits",
+				"description": "Per-key spend and usage controls to reduce accidental overspend and enforce team budgets."
+			},
+			"guardrails": {
+				"title": "Guardrails",
+				"description": "Expanded safety, policy, and moderation controls across gateway traffic."
+			},
+			"privacy-settings": {
+				"title": "Privacy Settings",
+				"description": "More granular privacy and retention controls for teams using Phaseo Gateway."
+			},
+			"provisioning-keys": {
+				"title": "Management API Keys",
+				"description": "Automated creation and lifecycle management for elevated management credentials."
+			},
+			"presets": {
+				"title": "Preset Marketplace",
+				"description": "Improved sharing, discovery, and one-click adoption of production-ready preset configurations."
+			},
+			"anthropic-compatibility": {
+				"title": "Anthropic Compatibility",
+				"description": "Anthropic Messages API compatibility shipped via the gateway /messages endpoint."
+			},
+			"organisation-page": {
+				"title": "Organisation Pages",
+				"description": "Dedicated organisation pages with linked models and metadata."
+			},
+			"model-page": {
+				"title": "Model Pages",
+				"description": "Dedicated model pages with pricing, availability, and quickstart details."
+			},
+			"benchmarks": {
+				"title": "Benchmark Pages",
+				"description": "Benchmark pages with rank deltas and per-model performance comparisons."
+			},
+			"api-providers": {
+				"title": "API Provider Pages",
+				"description": "Provider pages with supported models, pricing references, and capability coverage."
+			},
+			"latest-updates": {
+				"title": "Latest Updates",
+				"description": "A single stream for releases, announcements, and database updates."
+			},
+			"countries-pages": {
+				"title": "Countries Pages",
+				"description": "Country-level views that connect organisations and model activity."
+			},
+			"revamped-pricing-page": {
+				"title": "Pricing Reference Refresh",
+				"description": "A cleaner pricing reference experience with model and provider-focused navigation."
+			},
+			"database-updates": {
+				"title": "Database Update Feed",
+				"description": "Expanded update feed that surfaces ongoing database-level changes."
+			},
+			"sources": {
+				"title": "Inline Sources",
+				"description": "Source attribution surfaced directly alongside relevant model and provider data."
+			},
+			"compare": {
+				"title": "Model Comparisons",
+				"description": "Side-by-side model comparison across pricing, capabilities, and key metadata."
+			}
+		},
+		"expected": "Expected",
+		"developmentNotice": "This page is under active development. We publish updates frequently. Have feedback? We’d love to hear it."
+	},
+	"migrate": {
+		"title": "Migrate",
+		"description": "Interactive migration guide for moving from OpenRouter, Vercel AI Gateway, Requesty, LLMGateway, and OpenAI-compatible libraries to Phaseo Gateway.",
+		"heading": "Migration Assistant",
+		"intro": "Pick your current setup and get a tailored migration guide.",
+		"ui": {
+			"breadcrumb": "Breadcrumb",
+			"backToAllGuides": "Back to all migration guides",
+			"readTime": "{minutes, plural, one {# min read} other {# mins read}}",
+			"updatedAt": "Updated {date}",
+			"tryPhaseo": "Try Phaseo",
+			"comparePhaseoOpenRouter": "Compare Phaseo and OpenRouter",
+			"prerequisites": "Prerequisites",
+			"checklist": "Checklist",
+			"validationSteps": "Validation steps",
+			"faqHeading": "Frequently asked questions",
+			"migrationResources": "Migration resources",
+			"openrouterCtaTitle": "Want us to handle your migration?",
+			"customMigrationCtaTitle": "Need a custom migration diff?",
+			"openrouterCtaBody": "Get in touch and we’ll help move your OpenRouter integration to Phaseo for free, including the endpoint switch, model checks, and migration review.",
+			"customMigrationCtaBody": "Use the interactive assistant for before-and-after snippets tailored to your current SDK and language.",
+			"getFreeMigrationHelp": "Get free migration help",
+			"openMigrationAssistant": "Open migration assistant"
+		},
+		"agentPrompt": {
+			"codingAgents": "For coding agents",
+			"title": "Give this to your coding agent",
+			"description": "Paste this into your coding agent when you want OpenRouter removed instead of left as a fallback. It links to the maintained skill and says when the migration is done.",
+			"copied": "Copied",
+			"copyPrompt": "Copy prompt",
+			"readSkill": "Read the migration skill"
+		},
+		"englishBodyNotice": "This migration guide is currently available in English. The surrounding interface is translated; the original guide is shown to preserve technical accuracy.",
+		"assistant": {
+			"stepLabel": "Step {number}",
+			"sourceQuestion": "Where are you migrating from?",
+			"chooseSource": "Choose a source to continue.",
+			"selectSourcePrompt": "Select where you are migrating from to see the next options.",
+			"reviewChanges": "Review the changes",
+			"split": "Split",
+			"diff": "Diff",
+			"startOver": "Start over",
+			"beforeAndAfter": "Before & After",
+			"comparisonDescription": "Compare your current integration with the Phaseo version, or switch to Diff for a single view.",
+			"before": "Before",
+			"after": "After",
+			"keyChanges": "Key changes",
+			"fullGuidePrompt": "If you are migrating from {source}, see the full step-by-step guide.",
+			"readFullGuide": "Read full guide",
+			"snippetNoSdk": "No SDK configured",
+			"sourceLabels": {
+				"compatibleLibraries": "OpenAI-compatible libraries",
+				"gettingStarted": "Just getting started"
+			},
+			"sourceDescriptions": {
+				"openaiSdk": "Using the official OpenAI SDKs today.",
+				"anthropicSdk": "Using the Anthropic client libraries.",
+				"openrouter": "Routing requests through OpenRouter.",
+				"vercelAi": "Using Vercel AI Gateway or the AI SDK provider stack.",
+				"requesty": "Using Requesty as an OpenAI-compatible gateway.",
+				"llmGateway": "Using LLMGateway as an OpenAI-compatible endpoint.",
+				"compatibleLibraries": "Any OpenAI-style SDK or REST integration.",
+				"gettingStarted": "Set up from scratch with the fastest path."
+			},
+			"prompts": {
+				"openaiSdk": "Which OpenAI SDK are you using?",
+				"anthropicSdk": "Which Anthropic SDK are you using?",
+				"openrouter": "How do you call OpenRouter today?",
+				"vercelAi": "How are you integrated with Vercel today?",
+				"requesty": "How do you call Requesty today?",
+				"llmGateway": "How do you call LLMGateway today?",
+				"environment": "Choose your environment.",
+				"integration": "Pick your preferred integration."
+			},
+			"options": {
+				"keepOpenAiClient": "Keep the OpenAI client and swap the base URL.",
+				"keepAnthropicClient": "Keep the Anthropic client and swap the base URL.",
+				"pointPythonSdk": "Point the Python SDK to Phaseo.",
+				"switchRestToGateway": "Switch your REST calls to the Gateway.",
+				"switchVercelProvider": "Replace the Vercel/OpenAI provider factory with the official Phaseo provider.",
+				"restAnyRuntime": "Use REST calls in any runtime.",
+				"swapEnvironmentAndBaseUrl": "Keep the client and swap env vars plus base URL.",
+				"openAiPythonSettings": "Use OpenAI Python client settings for Phaseo.",
+				"switchRestToPhaseo": "Switch REST calls to Phaseo Gateway.",
+				"openAiCompatibleConfiguration": "Use OpenAI SDK-compatible configuration.",
+				"openAiPythonWithPhaseo": "Use the OpenAI Python client with Phaseo.",
+				"callGatewayDirectly": "Call the Gateway directly.",
+				"typedSdk": "Full typed client with helpers.",
+				"asyncPythonSdk": "Async-first Python client.",
+				"fastestRequest": "Fastest way to send a request."
+			},
+			"steps": {
+				"useApiKey": "Use your Phaseo API key",
+				"createApiKey": "Create a key in the Phaseo dashboard and store it as PHASEO_API_KEY.",
+				"setBaseUrlTitle": "Point the base URL to Phaseo",
+				"setBaseUrlDescription": "Set the base URL to {baseUrl}.",
+				"keepPayloadTitle": "Keep your payloads the same",
+				"keepPayloadDescription": "Your model selection and message payloads remain unchanged.",
+				"authorizationHeaderTitle": "Send the Authorization header",
+				"authorizationHeaderDescription": "Add Authorization: Bearer <key> on every request."
+			},
+			"changeTitles": {
+				"useGatewayKey": "Use your Phaseo Gateway key",
+				"routeThroughPhaseo": "Route requests through Phaseo",
+				"updateModelIds": "Update model ids",
+				"switchAiSdk": "Switch to the Phaseo AI SDK provider"
+			},
+			"changes": {
+				"replaceOpenAiKey": "Replace OPENAI_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
+				"replaceAnthropicKey": "Replace ANTHROPIC_API_KEY with PHASEO_API_KEY from the Phaseo dashboard.",
+				"setSdkKey": "Set PHASEO_API_KEY from the Phaseo dashboard for the SDK client.",
+				"sendAuthorization": "Send Authorization: Bearer YOUR_API_KEY on every request.",
+				"replaceVercelProvider": "Replace the Vercel OpenAI provider factory with createPhaseo(...) from @phaseo/ai-sdk-provider.",
+				"routeBaseUrl": "Set baseURL to {baseUrl} so traffic goes through the Gateway.",
+				"routeBaseUrlPython": "Set base_url to {baseUrl} so traffic goes through the Gateway.",
+				"routeRest": "Send requests to {endpoint}.",
+				"openAiModelIds": "Use Phaseo model ids like {modelId}. Find them on each model quickstart page.",
+				"anthropicModelIds": "Use Phaseo model ids like {modelId}. Find them on each model quickstart page."
+			},
+			"docs": {
+				"apiReference": "API Reference",
+				"apiReferenceDescription": "Endpoints, auth, and error formats.",
+				"quickstart": "Quickstart",
+				"quickstartDescription": "Make your first Gateway call in minutes.",
+				"toolCalling": "Tool Calling",
+				"toolCallingDescription": "Tools, tool_choice, and function routing.",
+				"structuredOutputs": "Structured Outputs",
+				"structuredOutputsDescription": "Schema-locked responses with constraints.",
+				"featureParity": "Feature Parity Matrix",
+				"featureParityDescription": "Gateway migration parity by surface and competitor.",
+				"parityReview": "Gateway Parity Review",
+				"parityReviewDescription": "Repo-grounded review of proven and still-open parity areas."
+			},
+			"docsHeading": "Documentation"
+		}
+	},
+	"worksWith": {
+		"title": "Works with Phaseo",
+		"description": "Discover apps and integrations built with the Phaseo Gateway, including production tools, open-source projects, and community launches across different workflows and teams.",
+		"intro": "Discover apps, tools, and integrations that use the Phaseo Gateway. Teams can build on top of Phaseo for routing, pricing, and model access, while users bring their own Phaseo API keys.",
+		"community": "Community",
+		"submitApp": "Submit your app",
+		"contribute": "Contribute to Phaseo",
+		"emptyTitle": "No apps yet",
+		"emptyDescription": "This list is ready for community submissions. Be the first to add yours.",
+		"addApp": "Add your app",
+		"added": "Added {date}",
+		"visitSite": "Visit site",
+		"setupDocs": "Setup docs",
+		"openSource": "Open source",
+		"contributing": "Contributing",
+		"contributingDescription": "Add your app to the Works with Phaseo list by following the steps below.",
+		"requirements": "Requirements",
+		"tags": {
+			"chat": "Chat",
+			"coding": "Coding",
+			"productivity": "Productivity",
+			"creative": "Creative",
+			"research": "Research",
+			"other": "Other"
+		},
+		"appLogoAlt": "{app} logo",
+		"requirementModelAccess": "Use Phaseo to access AI models.",
+		"requirementBringOwnKey": "Let users connect with their own Phaseo API key.",
+		"requirementPublicAccess": "Make your app publicly accessible or provide a public landing page.",
+		"requirementLogo": "Include a logo image.",
+		"howToSubmit": "How to submit",
+		"forkRepository": "Fork this repository.",
+		"addCatalogEntry": "Add an entry for your app to",
+		"addLogo": "Add your logo to",
+		"submitPullRequest": "Submit a pull request.",
+		"entryFormat": "Entry format",
+		"validTags": "Valid tags",
+		"questions": "Questions?",
+		"questionHelp": "Open an issue if you have questions or need help with your submission.",
+		"openDataRequest": "Open a data request",
+		"forYourApp": "for your app.",
+		"includeAppDetails": "Include the app name, a short description, website, Phaseo integration guide, and a logo link.",
+		"includeCategories": "Add relevant categories and a source repository link if the app is open source.",
+		"trackPublication": "Track review and publication in the issue."
+	},
+	"acknowledgements": {
+		"title": "Acknowledgements",
+		"description": "The open-source projects, platforms, and design work that Phaseo relies on and learns from.",
+		"heading": "Built with the work of many.",
+		"intro": "Phaseo stands on open-source software, thoughtful design work, and dependable infrastructure. This page recognizes the projects and teams that materially shape what we build.",
+		"thanks": "Thank you to every maintainer, contributor, researcher, and designer whose work makes Phaseo possible.",
+		"howUsed": "How Phaseo uses it.",
+		"disclaimer": "This is a maintained product acknowledgement, not an exhaustive software bill of materials or license notice. Package-level copyright and license terms remain with their respective projects.",
+		"continue": "Continue",
+		"review": "Review",
+		"accessibleStates": "Accessible states",
+		"streamingResponse": "Streaming response",
+		"searchExample": "Search example",
+		"createdBy": "Created by {name}",
+		"reliableGateway": "A reliable gateway",
+		"routeByHealthPriceCapability": "Route by health, price, and capability",
+		"orbWorking": "Working",
+		"orbSearching": "Searching",
+		"orbSolving": "Solving",
+		"orbComposing": "Composing",
+		"orbLabel": "{state} orb",
+		"groups": {
+			"interface": {
+				"label": "Interface",
+				"description": "The foundations behind Phaseo's web experience and interaction language."
+			},
+			"aiExperience": {
+				"label": "AI Experience",
+				"description": "Projects that help Phaseo stream, render, and explain model output."
+			},
+			"platform": {
+				"label": "Platform",
+				"description": "Infrastructure and services that help Phaseo operate reliably."
+			},
+			"productIntelligence": {
+				"label": "Product Intelligence",
+				"description": "Tools that help us understand releases, reliability, and product behaviour."
+			}
+		},
+		"items": {
+			"react": {
+				"description": "The declarative component and state model underlying Phaseo's interactive product surfaces.",
+				"usedFor": "Chat, model comparison, settings, observability, and every stateful interface are composed as React components."
+			},
+			"nextjs": {
+				"description": "The application framework that joins server rendering, routing, metadata, caching, and client interaction.",
+				"usedFor": "The public catalogue, authenticated workspace, API bridges, and this page all share one App Router application."
+			},
+			"tailwind": {
+				"description": "A utility-first styling system that keeps visual decisions close to the components they affect.",
+				"usedFor": "Responsive layout, typography, colour, motion, and dark mode use shared design tokens and utilities."
+			},
+			"baseUi": {
+				"description": "Open component patterns and accessible headless primitives that provide strong behaviour without prescribing the final visual design.",
+				"usedFor": "Dialogs, menus, tooltips, buttons, selectors, and keyboard interactions throughout Phaseo build on these foundations."
+			},
+			"lucide": {
+				"description": "A consistent, readable icon family with a broad vocabulary for product interfaces.",
+				"usedFor": "Icons clarify navigation, model actions, request status, settings, and compact controls where text alone would be cumbersome."
+			},
+			"thinkingOrbs": {
+				"description": "A family of carefully tuned canvas animations that gives background work a visible state without relying on a generic spinner.",
+				"usedFor": "Phaseo Chat uses the working state in the send and queue control, and the composing state while an assistant prepares a response."
+			},
+			"streamdown": {
+				"description": "A Markdown renderer designed for incomplete text that is still arriving token by token.",
+				"usedFor": "Phaseo renders headings, lists, links, code, and mathematics while a response streams, without waiting for the final document."
+			},
+			"shiki": {
+				"description": "A TextMate-compatible syntax highlighter that renders code with editor-quality grammar support.",
+				"usedFor": "Code in model responses stays legible across languages and themes, including during technical comparisons and debugging."
+			},
+			"cloudflare": {
+				"description": "A global application platform spanning edge compute, durable coordination, storage, networking, and security.",
+				"usedFor": "Phaseo's gateway and supporting APIs use Workers and related services to run close to users and coordinate long-running workloads."
+			},
+			"supabase": {
+				"description": "A Postgres platform with authentication, storage, realtime capabilities, and developer tooling.",
+				"usedFor": "Phaseo relies on Supabase for account identity and durable relational data such as workspaces, usage, credits, and gateway configuration."
+			},
+			"vercel": {
+				"description": "Deployment and application infrastructure optimised for Next.js and modern web delivery.",
+				"usedFor": "The Phaseo website is built, previewed, and served through Vercel while private APIs connect to the wider platform."
+			},
+			"hono": {
+				"description": "A small, standards-based web framework designed for modern JavaScript runtimes.",
+				"usedFor": "It provides routing, middleware, and typed request handling across Phaseo's Cloudflare Workers APIs."
+			},
+			"stripe": {
+				"description": "Payment infrastructure for secure checkout, payment methods, invoices, and billing events.",
+				"usedFor": "Stripe handles financial transactions when customers purchase and manage Phaseo credits."
+			},
+			"posthog": {
+				"description": "An open product analytics platform covering events, funnels, session diagnostics, and feature behaviour.",
+				"usedFor": "Phaseo uses measured product signals to understand reliability and improve flows without treating intuition as evidence."
+			},
+			"statsig": {
+				"description": "A feature-management and experimentation platform for controlled product delivery.",
+				"usedFor": "Feature gates let Phaseo introduce changes gradually, compare outcomes, and recover quickly when a rollout behaves unexpectedly."
+			}
+		}
+	},
+	"contribute": {
+		"title": "Contribute",
+		"description": "Meet the contributors and sponsors supporting Phaseo, browse community profiles and contribution history, and find clear ways to participate, sponsor, or help improve the platform.",
+		"heading": "Contributors & Sponsors",
+		"intro": "We build in public. These lists show everyone who has contributed to the Phaseo repository and those who sponsor its development via GitHub Sponsors. These are great people!",
+		"contributors": "Repository contributors",
+		"contributorCount": "{count} contributors",
+		"sponsors": "Sponsors",
+		"listed": "{count} listed",
+		"contributorExportPending": "Contributor data is still building. Trigger the export workflow or check back soon.",
+		"commitCount": "{count, plural, one {# commit} other {# commits}}",
+		"communityContributor": "Community contributor",
+		"sponsorListEmpty": "No sponsors recorded yet; join the community and your name will appear here soon!",
+		"viewProfile": "View profile",
+		"linkUnavailable": "Link unavailable"
+	}
+}

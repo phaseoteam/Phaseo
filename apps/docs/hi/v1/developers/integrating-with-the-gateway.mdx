@@ -1,0 +1,231 @@
+---
+title: "Gateway इंटीग्रेशन"
+description: "ऐप्लिकेशन को Phaseo Gateway से जोड़ें, endpoint चुनें और इंटीग्रेशन को प्रोडक्शन के लिए तैयार करें।"
+sidebarTitle: "Gateway इंटीग्रेशन"
+icon: "plug-zap"
+---
+
+क्विकस्टार्ट के बाद, जब आप किसी वास्तविक ऐप फ़ीचर में Phaseo इस्तेमाल करने के लिए तैयार हों, तब यह गाइड अपनाएँ।
+
+अंत तक आपके पास होगा:
+- सुरक्षित रूप से रखी गई API key
+- चुना हुआ endpoint
+- ऐप में काम करने वाला अनुरोध
+- रूटिंग, SDKs और संचालन के प्रोडक्शन गाइड के लिंक
+
+---
+
+## शुरू करने से पहले
+
+शुरू करने से पहले, सुनिश्चित करें कि आपके पास ये चीज़ें मौजूद हैं:
+
+- Gateway एक्सेस वाला Phaseo अकाउंट।
+- [डैशबोर्ड](https://phaseo.app/gateway/keys) से एक API key।
+- एक HTTP client, OpenAI-संगत SDK या Phaseo SDK।
+- एक समर्थित मॉडल ID, जैसे बिना क्रेडिट खर्च किए शुरू करने के लिए `google/gemma-3-27b:free`।
+
+---
+
+## 1. API key सुरक्षित रखें
+
+1. Phaseo dashboard में **Gateway → API Keys** खोलें।
+2. ऐप और वातावरण की पहचान वाला नाम देकर key बनाएँ।
+3. इसकी value को secrets manager या स्थानीय environment file में रखें:
+
+```bash
+# .env
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+<Tip>
+लोकल डेवलपमेंट, preview deployment और production के लिए अलग-अलग keys रखें। इससे rotation और उपयोग की समीक्षा आसान होती है।
+</Tip>
+
+---
+
+## 2. Endpoint चुनें
+
+अपने काम के लिए सबसे उपयुक्त endpoint चुनें:
+
+| Endpoint                 | कब इस्तेमाल करें                                     |
+| ------------------------ | -------------------------------------------------- |
+| `/v1/responses`          | नए टेक्स्ट फ़ीचर, structured output और कई चरणों वाले workflow। |
+| `/v1/chat/completions`   | Chat interface, assistant और OpenAI-शैली के integration। |
+| `/v1/messages`           | Anthropic-संगत integration।                         |
+| `/v1/decisions` | Jev 1.13 के साथ एप्लिकेशन की स्थिति के आधार पर टाइपयुक्त निर्णय। |
+| `/v1/moderations`        | सुरक्षा और content policy जाँच।                  |
+| `/v1/images/generations` | टेक्स्ट prompt से इमेज बनाना।                |
+
+समर्थित parameters और responses की पूरी सूची के लिए [API रेफ़रेंस](../api-reference/introduction.mdx) देखें।
+
+<Note>
+मुफ़्त मॉडल ID के अंत में `:free` होता है और उन्हें बिना क्रेडिट जमा किए कॉल किया जा सकता है। पेड मॉडल के लिए वॉलेट में बैलेंस चाहिए।
+</Note>
+
+---
+
+## 3. ऐप अनुरोध भेजें
+
+ऐसे अनुरोध के फ़ॉर्मैट से शुरू करें जिसे आपका ऐप संभवतः आगे भी इस्तेमाल करेगा। इस उदाहरण में Chat Completions है, जो OpenAI-संगत clients के साथ अच्छी तरह काम करता है।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "google/gemma-3-27b:free",
+    "messages": [
+      { "role": "system", "content": "You are a helpful assistant." },
+      { "role": "user", "content": "Explain the benefits of AI." }
+    ]
+  }'
+```
+
+```typescript TypeScript
+import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.chat.completions.create({
+  model: "google/gemma-3-27b:free",
+  messages: [
+    { role: "system", content: "You are a helpful assistant." },
+    { role: "user", content: "Explain the benefits of AI." },
+  ],
+});
+
+console.log(response.choices[0]?.message?.content);
+```
+
+```python Python
+from openai import OpenAI
+
+client = OpenAI(
+    api_key="YOUR_API_KEY",
+    base_url="https://api.phaseo.app/v1",
+)
+
+response = client.chat.completions.create(
+    model="google/gemma-3-27b:free",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain the benefits of AI."},
+    ],
+)
+
+print(response.choices[0].message.content)
+```
+
+```go Go
+package main
+
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+)
+
+func main() {
+  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+
+  response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
+    "model": "google/gemma-3-27b:free",
+    "messages": []map[string]string{
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Explain the benefits of AI."},
+    },
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(response)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+using System.Collections.Generic;
+
+var client = new Phaseo("YOUR_API_KEY");
+
+var response = await client.ChatCompletions(new Dictionary<string, object>
+{
+    ["model"] = "google/gemma-3-27b:free",
+    ["messages"] = new object[]
+    {
+        new Dictionary<string, object> { ["role"] = "system", ["content"] = "You are a helpful assistant." },
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Explain the benefits of AI." }
+    }
+});
+
+Console.WriteLine(response);
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+
+$response = $client->chatCompletions([
+    'model' => 'google/gemma-3-27b:free',
+    'messages' => [
+        ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+        ['role' => 'user', 'content' => 'Explain the benefits of AI.'],
+    ],
+]);
+
+print_r($response);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+
+response = client.chat_completions(
+  model: 'google/gemma-3-27b:free',
+  messages: [
+    { role: 'system', content: 'You are a helpful assistant.' },
+    { role: 'user', content: 'Explain the benefits of AI.' }
+  ]
+)
+
+puts response
+```
+</CodeGroup>
+
+---
+
+## 4. वातावरण कॉन्फ़िगर करें
+
+हर वातावरण के लिए API key को अलग environment variables में रखें:
+
+```bash
+# .env.local
+PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+PHASEO_BASE_URL="https://api.phaseo.app/v1"
+```
+
+अनुरोध भेजते समय `Authorization` header में key दें:
+
+```http
+Authorization: Bearer $PHASEO_API_KEY
+```
+
+---
+
+## 5. प्रोडक्शन के अगले चरण
+
+- Key प्रबंधन और आम प्रमाणीकरण गड़बड़ियों के लिए [प्रमाणीकरण](./authentication.mdx) देखें।
+- ज़रूरी ट्रैफ़िक भेजने से पहले [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx) जानें।
+- पूरे ऐप और script के नमूने [उदाहरण](../guides/examples.mdx) में देखें।
+- भाषा के अनुसार client के लिए [SDK रेफ़रेंस](../sdk-reference/typescript/overview.mdx) देखें।

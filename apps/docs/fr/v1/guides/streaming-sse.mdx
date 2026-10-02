@@ -1,0 +1,53 @@
+---
+icon: "radio-tower"
+title: "Événements SSE de streaming"
+description: "Comprenez la structure des trames et analysez les flux SSE en toute sécurité."
+---
+
+Tous les points de terminaison de streaming utilisent des trames de type SSE :
+
+`data: <json-or-sentinel>`
+
+## Séquence de trames habituelle
+
+1. Une ou plusieurs trames de progression ou de données partielles.
+2. Une trame de fin avec l’état final et l’utilisation.
+3. Le marqueur `data: [DONE]`.
+
+## Exemple de parseur JavaScript
+
+```typescript
+for await (const line of client.streamText({
+  model: "openai/gpt-5-nano",
+  messages: [{ role: "user", content: "Say hello." }],
+  stream: true,
+})) {
+  if (!line.startsWith("data:")) continue;
+  const payload = line.slice(5).trim();
+  if (payload === "[DONE]") break;
+  console.log(payload);
+}
+```
+
+## Exemple de parseur Python
+
+```python
+for line in client.stream_response({
+    "model": "openai/gpt-5-nano",
+    "input": "Say hello.",
+    "stream": True,
+}):
+    if not line.startswith("data:"):
+        continue
+    payload = line[5:].strip()
+    if payload == "[DONE]":
+        break
+    print(payload)
+```
+
+## Remarques sur le format des points de terminaison
+
+- `/v1/chat/completions` : événements découpés de type `choices[].delta`.
+- `/v1/responses` : événements de type Responses pour les éléments ou fragments de sortie.
+- `/v1/messages` : événements de type Anthropic (`message_start`, `content_block_delta`, `message_stop`).
+

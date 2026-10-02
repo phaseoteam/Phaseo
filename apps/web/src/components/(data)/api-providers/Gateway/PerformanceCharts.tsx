@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import {
@@ -25,26 +26,26 @@ import {
 	EmptyDescription,
 } from "@/components/ui/empty";
 
-const latencyChartConfig: ChartConfig = {
+const latencyChartConfig = (label: string): ChartConfig => ({
 	latency: {
-		label: "Latency (ms)",
+		label,
 		color: "hsl(32, 95%, 44%)",
 	},
-};
+});
 
-const throughputChartConfig: ChartConfig = {
+const throughputChartConfig = (label: string): ChartConfig => ({
 	throughput: {
-		label: "Throughput (t/s)",
+		label,
 		color: "hsl(189, 90%, 45%)",
 	},
-};
+});
 
-const e2eLatencyChartConfig: ChartConfig = {
+const e2eLatencyChartConfig = (label: string): ChartConfig => ({
 	e2eLatency: {
-		label: "E2E Latency (ms)",
+		label,
 		color: "hsl(262, 83%, 58%)",
 	},
-};
+});
 
 interface LatencyChartProps {
 	data: Array<{ timestamp: string; avgLatencyMs: number | null }>;
@@ -57,8 +58,10 @@ export function LatencyChart({
 	onHoverBucket,
 	syncId,
 }: LatencyChartProps) {
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		latency: point.avgLatencyMs,
@@ -76,9 +79,9 @@ export function LatencyChart({
 						<EmptyMedia variant="icon">
 							<Clock />
 						</EmptyMedia>
-						<EmptyTitle>No latency data available</EmptyTitle>
+						<EmptyTitle>{t("noLatencyData")}</EmptyTitle>
 						<EmptyDescription>
-							Data will appear as requests are processed
+							{t("chartDataWillAppear")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -99,7 +102,7 @@ export function LatencyChart({
 
 	return (
 		<ChartContainer
-			config={latencyChartConfig}
+			config={latencyChartConfig(t("latencyChartLabel"))}
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
@@ -128,7 +131,7 @@ export function LatencyChart({
 						axisLine={false}
 						tickLine={false}
 						tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-						tickFormatter={(value) => formatDateTick(String(value))}
+						tickFormatter={(value) => formatDateTick(String(value), locale)}
 						minTickGap={24}
 						interval="preserveStartEnd"
 					/>
@@ -190,8 +193,10 @@ export function ThroughputChart({
 	onHoverBucket,
 	syncId,
 }: ThroughputChartProps) {
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		throughput: point.avgThroughput,
@@ -209,9 +214,9 @@ export function ThroughputChart({
 						<EmptyMedia variant="icon">
 							<Zap />
 						</EmptyMedia>
-						<EmptyTitle>No throughput data available</EmptyTitle>
+						<EmptyTitle>{t("noThroughputData")}</EmptyTitle>
 						<EmptyDescription>
-							Data will appear as requests are processed
+							{t("chartDataWillAppear")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -232,7 +237,7 @@ export function ThroughputChart({
 
 	return (
 		<ChartContainer
-			config={throughputChartConfig}
+			config={throughputChartConfig(t("throughputChartLabel"))}
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
@@ -261,7 +266,7 @@ export function ThroughputChart({
 						axisLine={false}
 						tickLine={false}
 						tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-						tickFormatter={(value) => formatDateTick(String(value))}
+						tickFormatter={(value) => formatDateTick(String(value), locale)}
 						minTickGap={24}
 						interval="preserveStartEnd"
 					/>
@@ -323,8 +328,10 @@ export function E2ELatencyChart({
 	onHoverBucket,
 	syncId,
 }: E2ELatencyChartProps) {
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatDateTick = (timestamp: string) => format.calendarDate(timestamp, timestamp);
+	const formatDateTick = (timestamp: string, _locale?: string) => format.calendarDate(timestamp, timestamp);
 	const chartData = data.map((point) => ({
 		timestamp: point.timestamp,
 		e2eLatency: point.avgGenerationMs,
@@ -342,9 +349,9 @@ export function E2ELatencyChart({
 						<EmptyMedia variant="icon">
 							<Timer />
 						</EmptyMedia>
-						<EmptyTitle>No E2E latency data available</EmptyTitle>
+						<EmptyTitle>{t("noE2eLatencyData")}</EmptyTitle>
 						<EmptyDescription>
-							Data will appear as requests are processed
+							{t("chartDataWillAppear")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>
@@ -365,7 +372,7 @@ export function E2ELatencyChart({
 
 	return (
 		<ChartContainer
-			config={e2eLatencyChartConfig}
+			config={e2eLatencyChartConfig(t("e2eLatencyChartLabel"))}
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
@@ -394,7 +401,7 @@ export function E2ELatencyChart({
 						axisLine={false}
 						tickLine={false}
 						tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-						tickFormatter={(value) => formatDateTick(String(value))}
+						tickFormatter={(value) => formatDateTick(String(value), locale)}
 						minTickGap={24}
 						interval="preserveStartEnd"
 					/>

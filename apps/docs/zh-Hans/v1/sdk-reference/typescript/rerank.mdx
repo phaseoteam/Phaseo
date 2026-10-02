@@ -1,0 +1,26 @@
+---
+icon: "list-ordered"
+title: "文档重排序"
+description: "使用 TypeScript SDK 按照候选文档与查询的相关性重新排序。"
+---
+
+使用 `client.rerank.create()` 可根据候选文档与查询的相关性对其排序。
+
+```typescript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+在生产环境中使用前，请通过 `GET /v1/models` 确认模型 ID。

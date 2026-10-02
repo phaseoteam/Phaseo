@@ -1,0 +1,40 @@
+---
+icon: "package"
+title: "Instalación"
+description: "Instala y configura el Phaseo Ruby Agent SDK."
+---
+
+El Agent SDK se publica en RubyGems como [`phaseo_agent_sdk`](https://rubygems.org/gems/phaseo_agent_sdk).
+
+## Requisitos
+
+- Ruby 3.2 o posterior
+- RubyGems o Bundler
+- una clave de API de Phaseo
+
+## Instalación
+
+```bash
+gem install phaseo_agent_sdk
+```
+
+O agrégalo a tu `Gemfile`:
+
+```ruby
+gem "phaseo_agent_sdk"
+```
+
+La gema principal `phaseo_sdk` se instala automáticamente como dependencia.
+
+## Entorno
+
+Configura la clave de API de la pasarela antes de ejecutar los ejemplos:
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+## A continuación
+
+- [Descripción general](./agent-sdk-overview.mdx)
+- [Crea con Agent SDK](./agent-sdk.mdx)

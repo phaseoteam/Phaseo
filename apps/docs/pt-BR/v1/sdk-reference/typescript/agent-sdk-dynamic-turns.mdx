@@ -1,0 +1,66 @@
+---
+icon: "shuffle"
+title: "Turnos dinâmicos"
+description: "Altere modelos, instruções, amostragem e ferramentas entre os turnos do agente."
+---
+
+Use valores dinâmicos quando os próximos turnos precisarem responder ao contexto do aplicativo ou a resultados anteriores de ferramentas. O valor pode ser fixo ou calculado para o turno atual.
+
+## Escolher um modelo em tempo de execução
+
+```typescript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "phaseo/free" : "anthropic/claude-sonnet-4",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+A definição do agente aceita valores dinâmicos para `model`, `models`, `instructions`, `temperature`, `maxOutputTokens` e `topP`.
+
+## Atualizar o contexto do aplicativo por uma ferramenta
+
+As ferramentas podem armazenar informações para os próximos turnos com `context.setContext()`:
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+Mantenha o contexto pequeno e serializável se uma execução puder ser salva e retomada.
+
+## Substituir somente o próximo turno
+
+Use `nextTurnParams` quando uma ferramenta precisar alterar a próxima solicitação sem mudar permanentemente a definição do agente:
+
+```typescript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    temperature: 0.3,
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+Os valores do próximo turno podem alterar o modelo, as instruções, a temperatura, o máximo de tokens, a amostragem top-p ou as ferramentas disponíveis.
+
+## Guias relacionados
+
+- [Condições de parada](./agent-sdk-stop-conditions.mdx)
+- [Estado e aprovação](./agent-sdk-state-and-approval.mdx)
+- [Saídas e novas tentativas](./agent-sdk-run-controls.mdx)

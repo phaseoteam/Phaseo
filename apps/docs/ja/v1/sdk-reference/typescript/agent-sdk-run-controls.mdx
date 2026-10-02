@@ -1,0 +1,78 @@
+---
+icon: "braces"
+title: "出力と再試行"
+description: "最終出力を検証し、一時的なモデルエラーを再試行して、管理されたルーティングの既定値を適用します。"
+---
+
+アプリケーションの他の部分で自由形式のテキストではなく型付きの値が必要な場合は、出力を解析します。一時的なモデルエラーには回数を制限して再試行し、検証エラーやポリシーエラーはアプリケーションで確認できるようにします。
+
+## 型付き出力を解析する
+
+`parseOutput` はエージェントループの完了後に最終テキストを変換します。
+
+```typescript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+モデルの動作をより厳密にするには、解析と Gateway クライアントの構造化レスポンスを組み合わせます。
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+## モデルリクエストを再試行する
+
+現在の実行内で一時的なモデルエラーを再試行する場合は `modelRetry` を使用します。
+
+```typescript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+`maxRetries` は初回リクエスト後の再試行回数です。最終的な試行回数はステップの `modelAttempts` に保存されます。
+
+## 管理されたルーティングの既定値を使用する
+
+ルーティング、プロンプト、パラメーターの既定値をダッシュボードで管理する場合は `preset` を使用します。
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Gateway アダプターでは、`responseFormat`、`plugins`、`gatewayTools`、`toolChoice`、`webSearchOptions`、`providerOptions`、`promptCacheKey`、`includeMeta` も渡せます。
+
+## 関連ガイド
+
+- [後続のモデルターンを変更する](./agent-sdk-dynamic-turns.mdx)
+- [エージェントを安全に停止する](./agent-sdk-stop-conditions.mdx)
+- [エラーを処理する](./agent-sdk-events-and-errors.mdx)

@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	API_KEY_LIMIT_PRESETS,
 	getApiKeyPreset,
@@ -49,6 +51,7 @@ export default function CreateKeyDialog({
 	const [open, setOpen] = useState(false);
 	const [name, setName] = useState("");
 	const [loading, setLoading] = useState(false);
+	const t = useTranslations("SettingsUI");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
 	const [selectedPresetId, setSelectedPresetId] =
@@ -67,7 +70,7 @@ export default function CreateKeyDialog({
 		if (!currentUserId || selectedTeamId === undefined) {
 			setPlainKey(null);
 			setLoading(false);
-			toast.error("Missing user or workspace context. Make sure you are signed in.");
+			toast.error(t("strings.phraseSignInAndSelectAWorkspaceBeforeCreatingAnAPIKey" as never));
 			return;
 		}
 		try {
@@ -88,10 +91,8 @@ export default function CreateKeyDialog({
 				preset: selectedPresetId,
 				surface: "settings",
 			});
-		} catch (err: any) {
-			const message =
-				err?.message ?? "Could not create API key right now. Please try again.";
-			toast.error(message);
+		} catch (err: unknown) {
+			toast.error(localizedSettingsError(err, t, "Action failed"));
 		} finally {
 			setLoading(false);
 		}
@@ -123,18 +124,18 @@ export default function CreateKeyDialog({
 					className="flex items-center"
 				>
 					<Plus className="h-4 w-4" />
-					Create Key
+					{t("strings.Create Key" as never)}
 				</Button>
 			</DialogTrigger>
 
 			<DialogContent className="gap-5 sm:max-w-lg">
 				<DialogHeader className="gap-2">
-					<DialogTitle>Create API Key</DialogTitle>
+					<DialogTitle>{t("keys.createKey")}</DialogTitle>
 					<DialogDescription>
-						Create a new API key for a workspace.
+						{t("strings.phraseCreateANewAPIKeyForAWorkspace" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-destructive/10 px-3 py-2 text-sm leading-5 text-destructive">
-						The key is shown only once. Copy it and store it somewhere safe.
+						{t("strings.phraseTheKeyWillBeShownOnlyOnceCopyItAndStoreItSomewhereSafe" as never)}
 					</p>
 				</DialogHeader>
 
@@ -151,7 +152,7 @@ export default function CreateKeyDialog({
 										<span>
 											{resolvedTeams.find(
 												(t) => t.id === selectedTeamId
-											)?.name || "Personal"}
+											)?.name || t("strings.Personal" as never)}
 										</span>
 										<ChevronDown className="ml-2 h-4 w-4" />
 
@@ -178,10 +179,10 @@ export default function CreateKeyDialog({
 						<Input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder="Key name (e.g. my app)"
+							placeholder={t("keys.keyName")}
 						/>
 						<div className="space-y-2">
-							<div className="text-sm font-medium">Preset</div>
+							<div className="text-sm font-medium">{t("strings.Preset" as never)}</div>
 							<div className="grid gap-2 sm:grid-cols-2">
 								{API_KEY_LIMIT_PRESETS.map((preset) => {
 									const selected = selectedPresetId === preset.id;
@@ -198,10 +199,10 @@ export default function CreateKeyDialog({
 											].join(" ")}
 										>
 											<div className="text-sm font-medium">
-												{preset.label}
+												{t(`keys.presets.${preset.id}.title` as never)}
 											</div>
 											<div className="mt-1 text-xs leading-5 text-muted-foreground">
-												{preset.description}
+												{t(`keys.presets.${preset.id}.description` as never)}
 											</div>
 										</button>
 									);
@@ -215,11 +216,11 @@ export default function CreateKeyDialog({
 									variant="ghost"
 									onClick={onClose}
 								>
-									Cancel
+									{t("strings.Cancel" as never)}
 								</Button>
 							</DialogClose>
-							<Button type="submit" disabled={!canCreate}>
-								{loading ? "Creating..." : "Create Key"}
+						<Button type="submit" disabled={!canCreate}>
+							{loading ? t("keys.creatingKey") : t("keys.createKey")}
 							</Button>
 						</DialogFooter>
 					</form>
@@ -229,8 +230,7 @@ export default function CreateKeyDialog({
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-muted-foreground">
-							This key will not be shown again and gives access to your
-							workspace credits. Keep it secret.
+							{t("strings.phraseThisKeyWillNotBeShownAgainAndGivesAnyoneAccessToYourCreditsForYourWorkspaceKeepThisCodeSecretAtAllTimes" as never)}
 						</p>
 						<SecretRevealActions
 							secret={plainKey}
@@ -239,7 +239,7 @@ export default function CreateKeyDialog({
 						/>
 						<DialogFooter className="pt-1">
 							<DialogClose asChild>
-								<Button onClick={onClose}>Done</Button>
+								<Button onClick={onClose}>{t("labels.done")}</Button>
 							</DialogClose>
 						</DialogFooter>
 					</div>

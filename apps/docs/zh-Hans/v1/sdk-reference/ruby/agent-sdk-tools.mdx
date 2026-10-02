@@ -1,0 +1,21 @@
+---
+icon: "wrench"
+title: "工具"
+description: "定义经过验证、需审批、手动执行和可报告进度的 Ruby 工具。"
+---
+
+创建 `PhaseoAgentSdk::Tool` 值并通过 `define_tool` 传入。工具可包含：
+
+- 提供给模型的 JSON `parameters`
+- `input_schema`、`output_schema` 和 `event_schema` 验证回调
+- `timeout_ms` 和 `execute` 回调
+- 布尔值或可调用的 `require_approval`
+- 用于交互式工作的 `on_tool_called` 和 `on_response_received`
+- `next_turn_params` 和 `on_error: "return-to-model"`
+
+使用 `runtime.emit_progress` 报告初步结果，使用 `set_context` 设置应用上下文。受限线程可并发执行互不依赖的工具，同时让保存的结果保持模型调用顺序。
+
+## 相关内容
+
+- [状态与审批](./agent-sdk-state-and-approval.mdx)
+- [运行控制](./agent-sdk-run-controls.mdx)

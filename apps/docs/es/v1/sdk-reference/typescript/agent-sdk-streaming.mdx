@@ -1,0 +1,65 @@
+---
+icon: "radio"
+title: "Transmisión"
+description: "Transmite texto, razonamiento, actividad de herramientas y todos los eventos del agente."
+---
+
+Usa `stream()` para mostrar la respuesta del agente o la actividad de las herramientas mientras la ejecución sigue en curso. Inicia la misma máquina de estados reanudable que `run()`, con un cliente de modelo que admite streaming.
+
+## Transmitir texto
+
+```typescript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+## Leer el resultado desde varios lugares
+
+Los consumidores de streams se pueden reproducir. Así, el código de renderizado, telemetría y persistencia puede consumir la misma ejecución al mismo tiempo:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+## Elegir un stream
+
+- `getTextStream()` proporciona el texto de la respuesta.
+- `getReasoningStream()` proporciona actualizaciones de razonamiento cuando el modelo las incluye.
+- `getItemsStream()` proporciona valores `AgentItem<TOutput>` tipados para mensajes, razonamiento, actividad de herramientas, errores y resultados finales.
+- `getToolStream()` proporciona la actividad de las herramientas.
+- `getFullStream()` proporciona todos los eventos del runtime.
+
+Usa `cancel()` para cancelar la ejecución. Las herramientas locales reciben la cancelación mediante la señal de su runtime.
+
+## Transmitir el progreso de las herramientas
+
+Las herramientas implementadas como generadores asíncronos pueden publicar resultados preliminares. Aparecen en el stream completo como eventos `tool.preliminary_result` y permanecen vinculados al paso completado.
+
+```typescript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    return { indexed: 248 };
+  },
+});
+```
+
+## Guías relacionadas
+
+- [Definir y ejecutar herramientas](./agent-sdk-tools.mdx)
+- [Trabajar con elementos tipados](./agent-sdk-items.mdx)
+- [Hooks del ciclo de vida](./agent-sdk-lifecycle-hooks.mdx)
+- [Crear un bucle de agente duradero](../../cookbook/agent-sdk-durable-loop.mdx)

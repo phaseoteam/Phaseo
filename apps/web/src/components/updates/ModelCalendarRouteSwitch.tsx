@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ export default function ModelCalendarRouteSwitch({
 	active,
 	className,
 }: ModelCalendarRouteSwitchProps) {
+	const t = useTranslations("Catalogue.updates.routes");
 	return (
 		<div className={cn("flex items-center gap-2", className)}>
 			<Button
@@ -22,7 +24,7 @@ export default function ModelCalendarRouteSwitch({
 				className={cn("rounded-md", active !== "models" && "text-muted-foreground")}
 			>
 				<Link href="/updates/models">
-					Updates
+					{t("updates")}
 				</Link>
 			</Button>
 			<Button
@@ -32,7 +34,7 @@ export default function ModelCalendarRouteSwitch({
 				className={cn("rounded-md", active !== "calendar" && "text-muted-foreground")}
 			>
 				<Link href="/updates/calendar">
-					Calendar
+					{t("calendar")}
 				</Link>
 			</Button>
 		</div>

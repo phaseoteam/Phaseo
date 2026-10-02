@@ -1,0 +1,22 @@
+---
+icon: "chart-spline"
+title: "Outils de développement"
+description: "Enregistrez localement les exécutions du Java Agent SDK pour le développement et le débogage."
+---
+
+Activez la capture locale des exécutions avec `AgentSdk.createAgentDevtools(...)` :
+
+```java
+var devtools = AgentSdk.createAgentDevtools(".phaseo-devtools");
+```
+
+Transmettez cette valeur via `RunOptions`. Les entrées JSONL capturées incluent le statut et la durée de l’exécution, les détails du modèle et du fournisseur, les identifiants de requête, les messages, les étapes, l’activité des outils, l’utilisation, le coût et les erreurs structurées.
+
+<Warning>
+Les entrées, messages, contextes et résultats d’outils de l’agent peuvent contenir des données sensibles. Excluez le répertoire DevTools du contrôle de version et des images de production.
+</Warning>
+
+## À lire aussi
+
+- [Hooks de cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [Erreurs et dépannage](./agent-sdk-observability.mdx)

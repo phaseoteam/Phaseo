@@ -1,0 +1,23 @@
+---
+icon: "wrench"
+title: "الأدوات"
+description: "عرّف أدوات C# متحققة وتتطلب موافقة أو تُنفذ يدويًا أو تُصدر تحديثات التقدم."
+---
+
+أنشئ سجلات `Tool` ومرّرها عبر `AgentSdk.DefineTool(...)`. ويمكن أن تتضمن الأداة:
+
+- `Parameters` بصيغة JSON تُعرض على النموذج
+- مفوضات تحقق لـ`InputSchema` و`OutputSchema` و`EventSchema`
+- `Timeout` لكل أداة ومفوّض `Execute` غير متزامن
+- موافقة مشروطة أو غير مشروطة
+- `OnToolCalled` و`OnResponseReceived` للعمل التفاعلي
+- تجاوزات للخطوة التالية ومعالجة قابلة للاسترداد لأخطاء الأدوات
+
+استخدم `RuntimeContext.EmitProgress` للنتائج الأولية و`SetContext` لسياق التطبيق و`CancellationToken` للتبعيات التي تدعم الإلغاء.
+
+يمكن تشغيل الأدوات المستقلة بالتوازي عبر `ToolExecutionConfig`. وتحافظ رسائل نتائج الأدوات المحفوظة على ترتيب استدعاءات النموذج حتى إن اكتمل التنفيذ بترتيب مختلف.
+
+## مواضيع ذات صلة
+
+- [الحالة والموافقة](./agent-sdk-state-and-approval.mdx)
+- [عناصر التحكم في التشغيل](./agent-sdk-run-controls.mdx)

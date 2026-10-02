@@ -1,0 +1,52 @@
+---
+title: "LlamaIndex"
+icon: "database"
+description: "Utilisez Phaseo dans les workflows RAG de LlamaIndex."
+---
+
+Utilisez ce guide lorsque vous souhaitez acheminer la génération ou les embeddings de votre application LlamaIndex via Phaseo.
+
+## Installer
+
+```bash
+pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
+```
+
+## Configurer un LLM compatible avec OpenAI
+
+```python
+import os
+from llama_index.llms.openai_like import OpenAILike
+
+llm = OpenAILike(
+    model="openai/gpt-5-nano",
+    api_key=os.environ["PHASEO_API_KEY"],
+    api_base="https://api.phaseo.app/v1",
+    is_chat_model=True,
+)
+
+response = llm.complete("Write one sentence about retrieval quality.")
+print(response)
+```
+
+## Utiliser dans un index
+
+```python
+from llama_index.core import Settings
+
+Settings.llm = llm
+```
+
+Construisez ou interrogez ensuite votre index comme d’habitude.
+
+## Remarques
+
+- Utilisez `OpenAILike` pour les API tierces compatibles avec OpenAI.
+- Gardez explicites les identifiants des modèles de génération et d’embedding. Ne supposez pas que les valeurs par défaut de LlamaIndex pointent vers Phaseo.
+- Si vous utilisez les embeddings Phaseo, définissez le modèle d’embedding avec un identifiant de modèle Phaseo et la même URL de base.
+
+## À lire aussi
+
+- [Embeddings](../../api-reference/endpoint/embeddings.mdx)
+- [Modèles](../../api-reference/endpoint/models.mdx)
+- [SDK OpenAI](./openai-sdk.mdx)

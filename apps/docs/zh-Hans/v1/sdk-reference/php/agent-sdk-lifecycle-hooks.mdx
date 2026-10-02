@@ -1,0 +1,25 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "实时观察 PHP Agent 的运行、模型轮次、工具、暂停和完成事件。"
+---
+
+传入 `onEvent` 回调，以便在运行期间接收结构化的生命周期事件。
+
+```php
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event): void {
+        $logger->info("agent event", [
+            "type" => $event["type"],
+            "run_id" => $event["run_id"],
+            "details" => $event["details"] ?? [],
+        ]);
+    }
+);
+```
+
+常见事件包括运行开始、完成和失败，模型尝试，文本与推理增量，工具开始、进度、完成和失败，以及人工检查点。
+
+回调应快速返回。较慢的持久化操作放入队列，并在将事件转发到外部遥测系统之前清除工具输入中的敏感信息。

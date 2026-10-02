@@ -1,0 +1,30 @@
+---
+icon: "mic"
+title: "STT (تحويل الكلام إلى نص)"
+description: "استدعِ `/audio/transcriptions` باستخدام غلاف Go."
+---
+
+استخدم طريقة الغلاف:
+
+- `client.CreateTranscription(ctx, req)`
+
+```go
+import (
+  "context"
+  "fmt"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client := phaseo.New(apiKey, "https://api.phaseo.app/v1")
+resp, err := client.CreateTranscription(context.Background(), map[string]interface{}{
+  "model": "openai/gpt-4o-transcribe",
+  "audio_b64": "data:audio/wav;base64,...",
+  "language": "en",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+

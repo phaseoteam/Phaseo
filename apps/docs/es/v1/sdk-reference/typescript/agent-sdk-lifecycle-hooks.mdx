@@ -1,0 +1,46 @@
+---
+icon: "radio-tower"
+title: "Hooks del ciclo de vida"
+description: "Responde a eventos de ejecución, modelo, paso, herramienta y punto de control."
+---
+
+Usa `onEvent` para actualizar las interfaces del producto, escribir registros de auditoría o conectar la actividad del agente con tu telemetría actual.
+
+## Escuchar una ejecución
+
+```typescript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+Mantén pequeños los controladores de eventos. Si las operaciones de red o almacenamiento lentas no deben retrasar la ejecución, pásalas a la cola de tu aplicación.
+
+## Tipos de eventos
+
+| Tipo | Eventos |
+| --- | --- |
+| Ejecución | `run.started`, `run.resumed`, `run.waiting_for_human`, `run.cancelled`, `run.completed`, `run.failed` |
+| Paso | `step.started`, `step.completed`, `step.failed`, `step.cancelled` |
+| Modelo | `model.requested`, `model.completed`, `model.failed` |
+| Herramienta | `tool.started`, `tool.preliminary_result`, `tool.completed`, `tool.failed` |
+| Estado | `checkpoint.saved` |
+
+`step.completed` se emite después de guardar el punto de control del paso completado. Así, los consumidores de persistencia o telemetría pueden tratarlo como un límite estable.
+
+## Elige eventos para la interfaz del producto
+
+- Usa los diferenciales del modelo de [Transmisión](./agent-sdk-streaming.mdx) para mostrar el texto de la respuesta en tiempo real.
+- Usa los eventos de herramientas para mostrar tarjetas de llamadas y avisos de progreso.
+- Usa `run.waiting_for_human` para mostrar controles de aprobación o entrada.
+- Usa los eventos de finalización de la ejecución para cerrar los estados de carga y registrar los resultados.
+
+## Guías relacionadas
+
+- [Transmisión](./agent-sdk-streaming.mdx)
+- [Estado y aprobación](./agent-sdk-state-and-approval.mdx)
+- [DevTools](./agent-sdk-devtools.mdx)

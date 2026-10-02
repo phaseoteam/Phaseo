@@ -56,6 +56,8 @@ import { executor as novitaaiText } from "./novitaai/text-generate";
 import { executor as novitaVideo } from "./novita/video-generate";
 import { executor as perplexityText } from "./perplexity/text-generate";
 import { executor as liquidAiText } from "./liquid-ai/text-generate";
+import { executor as liquidAiDecisions } from "./liquid-ai/decisions";
+import { executor as perplexityDecisions } from "./perplexity/decisions";
 import { executor as ai21Text } from "./ai21/text-generate";
 import { executor as akashmlText } from "./akashml/text-generate";
 import { executor as arceeText } from "./arcee/text-generate";
@@ -74,6 +76,7 @@ import { executor as bytedanceSeedText } from "./bytedance-seed/text-generate";
 import { executor as chutesText } from "./chutes/text-generate";
 import { executor as clarifaiText } from "./clarifai/text-generate";
 import { executor as cloudflareText } from "./cloudflare/text-generate";
+import { executor as cloudflareDecisions } from "./cloudflare/decisions";
 import { executor as openrouterText } from "./openrouter/text-generate";
 import { executor as cloudflareImage } from "./cloudflare/image-generate";
 import { executor as cloudflareAudioTranscription } from "./cloudflare/audio-transcription";
@@ -344,6 +347,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"text.generate": clarifaiText,
 	},
 	cloudflare: {
+		"decisions.make": cloudflareDecisions,
 		"text.generate": cloudflareText,
 		embeddings: openaiEmbeddings,
 		"image.generate": cloudflareImage,
@@ -453,11 +457,11 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"audio.transcription": nonTextAdapterExecutor,
 		"audio.translations": nonTextAdapterExecutor,
 	},
-	liquid: { "text.generate": liquidAiText },
-	"liquid-ai": { "text.generate": liquidAiText },
+	liquid: { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
+	"liquid-ai": { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
 	novitaai: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
 	novita: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
-	perplexity: { "text.generate": perplexityText, embeddings: openaiEmbeddings },
+	perplexity: { "text.generate": perplexityText, embeddings: openaiEmbeddings, "decisions.make": perplexityDecisions },
 	relace: { "text.generate": relaceText, rerank: relaceRerank },
 	sambanova: { "text.generate": sambanovaText },
 	"sail-research": { "text.generate": sailResearchText },

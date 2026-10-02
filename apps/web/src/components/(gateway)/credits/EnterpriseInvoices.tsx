@@ -32,6 +32,8 @@ import {
 	PaginationPrevious,
 } from "@/components/ui/pagination";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type InvoiceStatus = "draft" | "open" | "paid" | "void" | "uncollectible";
@@ -52,31 +54,31 @@ type InvoiceRow = {
 	updated_at?: string | null;
 };
 
-function statusMeta(status: InvoiceStatus) {
+function statusMeta(status: InvoiceStatus, t: (key: string) => string) {
 	switch (status) {
 		case "paid":
 			return {
-				label: "Paid",
+				label: t("paid"),
 				className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
 			};
 		case "open":
 			return {
-				label: "Open",
+				label: t("open"),
 				className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
 			};
 		case "void":
 			return {
-				label: "Void",
+				label: t("void"),
 				className: "bg-zinc-200 text-zinc-800 dark:bg-zinc-900 dark:text-zinc-300",
 			};
 		case "uncollectible":
 			return {
-				label: "Uncollectible",
+				label: t("uncollectible"),
 				className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
 			};
 		default:
 			return {
-				label: "Draft",
+				label: t("draft"),
 				className: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
 			};
 	}
@@ -87,6 +89,8 @@ export default function EnterpriseInvoices(props: {
 	pageSize?: number;
 }) {
 	const { invoices, pageSize = 10 } = props;
+	const t = useTranslations("SettingsUI.credits");
+	const settingsT = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	const formatNanos = (nanos: number, currency = "USD") => format.number(
 		Number(nanos ?? 0) / 1_000_000_000,
@@ -99,7 +103,7 @@ export default function EnterpriseInvoices(props: {
 		},
 	);
 	const formatPeriod = (start: string, end: string) =>
-		`${format.date(start)} to ${format.date(end)}`;
+		`${format.date(start)} – ${format.date(end)}`;
 	const [page, setPage] = React.useState(0);
 	const [selectedInvoice, setSelectedInvoice] = React.useState<InvoiceRow | null>(null);
 	const [busyInvoiceId, setBusyInvoiceId] = React.useState<string | null>(null);
@@ -128,15 +132,17 @@ export default function EnterpriseInvoices(props: {
 			});
 			const payload = await res.json().catch(() => ({}));
 			if (!res.ok || !payload?.url) {
-				throw new Error(payload?.error ?? "Unable to load invoice document");
+				throw new Error(payload?.error ?? t("unableLoadInvoice"));
 			}
 			window.open(String(payload.url), "_blank", "noopener,noreferrer");
-		} catch (err: any) {
-			toast.error(err?.message ?? "Failed to open invoice document");
+		} catch (err: unknown) {
+			toast.error(
+				localizedSettingsError(err, settingsT, "Action failed", t("failedOpenInvoice")),
+			);
 		} finally {
 			setBusyInvoiceId(null);
 		}
-	}, []);
+	}, [t]);
 
 	return (
 		<Card>
@@ -145,10 +151,10 @@ export default function EnterpriseInvoices(props: {
 					<div>
 						<CardTitle className="flex items-center gap-2">
 							<ReceiptText className="h-5 w-5" />
-							Invoice history
+									{t("invoiceHistory")}
 						</CardTitle>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Track issued invoices, statuses, due dates, and open detailed records.
+							{t("invoiceHistoryDescription")}
 						</p>
 					</div>
 				</div>
@@ -156,25 +162,25 @@ export default function EnterpriseInvoices(props: {
 			<CardContent>
 				{invoices.length === 0 ? (
 					<div className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-						No invoices yet. Your first invoice appears once a billing cycle closes.
+						{t("noInvoices")}
 					</div>
 				) : (
 					<div className="w-full overflow-x-auto">
 						<table className="w-full text-sm table-fixed border-collapse">
 							<thead>
 								<tr className="text-left text-xs text-muted-foreground">
-									<th className="py-2 pr-4 w-44">Invoice</th>
-									<th className="py-2 pr-4 w-64">Period</th>
-									<th className="py-2 pr-4 w-32">Status</th>
-									<th className="py-2 pr-4 w-32">Issued</th>
-									<th className="py-2 pr-4 w-32">Due</th>
-									<th className="py-2 pr-4 w-36 text-right">Amount</th>
-									<th className="py-2 pl-4 w-44 text-right">Actions</th>
+					<th className="py-2 pr-4 w-44">{t("invoice")}</th>
+					<th className="py-2 pr-4 w-64">{t("billingPeriod")}</th>
+					<th className="py-2 pr-4 w-32">{t("status")}</th>
+					<th className="py-2 pr-4 w-32">{t("issued")}</th>
+					<th className="py-2 pr-4 w-32">{t("due")}</th>
+					<th className="py-2 pr-4 w-36 text-right">{t("amount")}</th>
+					<th className="py-2 pl-4 w-44 text-right">{t("actions")}</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y">
 								{visible.map((row) => {
-									const meta = statusMeta(row.status);
+									const meta = statusMeta(row.status, (key) => t(key as never));
 									const invoiceLabel = row.stripe_invoice_number || row.stripe_invoice_id || row.id;
 									const canOpenInvoice = Boolean(row.stripe_invoice_id);
 									const isBusy = busyInvoiceId === row.stripe_invoice_id;
@@ -182,7 +188,7 @@ export default function EnterpriseInvoices(props: {
 										<tr key={row.id}>
 											<td className="py-3 pr-4">
 												<div className="font-medium truncate" title={invoiceLabel}>{invoiceLabel}</div>
-												<div className="text-xs text-muted-foreground truncate">{row.stripe_invoice_id ?? "Internal invoice"}</div>
+								<div className="text-xs text-muted-foreground truncate">{row.stripe_invoice_id ?? t("internalInvoice")}</div>
 											</td>
 											<td className="py-3 pr-4">
 												<div className="truncate" title={formatPeriod(row.period_start, row.period_end)}>
@@ -211,7 +217,7 @@ export default function EnterpriseInvoices(props: {
 														variant="outline"
 														onClick={() => setSelectedInvoice(row)}
 													>
-														Details
+																	{t("details")}
 													</Button>
 													<Button
 														size="sm"
@@ -223,7 +229,7 @@ export default function EnterpriseInvoices(props: {
 																: null
 														}
 													>
-														{isBusy ? "Opening..." : "Invoice"}
+																{isBusy ? t("opening") : t("invoice")}
 														<ExternalLink className="ml-1 h-3.5 w-3.5" />
 													</Button>
 												</div>
@@ -344,53 +350,53 @@ export default function EnterpriseInvoices(props: {
 					<DialogHeader>
 						<DialogTitle className="flex items-center gap-2">
 							<FileText className="h-4 w-4" />
-							Invoice details
+							{t("invoiceDetails")}
 						</DialogTitle>
 						<DialogDescription>
-							Detailed billing record for this enterprise invoice.
+						{t("invoiceDetailsDescription")}
 						</DialogDescription>
 					</DialogHeader>
 					{selectedInvoice ? (
 						<div className="space-y-3 text-sm">
 							<div className="grid gap-3 sm:grid-cols-2">
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Invoice number</div>
+					<div className="text-xs text-muted-foreground">{t("invoiceNumber")}</div>
 									<div className="mt-1 font-medium">{selectedInvoice.stripe_invoice_number ?? "-"}</div>
 								</div>
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Status</div>
+					<div className="text-xs text-muted-foreground">{t("status")}</div>
 									<div className="mt-1 inline-flex items-center gap-2">
 										<BadgeCheck className="h-4 w-4 text-muted-foreground" />
-										{statusMeta(selectedInvoice.status).label}
+									{statusMeta(selectedInvoice.status, (key) => t(key as never)).label}
 									</div>
 								</div>
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Billing period</div>
+					<div className="text-xs text-muted-foreground">{t("billingPeriod")}</div>
 									<div className="mt-1 font-medium">{formatPeriod(selectedInvoice.period_start, selectedInvoice.period_end)}</div>
 								</div>
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Amount</div>
+					<div className="text-xs text-muted-foreground">{t("amount")}</div>
 									<div className="mt-1 flex items-center gap-2 font-medium">
 										<CircleDollarSign className="h-4 w-4 text-muted-foreground" />
 										{formatNanos(selectedInvoice.amount_nanos, String(selectedInvoice.currency ?? "USD"))}
 									</div>
 								</div>
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Issued</div>
+					<div className="text-xs text-muted-foreground">{t("issued")}</div>
 									<div className="mt-1 flex items-center gap-2 font-medium">
 										<Calendar className="h-4 w-4 text-muted-foreground" />
 										{format.dateTime(selectedInvoice.issued_at)}
 									</div>
 								</div>
 								<div className="rounded-md border p-3">
-									<div className="text-xs text-muted-foreground">Due</div>
+					<div className="text-xs text-muted-foreground">{t("due")}</div>
 									<div className="mt-1 flex items-center gap-2 font-medium">
 										<Calendar className="h-4 w-4 text-muted-foreground" />
 										{format.dateTime(selectedInvoice.due_at)}
 									</div>
 								</div>
 								<div className="rounded-md border p-3 sm:col-span-2">
-									<div className="text-xs text-muted-foreground">Stripe invoice ID</div>
+					<div className="text-xs text-muted-foreground">{t("stripeInvoiceId")}</div>
 									<div className="mt-1 font-mono text-xs break-all">{selectedInvoice.stripe_invoice_id ?? "-"}</div>
 								</div>
 							</div>
@@ -398,7 +404,7 @@ export default function EnterpriseInvoices(props: {
 					) : null}
 					<DialogFooter>
 						<Button variant="outline" onClick={() => setSelectedInvoice(null)}>
-							Close
+							{t("close")}
 						</Button>
 						<Button
 							onClick={() =>
@@ -408,7 +414,7 @@ export default function EnterpriseInvoices(props: {
 							}
 							disabled={!selectedInvoice?.stripe_invoice_id || busyInvoiceId === selectedInvoice?.stripe_invoice_id}
 						>
-							{busyInvoiceId === selectedInvoice?.stripe_invoice_id ? "Opening..." : "Open invoice"}
+							{busyInvoiceId === selectedInvoice?.stripe_invoice_id ? t("opening") : t("openInvoice")}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

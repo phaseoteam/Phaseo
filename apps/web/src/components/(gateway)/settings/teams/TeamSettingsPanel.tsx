@@ -4,6 +4,8 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,11 +58,12 @@ const DEFAULTS: Settings = {
 	publisherHandle: "",
 };
 
-const schema = z.object({
-	teamName: z.string().trim().min(1, "Workspace name is required").max(60),
-	publisherHandle: z.string().trim().regex(/^[a-z0-9][a-z0-9_-]{2,39}$/, "Use 3–40 lowercase letters, numbers, underscores, or hyphens."),
-});
-
+function createSettingsSchema(requiredName: string, maxLength: string, handleFormat: string) {
+	return z.object({
+		teamName: z.string().trim().min(1, requiredName).max(60, maxLength),
+		publisherHandle: z.string().trim().regex(/^[a-z0-9][a-z0-9_-]{2,39}$/, handleFormat),
+	});
+}
 export default function TeamSettingsPanel({
 	teams,
 	membersByTeam,
@@ -106,6 +109,7 @@ export default function TeamSettingsPanel({
 	const [logoUrl, setLogoUrl] = React.useState(initialLogoUrl);
 	const logoInputRef = React.useRef<HTMLInputElement>(null);
 	const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+	const t = useTranslations("SettingsUI");
 
 	const [settings, setSettings] = React.useState<Settings>(() => ({
 		teamName: initialTeamName,
@@ -124,14 +128,14 @@ export default function TeamSettingsPanel({
 
 	async function handleSave() {
 		if (!workspaceId) return;
-		const parsed = schema.safeParse({
+		const parsed = createSettingsSchema(t("workspace.teamNameRequired"), t("workspace.teamNameMaxLength"), t("workspace.publisherHandleFormat")).safeParse({
 			teamName: settings.teamName,
 			publisherHandle: settings.publisherHandle,
 		});
 
 		if (!parsed.success) {
 			toast.error(
-				parsed.error.issues[0]?.message ?? "Please check your inputs.",
+				parsed.error.issues[0]?.message ?? t("workspace.inputValidationFallback"),
 			);
 			return;
 		}
@@ -157,10 +161,9 @@ export default function TeamSettingsPanel({
 					setInitial(normalized);
 				})(),
 				{
-					loading: "Saving workspace settings...",
-					success: "Workspace settings updated",
-					error: (error: any) =>
-						error?.message || "Could not save settings",
+					loading: t("workspace.savingSettings"),
+					success: t("workspace.savedSettings"),
+					error: () => t("strings.Could not save settings" as never),
 				},
 			);
 		} finally {
@@ -178,11 +181,11 @@ export default function TeamSettingsPanel({
 		try {
 			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "POST", headers: { "content-type": file.type }, body: file });
 			const payload = await response.json() as { logoUrl?: string; error?: string };
-			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? "Could not upload the workspace logo.");
+			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? t("newMainSettingsCopy.logoUploadFailed"));
 			setLogoUrl(payload.logoUrl);
 			void invalidateSettings();
-			toast.success("Workspace logo updated.");
-		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not upload the workspace logo."); }
+			toast.success(t("newMainSettingsCopy.logoUpdated"));
+		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not upload the workspace logo.", t("newMainSettingsCopy.logoUploadFailed"))); }
 		finally { setLogoUploading(false); if (logoInputRef.current) logoInputRef.current.value = ""; }
 	}
 
@@ -192,26 +195,26 @@ export default function TeamSettingsPanel({
 		try {
 			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "DELETE" });
 			const payload = await response.json() as { error?: string };
-			if (!response.ok) throw new Error(payload.error ?? "Could not remove the workspace logo.");
+			if (!response.ok) throw new Error(payload.error ?? t("newMainSettingsCopy.logoRemoveFailed"));
 			setLogoUrl(null);
 			void invalidateSettings();
-			toast.success("Workspace logo removed.");
-		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not remove the workspace logo."); }
+			toast.success(t("newMainSettingsCopy.logoRemoved"));
+		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not remove the workspace logo.", t("newMainSettingsCopy.logoRemoveFailed"))); }
 		finally { setLogoUploading(false); }
 	}
 
 	async function handleDeleteTeam() {
 		if (!workspaceId) return;
 		if (isPersonalTeam) {
-			toast.error("Personal workspace cannot be deleted.");
+			toast.error(t("workspace.personalCannotDelete"));
 			return;
 		}
 		setDeleting(true);
 		try {
 			await toast.promise(deleteTeamAction(workspaceId).then((result) => { void invalidateSettings(); return result; }), {
-				loading: "Deleting workspace...",
-				success: "Workspace deleted",
-				error: (error: any) => error?.message || "Could not delete workspace",
+				loading: t("workspace.deletingWorkspace"),
+				success: t("workspace.workspaceDeleted"),
+				error: () => t("workspace.deleteError"),
 			});
 			setDeleteDialogOpen(false);
 		} finally {
@@ -232,28 +235,28 @@ export default function TeamSettingsPanel({
 			>
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
-						<Label className="text-sm font-medium">Workspace Logo</Label>
-						<p className="mt-0.5 text-sm text-muted-foreground">Shown on private models and workspace-owned resources.</p>
+						<Label className="text-sm font-medium">{t("newMainSettingsCopy.workspaceLogo")}</Label>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("newMainSettingsCopy.logoHelp")}</p>
 					</div>
 					<div className="flex w-full shrink-0 items-center gap-3 sm:w-[min(32rem,55%)]">
 						<Avatar className="size-12 rounded-md border bg-muted/30 after:rounded-md">
-							{logoUrl ? <AvatarImage src={logoUrl} alt={`${initialTeamName} logo`} className="rounded-md object-cover" /> : null}
+							{logoUrl ? <AvatarImage src={logoUrl} alt={t("newMainSettingsCopy.logoAlt", {workspace: initialTeamName})} className="rounded-md object-cover" /> : null}
 							<AvatarFallback className="rounded-md text-sm font-semibold">{initialTeamName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
 						</Avatar>
 						<input ref={logoInputRef} className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLogo(file); }} />
 						<Button type="button" variant="outline" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => logoInputRef.current?.click()}>
-							{logoUploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />} Upload
+							{logoUploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />} {t("newMainSettingsCopy.upload")}
 						</Button>
-						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>Remove</Button> : null}
+						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>{t("newMainSettingsCopy.remove")}</Button> : null}
 					</div>
 				</div>
 				<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
 						<Label htmlFor="teamName" className="text-sm font-medium">
-							Workspace Name
+							{t("workspace.name")}
 						</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">
-							Used throughout the dashboard, API keys, and invitations.
+							{t("workspace.teamNameHelp")}
 						</p>
 					</div>
 					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -262,28 +265,28 @@ export default function TeamSettingsPanel({
 							value={settings.teamName}
 							onChange={(event) => update("teamName", event.target.value)}
 							disabled={!canEdit}
-							placeholder="e.g. Engineering"
+							placeholder={t("workspace.namePlaceholder")}
 							maxLength={60}
 						/>
 					</div>
 				</div>
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
-						<Label htmlFor="publisherHandle" className="text-sm font-medium">Publisher Handle</Label>
-						<p className="mt-0.5 text-sm text-muted-foreground">Used in public preset names such as @{settings.publisherHandle || "workspace"}/preset.</p>
+						<Label htmlFor="publisherHandle" className="text-sm font-medium">{t("workspace.publisherHandle")}</Label>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("workspace.publisherHandleHelp", { example: "@" + (settings.publisherHandle || "workspace") + "/preset" })}</p>
 					</div>
 					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
-						<Input id="publisherHandle" value={settings.publisherHandle} onChange={(event) => update("publisherHandle", event.target.value.toLowerCase())} disabled={!hasTeamControl} placeholder="workspace-handle" maxLength={40} />
+						<Input id="publisherHandle" value={settings.publisherHandle} onChange={(event) => update("publisherHandle", event.target.value.toLowerCase())} disabled={!hasTeamControl} placeholder={t("workspace.handlePlaceholder")} maxLength={40} />
 					</div>
 				</div>
 
 				<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
 					<p className="text-xs text-muted-foreground">
 						{isPersonalTeam
-							? "Your personal workspace is permanent; its publisher handle can still be changed."
+							? t("workspace.personalWorkspacePermanent")
 							: canEdit
-								? "Changes apply everywhere this workspace name is shown."
-								: "Owner or admin access is required to change this workspace."}
+								? t("workspace.workspaceNameChangeHelp")
+								: t("workspace.workspaceChangePermissionHelp")}
 					</p>
 					<div className="flex items-center justify-end gap-2">
 						<Button
@@ -292,7 +295,7 @@ export default function TeamSettingsPanel({
 							onClick={handleReset}
 							disabled={!hasChanges || saving}
 						>
-							Reset
+							{t("strings.Reset" as never)}
 						</Button>
 						<Button
 							type="submit"
@@ -301,10 +304,10 @@ export default function TeamSettingsPanel({
 							{saving ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Saving...
+									{t("strings.phraseSaving" as never)}
 								</>
 							) : (
-								"Save changes"
+								t("strings.Save" as never)
 							)}
 						</Button>
 					</div>
@@ -330,16 +333,16 @@ export default function TeamSettingsPanel({
 					id="workspace-danger-zone-title"
 					className="font-heading text-base font-medium"
 				>
-					Danger Zone
+					{t("strings.Danger Zone" as never)}
 				</h3>
 				<div className="overflow-hidden rounded-xl border border-destructive/30 bg-background/40">
 					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 						<div className="min-w-0">
-							<p className="text-sm font-medium">Delete Workspace</p>
+							<p className="text-sm font-medium">{t("workspace.deleteWorkspace")}</p>
 							<p className="mt-0.5 text-sm text-muted-foreground">
 								{isPersonalTeam
-									? "Personal workspaces cannot be deleted."
-									: "Permanently remove this workspace and all related data."}
+									? t("workspace.personalCannotDelete")
+									: t("workspace.deleteWorkspaceHelp")}
 							</p>
 						</div>
 						<AlertDialog
@@ -353,22 +356,21 @@ export default function TeamSettingsPanel({
 									className="shrink-0"
 								>
 									<Trash2 className="mr-2 h-4 w-4" />
-									Delete Workspace
+									{t("workspace.deleteWorkspace")}
 								</Button>
 							</AlertDialogTrigger>
 							<AlertDialogContent>
 								<AlertDialogHeader>
-									<AlertDialogTitle>Delete workspace?</AlertDialogTitle>
+									<AlertDialogTitle>{t("workspace.deleteWorkspaceQuestion")}</AlertDialogTitle>
 									<AlertDialogDescription>
-										This will permanently remove the workspace and all related data.
-										Type <span className="font-semibold">DELETE WORKSPACE</span> to
-										confirm.
+										{t("workspace.deleteConfirmationDescription", { phrase: t("workspace.deleteConfirmationPhrase") })}
 									</AlertDialogDescription>
 								</AlertDialogHeader>
 								<ConfirmDeleteTeam
 									onConfirm={handleDeleteTeam}
 									deleting={deleting}
 									remainingBalance={currentTeamBalance}
+									translate={(key, values) => t(key as never, values as never)}
 								/>
 							</AlertDialogContent>
 						</AlertDialog>
@@ -383,15 +385,19 @@ function ConfirmDeleteTeam({
 	onConfirm,
 	deleting,
 	remainingBalance,
+	translate,
 }: {
 	onConfirm: () => void;
 	deleting: boolean;
 	remainingBalance?: number;
+	translate: (key: string, values?: Record<string, string | number>) => string;
 }) {
+	const t = translate;
 	const format = useDisplayFormatters();
 	const [text, setText] = React.useState("");
 	const [ackCredits, setAckCredits] = React.useState(false);
-	const ok = text.trim().toUpperCase() === "DELETE WORKSPACE";
+	const phrase = t("workspace.deleteConfirmationPhrase");
+	const ok = text.trim() === phrase;
 	const balance =
 		typeof remainingBalance === "number" ? Math.max(remainingBalance, 0) : 0;
 	const hasCredits = balance > 0.001;
@@ -407,10 +413,10 @@ function ConfirmDeleteTeam({
 	return (
 		<div className="grid gap-3">
 			<div className="grid gap-2">
-				<Label htmlFor="confirmDeleteTeam">Confirmation</Label>
+				<Label htmlFor="confirmDeleteTeam">{t("workspace.confirmation")}</Label>
 				<Input
 					id="confirmDeleteTeam"
-					placeholder='Type "DELETE WORKSPACE" to confirm'
+					placeholder={t("workspace.typeDeleteWorkspacePrompt", { phrase })}
 					value={text}
 					onChange={(event) => setText(event.target.value)}
 					autoFocus
@@ -418,11 +424,7 @@ function ConfirmDeleteTeam({
 			</div>
 			{hasCredits ? (
 				<div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200">
-					<p>
-						This workspace still has{" "}
-						<span className="font-semibold">{formattedBalance}</span> in credits.
-						Deleting the workspace will permanently forfeit this balance.
-					</p>
+					<div><p>{t("workspace.deleteCreditsWarning", { balance: formattedBalance ?? "" })}</p><p className="mt-1">{t("workspace.deleteCreditsForfeit")}</p></div>
 					<label className="flex items-center gap-2 text-xs font-medium">
 						<input
 							type="checkbox"
@@ -432,14 +434,14 @@ function ConfirmDeleteTeam({
 								setAckCredits(event.target.checked)
 							}
 						/>
-						I understand these credits can&apos;t be recovered.
+						{t("workspace.deleteCreditsAcknowledgement")}
 					</label>
 				</div>
 			) : null}
 			<AlertDialogFooter>
 				<div className="flex w-full items-center justify-end gap-2">
 					<AlertDialogCancel className="w-auto" disabled={deleting}>
-						Cancel
+						{t("strings.Cancel" as never)}
 					</AlertDialogCancel>
 					<Button
 						variant="destructive"
@@ -449,10 +451,10 @@ function ConfirmDeleteTeam({
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								Deleting...
+								{t("strings.phraseDeleting" as never)}
 							</>
 						) : (
-							"Yes, delete this workspace"
+							t("workspace.confirmDeleteWorkspaceButton")
 						)}
 					</Button>
 					<AlertDialogAction className="hidden" />

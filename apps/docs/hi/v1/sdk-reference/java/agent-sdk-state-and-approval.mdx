@@ -1,0 +1,21 @@
+---
+icon: "database"
+title: "स्थिति और अनुमोदन"
+description: "मानवीय निर्णय लेने और ऐप-प्रबंधित स्थिति से जारी रखने के लिए Java एजेंट रोकें।"
+---
+
+सामान्य checkpoint के लिए `AgentDefinition.humanReview` से `HumanReviewRequest` लौटाएँ। tool approval और manual काम के सटीक call IDs paused result में रखे जाते हैं।
+
+`Agent.continueRun(...)` के साथ जारी रखें और ये दें:
+
+- approval या rejection के लिए `ToolDecision` entry
+- manual tools के लिए `ToolOutput` entry
+- सामान्य समीक्षा विराम के लिए मानवीय input
+- serialized `RunResult` या `StateAccessor` वाला run ID
+
+SDK hosted Agent SDK state पर निर्भर नहीं है। यदि रन को requests या service restarts के बाद भी बनाए रखना है, तो `StateAccessor` लागू करें।
+
+## संबंधित विषय
+
+- [टूल](./agent-sdk-tools.mdx)
+- [रन कंट्रोल](./agent-sdk-run-controls.mdx)

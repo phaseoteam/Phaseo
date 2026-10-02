@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
-import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
+import { useRouter } from "@/i18n/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import {
 	ResponsiveContainer,
 	ScatterChart,
@@ -60,9 +61,11 @@ const ColoredDot = (props: any) => {
 };
 
 const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
+	const t = useTranslations("Catalogue.benchmarks");
+	const locale = useLocale();
 	if (!active || !payload || !payload.length) return null;
 
-	const scoreEntry = payload.find((entry: any) => entry.name === "Score");
+	const scoreEntry = payload.find((entry: any) => entry.dataKey === "y");
 	if (!scoreEntry) return null;
 	const data = scoreEntry.payload;
 	const { modelName, orgName, date, color, y, orgId, confidenceInterval } = data;
@@ -86,12 +89,12 @@ const CustomTooltip = ({ active, payload, tooltipValueFormatter }: any) => {
 				<span className="font-medium text-sm">{modelName}</span>
 			</div>
 			<div className="space-y-1 text-xs text-muted-foreground">
-				<div>Organization: {orgName}</div>
-				<div>Released: {date}</div>
+				<div>{t("tooltipOrganization")}: {orgName}</div>
+				<div>{t("tooltipReleased")}: {date}</div>
 				<div className="font-medium text-foreground">
-					Score: {tooltipValueFormatter(y)}
+					{t("score")}: {tooltipValueFormatter(y)}
 				</div>
-				{confidenceInterval ? <div className="font-medium text-foreground">95% CI: {confidenceInterval.low.toFixed(2)}–{confidenceInterval.high.toFixed(2)}</div> : null}
+				{confidenceInterval ? <div className="font-medium text-foreground">{t("confidenceInterval", { low: new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(confidenceInterval.low), high: new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(confidenceInterval.high) })}</div> : null}
 			</div>
 		</div>
 	);
@@ -127,14 +130,13 @@ function configurationLabel(result: any) {
 	return effort ? (effort.toLowerCase() === "none" ? "Non-reasoning" : effort.charAt(0).toUpperCase() + effort.slice(1).toLowerCase()) : "Default";
 }
 
-const monthFormatter = new Intl.DateTimeFormat("en-GB", {
-	month: "short",
-	year: "numeric",
-});
-
 function buildScatterData(
 	benchmark: BenchmarkPage,
-	hasPercentage: boolean
+	hasPercentage: boolean,
+	locale: string,
+	unknownModel: string,
+	unknownOrganisation: string,
+	displayConfiguration: (value: string) => string
 ): ScatterPoint[] {
 	const results: any[] = benchmark?.results ?? [];
 
@@ -158,13 +160,13 @@ function buildScatterData(
 			result.model?.name ??
 			result.model_id ??
 			result.id ??
-			"Unknown model";
+			unknownModel;
 		const configuration = configurationLabel(result);
-		const modelName = isEpochCapabilitiesIndex(benchmark.id) ? baseModelName : `${baseModelName} (${configuration})`;
+		const modelName = isEpochCapabilitiesIndex(benchmark.id) ? baseModelName : `${baseModelName} (${displayConfiguration(configuration)})`;
 		const confidenceInterval = isEpochCapabilitiesIndex(benchmark.id) ? parseEpochConfidenceInterval(result.other_info) : null;
 
 		const color = result.model?.organisation?.colour || "#8884d8"; // default color if no org color
-		const orgName = result.model?.organisation?.name || "Unknown";
+		const orgName = result.model?.organisation?.name || unknownOrganisation;
 		const orgId = result.model?.organisation?.organisation_id || "";
 		const modelId = result.model_id || result.id || "";
 
@@ -172,7 +174,7 @@ function buildScatterData(
 			x: date.getTime(),
 			y: numericScore,
 			modelName,
-			date: date.toLocaleDateString(),
+			date: date.toLocaleDateString(locale),
 			color,
 			orgName,
 			orgId,
@@ -189,16 +191,26 @@ function buildScatterData(
 	return points;
 }
 
+export default function BenchmarkProgressChart({
+	benchmark,
+}: BenchmarkProgressChartProps) {
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.benchmarks");
+	const requestT = useTranslations("Common.ui.requestBuilder");
+	const composerT = useTranslations("Common.ui.chatComposer");
+	const monthFormatter = React.useMemo(() => new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" }), [locale]);
+	const displayConfiguration = React.useCallback((value: string) => {
+		const keys = { Low: "low", Medium: "medium", High: "high", Xhigh: "extraHigh", Max: "max" } as const;
+		return value === "Non-reasoning" ? t("nonReasoning") : value === "Default" ? composerT("default") : value in keys ? requestT(keys[value as keyof typeof keys]) : value;
+	}, [t, requestT, composerT]);
 const chartConfig: ChartConfig = {
 	score: {
-		label: "Score",
+		label: t("score"),
 		color: "hsl(222 89% 53%)",
 	},
 };
 
-export default function BenchmarkProgressChart({
-	benchmark,
-}: BenchmarkProgressChartProps) {
+
 	const [range, setRange] = React.useState<"3m" | "6m" | "1y" | "2y" | "3y" | "all">("1y");
 	const [organisation, setOrganisation] = React.useState("all");
 	const [configuration, setConfiguration] = React.useState("all");
@@ -213,10 +225,10 @@ export default function BenchmarkProgressChart({
 		});
 
 	const scatterData = React.useMemo(
-		() => buildScatterData(benchmark, hasPercentage),
-		[benchmark, hasPercentage]
+		() => buildScatterData(benchmark, hasPercentage, locale, t("unknownModel"), t("unknownOrganization"), displayConfiguration),
+		[benchmark, hasPercentage, locale, t, displayConfiguration]
 	);
-	const organisations = React.useMemo(() => [...new Map(scatterData.filter((point) => point.orgId).map((point) => [point.orgId!, point.orgName || point.orgId!])).entries()].sort((left, right) => left[1].localeCompare(right[1])), [scatterData]);
+	const organisations = React.useMemo(() => [...new Map(scatterData.filter((point) => point.orgId).map((point) => [point.orgId!, point.orgName || point.orgId!])).entries()].sort((left, right) => left[1].localeCompare(right[1], locale)), [scatterData, locale]);
 	const configurations = React.useMemo(() => [...new Set(scatterData.map((point) => point.configuration))].sort(), [scatterData]);
 	const filteredScatterData = React.useMemo(() => {
 		const latest = Math.max(...scatterData.map((point) => point.x), 0);
@@ -232,14 +244,14 @@ export default function BenchmarkProgressChart({
 	const tooltipValueFormatter = React.useCallback(
 		(value: number | string | Array<number | string> | undefined) => {
 			if (typeof value !== "number") return value;
-			if (isArtificialAnalysisBenchmark(benchmark.id)) return formatArtificialAnalysisScore(benchmark.id, value);
+			if (isArtificialAnalysisBenchmark(benchmark.id)) return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(benchmark.id) ? { style: "currency", currency: "USD", maximumFractionDigits: 2 } : { maximumFractionDigits: 2 }).format(value);
 			const formatted =
 				Math.abs(value) >= 100 || Number.isInteger(value)
-					? value.toFixed(0)
-					: value.toFixed(2);
+					? new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
+					: new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 			return hasPercentage ? `${formatted}%` : formatted;
 		},
-		[hasPercentage, benchmark.id]
+		[hasPercentage, benchmark.id, locale]
 	);
 	const chartStateKey = `${range}:${organisation}:${configuration}:${modelQuery}`;
 	const paretoData = React.useCallback((data: ScatterPoint[]) => {
@@ -271,7 +283,7 @@ export default function BenchmarkProgressChart({
 	}, [benchmark.id]);
 	const chart = (data: ScatterPoint[]) => {
 		if (data.length === 0) return (
-			<div className="flex h-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">No scores match these filters.</div>
+			<div className="flex h-full items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">{t("filteredEmpty")}</div>
 		);
 		const frontier = paretoData(data);
 		const yValues = data.flatMap((point) => point.errorY
@@ -292,7 +304,7 @@ export default function BenchmarkProgressChart({
 					<ChartTooltip shared={false} cursor={{ strokeDasharray: "4 4" }} content={<CustomTooltip tooltipValueFormatter={tooltipValueFormatter} />} />
 					{frontier.slice(1).map((point, index) => <ReferenceLine key={`${frontier[index].x}-${point.x}`} segment={[{ x: frontier[index].x, y: frontier[index].y }, { x: point.x, y: point.y }]} stroke="#8b5cf6" strokeWidth={2} />)}
 					{frontier.filter((point) => point.frontierLabel).map((point) => <ReferenceDot key={`${point.x}-${point.modelId}`} x={point.x} y={point.y} r={0} label={{ value: point.frontierLabel, position: "top", fill: "var(--foreground)", fontSize: 10 }} />)}
-					<Scatter name="Score" dataKey="y" shape={ColoredDot}>{isEpochCapabilitiesIndex(benchmark.id) ? <ErrorBar dataKey="errorY" direction="y" width={5} stroke="var(--foreground)" strokeWidth={1.25} /> : null}</Scatter>
+					<Scatter name={t("score")} dataKey="y" shape={ColoredDot}>{isEpochCapabilitiesIndex(benchmark.id) ? <ErrorBar dataKey="errorY" direction="y" width={5} stroke="var(--foreground)" strokeWidth={1.25} /> : null}</Scatter>
 				</ScatterChart>
 			</ResponsiveContainer>
 		</ChartContainer>
@@ -303,19 +315,19 @@ export default function BenchmarkProgressChart({
 		return <div className="space-y-4 border-t pt-6">
 			<div className="flex flex-col gap-3">
 				<div className="flex flex-wrap items-start justify-between gap-3">
-					<div><h3 className="text-lg font-semibold">Score Progress</h3><p className="mt-1 text-sm text-muted-foreground">Compare Model Scores by Release Date.</p></div>
-					<div className="flex rounded-md border p-0.5" role="group" aria-label="Progress Time Range">{(["3m", "6m", "1y", "2y", "3y", "all"] as const).map((value) => <Button key={value} type="button" variant={range === value ? "secondary" : "ghost"} size="sm" className="h-7 min-w-10 px-2 text-xs" onClick={() => setRange(value)}>{value === "all" ? "All" : value.toUpperCase()}</Button>)}</div>
+					<div><h3 className="text-lg font-semibold">{t("scoreProgress")}</h3><p className="mt-1 text-sm text-muted-foreground">{t("releaseDateDescription")}</p></div>
+					<div className="flex rounded-md border p-0.5" role="group" aria-label={t("progressTimeRange")}>{(["3m", "6m", "1y", "2y", "3y", "all"] as const).map((value) => <Button key={value} type="button" variant={range === value ? "secondary" : "ghost"} size="sm" className="h-7 min-w-10 px-2 text-xs" onClick={() => setRange(value)}>{value === "all" ? t("all") : new Intl.NumberFormat(locale, { style: "unit", unit: value.endsWith("m") ? "month" : "year", unitDisplay: "short" }).format(Number.parseInt(value))}</Button>)}</div>
 				</div>
 				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-					<Input aria-label="Filter Progress by Model" placeholder="Filter Models" value={modelQuery} onChange={(event) => setModelQuery(event.target.value)} className="sm:w-48" />
-					<Select value={organisation} onValueChange={setOrganisation}><SelectTrigger aria-label="Filter Progress by Organisation" className="sm:w-52"><SelectValue>{organisation === "all" ? "All Organisations" : <><Logo id={organisation} alt="" width={16} height={16} className="size-4 object-contain" />{organisations.find(([id]) => id === organisation)?.[1] ?? organisation}</>}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Organisations</SelectItem>{organisations.map(([id, name]) => <SelectItem key={id} value={id}><Logo id={id} alt="" width={16} height={16} className="size-4 object-contain" />{name}</SelectItem>)}</SelectContent></Select>
-					{isArtificialAnalysisBenchmark(benchmark.id) ? <Select value={configuration} onValueChange={setConfiguration}><SelectTrigger aria-label="Filter Progress by Configuration" className="sm:w-44"><SelectValue>{configuration === "all" ? "All Configurations" : configuration}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">All Configurations</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select> : null}
+					<Input aria-label={t("filterByModel")} placeholder={t("filterModels")} value={modelQuery} onChange={(event) => setModelQuery(event.target.value)} className="sm:w-48" />
+					<Select value={organisation} onValueChange={setOrganisation}><SelectTrigger aria-label={t("filterByOrg")} className="sm:w-52"><SelectValue>{organisation === "all" ? t("allOrganisations") : <><Logo id={organisation} alt="" width={16} height={16} className="size-4 object-contain" />{organisations.find(([id]) => id === organisation)?.[1] ?? organisation}</>}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">{t("allOrganisations")}</SelectItem>{organisations.map(([id, name]) => <SelectItem key={id} value={id}><Logo id={id} alt="" width={16} height={16} className="size-4 object-contain" />{name}</SelectItem>)}</SelectContent></Select>
+					{isArtificialAnalysisBenchmark(benchmark.id) ? <Select value={configuration} onValueChange={setConfiguration}><SelectTrigger aria-label={t("filterByConfig")} className="sm:w-44"><SelectValue>{configuration === "all" ? t("allConfigurations") : displayConfiguration(configuration)}</SelectValue></SelectTrigger><SelectContent><SelectItem value="all">{t("allConfigurations")}</SelectItem>{configurations.map((value) => <SelectItem key={value} value={value}>{displayConfiguration(value)}</SelectItem>)}</SelectContent></Select> : null}
 				</div>
 			</div>
 			<div className="h-[420px] border-b pb-4">{chart(filteredScatterData)}</div>
 			<div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-				<p>Showing {filteredScatterData.length.toLocaleString()} of {scatterData.length.toLocaleString()} Results</p>
-				<span className="inline-flex items-center gap-2"><span className="h-0.5 w-5 rounded-full bg-violet-500" />Pareto Frontier</span>
+				<p>{t("showingCount", { shown: new Intl.NumberFormat(locale).format(filteredScatterData.length), total: new Intl.NumberFormat(locale).format(scatterData.length) })}</p>
+				<span className="inline-flex items-center gap-2"><span className="h-0.5 w-5 rounded-full bg-violet-500" />{t("paretoFrontier")}</span>
 			</div>
 		</div>;
 	}
@@ -329,10 +341,10 @@ export default function BenchmarkProgressChart({
 					</div>
 					<div>
 						<CardTitle className="text-lg font-semibold">
-							Scores Over Time
+							{t("progressTitle")}
 						</CardTitle>
 						<p className="text-sm text-muted-foreground">
-							Individual benchmark scores plotted by date.
+							{t("progressDescription")}
 						</p>
 					</div>
 				</div>
@@ -340,7 +352,7 @@ export default function BenchmarkProgressChart({
 			<CardContent className="h-80 pt-2">
 				{scatterData.length > 0 ? chart(scatterData) : (
 					<div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-zinc-300 text-center text-sm text-muted-foreground dark:border-zinc-700">
-						No scores available to display.
+						{t("noScores")}
 					</div>
 				)}
 			</CardContent>

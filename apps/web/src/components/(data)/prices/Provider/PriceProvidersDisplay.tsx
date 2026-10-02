@@ -5,6 +5,7 @@ import { useQueryState } from "nuqs";
 import PriceProviderCard from "./PriceProviderCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface PriceProvider {
 	id: string;
@@ -21,6 +22,8 @@ interface PriceProvidersDisplayProps {
 export default function PriceProvidersDisplay({
 	providers,
 }: PriceProvidersDisplayProps) {
+	const t = useTranslations("Common.search");
+
 	// State for filters
 	const [search, setSearch] = useQueryState("search", {
 		defaultValue: "",
@@ -53,13 +56,13 @@ export default function PriceProvidersDisplay({
 			{/* Title and Search Bar Row */}
 			<div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
 				<h1 className="font-bold text-xl text-black mb-2 md:mb-0">
-					API Providers
+					{t("apiProviders")}
 				</h1>
 				<div className="flex-1 flex justify-end">
 					<div className="relative w-full max-w-xs">
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
-							placeholder="Search API providers..."
+							placeholder={t("apiProvidersPlaceholder")}
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 							className="pl-9 pr-2 py-1.5 text-sm rounded-full bg-background border focus:outline-hidden focus:ring-2 focus:ring-primary w-full"
@@ -82,7 +85,7 @@ export default function PriceProvidersDisplay({
 					))
 				) : (
 					<div className="col-span-full text-center text-muted-foreground py-12">
-						No price providers found for the selected filters.
+						{t("noApiProvidersFound")}
 					</div>
 				)}
 			</div>

@@ -1,0 +1,138 @@
+---
+icon: "clapperboard"
+title: "Video- und Stapelaufträge"
+badge: "Beta"
+description: "Asynchrone Aufträge verfolgen, Webhooks empfangen und anbieterspezifische Videooptionen übergeben."
+---
+
+<Note>
+Die Video API und Batch API sind Betavorschauen, die ausgewählten Arbeitsbereichen nur auf Einladung zur Verfügung stehen. Prüfen Sie die Verfügbarkeit unter **Einstellungen → Funktionsvorschau**. Der Zugriff wird pro Arbeitsbereich verwaltet; eine persönliche Webeinstellung gewährt keinen API-Zugriff. Die üblichen Gebühren für die Modellnutzung gelten.
+</Note>
+
+Videogenerierung und Stapelverarbeitung liefern einen Auftrag zurück, bevor die Arbeit beendet ist. Speichern Sie dessen `id` und verwenden Sie die zurückgegebene `polling_url`, um den aktuellen Zustand abzurufen. Eine erfolgreiche Erstellungsantwort bedeutet nicht, dass die Generierung oder Stapelverarbeitung abgeschlossen ist.
+
+Beginnen Sie während der Beta mit kleinen Anfragen und einem Ausgabenlimit für den API-Schlüssel. Die Funktionen unterscheiden sich je nach Anbieter und Modell; Referenzeingaben, Abbruch und Aufbewahrung der Ausgaben hängen vom ausgewählten Anbieter ab. Speichern Sie eine eigene Kopie abgeschlossener Ausgaben, bevor sie ablaufen.
+
+## Aktualisierungen empfangen
+
+Fügen Sie beim Erstellen beider Auftragsarten einen Webhook-Endpunkt Ihres Arbeitsbereichs hinzu:
+
+```json
+{
+  "webhook": {
+    "endpoint_id": "YOUR_ENDPOINT_ID",
+    "events": ["job.status_changed", "job.completed", "job.failed", "job.cancelled", "job.expired"]
+  }
+}
+```
+
+Phaseo gleicht den Anbieterstatus ab und sendet Kundenbenachrichtigungen. Auch Anbieter, die Polling erfordern, etwa Anthropic-Nachrichtenstapel, können Kunden-Webhooks auslösen. Ein Webhook-Zustellfehler ist von einem Generierungs- oder Stapelfehler unabhängig.
+
+Endpunktabonnements können Batch- und Video-Ereignisse getrennt abonnieren. Verwenden Sie Ereignistypen mit Namensraum wie `batch.completed` oder `video.failed`; generische `job.*`-Ereignistypen bleiben unterstützt und abonnieren die entsprechende Phase beider Auftragsarten.
+
+Prüfen Sie `x-phaseo-signature` mit dem Endpunktgeheimnis: Die Signatur ist der hexadezimale HMAC-SHA256 von `x-phaseo-timestamp`, einem tatsächlichen Punkt und dem **unveränderten Anfragekörper**. Prüfen Sie die Aktualität des Zeitstempels, deduplizieren Sie `x-phaseo-event-id` und bestätigen Sie akzeptierte Zustellungen mit einer erfolgreichen HTTP-Antwort. Zustellungen können wiederholt werden oder in anderer Reihenfolge eintreffen; rufen Sie den Auftrag ab, bevor Sie eine widersprüchliche Statusänderung anwenden.
+
+Verwenden Sie nach dem Speichern eines Endpunkts **Testereignis senden** in den Einstellungen, um eine signierte `webhook.test`-Nutzlast zuzustellen. Testzustellungen haben genau einen Versuch und werden weder wiederholt noch dem Zustellverlauf des Auftrags hinzugefügt.
+
+Behandeln Sie die Lebenszykluszustände `completed`, `failed`, `cancelled` und `expired` als endgültig. Behalten Sie auch bei Webhooks einen Wiederherstellungspfad über Polling bei.
+
+Phaseo unternimmt für jedes Ereignis einen ersten Zustellversuch. Eine erfolgreiche 2xx-Antwort beendet die Zustellung ohne Wiederholung. Fehlgeschlagene Zustellungen erhalten höchstens drei Wiederholungen, geplant nach 1, 5 und 15 Minuten. Hintergrunddurchläufe verarbeiten fällige Wiederholungen; die tatsächliche Zustellung kann daher später erfolgen. Jeder Versuch protokolliert Nummer, Zeitpunkt, HTTP-Status, Fehler und nächsten Wiederholungszeitpunkt. Nach dem vierten erfolglosen Versuch gilt die Zustellung als endgültig fehlgeschlagen. Empfänger müssen Ereignisse weiterhin deduplizieren: Eine verlorene Bestätigung oder Worker-Unterbrechung kann die Zustellung ungewiss machen.
+
+## Auftrags- und Anfrageprotokolle anzeigen
+
+Unter **Einstellungen → Nutzung → Protokolle** zeigt **Anfragen** Details zu Inferenzanfragen, **Video** Videolebenszyklen und **Stapel** Stapelaufträge und Zeilenergebnisse. Video- und Stapeldetails enthalten Abrechnungsstatus, Anbieterversuche und Webhook-Versuche. Ein Auftrag kann erfolgreich enden, obwohl seine Webhook-Zustellung fehlschlägt.
+
+Beim Einreichen eines Videos wird vor dem Anbieterkontakt Guthaben reserviert. Ein Timeout ohne Aufgaben-ID hält die Reservierung zum Abgleich aufrecht und beweist keine fehlgeschlagene Generierung. Wird eine kostenpflichtige Video- oder Stapelreservierung nach erfolgreicher Arbeit unerwartet mit null bewertet, bleibt die Abrechnung mit `unexpected_zero_cost` zur Untersuchung offen. Eine Erstellungsantwort mit Kosten von null ist für asynchrone Generierung allein betrachtet normal.
+
+## Videoeingaben
+
+### Videopreise verstehen
+
+Videopreise hängen von Anbieter und Modell ab. Ein Preis pro Sekunde muss mit der abrechenbaren Dauer multipliziert werden; ein Preis pro Clip gilt nur für die angegebene Dauer und Auflösung. Mehrere Ausgaben und kostenpflichtige Referenzeingaben können den Gesamtpreis erhöhen.
+
+LTX-Text-/Bildgenerierung berechnet Ausgabesekunden, während Audio-zu-Video Eingabeaudiosekunden berechnet. BytePlus Seedance verwendet Videotokens mit anderen Tarifen bei Referenzvideo. MiniMax Hailuo V1 verwendet Clippreise mit fester Dauer; H3 berechnet Sekunden und kann Referenzeingaben berechnen. Prüfen Sie die Preisdimensionen des ausgewählten Anbieters, statt den angezeigten Preis als Kosten einer vollständigen Anfrage zu verstehen.
+
+Reservierungen sind vor dem Einreichen zurückgehaltene Schätzungen. Die endgültige Abrechnung verwendet den abrechenbaren Verbrauch des Auftrags; ungenutztes reserviertes Guthaben wird nach dem Abgleich freigegeben. Eine vom Anbieter unterstützte Auflösung oder Option garantiert keine Verfügbarkeit in der Beta.
+
+Verwenden Sie `seconds` oder `duration` für die Ausgabedauer. Sind beide vorhanden, müssen sie übereinstimmen. Verwenden Sie `resolution` mit `aspect_ratio` oder eine Pixel-`size` wie `1280x720`.
+
+Verwenden Sie `frame_images`, um erstes und letztes Bild ausdrücklich anzugeben:
+
+```json
+{
+  "frame_images": [
+    {
+      "type": "image_url",
+      "frame_type": "first_frame",
+      "image_url": { "url": "https://example.com/start.png" }
+    }
+  ],
+  "input_references": [
+    {
+      "type": "image_url",
+      "role": "reference",
+      "image_url": { "url": "https://example.com/character.png" }
+    }
+  ]
+}
+```
+
+Referenz-URLs müssen HTTPS verwenden. Geben Sie für reine Referenzbilder ausdrücklich `role: "reference"` an: Ältere Anfragen ohne `frame_images` interpretieren das erste unbeschriftete Bild als erstes Frame. Kombinieren Sie `frame_images` nicht mit Rollen für erste/letzte Frames in `input_references` oder mit `input_reference`.
+
+Video- und Audioreferenzen verwenden `type: "video_url"` oder `"audio_url"` sowie `media_url: { "url": "https://..." }`. Modelle und Anbieter unterstützen unterschiedliche Kombinationen. Beeinflusst die Referenzdauer den Preis, geben Sie `input_video_duration` und `input_audio_duration` in Sekunden an.
+
+## Anbieteroptionen
+
+Belassen Sie Modell, Dauer, Auflösung, Audiogenerierung, Eingabemedien und Ausgabemenge in den kanonischen Feldern. Übergeben Sie anbieterspezifische Erweiterungen unter der kanonischen Anbieter-ID:
+
+```json
+{
+  "provider_options": {
+    "atlascloud": { "watermark": false, "output_format": "mp4" },
+    "byteplus": { "camera_fixed": true }
+  }
+}
+```
+
+Nur die Optionen des ausgewählten Anbieters werden weitergeleitet. Optionen wählen keinen Anbieter aus; verwenden Sie dafür die Routingkonfiguration `provider`. Kombinieren Sie `provider_options` nicht mit dem älteren `provider_params`. Verschachtelte Optionen können vom Gateway kontrollierte Abrechnungs- oder Callback-Felder nicht überschreiben.
+
+| Anbieter | Beispiele nativer Erweiterungen | Referenz |
+| --- | --- | --- |
+| AtlasCloud Seedance 2.5 | `watermark`, `output_format`, `return_last_frame`, `omni_reference_task_type` | [Modell-API](https://www.atlascloud.ai/models/bytedance/seedance-2.5/reference-to-video) |
+| Novita Seedance 1.5 | `watermark`, `camera_fixed`, `fps` (24), `service_tier` (`default`) | [Einheitliche Video-API](https://docs.novita.ai/api-reference/reference-unified-video-generation) |
+| BytePlus Seedance | `camera_fixed` | Prüfen Sie vor Verwendung den Anbietervertrag des ausgewählten Modells. |
+| MiniMax V1 | `fast_pretreatment`; verwenden Sie das kanonische `enhance_prompt` zur Prompt-Optimierung | [Video-API](https://platform.minimax.io/docs/api-reference/video-generation-t2v) |
+
+AtlasCloud Seedance verwendet die nativen Felder `resolution`, `ratio` und `last_image`. Die Referenz-zu-Video-Variante erhält geordnete Bild-, Video- und Audioreferenzen. Bearbeitung mit automatischer Dauer (`duration: -1`) wird vom Reservierungsvertrag des Gateways mit fester Dauer nicht unterstützt. Modellverfügbarkeit und Preise des Anbieters müssen eingerichtet sein, bevor ein Modell geroutet werden kann; eine Anbieteroption aktiviert kein nicht verfügbares Modell.
+
+MiniMax H3 verwendet V2: 4–15 ganze Sekunden bei `768P` oder `2K`. H3 Max unterstützt 5–15 ganze Sekunden bei `480P` oder `768P` mit Text oder Frame-Bildern. H3 unterstützt Bild-, Video- und Audioreferenzen; diese dürfen nicht mit ersten/letzten Frames gemischt werden. Beide Modelle erzeugen ein Video pro Anfrage und unterstützen keine V1-Prompt-Optimierungsoptionen. Verwenden Sie das kanonische `aspect_ratio`; Frame-Eingaben bestimmen ihr eigenes Verhältnis. Referenzvideoreservierungen decken das 15-Sekunden-Eingabelimit des Anbieters ab; tatsächlicher Verbrauch wird bei Abschluss abgerechnet. Siehe [MiniMax-V2-Vertrag](https://platform.minimax.io/docs/api-reference/video-generation-v2-create).
+
+## Stapelanbieter
+
+Stapelanfragen akzeptieren ebenfalls `provider_options`: OpenAI unterstützt `output_expires_after`, Mistral unterstützt `metadata`. Verwenden Sie kanonische Anbieter-IDs und duplizieren Sie diese Felder nicht auf oberster Ebene. Beispielsweise setzt `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` die Aufbewahrung von OpenAI-Ausgaben. Zeileneingaben, Modelle, Endpunkte und Webhook-Ziele lassen sich nicht über Optionen überschreiben.
+
+Mistral besitzt bereits einen nativen Stapeladapter. Anthropic-Nachrichtenstapel werden abgefragt; andere Anbieter können Polling mit nativen Abschlussbenachrichtigungen kombinieren. Die Verfügbarkeit hängt von unterstützten Anbieterendpunkten und der Stapel-Freigabeliste der Bereitstellung ab. Prüfen Sie die Antwort zu Stapelfähigkeiten, bevor Sie eine Datei oder Inline-Anfragen einreichen.
+
+Ein abgeschlossener Stapel kann fehlgeschlagene Zeilen enthalten. Prüfen Sie jedes Ergebnis anhand seiner benutzerdefinierten ID, statt anzunehmen, dass alle Zeilen erfolgreich waren. Behalten Sie die ursprüngliche Eingabe und Auftrags-ID, bis Ergebnisse und Abrechnung abgeglichen sind. Eine ungewisse Einreichung muss vor erneutem Einreichen untersucht werden, da der Anbieter die ursprüngliche Anfrage möglicherweise angenommen hat.
+
+### Stapelergebnisse herunterladen
+
+Sobald ein unterstützter Stapel einen endgültigen Zustand erreicht, verweist seine `results_url` auf einen authentifizierten Phaseo-Download. Verwenden Sie Ihren normalen Phaseo-API-Schlüssel aus dem Arbeitsbereich, dem der Stapel gehört:
+
+```bash
+curl --fail "https://api.phaseo.app/v1/batches/$BATCH_ID/results" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  --output results.jsonl
+```
+
+Die Antwort streamt JSONL über denselben Endpunkt für jeden unterstützten Stapelanbieter. Phaseo kombiniert separate Erfolgs- und Fehlerdateien, konvertiert Inline-Ergebnisarrays in JSONL und folgt der Ergebnispaginierung. Generierte Inhalte und anfragebezogene Fehler bleiben erhalten. Zeilenfelder bleiben anbieternativ: Verwenden Sie `custom_id` für OpenAI-kompatible und Anthropic-Zeilen, Anfragemetadaten für Gemini und `batch_request_id` für xAI. Erfolgreiche Anthropic-Zeilen enthalten die generierte Nachricht in `result.message`.
+
+Downloads unterstützen Adapter für OpenAI, Anthropic, Google AI Studio, Mistral, Together, Groq, Alibaba Cloud, Moonshot, Parasail, OVHcloud und xAI. Die Anbieterverfügbarkeit hängt weiterhin von Vorschauzugriff und Einreichungs-Freigabeliste ab; Downloadunterstützung aktiviert keine weiteren Routen. Vorhandene `output_file_id`, `error_file_id` und Dateiinhaltsendpunkte bleiben verfügbar. Der Endpunkt für Stapelanfragezeilen enthält Nachverfolgungs- und Abrechnungsmetadaten, keine generierten Nachrichtenkörper.
+
+Das Herunterladen von Ergebnissen reicht keinen weiteren Stapel ein und verursacht keine zusätzliche Inferenzgebühr. Anbieterzugangsdaten sind nicht erforderlich. Webhooks melden Auftragsaktualisierungen; laden Sie Ergebnisse separat herunter. Ein endgültiger Auftrag kann teilweise Ergebnisse oder gar keine Ausgabe haben: Der Endpunkt liefert während der Verarbeitung `409` und ohne verfügbare Ausgabe `404`. Speichern Sie Ergebnisse vor Ablauf der Anbieteraufbewahrung. Wird ein Download unterbrochen, verwerfen Sie die Teildatei und wiederholen Sie den Download, nicht die Stapeleinreichung. Inline-JSON-Ergebnisse werden mit einem Sicherheitslimit von 8 MiB pro Zeile gestreamt; native JSONL-Dateien ohne dieses Zeilenlimit.
+
+Für große Ausgaben liefert TypeScripts `client.batches.streamResults(batchId, { signal })` einen `ReadableStream<Uint8Array>` ohne Pufferung. Leiten Sie ihn zu Ihrem Ziel und brechen Sie den Stream oder das Signal für einen frühen Stopp ab; es gibt kein festes Gesamt-Downloadtimeout. Pythons `client.batches.stream_results(batch_id)` liefert Byteblöcke mit dem konfigurierten HTTP-Timeout; schließen Sie den Iterator bei vorzeitigem Stopp. Generierte `retrieveBatchResults`-Operationen liefern den vollständigen JSONL-Text und eignen sich am besten für kleine Ausgaben.
+
+### Downloadlimits für Stapel
+
+Stapelergebnisdownloads erlauben 10 Versuche pro Arbeitsbereich und Stapel in einem gleitenden 30-Minuten-Fenster, gemeinsam für API-Schlüssel und die Aliase `/batches` und `/batch`. Versuche, die die Downloadzulassung erreichen, zählen auch bei fehlgeschlagenem oder abgebrochenem Upstream-Download. Eigentums- und Bereitschaftsfehler zählen nicht. Eine `429`-Antwort enthält `Retry-After` in Sekunden. Ist die Begrenzung nicht verfügbar, liefern Downloads `503` mit `Retry-After: 30`.

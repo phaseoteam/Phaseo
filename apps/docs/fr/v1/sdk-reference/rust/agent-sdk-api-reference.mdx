@@ -1,0 +1,174 @@
+---
+icon: "braces"
+title: "Référence de l’API Agent pour Rust"
+description: "Structures, traits et méthodes publics de phaseo-agent 0.1."
+---
+
+Cette page décrit l’API publique de [`phaseo-agent 0.1`](https://docs.rs/phaseo-agent/0.1.0/phaseo_agent/).
+
+## Définition de l’agent
+
+| API | Rôle |
+| --- | --- |
+| `AgentDefinition::new(id, model)` | Crée une définition d’agent avec une limite par défaut de huit étapes. |
+| `.instructions(text)` | Définit les instructions du modèle. |
+| `.tool(tool)` | Ajoute un outil. |
+| `.max_steps(limit)` | Définit la limite de tours du modèle. La valeur minimale est un. |
+| `.model_retries(count, backoff)` | Réessaie les requêtes de modèle en échec avec un intervalle `Duration` fixe. |
+| `.human_review(callback)` | Suspend l’exécution après une réponse du modèle si la fonction de rappel renvoie `Some(HumanReviewRequest)`. |
+| `create_agent(definition)` | Crée un `Agent`. |
+
+## Exécuter et reprendre
+
+| Méthode | Rôle |
+| --- | --- |
+| `Agent::run(client, options)` | Exécute l’agent de façon synchrone sans fonction de rappel d’événement. |
+| `Agent::run_with_events(client, options, callback)` | Exécute l’agent de façon synchrone et émet des valeurs `AgentEvent`. |
+| `Agent::continue_run(client, options)` | Reprend une exécution suspendue. |
+| `Agent::continue_with_events(client, options, callback)` | Reprend l’exécution et émet des événements. |
+
+Champs de `RunOptions` :
+
+- `input: Value`
+- `context: Value`
+- `model: Option<String>`
+- `max_steps: Option<usize>`
+
+Initialisez les valeurs par défaut avec `RunOptions::new(input)`.
+
+Champs de `ContinueOptions` :
+
+- `result: RunResult`
+- `human_input: Option<String>`
+- `approvals: Vec<ToolDecision>`
+- `tool_outputs: Vec<ToolOutput>`
+
+Initialisez les valeurs par défaut avec `ContinueOptions::new(result)`.
+
+## Outils
+
+| API | Rôle |
+| --- | --- |
+| `Tool::new(id, description, parameters, executor)` | Définit un outil local synchrone. |
+| `Tool::external(id, description, parameters)` | Définit un outil dont le résultat est fourni par l’application après une pause. |
+| `Tool::require_approval()` | Exige une approbation avec l’identifiant exact avant l’exécution locale. |
+| `define_tool(tool)` | Renvoie l’outil fourni pour conserver un style de définition cohérent. |
+
+La signature de l’exécuteur est :
+
+```rust
+Fn(
+    serde_json::Value,
+    &RuntimeContext,
+) -> Result<serde_json::Value, AgentError>
+    + Send
+    + Sync
+    + 'static
+```
+
+`Tool` expose `id`, `description`, `parameters`, `execute` et `require_approval`. Privilégiez ses constructeurs et sa méthode builder pour conserver des types d’exécuteur et des valeurs par défaut cohérents.
+
+Le `RuntimeContext` transmis à un exécuteur contient :
+
+- `run_id`
+- `agent_id`
+- `step_index`
+- `context`
+- `tool_call`
+
+## Messages et appels d’outil
+
+`Message` contient `role`, `content`, `tool_calls`, un `tool_call_id` facultatif, un `name` facultatif et `is_error`. Créez des messages ordinaires avec :
+
+- `Message::user(content)`
+- `Message::assistant(content)`
+
+`ToolCall` contient l’identifiant d’appel `id`, le nom d’outil `name` et l’entrée JSON `input`.
+
+`ToolSpec` contient l’identifiant de l’outil `id`, sa description `description` et les paramètres JSON Schema `parameters` transmis à un client de modèle.
+
+## Clients de modèle
+
+Implémentez `ModelClient` pour utiliser un autre transport de modèle :
+
+```rust
+pub trait ModelClient {
+    fn generate(
+        &mut self,
+        request: &ModelRequest,
+    ) -> Result<ModelResponse, AgentError>;
+}
+```
+
+L’adaptateur Gateway intégré est disponible avec :
+
+- `GatewayAgentClient::new(phaseo_client, model)`
+- `GatewayAgentClient::from_env(model)`
+- `create_gateway_agent_client(model)`
+
+Il envoie des valeurs `ModelRequest` à `POST /responses` et normalise le texte de sortie, les appels de fonction, les métadonnées de requête et l’utilisation.
+
+`ModelRequest` contient l’identifiant de l’agent, le modèle effectif, les instructions, les messages en cours, les spécifications des outils et le contexte de l’application.
+
+`ModelResponse` contient :
+
+- `message: Message`
+- `usage: UsageSummary`
+- `request_id: Option<String>`
+- `provider: Option<String>`
+- `model: Option<String>`
+- `finish_reason: Option<String>`
+
+## Types de revue et de pause
+
+`HumanReviewContext` contient les identifiants de l’exécution et de l’agent, l’index de l’étape, les messages en cours, la réponse normalisée du modèle et le contexte de l’application.
+
+Renvoyez `HumanReviewRequest { reason, payload }` depuis la fonction de revue pour suspendre une exécution.
+
+`HumanPause` contient :
+
+- `reason`
+- la charge utile JSON `payload`
+- `kind`
+- `pending_tool_calls`
+
+Chaque `PendingToolCall` contient le `ToolCall` d’origine, le type d’entrée requis `kind` et une explication lisible.
+
+`ToolDecision` fournit un `tool_call_id` approuvé et une explication facultative. `ToolOutput` fournit un `tool_call_id` et une sortie JSON.
+
+## Enregistrements d’exécution
+
+`RunResult` contient :
+
+- `run: RunRecord`
+- `steps: Vec<RunStep>`
+- `output: Value`
+- `messages: Vec<Message>`
+- `usage: UsageSummary`
+
+`RunRecord` contient les identifiants de l’exécution et de l’agent, le modèle effectif et la limite d’étapes, le statut, l’entrée d’origine, le contexte de l’application, le nombre d’étapes, une pause facultative, une raison d’arrêt facultative et des horodatages.
+
+`RunStep` contient son index, son statut, le nombre de tentatives du modèle, les appels d’outil, l’identifiant de requête, le fournisseur, le modèle, la raison de fin, une erreur facultative et l’utilisation.
+
+`UsageSummary` contient `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens` et `cost`.
+
+Le client de modèle fournit `cost`. L’adaptateur Gateway intégré 0.1 ne reporte actuellement pas les valeurs Gateway `cost_nanos` ou `cost_cents` dans ce champ.
+
+`RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` et `UsageSummary` prennent en charge la sérialisation Serde lorsque leurs définitions dérivent `Serialize` et `Deserialize`.
+
+## Événements et erreurs
+
+Champs de `AgentEvent` :
+
+- `event_type`
+- `run_id`
+- `agent_id`
+- `timestamp_ms`
+- `details`
+
+`AgentError` implémente `std::error::Error` et `Display`. Utilisez `AgentError::new(...)` pour en créer un et `message()` pour lire son message.
+
+## Références externes
+
+- [`phaseo-agent` sur crates.io](https://crates.io/crates/phaseo-agent)
+- [`phaseo-agent` sur docs.rs](https://docs.rs/phaseo-agent)

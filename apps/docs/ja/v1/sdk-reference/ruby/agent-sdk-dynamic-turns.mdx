@@ -1,0 +1,23 @@
+---
+icon: "shuffle"
+title: "動的なターン"
+description: "Rubyエージェントのターン間で、ルーティング、指示、ツール、サンプリング設定を変更します。"
+---
+
+エージェントの呼び出し可能なフィールドは、モデルの各ターン前に現在の実行状態からリクエストパラメーターを再計算します。
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn.run.step_count > 3 ? "openai/gpt-5.4" : "openai/gpt-5.4-nano"
+  },
+  instructions: ->(turn) {
+    "Resolve the request using the current context."
+  }
+)
+```
+
+動的ツールとサンプリング値にも同じパターンを適用できます。ツールは`next_turn_params`を設定して、直後のリクエストだけを変更できます。承認チェックポイント後も上書き値は保持され、次のターン後に失効します。
+
+各ターンで再計算するポリシーには呼び出し可能な関数を使います。ツール固有の設定を次へ引き継ぐには`next_turn_params`を使います。

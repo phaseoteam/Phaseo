@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { type ReactNode, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";
 
@@ -31,7 +33,7 @@ export function SearchableSelect({
 	options,
 	onValueChange,
 	disabled = false,
-	placeholder = "Select…",
+	placeholder,
 	allowCustom = false,
 	showScrollbar = false,
 	triggerClassName,
@@ -47,6 +49,8 @@ export function SearchableSelect({
 	showScrollbar?: boolean;
 	triggerClassName?: string;
 }) {
+	const t = useTranslations("SettingsUI");
+	const resolvedPlaceholder = placeholder ?? t("searchableSelectCopy.select");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const selected = options.find((option) => option.value === value);
@@ -56,7 +60,7 @@ export function SearchableSelect({
 	};
 	const choices = (
 		<>
-			<CommandEmpty>No matches found.</CommandEmpty>
+			<CommandEmpty>{t("searchableSelectCopy.noMatches")}</CommandEmpty>
 			<CommandGroup>
 				{options.map((option) => (
 					<CommandItem
@@ -80,7 +84,7 @@ export function SearchableSelect({
 				))}
 				{allowCustom && query.trim() && !options.some((option) => option.value === query.trim()) ? (
 					<CommandItem value={query.trim()} onSelect={() => choose(query.trim())}>
-						Use “{query.trim()}”
+						{t("searchableSelectCopy.useValue", { value: query.trim() })}
 					</CommandItem>
 				) : null}
 			</CommandGroup>
@@ -109,7 +113,7 @@ export function SearchableSelect({
 					<span className="flex min-w-0 items-center gap-2">
 						{selected?.icon}
 						<span className="truncate">
-							{selected?.label || (value ? "Unavailable selection" : placeholder)}
+							{selected?.label || (value ? t("searchableSelectCopy.unavailableSelection") : resolvedPlaceholder)}
 						</span>
 					</span>
 					<ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -123,8 +127,8 @@ export function SearchableSelect({
 					}}
 				>
 					<CommandInput
-						aria-label={`Search ${label.toLowerCase()}`}
-						placeholder={`Search ${label.toLowerCase()}…`}
+						aria-label={t("searchableSelectCopy.searchLabel", { label })}
+						placeholder={t("searchableSelectCopy.searchPlaceholder", { label })}
 						value={query}
 						onValueChange={setQuery}
 					/>

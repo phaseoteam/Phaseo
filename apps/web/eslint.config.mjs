@@ -59,8 +59,8 @@ export default [
 	},
 	{
 		files: [
-			"src/app/(dashboard)/models/**/*.{ts,tsx}",
-			"src/app/(dashboard)/families/**/*.{ts,tsx}",
+			"src/app/[locale]/(dashboard)/models/**/*.{ts,tsx}",
+			"src/app/[locale]/(dashboard)/families/**/*.{ts,tsx}",
 			"src/components/(data)/model/**/*.{ts,tsx}",
 		],
 		rules: {

@@ -15,6 +15,7 @@ import { fetchWorkspacePrivacySettings } from "@/lib/fetchers/internal/fetchWork
 import type { WorkspacePrivacySettings } from "@/lib/fetchers/internal/settingsTypes";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { getTranslations } from "next-intl/server";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import {
 	Empty,
@@ -153,6 +154,10 @@ export default async function ModelPricing({
 	providersOverride?: ProviderPricing[];
 	previewOffers?: AuthenticatedProviderCatalogPreview[];
 }) {
+	const tProvider = await getTranslations("Catalogue.modelDetail.providerTable");
+	const tPricing = await getTranslations("Catalogue.modelDetail.pricing");
+	const tModel = await getTranslations("Catalogue.models.detail");
+	const tActions = await getTranslations("Common.ui.actions");
 	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
 		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
 		modelStatus !== undefined
@@ -267,20 +272,20 @@ export default async function ModelPricing({
 						<Button asChild size="sm" variant="outline">
 							<Link href={`/internal/data/models/edit/${modelId}?tab=pricing`}>
 								<Pencil className="mr-1 h-3.5 w-3.5" />
-								Add pricing
+								{tActions("addPricing")}
 							</Link>
 						</Button>
 					</div>
 				) : null}
 				{showHeader ? (
 					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						Providers
+						{tProvider("heading")}
 					</h2>
 				) : null}
 				{showPendingApiBanner ? (
 					<div>
 						<ModelPendingApiReleaseBanner
-							modelName={identity.name ?? "This model"}
+							modelName={identity.name ?? tModel("sections.thisModel")}
 							surface="providers"
 						/>
 					</div>
@@ -302,28 +307,26 @@ export default async function ModelPricing({
 						</EmptyMedia>
 						<EmptyTitle>
 							{identity.status === "Announced" && identity.organisationName
-								? `${identity.organisationName} coming soon`
-								: "No pricing data available yet"}
+								? tPricing("organisationComingSoon", { organisation: identity.organisationName })
+								: tPricing("noProviderPricing")}
 						</EmptyTitle>
 						<EmptyDescription>
 							{identity.status === "Announced" && identity.organisationName
-								? `${identity.name ?? "This model"} has been announced by ${identity.organisationName}. Provider availability and pricing will be added when it becomes available.`
-								: "No API provider pricing or availability is available for this model yet."}
+								? tPricing("announcedPricingDescription", { model: identity.name ?? tPricing("thisModel"), organisation: identity.organisationName })
+								: tPricing("noProviderAvailability")}
 						</EmptyDescription>
 					</EmptyHeader>
 					{identity.status === "Announced" && identity.organisationName ? null : (
 						<EmptyContent>
 							<EmptyDescription>
-								If you know providers we can integrate, please tell us on
-								Discord or open an issue on GitHub so we can add pricing
-								data.
+								{tPricing("suggestProvider")}
 								<a
 									className="ml-1 text-primary underline"
 									href="https://github.com/phaseoteam/Phaseo/issues"
 									target="_blank"
 									rel="noopener noreferrer"
 								>
-									Open an issue
+									{tPricing("openIssue")}
 								</a>
 							</EmptyDescription>
 						</EmptyContent>
@@ -341,14 +344,14 @@ export default async function ModelPricing({
 					<Button asChild size="sm" variant="outline">
 						<Link href={`/internal/data/models/edit/${modelId}?tab=pricing`}>
 							<Pencil className="mr-1 h-3.5 w-3.5" />
-							Edit pricing
+							{tActions("editPricing")}
 						</Link>
 					</Button>
 				</div>
 			) : null}
 			{showPendingApiBanner ? (
 				<ModelPendingApiReleaseBanner
-					modelName={identity.name ?? "This model"}
+					modelName={identity.name ?? tModel("sections.thisModel")}
 					surface="providers"
 				/>
 			) : null}

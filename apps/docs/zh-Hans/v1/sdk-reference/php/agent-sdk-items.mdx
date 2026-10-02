@@ -1,0 +1,25 @@
+---
+icon: "layers"
+title: "流项目"
+description: "使用 PHP Agent 运行中的文本、推理、工具和供应商项目事件。"
+---
+
+流结果提供可重放的文本和结构化事件消费者。
+
+```php
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->itemStream() as $item) {
+    renderItem($item);
+}
+
+$result = $stream->getResult();
+```
+
+如果界面除供应商项目外还需要推理增量、工具进度、审批检查点或生命周期变化，请使用完整事件流。
+
+<Note>
+PHP 项目值是通用数组或对象，并非封闭的类型化项目联合。请验证界面使用的字段，并保留未知项目和未来供应商事件的回退处理。
+</Note>
+
+PHP 会同步消费供应商流，并使收集到的序列可重放。这适用于请求工作进程和 CLI 程序，但本身不会创建后台推送通道。

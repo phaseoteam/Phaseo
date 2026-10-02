@@ -1,0 +1,42 @@
+---
+icon: "blocks"
+title: "Llamada a herramientas (AI SDK)"
+description: "Llamada a funciones y herramientas con Vercel AI SDK y el proveedor Phaseo."
+---
+
+Usa `tools` en `generateText` para ejecutar funciones con parámetros tipados.
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+import { z } from "zod";
+
+const result = await generateText({
+  model: phaseo("openai/gpt-5-nano"),
+  prompt: "What is 17 + 25? Use the calculator tool.",
+  tools: {
+    calculator: {
+      description: "Perform basic arithmetic",
+      parameters: z.object({
+        operation: z.enum(["add", "subtract", "multiply", "divide"]),
+        a: z.number(),
+        b: z.number(),
+      }),
+      execute: async ({ operation, a, b }) => {
+        if (operation === "add") return a + b;
+        if (operation === "subtract") return a - b;
+        if (operation === "multiply") return a * b;
+        return a / b;
+      },
+    },
+  },
+});
+
+console.log(result.text);
+```
+
+## Notas
+
+- Mantén precisas las descripciones de herramientas y estrictos sus parámetros.
+- Valida los efectos secundarios externos dentro de `execute`.
+- Añade reintentos y espera progresiva a las API de herramientas posteriores cuando sea necesario.

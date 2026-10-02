@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	Card,
 	CardContent,
@@ -5,27 +7,30 @@ import {
 import { CircleHelp, Lock, Scale, Unlock } from "lucide-react";
 import type { ExtendedModel } from "@/data/types";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 interface LicenseTypeProps {
 	selectedModels: ExtendedModel[];
 }
 
-function getLicenseDescriptionCard(models: ExtendedModel[]) {
+type CompareTranslator = ReturnType<typeof useTranslations<"Catalogue.compare">>;
+
+function getLicenseDescriptionCard(models: ExtendedModel[], t: CompareTranslator) {
 	if (models.length < 2) return null;
 	const [first, second] = models;
 	const firstNormalized = normalizeLicense(first.license);
 	const secondNormalized = normalizeLicense(second.license);
 	const firstPhrase =
 		firstNormalized.kind === "proprietary"
-			? "a proprietary license"
+			? t("proprietaryLicense")
 			: firstNormalized.kind === "unknown"
-				? "an unknown license"
+				? t("unknownLicense")
 				: firstNormalized.label;
 	const secondPhrase =
 		secondNormalized.kind === "proprietary"
-			? "a proprietary license"
+			? t("proprietaryLicense")
 			: secondNormalized.kind === "unknown"
-				? "an unknown license"
+				? t("unknownLicense")
 				: secondNormalized.label;
 
 	// Check if all models have proprietary licenses
@@ -44,48 +49,32 @@ function getLicenseDescriptionCard(models: ExtendedModel[]) {
 					{allProprietary ? (
 						<>
 							<span className="block font-medium">
-								All models are licensed under proprietary
-								licenses.
+								{t("allModelsProprietary")}
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
-								All models have usage restrictions defined by
-								their respective organizations.
+								{t("allModelsHaveRestrictions")}
 							</span>
 						</>
 					) : (
 						<>
 							<span className="block font-medium">
-								<Link
-									href={`/models/${
-										first.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{first.name}
-									</span>
-								</Link>{" "}
-								is licensed under{" "}
-								{firstPhrase}
-								, while{" "}
-								<Link
-									href={`/models/${
-										second.id
-									}`}
-									className="group"
-								>
-									<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">
-										{second.name}
-									</span>
-								</Link>{" "}
-								uses{" "}
-								{secondPhrase}
-								.
+								{t.rich("licenseComparison", {
+									first: (chunks) => (
+										<Link href={`/models/${first.id}`} className="group">
+											<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">{chunks}</span>
+										</Link>
+									),
+									firstLicense: firstPhrase,
+									second: (chunks) => (
+										<Link href={`/models/${second.id}`} className="group">
+											<span className="relative underline decoration-transparent group-hover:decoration-current transition-colors duration-200 font-semibold">{chunks}</span>
+										</Link>
+									),
+									secondLicense: secondPhrase,
+								})}
 							</span>
 							<span className="block text-xs text-muted-foreground mt-1">
-								License differences may affect how you can use
-								these models in commercial or open-source
-								projects.
+								{t("licenseImpact")}
 							</span>
 						</>
 					)}
@@ -141,7 +130,14 @@ function normalizeLicense(license: string | null | undefined): {
 	return { kind: "custom", label: raw };
 }
 
-function getLicenseIcon(license: string | null) {
+function formatLicenseDisplay(license: string | null | undefined, t: CompareTranslator): string {
+	const normalized = normalizeLicense(license);
+	if (normalized.kind === "unknown") return t("unknownLicense");
+	if (normalized.kind === "proprietary") return t("proprietaryLicense");
+	return normalized.label;
+}
+
+function getLicenseIcon(license: string | null, t: CompareTranslator) {
 	const normalized = normalizeLicense(license);
 	const isProprietary = normalized.kind === "proprietary";
 	const isOpen = normalized.kind === "open";
@@ -161,22 +157,22 @@ function getLicenseIcon(license: string | null) {
 			{isProprietary ? (
 				<Lock
 					className="h-4 w-4 text-amber-700 dark:text-amber-400"
-					aria-label="Proprietary license"
+					aria-label={t("proprietaryLicense")}
 				/>
 			) : isUnknown ? (
 				<CircleHelp
 					className="h-4 w-4 text-muted-foreground"
-					aria-label="Unknown license"
+					aria-label={t("unknownLicense")}
 				/>
 			) : isOpen ? (
 				<Unlock
 					className="h-4 w-4 text-emerald-700 dark:text-emerald-400"
-					aria-label="Open license"
+					aria-label={t("openLicense")}
 				/>
 			) : (
 				<Scale
 					className="h-4 w-4 text-amber-700 dark:text-amber-400"
-					aria-label="License terms"
+					aria-label={t("licenseTerms")}
 				/>
 			)}
 		</span>
@@ -184,18 +180,19 @@ function getLicenseIcon(license: string | null) {
 }
 
 export default function LicenseType({ selectedModels }: LicenseTypeProps) {
+	const t = useTranslations("Catalogue.compare");
 	if (!selectedModels || selectedModels.length === 0) return null;
 	return (
 		<section className="space-y-3">
 			<header className="space-y-1">
-				<h2 className="text-lg font-semibold">License</h2>
+				<h2 className="text-lg font-semibold">{t("license")}</h2>
 				<p className="text-sm text-muted-foreground">
-					Usage and distribution terms.
+					{t("licenseDescription")}
 				</p>
 			</header>
 
 			<div className="space-y-4">
-				{getLicenseDescriptionCard(selectedModels)}
+				{getLicenseDescriptionCard(selectedModels, t)}
 				<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mt-2 w-full">
 					{selectedModels.map((model) => (
 						<Card
@@ -203,7 +200,7 @@ export default function LicenseType({ selectedModels }: LicenseTypeProps) {
 							className="flex flex-col items-start p-6 border-none shadow-lg min-w-0"
 						>
 							<div className="flex items-center mb-2">
-								{getLicenseIcon(model.license)}
+								{getLicenseIcon(model.license, t)}
 								<span className="font-semibold ml-2 text-base">
 									<Link
 										href={`/models/${
@@ -218,7 +215,7 @@ export default function LicenseType({ selectedModels }: LicenseTypeProps) {
 								</span>
 							</div>
 							<span className="text-sm text-muted-foreground">
-								{normalizeLicense(model.license).label}
+								{formatLicenseDisplay(model.license, t)}
 							</span>
 						</Card>
 					))}
@@ -227,4 +224,3 @@ export default function LicenseType({ selectedModels }: LicenseTypeProps) {
 		</section>
 	);
 }
-

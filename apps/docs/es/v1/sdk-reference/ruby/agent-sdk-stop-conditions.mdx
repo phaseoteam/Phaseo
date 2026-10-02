@@ -1,0 +1,24 @@
+---
+icon: "circle-check"
+title: "Condiciones de detención"
+description: "Limita ejecuciones de agentes Ruby por pasos, tokens, coste, duración, herramientas o motivo de finalización."
+---
+
+Combina funciones de detención para mantener el trabajo autónomo dentro de los límites de la aplicación.
+
+```ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "bounded-research",
+  model: "openai/gpt-5.4-nano",
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(12),
+    PhaseoAgentSdk.max_tokens_used(40_000),
+    PhaseoAgentSdk.max_cost(2.50),
+    PhaseoAgentSdk.max_duration(120_000)
+  ]
+)
+```
+
+También hay condiciones para las llamadas a herramientas y los motivos de finalización. Tras completar la ejecución, inspecciona `result.run.stop_reason` y el uso normalizado para distinguir una detención por presupuesto de una finalización normal del modelo.
+
+Detenerse es un resultado acotado, no una excepción automática. Decide qué motivos deben considerarse satisfactorios, reintentarse o mostrarse al usuario.

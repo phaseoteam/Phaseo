@@ -1,7 +1,10 @@
 import {
+	buildAuthErrorCodeRedirectUrl,
     buildAuthErrorRedirectUrl,
     normalizeAuthErrorMessage,
+	resolveCallbackErrorCode,
     resolveCallbackErrorMessage,
+	resolveHashAuthErrorCode,
     resolveHashAuthErrorMessage,
 } from './errorMessage'
 
@@ -31,6 +34,29 @@ describe('auth error helpers', () => {
         const url = new URL('https://example.com/auth/callback?error_code=saml_provider_disabled')
         expect(resolveCallbackErrorMessage(url)).toBe('Enterprise SSO is configured but currently disabled.')
     })
+
+	it("maps provider errors to stable locale-independent codes", () => {
+		expect(
+			resolveCallbackErrorCode(
+				new URL("https://example.com/auth/callback?error=access_denied"),
+			),
+		).toBe("cancelled");
+		expect(resolveHashAuthErrorCode("#error_code=otp_expired")).toBe(
+			"expired-link",
+		);
+	});
+
+	it("builds a localized error redirect without English query copy", () => {
+		const redirectUrl = buildAuthErrorCodeRedirectUrl(
+			"https://example.com/auth/callback",
+			"workspace-setup",
+			"ja",
+		);
+
+		expect(redirectUrl.pathname).toBe("/ja/error");
+		expect(redirectUrl.searchParams.get("code")).toBe("workspace-setup");
+		expect(redirectUrl.searchParams.has("message")).toBe(false);
+	});
 
     it('builds an error redirect URL with a sanitized message', () => {
         const redirectUrl = buildAuthErrorRedirectUrl('https://example.com/auth/callback', '  Detailed failure  ')

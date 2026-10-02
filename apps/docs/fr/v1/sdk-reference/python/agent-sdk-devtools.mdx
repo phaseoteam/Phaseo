@@ -1,0 +1,18 @@
+---
+icon: "chart-spline"
+title: "Outils de développement"
+description: "Capturez localement les exécutions du SDK Agent Python pour le développement et le débogage."
+---
+
+Activez la capture JSONL locale avec `create_agent_devtools(...)` et transmettez-la à `run(...)`, `stream(...)`, or continuation.
+
+Les entrées capturées comprennent l’état et la durée, les détails du modèle et du fournisseur, les identifiants de requête, les messages, les étapes, l’activité des outils, l’utilisation, le coût et les erreurs structurées.
+
+<Warning>
+Les entrées, le contexte et les résultats des outils peuvent contenir des données sensibles. Ne stockez pas la sortie DevTools dans le contrôle de version ni dans les images de production.
+</Warning>
+
+## Pages associées
+
+- [Hooks du cycle de vie](./agent-sdk-lifecycle-hooks.mdx)
+- [Erreurs et dépannage](./agent-sdk-observability.mdx)

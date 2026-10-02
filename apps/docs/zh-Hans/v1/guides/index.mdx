@@ -1,0 +1,66 @@
+---
+title: "指南"
+description: "查找适用于首次配置、功能开发、集成和生产运维的 Phaseo 指南。"
+icon: "book-open"
+---
+
+如果你已明确要完成的工作，并希望快速找到相应指南，请从这里开始。
+
+## 首次集成
+
+如果这是你首次集成 Phaseo，请按顺序完成以下步骤：
+
+1. [快速入门](../quickstart.mdx)：成功发送一次请求。
+2. [身份验证](../developers/authentication.mdx)：安全地存储和发送密钥。
+3. [示例](./examples.mdx)：将请求示例复制到应用中。
+
+<Note>
+调用 `:free` 模型无需充值。付费模型仍要求钱包中有可用余额。
+</Note>
+
+## 开发应用功能
+
+基本请求已正常运行、你准备为产品添加行为时，请使用这些指南。
+
+<Columns cols={2}>
+	<Card title="食谱" icon="chef-hat" href="../cookbook/index.mdx">
+		围绕免费路由、预设、异步任务和编程智能体配置的场景化方案。
+	</Card>
+	<Card title="路由与回退" icon="git-branch" href="./routing-and-fallbacks.mdx">
+		控制供应商顺序、故障切换行为和可靠性取舍。
+	</Card>
+	<Card title="工具调用" icon="wrench" href="./tool-calling.mdx">
+		实现函数工具、安全检查和稳定的工具循环。
+	</Card>
+	<Card title="服务器工具" icon="sparkles" href="./server-tools/index.mdx">
+		使用由 Phaseo 托管的日期时间、网页搜索、网页抓取和 Advisor 工具。
+	</Card>
+	<Card title="结构化输出" icon="braces" href="./structured-outputs.mdx">
+		使用 schema 获取可预测的机器可读响应。
+	</Card>
+	<Card title="流式传输" icon="radio" href="./streaming.mdx">
+		使用 SSE 交付低延迟响应，并配置生产环境保护措施。
+	</Card>
+	<Card title="提示缓存" icon="database-zap" href="./prompt-caching.mdx">
+		在 Chat Completions、Responses 和 Anthropic Messages 中复用稳定的提示上下文。
+	</Card>
+</Columns>
+
+## 生产环境运维
+
+当流量、可靠性、安全性和密钥生命周期变得重要时，请使用这些指南。
+
+<Columns cols={2}>
+	<Card title="错误处理" icon="triangle-alert" href="../api-reference/errors.mdx">
+		根据状态码、错误结构和重试策略进行调试。
+	</Card>
+	<Card title="速率限制" icon="gauge" href="../api-reference/limits.mdx">
+		规划负载下的吞吐量和退避策略。
+	</Card>
+	<Card title="最佳实践" icon="shield-check" href="../developers/best-practices.mdx">
+		提升可靠性和安全性的加固清单。
+	</Card>
+	<Card title="管理 API 密钥" icon="key-round" href="../developers/management-api-keys.mdx">
+		自动化密钥生命周期管理和环境隔离。
+	</Card>
+</Columns>

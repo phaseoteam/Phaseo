@@ -1,0 +1,62 @@
+---
+icon: "database"
+title: "مخططات المخرجات المنظّمة"
+description: "كيفية تصميم مخططات JSON عملية لمخرجات النماذج."
+---
+
+للحصول على مخرجات منظّمة موثوقة، يُعد تصميم المخطط أهم من اختيار النموذج.
+
+## ابدأ ببساطة
+
+- فضّل الكائنات المسطّحة على البنى ذات التداخل العميق.
+- استخدم `required` لكل حقل تحتاج إليه.
+- عيّن `additionalProperties: false` عند الحاجة إلى ضبط البنية بدقة.
+
+## الطلب
+
+```json
+{
+  "model": "openai/gpt-5-nano",
+  "messages": [
+    { "role": "user", "content": "Return a purchase summary for order 42." }
+  ],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {
+      "name": "purchase_summary",
+      "strict": true,
+      "schema": {
+        "type": "object",
+        "properties": {
+          "order_id": { "type": "string" },
+          "total_usd": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "paid", "failed"] }
+        },
+        "required": ["order_id", "total_usd", "status"],
+        "additionalProperties": false
+      }
+    }
+  }
+}
+```
+
+## الرد
+
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "content": "{\"order_id\":\"42\",\"total_usd\":19.99,\"status\":\"paid\"}"
+      }
+    }
+  ]
+}
+```
+
+## أخطاء شائعة
+
+- ترك الحقول المطلوبة اختيارية.
+- استخدام حقول نصية واسعة جدًا بدلًا من قيود `enum`.
+- السماح باختلاف المخطط في الوثائق عن أداة التحقق على الخادم.
+

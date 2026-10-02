@@ -1,0 +1,77 @@
+---
+title: "Anthropic Claude Opus 4.6"
+description: "À connaître pour adopter Claude Opus 4.6, notamment les sorties structurées, la réflexion adaptative et les préremplissages."
+icon: "/icons/brands/anthropic.svg"
+---
+
+# Anthropic Claude Opus 4.6
+
+Suivez ce guide pour adopter `anthropic/claude-opus-4.6` en production en toute sécurité.
+
+La migration vers Claude Opus 4.6 ne se limite pas à changer l’identifiant du modèle. Les consignes d’Anthropic prévoient des changements de requête, la suppression de certains indicateurs bêta et un comportement plus strict concernant les préremplissages.
+
+## Nouveautés
+
+- Les préremplissages de l’assistant ne sont plus pris en charge par Claude 4.6 et renvoient désormais `400`.
+- La sortie structurée passe de `output_format` à `output_config.format`.
+- La réflexion adaptative se configure avec `output_config.effort`.
+- Supprimez les anciens en-têtes bêta.
+- Opus 4.6 n’a plus besoin de l’en-tête bêta `interleaved-thinking-2025-05-14`.
+- Opus 4.6 ajoute une fenêtre de contexte d’un million de tokens en bêta et améliore les tâches longues de programmation et d’agent.
+
+## Démarrage rapide de la migration
+
+### 1. Supprimez les préremplissages de l’assistant
+
+Si vous imposiez du JSON ou un préfixe de réponse en préremplissant partiellement le tour de l’assistant, ce modèle échoue désormais avec 4.6. Déplacez ce contrôle vers :
+
+- des instructions système plus claires
+- des exemples dans le prompt utilisateur ou système
+- les sorties structurées via `output_config.format`
+
+### 2. Migrez les sorties structurées
+
+Si vous envoyez encore `output_format`, remplacez-le dans le corps de la requête par `output_config.format`.
+
+### 3. Vérifiez la configuration du raisonnement
+
+Si vous dépendiez d’anciennes versions bêta du raisonnement, adoptez le réglage `effort` actuel dans `output_config` et retestez les routes sensibles à la latence.
+
+### 4. Supprimez les indicateurs bêta obsolètes
+
+Recherchez les en-têtes bêta codés en dur dans les wrappers SDK, le middleware et les préréglages Gateway. Les conserver provoque des erreurs inutiles lors du déploiement.
+
+## Points à tester
+
+### Comportement des prompts
+
+- Prompts longs de programmation et de refactorisation.
+- Flux de recherche ou de traitement de documents en plusieurs étapes.
+- Prompts qui dépendaient de préremplissages de l’assistant.
+- Tâches à long contexte si vous comptez utiliser la fenêtre bêta d’un million de tokens.
+
+### Contrats et outils
+
+- Taux de réussite des schémas après passage à `output_config.format`.
+- Qualité des arguments d’appels d’outils pour les tâches agentiques en plusieurs étapes.
+- Comportement des nouvelles tentatives lorsque le modèle refuse ou reformate la sortie.
+- Gestion des régressions dans les flux de revue de code et de débogage.
+
+### Exploitation
+
+- Latence médiane et p95 avec les nouveaux réglages de réflexion.
+- Consommation de tokens sur les exécutions longues.
+- Taux d’expiration des tâches à grand contexte.
+- Taux de réussite par rapport à Opus 4.5 sur votre jeu d’évaluation de production.
+
+## Déploiement sûr
+
+1. Supprimez les préremplissages et migrez la configuration des sorties structurées avant de déplacer le trafic.
+2. Exécutez Opus 4.6 en parallèle sur les prompts de production importants.
+3. Testez progressivement le trafic en gardant Opus 4.5 comme solution de repli.
+4. Augmentez le trafic uniquement lorsque les schémas, la latence et le taux d’achèvement restent stables.
+
+## Sources
+
+- [Guide de migration Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [Présentation de Claude Opus 4.6](https://www.anthropic.com/news/claude-opus-4-6)

@@ -1,0 +1,35 @@
+---
+icon: "image"
+title: "छवि जनरेशन"
+description: "Ruby SDK के साथ /images/generations call करें।"
+---
+
+**Method**: `client.generate_image(...)`।
+
+### उदाहरण
+```ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
+image = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour',
+  size: '1024x1024',
+  n: 1,
+  response_format: 'url'
+)
+```
+
+### मुख्य पैरामीटर
+- `model` (ज़रूरी): image-capable model ID (जैसे `openai/gpt-image-1`)।
+- `prompt` (ज़रूरी): text prompt।
+- `n` (1–10): जनरेट की जाने वाली images की संख्या।
+- `size`: जैसे `1024x1024`, `1024x1792`, `1792x1024`।
+- `quality`: `standard` या `hd` (model पर निर्भर)।
+- `style`: जैसे `vivid` या `natural` (model पर निर्भर)।
+- `response_format`: `url` या `b64_json`।
+- `user`: सुरक्षा और दुरुपयोग की निगरानी के लिए अंतिम उपयोगकर्ता का वैकल्पिक टैग।
+
+### लौटाया गया मान
+`ImageGenerationResponse`
+

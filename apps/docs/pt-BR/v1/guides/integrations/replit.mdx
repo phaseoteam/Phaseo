@@ -1,0 +1,67 @@
+---
+title: "Replit"
+icon: "box"
+description: "Chame o Phaseo em aplicações e implantações do Replit."
+---
+
+Use o Phaseo no Replit com o SDK oficial da OpenAI ou o provedor oficial do Phaseo para AI SDK. Mantenha a chave de API em Replit Secrets, não no código-fonte.
+
+## Adicionar o segredo
+
+No espaço de trabalho do Replit, abra **Tools → Secrets** e adicione:
+
+```text
+PHASEO_API_KEY=phaseo_v1_sk_...
+```
+
+O segredo ficará disponível para a aplicação como uma variável de ambiente.
+
+## TypeScript com o SDK da OpenAI
+
+```bash
+npm install openai
+```
+
+```ts
+import OpenAI from "openai";
+
+const client = new OpenAI({
+	apiKey: process.env.PHASEO_API_KEY,
+	baseURL: "https://api.phaseo.app/v1",
+});
+
+const response = await client.responses.create({
+	model: "openai/gpt-5-nano",
+	input: "Reply with only: ok",
+});
+
+console.log(response.output_text);
+```
+
+## TypeScript com AI SDK
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+```ts
+import { phaseo } from "@phaseo/ai-sdk-provider";
+import { generateText } from "ai";
+
+const { text } = await generateText({
+	model: phaseo("openai/gpt-5-nano"),
+	prompt: "Reply with only: ok",
+});
+
+console.log(text);
+```
+
+## Implantações
+
+Adicione `PHASEO_API_KEY` também aos segredos da implantação, além do espaço de desenvolvimento. Confirme que a implantação não registra variáveis de ambiente nem cabeçalhos de solicitação.
+
+## Conteúdo relacionado
+
+- [SDK da OpenAI](./openai-sdk.mdx)
+- [AI SDK](./ai-sdk.mdx)
+- [Autenticação](../../developers/authentication.mdx)

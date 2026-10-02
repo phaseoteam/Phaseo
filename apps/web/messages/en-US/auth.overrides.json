@@ -1,0 +1,11 @@
+{
+	"Auth": {
+		"signIn": {
+			"passkeyCancelled": "Passkey sign-in canceled."
+		},
+		"error": {
+			"ssoNotConfigured": "Enterprise SSO is not configured for your organization yet.",
+			"cancelled": "Sign-in was canceled or denied. Please try again."
+		}
+	}
+}

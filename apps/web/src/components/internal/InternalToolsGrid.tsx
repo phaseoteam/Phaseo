@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import {
 	Card,
 	CardContent,
@@ -21,144 +22,138 @@ import {
 	Bell,
 	Gauge,
 	FlaskConical,
+	Languages,
 } from "lucide-react";
 
 const internalTools = [
 	{
-		id: "realtime-billing", title: "Realtime Billing", description: "Review missing usage, held funds, and audited billing decisions.",
+		id: "localisation-preview",
+		titleKey: "localisationPreviewTitle",
+		descriptionKey: "localisationPreviewDescription",
+		icon: Languages,
+		href: "/internal/localisation-preview",
+		comingSoon: false,
+	},
+	{
+		id: "realtime-billing", titleKey: "realtimeBillingTitle", descriptionKey: "realtimeBillingDescription",
 		icon: Shield, href: "/internal/realtime-billing", comingSoon: false,
 	},
 	{
 		id: "model-test-playground",
-		title: "Model Test Lab",
-		description:
-			"Stress-test models and parameter support across one, several, or every available provider.",
+		titleKey: "modelTestLabTitle",
+		descriptionKey: "modelTestLabDescription",
 		icon: FlaskConical,
 		href: "/internal/model-test-playground",
 		comingSoon: false,
 	},
 	{
 		id: "data-editor",
-		title: "Data Editor",
-		description:
-			"Manage models, organisations, API providers, and benchmarks from dedicated CRUD pages.",
+		titleKey: "dataEditorTitle",
+		descriptionKey: "dataEditorDescription",
 		icon: FileCheck,
 		href: "/internal/data",
 		comingSoon: false,
 	},
 	{
 		id: "data-audit",
-		title: "Data Audit",
-		description:
-			"Audit model/provider coverage with advanced filters for gateway activity, benchmarks, and pricing.",
+		titleKey: "dataAuditTitle",
+		descriptionKey: "dataAuditDescription",
 		icon: BarChart3,
 		href: "/internal/audit",
 		comingSoon: false,
 	},
 	{
 		id: "api-model-conflicts",
-		title: "API Model Conflicts",
-		description:
-			"Detect likely model ID alias conflicts and pricing folder mismatches across providers.",
+		titleKey: "apiModelConflictsTitle",
+		descriptionKey: "apiModelConflictsDescription",
 		icon: GitCompare,
 		href: "/internal/api-model-conflicts",
 		comingSoon: false,
 	},
 	{
 		id: "compatibility",
-		title: "Gateway Compatibility",
-		description:
-			"Validate gateway responses against official OpenAI and Anthropic response schemas.",
+		titleKey: "gatewayCompatibilityTitle",
+		descriptionKey: "gatewayCompatibilityDescription",
 		icon: FileCheck,
 		href: "/internal/compatibility",
 		comingSoon: false,
 	},
 	{
 		id: "cache-ops",
-		title: "Cache Control Centre",
-		description:
-			"Purge named Cloudflare Worker and website caches, and review the audit trail.",
+		titleKey: "cacheControlCentreTitle",
+		descriptionKey: "cacheControlCentreDescription",
 		icon: RefreshCcw,
 		href: "/internal/cache",
 		comingSoon: false,
 	},
 	{
 		id: "security-reports",
-		title: "Security Reports",
-		description:
-			"Review leaked-key incident reports, revoke compromised keys, and close false positives.",
+		titleKey: "securityReportsTitle",
+		descriptionKey: "securityReportsDescription",
 		icon: Shield,
 		href: "/internal/security-reports",
 		comingSoon: false,
 	},
 	{
 		id: "promo-credits",
-		title: "Promo Credits",
-		description:
-			"Create, review, and disable friendly promo credit codes for wallet credits.",
+		titleKey: "promoCreditsTitle",
+		descriptionKey: "promoCreditsDescription",
 		icon: Gift,
 		href: "/internal/credits",
 		comingSoon: false,
 	},
 	{
 		id: "model-discovery-notifier",
-		title: "Model Discovery Notifier",
-		description:
-			"Preview and send Discord embed payloads for internal model discovery alerts.",
+		titleKey: "modelDiscoveryNotifierTitle",
+		descriptionKey: "modelDiscoveryNotifierDescription",
 		icon: Bell,
 		href: "/internal/model-discovery-notifier",
 		comingSoon: false,
 	},
 	{
 		id: "gateway-benchmark",
-		title: "Gateway Benchmark",
-		description:
-			"Run side-by-side public streaming comparisons between Phaseo Gateway and OpenRouter.",
+		titleKey: "gatewayBenchmarkTitle",
+		descriptionKey: "gatewayBenchmarkDescription",
 		icon: Gauge,
 		href: "/internal/gateway-benchmark",
 		comingSoon: true,
 	},
 	{
 		id: "analytics",
-		title: "Internal Analytics",
-		description:
-			"Deep analytics and insights into model usage, performance, and trends.",
+		titleKey: "internalAnalyticsTitle",
+		descriptionKey: "internalAnalyticsDescription",
 		icon: BarChart3,
 		href: "/internal/analytics",
 		comingSoon: true,
 	},
 	{
 		id: "admin",
-		title: "Admin Panel",
-		description:
-			"Manage users, permissions, and system settings.",
+		titleKey: "adminPanelTitle",
+		descriptionKey: "adminPanelDescription",
 		icon: Shield,
 		href: "/internal/admin",
 		comingSoon: true,
 	},
 	{
 		id: "database",
-		title: "Database Tools",
-		description:
-			"Database management, migrations, and maintenance utilities.",
+		titleKey: "databaseToolsTitle",
+		descriptionKey: "databaseToolsDescription",
 		icon: Database,
 		href: "/internal/database",
 		comingSoon: true,
 	},
 	{
 		id: "users",
-		title: "User Management",
-		description:
-			"View and manage user accounts, roles, and access control.",
+		titleKey: "userManagementTitle",
+		descriptionKey: "userManagementDescription",
 		icon: Users,
 		href: "/internal/users",
 		comingSoon: true,
 	},
 	{
 		id: "config",
-		title: "System Configuration",
-		description:
-			"Configure system settings, feature flags, and integrations.",
+		titleKey: "systemConfigurationTitle",
+		descriptionKey: "systemConfigurationDescription",
 		icon: Settings,
 		href: "/internal/config",
 		comingSoon: true,
@@ -166,6 +161,7 @@ const internalTools = [
 ];
 
 export default function InternalToolsGrid() {
+	const t = useTranslations("Product.internalTools");
 	const availableTools = internalTools.filter((tool) => !tool.comingSoon);
 
 	return (
@@ -184,20 +180,20 @@ export default function InternalToolsGrid() {
 								</div>
 								<div className="flex-1">
 									<CardTitle className="text-lg">
-										{tool.title}
+										{t(tool.titleKey as never)}
 									</CardTitle>
 								</div>
 							</div>
 						</CardHeader>
 						<CardContent>
 							<CardDescription className="mb-4">
-								{tool.description}
+								{t(tool.descriptionKey as never)}
 							</CardDescription>
 							<Link
 								href={tool.href}
 								className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-2 px-4 rounded-md text-center block transition-colors"
 							>
-								Open Tool
+								{t("openTool")}
 							</Link>
 						</CardContent>
 					</Card>

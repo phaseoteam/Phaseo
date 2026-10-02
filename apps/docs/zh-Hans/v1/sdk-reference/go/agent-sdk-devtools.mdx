@@ -1,0 +1,19 @@
+---
+icon: "chart-spline"
+title: "开发工具"
+description: "以 Phaseo DevTools 本地事件格式捕获 Go Agent SDK 运行记录。"
+---
+
+DevTools 捕获会为每次运行和续接写入结构化 JSONL 记录。构建时间线、审批界面和工具调用视图时，这些记录会很有用。
+
+```go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input: prompt,
+  Client: client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+记录包含运行状态、用量、模型尝试、工具调用、暂停、请求元数据和错误。续接记录通过同一运行标识关联。
+
+请勿将本地捕获用作生产环境的审计存储。持久化敏感提示或工具结果前，请应用你自己的保留期限、访问控制、脱敏和加密规则。

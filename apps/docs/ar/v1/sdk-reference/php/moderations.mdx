@@ -1,0 +1,36 @@
+---
+icon: "shield-check"
+title: "الإشراف على المحتوى"
+description: "استدعِ /moderations باستخدام SDK PHP."
+---
+
+**الطرق**: `generateModeration()` و`createModeration()`
+
+### مثال
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$apiKey = getenv('PHASEO_API_KEY');
+$client = new Phaseo(apiKey: $apiKey);
+
+$response = $client->createModeration([
+    'model' => 'openai/omni-moderation-latest',
+    'input' => 'Text to classify'
+]);
+echo $response['results'][0]['flagged'] ? 'Flagged' : 'Not flagged';
+```
+
+### المعلمات الأساسية
+
+-   `model` (مطلوب): معرّف نموذج الإشراف (مثل `openai/omni-moderation-latest`).
+-   `input` (مطلوب): عناصر المحتوى (نص أو `image_url`).
+-   اختياري: عوامل تصفية `categories`/`severity` (عند دعمها) ووسم `user`.
+
+### القيمة المعادة
+
+استجابة الإشراف

@@ -17,6 +17,8 @@ import {
 	updateRoutingSettings,
 	type RoutingMode,
 } from "@/app/(dashboard)/settings/routing/actions";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 type RoutingOption = {
 	value: RoutingMode;
@@ -31,32 +33,16 @@ type PreviewRow = {
 	kind?: PreviewKind;
 };
 
-const ROUTING_OPTIONS: RoutingOption[] = [
-	{
-		value: "balanced",
-		label: "Balanced",
-		description: "Blend success rate, latency, throughput, and load.",
-	},
-	{
-		value: "price",
-		label: "Lowest cost",
-		description: "Prefer the cheapest compatible provider when possible.",
-	},
-	{
-		value: "latency",
-		label: "Lowest latency",
-		description: "Bias toward the fastest provider for your model.",
-	},
-	{
-		value: "throughput",
-		label: "Highest throughput",
-		description: "Route to providers with the most recent capacity.",
-	},
-];
+const ROUTING_OPTION_COPY = [
+	{ value: "balanced", labelKey: "credits.Balanced", descriptionKey: "routingModeDescriptions.balanced" },
+	{ value: "price", labelKey: "credits.Lowest cost", descriptionKey: "routingModeDescriptions.price" },
+	{ value: "latency", labelKey: "credits.Lowest latency", descriptionKey: "routingModeDescriptions.latency" },
+	{ value: "throughput", labelKey: "credits.Highest throughput", descriptionKey: "routingModeDescriptions.throughput" },
+] as const;
 
-const RESPONSE_HEALING_OPTIONS = [
-	{ value: "safe", label: "Safe" },
-	{ value: "strict", label: "Strict" },
+const RESPONSE_HEALING_OPTION_COPY = [
+	{ value: "safe", labelKey: "strings.Safe" },
+	{ value: "strict", labelKey: "strings.Strict" },
 ] as const;
 
 type Props = {
@@ -129,6 +115,17 @@ export default function RoutingSettingsClient({
 	initialResponseHealingMode,
 	teamName,
 }: Props) {
+	const t = useTranslations("SettingsUI");
+	const tAuditCopy = useTranslations();
+	const routingOptions: RoutingOption[] = ROUTING_OPTION_COPY.map((option) => ({
+		value: option.value,
+		label: t(option.labelKey as never),
+		description: t(option.descriptionKey as never),
+	}));
+	const responseHealingOptions = RESPONSE_HEALING_OPTION_COPY.map((option) => ({
+		value: option.value,
+		label: t(option.labelKey as never),
+	}));
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const defaultMode = initialMode ?? "balanced";
 	const defaultBeta = Boolean(initialBetaChannelEnabled);
@@ -166,10 +163,7 @@ export default function RoutingSettingsClient({
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const saveSequenceRef = useRef(0);
 
-	const activeOption = useMemo(
-		() => ROUTING_OPTIONS.find((opt) => opt.value === mode),
-		[mode]
-	);
+	const activeOption = routingOptions.find((option) => option.value === mode);
 	const previewRows = useMemo(
 		() =>
 			withCanaryTraffic(
@@ -217,15 +211,13 @@ export default function RoutingSettingsClient({
 			toast.promise(
 				promise,
 				{
-					loading: "Updating routing policy...",
+					loading: t("strings.phraseUpdatingRoutingPolicy" as never),
 					success: (result) =>
 						result.gatewayCacheInvalidated
-							? "Routing policy updated"
-							: "Routing policy updated; gateway cache refresh pending",
+							? t("strings.Routing policy updated" as never)
+							: t("strings.Routing policy updated; gateway cache refresh pending" as never),
 						error: (error) =>
-							error instanceof Error && error.message
-								? `Failed to update routing policy: ${error.message}`
-								: "Failed to update routing policy",
+							localizedSettingsError(error, t, "Failed to update routing policy"),
 					},
 				);
 				await promise;
@@ -270,10 +262,10 @@ export default function RoutingSettingsClient({
 		responseHealingLocked !== savedResponseHealingLocked ||
 		responseHealingMode !== savedResponseHealingMode;
 	const stateText = saving
-		? "Saving..."
+		? t("labels.saving")
 		: isDirty
-			? "Pending sync"
-			: "Synced";
+			? t("strings.Pending sync" as never)
+			: t("strings.Synced" as never);
 
 	function barTone(kind?: PreviewKind) {
 		if (kind === "beta") return "bg-amber-500/80";
@@ -304,10 +296,10 @@ export default function RoutingSettingsClient({
 			<section className="space-y-3">
 				<div className="flex items-start justify-between gap-4">
 					<div>
-						<h2 className="text-base font-semibold">Provider Routing</h2>
+						<h2 className="text-base font-semibold">{t("strings.Provider Routing" as never)}</h2>
 						<p className="mt-1 text-sm text-muted-foreground">
-							Choose how the Gateway prioritizes providers
-							{teamName ? ` for ${teamName}` : " for this workspace"}.
+							{t("strings.Choose how the Gateway prioritizes providers" as never)}
+							{tAuditCopy("Common.ui.auditCopy.workspaceSuffix", { named: teamName ? "yes" : "no", workspace: teamName ?? "" })}.
 						</p>
 					</div>
 					<Badge variant="outline" className="shrink-0 rounded-md font-normal">
@@ -319,7 +311,7 @@ export default function RoutingSettingsClient({
 					<div className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] sm:items-center">
 						<div>
 							<label htmlFor="routing-mode" className="text-sm font-medium">
-								Routing Preference
+								{t("strings.Routing Preference" as never)}
 							</label>
 							<p className="mt-1 text-sm text-muted-foreground">
 								{activeOption?.description}
@@ -327,14 +319,14 @@ export default function RoutingSettingsClient({
 						</div>
 					<Select
 						value={mode}
-						items={ROUTING_OPTIONS}
+						items={routingOptions}
 						onValueChange={(value) => setMode(value as RoutingMode)}
 					>
 						<SelectTrigger id="routing-mode" className="w-full rounded-md">
-							<SelectValue placeholder="Select a routing mode" />
+							<SelectValue placeholder={t("strings.Select a routing mode" as never)} />
 						</SelectTrigger>
 						<SelectContent>
-							{ROUTING_OPTIONS.map((option) => (
+							{routingOptions.map((option) => (
 								<SelectItem
 									key={option.value}
 									value={option.value}
@@ -349,14 +341,14 @@ export default function RoutingSettingsClient({
 					<Separator />
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
-							<label htmlFor="beta-channel" className="text-sm font-medium">Beta Channel</label>
-							<p className="mt-1 text-sm text-muted-foreground">Include beta providers in a small share of production traffic.</p>
+						<label htmlFor="beta-channel" className="text-sm font-medium">{t("strings.Beta Channel" as never)}</label>
+						<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeBetaProvidersInASmallShareOfProductionTraffic" as never)}</p>
 						</div>
 						<Switch
 							id="beta-channel"
 							checked={betaChannelEnabled}
 							onCheckedChange={setBetaChannelEnabled}
-							aria-label="Enable beta channel"
+							aria-label={t("strings.Enable beta channel" as never)}
 						/>
 					</div>
 
@@ -365,14 +357,14 @@ export default function RoutingSettingsClient({
 						<Separator />
 						<div className="flex items-center justify-between gap-4 bg-muted/15 py-2.5 pl-8 pr-4">
 							<div>
-								<label htmlFor="alpha-channel" className="text-sm font-medium">Alpha Channel</label>
-								<p className="mt-1 text-sm text-muted-foreground">Include alpha providers within beta canary traffic.</p>
+							<label htmlFor="alpha-channel" className="text-sm font-medium">{t("strings.Alpha Channel" as never)}</label>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeAlphaProvidersWithinBetaCanaryTraffic" as never)}</p>
 							</div>
 							<Switch
 								id="alpha-channel"
 								checked={alphaChannelEnabled}
 								onCheckedChange={setAlphaChannelEnabled}
-								aria-label="Enable alpha channel"
+								aria-label={t("strings.Enable alpha channel" as never)}
 							/>
 						</div>
 					</>
@@ -382,44 +374,44 @@ export default function RoutingSettingsClient({
 
 			<section className="space-y-3">
 				<div>
-					<h2 className="text-base font-semibold">Response Healing</h2>
-					<p className="mt-1 text-sm text-muted-foreground">Set the workspace default for repairing structured model output.</p>
+					<h2 className="text-base font-semibold">{t("strings.Response Healing" as never)}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseSetTheWorkspaceDefaultForRepairingStructuredModelOutput" as never)}</p>
 				</div>
 				<div className="overflow-hidden rounded-md border">
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
-							<label htmlFor="response-healing" className="text-sm font-medium">Enable by Default</label>
-							<p className="mt-1 text-sm text-muted-foreground">Repair compatible structured-output responses for this workspace.</p>
+							<label htmlFor="response-healing" className="text-sm font-medium">{t("strings.Enable by Default" as never)}</label>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseRepairCompatibleStructuredOutputResponsesForThisWorkspace" as never)}</p>
 						</div>
 						<Switch
 							id="response-healing"
 							checked={responseHealingEnabled}
 							onCheckedChange={setResponseHealingEnabled}
-							aria-label="Enable default response healing"
+							aria-label={t("strings.Enable default response healing" as never)}
 						/>
 					</div>
 					<Separator />
 					<div className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] sm:items-center">
 						<div>
-							<label htmlFor="response-healing-mode" className="text-sm font-medium">Healing Mode</label>
+							<label htmlFor="response-healing-mode" className="text-sm font-medium">{t("strings.Healing Mode" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">
 								{responseHealingMode === "strict"
-									? "Only unwrap already-valid JSON from fences or surrounding text."
-									: "Apply bounded repairs such as trailing-comma cleanup and safe closer recovery."}
+									? t("strings.phraseOnlyUnwrapAlreadyValidJSONFromFencesOrSurroundingText" as never)
+									: t("strings.phraseApplyBoundedRepairsSuchAsTrailingCommaCleanupAndSafeCloserRecovery" as never)}
 							</p>
 						</div>
 						<Select
 							value={responseHealingMode}
-							items={RESPONSE_HEALING_OPTIONS}
+							items={responseHealingOptions}
 							onValueChange={(value) =>
 								setResponseHealingMode(value as "safe" | "strict")
 							}
 						>
 							<SelectTrigger id="response-healing-mode" className="w-full rounded-md">
-								<SelectValue placeholder="Select a healing mode" />
+							<SelectValue placeholder={t("strings.Select a healing mode" as never)} />
 							</SelectTrigger>
 							<SelectContent>
-								{RESPONSE_HEALING_OPTIONS.map((option) => (
+								{responseHealingOptions.map((option) => (
 									<SelectItem
 										key={option.value}
 										value={option.value}
@@ -434,14 +426,14 @@ export default function RoutingSettingsClient({
 					<Separator />
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
-							<label htmlFor="response-healing-lock" className="text-sm font-medium">Lock Workspace Policy</label>
-							<p className="mt-1 text-sm text-muted-foreground">Prevent presets and requests from overriding this default.</p>
+							<label htmlFor="response-healing-lock" className="text-sm font-medium">{t("strings.Lock Workspace Policy" as never)}</label>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phrasePreventPresetsAndRequestsFromOverridingThisDefault" as never)}</p>
 						</div>
 						<Switch
 							id="response-healing-lock"
 							checked={responseHealingLocked}
 							onCheckedChange={setResponseHealingLocked}
-							aria-label="Lock default response healing policy"
+							aria-label={t("strings.Lock default response healing policy" as never)}
 						/>
 					</div>
 				</div>
@@ -449,8 +441,8 @@ export default function RoutingSettingsClient({
 
 			<section className="space-y-3">
 				<div>
-					<h2 className="text-base font-semibold">Routing Preview</h2>
-					<p className="mt-1 text-sm text-muted-foreground">An illustrative distribution for the current policy. Live routing also considers compatibility, health, availability, and failover signals.</p>
+					<h2 className="text-base font-semibold">{t("strings.Routing Preview" as never)}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseAnIllustrativeDistributionForTheCurrentPolicyLiveRoutingAlsoConsidersCompatibilityHealthAvailabilityAndFailoverSignals" as never)}</p>
 				</div>
 				<div className="rounded-md border px-4 py-3">
 					<div className="space-y-3">

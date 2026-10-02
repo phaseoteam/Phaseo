@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export type ModelSearchDropdownOption = {
   value: string;
@@ -34,9 +35,9 @@ export function ModelSearchDropdown({
   open,
   onOpenChange,
   disabled,
-  placeholder = "Select a model",
-  searchPlaceholder = "Search models...",
-  emptyMessage = "No models found.",
+  placeholder,
+  searchPlaceholder,
+  emptyMessage,
   className,
   contentClassName,
 }: {
@@ -52,6 +53,7 @@ export function ModelSearchDropdown({
   className?: string;
   contentClassName?: string;
 }) {
+  const t = useTranslations("Product.games");
   const selected = options.find((option) => option.value === value);
 
   return (
@@ -89,7 +91,9 @@ export function ModelSearchDropdown({
                 ) : null}
               </span>
             ) : (
-              <span className="min-w-0 truncate text-left">{placeholder}</span>
+              <span className="min-w-0 truncate text-left">
+                {placeholder ?? t("selectModel")}
+              </span>
             )}
           </span>
           <ChevronDown className="size-4 shrink-0 opacity-60" />
@@ -104,15 +108,18 @@ export function ModelSearchDropdown({
         )}
       >
         <Command>
-          <CommandInput autoFocus placeholder={searchPlaceholder} />
+          <CommandInput
+            autoFocus
+            placeholder={searchPlaceholder ?? t("searchModels")}
+          />
           <ScrollArea
             className="h-80 max-h-[52vh] [&_[data-slot=scroll-area-thumb]]:bg-muted-foreground/40 hover:[&_[data-slot=scroll-area-thumb]]:bg-muted-foreground/60"
             viewportClassName="p-1 pr-3"
             keepScrollbarMounted
           >
             <CommandList className="max-h-none overflow-visible p-0">
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-              <CommandGroup heading="Models">
+              <CommandEmpty>{emptyMessage ?? t("noModelsFound")}</CommandEmpty>
+              <CommandGroup heading={t("modelsHeading")}>
                 {options.map((option) => (
                   <CommandItem
                     key={option.value}

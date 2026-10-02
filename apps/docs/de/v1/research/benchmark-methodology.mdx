@@ -1,0 +1,61 @@
+---
+title: "Benchmark-Methodik"
+description: "Erfahre, wie Phaseo Benchmark-Ergebnisse sammelt, vereinheitlicht und veröffentlicht."
+icon: "clipboard-check"
+---
+
+Benchmarks bilden die Grundlage für Vergleiche zwischen Modellen und Anbietern. Diese Seite erklärt, wie Daten in die Plattform gelangen und wie wir für einheitliche Angaben sorgen.
+
+---
+
+## Datenquellen
+
+- **Offizielle Veröffentlichungen** — Ankündigungen von Anbietern, technische Blogs und Presseinformationen.
+- **Wissenschaftliche Arbeiten** — Peer-reviewte Veröffentlichungen und arXiv-Preprints mit reproduzierbaren Ergebnissen.
+- **Beiträge aus der Community** — Verifizierte Beiträge aus der Phaseo-Community und von Partnern.
+
+Jeder Score muss vor der Annahme eine öffentliche Quelle oder eine reproduzierbare Evaluierung enthalten.
+
+---
+
+## Normalisierung
+
+Wir vereinheitlichen Benchmark-Namen, Metriken und Splits, damit Vergleiche zwischen Modellen aussagekräftig sind:
+
+1. Ordne jeden Beitrag einer internen Benchmark-ID zu.
+2. Überführe gemeldete Metriken in eine einheitliche Skala (zum Beispiel Prozentwerte).
+3. Vermerke Abweichungen wie Few-Shot-Varianten oder benutzerdefinierte Evaluierungs-Harnesses.
+4. Führe eine automatische Validierung aus, um Felder und Wertebereiche auf Plausibilität zu prüfen.
+
+---
+
+## Aktualisierungsrhythmus
+
+- Wöchentlich für verbreitete Suites wie MMLU, GSM8K und HumanEval.
+- Monatlich für Nischen- oder neue Benchmarks.
+- Bei Bedarf, wenn Anbieter oder Community-Mitglieder hochwertige Evaluierungen einreichen.
+
+Größere Aktualisierungen führen zu Changelog-Einträgen, damit du historische Änderungen nachvollziehen kannst.
+
+---
+
+## Transparenz und Reproduzierbarkeit
+
+| Praxis | Ergebnis |
+| --- | --- |
+| Auf Primärquellen verlinken | Nutzer können Scores schnell überprüfen. |
+| `last_updated`-Zeitpunkte erfassen | Zeigt, wann ein Benchmark überprüft werden sollte. |
+| Evaluierungskonfiguration dokumentieren | Erläutert Prompt-Format, Kontextfenster und Sampling. |
+| Menschlich überprüfte Scores kennzeichnen | Unterscheidet manuelle Prüfung von automatisierten Abläufen. |
+
+---
+
+## Feedbackschleife
+
+Wenn dir Abweichungen oder fehlende Daten auffallen:
+
+1.  Erstelle ein Issue mit den unter [Benchmark-Ergebnisse einreichen](./submitting-scores.mdx) beschriebenen Belegen.
+2.  Beantworte Rückfragen im Issue. Verifizierte Korrekturen werden im Datenbankeditor veröffentlicht.
+3.  Stimme größere Forschungseinreichungen über Discord ab.
+
+Wir prüfen jeden Bericht und halten dich mit Statusmeldungen auf dem Laufenden, während der Benchmark überprüft wird.

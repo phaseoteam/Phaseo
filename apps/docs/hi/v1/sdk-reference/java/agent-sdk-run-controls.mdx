@@ -1,0 +1,28 @@
+---
+icon: "braces"
+title: "आउटपुट और पुनः प्रयास"
+description: "Java agents के outputs validate करें और अस्थायी model failures पर सीमित बार पुनः प्रयास करें।"
+---
+
+जब आगे का Java code बिना जाँचे model text के बजाय structured value चाहता है, तो final-output validation करें। Agent definition में final validator जोड़ें और validation failures को contract errors मानें।
+
+Model या provider की अस्थायी विफलताओं के लिए `ModelRetryConfig` उपयोग करें:
+
+```java
+var retry = new AgentSdk.ModelRetryConfig(
+    2,
+    Duration.ofMillis(250)
+);
+```
+
+पुनः प्रयासों की संख्या पहली request के बाद किए गए अतिरिक्त प्रयासों को दर्शाती है। डिबगिंग और टेलीमेट्री के लिए, पूरे हुए चरण में मॉडल के प्रयासों की अंतिम संख्या दर्ज रहती है।
+
+Local tools की concurrency नियंत्रित करने के लिए अलग से `ToolExecutionConfig` उपयोग करें। Model retries tools के अंदर विफल side effects को दोबारा नहीं चलाते।
+
+अतिरिक्त Responses API options `GatewayOptions.requestOptions` से दें; model, input, instructions और local function tools का प्रबंधन adapter करता है।
+
+## संबंधित विषय
+
+- [डायनामिक टर्न](./agent-sdk-dynamic-turns.mdx)
+- [रोकने की शर्तें](./agent-sdk-stop-conditions.mdx)
+- [त्रुटियाँ और समस्या निवारण](./agent-sdk-observability.mdx)

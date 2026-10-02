@@ -1,0 +1,22 @@
+---
+icon: "chart-spline"
+title: "Entwicklertools"
+description: "Zeichne Java-Agent-SDK-Läufe lokal für Entwicklung und Fehlerbehebung auf."
+---
+
+Aktiviere die lokale Laufaufzeichnung mit `AgentSdk.createAgentDevtools(...)`:
+
+```java
+var devtools = AgentSdk.createAgentDevtools(".phaseo-devtools");
+```
+
+Übergib diesen Wert über `RunOptions`. Die aufgezeichneten JSONL-Einträge enthalten Laufstatus und -dauer, Modell- und Provider-Details, Anfragen-IDs, Nachrichten, Schritte, Tool-Aktivität, Verbrauch, Kosten und strukturierte Fehler.
+
+<Warning>
+Agent-Eingaben, Nachrichten, Kontext und Tool-Ergebnisse können sensible Daten enthalten. Nimm das DevTools-Verzeichnis aus der Versionsverwaltung und aus Produktions-Images aus.
+</Warning>
+
+## Weiterführende Themen
+
+- [Lifecycle-Hooks](./agent-sdk-lifecycle-hooks.mdx)
+- [Fehler und Fehlerbehebung](./agent-sdk-observability.mdx)

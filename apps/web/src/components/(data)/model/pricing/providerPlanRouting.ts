@@ -165,6 +165,10 @@ export function getProviderModelScopeForPlan(
     const matchingProviderModels = provider.provider_models.filter((model) =>
         planModelKeys.has(buildProviderModelKey(model)),
     );
+    const tierModels = matchingProviderModels.filter(
+        (model) => model.service_tier != null && normalizePlan(model.service_tier) === normalizePlan(plan),
+    );
+    if (tierModels.length > 0) return tierModels;
     return matchingProviderModels.length > 0
         ? matchingProviderModels
         : provider.provider_models;

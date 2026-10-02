@@ -1,0 +1,67 @@
+---
+title: "Réviser du contenu CMS avec le SDK Agent PHP"
+icon: "file-check"
+description: "Utilisez le SDK Agent PHP pour intégrer un outil local de recherche de contenu dans un cycle de révision limité."
+---
+
+Utilisez cette recette lorsqu’une application PHP ou son interface d’administration a besoin d’aide pour réviser rapidement du contenu, sans déléguer l’orchestration à un autre système.
+
+## 1. Préparer les SDK
+
+<Note type="warning">Le package PHP Agent SDK n’est pas encore disponible sur Packagist. Suivez les [instructions d’installation depuis les sources](../sdk-reference/php/agent-sdk-installation.mdx).</Note>
+
+## 2. Définir un outil de recherche de contenu
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+
+$loadDraft = AgentSdk::defineTool(new Tool(
+    id: "load-draft",
+    description: "Load one CMS draft by slug.",
+    parameters: [
+        "type" => "object",
+        "properties" => [
+            "slug" => ["type" => "string"],
+        ],
+        "required" => ["slug"],
+    ],
+    execute: static fn (mixed $input, $context) => [
+        "slug" => $input["slug"] ?? "homepage",
+        "headline" => "Phaseo makes gateway routing visible.",
+    ]
+));
+```
+
+## 3. Créer et exécuter l’agent
+
+```php
+<?php
+use Phaseo\AgentSdk\AgentDefinition;
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "content-review-agent",
+    model: "openai/gpt-5.4-nano",
+    instructions: "Use tools when helpful and return concise editorial feedback.",
+    tools: [$loadDraft]
+));
+
+$result = $agent->run(
+    input: "Review the homepage draft and suggest one headline improvement.",
+    client: AgentSdk::createGatewayAgentClient()
+);
+
+echo $result->output . PHP_EOL;
+```
+
+## Quand utiliser cette recette
+
+- l’application PHP gère déjà la source du contenu
+- un ou deux outils locaux suffisent
+- vous souhaitez un cycle limité plutôt qu’une plateforme d’orchestration plus vaste
+
+## À lire aussi
+
+- [SDK Agent PHP](../sdk-reference/php/agent-sdk.mdx)
+- [Récupérer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
