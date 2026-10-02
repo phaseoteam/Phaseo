@@ -248,7 +248,8 @@
 			"endpointRealtime": "الوقت الفعلي",
 			"endpointVideoGeneration": "إنشاء الفيديو",
 			"endpointImageVariations": "تنويعات الصور",
-			"endpointMusicGeneration": "توليد الموسيقى"
+			"endpointMusicGeneration": "توليد الموسيقى",
+			"tierPrivate": "خاصة"
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",
@@ -269,7 +270,8 @@
 			"unknown": "غير معروف",
 			"never": "أبدًا",
 			"noEligibleTitle": "لا توجد نماذج مجانية مؤهلة الآن",
-			"noEligibleDescription": "لا يتوفر حاليًا في الموجّه المجاني أي نموذج نشط مؤهل لتوجيه النص المعتاد."
+			"noEligibleDescription": "لا يتوفر حاليًا في الموجّه المجاني أي نموذج نشط مؤهل لتوجيه النص المعتاد.",
+			"embedDescription": "مسار بوابة مرن لاكتشاف النماذج المتاحة ومقارنتها."
 		},
 		"cardView": "عرض البطاقات",
 		"tableView": "عرض الجدول",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "بدون Phaseo Routing:",
 			"hourlyAverage": "آخر 24 ساعة · المتوسط لكل ساعة",
 			"routingChartLabel": "وقت تشغيل النموذج لكل ساعة خلال آخر 24 ساعة. Phaseo Routing: {uptime}.{comparison}",
-			"routingComparison": " بدون Phaseo Routing: {uptime}."
+			"routingComparison": " بدون Phaseo Routing: {uptime}.",
+			"routingLabel": "توجيه Phaseo"
 		},
 		"providerInfo": {
 			"dataPolicy": "سياسة البيانات",
@@ -1576,7 +1579,8 @@
 			"remaining": "متبقية",
 			"totalDays": "إجمالي الأيام: {count}",
 			"modalityStructured": "حالة منظمة",
-			"modalityDecisions": "القرارات"
+			"modalityDecisions": "القرارات",
+			"viewLicense": "عرض الترخيص"
 		},
 		"performance": {
 			"noTelemetry": "لا توجد بيانات قياس عن Gateway خلال آخر 7 أيام",
@@ -1685,7 +1689,9 @@
 				"footer": "جميع الأوقات بتوقيت UTC. تجمع القيم متوسطات الساعات للفترة المحددة."
 			},
 			"observationsShown": "{description} يتم عرض {series}.",
-			"requestSuccess": "نجاح الطلبات"
+			"requestSuccess": "نجاح الطلبات",
+			"hiddenAttribution": "نسبة النتائج إلى المزوّد مخفية لهذا النموذج. تستخدم الاتجاهات ملاحظات على مستوى النموذج ككل.",
+			"selectTimeRange": "اختيار فترة الأداء"
 		},
 		"routeHelp": {
 			"external": "مزوّدون خارجيون",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "الصوت المفرّغ نصيًا",
 		"recentRequests": "{count} طلبات حديثة",
 		"intelligenceBenchmarks": "معايير تقييم الذكاء",
-		"noMeasuredUsage": "لا يوجد استخدام مقاس خلال آخر 30 يومًا."
+		"noMeasuredUsage": "لا يوجد استخدام مقاس خلال آخر 30 يومًا.",
+		"intelligenceValue": {
+			"barsCaption": "USD لكل نقطة ذكاء · من الأفضل إلى الأسوأ · الأقل أفضل",
+			"barAria": "{model}: {cost} لكل نقطة ذكاء، {configuration}",
+			"loadingChart": "جارٍ تحميل مخطط القيمة…",
+			"chartDisplay": "عرض مخطط القيمة",
+			"usdPerPoint": "USD لكل نقطة",
+			"scoreVsCost": "الدرجة مقابل التكلفة",
+			"configurationCount": "{visible} من {total} إعدادات",
+			"searchConfigurations": "البحث عن نماذج أو إعدادات",
+			"searchPlaceholder": "البحث عن نماذج أو إعدادات…",
+			"evaluatedConfigurations": "الإعدادات المقيّمة",
+			"noConfiguration": "لم يُعثر على إعداد مقيّم.",
+			"selectModels": "اختر نماذج للمقارنة.",
+			"perPoint": "{cost} / نقطة",
+			"rankSummary": "المرتبة {rank} من {total} إعدادات",
+			"scatterCaption": "الذكاء مقابل تكلفة التقييم · الأقل والأبعد يمينًا أفضل. تمثل كل نقطة إعدادًا مقيّمًا.",
+			"scatterAria": "مخطط مبعثر لدرجة الذكاء مقابل تكلفة التقييم. القيم الدقيقة مدرجة أدناه.",
+			"intelligenceScore": "درجة الذكاء",
+			"evaluationCostUsd": "تكلفة التقييم (USD)",
+			"intelligenceValue": "الذكاء: {score}",
+			"evaluationCostValue": "تكلفة التقييم: {cost}",
+			"perIntelligencePoint": "{cost} / نقطة ذكاء",
+			"tableCaption": "تكلفة التقييم لكل نقطة ذكاء، مرتبة من الأقل تكلفة. تستخدم الدرجات والتكاليف الإعداد المقيّم نفسه.",
+			"modelConfiguration": "النموذج / الإعداد",
+			"evaluationCostShort": "تكلفة التقييم",
+			"usdPerPointColumn": "USD / نقطة",
+			"slow": "بطيء",
+			"speed": "السرعة"
+		}
 	},
 	"compare": {
 		"title": "مقارنة النماذج",

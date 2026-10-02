@@ -113,7 +113,7 @@ export default function CreateManagementKeyDialog({
 			setPlainKey(null);
 			setLoading(false);
 			toast.error(
-				t("strings.Missing workspace context. Select a workspace in the header and try again." as never),
+				t("strings.phraseMissingWorkspaceContextSelectAWorkspaceInTheHeaderAndTryAgain" as never),
 			);
 			return;
 		}
@@ -178,11 +178,11 @@ export default function CreateManagementKeyDialog({
 						{t("strings.Create Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						{t("strings.Choose the minimum access this management API key needs." as never)}
+						{t("strings.phraseChooseTheMinimumAccessThisManagementAPIKeyNeeds" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
 						{t("keys.keyShownOnce")} <strong>{t("strings.once" as never)}</strong>{" "}
-						{t("strings.and grants elevated privileges. Store it securely." as never)}
+						{t("strings.phraseAndGrantsElevatedPrivilegesStoreItSecurely" as never)}
 					</p>
 				</DialogHeader>
 
@@ -225,7 +225,7 @@ export default function CreateManagementKeyDialog({
 						<Input
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							placeholder={t("strings.Key name (e.g. production management)" as never)}
+							placeholder={t("strings.phraseKeyNameEGProductionManagement" as never)}
 						/>
 						<div className="space-y-2">
 							<label id="management-key-template-label" className="text-sm font-medium">
@@ -262,7 +262,7 @@ export default function CreateManagementKeyDialog({
 							placeholder={t("keys.optionalExpiry")}
 							/>
 							<p className="text-xs text-muted-foreground">
-								{t("strings.Optional. Leave blank to keep this management key active until you revoke or pause it." as never)}
+								{t("strings.phraseOptionalLeaveBlankToKeepThisManagementKeyActiveUntilYouRevokeOrPauseIt" as never)}
 							</p>
 						</div>
 						<DialogFooter>
@@ -286,7 +286,7 @@ export default function CreateManagementKeyDialog({
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">
-							{t("strings.This key will not be shown again and grants elevated privileges. Keep this code secret at all times." as never)}
+							{t("strings.phraseThisKeyWillNotBeShownAgainAndGrantsElevatedPrivilegesKeepThisCodeSecretAtAllTimes" as never)}
 						</p>
 						<SecretRevealActions
 							secret={plainKey}

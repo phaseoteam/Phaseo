@@ -166,6 +166,7 @@ export function ChatSidebar({
 	activeTagId,
 	onTagFilterChange,
 }: ChatSidebarProps) {
+	const tAuditCopy = useTranslations();
 	const tUi = useTranslations("Common.ui");
 	const tChat = useTranslations("Product.chat");
 	const tSearch = useTranslations("Common.search");
@@ -512,7 +513,7 @@ export function ChatSidebar({
 								))}
 								{threads.length === 0 && (
 									<p className="px-2 py-4 text-xs text-muted-foreground">
-										{activeTagId ? "No chats with this tag." : "No chats yet."}
+										{activeTagId ? tAuditCopy("Common.ui.auditCopy.noChatsWithTag") : tAuditCopy("SettingsUI.chatGaps.noChats")}
 									</p>
 								)}
 							</SidebarMenu>

@@ -248,7 +248,8 @@
 			"endpointRealtime": "Echtzeit",
 			"endpointVideoGeneration": "Videogenerierung",
 			"endpointImageVariations": "Bildvariationen",
-			"endpointMusicGeneration": "Musikgenerierung"
+			"endpointMusicGeneration": "Musikgenerierung",
+			"tierPrivate": "Privat"
 		},
 		"freeRouter": {
 			"title": "Kostenloser Modellpool",
@@ -269,7 +270,8 @@
 			"unknown": "Unbekannt",
 			"never": "Nie",
 			"noEligibleTitle": "Derzeit keine geeigneten kostenlosen Modelle",
-			"noEligibleDescription": "Der kostenlose Router hat derzeit keine aktiven geeigneten Modelle für normales Text-Routing."
+			"noEligibleDescription": "Der kostenlose Router hat derzeit keine aktiven geeigneten Modelle für normales Text-Routing.",
+			"embedDescription": "Eine flexible Gateway-Route zum Entdecken und Vergleichen verfügbarer Modelle."
 		},
 		"cardView": "Kartenansicht",
 		"tableView": "Tabellenansicht",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "Ohne Phaseo Routing:",
 			"hourlyAverage": "Letzte 24 Stunden · stündlicher Durchschnitt",
 			"routingChartLabel": "Stündliche Modellverfügbarkeit in den letzten 24 Stunden. Phaseo Routing: {uptime}.{comparison}",
-			"routingComparison": " Ohne Phaseo Routing: {uptime}."
+			"routingComparison": " Ohne Phaseo Routing: {uptime}.",
+			"routingLabel": "Phaseo-Routing"
 		},
 		"providerInfo": {
 			"dataPolicy": "Datenschutzrichtlinie",
@@ -1576,7 +1579,8 @@
 			"remaining": "verbleibend",
 			"totalDays": "{count, plural, one {# Tag insgesamt} other {# Tage insgesamt}}",
 			"modalityStructured": "Strukturierter Zustand",
-			"modalityDecisions": "Entscheidungen"
+			"modalityDecisions": "Entscheidungen",
+			"viewLicense": "Lizenz anzeigen"
 		},
 		"performance": {
 			"noTelemetry": "Keine Gateway-Telemetrie in den letzten 7 Tagen",
@@ -1685,7 +1689,9 @@
 				"footer": "Alle Zeitangaben sind in UTC. Die Werte fassen Stundenmediane des ausgewählten Berichtszeitraums zusammen."
 			},
 			"observationsShown": "{description} Angezeigt werden {series}.",
-			"requestSuccess": "Erfolgreiche Anfragen"
+			"requestSuccess": "Erfolgreiche Anfragen",
+			"hiddenAttribution": "Die Anbieterzuordnung ist für dieses Modell ausgeblendet. Trends basieren auf Beobachtungen für das gesamte Modell.",
+			"selectTimeRange": "Leistungszeitraum auswählen"
 		},
 		"routeHelp": {
 			"external": "Externe Anbieter",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "Transkribiertes Audio",
 		"recentRequests": "{count} aktuelle Anfragen",
 		"intelligenceBenchmarks": "Intelligenz-Benchmarks",
-		"noMeasuredUsage": "Keine gemessene Nutzung in den letzten 30 Tagen."
+		"noMeasuredUsage": "Keine gemessene Nutzung in den letzten 30 Tagen.",
+		"intelligenceValue": {
+			"barsCaption": "USD pro Intelligenzpunkt · Beste bis schlechteste · Niedriger ist besser",
+			"barAria": "{model}: {cost} pro Intelligenzpunkt, {configuration}",
+			"loadingChart": "Wertdiagramm wird geladen…",
+			"chartDisplay": "Darstellung des Wertdiagramms",
+			"usdPerPoint": "USD pro Punkt",
+			"scoreVsCost": "Punktzahl und Kosten",
+			"configurationCount": "{visible} von {total} Konfigurationen",
+			"searchConfigurations": "Modelle oder Konfigurationen suchen",
+			"searchPlaceholder": "Modelle oder Konfigurationen suchen…",
+			"evaluatedConfigurations": "Bewertete Konfigurationen",
+			"noConfiguration": "Keine bewertete Konfiguration gefunden.",
+			"selectModels": "Wählen Sie Modelle zum Vergleichen aus.",
+			"perPoint": "{cost} / Punkt",
+			"rankSummary": "Rang {rank} von {total} Konfigurationen",
+			"scatterCaption": "Intelligenz und Bewertungskosten · Weiter unten und rechts ist besser. Jeder Punkt steht für eine bewertete Konfiguration.",
+			"scatterAria": "Streudiagramm der Intelligenzpunktzahl und Bewertungskosten. Die genauen Werte stehen unten.",
+			"intelligenceScore": "Intelligenzpunktzahl",
+			"evaluationCostUsd": "Bewertungskosten (USD)",
+			"intelligenceValue": "Intelligenz: {score}",
+			"evaluationCostValue": "Bewertungskosten: {cost}",
+			"perIntelligencePoint": "{cost} / Intelligenzpunkt",
+			"tableCaption": "Bewertungskosten pro Intelligenzpunkt, beginnend mit den niedrigsten Kosten. Punktzahlen und Kosten beziehen sich auf dieselbe bewertete Konfiguration.",
+			"modelConfiguration": "Modell / Konfiguration",
+			"evaluationCostShort": "Bewertungskosten",
+			"usdPerPointColumn": "USD / Punkt",
+			"slow": "Langsam",
+			"speed": "Geschwindigkeit"
+		}
 	},
 	"compare": {
 		"title": "Modelle vergleichen",

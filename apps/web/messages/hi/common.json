@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "उपनाम सहेजे गए। सार्वजनिक कैश रीफ़्रेश विफल हुआ; कैश नियंत्रण से पुनः प्रयास करें।",
 				"noticeCacheFailed": "सूचना सहेजी गई। सार्वजनिक कैश रीफ़्रेश विफल हुआ; कैश नियंत्रण से पुनः प्रयास करें।",
 				"sectionStillLoading": "{section} का डेटा अभी लोड हो रहा है। थोड़ी देर प्रतीक्षा करके पुनः प्रयास करें।"
-			}
+			},
+			"successorNotificationHelp": "वंशावली से स्वतंत्र; सूचनाओं में अनुशंसित माइग्रेशन लक्ष्य के रूप में उपयोग किया जाता है।"
 		},
 		"auditDataTable": {
 			"actions": "क्रियाएँ",
@@ -2387,7 +2388,47 @@
 			"frame": "फ़्रेम",
 			"frames": "फ़्रेम",
 			"message": "संदेश",
-			"messages": "संदेश"
+			"messages": "संदेश",
+			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ"
+		},
+		"publicModelCopy": {
+			"days": "{count} दिन",
+			"allPercentileBands": "सभी उपलब्ध पर्सेंटाइल बैंड",
+			"hiddenProviderObservations": "पूरे मॉडल के अवलोकन; प्रदाताओं की पहचान छिपी है",
+			"providerObservations": "दर्ज सभी {count} प्रदाताओं के {resolution, select, hour {प्रति घंटे} other {दैनिक}} अवलोकन",
+			"modelWide": "पूरे मॉडल में",
+			"changePercent": "{value} प्रतिशत बदलाव",
+			"freeRouterDescription": "प्रत्येक अनुरोध को प्रदाता के अनुसार संतुलन के साथ पात्र मुफ़्त मॉडल समूह में भेजता है। यहाँ वर्तमान पात्र मॉडल और हाल के रूट किए गए उपयोग की समीक्षा करें।",
+			"modelCreator": "मॉडल का निर्माता",
+			"inputOutputDescription": "यह {inputs} इनपुट स्वीकार करता है और {outputs} आउटपुट बनाता है।",
+			"inputDescription": "यह {inputs} इनपुट स्वीकार करता है।",
+			"outputDescription": "इसे {outputs} वर्कलोड के लिए बनाया गया है।",
+			"modelDetailsRetry": "मॉडल का विवरण लोड नहीं हो सका। हम अपने आप फिर कोशिश करेंगे।",
+			"loadingModelDetails": "मॉडल का विवरण लोड हो रहा है…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", क्रमबद्ध नहीं",
+			"sortedAscending": ", आरोही क्रम",
+			"sortedDescending": ", अवरोही क्रम",
+			"sendDiscordAnnouncement": "Discord घोषणा भेजें",
+			"announcementSent": "Discord घोषणा भेजी गई",
+			"announcementStateNotSaved": "Discord घोषणा भेजी गई, लेकिन उसकी स्थिति सहेजी नहीं जा सकी।",
+			"announcementFailed": "Discord घोषणा नहीं भेजी जा सकी।",
+			"invalidModelId": "मॉडल ID अमान्य है।",
+			"modelNotFound": "कैटलॉग में मॉडल नहीं मिला।",
+			"modelIdMissing": "कैटलॉग रिकॉर्ड में मॉडल ID मौजूद नहीं है।"
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "आपका चैट इतिहास तैयार नहीं हो सका। फिर कोशिश करने के लिए पेज दोबारा लोड करें।",
+			"loadingChat": "चैट लोड हो रही है…",
+			"noChatsWithTag": "इस टैग के साथ कोई चैट नहीं है।",
+			"dateUnknown": "तारीख अज्ञात",
+			"rightOnTheMoney": "कीमत बिल्कुल सही",
+			"priceLocked": "कीमत तय कर दी गई",
+			"workspaceSuffix": " {named, select, yes {{workspace} के लिए} other {इस कार्यक्षेत्र के लिए}}",
+			"noActivity": "कोई गतिविधि नहीं",
+			"requestErrorMessage": "अनुरोध का त्रुटि संदेश",
+			"openDetails": "विवरण खोलें"
 		}
 	}
 }

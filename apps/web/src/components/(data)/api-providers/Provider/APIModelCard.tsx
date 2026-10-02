@@ -257,6 +257,7 @@ function EndpointPill({ endpoint, fallbackLabel }: { endpoint?: string | null; f
 
 export default function APIModelCard({ model }: { model: APIProviderModels }) {
 	const t = useTranslations("Catalogue.apiModelCard");
+	const tx = useTranslations();
 	const tProviderModelList = useTranslations("Catalogue.providerModelList");
 	const tModelMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tStatus = useTranslations("Catalogue.modelDetail.providerTable.statusDescriptions");
@@ -346,7 +347,7 @@ export default function APIModelCard({ model }: { model: APIProviderModels }) {
 			<div className="pr-10">
 				{isComingSoon ? (
 					<Badge variant="secondary" className="mb-2 border-blue-200 bg-blue-50 text-xs font-medium text-blue-700">
-						Coming soon
+						{tx("Catalogue.common.comingSoon")}
 					</Badge>
 				) : null}
 				<h3 className="text-base sm:text-lg font-semibold leading-tight line-clamp-2">

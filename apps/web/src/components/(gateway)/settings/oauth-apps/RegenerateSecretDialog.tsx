@@ -92,14 +92,14 @@ export default function RegenerateSecretDialog({
 					<DialogHeader>
 						<DialogTitle>{t("strings.New Client Secret" as never)}</DialogTitle>
 						<DialogDescription>
-							{t("strings.Save your new secret now. It will not be shown again." as never)}
+							{t("strings.phraseSaveYourNewSecretNowItWillNotBeShownAgain" as never)}
 						</DialogDescription>
 					</DialogHeader>
 
 					<Alert>
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							<strong>{t("strings.Important:" as never)}</strong> {t("strings.Copy your new secret now. The old secret has been invalidated." as never)}
+							<strong>{t("strings.Important:" as never)}</strong> {t("strings.phraseCopyYourNewSecretNowTheOldSecretHasBeenInvalidated" as never)}
 						</AlertDescription>
 					</Alert>
 
@@ -151,7 +151,7 @@ export default function RegenerateSecretDialog({
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.This action cannot be undone. The old secret will be immediately invalidated." as never)}
+						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneTheOldSecretWillBeImmediatelyInvalidated" as never)}
 					</AlertDescription>
 				</Alert>
 
@@ -170,7 +170,7 @@ export default function RegenerateSecretDialog({
 						onClick={handleRegenerate}
 						disabled={loading}
 					>
-						{loading ? t("strings.Regenerating..." as never) : t("strings.Regenerate Secret" as never)}
+						{loading ? t("strings.phraseRegenerating" as never) : t("strings.Regenerate Secret" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

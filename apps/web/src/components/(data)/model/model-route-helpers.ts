@@ -3,12 +3,9 @@ import {
 	fetchFrontendModelHeader,
 	fetchFrontendModelOverview,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { resolveLocalizedModelDescription } from "@/i18n/localized-model-description";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
-	buildGeneratedModelDescription,
-	resolveModelDescription,
-} from "@/lib/models/modelDescription";
-import {
-	FREE_ROUTER_DESCRIPTION,
 	FREE_ROUTER_MODEL_ID,
 	FREE_ROUTER_NAME,
 	isFreeRouterModelId,
@@ -57,14 +54,16 @@ export async function getModelMetadataIdentity(
 	includeHidden: boolean,
 ): Promise<ModelMetadataIdentity> {
 	const requestedModelId = getModelIdFromParams(params);
-	const fallbackName = decodeURIComponent(params.modelId ?? "").trim() || "AI model";
+	const [locale, t] = await Promise.all([getLocale(), getTranslations()]);
+	const describeModel = (model: Parameters<typeof resolveLocalizedModelDescription>[0]) => resolveLocalizedModelDescription(model, locale, t);
+	const fallbackName = decodeURIComponent(params.modelId ?? "").trim() || t("Common.ui.chatComposer.model");
 
 	if (isFreeRouterModelId(requestedModelId)) {
 		return {
 			modelId: FREE_ROUTER_MODEL_ID,
 			modelName: FREE_ROUTER_NAME,
 			organisationName: "Phaseo",
-			modelDescription: FREE_ROUTER_DESCRIPTION,
+			modelDescription: t("Common.ui.publicModelCopy.freeRouterDescription"),
 		};
 	}
 
@@ -75,7 +74,7 @@ export async function getModelMetadataIdentity(
 				modelId,
 				modelName: overview.name?.trim() || fallbackName,
 				organisationName: overview.organisation?.name ?? null,
-				modelDescription: resolveModelDescription(overview),
+				modelDescription: describeModel(overview),
 			} : null;
 		};
 		const direct = await identityFromOverview(requestedModelId);
@@ -94,7 +93,7 @@ export async function getModelMetadataIdentity(
 			modelId: requestedModelId,
 			modelName: fallbackName,
 			organisationName: null,
-			modelDescription: buildGeneratedModelDescription({
+			modelDescription: describeModel({
 				model_id: requestedModelId,
 				name: fallbackName,
 			}),
@@ -117,8 +116,8 @@ export async function getModelMetadataIdentity(
 			modelName: header.name?.trim() || fallbackName,
 			organisationName: header.organisation?.name ?? null,
 			modelDescription: modelOverview
-				? resolveModelDescription(modelOverview)
-				: buildGeneratedModelDescription({
+				? describeModel(modelOverview)
+				: describeModel({
 						model_id: requestedModelId,
 						name: header.name?.trim() || fallbackName,
 						organisation_id: header.organisation_id,
@@ -149,8 +148,8 @@ export async function getModelMetadataIdentity(
 					modelName: canonicalHeader.name?.trim() || fallbackName,
 					organisationName: canonicalHeader.organisation?.name ?? null,
 					modelDescription: canonicalModelOverview
-						? resolveModelDescription(canonicalModelOverview)
-						: buildGeneratedModelDescription({
+						? describeModel(canonicalModelOverview)
+						: describeModel({
 								model_id: canonicalModelId,
 								name: canonicalHeader.name?.trim() || fallbackName,
 								organisation_id: canonicalHeader.organisation_id,
@@ -167,7 +166,7 @@ export async function getModelMetadataIdentity(
 			modelId: requestedModelId,
 			modelName: fallbackName,
 			organisationName: null,
-			modelDescription: buildGeneratedModelDescription({
+			modelDescription: describeModel({
 				model_id: requestedModelId,
 				name: fallbackName,
 			}),

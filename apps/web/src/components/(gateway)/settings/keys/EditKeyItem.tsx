@@ -137,7 +137,7 @@ function LimitInput({
 				/>
 				{kind === "requests" ? (
 					<InputGroupAddon align="inline-end">
-						<InputGroupText>req</InputGroupText>
+						<InputGroupText>{t("strings.Requests" as never)}</InputGroupText>
 					</InputGroupAddon>
 				) : null}
 			</InputGroup>
@@ -181,10 +181,10 @@ export default function EditKeyItem({
 		event.preventDefault();
 		const trimmedName = name.trim();
 		if (!trimmedName) {
-			toast.error(t("strings.Key name is required." as never));
+			toast.error(t("strings.phraseKeyNameIsRequired" as never));
 			return;
 		}
-		const limitPayload = buildLimitPayload(limits, t("strings.Limits must be zero or a positive number." as never));
+		const limitPayload = buildLimitPayload(limits, t("strings.phraseLimitsMustBeZeroOrAPositiveNumber" as never));
 		if (!limitPayload) return;
 
 		setSaving(true);
@@ -197,7 +197,7 @@ export default function EditKeyItem({
 			await toast.promise(
 				promise,
 				{
-					loading: t("strings.Saving key..." as never),
+					loading: t("strings.phraseSavingKey" as never),
 					success: t("strings.Key updated" as never),
 					error: (error) => localizedSettingsError(error, t, "Failed to update key"),
 				},
@@ -225,7 +225,7 @@ export default function EditKeyItem({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Edit API Key" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("strings.Manage the key name, availability, and usage limits." as never)}
+						{t("strings.phraseManageTheKeyNameAvailabilityAndUsageLimits" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-6">
@@ -238,7 +238,7 @@ export default function EditKeyItem({
 						<div className="flex items-center justify-between gap-4">
 							<div>
 								<div className="text-sm font-medium">{t("strings.Enabled" as never)}</div>
-								<div className="text-xs text-muted-foreground">{t("strings.Disabled keys cannot make gateway requests." as never)}</div>
+								<div className="text-xs text-muted-foreground">{t("strings.phraseDisabledKeysCannotMakeGatewayRequests" as never)}</div>
 							</div>
 							<Switch checked={enabled} onCheckedChange={setEnabled} aria-label={t("strings.Key enabled" as never)} />
 						</div>
@@ -249,7 +249,7 @@ export default function EditKeyItem({
 					<section className="space-y-4">
 						<div>
 							<div className="text-sm font-medium">{t("strings.Limits" as never)}</div>
-							<div className="text-xs text-muted-foreground">{t("strings.Leave a field blank for unlimited." as never)}</div>
+							<div className="text-xs text-muted-foreground">{t("strings.phraseLeaveAFieldBlankForUnlimited" as never)}</div>
 						</div>
 						<div className="grid gap-4 md:grid-cols-3">
 							<LimitInput id="edit-key-daily-requests" label={t("keys.dailyRequests")} value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
@@ -265,7 +265,7 @@ export default function EditKeyItem({
 
 					<DialogFooter>
 						<DialogClose asChild><Button type="button" variant="ghost">{t("strings.Cancel" as never)}</Button></DialogClose>
-						<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.Saving..." as never) : t("strings.Save Changes" as never)}</Button>
+						<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving" as never) : t("strings.Save Changes" as never)}</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>

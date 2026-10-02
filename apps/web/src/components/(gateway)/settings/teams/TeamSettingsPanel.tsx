@@ -4,7 +4,8 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -180,11 +181,11 @@ export default function TeamSettingsPanel({
 		try {
 			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "POST", headers: { "content-type": file.type }, body: file });
 			const payload = await response.json() as { logoUrl?: string; error?: string };
-			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? "Could not upload the workspace logo.");
+			if (!response.ok || !payload.logoUrl) throw new Error(payload.error ?? t("newMainSettingsCopy.logoUploadFailed"));
 			setLogoUrl(payload.logoUrl);
 			void invalidateSettings();
-			toast.success("Workspace logo updated.");
-		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not upload the workspace logo."); }
+			toast.success(t("newMainSettingsCopy.logoUpdated"));
+		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not upload the workspace logo.", t("newMainSettingsCopy.logoUploadFailed"))); }
 		finally { setLogoUploading(false); if (logoInputRef.current) logoInputRef.current.value = ""; }
 	}
 
@@ -194,11 +195,11 @@ export default function TeamSettingsPanel({
 		try {
 			const response = await fetch(`/api/account/settings/teams/${encodeURIComponent(workspaceId)}/logo`, { method: "DELETE" });
 			const payload = await response.json() as { error?: string };
-			if (!response.ok) throw new Error(payload.error ?? "Could not remove the workspace logo.");
+			if (!response.ok) throw new Error(payload.error ?? t("newMainSettingsCopy.logoRemoveFailed"));
 			setLogoUrl(null);
 			void invalidateSettings();
-			toast.success("Workspace logo removed.");
-		} catch (error) { toast.error(error instanceof Error ? error.message : "Could not remove the workspace logo."); }
+			toast.success(t("newMainSettingsCopy.logoRemoved"));
+		} catch (error) { toast.error(localizedSettingsError(error, t, "Could not remove the workspace logo.", t("newMainSettingsCopy.logoRemoveFailed"))); }
 		finally { setLogoUploading(false); }
 	}
 
@@ -234,19 +235,19 @@ export default function TeamSettingsPanel({
 			>
 				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 					<div className="min-w-0">
-						<Label className="text-sm font-medium">Workspace Logo</Label>
-						<p className="mt-0.5 text-sm text-muted-foreground">Shown on private models and workspace-owned resources.</p>
+						<Label className="text-sm font-medium">{t("newMainSettingsCopy.workspaceLogo")}</Label>
+						<p className="mt-0.5 text-sm text-muted-foreground">{t("newMainSettingsCopy.logoHelp")}</p>
 					</div>
 					<div className="flex w-full shrink-0 items-center gap-3 sm:w-[min(32rem,55%)]">
 						<Avatar className="size-12 rounded-md border bg-muted/30 after:rounded-md">
-							{logoUrl ? <AvatarImage src={logoUrl} alt={`${initialTeamName} logo`} className="rounded-md object-cover" /> : null}
+							{logoUrl ? <AvatarImage src={logoUrl} alt={t("newMainSettingsCopy.logoAlt", {workspace: initialTeamName})} className="rounded-md object-cover" /> : null}
 							<AvatarFallback className="rounded-md text-sm font-semibold">{initialTeamName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
 						</Avatar>
 						<input ref={logoInputRef} className="sr-only" type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadLogo(file); }} />
 						<Button type="button" variant="outline" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => logoInputRef.current?.click()}>
-							{logoUploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />} Upload
+							{logoUploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />} {t("newMainSettingsCopy.upload")}
 						</Button>
-						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>Remove</Button> : null}
+						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>{t("newMainSettingsCopy.remove")}</Button> : null}
 					</div>
 				</div>
 				<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
@@ -303,7 +304,7 @@ export default function TeamSettingsPanel({
 							{saving ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									{t("strings.Saving..." as never)}
+									{t("strings.phraseSaving" as never)}
 								</>
 							) : (
 								t("strings.Save" as never)
@@ -450,7 +451,7 @@ function ConfirmDeleteTeam({
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								{t("strings.Deleting..." as never)}
+								{t("strings.phraseDeleting" as never)}
 							</>
 						) : (
 							t("workspace.confirmDeleteWorkspaceButton")

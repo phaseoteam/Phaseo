@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -35,11 +36,11 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		const promise = write(deletePresetAction(p.id, confirm));
 		try {
 			await toast.promise(promise, {
-				loading: t("strings.Deleting preset..." as never),
+				loading: t("strings.phraseDeletingPreset" as never),
 				success: t("strings.Preset deleted" as never),
 				error: (err) => {
 					return (
-						(err && (err as any).message) || t("strings.Failed to delete preset" as never)
+						localizedSettingsError(err, t, "Failed to delete preset")
 					);
 				},
 			});
@@ -72,7 +73,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 						{t("strings.Delete Preset" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						{t("strings.This action is permanent and cannot be undone." as never)}
+						{t("strings.phraseThisActionIsPermanentAndCannotBeUndone" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onDelete} className="space-y-4">

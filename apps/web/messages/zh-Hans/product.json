@@ -1693,7 +1693,9 @@
 		"save": "保存",
 		"model": "模型",
 		"throughput": "吞吐量",
-		"responsePlaceholder": "响应将显示在此处……"
+		"responsePlaceholder": "响应将显示在此处……",
+		"gatewayLabel": "网关",
+		"openaiThroughput": "OpenAI API（词元/秒）"
 	},
 	"gatewayBenchmark": {
 		"title": "网关性能对比",

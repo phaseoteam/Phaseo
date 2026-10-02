@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "别名已保存。公开缓存刷新失败；请通过缓存控制重试。",
 				"noticeCacheFailed": "提示已保存。公开缓存刷新失败；请通过缓存控制重试。",
 				"sectionStillLoading": "{section}数据仍在加载。请稍等片刻后重试。"
-			}
+			},
+			"successorNotificationHelp": "与模型谱系无关；用作通知中推荐的迁移目标。"
 		},
 		"auditDataTable": {
 			"actions": "操作",
@@ -2387,7 +2388,47 @@
 			"frame": "帧",
 			"frames": "帧",
 			"message": "消息",
-			"messages": "消息"
+			"messages": "消息",
+			"serviceTierLineStyles": "服务层级线条样式"
+		},
+		"publicModelCopy": {
+			"days": "{count}天",
+			"allPercentileBands": "所有可用的百分位区间",
+			"hiddenProviderObservations": "模型整体观测数据；提供商身份已隐藏",
+			"providerObservations": "全部{count}个已记录提供商的{resolution, select, hour {每小时} other {每日}}观测数据",
+			"modelWide": "模型整体",
+			"changePercent": "变化{value}百分比",
+			"freeRouterDescription": "通过考虑提供商的负载均衡，将每个请求路由到符合条件的免费模型池。在此查看当前符合条件的模型和最近的路由使用情况。",
+			"modelCreator": "模型创建者",
+			"inputOutputDescription": "接受{inputs}输入并生成{outputs}输出。",
+			"inputDescription": "接受{inputs}输入。",
+			"outputDescription": "专为{outputs}工作负载设计。",
+			"modelDetailsRetry": "无法加载模型详情。我们将自动重试。",
+			"loadingModelDetails": "正在加载模型详情…"
+		},
+		"finalSharedCopy": {
+			"notSorted": "，未排序",
+			"sortedAscending": "，升序排列",
+			"sortedDescending": "，降序排列",
+			"sendDiscordAnnouncement": "发送 Discord 公告",
+			"announcementSent": "Discord 公告已发送",
+			"announcementStateNotSaved": "Discord 公告已发送，但无法保存其状态。",
+			"announcementFailed": "无法发送 Discord 公告。",
+			"invalidModelId": "模型 ID 无效。",
+			"modelNotFound": "目录中未找到该模型。",
+			"modelIdMissing": "目录记录中缺少模型 ID。"
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "无法准备聊天记录。请重新加载后重试。",
+			"loadingChat": "正在加载聊天…",
+			"noChatsWithTag": "没有使用此标签的聊天。",
+			"dateUnknown": "日期未知",
+			"rightOnTheMoney": "价格猜对了",
+			"priceLocked": "价格已锁定",
+			"workspaceSuffix": "{named, select, yes {（{workspace}）} other {（此工作区）}}",
+			"noActivity": "无活动",
+			"requestErrorMessage": "请求错误消息",
+			"openDetails": "打开详情"
 		}
 	}
 }

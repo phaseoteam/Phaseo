@@ -76,6 +76,7 @@ function DeltaPill({
 	className?: string;
 }) {
 	const format = useDisplayFormatters();
+	const tx = useTranslations();
 	const isPositive = trend === "up";
 	const isNeutral = trend === "neutral";
 	const isGood = invertColors ? !isPositive : isPositive;
@@ -101,7 +102,7 @@ function DeltaPill({
 				styles,
 				className,
 			)}
-			aria-label={`Change ${format.number(value)} percent`}
+			aria-label={tx("Common.ui.publicModelCopy.changePercent", { value: format.number(value) })}
 		>
 			<Icon className="h-3.5 w-3.5" aria-hidden />
 			{value >= 0 ? "+" : "-"}

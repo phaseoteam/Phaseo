@@ -401,6 +401,7 @@ function ResultCard({
 }
 
 function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
+	const tAuditCopy = useTranslations();
   const t = useTranslations("Product.games");
   const format = useDisplayFormatters();
   const formatPrice = (value: number) =>
@@ -486,8 +487,8 @@ function PriceleGame({ puzzle }: { puzzle: PricelePuzzle }) {
           success={state.guesses.some((guess) => guess.correct)}
           title={
             state.guesses.some((guess) => guess.correct)
-              ? "Right on the money"
-              : "Price locked"
+              ? tAuditCopy("Common.ui.auditCopy.rightOnTheMoney")
+              : tAuditCopy("Common.ui.auditCopy.priceLocked")
           }
           answer={state.answer}
         />

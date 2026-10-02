@@ -740,7 +740,7 @@ export default function AutoTopUpClient({
 					<Alert className="rounded-lg border-amber-500/25 bg-amber-500/5 px-3 py-2.5">
 						<ShieldCheck className="h-4 w-4 text-amber-700 dark:text-amber-300" />
 						<AlertTitle className="text-xs text-amber-950 dark:text-amber-100">
-							Two-factor authentication is not enabled
+							{t("newMainSettingsCopy.mfaNotEnabled")}
 						</AlertTitle>
 						<AlertDescription className="text-xs">
 							{t.rich("credits.autoTopUpPanel.activeMfaDescription", { mfa: (chunks) => <Link href="/settings/account/mfa">{chunks}</Link> })}

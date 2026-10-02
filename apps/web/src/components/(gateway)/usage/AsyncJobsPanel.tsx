@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import ConfigurableLogTable from "./ConfigurableLogTable";
@@ -95,7 +97,7 @@ function AsyncJobHeader({
 	providerNames: Map<string, string>;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const locale = useLocale();
 	const formatTimestamp = (value: string | null | undefined) =>
 		formatLocalizedTimestamp(value, locale);
@@ -403,7 +405,7 @@ function JobStatusBadge({ status }: { status: string | null | undefined }) {
 	const presentation = jobStatusPresentation(status);
 	return (
 		<Badge variant="outline" className={presentation.className}>
-			{t(`strings.${presentation.label}` as never)}
+			{t(settingsStringKey(presentation.label) as never)}
 		</Badge>
 	);
 }
@@ -491,10 +493,11 @@ function AsyncJobDetailSheet({
 	onInspectRequest: ((requestId: string) => void) | null;
 	isInspectingRequest: boolean;
 }) {
+	const tAuditCopy = useTranslations();
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const locale = useLocale();
 	const formatTimestamp = (value: string | null | undefined) =>
 		formatLocalizedTimestamp(value, locale);
@@ -718,7 +721,7 @@ function AsyncJobDetailSheet({
 															onClick={() => onInspectRequest(job.request_id!)}
 															disabled={isInspectingRequest}
 														>
-																	{isInspectingRequest ? s("Loading...") : s("Inspect")}
+																	{isInspectingRequest ? s("phraseLoading") : s("Inspect")}
 														</Button>
 													) : null}
 												</div>
@@ -1170,7 +1173,7 @@ function AsyncJobDetailSheet({
 											<div className="text-sm font-medium">
 												{formattedRequestError?.title?.trim()
 													? formattedRequestError.title
-													: "Request error message"}
+													: tAuditCopy("Common.ui.auditCopy.requestErrorMessage")}
 											</div>
 											<div className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
 												{formattedRequestError?.message ?? job.request_error_message}
@@ -1666,7 +1669,7 @@ function AsyncJobDetailSheet({
 							<DetailSection title={s("Webhook attempts")}>
 								{job.webhook_attempts.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-										{t("credits.No webhook attempts recorded yet.")}
+										{t("strings.phraseNoWebhookAttemptsRecordedYet")}
 									</div>
 								) : (
 									<ScrollArea
@@ -1750,14 +1753,14 @@ export default function AsyncJobsPanel({
 	providerFilter?: string | null;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const locale = useLocale();
 	const formatTimestamp = (value: string | null | undefined) =>
 		formatLocalizedTimestamp(value, locale);
 	const tTime = useTranslations("Common.ui.time");
 	const resolvedTitle = title ?? s("Async job webhooks");
-	const resolvedDescription = description ?? s("Recent video and batch jobs with webhook delivery history, pending retries, and failures.");
-	const resolvedEmptyMessage = emptyMessage ?? s("No async jobs with webhook activity yet.");
+	const resolvedDescription = description ?? s("phraseRecentVideoAndBatchJobsWithWebhookDeliveryHistoryPendingRetriesAndFailures");
+	const resolvedEmptyMessage = emptyMessage ?? s("phraseNoAsyncJobsWithWebhookActivityYet");
 	const userTimeZone =
 		typeof Intl !== "undefined"
 			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
@@ -2318,7 +2321,7 @@ export default function AsyncJobsPanel({
 			{isLoadingDetail || isLoadingRequestDetail ? (
 				<div className="sr-only">
 					{isLoadingDetail
-						? t("strings.Loading async job details..." as never)
+						? t("strings.phraseLoadingAsyncJobDetails" as never)
 						: t("strings.Loading request details" as never)}
 				</div>
 			) : null}

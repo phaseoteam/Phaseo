@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "حُفظت الأسماء البديلة. تعذّر تحديث ذاكرة التخزين المؤقت العامة؛ أعد المحاولة من أدوات التحكم فيها.",
 				"noticeCacheFailed": "حُفظ التنبيه. تعذّر تحديث ذاكرة التخزين المؤقت العامة؛ أعد المحاولة من أدوات التحكم فيها.",
 				"sectionStillLoading": "لا تزال بيانات {section} قيد التحميل. انتظر قليلًا ثم أعد المحاولة."
-			}
+			},
+			"successorNotificationHelp": "مستقل عن تسلسل النماذج؛ يُستخدم كهدف انتقال موصى به في الإشعارات."
 		},
 		"auditDataTable": {
 			"actions": "الإجراءات",
@@ -2387,7 +2388,47 @@
 			"frame": "إطار",
 			"frames": "إطارات",
 			"message": "رسالة",
-			"messages": "رسائل"
+			"messages": "رسائل",
+			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, zero {# أيام} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
+			"allPercentileBands": "جميع نطاقات المئينات المتاحة",
+			"hiddenProviderObservations": "ملاحظات على مستوى النموذج؛ هويات المزوّدين مخفية",
+			"providerObservations": "ملاحظات {resolution, select, hour {كل ساعة} other {يومية}} لجميع المزوّدين المسجلين وعددهم {count}",
+			"modelWide": "على مستوى النموذج",
+			"changePercent": "تغيّر بنسبة {value} بالمئة",
+			"freeRouterDescription": "يوجّه كل طلب إلى مجموعة نماذج مجانية مؤهلة مع موازنة تراعي المزوّدين. راجع هنا النماذج المؤهلة حاليًا والاستخدام الذي جرى توجيهه مؤخرًا.",
+			"modelCreator": "منشئ النموذج",
+			"inputOutputDescription": "يقبل مدخلات من نوع {inputs} وينتج مخرجات من نوع {outputs}.",
+			"inputDescription": "يقبل مدخلات من نوع {inputs}.",
+			"outputDescription": "مصمم لأحمال عمل من نوع {outputs}.",
+			"modelDetailsRetry": "تعذّر تحميل تفاصيل النموذج. سنعيد المحاولة تلقائيًا.",
+			"loadingModelDetails": "جارٍ تحميل تفاصيل النموذج…"
+		},
+		"finalSharedCopy": {
+			"notSorted": "، غير مرتب",
+			"sortedAscending": "، مرتب تصاعديًا",
+			"sortedDescending": "، مرتب تنازليًا",
+			"sendDiscordAnnouncement": "إرسال إعلان Discord",
+			"announcementSent": "تم إرسال إعلان Discord",
+			"announcementStateNotSaved": "تم إرسال إعلان Discord، لكن تعذّر حفظ حالته.",
+			"announcementFailed": "تعذّر إرسال إعلان Discord.",
+			"invalidModelId": "معرّف النموذج غير صالح.",
+			"modelNotFound": "لم يتم العثور على النموذج في الكتالوج.",
+			"modelIdMissing": "معرّف النموذج مفقود من سجل الكتالوج."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "تعذّر إعداد سجل محادثاتك. أعد التحميل للمحاولة مجددًا.",
+			"loadingChat": "جارٍ تحميل المحادثة…",
+			"noChatsWithTag": "لا توجد محادثات بهذا الوسم.",
+			"dateUnknown": "التاريخ غير معروف",
+			"rightOnTheMoney": "أصبت السعر تمامًا",
+			"priceLocked": "تم تثبيت السعر",
+			"workspaceSuffix": " {named, select, yes {لـ {workspace}} other {لمساحة العمل هذه}}",
+			"noActivity": "لا يوجد نشاط",
+			"requestErrorMessage": "رسالة خطأ الطلب",
+			"openDetails": "فتح التفاصيل"
 		}
 	}
 }

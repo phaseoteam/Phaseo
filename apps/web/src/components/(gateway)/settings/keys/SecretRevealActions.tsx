@@ -128,7 +128,7 @@ export function SecretRevealActions({
 			});
 			if (body?.ok === false) {
 				throw new Error(
-					body?.message || t("strings.The key could not be verified right now." as never),
+					body?.message || t("strings.phraseTheKeyCouldNotBeVerifiedRightNow" as never),
 				);
 			}
 			setTestState("success");
@@ -151,9 +151,9 @@ export function SecretRevealActions({
 				</CopyTextButton>
 				<CopyTextButton
 					value={envFile}
-					onCopied={() => toast.success(t("strings.Copied .env" as never))}
+					onCopied={() => toast.success(t("strings.phraseCopiedEnv" as never))}
 				>
-					{t("strings.Copy .env" as never)}
+					{t("strings.phraseCopyEnv" as never)}
 				</CopyTextButton>
 
 				{kind === "api-key" ? (
@@ -226,25 +226,25 @@ export function SecretRevealActions({
 						) : (
 							<TestTube2 className="h-4 w-4" />
 						)}
-						{testState === "testing" ? t("strings.Testing..." as never) : t("strings.Test key" as never)}
+						{testState === "testing" ? t("strings.phraseTesting" as never) : t("strings.Test key" as never)}
 					</Button>
 				) : null}
 			</div>
 
 			<div className="flex flex-wrap items-start gap-x-3 gap-y-2 border-t border-border/60 pt-3">
 				<OnePasswordSaveButton
-					title={name || "AI Stats API key"}
+					title={name || t("finalSettingsCopy.apiKeyTitle")}
 					secret={secret}
 					notes={
 						kind === "management-key"
-							? "AI Stats management API key. Store securely and use only for management API calls."
-							: "AI Stats Gateway API key. Keep server-side and rotate if exposed."
+							? t("finalSettingsCopy.managementKeyNote")
+							: t("finalSettingsCopy.gatewayKeyNote")
 					}
 					urls={onePasswordUrls}
 				/>
 				{kind === "api-key" ? (
 							<p className="max-w-sm text-xs leading-4 text-muted-foreground">
-								{t("strings.Exports use placeholders so downloaded collections do not contain the secret." as never)}
+								{t("strings.phraseExportsUsePlaceholdersSoDownloadedCollectionsDoNotContainTheSecret" as never)}
 					</p>
 				) : null}
 			</div>

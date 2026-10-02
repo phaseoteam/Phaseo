@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -136,7 +138,7 @@ function SelectionDialog(props: {
 	trigger: React.ReactNode;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const [draft, setDraft] = useState<string[]>(props.selected);
@@ -171,7 +173,7 @@ function SelectionDialog(props: {
 				</DialogHeader>
 				<div className="space-y-3">
 					<Input
-						placeholder={s("Search...")}
+						placeholder={s("phraseSearch")}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 					/>
@@ -219,7 +221,7 @@ function SelectionDialog(props: {
 								})}
 							</ul>
 						) : (
-							<div className="p-6 text-sm text-muted-foreground">{s("No matches.")}</div>
+							<div className="p-6 text-sm text-muted-foreground">{s("phraseNoMatches")}</div>
 						)}
 					</div>
 				</div>
@@ -461,7 +463,7 @@ export default function PrivacySettingsClient(props: {
 	dataContribution: DataContributionSettings;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const tUi = useTranslations("Common.ui");
 	const tEligibility = useTranslations("Common.ui.privacyEligibility.settingsPreview");
 	const providerLabelById = useMemo(() => {
@@ -561,7 +563,7 @@ export default function PrivacySettingsClient(props: {
 							global.providerRestrictionEnforceAllowed,
 					}),
 					{
-						loading: s("Saving privacy settings..."),
+						loading: s("phraseSavingPrivacySettings"),
 						success: s("Privacy settings updated"),
 						error: s("Failed to update privacy settings"),
 					},
@@ -640,7 +642,7 @@ export default function PrivacySettingsClient(props: {
 							{s("Privacy defaults")}
 						</h2>
 						<p className="text-sm text-muted-foreground">
-							{s("Global defaults applied to all requests.")}
+							{s("phraseGlobalDefaultsAppliedToAllRequests")}
 						</p>
 					</div>
 					<span className="text-xs text-muted-foreground">{globalStateText}</span>
@@ -649,7 +651,7 @@ export default function PrivacySettingsClient(props: {
 				<div className="grid gap-2">
 					<ToggleRow
 						label={s("Enable paid endpoints that may train on inputs")}
-						description={s("When disabled, paid endpoints flagged as training-on-inputs become ineligible.")}
+						description={s("phraseWhenDisabledPaidEndpointsFlaggedAsTrainingOnInputsBecomeIneligible")}
 						checked={global.privacyEnablePaidMayTrain}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyEnablePaidMayTrain: checked }))
@@ -657,7 +659,7 @@ export default function PrivacySettingsClient(props: {
 					/>
 					<ToggleRow
 						label={s("Enable free models that may train on inputs")}
-						description={s("When disabled, free models flagged as training-on-inputs become ineligible.")}
+						description={s("phraseWhenDisabledFreeModelsFlaggedAsTrainingOnInputsBecomeIneligible")}
 						checked={global.privacyEnableFreeMayTrain}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyEnableFreeMayTrain: checked }))
@@ -665,7 +667,7 @@ export default function PrivacySettingsClient(props: {
 					/>
 					<ToggleRow
 						label={s("Enable free endpoints that may publish prompts")}
-						description={s("When disabled, free endpoints flagged as publishing prompts become ineligible.")}
+						description={s("phraseWhenDisabledFreeEndpointsFlaggedAsPublishingPromptsBecomeIneligible")}
 						checked={global.privacyEnableFreeMayPublishPrompts}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({
@@ -678,7 +680,7 @@ export default function PrivacySettingsClient(props: {
 						<>
 							<ToggleRow
 								label={s("Store Gateway I/O logs")}
-								description={s("Store request prompts and completions in private R2 storage for the Logs detail view.")}
+								description={s("phraseStoreRequestPromptsAndCompletionsInPrivateR2StorageForTheLogsDetailView")}
 								checked={global.ioLoggingEnabled}
 								onCheckedChange={(checked) =>
 									setGlobal((prev) => ({ ...prev, privacyEnableInputOutputLogging: checked, ioLoggingEnabled: checked }))
@@ -702,7 +704,7 @@ export default function PrivacySettingsClient(props: {
 									</label>
 									<ToggleRow
 										label={s("Include provider payloads")}
-										description={s("Also retain the upstream provider request and response.")}
+										description={s("phraseAlsoRetainTheUpstreamProviderRequestAndResponse")}
 										checked={global.ioLoggingIncludeProviderPayloads}
 										onCheckedChange={(checked) =>
 											setGlobal((prev) => ({ ...prev, ioLoggingIncludeProviderPayloads: checked }))
@@ -714,7 +716,7 @@ export default function PrivacySettingsClient(props: {
 					) : null}
 					<ToggleRow
 						label={s("Enable ZDR endpoints only")}
-						description={s("Restrict routing to endpoints that meet ZDR requirements (may reduce availability).")}
+						description={s("phraseRestrictRoutingToEndpointsThatMeetZDRRequirementsMayReduceAvailability")}
 						checked={global.privacyZdrOnly}
 						onCheckedChange={(checked) =>
 							setGlobal((prev) => ({ ...prev, privacyZdrOnly: checked }))
@@ -729,7 +731,7 @@ export default function PrivacySettingsClient(props: {
 						{s("Provider restrictions")}
 					</h2>
 					<p className="text-sm text-muted-foreground">
-						{s("Globally allow or exclude providers for all requests.")}
+						{s("phraseGloballyAllowOrExcludeProvidersForAllRequests")}
 					</p>
 				</div>
 

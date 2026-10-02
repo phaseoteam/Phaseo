@@ -121,7 +121,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 如果允许广泛搜索网页，但需要从结果中排除特定域名，请使用 `excluded_domains`。
 
-Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish 将两个数组转换为查询中的 `site:` 和 `-site:` 运算符。
+Perplexity 和 Firecrawl 在一次搜索调用中接受 `allowed_domains` 或 `excluded_domains`，不能同时使用两者。Perplexity 每个请求最多接受 20 个域名筛选条件，并将排除域名转换为其拒绝列表格式。 TinyFish 将两个数组转换为查询中的 `site:` 和 `-site:` 运算符。
 
 TinyFish Search 在其公开计划中免费，因此 Phaseo 不会对 `engine: "tinyfish"` 增加提供商使用费；正常的 Phaseo 请求和令牌定价仍然适用。
 

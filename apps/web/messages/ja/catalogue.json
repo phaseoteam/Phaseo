@@ -248,7 +248,8 @@
 			"endpointRealtime": "リアルタイム",
 			"endpointVideoGeneration": "動画生成",
 			"endpointImageVariations": "画像バリエーション",
-			"endpointMusicGeneration": "音楽生成"
+			"endpointMusicGeneration": "音楽生成",
+			"tierPrivate": "プライベート"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",
@@ -269,7 +270,8 @@
 			"unknown": "不明",
 			"never": "なし",
 			"noEligibleTitle": "現在、対象となる無料モデルはありません",
-			"noEligibleDescription": "無料ルーターで通常のテキストをルーティングできる有効なモデルは現在ありません。"
+			"noEligibleDescription": "無料ルーターで通常のテキストをルーティングできる有効なモデルは現在ありません。",
+			"embedDescription": "利用可能なモデルを見つけて比較するための柔軟なゲートウェイルートです。"
 		},
 		"cardView": "カード表示",
 		"tableView": "テーブル表示",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "Phaseo Routing なし:",
 			"hourlyAverage": "過去24時間 · 時間別平均",
 			"routingChartLabel": "過去24時間のモデルの時間別稼働率。Phaseo Routing：{uptime}。{comparison}",
-			"routingComparison": " Phaseo Routing なし：{uptime}。"
+			"routingComparison": " Phaseo Routing なし：{uptime}。",
+			"routingLabel": "Phaseoルーティング"
 		},
 		"providerInfo": {
 			"dataPolicy": "データポリシー",
@@ -1576,7 +1579,8 @@
 			"remaining": "残り",
 			"totalDays": "合計{count}日",
 			"modalityStructured": "構造化された状態",
-			"modalityDecisions": "判断"
+			"modalityDecisions": "判断",
+			"viewLicense": "ライセンスを表示"
 		},
 		"performance": {
 			"noTelemetry": "過去7日間にGatewayのテレメトリーはありません",
@@ -1685,7 +1689,9 @@
 				"footer": "時刻はすべてUTCです。選択した期間の時間別中央値を集計しています。"
 			},
 			"observationsShown": "{description} {series}を表示しています。",
-			"requestSuccess": "リクエスト成功率"
+			"requestSuccess": "リクエスト成功率",
+			"hiddenAttribution": "このモデルではプロバイダーの帰属情報が非表示です。傾向にはモデル全体の観測データを使用します。",
+			"selectTimeRange": "性能の期間を選択"
 		},
 		"routeHelp": {
 			"external": "外部プロバイダー",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "文字起こしされた音声",
 		"recentRequests": "最近のリクエスト{count}件",
 		"intelligenceBenchmarks": "知能ベンチマーク",
-		"noMeasuredUsage": "過去30日間の利用記録はありません。"
+		"noMeasuredUsage": "過去30日間の利用記録はありません。",
+		"intelligenceValue": {
+			"barsCaption": "知能スコア1点あたりのUSD · 良い順 · 低いほど良い",
+			"barAria": "{model}: 知能スコア1点あたり{cost}、{configuration}",
+			"loadingChart": "価値のグラフを読み込み中…",
+			"chartDisplay": "価値のグラフの表示",
+			"usdPerPoint": "1点あたりのUSD",
+			"scoreVsCost": "スコアとコスト",
+			"configurationCount": "{total}構成中{visible}構成",
+			"searchConfigurations": "モデルや構成を検索",
+			"searchPlaceholder": "モデルや構成を検索…",
+			"evaluatedConfigurations": "評価済みの構成",
+			"noConfiguration": "評価済みの構成が見つかりません。",
+			"selectModels": "比較するモデルを選択してください。",
+			"perPoint": "1点あたり{cost}",
+			"rankSummary": "{total}構成中{rank}位",
+			"scatterCaption": "知能と評価コスト · 右下にあるほど良い結果です。各点は評価済みの構成を表します。",
+			"scatterAria": "知能スコアと評価コストの散布図。正確な値は下に一覧で表示されています。",
+			"intelligenceScore": "知能スコア",
+			"evaluationCostUsd": "評価コスト（USD）",
+			"intelligenceValue": "知能: {score}",
+			"evaluationCostValue": "評価コスト: {cost}",
+			"perIntelligencePoint": "知能スコア1点あたり{cost}",
+			"tableCaption": "知能スコア1点あたりの評価コストを低い順に表示。スコアとコストには同じ評価済み構成を使用します。",
+			"modelConfiguration": "モデル / 構成",
+			"evaluationCostShort": "評価コスト",
+			"usdPerPointColumn": "USD / 点",
+			"slow": "低速",
+			"speed": "速度"
+		}
 	},
 	"compare": {
 		"title": "モデルを比較",

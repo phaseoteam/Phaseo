@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import {
 	ArrowDown,
@@ -159,7 +161,7 @@ export default function TeamsMembers({
 	const t = useTranslations("SettingsUI");
 	const s = React.useCallback(
 		(key: string, values?: Record<string, string>) =>
-			t(`strings.${key}` as never, values as never),
+			t(settingsStringKey(key) as never, values as never),
 		[t],
 	);
 	const roleOptions = React.useMemo(
@@ -263,13 +265,13 @@ export default function TeamsMembers({
 
 	const confirmActionTitle = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
 	const confirmActionButton = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
-	const confirmActionLoading = canLeaveTeam ? s("Leaving...") : s("Revoking...");
+	const confirmActionLoading = canLeaveTeam ? s("phraseLeaving") : s("phraseRevoking");
 	const confirmActionDescription = canLeaveTeam
 		? s("Are you sure you want to leave {workspace}?", {
 				workspace: activeWorkspaceName ?? s("this workspace"),
 		  })
 		: isSelectedHigherRole
-			? s("You can't revoke access for someone with a higher role than yours.")
+			? s("phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours")
 			: s("Are you sure you want to revoke access for {member}?", {
 					member: selectedMember?.display_name ?? selectedMember?.user_id ?? s("this member"),
 				});
@@ -281,7 +283,7 @@ export default function TeamsMembers({
 				...current,
 				[selectedMember.user_id]: selectedRole,
 			}));
-			toast.success(s("Updated {member}'s sample role.", { member: selectedMember.display_name ?? selectedMember.user_id }));
+			toast.success(s("phraseUpdatedMemberSSampleRole", { member: selectedMember.display_name ?? selectedMember.user_id }));
 			setRoleDialogOpen(false);
 			setSelectedMember(null);
 			return;
@@ -310,7 +312,7 @@ export default function TeamsMembers({
 					error,
 					t,
 					"Action failed",
-					s("Unable to update the member role right now."),
+					s("phraseUnableToUpdateTheMemberRoleRightNow"),
 				),
 			);
 		} finally {
@@ -321,7 +323,7 @@ export default function TeamsMembers({
 	const confirmRevoke = async () => {
 		if (!activeWorkspaceId || !selectedMember) return;
 		if (!canLeaveTeam && !canRevokeSelectedMember) {
-			toast.error(s("You can't revoke access for members with a higher role than yours."));
+			toast.error(s("phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours"));
 			return;
 		}
 		if (selectedMember.is_sample) {
@@ -330,7 +332,7 @@ export default function TeamsMembers({
 				next.add(selectedMember.user_id);
 				return next;
 			});
-			toast.success(s("Removed sample member {member}.", { member: selectedMember.display_name ?? selectedMember.user_id }));
+			toast.success(s("phraseRemovedSampleMemberMember", { member: selectedMember.display_name ?? selectedMember.user_id }));
 			setConfirmOpen(false);
 			setRoleDialogOpen(false);
 			setSelectedMember(null);
@@ -352,10 +354,10 @@ export default function TeamsMembers({
 						result.message,
 						t,
 						"Action failed",
-						s("Unable to revoke access."),
+						s("phraseUnableToRevokeAccess"),
 					);
 					if (message.toLowerCase().includes("owner")) {
-						toast.error(s("You can't revoke the owner's access."));
+						toast.error(s("phraseYouCanTRevokeTheOwnerSAccess"));
 					} else {
 						toast.error(message);
 					}
@@ -365,8 +367,8 @@ export default function TeamsMembers({
 
 			toast.success(
 				canLeaveTeam
-					? s("You left {workspace}.", { workspace: activeWorkspaceName ?? s("the workspace") })
-					: s("Revoked access for {member}.", { member: targetLabel })
+					? s("phraseYouLeftWorkspace", { workspace: activeWorkspaceName ?? s("the workspace") })
+					: s("phraseRevokedAccessForMember", { member: targetLabel })
 			);
 			setConfirmOpen(false);
 			setRoleDialogOpen(false);
@@ -378,7 +380,7 @@ export default function TeamsMembers({
 					error,
 					t,
 					"Action failed",
-					s("Unable to revoke access right now."),
+					s("phraseUnableToRevokeAccessRightNow"),
 				),
 			);
 		} finally {
@@ -438,11 +440,11 @@ export default function TeamsMembers({
 
 			{!activeWorkspaceId ? (
 				<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-					{s("No workspace is currently selected.")}
+					{s("phraseNoWorkspaceIsCurrentlySelected")}
 				</div>
 			) : count === 0 ? (
 				<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-					{s("No members in {workspace} yet.", { workspace: activeWorkspaceName ?? s("this workspace") })}
+					{s("phraseNoMembersInWorkspaceYet", { workspace: activeWorkspaceName ?? s("this workspace") })}
 				</div>
 			) : (
 				<div className="overflow-hidden rounded-xl border bg-background">
@@ -620,11 +622,11 @@ export default function TeamsMembers({
 						<Label className="mb-2">{s("User Role")}</Label>
 						{!canModifyRoles ? (
 							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
-								{s("Only workspace owners can change member roles.")}
+								{s("phraseOnlyWorkspaceOwnersCanChangeMemberRoles")}
 							</div>
 						) : isSelectedOwner ? (
 							<div className="rounded border border-dashed border-muted p-3 text-sm text-muted-foreground">
-								{s("The workspace owner role is fixed and cannot be edited.")}
+								{s("phraseTheWorkspaceOwnerRoleIsFixedAndCannotBeEdited")}
 							</div>
 						) : (
 							<Select
@@ -657,11 +659,11 @@ export default function TeamsMembers({
 								}}
 								disabled={loading || (!canLeaveTeam && !canRevokeSelectedMember)}
 							>
-								{loading ? s("Working...") : confirmActionButton}
+								{loading ? s("phraseWorking") : confirmActionButton}
 							</Button>
 							{!canLeaveTeam && isSelectedHigherRole ? (
 								<p className="mt-2 text-xs text-muted-foreground">
-									{s("You can only revoke members with an equal or lower role.")}
+									{s("phraseYouCanOnlyRevokeMembersWithAnEqualOrLowerRole")}
 								</p>
 							) : null}
 						</div>
@@ -674,7 +676,7 @@ export default function TeamsMembers({
 								onClick={saveRole}
 								disabled={loading || !canEditSelectedRole}
 							>
-								{loading ? s("Saving...") : s("Save")}
+								{loading ? s("phraseSaving") : s("Save")}
 							</Button>
 						</div>
 					</DialogFooter>

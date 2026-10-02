@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
 	RoomModelSettingsShell,
 } from "@/components/(chat)/rooms/settings/RoomModelSettingsShell";
@@ -38,12 +40,13 @@ export function DecisionsModelSettingsDialog({
 	onUpdateBase,
 	onReset,
 }: DecisionsModelSettingsDialogProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	return (
 		<RoomModelSettingsShell
 			open={open}
 			onOpenChange={onOpenChange}
-			title="Decision model settings"
-			description="Configure the model used for decision messages."
+			title={tCopy("decisionModelSettings")}
+			description={tCopy("decisionModelHelp")}
 			settings={settings}
 			modelChoices={modelChoices}
 			selectedModelId={selectedModelId}
@@ -54,7 +57,7 @@ export function DecisionsModelSettingsDialog({
 			onReset={onReset}
 		>
 			<p className="text-sm text-muted-foreground">
-				Choose Noul, Choice, or Score for each message in the composer.
+				{tCopy("decisionModeHelp")}
 			</p>
 		</RoomModelSettingsShell>
 	);

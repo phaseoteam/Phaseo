@@ -222,12 +222,12 @@ export default function ModelSuccessChart({
 				<div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
 					<span className="inline-flex items-center gap-1.5">
 						<span className="h-0.5 w-4 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
-						Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
+						{t("routingLabel")} <span className="font-medium tabular-nums text-foreground">{formatUptime(averageUptime)}</span>
 					</span>
 					{showLeastStableProvider ? (
 						<span className="inline-flex items-center gap-1.5">
 							<span className="w-4 border-t-2 border-dashed border-pink-600 dark:border-pink-400" aria-hidden="true" />
-							Without Phaseo Routing <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
+							{t("leastStableProviderLabel")} <span className="font-medium tabular-nums text-foreground">{formatUptime(withoutRoutingUptime)}</span>
 						</span>
 					) : null}
 				</div>

@@ -788,7 +788,7 @@ function renderSecondaryTierSummary(
 	unitLabel: string | undefined,
 	valueClassName: string | undefined,
 	freeLabel: string,
-	l: (value: string | undefined) => string,
+	l: (value: string | null | undefined) => string,
 ) {
 	const orderedTiers = [...(tiers ?? [])].sort((a, b) => {
 		if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -3469,7 +3469,7 @@ export default function ProviderCard({
 				{priceColumns.length > 0 ? (
 					isCustomerManagedPricing ? (
 						<TableCell colSpan={priceColumns.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
-							Customer managed
+							{tx("Common.ui.providerCardCopy.customerManaged")}
 						</TableCell>
 					) : (
 						priceColumns.map((column) => (

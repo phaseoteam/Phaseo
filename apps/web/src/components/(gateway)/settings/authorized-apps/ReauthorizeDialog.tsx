@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
@@ -22,7 +24,7 @@ interface ReauthorizeDialogProps {
 
 export default function ReauthorizeDialog({ authorizationId, appName, homepageUrl, currentScopes, additionalScopes }: ReauthorizeDialogProps) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const { getScopeCopy } = useLocalizedOAuthScopes();
 	const isPhaseoCli = appName === "Phaseo CLI";
 	const [open, setOpen] = useState(false);
@@ -62,7 +64,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 				<DialogHeader>
 					<DialogTitle>{s("Reauthorize app")} {appName}</DialogTitle>
 					<DialogDescription>
-						{isPhaseoCli ? s("Restore removed permissions on the web, or start a genuinely fresh session from the CLI.") : s("OAuth must be restarted by the application so it can create a fresh, secure PKCE request.")}
+						{isPhaseoCli ? s("phraseRestoreRemovedPermissionsOnTheWebOrStartAGenuinelyFreshSessionFromTheCLI") : s("phraseOAuthMustBeRestartedByTheApplicationSoItCanCreateAFreshSecurePKCERequest")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -72,7 +74,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 								<div className="text-sm font-medium">{s("CLI permissions")}</div>
 							{additionalScopes.length > 0 ? (
 								<>
-									<p className="mt-1 text-xs text-muted-foreground">{s("Select permissions you previously removed. Restored access applies when the CLI next refreshes its session.")}</p>
+									<p className="mt-1 text-xs text-muted-foreground">{s("phraseSelectPermissionsYouPreviouslyRemovedRestoredAccessAppliesWhenTheCLINextRefreshesItsSession")}</p>
 									<div className="mt-3 max-h-48 space-y-1 overflow-y-auto">
 										{additionalScopes.map((scope) => (
 											<label key={scope} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted/60">
@@ -83,12 +85,12 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 									</div>
 									<Button type="button" className="mt-3 w-full rounded-md" disabled={saving || selectedAdditionalScopes.length === 0} onClick={reauthorizeOnWeb}>
 										<RefreshCw className="size-4" />
-										{saving ? s("Restoring...") : s("Restore selected permissions")}
+										{saving ? s("phraseRestoring") : s("Restore selected permissions")}
 									</Button>
 								</>
 							) : (
 								<div className="mt-2 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300">
-									{s("All available CLI permissions are currently authorized.")}
+									{s("phraseAllAvailableCLIPermissionsAreCurrentlyAuthorized")}
 								</div>
 							)}
 						</div>
@@ -98,9 +100,9 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 						</div>
 					</div>
 				) : homepageUrl ? (
-					<p className="text-sm text-muted-foreground">{s("Open the application and sign in with Phaseo again to review its requested permissions.")}</p>
+					<p className="text-sm text-muted-foreground">{s("phraseOpenTheApplicationAndSignInWithPhaseoAgainToReviewItsRequestedPermissions")}</p>
 				) : (
-					<p className="text-sm text-muted-foreground">{s("Open this application where you originally connected it, then choose its Phaseo sign-in or reconnect option.")}</p>
+					<p className="text-sm text-muted-foreground">{s("phraseOpenThisApplicationWhereYouOriginallyConnectedItThenChooseItsPhaseoSignInOrReconnectOption")}</p>
 				)}
 
 				{!isPhaseoCli && homepageUrl ? (

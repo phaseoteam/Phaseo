@@ -112,7 +112,7 @@ export default function InvestigateGeneration() {
 					<ProviderInspectorSheetHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
 						<ProviderInspectorSheetTitle>{t("strings.Investigate generation" as never)}</ProviderInspectorSheetTitle>
 						<ProviderInspectorSheetDescription>
-							{t("strings.Enter a request ID to inspect its generation details." as never)}
+							{t("strings.phraseEnterARequestIDToInspectItsGenerationDetails" as never)}
 						</ProviderInspectorSheetDescription>
 					</ProviderInspectorSheetHeader>
 					<form onSubmit={onSubmit} className="space-y-4 p-5 sm:p-6">
@@ -125,7 +125,7 @@ export default function InvestigateGeneration() {
 								autoFocus
 							/>
 							<Button type="submit" className="rounded-md" disabled={loading}>
-								{loading ? t("strings.Loading..." as never) : t("strings.Lookup" as never)}
+								{loading ? t("strings.phraseLoading" as never) : t("strings.Lookup" as never)}
 							</Button>
 						</div>
 					</form>

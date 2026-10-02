@@ -248,7 +248,8 @@
 			"endpointRealtime": "实时",
 			"endpointVideoGeneration": "视频生成",
 			"endpointImageVariations": "图像变体",
-			"endpointMusicGeneration": "音乐生成"
+			"endpointMusicGeneration": "音乐生成",
+			"tierPrivate": "私有"
 		},
 		"freeRouter": {
 			"title": "免费模型池",
@@ -269,7 +270,8 @@
 			"unknown": "未知",
 			"never": "从未",
 			"noEligibleTitle": "目前没有符合条件的免费模型",
-			"noEligibleDescription": "免费路由器目前没有可用于常规文本路由的活跃模型。"
+			"noEligibleDescription": "免费路由器目前没有可用于常规文本路由的活跃模型。",
+			"embedDescription": "用于发现和比较可用模型的灵活网关路由。"
 		},
 		"cardView": "卡片视图",
 		"tableView": "表格视图",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "不使用 Phaseo Routing:",
 			"hourlyAverage": "过去24小时 · 每小时平均值",
 			"routingChartLabel": "过去24小时的模型每小时可用率。Phaseo Routing：{uptime}。{comparison}",
-			"routingComparison": " 不使用 Phaseo Routing：{uptime}。"
+			"routingComparison": " 不使用 Phaseo Routing：{uptime}。",
+			"routingLabel": "Phaseo 路由"
 		},
 		"providerInfo": {
 			"dataPolicy": "数据政策",
@@ -1576,7 +1579,8 @@
 			"remaining": "剩余",
 			"totalDays": "共 {count} 天",
 			"modalityStructured": "结构化状态",
-			"modalityDecisions": "决策"
+			"modalityDecisions": "决策",
+			"viewLicense": "查看许可证"
 		},
 		"performance": {
 			"noTelemetry": "过去 7 天没有 Gateway 遥测数据",
@@ -1685,7 +1689,9 @@
 				"footer": "所有时间均为 UTC。数值汇总所选报告期内的每小时中位数。"
 			},
 			"observationsShown": "{description} 显示{series}。",
-			"requestSuccess": "请求成功率"
+			"requestSuccess": "请求成功率",
+			"hiddenAttribution": "此模型的提供商归属信息已隐藏。趋势使用模型整体的观测数据。",
+			"selectTimeRange": "选择性能时间范围"
 		},
 		"routeHelp": {
 			"external": "外部提供商",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "已转录音频",
 		"recentRequests": "最近 {count} 次请求",
 		"intelligenceBenchmarks": "智能基准测试",
-		"noMeasuredUsage": "过去 30 天内没有测得的使用量。"
+		"noMeasuredUsage": "过去 30 天内没有测得的使用量。",
+		"intelligenceValue": {
+			"barsCaption": "每智能分值的USD成本 · 从优到劣 · 越低越好",
+			"barAria": "{model}：每智能分值{cost}，{configuration}",
+			"loadingChart": "正在加载性价比图表…",
+			"chartDisplay": "性价比图表显示",
+			"usdPerPoint": "每分值USD",
+			"scoreVsCost": "分数与成本",
+			"configurationCount": "{total}个配置中的{visible}个",
+			"searchConfigurations": "搜索模型或配置",
+			"searchPlaceholder": "搜索模型或配置…",
+			"evaluatedConfigurations": "已评估的配置",
+			"noConfiguration": "未找到已评估的配置。",
+			"selectModels": "选择要比较的模型。",
+			"perPoint": "每分值{cost}",
+			"rankSummary": "{total}个配置中排名第{rank}",
+			"scatterCaption": "智能与评估成本 · 越靠右下越好。每个点代表一个已评估的配置。",
+			"scatterAria": "智能分数与评估成本的散点图。下方列出精确数值。",
+			"intelligenceScore": "智能分数",
+			"evaluationCostUsd": "评估成本（USD）",
+			"intelligenceValue": "智能：{score}",
+			"evaluationCostValue": "评估成本：{cost}",
+			"perIntelligencePoint": "每智能分值{cost}",
+			"tableCaption": "按成本从低到高排列的每智能分值评估成本。分数和成本使用相同的已评估配置。",
+			"modelConfiguration": "模型 / 配置",
+			"evaluationCostShort": "评估成本",
+			"usdPerPointColumn": "USD / 分值",
+			"slow": "慢速",
+			"speed": "速度"
+		}
 	},
 	"compare": {
 		"title": "比较模型",

@@ -1860,7 +1860,7 @@ function ModelsDisplayContent({
 			aria-pressed={privateOnly}
 		>
 			<LockKeyhole className="h-3.5 w-3.5" />
-			Private
+			{tFilters("tierPrivate")}
 		</Button>
 	) : null;
 

@@ -59,3 +59,22 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 يدعم Jev الجمع بين أنواع الأسئلة الثلاثة في طلب واحد؛ ويدعم Span-01 أسئلة `noul` فقط. راجع [البدء السريع](../../quickstart) لأمثلة جاهزة للنسخ في cURL وJavaScript وSDK TypeScript وSDK Python. تبلغ تكلفة Jev 1.13 ‏0.042 دولار لكل مليون رمز إدخال؛ ورموز الإخراج مجانية.
 
 لمعرفة دلالات الأسئلة لدى المزود الأصلي، راجع [مرجع API](https://docs.typesafe.ai/api) الخاص بـ TypeSafe.
+
+### قرارات الصور باستخدام Clef
+
+يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. لكل منهما نافذة سياق من 65,536 رمزًا. تبلغ تكلفة الإدخال 0.24 دولار أمريكي لكل مليون رمز في Clef و0.09 دولار أمريكي في Clef Flash.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+يمكنك أيضًا توفير سلسلة `data:image/png;base64,...` في `images`. يقبل Clef حتى أربع صور PNG أو JPEG أو WebP، على ألا تتجاوز كل صورة 4 MiB و16 ميغابكسل، وألا يتجاوز إجمالي بيانات الصور بعد فك الترميز 8 MiB وحجم جسم الطلب 13 MiB. الروابط البعيدة غير مدعومة. يتحقق Cloudflare من صيغ الصور وأبعادها. ترفض النماذج التي لا تدعم الصور طلبات الصور.
+
+يقبل Clef ما يصل إلى 64 سؤالًا، بمعرّفات تضم حتى 100 حرف أو رقم أو شرطة سفلية أو نقطة أو شرطة. تتطلب أسئلة الاختيار 2–255 خيارًا، وأسئلة الدرجة 2–10 مستويات. راجع [وثائق Clef](https://developers.cloudflare.com/workers-ai/models/clef/) من Cloudflare.

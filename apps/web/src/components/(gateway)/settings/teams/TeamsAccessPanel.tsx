@@ -151,7 +151,7 @@ export default function TeamsAccessPanel({
 	if (!activeWorkspaceId) {
 		return (
 			<div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
-				{t("strings.No workspace is currently selected." as never)}
+				{t("strings.phraseNoWorkspaceIsCurrentlySelected" as never)}
 			</div>
 		);
 	}

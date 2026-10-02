@@ -218,15 +218,14 @@ const KNOWN_MODALITY_META = [
 	{ key: "decisions", translationKey: "modalityDecisions", icon: Scale },
 ];
 
-function formatTypeLabel(value: string): string {
-	if (value === "audio_stt") return "Transcription";
-	if (value === "audio_tts") return "Speech";
-	if (value === "audio_music") return "Music";
-	return value
-		.split(/[_\s-]+/)
-		.filter(Boolean)
-		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-		.join(" ");
+function formatTypeLabel(value: string, translateModality: (key: string) => string): string {
+	const keys: Record<string, string> = {
+		audio_stt: "audioStt", audio_tts: "audioTts", audio_music: "audioMusic",
+		file: "file", code: "code", vision: "vision", speech: "speech", multimodal: "multimodal",
+		embedding: "embedding", rerank: "rerank", moderation: "moderation",
+	};
+	const key = keys[value];
+	return key ? translateModality(key) : value;
 }
 
 export async function ModelProvidersSection({
@@ -817,6 +816,7 @@ export async function ModelAboutSection({
 }) {
 	const t = await getTranslations("Catalogue.models.detail");
 	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
+	const tModalities = await getTranslations("Common.ui.modelCreation.modalities");
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
 	const inputTypeSet = new Set(inputTypes);
@@ -881,7 +881,7 @@ export async function ModelAboutSection({
 								tone.badgeClassName,
 							)}
 						>
-							{formatTypeLabel(type)}
+							{formatTypeLabel(type, (key) => tModalities(key as never))}
 						</span>
 					);
 				})}

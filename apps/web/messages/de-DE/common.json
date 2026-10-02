@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "Aliasse gespeichert. Der öffentliche Cache konnte nicht aktualisiert werden; versuchen Sie es über die Cache-Steuerung erneut.",
 				"noticeCacheFailed": "Hinweis gespeichert. Der öffentliche Cache konnte nicht aktualisiert werden; versuchen Sie es über die Cache-Steuerung erneut.",
 				"sectionStillLoading": "{section}: Die Daten werden noch geladen. Warten Sie einen Moment und versuchen Sie es erneut."
-			}
+			},
+			"successorNotificationHelp": "Unabhängig von der Modellabstammung; wird in Benachrichtigungen als empfohlenes Migrationsziel verwendet."
 		},
 		"auditDataTable": {
 			"actions": "Aktionen",
@@ -2387,7 +2388,47 @@
 			"frame": "Frame",
 			"frames": "Frames",
 			"message": "Nachricht",
-			"messages": "Nachrichten"
+			"messages": "Nachrichten",
+			"serviceTierLineStyles": "Linienstile der Servicestufen"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, one {# Tag} other {# Tage}}",
+			"allPercentileBands": "Alle verfügbaren Perzentilbänder",
+			"hiddenProviderObservations": "Modellweite Beobachtungen; Anbieteridentitäten sind ausgeblendet",
+			"providerObservations": "{resolution, select, hour {Stündliche Beobachtungen} other {Tägliche Beobachtungen}} für {count, plural, one {# erfassten Anbieter} other {alle # erfassten Anbieter}}",
+			"modelWide": "Modellweit",
+			"changePercent": "Änderung um {value} Prozent",
+			"freeRouterDescription": "Leitet jede Anfrage mit anbieterabhängigem Lastausgleich an einen Pool geeigneter kostenloser Modelle weiter. Hier finden Sie die aktuell geeigneten Modelle und die zuletzt weitergeleitete Nutzung.",
+			"modelCreator": "dem Modellersteller",
+			"inputOutputDescription": "Es akzeptiert {inputs} als Eingaben und erzeugt {outputs} als Ausgaben.",
+			"inputDescription": "Es akzeptiert {inputs} als Eingaben.",
+			"outputDescription": "Es ist für {outputs}-Aufgaben ausgelegt.",
+			"modelDetailsRetry": "Die Modelldetails konnten nicht geladen werden. Wir versuchen es automatisch erneut.",
+			"loadingModelDetails": "Modelldetails werden geladen…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", nicht sortiert",
+			"sortedAscending": ", aufsteigend sortiert",
+			"sortedDescending": ", absteigend sortiert",
+			"sendDiscordAnnouncement": "Discord-Ankündigung senden",
+			"announcementSent": "Discord-Ankündigung gesendet",
+			"announcementStateNotSaved": "Die Discord-Ankündigung wurde gesendet, ihr Status konnte jedoch nicht gespeichert werden.",
+			"announcementFailed": "Die Discord-Ankündigung konnte nicht gesendet werden.",
+			"invalidModelId": "Ungültige Modell-ID.",
+			"modelNotFound": "Modell im Katalog nicht gefunden.",
+			"modelIdMissing": "Die Modell-ID fehlt im Katalogeintrag."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "Der Chatverlauf konnte nicht vorbereitet werden. Laden Sie die Seite neu, um es erneut zu versuchen.",
+			"loadingChat": "Chat wird geladen…",
+			"noChatsWithTag": "Keine Chats mit diesem Tag.",
+			"dateUnknown": "Datum unbekannt",
+			"rightOnTheMoney": "Genau den Preis getroffen",
+			"priceLocked": "Preis festgelegt",
+			"workspaceSuffix": " {named, select, yes {für {workspace}} other {für diesen Arbeitsbereich}}",
+			"noActivity": "Keine Aktivität",
+			"requestErrorMessage": "Fehlermeldung der Anfrage",
+			"openDetails": "Details öffnen"
 		}
 	}
 }

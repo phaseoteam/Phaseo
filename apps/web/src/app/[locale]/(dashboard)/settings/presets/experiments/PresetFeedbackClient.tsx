@@ -1,4 +1,6 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import type { SettingsResourceData } from "@/app/(dashboard)/settings/cachedSettingsActions";
 import { Link } from "@/i18n/navigation";
@@ -446,7 +448,7 @@ export default function PresetFeedbackClient() {
 function PresetFeedbackContent({ data, parsedFilters }: { data: SettingsResourceData<"preset-feedback">; parsedFilters: Filters }) {
 	const locale = useLocale();
 	const t = useTranslations("SettingsUI");
-	const tStr = (key: string, values?: Record<string, string | number>) => t(`strings.${key}` as never, values as never);
+	const tStr = (key: string, values?: Record<string, string | number>) => t(settingsStringKey(key) as never, values as never);
 	if (!data.workspaceId) {
 		return (
 			<div className="space-y-6">

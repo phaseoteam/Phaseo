@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,11 +52,11 @@ interface SavedConfig {
 	createdAt: number;
 }
 
-function formatTime(ms: number | null, notAvailable: string): string {
+function formatTime(ms: number | null, notAvailable: string, locale: string): string {
 	if (ms === null || ms === undefined) return notAvailable;
-	if (ms < 1000) return `${ms.toFixed(0)}ms`;
-	if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`;
-	return `${(ms / 1000).toFixed(2)}s`;
+	const decimals = ms < 1000 ? 0 : 2;
+	const value = new Intl.NumberFormat(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(ms < 1000 ? ms : ms / 1000);
+	return `${value}${ms < 1000 ? "ms" : "s"}`;
 }
 
 async function streamRequest(
@@ -342,6 +342,7 @@ function exportToJSON(results: RunResult[]): string {
 
 function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; openaiTimes: number[] }) {
 	const t = useTranslations("Product.latency");
+	const locale = useLocale();
 	const maxTime = Math.max(...gatewayTimes, ...openaiTimes, 1);
 	const width = 400;
 	const height = 100;
@@ -383,7 +384,7 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 			{openaiTimes.map((t, i) => (
 				<circle key={`openai-${i}`} cx={getX(i, openaiTimes.length)} cy={getY(t)} r={3} fill="#3b82f6" />
 			))}
-			<text x={padding} y={padding - 5} className="text-xs fill-muted-foreground">{formatTime(maxTime, t("nA"))}</text>
+			<text x={padding} y={padding - 5} className="text-xs fill-muted-foreground">{formatTime(maxTime, t("nA"), locale)}</text>
 			<text x={padding} y={height - 5} className="text-xs fill-muted-foreground">0</text>
 			<g className="flex justify-between text-xs">
 				<text x={padding} y={height - 5} className="fill-muted-foreground">
@@ -400,7 +401,8 @@ function TimelineChart({ gatewayTimes, openaiTimes }: { gatewayTimes: number[]; 
 export default function LatencyComparisonClient() {
 	const t = useTranslations("Product.latency");
 	const extrasT = useTranslations("Product.latencyExtras");
-	const formatLocalizedTime = (ms: number | null) => formatTime(ms, t("nA"));
+	const locale = useLocale();
+	const formatLocalizedTime = (ms: number | null) => formatTime(ms, t("nA"), locale);
 	const displayFormat = useDisplayFormatters();
 	const formatNumber = (value: number, decimals = 2) =>
 		displayFormat.number(value, {
@@ -989,7 +991,7 @@ export default function LatencyComparisonClient() {
 							<div className="mt-4 flex justify-center gap-8">
 								<div className="flex items-center gap-2">
 									<div className={`w-3 h-3 rounded-full ${gatewayState === "running" ? "bg-primary animate-pulse" : gatewayState === "completed" ? "bg-green-500" : gatewayState === "error" ? "bg-red-500" : "bg-muted"}`} />
-									<span className="text-sm">Gateway</span>
+									<span className="text-sm">{extrasT("gatewayLabel")}</span>
 								</div>
 								<div className="flex items-center gap-2">
 									<div className={`w-3 h-3 rounded-full ${openaiState === "running" ? "bg-primary animate-pulse" : openaiState === "completed" ? "bg-green-500" : openaiState === "error" ? "bg-red-500" : "bg-muted"}`} />
@@ -1024,7 +1026,7 @@ export default function LatencyComparisonClient() {
 								<div className="flex justify-center gap-4 mt-2 text-xs">
 									<div className="flex items-center gap-1">
 										<div className="w-3 h-3 rounded-full bg-green-500" />
-										<span>Gateway</span>
+										<span>{extrasT("gatewayLabel")}</span>
 									</div>
 									<div className="flex items-center gap-1">
 										<div className="w-3 h-3 rounded-full bg-blue-500" />
@@ -1196,7 +1198,8 @@ export default function LatencyComparisonClient() {
 										<div>
 											<h3 className="font-medium mb-3 flex items-center gap-2">
 												<Logo id="openai" className="h-4 w-4" width={16} height={16} />
-												OpenAI API (tokens/sec)
+
+												{extrasT("openaiThroughput")}
 											</h3>
 											<div className="space-y-2 text-sm">
 												<div className="flex justify-between">
@@ -1292,7 +1295,7 @@ export default function LatencyComparisonClient() {
 											<Badge
 												variant={result.gatewayWinner === "gateway" ? "default" : result.gatewayWinner === "openai" ? "secondary" : "outline"}
 											>
-												{result.gatewayWinner === "gateway" ? "✓ Gateway" : result.gatewayWinner === "openai" ? "✓ OpenAI" : t("tie")}
+												{result.gatewayWinner === "gateway" ? `✓ ${extrasT("gatewayLabel")}` : result.gatewayWinner === "openai" ? "✓ OpenAI" : t("tie")}
 											</Badge>
 										</div>
 										<p className="text-sm text-muted-foreground truncate">{result.prompt}</p>
@@ -1300,7 +1303,8 @@ export default function LatencyComparisonClient() {
 											<div>
 												<div className="font-medium flex items-center gap-1">
 													<Server className="h-3 w-3" />
-													Gateway
+
+													{extrasT("gatewayLabel")}
 												</div>
 												{result.gateway.error ? (
 													<span className="text-red-500 text-xs">{result.gateway.error}</span>
@@ -1343,7 +1347,7 @@ export default function LatencyComparisonClient() {
 							<CardHeader>
 								<CardTitle className="flex items-center gap-2">
 									<Server className="h-5 w-5" />
-									{t("latestProvider", { provider: "Gateway" })}
+									{t("latestProvider", { provider: extrasT("gatewayLabel") })}
 								</CardTitle>
 							</CardHeader>
 							<CardContent>

@@ -40,7 +40,7 @@ function UsageAlertsContent({ initialData }: { initialData: SettingsUsageAlertsI
 				</CardHeader>
 				<CardContent>
 					<p className="text-sm text-muted-foreground">
-						{t("strings.You need to be signed in and have a team selected to view alerts." as never)}
+						{t("strings.phraseYouNeedToBeSignedInAndHaveATeamSelectedToViewAlerts" as never)}
 					</p>
 				</CardContent>
 			</Card>
@@ -69,7 +69,7 @@ function UsageAlertsContent({ initialData }: { initialData: SettingsUsageAlertsI
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground">
-							{t("strings.You have no upcoming deprecations or recent retirements for models used by this workspace." as never)}
+							{t("strings.phraseYouHaveNoUpcomingDeprecationsOrRecentRetirementsForModelsUsedByThisWorkspace" as never)}
 						</p>
 					</CardContent>
 				</Card>

@@ -434,10 +434,12 @@ export default function ModelFaqSection({
 	const descriptionPrefix =
 		plainModelDescription && descriptionStartsWithModelName(plainModelDescription, modelName)
 			? ""
-			: `${modelName} is `;
+			: translate ? `${modelName}: ` : `${modelName} is `;
 	const aboutAnswerText = plainModelDescription
 		? `${descriptionPrefix}${ensureSentencePunctuation(plainModelDescription)}`
-		: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`;
+		: translate
+			? `${translate("answers.modelPrefix", { model: modelName, status: statusDescription })} ${organisationName}.`
+			: `${modelName} is ${getStatusDescription(model.status)} from ${organisationName}.`;
 	const releaseDate = model.release_date ?? model.announcement_date ?? null;
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);

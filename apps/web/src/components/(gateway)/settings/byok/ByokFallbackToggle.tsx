@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import { useTranslations } from "next-intl";
 import { Switch } from "@/components/ui/switch";
@@ -14,7 +16,7 @@ export default function ByokFallbackToggle({
 	initialEnabled: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const write = useSettingsWrite();
 	const [enabled, setEnabled] = React.useState(initialEnabled);
 	const [saving, setSaving] = React.useState(false);
@@ -26,7 +28,7 @@ export default function ByokFallbackToggle({
 		const operation = write(updateByokFallbackAction(next));
 		try {
 			toast.promise(operation, {
-				loading: s("Saving fallback setting..."),
+				loading: s("phraseSavingFallbackSetting"),
 				success: s("Fallback setting updated"),
 				error: (err) =>
 					localizedSettingsError(err, t, "Failed to update setting"),

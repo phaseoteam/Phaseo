@@ -363,7 +363,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 		} catch (error) {
 			console.error(error);
 			toast.error(tx("Common.ui.actionDockCopy.couldNotRefreshPageData" as never), {
-				description: tx("SettingsUI.strings.Please try again." as never),
+				description: tx("SettingsUI.strings.phrasePleaseTryAgain" as never),
 			});
 		} finally {
 			setIsRefreshingPageData(false);

@@ -1665,7 +1665,9 @@
 		"save": "Guardar",
 		"model": "Modelo",
 		"throughput": "Rendimiento",
-		"responsePlaceholder": "La respuesta aparecerá aquí..."
+		"responsePlaceholder": "La respuesta aparecerá aquí...",
+		"gatewayLabel": "Puerta de enlace",
+		"openaiThroughput": "OpenAI API (tokens/s)"
 	},
 	"feedback": {
 		"category": "Categoría de comentarios",

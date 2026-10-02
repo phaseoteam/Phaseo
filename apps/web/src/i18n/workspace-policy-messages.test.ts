@@ -5,6 +5,7 @@ import { formatRelativeToNow } from "@/lib/formatRelative";
 const locales = ["es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"] as const;
 
 describe.each(locales)("Shared policy and relative copy in %s", (locale) => {
+	// eslint-disable-next-line @typescript-eslint/no-require-imports -- Each test loads its locale fixture.
 	const messages = {Common: require(`../../messages/${locale}/common.json`)};
 	const t = createTranslator({locale, messages, namespace: "Common.ui.localisationGaps"});
 

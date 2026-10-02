@@ -87,7 +87,7 @@ export default async function OtherInfo({
 						rel="noopener noreferrer"
 						className="mt-1 inline-flex min-w-0 items-center gap-1 text-sm font-semibold underline decoration-transparent underline-offset-2 hover:decoration-current"
 					>
-						<span className="truncate">{license?.trim() || "View license"}</span>
+						<span className="truncate">{license?.trim() || t("viewLicense")}</span>
 						<ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
 					</Link>
 				) : license && license.trim().length > 0 ? (

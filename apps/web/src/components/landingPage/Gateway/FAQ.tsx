@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Accordion,
@@ -6,40 +7,43 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const FAQS = [
+
+
+export function FAQ() {
+	const tCopy = useTranslations("Site.landingGaps");
+
+	const FAQS = [
 	{
-		q: "Is Gateway a replacement for the Conduit?",
-		a: "Yes. Phaseo Gateway is the new name and positioning of the Conduit, focused on being the single API for every model while keeping compatibility commitments.",
+		q: tCopy("copy003"),
+		a: tCopy("copy004"),
 	},
 	{
-		q: "Can I bring my existing OpenAI or Anthropic SDK?",
-		a: "Yes. Gateway preserves OpenAI- and Anthropic-compatible endpoints, so most migrations are a base URL + key change.",
+		q: tCopy("copy005"),
+		a: tCopy("copy006"),
 	},
 	{
-		q: "How do I monitor deprecations and rollouts?",
-		a: "Gateway centralises model status and retirement signals so you can proactively migrate before changes impact production.",
+		q: tCopy("copy007"),
+		a: tCopy("copy008"),
 	},
 	{
-		q: "What about compliance and key security?",
-		a: "Scoped keys, audit logging, and encrypted BYOK workflows are supported. Enterprise can add custom routing policies and controls.",
+		q: tCopy("copy009"),
+		a: tCopy("copy010"),
 	},
 ];
 
-export function FAQ() {
 	return (
 		<section id="faq" className="py-16 sm:py-20 bg-gray-50/20">
 			<div className="container mx-auto grid gap-8 lg:grid-cols-[1fr,1.2fr] lg:items-start">
 				<div>
 					<p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-						FAQ
-					</p>
+{tCopy("copy011")}
+</p>
 					<h2 className="mt-3 text-3xl font-semibold text-slate-950 sm:text-4xl">
-						Answers for teams migrating today.
-					</h2>
+{tCopy("copy012")}
+</h2>
 					<p className="mt-3 max-w-xl text-base leading-relaxed text-slate-600">
-						Clear guidance for production rollouts, compatibility,
-						and governance.
-					</p>
+{tCopy("copy013")}
+</p>
 				</div>
 				<Card className="shadow-sm border border-slate-200/70 bg-slate-50/80">
 					<CardContent className="p-6">

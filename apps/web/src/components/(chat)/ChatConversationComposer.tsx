@@ -475,6 +475,7 @@ function RecordingWaveform({
 	bars: number[];
 	durationMs: number;
 }) {
+
 	const tUi = useTranslations("Common.ui");
 	return (
 		<div
@@ -516,6 +517,7 @@ function ComposerModelSelectField({
 	allowAuto?: boolean;
 	onChange: (value: string | undefined) => void;
 }) {
+
 	const tUi = useTranslations("Common.ui");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
@@ -666,6 +668,7 @@ function ComposerTimezoneSelectField({
 	options: Array<{ value: string; label: string }>;
 	onChange: (value: string | undefined) => void;
 }) {
+
 	const tUi = useTranslations("Common.ui");
 	const [open, setOpen] = useState(false);
 	const [search, setSearch] = useState("");
@@ -841,6 +844,7 @@ interface ChatConversationComposerProps {
 }
 
 export function ChatConversationComposer(props: ChatConversationComposerProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chat");
 	const tModelPicker = useTranslations("Product.chat.modelPicker");
 	const tUi = useTranslations("Common.ui");
@@ -1245,7 +1249,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 		}>
 	>(
 		() => [
-			{ value: "none", label: "Default" },
+			{ value: "none", label: tCopy("copyDefault") },
 			...REASONING_OPTIONS
 				.filter((option) => option.value !== "none")
 				.map((option) => ({
@@ -1253,7 +1257,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					label: option.label,
 				})),
 		],
-		[],
+		[ tCopy],
 	);
 	const advisorEnabled = enabledServerToolSet.has("phaseo:advisor");
 	const selectedServerToolCommand = selectedServerToolSettings
@@ -1750,7 +1754,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			return {
 				id: `model-${option.modelId}`,
 				label: option.label,
-				description: isBlocked ? "Blocked by Chat policy" : undefined,
+				description: isBlocked ? tCopy("blockedChat") : undefined,
 				keywords: [
 					"model",
 					"models",
@@ -1788,7 +1792,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 			});
 		}
 		return groups;
-	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds, tModelPicker]);
+	}, [activeModelOptions, favoriteModelIdSet, format, selectedModelIds, tModelPicker, tCopy]);
 
 	const modelSlashCommands = useMemo<SlashCommand[]>(
 		() => modelSlashGroups.flatMap((group) => group.commands),
@@ -2884,7 +2888,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					</Button>
 				</TooltipTrigger>
 				<TooltipContent>
-					{isStartingRecording ? "Starting recording..." : label}
+					{isStartingRecording ? tCopy("startingRecording") : label}
 				</TooltipContent>
 			</Tooltip>
 		);
@@ -3012,7 +3016,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 									prompt.content.trim() ||
 									(prompt.attachmentCount > 0
 										? `${prompt.attachmentCount} attachment${prompt.attachmentCount === 1 ? "" : "s"}`
-										: "Queued prompt");
+										: tCopy("queuedPrompt"));
 								return (
 									<div
 										key={prompt.id}
@@ -3173,8 +3177,8 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											size="icon-sm"
 											className="h-6 w-6 shrink-0"
 											onClick={returnToMainSlashMenu}
-											aria-label="Back to chat actions"
-											title="Back to chat actions"
+											aria-label={tCopy("backActions")}
+											title={tCopy("backActions")}
 										>
 											<ArrowLeft className="h-3.5 w-3.5" />
 										</Button>

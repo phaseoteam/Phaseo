@@ -59,3 +59,22 @@ Para o exemplo da Respan, uma resposta tem este formato:
 Jev permite combinar os três tipos de perguntas em uma solicitação; Span-01 suporta apenas perguntas `noul`. Consulte o [início rápido](../../quickstart) para exemplos de cURL, JavaScript, SDK TypeScript e SDK Python prontos para copiar e colar. Jev 1.13 é cobrado a US$ 0,042 por milhão de tokens de entrada; os tokens de saída são gratuitos.
 
 Para a semântica das perguntas do provedor, consulte a [referência da API](https://docs.typesafe.ai/api) da TypeSafe.
+
+### Decisões sobre imagens com Clef
+
+`cloudflare/clef` e `cloudflare/clef-flash` suportam os três tipos de perguntas e imagens incorporadas pelo Cloudflare Workers AI. Cada um tem uma janela de contexto de 65.536 tokens. A entrada custa US$ 0,24 por milhão de tokens no Clef e US$ 0,09 no Clef Flash.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+Você também pode fornecer uma string `data:image/png;base64,...` em `images`. O Clef aceita até quatro imagens PNG, JPEG ou WebP, cada uma com no máximo 4 MiB e 16 megapixels, com até 8 MiB de dados de imagem decodificados no total e um corpo de requisição de 13 MiB. URLs remotas não são suportadas. O Cloudflare valida os formatos e dimensões das imagens. Modelos sem suporte a imagens rejeitam requisições com imagens.
+
+O Clef aceita no máximo 64 perguntas, com IDs de até 100 letras, dígitos, sublinhados, pontos ou hífens. Perguntas de escolha exigem de 2 a 255 opções; perguntas de pontuação exigem de 2 a 10 níveis. Consulte a [documentação do Clef](https://developers.cloudflare.com/workers-ai/models/clef/) do Cloudflare.

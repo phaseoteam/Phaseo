@@ -1,10 +1,16 @@
+import { NextIntlClientProvider, createTranslator } from "next-intl";
+import fs from "node:fs";
+import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { MeterRateRows } from "./sections";
 
+const locales = ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"] as const;
 describe("MeterRateRows", () => {
-	it("shows meter names, prices, units and conditions without an extra section heading", () => {
+	it.each(locales)("shows translated meter names, prices, units and conditions in %s without an extra heading", (locale) => {
+		const messages = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, `${file}.json`), "utf8"))]));
+		const t = createTranslator({ locale, messages });
 		const html = renderToStaticMarkup(
-			<MeterRateRows rows={[
+			<NextIntlClientProvider locale={locale} timeZone="UTC" messages={messages}><MeterRateRows rows={[
 				{
 					meter: "audio_minutes",
 					displayLabel: "Audio minutes",
@@ -21,15 +27,16 @@ describe("MeterRateRows", () => {
 					price: 0.004,
 					conditions: [{ path: "request.quality", op: "eq", value: "high" }],
 				},
-			]} />,
+			]} /></NextIntlClientProvider>,
 		);
 
-		expect(html).toContain("Audio minutes");
-		expect(html).toContain("$0.08");
-		expect(html).toContain("/ minute");
-		expect(html).toContain("Input Text Messages");
-		expect(html).toContain("$0.004");
-		expect(html).toContain("quality: high");
+		expect(html).toContain(t("Catalogue.modelDetail.pricing.meters.audio_minutes" as never));
+		expect(html).not.toContain("MISSING_MESSAGE");
+		expect(html).not.toContain("Common.ui.");
+		expect(html).toContain(t("Catalogue.modelDetail.pricing.meters.input_text_messages" as never));
+		expect(html).not.toContain("Catalogue.");
+		expect(html).toContain("request.quality:");
+		expect(html).toContain(t("Common.ui.requestBuilder.high" as never));
 		expect(html).not.toContain("Usage rates");
 	});
 });

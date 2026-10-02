@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowRight, Gamepad2, Trophy } from "lucide-react";
@@ -13,7 +15,7 @@ export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }
 	const format = useDisplayFormatters();
 	const t = useTranslations("SettingsUI");
 	const gamesT = useTranslations("Product.games");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const formatLastPlayed = (value: string | null) =>
 		value ? `${s("Last played")} ${format.date(value)}` : s("Not played yet");
 	const gameResults = new Map((summary?.games ?? []).map((game) => [game.game, game]));
@@ -34,7 +36,7 @@ export function ProfileGames({ summary }: { summary: ProfileGameSummary | null }
 							{s("Catalogue Games")}
 						</h2>
 						<p className="mt-1 text-sm text-muted-foreground">
-							{s("Daily results from your signed-in games, grouped by game.")}
+							{s("phraseDailyResultsFromYourSignedInGamesGroupedByGame")}
 						</p>
 					</div>
 					<Button asChild variant="outline" className="w-fit rounded-lg">

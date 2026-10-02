@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { LocalizedRequestError, localizedRequestErrorMessage } from "@/i18n/localized-request-error";
 import { Streamdown } from "streamdown";
 import {
 	Clapperboard,
@@ -375,7 +376,7 @@ async function pollMusicGeneration(
 			{ method: "GET", signal },
 		);
 		if (!response.ok) {
-			throw new Error(await readErrorMessage(response, errorMessages));
+			throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 		}
 		const rawText = await response.text();
 		let payload: unknown = null;
@@ -394,7 +395,7 @@ async function pollMusicGeneration(
 		const status = extractMusicStatus(payload);
 		latestStatus = status;
 		if (status === "failed") {
-			throw new Error(errorMessages.musicGenerationFailed);
+			throw new LocalizedRequestError(errorMessages.musicGenerationFailed);
 		}
 		if (status === "completed") {
 			return { payload, urls: [], status };
@@ -479,7 +480,7 @@ async function fetchVideoContentObjectUrl(
 		},
 	);
 	if (!response.ok) {
-		throw new Error(await readErrorMessage(response, errorMessages));
+		throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 	}
 	const blob = await response.blob();
 	if (!blob.size) return null;
@@ -512,7 +513,7 @@ async function pollVideoGeneration(
 		const payload = await parseApiPayload(response);
 		latestPayload = payload;
 		if (!response.ok) {
-			throw new Error(await readErrorMessage(response, errorMessages));
+			throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 		}
 		const urls = extractGenerationUrls(payload);
 		if (urls.length > 0) {
@@ -521,7 +522,7 @@ async function pollVideoGeneration(
 		const status = extractVideoStatus(payload);
 		latestStatus = status;
 		if (status === "failed") {
-			throw new Error(errorMessages.videoGenerationFailed);
+			throw new LocalizedRequestError(errorMessages.videoGenerationFailed);
 		}
 		if (status === "completed") {
 			const objectUrl = await fetchVideoContentObjectUrl(
@@ -1895,7 +1896,7 @@ export default function ModelPlayground({
 			});
 
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -2003,9 +2004,7 @@ export default function ModelPlayground({
 			}
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: errorMessages.requestFailed;
+				localizedRequestErrorMessage(requestError, errorMessages.requestFailed);
 			setError(message);
 		} finally {
 			setIsGenerating(false);
@@ -2059,7 +2058,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -2164,11 +2163,9 @@ export default function ModelPlayground({
 				return;
 			}
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: t("errors.requestFailedForType", {
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
 						type: getModeLabel(action === "music" ? "music" : "audio"),
-					});
+					}));
 			if (!isMountedRef.current) return;
 			setAudioError(message);
 		} finally {
@@ -2207,7 +2204,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -2228,11 +2225,9 @@ export default function ModelPlayground({
 			);
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: t("errors.requestFailedForType", {
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
 						type: getModeLabel("image"),
-					});
+					}));
 			setImageError(message);
 		} finally {
 			setImageIsGenerating(false);
@@ -2274,7 +2269,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			let payload = await parseApiPayload(response);
@@ -2327,11 +2322,9 @@ export default function ModelPlayground({
 				return;
 			}
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: t("errors.requestFailedForType", {
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
 						type: getModeLabel("video"),
-					});
+					}));
 			if (!isMountedRef.current) return;
 			setVideoError(message);
 		} finally {
@@ -2384,7 +2377,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const payload = await response.json();
@@ -2392,11 +2385,9 @@ export default function ModelPlayground({
 			setEmbeddingsRawResponse(JSON.stringify(payload, null, 2));
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: t("errors.requestFailedForType", {
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
 						type: getModeLabel("embeddings"),
-					});
+					}));
 			setEmbeddingsError(message);
 		} finally {
 			setEmbeddingsIsGenerating(false);
@@ -2431,7 +2422,7 @@ export default function ModelPlayground({
 				}),
 			});
 			if (!response.ok) {
-				throw new Error(await readErrorMessage(response, errorMessages));
+				throw new LocalizedRequestError(await readErrorMessage(response, errorMessages));
 			}
 
 			const payload = await response.json();
@@ -2439,11 +2430,9 @@ export default function ModelPlayground({
 			setModerationRawResponse(JSON.stringify(payload, null, 2));
 		} catch (requestError) {
 			const message =
-				requestError instanceof Error
-					? requestError.message
-					: t("errors.requestFailedForType", {
+				localizedRequestErrorMessage(requestError, t("errors.requestFailedForType", {
 						type: getModeLabel("moderation"),
-					});
+					}));
 			setModerationError(message);
 		} finally {
 			setModerationIsGenerating(false);

@@ -186,7 +186,7 @@ export function PaymentMethodsManager({
 
             {paymentMethods.length === 0 ? (
                 <p className="py-4 text-sm text-muted-foreground">
-                    {t("strings.No cards yet. Add one to use it for credits and auto top-ups." as never)}
+                    {t("strings.phraseNoCardsYetAddOneToUseItForCreditsAndAutoTopUps" as never)}
                 </p>
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -244,7 +244,7 @@ export function PaymentMethodsManager({
             )}
 
             <p className="text-xs leading-5 text-muted-foreground">
-                {t("strings.Cards are stored securely by Stripe. Use Customer Portal for billing details and other advanced changes." as never)}
+                {t("strings.phraseCardsAreStoredSecurelyByStripeUseCustomerPortalForBillingDetailsAndOtherAdvancedChanges" as never)}
             </p>
 
             <Dialog
@@ -259,14 +259,14 @@ export function PaymentMethodsManager({
                         <DialogDescription>
                             {(() => {
                                 const selected = paymentMethods.find((pm) => pm.id === confirmRemoveId);
-                                if (!selected) return t("strings.This payment method will no longer be available for credits and auto top-ups." as never);
+                                if (!selected) return t("strings.phraseThisPaymentMethodWillNoLongerBeAvailableForCreditsAndAutoTopUps" as never);
                                 return (
                                     <>
                                         {formatCardBrand(selected.brand)} {t("strings.ending" as never)}{" "}
 										<SensitiveValue inline label={t("billingCopy.cardNumber")}>
                                             {selected.last4 ?? "****"}
 										</SensitiveValue>{" "}
-                                        {t("strings.will no longer be available for credits and auto top-ups." as never)}
+                                        {t("strings.phraseWillNoLongerBeAvailableForCreditsAndAutoTopUps" as never)}
                                     </>
                                 );
                             })()}
@@ -290,7 +290,7 @@ export function PaymentMethodsManager({
                             {removePendingId ? (
                                 <span className="inline-flex items-center gap-2">
                                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    {t("strings.Removing..." as never)}
+                                    {t("strings.phraseRemoving" as never)}
                                 </span>
                             ) : (
                                 t("strings.Remove" as never)

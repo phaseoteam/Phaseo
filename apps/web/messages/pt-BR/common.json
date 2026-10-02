@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "Aliases salvos. A atualização do cache público falhou; tente novamente nos controles de cache.",
 				"noticeCacheFailed": "Aviso salvo. A atualização do cache público falhou; tente novamente nos controles de cache.",
 				"sectionStillLoading": "{section}: os dados ainda estão sendo carregados. Aguarde um momento e tente novamente."
-			}
+			},
+			"successorNotificationHelp": "Independente da linhagem; usado como destino de migração recomendado nas notificações."
 		},
 		"auditDataTable": {
 			"actions": "Ações",
@@ -2387,7 +2388,47 @@
 			"frame": "quadro",
 			"frames": "quadros",
 			"message": "mensagem",
-			"messages": "mensagens"
+			"messages": "mensagens",
+			"serviceTierLineStyles": "Estilos de linha por nível de serviço"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, one {# dia} other {# dias}}",
+			"allPercentileBands": "Todas as faixas de percentis disponíveis",
+			"hiddenProviderObservations": "Observações de todo o modelo; as identidades dos provedores estão ocultas",
+			"providerObservations": "{resolution, select, hour {Observações horárias} other {Observações diárias}} de {count, plural, one {# provedor registrado} other {todos os # provedores registrados}}",
+			"modelWide": "Todo o modelo",
+			"changePercent": "Variação de {value} por cento",
+			"freeRouterDescription": "Encaminha cada solicitação para um grupo de modelos gratuitos elegíveis com balanceamento por provedor. Confira aqui os modelos elegíveis atuais e o uso roteado recente.",
+			"modelCreator": "seu criador",
+			"inputOutputDescription": "Aceita entradas de {inputs} e produz saídas de {outputs}.",
+			"inputDescription": "Aceita entradas de {inputs}.",
+			"outputDescription": "Foi desenvolvido para cargas de trabalho de {outputs}.",
+			"modelDetailsRetry": "Não foi possível carregar os detalhes do modelo. Tentaremos novamente automaticamente.",
+			"loadingModelDetails": "Carregando detalhes do modelo…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", sem ordenação",
+			"sortedAscending": ", ordem crescente",
+			"sortedDescending": ", ordem decrescente",
+			"sendDiscordAnnouncement": "Enviar anúncio no Discord",
+			"announcementSent": "Anúncio enviado no Discord",
+			"announcementStateNotSaved": "O anúncio foi enviado no Discord, mas não foi possível salvar seu estado.",
+			"announcementFailed": "Não foi possível enviar o anúncio no Discord.",
+			"invalidModelId": "ID de modelo inválido.",
+			"modelNotFound": "Modelo não encontrado no catálogo.",
+			"modelIdMissing": "O ID do modelo está ausente no registro do catálogo."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "Não foi possível preparar seu histórico de chat. Recarregue para tentar novamente.",
+			"loadingChat": "Carregando chat…",
+			"noChatsWithTag": "Nenhum chat com esta etiqueta.",
+			"dateUnknown": "Data desconhecida",
+			"rightOnTheMoney": "Acertou o preço",
+			"priceLocked": "Preço confirmado",
+			"workspaceSuffix": " {named, select, yes {para {workspace}} other {para este espaço de trabalho}}",
+			"noActivity": "Nenhuma atividade",
+			"requestErrorMessage": "Mensagem de erro da solicitação",
+			"openDetails": "Abrir detalhes"
 		}
 	}
 }

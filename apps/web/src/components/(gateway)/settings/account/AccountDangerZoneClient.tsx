@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -26,7 +28,7 @@ import { Loader2, ShieldAlert, Trash2 } from "lucide-react";
 
 export default function AccountDangerZoneClient() {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const router = useRouter();
 	const [deleting, setDeleting] = React.useState(false);
 
@@ -34,8 +36,8 @@ export default function AccountDangerZoneClient() {
 		setDeleting(true);
 		try {
 			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
-				loading: s("Starting account deletion..."),
-				success: s("Account access removed. Deletion is in progress."),
+				loading: s("phraseStartingAccountDeletion"),
+				success: s("phraseAccountAccessRemovedDeletionIsInProgress"),
 				error: (error: unknown) =>
 					localizedSettingsError(error, t, "Could not delete account"),
 			});
@@ -56,7 +58,7 @@ export default function AccountDangerZoneClient() {
 					{s("Danger Zone")}
 				</h3>
 				<p className="text-sm text-muted-foreground mt-1">
-					{s("Deleting your account immediately removes access and starts permanent deletion from Phaseo's active systems. The process must complete within 30 days and cannot be undone.")}
+					{s("phraseDeletingYourAccountImmediatelyRemovesAccessAndStartsPermanentDeletionFromPhaseoSActiveSystemsTheProcessMustCompleteWithin30DaysAndCannotBeUndone")}
 				</p>
 			</div>
 
@@ -72,8 +74,8 @@ export default function AccountDangerZoneClient() {
 						<AlertDialogHeader>
 							<AlertDialogTitle>{s("Delete account?")}</AlertDialogTitle>
 							<AlertDialogDescription>
-								{s("This removes your account, owned workspaces, keys, stored Gateway data, and linked Stripe customer records. Other members will lose access to any workspace you own. Database backups expire through the seven-day backup cycle. Records that must be retained by law and data held by customer-directed providers are handled separately. Type")}{" "}
-						<span className="font-semibold">DELETE</span> {s("to confirm.")}
+								{s("phraseThisRemovesYourAccountOwnedWorkspacesKeysStoredGatewayDataAndLinkedStripeCustomerRecordsOtherMembersWillLoseAccessToAnyWorkspaceYouOwnDatabaseBackupsExpireThroughTheSevenDayBackupCycleRecordsThatMustBeRetainedByLawAndDataHeldByCustomerDirectedProvidersAreHandledSeparatelyType")}{" "}
+						<span className="font-semibold">DELETE</span> {s("phraseToConfirm")}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 
@@ -113,7 +115,7 @@ function ConfirmDelete({
 			<div className="grid gap-2">
 						<Label htmlFor="deleteCurrentPassword">{s("Current password")}</Label>
 				<Input id="deleteCurrentPassword" type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} />
-					<p className="text-xs text-muted-foreground">{s("Passwordless accounts require a recent provider sign-in.")}</p>
+					<p className="text-xs text-muted-foreground">{s("phrasePasswordlessAccountsRequireARecentProviderSignIn")}</p>
 			</div>
 			<AlertDialogFooter>
 				<div className="flex w-full items-center justify-end gap-2">
@@ -125,7 +127,7 @@ function ConfirmDelete({
 						{deleting ? (
 							<>
 								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-								{s("Deleting...")}
+								{s("phraseDeleting")}
 							</>
 						) : (
 							s("Yes, delete my account")

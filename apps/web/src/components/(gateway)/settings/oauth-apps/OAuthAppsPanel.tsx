@@ -29,7 +29,7 @@ export default function OAuthAppsPanel({
 					</EmptyMedia>
 					<EmptyTitle>{t("strings.No OAuth apps yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						{t("strings.Create your first OAuth app to enable third-party integrations with your Phaseo account." as never)}
+						{t("strings.phraseCreateYourFirstOAuthAppToEnableThirdPartyIntegrationsWithYourPhaseoAccount" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>

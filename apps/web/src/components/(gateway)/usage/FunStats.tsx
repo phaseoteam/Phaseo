@@ -72,7 +72,7 @@ export default function FunStats({
 			icon: TrendingUp,
 			title: "Total Saved",
 			value: `$${totalSaved.toFixed(2)}`,
-			subtitle: t("strings.vs. direct provider pricing" as never),
+			subtitle: t("strings.phraseVsDirectProviderPricing" as never),
 			color: "text-emerald-600",
 			bgColor: "bg-emerald-50",
 		});

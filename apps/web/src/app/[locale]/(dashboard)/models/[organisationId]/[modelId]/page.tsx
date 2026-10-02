@@ -563,6 +563,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	const requestedAlias = isAliasRoute ? requestedModelId : undefined;
 	const modelId = canonicalModelId;
 	if (isFreeRouterModelId(modelId)) {
+		const tRouter = await getTranslations("Catalogue.models.freeRouter");
 		return (
 			<>
 				<DiscordComponentEmbed
@@ -570,7 +571,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 					modelName="Free Router"
 					organisationName="Phaseo"
 					modelPath={getModelPath(modelId)}
-					description="A flexible gateway route for discovering and comparing available models."
+					description={tRouter("embedDescription")}
 				/>
 				<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} requestedAlias={requestedAlias}>
 					<FreeRouterOverview />

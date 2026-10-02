@@ -1281,7 +1281,7 @@ export default function ModelsTableDisplay({
 	const privateOnly = selectedTiers.includes("private");
 	const privateFilterButton = hasPrivateModels ? (
 		<Button type="button" size="sm" variant={privateOnly ? "default" : "outline"} className="h-8 gap-1.5 rounded-md" onClick={() => setSelectedTiers(privateOnly ? selectedTiers.filter((value) => value !== "private") : [...selectedTiers, "private"])} aria-pressed={privateOnly}>
-			<LockKeyhole className="h-3.5 w-3.5" />Private
+			<LockKeyhole className="h-3.5 w-3.5" />{tFilters("tierPrivate")}
 		</Button>
 	) : null;
 

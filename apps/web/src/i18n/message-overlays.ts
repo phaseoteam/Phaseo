@@ -25,6 +25,9 @@ function nestDottedMessageObject(
 
 	const result: Record<string, unknown> = {};
 	for (const [key, value] of Object.entries(messages)) {
+		if (preserveKeys && key.includes(".")) {
+			throw new Error(`Settings sentence requires a stable translation ID: ${key}`);
+		}
 		const normalizedValue = isMessageObject(value)
 			? nestDottedMessageObject(value, preserveKeys || key === "strings")
 			: value;

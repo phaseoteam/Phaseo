@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "エイリアスを保存しました。公開キャッシュの更新に失敗しました。キャッシュ制御から再試行してください。",
 				"noticeCacheFailed": "通知を保存しました。公開キャッシュの更新に失敗しました。キャッシュ制御から再試行してください。",
 				"sectionStillLoading": "{section} のデータを読み込み中です。少し待ってから再試行してください。"
-			}
+			},
+			"successorNotificationHelp": "系統とは独立しており、通知で推奨される移行先として使用されます。"
 		},
 		"auditDataTable": {
 			"actions": "操作",
@@ -2387,7 +2388,47 @@
 			"frame": "フレーム",
 			"frames": "フレーム",
 			"message": "メッセージ",
-			"messages": "メッセージ"
+			"messages": "メッセージ",
+			"serviceTierLineStyles": "サービス階層の線スタイル"
+		},
+		"publicModelCopy": {
+			"days": "{count}日",
+			"allPercentileBands": "利用可能なすべてのパーセンタイル帯",
+			"hiddenProviderObservations": "モデル全体の観測値。プロバイダーの識別情報は非表示です",
+			"providerObservations": "記録された全{count}プロバイダーの{resolution, select, hour {時間別} other {日別}}観測値",
+			"modelWide": "モデル全体",
+			"changePercent": "変化率{value}パーセント",
+			"freeRouterDescription": "各リクエストを、プロバイダーを考慮した負荷分散で利用可能な無料モデルのプールにルーティングします。現在利用可能なモデルと最近のルーティング利用状況をここで確認できます。",
+			"modelCreator": "モデルの開発者",
+			"inputOutputDescription": "{inputs}の入力を受け付け、{outputs}の出力を生成します。",
+			"inputDescription": "{inputs}の入力を受け付けます。",
+			"outputDescription": "{outputs}のワークロード向けに設計されています。",
+			"modelDetailsRetry": "モデルの詳細を読み込めませんでした。自動的に再試行します。",
+			"loadingModelDetails": "モデルの詳細を読み込み中…"
+		},
+		"finalSharedCopy": {
+			"notSorted": "、未並べ替え",
+			"sortedAscending": "、昇順",
+			"sortedDescending": "、降順",
+			"sendDiscordAnnouncement": "Discord に告知を送信",
+			"announcementSent": "Discord に告知を送信しました",
+			"announcementStateNotSaved": "Discord に告知を送信しましたが、状態を保存できませんでした。",
+			"announcementFailed": "Discord に告知を送信できませんでした。",
+			"invalidModelId": "モデル ID が無効です。",
+			"modelNotFound": "カタログにモデルが見つかりません。",
+			"modelIdMissing": "カタログのレコードにモデル ID がありません。"
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "チャット履歴を準備できませんでした。再読み込みして再試行してください。",
+			"loadingChat": "チャットを読み込み中…",
+			"noChatsWithTag": "このタグのチャットはありません。",
+			"dateUnknown": "日付不明",
+			"rightOnTheMoney": "価格をぴたりと当てました",
+			"priceLocked": "価格を確定しました",
+			"workspaceSuffix": "{named, select, yes {（{workspace}）} other {（このワークスペース）}}",
+			"noActivity": "アクティビティなし",
+			"requestErrorMessage": "リクエストのエラーメッセージ",
+			"openDetails": "詳細を開く"
 		}
 	}
 }

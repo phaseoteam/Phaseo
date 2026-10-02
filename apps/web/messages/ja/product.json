@@ -1693,7 +1693,9 @@
 		"save": "保存",
 		"model": "モデル",
 		"throughput": "スループット",
-		"responsePlaceholder": "レスポンスはここに表示されます…"
+		"responsePlaceholder": "レスポンスはここに表示されます…",
+		"gatewayLabel": "ゲートウェイ",
+		"openaiThroughput": "OpenAI API（トークン/秒）"
 	},
 	"gatewayBenchmark": {
 		"title": "ゲートウェイの性能比較",

@@ -1,4 +1,6 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -98,7 +100,7 @@ function WorkspaceCombobox({
 				<Command>
 				<CommandInput placeholder={s("Search workspaces…")} />
 					<CommandList className="max-h-64 overscroll-contain pr-1" style={{ scrollbarWidth: "thin" }}>
-					<CommandEmpty>{s("No workspace found.")}</CommandEmpty>
+					<CommandEmpty>{s("phraseNoWorkspaceFound")}</CommandEmpty>
 						<CommandGroup>
 							{teams.map((team) => (
 								<CommandItem
@@ -169,9 +171,9 @@ export default function AccountSettingsClient({
 	hasPassword = true,
 }: Props) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
-		t(`strings.${key}` as never, values as never);
+		t(settingsStringKey(key) as never, values as never);
 	const locale = useLocale();
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [displayName, setDisplayName] = React.useState<string | null>(
@@ -253,8 +255,8 @@ export default function AccountSettingsClient({
 		try {
 			const promise = updateAccount(updatePayload);
 			toast.promise(promise, {
-				loading: s("Saving your settings..."),
-				success: s("Settings saved."),
+				loading: s("phraseSavingYourSettings"),
+				success: s("phraseSettingsSaved"),
 				error: () => s("Could not save settings"),
 			});
 			await promise;
@@ -280,8 +282,8 @@ export default function AccountSettingsClient({
 				setChatNotifyOnComplete(false);
 				toast.error(
 					result.reason === "unsupported"
-						? s("Browser notifications are not supported here.")
-						: s("Allow notifications in your browser to enable chat alerts."),
+						? s("phraseBrowserNotificationsAreNotSupportedHere")
+						: s("phraseAllowNotificationsInYourBrowserToEnableChatAlerts"),
 				);
 				return;
 			}
@@ -329,9 +331,9 @@ export default function AccountSettingsClient({
 			await toast.promise(
 				changePasswordAction(currentPassword, newPassword),
 				{
-					loading: s("Changing your password..."),
+					loading: s("phraseChangingYourPassword"),
 					success: s("Password changed successfully!"),
-					error: () => s("Could not change password."),
+					error: () => s("phraseCouldNotChangePassword"),
 				}
 			);
 			// Reset form
@@ -364,9 +366,9 @@ export default function AccountSettingsClient({
 			const result = await toast.promise(
 				changeEmailAction(newEmail, emailPassword),
 				{
-					loading: s("Changing your email..."),
-					success: s("Email change initiated. Check both email addresses for confirmation."),
-					error: () => s("Could not change email."),
+					loading: s("phraseChangingYourEmail"),
+					success: s("phraseEmailChangeInitiatedCheckBothEmailAddressesForConfirmation"),
+					error: () => s("phraseCouldNotChangeEmail"),
 				}
 			);
 			// Reset form
@@ -446,7 +448,7 @@ export default function AccountSettingsClient({
 								{s("Display Name")}
 							</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								{s("This is how your name appears to other people.")}
+								{s("phraseThisIsHowYourNameAppearsToOtherPeople")}
 							</p>
 						</div>
 						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -454,7 +456,7 @@ export default function AccountSettingsClient({
 									id="displayName"
 									value={displayName ?? ""}
 									maxLength={60}
-									placeholder={s("e.g. Daniel")}
+									placeholder={s("phraseEGDaniel")}
 									onChange={(e) =>
 										setDisplayName(e.target.value ? e.target.value : null)
 									}
@@ -467,7 +469,7 @@ export default function AccountSettingsClient({
 							<div className="min-w-0">
 								<Label className="text-sm font-medium">{s("Email")}</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									{s("Contact support to change your sign-in email.")}
+									{s("phraseContactSupportToChangeYourSignInEmail")}
 								</p>
 							</div>
 							<SensitiveValue className="w-full shrink-0 sm:w-[min(32rem,55%)]" label="email address">
@@ -483,7 +485,7 @@ export default function AccountSettingsClient({
 									{s("Country")}
 								</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-									{s("Used to determine provider and service availability. Billing addresses are managed separately.")}
+									{s("phraseUsedToDetermineProviderAndServiceAvailabilityBillingAddressesAreManagedSeparately")}
 								</p>
 							</div>
 							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -503,7 +505,7 @@ export default function AccountSettingsClient({
 								{s("Default Workspace")}
 							</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								{s("Set the workspace shown by default.")}
+								{s("phraseSetTheWorkspaceShownByDefault")}
 							</p>
 						</div>
 						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
@@ -524,7 +526,7 @@ export default function AccountSettingsClient({
 						<div className="min-w-0">
 							<Label className="text-sm font-medium">{s("Analytics Cookies")}</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								{s("Allow analytics cookies to improve the product.")}
+								{s("phraseAllowAnalyticsCookiesToImproveTheProduct")}
 							</p>
 						</div>
 								<Switch
@@ -568,7 +570,7 @@ export default function AccountSettingsClient({
 								{saving ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										{s("Saving your settings...")}
+										{s("phraseSavingYourSettings")}
 									</>
 								) : (
 									s("Save changes")
@@ -592,8 +594,8 @@ export default function AccountSettingsClient({
 							<h4 className="text-sm font-medium">{s("Chat Completion")}</h4>
 							<p className="mt-0.5 text-sm text-muted-foreground">
 								{chatNotificationsSupported
-									? s("Show a browser notification when a text chat response finishes while this tab is unfocused.")
-									: s("Browser notifications are not supported in this browser.")}
+									? s("phraseShowABrowserNotificationWhenATextChatResponseFinishesWhileThisTabIsUnfocused")
+									: s("phraseBrowserNotificationsAreNotSupportedInThisBrowser")}
 							</p>
 						</div>
 						<Switch
@@ -614,7 +616,7 @@ export default function AccountSettingsClient({
 							{s("Change password")}
 						</h3>
 						<p className="text-xs text-muted-foreground mt-0.5">
-							{s("Update your password to keep your account secure.")}
+							{s("phraseUpdateYourPasswordToKeepYourAccountSecure")}
 						</p>
 					</div>
 
@@ -694,7 +696,7 @@ export default function AccountSettingsClient({
 								{changingPassword ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											{s("Changing your password...")}
+											{s("phraseChangingYourPassword")}
 									</>
 								) : (
 									s("Change password")
@@ -713,7 +715,7 @@ export default function AccountSettingsClient({
 							{s("Change email")}
 						</h3>
 						<p className="text-xs text-muted-foreground mt-0.5">
-							{s("Confirm the change in both your old and new inbox.")}
+							{s("phraseConfirmTheChangeInBothYourOldAndNewInbox")}
 						</p>
 					</div>
 
@@ -754,7 +756,7 @@ export default function AccountSettingsClient({
 									placeholder={s("Enter your password to confirm")}
 									/>
 									<p className="text-xs text-muted-foreground">
-										{s("For security, we need your password to change your email.")}
+										{s("phraseForSecurityWeNeedYourPasswordToChangeYourEmail")}
 									</p>
 								</div>
 							</div>
@@ -779,7 +781,7 @@ export default function AccountSettingsClient({
 								{changingEmail ? (
 									<>
 										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-											{s("Changing your email...")}
+											{s("phraseChangingYourEmail")}
 									</>
 								) : (
 									s("Change email")

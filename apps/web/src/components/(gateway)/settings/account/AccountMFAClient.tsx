@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -39,7 +41,7 @@ export default function AccountMFAClient({
 	mfaFactorId: string | null;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const router = useRouter();
 
 	const [mfaDialogOpen, setMfaDialogOpen] = React.useState(false);
@@ -54,7 +56,7 @@ export default function AccountMFAClient({
 		setDisablingMFA(true);
 		try {
 			await toast.promise(unenrollMFAAction(mfaFactorId), {
-				loading: s("Disabling MFA..."),
+				loading: s("phraseDisablingMFA"),
 				success: s("Two-factor authentication disabled"),
 				error: (error: unknown) =>
 					localizedSettingsError(error, t, "Could not disable MFA"),
@@ -99,7 +101,7 @@ export default function AccountMFAClient({
 						<div className="min-w-0">
 							<h3 className="text-sm font-medium">{s("Two-Factor Authentication")}</h3>
 							<p className="mt-0.5 text-sm text-muted-foreground">
-								{s("Require a code from your authenticator app when signing in.")}
+								{s("phraseRequireACodeFromYourAuthenticatorAppWhenSigningIn")}
 							</p>
 						</div>
 						{mfaEnabled ? (
@@ -114,7 +116,7 @@ export default function AccountMFAClient({
 							<div className="min-w-0">
 							<p className="text-xs font-medium">{s("Disable Two-Factor Authentication")}</p>
 								<p className="mt-0.5 text-xs text-muted-foreground">
-									{s("Remove the additional sign-in verification from your account.")}
+									{s("phraseRemoveTheAdditionalSignInVerificationFromYourAccount")}
 								</p>
 							</div>
 							<AlertDialog>
@@ -125,7 +127,7 @@ export default function AccountMFAClient({
 									<AlertDialogHeader>
 										<AlertDialogTitle>{s("Disable MFA?")}</AlertDialogTitle>
 										<AlertDialogDescription>
-											{s("This will remove the extra security layer from your account.")}
+											{s("phraseThisWillRemoveTheExtraSecurityLayerFromYourAccount")}
 										</AlertDialogDescription>
 									</AlertDialogHeader>
 									<AlertDialogFooter>
@@ -140,7 +142,7 @@ export default function AccountMFAClient({
 											{disablingMFA ? (
 												<>
 													<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-															{s("Disabling...")}
+															{s("phraseDisabling")}
 												</>
 											) : (
 														s("Disable MFA")

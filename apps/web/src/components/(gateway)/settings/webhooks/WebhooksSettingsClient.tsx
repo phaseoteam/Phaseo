@@ -2,6 +2,7 @@
 
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useState, useTransition } from "react";
 import { CheckCircle2, Copy, MoreHorizontal, RotateCw, Send, Trash2, Webhook } from "lucide-react";
@@ -92,7 +93,7 @@ export default function WebhooksSettingsClient({ endpoints }: Props) {
 				}
 				toast.success(successMessage);
 			} catch (error) {
-				toast.error(error instanceof Error ? error.message : t("strings.Action failed" as never));
+				toast.error(localizedSettingsError(error, t, "Action failed"));
 			} finally {
 				setPendingEndpointId(null);
 			}

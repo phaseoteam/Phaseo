@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -49,7 +50,7 @@ export default function DeleteKeyItem({
 					success: t("keys.deleted"),
 				error: (err) => {
 					return (
-						(err && (err as any).message) || t("keys.failedDelete")
+						localizedSettingsError(err, t, "Action failed", t("keys.failedDelete"))
 					);
 				},
 			});

@@ -26,8 +26,8 @@ describe("German settings UI catalogue", () => {
 			"Bring Your Own Key",
 			"Workspace access changed",
 			"Delete selected API keys?",
-			"Unable to revoke access right now.",
-			"Saving privacy settings...",
+			"phraseUnableToRevokeAccessRightNow",
+			"phraseSavingPrivacySettings",
 		]) {
 			expect(typeof strings[key]).toBe("string");
 			expect(strings[key]).not.toBe(key);

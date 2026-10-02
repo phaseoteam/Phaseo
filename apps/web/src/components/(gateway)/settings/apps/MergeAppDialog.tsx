@@ -79,7 +79,7 @@ export default function MergeAppDialog({
 		try {
 			const promise = mergeAppsAction(app.id, targetId);
 			toast.promise(promise, {
-				loading: t("strings.Merging apps..." as never),
+				loading: t("strings.phraseMergingApps" as never),
 				success: t("strings.Apps merged" as never),
 				error: (err) =>
 					localizedSettingsError(err, t, "Failed to merge apps"),
@@ -119,7 +119,7 @@ export default function MergeAppDialog({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Merge apps" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("strings.Move all requests from this app into another and remove the source afterwards." as never)}
+						{t("strings.phraseMoveAllRequestsFromThisAppIntoAnotherAndRemoveTheSourceAfterwards" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onMerge} className="space-y-4">
@@ -139,14 +139,14 @@ export default function MergeAppDialog({
 						</Select>
 					</div>
 					<div className="rounded-lg border border-amber-200/70 bg-amber-50/60 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
-						{(t as unknown as (key: string, values?: Record<string, string>) => string)("strings.This will move all historical requests to the selected app and delete {appName}.", { appName: app.title })}
+						{(t as unknown as (key: string, values?: Record<string, string>) => string)("strings.phraseThisWillMoveAllHistoricalRequestsToTheSelectedAppAndDeleteAppName", { appName: app.title })}
 					</div>
 					<DialogFooter>
 						<Button type="button" variant="ghost" onClick={() => setOpen(false)}>
 							{t("strings.Cancel" as never)}
 						</Button>
 						<Button type="submit" disabled={loading || !targetId}>
-							{loading ? t("strings.Merging..." as never) : t("strings.Merge app" as never)}
+							{loading ? t("strings.phraseMerging" as never) : t("strings.Merge app" as never)}
 						</Button>
 					</DialogFooter>
 				</form>

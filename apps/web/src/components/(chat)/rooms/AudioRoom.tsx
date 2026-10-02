@@ -237,10 +237,10 @@ function modeEmptyDescriptionKey(mode: AudioMode) {
 	return "addAudioToTranslate" as const;
 }
 
-function readFileAsBase64(file: File): Promise<string> {
+function readFileAsBase64(file: File, errorMessage: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+		reader.onerror = () => reject(new Error(errorMessage));
 		reader.onload = () => {
 			const result = String(reader.result ?? "");
 			const [, b64 = ""] = result.split(",", 2);
@@ -250,10 +250,10 @@ function readFileAsBase64(file: File): Promise<string> {
 	});
 }
 
-function blobToDataUrl(blob: Blob): Promise<string> {
+function blobToDataUrl(blob: Blob, errorMessage: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onerror = () => reject(reader.error ?? new Error("Blob read failed"));
+		reader.onerror = () => reject(new Error(errorMessage));
 		reader.onload = () => resolve(String(reader.result ?? ""));
 		reader.readAsDataURL(blob);
 	});
@@ -987,6 +987,7 @@ export function AudioRoom({
 	initialMode = "speech",
 	allowedModes = ["speech"],
 }: AudioRoomProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const tChat = useTranslations("Product.chat");
 	const tUi = useTranslations("Common.ui");
@@ -1587,7 +1588,7 @@ export function AudioRoom({
 			(targetMode === "transcription" && !targetModeSupport.transcription) ||
 			(targetMode === "translation" && !targetModeSupport.translation)
 		) {
-			setError(`Model "${targetModelId}" does not support ${targetMode}.`);
+			setError(tCopy("unsupportedAudioMode", { model: targetModelId, mode: t(({ speech: "modeSpeech", music: "modeMusic", transcription: "modeTranscription", translation: "modeTranslation" } as const)[targetMode]) }));
 			return;
 		}
 		const promptTextSource = overrides?.forcedPrompt ?? textInput;
@@ -1617,7 +1618,7 @@ export function AudioRoom({
 			: `${t(modeLabelKey(targetMode))} ${format.date(new Date())}`;
 		const conversationTitle =
 			overrides?.forcedConversationTitle ||
-			(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
+			(temporaryMode ? t("temporaryChat") : existingTitle || candidateTitle);
 		let pendingEntryId: string | null = null;
 
 		setError(null);
@@ -1689,7 +1690,7 @@ export function AudioRoom({
 					requestBody.audio_url = audioUrlInput.trim();
 				}
 				if (audioFile) {
-					requestBody.audio_b64 = await readFileAsBase64(audioFile);
+					requestBody.audio_b64 = await readFileAsBase64(audioFile, tCopy("fileReadFailed"));
 				}
 			}
 			const targetProviderId =
@@ -1729,7 +1730,7 @@ export function AudioRoom({
 			});
 			if (!response.ok) {
 				const text = await response.text();
-				throw new Error(text || `Request failed (${response.status})`);
+				throw new Error(text || t("newMainCopy.requestStatusFailed", { status: response.status }));
 			}
 
 			const contentType = response.headers.get("content-type") ?? "";
@@ -1816,7 +1817,7 @@ export function AudioRoom({
 									: undefined;
 			} else {
 				const blob = await response.blob();
-				audioSrc = await blobToDataUrl(blob);
+				audioSrc = await blobToDataUrl(blob, tCopy("audioReadFailed"));
 			}
 			const elapsedMs = Math.max(0, Math.round(performance.now() - requestStartedAt));
 			const metrics = extractMetricsFromRaw(payload, elapsedMs);

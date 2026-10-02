@@ -248,7 +248,8 @@
 			"endpointRealtime": "रीयल-टाइम",
 			"endpointVideoGeneration": "वीडियो जनरेशन",
 			"endpointImageVariations": "छवि विविधताएँ",
-			"endpointMusicGeneration": "संगीत जनरेशन"
+			"endpointMusicGeneration": "संगीत जनरेशन",
+			"tierPrivate": "निजी"
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",
@@ -269,7 +270,8 @@
 			"unknown": "अज्ञात",
 			"never": "कभी नहीं",
 			"noEligibleTitle": "अभी कोई योग्य मुफ़्त मॉडल नहीं",
-			"noEligibleDescription": "मुफ़्त राउटर में सामान्य टेक्स्ट रूटिंग के लिए अभी कोई सक्रिय योग्य मॉडल नहीं है।"
+			"noEligibleDescription": "मुफ़्त राउटर में सामान्य टेक्स्ट रूटिंग के लिए अभी कोई सक्रिय योग्य मॉडल नहीं है।",
+			"embedDescription": "उपलब्ध मॉडल खोजने और तुलना करने के लिए एक लचीला गेटवे रूट।"
 		},
 		"cardView": "कार्ड दृश्य",
 		"tableView": "तालिका दृश्य",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "Phaseo Routing के बिना:",
 			"hourlyAverage": "पिछले 24 घंटे · प्रति घंटे औसत",
 			"routingChartLabel": "पिछले 24 घंटों में मॉडल की प्रति घंटे उपलब्धता। Phaseo Routing: {uptime}।{comparison}",
-			"routingComparison": " Phaseo Routing के बिना: {uptime}।"
+			"routingComparison": " Phaseo Routing के बिना: {uptime}।",
+			"routingLabel": "Phaseo रूटिंग"
 		},
 		"providerInfo": {
 			"dataPolicy": "डेटा नीति",
@@ -1576,7 +1579,8 @@
 			"remaining": "शेष",
 			"totalDays": "कुल {count} दिन",
 			"modalityStructured": "संरचित स्थिति",
-			"modalityDecisions": "निर्णय"
+			"modalityDecisions": "निर्णय",
+			"viewLicense": "लाइसेंस देखें"
 		},
 		"performance": {
 			"noTelemetry": "पिछले 7 दिनों में Gateway टेलीमेट्री नहीं है",
@@ -1685,7 +1689,9 @@
 				"footer": "सभी समय UTC में हैं। मान चुनी गई रिपोर्टिंग अवधि के प्रति घंटा माध्यिका को एकत्र करते हैं।"
 			},
 			"observationsShown": "{description} {series} दिखाए जा रहे हैं।",
-			"requestSuccess": "सफल अनुरोध"
+			"requestSuccess": "सफल अनुरोध",
+			"hiddenAttribution": "इस मॉडल के लिए प्रदाता की पहचान छिपी है। रुझान पूरे मॉडल के अवलोकनों पर आधारित हैं।",
+			"selectTimeRange": "प्रदर्शन की समय सीमा चुनें"
 		},
 		"routeHelp": {
 			"external": "बाहरी प्रदाता",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "लिप्यंतरित ऑडियो",
 		"recentRequests": "{count} हाल के अनुरोध",
 		"intelligenceBenchmarks": "बुद्धिमत्ता बेंचमार्क",
-		"noMeasuredUsage": "पिछले 30 दिनों में कोई मापा गया उपयोग नहीं है।"
+		"noMeasuredUsage": "पिछले 30 दिनों में कोई मापा गया उपयोग नहीं है।",
+		"intelligenceValue": {
+			"barsCaption": "प्रति बुद्धिमत्ता अंक USD · श्रेष्ठ से सबसे खराब · कम बेहतर है",
+			"barAria": "{model}: प्रति बुद्धिमत्ता अंक {cost}, {configuration}",
+			"loadingChart": "मूल्य चार्ट लोड हो रहा है…",
+			"chartDisplay": "मूल्य चार्ट प्रदर्शन",
+			"usdPerPoint": "प्रति अंक USD",
+			"scoreVsCost": "स्कोर बनाम लागत",
+			"configurationCount": "{total} में से {visible} कॉन्फ़िगरेशन",
+			"searchConfigurations": "मॉडल या कॉन्फ़िगरेशन खोजें",
+			"searchPlaceholder": "मॉडल या कॉन्फ़िगरेशन खोजें…",
+			"evaluatedConfigurations": "मूल्यांकित कॉन्फ़िगरेशन",
+			"noConfiguration": "कोई मूल्यांकित कॉन्फ़िगरेशन नहीं मिला।",
+			"selectModels": "तुलना के लिए मॉडल चुनें।",
+			"perPoint": "{cost} / अंक",
+			"rankSummary": "{total} कॉन्फ़िगरेशन में स्थान {rank}",
+			"scatterCaption": "बुद्धिमत्ता बनाम मूल्यांकन लागत · नीचे और अधिक दाईं ओर बेहतर है। हर बिंदु एक मूल्यांकित कॉन्फ़िगरेशन दिखाता है।",
+			"scatterAria": "बुद्धिमत्ता स्कोर बनाम मूल्यांकन लागत का स्कैटर चार्ट। सटीक मान नीचे दिए गए हैं।",
+			"intelligenceScore": "बुद्धिमत्ता स्कोर",
+			"evaluationCostUsd": "मूल्यांकन लागत (USD)",
+			"intelligenceValue": "बुद्धिमत्ता: {score}",
+			"evaluationCostValue": "मूल्यांकन लागत: {cost}",
+			"perIntelligencePoint": "{cost} / बुद्धिमत्ता अंक",
+			"tableCaption": "प्रति बुद्धिमत्ता अंक मूल्यांकन लागत, सबसे कम लागत से क्रमबद्ध। स्कोर और लागत समान मूल्यांकित कॉन्फ़िगरेशन के हैं।",
+			"modelConfiguration": "मॉडल / कॉन्फ़िगरेशन",
+			"evaluationCostShort": "मूल्यांकन लागत",
+			"usdPerPointColumn": "USD / अंक",
+			"slow": "धीमा",
+			"speed": "गति"
+		}
 	},
 	"compare": {
 		"title": "मॉडलों की तुलना करें",

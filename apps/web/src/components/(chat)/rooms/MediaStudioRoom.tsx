@@ -525,13 +525,16 @@ function formatDuration(
 ): string {
 	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return notAvailable;
 	if (durationMs < 1000) {
-		return `${new Intl.NumberFormat(locale).format(Math.round(durationMs))}ms`;
+		return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short" }).format(Math.round(durationMs));
 	}
 	const seconds = new Intl.NumberFormat(locale, {
+		style: "unit",
+		unit: "second",
+		unitDisplay: "short",
 		minimumFractionDigits: 2,
 		maximumFractionDigits: 2,
 	});
-	return `${seconds.format(durationMs / 1000)}s`;
+	return seconds.format(durationMs / 1000);
 }
 
 function formatVideoSeconds(
@@ -540,7 +543,7 @@ function formatVideoSeconds(
 	notAvailable: string,
 ): string {
 	if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds <= 0) return notAvailable;
-	return `${new Intl.NumberFormat(locale).format(Math.round(seconds))}s`;
+	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short" }).format(Math.round(seconds));
 }
 
 function getGenerationStatus(payload: any): string | null {
@@ -1696,7 +1699,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 
 							if (!response.ok) {
 								const text = await response.text();
-								throw new Error(text || `Request failed (${response.status})`);
+								throw new Error(text || t("newMainCopy.requestStatusFailed", { status: response.status }));
 							}
 
 							const contentType = response.headers.get("content-type") ?? "";

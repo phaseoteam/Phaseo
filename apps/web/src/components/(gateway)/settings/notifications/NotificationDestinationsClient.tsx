@@ -1,4 +1,6 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -44,7 +46,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		};
 	});
 	const providerByType = new Map(localizedProviders.map((provider) => [provider.type, provider] as const));
-	const s = (key: string, values?: Record<string, string>) => (t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(`strings.${key}`, values);
+	const s = (key: string, values?: Record<string, string>) => (t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(settingsStringKey(key), values);
 	const [destinations, setDestinations] = React.useState(initialDestinations ?? []);
 	const [modelDeprecationEnabled, setModelDeprecationEnabled] = React.useState(initialModelDeprecationEnabled);
 	const [open, setOpen] = React.useState(false);
@@ -117,7 +119,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 				<h2 id="event-alerts-title" className="font-heading text-base font-medium">{s("Product alerts")}</h2>
 				<div className="rounded-xl border bg-background/40 px-4 py-4">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-						<div><h3 className="text-sm font-medium">{s("Model Deprecation Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get notice before a model your workspace uses is retired.")}</p></div>
+						<div><h3 className="text-sm font-medium">{s("Model Deprecation Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired")}</p></div>
 						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label={s("Enable model deprecation alerts")} onCheckedChange={(checked) => {
 							const next = Boolean(checked); setModelDeprecationEnabled(next);
 							toast.promise(write(setBillingNotificationPreference({ preference: "modelDeprecationAlerts", enabled: next })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
@@ -128,12 +130,12 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 
 			<section aria-labelledby="destinations-title" className="space-y-3">
 				<div className="flex items-end justify-between gap-4">
-					<div><h2 id="destinations-title" className="font-heading text-base font-medium">{s("Destinations")}</h2><p className="mt-1 text-sm text-muted-foreground">{s("Create reusable channels, then choose them on each alert above.")}</p></div>
+					<div><h2 id="destinations-title" className="font-heading text-base font-medium">{s("Destinations")}</h2><p className="mt-1 text-sm text-muted-foreground">{s("phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove")}</p></div>
 					<Button className="rounded-md" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button>
 				</div>
 				<div className="overflow-hidden rounded-xl border bg-background/40">
 					{destinations.length === 0 ? (
-						<div className="flex flex-col items-center px-6 py-12 text-center"><div className="mb-4 rounded-md border bg-muted/40 p-3"><BellRing className="size-5 text-muted-foreground" /></div><h3 className="text-sm font-medium">{s("No destinations yet")}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{s("Add a destination to route alerts to the tools your team already watches.")}</p><Button className="mt-5 rounded-md" variant="outline" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button></div>
+						<div className="flex flex-col items-center px-6 py-12 text-center"><div className="mb-4 rounded-md border bg-muted/40 p-3"><BellRing className="size-5 text-muted-foreground" /></div><h3 className="text-sm font-medium">{s("No destinations yet")}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{s("phraseAddADestinationToRouteAlertsToTheToolsYourTeamAlreadyWatches")}</p><Button className="mt-5 rounded-md" variant="outline" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button></div>
 					) : destinations.map((destination, index) => {
 						const item = providerByType.get(destination.type)!; const Icon = item.icon;
 						return <div key={destination.id} className={cn("flex items-center gap-3 px-4 py-3.5", index > 0 && "border-t")}><div className={cn("grid size-9 place-items-center rounded-md", item.color)}><Icon className="size-4.5" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{destination.name}</p><p className="truncate text-xs text-muted-foreground">{item.name} · {destination.targetPreview}</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button className="rounded-md" variant="outline" size="sm" disabled={saving}>{s("Send test")} <ChevronDown className="ml-1 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "notification_test")}>{t("notificationCopy.connectionTest")}</DropdownMenuItem><DropdownMenuItem onClick={() => sendDestinationTest(destination.id, "model_deprecation")}>{t("notificationCopy.deprecationSample")}</DropdownMenuItem></DropdownMenuContent></DropdownMenu><Button className="rounded-md" variant="ghost" size="icon-sm" aria-label={s("Delete {name}", { name: destination.name })} disabled={saving} onClick={() => void removeDestination(destination.id)}><Trash2 /></Button></div>;
@@ -146,7 +148,7 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 					<ProviderInspectorSheetHeader className="border-b border-zinc-200/80 px-5 py-4 pr-14 dark:border-zinc-800">
 						<div className="flex min-w-0 items-center gap-3">
 							<div className={cn("grid size-11 shrink-0 place-items-center rounded-md border border-zinc-200/80 dark:border-zinc-800", selectedProvider?.color ?? "bg-muted")}><SelectedProviderIcon className="size-6" /></div>
-							<div className="min-w-0"><ProviderInspectorSheetTitle className="truncate text-base">{s("Add notifier")}</ProviderInspectorSheetTitle><ProviderInspectorSheetDescription className="mt-1">{s("Connect one or more channels to workspace alerts.")}</ProviderInspectorSheetDescription></div>
+							<div className="min-w-0"><ProviderInspectorSheetTitle className="truncate text-base">{s("Add notifier")}</ProviderInspectorSheetTitle><ProviderInspectorSheetDescription className="mt-1">{s("phraseConnectOneOrMoreChannelsToWorkspaceAlerts")}</ProviderInspectorSheetDescription></div>
 						</div>
 					</ProviderInspectorSheetHeader>
 					<ScrollArea className="min-h-0 flex-1 overscroll-contain" viewportClassName="pb-6 overscroll-contain">

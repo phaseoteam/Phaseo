@@ -1,5 +1,7 @@
 'use client'
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from 'react'
 import {
     Dialog,
@@ -40,7 +42,7 @@ export function MFAEnrollmentFlow({
     onSuccess,
 }: MFAEnrollmentFlowProps) {
     const t = useTranslations('SettingsUI')
-    const s = (key: string) => t(`strings.${key}` as never)
+    const s = (key: string) => t(settingsStringKey(key) as never)
     const [step, setStep] = React.useState<EnrollmentStep>('authenticate')
     const [loading, setLoading] = React.useState(false)
     const [qrCode, setQrCode] = React.useState<string | null>(null)
@@ -127,7 +129,7 @@ export function MFAEnrollmentFlow({
 						<DialogHeader>
 							<DialogTitle>{s('Confirm your identity')}</DialogTitle>
 							<DialogDescription>
-								{s('Enter your current password, or continue after a recent provider sign-in.')}
+								{s("phraseEnterYourCurrentPasswordOrContinueAfterARecentProviderSignIn")}
 							</DialogDescription>
 						</DialogHeader>
 						<div className="space-y-4">
@@ -154,7 +156,7 @@ export function MFAEnrollmentFlow({
                                 {s('Set up two-factor authentication')}
                             </DialogTitle>
                             <DialogDescription>
-                                {s('Scan this QR code with your authenticator app (Google Authenticator, Authy, 1Password, etc.)')}
+                                {s("phraseScanThisQRCodeWithYourAuthenticatorAppGoogleAuthenticatorAuthy1PasswordEtc")}
                             </DialogDescription>
                         </DialogHeader>
 
@@ -275,7 +277,7 @@ export function MFAEnrollmentFlow({
                                     {loading ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            {s('Verifying...')}
+                                            {s("phraseVerifying")}
                                         </>
                                     ) : (
                                         s('Verify code')
@@ -302,7 +304,7 @@ export function MFAEnrollmentFlow({
                         <div className="space-y-4 py-4">
                             <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900/50 dark:bg-green-900/10">
                                 <p className="text-sm text-green-900 dark:text-green-200">
-									{s('You&apos;ll need your authenticator app to sign in from now on. Keep a secure backup of the authenticator configuration before changing devices.')}
+									{s("phraseYouAposLlNeedYourAuthenticatorAppToSignInFromNowOnKeepASecureBackupOfTheAuthenticatorConfigurationBeforeChangingDevices")}
                                 </p>
                             </div>
 

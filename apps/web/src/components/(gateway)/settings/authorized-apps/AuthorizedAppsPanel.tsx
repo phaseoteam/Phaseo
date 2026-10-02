@@ -21,7 +21,7 @@ export default function AuthorizedAppsPanel({
 				<div className="text-muted-foreground">
 					<p className="text-lg font-medium mb-2">{t("strings.No authorized apps" as never)}</p>
 					<p className="text-sm">
-						{t("strings.You haven&apos;t authorized any third-party applications yet. When you do, they&apos;ll appear here." as never)}
+						{t("strings.phraseYouHavenAposTAuthorizedAnyThirdPartyApplicationsYetWhenYouDoTheyAposLlAppearHere" as never)}
 					</p>
 				</div>
 			</Card>

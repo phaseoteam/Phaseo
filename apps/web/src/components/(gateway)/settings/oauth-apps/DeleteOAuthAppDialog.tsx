@@ -88,14 +88,14 @@ export default function DeleteOAuthAppDialog({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Delete OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("strings.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.and revoke all user authorizations." as never)}
+						{t("strings.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.phraseAndRevokeAllUserAuthorizations" as never)}
 					</DialogDescription>
 				</DialogHeader>
 
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.This action cannot be undone. All users who authorized this app will lose access immediately." as never)}
+						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneAllUsersWhoAuthorizedThisAppWillLoseAccessImmediately" as never)}
 					</AlertDescription>
 				</Alert>
 
@@ -129,7 +129,7 @@ export default function DeleteOAuthAppDialog({
 						onClick={handleDelete}
 						disabled={loading || confirmation !== appName}
 					>
-						{loading ? t("strings.Deleting..." as never) : t("oauthCardCopy.deleteApp" as never)}
+						{loading ? t("strings.phraseDeleting" as never) : t("oauthCardCopy.deleteApp" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

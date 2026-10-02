@@ -22,17 +22,16 @@ import { UseModelSheet } from "./UseModelSheet";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
-import { resolveModelDescription } from "@/lib/models/modelDescription";
+import { resolveLocalizedModelDescription } from "@/i18n/localized-model-description";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { ModelOverviewHeader } from "@/lib/fetchers/models/getModelOverviewHeader";
 import {
-	FREE_ROUTER_DESCRIPTION,
 	FREE_ROUTER_MODEL_ID,
 	FREE_ROUTER_NAME,
 	FREE_ROUTER_ORGANISATION_ID,
 	isFreeRouterModelId,
 } from "@/lib/models/freeRouter";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -133,6 +132,8 @@ export default async function ModelDetailShell({
 	showUnreleased = false,
 }: ModelDetailShellProps) {
 	const t = await getTranslations("Catalogue.models");
+	const tx = await getTranslations();
+	const locale = await getLocale();
 	const isFreeRouter = isFreeRouterModelId(modelId);
 	const [header, modelOverview] = isFreeRouter
 		? [
@@ -166,9 +167,9 @@ export default async function ModelDetailShell({
 	const modelDescription = descriptionOverride !== undefined
 		? descriptionOverride
 		: isFreeRouter
-		? FREE_ROUTER_DESCRIPTION
+		? tx("Common.ui.publicModelCopy.freeRouterDescription")
 		: modelOverview
-		? resolveModelDescription(modelOverview)
+		? resolveLocalizedModelDescription(modelOverview, locale, tx)
 		: null;
 
 	const visibleTabKeys = getVisibleTabKeys(header.status);

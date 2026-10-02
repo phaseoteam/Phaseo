@@ -307,7 +307,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 	return btoa(binary);
 }
 
-async function fileToDataUrl(file: File): Promise<string> {
+async function fileToDataUrl(file: File, unsupportedFormat: string): Promise<string> {
 	const bytes = new Uint8Array(await file.arrayBuffer());
 	let mimeType = normalizeImageMimeType(file.type);
 	if (!mimeType || !SUPPORTED_MODERATION_UPLOAD_MIME_TYPES.has(mimeType)) {
@@ -316,7 +316,7 @@ async function fileToDataUrl(file: File): Promise<string> {
 	}
 	if (!SUPPORTED_MODERATION_UPLOAD_MIME_TYPES.has(mimeType)) {
 		throw new Error(
-			'Unsupported image format. Use PNG, JPEG, WEBP, or GIF for moderation uploads.',
+			unsupportedFormat,
 		);
 	}
 	return `data:${mimeType};base64,${bytesToBase64(bytes)}`;
@@ -436,7 +436,7 @@ function getGenerationMs(raw: unknown): number | null {
 		: null;
 }
 
-function mapModerationErrorMessage(rawText: string): string {
+function mapModerationErrorMessage(rawText: string, messages: { unsupportedFormat: string; invalidUrl: string; requestFailed: string }): string {
 	const fallback = rawText.trim();
 	try {
 		const parsed = JSON.parse(rawText) as Record<string, any>;
@@ -448,10 +448,10 @@ function mapModerationErrorMessage(rawText: string): string {
 			upstreamCode === "invalid_image_format" ||
 			upstreamCode === "unsupported_image_format"
 		) {
-			return "Unsupported image format. Use a direct image URL (PNG/JPEG/WEBP/GIF) or upload an image file. If using Bing/Google image search links, open the image itself and copy that direct image URL.";
+			return messages.unsupportedFormat;
 		}
 		if (upstreamCode === "invalid_image_url") {
-			return "Invalid image URL. Please use a publicly reachable direct image URL (or upload a local image file).";
+			return messages.invalidUrl;
 		}
 		const description =
 			typeof parsed?.description === "string" ? parsed.description.trim() : "";
@@ -464,7 +464,7 @@ function mapModerationErrorMessage(rawText: string): string {
 	} catch {
 		// keep fallback
 	}
-	return fallback || "Moderation request failed.";
+	return fallback || messages.requestFailed;
 }
 
 function buildConversations(
@@ -565,6 +565,7 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 }
 
 export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const tChat = useTranslations("Product.chat");
 	const tUi = useTranslations("Common.ui");
@@ -1063,7 +1064,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 					}
 				}
 				if (imageFile) {
-					const dataUrl = await fileToDataUrl(imageFile);
+					const dataUrl = await fileToDataUrl(imageFile, tCopy("moderationUploadFormat"));
 					resolvedImageUrls.push(dataUrl);
 				}
 			}
@@ -1155,7 +1156,7 @@ export function ModerationRoom({ models }: { models: GatewaySupportedModel[] }) 
 			if (!response.ok) {
 				const body = await response.text();
 				throw new Error(
-					mapModerationErrorMessage(body) ||
+					mapModerationErrorMessage(body, { unsupportedFormat: tCopy("moderationDirectImage"), invalidUrl: tCopy("moderationInvalidImageUrl"), requestFailed: t("requestFailed") }) ||
 						`Moderation request failed (${response.status}).`,
 				);
 			}

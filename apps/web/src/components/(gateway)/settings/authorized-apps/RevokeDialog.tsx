@@ -86,14 +86,14 @@ export default function RevokeDialog({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Revoke Access?" as never)}</DialogTitle>
 					<DialogDescription>
-						{(t as unknown as (key: string, values?: Record<string, string>) => string)("strings.This will immediately prevent {appName} from accessing your Phaseo account. Any active tokens will be invalidated.", { appName })}
+						{(t as unknown as (key: string, values?: Record<string, string>) => string)("strings.phraseThisWillImmediatelyPreventAppNameFromAccessingYourPhaseoAccountAnyActiveTokensWillBeInvalidated", { appName })}
 					</DialogDescription>
 				</DialogHeader>
 
 				<Alert>
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						{t("strings.The application will no longer be able to make API requests on your behalf. You can re-authorize the app later if needed." as never)}
+						{t("strings.phraseTheApplicationWillNoLongerBeAbleToMakeAPIRequestsOnYourBehalfYouCanReAuthorizeTheAppLaterIfNeeded" as never)}
 					</AlertDescription>
 				</Alert>
 
@@ -113,7 +113,7 @@ export default function RevokeDialog({
 						onClick={handleRevoke}
 						disabled={loading}
 					>
-						{loading ? t("strings.Revoking..." as never) : t("strings.Revoke Access" as never)}
+						{loading ? t("strings.phraseRevoking" as never) : t("strings.Revoke Access" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

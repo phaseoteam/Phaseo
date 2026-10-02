@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
@@ -833,9 +835,9 @@ export default function RequestDetailDialog({
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
 	const locale = useLocale();
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
-		t(`strings.${key}` as never, values as never);
+		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
 
@@ -851,8 +853,8 @@ export default function RequestDetailDialog({
 						<LoaderCircle className="size-5 animate-spin" />
 					</div>
 					<div>
-						<p className="text-sm font-medium text-foreground">{s("Loading...")}</p>
-						<p className="mt-1 text-xs text-muted-foreground">{s("Fetching routing, attempts, pricing, and stored payloads.")}</p>
+						<p className="text-sm font-medium text-foreground">{s("phraseLoading")}</p>
+						<p className="mt-1 text-xs text-muted-foreground">{s("phraseFetchingRoutingAttemptsPricingAndStoredPayloads")}</p>
 					</div>
 				</div>
 			</>
@@ -873,7 +875,7 @@ export default function RequestDetailDialog({
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent className="max-h-[90vh] max-w-6xl overflow-hidden p-0">
-					<DialogHeader className="sr-only"><DialogTitle>{s("Loading...")}</DialogTitle></DialogHeader>
+					<DialogHeader className="sr-only"><DialogTitle>{s("phraseLoading")}</DialogTitle></DialogHeader>
 					{loadingContent}
 				</DialogContent>
 			</Dialog>
@@ -1166,7 +1168,7 @@ export default function RequestDetailDialog({
 	const requestDetailItems = [
 		{
 			label: s("Routed model"),
-			description: s("The canonical Phaseo model selected after aliases, presets, and router expansion are resolved."),
+			description: s("phraseTheCanonicalPhaseoModelSelectedAfterAliasesPresetsAndRouterExpansionAreResolved"),
 			value: modelHref ? (
 				<UsageEntityHoverCard
 					title={modelName || routedModelId || "-"}
@@ -1269,7 +1271,7 @@ export default function RequestDetailDialog({
 		},
 		{
 			label: s("Requested model"),
-			description: s("The exact model ID or alias supplied by the client in the original request."),
+			description: s("phraseTheExactModelIDOrAliasSuppliedByTheClientInTheOriginalRequest"),
 			value: requestedModelId ? (
 				<UsageEntityHoverCard
 					title={requestedModelName || requestedModelId}
@@ -1360,7 +1362,7 @@ export default function RequestDetailDialog({
 			? [
 					{
 						label: s("Upstream model ID"),
-						description: s("The provider-facing model identifier sent upstream for the successful attempt."),
+						description: s("phraseTheProviderFacingModelIdentifierSentUpstreamForTheSuccessfulAttempt"),
 						value: (
 							<div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
 								{modelMeta ? <Logo id={modelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
@@ -1503,12 +1505,12 @@ export default function RequestDetailDialog({
 			? [{
 				...trainingPolicyItem,
 				label: s("Data training"),
-				description: s("Whether the upstream provider may use prompts or completions for model training."),
+				description: s("phraseWhetherTheUpstreamProviderMayUsePromptsOrCompletionsForModelTraining"),
 			}]
 			: []),
 		{
 			label: s("Phaseo data retention"),
-			description: s("Whether Phaseo retained the gateway request and response payload for this generation."),
+			description: s("phraseWhetherPhaseoRetainedTheGatewayRequestAndResponsePayloadForThisGeneration"),
 			value: (
 				<span className="inline-flex items-center justify-end gap-2">
 					<Database className="size-3.5 shrink-0 text-muted-foreground" />
@@ -2706,7 +2708,7 @@ export default function RequestDetailDialog({
 								</div>
 							) : (
 								<div className="text-sm text-muted-foreground">
-									{s("No usage metrics available.")}
+									{s("phraseNoUsageMetricsAvailable")}
 								</div>
 							)}
 						</GenerationSection>
@@ -2728,7 +2730,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? s("No I/O payload is available for this request.")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}

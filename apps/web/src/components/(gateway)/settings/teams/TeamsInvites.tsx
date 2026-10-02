@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import { useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -60,7 +62,7 @@ export default function TeamsInvites({
 	const t = useTranslations("SettingsUI");
 	const s = React.useCallback(
 		(key: string, values?: Record<string, string>) =>
-			t(`strings.${key}` as never, values as never),
+			t(settingsStringKey(key) as never, values as never),
 		[t],
 	);
 	const format = useDisplayFormatters();
@@ -146,7 +148,7 @@ export default function TeamsInvites({
 				<div>
 					<CardTitle className="text-base">{s("Invites")}</CardTitle>
 					<CardDescription>
-						{s("View and manage invites for this workspace.")}
+						{s("phraseViewAndManageInvitesForThisWorkspace")}
 					</CardDescription>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
@@ -173,11 +175,11 @@ export default function TeamsInvites({
 			<CardContent>
 				{!activeTeam ? (
 					<div className="text-sm text-muted-foreground">
-						{s("No workspaces available.")}
+						{s("phraseNoWorkspacesAvailable")}
 					</div>
 				) : activeInvites.length === 0 ? (
 					<div className="text-sm text-muted-foreground">
-						{s("No invites for {workspace} yet.", { workspace: activeTeam.name })}
+						{s("phraseNoInvitesForWorkspaceYet", { workspace: activeTeam.name })}
 					</div>
 				) : (
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-3">

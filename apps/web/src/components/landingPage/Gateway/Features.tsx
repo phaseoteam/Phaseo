@@ -1,118 +1,119 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Activity, Route, Timer, Lock, Globe, Layers, ArrowRight } from "lucide-react";
 
 const DOCS_HREF = "https://phaseo.app/docs/v1/quickstart";
 
-const FEATURE_CARDS = [
+
+
+export function Features() {
+	const tCopy = useTranslations("Site.landingGaps");
+
+	const FEATURE_CARDS = [
 	{
-		title: "Any model, one surface",
-		body: "Keep one integration while you swap providers, add new models, and expand modalities without rewriting clients.",
+		title: tCopy("copy014"),
+		body: tCopy("copy015"),
 		highlights: [
-			"OpenAI, Anthropic, Google, and 50+ more",
-			"Text, vision, audio, video, embeddings",
-			"Consistent response schemas",
+			tCopy("copy016"),
+			tCopy("copy017"),
+			tCopy("copy018"),
 		],
-		tag: "Unified API",
+		tag: tCopy("copy019"),
 		icon: Globe,
 		accent: "#f59e0b",
 	},
 	{
-		title: "Reliability by design",
-		body: "Health-aware routing, automatic failover, and guardrails that protect production traffic when a provider degrades.",
+		title: tCopy("copy020"),
+		body: tCopy("copy021"),
 		highlights: [
-			"Real-time health monitoring",
-			"Automatic failover routing",
-			"Circuit breaker patterns",
+			tCopy("copy022"),
+			tCopy("copy023"),
+			tCopy("copy024"),
 		],
-		tag: "Uptime",
+		tag: tCopy("copy025"),
 		icon: Activity,
 		accent: "#10b981",
 	},
 	{
-		title: "Intelligent routing",
-		body: "Route by latency, price, geography, capability, or your own rules. Apply consistent behaviour across every provider.",
+		title: tCopy("copy026"),
+		body: tCopy("copy027"),
 		highlights: [
-			"Latency-optimized routing",
-			"Cost-aware load balancing",
-			"Custom routing policies",
+			tCopy("copy028"),
+			tCopy("copy029"),
+			tCopy("copy030"),
 		],
-		tag: "Routing",
+		tag: tCopy("copy031"),
 		icon: Route,
 		accent: "#f97316",
 	},
 	{
-		title: "Deprecations handled",
-		body: "Model retirement and breaking changes become predictable. Gateway surfaces alerts and migration paths before downtime.",
+		title: tCopy("copy032"),
+		body: tCopy("copy033"),
 		highlights: [
-			"Proactive deprecation alerts",
-			"Automatic version mapping",
-			"Zero-downtime migrations",
+			tCopy("copy034"),
+			tCopy("copy035"),
+			tCopy("copy036"),
 		],
-		tag: "Always current",
+		tag: tCopy("copy037"),
 		icon: Timer,
 		accent: "#e11d48",
 	},
 	{
-		title: "Built for multimodal",
-		body: "Text, vision, audio, video, embeddings, tool-calling, and realtime are treated as first-class, not bolt-ons.",
+		title: tCopy("copy038"),
+		body: tCopy("copy039"),
 		highlights: [
-			"Native multimodal support",
-			"Streaming and real-time APIs",
-			"Function calling built-in",
+			tCopy("copy040"),
+			tCopy("copy041"),
+			tCopy("copy042"),
 		],
-		tag: "Modalities",
+		tag: tCopy("copy043"),
 		icon: Layers,
 		accent: "#ec4899",
 	},
 	{
-		title: "Security-first operations",
-		body: "Scoped keys, audit trails, and encrypted BYOK workflows. Built for teams who can't afford surprises.",
+		title: tCopy("copy044"),
+		body: tCopy("copy045"),
 		highlights: [
-			"Fine-grained API key scopes",
-			"Full request audit logging",
-			"Encrypted BYOK support",
+			tCopy("copy046"),
+			tCopy("copy047"),
+			tCopy("copy048"),
 		],
-		tag: "Security",
+		tag: tCopy("copy049"),
 		icon: Lock,
 		accent: "#111827",
 	},
 ];
 
-export function Features() {
 	return (
 		<section id="features" className="py-8">
 			<div className="mx-auto px-6 lg:px-8">
 				<div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
 					<div className="space-y-6">
 						<h2 className="max-w-xl text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-4xl">
-							One control plane for a provider market that changes every week.
-						</h2>
+{tCopy("copy050")}
+</h2>
 						<p className="max-w-xl text-lg leading-relaxed text-zinc-600 dark:text-zinc-300">
-							The gateway is built for teams that care about model portability,
-							routing quality, and operational discipline more than raw provider
-							counts on a slide.
-						</p>
+{tCopy("copy051")}
+</p>
 
 						<div className="space-y-4 border-l border-zinc-200 pl-4 dark:border-zinc-800">
 							<div className="flex items-start gap-3">
 								<Activity className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
 								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-									Health-aware routing means degraded providers stop being a
-									midnight incident.
-								</p>
+{tCopy("copy052")}
+</p>
 							</div>
 							<div className="flex items-start gap-3">
 								<Route className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
 								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-									Swap models and clouds without rewriting product integrations.
-								</p>
+{tCopy("copy053")}
+</p>
 							</div>
 							<div className="flex items-start gap-3">
 								<Lock className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
 								<p className="text-sm leading-6 text-zinc-700 dark:text-zinc-300">
-									Keep policy, spend controls, and auditability in the same place
-									as execution.
-								</p>
+{tCopy("copy054")}
+</p>
 							</div>
 						</div>
 
@@ -121,8 +122,8 @@ export function Features() {
 								href={DOCS_HREF}
 								className="inline-flex items-center gap-2 text-sm font-medium text-zinc-900 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
 							>
-								View documentation
-								<ArrowRight className="h-4 w-4" />
+{tCopy("copy055")}
+<ArrowRight className="h-4 w-4" />
 							</Link>
 						</div>
 					</div>

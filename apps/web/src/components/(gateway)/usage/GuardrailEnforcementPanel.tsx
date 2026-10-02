@@ -44,7 +44,7 @@ export default function GuardrailEnforcementPanel({
 					<div className="space-y-1">
 						<CardTitle>{t("strings.Guardrail enforcement" as never)}</CardTitle>
 						<p className="text-sm text-muted-foreground">
-							{t("strings.Tracks requests blocked, redacted, or flagged by workspace policy and guardrail enforcement signals." as never)}
+							{t("strings.phraseTracksRequestsBlockedRedactedOrFlaggedByWorkspacePolicyAndGuardrailEnforcementSignals" as never)}
 						</p>
 					</div>
 				</div>
@@ -115,7 +115,7 @@ export default function GuardrailEnforcementPanel({
 							</div>
 						) : (
 							<div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-								{t("strings.No guardrail enforcement events were recorded in this window." as never)}
+								{t("strings.phraseNoGuardrailEnforcementEventsWereRecordedInThisWindow" as never)}
 							</div>
 						)}
 					</div>
@@ -138,7 +138,7 @@ export default function GuardrailEnforcementPanel({
 							</div>
 						) : (
 							<div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
-								{t("strings.No guardrail IDs were attached to the current enforcement events." as never)}
+								{t("strings.phraseNoGuardrailIDsWereAttachedToTheCurrentEnforcementEvents" as never)}
 							</div>
 						)}
 

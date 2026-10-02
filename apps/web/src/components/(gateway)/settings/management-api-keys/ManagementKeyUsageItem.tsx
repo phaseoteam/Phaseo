@@ -46,7 +46,7 @@ export default function ManagementKeyUsageItem({ k }: any) {
 					<DialogHeader>
 						<DialogTitle>{t("strings.Usage for" as never)} {k.name}</DialogTitle>
 						<DialogDescription>
-							{t("strings.Request usage and cost for this management API key." as never)}
+							{t("strings.phraseRequestUsageAndCostForThisManagementAPIKey" as never)}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-4">

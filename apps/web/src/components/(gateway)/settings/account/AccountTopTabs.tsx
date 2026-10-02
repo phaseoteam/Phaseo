@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -92,7 +94,7 @@ export default function AccountTopTabs() {
 							active ? "text-primary" : "text-muted-foreground hover:text-primary",
 						)}
 					>
-						{t(`strings.${tab.label}` as never)}
+						{t(settingsStringKey(tab.label) as never)}
 					</Link>
 				);
 			})}

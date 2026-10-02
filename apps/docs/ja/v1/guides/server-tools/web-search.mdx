@@ -121,7 +121,7 @@ Phaseo Gatewayの実行環境のシークレットに`TINYFISH_API_KEY`を設定
 
 幅広いWeb検索は許可しつつ、特定のドメインを結果から除外する場合は`excluded_domains`を使います。
 
-Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFishは両方の配列をクエリの`site:`と`-site:`演算子に変換します。
+PerplexityとFirecrawlでは、1回の検索に`allowed_domains`または`excluded_domains`のどちらかを指定でき、両方は指定できません。Perplexityは1リクエストあたり最大20件のドメインフィルターを受け付け、除外ドメインを拒否リスト形式に変換します。 TinyFishは両方の配列をクエリの`site:`と`-site:`演算子に変換します。
 
 TinyFish Searchは公開プランで無料のため、Phaseoは`engine: "tinyfish"`にプロバイダー利用料を追加しません。通常のPhaseoリクエスト料金とトークン料金は引き続き適用されます。
 

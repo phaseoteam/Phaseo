@@ -1,4 +1,6 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
+import { localizedUpdateBadge } from "@/i18n/update-card-messages";
 import {
 	Card,
 	CardDescription,
@@ -94,6 +96,10 @@ export default function UpdateCard({
 	showAccentDot = true,
 	titleLines = 2,
 }: Props) {
+	const tEvents = useTranslations("Catalogue.updates.eventTypes");
+	const tModels = useTranslations("Catalogue.updates.models");
+	const tAbout = useTranslations("Site.about");
+	const cta = !link.cta || link.cta === "Open" ? tAbout("open") : ["View", "View model", "View Model"].includes(link.cta) ? tModels("viewModel") : link.cta;
 	const isModelRelease = badges.some((b) => b.label === "Release");
 	const visibleBadges = hideBadges ? [] : badges;
 	const providerInlineDateIso =
@@ -146,7 +152,7 @@ export default function UpdateCard({
 										)}
 									>
 										{Icon ? <Icon className="h-3.5 w-3.5" /> : null}
-										{badge.label}
+										{localizedUpdateBadge(tEvents, badge.label)}
 									</span>
 								);
 							})}
@@ -292,7 +298,7 @@ export default function UpdateCard({
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
 						>
-							{link.cta ?? "Open"}
+							{cta}
 						</Link>
 					) : null}
 				</CardFooter>

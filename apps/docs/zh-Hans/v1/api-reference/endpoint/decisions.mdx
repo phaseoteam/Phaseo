@@ -59,3 +59,22 @@ Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity D
 Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速开始](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
 
 有关上游问题语义，请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。
+
+### 使用Clef进行图像决策
+
+`cloudflare/clef`和`cloudflare/clef-flash`通过Cloudflare Workers AI支持全部三种问题类型和嵌入图像。两者的上下文窗口均为65,536个令牌。输入价格为每百万令牌Clef 0.24美元、Clef Flash 0.09美元。
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+也可以在`images`中提供`data:image/png;base64,...`字符串。Clef最多接受四张PNG、JPEG或WebP图像，每张最多4 MiB和1,600万像素，解码后图像数据总量最多8 MiB，请求体最多13 MiB。不支持远程URL。Cloudflare会验证图像格式和尺寸。不支持图像的模型会拒绝图像请求。
+
+Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或连字符。选择题需要2–255个选项，评分题需要2–10个等级。请参阅Cloudflare的[Clef文档](https://developers.cloudflare.com/workers-ai/models/clef/)。

@@ -1693,7 +1693,9 @@
 		"save": "Enregistrer",
 		"model": "Modèle",
 		"throughput": "Débit",
-		"responsePlaceholder": "La réponse apparaîtra ici..."
+		"responsePlaceholder": "La réponse apparaîtra ici...",
+		"gatewayLabel": "Passerelle",
+		"openaiThroughput": "OpenAI API (tokens/s)"
 	},
 	"gatewayBenchmark": {
 		"title": "Comparaison des performances des passerelles",

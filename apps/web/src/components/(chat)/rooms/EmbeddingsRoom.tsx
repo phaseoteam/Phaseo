@@ -187,10 +187,10 @@ function truncateTitle(value: string, max = 72): string {
 	return `${trimmed.slice(0, max - 3).trimEnd()}...`;
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File, errorMessage: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
-		reader.onerror = () => reject(reader.error ?? new Error("File read failed"));
+		reader.onerror = () => reject(new Error(errorMessage));
 		reader.onload = () => resolve(String(reader.result ?? ""));
 		reader.readAsDataURL(file);
 	});
@@ -439,6 +439,7 @@ function safeParsePinned(value: string | null): Record<string, boolean> {
 }
 
 export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const tChat = useTranslations("Product.chat");
 	const tUi = useTranslations("Common.ui");
@@ -774,7 +775,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				}
 
 				for (const file of effectiveFiles) {
-					const dataUrl = await readFileAsDataUrl(file);
+					const dataUrl = await readFileAsDataUrl(file, tCopy("fileReadFailed"));
 					if (file.type.startsWith("image/")) {
 						parts.push({ type: "input_image", image_url: dataUrl });
 						continue;
@@ -804,7 +805,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 				}
 
 				if (!parts.length) {
-					throw new Error("Provide at least one text/image/audio/video input.");
+					throw new Error(tCopy("embeddingsInputRequired"));
 				}
 				requestInput = buildEmbeddingsMultimodalInput(parts);
 			}
@@ -823,7 +824,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 					: `Embedding ${format.date(new Date())}`;
 			const conversationTitle =
 				overrides?.forcedConversationTitle ||
-				(temporaryMode ? "Temporary chat" : existingTitle || candidateTitle);
+				(temporaryMode ? t("temporaryChat") : existingTitle || candidateTitle);
 			pendingEntryId = crypto.randomUUID();
 			setEntries((prev) => [
 				{
@@ -879,7 +880,7 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 			});
 			if (!response.ok) {
 				const text = await response.text();
-				throw new Error(text || `Request failed (${response.status})`);
+				throw new Error(text || t("newMainCopy.requestStatusFailed", { status: response.status }));
 			}
 			const payload = await response.json();
 			setEntries((prev) => prev.filter((item) => item.id !== pendingEntryId));

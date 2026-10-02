@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React, { useState } from "react";
 import Image from "next/image";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
@@ -48,7 +50,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 	const t = useTranslations("SettingsUI");
 	const consentT = useTranslations("Common.authFlows.oauthConsent");
 	const currentLocale = useLocale();
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const resources = consentT.raw("resources" as never) as Record<string, string>;
 	const groups = consentT.raw("groups" as never) as Record<string, { title: string; description: string }>;
 	const dateLocales: Record<string, Locale> = { ar: ar, "ar-SA": ar, de, "de-DE": de, enGB, "en-GB": enGB, enUS, "en-US": enUS, es, "es-ES": es, fr, "fr-FR": fr, hi, ja, ptBR, "pt-BR": ptBR, zhCN, "zh-Hans": zhCN, "en-XA": enGB };
@@ -195,8 +197,8 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 							<div className="mb-3 flex flex-col gap-2 rounded-md bg-muted/35 p-2.5 sm:flex-row sm:items-center sm:justify-between">
 								<p className="text-xs text-muted-foreground">
 									{editingScopes
-										? s("Deselect permissions to reduce this app's access. New access requires authorization through the app.")
-										: s("You can reduce this app's access without revoking it entirely.")}
+										? s("phraseDeselectPermissionsToReduceThisAppSAccessNewAccessRequiresAuthorizationThroughTheApp")
+										: s("phraseYouCanReduceThisAppSAccessWithoutRevokingItEntirely")}
 								</p>
 								{editingScopes ? (
 									<div className="flex shrink-0 gap-2">
@@ -204,7 +206,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 											{s("Cancel")}
 										</Button>
 										<Button type="button" size="sm" className="rounded-md" disabled={savingScopes || selectedScopes.length === 0 || !hasScopeChanges} onClick={saveScopes}>
-										{savingScopes ? s("Saving...") : s("Save changes")}
+										{savingScopes ? s("phraseSaving") : s("Save changes")}
 										</Button>
 									</div>
 								) : (
@@ -347,7 +349,7 @@ export default function AuthorizationCard({ authorization }: AuthorizationCardPr
 																addSuffix: true,
 																locale: dateLocale,
 									})
-								: "Never"}
+								: t("labels.never")}
 						</div>
 					</div>
 				</div>

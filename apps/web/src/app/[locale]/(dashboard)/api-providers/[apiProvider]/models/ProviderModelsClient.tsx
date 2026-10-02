@@ -671,7 +671,9 @@ export default function ProviderModelsClient({
 										) : model.starting_price_usd != null ? (
 											<div className="text-xs text-muted-foreground">
 												{t("startingAt", { price: formatUsd(model.starting_price_usd) })} /{" "}
-												{model.starting_price_unit ?? "unit"}
+												{model.starting_price_unit && tPricing.has(`unitsSingular.${model.starting_price_unit}` as never)
+													? tPricing(`unitsSingular.${model.starting_price_unit}` as never)
+													: model.starting_price_unit ?? t("unit")}
 											</div>
 										) : (
 											<div className="text-xs text-muted-foreground">-</div>

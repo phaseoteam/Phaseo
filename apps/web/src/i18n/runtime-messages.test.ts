@@ -17,6 +17,10 @@ function valueAt(value: unknown, path: string): string {
 describe("runtime locale message loading", () => {
 	it.each(publicLocales)("loads complete domain trees for %s", async (locale: PublicLocale) => {
 		const messages = await getPublicMessages(locale);
+		const onError = jest.fn();
+		const translate = createTranslator({ locale, messages, onError } as never);
+		expect(translate("Common.nav.home" as never)).toBe(valueAt(messages.Common, "nav.home"));
+		expect(onError).not.toHaveBeenCalled();
 		expect(valueAt(messages.Common, "nav.home")).toBeTruthy();
 		expect(valueAt(messages.Site, "home.title")).toBeTruthy();
 		expect(valueAt(messages.Catalogue, "models.title")).toBeTruthy();
@@ -38,16 +42,18 @@ describe("runtime locale message loading", () => {
 		},
 	);
 
-	it("resolves dotted settings sentence IDs as valid next-intl paths", async () => {
+	it("resolves settings sentences through stable next-intl IDs", async () => {
 		const messages = await getPublicMessages("es-ES");
-		const translate = createTranslator({ locale: "es-ES", messages } as never);
+		const onError = jest.fn();
+		const translate = createTranslator({ locale: "es-ES", messages, onError } as never);
 
-		expect(translate("SettingsUI.strings.Please try again." as never)).not.toBe(
-			"Please try again.",
+		expect(translate("SettingsUI.strings.phrasePleaseTryAgain" as never)).toBe(
+			"Por favor inténtalo de nuevo.",
 		);
 		expect(
-			translate("SettingsUI.strings.Invalid code. Please try again." as never),
-		).not.toBe("Invalid code. Please try again.");
+			translate("SettingsUI.strings.phraseInvalidCodePleaseTryAgain" as never),
+		).toBe("Código no válido. Por favor inténtalo de nuevo.");
+		expect(onError).not.toHaveBeenCalled();
 	});
 
 	it("uses the en-GB help tree for en-US while localized trees remain available", async () => {

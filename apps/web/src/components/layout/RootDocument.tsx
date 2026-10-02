@@ -7,7 +7,7 @@ import {
 	Noto_Sans_SC,
 } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { NextIntlClientProvider } from "next-intl";
+import { LocaleMessagesProvider } from "@/components/i18n/LocaleMessagesProvider";
 import {
 	CookieConsentManager,
 	type CookieConsentCopy,
@@ -118,7 +118,7 @@ export function RootDocument({
 				/>
 			</head>
 			<body className="min-h-screen h-full bg-background antialiased">
-				<NextIntlClientProvider locale={locale} messages={messages}>
+				<LocaleMessagesProvider locale={locale} messages={messages} timeZone="UTC">
 				<CookieConsentManager
 					copy={cookieConsentCopy}
 					gaMeasurementId={GA_MEASUREMENT_ID}
@@ -153,7 +153,7 @@ export function RootDocument({
 				</ThemeProvider>
 				</CatalogNavigationGuardProvider>
 				<DeferredVercelAnalytics />
-				</NextIntlClientProvider>
+				</LocaleMessagesProvider>
 			</body>
 		</html>
 	);

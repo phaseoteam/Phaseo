@@ -1,5 +1,7 @@
 "use client"
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 import { Check, Copy, Download, Share2 } from "lucide-react"
@@ -26,7 +28,7 @@ type Props = {
 
 export default function ProfileShareControls({ payload }: Props) {
 	const t = useTranslations("SettingsUI")
-	const s = (key: string) => t(`strings.${key}` as never)
+	const s = (key: string) => t(settingsStringKey(key) as never)
 	const [copied, setCopied] = useState(false)
 	const sharePageUrl = buildProfileShareCardPageUrl(payload)
 	const shareImageUrl = buildProfileShareCardImageUrl(payload)
@@ -60,7 +62,7 @@ export default function ProfileShareControls({ payload }: Props) {
 				<DialogHeader className="pr-8">
 				<DialogTitle>{s("Share Card")}</DialogTitle>
 					<DialogDescription>
-						{payload.periodLabel} {s("activity. Preview the image, then share or download it.")}
+						{payload.periodLabel} {s("phraseActivityPreviewTheImageThenShareOrDownloadIt")}
 					</DialogDescription>
 				</DialogHeader>
 

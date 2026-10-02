@@ -226,7 +226,7 @@ function SelectionDialog(props: {
 				</DialogHeader>
 				<div className="space-y-3">
 					<Input
-						placeholder={t("strings.Search..." as never)}
+						placeholder={t("strings.phraseSearch" as never)}
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 					/>

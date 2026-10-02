@@ -329,6 +329,7 @@ export default function ModelProviderTrendChart({
 }: ModelProviderTrendChartProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
 	const format = useDisplayFormatters();
 	const isPercentileData = data.some(
 		(point) => getPercentile(point.provider) != null,
@@ -380,7 +381,7 @@ export default function ModelProviderTrendChart({
 			.reduce((map, point) => {
 				const existing = map.get(point.provider) ?? {
 					provider: point.provider,
-					name: point.providerName || point.provider,
+					name: point.provider === "model-aggregate" ? tx("Common.ui.publicModelCopy.modelWide") : point.provider === "all-providers" ? t("allProviders") : point.providerName || point.provider,
 					color: normalizeColor(point.providerColor),
 					requests: 0,
 				};

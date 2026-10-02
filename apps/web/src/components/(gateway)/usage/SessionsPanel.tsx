@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useLocale, useTranslations } from "next-intl";
 import ConfigurableLogTable from "./ConfigurableLogTable";
@@ -368,9 +370,9 @@ function SessionModelsCell({
 	maxVisible?: number;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
-		t(`strings.${key}` as never, values as never);
+		t(settingsStringKey(key) as never, values as never);
 	const visibleModels = modelCounts.slice(0, maxVisible);
 	const hiddenModels = modelCounts.slice(maxVisible);
 	const hiddenCount = Math.max(0, modelCounts.length - visibleModels.length);
@@ -496,9 +498,9 @@ function SessionDetailSheet({
 	onOpenChange: (open: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
-		t(`strings.${key}` as never, values as never);
+		t(settingsStringKey(key) as never, values as never);
 	const locale = useLocale();
 	const userTimeZone =
 		typeof Intl !== "undefined"
@@ -677,7 +679,7 @@ function SessionDetailSheet({
 											))}
 										</div>
 									) : (
-										<div className="text-sm text-muted-foreground">{t("strings.No app metadata recorded." as never)}</div>
+										<div className="text-sm text-muted-foreground">{t("strings.phraseNoAppMetadataRecorded" as never)}</div>
 									)}
 								</DetailSection>
 								<DetailSection
@@ -698,7 +700,7 @@ function SessionDetailSheet({
 							>
 								{requests.length === 0 ? (
 									<div className="rounded-lg border border-dashed px-4 py-8 text-sm text-muted-foreground">
-										{s("No requests found for this session in the selected period.")}
+										{s("phraseNoRequestsFoundForThisSessionInTheSelectedPeriod")}
 									</div>
 								) : (
 									<ScrollArea
@@ -1276,7 +1278,7 @@ export default function SessionsPanel({
 			/>
 
 			{isLoadingDetail ? (
-				<div className="sr-only">{t("strings.Loading session details..." as never)}</div>
+				<div className="sr-only">{t("strings.phraseLoadingSessionDetails" as never)}</div>
 			) : null}
 		</>
 	);

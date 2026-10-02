@@ -20,21 +20,25 @@ describe("mergeMessages", () => {
 });
 
 describe("nestDottedMessageKeys", () => {
-	it("preserves punctuation in phrase keys while nesting dotted namespaces", () => {
+	it("preserves punctuation in messages while nesting dotted namespaces", () => {
 		expect(
 			nestDottedMessageKeys({
 				"routing.reasoning": "Reasoning",
 				strings: {
-					"Saving...": "Guardando...",
+					phraseSaving: "Guardando...",
 					Saving: "Guardando",
 				},
 			}),
 		).toEqual({
 			routing: { reasoning: "Reasoning" },
 			strings: {
-				"Saving...": "Guardando...",
+				phraseSaving: "Guardando...",
 				Saving: "Guardando",
 			},
 		});
+	});
+	it("rejects sentence punctuation in translation IDs", () => {
+		expect(() => nestDottedMessageKeys({ strings: { "Saving...": "Guardando..." } }))
+			.toThrow("Settings sentence requires a stable translation ID");
 	});
 });

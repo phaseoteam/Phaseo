@@ -1,4 +1,5 @@
 "use client";
+import { useTranslations } from "next-intl";
 
 import {
 	ArrowUp,
@@ -117,6 +118,15 @@ function isEmptyDecisionDraft(draft: DecisionDraft): boolean {
 	);
 }
 
+export const DECISION_VALIDATION_COPY_KEYS = {
+	"Enter a question for Jev.": "validationQuestion",
+	"Add at least two answers.": "validationTwoAnswers",
+	"Fill in every answer.": "validationEveryAnswer",
+	"Each answer must be different.": "validationDistinctAnswers",
+	"Add at least two score levels.": "validationTwoLevels",
+	"Describe every score level.": "validationEveryLevel",
+} as const;
+
 export function validateDecisionDraft(draft: DecisionDraft): string | null {
 	if (!draft.prompt.trim()) return "Enter a question for Jev.";
 	if (draft.mode === "choice") {
@@ -222,6 +232,7 @@ function ModeMenu({
 	mode: DecisionMode;
 	onModeChange: (mode: DecisionMode) => void;
 }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const activeMode = MODES.find((item) => item.id === mode) ?? MODES[0];
 	const ActiveIcon = activeMode.icon;
 
@@ -234,12 +245,12 @@ function ModeMenu({
 						variant="ghost"
 						size="sm"
 						className="h-8 gap-1.5 px-2"
-						aria-label="Choose decision type"
+						aria-label={tCopy("chooseDecision")}
 					/>
 				}
 			>
 				<ActiveIcon className="size-4" />
-				<span>{activeMode.label}</span>
+				<span>{({ Noul: "Noul", Choice: tCopy("choice"), Score: tCopy("copyScore") } as Record<string, string>)[activeMode.label] ?? activeMode.label}</span>
 				<ChevronDown className="size-3.5 text-muted-foreground" />
 			</DropdownMenuTrigger>
 			<DropdownMenuContent side="top" align="start" sideOffset={8} className="w-64">
@@ -253,9 +264,9 @@ function ModeMenu({
 						>
 							<Icon className="mt-0.5 size-4 text-muted-foreground" />
 							<span className="min-w-0">
-								<span className="block font-medium">{item.label}</span>
+								<span className="block font-medium">{({ Noul: "Noul", Choice: tCopy("choice"), Score: tCopy("copyScore") } as Record<string, string>)[item.label] ?? item.label}</span>
 								<span className="block text-xs text-muted-foreground">
-									{item.description}
+									{({ "Get a yes or no probability": tCopy("noulHelp"), "Choose between your answers": tCopy("choiceHelp"), "Score against defined levels": tCopy("scoreHelp") } as Record<string, string>)[item.description] ?? item.description}
 								</span>
 							</span>
 							{item.id === mode ? <Check className="ml-auto mt-0.5 size-4" /> : null}
@@ -275,6 +286,7 @@ export function DecisionComposer({
 	onDraftChange,
 	onSubmit,
 }: DecisionComposerProps) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const [isActive, setIsActive] = useState(false);
 	const [hasDraftChanges, setHasDraftChanges] = useState(false);
 	const composerRef = useRef<HTMLDivElement | null>(null);
@@ -398,10 +410,10 @@ export function DecisionComposer({
 				onKeyDown={handleKeyDown}
 				placeholder={
 					draft.mode === "noul"
-						? "Ask a yes or no question…"
+						? tCopy("yesNoPrompt")
 						: draft.mode === "choice"
-							? "What should Jev choose?"
-							: "What should Jev score?"
+							? tCopy("choicePrompt")
+							: tCopy("scorePrompt")
 				}
 				rows={1}
 				className={cn(
@@ -415,7 +427,7 @@ export function DecisionComposer({
 			{composerExpanded && draft.mode === "choice" ? (
 				<div className="border-t border-border/70 px-3.5 py-3">
 					<div className="mb-2 flex items-center justify-between gap-3">
-						<Label className="text-xs">Answers</Label>
+						<Label className="text-xs">{tCopy("answers")}</Label>
 						<Button
 							type="button"
 							variant="ghost"
@@ -423,8 +435,7 @@ export function DecisionComposer({
 							className="h-7 px-2 text-xs"
 							onClick={() => updateDraft({ choices: [...draft.choices, createChoice()] })}
 						>
-							<Plus className="size-3.5" /> Add answer
-						</Button>
+							<Plus className="size-3.5" /> {tCopy("addAnswer")}</Button>
 					</div>
 					<ScrollArea
 						className="max-h-36"
@@ -445,8 +456,8 @@ export function DecisionComposer({
 												),
 											})
 										}
-										placeholder={`Answer ${index + 1}`}
-										aria-label={`Answer ${index + 1}`}
+										placeholder={tCopy("answerNumber", { number: index + 1 })}
+										aria-label={tCopy("answerNumber", { number: index + 1 })}
 									/>
 									<Button
 										type="button"
@@ -459,7 +470,7 @@ export function DecisionComposer({
 												choices: draft.choices.filter((item) => item.id !== choice.id),
 											})
 										}
-										aria-label={`Remove answer ${index + 1}`}
+										aria-label={tCopy("removeAnswer", { number: index + 1 })}
 									>
 										<Trash2 className="size-3.5" />
 									</Button>
@@ -473,7 +484,7 @@ export function DecisionComposer({
 			{composerExpanded && draft.mode === "score" ? (
 				<div className="border-t border-border/70 px-3.5 py-3">
 					<div className="mb-2 flex items-center justify-between gap-3">
-						<Label className="text-xs">Score levels</Label>
+						<Label className="text-xs">{tCopy("scoreLevels")}</Label>
 						<Button
 							type="button"
 							variant="ghost"
@@ -483,8 +494,7 @@ export function DecisionComposer({
 								updateDraft({ scoreLevels: [...draft.scoreLevels, createScoreLevel()] })
 							}
 						>
-							<Plus className="size-3.5" /> Add level
-						</Button>
+							<Plus className="size-3.5" /> {tCopy("addLevel")}</Button>
 					</div>
 					<ScrollArea
 						className="max-h-36"
@@ -508,8 +518,8 @@ export function DecisionComposer({
 												),
 											})
 										}
-										placeholder={`Describe score ${index}`}
-										aria-label={`Description for score ${index}`}
+										placeholder={tCopy("describeScore", { number: index })}
+										aria-label={tCopy("scoreDescription", { number: index })}
 									/>
 									<Button
 										type="button"
@@ -522,7 +532,7 @@ export function DecisionComposer({
 												scoreLevels: draft.scoreLevels.filter((item) => item.id !== level.id),
 											})
 										}
-										aria-label={`Remove score ${index}`}
+										aria-label={tCopy("removeScore", { number: index })}
 									>
 										<Trash2 className="size-3.5" />
 									</Button>
@@ -549,27 +559,26 @@ export function DecisionComposer({
 									variant="ghost"
 									size="sm"
 									className="h-8 gap-1.5 px-2"
-									aria-label="Add optional context"
+									aria-label={tCopy("addContext")}
 								/>
 							}
 						>
 							<Braces className="size-4" />
-							<span className="hidden sm:inline">Context</span>
+							<span className="hidden sm:inline">{tCopy("copyContext")}</span>
 							{draft.context.trim() ? (
-								<span className="size-1.5 rounded-full bg-primary" aria-label="Context added" />
+								<span className="size-1.5 rounded-full bg-primary" aria-label={tCopy("contextAdded")} />
 							) : null}
 						</PopoverTrigger>
 						<PopoverContent side="top" align="start" sideOffset={8} className="w-[min(24rem,calc(100vw-2rem))]">
 							<PopoverHeader>
-								<PopoverTitle className="text-sm">Context</PopoverTitle>
+								<PopoverTitle className="text-sm">{tCopy("copyContext")}</PopoverTitle>
 								<PopoverDescription className="text-xs">
-									Optional facts Jev should use when making this decision.
-								</PopoverDescription>
+									{tCopy("contextHelp")}</PopoverDescription>
 							</PopoverHeader>
 							<Textarea
 								value={draft.context}
 								onChange={(event) => updateDraft({ context: event.target.value })}
-								placeholder="Add relevant account, user, or event context…"
+								placeholder={tCopy("contextPlaceholder")}
 								className="min-h-28 resize-none"
 							/>
 						</PopoverContent>
@@ -577,15 +586,14 @@ export function DecisionComposer({
 				</div>
 				<div className="flex items-center gap-2">
 					<span className="hidden text-[11px] text-muted-foreground sm:inline">
-						Enter
-					</span>
+						{tCopy("enter")}</span>
 					<Button
 						type="button"
 						size="icon"
 						className="size-8 rounded-full"
 						onClick={() => void handleSubmit()}
 						disabled={!historyLoaded || isSubmitting || !draft.prompt.trim()}
-						aria-label={isSubmitting ? "Evaluating decision" : "Send decision"}
+						aria-label={isSubmitting ? tCopy("evaluating") : tCopy("sendDecision")}
 					>
 						<ArrowUp className="size-4" />
 					</Button>

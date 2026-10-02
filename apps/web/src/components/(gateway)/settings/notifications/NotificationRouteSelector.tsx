@@ -1,4 +1,6 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
@@ -29,7 +31,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 	initialDestinationIds: string[];
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const availableIds = React.useMemo(() => new Set(destinations.map((destination) => destination.id)), [destinations]);
 	const write = useSettingsWrite();
 	const [selectedIds, setSelectedIds] = React.useState(() => initialDestinationIds.filter((id) => availableIds.has(id)));

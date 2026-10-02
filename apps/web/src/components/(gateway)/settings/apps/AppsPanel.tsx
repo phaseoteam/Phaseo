@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -182,7 +184,7 @@ function CategoryIcons({ category }: { category: string | null }) {
 export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string, values?: Record<string, string>) =>
-		(t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(`strings.${key}`, values);
+		(t as unknown as (messageKey: string, messageValues?: Record<string, string>) => string)(settingsStringKey(key), values);
 	const format = useDisplayFormatters();
 	const [items, setItems] = useState<AppItem[]>(apps);
 	const [pending, setPending] = useState<Record<string, boolean>>({});
@@ -241,7 +243,7 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 				}
 			})();
 			toast.promise(updatePromise, {
-				loading: s("Updating app..."),
+				loading: s("phraseUpdatingApp"),
 				success: s("App updated"),
 				error: (err) => localizedSettingsError(err, t, "Failed to update app"),
 			});
@@ -348,7 +350,7 @@ export default function AppsPanel({ apps }: { apps: AppItem[] }) {
 					</EmptyMedia>
 					<EmptyTitle>{s("No apps found")}</EmptyTitle>
 					<EmptyDescription>
-						{s("App attribution records will appear here after your requests include app headers.")}
+						{s("phraseAppAttributionRecordsWillAppearHereAfterYourRequestsIncludeAppHeaders")}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>

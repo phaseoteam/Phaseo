@@ -248,7 +248,8 @@
 			"endpointRealtime": "Real-time",
 			"endpointVideoGeneration": "Video generation",
 			"endpointImageVariations": "Image variations",
-			"endpointMusicGeneration": "Music generation"
+			"endpointMusicGeneration": "Music generation",
+			"tierPrivate": "Private"
 		},
 		"freeRouter": {
 			"title": "Free model pool",
@@ -269,7 +270,8 @@
 			"unknown": "Unknown",
 			"never": "Never",
 			"noEligibleTitle": "No eligible free models right now",
-			"noEligibleDescription": "The free router currently has no active eligible models for normal text routing."
+			"noEligibleDescription": "The free router currently has no active eligible models for normal text routing.",
+			"embedDescription": "A flexible gateway route for discovering and comparing available models."
 		},
 		"cardView": "Card view",
 		"tableView": "Table view",
@@ -1451,7 +1453,8 @@
 			"tooltipWorstProvider": "Without Phaseo Routing:",
 			"hourlyAverage": "Last 24 hours · hourly average",
 			"routingChartLabel": "Hourly model uptime over the last 24 hours. Phaseo Routing: {uptime}.{comparison}",
-			"routingComparison": " Without Phaseo Routing: {uptime}."
+			"routingComparison": " Without Phaseo Routing: {uptime}.",
+			"routingLabel": "Phaseo routing"
 		},
 		"providerInfo": {
 			"dataPolicy": "Data policy",
@@ -1576,7 +1579,8 @@
 			"remaining": "remaining",
 			"totalDays": "{count, plural, one {# total day} other {# total days}}",
 			"modalityStructured": "Structured state",
-			"modalityDecisions": "Decisions"
+			"modalityDecisions": "Decisions",
+			"viewLicense": "View license"
 		},
 		"performance": {
 			"noTelemetry": "No gateway telemetry in the past 7 days",
@@ -1685,7 +1689,9 @@
 				"footer": "All times are in UTC. Values aggregate hourly medians from the selected reporting period."
 			},
 			"observationsShown": "{description} Showing {series}.",
-			"requestSuccess": "Request success"
+			"requestSuccess": "Request success",
+			"hiddenAttribution": "Provider attribution is hidden for this model. Trends use model-wide observations.",
+			"selectTimeRange": "Select performance time range"
 		},
 		"routeHelp": {
 			"external": "External providers",
@@ -2203,7 +2209,36 @@
 		"audioTranscribed": "Audio transcribed",
 		"recentRequests": "{count} recent requests",
 		"intelligenceBenchmarks": "Intelligence benchmarks",
-		"noMeasuredUsage": "No measured usage in the last 30 days."
+		"noMeasuredUsage": "No measured usage in the last 30 days.",
+		"intelligenceValue": {
+			"barsCaption": "USD per intelligence point · Best to worst · Lower is better",
+			"barAria": "{model}: {cost} per intelligence point, {configuration}",
+			"loadingChart": "Loading value chart…",
+			"chartDisplay": "Value chart display",
+			"usdPerPoint": "USD per point",
+			"scoreVsCost": "Score vs cost",
+			"configurationCount": "{visible} of {total} configurations",
+			"searchConfigurations": "Search models or configurations",
+			"searchPlaceholder": "Search models or configurations…",
+			"evaluatedConfigurations": "Evaluated configurations",
+			"noConfiguration": "No evaluated configuration found.",
+			"selectModels": "Select models to compare.",
+			"perPoint": "{cost} / point",
+			"rankSummary": "Rank #{rank} of {total} configurations",
+			"scatterCaption": "Intelligence vs evaluation cost · Lower and further right is better. Each point represents an evaluated configuration.",
+			"scatterAria": "Scatter chart of intelligence score versus evaluation cost. Exact values are listed below.",
+			"intelligenceScore": "Intelligence score",
+			"evaluationCostUsd": "Evaluation cost (USD)",
+			"intelligenceValue": "Intelligence: {score}",
+			"evaluationCostValue": "Evaluation cost: {cost}",
+			"perIntelligencePoint": "{cost} / intelligence point",
+			"tableCaption": "Evaluation cost per intelligence point, ranked from lowest cost. Scores and costs use the same evaluated configuration.",
+			"modelConfiguration": "Model / configuration",
+			"evaluationCostShort": "Eval cost",
+			"usdPerPointColumn": "USD / point",
+			"slow": "Slow",
+			"speed": "Speed"
+		}
 	},
 	"compare": {
 		"title": "Compare models",

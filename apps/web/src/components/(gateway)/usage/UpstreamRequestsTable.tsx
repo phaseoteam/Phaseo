@@ -199,7 +199,7 @@ export default function UpstreamRequestsTable({
 				rowKey={(row) => row.gateway_request_id || row.request_id}
 				settingsTargetId={settingsTargetId}
 				onRowClick={(row) => { setSelected(row); setInspectedAttemptId(null); }}
-				emptyMessage={t("strings.No upstream requests in this period." as never)}
+				emptyMessage={t("strings.phraseNoUpstreamRequestsInThisPeriod" as never)}
 				renderCell={(row, column) => {
 					const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 					const model = modelMetadata.get(row.model_id);

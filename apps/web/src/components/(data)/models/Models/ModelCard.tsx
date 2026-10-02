@@ -504,6 +504,7 @@ function ModelCardImpl({
 	showOrganisationPrefix?: boolean;
 	contentPaddingClassName?: string;
 }) {
+	const tAuditCopy = useTranslations();
 	const t = useTranslations("Catalogue.models");
 	const tDetail = useTranslations("Catalogue.modelDetail");
 	const tProviderStatus = useTranslations(
@@ -1051,7 +1052,7 @@ function ModelCardImpl({
 										</Button>
 									</TooltipTrigger>
 									<TooltipContent side="top">
-										{copied ? "Copied" : "Copy Model ID"}
+										{copied ? tAuditCopy("Catalogue.common.copied") : tAuditCopy("Common.ui.actions.copyModelId")}
 									</TooltipContent>
 								</Tooltip>
 							) : null}
@@ -1206,7 +1207,7 @@ function ModelCardImpl({
 																					className="flex items-baseline justify-between gap-3"
 																				>
 																					<div className="text-muted-foreground">
-																						{item.detail ?? "Standard"}
+																						{item.detail ?? tAuditCopy("Catalogue.models.detail.quickstart.tierStandard")}
 																					</div>
 																					<div className="shrink-0 text-muted-foreground">
 																						{item.value}
@@ -1444,7 +1445,7 @@ function ModelCardImpl({
 				</div>
 
 				<div className="mt-auto flex items-center justify-between gap-3 text-xs text-muted-foreground">
-					<span className="truncate">{model.primary_date ? format.calendarDate(model.primary_date) : "Date unknown"}</span>
+					<span className="truncate">{model.primary_date ? format.calendarDate(model.primary_date) : tAuditCopy("Common.ui.auditCopy.dateUnknown")}</span>
 					<div className="shrink-0">
 						<Tooltip>
 							<TooltipTrigger asChild>

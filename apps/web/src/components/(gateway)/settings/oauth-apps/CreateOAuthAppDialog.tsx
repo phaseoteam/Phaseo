@@ -122,14 +122,14 @@ export default function CreateOAuthAppDialog({
 					<DialogHeader>
 				<DialogTitle>{t("strings.OAuth App Created" as never)}</DialogTitle>
 						<DialogDescription>
-				{t("strings.Save your client credentials now. The client secret will not be shown again." as never)}
+				{t("strings.phraseSaveYourClientCredentialsNowTheClientSecretWillNotBeShownAgain" as never)}
 						</DialogDescription>
 					</DialogHeader>
 
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
-				<strong>{t("strings.Important:" as never)}</strong> {t("strings.Copy your client secret now. You won&apos;t be able to see it again!" as never)}
+				<strong>{t("strings.Important:" as never)}</strong> {t("strings.phraseCopyYourClientSecretNowYouWonAposTBeAbleToSeeItAgain" as never)}
 						</AlertDescription>
 					</Alert>
 
@@ -200,7 +200,7 @@ export default function CreateOAuthAppDialog({
 				<DialogHeader>
 				<DialogTitle>{t("strings.Create OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
-					{t("strings.Create a new OAuth application for third-party integrations." as never)}
+					{t("strings.phraseCreateANewOAuthApplicationForThirdPartyIntegrations" as never)}
 						{t("oauthCopy.clientCredentialsDescription")}
 					</DialogDescription>
 				</DialogHeader>

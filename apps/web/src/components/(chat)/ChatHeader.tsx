@@ -3,6 +3,7 @@
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 
 import {
 	useCallback,
@@ -387,6 +388,8 @@ export function ChatHeader({
 	const tUi = useTranslations("Common.ui");
 	const tChat = useTranslations("Product.chat");
 	const tModelPicker = useTranslations("Product.chat.modelPicker");
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const tPolicy = useTranslations("Common.ui.localisationGaps");
 	const tRooms = useTranslations("Product.chatRooms");
 	const settingsTabLabels = {
 		personalization: tUi("chatSettings.personalization"),
@@ -1570,7 +1573,7 @@ export function ChatHeader({
 						<div className="flex flex-wrap gap-x-3 gap-y-1 border-b px-4 py-2 text-xs text-muted-foreground">
 			<span>{tUi("chatSettings.policyUnavailable")}</span>
 							{Array.from(new Map([...modelOptions.active, ...modelOptions.comingSoon].flatMap((option) => option.chatBlockedReasons).map((reason) => [reason.settingsHref, reason])).values()).map((reason) => (
-								<Link key={reason.settingsHref} href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{reason.label}</Link>
+								<Link key={reason.settingsHref} href={reason.settingsHref} className="font-medium text-foreground underline underline-offset-4">{localizedWorkspacePolicyReason(tPolicy, reason)}</Link>
 							))}
 						</div>
 					) : null}
@@ -1617,13 +1620,13 @@ export function ChatHeader({
 										? "border-sky-600 bg-sky-600 text-white hover:border-sky-700 hover:bg-sky-700 hover:text-white dark:border-sky-300 dark:bg-sky-300 dark:text-slate-950 dark:hover:border-sky-200 dark:hover:bg-sky-200 dark:hover:text-slate-950"
 										: "border-border bg-transparent text-slate-900 hover:bg-slate-100 hover:text-slate-950 dark:border-white/25 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/10 dark:hover:text-white",
 								)}
-								title="Hide models that are unavailable in this chat"
+								title={tCopy("hideUnavailableHelp")}
 							>
-								Hide Unavailable
+								{tCopy("hideUnavailable")}
 							</Button>
 							{allowModelCompare ? (
 								<span className="ml-auto hidden text-[11px] text-muted-foreground sm:inline">
-									Ctrl/⌘-click to add multiple
+									{tCopy("addMultipleShortcut")}
 								</span>
 							) : null}
 						</div>

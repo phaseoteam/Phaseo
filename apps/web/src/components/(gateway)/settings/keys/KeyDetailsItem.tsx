@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -221,7 +223,7 @@ export default function KeyDetailsItem({
 	const activityHref = `/settings/usage?group=key&key=${encodeURIComponent(String(k?.id ?? ""))}`;
 	const logsHref = `/settings/usage/logs?key=${encodeURIComponent(String(k?.id ?? ""))}`;
 	const stateLabel = keyStateLabel(k);
-	const localizedStateLabel = t(`strings.${stateLabel}` as never);
+	const localizedStateLabel = t(settingsStringKey(stateLabel) as never);
 	const stateVisual = stateLabel === "Active"
 		? { Icon: CheckCircle2, className: "text-emerald-600 dark:text-emerald-400" }
 		: stateLabel === "Limits reached"
@@ -295,7 +297,7 @@ export default function KeyDetailsItem({
 						</ProviderInspectorSheetDescription>
 						</div>
 						<ProviderInspectorSheetDescription className="sr-only">
-							{t("strings.Detailed usage, spend, metadata, and guardrail coverage for this key." as never)}
+							{t("strings.phraseDetailedUsageSpendMetadataAndGuardrailCoverageForThisKey" as never)}
 						</ProviderInspectorSheetDescription>
 					</ProviderInspectorSheetHeader>
 
@@ -373,7 +375,7 @@ export default function KeyDetailsItem({
 											))}
 										</div>
 									) : (
-										<div className="text-sm text-muted-foreground">{t("strings.No explicit scopes configured." as never)}</div>
+										<div className="text-sm text-muted-foreground">{t("strings.phraseNoExplicitScopesConfigured" as never)}</div>
 									)}
 								</div>
 							</section>
@@ -394,7 +396,7 @@ export default function KeyDetailsItem({
 											))}
 										</div>
 									) : (
-										<div className="text-sm text-muted-foreground">{t("strings.No guardrails applied." as never)}</div>
+										<div className="text-sm text-muted-foreground">{t("strings.phraseNoGuardrailsApplied" as never)}</div>
 									)}
 								</div>
 							</section>
@@ -477,14 +479,14 @@ export default function KeyDetailsItem({
 												</div>
 											) : (
 												<div className="text-sm text-muted-foreground">
-															{t("strings.Guardrail activity was recorded, but the source rule could not be resolved from current workspace mappings." as never)}
+															{t("strings.phraseGuardrailActivityWasRecordedButTheSourceRuleCouldNotBeResolvedFromCurrentWorkspaceMappings" as never)}
 												</div>
 											)}
 										</div>
 									</div>
 								) : (
 									<div className="text-sm text-muted-foreground">
-															{t("strings.No recorded blocked, redacted, or flagged requests for this key in the last 30 days." as never)}
+															{t("strings.phraseNoRecordedBlockedRedactedOrFlaggedRequestsForThisKeyInTheLast30Days" as never)}
 									</div>
 								)}
 							</div>

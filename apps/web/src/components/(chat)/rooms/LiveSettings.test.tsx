@@ -1,5 +1,13 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactNode } from "react";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
+import { NextIntlClientProvider } from "next-intl";
+import { englishSettingsUiMessages } from "@/i18n/default-messages";
+import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails } from "./LiveSettings";
+
+function renderToStaticMarkup(children: ReactNode) {
+	return renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</NextIntlClientProvider>);
+}
 
 describe("Live settings and usage", () => {
 	it("offers all built-in voices without generating paid voice previews", () => {
@@ -39,7 +47,7 @@ describe("Live settings and usage", () => {
 			cached_read_text_tokens: 500, cached_write_text_tokens: 50, native_web_search_requests: 2,
 			live_responses: [{ id: "resp_test", status: "response.incomplete", service_tier: "priority", usage: { input_tokens: 1234, output_tokens: 250 } }] }} />);
 		expect(html).toContain("1 running"); expect(html).toContain("Reasoning (included)"); expect(html).toContain("Cache writes");
-		expect(html).toContain("resp_test"); expect(html).toContain("incomplete"); expect(html).toContain("priority");
+		expect(html).toContain("resp_test"); expect(html).toContain("Incomplete"); expect(html).toContain("Priority");
 		expect(html).toContain('aria-expanded="false"');
 		expect(html).toContain('aria-label="Delegation usage details"');
 		expect(html).toContain('data-slot="scroll-area"');

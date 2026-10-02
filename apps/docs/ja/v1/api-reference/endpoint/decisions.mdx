@@ -59,3 +59,22 @@ Respan の例では、レスポンスは次のようになります。
 Jev は 1 回のリクエストで 3 種類の質問を組み合わせられます。Span-01 は `noul` の質問にのみ対応します。コピーして使える cURL、JavaScript、TypeScript SDK、Python SDK の例は[クイックスタート](../../quickstart)を参照してください。Jev 1.13 は入力トークン 100 万個あたり 0.042 米ドルで、出力トークンは無料です。
 
 提供元の質問の意味については、TypeSafe の [API リファレンス](https://docs.typesafe.ai/api)を参照してください。
+
+### Clefによる画像の判断
+
+`cloudflare/clef`と`cloudflare/clef-flash`は、Cloudflare Workers AIを通じて3種類すべての質問と埋め込み画像に対応します。それぞれ65,536トークンのコンテキストウィンドウを備えています。入力料金は100万トークンあたりClefで0.24 USD、Clef Flashで0.09 USDです。
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+`images`には`data:image/png;base64,...`の文字列も指定できます。ClefはPNG、JPEG、WebP画像を最大4枚受け付けます。各画像は最大4 MiBかつ1,600万画素、デコード後の画像データの合計は最大8 MiB、リクエスト本文は最大13 MiBです。リモートURLには対応していません。Cloudflareは画像形式と寸法を検証します。画像に対応していないモデルは画像リクエストを拒否します。
+
+Clefは最大64個の質問を受け付けます。IDは英字、数字、アンダースコア、ピリオド、ハイフンからなる最大100文字です。選択式の質問には2〜255個の選択肢、スコア式の質問には2〜10段階が必要です。Cloudflareの[Clefドキュメント](https://developers.cloudflare.com/workers-ai/models/clef/)を参照してください。

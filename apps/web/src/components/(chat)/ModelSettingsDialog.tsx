@@ -190,6 +190,7 @@ export function ModelSettingsDialog({
     const tUi = useTranslations("Common.ui");
     const tRooms = useTranslations("Product.chatRooms");
     const tRequest = useTranslations("Product.tools.request");
+    const tCopy = useTranslations("SettingsUI.chatGaps");
     const tSettings = useTranslations("SettingsUI.strings");
     const format = useDisplayFormatters();
     const reduceMotion = useReducedMotion();
@@ -860,7 +861,7 @@ export function ModelSettingsDialog({
                             </Select>
                         </div>
                         <div className="grid gap-1.5">
-                            <Label>Service Tier</Label>
+                            <Label>{tCopy("copyServiceTier")}</Label>
                             <Select
                                 value={selectedServiceTier}
                                 disabled={availableServiceTierOptions.length <= 1 && selectedServiceTierAvailable}

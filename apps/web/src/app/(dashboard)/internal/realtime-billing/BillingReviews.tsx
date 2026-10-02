@@ -16,6 +16,7 @@ import type { Decision, Review, ReviewDetails } from "./types";
 
 export function BillingReviews({ reviews }: { reviews: Review[] }) {
 	const t = useTranslations("SettingsUI");
+	const tStatus = useTranslations("SettingsUI.labels");
 	const locale = useLocale();
 	const usd = (nanos: number | null) => nanos == null ? t("realtimeCopy.copyUnavailable") : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 6, maximumFractionDigits: 6 }).format(Number(nanos) / 1e9);
 	const labels: Record<Decision, string> = { retry: t("realtimeCopy.retry"), retain: t("realtimeCopy.retain"), capture_confirmed: t("realtimeCopy.capture_confirmed"),
@@ -75,7 +76,7 @@ export function BillingReviews({ reviews }: { reviews: Review[] }) {
 							<p>{t("realtimeCopy.voiceSeconds", { seconds: details.evidence.live_seconds == null ? t("realtimeCopy.copyUnknown") : new Intl.NumberFormat(locale).format(details.evidence.live_seconds), duration: details.evidence.live_final ? t("realtimeCopy.finalDuration") : t("realtimeCopy.finalDurationMissing") })}</p>
 							<p>{t("realtimeCopy.backendCounts", { completed: new Intl.NumberFormat(locale).format(details.evidence.live_responses.length), pending: new Intl.NumberFormat(locale).format(details.evidence.live_pending_responses.length), searches: new Intl.NumberFormat(locale).format(details.evidence.live_tool_calls.filter((tool) => tool.done).length) })}</p>
 							{details.evidence.live_responses.map((response) => <div key={response.id} className="rounded-md border p-3">
-								<p className="break-all font-mono text-xs">{response.id}</p><p>{response.model} · {response.service_tier ?? "default"}</p>
+								<p className="break-all font-mono text-xs">{response.id}</p><p>{response.model} · {response.service_tier ?? tStatus("default")}</p>
 								<p>{t("realtimeCopy.tokenCounts", { input: new Intl.NumberFormat(locale).format(response.usage.input_tokens ?? 0), cached: new Intl.NumberFormat(locale).format(response.usage.cached_read_text_tokens ?? 0), output: new Intl.NumberFormat(locale).format(response.usage.output_tokens ?? 0) })}</p>
 							</div>)}
 							<h3 className="font-medium">{t("realtimeCopy.decisionHistory")}</h3>

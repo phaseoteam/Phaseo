@@ -121,7 +121,7 @@ Usa `allowed_domains` cuando la respuesta deba proceder de un conjunto controlad
 
 Usa `excluded_domains` cuando se permita una búsqueda web amplia, pero deban eliminarse ciertos dominios de los resultados.
 
-Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish convierte ambas matrices en operadores `site:` y `-site:` de la consulta.
+Perplexity y Firecrawl aceptan `allowed_domains` o `excluded_domains` en una sola llamada de búsqueda, pero no ambos. Perplexity admite hasta 20 filtros de dominios por solicitud y convierte los dominios excluidos a su formato de lista de bloqueo. TinyFish convierte ambas matrices en operadores `site:` y `-site:` de la consulta.
 
 TinyFish Search es gratuito en sus planes publicados, por lo que Phaseo no añade un cargo por uso del proveedor con `engine: "tinyfish"`; siguen aplicándose los precios normales de solicitudes y tokens de Phaseo.
 

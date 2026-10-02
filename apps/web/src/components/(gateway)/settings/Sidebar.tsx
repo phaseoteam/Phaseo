@@ -161,7 +161,7 @@ export default function SettingsSidebar({
 		const heading = (group.heading ?? "").trim();
 		return (
 			<SidebarGroup className={cn("py-0", !first && "group-data-[collapsible=icon]:pt-2")}>
-				{isSearching ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">{group.scope === "personal" ? "Account" : "Workspace"}</p> : null}
+				{isSearching ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">{group.scope === "personal" ? settingsMessages.sidebar.scope.account : settingsMessages.sidebar.scope.workspace}</p> : null}
 				<SidebarGroupContent>
 					<SidebarMenu>
 						{group.items.map((item) =>
@@ -327,7 +327,7 @@ export default function SettingsSidebar({
 			<SidebarHeader className="h-[53px] shrink-0 gap-0 border-b px-2 py-0 group-data-[collapsible=icon]:px-2">
 				<div className="flex h-full items-center gap-2 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
 					<div className="text-sm font-semibold text-foreground group-data-[collapsible=icon]:hidden">
-						Settings
+						{settingsMessages.sidebar.settings}
 					</div>
 					<Button
 						variant="ghost"

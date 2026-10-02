@@ -95,7 +95,7 @@ export function GeographyUsage({
 		if (rows.length === 0) {
 			return (
 				<p className="border-y border-border py-8 text-sm text-muted-foreground">
-					{t("strings.Country usage will appear after gateway requests include sufficient geographic metadata." as never)}
+					{t("strings.phraseCountryUsageWillAppearAfterGatewayRequestsIncludeSufficientGeographicMetadata" as never)}
 				</p>
 			);
 		}
@@ -152,7 +152,7 @@ export function GeographyUsage({
 			<div className="rounded-lg border border-dashed px-4 py-8">
 					<p className="text-sm font-medium">{t("strings.No geographic usage yet" as never)}</p>
 				<p className="mt-1 text-sm text-muted-foreground">
-					{t("strings.Countries will appear after requests in the selected period include geographic metadata." as never)}
+					{t("strings.phraseCountriesWillAppearAfterRequestsInTheSelectedPeriodIncludeGeographicMetadata" as never)}
 				</p>
 			</div>
 		) : (

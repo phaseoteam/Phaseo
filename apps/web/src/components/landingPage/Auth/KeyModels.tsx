@@ -1,9 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { SignInModel } from "@/lib/fetchers/landing/sign-in/types";
 import { fetchFrontendSignInMainModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 
 export default async function KeyModels() {
+	const tCopy = await getTranslations("Site.landingGaps");
+
 	// If consumer didn't provide data, fetch main models by ID from Supabase
 	let models: SignInModel[] = [];
 
@@ -39,8 +42,8 @@ export default async function KeyModels() {
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="rounded-full border border-border bg-white/80 px-4 py-2 text-center text-sm font-medium text-muted-foreground shadow-sm dark:bg-black/70">
-				Access an ever-growing catalog of curated models as soon as you sign in to the Phaseo Gateway.
-			</div>
+{tCopy("copy002")}
+</div>
 			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 				{ordered.map((m: SignInModel) => (
 					<Card key={m.model_id} className="p-4">

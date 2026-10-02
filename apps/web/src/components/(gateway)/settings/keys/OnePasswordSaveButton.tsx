@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,10 @@ export function OnePasswordSaveButton({
 	notes,
 	urls,
 }: OnePasswordSaveButtonProps) {
+	const t = useTranslations("SettingsUI");
+	const locale = useLocale();
+	const language = locale === "zh-Hans" ? "zh-CN" : locale.split("-")[0];
+	const supportedLanguage = ["de", "en", "es", "fr", "it", "ja", "ko", "pt", "ru", "zh-CN", "zh-TW"].includes(language) ? language : undefined;
 	const [encodedValue, setEncodedValue] = React.useState<string | null>(null);
 	const [theme, setTheme] = React.useState<"light" | "dark">("light");
 	const [isReady, setIsReady] = React.useState(false);
@@ -109,7 +114,7 @@ export function OnePasswordSaveButton({
 		);
 		if (!nativeButton || nativeButton.disabled) {
 			toast.error(
-				"1Password isn't available here. Enable its extension and make sure this site is approved, or use Copy key instead.",
+				t("newMainSettingsCopy.onePasswordUnavailableHelp"),
 			);
 			return;
 		}
@@ -126,7 +131,7 @@ export function OnePasswordSaveButton({
 				aria-describedby={statusId}
 			>
 				<KeyRound className="h-4 w-4" />
-				Save in 1Password
+				{t("newMainSettingsCopy.saveOnePassword")}
 			</Button>
 			{!isReady ? (
 				<span
@@ -135,8 +140,8 @@ export function OnePasswordSaveButton({
 					role="status"
 				>
 					{loadError
-						? "1Password is unavailable in this browser."
-						: "Requires the 1Password extension and an approved site."}
+						? t("newMainSettingsCopy.onePasswordUnavailable")
+						: t("newMainSettingsCopy.onePasswordRequirements")}
 				</span>
 			) : null}
 			<div
@@ -148,7 +153,7 @@ export function OnePasswordSaveButton({
 					ref: buttonRef,
 					"data-onepassword-type": "api-key",
 					value: encodedValue,
-					lang: "en",
+					lang: supportedLanguage,
 					class: "black",
 					"data-theme": theme,
 					padding: "none",

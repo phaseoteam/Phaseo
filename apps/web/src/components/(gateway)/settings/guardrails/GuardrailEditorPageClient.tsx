@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import Link from "next/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -463,11 +465,11 @@ function SelectionCombobox(props: {
 									))}
 								</div>
 							) : (
-								<div className="py-6 text-center text-sm text-muted-foreground">{t("strings.No matches." as never)}</div>
+								<div className="py-6 text-center text-sm text-muted-foreground">{t("strings.phraseNoMatches" as never)}</div>
 							)
 						) : (
 							<>
-							<CommandEmpty>{t("strings.No matches." as never)}</CommandEmpty>
+							<CommandEmpty>{t("strings.phraseNoMatches" as never)}</CommandEmpty>
 							{groupedOptions.map(([group, options]) => {
 								const groupValues = options.map((option) => option.value);
 								const allGroupSelected = groupValues.every((value) => selectedSet.has(value));
@@ -857,7 +859,7 @@ export default function GuardrailEditorPageClient(props: {
 	backHref: string;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const tGuardrail = useTranslations("SettingsUI.guardrailEditorCopy");
 	const standardProviderVariant = tGuardrail("standardVariant");
 	const modelOrganisationLabel = s("Organisation");
@@ -877,19 +879,19 @@ export default function GuardrailEditorPageClient(props: {
 		? {
 			access: {
 				title: s("Access"),
-				description: s("Control privacy, provider access, and model access."),
+				description: s("phraseControlPrivacyProviderAccessAndModelAccess"),
 			},
 			"prompt-injection": {
 				title: s("Prompt Injection"),
-				description: s("Scan user-supplied request content for common prompt injection patterns before it reaches the model."),
+				description: s("phraseScanUserSuppliedRequestContentForCommonPromptInjectionPatternsBeforeItReachesTheModel"),
 			},
 			"sensitive-info": {
 				title: s("Sensitive Info Detection"),
-				description: s("Detect and handle sensitive data before requests leave Phaseo."),
+				description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo"),
 			},
 			budgets: {
 				title: s("Budget Policies"),
-				description: s("Set request and spend ceilings by time window."),
+				description: s("phraseSetRequestAndSpendCeilingsByTimeWindow"),
 			},
 		}[activeSection]
 		: null;
@@ -1562,7 +1564,7 @@ export default function GuardrailEditorPageClient(props: {
 									: null;
 
 		if (invalidField) {
-			toast.error(`${invalidField} ${t("strings.must be a positive number." as never)}`);
+			toast.error(`${invalidField} ${t("strings.phraseMustBeAPositiveNumber" as never)}`);
 			return null;
 		}
 
@@ -1578,7 +1580,7 @@ export default function GuardrailEditorPageClient(props: {
 
 	async function onSave() {
 		if (!form.name.trim()) {
-			toast.error(t("strings.Name is required." as never));
+			toast.error(t("strings.phraseNameIsRequired" as never));
 			return;
 		}
 		const firstSensitiveInfoIssue = form.sensitiveInfoRules
@@ -1598,7 +1600,7 @@ export default function GuardrailEditorPageClient(props: {
 
 		setSaving(true);
 		const toastId = toast.loading(
-			props.mode === "create" ? t("strings.Creating guardrail..." as never) : t("strings.Saving guardrail..." as never),
+			props.mode === "create" ? t("strings.phraseCreatingGuardrail" as never) : t("strings.phraseSavingGuardrail" as never),
 		);
 		try {
 			let guardrailId = props.guardrailId;
@@ -1670,7 +1672,7 @@ export default function GuardrailEditorPageClient(props: {
 	async function onDelete() {
 		if (!props.guardrailId) return;
 		setDeleting(true);
-		const toastId = toast.loading(t("strings.Deleting guardrail..." as never));
+		const toastId = toast.loading(t("strings.phraseDeletingGuardrail" as never));
 		try {
 			await deleteGuardrail(props.guardrailId);
 			toast.success(t("strings.Guardrail deleted" as never), { id: toastId });
@@ -1722,7 +1724,7 @@ export default function GuardrailEditorPageClient(props: {
 							<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
 						</Button>
 						<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
-							{saving ? t("strings.Saving..." as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
+							{saving ? t("strings.phraseSaving" as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
 						</Button>
 						{props.mode === "edit" ? (
 							<Button type="button" variant="destructive" onClick={onDelete} disabled={saving || deleting} className="rounded-md">
@@ -1746,12 +1748,12 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="space-y-4 border-t pt-5">
 								<div>
 									<h2 className="text-sm font-semibold">{t("strings.Status & Assignments" as never)}</h2>
-									<p className="mt-1 text-sm text-muted-foreground">{t("strings.Enable this guardrail and choose who it protects." as never)}</p>
+									<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseEnableThisGuardrailAndChooseWhoItProtects" as never)}</p>
 								</div>
 								<div className="flex items-center justify-between gap-4 py-2">
 									<div>
 										<p className="text-sm font-medium">{t("strings.Enabled" as never)}</p>
-										<p className="mt-1 text-xs text-muted-foreground">{t("strings.Disabled guardrails remain configured but are not enforced." as never)}</p>
+										<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseDisabledGuardrailsRemainConfiguredButAreNotEnforced" as never)}</p>
 									</div>
 									<Switch checked={form.enabled} onCheckedChange={(checked) => set("enabled", checked)} />
 								</div>
@@ -1759,29 +1761,29 @@ export default function GuardrailEditorPageClient(props: {
 									<div>
 										<div className="text-sm font-medium">{t("strings.Apply to members" as never)}</div>
 										<p className="text-xs text-muted-foreground">
-											{t("strings.Enforce this policy on API keys created for selected members." as never)}
+											{t("strings.phraseEnforceThisPolicyOnAPIKeysCreatedForSelectedMembers" as never)}
 										</p>
 									</div>
 									<SelectionCombobox
 										title={t("strings.Select members" as never)}
-										description={t("strings.Members cannot edit or remove policies assigned by workspace owners or admins." as never)}
+										description={t("strings.phraseMembersCannotEditOrRemovePoliciesAssignedByWorkspaceOwnersOrAdmins" as never)}
 										options={memberOptions}
 										selected={form.memberIds}
 										onChange={(next) => set("memberIds", next)}
 										trigger={<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">{form.memberIds.length ? `${form.memberIds.length} ${t("strings.selected" as never)}` : t("strings.Select members" as never)}</Button>}
 									/>
 								</div>
-				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.No members selected yet." as never)} onRemove={removeSelectedMember} />
+				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.phraseNoMembersSelectedYet" as never)} onRemove={removeSelectedMember} />
 								<div className="flex flex-wrap items-center justify-between gap-3">
 									<div>
 								<div className="text-sm font-medium">{t("strings.Apply to keys" as never)}</div>
 										<p className="text-xs text-muted-foreground">
-										{t("strings.Attach this guardrail during creation instead of after the fact." as never)}
+										{t("strings.phraseAttachThisGuardrailDuringCreationInsteadOfAfterTheFact" as never)}
 										</p>
 									</div>
 									<SelectionCombobox
 										title={t("strings.Select keys" as never)}
-										description={t("strings.Apply this guardrail to one or more keys." as never)}
+										description={t("strings.phraseApplyThisGuardrailToOneOrMoreKeys" as never)}
 										options={keyOptions}
 										selected={form.keyIds}
 										onChange={(next) => set("keyIds", next)}
@@ -1796,7 +1798,7 @@ export default function GuardrailEditorPageClient(props: {
 								</div>
 								<SelectedItemBadges
 									items={selectedKeyItems}
-									empty={t("strings.No keys selected yet." as never)}
+									empty={t("strings.phraseNoKeysSelectedYet" as never)}
 									onRemove={removeSelectedKey}
 								/>
 							</div>
@@ -1806,7 +1808,7 @@ export default function GuardrailEditorPageClient(props: {
 
 				<div>
 					<h2 className="text-sm font-semibold">{t("strings.Configuration Groups" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.Configure access, safety, and spending policies." as never)}</p>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseConfigureAccessSafetyAndSpendingPolicies" as never)}</p>
 				</div>
 				</> : null}
 				<Accordion
@@ -1820,7 +1822,7 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="min-w-0 flex-1 text-left">
 				<div className="text-sm font-medium">{t("strings.Access" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">
-					{t("strings.Control privacy, provider access, and model access." as never)}
+					{t("strings.phraseControlPrivacyProviderAccessAndModelAccess" as never)}
 								</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
@@ -1831,21 +1833,21 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Access" as never)}
-							description={t("strings.Control privacy eligibility first, then provider and model access." as never)}
+							description={t("strings.phraseControlPrivacyEligibilityFirstThenProviderAndModelAccess" as never)}
 							compact
 						>
 							<div className="space-y-6">
 								<div>
 									<h4 className="text-sm font-semibold">{t("strings.Data handling" as never)}</h4>
 									<p className="mt-1 text-xs text-muted-foreground">
-										{t("strings.Set the minimum privacy requirements every routed request must meet." as never)}
+										{t("strings.phraseSetTheMinimumPrivacyRequirementsEveryRoutedRequestMustMeet" as never)}
 									</p>
 								</div>
 								<div className="divide-y border-y">
 									<div className="px-3 sm:px-4">
 										<ToggleRow
 											label={t("strings.Allow paid endpoints that may train on inputs" as never)}
-											description={t("strings.Disabling further restricts paid endpoints flagged as training-on-inputs." as never)}
+											description={t("strings.phraseDisablingFurtherRestrictsPaidEndpointsFlaggedAsTrainingOnInputs" as never)}
 											checked={form.privacyEnablePaidMayTrain}
 											onCheckedChange={(checked) => set("privacyEnablePaidMayTrain", checked)}
 											flat
@@ -1854,7 +1856,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div className="px-3 sm:px-4">
 										<ToggleRow
 											label={t("strings.Allow free models that may train on inputs" as never)}
-											description={t("strings.Disabling further restricts free models flagged as training-on-inputs." as never)}
+											description={t("strings.phraseDisablingFurtherRestrictsFreeModelsFlaggedAsTrainingOnInputs" as never)}
 											checked={form.privacyEnableFreeMayTrain}
 											onCheckedChange={(checked) => set("privacyEnableFreeMayTrain", checked)}
 											flat
@@ -1863,7 +1865,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div className="px-3 sm:px-4">
 										<ToggleRow
 											label={t("strings.Allow input/output logging" as never)}
-											description={t("strings.Disabling indicates this guardrail should avoid body logging where supported." as never)}
+											description={t("strings.phraseDisablingIndicatesThisGuardrailShouldAvoidBodyLoggingWhereSupported" as never)}
 											checked={form.privacyEnableInputOutputLogging}
 											onCheckedChange={(checked) =>
 												set("privacyEnableInputOutputLogging", checked)
@@ -1874,7 +1876,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div className="px-3 sm:px-4">
 										<ToggleRow
 											label={t("strings.ZDR only" as never)}
-											description={t("strings.Further restrict routing to endpoints that meet ZDR requirements." as never)}
+											description={t("strings.phraseFurtherRestrictRoutingToEndpointsThatMeetZDRRequirements" as never)}
 											checked={form.privacyZdrOnly}
 											onCheckedChange={(checked) => set("privacyZdrOnly", checked)}
 											flat
@@ -1887,13 +1889,13 @@ export default function GuardrailEditorPageClient(props: {
 								<div>
 									<h4 className="text-sm font-semibold">{t("strings.Route access" as never)}</h4>
 									<p className="mt-1 text-xs text-muted-foreground">
-										{t("strings.Narrow eligible routes by provider or model." as never)}
+										{t("strings.phraseNarrowEligibleRoutesByProviderOrModel" as never)}
 									</p>
 								</div>
 								{props.accountPolicy.providerRestrictionMode !== "none" || props.accountPolicy.modelRestrictionMode !== "none" ? (
 									<div className="flex flex-col gap-1.5 rounded-lg border bg-muted/20 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
 										<span className="text-muted-foreground">
-											{t("strings.Account Privacy applies first; blocked routes remain unavailable here." as never)}
+											{t("strings.phraseAccountPrivacyAppliesFirstBlockedRoutesRemainUnavailableHere" as never)}
 										</span>
 										<Button asChild type="button" variant="ghost" size="sm" className="h-7 justify-start px-2 sm:justify-center">
 												<Link href="/settings/privacy">{t("strings.Review workspace privacy" as never)}</Link>
@@ -1924,7 +1926,7 @@ export default function GuardrailEditorPageClient(props: {
 										</div>
 										<SelectionField
 																	label={t("strings.Providers" as never)}
-																description={t("strings.Choose the providers this guardrail allows or blocks." as never)}
+																description={t("strings.phraseChooseTheProvidersThisGuardrailAllowsOrBlocks" as never)}
 										pickerTitle={t("strings.Select Providers" as never)}
 										pickerDescription={tGuardrail("selectProvidersDescription")}
 											options={providerOptions}
@@ -1997,7 +1999,7 @@ export default function GuardrailEditorPageClient(props: {
 										</div>
 										<SelectionField
 																	label={t("strings.Models" as never)}
-																description={t("strings.Choose the models this guardrail allows or blocks after provider filtering." as never)}
+																description={t("strings.phraseChooseTheModelsThisGuardrailAllowsOrBlocksAfterProviderFiltering" as never)}
 										pickerTitle={s("Models")}
 										pickerDescription={tGuardrail("selectModelsDescription")}
 											options={modelOptions}
@@ -2008,7 +2010,7 @@ export default function GuardrailEditorPageClient(props: {
 										empty={
 											form.modelRestrictionMode === "none"
 													? tGuardrail("noModelsRestricted")
-												: s("No models selected yet.")
+												: s("phraseNoModelsSelectedYet")
 											}
 											triggerLabel={
 												form.modelRestrictionMode === "none"
@@ -2122,7 +2124,7 @@ export default function GuardrailEditorPageClient(props: {
 						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 							<div className="text-sm font-medium">{t("strings.Prompt Injection" as never)}</div>
-								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Scan request content before routing." as never)}</p>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseScanRequestContentBeforeRouting" as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal capitalize text-muted-foreground md:block">
 								{form.promptInjectionEnabled ? getHandlingLabel(form.promptInjectionAction, s) : s("Disabled")}
@@ -2132,7 +2134,7 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Prompt injection" as never)}
-							description={t("strings.Scan user-supplied request content for common prompt injection patterns before it reaches the model." as never)}
+							description={t("strings.phraseScanUserSuppliedRequestContentForCommonPromptInjectionPatternsBeforeItReachesTheModel" as never)}
 							compact
 						>
 							<div className="grid gap-2 md:max-w-sm">
@@ -2168,7 +2170,7 @@ export default function GuardrailEditorPageClient(props: {
 						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 								<div className="text-sm font-medium">{t("strings.Sensitive Info Detection" as never)}</div>
-								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Detect and handle sensitive data before requests leave Phaseo." as never)}</p>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo" as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
 								{form.sensitiveInfoEnabled ? tGuardrail("sensitiveInfoRulesEnabled", { count: enabledSensitiveInfoRuleCount }) : s("Disabled")}
@@ -2178,7 +2180,7 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="space-y-6">
 						<EditorSection
 							title={t("strings.Sensitive info" as never)}
-							description={t("strings.Detect and handle common sensitive data before the request reaches the model." as never)}
+							description={t("strings.phraseDetectAndHandleCommonSensitiveDataBeforeTheRequestReachesTheModel" as never)}
 							compact
 						>
 							<div className="grid gap-4">
@@ -2344,7 +2346,7 @@ export default function GuardrailEditorPageClient(props: {
 																			name: event.target.value,
 																		})
 																	}
-																		placeholder={t("strings.e.g. Internal ticket ID" as never)}
+																		placeholder={t("strings.phraseEGInternalTicketID" as never)}
 																/>
 															</div>
 															<div className="space-y-2">
@@ -2360,7 +2362,7 @@ export default function GuardrailEditorPageClient(props: {
 																			flags: event.target.value,
 																		})
 																	}
-																		placeholder={t("strings.e.g. i" as never)}
+																		placeholder={t("strings.phraseEGI" as never)}
 																/>
 																<p className="text-xs text-muted-foreground">
 																	{tGuardrail("regexFlagsDescription")}
@@ -2381,7 +2383,7 @@ export default function GuardrailEditorPageClient(props: {
 																			pattern: event.target.value,
 																		})
 																	}
-																		placeholder={t("strings.e.g. ACCT-[0-9]{6}" as never)}
+																		placeholder={t("strings.phraseEGACCT096" as never)}
 																	className="font-mono"
 																/>
 															</div>
@@ -2438,7 +2440,7 @@ export default function GuardrailEditorPageClient(props: {
 									<Textarea
 										value={form.sensitiveInfoPreviewInput}
 										onChange={(e) => set("sensitiveInfoPreviewInput", e.target.value)}
-										placeholder={t("strings.e.g. My email is test@example.com and my card is 4242 4242 4242 4242" as never)}
+										placeholder={t("strings.phraseEGMyEmailIsTestExampleComAndMyCardIs4242424242424242" as never)}
 									/>
 									<div className="grid gap-3 lg:grid-cols-[0.9fr_1.1fr]">
 										<div className="rounded-lg border bg-background p-3">
@@ -2497,7 +2499,7 @@ export default function GuardrailEditorPageClient(props: {
 						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 								<div className="text-sm font-medium">{t("strings.Budget Policies" as never)}</div>
-								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.Set request and spend ceilings by time window." as never)}</p>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseSetRequestAndSpendCeilingsByTimeWindow" as never)}</p>
 							</div>
 							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
 								{configuredBudgetCount ? tGuardrail("limitsConfigured", { count: configuredBudgetCount }) : t("credits.No limits" as never)}
@@ -2507,7 +2509,7 @@ export default function GuardrailEditorPageClient(props: {
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Budgets" as never)}
-							description={t("strings.Leave a field blank for unlimited." as never)}
+							description={t("strings.phraseLeaveAFieldBlankForUnlimited" as never)}
 							compact
 						>
 							<div className="space-y-4">
@@ -2516,7 +2518,7 @@ export default function GuardrailEditorPageClient(props: {
 									<div>
 										<AlertTitle>{t("strings.Aggregate guardrail budgets are not yet enforced" as never)}</AlertTitle>
 										<AlertDescription>
-											{t("credits.Use API key limits for hard request and spend enforcement while member and workspace aggregation is completed." as never)}
+											{t("strings.phraseUseAPIKeyLimitsForHardRequestAndSpendEnforcementWhileMemberAndWorkspaceAggregationIsCompleted" as never)}
 										</AlertDescription>
 									</div>
 								</Alert>
@@ -2599,7 +2601,7 @@ export default function GuardrailEditorPageClient(props: {
 						<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
 					</Button>
 					<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
-						{saving ? "Saving..." : props.mode === "create" ? "Create" : "Save"}
+					{saving ? t("strings.phraseSaving") : props.mode === "create" ? t("labels.create") : t("labels.save")}
 					</Button>
 				</div> : null}
 			</div>

@@ -313,7 +313,7 @@ export default function MetricChartCard({
 				<div className="mt-3 border-t pt-2 space-y-1.5">
 					<div className="text-[10px] uppercase tracking-wide text-muted-foreground">{t("strings.Top Models" as never)}</div>
 					{topSeriesRows.length === 0 ? (
-						<div className="text-xs text-muted-foreground">{t("strings.No usage yet." as never)}</div>
+						<div className="text-xs text-muted-foreground">{t("strings.phraseNoUsageYet" as never)}</div>
 					) : (
 						topSeriesRows.map((row: TopSeriesRow) => (
 							<div key={row.key} className="flex items-center gap-2 text-xs">

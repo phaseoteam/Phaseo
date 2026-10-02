@@ -363,7 +363,7 @@ export default function UsageLogsToolbar({
 		const parsed = parseTypedRangeInput(rangeInputValue);
 		if (!parsed) {
 			toast.error(
-				t("strings.Use shorthand like 2mo, 4w, 36h, or a range like 2026-05-11 09:00 -> 2026-05-12 18:30." as never),
+				t("strings.phraseUseShorthandLike2mo4w36hOrARangeLike202605110900202605121830" as never),
 			);
 			return;
 		}
@@ -414,8 +414,8 @@ export default function UsageLogsToolbar({
 				})();
 				if (showToast) {
 					await toast.promise(refreshPromise, {
-						loading: t("strings.Refreshing usage data..." as never),
-						success: t("strings.Usage data refreshed." as never),
+						loading: t("strings.phraseRefreshingUsageData" as never),
+						success: t("strings.phraseUsageDataRefreshed" as never),
 						error: (error: unknown) =>
 							localizedSettingsError(error, t, "Failed to revalidate usage data."),
 					});

@@ -1665,7 +1665,9 @@
 		"save": "Save",
 		"model": "Model",
 		"throughput": "Throughput",
-		"responsePlaceholder": "Response will appear here..."
+		"responsePlaceholder": "Response will appear here...",
+		"gatewayLabel": "Gateway",
+		"openaiThroughput": "OpenAI API (tokens/sec)"
 	},
 	"feedback": {
 		"category": "Feedback category",

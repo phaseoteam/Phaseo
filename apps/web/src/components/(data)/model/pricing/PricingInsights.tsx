@@ -10,7 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { DateRange } from "react-day-picker";
 import {
@@ -73,8 +73,6 @@ import {
 	buildProviderSections,
 	buildProviderTablePriceSummary,
 	calculateDailyAveragePricingMeterPrice,
-	fmtUSD,
-	formatPricingHistoryUnitLabel,
 	normalizePricingHistoryPrice,
 	resolvePricingMeterPrice,
 } from "@/components/(data)/model/pricing/pricingHelpers";
@@ -190,9 +188,9 @@ type ObservedEffectiveUsageSummary = {
 
 const INPUT_METER_PREFERENCE = ["input_text_tokens", "input_tokens"] as const;
 const OUTPUT_METER_PREFERENCE = ["output_text_tokens", "output_tokens"] as const;
-function formatPercent(value: number | null): string {
+function formatPercentValue(value: number | null, locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "--";
-	return `${value.toFixed(1)}%`;
+	return new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100);
 }
 
 function formatTokenCount(value: number, formatCount: (count: number) => string): string {
@@ -200,17 +198,17 @@ function formatTokenCount(value: number, formatCount: (count: number) => string)
 	return formatCount(Math.round(value));
 }
 
-function formatUsd(value: number | null): string {
+function formatUsdValue(value: number | null, locale: string, freeLabel: string): string {
 	if (value == null || !Number.isFinite(value)) return "--";
-	if (value === 0) return "Free";
-	return fmtUSD(value);
+	if (value === 0) return freeLabel;
+	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value);
 }
 
-function formatAxisUsd(value: number): string {
+function formatAxisUsd(value: number, locale: string): string {
 	if (!Number.isFinite(value)) return "--";
-	if (Math.abs(value) >= 100) return fmtUSD(Math.round(value));
-	if (Math.abs(value) >= 10) return fmtUSD(Number(value.toFixed(1)));
-	return fmtUSD(Number(value.toFixed(2)));
+	if (Math.abs(value) >= 100) return formatUsdValue(Math.round(value), locale, "0");
+	if (Math.abs(value) >= 10) return formatUsdValue(Number(value.toFixed(1)), locale, "0");
+	return formatUsdValue(Number(value.toFixed(2)), locale, "0");
 }
 
 function formatTimestampLabel(timestamp: string, locale: string, includeTime = false): string {
@@ -477,28 +475,20 @@ function getProviderPricingPlans(provider: ProviderPricing): string[] {
 	});
 }
 
-function formatMeterLabel(meter: string): string {
-	return meter
-		.replace(/_/g, " ")
-		.replace(/\b\w/g, (letter) => letter.toUpperCase())
-		.replace("Cached Read", "Cache Read")
-		.replace("Cached Write", "Cache Write");
-}
-
-function formatPricingPlanLabel(plan: string): string {
+type PricingCopyTranslator = ReturnType<typeof useTranslations>;
+function formatPricingPlanLabel(plan: string, tx: PricingCopyTranslator): string {
 	const normalizedPlan = String(plan ?? "").trim().toLowerCase();
-	const knownLabels: Record<string, string> = {
-		standard: "Standard",
-		fast: "Fast",
-		priority: "Fast",
-		ultrafast: "Ultrafast",
-		flex: "Flex",
-		batch: "Batch",
-		free: "Free",
+	const knownKeys: Record<string, string> = {
+		standard: "Catalogue.models.detail.quickstart.tierStandard",
+		fast: "Catalogue.models.detail.quickstart.tierFast",
+		priority: "Catalogue.models.detail.quickstart.tierFast",
+		ultrafast: "Catalogue.models.detail.quickstart.tierUltrafast",
+		flex: "Catalogue.models.detail.quickstart.tierFlex",
+		batch: "Catalogue.models.detail.quickstart.tierBatch",
+		free: "Catalogue.models.detail.quickstart.tierFree",
 	};
-	return knownLabels[normalizedPlan] ?? normalizedPlan
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
+	const key = knownKeys[normalizedPlan];
+	return key ? tx(key as never) : plan;
 }
 
 function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
@@ -528,10 +518,11 @@ function PricingTierLabel({ providerName, plan }: { providerName: string; plan: 
 }
 
 function PricingTierLegend({ plans }: { plans: string[] }) {
+	const tx = useTranslations();
 	if (!plans.length) return null;
 	return (
-		<div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t px-2 pt-2.5 text-[11px] text-muted-foreground" aria-label="Service tier line styles">
-			<span className="font-medium text-foreground">Service tier</span>
+		<div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t px-2 pt-2.5 text-[11px] text-muted-foreground" aria-label={tx("Common.ui.pricingDisplayCopy.serviceTierLineStyles")}>
+			<span className="font-medium text-foreground">{tx("Common.ui.versionedPricing.serviceTier")}</span>
 			{plans.map((plan) => (
 				<span key={plan} className="inline-flex items-center gap-1.5">
 					<svg width="28" height="8" viewBox="0 0 28 8" aria-hidden="true" focusable="false">
@@ -546,7 +537,7 @@ function PricingTierLegend({ plans }: { plans: string[] }) {
 							strokeLinecap="round"
 						/>
 					</svg>
-					<span>{formatPricingPlanLabel(plan)}</span>
+					<span>{formatPricingPlanLabel(plan, tx)}</span>
 				</span>
 			))}
 		</div>
@@ -628,6 +619,7 @@ function ExternalProviderBadge() {
 }
 
 function buildPricingHistoryState(args: {
+	tx: PricingCopyTranslator;
 	rows: EffectiveRow[];
 	usageByProvider: Map<string, ProviderUsageSummary>;
 	observedUsageByProviderPlan: Map<string, ObservedEffectiveUsageSummary>;
@@ -645,7 +637,7 @@ function buildPricingHistoryState(args: {
 	const seriesByProviderPlan = new Map<string, string>();
 	const lineDasharrayBySeries = new Map<string, string | undefined>();
 	for (const row of args.rows) {
-		const seriesLabel = `${row.providerName} (${formatPricingPlanLabel(row.pricingPlan)})`;
+		const seriesLabel = `${row.providerName} (${formatPricingPlanLabel(row.pricingPlan, args.tx)})`;
 		providerNameBySeries.set(row.seriesKey, seriesLabel);
 		chartConfig[row.seriesKey] = { label: seriesLabel, color: row.color };
 		rulesBySeries.set(row.seriesKey, []);
@@ -740,6 +732,8 @@ function PricingHistoryChart({
 	expanded?: boolean;
 }) {
 	const locale = useLocale();
+	const tx = useTranslations();
+	const formatUsd = (value: number | null) => formatUsdValue(value, locale, tx("Common.ui.chatSettings.free"));
 	return (
 		<ChartContainer
 			config={state.chartConfig}
@@ -748,7 +742,7 @@ function PricingHistoryChart({
 			<LineChart data={state.chartData} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
 				<CartesianGrid vertical={false} className="stroke-muted/70" />
 				<XAxis dataKey="timestamp" tickFormatter={(value) => formatTimestampLabel(String(value), locale, range === "7d")} tickLine={false} axisLine={false} minTickGap={42} />
-				<YAxis tickFormatter={(value) => formatAxisUsd(Number(value))} width={72} tickLine={false} axisLine={false} />
+				<YAxis tickFormatter={(value) => formatAxisUsd(Number(value), locale)} width={72} tickLine={false} axisLine={false} />
 				<RechartsTooltip
 					isAnimationActive={false}
 					content={({ active, payload, label }) => {
@@ -787,7 +781,7 @@ function PricingHistoryChart({
 									{hiddenCount ? (
 										<div className="flex items-center gap-2 py-0.5 text-[11px] text-muted-foreground" aria-label={`${hiddenCount} providers omitted`}>
 											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
-											<span className="shrink-0">{hiddenCount}+ Providers</span>
+											<span className="shrink-0">{hiddenCount}+ {tx("Common.nav.providers")}</span>
 											<span className="h-px flex-1 border-t border-dashed border-muted-foreground/40" aria-hidden="true" />
 										</div>
 									) : null}
@@ -831,7 +825,10 @@ export default function PricingInsights({
 	effectivePricingRows,
 }: PricingInsightsProps) {
 	const t = useTranslations("Catalogue.modelDetail.pricing");
+	const tx = useTranslations();
 	const locale = useLocale();
+	const formatUsd = (value: number | null) => formatUsdValue(value, locale, tx("Common.ui.chatSettings.free"));
+	const formatPercent = (value: number | null) => formatPercentValue(value, locale);
 	const formatLocalizedMeterLabel = (meter: string) => {
 		const key = `meters.${meter}`;
 		return t.has(key as never) ? t(key as never) : t("meter");
@@ -1242,6 +1239,7 @@ export default function PricingInsights({
 			activeMeter as (typeof OUTPUT_METER_PREFERENCE)[number],
 		);
 	const effectivePricingHistoryState = useMemo(() => buildPricingHistoryState({
+			tx,
 			rows: historyRows,
 			usageByProvider,
 			observedUsageByProviderPlan,
@@ -1252,7 +1250,7 @@ export default function PricingInsights({
 			nowMs: historyNowMs,
 			customStartMs,
 			customEndMs,
-		}), [activeMeter, customEndMs, customStartMs, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider]);
+		}), [activeMeter, customEndMs, customStartMs, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider, tx]);
 	const hasEffectivePricing =
 		activeMeterSupportsEffectivePricing && effectivePricingHistoryState.hasData;
 	const displayedPricingView: PricingView = pricingView === "effective" && !hasEffectivePricing
@@ -1260,6 +1258,7 @@ export default function PricingInsights({
 		: pricingView;
 	const listedPricingHistoryState = useMemo(() => displayedPricingView === "listed"
 		? buildPricingHistoryState({
+			tx,
 			rows: historyRows,
 			usageByProvider,
 			observedUsageByProviderPlan,
@@ -1271,7 +1270,7 @@ export default function PricingInsights({
 			customStartMs,
 			customEndMs,
 		})
-		: null, [activeMeter, customEndMs, customStartMs, displayedPricingView, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider]);
+		: null, [activeMeter, customEndMs, customStartMs, displayedPricingView, historyNowMs, historyRows, historyRules, observedUsageByProviderPlan, pricingRange, usageByProvider, tx]);
 	const pricingHistoryState = displayedPricingView === "effective"
 		? effectivePricingHistoryState
 		: listedPricingHistoryState!;
@@ -1646,7 +1645,7 @@ export default function PricingInsights({
 													toggleSeries(row);
 												}}
 												aria-pressed={isMainSeriesVisible}
-												aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })}
+												aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan, tx) })}
 											className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}
 											>
 												<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
@@ -1757,7 +1756,7 @@ export default function PricingInsights({
 										>
 						<TableCell className="px-3 py-1.5">
 						<div className="flex items-center gap-2">
-											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 								</button>
 								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
@@ -1835,7 +1834,7 @@ export default function PricingInsights({
 													<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 												) : null}
 												<span className="inline-flex items-center gap-2 font-medium">
-							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
 								<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 											<span className="inline-flex items-center gap-2.5">
@@ -1879,7 +1878,7 @@ export default function PricingInsights({
 												>
 							<TableCell>
 								<div className="flex items-center gap-2">
-															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 									</button>
 									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />

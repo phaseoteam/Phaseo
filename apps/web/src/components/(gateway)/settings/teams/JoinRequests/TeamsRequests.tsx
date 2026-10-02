@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import React from "react";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -71,7 +73,7 @@ export default function TeamsRequests({
 }: Props) {
 	const t = useTranslations("SettingsUI");
 	const s = (key: string, values?: Record<string, string>) =>
-		t(`strings.${key}` as never, values as never);
+		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const [localActiveTeamId, setLocalActiveTeamId] = React.useState<
 		string | undefined
@@ -284,7 +286,7 @@ export default function TeamsRequests({
 											{s("Join requests")}
 						</CardTitle>
 						<CardDescription>
-										{s("Approve or ignore requests to join this workspace.")}
+										{s("phraseApproveOrIgnoreRequestsToJoinThisWorkspace")}
 						</CardDescription>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
@@ -312,7 +314,7 @@ export default function TeamsRequests({
 				<CardContent>
 					{!activeTeam ? (
 						<div className="text-sm text-muted-foreground">
-							{s("No workspaces available.")}
+							{s("phraseNoWorkspacesAvailable")}
 						</div>
 					) : active.length === 0 ? (
 						<div className="text-sm text-muted-foreground">

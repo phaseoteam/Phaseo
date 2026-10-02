@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -50,11 +51,11 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 		const promise = updateManagementKeyLimitsAction(k.id, payload);
 		try {
 			await toast.promise(promise, {
-					loading: t("strings.Saving limits..." as never),
+					loading: t("strings.phraseSavingLimits" as never),
 					success: t("strings.Limits updated" as never),
 				error: (err) => {
 					const message =
-							(err && (err as any).message) || t("strings.Failed to update limits" as never);
+							localizedSettingsError(err, t, "Failed to update limits");
 					return message;
 				},
 			});
@@ -84,7 +85,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 						{t("strings.Management API Key Limits" as never)}
 					</DialogTitle>
 					<DialogDescription>
-						{t("strings.Set request limits for this elevated-privilege key." as never)}
+						{t("strings.phraseSetRequestLimitsForThisElevatedPrivilegeKey" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">

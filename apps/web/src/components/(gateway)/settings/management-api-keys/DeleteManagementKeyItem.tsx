@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -17,7 +18,6 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, ShieldAlert } from "lucide-react";
 import { deleteManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
 import { useTranslations } from "next-intl";
 
 export default function DeleteManagementKeyItem({
@@ -50,7 +50,7 @@ export default function DeleteManagementKeyItem({
 					success: t("keys.deleted"),
 				error: (err) => {
 					return (
-						(err && (err as any).message) || t("keys.failedDelete")
+						localizedSettingsError(err, t, "Action failed", t("keys.failedDelete"))
 					);
 				},
 			});
@@ -89,7 +89,7 @@ export default function DeleteManagementKeyItem({
 						{t("keys.deleteApiKey")}
 					</DialogTitle>
 					<DialogDescription>
-						{t("strings.This action is permanent. This key has elevated privileges." as never)}
+						{t("strings.phraseThisActionIsPermanentThisKeyHasElevatedPrivileges" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onDelete} className="space-y-4">

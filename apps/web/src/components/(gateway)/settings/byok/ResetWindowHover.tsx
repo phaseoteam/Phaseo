@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 
@@ -21,7 +23,7 @@ type ResetWindowHoverProps = {
 
 export default function ResetWindowHover({ iso, triggerText }: ResetWindowHoverProps) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const format = useDisplayFormatters();
 	const { formattingPreferences: preferences } = useDisplayPreferences();
 	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);

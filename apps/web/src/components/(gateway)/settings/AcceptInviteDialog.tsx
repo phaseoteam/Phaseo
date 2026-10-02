@@ -1,4 +1,6 @@
 "use client";
+
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -27,7 +29,7 @@ export default function AcceptInviteDialog({
 	onOpenChange: (next: boolean) => void;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const [code, setCode] = useState("");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [loading, setLoading] = useState(false);
@@ -46,8 +48,8 @@ export default function AcceptInviteDialog({
 				throw new Error(res?.error || s("Failed to submit request"));
 			setMessage(
 				res.requestId
-					? `${s("Request submitted. ID:")} ${res.requestId}`
-					: s("Request submitted.")
+					? `${s("phraseRequestSubmittedID")} ${res.requestId}`
+					: s("phraseRequestSubmitted")
 			);
 			// close after a short delay
 			setTimeout(() => onOpenChange(false), 900);
@@ -64,7 +66,7 @@ export default function AcceptInviteDialog({
 				<DialogHeader>
 					<DialogTitle>{s("Request to Join a Workspace")}</DialogTitle>
 					<DialogDescription>
-						{s("Enter an invite code to request to join a workspace.")}
+						{s("phraseEnterAnInviteCodeToRequestToJoinAWorkspace")}
 					</DialogDescription>
 				</DialogHeader>
 
@@ -82,7 +84,7 @@ export default function AcceptInviteDialog({
 							</Button>
 						</DialogClose>
 						<Button type="submit" disabled={loading}>
-							{loading ? s("Accepting...") : s("Accept")}
+							{loading ? s("phraseAccepting") : s("Accept")}
 						</Button>
 					</DialogFooter>
 				</form>

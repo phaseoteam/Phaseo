@@ -1,4 +1,5 @@
 "use client";
+import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useState } from "react";
@@ -111,11 +112,11 @@ export default function EditManagementKeyItem({
 		const promise = Promise.all(updates);
 		try {
 			await toast.promise(promise, {
-					loading: t("strings.Saving management API key..." as never),
+					loading: t("strings.phraseSavingManagementAPIKey" as never),
 					success: t("strings.Management API key updated" as never),
 				error: (err) => {
 					const message =
-							(err && (err as any).message) || t("strings.Failed to update key" as never);
+							localizedSettingsError(err, t, "Failed to update key");
 					return message;
 				},
 			});
@@ -154,7 +155,7 @@ export default function EditManagementKeyItem({
 						{t("strings.Edit Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
-					{t("strings.Update the lifecycle and access level for this elevated-privilege key." as never)}
+					{t("strings.phraseUpdateTheLifecycleAndAccessLevelForThisElevatedPrivilegeKey" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">
@@ -183,7 +184,7 @@ export default function EditManagementKeyItem({
 							))}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							{template === "read-only" ? t("keys.readOnlyDescription") : template === "read-write" ? t("keys.readWriteDescription") : template === "full-control" ? t("keys.fullControlDescription") : t("strings.Custom scopes are preserved until you select a new access level." as never)}
+							{template === "read-only" ? t("keys.readOnlyDescription") : template === "read-write" ? t("keys.readWriteDescription") : template === "full-control" ? t("keys.fullControlDescription") : t("strings.phraseCustomScopesArePreservedUntilYouSelectANewAccessLevel" as never)}
 						</p>
 					</div>
 					<div className="space-y-2">
@@ -194,7 +195,7 @@ export default function EditManagementKeyItem({
 							onChange={(e) => setExpiresAtLocal(e.target.value)}
 						/>
 						<p className="text-xs text-muted-foreground">
-							{t("strings.Optional. Clear this field to remove the expiry date." as never)}
+							{t("strings.phraseOptionalClearThisFieldToRemoveTheExpiryDate" as never)}
 						</p>
 					</div>
 					<div className="flex items-center justify-between">

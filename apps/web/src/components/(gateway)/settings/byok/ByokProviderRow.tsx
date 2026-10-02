@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { ChevronRight } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { MAX_BYOK_KEYS_PER_PROVIDER } from "@/lib/byok/constants";
@@ -20,6 +20,7 @@ type ByokProviderRowProps = {
 };
 
 export default function ByokProviderRow({ provider, entries }: ByokProviderRowProps) {
+	const t = useTranslations("SettingsUI.finalSettingsCopy");
 	const router = useRouter();
 	const priorityCount = entries.filter((entry) => entry.routingMode === "priority").length;
 	const fallbackCount = entries.length - priorityCount;
@@ -41,8 +42,8 @@ export default function ByokProviderRow({ provider, entries }: ByokProviderRowPr
 					<div className="truncate text-sm font-medium">{provider.name}</div>
 					<div className="text-xs text-muted-foreground">
 						{entries.length === 0
-							? "No keys configured"
-							: `${priorityCount} prioritized · ${fallbackCount} fallback`}
+							? t("noKeysConfigured")
+							: t("providerKeyCounts", { priority: priorityCount, fallback: fallbackCount })}
 					</div>
 				</div>
 			</div>

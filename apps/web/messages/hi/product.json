@@ -1693,7 +1693,9 @@
 		"save": "सहेजें",
 		"model": "मॉडल",
 		"throughput": "थ्रूपुट",
-		"responsePlaceholder": "प्रतिक्रिया यहाँ दिखाई देगी..."
+		"responsePlaceholder": "प्रतिक्रिया यहाँ दिखाई देगी...",
+		"gatewayLabel": "गेटवे",
+		"openaiThroughput": "OpenAI API (टोकन/सेकंड)"
 	},
 	"gatewayBenchmark": {
 		"title": "गेटवे प्रदर्शन तुलना",

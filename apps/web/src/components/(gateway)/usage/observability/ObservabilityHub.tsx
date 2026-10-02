@@ -780,7 +780,8 @@ function DonutBreakdownChart({
 	data: ObservabilityBreakdownItem[];
 	height?: number;
 }) {
-	return <BarBreakdownChart data={data} label="value" height={height} />;
+	const t = useTranslations("SettingsUI.observability");
+	return <BarBreakdownChart data={data} label={t("value")} height={height} />;
 }
 
 function timeSeriesChartConfig(data: ObservabilityTimeSeriesChart) {
@@ -883,6 +884,7 @@ function TimeSeriesTooltip({
 	activeSeries: string | null;
 	showPercent?: boolean;
 }) {
+	const tAuditCopy = useTranslations();
 	if (!active || !payload?.length) return null;
 	const visiblePayload = [...payload]
 		.sort((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
@@ -895,7 +897,7 @@ function TimeSeriesTooltip({
 			<div className="mb-2 flex items-center justify-between gap-4 text-xs font-medium">
 				<span>{label}</span>
 				<span className="font-mono text-muted-foreground">
-					{total > 0 ? formatNumber(total) : "No activity"}
+					{total > 0 ? formatNumber(total) : tAuditCopy("Common.ui.auditCopy.noActivity")}
 				</span>
 			</div>
 			<div className="space-y-1.5">

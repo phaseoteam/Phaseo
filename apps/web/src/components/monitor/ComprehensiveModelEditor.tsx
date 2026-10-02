@@ -787,15 +787,15 @@ export function ComprehensiveModelEditor({
 				</div>
 
 				<div className="space-y-2">
-					<Label htmlFor="recommended-successor">Recommended Successor Model ID</Label>
+					<Label htmlFor="recommended-successor">{tUi("modelEditor.recommendedSuccessor")}</Label>
 					<Input
 						id="recommended-successor"
 						value={replacementModelId}
 						onChange={(e) => setReplacementModelId(e.target.value)}
-						placeholder="Shown in model deprecation notices"
+						placeholder={tUi("modelEditor.recommendedSuccessorDescription")}
 					/>
 					<p className="text-xs text-muted-foreground">
-						Independent of lineage; used as the recommended migration target in notifications.
+						{tUi("modelEditor.successorNotificationHelp")}
 					</p>
 				</div>
 

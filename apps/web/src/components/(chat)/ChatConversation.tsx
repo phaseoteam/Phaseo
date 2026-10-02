@@ -176,6 +176,7 @@ export function ChatConversation({
 	const t = useTranslations("Common.ui.accessibility");
 	const tChatRoom = useTranslations("Common.ui.chatRooms");
 	const tUi = useTranslations("Common.ui");
+	const tRequest = useTranslations("Product.tools.request");
 	const tProductChat = useTranslations("Product.chat");
 	const isUnified = mode === "unified";
 	const pathname = usePathname();
@@ -966,7 +967,7 @@ export function ChatConversation({
 						viewportRef={scrollViewportRef}
 						viewportRender={
 							<MessageScroller.Viewport
-								aria-label="Messages"
+								aria-label={tRequest("messages")}
 								role="region"
 							/>
 						}

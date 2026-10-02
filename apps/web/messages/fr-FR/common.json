@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "Alias enregistrés. L’actualisation du cache public a échoué ; réessayez depuis les contrôles du cache.",
 				"noticeCacheFailed": "Avis enregistré. L’actualisation du cache public a échoué ; réessayez depuis les contrôles du cache.",
 				"sectionStillLoading": "{section} : les données sont encore en cours de chargement. Patientez un instant et réessayez."
-			}
+			},
+			"successorNotificationHelp": "Indépendant de la filiation ; utilisé comme cible de migration recommandée dans les notifications."
 		},
 		"auditDataTable": {
 			"actions": "Actions",
@@ -2387,7 +2388,47 @@
 			"frame": "image vidéo",
 			"frames": "images vidéo",
 			"message": "message",
-			"messages": "messages"
+			"messages": "messages",
+			"serviceTierLineStyles": "Styles de ligne par niveau de service"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, one {# jour} other {# jours}}",
+			"allPercentileBands": "Toutes les bandes de percentiles disponibles",
+			"hiddenProviderObservations": "Observations pour l’ensemble du modèle ; les identités des fournisseurs sont masquées",
+			"providerObservations": "{resolution, select, hour {Observations horaires} other {Observations quotidiennes}} pour {count, plural, one {# fournisseur enregistré} other {les # fournisseurs enregistrés}}",
+			"modelWide": "Ensemble du modèle",
+			"changePercent": "Variation de {value} pour cent",
+			"freeRouterDescription": "Achemine chaque requête vers un groupe de modèles gratuits admissibles avec un équilibrage tenant compte des fournisseurs. Consultez ici les modèles actuellement admissibles et l’utilisation routée récente.",
+			"modelCreator": "son créateur",
+			"inputOutputDescription": "Il accepte des entrées de type {inputs} et produit des sorties de type {outputs}.",
+			"inputDescription": "Il accepte des entrées de type {inputs}.",
+			"outputDescription": "Il est conçu pour les tâches de type {outputs}.",
+			"modelDetailsRetry": "Impossible de charger les détails du modèle. Nous réessaierons automatiquement.",
+			"loadingModelDetails": "Chargement des détails du modèle…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", non trié",
+			"sortedAscending": ", tri croissant",
+			"sortedDescending": ", tri décroissant",
+			"sendDiscordAnnouncement": "Envoyer l’annonce sur Discord",
+			"announcementSent": "Annonce envoyée sur Discord",
+			"announcementStateNotSaved": "L’annonce a été envoyée sur Discord, mais son état n’a pas pu être enregistré.",
+			"announcementFailed": "Impossible d’envoyer l’annonce sur Discord.",
+			"invalidModelId": "Identifiant de modèle invalide.",
+			"modelNotFound": "Modèle introuvable dans le catalogue.",
+			"modelIdMissing": "L’identifiant du modèle est absent de l’entrée du catalogue."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "Impossible de préparer votre historique de chat. Rechargez pour réessayer.",
+			"loadingChat": "Chargement du chat…",
+			"noChatsWithTag": "Aucun chat avec cette étiquette.",
+			"dateUnknown": "Date inconnue",
+			"rightOnTheMoney": "Le prix est juste",
+			"priceLocked": "Prix verrouillé",
+			"workspaceSuffix": " {named, select, yes {pour {workspace}} other {pour cet espace de travail}}",
+			"noActivity": "Aucune activité",
+			"requestErrorMessage": "Message d’erreur de la requête",
+			"openDetails": "Ouvrir les détails"
 		}
 	}
 }

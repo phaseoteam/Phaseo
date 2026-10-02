@@ -1,3 +1,4 @@
+import { settingsStringKey } from "@/i18n/settings-string-keys";
 type MessageTranslator = {
 	(key: never): string;
 	has(key: never): boolean;
@@ -24,9 +25,9 @@ export function localizedSettingsError(
 	fallbackMessage?: string,
 ): string {
 	const message = getErrorMessage(error);
-	const messageKey = `strings.${message}`;
+	const messageKey = settingsStringKey(message);
 	if (message && translate.has(messageKey as never)) {
 		return translate(messageKey as never);
 	}
-	return fallbackMessage ?? translate(`strings.${fallbackKey}` as never);
+	return fallbackMessage ?? translate(settingsStringKey(fallbackKey) as never);
 }

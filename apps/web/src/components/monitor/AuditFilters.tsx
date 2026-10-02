@@ -50,6 +50,7 @@ export function AuditFilters({
 	filteredCount,
 	providerOptions,
 }: AuditFiltersProps) {
+	const tAuditCopy = useTranslations();
 	const tUi = useTranslations("Common.ui");
 	const [searchQuery, setSearchQuery] = useQueryState("search", {
 		defaultValue: "",
@@ -719,10 +720,10 @@ export function AuditFilters({
 						>
 							{tUi("filters.releaseTag")}: {" "}
 							{filterReleaseDateOp === "gt"
-								? "After"
+								? tAuditCopy("Common.ui.filters.after")
 								: filterReleaseDateOp === "lt"
-									? "Before"
-									: "On"}{" "}
+									? tAuditCopy("Common.ui.filters.before")
+									: tAuditCopy("Common.ui.filters.on")}{" "}
 							{filterReleaseDateValue}
 							<X className="h-3 w-3" />
 						</Badge>

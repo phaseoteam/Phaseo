@@ -64,10 +64,10 @@ interface ModelPerformanceDashboardProps {
 
 type PerformanceRangeDays = 1 | 3 | 7;
 
-const PERFORMANCE_RANGES: Array<{ days: PerformanceRangeDays; label: string }> = [
-	{ days: 1, label: "1 day" },
-	{ days: 3, label: "3 days" },
-	{ days: 7, label: "7 days" },
+const PERFORMANCE_RANGES: Array<{ days: PerformanceRangeDays }> = [
+	{ days: 1 },
+	{ days: 3 },
+	{ days: 7 },
 ];
 
 const pointTimestamp = (point: { bucket?: string; day?: string }) =>
@@ -107,6 +107,7 @@ export default function ModelPerformanceDashboard({
 	headerDescription,
 }: ModelPerformanceDashboardProps) {
 	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
 	const locale = useLocale();
 	const [initialSelection] = useState<{
 		colo: string | null;
@@ -282,7 +283,7 @@ export default function ModelPerformanceDashboard({
 								variant="outline"
 								size="sm"
 								className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:flex-none"
-								aria-label="Select performance time range"
+								aria-label={t("selectTimeRange")}
 							>
 								<CalendarDays className="size-3.5" />
 								{selectedRangeDays}D
@@ -297,7 +298,7 @@ export default function ModelPerformanceDashboard({
 							>
 								{PERFORMANCE_RANGES.map((range) => (
 									<DropdownMenuRadioItem key={range.days} value={String(range.days)}>
-										{range.label}
+										{tx("Common.ui.publicModelCopy.days", { count: range.days })}
 									</DropdownMenuRadioItem>
 								))}
 							</DropdownMenuRadioGroup>

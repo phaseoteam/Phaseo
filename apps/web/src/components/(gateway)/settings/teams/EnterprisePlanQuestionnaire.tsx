@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { ArrowRight, Check, Loader2, MessagesSquare, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -32,7 +34,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 	const t = useTranslations("SettingsUI");
 	const s = React.useCallback(
 		(key: string, values?: Record<string, string>) =>
-			t(`strings.${key}` as never, values as never),
+			t(settingsStringKey(key) as never, values as never),
 		[t],
 	);
 	const format = useDisplayFormatters();
@@ -104,7 +106,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 						);
 					})}
 				</div>
-			<p className="text-xs text-muted-foreground">{s("Quote valid until {date}. USD billing only.", { date: format.dateTime(quote.expiresAt) })}</p>
+			<p className="text-xs text-muted-foreground">{s("phraseQuoteValidUntilDateUSDBillingOnly", { date: format.dateTime(quote.expiresAt) })}</p>
 			</div>
 		);
 	}
@@ -113,12 +115,12 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 		<section className="space-y-6">
 			<div className="border-b border-border/60 pb-5">
 				<h2 className="text-xl font-semibold">{s("Build your Enterprise plan")}</h2>
-				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">{s("Tell us the shape of your workspace. You will get a fixed USD price immediately—no sales call and no custom contract.")}</p>
+				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">{s("phraseTellUsTheShapeOfYourWorkspaceYouWillGetAFixedUSDPriceImmediatelyNoSalesCallAndNoCustomContract")}</p>
 			</div>
 			<div className="grid gap-6 lg:grid-cols-[0.75fr_1fr]">
 				<div>
 					<div className="space-y-2"><Label htmlFor="enterprise-members">{s("Active members")}</Label><div className="relative"><Users className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input id="enterprise-members" className="pl-9" inputMode="numeric" min={ENTERPRISE_MIN_SELF_SERVE_MEMBERS} max={ENTERPRISE_MAX_QUOTED_MEMBERS} type="number" value={memberCount} onChange={(event) => setMemberCount(event.target.value)} /></div></div>
-					<p className="mt-3 text-xs leading-5 text-muted-foreground">{s("Volume discounts are applied automatically. Credit funding is billed separately.")}</p>
+					<p className="mt-3 text-xs leading-5 text-muted-foreground">{s("phraseVolumeDiscountsAreAppliedAutomaticallyCreditFundingIsBilledSeparately")}</p>
 				</div>
 				<div className="border-y border-border/60 py-1">
 					<p className="mb-3 text-sm font-medium">{s("What will you use?")}</p>
@@ -127,7 +129,7 @@ export default function EnterprisePlanQuestionnaire({ canEdit, workspaceId }: Pr
 						{ id: "needs-scim", label: s("SCIM provisioning"), icon: Users, checked: needsScim, set: setNeedsScim },
 						{ id: "wants-slack", label: s("Slack Connect support"), icon: MessagesSquare, checked: wantsSlackConnect, set: setWantsSlackConnect },
 					].map(({ id, label, icon: Icon, checked, set }) => <label key={id} htmlFor={id} className="flex cursor-pointer items-center gap-3 border-b border-border/50 py-3 last:border-0"><Checkbox id={id} checked={checked} onCheckedChange={(value) => set(value === true)} /><Icon className="h-4 w-4 text-muted-foreground" /><span className="text-sm">{label}</span></label>)}
-					<p className="mt-4 text-xs leading-5 text-muted-foreground">{s("All Enterprise features are included in one subscription.")}</p>
+					<p className="mt-4 text-xs leading-5 text-muted-foreground">{s("phraseAllEnterpriseFeaturesAreIncludedInOneSubscription")}</p>
 				</div>
 			</div>
 			<div className="flex justify-end border-t border-border/60 pt-5"><Button onClick={calculateQuote} disabled={working || !canEdit}>{working ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}{s("Calculate my price")} <ArrowRight className="ml-2 h-4 w-4" /></Button></div>

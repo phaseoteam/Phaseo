@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "Alias guardados. No se pudo actualizar la caché pública; reintenta desde los controles de caché.",
 				"noticeCacheFailed": "Aviso guardado. No se pudo actualizar la caché pública; reintenta desde los controles de caché.",
 				"sectionStillLoading": "{section}: los datos aún se están cargando. Espera un momento y reintenta."
-			}
+			},
+			"successorNotificationHelp": "Independiente del linaje; se utiliza como destino de migración recomendado en las notificaciones."
 		},
 		"auditDataTable": {
 			"actions": "Acciones",
@@ -2387,7 +2388,47 @@
 			"frame": "fotograma",
 			"frames": "fotogramas",
 			"message": "mensaje",
-			"messages": "mensajes"
+			"messages": "mensajes",
+			"serviceTierLineStyles": "Estilos de línea por nivel de servicio"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, one {# día} other {# días}}",
+			"allPercentileBands": "Todas las bandas de percentiles disponibles",
+			"hiddenProviderObservations": "Observaciones de todo el modelo; las identidades de los proveedores están ocultas",
+			"providerObservations": "{resolution, select, hour {Observaciones horarias} other {Observaciones diarias}} de {count, plural, one {# proveedor registrado} other {los # proveedores registrados}}",
+			"modelWide": "Todo el modelo",
+			"changePercent": "Cambio del {value} por ciento",
+			"freeRouterDescription": "Dirige cada solicitud a un grupo de modelos gratuitos elegibles con equilibrio según el proveedor. Consulta aquí los modelos elegibles actuales y el uso enrutado reciente.",
+			"modelCreator": "su creador",
+			"inputOutputDescription": "Acepta entradas de {inputs} y produce salidas de {outputs}.",
+			"inputDescription": "Acepta entradas de {inputs}.",
+			"outputDescription": "Está diseñado para cargas de trabajo de {outputs}.",
+			"modelDetailsRetry": "No se pudieron cargar los detalles del modelo. Volveremos a intentarlo automáticamente.",
+			"loadingModelDetails": "Cargando detalles del modelo…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", sin ordenar",
+			"sortedAscending": ", orden ascendente",
+			"sortedDescending": ", orden descendente",
+			"sendDiscordAnnouncement": "Enviar anuncio a Discord",
+			"announcementSent": "Anuncio enviado a Discord",
+			"announcementStateNotSaved": "El anuncio se envió a Discord, pero no se pudo guardar su estado.",
+			"announcementFailed": "No se pudo enviar el anuncio a Discord.",
+			"invalidModelId": "ID de modelo no válido.",
+			"modelNotFound": "No se encontró el modelo en el catálogo.",
+			"modelIdMissing": "Falta el ID del modelo en el registro del catálogo."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "No se pudo preparar tu historial de chat. Recarga para volver a intentarlo.",
+			"loadingChat": "Cargando chat…",
+			"noChatsWithTag": "No hay chats con esta etiqueta.",
+			"dateUnknown": "Fecha desconocida",
+			"rightOnTheMoney": "Has acertado el precio",
+			"priceLocked": "Precio fijado",
+			"workspaceSuffix": " {named, select, yes {para {workspace}} other {para este espacio de trabajo}}",
+			"noActivity": "Sin actividad",
+			"requestErrorMessage": "Mensaje de error de la solicitud",
+			"openDetails": "Abrir detalles"
 		}
 	}
 }

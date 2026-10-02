@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,13 +47,13 @@ export default function TopModels({
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>{t(`strings.${meta.titleKey}` as never)}</CardTitle>
+				<CardTitle>{t(settingsStringKey(meta.titleKey) as never)}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<Table>
 					<TableHeader>
 						<TableRow>
-							<TableHead>{t(`strings.${meta.columnKey}` as never)}</TableHead>
+							<TableHead>{t(settingsStringKey(meta.columnKey) as never)}</TableHead>
 							<TableHead className="text-right">{t("strings.Spend" as never)}</TableHead>
 							<TableHead className="text-right">
 								{t("strings.Requests" as never)}

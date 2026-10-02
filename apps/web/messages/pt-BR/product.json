@@ -1665,7 +1665,9 @@
 		"save": "Salvar",
 		"model": "Modelo",
 		"throughput": "Vazão",
-		"responsePlaceholder": "A resposta aparecerá aqui..."
+		"responsePlaceholder": "A resposta aparecerá aqui...",
+		"gatewayLabel": "Gateway",
+		"openaiThroughput": "OpenAI API (tokens/s)"
 	},
 	"feedback": {
 		"category": "Categoria do feedback",

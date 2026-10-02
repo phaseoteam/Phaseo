@@ -34,6 +34,8 @@
 		"resend:incident:outreach": "tsx scripts/resend/send-incident-outreach.ts",
 		"test:live:playground-text": "tsx scripts/live-playground-text-smoke.ts",
 		"test": "jest --runInBand",
+		"audit:i18n:ui": "node scripts/audit-localised-ui.mjs",
+		"test:i18n:ui-audit": "node scripts/audit-localised-ui.mjs --self-test",
 		"validate:i18n": "tsx scripts/validate-localisation.ts && node scripts/generate-docs-search.mjs --check",
 		"test:i18n": "pnpm run validate:i18n"
 	},

@@ -995,7 +995,8 @@
 				"aliasesCacheFailed": "Aliases saved. Public cache refresh failed; retry from Cache controls.",
 				"noticeCacheFailed": "Notice saved. Public cache refresh failed; retry from Cache controls.",
 				"sectionStillLoading": "{section} are still loading. Please wait a moment and retry."
-			}
+			},
+			"successorNotificationHelp": "Independent of lineage; used as the recommended migration target in notifications."
 		},
 		"auditDataTable": {
 			"actions": "Actions",
@@ -2387,7 +2388,47 @@
 			"frame": "frame",
 			"frames": "frames",
 			"message": "message",
-			"messages": "messages"
+			"messages": "messages",
+			"serviceTierLineStyles": "Service tier line styles"
+		},
+		"publicModelCopy": {
+			"days": "{count, plural, one {# day} other {# days}}",
+			"allPercentileBands": "All available percentile bands",
+			"hiddenProviderObservations": "Model-wide observations; provider identities are hidden",
+			"providerObservations": "{resolution, select, hour {Hourly observations} other {Daily observations}} for all {count, plural, one {# recorded provider} other {# recorded providers}}",
+			"modelWide": "Model-wide",
+			"changePercent": "Change {value} percent",
+			"freeRouterDescription": "Routes each request to an eligible free model pool with provider-aware balancing. Review the currently eligible models and recent routed usage here.",
+			"modelCreator": "the model creator",
+			"inputOutputDescription": "It accepts {inputs} inputs and produces {outputs} outputs.",
+			"inputDescription": "It accepts {inputs} inputs.",
+			"outputDescription": "It is designed for {outputs} workloads.",
+			"modelDetailsRetry": "Model details could not be loaded. We’ll retry automatically.",
+			"loadingModelDetails": "Loading model details…"
+		},
+		"finalSharedCopy": {
+			"notSorted": ", not sorted",
+			"sortedAscending": ", sorted ascending",
+			"sortedDescending": ", sorted descending",
+			"sendDiscordAnnouncement": "Send Discord announcement",
+			"announcementSent": "Discord announcement sent",
+			"announcementStateNotSaved": "Discord announcement sent, but its state could not be saved.",
+			"announcementFailed": "Could not send the Discord announcement.",
+			"invalidModelId": "Invalid model ID.",
+			"modelNotFound": "Model not found in the catalog.",
+			"modelIdMissing": "Model ID is missing from the catalog record."
+		},
+		"auditCopy": {
+			"chatHistoryFailed": "Unable to prepare your chat history. Reload to retry.",
+			"loadingChat": "Loading chat…",
+			"noChatsWithTag": "No chats with this tag.",
+			"dateUnknown": "Date unknown",
+			"rightOnTheMoney": "Right on the money",
+			"priceLocked": "Price locked",
+			"workspaceSuffix": " {named, select, yes {for {workspace}} other {for this workspace}}",
+			"noActivity": "No activity",
+			"requestErrorMessage": "Request error message",
+			"openDetails": "Open details"
 		}
 	}
 }

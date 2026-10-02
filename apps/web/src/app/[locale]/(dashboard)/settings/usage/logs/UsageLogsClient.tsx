@@ -164,7 +164,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		return (
 			<Card>
 				<CardHeader><CardTitle>{t("strings.Logs unavailable" as never)}</CardTitle></CardHeader>
-				<CardContent><p className="text-sm text-muted-foreground">{t("strings.We couldn't load request logs. Try again in a moment." as never)}</p></CardContent>
+				<CardContent><p className="text-sm text-muted-foreground">{t("strings.phraseWeCouldnTLoadRequestLogsTryAgainInAMoment" as never)}</p></CardContent>
 			</Card>
 		);
 	}
@@ -173,7 +173,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		return (
 			<Card>
 				<CardHeader><CardTitle>{t("strings.Workspace access changed" as never)}</CardTitle></CardHeader>
-				<CardContent><p className="text-sm text-muted-foreground">{t("strings.You no longer have access to this workspace. Select another workspace to view its logs." as never)}</p></CardContent>
+				<CardContent><p className="text-sm text-muted-foreground">{t("strings.phraseYouNoLongerHaveAccessToThisWorkspaceSelectAnotherWorkspaceToViewItsLogs" as never)}</p></CardContent>
 			</Card>
 		);
 	}
@@ -186,7 +186,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				</CardHeader>
 				<CardContent>
 					<p className="text-sm text-muted-foreground">
-						{t("strings.Join or create a workspace to view request logs." as never)}
+						{t("strings.phraseJoinOrCreateAWorkspaceToViewRequestLogs" as never)}
 					</p>
 				</CardContent>
 			</Card>
@@ -213,12 +213,12 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 	const sessionProviderFilter = firstSearchParam(sp?.session_provider)?.trim() || null;
 	const pageTitle = view === "logs" ? t("strings.Requests" as never) : view === "upstream" ? t("strings.Upstream Requests" as never) : view === "jobs" ? forcedJobKind === "video" ? t("strings.Videos" as never) : forcedJobKind === "batch" ? t("strings.Batches" as never) : t("strings.Jobs" as never) : t("strings.Sessions" as never);
 	const pageDescription = view === "logs"
-		? t("strings.Inspect gateway requests, routing decisions, usage, and errors." as never)
+		? t("strings.phraseInspectGatewayRequestsRoutingDecisionsUsageAndErrors" as never)
 		: view === "upstream"
-			? t("strings.Review each generation’s final provider, attempts, and latency." as never)
+			? t("strings.phraseReviewEachGenerationSFinalProviderAttemptsAndLatency" as never)
 			: view === "jobs"
-				? forcedJobKind === "video" ? t("strings.Inspect asynchronous video generation jobs." as never) : forcedJobKind === "batch" ? t("strings.Inspect asynchronous batch processing jobs." as never) : t("strings.Inspect asynchronous video and batch jobs." as never)
-				: t("strings.Inspect grouped request activity across apps and models." as never);
+				? forcedJobKind === "video" ? t("strings.phraseInspectAsynchronousVideoGenerationJobs" as never) : forcedJobKind === "batch" ? t("strings.phraseInspectAsynchronousBatchProcessingJobs" as never) : t("strings.phraseInspectAsynchronousVideoAndBatchJobs" as never)
+				: t("strings.phraseInspectGroupedRequestActivityAcrossAppsAndModels" as never);
 
 	let content: React.ReactNode;
 	let filters: React.ReactNode = null;
@@ -275,8 +275,8 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				settingsTargetId="request-column-settings"
 				initialJobs={data.recentJobs}
 				title={t("strings.Async jobs" as never)}
-				description={t("strings.Recent long-running video and batch jobs, including status, billing, and webhook delivery history." as never)}
-				emptyMessage={t("strings.No async jobs found in this workspace yet." as never)}
+				description={t("strings.phraseRecentLongRunningVideoAndBatchJobsIncludingStatusBillingAndWebhookDeliveryHistory" as never)}
+				emptyMessage={t("strings.phraseNoAsyncJobsFoundInThisWorkspaceYet" as never)}
 				refreshLimit={50}
 				includeWithoutWebhook
 				providerNames={providerNames}
@@ -394,7 +394,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 									<p className="mt-1 font-mono font-medium">{formatLabelSpend(data.labelSummary.totalCostNanos, locale)}</p>
 								</div>
 							</div>
-							{data.labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("strings.Spend is calculated from a 5,000-request sample." as never)}</p> : null}
+							{data.labelSummary.isSampled ? <p className="basis-full text-xs text-muted-foreground">{t("strings.phraseSpendIsCalculatedFromA5000RequestSample" as never)}</p> : null}
 						</CardContent>
 					</Card>
 				) : null}

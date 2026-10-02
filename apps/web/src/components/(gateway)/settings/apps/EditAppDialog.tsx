@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useEffect, useState } from "react";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import NextImage from "next/image";
@@ -79,7 +81,7 @@ export default function EditAppDialog({
 	trigger,
 }: EditAppDialogProps) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [internalOpen, setInternalOpen] = useState(false);
 	const [title, setTitle] = useState(app.title);
@@ -223,7 +225,7 @@ export default function EditAppDialog({
 				}
 			})();
 			toast.promise(updatePromise, {
-				loading: s("Saving changes..."),
+				loading: s("phraseSavingChanges"),
 				success: s("App updated"),
 				error: (err) =>
 					localizedSettingsError(err, t, "Failed to update app"),
@@ -264,7 +266,7 @@ export default function EditAppDialog({
 				<DialogHeader>
 					<DialogTitle>{s("Edit app")}</DialogTitle>
 					<DialogDescription>
-						{s("Update the metadata shown on your app profile.")}
+						{s("phraseUpdateTheMetadataShownOnYourAppProfile")}
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={onSave} className="space-y-4">
@@ -320,7 +322,7 @@ export default function EditAppDialog({
 							) : imageValidation === "invalid" ? (
 								<div className="flex items-center gap-2 text-xs text-destructive">
 									<ImageOff className="size-4" />
-									{s("This URL did not load a valid image.")}
+									{s("phraseThisURLDidNotLoadAValidImage")}
 								</div>
 							) : imageValidation === "valid" && validatedImageUrl ? (
 								<div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
@@ -337,7 +339,7 @@ export default function EditAppDialog({
 								</div>
 							) : (
 								<p className="text-xs text-muted-foreground">
-									{s("Leave empty to use the app initial.")}
+									{s("phraseLeaveEmptyToUseTheAppInitial")}
 								</p>
 							)}
 						</div>
@@ -418,7 +420,7 @@ export default function EditAppDialog({
 								imageValidation === "invalid"
 							}
 						>
-							{loading ? s("Saving...") : s("Save")}
+							{loading ? s("phraseSaving") : s("Save")}
 						</Button>
 					</DialogFooter>
 				</form>

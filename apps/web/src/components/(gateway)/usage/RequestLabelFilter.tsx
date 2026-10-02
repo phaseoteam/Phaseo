@@ -55,7 +55,7 @@ export default function RequestLabelFilter({ facets }: { facets: UsageLabelFacet
 					<Command>
 						<CommandInput placeholder={t("strings.Search labels…" as never)} />
 						<CommandList className="max-h-[320px]">
-							<CommandEmpty>{facets.length ? t("strings.No matching labels." as never) : t("strings.No request labels in this time range." as never)}</CommandEmpty>
+							<CommandEmpty>{facets.length ? t("strings.phraseNoMatchingLabels" as never) : t("strings.phraseNoRequestLabelsInThisTimeRange" as never)}</CommandEmpty>
 							<CommandGroup heading={t("strings.Request labels" as never)}>
 								{facets.map((facet) => {
 									const selected = active?.key === facet.key && active.value === facet.value;

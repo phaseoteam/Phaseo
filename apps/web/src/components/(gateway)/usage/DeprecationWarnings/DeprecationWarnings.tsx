@@ -64,6 +64,7 @@ function AlertCard({
 	row: DeprecationWarning;
 	mode: AlertCardMode;
 }) {
+	const tAuditCopy = useTranslations();
 	const t = useTranslations("SettingsUI");
 	const modelOrgId = deriveOrganisationId(row.modelId, row.organisationId);
 	const replacementOrgId = row.replacementModelId
@@ -155,7 +156,7 @@ function AlertCard({
 					<span>
 						{t("strings.Retired" as never)}{" "}
 						<span className="font-medium text-foreground">
-							{row.retirementDate ? <DisplayDate value={row.retirementDate} /> : "unknown"}
+							{row.retirementDate ? <DisplayDate value={row.retirementDate} /> : tAuditCopy("Common.status.unknown")}
 						</span>
 					</span>
 				)}
@@ -163,7 +164,7 @@ function AlertCard({
 
 			{mode === "retired" ? (
 				<p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-					{t("strings.This model is retired and no longer usable." as never)}
+					{t("strings.phraseThisModelIsRetiredAndNoLongerUsable" as never)}
 				</p>
 			) : null}
 
@@ -181,7 +182,7 @@ function AlertCard({
 			) : mode === "deprecated" ? (
 				<div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
 					<ArrowRight className="h-3 w-3 shrink-0 opacity-60" />
-					<span>{t("strings.No recommended replacement yet." as never)}</span>
+					<span>{t("strings.phraseNoRecommendedReplacementYet" as never)}</span>
 				</div>
 			) : null}
 		</div>

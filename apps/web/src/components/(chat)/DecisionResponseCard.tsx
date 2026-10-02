@@ -1,3 +1,4 @@
+import { useTranslations, useLocale } from "next-intl";
 import { ChevronDown } from "lucide-react";
 
 type RecordValue = Record<string, unknown>;
@@ -61,15 +62,15 @@ function formatLabel(value: string): string {
 		.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function formatPercent(value: number | undefined): string {
+function formatPercent(value: number | undefined, locale = "en-GB"): string {
 	if (value === undefined) return "-";
 	const percent = Math.round(Math.max(0, Math.min(1, value)) * 1000) / 10;
-	return `${Number.isInteger(percent) ? percent.toFixed(0) : percent.toFixed(1)}%`;
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(percent / 100);
 }
 
-function formatDecimal(value: number | undefined): string {
+function formatDecimal(value: number | undefined, locale = "en-GB"): string {
 	if (value === undefined) return "-";
-	return value.toFixed(2).replace(/\.00$/, "").replace(/(\.\d)0$/, "$1");
+	return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
 }
 
 function formatUsd(value: string | undefined): string | null {
@@ -214,6 +215,7 @@ function dominantScoreOption(
 function answerValue(
 	answer: DecisionAnswer,
 	probabilities: Array<[string, number]>,
+	locale = "en-GB",
 ): string {
 	if (answer.type === "choice") return formatLabel(answer.choice ?? "No choice");
 	if (answer.type === "score") {
@@ -223,7 +225,7 @@ function answerValue(
 	if (answer.type === "noul") {
 		return answer.noul !== undefined && answer.noul >= 0.5 ? "Yes" : "No";
 	}
-	return answer.choice ? formatLabel(answer.choice) : formatDecimal(answer.score);
+	return answer.choice ? formatLabel(answer.choice) : formatDecimal(answer.score, locale);
 }
 
 function probabilityEntries(answer: DecisionAnswer): Array<[string, number]> {
@@ -254,13 +256,15 @@ const probabilityColors = [
 ];
 
 function ProbabilityStrip({ entries }: { entries: Array<[string, number]> }) {
+
+	const locale = useLocale();
 	const total = entries.reduce((sum, [, probability]) => sum + probability, 0);
 	return (
 		<div
 			className="flex h-2 overflow-hidden rounded-full bg-muted"
 			role="img"
 			aria-label={entries
-				.map(([label, probability]) => `${label}: ${formatPercent(probability)}`)
+				.map(([label, probability]) => `${label}: ${formatPercent(probability, locale)}`)
 				.join(", ")}
 		>
 			{entries.map(([label, probability], index) => (
@@ -283,6 +287,8 @@ function ProbabilityRows({
 	answer: DecisionAnswer;
 	entries: Array<[string, number]>;
 }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const locale = useLocale();
 	return (
 		<div className="space-y-2.5">
 			{entries.map(([option, probability], index) => {
@@ -290,7 +296,7 @@ function ProbabilityRows({
 				const description = isScore ? undefined : answer.legend?.[option];
 				const label = isScore
 					? scoreLevelLabel(answer, option)
-					: formatLabel(option);
+					: answer.type === "noul" ? (option === "Yes" ? tCopy("copyYes") : tCopy("copyNo")) : formatLabel(option);
 				return (
 					<div key={option} className="space-y-1">
 						<div className="flex items-start justify-between gap-3 text-xs">
@@ -310,7 +316,7 @@ function ProbabilityRows({
 								) : null}
 							</div>
 							<span className="shrink-0 font-mono tabular-nums text-foreground">
-								{formatPercent(probability)}
+								{formatPercent(probability, locale)}
 							</span>
 						</div>
 						<div className="h-1.5 overflow-hidden rounded-full bg-muted">
@@ -329,13 +335,15 @@ function ProbabilityRows({
 }
 
 function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
+	const locale = useLocale();
 	const isNoul = answer.type === "noul";
 	const probabilities = isNoul
 		? noulProbabilityEntries(answer)
 		: probabilityEntries(answer);
 	const confidence = answer.confidence;
 	const displayProbabilities =
-		answer.type === "score"
+		answer.type === "noul" ? probabilities.map(([option, probability]) => [option === "Yes" ? tCopy("copyYes") : tCopy("copyNo"), probability] as [string, number]) : answer.type === "score"
 			? probabilities.map(([option, probability]) => [
 					scoreLevelLabel(answer, option),
 					probability,
@@ -360,21 +368,20 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 			<div className="flex items-end justify-between gap-3">
 				<div className="min-w-0">
 					<div className="truncate text-lg font-semibold tracking-tight text-foreground">
-						{answerValue(answer, probabilities)}
+						{answer.type === "choice" && !answer.choice ? tCopy("noChoice") : answer.type === "score" && !dominantScoreOption(answer, probabilities) ? tCopy("copyScore") : answerValue(answer, probabilities, locale)}
 					</div>
 					{answer.type === "score" && maxScore !== undefined ? (
 						<div className="mt-0.5 text-xs text-muted-foreground">
-							Weighted average: {formatDecimal(answer.score)} of {maxScore}
+							{tCopy("weightedAverage", { score: formatDecimal(answer.score, locale), maximum: maxScore })}
 						</div>
 					) : null}
 				</div>
 				{confidence !== undefined ? (
 					<div className="shrink-0 text-right text-xs text-muted-foreground">
 						<div className="font-medium text-foreground">
-							{formatPercent(confidence)}
+							{formatPercent(confidence, locale)}
 						</div>
-						confidence
-					</div>
+						{tCopy("confidence")}</div>
 				) : null}
 			</div>
 
@@ -389,15 +396,16 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 }
 
 function RawResponseFallback({ result }: { result: unknown }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	return (
 		<details className="w-full max-w-[min(100%,46rem)]">
 			<summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-sm font-medium [&::-webkit-details-marker]:hidden">
-				<span>View response</span>
+				<span>{tCopy("viewResponse")}</span>
 				<ChevronDown className="size-4 text-muted-foreground" />
 			</summary>
 			<pre className="mt-2 max-h-96 overflow-auto border-l border-border pl-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
 				{result === null || result === undefined
-					? "No decision output returned."
+					? tCopy("noDecision")
 					: JSON.stringify(result, null, 2)}
 			</pre>
 		</details>
@@ -405,6 +413,7 @@ function RawResponseFallback({ result }: { result: unknown }) {
 }
 
 export function DecisionResponseCard({ result }: { result: unknown }) {
+	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const parsedResult = parseDecisionResult(result);
 	if (!parsedResult) return <RawResponseFallback result={result} />;
 
@@ -421,8 +430,7 @@ export function DecisionResponseCard({ result }: { result: unknown }) {
 				</div>
 			) : (
 				<div className="py-1 text-sm text-muted-foreground">
-					No decision output returned.
-				</div>
+					{tCopy("noDecision")}</div>
 			)}
 		</div>
 	);

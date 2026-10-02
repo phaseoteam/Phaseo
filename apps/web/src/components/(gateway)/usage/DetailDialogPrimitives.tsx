@@ -165,7 +165,7 @@ export function DetailTimingBar({
 	if (!safeItems.length) {
 		return (
 			<div className="text-sm text-muted-foreground">
-				{t("strings.No timing metrics available for this request." as never)}
+				{t("strings.phraseNoTimingMetricsAvailableForThisRequest" as never)}
 			</div>
 		);
 	}

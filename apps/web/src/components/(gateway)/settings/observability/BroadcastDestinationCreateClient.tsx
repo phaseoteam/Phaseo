@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -564,7 +566,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							<FlaskConical className="mr-2 h-4 w-4" />
 							{isTestingConnection ? t("broadcastControls.testing") : t("broadcastControls.test")}
 						</Button>
-						<Button variant="outline" disabled title={t("strings.Save destination before sending a sample trace." as never)}>
+						<Button variant="outline" disabled title={t("strings.phraseSaveDestinationBeforeSendingASampleTrace" as never)}>
 							<SendHorizontal className="mr-2 h-4 w-4" />
 							{t("broadcastControls.sendSample")}
 						</Button>
@@ -582,7 +584,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					{destination.fields.map((field) => (
 						<div key={field.key} className="space-y-1.5">
 							<Label className="text-xs font-medium">
-								{t(`strings.${field.label}` as never)}
+								{t(settingsStringKey(field.label) as never)}
 								{field.required === false ? (
 											<span className="ml-1 text-muted-foreground">{t("broadcastControls.optional")}</span>
 								) : null}
@@ -623,7 +625,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
 						<h3 className="text-sm font-semibold">{t("strings.Additional Metadata" as never)}</h3>
 					</div>
-						<p className="text-xs text-muted-foreground">{t("strings.Choose which structured context accompanies each trace." as never)}</p>
+						<p className="text-xs text-muted-foreground">{t("strings.phraseChooseWhichStructuredContextAccompaniesEachTrace" as never)}</p>
 				</div>
 				<div className="divide-y divide-border/50 rounded-md border border-border/60">
 					{[
@@ -709,8 +711,8 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 					{keys.length ? (
 						<div className="space-y-4">
-							<KeyMultiCombobox title={t("strings.Included API Keys" as never)} description={t("strings.When selected, only these keys send traces." as never)} keys={keys} selected={includedKeyIds} disabledIds={excludedKeyIds} onChange={setIncludedKeyIds} getLabel={getKeyLabel} />
-							<KeyMultiCombobox title={t("strings.Excluded API Keys" as never)} description={t("strings.These keys never send traces to this destination." as never)} keys={keys} selected={excludedKeyIds} disabledIds={includedKeyIds} onChange={setExcludedKeyIds} getLabel={getKeyLabel} />
+							<KeyMultiCombobox title={t("strings.Included API Keys" as never)} description={t("strings.phraseWhenSelectedOnlyTheseKeysSendTraces" as never)} keys={keys} selected={includedKeyIds} disabledIds={excludedKeyIds} onChange={setIncludedKeyIds} getLabel={getKeyLabel} />
+							<KeyMultiCombobox title={t("strings.Excluded API Keys" as never)} description={t("strings.phraseTheseKeysNeverSendTracesToThisDestination" as never)} keys={keys} selected={excludedKeyIds} disabledIds={includedKeyIds} onChange={setExcludedKeyIds} getLabel={getKeyLabel} />
 						</div>
 					) : (
 						<p className="text-xs text-muted-foreground">{t("broadcastControls.noKeysWorkspace")}</p>
@@ -856,7 +858,7 @@ export default function BroadcastDestinationCreateClient(props: {
 																patchRule(group.id, rule.id, { value: e.target.value })
 															}
 																																												placeholder={
-																																													rule.condition === "matches_regex" ? "e.g. ^openai/" : t("broadcastControls.value")
+																																													rule.condition === "matches_regex" ? t("finalSettingsCopy.regexExample", { pattern: "^openai/" }) : t("broadcastControls.value")
 															}
 														/>
 													)
@@ -887,7 +889,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						</div>
 							{groupIndex < ruleGroups.length - 1 ? (
 								<div className="flex justify-center">
-									<Badge variant="outline">{groupJoin === "and" ? "AND" : "OR"}</Badge>
+									<Badge variant="outline">{groupJoin === "and" ? t("broadcastControls.and") : t("broadcastControls.or")}</Badge>
 								</div>
 							) : null}
 						</div>

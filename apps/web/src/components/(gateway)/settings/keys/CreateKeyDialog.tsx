@@ -70,7 +70,7 @@ export default function CreateKeyDialog({
 		if (!currentUserId || selectedTeamId === undefined) {
 			setPlainKey(null);
 			setLoading(false);
-			toast.error(t("strings.Sign in and select a workspace before creating an API key." as never));
+			toast.error(t("strings.phraseSignInAndSelectAWorkspaceBeforeCreatingAnAPIKey" as never));
 			return;
 		}
 		try {
@@ -132,10 +132,10 @@ export default function CreateKeyDialog({
 				<DialogHeader className="gap-2">
 					<DialogTitle>{t("keys.createKey")}</DialogTitle>
 					<DialogDescription>
-						{t("strings.Create a new API key for a workspace." as never)}
+						{t("strings.phraseCreateANewAPIKeyForAWorkspace" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-destructive/10 px-3 py-2 text-sm leading-5 text-destructive">
-						{t("strings.The key will be shown only once - copy it and store it somewhere safe." as never)}
+						{t("strings.phraseTheKeyWillBeShownOnlyOnceCopyItAndStoreItSomewhereSafe" as never)}
 					</p>
 				</DialogHeader>
 
@@ -230,7 +230,7 @@ export default function CreateKeyDialog({
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-muted-foreground">
-							{t("strings.This key will not be shown again and gives anyone access to your credits for your workspace. Keep this code secret at all times." as never)}
+							{t("strings.phraseThisKeyWillNotBeShownAgainAndGivesAnyoneAccessToYourCreditsForYourWorkspaceKeepThisCodeSecretAtAllTimes" as never)}
 						</p>
 						<SecretRevealActions
 							secret={plainKey}

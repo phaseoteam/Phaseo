@@ -186,6 +186,7 @@ export default function ModelPerformanceCards({
 	qualitySeries = [],
 }: ModelPerformanceCardsProps) {
 	const t = useTranslations("Catalogue.modelDetail.performance");
+	const tx = useTranslations();
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
@@ -218,10 +219,10 @@ export default function ModelPerformanceCards({
 		description: t(definition.descriptionKey as never),
 	}));
 	const detailSeriesLabel = chartProviderDaily7d
-		? "All available percentile bands"
+		? tx("Common.ui.publicModelCopy.allPercentileBands")
 		: usesAggregateData
-			? "Model-wide observations; provider identities are hidden"
-			: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+			? tx("Common.ui.publicModelCopy.hiddenProviderObservations")
+			: tx("Common.ui.publicModelCopy.providerObservations", { resolution: usesHourlyData ? "hour" : "day", count: providerCount });
 	const metricUsesPercentiles = (metric: MetricKey) => {
 		if (!chartProviderDaily7d) return false;
 		const definition = METRIC_DEFINITIONS[metric];
@@ -244,15 +245,15 @@ export default function ModelPerformanceCards({
 		metricUsesPercentiles(metric)
 			? detailSeriesLabel
 			: usesAggregateData
-				? "Model-wide observations; provider identities are hidden"
-				: `${usesHourlyData ? "Hourly observations for" : "Daily observations for"} all ${providerCount.toLocaleString()} recorded provider${providerCount === 1 ? "" : "s"}`;
+				? tx("Common.ui.publicModelCopy.hiddenProviderObservations")
+				: tx("Common.ui.publicModelCopy.providerObservations", { resolution: usesHourlyData ? "hour" : "day", count: providerCount });
 	const qualityMetrics = [
 		{
-			title: "Tool Call Errors",
+			title: t("qualityMetrics.toolCallErrors.label"),
 			metric: "toolCallErrorPct" as const,
 		},
 		{
-			title: "Structured Response Errors",
+			title: t("qualityMetrics.structuredResponseErrors.label"),
 			metric: "structuredOutputErrorPct" as const,
 		},
 	].filter(({ metric }) => hasQualityMetricData(metric, qualitySeries));
@@ -323,7 +324,7 @@ export default function ModelPerformanceCards({
 				</p>
 			) : usesAggregateData ? (
 				<p className="text-xs text-muted-foreground">
-					Provider attribution is hidden for this model. Trends use model-wide observations.
+					{t("hiddenAttribution")}
 				</p>
 			) : null}
 		</div>

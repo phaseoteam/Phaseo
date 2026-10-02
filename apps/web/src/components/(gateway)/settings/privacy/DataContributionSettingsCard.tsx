@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import { useMemo, useState, useTransition } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -41,7 +43,7 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatMoney = (nanos: number) => format.number(nanos / 1_000_000_000, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 4, notation: "standard" });
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const router = useRouter();
 	const [enabled, setEnabled] = useState(initial.enabled);
 	const [confirmOpen, setConfirmOpen] = useState(false);
@@ -111,11 +113,11 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 							<DialogHeader>
 								<DialogTitle>{s("Enable discounted data contribution?")}</DialogTitle>
 								<DialogDescription>
-									{s("This is separate from private I/O logging and provider data policies. Up to 100% of successful, non-BYOK prompts and completions will be redacted and retained for 30 days. Upstream classification is independently sampled.")}
+									{s("phraseThisIsSeparateFromPrivateIOLoggingAndProviderDataPoliciesUpTo100OfSuccessfulNonBYOKPromptsAndCompletionsWillBeRedactedAndRetainedFor30DaysUpstreamClassificationIsIndependentlySampled")}
 								</DialogDescription>
 							</DialogHeader>
 							<div className="rounded-lg border bg-muted/30 p-3 text-sm">
-								{s("You can revoke consent at any time. Revocation stops new capture, removes the discount, and queues previously captured objects for deletion within 24 hours.")}
+								{s("phraseYouCanRevokeConsentAtAnyTimeRevocationStopsNewCaptureRemovesTheDiscountAndQueuesPreviouslyCapturedObjectsForDeletionWithin24Hours")}
 							</div>
 							<DialogFooter>
 								<DialogClose asChild><Button variant="outline">{s("Cancel")}</Button></DialogClose>
@@ -135,11 +137,11 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 			<div className="grid gap-6 p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,.8fr)]">
 				<div className="space-y-3">
 					<div className="flex items-center justify-between gap-3">
-						<div><h3 className="text-sm font-semibold">{s("Classifiers")}</h3><p className="text-xs text-muted-foreground">{s("Run asynchronously on a deterministic upstream sample, using Flex by default.")} ({sampleRate}%)</p></div>
+						<div><h3 className="text-sm font-semibold">{s("Classifiers")}</h3><p className="text-xs text-muted-foreground">{s("phraseRunAsynchronouslyOnADeterministicUpstreamSampleUsingFlexByDefault")} ({sampleRate}%)</p></div>
 						<Dialog open={createOpen} onOpenChange={setCreateOpen}>
 							<DialogTrigger asChild><Button size="sm" variant="outline"><Plus className="mr-1 size-4" />{s("Custom classifier")}</Button></DialogTrigger>
 							<DialogContent className="sm:max-w-2xl">
-								<DialogHeader><DialogTitle>{s("Create classifier")}</DialogTitle><DialogDescription>{s("Define private labels for your own domain. The built-in task classifier remains the recommended baseline.")}</DialogDescription></DialogHeader>
+								<DialogHeader><DialogTitle>{s("Create classifier")}</DialogTitle><DialogDescription>{s("phraseDefinePrivateLabelsForYourOwnDomainTheBuiltInTaskClassifierRemainsTheRecommendedBaseline")}</DialogDescription></DialogHeader>
 								<div className="space-y-4">
 									<div className="space-y-1.5"><Label htmlFor="classifier-name">{s("Name")}</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("contributionCopy.customerIntentPlaceholder")} /></div>
 									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">{s("Instructions")}</Label><textarea id="classifier-instructions" className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
@@ -159,18 +161,18 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 								</div>
 							</div>
 						))}
-						{!initial.classifiers.length ? <div className="p-4 text-sm text-muted-foreground">{s("Enable contribution to install the starter taxonomy.")}</div> : null}
+						{!initial.classifiers.length ? <div className="p-4 text-sm text-muted-foreground">{s("phraseEnableContributionToInstallTheStarterTaxonomy")}</div> : null}
 					</div>
 				</div>
 
 				<div className="space-y-3">
-					<div><h3 className="text-sm font-semibold">{s("Top tasks")}</h3><p className="text-xs text-muted-foreground">{s("Private classification rollups retained after raw I/O expires.")}</p></div>
+					<div><h3 className="text-sm font-semibold">{s("Top tasks")}</h3><p className="text-xs text-muted-foreground">{s("phrasePrivateClassificationRollupsRetainedAfterRawIOExpires")}</p></div>
 					<div className="space-y-2 rounded-lg border p-3">
 						{categoryTotals.map(([category, count]) => {
 							const max = categoryTotals[0]?.[1] ?? 1;
 							return <div key={category} className="space-y-1"><div className="flex justify-between gap-3 text-xs"><span className="truncate">{category.replaceAll("_", " ")}</span><span className="tabular-nums text-muted-foreground">{format.number(count)}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full bg-foreground/70" style={{ width: `${Math.max(4, (count / max) * 100)}%` }} /></div></div>;
 						})}
-						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">{s("Classifications will appear after sampled requests are processed.")}</p> : null}
+						{!categoryTotals.length ? <p className="py-6 text-center text-xs text-muted-foreground">{s("phraseClassificationsWillAppearAfterSampledRequestsAreProcessed")}</p> : null}
 					</div>
 				</div>
 			</div>

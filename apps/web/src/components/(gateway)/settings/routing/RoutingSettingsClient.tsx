@@ -116,6 +116,7 @@ export default function RoutingSettingsClient({
 	teamName,
 }: Props) {
 	const t = useTranslations("SettingsUI");
+	const tAuditCopy = useTranslations();
 	const routingOptions: RoutingOption[] = ROUTING_OPTION_COPY.map((option) => ({
 		value: option.value,
 		label: t(option.labelKey as never),
@@ -210,7 +211,7 @@ export default function RoutingSettingsClient({
 			toast.promise(
 				promise,
 				{
-					loading: t("strings.Updating routing policy..." as never),
+					loading: t("strings.phraseUpdatingRoutingPolicy" as never),
 					success: (result) =>
 						result.gatewayCacheInvalidated
 							? t("strings.Routing policy updated" as never)
@@ -298,7 +299,7 @@ export default function RoutingSettingsClient({
 						<h2 className="text-base font-semibold">{t("strings.Provider Routing" as never)}</h2>
 						<p className="mt-1 text-sm text-muted-foreground">
 							{t("strings.Choose how the Gateway prioritizes providers" as never)}
-							{teamName ? ` for ${teamName}` : " for this workspace"}.
+							{tAuditCopy("Common.ui.auditCopy.workspaceSuffix", { named: teamName ? "yes" : "no", workspace: teamName ?? "" })}.
 						</p>
 					</div>
 					<Badge variant="outline" className="shrink-0 rounded-md font-normal">
@@ -341,7 +342,7 @@ export default function RoutingSettingsClient({
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
 						<label htmlFor="beta-channel" className="text-sm font-medium">{t("strings.Beta Channel" as never)}</label>
-						<p className="mt-1 text-sm text-muted-foreground">{t("strings.Include beta providers in a small share of production traffic." as never)}</p>
+						<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeBetaProvidersInASmallShareOfProductionTraffic" as never)}</p>
 						</div>
 						<Switch
 							id="beta-channel"
@@ -357,7 +358,7 @@ export default function RoutingSettingsClient({
 						<div className="flex items-center justify-between gap-4 bg-muted/15 py-2.5 pl-8 pr-4">
 							<div>
 							<label htmlFor="alpha-channel" className="text-sm font-medium">{t("strings.Alpha Channel" as never)}</label>
-							<p className="mt-1 text-sm text-muted-foreground">{t("strings.Include alpha providers within beta canary traffic." as never)}</p>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeAlphaProvidersWithinBetaCanaryTraffic" as never)}</p>
 							</div>
 							<Switch
 								id="alpha-channel"
@@ -374,13 +375,13 @@ export default function RoutingSettingsClient({
 			<section className="space-y-3">
 				<div>
 					<h2 className="text-base font-semibold">{t("strings.Response Healing" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.Set the workspace default for repairing structured model output." as never)}</p>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseSetTheWorkspaceDefaultForRepairingStructuredModelOutput" as never)}</p>
 				</div>
 				<div className="overflow-hidden rounded-md border">
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
 							<label htmlFor="response-healing" className="text-sm font-medium">{t("strings.Enable by Default" as never)}</label>
-							<p className="mt-1 text-sm text-muted-foreground">{t("strings.Repair compatible structured-output responses for this workspace." as never)}</p>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseRepairCompatibleStructuredOutputResponsesForThisWorkspace" as never)}</p>
 						</div>
 						<Switch
 							id="response-healing"
@@ -395,8 +396,8 @@ export default function RoutingSettingsClient({
 							<label htmlFor="response-healing-mode" className="text-sm font-medium">{t("strings.Healing Mode" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">
 								{responseHealingMode === "strict"
-									? t("strings.Only unwrap already-valid JSON from fences or surrounding text." as never)
-									: t("strings.Apply bounded repairs such as trailing-comma cleanup and safe closer recovery." as never)}
+									? t("strings.phraseOnlyUnwrapAlreadyValidJSONFromFencesOrSurroundingText" as never)
+									: t("strings.phraseApplyBoundedRepairsSuchAsTrailingCommaCleanupAndSafeCloserRecovery" as never)}
 							</p>
 						</div>
 						<Select
@@ -426,7 +427,7 @@ export default function RoutingSettingsClient({
 					<div className="flex items-center justify-between gap-4 px-4 py-3">
 						<div>
 							<label htmlFor="response-healing-lock" className="text-sm font-medium">{t("strings.Lock Workspace Policy" as never)}</label>
-							<p className="mt-1 text-sm text-muted-foreground">{t("strings.Prevent presets and requests from overriding this default." as never)}</p>
+							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phrasePreventPresetsAndRequestsFromOverridingThisDefault" as never)}</p>
 						</div>
 						<Switch
 							id="response-healing-lock"
@@ -441,7 +442,7 @@ export default function RoutingSettingsClient({
 			<section className="space-y-3">
 				<div>
 					<h2 className="text-base font-semibold">{t("strings.Routing Preview" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.An illustrative distribution for the current policy. Live routing also considers compatibility, health, availability, and failover signals." as never)}</p>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseAnIllustrativeDistributionForTheCurrentPolicyLiveRoutingAlsoConsidersCompatibilityHealthAvailabilityAndFailoverSignals" as never)}</p>
 				</div>
 				<div className="rounded-md border px-4 py-3">
 					<div className="space-y-3">

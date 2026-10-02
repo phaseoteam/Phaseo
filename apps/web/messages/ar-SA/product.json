@@ -1693,7 +1693,9 @@
 		"save": "حفظ",
 		"model": "النموذج",
 		"throughput": "معدل الإنجاز",
-		"responsePlaceholder": "ستظهر الاستجابة هنا..."
+		"responsePlaceholder": "ستظهر الاستجابة هنا...",
+		"gatewayLabel": "البوابة",
+		"openaiThroughput": "OpenAI API (رموز/ثانية)"
 	},
 	"gatewayBenchmark": {
 		"title": "مقارنة أداء البوابات",

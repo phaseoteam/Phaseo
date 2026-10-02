@@ -60,7 +60,7 @@ export default function PresetsPanel({
 	async function onPublishVersion(preset: any) {
 		if (publishingPresetId) return;
 		const releaseNotes = window.prompt(t("strings.What changed in this version? (optional)" as never)) ?? undefined;
-		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.Semantic version (for example 1.2.0 or 2.0.0-beta.1)" as never)) ?? undefined : undefined;
+		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)) ?? undefined : undefined;
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
 		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("strings.Published" as never)} ${result.version?.version_label ?? `${t("strings.release" as never)} ${result.version?.version_number ?? t("strings.next" as never)}`}`); window.location.reload(); }
@@ -81,7 +81,7 @@ export default function PresetsPanel({
 					</EmptyMedia>
 					<EmptyTitle>{t("strings.No presets yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						{t("strings.Create a preset to reuse model, provider, and prompt configuration." as never)}
+						{t("strings.phraseCreateAPresetToReuseModelProviderAndPromptConfiguration" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -104,7 +104,7 @@ export default function PresetsPanel({
 								</EmptyMedia>
 					<EmptyTitle className="text-base">{t("strings.No presets for this workspace" as never)}</EmptyTitle>
 								<EmptyDescription>
-									{t("strings.Create one to standardize request settings across apps." as never)}
+									{t("strings.phraseCreateOneToStandardizeRequestSettingsAcrossApps" as never)}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>

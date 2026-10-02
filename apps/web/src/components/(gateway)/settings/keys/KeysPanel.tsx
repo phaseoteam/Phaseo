@@ -1,5 +1,8 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+import { localizedSettingsError } from "@/i18n/error-messages";
+
 import React, { memo, useId, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -175,7 +178,7 @@ function GuardrailSummary({
 					className="max-w-full gap-1 text-[10px]"
 				>
 					<span className="truncate">
-						{guardrail.name ?? guardrail.id ?? "Guardrail"}
+						{guardrail.name ?? guardrail.id ?? t("headers.guardrail")}
 					</span>
 					{guardrail.enabled === false ? (
 						<span className="text-muted-foreground">({t("labels.off")})</span>
@@ -393,8 +396,8 @@ const LimitPillStack = memo(function LimitPillStack({
 				const value = clamped !== null ? `${Math.round(clamped)}%` : t("strings.No cap" as never);
 				const title =
 					metricLabel === "requests"
-						? `${t(`strings.${window.name}` as never)} ${t("strings.requests" as never)}`
-						: `${t(`strings.${window.name}` as never)} ${t("strings.spend" as never)}`;
+						? `${t(settingsStringKey(window.name) as never)} ${t("strings.requests" as never)}`
+						: `${t(settingsStringKey(window.name) as never)} ${t("strings.spend" as never)}`;
 				const resetText = formatResetCountdown(window.label);
 
 				return (
@@ -839,10 +842,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			));
 			toast.promise(operation,
 				{
-					loading: paused ? t("strings.Pausing selected keys..." as never) : t("strings.Activating selected keys..." as never),
+					loading: paused ? t("strings.phrasePausingSelectedKeys" as never) : t("strings.phraseActivatingSelectedKeys" as never),
 					success: paused ? t("strings.Selected keys paused" as never) : t("strings.Selected keys activated" as never),
 					error: (error) =>
-						(error && (error as any).message) || t("strings.Failed to update selected keys" as never),
+						localizedSettingsError(error, t, "Failed to update selected keys"),
 				}
 			);
 			await operation;
@@ -865,10 +868,10 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 			));
 			toast.promise(operation,
 				{
-					loading: t("strings.Deleting selected keys..." as never),
+					loading: t("strings.phraseDeletingSelectedKeys" as never),
 					success: t("strings.Selected keys deleted" as never),
 					error: (error) =>
-						(error && (error as any).message) || t("strings.Failed to delete selected keys" as never),
+						localizedSettingsError(error, t, "Failed to delete selected keys"),
 				}
 			);
 			await operation;
@@ -913,7 +916,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 					</EmptyMedia>
 					<EmptyTitle>{t("strings.No API keys yet" as never)}</EmptyTitle>
 					<EmptyDescription>
-						{t("strings.Create your first key to start sending gateway requests." as never)}
+						{t("strings.phraseCreateYourFirstKeyToStartSendingGatewayRequests" as never)}
 					</EmptyDescription>
 				</EmptyHeader>
 			</Empty>
@@ -993,7 +996,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 							<Trash2 className="h-4 w-4" />
 							{t("strings.Delete" as never)}
 						</Button>
-						<Button type="button" variant="ghost" size="icon" className="size-8" disabled={bulkBusy} aria-label="Clear selection" onClick={() => setSelectedIds(new Set())}>
+						<Button type="button" variant="ghost" size="icon" className="size-8" disabled={bulkBusy} aria-label={t("newMainSettingsCopy.clearSelection")} onClick={() => setSelectedIds(new Set())}>
 							<X className="size-4" />
 						</Button>
 					</div>
@@ -1013,7 +1016,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 								<EmptyTitle className="text-base">{t("keys.search.empty")}</EmptyTitle>
  {statusMenu}
 								<EmptyDescription>
-									{normalizedSearch ? (rawLookupPending ? t("keys.search.checking") : t("keys.search.tryAnother")) : filter === "all" ? t("strings.Create an API key to manage access and usage limits." as never) : t("keys.search.chooseStatus")}
+									{normalizedSearch ? (rawLookupPending ? t("keys.search.checking") : t("keys.search.tryAnother")) : filter === "all" ? t("strings.phraseCreateAnAPIKeyToManageAccessAndUsageLimits" as never) : t("keys.search.chooseStatus")}
 								</EmptyDescription>
 							</EmptyHeader>
 						</Empty>
@@ -1134,7 +1137,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 				<DialogHeader>
 								<DialogTitle>{t("keys.deleteSelectedQuestion")}</DialogTitle>
 					<DialogDescription>
-						{t("strings.This will delete {count} {unit} and remove linked guardrail assignments from those keys." as never, {
+						{t("strings.phraseThisWillDeleteCountUnitAndRemoveLinkedGuardrailAssignmentsFromThoseKeys" as never, {
 							count: selectedKeys.length,
 							unit: selectedKeys.length === 1 ? t("strings.key" as never) : t("strings.keys" as never),
 						} as never)}
@@ -1167,7 +1170,7 @@ export default function KeysPanel({ teamsWithKeys }: any) {
 						disabled={bulkBusy || selectedKeys.length === 0}
 						onClick={runBulkDelete}
 					>
-										{bulkBusy ? t("strings.Deleting..." as never) : t("strings.Delete selected" as never)}
+										{bulkBusy ? t("strings.phraseDeleting" as never) : t("strings.Delete selected" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

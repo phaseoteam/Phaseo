@@ -39,7 +39,7 @@ export function RouteRequestDetailErrorDialog({
 				<DialogHeader>
 					<DialogTitle>{t("strings.Request details unavailable" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("strings.We couldn't load this request. Try again or return to the request logs." as never)}
+						{t("strings.phraseWeCouldnTLoadThisRequestTryAgainOrReturnToTheRequestLogs" as never)}
 					</DialogDescription>
 				</DialogHeader>
 				<DialogFooter>

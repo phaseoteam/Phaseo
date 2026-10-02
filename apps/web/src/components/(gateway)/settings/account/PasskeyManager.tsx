@@ -1,5 +1,7 @@
 "use client";
 
+import { settingsStringKey } from "@/i18n/settings-string-keys";
+
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, LogIn, Trash2 } from "lucide-react";
@@ -42,7 +44,7 @@ type PendingPasskeyAction =
 
 export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(`strings.${key}` as never);
+	const s = (key: string) => t(settingsStringKey(key) as never);
 	const format = useDisplayFormatters();
 	const router = useRouter();
 	const [passkeys, setPasskeys] = React.useState<Passkey[]>([]);
@@ -63,7 +65,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		} catch (error) {
 			const message =
 				error instanceof Error && error.message.includes("passkey_disabled")
-					? s("Passkeys are not enabled for this environment yet.")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
 					: localizedSettingsError(error, t, "Could not load passkeys", s("Could not load passkeys"));
 			if (!message.includes("passkey_disabled")) toast.error(message);
 		} finally {
@@ -161,7 +163,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 					: s("Could not remove passkey");
 			const message =
 				error instanceof Error && error.message.includes("passkey_disabled")
-					? s("Passkeys are not enabled for this environment yet.")
+					? s("phrasePasskeysAreNotEnabledForThisEnvironmentYet")
 					: localizedSettingsError(error, t, "Could not remove passkey", fallback);
 			toast.error(message);
 		} finally {
@@ -193,7 +195,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 							<div className="min-w-0">
 				<h3 className="text-sm font-medium">{s("Device Passkeys")}</h3>
 								<p className="mt-0.5 text-sm text-muted-foreground">
-					{s("Sign in with your device biometrics, PIN, or security key.")}
+					{s("phraseSignInWithYourDeviceBiometricsPINOrSecurityKey")}
 								</p>
 							</div>
 							<Button
@@ -207,10 +209,10 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 
 						<div className="pt-3 pl-3 sm:pl-4">
 							{loading ? (
-							<p className="text-xs text-muted-foreground">{s("Loading passkeys...")}</p>
+							<p className="text-xs text-muted-foreground">{s("phraseLoadingPasskeys")}</p>
 							) : null}
 							{!loading && passkeys.length === 0 ? (
-								<p className="text-xs text-muted-foreground">{s("No passkeys added yet.")}</p>
+								<p className="text-xs text-muted-foreground">{s("phraseNoPasskeysAddedYet")}</p>
 							) : null}
 							{passkeys.map((passkey, index) => (
 								<div
@@ -259,14 +261,14 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 					<DialogHeader>
 						<DialogTitle>{s("Verify it&apos;s you")}</DialogTitle>
 						<DialogDescription>
-							{s("Adding or removing a passkey changes how your account can be accessed, so recent authentication is required.")}
+							{s("phraseAddingOrRemovingAPasskeyChangesHowYourAccountCanBeAccessedSoRecentAuthenticationIsRequired")}
 						</DialogDescription>
 					</DialogHeader>
 
 					{freshSignInRequired ? (
 						<div className="space-y-4">
 							<p className="text-sm text-muted-foreground">
-								{s("Your last sign-in is too old for this security change. Sign in again, then return here to continue.")}
+								{s("phraseYourLastSignInIsTooOldForThisSecurityChangeSignInAgainThenReturnHereToContinue")}
 							</p>
 							<DialogFooter>
 								<Button type="button" onClick={restartSignIn} disabled={pending}>
@@ -294,7 +296,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 								</div>
 							) : (
 								<p className="text-sm text-muted-foreground">
-									{s("Continue using your recent social, SSO, or passkey sign-in.")}
+									{s("phraseContinueUsingYourRecentSocialSSOOrPasskeySignIn")}
 								</p>
 							)}
 

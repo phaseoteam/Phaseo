@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Info, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -30,13 +30,10 @@ import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
 import {
 	getProviderCredentialFormKind,
-	getProviderCredentialLabel,
 	getProviderKeyFormatExample,
-	getProviderKeyFormatHint,
-	getProviderKeyInputInstruction,
-	getProviderKeyOnboarding,
 	validateProviderKeyFormat,
 } from "@/lib/byok/providerKeyValidation";
+import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedProviderKeyInstruction, localizedProviderKeyOnboarding, localizedProviderKeyValidation, localizedProviderSubmissionError } from "@/i18n/byok-messages";
 
 import {
 	createByokKeyAction,
@@ -98,7 +95,7 @@ function createEmptyAzureDeployment(): AzureDeploymentForm {
 export default function BYOKInputDialog({
 	providerId,
 	providerName,
-	triggerLabel = "Set key",
+	triggerLabel,
 	trigger,
 	disabled = false,
 	defaultAlwaysUse = false,
@@ -215,25 +212,26 @@ export default function BYOKInputDialog({
 
 	const formatCheck = useMemo(() => {
 		if (!submission.value) return null;
-		return validateProviderKeyFormat(activeProviderId, submission.value);
-	}, [activeProviderId, submission.value]);
+		const result = validateProviderKeyFormat(activeProviderId, submission.value);
+		return {...result, message: localizedProviderKeyValidation(result, activeProviderId, t)};
+	}, [activeProviderId, submission.value, t]);
 	const credentialCanSubmit = initial
 		? (submission.value === null && !submission.error) || (submission.value !== null && !submission.error && Boolean(formatCheck?.ok))
 		: submission.value !== null && !submission.error && Boolean(formatCheck?.ok);
 	const canSubmit = keyName.trim().length > 0 && credentialCanSubmit;
 	const credentialLabel = useMemo(
-		() => getProviderCredentialLabel(activeProviderId),
-		[activeProviderId],
+		() => localizedProviderCredentialLabel(activeProviderId, t),
+		[activeProviderId, t],
 	);
-	const formatHint = useMemo(() => getProviderKeyFormatHint(activeProviderId), [activeProviderId]);
+	const formatHint = useMemo(() => localizedProviderKeyHint(activeProviderId, t), [activeProviderId, t]);
 	const inputInstruction = useMemo(
-		() => getProviderKeyInputInstruction(activeProviderId),
-		[activeProviderId],
+		() => localizedProviderKeyInstruction(activeProviderId, t),
+		[activeProviderId, t],
 	);
 	const formatExample = useMemo(() => getProviderKeyFormatExample(activeProviderId), [activeProviderId]);
 	const onboarding = useMemo(
-		() => getProviderKeyOnboarding(activeProviderId, providerName),
-		[activeProviderId, providerName],
+		() => localizedProviderKeyOnboarding(activeProviderId, providerName, t),
+		[activeProviderId, providerName, t],
 	);
 	const providerModelsHref = activeProviderId
 		? `/api-providers/${encodeURIComponent(activeProviderId)}`
@@ -265,7 +263,7 @@ export default function BYOKInputDialog({
 	async function onSave(e?: React.FormEvent) {
 		e?.preventDefault();
 		if (submission.error) {
-			toast.error(submission.error);
+			toast.error(localizedProviderSubmissionError(submission.error, t));
 			return;
 		}
 		const normalizedName = keyName.trim();
@@ -324,7 +322,7 @@ export default function BYOKInputDialog({
 	const editor = (
 		<>
 			{embedded ? null : <DialogHeader>
-					<DialogTitle>{initial ? "Manage provider key" : "Set provider key"}</DialogTitle>
+					<DialogTitle>{initial ? t("finalSettingsCopy.manageProviderKey") : t("finalSettingsCopy.setProviderKey")}</DialogTitle>
 				</DialogHeader>}
 
 				<form onSubmit={onSave} className="grid gap-4">
@@ -560,7 +558,7 @@ export default function BYOKInputDialog({
 						)}
 						{formatCheck ? null : <p className="text-xs text-muted-foreground">{inputInstruction ?? formatHint}</p>}
 						{submission.error ? (
-							<p className="text-xs text-red-600">{submission.error}</p>
+							<p className="text-xs text-red-600">{localizedProviderSubmissionError(submission.error, t)}</p>
 						) : null}
 						{formatCheck ? (
 							<p
@@ -582,13 +580,13 @@ export default function BYOKInputDialog({
 					{initial ? <div className="space-y-4 rounded-md border p-3">
 						<div>
 					<div className="text-sm font-medium">{t("strings.Key scope" as never)}</div>
-					<p className="mt-0.5 text-xs text-muted-foreground">{t("strings.Leave a list empty to allow every option." as never)}</p>
+					<p className="mt-0.5 text-xs text-muted-foreground">{t("strings.phraseLeaveAListEmptyToAllowEveryOption" as never)}</p>
 						</div>
 						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="space-y-2">
 								<div className="flex items-center justify-between text-xs font-medium">
 						<span>{t("strings.Models" as never)}</span>
-									<span className="text-muted-foreground">{allowedModelSlugs.length ? `${allowedModelSlugs.length} selected` : "All"}</span>
+									<span className="text-muted-foreground">{allowedModelSlugs.length ? t("guardrailEditorCopy.selectedCount", { count: allowedModelSlugs.length }) : t("credits.All")}</span>
 								</div>
 								<ScrollArea className="h-36 rounded-md border p-2">
 									<div className="space-y-2 pr-2">
@@ -604,7 +602,7 @@ export default function BYOKInputDialog({
 							<div className="space-y-2">
 								<div className="flex items-center justify-between text-xs font-medium">
 						<span>{t("strings.Phaseo API keys" as never)}</span>
-									<span className="text-muted-foreground">{allowedApiKeyIds.length ? `${allowedApiKeyIds.length} selected` : "All"}</span>
+									<span className="text-muted-foreground">{allowedApiKeyIds.length ? t("guardrailEditorCopy.selectedCount", { count: allowedApiKeyIds.length }) : t("credits.All")}</span>
 								</div>
 								<ScrollArea className="h-36 rounded-md border p-2">
 									<div className="space-y-2 pr-2">
@@ -642,7 +640,7 @@ export default function BYOKInputDialog({
 			<DialogTrigger asChild>
 				{trigger ? trigger : (
 					<Button variant="outline" size="sm" className="rounded-lg" disabled={disabled} onClick={() => setOpen(true)}>
-						{triggerLabel}
+						{triggerLabel ?? t("byokCredentialCopy.setKey")}
 					</Button>
 				)}
 			</DialogTrigger>

@@ -47,7 +47,7 @@ export function StripePortalButton({
 					}
 				} catch {
 					toast.error(t("strings.Could not open the Stripe portal" as never), {
-						description: t("strings.Please try again." as never),
+						description: t("strings.phrasePleaseTryAgain" as never),
 					});
 				} finally {
 					setLoading(false);

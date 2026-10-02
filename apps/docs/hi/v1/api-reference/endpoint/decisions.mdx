@@ -59,3 +59,22 @@ Respan उदाहरण के लिए प्रतिक्रिया इ
 Jev एक अनुरोध में तीनों प्रश्न प्रकारों को मिलाने का समर्थन करता है; Span-01 केवल `noul` प्रश्नों का समर्थन करता है। कॉपी-पेस्ट करने योग्य cURL, JavaScript, TypeScript SDK और Python SDK उदाहरणों के लिए [त्वरित शुरुआत](../../quickstart) देखें। Jev 1.13 की कीमत प्रति दस लाख इनपुट टोकन 0.042 अमेरिकी डॉलर है; आउटपुट टोकन मुफ़्त हैं।
 
 प्रदाता के प्रश्नों के अर्थ के लिए TypeSafe का [API संदर्भ](https://docs.typesafe.ai/api) देखें।
+
+### Clef के साथ चित्र निर्णय
+
+`cloudflare/clef` और `cloudflare/clef-flash`, Cloudflare Workers AI के ज़रिए तीनों प्रश्न प्रकार और एम्बेड किए गए चित्रों का समर्थन करते हैं। दोनों की कॉन्टेक्स्ट विंडो 65,536 टोकन है। इनपुट की कीमत प्रति दस लाख टोकन Clef के लिए 0.24 USD और Clef Flash के लिए 0.09 USD है।
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+आप `images` में `data:image/png;base64,...` स्ट्रिंग भी दे सकते हैं। Clef अधिकतम चार PNG, JPEG या WebP चित्र स्वीकार करता है। हर चित्र अधिकतम 4 MiB और 16 मेगापिक्सल का हो सकता है; डिकोड किए गए चित्र डेटा की कुल सीमा 8 MiB और अनुरोध बॉडी की सीमा 13 MiB है। रिमोट URL समर्थित नहीं हैं। Cloudflare चित्रों के प्रारूप और आयाम जाँचता है। जिन मॉडलों में चित्र समर्थन नहीं है, वे चित्र अनुरोध अस्वीकार करते हैं।
+
+Clef अधिकतम 64 प्रश्न स्वीकार करता है। ID में अधिकतम 100 अक्षर, अंक, अंडरस्कोर, डॉट या हाइफ़न हो सकते हैं। विकल्प वाले प्रश्नों में 2–255 विकल्प और स्कोर वाले प्रश्नों में 2–10 स्तर आवश्यक हैं। Cloudflare के [Clef दस्तावेज़](https://developers.cloudflare.com/workers-ai/models/clef/) देखें।
