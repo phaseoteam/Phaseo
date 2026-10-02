@@ -1,0 +1,76 @@
+{
+  "model_id": "kilo/free",
+  "organisation_id": "kilo",
+  "name": "Auto Free",
+  "status": "Available",
+  "previous_model_id": null,
+  "description": "Rotates through available free models. Limited capability and no credits required. [Learn more](https://kilo.ai/docs/code-with-ai/agents/auto-model)\n\n**Warning** Prompts may be logged by the upstream provider and used to improve their services. Not suitable for production or sensitive data workloads.",
+  "announced_date": null,
+  "release_date": null,
+  "deprecation_date": null,
+  "retirement_date": null,
+  "license": null,
+  "input_types": [
+    "text"
+  ],
+  "output_types": [
+    "text"
+  ],
+  "api_model_id": "kilo/free",
+  "family_id": null,
+  "links": [
+    {
+      "title": "Kilo Gateway models",
+      "kind": "api_reference",
+      "url": "https://api.kilo.ai/api/gateway/models"
+    }
+  ],
+  "details": [],
+  "benchmarks": [],
+  "page_notice": null,
+  "model_type": "inference",
+  "knowledge_cutoff": null,
+  "limits": {
+    "context": 256000,
+    "input": 256000,
+    "output": 10000
+  },
+  "modalities": {
+    "input": [
+      "text"
+    ],
+    "output": [
+      "text"
+    ]
+  },
+  "reasoning": {
+    "supported": true,
+    "options": []
+  },
+  "capabilities": {
+    "attachment": false,
+    "tool_call": true,
+    "structured_output": false,
+    "temperature": true,
+    "streaming": true,
+    "web_search": false
+  },
+  "open_weights": null,
+  "sources": [
+    {
+      "kind": "official_models",
+      "url": "https://api.kilo.ai/api/gateway/models",
+      "accessed_at": "2026-08-24T00:00:00Z",
+      "notes": "Exact Kilo Gateway model identity, description, availability, modalities, limits, and supported parameters."
+    }
+  ],
+  "verification": {
+    "status": "partial",
+    "checked_at": "2026-08-24T00:00:00Z",
+    "notes": "Kilo Gateway availability and technical metadata verified; upstream release lifecycle was not published by Kilo."
+  },
+  "last_updated": "2026-08-24T00:00:00Z",
+  "removal_date": null,
+  "replacement_model_id": null,
+  "license_url": null
+}
