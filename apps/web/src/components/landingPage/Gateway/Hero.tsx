@@ -39,8 +39,6 @@ type HeroStatItem = {
 
 function HeroActions({ ctaVariant }: { ctaVariant: "classic" | "experimental" }) {
 	const t = useTranslations("Site.gatewayHero");
-	const tLanding = useTranslations("SettingsUI.landingGaps");
-	const locale = useLocale();
 	return (
 		<div className="mt-10 flex flex-wrap items-center gap-4">
 			<Button
@@ -242,6 +240,8 @@ export function Hero({
 	heroVariant?: GatewayHeroVariant;
 }) {
 	const t = useTranslations("Site.gatewayHero");
+	const tLanding = useTranslations("SettingsUI.landingGaps");
+	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const roundTo = (value: number | null, step: number) => {
 		if (value == null) return null;
