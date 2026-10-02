@@ -1,6 +1,7 @@
 import type { ComponentProps } from "react";
 import Image from "next/image";
 import { Check, ChevronDown } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "@/i18n/navigation";
 import {
 	getLocaleDefinition,
@@ -61,65 +62,72 @@ export function LocaleSwitcher({
 	return (
 		<nav aria-label={label} className={cn("relative inline-block", className)}>
 			<details className="group relative">
-				<summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-md border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+				<summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm font-medium shadow-xs transition-colors hover:bg-muted group-open:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
 					<LocaleFlag locale={currentLocale} />
 					<span className="sr-only">{label}: </span>
 					<bdi lang={currentLocale} dir={currentDefinition.dir}>
 						{currentDefinition.nativeName}
 					</bdi>
 					<ChevronDown
-						className="size-4 shrink-0 transition-transform group-open:rotate-180"
+						className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
 						aria-hidden="true"
 					/>
 				</summary>
 
-				<ul
+				<div
 					className={cn(
-						"absolute end-0 z-50 max-h-80 min-w-64 overflow-y-auto rounded-xl border bg-popover p-1.5 text-popover-foreground shadow-xl",
+						"absolute end-0 z-50 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border bg-popover text-popover-foreground shadow-lg",
 						placement === "top" ? "bottom-full mb-2" : "top-full mt-2",
 					)}
 				>
-					{publicLocales.map((locale) => {
-						const definition = getLocaleDefinition(locale);
-						const selected = locale === currentLocale;
+					<ScrollArea
+						className="h-[min(20rem,60dvh)]"
+						viewportClassName="overscroll-y-contain"
+					>
+						<ul className="space-y-0.5 p-1.5 pe-3">
+							{publicLocales.map((locale) => {
+								const definition = getLocaleDefinition(locale);
+								const selected = locale === currentLocale;
 
-						return (
-							<li key={locale}>
-								<Link
-									href={returnPath}
-									locale={locale}
-									hrefLang={locale}
-									prefetch={false}
-									aria-current={selected ? "page" : undefined}
-									className={cn(
-										"flex min-h-11 items-center gap-3 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground",
-										selected && "bg-accent text-accent-foreground",
-									)}
-								>
-									<LocaleFlag locale={locale} />
-									<span className="min-w-0 flex-1">
-										<bdi
-											lang={locale}
-											dir={definition.dir}
-											className="block truncate font-medium"
+								return (
+									<li key={locale}>
+										<Link
+											href={returnPath}
+											locale={locale}
+											hrefLang={locale}
+											prefetch={false}
+											aria-current={selected ? "page" : undefined}
+											className={cn(
+												"flex min-h-11 items-center gap-3 rounded-lg px-2.5 py-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:text-accent-foreground",
+												selected && "bg-accent text-accent-foreground",
+											)}
 										>
-											{definition.nativeName}
-										</bdi>
-										<bdi
-											dir="ltr"
-											className="block text-xs text-muted-foreground"
-										>
-											{locale}
-										</bdi>
-									</span>
-									{selected ? (
-										<Check className="size-4 shrink-0" aria-hidden="true" />
-									) : null}
-								</Link>
-							</li>
-						);
-					})}
-				</ul>
+											<LocaleFlag locale={locale} />
+											<span className="min-w-0 flex-1">
+												<bdi
+													lang={locale}
+													dir={definition.dir}
+													className="block truncate font-medium"
+												>
+													{definition.nativeName}
+												</bdi>
+												<bdi
+													dir="ltr"
+													className="block text-xs text-muted-foreground"
+												>
+													{locale}
+												</bdi>
+											</span>
+											{selected ? (
+												<Check className="size-4 shrink-0" aria-hidden="true" />
+											) : null}
+										</Link>
+									</li>
+								);
+							})}
+						</ul>
+					</ScrollArea>
+				</div>
 			</details>
 		</nav>
 	);
