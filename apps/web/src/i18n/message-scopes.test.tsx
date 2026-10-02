@@ -10,6 +10,7 @@ import { combineMessages, selectMessages, SHELL_MESSAGE_NAMESPACES } from "./mes
 import lazyScopes from "./lazy-message-scopes.json";
 import { gzipSync } from "node:zlib";
 import { selectClientMessages } from "./client-message-selection";
+import { localizedProviderCatalogMessage } from "./provider-catalog-messages";
 
 function routeNamespaces(directory: string): string[][] {
 	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -48,6 +49,9 @@ describe("route message selection", () => {
 		expect(optionalTranslate.has("SettingsUI.strings.Details" as never)).toBe(true);
 		expect(optionalTranslate.has("SettingsUI.identity.availability.ready" as never)).toBe(true);
 		expect(optionalTranslate.has("SettingsUI.identity.reviewStatus.approved" as never)).toBe(true);
+		expect(optionalTranslate("Product.internalTools.dataEditor.policyUnknown" as never)).toBeTruthy();
+		const optionalSettings = createTranslator({ locale, messages: optional, namespace: "SettingsUI", onError } as never);
+		expect(localizedProviderCatalogMessage("Unknown model field.", optionalSettings)).toBeTruthy();
 		expect(onError).not.toHaveBeenCalled();
 		function TranslatedChild() {
 			const shared = useTranslations("Common.nav");

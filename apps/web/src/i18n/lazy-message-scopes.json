@@ -4,9 +4,10 @@
     "Common.ui.chatSettings.admin", "Common.ui.actions", "Common.ui.modelCreation",
     "Common.ui.select", "Common.ui.datePicker", "Common.ui.formTypes",
     "Common.ui.modelSettingsDialog.noModelsFound",
-    "Product.internalTools.dataEditor.searchModelsPlaceholder",
+    "Product.internalTools.dataEditor",
     "SettingsUI.providerCatalogCopy", "SettingsUI.providerCatalog.title",
     "SettingsUI.identity.availability", "SettingsUI.identity.reviewStatus",
+    "SettingsUI.identity.catalogValidation",
     "SettingsUI.strings.Details", "SettingsUI.strings.phrasePleaseTryAgain",
     "SettingsUI.settingsCopy.settingsSidebar"
   ]
