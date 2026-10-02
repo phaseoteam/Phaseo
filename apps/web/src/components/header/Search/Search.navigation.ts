@@ -122,6 +122,9 @@ const settingsPages: GlobalNavigationItem[] = getSettingsSidebar({ showAutoRouti
 );
 
 const additionalPages: Array<[string, string]> = [
+	["/support", "Support"],
+	["/chat/decisions", "Decisions"],
+	["/settings/account/providers", "Provider Onboarding"],
 	["/settings/webhooks/new", "Create Webhook"],
 	["/settings/workspaces/private-models/new", "Create Private Model"],
 	["/settings/routing/demo", "Dynamic Routing Demo"],

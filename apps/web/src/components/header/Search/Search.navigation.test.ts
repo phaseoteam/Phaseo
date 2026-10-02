@@ -24,16 +24,29 @@ describe("global search navigation", () => {
 		expect(isSearchDestinationEnabled(undefined, DEFAULT_SEARCH_CAPABILITIES)).toBe(true);
 	});
 	it("covers public static pages in the dashboard", () => {
-		const root = path.join(process.cwd(), "src/app/(dashboard)");
 		const hrefs = new Set(GLOBAL_NAVIGATION_ITEMS.map((item) => item.href));
-		const pages = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
-		for (const file of pages) {
-			const normalized = file.replaceAll("\\", "/");
-			if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
-			const source = fs.readFileSync(path.join(root, file), "utf8");
-			if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
-			const href = normalized === "page.tsx" ? "/" : `/${normalized.slice(0, -"/page.tsx".length)}`;
-			expect(hrefs).toContain(href);
+		for (const directory of ["src/app/(dashboard)", "src/app/[locale]/(dashboard)"]) {
+			const root = path.join(process.cwd(), directory);
+			const pages = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
+			for (const file of pages) {
+				const normalized = file.replaceAll("\\", "/");
+				if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
+				const source = fs.readFileSync(path.join(root, file), "utf8");
+				if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
+				const href = normalized === "page.tsx" ? "/" : `/${normalized.slice(0, -"/page.tsx".length)}`;
+				expect(hrefs).toContain(href);
+			}
+		}
+	});
+	it("has translated labels for every navigation destination", () => {
+		for (const locale of ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"]) {
+			const file = path.join(process.cwd(), "messages", locale, "common.json");
+			const catalog = JSON.parse(fs.readFileSync(file, "utf8"));
+			for (const item of GLOBAL_NAVIGATION_ITEMS) {
+				const label = catalog.search.palette.navigationItems[item.id];
+				expect(label).toEqual(expect.any(String));
+				expect(label.trim()).not.toBe("");
+			}
 		}
 	});
 	it("includes every public settings sidebar destination", () => {

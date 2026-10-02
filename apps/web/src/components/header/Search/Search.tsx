@@ -36,7 +36,7 @@ import {
 	Trophy,
 } from "lucide-react";
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, isSearchDestinationEnabled, type SearchCapabilities } from "@/components/header/Search/Search.navigation";
-import documentationPages from "./Search.docs.generated.json";
+import { loadDocumentationPages } from "./Search.documentation";
 import {
 	EXTERNAL_RESOURCE_ITEMS,
 	getContextItems,
@@ -309,10 +309,10 @@ async function fetchSearchData(path: string, signal?: AbortSignal): Promise<Sear
 
 let lastSearchRefreshAt = 0;
 const EMPTY_WORKSPACE_ITEMS: PaletteItem[] = [];
+const EMPTY_DOCUMENTATION_ITEMS: PaletteItem[] = [];
 
 const ACTION_SEARCH_INDEX = createSearchIndex(GLOBAL_ACTION_ITEMS);
 const RESOURCE_SEARCH_INDEX = createSearchIndex(EXTERNAL_RESOURCE_ITEMS);
-const DOCUMENTATION_SEARCH_INDEX = createSearchIndex(documentationPages);
 
 function getIndexedMatchScore<T extends SearchableItem>(
 	indexedItem: IndexedSearchItem<T>,
@@ -744,6 +744,16 @@ export default function Search({
 	const searchData = searchQuery.data;
 	const searchDataFetchError = searchQuery.error;
 	const isLoadingSearchData = searchQuery.isLoading;
+	const documentationQuery = useQuery({
+		queryKey: webQueryKeys.public.documentationSearch(locale),
+		queryFn: () => loadDocumentationPages(locale),
+		staleTime: Infinity,
+		enabled: open,
+	});
+	const documentationSearchIndex = useMemo(
+		() => createSearchIndex(documentationQuery.data ?? EMPTY_DOCUMENTATION_ITEMS),
+		[documentationQuery.data],
+	);
 	if (searchData) hasLoadedSearchRef.current = true;
 	const workspaceQuery = useQuery({
 		queryKey: webQueryKeys.account.workspaceSearch(scope),
@@ -753,7 +763,7 @@ export default function Search({
 		enabled: open && Boolean(scope.userId),
 	});
 	const workspaceItems = workspaceQuery.data ?? EMPTY_WORKSPACE_ITEMS;
-	const searchDataError = searchDataFetchError
+	const searchDataError = searchDataFetchError || documentationQuery.error
 		? t("searchDataUnavailable")
 		: null;
 	const [scrollViewport, setScrollViewport] = useState<HTMLDivElement | null>(null);
@@ -1054,7 +1064,7 @@ export default function Search({
 			? filterAndSortIndexed(RESOURCE_SEARCH_INDEX, searchTerm, 12, showAllWhenScoped)
 			: [];
 		const documentation = includesScope("resources")
-			? filterAndSortIndexed(DOCUMENTATION_SEARCH_INDEX, searchTerm, resultLimit, showAllWhenScoped)
+			? filterAndSortIndexed(documentationSearchIndex, searchTerm, resultLimit, showAllWhenScoped)
 			: [];
 		const models = includesScope("models") && searchIndex
 			? filterAndSortIndexed(searchIndex.models, searchTerm, resultLimit, showAllWhenScoped)
@@ -1098,7 +1108,7 @@ export default function Search({
 			{
 				name: "documentation" as const,
 				items: documentation,
-				score: getFirstResultScore(DOCUMENTATION_SEARCH_INDEX, documentation, searchTerm),
+				score: getFirstResultScore(documentationSearchIndex, documentation, searchTerm),
 			},
 			{
 				name: "models" as const,
@@ -1148,6 +1158,7 @@ export default function Search({
 			.sort((left, right) => compareSearchCategories(left, right) || searchContextScore(pathname, right.items[0]?.href) - searchContextScore(pathname, left.items[0]?.href));
 	}, [
 		contextSearchIndex,
+		documentationSearchIndex,
 		navigationItems,
 		navigationSearchIndex,
 		pathname,
