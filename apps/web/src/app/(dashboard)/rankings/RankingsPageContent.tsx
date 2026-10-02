@@ -4,6 +4,7 @@
 // How: Server component that fetches data and renders visualizations
 
 import { Suspense } from "react";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Metadata } from "next";
 import { buildMetadata } from "@/lib/seo";
 import { MarketShareStackedBar } from "@/components/(rankings)/MarketShareStackedBar";
@@ -259,7 +260,7 @@ function metadataFor(
 }
 
 function formatCount(value: number, unit: string) {
-	const formatted = formatTokens(value);
+	const formatted = unit === "tokens" ? formatRoundedCount(value) : formatTokens(value);
 	return `${formatted} ${unit}`;
 }
 

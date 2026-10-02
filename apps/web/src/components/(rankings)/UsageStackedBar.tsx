@@ -201,10 +201,11 @@ export function UsageStackedBar({
 	const formatNumber = (value: number) => Number.isFinite(value)
 		? format.number(value, { maximumFractionDigits: 1 })
 		: "--";
-	const formatTooltipNumber = showScaleToggle ? formatRoundedCount : formatNumber;
+	const compactTokenCounts = metric === "tokens" && (!valueUnit || valueUnit === "tokens");
+	const formatTooltipNumber = compactTokenCounts ? formatRoundedCount : formatNumber;
 	const formatPaceGain = (value: number) => {
 		const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
-		return `+${showScaleToggle
+		return `+${compactTokenCounts
 			? formatRoundedCount(safeValue)
 			: format.number(safeValue, { maximumFractionDigits: 2 })}`;
 	};
@@ -843,7 +844,7 @@ export function UsageStackedBar({
 										)}
 										<div className="text-right">
 											<div className="whitespace-nowrap text-xs tabular-nums text-muted-foreground lg:text-sm">
-											{formatNumber(entry.current)}{" "}
+											{formatTooltipNumber(entry.current)}{" "}
 											{entry.current === 1 && leaderboardUnit.endsWith("s")
 												? leaderboardUnit.slice(0, -1)
 												: leaderboardUnit}

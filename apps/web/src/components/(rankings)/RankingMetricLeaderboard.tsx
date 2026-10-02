@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -35,7 +36,7 @@ export function RankingMetricLeaderboard({
 			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
 		}
 		const unit = metricId.includes("image") ? "images" : "tokens";
-		return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${unit}`;
+		return `${unit === "tokens" ? formatRoundedCount(entry.value) : format.number(entry.value, { maximumFractionDigits: 1 })} ${unit}`;
 	};
 
 	if (!visibleEntries.length) return (
