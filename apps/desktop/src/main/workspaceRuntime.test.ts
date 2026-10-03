@@ -4,8 +4,39 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("blocks duplicate steering sends and waits for delivery settlement during shutdown", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-close-")); let finish: (() => void) | undefined; let reject: ((error: Error) => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, steer: async () => { await new Promise<void>((_resolve, fail) => { reject = fail; }); }, cancel: async () => { finish?.(); reject?.(new Error("Disconnected")); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(finish).toBeDefined());
+			const delivery = runtime.command({ type: "steer", id, text: "Change direction" }); await vi.waitFor(() => expect(reject).toBeDefined());
+			await expect(runtime.command({ type: "steer", id, text: "Duplicate" })).rejects.toThrow("Wait for");
+			await runtime.close(); expect((await delivery).tasks[0].steering?.[0].status).toBe("unconfirmed");
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-"));
+		let finish: (() => void) | undefined;
+		const steer = vi.fn();
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); }, steer }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(finish).toBeDefined());
+			steer.mockImplementationOnce(async message => { expect(runtime.store.getTask(id).steering?.[0]).toMatchObject({ id: message.id, status: "sending" }); });
+			await runtime.command({ type: "steer", id, text: "Change direction" });
+			expect(runtime.store.getTask(id).messages.at(-1)).toMatchObject({ text: "Change direction", delivery: "steer" }); expect(runtime.store.getTask(id).steering).toEqual([]);
+			steer.mockRejectedValueOnce(new AgentInputRejectedError("Turn finished")); await runtime.command({ type: "steer", id, text: "Rejected" });
+			steer.mockRejectedValueOnce(new Error("Transport closed")); await runtime.command({ type: "steer", id, text: "Uncertain" });
+			const pending = runtime.store.getTask(id).steering!; expect(pending.map(message => message.status)).toEqual(["rejected", "unconfirmed"]); expect(runtime.store.getTask(id).queue).toEqual([]);
+			await runtime.command({ type: "steer-queue", id, messageId: pending[0].id }); expect(runtime.store.getTask(id).queue[0].text).toBe("Rejected");
+			await runtime.command({ type: "steer-discard", id, messageId: pending[1].id }); expect(runtime.store.getTask(id).steering).toEqual([]);
+			await runtime.command({ type: "cancel", id }); expect(steer).toHaveBeenCalledTimes(3);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("validates typed forms, preserves other requests and removes externally settled forms", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-form-runtime-"));
 		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;

@@ -5,7 +5,7 @@ import type { AgentActivity, AgentConnection, Workspace, WorkspaceCommand } from
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
 import { ClaudeAdapter } from "./claudeAdapter";
-import type { AgentAdapter } from "./agentAdapter";
+import { AgentInputRejectedError, type AgentAdapter } from "./agentAdapter";
 import type { Harness } from "../shared/workspace";
 import type { SecretVault } from "./secretVault";
 import { PhaseoAdapter } from "./phaseoAdapter";
@@ -39,6 +39,7 @@ export class WorkspaceRuntime {
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
+	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
@@ -50,6 +51,11 @@ export class WorkspaceRuntime {
 	private broadcast() { this.onChange(this.store.get()); }
 	async command(command: WorkspaceCommand): Promise<Workspace> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (command.type === "steer") {
+			if (this.steeringExecutions.has(command.id)) throw new Error("Wait for the current steering instruction to finish sending.");
+			const execution = this.steer(command).finally(() => this.steeringExecutions.delete(command.id));
+			this.steeringExecutions.set(command.id, execution); return execution;
+		}
 		if (command.type === "add-agent") {
 			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
 			this.broadcast(); return this.store.get();
@@ -99,8 +105,28 @@ export class WorkspaceRuntime {
 		}
 		const task = this.store.apply(command);
 		this.broadcast();
-		if (command.type === "send" || command.type === "resume") this.start(task.id);
+		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
 		return this.store.get();
+	}
+	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<Workspace> {
+		const task = this.store.getTask(command.id); const adapter = this.running.get(task.id);
+		if (task.archived || !adapter?.steer || !["running", "waiting"].includes(task.status)) throw new Error("This task is not ready for live steering.");
+		if ((task.steering?.length ?? 0) >= 10) throw new Error("Resolve the outstanding steering instructions first.");
+		const attachments = command.attachments?.map(id => { const value = this.store.getAttachment(id); if (!value || value.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return value; });
+		const message = { id: randomUUID(), text: command.text, attachments, createdAt: new Date().toISOString() };
+		task.steering ??= []; task.steering.push({ ...message, status: "sending" }); this.store.saveTask(task); this.broadcast();
+		let sending = false;
+		try {
+			const contents = await Promise.all((attachments ?? []).map(value => this.attachments.read(value.id)));
+			if (this.closing || this.running.get(task.id) !== adapter) throw new AgentInputRejectedError("The turn ended before this instruction was sent.");
+			sending = true; await adapter.steer!(message, contents);
+			const current = this.store.getTask(task.id); current.steering = current.steering?.filter(value => value.id !== message.id);
+			current.messages.push({ ...message, role: "user", delivery: "steer" }); this.store.saveTask(current);
+		} catch (error) {
+			const current = this.store.getTask(task.id); const pending = current.steering?.find(value => value.id === message.id);
+			if (pending) { pending.status = !sending || error instanceof AgentInputRejectedError ? "rejected" : "unconfirmed"; pending.error = error instanceof Error ? error.message : "Steering delivery failed."; this.store.saveTask(current); }
+		}
+		this.broadcast(); return this.store.get();
 	}
 	private start(id: string) {
 		if (this.closing || this.executions.has(id)) return;
@@ -234,6 +260,7 @@ export class WorkspaceRuntime {
 		for (const pending of this.forms.values()) pending.resolve(null);
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
+		await Promise.allSettled([...this.steeringExecutions.values()]);
 		await this.openCode.close();
 		this.store.close();
 	}

@@ -1,8 +1,11 @@
 import type { Readable, Writable } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
 
-type RpcPacket = { id?: number | string; method?: string; params?: unknown; result?: unknown; error?: { code: number; message: string } };
+type RpcPacket = { id?: number | string; method?: string; params?: unknown; result?: unknown; error?: { code: number; message: string; data?: unknown } };
 type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> };
+export class JsonRpcResponseError extends Error {
+	constructor(message: string, readonly code: number, readonly data?: unknown) { super(message); this.name = "JsonRpcResponseError"; }
+}
 
 /** Newline-delimited transport used by native agent app servers. */
 export class JsonRpc {
@@ -62,7 +65,7 @@ export class JsonRpc {
 				const pending = this.pending.get(packet.id);
 				if (!pending) continue;
 				clearTimeout(pending.timer); this.pending.delete(packet.id);
-				if (packet.error) pending.reject(new Error(packet.error.message)); else pending.resolve(packet.result);
+				if (packet.error) pending.reject(new JsonRpcResponseError(packet.error.message, packet.error.code, packet.error.data)); else pending.resolve(packet.result);
 			}
 		}
 	}

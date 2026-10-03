@@ -6,8 +6,9 @@ export type Project = { id: string; name: string; directory: string; createdAt: 
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean };
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; createdAt: string };
+export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
 export type QueuedMessage = { id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed" };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string }[] | null };
 export type Task = {
@@ -20,6 +21,7 @@ export type Task = {
 	approvals?: { id: string; method: string; description: string }[];
 	questions?: { id: string; questions: AgentQuestion[] }[];
 	forms?: { id: string; form: AgentForm }[];
+	steering?: SteeringMessage[];
 	activities?: AgentActivity[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[] };
@@ -39,6 +41,8 @@ export type WorkspaceCommand =
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean }
 	| { type: "send"; id: string; text: string; attachments?: string[] }
+	| { type: "steer"; id: string; text: string; attachments?: string[] }
+	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
 	| { type: "resume"; id: string }
 	| { type: "fork"; id: string }
@@ -108,7 +112,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				string("title", false, 200);
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
 				break;
-			case "send":
+			case "send": case "steer":
 				string("text", true, 100000);
 				if (command.attachments !== undefined && (!Array.isArray(command.attachments) || command.attachments.length > 10 || command.attachments.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) || new Set(command.attachments).size !== command.attachments.length)) throw new Error("Invalid attachments.");
 				break;
@@ -132,7 +136,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || !values.length || values.length > 100 || values.some(value => typeof value !== "string" || !value.trim() || value.length > 10000))) throw new Error("Invalid answers.");
 				break;
 			}
-			case "queue-remove": string("messageId"); break;
+			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;
 			case "queue-move":
 				string("messageId");

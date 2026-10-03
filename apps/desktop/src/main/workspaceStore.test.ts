@@ -6,6 +6,18 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+	it("recovers unacknowledged steering without replay, including instructions whose turn already finished", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-recovery-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
+		try {
+			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); task.status = "completed";
+			task.steering = [{ id: "uncertain", text: "Change direction", createdAt: "", status: "sending" }]; store.saveTask(task);
+			expect(() => store.apply({ type: "steer-discard", id: task.id, messageId: "uncertain" })).toThrow("still sending");
+			store.close(); store = new WorkspaceStore(filename);
+			expect(store.getTask(task.id)).toMatchObject({ status: "completed", queue: [], steering: [{ status: "unconfirmed" }] });
+			const fork = store.apply({ type: "fork", id: task.id }); expect(fork.steering).toEqual([]);
+			store.apply({ type: "steer-queue", id: task.id, messageId: "uncertain" }); expect(store.getTask(task.id).queue[0]).toEqual({ id: "uncertain", text: "Change direction", createdAt: "" });
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("persists attachment references and rejects files imported for another task", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

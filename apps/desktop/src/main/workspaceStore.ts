@@ -17,12 +17,15 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
 		for (const task of this.get().tasks) {
+			let recovered = false;
+			for (const message of task.steering ?? []) if (message.status === "sending") { message.status = "unconfirmed"; message.error = "The application stopped before delivery was confirmed."; recovered = true; }
 			if (task.status === "running" || task.status === "waiting") {
 				task.status = "interrupted";
 				task.approvals = []; task.questions = []; task.forms = [];
 				task.error = "The application stopped during this task. Resume to continue.";
 				this.saveTask(task);
 			}
+			else if (recovered) this.saveTask(task);
 		}
 		for (const session of this.getTerminals()) if (session.status === "running") { session.status = "interrupted"; this.saveTerminal(session); }
 	}
@@ -98,10 +101,18 @@ export class WorkspaceStore {
 				break;
 			case "fork": {
 				if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before forking it.");
-				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, status: "idle", queue: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
+				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
+			case "steer-queue":
+			case "steer-discard": {
+				const message = task.steering?.find(value => value.id === command.messageId);
+				if (!message || message.status === "sending") throw new Error("This instruction is still sending or is no longer pending.");
+				if (command.type === "steer-queue") { if (task.archived) throw new Error("Restore this task before queueing a message."); task.queue.push({ id: message.id, text: message.text, attachments: message.attachments, createdAt: message.createdAt }); }
+				task.steering = task.steering?.filter(value => value.id !== message.id); break;
+			}
+			case "steer": throw new Error("Live steering must be sent through the workspace runtime.");
 			case "queue-edit": {
 				const message = task.queue.find(message => message.id === command.messageId);
 				if (!message) throw new Error("This message is no longer queued.");

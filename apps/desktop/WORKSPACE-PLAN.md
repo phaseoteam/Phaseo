@@ -75,7 +75,12 @@ The desktop enforces one process per user-data directory to prevent duplicate
 task execution and service ownership. Native configuration/accounts remain owned
 by OpenCode; the Phaseo service does not install or upgrade a global CLI.
 
-Evidence: desktop lint/typecheck/build pass; 87 deterministic tests cover protocol,
+Codex live steering targets the active native turn and records a client message
+identity before delivery. Rejected or unacknowledged instructions remain visible
+for explicit queue/discard decisions; restart never replays an uncertain send.
+Other harnesses still use ordinary queued messages.
+
+Evidence: desktop lint/typecheck/build pass; 93 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

@@ -138,6 +138,7 @@ app.whenReady().then(async () => {
 		const fixtureDb = new DatabaseSync(path.join(data, "workspace", "workspace.sqlite"));
 		const taskRow = fixtureDb.prepare("SELECT data FROM tasks LIMIT 1").get();
 		const fixtureTask = JSON.parse(taskRow.data);
+		fixtureTask.steering = [{ id: "fixture-steering", text: "Unacknowledged instruction", createdAt: new Date().toISOString(), status: "unconfirmed", error: "Fixture connection closed" }];
 		fixtureTask.forms = [{ id: "fixture-request", form: { id: "fixture-form", title: "Form interaction check", fields: [
 			{ key: "enabled", type: "boolean", title: "Include details", default: false },
 			{ key: "count", type: "integer", title: "Item count", default: 2, minimum: 1, maximum: 5, when: [{ key: "enabled", op: "eq", value: true }] },
@@ -148,6 +149,10 @@ app.whenReady().then(async () => {
 		await window.webContents.executeJavaScript(`(async () => {
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:${JSON.stringify(fixtureTask.id)},title:'Electron bridge check'});
 			await new Promise(resolve => setTimeout(resolve,100));
+			const recovery=Array.from(document.querySelectorAll('.task-approval')).find(card=>card.textContent.includes('Unacknowledged instruction'));
+			if (!recovery || !recovery.textContent.includes('Delivery unconfirmed') || !recovery.textContent.includes('may send it twice')) throw new Error('Steering recovery did not render');
+			Array.from(recovery.querySelectorAll('button')).find(button=>button.textContent==='Discard').click();
+			await new Promise(resolve => setTimeout(resolve,100)); if ((await window.phaseoDesktop.workspace.get()).tasks.find(task=>task.id===${JSON.stringify(fixtureTask.id)}).steering.length) throw new Error('Steering recovery discard failed');
 			const toggle=document.querySelector('select[aria-label="Include details"]');
 			if (!toggle || toggle.value!=='false' || document.querySelector('[aria-label="Item count"]')) throw new Error('Form defaults or initial visibility failed');
 			Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(toggle,'true'); toggle.dispatchEvent(new Event('change',{bubbles:true}));
@@ -165,6 +170,7 @@ app.whenReady().then(async () => {
 			await new Promise(resolve => setTimeout(resolve,100)); if (!choice.checked) throw new Error('Form selection did not update');
 		})()`);
 		result.forms = true;
+		result.steeringRecovery = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);

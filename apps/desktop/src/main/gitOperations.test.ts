@@ -48,6 +48,6 @@ describe("Git workspace actions", () => {
 			expect(readFileSync(path.join(root, "renamed file.txt"), "utf8")).toBe("Before\nExtra\n");
 			await expect(gitCommand(root, { type: "stage", filename: "../outside" })).rejects.toThrow("inside");
 			await expect(gitCommand(root, { type: "switch-branch", name: "--detach" })).rejects.toThrow("branch name");
-		} finally { rmSync(root, { recursive: true, force: true }); }
+		} finally { rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); }
 	}, 15000);
 });

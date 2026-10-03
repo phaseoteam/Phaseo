@@ -1,10 +1,11 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { Account, AgentQuestion, Task } from "../shared/workspace";
-import { JsonRpc } from "./jsonRpc";
+import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
+import { JsonRpc, JsonRpcResponseError } from "./jsonRpc";
 import { spawnNative } from "./nativeProcess";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -32,7 +33,8 @@ export class CodexAdapter implements AgentAdapter {
 				return { answers: Object.fromEntries(Object.entries(answers).map(([id, values]) => [id, { answers: values }])) };
 			}
 			if (method === "item/commandExecution/requestApproval" || method === "item/fileChange/requestApproval") {
-				const input = params as { command?: string; reason?: string };
+				const input = params as { threadId?: string; command?: string; reason?: string };
+				if (input.threadId !== this.threadId) throw new Error("Approval belongs to another task.");
 				return { decision: await callbacks.onApproval(method, input.command ?? input.reason ?? "Allow this agent action?") };
 			}
 			throw new Error(`Unsupported Codex request: ${method}`);
@@ -49,6 +51,7 @@ export class CodexAdapter implements AgentAdapter {
 				rpc.onNotification = (method, raw) => {
 					const event = raw as CodexEvent;
 					if (event.threadId !== this.threadId) return;
+					if (method === "turn/started" && event.turn) this.turnId = event.turn.id;
 					if (method === "item/agentMessage/delta" && typeof event.delta === "string") callbacks.onDelta(event.itemId ?? "assistant", event.delta);
 					if ((method === "item/reasoning/summaryTextDelta" || method === "item/reasoning/textDelta") && typeof event.delta === "string") callbacks.onActivity?.({ id: event.itemId ?? "reasoning", type: "reasoning", title: "Reasoning", text: event.delta, append: true });
 					if (method === "turn/plan/updated") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: `${event.explanation ?? ""}\n${JSON.stringify(event.plan, null, 2)}` });
@@ -59,16 +62,22 @@ export class CodexAdapter implements AgentAdapter {
 						callbacks.onActivity?.({ id: item.id, type, title: item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
 					}
 					if (method === "turn/completed" && event.turn) {
-						this.rejectTurn = undefined;
+						this.rejectTurn = undefined; this.turnId = undefined;
 						if (event.turn.status === "completed") resolve(); else reject(new Error(event.turn.error?.message ?? `Codex turn ${event.turn.status}.`));
 					}
 				};
 				void rpc.request<{ turn: { id: string } }>("turn/start", {
 					threadId: this.threadId,
 					input: [{ type: "text", text: attachmentPrompt(text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
-				}).then(response => { this.turnId = response.turn.id; }, reject);
+				}).then(response => { if (this.rejectTurn) this.turnId = response.turn.id; }, reject);
 			});
-		} finally { this.rejectTurn = undefined; rpc.close(); this.child.kill(); }
+		} finally { this.rejectTurn = undefined; this.turnId = undefined; rpc.close(); this.child.kill(); }
+	}
+	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
+		if (this.canceled || !this.rpc || !this.threadId || !this.turnId || !this.rejectTurn) throw new AgentInputRejectedError("Codex is not ready for steering. Queue this message instead.");
+		try {
+			await this.rpc.request("turn/steer", { threadId: this.threadId, expectedTurnId: this.turnId, clientUserMessageId: message.id, input: [{ type: "text", text: attachmentPrompt(message.text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))] });
+		} catch (error) { if (error instanceof JsonRpcResponseError) throw new AgentInputRejectedError(error.message, { cause: error }); throw error; }
 	}
 	async cancel() {
 		this.canceled = true;

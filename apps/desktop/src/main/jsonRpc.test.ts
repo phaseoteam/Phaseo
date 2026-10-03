@@ -1,8 +1,13 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { JsonRpc } from "./jsonRpc";
+import { JsonRpc, JsonRpcResponseError } from "./jsonRpc";
 
 describe("native agent transport", () => {
+	it("distinguishes a provider rejection from uncertain transport delivery", async () => {
+		const input = new PassThrough(); const rpc = new JsonRpc(input, new PassThrough()); const request = rpc.request("turn/steer", {});
+		input.write('{"id":1,"error":{"code":-32602,"message":"Turn changed","data":{"turnId":"new"}}}\n');
+		await expect(request).rejects.toBeInstanceOf(JsonRpcResponseError); await expect(request).rejects.toMatchObject({ code: -32602, data: { turnId: "new" } }); rpc.close();
+	});
 	it("closes a failed server-request response without an unhandled rejection", async () => {
 		const input = new PassThrough(); const output = new PassThrough(); const rpc = new JsonRpc(input, output);
 		vi.spyOn(output, "write").mockImplementation(() => { throw new Error("Response write failed"); });

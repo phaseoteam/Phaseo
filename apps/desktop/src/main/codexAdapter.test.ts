@@ -24,6 +24,31 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it("rejects steering precondition errors and approvals for unrelated threads", async () => {
+		let complete: (() => void) | undefined; let response: unknown;
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ id: "foreign", method: "item/fileChange/requestApproval", params: { threadId: "other", reason: "Foreign edit" } }); complete = () => send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+			if (packet.method === "turn/steer") send({ id: packet.id, error: { code: -32602, message: "Turn changed" } });
+			if (String(packet.id) === "foreign") response = packet;
+		});
+		const onApproval = vi.fn(); const adapter = new CodexAdapter(); const execution = adapter.run(task, ".", "Start", { onDelta: () => {}, onSession: () => {}, onApproval });
+		await vi.waitFor(() => expect(complete).toBeDefined()); await expect(adapter.steer({ id: "instruction", text: "Change direction", createdAt: "" }, [])).rejects.toMatchObject({ constructor: expect.any(Function), message: "Turn changed" });
+		await vi.waitFor(() => expect(response).toMatchObject({ error: { message: "Approval belongs to another task." } })); expect(onApproval).not.toHaveBeenCalled(); complete!(); await execution;
+	});
+	it("steers the exact active turn with a stable client message identity", async () => {
+		let complete: (() => void) | undefined;
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); complete = () => send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+			if (packet.method === "turn/steer") { expect(packet.params).toMatchObject({ threadId: "native", expectedTurnId: "turn", clientUserMessageId: "instruction", input: [{ type: "text", text: "Change direction", text_elements: [] }] }); send({ id: packet.id, result: { turnId: "turn" } }); }
+		});
+		const adapter = new CodexAdapter(); const execution = adapter.run(task, ".", "Start", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline" });
+		await vi.waitFor(() => expect(complete).toBeDefined()); await adapter.steer({ id: "instruction", text: "Change direction", createdAt: "" }, []);
+		complete!(); await execution; await expect(adapter.steer({ id: "late", text: "Late", createdAt: "" }, [])).rejects.toThrow("not ready");
+	});
 	it("initializes, streams native output, and waits for the completed turn", async () => {
 		const methods: string[] = [];
 		const child = fixture((packet, send) => {

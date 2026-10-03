@@ -1,4 +1,4 @@
-import type { Account, AgentActivity, AgentQuestion, Task } from "../shared/workspace";
+import type { Account, AgentActivity, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
 
@@ -12,5 +12,7 @@ export type AgentCallbacks = {
 };
 export interface AgentAdapter {
 	run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments?: AttachmentContent[]): Promise<void>;
+	steer?: (message: QueuedMessage, attachments: AttachmentContent[]) => Promise<void>;
 	cancel(): Promise<void>;
 }
+export class AgentInputRejectedError extends Error {}
