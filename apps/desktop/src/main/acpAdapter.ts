@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { Readable, Writable } from "node:stream";
 import path from "node:path";
@@ -14,6 +15,7 @@ import { AcpTerminals } from "./acpTerminals";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -28,6 +30,7 @@ export class AcpAdapter implements AgentAdapter {
 		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
 		let receiving = false; let promptSubmitted = false; let modesViaConfig = false; let nativeModes: ReturnType<typeof acpModes> = [];
 		const tools = new Map<string, ToolCallUpdate>();
+		const completion = new GrokCompletion();
 		const terminals = this.terminals = new AcpTerminals(cwd, callbacks);
 		const checkSession = (sessionId: string) => { if (this.cancelled || sessionId !== this.sessionId) throw new Error("Agent request belongs to an inactive session."); };
 		const app = client({ name: "phaseo-desktop" })
@@ -61,6 +64,7 @@ export class AcpAdapter implements AgentAdapter {
 			})
 			.onNotification("session/update", ({ params }) => {
 				if (!receiving || params.sessionId !== this.sessionId) return;
+				if (typeof params._meta?.promptId === "string" && params._meta.promptId.startsWith("task-completed-")) return;
 				const update = params.update;
 				if (update.sessionUpdate === "agent_message_chunk" && update.content.type === "text") callbacks.onDelta("assistant", update.content.text);
 				if (update.sessionUpdate === "agent_thought_chunk" && update.content.type === "text") callbacks.onActivity?.({ id: "reasoning", type: "reasoning", title: "Reasoning", text: update.content.text, append: true });
@@ -73,6 +77,7 @@ export class AcpAdapter implements AgentAdapter {
 				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(acpModels(update.configOptions)); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
 				if (update.sessionUpdate === "current_mode_update" && !modesViaConfig) { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
 			});
+		for (const method of grokCompletionMethods) app.onNotification(method, (value: unknown) => value, ({ params }) => completion.notify(params));
 		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
@@ -144,9 +149,10 @@ export class AcpAdapter implements AgentAdapter {
 				if (modesViaConfig) { nativeModes = acpModes(undefined, result.configOptions); callbacks.onModes?.(nativeModes); }
 			}
 			clearTimeout(startup); receiving = true;
-			const prompt: PromptRequest = { sessionId: session.sessionId, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };
+			const promptId = randomUUID();
+			const prompt: PromptRequest = { sessionId: session.sessionId, _meta: { promptId, requestId: promptId }, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };
 			promptSubmitted = true;
-			const result = await connection.agent.request("session/prompt", prompt);
+			const result = await completion.run(session.sessionId, promptId, () => connection.agent.request("session/prompt", prompt), this.controller.signal);
 			if (result.stopReason !== "end_turn") throw new Error(`ACP turn stopped: ${result.stopReason}.`);
 		} catch (error) { if (!promptSubmitted && !(error instanceof AgentInputRejectedError)) throw new AgentInputRejectedError(error instanceof Error ? error.message : "ACP setup failed.", { cause: error }); throw error; }
 		finally { clearTimeout(startup); connection.close(); child.kill(); await terminals.close(); }
@@ -155,6 +161,7 @@ export class AcpAdapter implements AgentAdapter {
 		this.cancelled = true;
 		this.controller.abort();
 		try { if (this.connection && this.sessionId) await this.connection.agent.notify("session/cancel", { sessionId: this.sessionId }); }
+		catch { /* Prompt cancellation can close the connection before the notification flushes. */ }
 		finally { this.connection?.close(new Error("Task stopped.")); this.child?.kill(); await this.terminals?.close(); }
 	}
 }

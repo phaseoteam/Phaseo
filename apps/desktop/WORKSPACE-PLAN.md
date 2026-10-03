@@ -185,7 +185,9 @@ ACP mode configuration now prefers the modern configuration selector when an age
 
 An isolated official Grok 1.0.46 Windows binary startup check used verified npm archive integrity, a fresh `GROK_HOME`, disabled auto-updates and forced a process-owned agent instead of a shared leader. Initialization and signed-out session rejection passed with zero login/inference calls. This release advertises `grok.com` authentication and initial models under initialization metadata, differing from the pinned T3 implementation. Native Grok execution, authentication and extension callbacks remain unfinished; the selector stays unavailable until integrated.
 
-Evidence: desktop lint/typecheck/build pass; 231 deterministic tests cover protocol,
+ACP now handles Grok's five native completion notification aliases alongside the standard prompt response. Each submitted prompt carries a unique identifier; completion requires both that identifier and the root session. Child-session, missing-id, previous-turn and background-wake notifications cannot finish the foreground task. Background wake text is excluded from its transcript. Error/rate-limit/unknown completion signals fail the turn, and late RPC failures are consumed after notification completion. Cancellation releases the pending completion without surfacing a connection-flush race. Real SDK packet tests cover all aliases, failure outcomes and cancellation. Native Grok account/model/question/plan integration remains outstanding.
+
+Evidence: desktop lint/typecheck/build pass; 240 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

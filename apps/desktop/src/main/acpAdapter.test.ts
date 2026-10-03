@@ -11,9 +11,42 @@ const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("node:child_process", async importOriginal => ({ ...await importOriginal<typeof ChildProcessModule>(), spawn: native.spawn }));
 import { AcpAdapter } from "./acpAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { grokCompletionMethods } from "./grokCompletion";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(grokCompletionMethods)("settles the foreground prompt from native completion packets (%s)", async method => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onDelta = vi.fn(); let finishRpc!: (value: { stopReason: "end_turn" }) => void;
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ params, client }) => {
+			const promptId = params._meta?.promptId;
+			expect(typeof promptId).toBe("string"); expect(params._meta?.requestId).toBe(promptId);
+			const payload = (sessionId: string, id: unknown) => method.endsWith("prompt_complete") ? { sessionId, promptId: id, stopReason: "end_turn" } : { sessionId, update: { sessionUpdate: "turn_completed", prompt_id: id, stop_reason: "end_turn" } };
+			await client.notify(method, payload("child", promptId));
+			await client.notify(method, payload("native", undefined));
+			await client.notify(method, payload("native", "previous-turn"));
+			await client.notify(method, payload("native", "task-completed-background"));
+			await client.notify("session/update", { sessionId: "native", _meta: { promptId: "task-completed-background" }, update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Background wake" } } });
+			await client.notify("session/update", { sessionId: "native", update: { sessionUpdate: "agent_message_chunk", content: { type: "text", text: "Foreground reply" } } });
+			const pending = new Promise<{ stopReason: "end_turn" }>(resolve => { finishRpc = resolve; });
+			await client.notify(method, payload("native", promptId));
+			return await pending;
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta, onSession: vi.fn(), onApproval: async () => "decline" });
+			expect(onDelta).toHaveBeenCalledExactlyOnceWith("assistant", "Foreground reply"); expect(child.kill).toHaveBeenCalled();
+		} finally { finishRpc?.({ stopReason: "end_turn" }); connection.close(); }
+	});
+	it.each(["error", "rate_limit", "unknown", undefined])("does not treat a failed or invalid native completion as success (%s)", async reason => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ params, client }) => {
+			await client.notify("_x.ai/session/prompt_complete", { sessionId: "native", promptId: params._meta?.promptId, ...(reason ? { stopReason: reason } : {}), agentResult: "Provider-private diagnostic" });
+			throw new Error("Late RPC failure");
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await expect(new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow(reason === "error" ? "ended the turn with an error" : reason === "rate_limit" ? "usage limit" : "unrecognized");
+		} finally { connection.close(); }
+	});
 	it.each(["plan-model", "code-model"])("refreshes dependent model choices before prompting (%s)", async model => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const modeOption = { id: "mode", category: "mode", name: "Mode", type: "select" as const, currentValue: "code", options: [{ value: "code", name: "Code" }, { value: "plan", name: "Plan" }] };
