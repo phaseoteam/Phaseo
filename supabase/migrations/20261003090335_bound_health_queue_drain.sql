@@ -78,4 +78,3 @@ $$;
 
 select cron.schedule('provider-health-refresh-queue', '* * * * *',
   $$set statement_timeout = '10s'; select private.drain_provider_health_refresh(25);$$);
-
