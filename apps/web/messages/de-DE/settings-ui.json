@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "Benutzerprofil",
+		"viewProfile": "Profil anzeigen",
+		"viewKeys": "Schlüssel anzeigen",
+		"viewActivity": "Aktivität anzeigen",
+		"viewLogs": "Protokolle anzeigen",
+		"back": "Zurück zu Mitgliedern",
+		"joined": "Beigetreten am {date}",
+		"usageScope": "Erfolgreiche Anfragen über Schlüssel dieses Benutzers · Letzte 30 Tage",
+		"topModels": "Häufigste Modelle",
+		"noKeys": "Dieser Benutzer hat keine Schlüssel erstellt.",
+		"previous": "Zurück",
+		"next": "Weiter",
+		"recentLogs": "Aktuelle Anfrageprotokolle",
+		"logsScope": "Die letzten 50 Anfragen über die Schlüssel dieses Benutzers in den letzten 30 Tagen.",
+		"logsUnavailable": "Anfrageprotokolle sind vorübergehend nicht verfügbar.",
+		"noLogs": "Keine Anfragen in diesem Zeitraum.",
+		"success": "Erfolgreich",
+		"failed": "Fehlgeschlagen",
+		"owner": "Eigentümer",
+		"admin": "Administrator",
+		"member": "Mitglied"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth-Apps - Einstellungen | Phaseo",
 		"metadataDescription": "Erstellen und verwalten Sie OAuth-Anwendungen für Drittanbieter-Integrationen mit Ihrem Phaseo-Konto.",

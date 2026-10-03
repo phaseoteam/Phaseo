@@ -7,6 +7,18 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account usage settings routes", () => {
+	it("denies a member's attempt to inspect another creator's activity", async () => {
+		const privateReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return Response.json({ id: "viewer" });
+			if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+			privateReads.push(url.pathname); return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=other&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(403); expect(privateReads).toHaveLength(0);
+	});
 	it("filters creator activity by workspace-scoped keys before pagination", async () => {
 		const requestUrls: URL[] = [];
 		let creatorKeysUrl: URL | undefined;
@@ -14,7 +26,7 @@ describe("account usage settings routes", () => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.includes("/auth/v1/admin/users/")) return new Response(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", email: "private@example.com", user_metadata: { avatar_url: "https://example.com/avatar.jpg", secret: "hidden" } }));
-			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]));
+			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
 			if (url.pathname.endsWith("keys") && url.searchParams.has("created_by")) { creatorKeysUrl = url; return new Response(JSON.stringify([{ id: "creator-key" }])); }
 			if (url.pathname.endsWith("users")) return new Response(JSON.stringify([{ display_name: "Alice" }]));
@@ -38,7 +50,7 @@ describe("account usage settings routes", () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
-			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]));
+			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
 			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) requestUrls.push(url);
 			return new Response("[]");

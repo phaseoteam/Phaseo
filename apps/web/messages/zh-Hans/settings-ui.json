@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "用户资料",
+		"viewProfile": "查看用户资料",
+		"viewKeys": "查看用户密钥",
+		"viewActivity": "查看用户活动",
+		"viewLogs": "查看用户日志",
+		"back": "返回成员",
+		"joined": "加入于 {date}",
+		"usageScope": "通过该用户创建的密钥发起的成功请求 · 过去30天",
+		"topModels": "热门模型",
+		"noKeys": "该用户尚未创建密钥。",
+		"previous": "上一页",
+		"next": "下一页",
+		"recentLogs": "最近的请求日志",
+		"logsScope": "过去30天内通过该用户密钥发起的最新50条请求。",
+		"logsUnavailable": "请求日志暂时不可用。",
+		"noLogs": "此期间没有请求。",
+		"success": "成功",
+		"failed": "失败",
+		"owner": "所有者",
+		"admin": "管理员",
+		"member": "成员"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth 应用 - 设置 | Phaseo",
 		"metadataDescription": "创建和管理 OAuth 应用，以便通过 Phaseo 帐户接入第三方服务。",

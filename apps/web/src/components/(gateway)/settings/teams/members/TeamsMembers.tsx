@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { UserUsageChip } from "../../keys/UserUsageChip";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -519,7 +520,7 @@ export default function TeamsMembers({
 											<TableCell className="px-4 py-3">
 												<div className="min-w-0">
 													<div className="truncate font-medium">
-														{member.display_name ?? member.user_id}
+														{member.is_sample || !activeWorkspaceId ? member.display_name ?? member.user_id : <UserUsageChip userId={member.user_id} name={member.display_name ?? null} avatarUrl={null} workspaceId={activeWorkspaceId} currentUserId={currentUserId ?? undefined} canViewWorkspaceUsers={currentUserRole === "owner" || currentUserRole === "admin"} />}
 													</div>
 													{isCurrent || member.is_sample ? (
 														<div className="mt-1">

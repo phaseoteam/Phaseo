@@ -216,6 +216,9 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const from = stringParam(url, "from");
+	const creatorId = stringParam(url, "user");
+	const canViewWorkspaceUsers = ["owner", "admin"].includes(context.role.toLowerCase());
+	if (creatorId && creatorId !== user.id && !canViewWorkspaceUsers) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const to = stringParam(url, "to");
 	const previousFrom = stringParam(url, "previousFrom");
 	const previousTo = stringParam(url, "previousTo");
@@ -281,6 +284,8 @@ accountSettingsUsageRouter.get("/usage/observability", async (c) => {
 		const metadata = await metadataForIds(context, { models, apps });
 		return c.json({
 			creatorFilter: scope.creatorId ? { id: scope.creatorId, name: creator?.name ?? null, avatarUrl: creator?.avatarUrl ?? null } : null,
+			currentUserId: user.id,
+			canViewWorkspaceUsers,
 			appMetadataEntries: metadata.appMetadataEntries,
 			appNameEntries: metadata.appNameEntries,
 			current,

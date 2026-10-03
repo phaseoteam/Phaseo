@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "ユーザープロフィール",
+		"viewProfile": "プロフィールを表示",
+		"viewKeys": "キーを表示",
+		"viewActivity": "アクティビティを表示",
+		"viewLogs": "ログを表示",
+		"back": "メンバーに戻る",
+		"joined": "参加日: {date}",
+		"usageScope": "このユーザーが作成したキーによる成功したリクエスト · 過去30日間",
+		"topModels": "上位モデル",
+		"noKeys": "このユーザーが作成したキーはありません。",
+		"previous": "前へ",
+		"next": "次へ",
+		"recentLogs": "最近のリクエストログ",
+		"logsScope": "過去30日間のこのユーザーのキーによる最新50件のリクエスト。",
+		"logsUnavailable": "リクエストログは一時的に利用できません。",
+		"noLogs": "この期間のリクエストはありません。",
+		"success": "成功",
+		"failed": "失敗",
+		"owner": "オーナー",
+		"admin": "管理者",
+		"member": "メンバー"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth アプリ - 設定 | Phaseo",
 		"metadataDescription": "トレースに含める構造化コンテキストを選択します。",

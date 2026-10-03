@@ -1000,7 +1000,7 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 
 	return (
 		<div className="space-y-4">
-		{initial.creatorFilter && <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 text-sm"><span className="text-muted-foreground">{t("keyDetail.keysCreatedBy")}</span><UserUsageChip userId={initial.creatorFilter.id} name={initial.creatorFilter.name} avatarUrl={initial.creatorFilter.avatarUrl} workspaceId={initial.workspaceId!} /><Link className="ml-auto text-muted-foreground underline hover:text-foreground" href={`/settings/usage/${initialTab}?${clearFilterParams}`}>{t("keyDetail.clearUserFilter")}</Link></div>}
+		{initial.creatorFilter && <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 text-sm"><span className="text-muted-foreground">{t("keyDetail.keysCreatedBy")}</span><UserUsageChip userId={initial.creatorFilter.id} name={initial.creatorFilter.name} avatarUrl={initial.creatorFilter.avatarUrl} workspaceId={initial.workspaceId!} currentUserId={initial.currentUserId} canViewWorkspaceUsers={initial.canViewWorkspaceUsers} /><Link className="ml-auto text-muted-foreground underline hover:text-foreground" href={`/settings/usage/${initialTab}?${clearFilterParams}`}>{t("keyDetail.clearUserFilter")}</Link></div>}
 		<ObservabilityHub
 			data={data}
 			guardrailMetrics={guardrailMetrics}

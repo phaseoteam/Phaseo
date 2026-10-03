@@ -26,7 +26,7 @@ export function KeyUsageCharts({ chart }: { chart: KeyDetailData["chart"] }) {
 			<section className="min-w-0 rounded-xl border bg-card p-5"><h3 className="mb-4 text-sm font-medium">{t("keyDetail.spendUsd")}</h3>
 				<ChartContainer config={config} className="h-56 w-full"><AreaChart accessibilityLayer data={chart.points} margin={{ left: 0, right: 8 }}>
 					<CartesianGrid vertical={false} /><XAxis dataKey="date" tickFormatter={label} minTickGap={35} tickLine={false} axisLine={false} /><YAxis width={55} tickFormatter={usd} tickLine={false} axisLine={false} />
-					<ChartTooltip content={<ChartTooltipContent labelFormatter={tooltipDate} formatter={(value) => usd(Number(value))} />} /><Area type="linear" dataKey="spendUsd" stroke="var(--color-spendUsd)" fill="var(--color-spendUsd)" fillOpacity={0.15} />
+					<ChartTooltip content={<ChartTooltipContent labelFormatter={tooltipDate} formatter={(value) => usd(Number(value))} />} /><Area type="monotone" dataKey="spendUsd" stroke="var(--color-spendUsd)" fill="var(--color-spendUsd)" fillOpacity={0.15} />
 				</AreaChart></ChartContainer>
 			</section>
 		</div>}

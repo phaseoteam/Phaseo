@@ -4,6 +4,7 @@ import { fetchSettingsKeysInitialData } from "./fetchSettingsKeysInitialData";
 import { matchesKeyRouteName } from "@/components/(gateway)/settings/keys/keyDetailHref";
 
 export type KeyDetailData = {
+	currentUserId?: string;
 	observedAt: number;
 	key: {
 		id: string; workspace_id: string; name: string; prefix: string; status: string;
