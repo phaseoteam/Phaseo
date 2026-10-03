@@ -139,6 +139,11 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => gitCommand(projectRoot(event, id), command));
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
+ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
+	projectRoot(event, id);
+	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
+	return workspaceRuntime.createWorktree(id, branch, base);
+});
 ipcMain.handle("workspace:read-document", async (event, id: unknown, filename: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof filename !== "string") throw new Error("Invalid file request.");

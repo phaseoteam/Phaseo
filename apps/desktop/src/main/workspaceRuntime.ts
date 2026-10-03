@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
 import type { AgentActivity, AgentConnection, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { CodexAdapter } from "./codexAdapter";
@@ -22,6 +22,7 @@ import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
+import { createGitWorktree } from "./gitWorktrees";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -46,6 +47,7 @@ export class WorkspaceRuntime {
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
 	private readonly imports = new Set<Promise<unknown>>();
+	private readonly worktreeOperations = new Set<Promise<unknown>>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
@@ -56,6 +58,18 @@ export class WorkspaceRuntime {
 		this.openCode = new OpenCodeService(directory);
 	}
 	private broadcast() { this.onChange(this.store.get()); }
+	async createWorktree(projectId: string, branch: string, base: string) {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		const operation = this.performCreateWorktree(projectId, branch, base); this.worktreeOperations.add(operation);
+		try { return await operation; } finally { this.worktreeOperations.delete(operation); }
+	}
+	private async performCreateWorktree(projectId: string, branch: string, base: string) {
+		const source = this.store.get().projects.find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
+		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
+		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); return { workspace: this.store.get(), projectId: project.id }; }
+		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
+	}
 	mcp(command: McpCommand): Workspace {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const connection = command.connection; const workspace = this.store.get(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
@@ -332,6 +346,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);
 		await Promise.allSettled([...this.imports]);
+		await Promise.allSettled([...this.worktreeOperations]);
 		await this.openCode.close();
 		this.store.close();
 	}

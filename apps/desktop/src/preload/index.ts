@@ -6,6 +6,7 @@ const desktopApi: PhaseoDesktopApi = {
 		get: () => ipcRenderer.invoke("workspace:get"),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
+		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
 		chooseAttachments: id => ipcRenderer.invoke("workspace:choose-attachments", id),
 		exportTask: (id, format) => ipcRenderer.invoke("workspace:export-task", id, format),
 		importTask: configuration => ipcRenderer.invoke("workspace:import-task", configuration),

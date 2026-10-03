@@ -3,7 +3,7 @@ import type { McpCommand, McpConnection } from "./mcp";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string } };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string };
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
@@ -68,6 +68,7 @@ export type WorkspaceApi = {
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<Workspace>;
 	chooseProject: () => Promise<Workspace>;
+	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: Workspace; projectId: string }>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: Workspace; taskId: string } | undefined>;

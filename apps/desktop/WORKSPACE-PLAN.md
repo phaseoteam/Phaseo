@@ -159,7 +159,15 @@ process and preserves the original task input. A crash during sign-in recovers t
 same original input for explicit retry. Owned Electron fixtures verify interactive
 completion and cancellation without real provider sign-in or inference.
 
-Evidence: desktop lint/typecheck/build pass; 190 deterministic tests cover protocol,
+Git review creates a new managed worktree from a chosen commit/ref and new branch,
+registers it as a linked project and makes it available to tasks, files and
+terminals. Source working changes remain in the source checkout. Git mutation
+queues share the repository's common Git directory across worktrees; review reads
+disable optional index locking. Real Git fixtures verify commit/branch isolation
+and durable project relationships, and Electron verifies the creation controls.
+Worktree removal, checkout handoff and pull-request workflows remain outstanding.
+
+Evidence: desktop lint/typecheck/build pass; 193 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

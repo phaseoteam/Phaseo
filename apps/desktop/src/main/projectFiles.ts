@@ -30,7 +30,7 @@ export async function readProjectFile(root: string, filename: string): Promise<s
 }
 
 export async function gitReview(root: string): Promise<GitReview> {
-	const git = async (args: string[]) => (await execute("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024 })).stdout;
+	const git = async (args: string[]) => (await execute("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
 	const [status, diff, stagedDiff, branch] = await Promise.all([
 		git(["status", "--porcelain=v1", "-z"]), git(["diff", "--no-ext-diff", "--no-textconv"]),
 		git(["diff", "--cached", "--no-ext-diff", "--no-textconv"]), git(["branch", "--show-current"]),

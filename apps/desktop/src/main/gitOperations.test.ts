@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { gitBranches, gitCommand } from "./gitOperations";
+import { gitReview } from "./projectFiles";
 
 describe("Git workspace actions", () => {
 	it("accepts an alias of the repository root and rejects a nested project", async () => {
@@ -36,7 +37,7 @@ describe("Git workspace actions", () => {
 			await gitCommand(root, { type: "unstage", filename: "[literal].txt" });
 			expect(git(["diff", "--cached"])).toBe("");
 			await gitCommand(root, { type: "stage", filename: "[literal].txt" });
-			await gitCommand(root, { type: "commit", message: "Fixture edit" });
+			await Promise.all([gitCommand(root, { type: "commit", message: "Fixture edit" }), ...Array.from({ length: 5 }, () => gitReview(root))]);
 			expect((await gitCommand(root, { type: "switch-branch", name: "fixture" })).branch).toBe("fixture");
 			expect(await gitBranches(root)).toEqual(["feature/fixture", "fixture"]);
 			git(["mv", "--", "[literal].txt", "renamed file.txt"]);
