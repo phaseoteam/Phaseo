@@ -11,6 +11,8 @@ import { KeyUsageCharts } from "../keys/KeyUsageCharts";
 import { keyDetailHref } from "../keys/keyDetailHref";
 import type { WorkspaceUserData } from "@/lib/fetchers/internal/fetchWorkspaceUser";
 import { WorkspaceUserModelIdentity } from "./WorkspaceUserModelIdentity";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 	const t = useTranslations("SettingsUI");
@@ -35,14 +37,16 @@ export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 			</> : <p className="rounded-xl border p-5 text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p>}
 		</section>
 		<section className="space-y-4"><h2 className="text-lg font-semibold">{t("workspaceUser.topModels")}</h2>
-			{data.analytics === null ? <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p> : !data.analytics.models.length ? <p className="text-sm text-muted-foreground">{t("keyDetail.noRequests")}</p> : <div className="overflow-x-auto rounded-xl border bg-card">
-				<table className="w-full text-left text-sm">
-					<thead className="border-b bg-muted/30 text-xs text-muted-foreground"><tr><th className="px-5 py-3 font-medium">{t("strings.Model")}</th><th className="px-5 py-3 text-right font-medium">{t("oauthDetail.requests")}</th><th className="px-5 py-3 text-right font-medium">{t("keyDetail.spendUsd")}</th></tr></thead>
-					<tbody className="divide-y">{data.analytics.models.map((model) => <tr key={model.modelId} className="transition-colors hover:bg-muted/30">
-						<td className="px-5 py-4"><WorkspaceUserModelIdentity modelId={model.modelId} metadata={modelMetadata} /></td>
-						<td className="px-5 py-4 text-right tabular-nums">{format.number(model.requests)}</td><td className="px-5 py-4 text-right tabular-nums">{money(model.spendUsd)}</td>
-					</tr>)}</tbody>
-				</table>
+			{data.analytics === null ? <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p> : !data.analytics.models.length ? <p className="text-sm text-muted-foreground">{t("keyDetail.noRequests")}</p> : <div className="min-w-0 max-w-full overflow-hidden rounded-md border">
+				<ScrollArea className="w-full" scrollBarOrientation="horizontal" keepScrollbarMounted viewportClassName="w-full pb-2">
+					<Table wrapInContainer={false} aria-label={t("workspaceUser.topModels")} data-density="regular" className="isolate border-separate border-spacing-0 whitespace-nowrap text-xs [&_tr]:border-0 [&_thead_th]:border-b [&_tbody_tr:not(:last-child)>td]:border-b [&_tbody_td:not([colspan])]:py-2">
+						<TableHeader><TableRow className="h-9"><TableHead>{t("strings.Model")}</TableHead><TableHead className="text-right">{t("oauthDetail.requests")}</TableHead><TableHead className="text-right">{t("keyDetail.spendUsd")}</TableHead></TableRow></TableHeader>
+						<TableBody>{data.analytics.models.map((model) => <TableRow key={model.modelId}>
+							<TableCell className="py-2 font-medium"><WorkspaceUserModelIdentity modelId={model.modelId} metadata={modelMetadata} /></TableCell>
+							<TableCell className="py-2 text-right font-mono text-xs tabular-nums">{format.number(model.requests)}</TableCell><TableCell className="py-2 text-right font-mono text-xs tabular-nums">{money(model.spendUsd)}</TableCell>
+						</TableRow>)}</TableBody>
+					</Table>
+				</ScrollArea>
 			</div>}
 		</section>
 		<section id="keys" className="scroll-mt-20 space-y-4"><h2 className="text-lg font-semibold">{t("headers.apiKeys")} <span className="text-muted-foreground">{format.number(data.keyCount)}</span></h2>

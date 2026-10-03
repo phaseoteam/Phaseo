@@ -10,7 +10,7 @@ const metadata = new Map([["gpt-5-alias", { modelName: "GPT-5", organisationId: 
 
 it("shows catalog names and organisation logos with canonical model links", () => {
 	const html = renderToStaticMarkup(<WorkspaceUserModelIdentity modelId="gpt-5-alias" metadata={metadata} />);
-	expect(html).toContain("GPT-5");
+	expect(html).toContain("OpenAI: GPT 5");
 	expect(html).toContain("OpenAI");
 	expect(html).toContain('data-logo="openai"');
 	expect(html).toContain('href="/models/openai/gpt-5"');
