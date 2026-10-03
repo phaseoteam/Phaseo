@@ -4,8 +4,7 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
 import dynamic from "next/dynamic";
-import { useFeatureGate } from "@statsig/react-bindings";
-import { GATEWAY_TRACE_VIEW_GATE } from "@/lib/statsig/shared";
+import { useTraceViewEnabled } from "./TraceViewGate";
 import { useLocale, useTranslations } from "next-intl";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
@@ -821,7 +820,7 @@ export default function RequestDetailDialog({
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const traceEnabled = useFeatureGate(GATEWAY_TRACE_VIEW_GATE).value;
+	const traceEnabled = useTraceViewEnabled();
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
