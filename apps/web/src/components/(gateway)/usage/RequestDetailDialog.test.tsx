@@ -9,9 +9,9 @@ import React from "react";
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
+import { TraceViewGateProvider } from "./TraceViewGate";
 
 let mockTraceEnabled = false;
-jest.mock("@statsig/react-bindings", () => ({ useFeatureGate: () => ({ value: mockTraceEnabled }) }));
 
 const router = {
 	push: jest.fn(),
@@ -59,7 +59,7 @@ const historicalRequestWithoutCollections = {
 describe("RequestDetailDialog", () => {
 	beforeEach(() => { mockTraceEnabled = false; });
 	it("shows the Trace tab only when its rollout gate passes", () => {
-		const render = () => renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		const render = () => renderToStaticMarkup(<TraceViewGateProvider enabled={mockTraceEnabled}><RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} /></TraceViewGateProvider>);
 		expect(render()).not.toContain('value="trace"');
 		mockTraceEnabled = true;
 		expect(render()).toContain("Trace");

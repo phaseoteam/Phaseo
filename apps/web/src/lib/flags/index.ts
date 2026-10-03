@@ -9,6 +9,7 @@ import {
 	VIDEO_API_GATE,
 	REALTIME_VOICE_GATE,
 	GATEWAY_IO_LOGGING_GATE,
+	GATEWAY_TRACE_VIEW_GATE,
 	AUTO_ROUTING_GATE,
 	PRESET_EXPERIMENTS_GATE,
 	SAML_SSO_GATE,
@@ -23,6 +24,17 @@ import { identify } from "./identify";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 
 const statsigAdapter = getStatsigFlagsAdapter();
+
+export const gatewayTraceViewFlag = statsigAdapter
+	? flag<boolean, StatsigUser>({
+			key: GATEWAY_TRACE_VIEW_GATE,
+			identify,
+			adapter: statsigAdapter.featureGate((gate) => gate.value),
+		})
+	: flag<boolean>({
+			key: GATEWAY_TRACE_VIEW_GATE,
+			decide: () => false,
+		});
 
 export const gatewayNewHeroFlag = statsigAdapter
 	? flag<boolean, StatsigUser>({
