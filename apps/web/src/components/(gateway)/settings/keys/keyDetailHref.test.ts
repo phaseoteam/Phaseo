@@ -16,4 +16,12 @@ describe("key route name comparison", () => {
 		expect(matchesKeyRouteName("literal%2F", "literal%2F")).toBe(true);
 		expect(matchesKeyRouteName("other", "100%")).toBe(false);
 	});
+	it.each([
+		["100% / prod", "100% %2F prod"],
+		["literal%2F / prod", "literal%252F %2F prod"],
+		["100% / prod", "100%25%20%2F%20prod"],
+		["東京 / 100%", "東京 %2F 100%"],
+	])("matches partially escaped names with literal percent signs: %s", (name, routeName) => {
+		expect(matchesKeyRouteName(name, routeName)).toBe(true);
+	});
 });
