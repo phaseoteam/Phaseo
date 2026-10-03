@@ -18,6 +18,8 @@ import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
 import { OpenCodeService } from "./openCodeService";
+import type { ImportedConversation } from "./taskImport";
+import type { Attachment } from "../shared/workspace";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -40,6 +42,7 @@ export class WorkspaceRuntime {
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
+	private readonly imports = new Set<Promise<unknown>>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
@@ -49,6 +52,25 @@ export class WorkspaceRuntime {
 		this.openCode = new OpenCodeService(directory);
 	}
 	private broadcast() { this.onChange(this.store.get()); }
+	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
+		const execution = this.performImport(command, conversation); this.imports.add(execution);
+		try { return await execution; } finally { this.imports.delete(execution); }
+	}
+	private async performImport(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		const prepared = new Map<string, Attachment>();
+		let committed = false;
+		try {
+			for (const file of conversation.attachments) {
+				if (this.closing) throw new Error("The workspace is shutting down.");
+				prepared.set(file.id, await this.attachments.prepare("", file.name, file.bytes));
+			}
+			if (this.closing) throw new Error("The workspace is shutting down.");
+			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()]);
+			committed = true;
+			this.broadcast(); return { workspace: this.store.get(), taskId: task.id };
+		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
+	}
 	async command(command: WorkspaceCommand): Promise<Workspace> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if (command.type === "steer") {
@@ -261,6 +283,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);
+		await Promise.allSettled([...this.imports]);
 		await this.openCode.close();
 		this.store.close();
 	}

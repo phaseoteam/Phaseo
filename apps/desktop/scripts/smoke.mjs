@@ -185,6 +185,17 @@ app.whenReady().then(async () => {
 			await new Promise(resolve => setTimeout(resolve, 100));
 		}
 		result.exports = true;
+		dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path.join(data, "Electron bridge check.json")] });
+		await window.webContents.executeJavaScript(`(async () => {
+			document.querySelector('[aria-label="New task"]').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const importer=Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Import conversation'); if (!importer) throw new Error('Import control missing'); importer.click();
+			let imported; for (let attempt=0;attempt<100;attempt++) { imported=(await window.phaseoDesktop.workspace.get()).tasks.find(task=>task.id!==${JSON.stringify(fixtureTask.id)}); if (imported) break; await new Promise(resolve=>setTimeout(resolve,100)); }
+			if (!imported || imported.status!=='idle' || imported.nativeSessionId || imported.queue.length || imported.messages[0].text!=='Export conversation fixture') throw new Error('Fresh task import failed');
+			const pdf=imported.messages[0].attachments.find(file=>file.mimeType==='application/pdf'); if (!pdf || pdf.taskId!==imported.id) throw new Error('Imported PDF ownership failed');
+			const preview=await window.phaseoDesktop.workspace.attachment(imported.id,pdf.id); if (!preview.text.includes('Fixture PDF text')) throw new Error('Imported PDF extraction failed');
+			await new Promise(resolve=>setTimeout(resolve,100)); if (!document.querySelector('.task-message')?.textContent.includes('Export conversation fixture')) throw new Error('Imported conversation did not render');
+		})()`);
+		result.imports = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);

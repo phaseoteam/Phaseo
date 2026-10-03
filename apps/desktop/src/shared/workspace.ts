@@ -58,6 +58,7 @@ export type WorkspaceApi = {
 	chooseProject: () => Promise<Workspace>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
+	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: Workspace; taskId: string } | undefined>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;

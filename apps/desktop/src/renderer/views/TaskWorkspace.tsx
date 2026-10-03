@@ -61,6 +61,13 @@ export function TaskWorkspace() {
 		const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
 		if (state) { setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); setHandoffId(undefined); }
 	}
+	async function importConversation() {
+		if (!api || busy) return; setBusy(true); setError("");
+		try {
+			const result = await api.importTask({ type: "create-task", harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
+			if (result) { setWorkspace(result.workspace); setSelectedId(result.taskId); setHandoffId(undefined); }
+		} catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+	}
 	async function send(delivery: "send" | "steer" = "send") {
 		if (!selected || (!text.trim() && !pendingAttachments.length) || busy || uploading) return;
 		setBusy(true);
@@ -99,6 +106,7 @@ export function TaskWorkspace() {
 				</div>
 				{handoffId && <p className="task-muted">Continue “{workspace.tasks.find(task => task.id === handoffId)?.title}” with the selected harness. Conversation messages carry over; native tool state stays with the original task.</p>}
 				<button className="task-primary" type="button" onClick={() => void create()} disabled={!model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "acp" && !agentId)}>{handoffId ? "Create handoff" : "Create task"} <Plus size={16} /></button>
+				{!handoffId && <button type="button" disabled={busy || !model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "acp" && !agentId)} onClick={() => void importConversation()}>Import conversation</button>}
 				<small className="task-muted">{harness === "phaseo" ? "Code and Plan require a Responses-compatible API account. File changes require approval." : harness === "pi" ? "Uses Pi’s native account, extensions and tool policies. Models use provider/model names." : harness === "acp" ? "Uses the connected agent’s native account and settings." : harness === "opencode" ? "Uses your local OpenCode 2 service and its connected accounts." : `Uses ${accountId ? "your selected" : "your existing local"} ${harness === "claude" ? "Claude Code" : "Codex"} account.`}</small>
 			</div> : <>
 				<header className="task-toolbar"><div><input className="task-title" aria-label="Task title" key={selected.id + selected.title} defaultValue={selected.title} maxLength={200} onBlur={event => { const title = event.target.value.trim(); if (title && title !== selected.title) void command({ type: "update-task", id: selected.id, title }); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} /><small>{selected.harness} · {selected.mode} · {selected.status}</small></div>

@@ -65,6 +65,17 @@ export class WorkspaceStore {
 	saveAgent(agent: AgentConnection) { this.db.prepare("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
 	getAttachment(id: string): Attachment | undefined { const row = this.db.prepare("SELECT data FROM attachments WHERE id=?").get(id); return row ? JSON.parse(row.data as string) as Attachment : undefined; }
 	saveAttachment(attachment: Attachment) { this.db.prepare("INSERT INTO attachments (id, data) VALUES (?, ?)").run(attachment.id, JSON.stringify(attachment)); }
+	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom">, attachments: Attachment[]): Task {
+		this.db.exec("BEGIN");
+		try {
+			const task = this.apply(command);
+			const files = new Map(attachments.map(attachment => [attachment.id, { ...attachment, taskId: task.id }]));
+			for (const attachment of files.values()) this.saveAttachment(attachment);
+			task.title = conversation.title; task.createdAt = conversation.createdAt; task.handoffFrom = conversation.handoffFrom;
+			task.messages = conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(attachment => { const file = files.get(attachment.id); if (!file) throw new Error("An imported attachment is missing."); return file; }) }));
+			this.saveTask(task); this.db.exec("COMMIT"); return task;
+		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
+	}
 	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "add-agent" }>): Task {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);

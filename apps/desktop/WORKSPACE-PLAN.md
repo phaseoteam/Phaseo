@@ -88,9 +88,12 @@ for native execution to settle.
 
 Conversation export supports Markdown with document text/embedded images and
 versioned JSON with original attachments. Native session/account references and
-project paths are excluded. Conversation import remains outstanding.
+project paths are excluded. JSON import restores messages and original files into
+a fresh task with the selected harness/account/project. It revalidates file bytes,
+regenerates attachment/message IDs and commits task/file references together;
+importing never starts execution or carries native runtime configuration.
 
-Evidence: desktop lint/typecheck/build pass; 104 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 114 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

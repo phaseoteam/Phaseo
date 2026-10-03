@@ -27,7 +27,9 @@ export async function taskExport(task: Task, format: TaskExportFormat, attachmen
 			if (bytes.length !== attachment.size) throw new Error("Attachment data is incomplete.");
 			files.push({ id: attachment.id, name: attachment.name, kind: attachment.kind, mimeType: attachment.mimeType, size: bytes.length, pages: attachment.pages, encoding: "base64", data: bytes.toString("base64"), ...(attachment.text !== undefined ? { text: attachment.text } : {}) });
 		}
-		return JSON.stringify({ format: "phaseo-conversation", version: 1, exportedAt: new Date().toISOString(), title: task.title, harness: task.harness, model: task.model, mode: task.mode, createdAt: task.createdAt, messages: task.messages.map(message => ({ role: message.role, text: message.text, createdAt: message.createdAt, delivery: message.delivery, attachments: message.attachments?.map(attachment => attachment.id) })), attachments: files }, null, 2) + "\n";
+		const content = JSON.stringify({ format: "phaseo-conversation", version: 1, exportedAt: new Date().toISOString(), title: task.title, harness: task.harness, model: task.model, mode: task.mode, createdAt: task.createdAt, messages: task.messages.map(message => ({ role: message.role, text: message.text, createdAt: message.createdAt, delivery: message.delivery, attachments: message.attachments?.map(attachment => attachment.id) })), attachments: files }, null, 2) + "\n";
+		if (Buffer.byteLength(content) > 200 * 1024 * 1024) throw new Error("This conversation export exceeds 200 MB.");
+		return content;
 	}
 	const sections = [`# ${heading(task.title)}`, `${heading(task.harness)} · ${heading(task.model)} · ${task.mode}`];
 	for (const message of task.messages) {

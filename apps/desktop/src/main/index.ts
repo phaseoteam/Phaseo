@@ -17,6 +17,7 @@ import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { piEntries } from "./piAdapter";
 import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
+import { readConversation } from "./taskImport";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -131,6 +132,13 @@ ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unkno
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	const content = await taskExport(task, format, workspaceRuntime.attachments);
 	await saveTaskExport(result.filePath, content); return true;
+});
+ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
+	const window = senderWindow(event); if (!window) throw new Error("Invalid conversation import.");
+	const command = validateCommand(value); if (command.type !== "create-task") throw new Error("Choose a destination for the imported conversation.");
+	const result = await dialog.showOpenDialog(window, { title: "Import conversation", properties: ["openFile"], filters: [{ name: "Phaseo conversation", extensions: ["json"] }] });
+	if (result.canceled || !result.filePaths[0]) return undefined;
+	return workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
 });
 ipcMain.handle("workspace:command", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");

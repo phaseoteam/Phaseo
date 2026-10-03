@@ -28,18 +28,29 @@ export class AttachmentService {
 			if (length !== metadata.size || after.size !== metadata.size || after.mtimeMs !== metadata.mtimeMs) throw new Error("The attachment changed while it was being read. Choose it again.");
 			bytes = bytes.subarray(0, length);
 		} finally { await file.close(); }
+		const attachment = await this.prepare(taskId, path.basename(filename), bytes);
+		try { this.repository.saveAttachment(attachment); return attachment; }
+		catch (error) { await this.discard(attachment); throw error; }
+	}
+	async prepare(taskId: string, name: string, bytes: Buffer): Promise<Attachment> {
+		if (bytes.length > 10 * 1024 * 1024) throw new Error("Attachments must be files up to 10 MB.");
 		const mimeType = imageMime(bytes);
 		const pdf = bytes.subarray(0, 5).toString() === "%PDF-" ? await extractPdfText(bytes) : undefined;
 		if (!mimeType && !pdf) {
 			if (bytes.length > 2 * 1024 * 1024 || bytes.includes(0)) throw new Error("Choose a supported image or a UTF-8 text document up to 2 MB.");
 			try { new TextDecoder("utf-8", { fatal: true }).decode(bytes); } catch { throw new Error("This document is not UTF-8 text."); }
 		}
-		const attachment: Attachment = { id: randomUUID(), taskId, name: path.basename(filename), kind: mimeType ? "image" : "text", mimeType: mimeType ?? (pdf ? "application/pdf" : "text/plain"), size: bytes.length, ...(pdf ? { pages: pdf.pages } : {}) };
+		const attachment: Attachment = { id: randomUUID(), taskId, name: path.basename(name), kind: mimeType ? "image" : "text", mimeType: mimeType ?? (pdf ? "application/pdf" : "text/plain"), size: bytes.length, ...(pdf ? { pages: pdf.pages } : {}) };
 		await mkdir(this.directory, { recursive: true });
 		const destination = path.join(this.directory, attachment.id); const temporary = `${destination}.tmp`;
-		try { await writeFile(temporary, bytes, { flag: "wx" }); if (pdf) await writeFile(`${destination}.txt`, pdf.text, { flag: "wx" }); await rename(temporary, destination); this.repository.saveAttachment(attachment); }
+		try { await writeFile(temporary, bytes, { flag: "wx" }); if (pdf) await writeFile(`${destination}.txt`, pdf.text, { flag: "wx" }); await rename(temporary, destination); }
 		catch (error) { await rm(temporary, { force: true }); await rm(destination, { force: true }); await rm(`${destination}.txt`, { force: true }); throw error; }
 		return attachment;
+	}
+	async discard(attachment: Attachment) {
+		if (!/^[a-f0-9-]{36}$/.test(attachment.id)) throw new Error("Invalid attachment.");
+		const filename = path.join(this.directory, attachment.id);
+		await Promise.all([rm(filename, { force: true }), rm(`${filename}.txt`, { force: true })]);
 	}
 	async read(id: string): Promise<AttachmentContent> {
 		if (!/^[a-f0-9-]{36}$/.test(id)) throw new Error("Invalid attachment.");
