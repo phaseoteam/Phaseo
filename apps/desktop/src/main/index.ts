@@ -7,6 +7,7 @@ import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
+import { resolveGrokCommand } from "./grokLaunch";
 import { SecretVault } from "./secretVault";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
@@ -239,9 +240,10 @@ ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknow
 });
 ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return Promise.all((["codex", "claude", "opencode", "pi", "cursor"] as const).map(async harness => {
+	return Promise.all((["codex", "claude", "opencode", "pi", "cursor", "grok"] as const).map(async harness => {
 		try {
 			if (harness === "cursor") return { harness, installed: true, version: "SDK 1.0.31" };
+			if (harness === "grok") { await resolveGrokCommand(); return { harness, installed: true }; }
 			if (harness === "opencode") { const command = await resolveOpenCodeCommand(app.getPath("userData")); return { harness, installed: true, version: command.version }; }
 			await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
 			return { harness, installed: true };

@@ -193,7 +193,9 @@ Grok's native model catalog now feeds ACP task settings, including advertised re
 
 The dedicated Grok backend now resolves the installed native binary directly, disables automatic updates and starts an owned ACP process with supervised Code or native Plan permissions. Selected profiles clear ambient Grok/xAI credentials and routing variables. Cancellation during discovery cannot launch a late process; discovery failures preserve the unsubmitted instruction. Native initialization declares an interactive client and cancellation identifies an explicit user stop. Nine launch/profile tests pass. Real isolated Grok 1.0.46 initialization passes with both permission settings without login or inference. Account creation, sign-in/status, renderer selection and Chat tool isolation remain unfinished; the dedicated harness is not yet exposed in the UI.
 
-Evidence: desktop lint/typecheck/build pass; 270 deterministic tests cover protocol,
+Native harness installation discovery includes Grok and uses the same direct-binary resolver as execution. Four discovery tests verify canonical installation preference, custom installation homes, native PATH fallback and missing installations. An ACP packet test verifies the selected profile environment and interactive client metadata reach the native transport.
+
+Evidence: desktop lint/typecheck/build pass; 275 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

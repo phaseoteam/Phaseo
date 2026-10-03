@@ -16,6 +16,17 @@ import { grokCompletionMethods } from "./grokCompletion";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it("passes the owned Grok profile and interactive client metadata through ACP", async () => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const initialize = vi.fn();
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => { initialize(params); return { protocolVersion: params.protocolVersion, agentCapabilities: {} }; }).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", () => ({ stopReason: "end_turn" })).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await new AcpAdapter({ id: "grok", name: "Grok", executable: "fixture", arguments: [] }, [], { GROK_HOME: "/owned/profile", XAI_API_KEY: undefined }).run({ ...task, harness: "grok" }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+			expect(initialize).toHaveBeenCalledWith(expect.objectContaining({ _meta: { clientType: "extension" } }));
+			expect(native.spawn.mock.lastCall?.[2]).toMatchObject({ shell: false, env: { GROK_HOME: "/owned/profile", XAI_API_KEY: undefined } });
+			expect(child.kill).toHaveBeenCalled();
+		} finally { connection.close(); }
+	});
 	it.each(["initialize", "session", "legacy-resume", "modern", "missing-model", "missing-effort", "default-effort"])("selects Grok models from native catalogs before prompting (%s)", async source => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const catalog = (current: string) => ({ currentModelId: current, availableModels: [{ modelId: "a", name: "A" }, { modelId: "b", name: "B", _meta: { reasoningEffort: "high", reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], credential: "private" } }] });
