@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
+import { createRequire } from "node:module";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-electron-smoke-"));
 app.setPath("userData", data);
@@ -31,6 +32,26 @@ seed.prepare("INSERT INTO projects (id, data) VALUES (?, ?)").run("fixture", JSO
 seed.close();
 const packagedEntry = process.argv.find(argument => argument.startsWith("--app-entry="))?.slice("--app-entry=".length);
 await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "../dist/main/index.mjs");
+// Exercise the real SDK's deferred runtime chunks and local session store without
+// submitting a prompt or contacting a provider, including inside app.asar.
+const runtimeRequire = createRequire(packagedEntry ? path.resolve(packagedEntry) : import.meta.url);
+const cursorEntry = path.join(path.dirname(runtimeRequire.resolve("@cursor/sdk")), "../esm/index.js");
+const { Agent: CursorAgent, JsonlLocalAgentStore } = await import(pathToFileURL(cursorEntry).href);
+const originalFetch = globalThis.fetch;
+let cursorCatalogueRequests = 0;
+try {
+	globalThis.fetch = async input => {
+		if (!String(input).endsWith("/v1/models")) throw new Error("Unexpected Cursor SDK fixture endpoint.");
+		cursorCatalogueRequests++;
+		return new Response(JSON.stringify({ items: [{ id: "auto", displayName: "Auto" }] }), { headers: { "content-type": "application/json" } });
+	};
+	const options = { apiKey: "unused-sdk-fixture-key", model: { id: "auto" }, tools: [], mcpServers: {}, local: { cwd: fixtureProject, store: new JsonlLocalAgentStore(path.join(data, "cursor-sdk-fixture")), settingSources: [], enableAgentRetries: false } };
+	const agent = await CursorAgent.create(options); const id = agent.agentId; await agent[Symbol.asyncDispose]();
+	const resumed = await CursorAgent.resume(id, options);
+	try { if (resumed.agentId !== id) throw new Error("Cursor native session identity changed."); } finally { await resumed[Symbol.asyncDispose](); }
+	if (cursorCatalogueRequests < 1 || cursorCatalogueRequests > 3) throw new Error("Unexpected Cursor SDK catalogue requests.");
+} finally { globalThis.fetch = originalFetch; }
+console.log("CURSOR_SDK_SMOKE", JSON.stringify({ create: true, resume: true, catalogueFixtureRequests: cursorCatalogueRequests, inferenceCalls: 0 }));
 
 app.whenReady().then(async () => {
 	try {
@@ -107,7 +128,9 @@ app.whenReady().then(async () => {
 			const commitInput = document.querySelector('[aria-label="Commit message"]');
 			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(commitInput,'Fixture UI commit'); commitInput.dispatchEvent(new Event('input',{bubbles:true}));
 			await new Promise(resolve => setTimeout(resolve,100));
-			Array.from(document.querySelectorAll('.project-review button')).find(button => button.textContent.trim() === 'Commit staged changes').click();
+			const commitButton=Array.from(document.querySelectorAll('.project-review button')).find(button => button.textContent.trim() === 'Commit staged changes');
+			for(let attempt=0;attempt<50 && commitButton.disabled;attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			if(commitButton.disabled) throw new Error('Git commit control remained disabled'); commitButton.click();
 			let committed = false;
 			for (let attempt = 0; attempt < 50; attempt++) { if (!(await api.gitReview('fixture')).status) { committed = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!committed) throw new Error('Git commit did not finish');
@@ -229,6 +252,26 @@ app.whenReady().then(async () => {
 		})()`);
 		if (readFileSync(path.join(data, "workspace", "credentials", `${updatedAccount.secretId}.credential`)).includes(Buffer.from("rotated-fixture-key"))) throw new Error("API key was stored without encryption");
 		result.accountManagement = true;
+		const cursorAccount = await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;
+			const previousTaskTitle=document.querySelector('.task-title')?.value;
+			const created=await api.command({type:'add-account',name:'Cursor fixture account',harness:'cursor',kind:'api',apiKey:'cursor-initial-fixture-key'}); const account=created.accounts.find(value=>value.name==='Cursor fixture account');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Accounts').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Cursor fixture account')); if(!row.textContent.includes('Cursor API key')) throw new Error('Cursor account label missing');
+			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Edit').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const editor=row.querySelector('form'); const inputs=editor.querySelectorAll('input'); if(inputs.length!==2 || inputs[1].value!=='') throw new Error('Cursor account editor exposed a key or endpoint');
+			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(inputs[1],'cursor-rotated-fixture-key'); inputs[1].dispatchEvent(new Event('input',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100)); editor.requestSubmit();
+			for(let attempt=0;attempt<30 && row.querySelector('form');attempt++) await new Promise(resolve=>setTimeout(resolve,100)); if(row.querySelector('form')) throw new Error('Cursor key rotation did not finish');
+			const updated=(await api.get()).accounts.find(value=>value.id===account.id); if(!updated.secretId || updated.endpoint) throw new Error('Cursor account metadata is invalid');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			document.querySelector('button[aria-label="New task"]').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			if(!Array.from(document.querySelectorAll('option')).some(option=>option.value==='cursor')) throw new Error('Cursor harness selector missing');
+			let rejected=false; try{await api.command({type:'create-task',harness:'cursor',model:'default',mode:'chat'});}catch{rejected=true;} if(!rejected) throw new Error('Cursor allowed an unselected account');
+			const previousRow=Array.from(document.querySelectorAll('.task-row')).find(row=>row.querySelector('span')?.textContent===previousTaskTitle); if(!previousRow) throw new Error('Previous account fixture task missing'); previousRow.click(); await new Promise(resolve=>setTimeout(resolve,100));
+			return updated;
+		})()`);
+		if (readFileSync(path.join(data, "workspace", "credentials", `${cursorAccount.secretId}.credential`)).includes(Buffer.from("cursor-rotated-fixture-key"))) throw new Error("Cursor key was stored without encryption");
+		result.cursorAccounts = true;
 		const agentFixture = path.join(data, "acp-fixture.cjs"); const agentRequests = path.join(data, "acp-requests.txt");
 		writeFileSync(agentFixture, `const readline=require('node:readline'); const fs=require('node:fs'); readline.createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line); fs.appendFileSync(${JSON.stringify(agentRequests)},request.method+'\\n'); if(request.method==='initialize') process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:request.id,result:{protocolVersion:request.params.protocolVersion,agentInfo:{name:'Smoke ACP fixture',version:'1.2.3'},agentCapabilities:{loadSession:true,promptCapabilities:{image:true}},authMethods:[{id:'browser',name:'Browser sign-in'}]}})+'\\n');});`);
 		await window.webContents.executeJavaScript(`(async () => {

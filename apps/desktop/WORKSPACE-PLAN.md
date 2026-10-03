@@ -175,7 +175,11 @@ Missions persist interval or local-time/weekday schedules and use a selected tas
 
 Notification click navigation is buffered in preload until the renderer subscribes, so clicks during window startup are retained.
 
-Evidence: desktop lint/typecheck/build pass; 217 deterministic tests cover protocol,
+Cursor uses the pinned T3 baseline's official SDK 1.0.31. Browser sign-in mints a user key through the SDK with plaintext persistence disabled; managed keys use the existing encrypted device vault, and accounts have isolated JSONL session stores. The renderer supports API-key setup/rotation, status, model discovery, task settings, native streaming/activity/cancellation and acknowledged live steering. Chat disables native tools and ambient settings; Plan uses an explicit read-only tool list; Code requires a whole-turn approval because the SDK has no per-tool approval callbacks. Native policies and Auto-review apply after approval. Managed MCP connections apply to Code turns. Forks create a fresh session with visible history rather than claiming native SDK fork support. Real SDK create/resume checks use a local model-catalogue response fixture and submit no prompt, including inside the Windows packaged archive. Cursor's SDK is proprietary; its unmodified licence notices are preserved. Real Cursor browser login, paid inference, and sandbox execution remain unverified.
+
+Design direction: desktop typography, semantic colour tokens, control sizing, focus treatment and cards should follow the current Phaseo web app. Desktop-specific navigation and workspace layouts retain those shared visual conventions.
+
+Evidence: desktop lint/typecheck/build pass; 228 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

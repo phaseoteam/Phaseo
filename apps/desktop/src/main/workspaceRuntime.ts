@@ -18,6 +18,7 @@ import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
 import { OpenCodeService } from "./openCodeService";
+import { CursorAdapter } from "./cursorAdapter";
 import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
@@ -105,7 +106,7 @@ export class WorkspaceRuntime {
 		const connection = command.connection; const workspace = this.store.get(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
-		if (workspace.tasks.some(task => this.executions.has(task.id) && ["codex", "claude", "opencode", "acp"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
+		if (workspace.tasks.some(task => this.executions.has(task.id) && ["codex", "claude", "opencode", "acp", "cursor"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
 		this.store.saveMcp(connection); this.broadcast(); return this.store.get();
 	}
 	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
@@ -173,6 +174,7 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "update-account") {
 			const account = this.store.get().accounts.find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
+			if (account.harness === "cursor" && command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service.");
 			if (command.endpoint !== undefined || command.apiKey !== undefined) {
 				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
 				if (this.store.get().tasks.some(task => task.accountId === account.id && this.running.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
@@ -267,7 +269,7 @@ export class WorkspaceRuntime {
 		let adapter: AgentAdapter;
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.get().accounts.find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode, this.store.get().mcpConnections, task.projectId);
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.get().mcpConnections) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode, this.store.get().mcpConnections, task.projectId);
 		}
 		catch (error) {
 			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
@@ -307,7 +309,7 @@ export class WorkspaceRuntime {
 		};
 		try {
 			mkdirSync(cwd, { recursive: true });
-			const selectedAttachments = task.harness === "phaseo" || (task.handoffFrom && !task.nativeSessionId) ? task.messages.flatMap(message => message.attachments ?? []) : message.attachments ?? [];
+			const selectedAttachments = task.harness === "phaseo" || ((task.handoffFrom || (task.harness === "cursor" && task.nativeForkFrom)) && !task.nativeSessionId) ? task.messages.flatMap(message => message.attachments ?? []) : message.attachments ?? [];
 			if (selectedAttachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			const attachmentIds = selectedAttachments.map(attachment => attachment.id);
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));

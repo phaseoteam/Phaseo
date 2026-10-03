@@ -25,6 +25,7 @@ async function collect(name, from) {
 	for (const dependency of Object.keys(packageManifest.dependencies ?? {})) await collect(dependency, directory);
 }
 for (const name of [...Object.keys(manifest.dependencies), "react", "react-dom", "lucide-react"]) await collect(name, root);
+await collect(`@cursor/sdk-${process.platform}-${process.arch}`, path.dirname(createRequire(path.join(root, "package.json")).resolve("@cursor/sdk")));
 notices.push({ name: "Mozilla PDF.js (bundled by unpdf)", text: `Copyright Mozilla Foundation\nSource: https://github.com/mozilla/pdf.js\n\n${await readFile(path.join(root, "licenses", "LICENSE.pdfjs.txt"), "utf8")}` });
 await mkdir(path.join(root, "dist"), { recursive: true });
 await writeFile(path.join(root, "dist", "THIRD-PARTY-NOTICES.txt"), "Phaseo desktop — third-party software notices\n\n" + notices.sort((a, b) => a.name.localeCompare(b.name)).map(notice => `${notice.name}\n${"=".repeat(notice.name.length)}\n${notice.text}`).join("\n\n"));

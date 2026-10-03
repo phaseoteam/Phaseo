@@ -4,6 +4,7 @@ import path from "node:path";
 export type CredentialEncryption = { available: () => boolean; encrypt: (value: string) => Buffer; decrypt: (value: Buffer) => string };
 export class SecretVault {
 	constructor(private readonly directory: string, private readonly encryption: CredentialEncryption) { mkdirSync(directory, { recursive: true }); }
+	available() { return this.encryption.available(); }
 	private filename(id: string) {
 		if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new Error("Invalid credential identifier.");
 		return path.join(this.directory, `${id}.credential`);

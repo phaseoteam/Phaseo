@@ -50,7 +50,7 @@ export type TerminalCommand = { type: "open"; projectId?: string } | { type: "wr
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
-	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
+	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
@@ -94,7 +94,7 @@ export type WorkspaceApi = {
 	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
 	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
 	signIn: (accountId: string) => Promise<Workspace>;
-	accountStatus: (harness: "codex" | "claude", accountId?: string) => Promise<AccountStatus>;
+	accountStatus: (harness: "codex" | "claude" | "cursor", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	readFile: (projectId: string, filename: string) => Promise<string>;
@@ -129,11 +129,12 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000)) throw new Error("Invalid agent arguments.");
 	} else if (command.type === "add-account") {
 		string("name", true, 100);
-		if (!["codex", "claude", "phaseo"].includes(command.harness as string)) throw new Error("Invalid account harness.");
+		if (!["codex", "claude", "phaseo", "cursor"].includes(command.harness as string)) throw new Error("Invalid account harness.");
 		if (command.kind === "api" && command.harness === "phaseo") {
 			string("endpoint"); string("apiKey", true, 10000);
 			validateApiEndpoint(command.endpoint as string);
-		} else if (command.kind !== "native" || command.harness === "phaseo") throw new Error("Invalid account type.");
+		} else if (command.kind === "api" && command.harness === "cursor") { string("apiKey", true, 10000); if (command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service."); }
+		else if (command.kind !== "native" || command.harness === "phaseo") throw new Error("Invalid account type.");
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");

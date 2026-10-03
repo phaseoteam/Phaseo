@@ -8,7 +8,7 @@ export function TaskSettings({ task, save, close }: { task: Task; save: (model: 
 	const [models, setModels] = useState<ModelOption[]>(task.nativeModels ?? []); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
 	useEffect(() => {
 		const api = window.phaseoDesktop?.workspace;
-		if (!api || !["codex", "phaseo", "opencode", "pi"].includes(task.harness)) return;
+		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor"].includes(task.harness)) return;
 		let active = true; setLoading(true);
 		void api.models(task.harness, task.accountId, task.projectId).then(value => { if (active) setModels(value); }, reason => { if (active) setError(String(reason)); }).finally(() => { if (active) setLoading(false); });
 		return () => { active = false; };

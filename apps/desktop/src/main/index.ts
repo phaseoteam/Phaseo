@@ -1,5 +1,6 @@
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
@@ -25,6 +26,7 @@ import { validatePreferences } from "../shared/preferences";
 import { TaskNotifications } from "./taskNotifications";
 import { MissionService } from "./missionService";
 import { validateMissionCommand } from "../shared/missions";
+import { cursorAccountStatus, cursorModels, cursorSignIn } from "./cursorAccounts";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -65,7 +67,7 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	await shell.openExternal(url.href);
 });
 ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
-	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
+	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
 	const project = projectId ? workspaceRuntime.store.get().projects.find(value => value.id === projectId) : undefined;
 	if (projectId && !project) throw new Error("Project is unavailable.");
 	const cwd = project?.directory ?? app.getPath("userData");
@@ -75,6 +77,7 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 		if (!account) throw new Error("Choose an API account.");
 		return apiModels(account, credentialVault.get(account.secretId ?? account.id));
 	}
+	if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return cursorModels(credentialVault.get(account.secretId ?? account.id)); }
 	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 	if (harness === "pi") return piModels(cwd);
 	return codexModels(cwd, account);
@@ -97,13 +100,23 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
 	const account = workspaceRuntime.store.get().accounts.find(value => value.id === id);
 	if (!account) throw new Error("Account no longer exists.");
+	if (account.kind !== "native" || account.archived) throw new Error("Choose an active native account for sign-in.");
 	if (signIns.has(id) || accountChecks.has(id)) throw new Error("Sign-in or an account check is already in progress.");
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
-		await signInNative(account, url => shell.openExternal(url), controller.signal);
-		if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
-		const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
-		current.configured = true; workspaceRuntime.store.saveAccount(current);
+		if (account.harness === "cursor") {
+			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
+			if (workspaceRuntime.store.get().tasks.some(task => task.accountId === id && (task.status === "running" || task.status === "waiting"))) throw new Error("Stop this account's tasks before signing in again.");
+			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
+			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
+			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); credentialVault.set(newSecret, result.apiKey); current.secretId = newSecret; current.configured = true;
+			try { workspaceRuntime.store.saveAccount(current); } catch (error) { credentialVault.remove(newSecret); throw error; } credentialVault.remove(oldSecret);
+		} else {
+			await signInNative(account, url => shell.openExternal(url), controller.signal);
+			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
+			const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
+			current.configured = true; workspaceRuntime.store.saveAccount(current);
+		}
 		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return state;
 	} finally { signIns.delete(id); }
 });
@@ -112,13 +125,13 @@ ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	signIns.get(id)?.abort();
 });
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
-	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
-	const account = id ? workspaceRuntime.store.get().accounts.find(value => value.id === id && value.harness === harness && value.kind === "native") : undefined;
+	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
+	const account = id ? workspaceRuntime.store.get().accounts.find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
 	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
 	try {
-		const status = await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
 		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.get()); } }
 		return status;
@@ -226,8 +239,9 @@ ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknow
 });
 ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return Promise.all((["codex", "claude", "opencode", "pi"] as const).map(async harness => {
+	return Promise.all((["codex", "claude", "opencode", "pi", "cursor"] as const).map(async harness => {
 		try {
+			if (harness === "cursor") return { harness, installed: true, version: "SDK 1.0.31" };
 			if (harness === "opencode") { const command = await resolveOpenCodeCommand(app.getPath("userData")); return { harness, installed: true, version: command.version }; }
 			await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
 			return { harness, installed: true };
