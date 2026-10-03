@@ -4,16 +4,20 @@ The historical leaderboard cron requeued every fact from the last 90 days,
 including already completed analytics work. Keep that job disabled: the
 gateway's existing V2 outbox worker already updates the leaderboard rollups.
 Its backlog and watermark must be checked separately from this queue. Direct
-fact updates and meter mutations now mark their request pending in that outbox,
+fact updates, meter and attempt mutations now mark their request pending in that outbox,
 so ordinary corrections no longer rely on replaying all completed history.
 Fact moves and explicit deletions additionally record their former dimensions
 in a private queue. Each existing V2 worker call claims one former identity
+coalesced by nullable workspace/hour/app/model/provider/location dimensions,
 alongside its ordinary bounded batch and reuses the same metric queries to
 recompute both sides, including an old group with no remaining source rows.
 The former identity is acknowledged only after successful atomic publication.
 Hourly BYOK metadata pruning suppresses both reporting and correction signals
 for its duration, including cascaded meters, preserving durable old aggregates.
 The transaction-local suppression flag is restored before pruning returns.
+Within-hour timestamp finalization and model-less former records skip extra
+repairs. Repeated changes within a transaction coalesce; later transactions
+replace the repair generation so acknowledgments cannot discard fresh changes.
 
 User counts and workspace return rates now refresh only dirty UTC periods.
 Fact inserts, corrections, deletions, usage-meter changes and authoritative

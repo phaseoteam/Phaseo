@@ -94,6 +94,7 @@ try {
   await db.exec(await functionFrom('../migrations/20260722154000_v2_analytics_outbox_processor.sql','process_v2_analytics_outbox'));
   await db.exec(await read('../migrations/20261003102642_repair_previous_analytics_grains.sql'));
   await db.exec(await read('../migrations/20261003103314_skip_unchanged_analytics_grains.sql'));
+  await db.exec(await read('../migrations/20261003103617_coalesce_former_grains_and_repair_attempts.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
   assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
@@ -230,7 +231,23 @@ try {
   await db.exec(`delete from v2_request_facts where request_event_id='00000000-0000-0000-0000-000000000001';
     select public.process_v2_analytics_outbox(10);`);
   assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_public_usage_daily where model_slug='final'`)).n,0);
-  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, 64-signal cap, retention preservation, former-grain moves/deletions, atomic repair rollback, outbox repairs and permissions passed.');
+  // Nullable group dimensions coalesce a bulk correction into one old repair.
+  await db.exec(`insert into v2_request_facts(request_event_id,occurred_at,workspace_id,routed_model_slug,success)
+    select md5('bulk-'||n)::uuid,'2026-10-09','10000000-0000-0000-0000-000000000001','bulk-old',true
+    from generate_series(1,10000) n;
+    update v2_request_facts set routed_model_slug='bulk-new' where routed_model_slug='bulk-old';`);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains where model_slug='bulk-old'`)).n,1);
+  const attemptRequest=(await scalar(`select request_event_id from v2_request_facts where routed_model_slug='bulk-new' limit 1`)).request_event_id;
+  await db.exec(`update v2_analytics_outbox set status='complete' where request_event_id='${attemptRequest}';
+    insert into v2_request_attempts(request_event_id,success) values('${attemptRequest}',true);`);
+  assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='${attemptRequest}'`)).status,'pending');
+  await db.exec(`update v2_analytics_outbox set status='complete' where request_event_id='${attemptRequest}';
+    update v2_request_attempts set success=false where request_event_id='${attemptRequest}';`);
+  assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='${attemptRequest}'`)).status,'pending');
+  await db.exec(`update v2_analytics_outbox set status='complete' where request_event_id='${attemptRequest}';
+    delete from v2_request_attempts where request_event_id='${attemptRequest}';`);
+  assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='${attemptRequest}'`)).status,'pending');
+  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, 64-signal cap, retention preservation, former-grain moves/deletions, atomic repair rollback, 10,000-fact correction coalescing, attempt mutations, outbox repairs and permissions passed.');
 } catch(error) {
   console.error(error.message,error.code ?? '',error.where ?? '');
   process.exitCode=1;
