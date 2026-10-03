@@ -120,6 +120,38 @@ app.whenReady().then(async () => {
 			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true };
 			} catch (error) { throw new Error(error.stack ?? String(error)); }
 		})()`);
+		// Seed a protocol-shaped form solely for renderer interaction checks;
+		// request validation and native replies are exercised by runtime tests.
+		const fixtureDb = new DatabaseSync(path.join(data, "workspace", "workspace.sqlite"));
+		const taskRow = fixtureDb.prepare("SELECT data FROM tasks LIMIT 1").get();
+		const fixtureTask = JSON.parse(taskRow.data);
+		fixtureTask.forms = [{ id: "fixture-request", form: { id: "fixture-form", title: "Form interaction check", fields: [
+			{ key: "enabled", type: "boolean", title: "Include details", default: false },
+			{ key: "count", type: "integer", title: "Item count", default: 2, minimum: 1, maximum: 5, when: [{ key: "enabled", op: "eq", value: true }] },
+			{ key: "choices", type: "multiselect", title: "Sections", options: [{ value: "summary", label: "Summary" }, { value: "details", label: "Details" }] },
+			{ key: "profile", type: "string", title: "Profile", hidden: true, default: "local" },
+		] } }];
+		fixtureDb.prepare("UPDATE tasks SET data=? WHERE id=?").run(JSON.stringify(fixtureTask), fixtureTask.id); fixtureDb.close();
+		await window.webContents.executeJavaScript(`(async () => {
+			await window.phaseoDesktop.workspace.command({type:'update-task',id:${JSON.stringify(fixtureTask.id)},title:'Electron bridge check'});
+			await new Promise(resolve => setTimeout(resolve,100));
+			const toggle=document.querySelector('select[aria-label="Include details"]');
+			if (!toggle || toggle.value!=='false' || document.querySelector('[aria-label="Item count"]')) throw new Error('Form defaults or initial visibility failed');
+			Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(toggle,'true'); toggle.dispatchEvent(new Event('change',{bubbles:true}));
+			await new Promise(resolve => setTimeout(resolve,100));
+			const count=document.querySelector('[aria-label="Item count"]');
+			if (!count || count.value!=='2') throw new Error('Conditional form default failed');
+			if (document.querySelector('[aria-label="Profile"]')) throw new Error('Hidden form field was visible by default');
+			Array.from(document.querySelectorAll('.task-question button')).find(button=>button.textContent==='Show advanced fields').click();
+			await new Promise(resolve => setTimeout(resolve,100)); if (document.querySelector('[aria-label="Profile"]')?.value!=='local') throw new Error('Advanced form field did not retain its default');
+			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(count,'0'); count.dispatchEvent(new Event('input',{bubbles:true}));
+			await new Promise(resolve => setTimeout(resolve,100));
+			if (!count.validity.rangeUnderflow) throw new Error('Numeric form bounds failed');
+			const choice=Array.from(document.querySelectorAll('.task-question .question-option')).find(label=>label.textContent.includes('Summary'))?.querySelector('input');
+			if (!choice) throw new Error('Form selection missing'); choice.click();
+			await new Promise(resolve => setTimeout(resolve,100)); if (!choice.checked) throw new Error('Form selection did not update');
+		})()`);
+		result.forms = true;
 		const output = fileURLToPath(new URL("../../../output/playwright", import.meta.url));
 		mkdirSync(output, { recursive: true });
 		writeFileSync(path.join(output, "electron-workspace.png"), (await window.webContents.capturePage()).toPNG());

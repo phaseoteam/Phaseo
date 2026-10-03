@@ -6,6 +6,25 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 
 describe("workspace orchestration", () => {
+	it("validates typed forms, preserves other requests and removes externally settled forms", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-form-runtime-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, input) => { callbacks = input; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "opencode", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			const approval = callbacks!.onApproval("write", "Review action");
+			const answer = callbacks!.onForm!({ id: "native-form", title: "Count", fields: [{ type: "integer", key: "count", required: true, minimum: 1 }] });
+			const requestId = runtime.store.getTask(id).forms![0].id;
+			await expect(runtime.command({ type: "form-answer", id, requestId, answer: { count: 0 } })).rejects.toThrow("valid integer");
+			expect(runtime.store.getTask(id).forms).toHaveLength(1);
+			await runtime.command({ type: "form-answer", id, requestId, answer: { count: 3 } }); expect(await answer).toEqual({ count: 3 });
+			expect(runtime.store.getTask(id).status).toBe("waiting");
+			const controller = new AbortController(); const external = callbacks!.onForm!({ id: "external", title: "External", fields: [{ type: "string", key: "name" }] }, controller.signal);
+			controller.abort(); expect(await external).toBeNull(); expect(runtime.store.getTask(id).forms).toEqual([]);
+			await runtime.command({ type: "cancel", id }); expect(await approval).toBe("decline");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("keeps simultaneous approvals visible and cancels unanswered questions", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-requests-"));
 		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;

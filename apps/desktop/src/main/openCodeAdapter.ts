@@ -1,4 +1,4 @@
-import { OpenCode } from "@opencode/client";
+import { OpenCode, isFormAlreadySettledError, isFormInvalidAnswerError, isFormNotFoundError } from "@opencode/client";
 import type { OpenCodeClient } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import { pathToFileURL } from "node:url";
@@ -6,6 +6,7 @@ import type { Account, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import type { AgentForm } from "../shared/agentForms";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -22,6 +23,29 @@ export class OpenCodeAdapter implements AgentAdapter {
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
 		const requestOptions = { signal: this.controller.signal };
+		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
+		const handleForm = async (form: AgentForm) => {
+			if (seenForms.has(form.id)) return; seenForms.add(form.id);
+			const controller = new AbortController(); forms.set(form.id, controller);
+			const signal = AbortSignal.any([this.controller.signal, controller.signal]);
+			let validationError: string | undefined;
+			try {
+				while (!signal.aborted) {
+					const answer = await callbacks.onForm?.({ id: form.id, title: form.title, fields: form.fields, error: validationError }, signal) ?? null;
+					if (signal.aborted) return;
+					try {
+						if (answer === null) await client.session.form.cancel({ sessionID: this.sessionId!, formID: form.id, message: "Cancelled in Phaseo." }, { signal });
+						else await client.session.form.reply({ sessionID: this.sessionId!, formID: form.id, answer }, { signal });
+						return;
+					} catch (error) {
+						if (isFormAlreadySettledError(error) || isFormNotFoundError(error) || signal.aborted) return;
+						if (!isFormInvalidAnswerError(error)) throw error;
+						validationError = error.message;
+						callbacks.onActivity?.({ id: `form:${form.id}:validation`, type: "tool", title: form.title, text: error.message, status: "failed" });
+					}
+				}
+			} finally { forms.delete(form.id); }
+		};
 		const session = task.nativeSessionId ? await client.session.get({ sessionID: task.nativeSessionId }, requestOptions) : task.nativeForkFrom ? await client.session.fork({ sessionID: task.nativeForkFrom }, requestOptions) : await client.session.create({
 			location: { directory: cwd }, agent: task.mode === "plan" ? "plan" : "build", model,
 			permissions: [{ action: "*", resource: "*", effect: task.mode === "chat" ? "deny" : "ask" }],
@@ -38,6 +62,10 @@ export class OpenCodeAdapter implements AgentAdapter {
 		const events = (async () => {
 			try {
 				for await (const event of client.event.subscribe({ signal: this.controller.signal, onActivity: () => { readyResolve(); clearTimeout(timeout); } })) {
+					if (event.type === "form.created" && event.data.form.sessionID === session.id) {
+						void handleForm(event.data.form).catch(error => rejectTurn(error instanceof Error ? error : new Error("OpenCode form failed."))); continue;
+					}
+					if ((event.type === "form.replied" || event.type === "form.cancelled") && event.data.sessionID === session.id) { forms.get(event.data.id)?.abort(); continue; }
 					if (!("data" in event) || !("sessionID" in event.data) || event.data.sessionID !== session.id) continue;
 					if (event.type === "session.text.delta") callbacks.onDelta(event.data.assistantMessageID, event.data.delta);
 					if (event.type === "session.reasoning.delta") callbacks.onActivity?.({ id: `${event.data.assistantMessageID}:reasoning:${event.data.ordinal}`, type: "reasoning", title: "Reasoning", text: event.data.delta, append: true });

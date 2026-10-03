@@ -62,14 +62,20 @@ ACP agents can request approved command terminals with bounded UTF-8 output,
 exit/kill/release lifecycle and process-tree cleanup. Agent-managed ACP sign-in
 offers the agent's native authentication methods when authentication is required;
 interactive terminal sign-in remains a gap.
+OpenCode session forms support typed values, conditional/default fields,
+explicit external acknowledgements, cancellation and native validation retries.
+Provider-defined patterns are validated by OpenCode rather than evaluated in
+Electron's main process. Pending form rediscovery after reconnect remains a gap.
 Phaseo Code/Plan currently accepts text documents; images require Chat or a
 vision-capable native harness. PDF OCR is not implemented.
 
-Evidence: desktop lint/typecheck/build pass; 73 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 81 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
 rejection, Git staging/commits, command search, attachment imports and PDF previews.
+Protocol-shaped renderer fixtures check form defaults, conditional visibility,
+numeric bounds and choices; native form replies have separate runtime coverage.
 The same checks pass against the Windows packaged archive. Pi fixtures
 verify that agent_end does not finish a task and compaction must settle first.
 Live paid inference and real provider login

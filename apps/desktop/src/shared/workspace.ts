@@ -1,3 +1,4 @@
+import type { AgentForm, FormAnswer } from "./agentForms";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -18,6 +19,7 @@ export type Task = {
 	handoffFrom?: Harness;
 	approvals?: { id: string; method: string; description: string }[];
 	questions?: { id: string; questions: AgentQuestion[] }[];
+	forms?: { id: string; form: AgentForm }[];
 	activities?: AgentActivity[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[] };
@@ -42,6 +44,7 @@ export type WorkspaceCommand =
 	| { type: "fork"; id: string }
 	| { type: "approval"; id: string; approvalId: string; decision: "accept" | "decline" }
 	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]> }
+	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null }
 	| { type: "queue-remove"; id: string; messageId: string }
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
@@ -114,6 +117,14 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				string("approvalId");
 				if (command.decision !== "accept" && command.decision !== "decline") throw new Error("Invalid approval decision.");
 				break;
+			case "form-answer": {
+				string("requestId");
+				if (command.answer === null) break;
+				if (!command.answer || typeof command.answer !== "object" || Array.isArray(command.answer)) throw new Error("Invalid form answer.");
+				const entries = Object.entries(command.answer);
+				if (entries.length > 100 || entries.some(([key, value]) => !key || key.length > 1000 || !(typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value)) || (typeof value === "string" && value.length <= 10000) || (Array.isArray(value) && value.length <= 100 && value.every(item => typeof item === "string" && item.length <= 10000))))) throw new Error("Invalid form answer.");
+				break;
+			}
 			case "answer": {
 				string("requestId");
 				if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers)) throw new Error("Invalid answers.");

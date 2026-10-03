@@ -19,7 +19,7 @@ export class WorkspaceStore {
 		for (const task of this.get().tasks) {
 			if (task.status === "running" || task.status === "waiting") {
 				task.status = "interrupted";
-				task.approvals = []; task.questions = [];
+				task.approvals = []; task.questions = []; task.forms = [];
 				task.error = "The application stopped during this task. Resume to continue.";
 				this.saveTask(task);
 			}
@@ -98,7 +98,7 @@ export class WorkspaceStore {
 				break;
 			case "fork": {
 				if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before forking it.");
-				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, status: "idle", queue: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], error: undefined, createdAt: new Date().toISOString() };
+				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, status: "idle", queue: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;

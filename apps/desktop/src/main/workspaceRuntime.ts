@@ -15,6 +15,10 @@ import { AcpAdapter } from "./acpAdapter";
 import { PiAdapter } from "./piAdapter";
 import { handoffPrompt } from "./handoffPrompt";
 import { AttachmentService } from "./attachments";
+import type { FormAnswer } from "../shared/agentForms";
+import { formAnswerError } from "../shared/agentForms";
+
+const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
 function createAdapter(harness: Harness, agent?: AgentConnection): AgentAdapter {
 	if (harness === "codex") return new CodexAdapter();
@@ -31,6 +35,7 @@ export class WorkspaceRuntime {
 	private readonly running = new Map<string, AgentAdapter>();
 	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
+	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
@@ -60,7 +65,7 @@ export class WorkspaceRuntime {
 		if (command.type === "approval") {
 			const pending = this.approvals.get(command.approvalId);
 			if (!pending || pending.taskId !== command.id) throw new Error("This approval is no longer pending.");
-			const task = this.store.getTask(command.id); task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = task.approvals?.length || task.questions?.length ? "waiting" : "running";
+			const task = this.store.getTask(command.id); task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
 			this.store.saveTask(task); this.broadcast();
 			this.approvals.delete(command.approvalId); pending.resolve(command.decision);
 			return this.store.get();
@@ -71,13 +76,22 @@ export class WorkspaceRuntime {
 			const request = task.questions?.find(value => value.id === command.requestId);
 			if (!pending || pending.taskId !== task.id || !request) throw new Error("This question is no longer pending.");
 			if (request.questions.some(question => !command.answers[question.id]?.length)) throw new Error("Answer every question.");
-			task.questions = task.questions?.filter(value => value.id !== command.requestId); task.status = task.approvals?.length || task.questions?.length ? "waiting" : "running";
+			task.questions = task.questions?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
 			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.answers); return this.store.get();
+		}
+		if (command.type === "form-answer") {
+			const pending = this.forms.get(command.requestId); const task = this.store.getTask(command.id);
+			const request = task.forms?.find(value => value.id === command.requestId);
+			if (!pending || pending.taskId !== task.id || !request) throw new Error("This form is no longer pending.");
+			if (command.answer !== null) { const error = formAnswerError(request.form, command.answer); if (error) throw new Error(error); }
+			task.forms = task.forms?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
+			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.get();
 		}
 		if (command.type === "cancel") {
 			this.store.apply(command);
 			for (const [id, pending] of this.approvals) if (pending.taskId === command.id) { pending.resolve("decline"); this.approvals.delete(id); }
 			for (const [id, pending] of this.questions) if (pending.taskId === command.id) { pending.resolve({}); this.questions.delete(id); }
+			for (const [id, pending] of this.forms) if (pending.taskId === command.id) { pending.resolve(null); this.forms.delete(id); }
 			await this.running.get(command.id)?.cancel();
 		}
 		const task = this.store.apply(command);
@@ -165,6 +179,22 @@ export class WorkspaceRuntime {
 					const current = this.store.getTask(id); current.status = "waiting"; current.approvals ??= []; current.approvals.push({ id: approvalId, method, description });
 					this.store.saveTask(current); this.broadcast();
 				}),
+				onForm: (form, signal) => new Promise(resolve => {
+					flush();
+					if (this.closing || signal?.aborted || this.store.getTask(id).status === "interrupted") { resolve(null); return; }
+					if (!form.fields.length || form.fields.length > 100 || new Set(form.fields.map(field => field.key)).size !== form.fields.length) throw new Error("The agent returned an invalid form.");
+					const requestId = randomUUID();
+					const complete = (answer: FormAnswer | null) => { signal?.removeEventListener("abort", abort); resolve(answer); };
+					const abort = () => {
+						this.forms.delete(requestId); const current = this.store.getTask(id);
+						current.forms = current.forms?.filter(value => value.id !== requestId);
+						if (current.status === "waiting") current.status = hasRequests(current) ? "waiting" : "running";
+						this.store.saveTask(current); this.broadcast(); complete(null);
+					};
+					this.forms.set(requestId, { taskId: id, resolve: complete });
+					const current = this.store.getTask(id); current.status = "waiting"; current.forms ??= []; current.forms.push({ id: requestId, form });
+					this.store.saveTask(current); this.broadcast(); signal?.addEventListener("abort", abort, { once: true });
+				}),
 				onQuestion: questions => new Promise(resolve => {
 					flush();
 					if (this.closing || this.store.getTask(id).status === "interrupted") { resolve({}); return; }
@@ -176,19 +206,20 @@ export class WorkspaceRuntime {
 			flush(); if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
-			current.approvals = []; current.questions = [];
+			current.approvals = []; current.questions = []; current.forms = [];
 			this.store.saveTask(current);
 		} catch (error) {
 			flush();
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
-			current.approvals = []; current.questions = []; this.store.saveTask(current);
+			current.approvals = []; current.questions = []; current.forms = []; this.store.saveTask(current);
 		} finally {
 			if (flushTimer) clearTimeout(flushTimer);
 			this.running.delete(id);
 			for (const [approvalId, pending] of this.approvals) if (pending.taskId === id) { pending.resolve("decline"); this.approvals.delete(approvalId); }
 			for (const [requestId, pending] of this.questions) if (pending.taskId === id) { pending.resolve({}); this.questions.delete(requestId); }
+			for (const [requestId, pending] of this.forms) if (pending.taskId === id) { pending.resolve(null); this.forms.delete(requestId); }
 			this.broadcast();
 		}
 	}
@@ -197,6 +228,7 @@ export class WorkspaceRuntime {
 		for (const id of this.running.keys()) this.store.apply({ type: "cancel", id });
 		for (const pending of this.approvals.values()) pending.resolve("decline");
 		for (const pending of this.questions.values()) pending.resolve({});
+		for (const pending of this.forms.values()) pending.resolve(null);
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		this.store.close();
