@@ -72,7 +72,14 @@ backfill and consumer cutover are verified.
   provider-attempt counts. A failed provider attempt remains visible after a
   later failover succeeds; the health RPC exposes attempt uptime, request
   success, failure percentage, fallback attempts, and daily buckets. New
-  attempts refresh the affected daily provider row through a database trigger.
+  attempts enqueue the affected daily provider row through a database trigger.
+  A single cron worker refreshes up to 25 dirty buckets each minute, stopping
+  between buckets after five seconds, with a ten-second statement budget.
+  Updates, replayed attempts, moved facts and
+  deletions also enqueue affected buckets. Reporting is eventually consistent;
+  backlog or retries can delay it beyond a minute. Inspect the private refresh
+  queue for pending age and errors. The live routing circuit breaker continues
+  to use its separate health state; billing and usage gates remain synchronous.
   Health is an observation and routing signal, not a permanent provider
   blacklist: degraded providers remain eligible for controlled exploration
   unless an explicit status/routing switch or circuit breaker blocks them.

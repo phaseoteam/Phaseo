@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/runtime/env";
-import { publicCatalogEndpoints, publicCatalogKey, publishPublicCatalog } from "@/pipeline/before/contextBundle";
+import { publicCatalogEndpoints, publicCatalogKey, publicCatalogHasRefreshHeadroom, publishPublicCatalog } from "@/pipeline/before/contextBundle";
 
 // Snapshot count, not model count: each wire endpoint has a separate key.
 export const PUBLIC_CATALOG_TARGET_LIMIT = 20;
@@ -22,6 +22,10 @@ export async function publishConfiguredPublicCatalog(rawTargets: string) {
             const target = targets[next++];
             const endpoints = publicCatalogEndpoints(target.endpoint);
             try {
+                if (await publicCatalogHasRefreshHeadroom(target.model, endpoints)) {
+                    summary.skipped++;
+                    continue;
+                }
                 const { data, error } = await supabase.rpc("gateway_fetch_public_catalog", {
                     p_model: target.model, p_endpoints: endpoints,
                 }).abortSignal(AbortSignal.timeout(10_000));

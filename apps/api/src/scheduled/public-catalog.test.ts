@@ -27,6 +27,33 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("public catalog publisher", () => {
+    it("skips database reads for a persisted snapshot valid beyond the next publication tick", async () => {
+        state.get.mockResolvedValue(JSON.stringify(catalog()));
+        const { publishConfiguredPublicCatalog } = await import("./public-catalog");
+        expect(await publishConfiguredPublicCatalog(JSON.stringify([target]))).toEqual({ targets: 1, published: 0, skipped: 1, failed: 0 });
+        expect(state.rpc).not.toHaveBeenCalled();
+        expect(state.put).not.toHaveBeenCalled();
+    });
+
+    it.each([120_000, 119_999, 0])("refreshes snapshots with %i ms remaining without extending the old deadline", async remaining => {
+        state.get.mockResolvedValue(JSON.stringify({ ...catalog(), expiresAt: Date.now() + remaining }));
+        const { publishConfiguredPublicCatalog } = await import("./public-catalog");
+        expect((await publishConfiguredPublicCatalog(JSON.stringify([target]))).published).toBe(1);
+        expect(state.rpc).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(["broken JSON", JSON.stringify(catalog("wrong/model")), null])("refreshes invalid or absent KV data: %s", async value => {
+        state.get.mockResolvedValue(value);
+        const { publishConfiguredPublicCatalog } = await import("./public-catalog");
+        expect((await publishConfiguredPublicCatalog(JSON.stringify([target]))).published).toBe(1);
+    });
+
+    it("queries the database when KV reads fail", async () => {
+        state.get.mockRejectedValue(new Error("KV unavailable"));
+        const { publishConfiguredPublicCatalog } = await import("./public-catalog");
+        expect((await publishConfiguredPublicCatalog(JSON.stringify([target]))).published).toBe(1);
+    });
+
     it("deduplicates targets and publishes usable snapshots before any account request", async () => {
         const { publishConfiguredPublicCatalog } = await import("./public-catalog");
         expect(await publishConfiguredPublicCatalog(JSON.stringify([target, target]))).toEqual({ targets: 1, published: 1, skipped: 0, failed: 0 });
