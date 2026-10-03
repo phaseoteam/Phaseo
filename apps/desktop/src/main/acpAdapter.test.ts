@@ -1,4 +1,5 @@
 import { EventEmitter } from "node:events";
+import { createInterface } from "node:readline";
 import type * as ChildProcessModule from "node:child_process";
 import { PassThrough, Readable, Writable } from "node:stream";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -6,7 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { agent, ndJsonStream, RequestError } from "@agentclientprotocol/sdk";
-import type { Task } from "../shared/workspace";
+import type { ModelOption, Task } from "../shared/workspace";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("node:child_process", async importOriginal => ({ ...await importOriginal<typeof ChildProcessModule>(), spawn: native.spawn }));
 import { AcpAdapter } from "./acpAdapter";
@@ -15,6 +16,31 @@ import { grokCompletionMethods } from "./grokCompletion";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(["initialize", "session", "legacy-resume", "modern", "missing-model", "missing-effort", "default-effort"])("selects Grok models from native catalogs before prompting (%s)", async source => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const catalog = (current: string) => ({ currentModelId: current, availableModels: [{ modelId: "a", name: "A" }, { modelId: "b", name: "B", _meta: { reasoningEffort: "high", reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], credential: "private" } }] });
+		const requests: { method: string; params: Record<string, unknown> }[] = [];
+		const lines = createInterface({ input: child.stdin });
+		lines.on("line", line => {
+			const request = JSON.parse(line); requests.push(request);
+			if (request.id === undefined) return;
+			const result = request.method === "initialize" ? { protocolVersion: 1, agentCapabilities: { loadSession: true }, _meta: { grokShell: true, modelState: catalog("a") } } : ["session/new", "session/load"].includes(request.method) ? { sessionId: "native", ...(source === "session" ? { _meta: { modelState: catalog("b") } } : source === "legacy-resume" ? { models: catalog("b") } : source === "modern" ? { configOptions: [{ id: "model", name: "Model", category: "model", type: "select", currentValue: "a", options: [{ value: "a", name: "Modern A" }] }] } : {}) } : request.method === "session/prompt" ? { stopReason: "end_turn" } : {};
+			child.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, result }) + "\n");
+		});
+		const onModels = vi.fn<(models: ModelOption[]) => void>();
+		try {
+			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run({ ...task, ...(source === "legacy-resume" ? { nativeSessionId: "native" } : {}), model: source === "missing-model" ? "missing" : source === "modern" ? "a" : source === "default-effort" ? "default" : "b", ...(source === "default-effort" || source === "modern" ? {} : { reasoningEffort: source === "missing-effort" ? "missing" : "low" }) }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onModels, onApproval: async () => "decline" });
+			if (source.startsWith("missing-")) { await expect(run).rejects.toThrow("no longer offers"); expect(requests.some(value => value.method === "session/prompt" || value.method === "session/set_model")).toBe(false); }
+			else {
+				await run; expect(requests.filter(value => value.method === "session/prompt")).toHaveLength(1);
+				if (source === "modern") { expect(requests.some(value => value.method === "session/set_model")).toBe(false); expect(onModels).toHaveBeenCalledWith([{ id: "a", name: "Modern A", default: true }]); }
+				else if (source === "default-effort") expect(requests.some(value => value.method === "session/set_model")).toBe(false);
+				else expect(requests.find(value => value.method === "session/set_model")?.params).toEqual({ sessionId: "native", modelId: "b", _meta: { reasoningEffort: "low" } });
+				if (source === "session" || source === "legacy-resume") expect(onModels.mock.calls[0][0].find(value => value.id === "b")?.default).toBe(true);
+			}
+			expect(JSON.stringify(onModels.mock.calls)).not.toContain("private");
+		} finally { lines.close(); }
+	});
 	it.each(["x.ai/ask_user_question", "_x.ai/ask_user_question"])("routes native choices and free text through desktop questions (%s)", async method => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const onQuestion = vi.fn(async () => ({ audience: ["Developers", "Designers"], timing: ["After the review"] }));

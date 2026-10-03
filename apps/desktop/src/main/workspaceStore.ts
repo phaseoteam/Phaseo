@@ -115,7 +115,11 @@ export class WorkspaceStore {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before changing its model or mode.");
 					if (task.archived) throw new Error("Restore this task before changing its settings.");
 					if (task.harness === "phaseo" && command.model === "default") throw new Error("Choose a model for the Phaseo harness.");
-					if (command.reasoningEffort && task.harness !== "codex") throw new Error("This harness does not expose reasoning effort in the desktop yet.");
+					if (command.reasoningEffort && task.harness !== "codex") {
+						const modelId = command.model ?? task.model;
+						const model = task.nativeModels?.find(value => modelId === "default" ? value.default : value.id === modelId);
+						if (task.harness !== "acp" || !model?.reasoningEfforts?.some(value => value.id === command.reasoningEffort)) throw new Error("This harness does not offer the selected reasoning effort.");
+					}
 					if (command.nativeMode !== undefined && task.harness !== "acp") throw new Error("Native mode selection requires an ACP agent.");
 					if (command.model !== undefined && command.model !== task.model) task.reasoningEffort = task.harness === "codex" ? "" : undefined;
 					if (command.model !== undefined) task.model = command.model;

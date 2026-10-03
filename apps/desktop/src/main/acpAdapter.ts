@@ -5,7 +5,7 @@ import { Readable, Writable } from "node:stream";
 import path from "node:path";
 import { client, ndJsonStream, PROTOCOL_VERSION, RequestError } from "@agentclientprotocol/sdk";
 import type { ClientConnection, NewSessionResponse, PromptRequest, ToolCallUpdate } from "@agentclientprotocol/sdk";
-import type { Account, AgentConnection, Task } from "../shared/workspace";
+import type { Account, AgentConnection, ModelOption, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { readProjectFile } from "./projectFiles";
 import { contentHash, writeProjectFile } from "./projectEdits";
@@ -17,6 +17,7 @@ import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
 import { grokPlanMethods, grokPlanRequest, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
+import { grokModels, grokModelStream } from "./grokModels";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -32,6 +33,7 @@ export class AcpAdapter implements AgentAdapter {
 		let receiving = false; let promptSubmitted = false; let modesViaConfig = false; let nativeModes: ReturnType<typeof acpModes> = [];
 		const tools = new Map<string, ToolCallUpdate>();
 		const completion = new GrokCompletion();
+		let nativeGrokModels: ModelOption[] = [];
 		const terminals = this.terminals = new AcpTerminals(cwd, callbacks);
 		const checkSession = (sessionId: string) => { if (this.cancelled || sessionId !== this.sessionId) throw new Error("Agent request belongs to an inactive session."); };
 		const app = client({ name: "phaseo-desktop" })
@@ -75,7 +77,7 @@ export class AcpAdapter implements AgentAdapter {
 				}
 				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2) });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });
-				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(acpModels(update.configOptions)); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
+				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(update.configOptions.some(option => option.category === "model" && option.type === "select") ? acpModels(update.configOptions) : nativeGrokModels); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
 				if (update.sessionUpdate === "current_mode_update" && !modesViaConfig) { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
 			});
 		for (const method of grokCompletionMethods) app.onNotification(method, (value: unknown) => value, ({ params }) => completion.notify(params));
@@ -94,7 +96,7 @@ export class AcpAdapter implements AgentAdapter {
 			const decision = await callbacks.onApproval("Implement plan", params.plan);
 			return { outcome: !this.cancelled && decision === "accept" ? "approved" : "abandoned" };
 		});
-		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
+		const connection = this.connection = app.connect(grokModelStream(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>)));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
 		try {
@@ -136,7 +138,10 @@ export class AcpAdapter implements AgentAdapter {
 			}
 			this.sessionId = session.sessionId; callbacks.onSession(session.sessionId);
 			let configOptions = session.configOptions;
-			let models = acpModels(configOptions); callbacks.onModels?.(models);
+			const grok = initialized._meta?.grokShell === true;
+			nativeGrokModels = grok ? grokModels(session._meta?.modelState ?? initialized._meta?.modelState) : [];
+			const hasModelConfig = () => Boolean(configOptions?.some(option => option.category === "model" && option.type === "select"));
+			let models = hasModelConfig() ? acpModels(configOptions) : nativeGrokModels; callbacks.onModels?.(models);
 			modesViaConfig = Boolean(configOptions?.some(option => option.category === "mode" && option.type === "select")) || !session.modes;
 			nativeModes = acpModes(session.modes, configOptions); callbacks.onModes?.(nativeModes);
 			const modeId = task.nativeMode || task.mode; const mode = nativeModes.find(mode => mode.id === modeId);
@@ -150,20 +155,27 @@ export class AcpAdapter implements AgentAdapter {
 					if (option) {
 						const result = await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: modeId });
 						configOptions = result.configOptions;
-						models = acpModels(configOptions); callbacks.onModels?.(models);
+						models = hasModelConfig() ? acpModels(configOptions) : nativeGrokModels; callbacks.onModels?.(models);
 						nativeModes = acpModes(undefined, configOptions);
 						if (!nativeModes.some(value => value.id === modeId && value.default)) throw new AgentInputRejectedError("The agent did not apply the selected mode. Update the task settings.");
 					}
 				}
 				callbacks.onModes?.(nativeModes);
 			}
-			if (task.model !== "default") {
+			if (!hasModelConfig() && grok && (task.model !== "default" || task.reasoningEffort)) {
+				const selected = models.find(model => task.model === "default" ? model.default : model.id === task.model);
+				if (!selected) throw new AgentInputRejectedError("Grok no longer offers the selected model. Update the task settings.");
+				if (task.reasoningEffort && !selected.reasoningEfforts?.some(effort => effort.id === task.reasoningEffort)) throw new AgentInputRejectedError("Grok no longer offers the selected reasoning effort. Update the task settings.");
+				await connection.agent.request("session/set_model", { sessionId: session.sessionId, modelId: selected.id, ...(task.reasoningEffort ? { _meta: { reasoningEffort: task.reasoningEffort } } : {}) });
+				models = models.map(model => ({ ...model, default: model.id === selected.id, ...(model.id === selected.id && task.reasoningEffort ? { defaultReasoningEffort: task.reasoningEffort } : {}) })); nativeGrokModels = models; callbacks.onModels?.(models);
+			} else if (task.model !== "default") {
 				const option = configOptions?.find(option => option.category === "model" && option.type === "select");
 				if (!option) throw new AgentInputRejectedError("This agent does not expose model selection. Use its native default.");
 				if (!models.some(model => model.id === task.model)) throw new AgentInputRejectedError("This agent no longer offers the selected model. Update the task settings.");
 				const result = await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: task.model }); callbacks.onModels?.(acpModels(result.configOptions));
 				if (modesViaConfig) { nativeModes = acpModes(undefined, result.configOptions); callbacks.onModes?.(nativeModes); }
 			}
+			if (task.reasoningEffort && (!grok || hasModelConfig())) throw new AgentInputRejectedError("This ACP agent does not expose native reasoning selection yet.");
 			clearTimeout(startup); receiving = true;
 			const promptId = randomUUID();
 			const prompt: PromptRequest = { sessionId: session.sessionId, _meta: { promptId, requestId: promptId }, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };

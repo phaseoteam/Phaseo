@@ -17,12 +17,24 @@ describe("existing conversation settings", () => {
 			for (const nativeMode of [42, "bad\0mode", "x".repeat(1001)]) expect(() => validateCommand({ type: "update-task", id: task.id, nativeMode })).toThrow("native mode");
 		} finally { store.close(); }
 	});
-	it("resets model-specific effort when models change and scopes controls to Codex", () => {
+	it("resets model-specific effort when models change and rejects unsupported harnesses", () => {
 		const store = new WorkspaceStore(":memory:"); try {
 			const task = store.apply({ type: "create-task", harness: "codex", model: "first", mode: "chat" }); store.apply({ type: "update-task", id: task.id, reasoningEffort: "high" }); expect(store.getTask(task.id).reasoningEffort).toBe("high");
 			store.apply({ type: "update-task", id: task.id, model: "second" }); expect(store.getTask(task.id).reasoningEffort).toBe(""); const fork=store.apply({type:"fork",id:task.id}); expect(fork.reasoningEffort).toBe("");
-			const claude=store.apply({type:"create-task",harness:"claude",model:"default",mode:"chat"}); expect(()=>store.apply({type:"update-task",id:claude.id,reasoningEffort:"high"})).toThrow("does not expose");
+			const claude=store.apply({type:"create-task",harness:"claude",model:"default",mode:"chat"}); expect(()=>store.apply({type:"update-task",id:claude.id,reasoningEffort:"high"})).toThrow("does not offer");
 			for(const reasoningEffort of [42,"x".repeat(101),"bad\0value"]) expect(()=>validateCommand({type:"update-task",id:task.id,reasoningEffort})).toThrow();
+		} finally { store.close(); }
+	});
+	it("allows only advertised ACP reasoning choices and resets them when models change", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			store.saveAgent({ id: "agent", name: "Fixture", executable: "/fixture", arguments: [] });
+			const task = store.apply({ type: "create-task", harness: "acp", agentId: "agent", model: "default", mode: "plan" });
+			expect(() => store.apply({ type: "update-task", id: task.id, reasoningEffort: "low" })).toThrow("does not offer");
+			task.nativeModels = [{ id: "first", name: "First", default: true, reasoningEfforts: [{ id: "low", description: "Low" }] }, { id: "second", name: "Second" }]; store.saveTask(task);
+			store.apply({ type: "update-task", id: task.id, reasoningEffort: "low" }); expect(store.getTask(task.id).reasoningEffort).toBe("low");
+			expect(() => store.apply({ type: "update-task", id: task.id, model: "second", reasoningEffort: "low" })).toThrow("does not offer");
+			store.apply({ type: "update-task", id: task.id, model: "second" }); expect(store.getTask(task.id).reasoningEffort).toBeUndefined();
 		} finally { store.close(); }
 	});
 	it("uses changed settings on the next turn while preserving native identity and blocking active changes", async () => {
