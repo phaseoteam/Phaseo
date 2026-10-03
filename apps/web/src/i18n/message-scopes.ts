@@ -3,7 +3,7 @@ import type { AbstractIntlMessages } from "next-intl";
 // Shared chrome, error boundaries and reusable controls remain available on
 // every route. Feature dictionaries are supplied by their route boundaries.
 export const SHELL_MESSAGE_NAMESPACES = [
-	"Auth.shared.changeLanguage", "Common.nav", "Common.footer.about", "Common.search",
+	"Auth.shared.changeLanguage", "Common.nav", "Common.footer.about", "Common.footer.or", "Common.search",
 	"Common.theme", "Common.status", "Common.accessibility", "Common.errors",
 	"Common.dropdown", "Common.timeRange",
 	"Common.ui.accessibility.breadcrumb", "Common.ui.accessibility.breadcrumbMore",

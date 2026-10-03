@@ -45,7 +45,8 @@ describe("route message selection", () => {
 		expect((shell.Common as Record<string, unknown>).authFlows).toBeUndefined();
 		expect((shell.Common as Record<string, Record<string, unknown>>).ui.modelEditor).toBeUndefined();
 		expect((shell.Product as Record<string, unknown>).developerMenu).toBeUndefined();
-		expect((shell.Common as Record<string, unknown>).footer).toEqual({ about: messages.Common.footer.about });
+		expect((shell.Common as Record<string, unknown>).footer).toEqual({ about: messages.Common.footer.about, or: messages.Common.footer.or });
+		expect(translate("Common.footer.or" as never)).toBe(messages.Common.footer.or);
 		const accessibility = (shell.Common as Record<string, Record<string, Record<string, unknown>>>).ui.accessibility;
 		expect(accessibility.openActionMenu).toBeUndefined();
 		expect(accessibility.dropToAttachFiles).toBeUndefined();
