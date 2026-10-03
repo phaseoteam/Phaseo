@@ -15,6 +15,35 @@ import { grokCompletionMethods } from "./grokCompletion";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(["x.ai/ask_user_question", "_x.ai/ask_user_question"])("routes native choices and free text through desktop questions (%s)", async method => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onQuestion = vi.fn(async () => ({ audience: ["Developers", "Designers"], timing: ["After the review"] }));
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			const request = { sessionId: "native", toolCallId: "question", mode: "default", questions: [{ id: "audience", question: "Who is it for?", options: [{ label: "Developers" }, { label: "Designers" }], multiSelect: true }, { id: "timing", question: "When?", options: [{ label: "Now" }] }] };
+			await expect(client.request(method, { ...request, sessionId: "child" })).rejects.toThrow();
+			expect(onQuestion).not.toHaveBeenCalled();
+			const response = await client.request(method, method.startsWith("_") ? { method, params: request } : request);
+			expect(response).toEqual({ outcome: "accepted", answers: { "Who is it for?": ["Developers", "Designers"], "When?": ["Other"] }, annotations: { "When?": { notes: "After the review" } } });
+			return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval: async () => "decline" }); expect(onQuestion).toHaveBeenCalledOnce(); }
+		finally { connection.close(); }
+	});
+	it.each(["plan", "chat", "code-accept", "code-decline", "missing-plan"])("captures proposed plans and gates implementation (%s)", async scenario => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onApproval = vi.fn(async () => scenario === "code-accept" ? "accept" as const : "decline" as const); const onActivity = vi.fn();
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			const method = "_x.ai/exit_plan_mode";
+			const response = await client.request(method, { method, params: { sessionId: "native", toolCallId: "plan", ...(scenario === "missing-plan" ? {} : { planContent: "Review, implement, verify." }) } });
+			expect(response).toEqual(expect.objectContaining({ outcome: scenario === "code-accept" ? "approved" : "abandoned" }));
+			return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run({ ...task, mode: scenario === "plan" || scenario === "chat" ? scenario : "code" }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval, onActivity });
+			if (scenario.startsWith("code-")) expect(onApproval).toHaveBeenCalledExactlyOnceWith("Implement plan", "Review, implement, verify."); else expect(onApproval).not.toHaveBeenCalled();
+			if (scenario === "missing-plan") expect(onActivity).not.toHaveBeenCalled(); else expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ type: "plan", text: "Review, implement, verify." }));
+		} finally { connection.close(); }
+	});
 	it.each(grokCompletionMethods)("settles the foreground prompt from native completion packets (%s)", async method => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const onDelta = vi.fn(); let finishRpc!: (value: { stopReason: "end_turn" }) => void;

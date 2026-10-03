@@ -187,7 +187,9 @@ An isolated official Grok 1.0.46 Windows binary startup check used verified npm 
 
 ACP now handles Grok's five native completion notification aliases alongside the standard prompt response. Each submitted prompt carries a unique identifier; completion requires both that identifier and the root session. Child-session, missing-id, previous-turn and background-wake notifications cannot finish the foreground task. Background wake text is excluded from its transcript. Error/rate-limit/unknown completion signals fail the turn, and late RPC failures are consumed after notification completion. Cancellation releases the pending completion without surfacing a connection-flush race. Real SDK packet tests cover all aliases, failure outcomes and cancellation. Native Grok account/model/question/plan integration remains outstanding.
 
-Evidence: desktop lint/typecheck/build pass; 240 deterministic tests cover protocol,
+Grok's native question and plan-exit requests now use the existing desktop question/approval controls through ACP. Both aliases and direct/wrapped payloads are supported. Answers retain selected labels, custom notes and single-choice previews. Payloads are bounded; duplicate identities/choices and invalid single-choice answers are rejected. Prototype-like identifiers remain ordinary data throughout parsing and rendering. Plan/Chat capture the proposal and defer implementation to a later Code instruction; Code requires explicit approval, and missing plans cannot authorize implementation. Packet tests cover session isolation and approval outcomes. An owned Electron fixture exercises preview rendering, answer submission, native reply annotations and Plan-mode proposal capture without network or inference. Native Grok account/model integration and plan-change feedback remain outstanding.
+
+Evidence: desktop lint/typecheck/build pass; 251 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

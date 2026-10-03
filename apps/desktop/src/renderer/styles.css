@@ -133,6 +133,8 @@
 .task-question legend { font-weight: 600; }
 .task-question .question-option { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0; }
 .question-option small { display: block; margin-top: 3px; }
+.question-option > span { min-width: 0; }
+.question-preview { display: block; max-height: 200px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); font-size: 12px; line-height: 1.6; }
 .terminal-workspace { display: grid; grid-template-columns: 245px minmax(0, 1fr); height: 100%; min-height: 500px; }
 .terminal-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--border); overflow-y: auto; }
 .terminal-list h1 { font-size: 16px; margin: 0; }

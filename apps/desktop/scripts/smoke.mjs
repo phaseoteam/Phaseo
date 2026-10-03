@@ -344,6 +344,18 @@ app.whenReady().then(async () => {
 			if((await api.get()).tasks.find(value=>value.id===task.id).nativeMode!=='analysis') throw new Error('Native ACP mode selection did not persist');
 		})()`);
 		result.acpModels = true;
+		await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;
+			let state=await api.command({type:'add-agent',name:'Grok interaction fixture',executable:${JSON.stringify(process.execPath)},arguments:[${JSON.stringify(fileURLToPath(new URL("./fixtures/grok-interaction.cjs", import.meta.url)))}]}); const agent=state.agents.find(value=>value.name==='Grok interaction fixture');
+			state=await api.command({type:'create-task',harness:'acp',agentId:agent.id,model:'default',mode:'plan'}); const task=state.tasks.find(value=>value.agentId===agent.id); await api.command({type:'send',id:task.id,text:'Native Grok question fixture'});
+			for(let attempt=0;attempt<50;attempt++){const row=Array.from(document.querySelectorAll('.task-row')).find(value=>value.textContent.includes('Native Grok question fixture'));if(row){row.click();break;}await new Promise(resolve=>setTimeout(resolve,100));}
+			let form; for(let attempt=0;attempt<50;attempt++){form=document.querySelector('form.task-question');if(form?.querySelector('.question-preview'))break;await new Promise(resolve=>setTimeout(resolve,100));}
+			if(form?.querySelector('.question-preview')?.textContent!=='Owned proposal preview')throw new Error('Native question preview missing');
+			form.querySelector('input[type="radio"]').click(); await new Promise(resolve=>setTimeout(resolve,100)); if(form.querySelector('button[type="submit"]').disabled)throw new Error('Native answer remained disabled'); form.requestSubmit();
+			let current;for(let attempt=0;attempt<50;attempt++){current=(await api.get()).tasks.find(value=>value.id===task.id);if(current.status==='completed'||current.status==='failed')break;await new Promise(resolve=>setTimeout(resolve,100));}
+			if(current.status!=='completed'||current.questions?.length||current.approvals?.length||!current.activities?.some(value=>value.type==='plan'&&value.text==='Review the proposal and wait for implementation approval.'))throw new Error('Native plan/question workflow failed: '+current.error);
+		})()`);
+		result.grokInteractions = true;
 		const authAgentFixture = path.join(data, "acp-auth-fixture.cjs"); const authMarker = path.join(data, "owned-auth-completed"); const authRequests = path.join(data, "auth-requests.txt");
 		const authNode = execFileSync(process.platform === "win32" ? "where.exe" : "which", ["node"], { windowsHide: true }).toString().split(/\r?\n/).find(value => value && (process.platform !== "win32" || /\.exe$/i.test(value)));
 		if (!authNode) throw new Error("The terminal auth fixture needs the installed Node executable");

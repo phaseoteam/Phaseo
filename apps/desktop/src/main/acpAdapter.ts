@@ -16,6 +16,7 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
+import { grokPlanMethods, grokPlanRequest, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -78,6 +79,21 @@ export class AcpAdapter implements AgentAdapter {
 				if (update.sessionUpdate === "current_mode_update" && !modesViaConfig) { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
 			});
 		for (const method of grokCompletionMethods) app.onNotification(method, (value: unknown) => value, ({ params }) => completion.notify(params));
+		for (const method of grokQuestionMethods) app.onRequest(method, grokQuestionRequest, async ({ params }) => {
+			checkSession(params.sessionId);
+			if (!receiving || !callbacks.onQuestion) return { outcome: "cancelled" };
+			const answers = await callbacks.onQuestion(params.questions);
+			if (this.cancelled) return { outcome: "cancelled" };
+			return grokQuestionResponse(params.questions, answers);
+		});
+		for (const method of grokPlanMethods) app.onRequest(method, grokPlanRequest, async ({ params }) => {
+			checkSession(params.sessionId);
+			if (!receiving || !params.plan) return { outcome: "abandoned", feedback: "Provide the proposed plan before requesting implementation." };
+			callbacks.onActivity?.({ id: params.toolCallId, type: "plan", title: "Proposed plan", text: params.plan });
+			if (task.mode !== "code") return { outcome: "abandoned", feedback: "The plan is captured. Wait for a later implementation instruction in Code mode." };
+			const decision = await callbacks.onApproval("Implement plan", params.plan);
+			return { outcome: !this.cancelled && decision === "accept" ? "approved" : "abandoned" };
+		});
 		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
