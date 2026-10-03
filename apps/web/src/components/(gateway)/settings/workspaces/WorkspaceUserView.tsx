@@ -1,6 +1,7 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,12 +13,18 @@ import { keyDetailHref } from "../keys/keyDetailHref";
 import type { WorkspaceUserData } from "@/lib/fetchers/internal/fetchWorkspaceUser";
 import { WorkspaceUserModelIdentity } from "./WorkspaceUserModelIdentity";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, nextTableSort, type TableSort } from "../../usage/SortableTableHead";
+import { sortWorkspaceUserModels, type WorkspaceUserModelSortKey } from "./workspaceUserModelSort";
 
 export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
 	const modelMetadata = new Map(data.modelMetadataEntries ?? []);
+	const locale = useLocale();
+	const [modelSort, setModelSort] = useState<TableSort<WorkspaceUserModelSortKey>>(null);
+	const models = sortWorkspaceUserModels(data.analytics?.models ?? [], modelMetadata, modelSort, locale);
+	const changeModelSort = (key: WorkspaceUserModelSortKey) => setModelSort((current) => nextTableSort(current, key));
 	const name = data.profile.name ?? t("oauthDetail.unknownUser");
 	const money = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 4, notation: "standard" });
 	const pageHref = (page: number) => `/settings/workspaces/users/${encodeURIComponent(data.profile.id)}?${new URLSearchParams({ workspaceId: data.workspaceId, keyPage: String(page) })}#keys`;
@@ -40,8 +47,12 @@ export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 			{data.analytics === null ? <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p> : !data.analytics.models.length ? <p className="text-sm text-muted-foreground">{t("keyDetail.noRequests")}</p> : <div className="min-w-0 max-w-full overflow-hidden rounded-md border">
 				<ScrollArea className="w-full" scrollBarOrientation="horizontal" keepScrollbarMounted viewportClassName="w-full pb-2">
 					<Table wrapInContainer={false} aria-label={t("workspaceUser.topModels")} data-density="regular" className="isolate border-separate border-spacing-0 whitespace-nowrap text-xs [&_tr]:border-0 [&_thead_th]:border-b [&_tbody_tr:not(:last-child)>td]:border-b [&_tbody_td:not([colspan])]:py-2">
-						<TableHeader><TableRow className="h-9"><TableHead>{t("strings.Model")}</TableHead><TableHead className="text-right">{t("oauthDetail.requests")}</TableHead><TableHead className="text-right">{t("keyDetail.spendUsd")}</TableHead></TableRow></TableHeader>
-						<TableBody>{data.analytics.models.map((model) => <TableRow key={model.modelId}>
+						<TableHeader><TableRow className="h-9">
+							<SortableTableHead label={t("strings.Model")} sortKey="model" activeSort={modelSort} onSortChange={changeModelSort} />
+							<SortableTableHead label={t("oauthDetail.requests")} sortKey="requests" activeSort={modelSort} onSortChange={changeModelSort} className="text-right" />
+							<SortableTableHead label={t("keyDetail.spendUsd")} sortKey="spendUsd" activeSort={modelSort} onSortChange={changeModelSort} className="text-right" />
+						</TableRow></TableHeader>
+						<TableBody>{models.map((model) => <TableRow key={model.modelId}>
 							<TableCell className="py-2 font-medium"><WorkspaceUserModelIdentity modelId={model.modelId} metadata={modelMetadata} /></TableCell>
 							<TableCell className="py-2 text-right font-mono text-xs tabular-nums">{format.number(model.requests)}</TableCell><TableCell className="py-2 text-right font-mono text-xs tabular-nums">{money(model.spendUsd)}</TableCell>
 						</TableRow>)}</TableBody>

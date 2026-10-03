@@ -1,5 +1,7 @@
 "use client";
 
+import { SortableTableHead } from "../SortableTableHead";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -23,7 +25,6 @@ import {
 	BarChart3,
 	ChevronDown,
 	ChevronUp,
-	ChevronsUpDown,
 	ArrowUpRight,
 	Check,
 	ChevronRight,
@@ -2027,49 +2028,6 @@ function ExploreBarChart({
 				</Bar>
 			</BarChart>
 		</ChartContainer>
-	);
-}
-
-function SortableTableHead({
-	label,
-	sortKey,
-	activeSort,
-	onSortChange,
-	className,
-}: {
-	label: string;
-	sortKey: ExploreTableSortKey;
-	activeSort: ExploreTableSort;
-	onSortChange: (key: ExploreTableSortKey) => void;
-	className?: string;
-}) {
-	const active = activeSort?.key === sortKey;
-	const Icon = !active
-		? ChevronsUpDown
-		: activeSort.direction === "desc"
-			? ChevronDown
-			: ChevronUp;
-	return (
-		<TableHead className={cn("group", className)}>
-			<button
-				type="button"
-				className={cn(
-					"inline-flex w-full items-center gap-1 text-left",
-					className?.includes("text-right") ? "justify-end" : "justify-start",
-				)}
-				onClick={() => onSortChange(sortKey)}
-			>
-				<span>{label}</span>
-				<Icon
-					className={cn(
-						"h-3.5 w-3.5 transition-opacity",
-						active
-							? "opacity-100"
-							: "opacity-0 group-hover:opacity-60 group-focus-within:opacity-60",
-					)}
-				/>
-			</button>
-		</TableHead>
 	);
 }
 
