@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
 
-type StatusState = "operational" | "degraded" | "partial_outage" | "major_outage" | "maintenance" | "unknown";
+type StatusState = "operational" | "monitoring" | "degraded" | "partial_outage" | "major_outage" | "maintenance" | "unknown";
 type ProviderIncident = { id: string; title: string; link: string; status: string; impact?: string; description?: string; updatedAt?: string; publishedAt?: string };
 type ProviderStatus = { name: string; statusPageUrl: string; hasIssues: boolean; incidents: ProviderIncident[]; lastChecked?: string; error?: string };
 
@@ -12,6 +12,7 @@ const DEFAULT_WIDGET_API_URL = "https://statuspage.incident.io/phaseo/api/v1/sum
 const VISIBLE_COMPONENT_NAMES = new Set([
 	"API health (/v1/health)",
 	"Models API (/v1/models)",
+	"Generations API",
 	"Generation API demo",
 	"Homepage",
 	"Docs page",
@@ -187,6 +188,7 @@ function affectedComponentStatus(
 const STATUS_SEVERITY: Record<StatusState, number> = {
 	operational: 0,
 	unknown: 1,
+	monitoring: 1,
 	maintenance: 2,
 	degraded: 3,
 	partial_outage: 4,
@@ -327,6 +329,12 @@ function flattenIncidentComponents(summary: IncidentSummary): ComponentStatus[] 
 }
 
 function pickIncidentStatus(summary: IncidentSummary) {
+	const incidents = asArray(summary.ongoing_incidents);
+	if (incidents.length > 0 && incidents.every((incident) =>
+		isRecord(incident) && incident.status === "monitoring",
+	)) {
+		return { state: "monitoring" as const, label: "Monitoring recovery" };
+	}
 	const affectedStatuses = Array.from(buildAffectedComponentMap(summary).values());
 	if (affectedStatuses.length > 0) {
 		return affectedStatuses.sort(
@@ -343,6 +351,17 @@ function pickIncidentStatus(summary: IncidentSummary) {
 	}
 
 	return normalizeStatus("operational");
+}
+
+function incidentDetails(summary: IncidentSummary) {
+	return asArray(summary.ongoing_incidents).filter(isRecord).map((incident) => ({
+		id: String(incident.id ?? ""),
+		name: String(incident.name ?? "Service incident"),
+		status: String(incident.status ?? "unknown"),
+		impact: normalizeStatus(incident.current_worst_impact ?? incident.impact).label,
+		updatedAt: typeof incident.last_update_at === "string" ? incident.last_update_at : null,
+		message: typeof incident.last_update_message === "string" ? incident.last_update_message : null,
+	}));
 }
 
 async function fetchIncidentStatus(signal: AbortSignal, env: Env) {
@@ -396,6 +415,7 @@ async function fetchIncidentStatus(signal: AbortSignal, env: Env) {
 
 	return {
 		components: flattenIncidentComponents(summary),
+		incidents: incidentDetails(liveSummary),
 		href: STATUS_PAGE_HREF,
 		status: pickIncidentStatus(liveSummary),
 	};
@@ -407,11 +427,11 @@ publicStatusRouter.get("/status", async (c) => {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), 3500);
 	try {
-		const { components, href, status } = await fetchIncidentStatus(controller.signal, c.env);
+		const { components, incidents, href, status } = await fetchIncidentStatus(controller.signal, c.env);
 		const visibleComponents = components.filter((component) => isVisibleComponent(component, components));
 		const componentIssues = visibleComponents.filter((component) => component.state !== "operational" && component.state !== "unknown");
 		const onlyThirdPartyIssues = componentIssues.length > 0 && componentIssues.every((component) => `${component.name} ${component.parent ?? ""}`.includes("Third Party:"));
-		const label = status.state === "operational"
+		const label = status.state === "operational" || status.state === "monitoring"
 			? status.label
 			: onlyThirdPartyIssues
 				? "Slightly degraded"
@@ -419,7 +439,7 @@ publicStatusRouter.get("/status", async (c) => {
 					? `${componentIssues.length} services affected`
 					: status.label;
 
-		return withPublicCache(c.json({ ok: true, ...status, label, components: visibleComponents, href }), { edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 });
+		return withPublicCache(c.json({ ok: true, ...status, label, components: visibleComponents, incidents, href }), { edgeTtlSeconds: 30, staleWhileRevalidateSeconds: 60 });
 	} catch (error) {
 		console.error("[web-api/status] failed to fetch Incident.io status", error);
 		return c.json({ ok: false, state: "unknown" satisfies StatusState, label: "Status unavailable", components: [], href: STATUS_PAGE_HREF });
