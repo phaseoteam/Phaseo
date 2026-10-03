@@ -43,11 +43,11 @@ export function TaskWorkspace() {
 	}, [api]);
 	useEffect(() => {
 		setModels([]); setModelError("");
-		if (!api || (harness !== "codex" && harness !== "phaseo") || (harness === "phaseo" && !accountId)) { setModelsLoading(false); return; }
+		if (!api || !["codex", "phaseo", "opencode", "pi"].includes(harness) || (harness === "phaseo" && !accountId)) { setModelsLoading(false); return; }
 		let active = true; setModelsLoading(true);
-		void api.models(harness, accountId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
+		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
 		return () => { active = false; };
-	}, [api, harness, accountId]);
+	}, [api, harness, accountId, projectId]);
 	const selected = workspace.tasks.find(task => task.id === selectedId);
 	const tasks = workspace.tasks.filter(task => task.archived === showArchived && `${task.title} ${task.messages.map(message => message.text).join(" ")}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => Number(b.pinned) - Number(a.pinned));
 	async function command(value: WorkspaceCommand) {

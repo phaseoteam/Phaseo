@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import { getDocumentProxy } from "unpdf";
 
 let document;
+let result;
 try {
 	document = await getDocumentProxy(workerData, { isEvalSupported: false, maxImageSize: 16_777_216, useSystemFonts: false, disableFontFace: true });
 	if (document.numPages > 200) throw new Error("PDF attachments support up to 200 pages.");
@@ -19,6 +20,10 @@ try {
 		} finally { page.cleanup(); }
 	}
 	if (!readable) throw new Error("This PDF has no readable text. Use OCR or attach its pages as images.");
-	parentPort?.postMessage({ text: pages.join("\n\n"), pages: document.numPages });
-} catch (error) { parentPort?.postMessage({ error: error instanceof Error ? error.message : "PDF extraction failed." }); }
-finally { await document?.destroy(); }
+	result = { text: pages.join("\n\n"), pages: document.numPages };
+} catch (error) { result = { error: error instanceof Error ? error.message : "PDF extraction failed." }; }
+finally {
+	try { await document?.loadingTask.destroy(); }
+	catch (error) { if (!result?.error) result = { error: error instanceof Error ? error.message : "PDF cleanup failed." }; }
+}
+parentPort?.postMessage(result);

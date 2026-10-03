@@ -45,7 +45,7 @@ describe("workspace orchestration", () => {
 			expect(prompts).toEqual(["First"]); expect(runtime.store.getTask(id).queue).toHaveLength(1);
 			finish?.(); await vi.waitFor(() => expect(prompts).toEqual(["First", "Second"]));
 			expect(runtime.store.getTask(id).nativeSessionId).toBe("native");
-			expect(runtime.store.getTask(id).messages.filter(message => message.role === "assistant")).toHaveLength(2);
+			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.filter(message => message.role === "assistant")).toHaveLength(2));
 			expect(runtime.store.getTask(id).messages.find(message => message.role === "assistant")?.text).toBe("Reply to First");
 			expect(runtime.store.getTask(id).activities?.[0]).toMatchObject({ text: "Contents", status: "completed" });
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }

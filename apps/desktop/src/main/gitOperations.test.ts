@@ -1,11 +1,23 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { gitBranches, gitCommand } from "./gitOperations";
 
 describe("Git workspace actions", () => {
+	it("accepts an alias of the repository root and rejects a nested project", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-git-alias-"));
+		const root = path.join(directory, "repository"); const alias = path.join(directory, "alias");
+		mkdirSync(root); mkdirSync(path.join(root, "nested"));
+		try {
+			execFileSync("git", ["init", "-b", "fixture"], { cwd: root, windowsHide: true, stdio: "pipe" });
+			symlinkSync(root, alias, process.platform === "win32" ? "junction" : "dir");
+			writeFileSync(path.join(root, "file.txt"), "Alias fixture\n");
+			expect((await gitCommand(alias, { type: "stage", filename: "file.txt" })).stagedDiff).toContain("Alias fixture");
+			await expect(gitCommand(path.join(root, "nested"), { type: "stage", filename: "file.txt" })).rejects.toThrow("repository root");
+		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("stages literal filenames, commits and switches branches without losing working changes", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-git-"));
 		const git = (args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true, stdio: "pipe" }).toString();

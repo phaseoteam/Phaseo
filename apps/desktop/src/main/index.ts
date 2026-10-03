@@ -10,6 +10,7 @@ import { SecretVault } from "./secretVault";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { apiModels, codexModels } from "./modelCatalog";
+import { openCodeModels, piModels } from "./nativeModels";
 import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
@@ -40,15 +41,20 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) throw new Error("Use a web link.");
 	await shell.openExternal(url.href);
 });
-ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown) => {
-	if (!senderWindow(event) || (harness !== "codex" && harness !== "phaseo") || (accountId !== undefined && typeof accountId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
+ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
+	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
+	const project = projectId ? workspaceRuntime.store.get().projects.find(value => value.id === projectId) : undefined;
+	if (projectId && !project) throw new Error("Project is unavailable.");
+	const cwd = project?.directory ?? app.getPath("userData");
 	const account = accountId ? workspaceRuntime.store.get().accounts.find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
 	if (accountId && !account) throw new Error("Account is unavailable.");
 	if (harness === "phaseo") {
 		if (!account) throw new Error("Choose an API account.");
 		return apiModels(account, credentialVault.get(account.id));
 	}
-	return codexModels(app.getPath("userData"), account);
+	if (harness === "opencode") return openCodeModels(cwd);
+	if (harness === "pi") return piModels(cwd);
+	return codexModels(cwd, account);
 });
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;

@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
+import { realpath } from "node:fs/promises";
 import { gitReview, parseGitStatus } from "./projectFiles";
 
 const execute = promisify(execFile);
@@ -16,8 +17,9 @@ export async function gitCommand(root: string, value: unknown) {
 	const command = value as Record<string, unknown>;
 	if (!["stage", "unstage", "create-branch", "switch-branch", "commit"].includes(String(command.type))) throw new Error("Invalid Git action.");
 	const repository = (await git(root, ["rev-parse", "--show-toplevel"])).trim();
-	if (path.relative(path.resolve(root), path.resolve(repository))) throw new Error("Open the repository root before changing Git state.");
-	const key = path.resolve(repository);
+	const [projectRoot, repositoryRoot] = await Promise.all([realpath(root), realpath(repository)]);
+	if (path.relative(projectRoot, repositoryRoot)) throw new Error("Open the repository root before changing Git state.");
+	const key = process.platform === "win32" ? repositoryRoot.toLowerCase() : repositoryRoot;
 	const previous = locks.get(key);
 	const operation = (previous ?? Promise.resolve()).catch(() => {}).then(async () => {
 		if (command.type === "stage" || command.type === "unstage") {

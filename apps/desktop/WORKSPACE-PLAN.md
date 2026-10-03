@@ -53,7 +53,7 @@ approved file writes. Project browsing enforces realpath boundaries; Git review
 shows staged and unstaged changes, with literal-path staging, commits and local
 branch creation/switching. The file editor checks content hashes before writes
 and retains unfinished drafts across navigation. Real PTY terminals persist
-transcripts. Codex and API model discovery and command search are connected.
+transcripts. Codex, OpenCode V2, Pi and API model discovery and command search are connected.
 Cross-harness handoff copies visible conversation into a fresh native session.
 Image/text attachment snapshots persist independently of their source files;
 PDF text extraction runs in a bounded worker and includes page provenance.
@@ -61,7 +61,7 @@ Task and attachment drafts persist across navigation, with local previews.
 Phaseo Code/Plan currently accepts text documents; images require Chat or a
 vision-capable native harness. PDF OCR is not implemented.
 
-Evidence: desktop lint/typecheck/build pass; 62 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 67 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
