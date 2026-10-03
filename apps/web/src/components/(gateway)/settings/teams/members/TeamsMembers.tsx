@@ -84,6 +84,7 @@ interface Props {
 	) => void;
 	personalTeamId?: string | null;
 	samplePreview?: boolean;
+	canManageWorkspace?: boolean;
 }
 
 function roleRank(role?: string) {
@@ -156,6 +157,7 @@ export default function TeamsMembers({
 	onUpdateMemberRole,
 	personalTeamId,
 	samplePreview = false,
+	canManageWorkspace = false,
 }: Props) {
 	const format = useDisplayFormatters();
 	const router = useRouter();
@@ -520,7 +522,7 @@ export default function TeamsMembers({
 											<TableCell className="px-4 py-3">
 												<div className="min-w-0">
 													<div className="truncate font-medium">
-														{member.is_sample || !activeWorkspaceId ? member.display_name ?? member.user_id : <UserUsageChip userId={member.user_id} name={member.display_name ?? null} avatarUrl={null} workspaceId={activeWorkspaceId} currentUserId={currentUserId ?? undefined} canViewWorkspaceUsers={currentUserRole === "owner" || currentUserRole === "admin"} />}
+														{member.is_sample || !activeWorkspaceId ? member.display_name ?? member.user_id : <UserUsageChip userId={member.user_id} name={member.display_name ?? null} avatarUrl={null} workspaceId={activeWorkspaceId} currentUserId={currentUserId ?? undefined} canViewWorkspaceUsers={canManageWorkspace || currentUserRole === "owner" || currentUserRole === "admin"} />}
 													</div>
 													{isCurrent || member.is_sample ? (
 														<div className="mt-1">
