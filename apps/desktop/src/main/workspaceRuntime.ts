@@ -26,7 +26,7 @@ const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms
 
 function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: OpenCodeService, mcp: McpConnection[] = [], projectId?: string): AgentAdapter {
 	const active = mcp.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === projectId));
-	if (harness === "codex") return new CodexAdapter();
+	if (harness === "codex") return new CodexAdapter(mcp);
 	if (harness === "claude") return new ClaudeAdapter(active);
 	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
 	if (harness === "pi") return new PiAdapter();
@@ -59,7 +59,7 @@ export class WorkspaceRuntime {
 		const connection = command.connection; const workspace = this.store.get(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
-		if (workspace.tasks.some(task => this.executions.has(task.id) && ["claude", "opencode", "acp"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
+		if (workspace.tasks.some(task => this.executions.has(task.id) && ["codex", "claude", "opencode", "acp"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
 		this.store.saveMcp(connection); this.broadcast(); return this.store.get();
 	}
 	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
@@ -300,6 +300,7 @@ export class WorkspaceRuntime {
 			flush();
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "failed";
+			if (error instanceof AgentInputRejectedError && !current.messages.some(value => value.role === "assistant" && value.id.startsWith(`${message.id}:`))) { current.messages = current.messages.filter(value => value.id !== message.id); if (!current.queue.some(value => value.id === message.id)) current.queue.unshift(message); }
 			current.error = error instanceof Error ? error.message : "Agent execution failed.";
 			current.approvals = []; current.questions = []; current.forms = []; this.store.saveTask(current);
 		} finally {

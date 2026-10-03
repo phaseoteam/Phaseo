@@ -6,6 +6,8 @@ import type { Task } from "../shared/workspace";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
 import { CodexAdapter } from "./codexAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
+import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 function fixture(onRequest: (packet: { id: number; method: string; params: Record<string, unknown> }, send: (value: unknown) => void) => void) {
 	const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
@@ -24,6 +26,23 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it.each(["start", "resume", "fork"])("configures MCP before submitting a %s turn", async operation => {
+		const connection: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" }; const methods: string[] = [];
+		fixture((packet, send) => {
+			methods.push(packet.method);
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === `thread/${operation}`) { expect(packet.params.config).toEqual({ [`mcp_servers.${nativeMcpName(connection)}`]: { url: connection.url, enabled: true } }); send({ id: packet.id, result: { thread: { id: "native" } } }); }
+			if (packet.method === "mcpServerStatus/list") { expect(packet.params.threadId).toBe("native"); expect(methods).not.toContain("turn/start"); send({ id: packet.id, result: { data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }], nextCursor: null } }); }
+			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+		});
+		await new CodexAdapter([connection]).run({ ...task, ...(operation === "resume" ? { nativeSessionId: "source" } : operation === "fork" ? { nativeForkFrom: "source" } : {}) }, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(methods.indexOf("mcpServerStatus/list")).toBeLessThan(methods.indexOf("turn/start"));
+	});
+	it("reports failed MCP as confirmed rejection without submitting input", async () => {
+		const connection: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" }; const methods: string[] = [];
+		fixture((packet, send) => { methods.push(packet.method); if (packet.method === "initialize") send({ id: packet.id, result: {} }); if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } }); if (packet.method === "mcpServerStatus/list") send({ id: packet.id, result: { data: [{ name: nativeMcpName(connection), runtimeStatus: "failed" }], nextCursor: null } }); });
+		await expect(new CodexAdapter([connection]).run(task, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toBeInstanceOf(AgentInputRejectedError); expect(methods).not.toContain("turn/start");
+	});
 	it.each(["supported", "unsupported", ""])("validates model-specific reasoning before execution (%s)", async effort => {
 		const methods: string[] = [];
 		fixture((packet, send) => { methods.push(packet.method); if(packet.method==="initialize") send({id:packet.id,result:{}}); if(packet.method==="model/list") send({id:packet.id,result:{data:[{model:"default-model",displayName:"Model",isDefault:true,defaultReasoningEffort:"supported",supportedReasoningEfforts:[{reasoningEffort:"supported",description:"Native option"}]}],nextCursor:null}}); if(packet.method==="thread/start") send({id:packet.id,result:{thread:{id:"native"}}}); if(packet.method==="turn/start") {expect(packet.params.effort).toBe("supported");send({id:packet.id,result:{turn:{id:"turn"}}});send({method:"turn/completed",params:{threadId:"native",turn:{id:"turn",status:"completed"}}});} });

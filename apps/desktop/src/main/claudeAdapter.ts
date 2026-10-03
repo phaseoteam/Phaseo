@@ -8,6 +8,7 @@ import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { waitClaudeMcp } from "./claudeMcp";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -48,7 +49,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		try {
-			if (managedMcp.length) { await waitClaudeMcp(execution, managedMcp, signal); promptAllowed = true; releasePrompt(); }
+			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } promptAllowed = true; releasePrompt(); }
 			for await (const message of execution) {
 				if ("session_id" in message && message.session_id) callbacks.onSession(message.session_id);
 				if (message.type === "stream_event" && !message.parent_tool_use_id) {

@@ -7,6 +7,22 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it.each([true, false])("only restores input when rejection is confirmed (%s)", async confirmed => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preflight-"));
+		const run = vi.fn().mockRejectedValueOnce(confirmed ? new AgentInputRejectedError("Setup failed") : new Error("Transport disconnected")).mockResolvedValue(undefined);
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Original instruction" });
+			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+			const failed = runtime.store.getTask(id); expect(run).toHaveBeenCalledTimes(1);
+			if (confirmed) {
+				expect(failed.queue).toHaveLength(1); expect(failed.messages).toEqual([]); const original = failed.queue[0];
+				await runtime.command({ type: "resume", id }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+				expect(runtime.store.getTask(id).messages).toEqual([expect.objectContaining({ id: original.id, text: original.text })]); expect(run).toHaveBeenCalledTimes(2);
+			} else { expect(failed.queue).toEqual([]); expect(failed.messages).toHaveLength(1); }
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("blocks duplicate steering sends and waits for delivery settlement during shutdown", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-close-")); let finish: (() => void) | undefined; let reject: ((error: Error) => void) | undefined;
 		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, steer: async () => { await new Promise<void>((_resolve, fail) => { reject = fail; }); }, cancel: async () => { finish?.(); reject?.(new Error("Disconnected")); } }));

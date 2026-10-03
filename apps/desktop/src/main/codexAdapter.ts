@@ -8,6 +8,8 @@ import { attachmentPrompt } from "./attachmentPrompt";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import { readCodexModels } from "./modelCatalog";
+import type { McpConnection } from "../shared/mcp";
+import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
 
 type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -17,6 +19,8 @@ export class CodexAdapter implements AgentAdapter {
 	private threadId?: string;
 	private rejectTurn?: (error: Error) => void;
 	private canceled = false;
+	private readonly controller = new AbortController();
+	constructor(private readonly mcp: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		this.child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", nativeAccountEnvironment(account));
 		if (this.canceled) { this.child.kill(); throw new Error("Task stopped."); }
@@ -48,12 +52,14 @@ export class CodexAdapter implements AgentAdapter {
 			if (effort !== undefined) {
 				const models = await readCodexModels(rpc); const model = models.find(value => task.model === "default" ? value.default : value.id === task.model);
 				effort ||= model?.defaultReasoningEffort;
-				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new Error("The selected model does not support this reasoning effort. Update the task settings.");
+				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new AgentInputRejectedError("The selected model does not support this reasoning effort. Update the task settings.");
 			}
-			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: "untrusted", sandbox: task.mode === "code" ? "workspace-write" : "read-only" };
+			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: "untrusted", sandbox: task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
 			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
+			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), this.controller.signal); }
+			catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); }
 			await new Promise<void>((resolve, reject) => {
 				this.rejectTurn = reject;
 				rpc.onNotification = (method, raw) => {
@@ -89,7 +95,7 @@ export class CodexAdapter implements AgentAdapter {
 		} catch (error) { if (error instanceof JsonRpcResponseError) throw new AgentInputRejectedError(error.message, { cause: error }); throw error; }
 	}
 	async cancel() {
-		this.canceled = true;
+		this.canceled = true; this.controller.abort();
 		try {
 			if (this.rpc && this.threadId && this.turnId) await this.rpc.request("turn/interrupt", { threadId: this.threadId, turnId: this.turnId }, 5000);
 		} finally { this.rejectTurn?.(new Error("Task stopped.")); this.child?.kill(); }

@@ -32,7 +32,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
 		const requestOptions = { signal: this.controller.signal };
-		if (task.mode !== "chat") await this.mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, this.mcp, this.controller.signal);
+		if (task.mode !== "chat") { try { await this.mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, this.mcp, this.controller.signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
 		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
 		const formJobs = new Map<string, Promise<void>>();
 		const handleForm = async (form: AgentForm) => {
