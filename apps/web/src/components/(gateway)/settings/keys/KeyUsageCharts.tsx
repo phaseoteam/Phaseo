@@ -11,7 +11,7 @@ export function KeyUsageCharts({ chart }: { chart: KeyDetailData["chart"] }) {
 	const format = useDisplayFormatters();
 	const config = { requests: { label: t("oauthDetail.requests"), color: "var(--chart-1)" }, spendUsd: { label: t("keyDetail.spendUsd"), color: "var(--chart-2)" } };
 	const usd = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 4, notation: "standard" });
-	const label = (value: string) => format.dateParts(`${value}T00:00:00Z`, { month: "short", day: "numeric", timeZone: "UTC" });
+	const label = (value: string) => format.calendarDate(value);
 	const tooltipDate = (value: unknown) => `${format.calendarDate(String(value))} UTC`;
 	if (chart === null) return <p className="rounded-xl border p-5 text-sm text-muted-foreground">{t("keyDetail.chartUnavailable")}</p>;
 	return <div className="space-y-3">
