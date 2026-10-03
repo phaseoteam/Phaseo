@@ -8,6 +8,16 @@ import assert from 'node:assert/strict';
 const root = path.resolve('src');
 const cache = new Map();
 const lazyScopes = JSON.parse(fs.readFileSync(path.join(root, 'i18n/lazy-message-scopes.json'), 'utf8'));
+// Settings phrase helpers use stable IDs for sentences containing punctuation.
+const phraseSource = fs.readFileSync(path.join(root, 'i18n/settings-string-keys.ts'), 'utf8');
+const phraseTree = ts.createSourceFile('settings-string-keys.ts', phraseSource, ts.ScriptTarget.Latest, true);
+const phraseTable = phraseTree.statements.flatMap(statement => ts.isVariableStatement(statement) ? [...statement.declarationList.declarations] : [])
+    .find(declaration => declaration.name.getText(phraseTree) === 'settingsPhraseKeys')?.initializer;
+assert(phraseTable && ts.isObjectLiteralExpression(phraseTable), 'Settings phrase IDs must be a literal table');
+const phraseKeys = Object.fromEntries(phraseTable.properties.map(property => {
+    assert(ts.isPropertyAssignment(property) && ts.isStringLiteral(property.name) && ts.isStringLiteral(property.initializer));
+    return [property.name.text, property.initializer.text];
+}));
 function fileInfo(file, sourceOverride) {
     if (cache.has(file))
         return cache.get(file);
@@ -34,6 +44,12 @@ function fileInfo(file, sourceOverride) {
                     return base + suffix;
     }
     function visit(node) {
+        if (text.includes('settingsStringKey') && ts.isCallExpression(node)
+            && ['s', 'settingsStringKey'].includes(node.expression.getText(tree))
+            && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) {
+            const phrase = node.arguments[0].text;
+            info.keys.push('SettingsUI.strings.' + (phraseKeys[phrase] ?? phrase));
+        }
         if (ts.isJsxAttribute(node) && node.name.getText(tree) === 'feature'
             && node.initializer && ts.isStringLiteral(node.initializer)
             && node.parent.parent.tagName?.getText(tree) === 'LazyMessages') {
@@ -125,6 +141,8 @@ if (process.argv.includes('--self-test')) {
     assert.deepEqual(fixture.keys.sort(), ['Feature.copyButton.copied', 'Feature.copyButton.copy', 'Feature.copyButton.status.*']);
     const alias = fileInfo('scope-alias-fixture.tsx', `function Copy() { const t = useTranslations("Feature"); const rich = t.rich; return rich("intro", {}); }`);
     assert(alias.keys.includes('Feature.*'), 'An aliased translation method must retain its containing namespace');
+    const phrase = fileInfo('scope-phrase-fixture.tsx', `import { settingsStringKey } from './settings-string-keys'; function Copy() { return s("Please try again."); }`);
+    assert(phrase.keys.includes('SettingsUI.strings.phrasePleaseTryAgain'), 'Settings sentence helpers must resolve their stable IDs');
     console.log('Message scope audit self-test passed.');
     process.exit(0);
 }
@@ -155,6 +173,28 @@ function list(directory) {
 const shell = [...fs.readFileSync(path.join(root, "i18n/message-scopes.ts"), "utf8").match(/SHELL_MESSAGE_NAMESPACES = \[([\s\S]*?)\]/)[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
 const routes = list(path.join(root, 'app/[locale]')).filter(f => f.endsWith('/page.tsx') || f.endsWith('\\page.tsx'));
 const problems = [];
+// Check catalog paths as well as provider coverage: an available namespace
+// cannot resolve a literal key that was accidentally assigned to another one.
+function normalizeCatalog(value, preserveKeys = false) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const result = {};
+    for (const [key, child] of Object.entries(value)) {
+        const parts = preserveKeys ? [key] : key.split('.');
+        let target = result;
+        for (const part of parts.slice(0, -1)) target = target[part] ??= {};
+        target[parts.at(-1)] = normalizeCatalog(child, preserveKeys || key === 'strings');
+    }
+    return result;
+}
+const settingsCatalog = normalizeCatalog(JSON.parse(fs.readFileSync('messages/en-GB/settings-ui.json', 'utf8')));
+const settingsFiles = [path.join(root, 'components/(gateway)/settings'), path.join(root, 'app/[locale]/(dashboard)/settings')]
+    .flatMap(directory => list(directory)).filter(file => /\.tsx?$/.test(file));
+for (const file of settingsFiles) for (const key of new Set(fileInfo(file).keys)) {
+    if (!key.startsWith('SettingsUI.') || key.endsWith('.*')) continue;
+    let value = settingsCatalog;
+    for (const part of key.slice('SettingsUI.'.length).split('.')) value = value?.[part];
+    if (value === undefined) problems.push({ file: path.relative(root, file), missingCatalogKey: key });
+}
 const clientScopes = {};
 const dynamicClientFiles = new Set();
 function covers(scope, key) { return scope === key || key.startsWith(scope + '.'); }

@@ -33,12 +33,9 @@ import {
 import type { NavGroup, NavItem, SettingsScope } from "./Sidebar.config";
 import { getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 import { cn } from "@/lib/utils";
+import { SETTINGS_LABEL_KEYS as LABEL_KEYS, SETTINGS_NEW_LABEL_KEYS } from "./Sidebar.labels";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
-
-const LABEL_KEYS = {
-	Settings:"settings",Account:"account",Workspace:"workspace",Profile:"profile",Details:"details",MFA:"mfa","Provider onboarding":"providerOnboarding","Connected Apps":"connectedApps","Danger Zone":"dangerZone",Workspaces:"workspaces",Billing:"billing",Credits:"credits",Transactions:"transactions","Payment Methods":"paymentMethods","Feature Preview":"featurePreview",General:"settings",Members:"members",Access:"access",Notifications:"notifications",Guardrails:"guardrails",Enterprise:"enterprise",Overview:"overview",Directory:"directory",Departments:"departments","Single Sign-On":"singleSignOn",SCIM:"scim",Privacy:"privacy",Usage:"usage",Trends:"trends",Explore:"explore",Geography:"geography","Guardrail Activity":"guardrailActivity",Alerts:"alerts",Logs:"logs",Requests:"requests","Upstream Requests":"upstreamRequests",Sessions:"sessions",Videos:"videos",Batches:"batches","API Keys":"apiKeys","Management Keys":"managementKeys",Broadcast:"broadcast",Apps:"apps",Routing:"routing","Auto routing":"autoRouting","Dynamic Routes":"dynamicRoutes","Bring Your Own Key":"bringYourOwnKey",Presets:"presets",Feedback:"feedback","OAuth Apps":"oauthApps",Webhooks:"webhooks","Provider review":"providerReview"
-} as const;
 
 export default function SettingsSidebar({
 	children,
@@ -65,7 +62,7 @@ export default function SettingsSidebar({
 	const tNew = useTranslations("SettingsUI.sidebarNew");
 	const settingsMessages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
 	const translateLabel = (label: string) => {
-		const newLabels: Record<string, string> = { Preferences: "preferences", "Billing & Credits": "billingCredits", Activity: "activity", "Realtime Sessions": "realtimeSessions", "Private Models": "privateModels", "Discovery queue": "discoveryQueue", "Your Models": "yourModels", "Provider Review": "providerReview", Integrations: "integrations", Provider: "provider" };
+		const newLabels: Record<string, string> = SETTINGS_NEW_LABEL_KEYS;
 		if (newLabels[label]) return tNew(newLabels[label] as never);
 		const key = LABEL_KEYS[label as keyof typeof LABEL_KEYS];
 		if (!key) return label;

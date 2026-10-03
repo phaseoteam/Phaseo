@@ -356,7 +356,7 @@ function GuardrailsSection(props: {
 						<EmptyMedia variant="icon">
 							<Shield className="h-5 w-5" />
 						</EmptyMedia>
-						<EmptyTitle>{t("strings.No guardrails yet" as never)}</EmptyTitle>
+						<EmptyTitle>{t("credits.No guardrails yet" as never)}</EmptyTitle>
 						<EmptyDescription>
 											{t("headers.guardrailsDescription")}
 						</EmptyDescription>

@@ -465,11 +465,11 @@ export default function PresetForm({
 		const trimmedName = name.trim();
 		const slugPreview = buildPresetSlugPreview(slug || trimmedName);
 		if (!trimmedName) {
-			toast.error(t("strings.Preset name is required" as never));
+			toast.error(t("credits.Preset name is required" as never));
 			return;
 		}
 		if (!slugPreview) {
-			toast.error(t("strings.Preset slug is required" as never));
+			toast.error(t("credits.Preset slug is required" as never));
 			return;
 		}
 		if (selectedModels.length === 0) {
@@ -596,7 +596,7 @@ export default function PresetForm({
 					visibility,
 					config,
 				});
-			toast.success(t("strings.Draft saved" as never));
+			toast.success(t("credits.Draft saved" as never));
 			} else {
 				await createPresetAction({
 					name: trimmedName,
@@ -607,7 +607,7 @@ export default function PresetForm({
 					creatorUserId: currentUserId,
 					workspaceId: currentTeamId,
 				});
-			toast.success(t("strings.Preset created" as never));
+			toast.success(t("credits.Preset created" as never));
 			}
 			router.push("/settings/presets");
 			router.refresh();
@@ -628,22 +628,22 @@ export default function PresetForm({
 					<div className="space-y-6">
 						<div className="flex flex-wrap items-start justify-between gap-4">
 							<div className="min-w-0 flex-1 space-y-1">
-				<Label htmlFor="preset-name" className="sr-only">{t("strings.Preset Name" as never)}</Label>
+				<Label htmlFor="preset-name" className="sr-only">{t("credits.Preset Name" as never)}</Label>
 								<input
 									id="preset-name"
 									value={name}
 									onChange={handleNameChange}
-				placeholder={t("strings.Concise Support Assistant" as never)}
+				placeholder={t("credits.Concise Support Assistant" as never)}
 									className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground/70"
 								/>
 								<div className="flex min-w-0 items-center gap-1 font-mono text-sm text-muted-foreground focus-within:text-foreground">
 									<span aria-hidden="true">@</span>
-				<Label htmlFor="preset-slug" className="sr-only">{t("strings.Invocation Slug" as never)}</Label>
+				<Label htmlFor="preset-slug" className="sr-only">{t("credits.Invocation Slug" as never)}</Label>
 									<input
 										id="preset-slug"
 										value={slug}
 										onChange={handleSlugChange}
-				placeholder={t("strings.concise-support-assistant" as never)}
+				placeholder={t("credits.concise-support-assistant" as never)}
 										className="min-w-0 flex-1 bg-transparent py-1 font-mono text-sm outline-none placeholder:text-muted-foreground/60"
 									/>
 								</div>
@@ -662,7 +662,7 @@ export default function PresetForm({
 							<Textarea
 								value={description}
 								onChange={(e) => setDescription(e.target.value)}
-				placeholder={t("strings.When should this preset be used?" as never)}
+				placeholder={t("credits.When should this preset be used?" as never)}
 								className="min-h-0 h-10 resize-none overflow-hidden border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
 							/>
 						</div>
@@ -677,15 +677,15 @@ export default function PresetForm({
 						</div>
 						<div className="flex flex-col gap-3 border-y py-4 sm:flex-row sm:items-center sm:justify-between">
 							<div>
-			<div className="text-sm font-medium">{t("strings.Preset Access" as never)}</div>
+			<div className="text-sm font-medium">{t("credits.Preset Access" as never)}</div>
 			<p className="mt-1 text-xs text-muted-foreground">{t("strings.phrasePrivatePresetsAreOnlyVisibleToYouWorkspacePresetsCanBeUsedByMembersPublicPresetsAppearInTheMarketplace" as never)}</p>
 							</div>
 							<Select value={visibility} onValueChange={(value: PresetVisibility) => setVisibility(value)}>
-								<SelectTrigger className="w-full sm:w-56"><SelectValue>{visibility === "private" ? t("strings.Only Me" as never) : visibility === "team" ? t("strings.Share With Workspace" as never) : t("strings.Publish to Marketplace" as never)}</SelectValue></SelectTrigger>
+								<SelectTrigger className="w-full sm:w-56"><SelectValue>{visibility === "private" ? t("credits.Only Me" as never) : visibility === "team" ? t("credits.Share With Workspace" as never) : t("credits.Publish to Marketplace" as never)}</SelectValue></SelectTrigger>
 								<SelectContent className="rounded-md">
-			<SelectItem value="private">{t("strings.Only Me" as never)}</SelectItem>
-			<SelectItem value="team">{t("strings.Share With Workspace" as never)}</SelectItem>
-			<SelectItem value="public">{t("strings.Publish to Marketplace" as never)}</SelectItem>
+			<SelectItem value="private">{t("credits.Only Me" as never)}</SelectItem>
+			<SelectItem value="team">{t("credits.Share With Workspace" as never)}</SelectItem>
+			<SelectItem value="public">{t("credits.Publish to Marketplace" as never)}</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -704,7 +704,7 @@ export default function PresetForm({
 							</div>
 							<div className="flex items-center gap-2">
 								<Popover open={showModelPicker} onOpenChange={setShowModelPicker}>
-									<PopoverTrigger asChild><Button type="button" variant="outline" size="sm" className="rounded-md"><Plus className="mr-2 h-4 w-4" />{t("strings.Add Model" as never)}</Button></PopoverTrigger>
+									<PopoverTrigger asChild><Button type="button" variant="outline" size="sm" className="rounded-md"><Plus className="mr-2 h-4 w-4" />{t("credits.Add Model" as never)}</Button></PopoverTrigger>
 									<PopoverContent align="end" className="w-[min(92vw,440px)] gap-0 overflow-hidden rounded-md p-0">
 										<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder={t("strings.phraseSearchModels" as never)} className="rounded-md pl-9" /></div>
 										<ScrollArea className="h-80">
@@ -717,7 +717,7 @@ export default function PresetForm({
 									<span className="truncate text-sm font-medium">{model.name}</span>
 									<span className="max-w-32 truncate text-right text-xs text-muted-foreground">{orgInfo.name}</span>
 												</button>;
-																											}) : <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("strings.No matching models" as never)}</p>}
+																											}) : <p className="px-4 py-8 text-center text-sm text-muted-foreground">{t("credits.No matching models" as never)}</p>}
 										</ScrollArea>
 									</PopoverContent>
 								</Popover>
@@ -730,7 +730,7 @@ export default function PresetForm({
 					<Separator />
 
 					<div>
-						<div className="text-sm font-medium">{t("strings.Configuration groups" as never)}</div>
+						<div className="text-sm font-medium">{t("credits.Configuration groups" as never)}</div>
 					</div>
 					<div className="border-y border-border/70">
 						<SectionLinkRow
@@ -740,7 +740,7 @@ export default function PresetForm({
 							onClick={() => setActiveView("providers")}
 						/>
 						<SectionLinkRow
-							title={t("strings.Request Defaults" as never)}
+							title={t("presetForm.requestDefaultsTitle" as never)}
 							description={t("strings.phraseSetRoutingBehaviorResponseCachingAndPromptDefaults" as never)}
 							summary={requestDefaultsSummary}
 							onClick={() => setActiveView("defaults")}
@@ -779,7 +779,7 @@ export default function PresetForm({
 						className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
 					>
 						<ChevronLeft className="h-4 w-4" />
-						<span>{t("strings.Overview / Request Defaults" as never)}</span>
+						<span>{t("credits.Overview / Request Defaults" as never)}</span>
 					</button>
 					<FormSection
 						icon={<Sliders className="h-4 w-4" />}
@@ -788,19 +788,19 @@ export default function PresetForm({
 						stacked
 					>
 						<div className="space-y-2">
-						<Label>{t("strings.Preferred Routing Profile" as never)}</Label>
+						<Label>{t("credits.Preferred Routing Profile" as never)}</Label>
 							<Select
 								value={routingMode}
 								onValueChange={(value: PresetRoutingMode) => setRoutingMode(value)}
 							>
 								<SelectTrigger>
-									<SelectValue>{routingMode === "balanced" ? t("strings.Balanced" as never) : routingMode === "price" ? t("strings.Lowest cost" as never) : routingMode === "latency" ? t("strings.Lowest latency" as never) : t("strings.Highest throughput" as never)}</SelectValue>
+									<SelectValue>{routingMode === "balanced" ? t("credits.Balanced" as never) : routingMode === "price" ? t("credits.Lowest cost" as never) : routingMode === "latency" ? t("credits.Lowest latency" as never) : t("credits.Highest throughput" as never)}</SelectValue>
 								</SelectTrigger>
 								<SelectContent className="rounded-md">
-									<SelectItem value="balanced">{t("strings.Balanced" as never)}</SelectItem>
-									<SelectItem value="price">{t("strings.Lowest cost" as never)}</SelectItem>
-									<SelectItem value="latency">{t("strings.Lowest latency" as never)}</SelectItem>
-									<SelectItem value="throughput">{t("strings.Highest throughput" as never)}</SelectItem>
+									<SelectItem value="balanced">{t("credits.Balanced" as never)}</SelectItem>
+									<SelectItem value="price">{t("credits.Lowest cost" as never)}</SelectItem>
+									<SelectItem value="latency">{t("credits.Lowest latency" as never)}</SelectItem>
+									<SelectItem value="throughput">{t("credits.Highest throughput" as never)}</SelectItem>
 								</SelectContent>
 							</Select>
 							<p className="text-xs text-muted-foreground">
@@ -811,7 +811,7 @@ export default function PresetForm({
 						<div className="space-y-3 rounded-lg border p-4">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
-						<Label>{t("strings.Enable Response Caching" as never)}</Label>
+						<Label>{t("credits.Enable Response Caching" as never)}</Label>
 									<p className="text-xs text-muted-foreground">
 										{t("presetForm.responseCachingHelp")}
 									</p>
@@ -823,7 +823,7 @@ export default function PresetForm({
 							</div>
 							{responseCachingEnabled && (
 								<div className="space-y-2">
-						<Label>{t("strings.Cache TTL (seconds)" as never)}</Label>
+						<Label>{t("credits.Cache TTL (seconds)" as never)}</Label>
 									<Input
 										type="number"
 										min="30"
@@ -840,7 +840,7 @@ export default function PresetForm({
 						</div>
 
 						<div className="space-y-2">
-						<Label>{t("strings.System Prompt" as never)}</Label>
+						<Label>{t("credits.System Prompt" as never)}</Label>
 							<Textarea
 								value={systemPrompt}
 								onChange={(e) => setSystemPrompt(e.target.value)}

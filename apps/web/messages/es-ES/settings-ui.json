@@ -1135,6 +1135,7 @@
 		"redirectHelp": "Los URI de redireccionamiento deben coincidir exactamente, incluido el esquema, el host, la ruta y el puerto."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Permitir todos excepto los modelos seleccionados",
 		"chooseModels": "Elegir modelos",
 		"chooseProviders": "Elegir proveedores",
 		"customPatternsDescription": "Añade patrones de expresiones regulares para marcar, redactar o bloquear contenido sensible propio del espacio de trabajo.",
@@ -1215,6 +1216,8 @@
 		"excludeReasoningHelp": "No incluyas los tokens de razonamiento en la respuesta final."
 	},
 	"presetPage": {
+		"fork": "Crear una copia",
+		"copyReference": "Copiar referencia del preajuste",
 		"metadataTitle": "Preajustes - Configuración | Phaseo",
 		"settingsTitle": "Preajustes",
 		"settingsDescription": "Administra configuraciones de solicitud reutilizables para tus llamadas a la API.",
@@ -3257,6 +3260,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Modelo desconocido",
+		"noApiKey": "Sin clave de API",
+		"noApp": "Sin aplicación",
 		"activity": "Actividad",
 		"yourUsage": "Su uso en Phaseo.",
 		"sampledRequests": "Esta vista se basa en las primeras solicitudes de {count} en el período seleccionado.",
@@ -4264,6 +4270,7 @@
 		"sampleProviderRejected": "El proveedor rechazó la solicitud más reciente."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Volver a los destinos",
 		"billingAdminsOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar su configuración de facturación.",
 		"managementKeysTitle": "No hay ningún espacio de trabajo seleccionado",
 		"managementKeysBody": "Selecciona un espacio de trabajo en el encabezado para ver y administrar sus claves de API de administración.",

@@ -63,12 +63,12 @@ export default function PresetsPanel({
 		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)) ?? undefined : undefined;
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
-		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("strings.Published" as never)} ${result.version?.version_label ?? `${t("strings.release" as never)} ${result.version?.version_number ?? t("strings.next" as never)}`}`); window.location.reload(); }
+		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("credits.Published" as never)} ${result.version?.version_label ?? `${t("credits.release" as never)} ${result.version?.version_number ?? t("credits.next" as never)}`}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to publish version")); setPublishingPresetId(null); }
 	}
 
 	async function onApplyUpstream(id: string, versionId: string, versionNumber: number) {
-		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("strings.Upstream" as never)} v${versionNumber} ${t("strings.applied to your draft" as never)}`); window.location.reload(); }
+		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("credits.Upstream" as never)} v${versionNumber} ${t("credits.applied to your draft" as never)}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to apply upstream update")); }
 	}
 
@@ -122,17 +122,17 @@ export default function PresetsPanel({
 													<span className="truncate">{p.name}</span>
 													{p.visibility && (
 														<Badge variant="outline" className="text-[10px] capitalize">
-										{p.visibility === "private" ? t("strings.Only Me" as never) : p.visibility === "team" ? t("strings.Share With Workspace" as never) : p.visibility === "public" ? t("strings.Public" as never) : p.visibility}
+										{p.visibility === "private" ? t("credits.Only Me" as never) : p.visibility === "team" ? t("credits.Share With Workspace" as never) : p.visibility === "public" ? t("strings.Public" as never) : p.visibility}
 														</Badge>
 													)}
 													{p.source_preset_id && (
 														<Badge variant="secondary" className="text-[10px] capitalize">
-											{t("strings.Fork" as never)}
+											{t("presetPage.fork" as never)}
 														</Badge>
 													)}
 													{p.hasDraftChanges && (
 														<Badge variant="secondary" className="text-[10px]">
-											{t("strings.Unpublished changes" as never)}
+											{t("settingsPageCopy.unpublished" as never)}
 														</Badge>
 													)}
 												</div>
@@ -165,7 +165,7 @@ export default function PresetsPanel({
 													<DropdownMenuItem onClick={() => onCopyPresetReference(p)}>
 
 															<Copy className="mr-2 h-4 w-4" />
-															{t("strings.Copy preset reference" as never)}
+															{t("presetPage.copyReference" as never)}
 
 													</DropdownMenuItem>
 													<DropdownMenuItem asChild>
@@ -175,7 +175,7 @@ export default function PresetsPanel({
 														</Link>
 													</DropdownMenuItem>
 									{p.canPublish && p.hasDraftChanges && <DropdownMenuItem disabled={publishingPresetId === p.id} onClick={() => onPublishVersion(p)}><Upload className="mr-2 h-4 w-4" />{publishingPresetId === p.id ? t("strings.Publishing…" as never) : t("strings.Publish new version" as never)}</DropdownMenuItem>}
-									{p.created_by === currentUserId && p.hasUpstreamUpdate && p.latestUpstreamVersion && <DropdownMenuItem onClick={() => onApplyUpstream(p.id, p.latestUpstreamVersion.id, p.latestUpstreamVersion.version_number)}><GitBranch className="mr-2 h-4 w-4" />{t("strings.Apply upstream" as never)} v{p.latestUpstreamVersion.version_number} {t("strings.to draft" as never)}</DropdownMenuItem>}
+									{p.created_by === currentUserId && p.hasUpstreamUpdate && p.latestUpstreamVersion && <DropdownMenuItem onClick={() => onApplyUpstream(p.id, p.latestUpstreamVersion.id, p.latestUpstreamVersion.version_number)}><GitBranch className="mr-2 h-4 w-4" />{t("credits.Apply upstream" as never)} v{p.latestUpstreamVersion.version_number} {t("credits.to draft" as never)}</DropdownMenuItem>}
 													<DropdownMenuItem variant="destructive" onClick={() => setDeletingPresetId(p.id)}>
 														<Trash2 className="mr-2 h-4 w-4" />
 																{t("strings.Delete" as never)}
