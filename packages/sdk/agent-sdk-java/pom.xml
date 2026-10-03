@@ -15,7 +15,7 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>5.10.2</junit.version>
-    <phaseo.sdk.version>3.0.0</phaseo.sdk.version>
+    <phaseo.sdk.version>3.1.0</phaseo.sdk.version>
   </properties>
   <dependencies>
     <dependency><groupId>app.phaseo</groupId><artifactId>phaseo-sdk</artifactId><version>${phaseo.sdk.version}</version></dependency>
