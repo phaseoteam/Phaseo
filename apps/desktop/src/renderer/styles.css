@@ -103,7 +103,9 @@
 .task-primary:hover { background: var(--primary-hover); }
 .task-start > small { display: block; margin-top: 16px; }
 .task-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding: 16px 24px; }
-.task-toolbar > div { flex: 1 1 220px; min-width: 180px; }
+.task-toolbar > div { flex: 1 1 180px; min-width: 180px; }
+.task-toolbar > select { width: 104px; }
+.task-toolbar > button { width: 32px; padding-inline: 0; flex-shrink: 0; }
 .task-toolbar strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-toolbar small { display: block; margin-top: 5px; color: var(--text-muted); }
 .task-toolbar .task-title { width: 100%; border: 0; padding: 0; background: transparent; color: var(--text); font: inherit; font-weight: 600; }
