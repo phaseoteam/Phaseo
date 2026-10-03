@@ -47,8 +47,8 @@ limits. Do not upgrade to obtain custom webhooks or more monitor slots.
 Passing checks do not establish database availability, authenticated behavior
 or provider generation. Add a cheap uncached read through the application
 before describing database coverage as complete. Cached pages cannot prove it.
-Browser setup failures and assertion failures share a pilot failure reason;
-separate checker faults from product faults before automatically paging.
+Browser setup failures have a separate reason from journey failures;
+exclude checker setup faults from product-outage paging.
 
 The proposed free incident path is existing Axiom monitors -> email notifier
 -> incident.io email source. External health alerts can later use an

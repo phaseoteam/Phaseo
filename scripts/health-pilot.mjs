@@ -57,10 +57,12 @@ function event(id, success, started, extra = {}) {
 export async function checkBrowser(loadPlaywright) {
   const started = Date.now();
   let browser;
+  let stage = 'setup';
   try {
     const { chromium, expect } = loadPlaywright();
     browser = await chromium.launch({ timeout: 15000 });
     const page = await browser.newPage();
+    stage = 'journey';
     page.setDefaultTimeout(15000);
     page.setDefaultNavigationTimeout(20000);
     const response = await page.goto('https://phaseo.app/models', { waitUntil: 'domcontentloaded' });
@@ -78,7 +80,7 @@ export async function checkBrowser(loadPlaywright) {
     await expect(page.getByText('Application error', { exact: false })).toHaveCount(0);
     return event('models-browser', true, started);
   } catch {
-    return event('models-browser', false, started, { failure_reason: 'browser_setup_or_assertion_failed' });
+    return event('models-browser', false, started, { failure_reason: stage === 'setup' ? 'browser_setup_failed' : 'browser_journey_failed' });
   } finally {
     await browser?.close();
   }
