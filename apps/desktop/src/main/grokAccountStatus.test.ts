@@ -30,4 +30,13 @@ describe("Grok account status", () => {
 		const controller = new AbortController(); const checking = grokAccountStatus("/owned/project", undefined, controller.signal); const rejected = expect(checking).rejects.toThrow("cancelled");
 		await vi.waitFor(() => expect(child.stdout.listenerCount("data")).toBe(1)); controller.abort(); await rejected; expect(child.kill).toHaveBeenCalled();
 	});
+	it.each(["oversized", "exit", "error"])("rejects unusable native status (%s)", async failure => {
+		const child = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child); native.resolve.mockResolvedValue({ executable: "/owned/grok", prefix: [] });
+		const checking = grokAccountStatus("/owned/project"); const rejected = expect(checking).rejects.toThrow(failure === "oversized" ? "oversized" : failure === "exit" ? "did not complete" : "failed");
+		await vi.waitFor(() => expect(child.stdout.listenerCount("data")).toBe(1));
+		if (failure === "oversized") child.stdout.write("x".repeat(65537));
+		else if (failure === "exit") { child.stdout.write("You are logged in with grok.com.\n"); child.emit("exit", 1); }
+		else child.emit("error", new Error("private native diagnostics"));
+		await rejected; expect(child.kill).toHaveBeenCalled();
+	});
 });

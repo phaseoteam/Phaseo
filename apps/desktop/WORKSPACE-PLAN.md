@@ -197,7 +197,7 @@ Native harness installation discovery includes Grok and uses the same direct-bin
 
 The desktop account-status bridge now supports Grok's native `models` command without starting a session or sending a prompt. Explicit signed-in/out lines determine authentication; absent or contradictory evidence stays unknown. Output is bounded, terminal escapes are removed, selected profile environment is isolated and cancelled checks kill their process. Seven targeted tests pass. Real isolated signed-out CLI output confirms authentication can be false despite exit code zero. Sign-in and managed-account creation remain unfinished.
 
-Evidence: desktop lint/typecheck/build pass; 275 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 285 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
