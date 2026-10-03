@@ -3,7 +3,8 @@ export function keyDetailHref(key: { name: string; prefix: string; workspace_id:
 	return `/settings/keys/${encodeURIComponent(key.name)}?${query.toString()}`;
 }
 
-export function matchesKeyRouteName(name: string, routeName: string) {
+export function matchesKeyRouteName(name: unknown, routeName: string) {
+	if (typeof name !== "string") return false;
 	if (name === routeName) return true;
 	try {
 		return name === decodeURIComponent(routeName);

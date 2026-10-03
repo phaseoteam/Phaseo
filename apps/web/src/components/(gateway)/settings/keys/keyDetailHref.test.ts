@@ -8,6 +8,9 @@ describe("key route name comparison", () => {
 	it("keeps renamed bookmarks eligible for a canonical redirect", () => {
 		expect(matchesKeyRouteName("New name", "Old name")).toBe(false);
 	});
+	it("rejects malformed names from the key-list response", () => {
+		expect(matchesKeyRouteName(null, "key")).toBe(false);
+	});
 	it("accepts literal percent characters without decoding valid names again", () => {
 		expect(matchesKeyRouteName("100%", "100%")).toBe(true);
 		expect(matchesKeyRouteName("literal%2F", "literal%2F")).toBe(true);
