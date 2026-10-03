@@ -330,7 +330,7 @@ function resolveMantleTextRoute(
 }
 
 function usesBedrockMessagesApi(args: ExecutorExecuteArgs): boolean {
-	return args.protocol === "anthropic.messages" || args.endpoint === "messages";
+	return args.providerId.startsWith("amazon-bedrock-") || args.protocol === "anthropic.messages" || args.endpoint === "messages";
 }
 
 function buildMantleMessagesUrl(baseUrl: string): string {

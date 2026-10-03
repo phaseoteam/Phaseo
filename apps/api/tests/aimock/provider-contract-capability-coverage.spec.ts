@@ -6,6 +6,13 @@ import { EXECUTORS_BY_PROVIDER } from "@executors/index";
 const contractsRoot = path.resolve(import.meta.dirname, "../../../../packages/testing/provider-mock/contracts");
 
 const inheritedContractByProvider: Record<string, string> = {
+    // Runtime offers use the same Anthropic wire contract; the regional executor
+    // tests also assert each exact Runtime endpoint and inference profile ID.
+    "amazon-bedrock-global": "anthropic",
+    "amazon-bedrock-us": "anthropic",
+    "amazon-bedrock-eu": "anthropic",
+    "amazon-bedrock-jp": "anthropic",
+    "amazon-bedrock-au": "anthropic",
     ambient: "openai",
     baidu: "openai",
     doubleword: "openai",
