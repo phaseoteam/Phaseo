@@ -52,16 +52,17 @@ describe("OpenCode 2 integration", () => {
 		let answer!: (value: { count: number }) => void; let prompted!: () => void; let listed!: () => void;
 		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const listing = new Promise<void>(resolve => { listed = resolve; });
 		const form = { id: "pending", sessionID: "session", title: "Recovered form", fields: [{ key: "count", type: "integer", default: 2 }] };
-		const reply = vi.fn(async () => {}); const submit = vi.fn(async () => { prompted(); });
-		sdk.make.mockReturnValue({ session: { get: async () => ({ id: "session" }), wait: async () => {}, prompt: submit, form: { list: async () => { listed(); return [form]; }, reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+		const reply = vi.fn(async () => {}); const submit = vi.fn(async () => { prompted(); }); const switchAgent = vi.fn(async () => {}); const update = vi.fn(async () => {});
+		sdk.make.mockReturnValue({ session: { get: async () => ({ id: "session" }), switchAgent, update, wait: async () => {}, prompt: submit, form: { list: async () => { listed(); return [form]; }, reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
 			options.onActivity(); await listing; yield { type: "form.created", data: { form } };
 			yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
 			await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
 		} } });
 		const onForm = vi.fn(async () => new Promise<{ count: number }>(resolve => { answer = resolve; }));
-		const run = new OpenCodeAdapter().run({ ...task, nativeSessionId: "session" }, ".", "Continue", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onForm });
+		const run = new OpenCodeAdapter().run({ ...task, mode: "chat", nativeSessionId: "session" }, ".", "Continue", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onForm });
 		await vi.waitFor(() => expect(answer).toBeDefined()); expect(submit).not.toHaveBeenCalled(); expect(onForm).toHaveBeenCalledOnce();
 		answer({ count: 3 }); await run; expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "pending", answer: { count: 3 } }, expect.anything()); expect(submit).toHaveBeenCalledOnce();
+		expect(switchAgent).toHaveBeenCalledWith({ sessionID: "session", agent: "build" }, expect.anything()); expect(update).toHaveBeenCalledWith({ sessionID: "session", permissions: [{ action: "*", resource: "*", effect: "deny" }] }, expect.anything());
 	});
 	it.each([true, false])("handles native typed forms without blocking the event stream (%s)", async submit => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
@@ -109,9 +110,9 @@ describe("OpenCode 2 integration", () => {
 		let prompted = false;
 		let promptResolve: () => void = () => {};
 		const prompt = new Promise<void>(resolve => { promptResolve = resolve; });
-		const reply = vi.fn(); const fork = vi.fn(async () => ({ id: "fork" }));
+		const reply = vi.fn(); const fork = vi.fn(async () => ({ id: "fork" })); const switchAgent = vi.fn(async () => {}); const update = vi.fn(async () => {});
 		sdk.make.mockReturnValue({
-			session: { fork, wait: async () => {}, prompt: vi.fn(async () => { prompted = true; promptResolve(); }) },
+			session: { fork, switchAgent, update, wait: async () => {}, prompt: vi.fn(async () => { prompted = true; promptResolve(); }) },
 			permission: { reply },
 			event: { subscribe: async function* (options: { onActivity: () => void }) {
 				expect(prompted).toBe(false); options.onActivity(); await prompt;
@@ -124,6 +125,7 @@ describe("OpenCode 2 integration", () => {
 		const onDelta = vi.fn(); const onSession = vi.fn();
 		await new OpenCodeAdapter().run({ ...task, nativeForkFrom: "source" }, ".", "Hello", { onDelta, onSession, onApproval: async () => "accept" });
 		expect(fork).toHaveBeenCalledWith({ sessionID: "source" }, expect.anything());
+		expect(switchAgent).toHaveBeenCalledWith({ sessionID: "fork", agent: "build" }, expect.anything()); expect(update).toHaveBeenCalledWith({ sessionID: "fork", permissions: [{ action: "*", resource: "*", effect: "ask" }] }, expect.anything());
 		expect(onSession).toHaveBeenCalledWith("fork");
 		expect(reply).toHaveBeenCalledWith({ sessionID: "fork", requestID: "permission", decision: "once" }, expect.anything());
 		expect(onDelta).toHaveBeenCalledExactlyOnceWith("message", "Done");

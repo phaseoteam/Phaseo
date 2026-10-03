@@ -44,7 +44,7 @@ export type WorkspaceCommand =
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"] }
 	| { type: "send"; id: string; text: string; attachments?: string[] }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -133,6 +133,8 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			case "update-task":
 				string("title", false, 200);
+				string("model", false);
+				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
 				break;
 			case "send": case "steer":

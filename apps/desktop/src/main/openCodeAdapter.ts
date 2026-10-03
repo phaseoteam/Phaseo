@@ -63,7 +63,11 @@ export class OpenCodeAdapter implements AgentAdapter {
 			permissions: [{ action: "*", resource: "*", effect: task.mode === "chat" ? "deny" : "ask" }],
 		}, requestOptions);
 		this.sessionId = session.id; callbacks.onSession(session.id);
-		if (model && task.nativeSessionId) await client.session.switchModel({ sessionID: session.id, model }, requestOptions);
+		if (task.nativeSessionId || task.nativeForkFrom) {
+			await client.session.switchAgent({ sessionID: session.id, agent: task.mode === "plan" ? "plan" : "build" }, requestOptions);
+			await client.session.update({ sessionID: session.id, permissions: [{ action: "*", resource: "*", effect: task.mode === "chat" ? "deny" : "ask" }] }, requestOptions);
+			if (model) await client.session.switchModel({ sessionID: session.id, model }, requestOptions);
+		}
 		let readyResolve: () => void = () => {};
 		const ready = new Promise<void>(resolve => { readyResolve = resolve; });
 		let resolveTurn: () => void = () => {};

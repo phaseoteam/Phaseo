@@ -73,6 +73,7 @@ export class WorkspaceRuntime {
 	}
 	async command(command: WorkspaceCommand): Promise<Workspace> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
 			if (this.steeringExecutions.has(command.id)) throw new Error("Wait for the current steering instruction to finish sending.");
 			const execution = this.steer(command).finally(() => this.steeringExecutions.delete(command.id));

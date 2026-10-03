@@ -7,6 +7,7 @@ import { MessageContent } from "../components/MessageContent";
 import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { AgentForm } from "../components/AgentForm";
+import { TaskSettings } from "../components/TaskSettings";
 
 export function TaskWorkspace() {
 	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
@@ -14,6 +15,7 @@ export function TaskWorkspace() {
 	const [query, setQuery] = useState("");
 	const [showArchived, setShowArchived] = useState(false);
 	const [editingQueue, setEditingQueue] = useState<string>();
+	const [settingsId, setSettingsId] = useState<string>();
 	const [queueText, setQueueText] = useState("");
 	const [drafts, setDrafts] = usePersistedState<Record<string, string>>("phaseo.desktop.messageDrafts", {});
 	const text = selectedId ? drafts[selectedId] ?? "" : "";
@@ -115,7 +117,9 @@ export function TaskWorkspace() {
 					<button type="button" aria-label={selected.pinned ? "Unpin task" : "Pin task"} onClick={() => void command({ type: "update-task", id: selected.id, pinned: !selected.pinned })}><Pin size={16} /></button>
 					<button type="button" aria-label="Fork task history" onClick={() => { void command({ type: "fork", id: selected.id }).then(state => { if (state) setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); }); }}><GitFork size={16} /></button>
 					<button type="button" disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { setHandoffId(selected.id); setProjectId(selected.projectId ?? ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setSelectedId(undefined); }}>Handoff</button>
+				<button type="button" disabled={selected.archived || selected.status === "running" || selected.status === "waiting"} onClick={() => setSettingsId(value => value === selected.id ? undefined : selected.id)}>Task settings</button>
 				</header>
+				{settingsId === selected.id && !selected.archived && selected.status !== "running" && selected.status !== "waiting" && <TaskSettings key={selected.id} task={selected} close={() => setSettingsId(undefined)} save={async (model, mode) => Boolean(await command({ type: "update-task", id: selected.id, model, mode }))} />}
 				<div className="task-messages" aria-live="polite">{selected.messages.length ? selected.messages.map(message => <article className={`task-message task-message-${message.role}`} key={message.id}><small>{message.role === "user" ? "You" : message.role === "assistant" ? selected.harness : message.role}</small>{message.role === "assistant" ? <MessageContent text={message.text} /> : <div>{message.text}</div>}{message.attachments?.map(attachment => <button type="button" className="attachment-chip" key={attachment.id} onClick={() => setAttachmentPreview({ taskId: selected.id, id: attachment.id })}><Paperclip size={12} />{attachment.name}</button>)}</article>) : <p className="task-muted">Send a message to start.</p>}
 					{selected.activities?.map(activity => <details className="task-activity" key={activity.id}><summary>{activity.title}{activity.status ? ` · ${activity.status}` : ""}</summary><pre>{activity.text}</pre></details>)}
 					{selected.error && <div className="task-error" role="alert">{selected.error}<button type="button" onClick={() => void command({ type: "resume", id: selected.id })}>Resume</button></div>}

@@ -105,6 +105,11 @@ Account editing supports names, API endpoints and encrypted key rotation. Active
 turns block connection changes; key rotation commits a new credential reference
 before retiring the old key. Account archival hides profiles from new task choices
 while preserving linked task history and supports restoration.
+Existing conversations can change model and mode between turns. Settings retain
+history and native session identity and never start execution by themselves;
+active/shutting-down turns block edits. OpenCode resumes and forks reapply native
+agent selection and explicit tool permissions before prompting. The isolated V2
+binary verified native agent/permission changes without inference.
 
 ACP agent profiles support editing, archival and restoration. Connection checks
 initialize the configured native process without creating sessions or advertising
@@ -112,7 +117,7 @@ host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
 
-Evidence: desktop lint/typecheck/build pass; 135 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 137 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
