@@ -58,6 +58,9 @@ try {
         if (page === "Tasks") {
           await window.webContents.executeJavaScript(`document.querySelector('.task-row').click()`);
           await new Promise(resolve => setTimeout(resolve, 200));
+          const messageLayout = await window.webContents.executeJavaScript(`(()=>{const message=document.querySelector('.message-markdown'),heading=message?.querySelector('h2'),paragraph=heading?.nextElementSibling;return {whiteSpace:message&&getComputedStyle(message).whiteSpace,headingGap:heading&&paragraph?paragraph.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null}})()`);
+          if (messageLayout.whiteSpace !== "normal" || messageLayout.headingGap === null || messageLayout.headingGap > 20) throw new Error("Markdown conversation spacing is inconsistent.");
+          writeFileSync(path.join(output, `${width}-${theme}-conversation.json`), JSON.stringify(messageLayout, null, 2));
           writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
           await new Promise(resolve => setTimeout(resolve, 100));

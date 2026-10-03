@@ -16,6 +16,7 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 10. **Inbox:** use the same headings, list padding and readable empty-state text.
 11. **Platform:** replace the decorative marketing hero and unverified readiness/health badges with concise links to the existing web tools.
 12. **Conversation settings:** inset the model, reasoning and mode controls by 24 pixels, matching the toolbar and composer. Capture both window sizes and themes after the rendered frame settles.
+13. **Conversation typography:** prevent the general message rule from preserving Markdown whitespace between rendered blocks. Use explicit heading, paragraph and list spacing; retain preformatted code. The audit verifies normal Markdown whitespace and a heading-to-paragraph gap no greater than 20 pixels (currently 12 pixels).
 
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
