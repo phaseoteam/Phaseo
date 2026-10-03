@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog } from "electron";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -35,6 +35,7 @@ await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "
 app.whenReady().then(async () => {
 	try {
 		dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path.join(fixtureProject, "hello.txt"), path.join(fixtureProject, "fixture.pdf")] });
+		dialog.showSaveDialog = async (_window, options) => ({ canceled: false, filePath: path.join(data, path.basename(options.defaultPath)) });
 		const window = BrowserWindow.getAllWindows()[0];
 		if (!window) throw new Error("Desktop window missing");
 		if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
@@ -138,6 +139,8 @@ app.whenReady().then(async () => {
 		const fixtureDb = new DatabaseSync(path.join(data, "workspace", "workspace.sqlite"));
 		const taskRow = fixtureDb.prepare("SELECT data FROM tasks LIMIT 1").get();
 		const fixtureTask = JSON.parse(taskRow.data);
+		const fixtureAttachments = fixtureDb.prepare("SELECT data FROM attachments").all().map(row => JSON.parse(row.data));
+		fixtureTask.messages = [{ id: "export-fixture", role: "user", text: "Export conversation fixture", createdAt: new Date().toISOString(), attachments: fixtureAttachments }];
 		fixtureTask.steering = [{ id: "fixture-steering", text: "Unacknowledged instruction", createdAt: new Date().toISOString(), status: "unconfirmed", error: "Fixture connection closed" }];
 		fixtureTask.forms = [{ id: "fixture-request", form: { id: "fixture-form", title: "Form interaction check", fields: [
 			{ key: "enabled", type: "boolean", title: "Include details", default: false },
@@ -171,6 +174,17 @@ app.whenReady().then(async () => {
 		})()`);
 		result.forms = true;
 		result.steeringRecovery = true;
+		for (const format of ["markdown", "json"]) {
+			const extension = format === "markdown" ? "md" : "json";
+			await window.webContents.executeJavaScript(`(() => { const picker=document.querySelector('[aria-label="Export conversation"]'); if (!picker) throw new Error('Export control missing'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(picker,${JSON.stringify(format)}); picker.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+			const filename = path.join(data, `Electron bridge check.${extension}`);
+			for (let attempt = 0; attempt < 50 && !existsSync(filename); attempt++) await new Promise(resolve => setTimeout(resolve, 100));
+			const exported = readFileSync(filename, "utf8");
+			if (format === "markdown" && !exported.includes("Fixture PDF text")) throw new Error("Markdown attachment export failed");
+			if (format === "json") { const snapshot = JSON.parse(exported); const pdf = snapshot.attachments.find(file => file.mimeType === "application/pdf"); if (!pdf || Buffer.from(pdf.data,"base64").toString() !== fixturePdf || snapshot.messages[0].text !== "Export conversation fixture") throw new Error("JSON original attachment export failed"); }
+			await new Promise(resolve => setTimeout(resolve, 100));
+		}
+		result.exports = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);

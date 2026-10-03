@@ -16,6 +16,7 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { piEntries } from "./piAdapter";
+import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -119,6 +120,17 @@ ipcMain.handle("workspace:write-document", async (event, id: unknown, filename: 
 ipcMain.handle("workspace:get", event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.get();
+});
+ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unknown) => {
+	const window = senderWindow(event);
+	if (!window || typeof id !== "string" || (format !== "markdown" && format !== "json")) throw new Error("Invalid conversation export.");
+	const task = workspaceRuntime.store.getTask(id);
+	const extension = format === "markdown" ? "md" : "json";
+	const result = await dialog.showSaveDialog(window, { title: "Export conversation", defaultPath: exportFilename(task.title, format), filters: [{ name: format === "markdown" ? "Markdown" : "JSON with files", extensions: [extension] }] });
+	if (result.canceled || !result.filePath) return false;
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	const content = await taskExport(task, format, workspaceRuntime.attachments);
+	await saveTaskExport(result.filePath, content); return true;
 });
 ipcMain.handle("workspace:command", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");

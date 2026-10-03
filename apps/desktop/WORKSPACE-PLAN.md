@@ -86,7 +86,11 @@ OpenCode resumed tasks rediscover pending forms before sending the next message,
 deduplicate snapshot/event overlap and continue consuming requests while waiting
 for native execution to settle.
 
-Evidence: desktop lint/typecheck/build pass; 100 deterministic tests cover protocol,
+Conversation export supports Markdown with document text/embedded images and
+versioned JSON with original attachments. Native session/account references and
+project paths are excluded. Conversation import remains outstanding.
+
+Evidence: desktop lint/typecheck/build pass; 104 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
