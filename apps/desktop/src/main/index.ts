@@ -20,6 +20,7 @@ import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 import { readConversation } from "./taskImport";
 import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
+import { validateMcpCommand } from "../shared/mcp";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -34,6 +35,10 @@ const accountChecks = new Map<string, AbortController>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
+ipcMain.handle("workspace:mcp", (event, value: unknown) => {
+	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
+	return workspaceRuntime.mcp(validateMcpCommand(value));
+});
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
 	return workspaceRuntime.store.getTerminals();

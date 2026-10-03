@@ -10,6 +10,8 @@ import type { AgentForm } from "../shared/agentForms";
 import type { Endpoint } from "@opencode/client/service";
 import { openCodeForm } from "./openCodeForms";
 import { AgentInputRejectedError } from "./agentAdapter";
+import type { McpConnection } from "../shared/mcp";
+import { OpenCodeMcp } from "./openCodeMcp";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -18,7 +20,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 	private acceptingInput = false;
 	private inputGeneration = 0;
 	private readonly inputs = new Set<Promise<unknown>>();
-	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>) {}
+	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp()) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
 		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
@@ -30,6 +32,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
 		const requestOptions = { signal: this.controller.signal };
+		if (task.mode !== "chat") await this.mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, this.mcp, this.controller.signal);
 		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
 		const formJobs = new Map<string, Promise<void>>();
 		const handleForm = async (form: AgentForm) => {

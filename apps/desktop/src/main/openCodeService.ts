@@ -7,6 +7,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import { Service } from "@opencode/client/service";
 import type { Endpoint } from "@opencode/client/service";
 import { resolveNativeCommand } from "./nativeProcess";
+import { OpenCodeMcp } from "./openCodeMcp";
 
 const execute = promisify(execFile);
 const compatible = (version: string) => version.startsWith("2.");
@@ -23,6 +24,7 @@ export async function resolveOpenCodeCommand(cwd: string, signal?: AbortSignal) 
 }
 
 export class OpenCodeService {
+	readonly mcp = new OpenCodeMcp();
 	private readonly controller = new AbortController();
 	private readonly state: string;
 	private readonly file: string;

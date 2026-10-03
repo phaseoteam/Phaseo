@@ -17,7 +17,7 @@ export function CommandPalette({ onClose, onNavigate, onTheme }: { onClose: () =
 	}, []);
 	const commands = [
 		{ id: "new", title: "New task", detail: "Create", action: () => onNavigate("tasks") },
-		...["home", "projects", "accounts", "agents", "terminals"].map(page => ({ id: page, title: `Open ${page}`, detail: "Navigation", action: () => onNavigate(page) })),
+		...["home", "projects", "accounts", "agents", "terminals", "mcp"].map(page => ({ id: page, title: `Open ${page === "mcp" ? "MCP connections" : page}`, detail: "Navigation", action: () => onNavigate(page) })),
 		...["light", "dark", "system"].map(theme => ({ id: theme, title: `${theme[0].toUpperCase()}${theme.slice(1)} theme`, detail: "Appearance", action: () => onTheme(theme as "light" | "dark" | "system") })),
 		...workspace.tasks.map(task => ({ id: task.id, title: task.title, detail: `${task.harness} · ${task.status}${task.archived ? " · archived" : ""}`, action: () => onNavigate("tasks", task.id) })),
 	].filter(command => `${command.title} ${command.detail}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 50);

@@ -6,16 +6,23 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { waitClaudeMcp } from "./claudeMcp";
 
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
+	constructor(private readonly mcp: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		const command = await resolveNativeCommand("claude");
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
-		async function* prompt(): AsyncGenerator<SDKUserMessage> { yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
-		const execution = query({ prompt: images.length ? prompt() : attachmentPrompt(text, attachments), options: {
+		const managedMcp = task.mode === "chat" ? [] : this.mcp; let promptAllowed = !managedMcp.length; let releasePrompt!: () => void;
+		const gate = managedMcp.length ? new Promise<void>(resolve => { releasePrompt = resolve; }) : Promise.resolve(); const signal = this.controller.signal;
+		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
+		const execution = query({ prompt: images.length || managedMcp.length ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
+			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url }])),
+			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
 			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
@@ -26,6 +33,7 @@ export class ClaudeAdapter implements AgentAdapter {
 			includePartialMessages: true,
 			settingSources: ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {
+				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };
 				if (toolName === "AskUserQuestion" && callbacks.onQuestion && Array.isArray(input.questions)) {
 					const questions = input.questions as { question: string; header: string; multiSelect?: boolean; options?: { label: string; description?: string }[] }[];
 					const answers = await callbacks.onQuestion(questions.map((question, index) => ({ ...question, id: String(index), isOther: true })));
@@ -40,6 +48,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		try {
+			if (managedMcp.length) { await waitClaudeMcp(execution, managedMcp, signal); promptAllowed = true; releasePrompt(); }
 			for await (const message of execution) {
 				if ("session_id" in message && message.session_id) callbacks.onSession(message.session_id);
 				if (message.type === "stream_event" && !message.parent_tool_use_id) {
@@ -66,7 +75,7 @@ export class ClaudeAdapter implements AgentAdapter {
 				}
 			}
 			if (!completed) throw new Error("Claude stopped before completing the turn.");
-		} finally { execution.close(); }
+		} finally { execution.close(); releasePrompt?.(); }
 	}
 	async cancel() { this.controller.abort(); }
 }

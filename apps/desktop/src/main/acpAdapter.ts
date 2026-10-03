@@ -11,6 +11,7 @@ import { contentHash, writeProjectFile } from "./projectEdits";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AcpTerminals } from "./acpTerminals";
+import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -18,7 +19,7 @@ export class AcpAdapter implements AgentAdapter {
 	private sessionId?: string;
 	private cancelled = false;
 	private terminals?: AcpTerminals;
-	constructor(private readonly agent: AgentConnection) {}
+	constructor(private readonly agent: AgentConnection, private readonly mcp: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
 		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
@@ -73,6 +74,10 @@ export class AcpAdapter implements AgentAdapter {
 		try {
 			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code" } });
 			clearTimeout(startup);
+			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
+			const servers = task.mode === "chat" ? [] : this.mcp;
+			if (servers.some(server => server.transport === "http") && !initialized.agentCapabilities?.mcpCapabilities?.http) throw new Error("This ACP agent does not support HTTP MCP connections.");
+			const mcpServers = servers.map(server => server.transport === "stdio" ? { name: nativeMcpName(server), command: server.executable, args: server.arguments, env: [{ name: "ELECTRON_RUN_AS_NODE", value: "1" }] } : { type: "http" as const, name: nativeMcpName(server), url: server.url, headers: [] });
 			if (attachments.some(attachment => attachment.kind === "image") && !initialized.agentCapabilities?.promptCapabilities?.image) throw new Error("This ACP agent does not support image attachments.");
 			const openSession = async (): Promise<NewSessionResponse> => {
 				const timeout = setTimeout(() => connection.close(new Error("ACP session startup timed out.")), 30000);
@@ -80,11 +85,11 @@ export class AcpAdapter implements AgentAdapter {
 					if (task.nativeSessionId) {
 						if (!initialized.agentCapabilities?.loadSession) throw new Error("This agent cannot resume sessions. Start a new task.");
 						this.sessionId = task.nativeSessionId;
-						return { ...await connection.agent.request("session/load", { sessionId: task.nativeSessionId, cwd, mcpServers: [] }), sessionId: task.nativeSessionId };
+						return { ...await connection.agent.request("session/load", { sessionId: task.nativeSessionId, cwd, mcpServers }), sessionId: task.nativeSessionId };
 					} else if (task.nativeForkFrom) {
 						if (!initialized.agentCapabilities?.sessionCapabilities?.fork) throw new Error("This agent does not support native session forks.");
-						return await connection.agent.request("session/fork", { sessionId: task.nativeForkFrom, cwd });
-					} else return await connection.agent.request("session/new", { cwd, mcpServers: [] });
+						return await connection.agent.request("session/fork", { sessionId: task.nativeForkFrom, cwd, mcpServers });
+					} else return await connection.agent.request("session/new", { cwd, mcpServers });
 				} finally { clearTimeout(timeout); }
 			};
 			let session: NewSessionResponse;

@@ -10,9 +10,26 @@ import type { Task } from "../shared/workspace";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("node:child_process", async importOriginal => ({ ...await importOriginal<typeof ChildProcessModule>(), spawn: native.spawn }));
 import { AcpAdapter } from "./acpAdapter";
+import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(["new", "load", "fork"] as const)("passes managed HTTP MCP through real ACP session setup (%s)", async operation => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "HTTP fixture", transport: "http", url: "https://example.invalid/mcp", enabled: true };
+		const setup = vi.fn((params: { mcpServers?: unknown[] }) => { expect(params.mcpServers).toEqual([{ type: "http", name: nativeMcpName(server), url: server.url, headers: [] }]); });
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: { loadSession: true, mcpCapabilities: { http: true }, sessionCapabilities: { fork: {} } } }))
+			.onRequest("session/new", ({ params }) => { setup(params); return { sessionId: "native" }; }).onRequest("session/load", ({ params }) => { setup(params); return {}; }).onRequest("session/fork", ({ params }) => { setup(params); return { sessionId: "fork" }; }).onRequest("session/prompt", () => ({ stopReason: "end_turn" }))
+			.connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }, [server]).run({ ...task, ...(operation === "load" ? { nativeSessionId: "native" } : operation === "fork" ? { nativeForkFrom: "native" } : {}) }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }); expect(setup).toHaveBeenCalledOnce(); }
+		finally { connection.close(); }
+	});
+	it("rejects unsupported HTTP MCP before opening a native session", async () => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child); const start = vi.fn(() => ({ sessionId: "native" }));
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", start).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await expect(new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }, [{ id: "00000000-0000-4000-8000-000000000001", name: "HTTP fixture", transport: "http", url: "https://example.invalid/mcp", enabled: true }]).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow("does not support HTTP MCP"); expect(start).not.toHaveBeenCalled(); }
+		finally { connection.close(); }
+	});
 	it.each([true, false])("lets the user choose native authentication without collecting credentials (%s)", async accept => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		let authenticated = false; const authenticate = vi.fn(({ params }: { params: { methodId: string } }) => { expect(params.methodId).toBe("browser"); authenticated = true; return {}; });

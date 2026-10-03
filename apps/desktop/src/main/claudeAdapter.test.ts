@@ -4,9 +4,20 @@ const sdk = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
 import { ClaudeAdapter } from "./claudeAdapter";
+import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
+	it.each(["chat", "code"] as const)("applies managed MCP connections with native tool permissions (%s)", async mode => {
+		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "stdio", executable: process.execPath, arguments: ["fixture.mjs"] }; const onApproval = vi.fn(async () => "decline" as const);
+		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
+		await new ClaudeAdapter([server]).run({ ...task, mode }, ".", "Use tools", { onDelta: vi.fn(), onSession: vi.fn(), onApproval });
+	});
+	it("does not submit a prompt when managed MCP setup fails", async () => {
+		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "http", url: "https://example.invalid/mcp" }; let input: AsyncIterable<unknown> | undefined; const close=vi.fn();
+		sdk.query.mockImplementation(({prompt})=>{input=prompt;return Object.assign((async function*(){yield {type:"result",subtype:"success",is_error:false,result:"Unexpected"};})(),{close,mcpServerStatus:async()=>[{name:nativeMcpName(server),status:"failed",error:"token=secret"}]});});
+		await expect(new ClaudeAdapter([server]).run({...task,mode:"code"},".","Do not send",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"})).rejects.toThrow("could not connect"); expect(close).toHaveBeenCalled(); const submitted=[]; for await(const message of input!) submitted.push(message); expect(submitted).toEqual([]);
+	});
 	it("passes image bytes through a structured native user message", async () => {
 		const received: unknown[] = [];
 		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for await (const message of prompt) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
@@ -20,7 +31,7 @@ describe("Claude SDK integration", () => {
 			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
 		})(), { close: vi.fn() }));
 		const onQuestion = vi.fn(async () => ({ "0": ["Small"] }));
-		await new ClaudeAdapter().run(task, ".", "Plan", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline", onQuestion });
+		await new ClaudeAdapter().run({ ...task, mode: "plan" }, ".", "Plan", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline", onQuestion });
 		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "0", question: "Which scope?", isOther: true })]);
 	});
 	it("streams text once and preserves native session identity", async () => {

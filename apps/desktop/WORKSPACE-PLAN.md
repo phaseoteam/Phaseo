@@ -116,6 +116,17 @@ model default, and changing models clears the previous model's effort selection.
 An isolated installed-Codex catalog returned eight models with reasoning options
 and a reported default, without signing in or running inference. Other harness
 reasoning controls remain outstanding.
+Managed MCP connections persist with global or project scope, editing, disable,
+archive and restore controls. Claude, OpenCode and compatible ACP agents receive
+enabled connections in Code/Plan mode. Native MCP names isolate these settings
+from existing provider configuration. Claude/OpenCode wait for managed readiness
+before submitting prompts; failures and cancellation do not submit input. OpenCode
+setup is serialized per native workspace and reapplies durable settings after a
+service restart. Owned local MCP processes connected through both installed Claude
+and isolated OpenCode V2 with zero prompts or inference calls. ACP setup passes
+connections through new/load/fork and checks HTTP support before opening sessions.
+Codex/Phaseo/Pi managed MCP, custom encrypted MCP credentials, OAuth management,
+catalog browsing and native plugin/skill controls remain outstanding.
 
 ACP agent profiles support editing, archival and restoration. Connection checks
 initialize the configured native process without creating sessions or advertising
@@ -123,7 +134,7 @@ host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
 
-Evidence: desktop lint/typecheck/build pass; 142 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 154 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

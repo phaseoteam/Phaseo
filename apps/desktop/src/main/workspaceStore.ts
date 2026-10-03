@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { McpConnection } from "../shared/mcp";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -15,6 +16,7 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS terminals (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
 		for (const task of this.get().tasks) {
 			let recovered = false;
@@ -33,9 +35,10 @@ export class WorkspaceStore {
 	saveTerminal(session: TerminalSession) { session.updatedAt = new Date().toISOString(); this.db.prepare("INSERT INTO terminals (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(session.id, JSON.stringify(session)); }
 	deleteTerminal(id: string) { this.db.prepare("DELETE FROM terminals WHERE id=?").run(id); }
 	get(): Workspace {
-		const rows = (table: "projects" | "tasks" | "accounts" | "agents") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
-		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), tasks: rows("tasks").sort((a: Task, b: Task) => b.updatedAt.localeCompare(a.updatedAt)) };
+		const rows = (table: "projects" | "tasks" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
+		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks: rows("tasks").sort((a: Task, b: Task) => b.updatedAt.localeCompare(a.updatedAt)) };
 	}
+	saveMcp(connection: McpConnection) { this.db.prepare("INSERT INTO mcp_connections (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(connection.id, JSON.stringify(connection)); }
 	getTask(id: string): Task {
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");

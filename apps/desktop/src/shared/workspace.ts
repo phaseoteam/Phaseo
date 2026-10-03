@@ -1,4 +1,5 @@
 import type { AgentForm, FormAnswer } from "./agentForms";
+import type { McpCommand, McpConnection } from "./mcp";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -26,7 +27,7 @@ export type Task = {
 	steering?: SteeringMessage[];
 	activities?: AgentActivity[];
 };
-export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[] };
+export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
 export type ModelOption = { id: string; name: string; description?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
@@ -68,6 +69,7 @@ export type WorkspaceApi = {
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
+	mcp: (command: McpCommand) => Promise<Workspace>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	openLink: (url: string) => Promise<void>;
 	terminals: () => Promise<TerminalSession[]>;
@@ -87,7 +89,7 @@ export type WorkspaceApi = {
 };
 
 export function emptyWorkspace(): Workspace {
-	return { version: 1, projects: [], accounts: [], agents: [], tasks: [] };
+	return { version: 1, projects: [], accounts: [], agents: [], tasks: [], mcpConnections: [] };
 }
 
 function validateApiEndpoint(endpoint: string) {

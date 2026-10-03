@@ -33,6 +33,7 @@ const workspaceNavigation: NavigationItem[] = [
 	{ id: "repositories", label: "Repositories", icon: Code2 },
 	{ id: "proposals", label: "Proposals", icon: GitPullRequest },
 	{ id: "agents", label: "Agents", icon: Bot },
+	{ id: "mcp", label: "MCP", icon: Boxes },
 	{ id: "rooms", label: "Rooms", icon: MessageSquare },
 ];
 
