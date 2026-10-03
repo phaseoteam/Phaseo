@@ -62,25 +62,32 @@ export async function checkBrowser(loadPlaywright) {
     const { chromium, expect } = loadPlaywright();
     browser = await chromium.launch({ timeout: 15000 });
     const page = await browser.newPage();
-    stage = 'journey';
+    stage = 'list_navigation';
     page.setDefaultTimeout(15000);
     page.setDefaultNavigationTimeout(20000);
     const response = await page.goto('https://phaseo.app/models', { waitUntil: 'domcontentloaded' });
     if (!response?.ok()) return event('models-browser', false, started, { failure_reason: 'http_error' });
+    stage = 'list_title';
     await expect(page).toHaveTitle(/Models/i);
+    stage = 'list_heading';
     await expect(page.getByRole('heading', { level: 1, name: 'Models', exact: true })).toBeVisible();
     // Verify a rendered model link, then navigate to its page and verify content.
+    stage = 'model_link';
     const link = page.locator('main a[href^="/models/"]').filter({ visible: true }).first();
     await expect(link).toBeVisible();
     const href = await link.getAttribute('href');
     if (!href?.startsWith('/models/')) throw new Error('missing_model_link');
+    stage = 'model_click';
     await link.click();
+    stage = 'detail_url';
     await expect(page).toHaveURL(new RegExp('/models/.+'));
+    stage = 'detail_heading';
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    stage = 'application_error';
     await expect(page.getByText('Application error', { exact: false })).toHaveCount(0);
     return event('models-browser', true, started);
   } catch {
-    return event('models-browser', false, started, { failure_reason: stage === 'setup' ? 'browser_setup_failed' : 'browser_journey_failed' });
+    return event('models-browser', false, started, { failure_reason: stage === 'setup' ? 'browser_setup_failed' : 'browser_journey_failed', failure_step: stage });
   } finally {
     await browser?.close();
   }
