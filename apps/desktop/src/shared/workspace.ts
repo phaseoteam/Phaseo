@@ -17,6 +17,7 @@ export type Task = {
 	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;
 	agentId?: string;
 	reasoningEffort?: string;
+	nativeModels?: ModelOption[];
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;

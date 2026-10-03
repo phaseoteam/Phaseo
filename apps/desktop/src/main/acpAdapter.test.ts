@@ -14,6 +14,19 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(["small", "unavailable"])("uses agent-reported model options before prompting (%s)", async model => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const option = { id: "native-model", category: "model", name: "Model", type: "select" as const, currentValue: "small", options: [{ group: "provider", name: "Provider", options: [{ value: "small", name: "Small" }] }] };
+		const prompt = vi.fn(() => ({ stopReason: "end_turn" as const })); const select = vi.fn(({ params }: { params: { sessionId: string; configId: string; value: unknown } }) => { expect(params).toEqual({ sessionId: "native", configId: "native-model", value: "small" }); return { configOptions: [option] }; });
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native", configOptions: [option] })).onRequest("session/set_config_option", select).onRequest("session/prompt", prompt).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const onModels = vi.fn();
+		try {
+			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run({ ...task, model }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onModels, onApproval: async () => "decline" });
+			if (model === "small") { await run; expect(select).toHaveBeenCalledOnce(); expect(prompt).toHaveBeenCalledOnce(); }
+			else { await expect(run).rejects.toThrow("no longer offers"); expect(select).not.toHaveBeenCalled(); expect(prompt).not.toHaveBeenCalled(); }
+			expect(onModels).toHaveBeenCalledWith([{ id: "small", name: "Small", default: true }]);
+		} finally { connection.close(); }
+	});
 	it.each(["new", "load", "fork"] as const)("passes managed HTTP MCP through real ACP session setup (%s)", async operation => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "HTTP fixture", transport: "http", url: "https://example.invalid/mcp", enabled: true };

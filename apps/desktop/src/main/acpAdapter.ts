@@ -12,6 +12,8 @@ import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AcpTerminals } from "./acpTerminals";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
+import { acpModels } from "./acpModels";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 export class AcpAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -23,7 +25,7 @@ export class AcpAdapter implements AgentAdapter {
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
 		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
-		let receiving = false;
+		let receiving = false; let promptSubmitted = false;
 		const tools = new Map<string, ToolCallUpdate>();
 		const terminals = this.terminals = new AcpTerminals(cwd, callbacks);
 		const checkSession = (sessionId: string) => { if (this.cancelled || sessionId !== this.sessionId) throw new Error("Agent request belongs to an inactive session."); };
@@ -67,6 +69,7 @@ export class AcpAdapter implements AgentAdapter {
 				}
 				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2) });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });
+				if (update.sessionUpdate === "config_option_update") callbacks.onModels?.(acpModels(update.configOptions));
 			});
 		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
@@ -107,18 +110,22 @@ export class AcpAdapter implements AgentAdapter {
 				session = await openSession();
 			}
 			this.sessionId = session.sessionId; callbacks.onSession(session.sessionId);
+			const models = acpModels(session.configOptions); callbacks.onModels?.(models);
 			const mode = session.modes?.availableModes.find(mode => mode.id === task.mode);
 			if (mode) await connection.agent.request("session/set_mode", { sessionId: session.sessionId, modeId: mode.id });
 			if (task.model !== "default") {
 				const option = session.configOptions?.find(option => option.category === "model" && option.type === "select");
-				if (!option) throw new Error("This agent does not expose model selection. Use its native default.");
-				await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: task.model });
+				if (!option) throw new AgentInputRejectedError("This agent does not expose model selection. Use its native default.");
+				if (!models.some(model => model.id === task.model)) throw new AgentInputRejectedError("This agent no longer offers the selected model. Update the task settings.");
+				const result = await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: task.model }); callbacks.onModels?.(acpModels(result.configOptions));
 			}
 			clearTimeout(startup); receiving = true;
 			const prompt: PromptRequest = { sessionId: session.sessionId, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };
+			promptSubmitted = true;
 			const result = await connection.agent.request("session/prompt", prompt);
 			if (result.stopReason !== "end_turn") throw new Error(`ACP turn stopped: ${result.stopReason}.`);
-		} finally { clearTimeout(startup); connection.close(); child.kill(); await terminals.close(); }
+		} catch (error) { if (!promptSubmitted && !(error instanceof AgentInputRejectedError)) throw new AgentInputRejectedError(error instanceof Error ? error.message : "ACP setup failed.", { cause: error }); throw error; }
+		finally { clearTimeout(startup); connection.close(); child.kill(); await terminals.close(); }
 	}
 	async cancel() {
 		this.cancelled = true;

@@ -4,7 +4,7 @@ import type { ModelOption, Task } from "../../shared/workspace";
 export function TaskSettings({ task, save, close }: { task: Task; save: (model: string, mode: Task["mode"], reasoningEffort: string) => Promise<boolean>; close: () => void }) {
 	const [model, setModel] = useState(task.model); const [mode, setMode] = useState(task.mode);
 	const [reasoningEffort, setReasoningEffort] = useState(task.reasoningEffort ?? "");
-	const [models, setModels] = useState<ModelOption[]>([]); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
+	const [models, setModels] = useState<ModelOption[]>(task.nativeModels ?? []); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
 	useEffect(() => {
 		const api = window.phaseoDesktop?.workspace;
 		if (!api || !["codex", "phaseo", "opencode", "pi"].includes(task.harness)) return;

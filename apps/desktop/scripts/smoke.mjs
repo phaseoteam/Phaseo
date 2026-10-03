@@ -283,6 +283,19 @@ app.whenReady().then(async () => {
 			const updated=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===task.id); if(updated.model!=='fixture-model' || updated.mode!=='plan' || updated.reasoningEffort!=='high' || updated.messages[0].text!=='Export conversation fixture' || updated.status!=='idle') throw new Error('Conversation settings changed history or started execution');
 		})()`);
 		result.taskSettings = true;
+		const modelAgentFixture = path.join(data, "acp-model-fixture.cjs");
+		writeFileSync(modelAgentFixture, `const readline=require('node:readline'); const config={id:'model',name:'Model',category:'model',type:'select',currentValue:'small',options:[{value:'small',name:'Small fixture model'}]}; readline.createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line); if(request.id===undefined)return; const result=request.method==='initialize'?{protocolVersion:request.params.protocolVersion,agentCapabilities:{}}:request.method==='session/new'?{sessionId:'model-fixture',configOptions:[config]}:request.method==='session/set_config_option'?{configOptions:[config]}:request.method==='session/prompt'?{stopReason:'end_turn'}:{}; process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:request.id,result})+'\\n');});`);
+		await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace; let state=await api.command({type:'add-agent',name:'Model fixture',executable:${JSON.stringify(process.execPath)},arguments:[${JSON.stringify(modelAgentFixture)}]}); const agent=state.agents.find(value=>value.name==='Model fixture');
+			state=await api.command({type:'create-task',harness:'acp',agentId:agent.id,model:'default',mode:'chat'}); const task=state.tasks.find(value=>value.agentId===agent.id); await api.command({type:'send',id:task.id,text:'Native model fixture'});
+			for(let attempt=0;attempt<50 && (await api.get()).tasks.find(value=>value.id===task.id).status!=='completed';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			const discovered=(await api.get()).tasks.find(value=>value.id===task.id); if(discovered.nativeModels?.[0]?.id!=='small') throw new Error('Native ACP model catalog missing');
+			const row=Array.from(document.querySelectorAll('.task-row')).find(value=>value.textContent.includes('Native model fixture')); if(!row) throw new Error('ACP task missing'); row.click(); await new Promise(resolve=>setTimeout(resolve,100)); Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Task settings').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const form=document.querySelector('[aria-label="Task settings"]'); if(!form.querySelector('option[value="small"]')) throw new Error('Native ACP models missing from settings');
+			const model=form.querySelector('[aria-label="Task model"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'small'); model.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100)); form.requestSubmit();
+			for(let attempt=0;attempt<30 && (await api.get()).tasks.find(value=>value.id===task.id).model!=='small';attempt++) await new Promise(resolve=>setTimeout(resolve,100)); if((await api.get()).tasks.find(value=>value.id===task.id).model!=='small') throw new Error('Native ACP model selection did not persist');
+		})()`);
+		result.acpModels = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);

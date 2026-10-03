@@ -255,6 +255,7 @@ export class WorkspaceRuntime {
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			await adapter.run(task, cwd, handoffPrompt(task, message.text), {
+				onModels: nativeModels => { const current = this.store.getTask(id); current.nativeModels = nativeModels; this.store.saveTask(current); this.broadcast(); },
 				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
 					deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();

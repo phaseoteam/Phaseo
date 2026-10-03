@@ -142,8 +142,13 @@ initialize the configured native process without creating sessions or advertisin
 host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
+ACP sessions retain agent-reported grouped model catalogs across restarts and show
+them in task settings. Model selection uses the native configuration ID and checks
+the current catalog before prompting. Pre-prompt ACP setup failures retain the
+original input for explicit retry. An owned agent fixture verifies native model
+discovery and selection through the real Electron runtime without inference.
 
-Evidence: desktop lint/typecheck/build pass; 173 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 177 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

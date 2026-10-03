@@ -1,10 +1,11 @@
-import type { Account, AgentActivity, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
+import type { Account, AgentActivity, AgentQuestion, ModelOption, QueuedMessage, Task } from "../shared/workspace";
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
 
 export type AgentCallbacks = {
 	onDelta: (id: string, text: string) => void;
 	onSession: (id: string) => void;
+	onModels?: (models: ModelOption[]) => void;
 	onActivity?: (activity: AgentActivity & { append?: boolean }) => void;
 	onQuestion?: (questions: AgentQuestion[]) => Promise<Record<string, string[]>>;
 	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null>;

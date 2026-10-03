@@ -7,6 +7,16 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("retains discovered native models across workspace restart", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-models-"));
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, callbacks) => { callbacks.onModels?.([{ id: "native-model", name: "Native model", default: true }]); }, cancel: async () => {} }));
+		let closed = false;
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed")); await runtime.close(); closed = true;
+			const restored = new WorkspaceRuntime(directory); try { expect(restored.store.getTask(id).nativeModels).toEqual([{ id: "native-model", name: "Native model", default: true }]); } finally { await restored.close(); }
+		} finally { if (!closed) await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it.each([true, false])("only restores input when rejection is confirmed (%s)", async confirmed => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preflight-"));
 		const run = vi.fn().mockRejectedValueOnce(confirmed ? new AgentInputRejectedError("Setup failed") : new Error("Transport disconnected")).mockResolvedValue(undefined);
