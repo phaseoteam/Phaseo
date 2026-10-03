@@ -175,13 +175,13 @@ export default function CreateManagementKeyDialog({
 				<DialogHeader className="gap-2">
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						{t("strings.Create Management API Key" as never)}
+						{t("credits.Create Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
 						{t("strings.phraseChooseTheMinimumAccessThisManagementAPIKeyNeeds" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
-						{t("keys.keyShownOnce")} <strong>{t("strings.once" as never)}</strong>{" "}
+						{t("keys.keyShownOnce")} <strong>{t("credits.once" as never)}</strong>{" "}
 						{t("strings.phraseAndGrantsElevatedPrivilegesStoreItSecurely" as never)}
 					</p>
 				</DialogHeader>
@@ -229,7 +229,7 @@ export default function CreateManagementKeyDialog({
 						/>
 						<div className="space-y-2">
 							<label id="management-key-template-label" className="text-sm font-medium">
-								{t("strings.Access template" as never)}
+								{t("credits.Access template" as never)}
 							</label>
 							<div
 								id="management-key-template"
@@ -246,7 +246,7 @@ export default function CreateManagementKeyDialog({
 										aria-pressed={template === option.value}
 										onClick={() => setTemplate(option.value)}
 									>
-										{option.label === "All" ? t("strings.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
+										{option.label === "All" ? t("credits.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
 									</Button>
 								))}
 							</div>
@@ -290,7 +290,7 @@ export default function CreateManagementKeyDialog({
 						</p>
 						<SecretRevealActions
 							secret={plainKey}
-							name={name || t("strings.AI Stats management API key" as never)}
+							name={name || t("credits.AI Stats management API key" as never)}
 							kind="management-key"
 							enableTest={false}
 						/>

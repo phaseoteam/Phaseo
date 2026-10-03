@@ -37,7 +37,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		try {
 			await toast.promise(promise, {
 				loading: t("strings.phraseDeletingPreset" as never),
-				success: t("strings.Preset deleted" as never),
+				success: t("credits.Preset deleted" as never),
 				error: (err) => {
 					return (
 						localizedSettingsError(err, t, "Failed to delete preset")
@@ -70,7 +70,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<Sparkles className="h-5 w-5 text-blue-600" />
-						{t("strings.Delete Preset" as never)}
+						{t("credits.Delete Preset" as never)}
 					</DialogTitle>
 					<DialogDescription>
 						{t("strings.phraseThisActionIsPermanentAndCannotBeUndone" as never)}
@@ -84,7 +84,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 						<Input
 							value={confirm}
 							onChange={(e) => setConfirm(e.target.value)}
-							placeholder={t("strings.Type preset name to confirm" as never)}
+							placeholder={t("credits.Type preset name to confirm" as never)}
 						/>
 					</div>
 					<DialogFooter>
@@ -96,7 +96,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 							variant="destructive"
 							disabled={loading || confirm !== p.name}
 						>
-							{loading ? t("labels.deleting") : t("strings.Delete Preset" as never)}
+							{loading ? t("labels.deleting") : t("credits.Delete Preset" as never)}
 						</Button>
 					</DialogFooter>
 				</form>

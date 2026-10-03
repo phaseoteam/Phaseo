@@ -1658,7 +1658,7 @@ export default function GuardrailEditorPageClient(props: {
 				]);
 			}
 
-			toast.success(t("strings.Guardrail saved" as never), { id: toastId });
+			toast.success(t("credits.Guardrail saved" as never), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {
@@ -1675,7 +1675,7 @@ export default function GuardrailEditorPageClient(props: {
 		const toastId = toast.loading(t("strings.phraseDeletingGuardrail" as never));
 		try {
 			await deleteGuardrail(props.guardrailId);
-			toast.success(t("strings.Guardrail deleted" as never), { id: toastId });
+			toast.success(t("credits.Guardrail deleted" as never), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();
 		} catch (err) {
@@ -1846,7 +1846,7 @@ export default function GuardrailEditorPageClient(props: {
 								<div className="divide-y border-y">
 									<div className="px-3 sm:px-4">
 										<ToggleRow
-											label={t("strings.Allow paid endpoints that may train on inputs" as never)}
+											label={t("strings.Enable paid endpoints that may train on inputs" as never)}
 											description={t("strings.phraseDisablingFurtherRestrictsPaidEndpointsFlaggedAsTrainingOnInputs" as never)}
 											checked={form.privacyEnablePaidMayTrain}
 											onCheckedChange={(checked) => set("privacyEnablePaidMayTrain", checked)}
@@ -1855,7 +1855,7 @@ export default function GuardrailEditorPageClient(props: {
 									</div>
 									<div className="px-3 sm:px-4">
 										<ToggleRow
-											label={t("strings.Allow free models that may train on inputs" as never)}
+											label={t("strings.Enable free models that may train on inputs" as never)}
 											description={t("strings.phraseDisablingFurtherRestrictsFreeModelsFlaggedAsTrainingOnInputs" as never)}
 											checked={form.privacyEnableFreeMayTrain}
 											onCheckedChange={(checked) => set("privacyEnableFreeMayTrain", checked)}
@@ -1992,7 +1992,7 @@ export default function GuardrailEditorPageClient(props: {
 															<SelectItem value="none">{t("strings.Allow all models" as never)}</SelectItem>
 															<SelectItem value="allowlist">{t("strings.Only allow selected models" as never)}</SelectItem>
 													<SelectItem value="blocklist">
-																{t("strings.Allow all except selected models" as never)}
+																{t("guardrailEditorCopy.allowAllExceptSelectedModels" as never)}
 													</SelectItem>
 												</SelectContent>
 											</Select>

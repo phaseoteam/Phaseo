@@ -49,7 +49,7 @@ export default function CreateOAuthAppDialog({
 
 	const handleCreate = async () => {
 		if (!currentTeamId) {
-			setError(t("strings.selectWorkspace" as never));
+			setError(t("labels.selectWorkspace" as never));
 			return;
 		}
 		setLoading(true);
@@ -76,7 +76,7 @@ export default function CreateOAuthAppDialog({
 			// Show the created app with client secret (only shown once!)
 			setCreatedApp(result.data);
 
-			toast.success(`${t("strings.OAuth app" as never)} "${formData.name}" ${t("strings.created successfully" as never)}`);
+			toast.success(`${t("credits.OAuth app" as never)} "${formData.name}" ${t("credits.created successfully" as never)}`);
 
 		} catch (err: any) {
 			setError(localizedSettingsError(err, t, "Failed to create OAuth app"));
@@ -103,7 +103,7 @@ export default function CreateOAuthAppDialog({
 		if (createdApp?.client_secret) {
 			navigator.clipboard.writeText(createdApp.client_secret);
 			setCopiedSecret(true);
-			toast.success(t("strings.Client secret copied to clipboard" as never));
+			toast.success(t("credits.Client secret copied to clipboard" as never));
 			setTimeout(() => setCopiedSecret(false), 2000);
 		}
 	};
@@ -115,12 +115,12 @@ export default function CreateOAuthAppDialog({
 				<DialogTrigger asChild>
 					<Button disabled={!currentTeamId}>
 						<Plus className="h-4 w-4 mr-2" />
-						{t("strings.Create OAuth App" as never)}
+						{t("credits.Create OAuth App" as never)}
 					</Button>
 				</DialogTrigger>
 				<DialogContent className="max-w-2xl">
 					<DialogHeader>
-				<DialogTitle>{t("strings.OAuth App Created" as never)}</DialogTitle>
+				<DialogTitle>{t("credits.OAuth App Created" as never)}</DialogTitle>
 						<DialogDescription>
 				{t("strings.phraseSaveYourClientCredentialsNowTheClientSecretWillNotBeShownAgain" as never)}
 						</DialogDescription>
@@ -129,25 +129,25 @@ export default function CreateOAuthAppDialog({
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
-				<strong>{t("strings.Important:" as never)}</strong> {t("strings.phraseCopyYourClientSecretNowYouWonAposTBeAbleToSeeItAgain" as never)}
+				<strong>{t("credits.Important:" as never)}</strong> {t("strings.phraseCopyYourClientSecretNowYouWonAposTBeAbleToSeeItAgain" as never)}
 						</AlertDescription>
 					</Alert>
 
 					<div className="space-y-4">
 						<div>
-				<Label>{t("strings.Application Name" as never)}</Label>
+				<Label>{t("credits.Application Name" as never)}</Label>
 							<div className="text-sm font-medium mt-1">{createdApp.name}</div>
 						</div>
 
 						<div>
-				<Label>{t("strings.Client ID" as never)}</Label>
+				<Label>{t("credits.Client ID" as never)}</Label>
 							<Card className="p-3 mt-1">
 								<code className="text-xs break-all">{createdApp.client_id}</code>
 							</Card>
 						</div>
 
 						<div>
-				<Label>{t("strings.Client Secret" as never)}</Label>
+				<Label>{t("credits.Client Secret" as never)}</Label>
 							<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 								<div className="flex items-center justify-between gap-2">
 									<code className="text-xs break-all flex-1">{createdApp.client_secret}</code>
@@ -193,12 +193,12 @@ export default function CreateOAuthAppDialog({
 			<DialogTrigger asChild>
 				<Button disabled={!currentTeamId}>
 					<Plus className="h-4 w-4 mr-2" />
-						{t("strings.Create OAuth App" as never)}
+						{t("credits.Create OAuth App" as never)}
 				</Button>
 			</DialogTrigger>
 			<DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
 				<DialogHeader>
-				<DialogTitle>{t("strings.Create OAuth App" as never)}</DialogTitle>
+				<DialogTitle>{t("credits.Create OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
 					{t("strings.phraseCreateANewOAuthApplicationForThirdPartyIntegrations" as never)}
 						{t("oauthCopy.clientCredentialsDescription")}
@@ -225,7 +225,7 @@ export default function CreateOAuthAppDialog({
 					</div>
 
 					<div>
-					<Label>{t("strings.Scopes this app may request" as never)}</Label>
+					<Label>{t("credits.Scopes this app may request" as never)}</Label>
 						<p className="mb-3 text-xs text-muted-foreground">
 							{t("oauthCopy.minimumScopesHelp")}
 						</p>
@@ -236,7 +236,7 @@ export default function CreateOAuthAppDialog({
 					</div>
 
 					<div>
-					<Label htmlFor="description">{t("strings.Description" as never)}</Label>
+					<Label htmlFor="description">{t("credits.Description" as never)}</Label>
 						<Textarea
 							id="description"
 							placeholder={t("oauthCopy.descriptionPlaceholder")}
@@ -249,7 +249,7 @@ export default function CreateOAuthAppDialog({
 					</div>
 
 					<div>
-					<Label htmlFor="homepageUrl">{t("strings.Homepage URL" as never)}</Label>
+					<Label htmlFor="homepageUrl">{t("credits.Homepage URL" as never)}</Label>
 						<Input
 							id="homepageUrl"
 							type="url"
@@ -295,7 +295,7 @@ export default function CreateOAuthAppDialog({
 						onClick={handleCreate}
 						disabled={loading || !formData.name.trim() || !formData.redirectUris.trim() || formData.allowedScopes.length === 0}
 					>
-							{loading ? t("labels.creating") : t("strings.Create App" as never)}
+							{loading ? t("labels.creating") : t("credits.Create App" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

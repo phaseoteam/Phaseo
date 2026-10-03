@@ -1135,6 +1135,7 @@
 		"redirectHelp": "Weiterleitungs-URIs müssen einschließlich Schema, Host, Pfad und Port exakt übereinstimmen."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Alle außer den ausgewählten Modellen erlauben",
 		"chooseModels": "Modelle auswählen",
 		"chooseProviders": "Anbieter auswählen",
 		"customPatternsDescription": "Füge regexbasierte Muster hinzu, um arbeitsbereichsspezifische sensible Inhalte zu markieren, zu schwärzen oder zu blockieren.",
@@ -1215,6 +1216,8 @@
 		"excludeReasoningHelp": "Reasoning-Tokens nicht in die endgültige Antwort aufnehmen."
 	},
 	"presetPage": {
+		"fork": "Kopie erstellen",
+		"copyReference": "Voreinstellungsreferenz kopieren",
 		"metadataTitle": "Voreinstellungen - Einstellungen | Phaseo",
 		"settingsTitle": "Voreinstellungen",
 		"settingsDescription": "Verwalten Sie wiederverwendbare Anfragekonfigurationen für Ihre API-Aufrufe.",
@@ -3257,6 +3260,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Unbekanntes Modell",
+		"noApiKey": "Kein API-Schlüssel",
+		"noApp": "Keine App",
 		"activity": "Aktivität",
 		"yourUsage": "Ihre Nutzung auf Phaseo.",
 		"sampledRequests": "Diese Ansicht basiert auf den ersten {count} Anfragen im ausgewählten Zeitraum.",
@@ -4264,6 +4270,7 @@
 		"sampleProviderRejected": "Der Anbieter hat die letzte Anfrage abgelehnt."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Zurück zu den Zielen",
 		"billingAdminsOnly": "Nur Inhaber und Admins des Arbeitsbereichs können die Abrechnungseinstellungen ändern.",
 		"managementKeysTitle": "Kein Arbeitsbereich ausgewählt",
 		"managementKeysBody": "Wähle im Kopfbereich einen Arbeitsbereich aus, um seine Management-API-Schlüssel anzusehen und zu verwalten.",

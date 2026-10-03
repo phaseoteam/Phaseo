@@ -432,7 +432,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					})),
 				})),
 			}));
-			toast.success(t("strings.Destination saved" as never));
+			toast.success(t("credits.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();
 		} catch (error) {
@@ -455,10 +455,10 @@ export default function BroadcastDestinationCreateClient(props: {
 				body: JSON.stringify({ destinationId: destination.id, config, workspaceId }),
 			});
 			if (result.ok) {
-				toast.success(t("strings.Connected" as never));
+				toast.success(t("credits.Connected" as never));
 				return;
 			}
-			toast.error(t("strings.Connection check failed" as never));
+			toast.error(t("credits.Connection check failed" as never));
 		} catch (error) {
 			const message = localizedSettingsError(error, t, "Action failed", t("broadcastControls.connectionCheckFailed"));
 			toast.error(message);
@@ -526,7 +526,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						prefetch={false}
 					>
 						<ArrowLeft className="h-3.5 w-3.5" />
-						{t("strings.Back to Destinations" as never)}
+						{t("settingsPageCopy.backToDestinations" as never)}
 					</Link>
 					<div className="flex items-center gap-2">
 						{destination.id === "webhook" ? (
@@ -543,7 +543,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							/>
 						) : null}
 						<h2 className="text-base font-semibold tracking-tight">
-							{t("strings.New Destination" as never, { destination: destination.label } as never)}
+							{t("settingsPageCopy.newDestinationFallbackTitle" as never, { destination: destination.label } as never)}
 						</h2>
 					</div>
 				</div>
@@ -559,7 +559,7 @@ export default function BroadcastDestinationCreateClient(props: {
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
 						<Plug className="h-4 w-4" />
-						<h3 className="text-sm font-semibold">{t("strings.Connection" as never)}</h3>
+						<h3 className="text-sm font-semibold">{t("credits.Connection" as never)}</h3>
 					</div>
 					<div className="flex items-center gap-2">
 						<Button variant="outline" onClick={handleTestConnection} disabled={isTestingConnection || !hasAllRequiredConnectionValues}>
@@ -574,7 +574,7 @@ export default function BroadcastDestinationCreateClient(props: {
 				</div>
 				<div className="grid gap-x-4 gap-y-3 lg:grid-cols-2">
 					<div className="space-y-2">
-						<Label>{t("strings.Destination Name" as never)}</Label>
+						<Label>{t("credits.Destination Name" as never)}</Label>
 						<Input
 							value={destinationName}
 							onChange={(e) => setDestinationName(e.target.value)}
@@ -623,7 +623,7 @@ export default function BroadcastDestinationCreateClient(props: {
 				<div className="space-y-2">
 					<div className="inline-flex items-center gap-2">
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
-						<h3 className="text-sm font-semibold">{t("strings.Additional Metadata" as never)}</h3>
+						<h3 className="text-sm font-semibold">{t("credits.Additional Metadata" as never)}</h3>
 					</div>
 						<p className="text-xs text-muted-foreground">{t("strings.phraseChooseWhichStructuredContextAccompaniesEachTrace" as never)}</p>
 				</div>
@@ -676,7 +676,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Gauge className="h-4 w-4 text-muted-foreground" />
-							<h3 className="text-sm font-semibold">{t("strings.Sampling" as never)}</h3>
+							<h3 className="text-sm font-semibold">{t("credits.Sampling" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
 							{t("broadcastControls.samplingDescription")}
@@ -703,7 +703,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<KeyRound className="h-4 w-4 text-muted-foreground" />
-							<h3 className="text-sm font-semibold">{t("strings.API Key Filter" as never)}</h3>
+							<h3 className="text-sm font-semibold">{t("credits.API Key Filter" as never)}</h3>
 						</div>
 						<p className="text-xs text-muted-foreground">
 							{t("broadcastControls.apiKeyFilterDescription")}

@@ -14,11 +14,21 @@ import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSide
 import { BrandMenu } from "./BrandMenu";
 import { autoRoutingFlag } from "@/lib/flags";
 import { getLocalizedDocsHref } from "@/lib/docs";
+import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
+import { getPublicMessages } from "@/i18n/messages";
+import { isPublicLocale } from "@/i18n/routing";
+import { getSettingsNavigationCopy } from "@/components/(gateway)/settings/Sidebar.labels";
 
 const showHeaderAnnouncement = false;
 
 async function GatedSettingsSidebarTrigger() {
-	return <SettingsSidebarTrigger showAutoRouting={await autoRoutingFlag()} />;
+	const locale = await getLocale();
+	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
+	const [showAutoRouting, messages, navigationMessages] = await Promise.all([
+		autoRoutingFlag(), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
+	]);
+	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
+	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} copy={copy} />;
 }
 
 export default async function Header() {

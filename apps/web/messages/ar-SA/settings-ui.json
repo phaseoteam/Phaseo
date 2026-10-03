@@ -1135,6 +1135,7 @@
 		"redirectHelp": "يجب أن تتطابق إعادة توجيه الـ (Phaseo) تماماً، بما في ذلك المخطط والمضيف والمسار والميناء. URIs"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "السماح بجميع النماذج باستثناء المحددة",
 		"chooseModels": "اختيار النماذج",
 		"chooseProviders": "اختيار المزوّدين",
 		"customPatternsDescription": "أضف أنماطًا باستخدام التعبيرات النمطية لتحديد محتوى حساس خاص بمساحة العمل أو تنقيحه أو حظره.",
@@ -1215,6 +1216,8 @@
 		"excludeReasoningHelp": "لا تُدرج رموز الاستدلال في الاستجابة النهائية."
 	},
 	"presetPage": {
+		"fork": "إنشاء نسخة",
+		"copyReference": "نسخ مرجع الإعداد المسبق",
 		"metadataTitle": "الإعدادات المسبقة - الإعدادات | Phaseo",
 		"settingsTitle": "الإعدادات المسبقة",
 		"settingsDescription": "أدِر إعدادات الطلب القابلة لإعادة الاستخدام في استدعاءات API.",
@@ -3257,6 +3260,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "نموذج غير معروف",
+		"noApiKey": "لا يوجد مفتاح API",
+		"noApp": "لا يوجد تطبيق",
 		"activity": "النشاط",
 		"yourUsage": "استخدامك عبر اكسفاكس Phaseo",
 		"sampledRequests": "ويستند هذا الرأي إلى أول طلبات من طراز {count} في الفترة المختارة.",
@@ -4264,6 +4270,7 @@
 		"sampleProviderRejected": "رفض المزوّد أحدث طلب."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "العودة إلى الوجهات",
 		"billingAdminsOnly": "لا يمكن تغيير إعدادات الفوترة لمساحة العمل هذه إلا للمالكين والمسؤولين.",
 		"managementKeysTitle": "لم يتم تحديد مساحة عمل",
 		"managementKeysBody": "حدد مساحة عمل من الترويسة لعرض مفاتيح API الإدارية وإدارتها.",
