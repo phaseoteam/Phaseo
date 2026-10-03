@@ -268,15 +268,15 @@ export default function BYOKInputDialog({
 		}
 		const normalizedName = keyName.trim();
 		if (!normalizedName) {
-			toast.error(t("strings.Key name is required" as never));
+			toast.error(t("credits.Key name is required" as never));
 			return;
 		}
 		if (!initial && !submission.value) {
-			toast.error(t("strings.Please provide a key value" as never));
+			toast.error(t("credits.Please provide a key value" as never));
 			return;
 		}
 		if (!initial && !providerId) {
-			toast.error(t("strings.Missing provider id" as never));
+			toast.error(t("credits.Missing provider id" as never));
 			return;
 		}
 		if (submission.value && formatCheck && !formatCheck.ok) {
@@ -295,7 +295,7 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				}));
-			toast.success(submission.value ? t("strings.Key updated and replaced" as never) : t("strings.Key updated" as never));
+			toast.success(submission.value ? t("credits.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
 				await write(createByokKeyAction(
 					normalizedName,
@@ -306,7 +306,7 @@ export default function BYOKInputDialog({
 					allowedModelSlugs,
 					allowedApiKeyIds,
 				));
-		toast.success(t("strings.Key saved" as never));
+		toast.success(t("credits.Key saved" as never));
 			}
 			setOpen(false);
 			resetForm();
@@ -358,7 +358,7 @@ export default function BYOKInputDialog({
 										aria-label={t("strings.Credential setup info" as never)}
 									>
 										<Info className="h-3.5 w-3.5" />
-					<span>{t("strings.Info" as never)}</span>
+					<span>{t("credits.Info" as never)}</span>
 									</span>
 								</HoverCardTrigger>
 								<HoverCardContent align="end" className="max-w-sm">
@@ -395,7 +395,7 @@ export default function BYOKInputDialog({
 						{credentialFormKind === "bedrock" ? (
 							<div className="space-y-3 rounded-md border p-3">
 								<div className="flex items-center justify-between gap-4">
-					<div className="text-sm font-medium">{t("strings.Use IAM credentials" as never)}</div>
+					<div className="text-sm font-medium">{t("credits.Use IAM credentials" as never)}</div>
 									<Switch
 										checked={bedrockUseIam}
 										onCheckedChange={(checked: any) => setBedrockUseIam(Boolean(checked))}
@@ -579,7 +579,7 @@ export default function BYOKInputDialog({
 
 					{initial ? <div className="space-y-4 rounded-md border p-3">
 						<div>
-					<div className="text-sm font-medium">{t("strings.Key scope" as never)}</div>
+					<div className="text-sm font-medium">{t("credits.Key scope" as never)}</div>
 					<p className="mt-0.5 text-xs text-muted-foreground">{t("strings.phraseLeaveAListEmptyToAllowEveryOption" as never)}</p>
 						</div>
 						<div className="grid gap-4 sm:grid-cols-2">
@@ -601,7 +601,7 @@ export default function BYOKInputDialog({
 							</div>
 							<div className="space-y-2">
 								<div className="flex items-center justify-between text-xs font-medium">
-						<span>{t("strings.Phaseo API keys" as never)}</span>
+						<span>{t("credits.Phaseo API keys" as never)}</span>
 									<span className="text-muted-foreground">{allowedApiKeyIds.length ? t("guardrailEditorCopy.selectedCount", { count: allowedApiKeyIds.length }) : t("credits.All")}</span>
 								</div>
 								<ScrollArea className="h-36 rounded-md border p-2">

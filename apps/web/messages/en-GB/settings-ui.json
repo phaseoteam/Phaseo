@@ -1158,6 +1158,7 @@
 		"redirectHelp": "Redirect URIs must match exactly, including scheme, host, path, and port."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Allow all except selected models",
 		"chooseModels": "Choose models",
 		"chooseProviders": "Choose providers",
 		"customPatternsDescription": "Add regex patterns to flag, redact, or block workspace-specific sensitive content.",
@@ -1238,6 +1239,8 @@
 		"excludeReasoningHelp": "Exclude reasoning tokens from the final response."
 	},
 	"presetPage": {
+		"fork": "Fork",
+		"copyReference": "Copy preset reference",
 		"metadataTitle": "Presets - Settings | Phaseo",
 		"settingsTitle": "Presets",
 		"settingsDescription": "Manage reusable request configurations for your API calls.",
@@ -3280,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Unknown model",
+		"noApiKey": "No API key",
+		"noApp": "No app",
 		"activity": "Activity",
 		"yourUsage": "Your usage across Phaseo.",
 		"sampledRequests": "This view is based on the first {count} requests in the selected period.",
@@ -4287,6 +4293,7 @@
 		"sampleProviderRejected": "The provider rejected the most recent request."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Back to destinations",
 		"billingAdminsOnly": "Only workspace owners and admins can change billing settings.",
 		"managementKeysTitle": "No workspace selected",
 		"managementKeysBody": "Select a workspace in the header to view and manage its management API keys.",

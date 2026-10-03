@@ -28,7 +28,7 @@ When adding a translated client component, include its namespace in the nearest 
 
 `scripts/validate-message-scopes.mjs --write-client-scopes` generates the client key selections in `src/i18n/generated-client-scopes.json`. Production builds regenerate it; validation rejects stale output. `ScopedMessages` intersects each boundary's allowed namespaces with the client requirements of its child routes, excluding server-only copy. Computed keys and forwarded translators retain their containing namespace conservatively. Use `--explain-client-scopes` to find unbounded helpers that need review. Keep the generated manifest on the server.
 
-Optional tools use `LazyMessages` and the allowlist in `src/i18n/lazy-message-scopes.json`. Their copy loads through the public locale endpoint only when the tool mounts, and stays cached by feature and locale. The shared shell excludes model-editor, provider-catalog, and developer-menu dictionaries; feature routes retain their own requirements. The homepage regression test caps the English client dictionary at 10 KB compressed.
+Optional tools use `LazyMessages` and the allowlist in `src/i18n/lazy-message-scopes.json`. Their copy loads through the public locale endpoint only when the tool mounts, and stays cached by feature and locale. The shared shell excludes model-editor, provider-catalog, and developer-menu dictionaries; feature routes retain their own requirements. The homepage regression test caps the English client dictionary at 7.5 KB compressed. Footer labels render on the server; chat accessibility labels are supplied by the chat boundary.
 
 ## Server catalogue loading
 

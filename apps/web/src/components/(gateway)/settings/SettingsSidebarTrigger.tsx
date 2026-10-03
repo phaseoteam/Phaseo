@@ -38,16 +38,19 @@ import {
 	type SettingsScope,
 } from "./Sidebar.config";
 import { cn } from "@/lib/utils";
+import type { SettingsNavigationCopy } from "./Sidebar.labels";
 
 const subscribe = () => () => {};
 const getClientSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function SettingsSidebarTrigger({
+	copy,
 	showBroadcast = true,
 	showWebhooks = true,
 	showAutoRouting = false,
 }: {
+	copy: SettingsNavigationCopy;
 	showBroadcast?: boolean;
 	showWebhooks?: boolean;
 	showAutoRouting?: boolean;
@@ -99,10 +102,10 @@ export default function SettingsSidebarTrigger({
 		const itemContent = (
 			<>
 				{Icon ? <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
-				<span className="min-w-0 flex-1 truncate">{item.label}</span>
+				<span className="min-w-0 flex-1 truncate">{copy.labels[item.label] ?? item.label}</span>
 				{item.badge ? (
 					<Badge variant="outline" className="h-5 px-1.5 text-[10px] capitalize">
-						{item.badge}
+						{copy.badges[item.badge] ?? item.badge}
 					</Badge>
 				) : null}
 				{item.external ? <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" /> : null}
@@ -158,7 +161,7 @@ export default function SettingsSidebarTrigger({
 												: "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
 										)}
 									>
-										<span className="truncate">{child.label}</span>
+										<span className="truncate">{copy.labels[child.label] ?? child.label}</span>
 									</Link>
 								);
 							})}
@@ -276,7 +279,7 @@ export default function SettingsSidebarTrigger({
 									>
 										{heading ? (
 											<p className="mb-1 px-3 text-xs font-medium text-muted-foreground">
-												{heading}
+													{copy.headings[heading] ?? heading}
 											</p>
 										) : null}
 										<div className="space-y-1">

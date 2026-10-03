@@ -1158,6 +1158,7 @@
 		"redirectHelp": "रीडायरेक्ट URIs को स्कीम, होस्ट, पथ और पोर्ट सहित बिल्कुल मेल खाना चाहिए।"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "चुने गए मॉडल को छोड़कर सभी को अनुमति दें",
 		"chooseModels": "मॉडल चुनें",
 		"chooseProviders": "प्रदाता चुनें",
 		"customPatternsDescription": "वर्कस्पेस के संवेदनशील कंटेंट को चिह्नित, छिपाने या रोकने के लिए regex पैटर्न जोड़ें।",
@@ -1238,6 +1239,8 @@
 		"excludeReasoningHelp": "अंतिम जवाब में तर्क वाले टोकन शामिल न करें।"
 	},
 	"presetPage": {
+		"fork": "एक प्रति बनाएँ",
+		"copyReference": "प्रीसेट का संदर्भ कॉपी करें",
 		"metadataTitle": "प्रीसेट - सेटिंग्स | Phaseo",
 		"settingsTitle": "प्रीसेट",
 		"settingsDescription": "अपने API कॉल के लिए दोबारा इस्तेमाल की जा सकने वाली अनुरोध कॉन्फ़िगरेशन प्रबंधित करें।",
@@ -3280,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "अज्ञात मॉडल",
+		"noApiKey": "कोई API कुंजी नहीं",
+		"noApp": "कोई ऐप नहीं",
 		"activity": "गतिविधि",
 		"yourUsage": "Phaseo पर आपका उपयोग।",
 		"sampledRequests": "यह दृश्य चयनित अवधि में पहले {count} अनुरोधों पर आधारित है।",
@@ -4287,6 +4293,7 @@
 		"sampleProviderRejected": "प्रदाता ने हाल का अनुरोध अस्वीकार कर दिया।"
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "गंतव्यों पर वापस जाएँ",
 		"billingAdminsOnly": "इस कार्यस्थान की बिलिंग सेटिंग केवल मालिक और एडमिन बदल सकते हैं।",
 		"managementKeysTitle": "कोई कार्यस्थान चुना नहीं गया",
 		"managementKeysBody": "प्रबंधन API कुंजियाँ देखने और प्रबंधित करने के लिए हेडर में कोई कार्यस्थान चुनें।",

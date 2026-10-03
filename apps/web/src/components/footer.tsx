@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
 import { ThemeSelector } from "@/components/theme-toggle";
 import { Logo } from "@/components/Logo";
@@ -125,7 +125,7 @@ const FOOTER_LABEL_KEYS = {
 
 type FooterLabel = keyof typeof FOOTER_LABEL_KEYS;
 
-function FooterLinkList({
+async function FooterLinkList({
 	title,
 	links,
 	titleKey,
@@ -134,8 +134,7 @@ function FooterLinkList({
 	links: FooterLink[];
 	titleKey: "explore" | "build" | "resources" | "company" | "community";
 }) {
-	const t = useTranslations("Common.footer");
-	const locale = useLocale();
+	const [t, locale] = await Promise.all([getTranslations("Common.footer"), getLocale()]);
 	return (
 		<div className="flex min-w-0 flex-col gap-2">
 			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -174,8 +173,8 @@ function FooterLinkList({
 	);
 }
 
-export default function Footer() {
-	const t = useTranslations("Common.footer");
+export default async function Footer() {
+	const t = await getTranslations("Common.footer");
 	return (
 		<footer className="mt-auto w-full overflow-x-clip border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
 			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">

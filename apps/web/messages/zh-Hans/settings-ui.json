@@ -1158,6 +1158,7 @@
 		"redirectHelp": "重定向 URI 必须完全匹配，包括方案、主机、路径和端口。"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "允许除所选模型之外的所有模型",
 		"chooseModels": "选择模型",
 		"chooseProviders": "选择提供商",
 		"customPatternsDescription": "添加正则表达式模式，用于标记、遮蔽或屏蔽工作区专属的敏感内容。",
@@ -1238,6 +1239,8 @@
 		"excludeReasoningHelp": "不要在最终响应中包含推理 token。"
 	},
 	"presetPage": {
+		"fork": "创建副本",
+		"copyReference": "复制预设引用",
 		"metadataTitle": "预设 - 设置 | Phaseo",
 		"settingsTitle": "预设",
 		"settingsDescription": "管理可在 API 调用中重复使用的请求配置。",
@@ -3280,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "未知模型",
+		"noApiKey": "无 API 密钥",
+		"noApp": "无应用",
 		"activity": "活动",
 		"yourUsage": "您在 Phaseo 上的使用情况。",
 		"sampledRequests": "此视图基于所选时间段内的第一个 {count} 请求。",
@@ -4287,6 +4293,7 @@
 		"sampleProviderRejected": "服务商拒绝了最近一次请求。"
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "返回目标列表",
 		"billingAdminsOnly": "只有此工作区的所有者和管理员可以更改账单设置。",
 		"managementKeysTitle": "未选择工作区",
 		"managementKeysBody": "请在页眉中选择一个工作区，以查看和管理其管理 API 密钥。",
