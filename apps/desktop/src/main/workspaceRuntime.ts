@@ -17,13 +17,14 @@ import { handoffPrompt } from "./handoffPrompt";
 import { AttachmentService } from "./attachments";
 import type { FormAnswer } from "../shared/agentForms";
 import { formAnswerError } from "../shared/agentForms";
+import { OpenCodeService } from "./openCodeService";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
-function createAdapter(harness: Harness, agent?: AgentConnection): AgentAdapter {
+function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: OpenCodeService): AgentAdapter {
 	if (harness === "codex") return new CodexAdapter();
 	if (harness === "claude") return new ClaudeAdapter();
-	if (harness === "opencode") return new OpenCodeAdapter();
+	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined);
 	if (harness === "pi") return new PiAdapter();
 	if (harness === "acp" && agent) return new AcpAdapter(agent);
 	throw new Error(`${harness} execution is not connected yet. Your message remains queued.`);
@@ -32,6 +33,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection): AgentAdapter 
 export class WorkspaceRuntime {
 	readonly store: WorkspaceStore;
 	readonly attachments: AttachmentService;
+	readonly openCode: OpenCodeService;
 	private readonly running = new Map<string, AgentAdapter>();
 	private readonly approvals = new Map<string, { taskId: string; resolve: (decision: "accept" | "decline") => void }>();
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
@@ -43,6 +45,7 @@ export class WorkspaceRuntime {
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
+		this.openCode = new OpenCodeService(directory);
 	}
 	private broadcast() { this.onChange(this.store.get()); }
 	async command(command: WorkspaceCommand): Promise<Workspace> {
@@ -121,7 +124,7 @@ export class WorkspaceRuntime {
 		let adapter: AgentAdapter;
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); return this.vault.get(accountId); };
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId));
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode);
 		}
 		catch (error) {
 			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
@@ -231,6 +234,7 @@ export class WorkspaceRuntime {
 		for (const pending of this.forms.values()) pending.resolve(null);
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
+		await this.openCode.close();
 		this.store.close();
 	}
 }

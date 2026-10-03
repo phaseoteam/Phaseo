@@ -69,7 +69,13 @@ Electron's main process. Pending form rediscovery after reconnect remains a gap.
 Phaseo Code/Plan currently accepts text documents; images require Chat or a
 vision-capable native harness. PDF OCR is not implemented.
 
-Evidence: desktop lint/typecheck/build pass; 81 deterministic tests cover protocol,
+OpenCode startup reuses compatible external services or starts a verified V2
+executable with an app-owned registration file; shutdown stops managed services.
+The desktop enforces one process per user-data directory to prevent duplicate
+task execution and service ownership. Native configuration/accounts remain owned
+by OpenCode; the Phaseo service does not install or upgrade a global CLI.
+
+Evidence: desktop lint/typecheck/build pass; 87 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
@@ -78,7 +84,10 @@ Protocol-shaped renderer fixtures check form defaults, conditional visibility,
 numeric bounds and choices; native form replies have separate runtime coverage.
 The same checks pass against the Windows packaged archive. Pi fixtures
 verify that agent_end does not finish a task and compaction must settle first.
-Live paid inference and real provider login
+An isolated OpenCode v2.0.22 binary check verified concurrent service startup,
+session creation, typed form validation/replies/cancellation and process shutdown,
+with zero inference calls. Its model catalog was empty because the test profile
+had no connected providers. Live paid inference and real provider login
 have not been exercised. Broad ledger items stay unchecked until all their parts
 have runtime and UI coverage. The desktop smoke command is `pnpm --filter
 @phaseo/desktop test:desktop`; it uses a fresh temporary user-data directory.

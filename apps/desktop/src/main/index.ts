@@ -11,6 +11,7 @@ import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { apiModels, codexModels } from "./modelCatalog";
 import { openCodeModels, piModels } from "./nativeModels";
+import { resolveOpenCodeCommand } from "./openCodeService";
 import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
@@ -52,7 +53,7 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 		if (!account) throw new Error("Choose an API account.");
 		return apiModels(account, credentialVault.get(account.id));
 	}
-	if (harness === "opencode") return openCodeModels(cwd);
+	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 	if (harness === "pi") return piModels(cwd);
 	return codexModels(cwd, account);
 });
@@ -151,9 +152,10 @@ ipcMain.handle("workspace:installations", async event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return Promise.all((["codex", "claude", "opencode", "pi"] as const).map(async harness => {
 		try {
-			await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "opencode" ? "opencode-ai/bin/opencode" : harness === "pi" ? piEntries : undefined);
+			if (harness === "opencode") { const command = await resolveOpenCodeCommand(app.getPath("userData")); return { harness, installed: true, version: command.version }; }
+			await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
 			return { harness, installed: true };
-		} catch { return { harness, installed: false }; }
+		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
 });
 
@@ -291,6 +293,12 @@ ipcMain.handle("desktop:open-external", async (event, url: unknown) => {
 });
 
 app.setAppUserModelId("app.phaseo.desktop");
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) app.quit();
+app.on("second-instance", () => {
+	const window = BrowserWindow.getAllWindows()[0];
+	if (window?.isMinimized()) window.restore(); window?.show(); window?.focus();
+});
 
 autoUpdater.on("update-available", () => broadcastUpdateState({ status: "available" }));
 autoUpdater.on("update-not-available", () => broadcastUpdateState({ status: "unavailable" }));
@@ -301,6 +309,7 @@ autoUpdater.on("update-downloaded", (_event, notes, name) => {
 autoUpdater.on("error", (error) => broadcastUpdateState({ status: "error", message: error.message }));
 
 app.whenReady().then(() => {
+	if (!primaryInstance) return;
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
 	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), {
 		available: () => safeStorage.isEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),

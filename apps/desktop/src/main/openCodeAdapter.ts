@@ -7,13 +7,15 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import type { AgentForm } from "../shared/agentForms";
+import type { Endpoint } from "@opencode/client/service";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	private client?: OpenCodeClient;
 	private sessionId?: string;
+	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
-		const endpoint = await Service.discover({ version: version => version.startsWith("2.") });
+		const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
 		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
 		if (this.controller.signal.aborted) throw new Error("Task stopped.");
 		const client = this.client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) });

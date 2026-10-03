@@ -4,10 +4,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { promisify } from "node:util";
 
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-electron-smoke-"));
 app.setPath("userData", data);
+const openCodeBinary = process.argv.find(argument => argument.startsWith("--opencode-binary="))?.slice("--opencode-binary=".length);
+if (openCodeBinary) {
+	process.env.PATH = `${path.dirname(path.resolve(openCodeBinary))}${path.delimiter}${process.env.PATH ?? ""}`;
+	for (const name of ["CONFIG", "DATA", "STATE", "CACHE"]) process.env[`XDG_${name}_HOME`] = path.join(data, "native-fixture", name.toLowerCase());
+}
 const fixtureProject = path.join(data, "fixture-project");
 mkdirSync(fixtureProject); writeFileSync(path.join(fixtureProject, "hello.txt"), "Before");
 const stream = "BT /F1 12 Tf 20 50 Td (Fixture PDF text) Tj ET";
@@ -37,6 +43,13 @@ app.whenReady().then(async () => {
 			const api = window.phaseoDesktop.workspace;
 			const initial = await api.get();
 			if (initial.tasks.length) throw new Error('Isolated workspace is not empty');
+			const checkNativeOpenCode = ${Boolean(openCodeBinary)};
+			if (checkNativeOpenCode) {
+				const models = await api.models('opencode',undefined,'fixture');
+				if (!Array.isArray(models)) throw new Error('Native OpenCode model discovery failed');
+				const installation = (await api.installations()).find(value=>value.harness==='opencode');
+				if (!installation?.installed || installation.version!=='2.0.22') throw new Error('Native OpenCode version check failed');
+			}
 			const created = await api.command({type:'create-task',harness:'codex',model:'default',mode:'chat'});
 			const task = created.tasks[0];
 			await api.command({type:'update-task',id:task.id,title:'Electron bridge check',pinned:true});
@@ -117,7 +130,7 @@ app.whenReady().then(async () => {
 			for (let attempt = 0; attempt < 50; attempt++) { if (document.querySelector('.attachment-preview pre')?.textContent.includes('Page 1\\nFixture PDF text')) { previewed = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!previewed) throw new Error('PDF text preview did not render');
 			document.querySelector('[aria-label="Close attachment preview"]').click();
-			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true };
+			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true, ...(checkNativeOpenCode ? {nativeOpenCode:true} : {}) };
 			} catch (error) { throw new Error(error.stack ?? String(error)); }
 		})()`);
 		// Seed a protocol-shaped form solely for renderer interaction checks;
@@ -152,6 +165,12 @@ app.whenReady().then(async () => {
 			await new Promise(resolve => setTimeout(resolve,100)); if (!choice.checked) throw new Error('Form selection did not update');
 		})()`);
 		result.forms = true;
+		const secondInstance = path.join(data, "second-instance.mjs");
+		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
+		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);
+		await promisify(execFile)(process.execPath, [secondInstance], { windowsHide: true, timeout: 10000 });
+		if (BrowserWindow.getAllWindows().length !== 1) throw new Error("Second instance changed the primary desktop window");
+		result.singleInstance = true;
 		const output = fileURLToPath(new URL("../../../output/playwright", import.meta.url));
 		mkdirSync(output, { recursive: true });
 		writeFileSync(path.join(output, "electron-workspace.png"), (await window.webContents.capturePage()).toPNG());

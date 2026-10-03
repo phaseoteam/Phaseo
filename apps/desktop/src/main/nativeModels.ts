@@ -4,9 +4,10 @@ import type { ModelOption } from "../shared/workspace";
 import { spawnNative } from "./nativeProcess";
 import { PiRpc } from "./piRpc";
 import { piEntries } from "./piAdapter";
+import type { Endpoint } from "@opencode/client/service";
 
-export async function openCodeModels(cwd: string): Promise<ModelOption[]> {
-	const endpoint = await Service.discover({ version: version => version.startsWith("2.") });
+export async function openCodeModels(cwd: string, connected?: Endpoint): Promise<ModelOption[]> {
+	const endpoint = connected ?? await Service.discover({ version: version => version.startsWith("2.") });
 	if (!endpoint) throw new Error("Start an OpenCode 2 service to discover its configured models.");
 	const client = OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) });
 	const catalog = await client.model.list({ location: { directory: cwd } }, { signal: AbortSignal.timeout(15000) });
