@@ -95,6 +95,7 @@ try {
   await db.exec(await read('../migrations/20261003102642_repair_previous_analytics_grains.sql'));
   await db.exec(await read('../migrations/20261003103314_skip_unchanged_analytics_grains.sql'));
   await db.exec(await read('../migrations/20261003103617_coalesce_former_grains_and_repair_attempts.sql'));
+  await db.exec(await read('../migrations/20261003104346_omit_empty_analytics_grains.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
   assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
@@ -226,11 +227,16 @@ try {
   assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,0);
   for(const table of ['private_usage_daily','public_usage_daily','public_usage_hourly']) {
     assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_${table} where model_slug='after-pruning'`)).n,0);
+    assert.equal((await scalar(`select count(*)::int n from v2_${table} where model_slug='after-pruning'`)).n,0);
     assert.equal((await scalar(`select sum(requests)::int n from v2_${table} where model_slug='final'`)).n,1);
   }
   await db.exec(`delete from v2_request_facts where request_event_id='00000000-0000-0000-0000-000000000001';
     select public.process_v2_analytics_outbox(10);`);
   assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_public_usage_daily where model_slug='final'`)).n,0);
+  for(const table of ['private_usage_daily','public_usage_daily','public_usage_hourly']) {
+    assert.equal((await scalar(`select count(*)::int n from v2_${table} where model_slug='final'`)).n,0);
+    assert.equal((await scalar(`select count(*)::int n from v2_${table}_meters m join v2_${table} r using(rollup_id) where model_slug='final'`)).n,0);
+  }
   // Nullable group dimensions coalesce a bulk correction into one old repair.
   await db.exec(`insert into v2_request_facts(request_event_id,occurred_at,workspace_id,routed_model_slug,success)
     select md5('bulk-'||n)::uuid,'2026-10-09','10000000-0000-0000-0000-000000000001','bulk-old',true
