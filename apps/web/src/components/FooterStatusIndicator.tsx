@@ -76,6 +76,7 @@ type StatusComponent = NonNullable<StatusSummary["components"]>[number];
 
 const GROUP_ORDER = ["API", "Platform", "Other"];
 const STATUS_LABEL_KEYS: Record<StatusState, string> = {
+	monitoring: "monitoring",
 	operational: "operationalSummary",
 	degraded: "degraded",
 	partial_outage: "partialOutage",
@@ -92,6 +93,7 @@ const COMPONENT_NAME_KEYS: Record<string, string> = {
 	"Docs page": "docsPage",
 };
 const COMPONENT_STATE_KEYS: Record<StatusState, string> = {
+	monitoring: "monitoring",
 	operational: "operational",
 	degraded: "degraded",
 	partial_outage: "partialOutage",
@@ -201,6 +203,7 @@ export function FooterStatusIndicator() {
 
 	const styles = STATUS_STYLES[status.state] ?? STATUS_STYLES.unknown;
 	const localizeComponentName = (name: string) => {
+		if (name === "Generations API") return name;
 		const key = COMPONENT_NAME_KEYS[name];
 		return key ? t(`componentNames.${key}` as never) : t("componentNames.other" as never);
 	};
@@ -289,12 +292,12 @@ export function FooterStatusIndicator() {
 							<span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{incident.name}</span>
 							<span className="block text-[11px] text-zinc-500 dark:text-zinc-400">
 								<span className="capitalize">{incident.status.replaceAll("_", " ")}</span>
-								{` · Reported impact: ${incident.impact}`}
+								{` · ${t("reportedImpact", { impact: incident.impact })}`}
 							</span>
 							{incident.message ? <span className="block whitespace-pre-wrap text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">{incident.message}</span> : null}
 							{incident.updatedAt && Number.isFinite(Date.parse(incident.updatedAt)) ? (
 								<time dateTime={incident.updatedAt} className="block text-[10px] text-zinc-500">
-									Updated {new Date(incident.updatedAt).toLocaleString("en-GB", { timeZone: "UTC", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} UTC
+									{t("updatedAt", { time: `${new Date(incident.updatedAt).toLocaleString("en-GB", { timeZone: "UTC", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} UTC` })}
 								</time>
 							) : null}
 						</span>

@@ -359,6 +359,9 @@
 		"toggle": "Changer de thème"
 	},
 	"status": {
+		"monitoring": "Rétablissement sous surveillance",
+		"reportedImpact": "Impact signalé : {impact}",
+		"updatedAt": "Mis à jour {time}",
 		"unavailable": "Statut indisponible",
 		"checking": "Vérification du statut",
 		"openPage": "{status}. Ouvrir la page du statut.",

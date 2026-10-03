@@ -359,6 +359,9 @@
 		"toggle": "Darstellung wechseln"
 	},
 	"status": {
+		"monitoring": "Wiederherstellung wird überwacht",
+		"reportedImpact": "Gemeldete Auswirkungen: {impact}",
+		"updatedAt": "Aktualisiert {time}",
 		"unavailable": "Status nicht verfügbar",
 		"checking": "Status wird geprüft",
 		"openPage": "{status}. Statusseite öffnen.",

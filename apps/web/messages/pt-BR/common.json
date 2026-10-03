@@ -359,6 +359,9 @@
 		"toggle": "Alternar tema"
 	},
 	"status": {
+		"monitoring": "Monitorando a recuperação",
+		"reportedImpact": "Impacto relatado: {impact}",
+		"updatedAt": "Atualizado {time}",
 		"unavailable": "Status indisponível",
 		"checking": "Verificando status",
 		"openPage": "{status}. Abrir página de status.",

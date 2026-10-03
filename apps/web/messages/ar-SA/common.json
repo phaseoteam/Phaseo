@@ -359,6 +359,9 @@
 		"toggle": "تبديل المظهر"
 	},
 	"status": {
+		"monitoring": "مراقبة التعافي",
+		"reportedImpact": "التأثير المُبلّغ عنه: {impact}",
+		"updatedAt": "تم التحديث {time}",
 		"unavailable": "الحالة غير متاحة",
 		"checking": "جارٍ التحقّق من الحالة",
 		"openPage": "{status}. فتح صفحة الحالة.",

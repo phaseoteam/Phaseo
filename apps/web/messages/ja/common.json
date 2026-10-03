@@ -359,6 +359,9 @@
 		"toggle": "テーマを切り替え"
 	},
 	"status": {
+		"monitoring": "復旧状況を監視中",
+		"reportedImpact": "報告された影響: {impact}",
+		"updatedAt": "更新日時 {time}",
 		"unavailable": "ステータスを利用できません",
 		"checking": "ステータスを確認中",
 		"openPage": "{status}。ステータスページを開く。",
