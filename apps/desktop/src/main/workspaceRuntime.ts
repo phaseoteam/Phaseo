@@ -21,6 +21,7 @@ import { OpenCodeService } from "./openCodeService";
 import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
+import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -47,6 +48,7 @@ export class WorkspaceRuntime {
 	private readonly imports = new Set<Promise<unknown>>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
+	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
@@ -255,6 +257,12 @@ export class WorkspaceRuntime {
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			await adapter.run(task, cwd, handoffPrompt(task, message.text), {
+				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
+					const agent = this.store.get().agents.find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
+					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
+					const current = this.store.getTask(id); current.authTerminalId = auth.session.id; current.authInputId = message.id; current.status = "waiting"; this.store.saveTask(current); this.broadcast();
+					try { await auth.completed; } finally { const current = this.store.getTask(id); current.authTerminalId = undefined; current.authInputId = undefined; if (current.status === "waiting") current.status = hasRequests(current) ? "waiting" : "running"; this.store.saveTask(current); this.broadcast(); }
+				} } : {}),
 				onModels: nativeModels => { const current = this.store.getTask(id); current.nativeModels = nativeModels; this.store.saveTask(current); this.broadcast(); },
 				onModes: nativeModes => { const current = this.store.getTask(id); current.nativeModes = nativeModes; this.store.saveTask(current); this.broadcast(); },
 				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },

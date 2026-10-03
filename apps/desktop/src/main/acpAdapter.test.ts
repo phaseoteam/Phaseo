@@ -14,6 +14,17 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each([true, false])("runs terminal authentication without sending it to authenticate (%s)", async success => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child); let signedIn = false;
+		const authenticate = vi.fn(() => ({})); const prompt = vi.fn(() => ({ stopReason: "end_turn" as const }));
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => { expect(params.clientCapabilities?.auth?.terminal).toBe(true); return { protocolVersion: params.protocolVersion, agentCapabilities: {}, authMethods: [{ id: "terminal", name: "Interactive login", type: "terminal" as const, args: ["--login"], env: { AUTH_FIXTURE: "1" } }] }; }).onRequest("session/new", () => { if (!signedIn) throw RequestError.authRequired(); return { sessionId: "native" }; }).onRequest("authenticate", authenticate).onRequest("session/prompt", prompt).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const onTerminalAuth = vi.fn(async (args, env, _title, signal) => { expect(args).toEqual(["--login"]); expect(env).toEqual({ AUTH_FIXTURE: "1" }); expect(signal).toBeInstanceOf(AbortSignal); if (!success) throw new Error("Native sign-in cancelled."); signedIn = true; });
+		try {
+			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onQuestion: async () => ({ "auth-method": ["Interactive login (terminal)"] }), onTerminalAuth });
+			if (success) { await run; expect(prompt).toHaveBeenCalledOnce(); } else { await expect(run).rejects.toThrow("cancelled"); expect(prompt).not.toHaveBeenCalled(); }
+			expect(onTerminalAuth).toHaveBeenCalledOnce(); expect(authenticate).not.toHaveBeenCalled();
+		} finally { connection.close(); }
+	});
 	it.each(["native", "config", "current", "unavailable"])("selects native modes while retaining desktop permission controls (%s)", async source => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const option = { id: "mode", category: "mode", name: "Mode", type: "select" as const, currentValue: "default", options: [{ value: "analysis", name: "Analysis" }] };

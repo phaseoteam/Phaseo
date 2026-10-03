@@ -20,6 +20,7 @@ export class AcpAdapter implements AgentAdapter {
 	private connection?: ClientConnection;
 	private sessionId?: string;
 	private cancelled = false;
+	private readonly controller = new AbortController();
 	private terminals?: AcpTerminals;
 	constructor(private readonly agent: AgentConnection, private readonly mcp: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
@@ -76,7 +77,7 @@ export class AcpAdapter implements AgentAdapter {
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
 		try {
-			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code" } });
+			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) } } });
 			clearTimeout(startup);
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
 			const servers = task.mode === "chat" ? [] : this.mcp;
@@ -100,13 +101,15 @@ export class AcpAdapter implements AgentAdapter {
 			try { session = await openSession(); }
 			catch (error) {
 				if (!(error instanceof RequestError) || error.code !== RequestError.authRequired().code) throw error;
-				const methods = (initialized.authMethods ?? []).filter(method => !("type" in method) || method.type !== "terminal");
+				const methods = (initialized.authMethods ?? []).filter(method => !("type" in method) || method.type !== "terminal" || callbacks.onTerminalAuth);
 				if (!methods.length || !callbacks.onQuestion) throw new Error("Authenticate this agent using its native application, then resume the task.", { cause: error });
 				const options = methods.map(method => ({ label: `${method.name} (${method.id})`, description: method.description ?? undefined }));
 				const answers = await callbacks.onQuestion([{ id: "auth-method", header: "Sign in to agent", question: `Choose a native sign-in method for ${this.agent.name}.`, options }]);
 				const index = options.findIndex(option => option.label === answers["auth-method"]?.[0]);
 				if (index < 0 || this.cancelled) throw new Error("Agent sign-in cancelled.", { cause: error });
-				await connection.agent.request("authenticate", { methodId: methods[index].id });
+				const method = methods[index];
+				if ("type" in method && method.type === "terminal") await callbacks.onTerminalAuth!(method.args ?? [], method.env ?? {}, `Sign in: ${this.agent.name} · ${method.name}`, this.controller.signal);
+				else await connection.agent.request("authenticate", { methodId: method.id });
 				if (this.cancelled) throw new Error("Task stopped.", { cause: error });
 				session = await openSession();
 			}
@@ -136,6 +139,7 @@ export class AcpAdapter implements AgentAdapter {
 	}
 	async cancel() {
 		this.cancelled = true;
+		this.controller.abort();
 		try { if (this.connection && this.sessionId) await this.connection.agent.notify("session/cancel", { sessionId: this.sessionId }); }
 		finally { this.connection?.close(new Error("Task stopped.")); this.child?.kill(); await this.terminals?.close(); }
 	}

@@ -35,6 +35,17 @@ export function Terminals() {
 	</section></div>;
 }
 
+export function AuthTerminal({ id }: { id: string }) {
+	const api = window.phaseoDesktop?.workspace; const [session, setSession] = useState<TerminalSession>(); const [error, setError] = useState("");
+	useEffect(() => {
+		if (!api) return; let active = true;
+		void api.terminals().then(values => { if (active) setSession(values.find(value => value.id === id)); }, reason => { if (active) setError(String(reason)); });
+		const unsubscribe = api.onTerminalEvent(event => { if (event.sessionId === id) setSession(current => event.session ?? (current ? { ...current, output: (current.output + (event.data ?? "")).slice(-1024 * 1024) } : current)); });
+		return () => { active = false; unsubscribe(); };
+	}, [api, id]);
+	return <section className="task-auth-terminal" aria-label="Native sign-in terminal"><strong>{session?.title ?? "Native sign-in"}</strong>{error && <p role="alert">{error}</p>}{api && session && <TerminalView session={session} api={api} onError={setError} />}</section>;
+}
+
 function TerminalView({ session, api, onError }: { session: TerminalSession; api: WorkspaceApi; onError: (error: string) => void }) {
 	const host = useRef<HTMLDivElement>(null);
 	const current = useRef(session); current.current = session;

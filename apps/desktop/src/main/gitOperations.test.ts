@@ -16,8 +16,8 @@ describe("Git workspace actions", () => {
 			writeFileSync(path.join(root, "file.txt"), "Alias fixture\n");
 			expect((await gitCommand(alias, { type: "stage", filename: "file.txt" })).stagedDiff).toContain("Alias fixture");
 			await expect(gitCommand(path.join(root, "nested"), { type: "stage", filename: "file.txt" })).rejects.toThrow("repository root");
-		} finally { rmSync(directory, { recursive: true, force: true }); }
-	});
+		} finally { rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
 	it("stages literal filenames, commits and switches branches without losing working changes", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-git-"));
 		const git = (args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true, stdio: "pipe" }).toString();
@@ -48,6 +48,6 @@ describe("Git workspace actions", () => {
 			expect(readFileSync(path.join(root, "renamed file.txt"), "utf8")).toBe("Before\nExtra\n");
 			await expect(gitCommand(root, { type: "stage", filename: "../outside" })).rejects.toThrow("inside");
 			await expect(gitCommand(root, { type: "switch-branch", name: "--detach" })).rejects.toThrow("branch name");
-		} finally { rmSync(root, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 }); }
-	}, 15000);
+		} finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
 });

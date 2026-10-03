@@ -20,6 +20,11 @@ export class WorkspaceStore {
 			PRAGMA user_version=1;`);
 		for (const task of this.get().tasks) {
 			let recovered = false;
+			if (task.authTerminalId) {
+				const input = task.messages.find(value => value.id === task.authInputId && value.role === "user");
+				if (input && !task.messages.some(value => value.role === "assistant" && value.id.startsWith(`${input.id}:`))) { if (!task.queue.some(value => value.id === input.id)) task.queue.unshift({ id: input.id, text: input.text, attachments: input.attachments, createdAt: input.createdAt }); task.messages = task.messages.filter(value => value.id !== input.id); }
+				task.authTerminalId = undefined; task.authInputId = undefined; recovered = true;
+			}
 			for (const message of task.steering ?? []) if (message.status === "sending") { message.status = "unconfirmed"; message.error = "The application stopped before delivery was confirmed."; recovered = true; }
 			if (task.status === "running" || task.status === "waiting") {
 				task.status = "interrupted";

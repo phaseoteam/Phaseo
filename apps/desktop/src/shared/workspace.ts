@@ -20,6 +20,8 @@ export type Task = {
 	nativeModels?: ModelOption[];
 	nativeModes?: ModelOption[];
 	nativeMode?: string;
+	authTerminalId?: string;
+	authInputId?: string;
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
@@ -39,7 +41,7 @@ export type ProjectFile = { name: string; path: string; directory: boolean };
 export type GitFile = { path: string; oldPath?: string; indexStatus: string; worktreeStatus: string };
 export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; branch: string };
 export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string };
-export type TerminalSession = { id: string; projectId?: string; title: string; cwd: string; output: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
+export type TerminalSession = { id: string; projectId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
 export type TerminalCommand = { type: "open"; projectId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =

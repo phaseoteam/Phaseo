@@ -7,6 +7,7 @@ export type AgentCallbacks = {
 	onSession: (id: string) => void;
 	onModels?: (models: ModelOption[]) => void;
 	onModes?: (modes: ModelOption[]) => void;
+	onTerminalAuth?: (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => Promise<void>;
 	onActivity?: (activity: AgentActivity & { append?: boolean }) => void;
 	onQuestion?: (questions: AgentQuestion[]) => Promise<Record<string, string[]>>;
 	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null>;

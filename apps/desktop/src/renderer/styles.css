@@ -87,6 +87,7 @@
 .message-markdown a { color: var(--primary-text); }
 .task-activity { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; }
 .task-activity summary { cursor: pointer; color: var(--text-muted); font-size: 12px; }
+.task-auth-terminal { display: flex; flex-direction: column; gap: 8px; height: 340px; min-height: 240px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
 .task-activity pre { white-space: pre-wrap; max-height: 320px; overflow: auto; font-size: 12px; }
 .task-question { display: grid; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; margin: 10px 0; }
 .task-question label { display: grid; gap: 7px; }

@@ -8,6 +8,19 @@ import { TerminalService } from "./terminalService";
 import { WorkspaceStore } from "./workspaceStore";
 
 describe("terminal lifecycle", () => {
+	it.each([0, 1, "cancel"] as const)("runs native sign-in without retaining a transcript (%s)", async outcome => {
+		const store = new WorkspaceStore(":memory:"); let data!: (value: string) => void; let exit!: (value: { exitCode: number }) => void;
+		const pty = { kill: vi.fn(), onData: (callback: typeof data) => { data = callback; }, onExit: (callback: typeof exit) => { exit = callback; }, write: vi.fn(), resize: vi.fn() }; native.spawn.mockReturnValue(pty);
+		const service = new TerminalService(store, tmpdir()); const controller = new AbortController();
+		try {
+			const auth = service.authenticate({ agent: { id: "agent", name: "Agent", executable: "/agent", arguments: ["--native"] }, args: ["--login"], env: { LOGIN_FIXTURE: "private", ELECTRON_RUN_AS_NODE: "0" }, title: "Sign in", cwd: tmpdir(), taskId: "task" }, controller.signal);
+			expect(native.spawn).toHaveBeenLastCalledWith("/agent", ["--native", "--login"], expect.objectContaining({ env: expect.objectContaining({ LOGIN_FIXTURE: "private", ELECTRON_RUN_AS_NODE: "1" }) }));
+			data("Private sign-in output"); expect(service.get()).toHaveLength(1); expect(store.getTerminals()).toEqual([]);
+			if (outcome === "cancel") { controller.abort(); await expect(auth.completed).rejects.toThrow("cancelled"); expect(pty.kill).toHaveBeenCalled(); }
+			else { exit({ exitCode: outcome }); if (outcome === 0) await auth.completed; else await expect(auth.completed).rejects.toThrow("without completing"); }
+			expect(store.getTerminals()).toEqual([]); expect(service.get()).toEqual([]);
+		} finally { service.close(); store.close(); }
+	});
 	it("validates input, persists output and safely ignores late events after shutdown", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-terminal-"));
 		const store = new WorkspaceStore(":memory:");

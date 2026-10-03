@@ -151,8 +151,15 @@ ACP mode catalogs also persist and expose an independent agent-mode selector.
 Native mode/configuration methods apply the chosen value before prompting, skip
 unchanged selections and reject unavailable modes. Desktop Chat/Plan/Code controls
 still govern advertised host capabilities and permission responses.
+ACP terminal sign-in runs the configured native command in an embedded interactive
+PTY after the user chooses a native method. A successful exit retries session
+creation; terminal methods are never sent to ACP authenticate. Sign-in output stays
+in memory and is excluded from saved transcripts. Cancellation kills the sign-in
+process and preserves the original task input. A crash during sign-in recovers the
+same original input for explicit retry. Owned Electron fixtures verify interactive
+completion and cancellation without real provider sign-in or inference.
 
-Evidence: desktop lint/typecheck/build pass; 183 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 190 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

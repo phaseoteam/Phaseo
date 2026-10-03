@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Archive, ArrowDown, ArrowUp, FolderOpen, GitFork, Paperclip, Pin, Plus, Search, Send, Square, X } from "lucide-react";
 import type { Attachment, Harness, ModelOption, Task, Workspace, WorkspaceCommand } from "../../shared/workspace";
 import { emptyWorkspace } from "../../shared/workspace";
@@ -8,6 +8,7 @@ import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { AgentForm } from "../components/AgentForm";
 import { TaskSettings } from "../components/TaskSettings";
+const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
 export function TaskWorkspace() {
 	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
@@ -126,6 +127,7 @@ export function TaskWorkspace() {
 					{selected.approvals?.map(approval => <div className="task-approval" key={approval.id}><strong>Approval needed</strong><pre>{approval.description}</pre>{(["decline", "accept"] as const).map(decision => <button type="button" key={decision} onClick={() => void command({ type: "approval", id: selected.id, approvalId: approval.id, decision })}>{decision === "accept" ? "Allow" : "Deny"}</button>)}</div>)}
 					{selected.questions?.map(request => <QuestionForm key={request.id} questions={request.questions} onAnswer={async answers => Boolean(await command({ type: "answer", id: selected.id, requestId: request.id, answers }))} />)}
 					{selected.forms?.map(request => <AgentForm key={request.id} form={request.form} onAnswer={async answer => Boolean(await command({ type: "form-answer", id: selected.id, requestId: request.id, answer }))} />)}
+					{selected.authTerminalId && <Suspense fallback={<p>Opening native sign-in…</p>}><AuthTerminal id={selected.authTerminalId} /></Suspense>}
 				</div>
 				{selected.steering?.map(message => <div className="task-approval" key={message.id}><strong>{message.status === "sending" ? "Sending steering instruction…" : message.status === "rejected" ? "Instruction not sent" : "Delivery unconfirmed"}</strong><p>{message.text}</p>{message.attachments?.map(attachment => <button type="button" key={attachment.id} onClick={() => setAttachmentPreview({ taskId: selected.id, id: attachment.id })}>{attachment.name}</button>)}{message.error && <p>{message.error}</p>}{message.status === "unconfirmed" && <p>Queueing this instruction may send it twice.</p>}<button type="button" disabled={message.status === "sending" || selected.archived} onClick={() => void command({ type: "steer-queue", id: selected.id, messageId: message.id })}>Queue instead</button><button type="button" disabled={message.status === "sending"} onClick={() => void command({ type: "steer-discard", id: selected.id, messageId: message.id })}>Discard</button></div>)}
 				{selected.queue.length > 0 && <div className="task-queue"><strong>Queued messages</strong>{selected.queue.map(message => <div key={message.id}>{editingQueue === message.id ? <><textarea aria-label="Queued message" value={queueText} onChange={event => setQueueText(event.target.value)} /><button type="button" disabled={!queueText.trim()} onClick={() => { void command({ type: "queue-edit", id: selected.id, messageId: message.id, text: queueText }).then(state => { if (state) setEditingQueue(undefined); }); }}>Save</button><button type="button" onClick={() => setEditingQueue(undefined)}>Cancel</button></> : <><span>{message.text}</span><button type="button" onClick={() => { setEditingQueue(message.id); setQueueText(message.text); }}>Edit</button></>}<button type="button" aria-label="Move message up" onClick={() => void command({ type: "queue-move", id: selected.id, messageId: message.id, direction: "up" })}><ArrowUp size={14} /></button><button type="button" aria-label="Move message down" onClick={() => void command({ type: "queue-move", id: selected.id, messageId: message.id, direction: "down" })}><ArrowDown size={14} /></button><button type="button" onClick={() => void command({ type: "queue-remove", id: selected.id, messageId: message.id })}>Remove</button></div>)}</div>}

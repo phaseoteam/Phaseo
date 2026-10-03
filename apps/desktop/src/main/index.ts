@@ -41,7 +41,7 @@ ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 });
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
-	return workspaceRuntime.store.getTerminals();
+	return terminalService.get();
 });
 ipcMain.handle("workspace:terminal", (event, command: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
@@ -371,6 +371,7 @@ app.whenReady().then(() => {
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
+	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:changed", state);
