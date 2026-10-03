@@ -80,7 +80,11 @@ identity before delivery. Rejected or unacknowledged instructions remain visible
 for explicit queue/discard decisions; restart never replays an uncertain send.
 Other harnesses still use ordinary queued messages.
 
-Evidence: desktop lint/typecheck/build pass; 93 deterministic tests cover protocol,
+OpenCode resumed tasks rediscover pending forms before sending the next message,
+deduplicate snapshot/event overlap and continue consuming requests while waiting
+for native execution to settle.
+
+Evidence: desktop lint/typecheck/build pass; 97 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

@@ -8,6 +8,7 @@ import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import type { AgentForm } from "../shared/agentForms";
 import type { Endpoint } from "@opencode/client/service";
+import { openCodeForm } from "./openCodeForms";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -26,6 +27,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 		})();
 		const requestOptions = { signal: this.controller.signal };
 		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
+		const formJobs = new Map<string, Promise<void>>();
 		const handleForm = async (form: AgentForm) => {
 			if (seenForms.has(form.id)) return; seenForms.add(form.id);
 			const controller = new AbortController(); forms.set(form.id, controller);
@@ -48,6 +50,10 @@ export class OpenCodeAdapter implements AgentAdapter {
 				}
 			} finally { forms.delete(form.id); }
 		};
+		const requestForm = (form: AgentForm) => {
+			const existing = formJobs.get(form.id); if (existing) return existing;
+			const job = handleForm(form); formJobs.set(form.id, job); return job;
+		};
 		const session = task.nativeSessionId ? await client.session.get({ sessionID: task.nativeSessionId }, requestOptions) : task.nativeForkFrom ? await client.session.fork({ sessionID: task.nativeForkFrom }, requestOptions) : await client.session.create({
 			location: { directory: cwd }, agent: task.mode === "plan" ? "plan" : "build", model,
 			permissions: [{ action: "*", resource: "*", effect: task.mode === "chat" ? "deny" : "ask" }],
@@ -60,14 +66,16 @@ export class OpenCodeAdapter implements AgentAdapter {
 		let rejectTurn: (error: Error) => void = () => {};
 		const turn = new Promise<void>((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
 		void turn.catch(() => {});
+		let prompted = false;
+		let completion: Promise<void> | undefined;
 		const timeout = setTimeout(() => { rejectTurn(new Error("OpenCode event stream did not connect.")); this.controller.abort(); }, 30000);
 		const events = (async () => {
 			try {
 				for await (const event of client.event.subscribe({ signal: this.controller.signal, onActivity: () => { readyResolve(); clearTimeout(timeout); } })) {
 					if (event.type === "form.created" && event.data.form.sessionID === session.id) {
-						void handleForm(event.data.form).catch(error => rejectTurn(error instanceof Error ? error : new Error("OpenCode form failed."))); continue;
+						void requestForm(event.data.form).catch(error => rejectTurn(error instanceof Error ? error : new Error("OpenCode form failed."))); continue;
 					}
-					if ((event.type === "form.replied" || event.type === "form.cancelled") && event.data.sessionID === session.id) { forms.get(event.data.id)?.abort(); continue; }
+					if ((event.type === "form.replied" || event.type === "form.cancelled") && event.data.sessionID === session.id) { seenForms.add(event.data.id); forms.get(event.data.id)?.abort(); continue; }
 					if (!("data" in event) || !("sessionID" in event.data) || event.data.sessionID !== session.id) continue;
 					if (event.type === "session.text.delta") callbacks.onDelta(event.data.assistantMessageID, event.data.delta);
 					if (event.type === "session.reasoning.delta") callbacks.onActivity?.({ id: `${event.data.assistantMessageID}:reasoning:${event.data.ordinal}`, type: "reasoning", title: "Reasoning", text: event.data.delta, append: true });
@@ -81,14 +89,24 @@ export class OpenCodeAdapter implements AgentAdapter {
 							if (!this.controller.signal.aborted) await client.permission.reply({ sessionID: session.id, requestID: permission.id, decision: decision === "accept" ? "once" : "reject" }, requestOptions);
 						})().catch(error => rejectTurn(error instanceof Error ? error : new Error("OpenCode permission reply failed.")));
 					}
-					if (event.type === "session.execution.succeeded") { resolveTurn(); return; }
-					if (event.type === "session.execution.failed" || event.type === "session.execution.interrupted") { rejectTurn(new Error(`OpenCode execution ${event.type.endsWith("failed") ? "failed" : "was interrupted"}.`)); return; }
+					if (prompted && event.type === "session.execution.succeeded") {
+						// The session may have accepted another input before this event arrived.
+						// Keep consuming permissions/forms while the native service settles.
+						completion ??= client.session.wait({ sessionID: session.id }, requestOptions).then(resolveTurn, rejectTurn); continue;
+					}
+					if (prompted && (event.type === "session.execution.failed" || event.type === "session.execution.interrupted")) { rejectTurn(new Error(`OpenCode execution ${event.type.endsWith("failed") ? "failed" : "was interrupted"}.`)); return; }
 				}
-				rejectTurn(new Error("OpenCode event stream disconnected."));
+				if (completion) await completion;
+				else rejectTurn(new Error("OpenCode event stream disconnected."));
 			} catch (error) { rejectTurn(error instanceof Error ? error : new Error("OpenCode event stream failed.")); }
 		})();
 		try {
 			await Promise.race([ready, turn]);
+			if (task.nativeSessionId) {
+				const pending = await client.session.form.list({ sessionID: session.id }, requestOptions);
+				await Promise.race([Promise.all(pending.filter(form => form.sessionID === session.id).map(form => requestForm(openCodeForm(form)))), turn]);
+			}
+			prompted = true;
 			await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, requestOptions);
 			await turn;
 		} finally { clearTimeout(timeout); this.controller.abort(); await events; }

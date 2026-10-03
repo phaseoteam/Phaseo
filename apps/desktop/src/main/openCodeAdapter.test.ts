@@ -8,12 +8,41 @@ import { OpenCodeAdapter } from "./openCodeAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "opencode", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("OpenCode 2 integration", () => {
+	it("keeps streaming requests while native settlement waits for further work", async () => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; let idle!: () => void;
+		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const settlement = new Promise<void>(resolve => { idle = resolve; });
+		const wait = vi.fn(async () => settlement); const reply = vi.fn(async () => { idle(); });
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait, prompt: async () => { prompted(); }, form: { reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+			options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
+			yield { type: "form.created", data: { form: { id: "later", sessionID: "session", title: "Further work", fields: [{ key: "name", type: "string" }] } } };
+			yield { type: "session.text.delta", data: { sessionID: "session", assistantMessageID: "message", delta: "Further output" } };
+			await settlement;
+		} } });
+		const onDelta = vi.fn(); await new OpenCodeAdapter().run(task, ".", "Start", { onDelta, onSession: vi.fn(), onApproval: async () => "decline", onForm: async () => ({ name: "Answer" }) });
+		expect(wait).toHaveBeenCalledWith({ sessionID: "session" }, expect.anything()); expect(reply).toHaveBeenCalledOnce(); expect(onDelta).toHaveBeenCalledWith("message", "Further output");
+	});
+	it("rediscovers pending forms before resuming and deduplicates overlapping creation events", async () => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
+		let answer!: (value: { count: number }) => void; let prompted!: () => void; let listed!: () => void;
+		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const listing = new Promise<void>(resolve => { listed = resolve; });
+		const form = { id: "pending", sessionID: "session", title: "Recovered form", fields: [{ key: "count", type: "integer", default: 2 }] };
+		const reply = vi.fn(async () => {}); const submit = vi.fn(async () => { prompted(); });
+		sdk.make.mockReturnValue({ session: { get: async () => ({ id: "session" }), wait: async () => {}, prompt: submit, form: { list: async () => { listed(); return [form]; }, reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+			options.onActivity(); await listing; yield { type: "form.created", data: { form } };
+			yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
+			await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } };
+		} } });
+		const onForm = vi.fn(async () => new Promise<{ count: number }>(resolve => { answer = resolve; }));
+		const run = new OpenCodeAdapter().run({ ...task, nativeSessionId: "session" }, ".", "Continue", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onForm });
+		await vi.waitFor(() => expect(answer).toBeDefined()); expect(submit).not.toHaveBeenCalled(); expect(onForm).toHaveBeenCalledOnce();
+		answer({ count: 3 }); await run; expect(reply).toHaveBeenCalledWith({ sessionID: "session", formID: "pending", answer: { count: 3 } }, expect.anything()); expect(submit).toHaveBeenCalledOnce();
+	});
 	it.each([true, false])("handles native typed forms without blocking the event stream (%s)", async submit => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" });
 		let promptResolve!: () => void; const prompt = new Promise<void>(resolve => { promptResolve = resolve; });
 		let settled!: () => void; const answered = new Promise<void>(resolve => { settled = resolve; });
 		const reply = vi.fn(async () => { settled(); }); const cancel = vi.fn(async () => { settled(); });
-		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), prompt: async () => { promptResolve(); }, form: { reply, cancel } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait: async () => {}, prompt: async () => { promptResolve(); }, form: { reply, cancel } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
 			options.onActivity(); await prompt;
 			yield { type: "form.created", data: { form: { id: "ignored", sessionID: "other", title: "Other", fields: [{ key: "name", type: "string" }] } } };
 			yield { type: "form.created", data: { form: { id: "native-form", sessionID: "session", title: "Scope", fields: [{ key: "count", type: "integer", required: true }] } } };
@@ -31,7 +60,7 @@ describe("OpenCode 2 integration", () => {
 		let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
 		let replied!: () => void; const done = new Promise<void>(resolve => { replied = resolve; });
 		const reply = vi.fn().mockRejectedValueOnce({ _tag: "FormInvalidAnswerError", id: "form", message: "Use an ISO date." }).mockImplementationOnce(async () => { replied(); });
-		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), prompt: async () => { prompted(); }, form: { reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait: async () => {}, prompt: async () => { prompted(); }, form: { reply } }, event: { subscribe: async function* (options: { onActivity: () => void }) {
 			options.onActivity(); await prompt;
 			yield { type: "form.created", data: { form: { id: "form", sessionID: "session", title: "Date", fields: [{ key: "date", type: "string" }] } } };
 			await done;
@@ -56,7 +85,7 @@ describe("OpenCode 2 integration", () => {
 		const prompt = new Promise<void>(resolve => { promptResolve = resolve; });
 		const reply = vi.fn(); const fork = vi.fn(async () => ({ id: "fork" }));
 		sdk.make.mockReturnValue({
-			session: { fork, prompt: vi.fn(async () => { prompted = true; promptResolve(); }) },
+			session: { fork, wait: async () => {}, prompt: vi.fn(async () => { prompted = true; promptResolve(); }) },
 			permission: { reply },
 			event: { subscribe: async function* (options: { onActivity: () => void }) {
 				expect(prompted).toBe(false); options.onActivity(); await prompt;
