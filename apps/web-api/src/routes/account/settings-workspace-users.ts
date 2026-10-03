@@ -5,6 +5,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { keyUsageSeries } from "./keyUsageSeries";
+import { metadataForIds } from "./settings-usage";
 
 export const accountSettingsWorkspaceUsersRouter = new Hono<{ Bindings: Env }>();
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -37,7 +38,9 @@ accountSettingsWorkspaceUsersRouter.get("/workspace-users/:userId", async (c) =>
 		const value = usage.data as { requests: number; spendUsd: number; points: Array<{ date: string; requests: number; spendUsd: number }>; models: Array<{ modelId: string; requests: number; spendUsd: number }> };
 		analytics = { ...value, points: keyUsageSeries(value.points.map((point) => ({ bucket: point.date, requests: point.requests, cost: point.spendUsd })), from.toISOString(), to.toISOString()) };
 	}
-	return c.json({ profile, workspaceId: context.workspaceId, workspaceName: context.workspaceName, role: workspace.data?.owner_user_id === userId ? "owner" : member.data?.role ?? null, joinedAt: member.data?.joined_at ?? null,
+	const modelIds = Array.from(new Set([...(analytics?.models ?? []).map((model) => model.modelId), ...(logs.data ?? []).map((log) => log.model_id)].filter((id): id is string => Boolean(id))));
+	const metadata = await metadataForIds(context, { models: modelIds }).catch(() => ({ modelMetadataEntries: [] }));
+	return c.json({ profile, modelMetadataEntries: metadata.modelMetadataEntries, workspaceId: context.workspaceId, workspaceName: context.workspaceName, role: workspace.data?.owner_user_id === userId ? "owner" : member.data?.role ?? null, joinedAt: member.data?.joined_at ?? null,
 		from: from.toISOString(), to: to.toISOString(), analytics, keys: (keys.data ?? []).slice(0, PAGE_SIZE), keyCount: keys.count ?? 0, keyPage: page, hasMoreKeys: (keys.data?.length ?? 0) > PAGE_SIZE, logs: logs.error ? null : logs.data ?? [],
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });

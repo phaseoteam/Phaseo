@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/auth/requireUser", () => ({ requireUser: async () => mocks.signedIn ? { id: mocks.viewer } : null }));
 vi.mock("./workspaceUserProfile", () => ({ workspaceUserProfile: mocks.profile }));
+vi.mock("./settings-usage", () => ({ metadataForIds: async (_context: unknown, args: { models: string[] }) => ({ modelMetadataEntries: args.models.map((id) => [id, { modelName: "GPT-5", organisationId: "openai", organisationName: "OpenAI" }]) }) }));
 vi.mock("./context", () => ({ requireAccountWorkspace: async () => mocks.allowedWorkspace ? {
 	user: { id: mocks.viewer }, workspaceId: mocks.workspace, workspaceName: "Example", role: mocks.role,
 	client: { rpc: mocks.rpc, from: (table: string) => {
@@ -48,7 +49,7 @@ describe("workspace user profiles", () => {
 	it.each(["admin", "owner"])("allows %s and scopes all private reads", async (role) => {
 		mocks.role = role;
 		const response = await load(); expect(response.status).toBe(200);
-		expect(await response.json()).toMatchObject({ profile: { name: "Alice" }, analytics: { requests: 12 }, keyCount: 1 });
+		expect(await response.json()).toMatchObject({ profile: { name: "Alice" }, analytics: { requests: 12 }, keyCount: 1, modelMetadataEntries: [["model-1", { modelName: "GPT-5", organisationId: "openai" }]] });
 		expect(response.headers.get("cache-control")).toContain("no-store");
 		const keys = mocks.queries.find((query) => query.table === "keys")!;
 		expect(keys.filters).toContainEqual(["workspace_id", mocks.workspace]); expect(keys.filters).toContainEqual(["created_by", mocks.target]);

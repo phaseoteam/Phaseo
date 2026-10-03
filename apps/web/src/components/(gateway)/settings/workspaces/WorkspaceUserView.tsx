@@ -10,10 +10,12 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import { KeyUsageCharts } from "../keys/KeyUsageCharts";
 import { keyDetailHref } from "../keys/keyDetailHref";
 import type { WorkspaceUserData } from "@/lib/fetchers/internal/fetchWorkspaceUser";
+import { WorkspaceUserModelIdentity } from "./WorkspaceUserModelIdentity";
 
 export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 	const t = useTranslations("SettingsUI");
 	const format = useDisplayFormatters();
+	const modelMetadata = new Map(data.modelMetadataEntries ?? []);
 	const name = data.profile.name ?? t("oauthDetail.unknownUser");
 	const money = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 4, notation: "standard" });
 	const pageHref = (page: number) => `/settings/workspaces/users/${encodeURIComponent(data.profile.id)}?${new URLSearchParams({ workspaceId: data.workspaceId, keyPage: String(page) })}#keys`;
@@ -33,14 +35,22 @@ export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 			</> : <p className="rounded-xl border p-5 text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p>}
 		</section>
 		<section className="space-y-4"><h2 className="text-lg font-semibold">{t("workspaceUser.topModels")}</h2>
-			{data.analytics === null ? <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p> : !data.analytics.models.length ? <p className="text-sm text-muted-foreground">{t("keyDetail.noRequests")}</p> : <div className="overflow-x-auto rounded-xl border"><table className="w-full text-left text-sm"><thead className="bg-muted/40"><tr><th className="p-4">{t("strings.Model")}</th><th className="p-4 text-right">{t("oauthDetail.requests")}</th><th className="p-4 text-right">{t("keyDetail.spendUsd")}</th></tr></thead><tbody>{data.analytics.models.map((model) => <tr key={model.modelId} className="border-t"><td className="p-4 break-all">{model.modelId}</td><td className="p-4 text-right tabular-nums">{format.number(model.requests)}</td><td className="p-4 text-right tabular-nums">{money(model.spendUsd)}</td></tr>)}</tbody></table></div>}
+			{data.analytics === null ? <p className="text-sm text-muted-foreground">{t("keyDetail.usageUnavailable")}</p> : !data.analytics.models.length ? <p className="text-sm text-muted-foreground">{t("keyDetail.noRequests")}</p> : <div className="overflow-x-auto rounded-xl border bg-card">
+				<table className="w-full text-left text-sm">
+					<thead className="border-b bg-muted/30 text-xs text-muted-foreground"><tr><th className="px-5 py-3 font-medium">{t("strings.Model")}</th><th className="px-5 py-3 text-right font-medium">{t("oauthDetail.requests")}</th><th className="px-5 py-3 text-right font-medium">{t("keyDetail.spendUsd")}</th></tr></thead>
+					<tbody className="divide-y">{data.analytics.models.map((model) => <tr key={model.modelId} className="transition-colors hover:bg-muted/30">
+						<td className="px-5 py-4"><WorkspaceUserModelIdentity modelId={model.modelId} metadata={modelMetadata} /></td>
+						<td className="px-5 py-4 text-right tabular-nums">{format.number(model.requests)}</td><td className="px-5 py-4 text-right tabular-nums">{money(model.spendUsd)}</td>
+					</tr>)}</tbody>
+				</table>
+			</div>}
 		</section>
 		<section id="keys" className="scroll-mt-20 space-y-4"><h2 className="text-lg font-semibold">{t("headers.apiKeys")} <span className="text-muted-foreground">{format.number(data.keyCount)}</span></h2>
 			{!data.keys.length ? <p className="text-sm text-muted-foreground">{t("workspaceUser.noKeys")}</p> : <div className="divide-y rounded-xl border">{data.keys.map((key) => <Link key={key.id} href={keyDetailHref(key)} className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-muted/40"><div className="min-w-0"><p className="break-all font-medium">{key.name}</p><p className="text-sm text-muted-foreground">{key.prefix}… · {format.date(key.created_at)}</p></div><Badge variant="outline">{t(key.status === "active" ? "labels.enabled" : "labels.disabled")}</Badge></Link>)}</div>}
 			{(data.keyPage > 1 || data.hasMoreKeys) && <nav className="flex gap-3" aria-label={t("headers.apiKeys")}>{data.keyPage > 1 && <Button variant="outline" asChild><Link href={pageHref(data.keyPage - 1)}>{t("workspaceUser.previous")}</Link></Button>}{data.hasMoreKeys && <Button variant="outline" asChild><Link href={pageHref(data.keyPage + 1)}>{t("workspaceUser.next")}</Link></Button>}</nav>}
 		</section>
 		<section id="logs" className="scroll-mt-20 space-y-4"><h2 className="text-lg font-semibold">{t("workspaceUser.recentLogs")}</h2><p className="text-sm text-muted-foreground">{t("workspaceUser.logsScope")}</p>
-			{data.logs === null ? <p className="text-sm text-muted-foreground">{t("workspaceUser.logsUnavailable")}</p> : !data.logs.length ? <p className="text-sm text-muted-foreground">{t("workspaceUser.noLogs")}</p> : <div className="divide-y rounded-xl border">{data.logs.map((log) => <Link key={log.request_id} href={`/settings/usage/logs/requests/${encodeURIComponent(log.request_id)}?${new URLSearchParams({ workspaceId: data.workspaceId })}`} className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-muted/40"><div className="min-w-0"><p className="break-all text-sm font-medium">{log.model_id ?? t("teams.unknown")}</p><p className="text-xs text-muted-foreground">{format.dateTime(log.created_at)}</p></div><div className="flex items-center gap-3"><span className="text-sm tabular-nums">{money(Number(log.cost_nanos ?? 0) / 1e9)}</span><Badge variant="outline">{t(log.success ? "workspaceUser.success" : "workspaceUser.failed")}</Badge></div></Link>)}</div>}
+			{data.logs === null ? <p className="text-sm text-muted-foreground">{t("workspaceUser.logsUnavailable")}</p> : !data.logs.length ? <p className="text-sm text-muted-foreground">{t("workspaceUser.noLogs")}</p> : <div className="divide-y rounded-xl border">{data.logs.map((log) => <Link key={log.request_id} href={`/settings/usage/logs/requests/${encodeURIComponent(log.request_id)}?${new URLSearchParams({ workspaceId: data.workspaceId })}`} className="flex flex-wrap items-center justify-between gap-3 p-4 hover:bg-muted/40"><div className="min-w-0"><WorkspaceUserModelIdentity modelId={log.model_id} metadata={modelMetadata} linked={false} /><p className="text-xs text-muted-foreground">{format.dateTime(log.created_at)}</p></div><div className="flex items-center gap-3"><span className="text-sm tabular-nums">{money(Number(log.cost_nanos ?? 0) / 1e9)}</span><Badge variant="outline">{t(log.success ? "workspaceUser.success" : "workspaceUser.failed")}</Badge></div></Link>)}</div>}
 		</section>
 	</div>;
 }

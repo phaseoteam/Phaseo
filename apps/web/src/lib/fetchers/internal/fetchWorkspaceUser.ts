@@ -1,7 +1,9 @@
 import { getServerAccountContext } from "./serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
+import type { ModelMetadataEntry } from "@/components/(gateway)/usage/model-display";
 
 export type WorkspaceUserData = {
+	modelMetadataEntries?: Array<[string, ModelMetadataEntry]>;
 	profile: { id: string; name: string | null; avatarUrl: string | null };
 	workspaceId: string;
 	workspaceName: string;
