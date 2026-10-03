@@ -21,6 +21,7 @@ const desktopApi: PhaseoDesktopApi = {
 			return () => ipcRenderer.removeListener("workspace:terminal-event", subscription);
 		},
 		signIn: id => ipcRenderer.invoke("workspace:sign-in", id),
+		accountStatus: (harness, id) => ipcRenderer.invoke("workspace:account-status", harness, id),
 		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),
 		listFiles: (id, directory) => ipcRenderer.invoke("workspace:list-files", id, directory),
 		readFile: (id, filename) => ipcRenderer.invoke("workspace:read-file", id, filename),

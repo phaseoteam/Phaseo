@@ -27,6 +27,8 @@ export type Task = {
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
 export type ModelOption = { id: string; name: string; description?: string; default?: boolean };
+export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
+export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
 export type ProjectFile = { name: string; path: string; directory: boolean };
 export type GitFile = { path: string; oldPath?: string; indexStatus: string; worktreeStatus: string };
 export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; branch: string };
@@ -67,6 +69,7 @@ export type WorkspaceApi = {
 	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
 	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
 	signIn: (accountId: string) => Promise<Workspace>;
+	accountStatus: (harness: "codex" | "claude", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	readFile: (projectId: string, filename: string) => Promise<string>;

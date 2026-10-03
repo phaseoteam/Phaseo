@@ -1,6 +1,7 @@
 import type { Account, ModelOption } from "../shared/workspace";
 import { spawnNative } from "./nativeProcess";
 import { JsonRpc } from "./jsonRpc";
+import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 
 export async function apiModels(account: Account, key: string, fetcher: typeof fetch = fetch): Promise<ModelOption[]> {
 	if (!account.endpoint || account.kind !== "api") throw new Error("Choose an API account.");
@@ -12,7 +13,7 @@ export async function apiModels(account: Account, key: string, fetcher: typeof f
 }
 
 export async function codexModels(cwd: string, account?: Account): Promise<ModelOption[]> {
-	const child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", account?.configDirectory ? { CODEX_HOME: account.configDirectory, OPENAI_API_KEY: undefined, CODEX_API_KEY: undefined } : undefined);
+	const child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", nativeAccountEnvironment(account));
 	const rpc = new JsonRpc(child.stdout, child.stdin); child.stderr.resume();
 	child.on("error", error => rpc.close(error)); child.on("exit", () => rpc.close());
 	try {

@@ -18,6 +18,7 @@ import { gitBranches, gitCommand } from "./gitOperations";
 import { piEntries } from "./piAdapter";
 import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 import { readConversation } from "./taskImport";
+import { nativeAccountStatus } from "./accountStatus";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -28,6 +29,7 @@ let workspaceRuntime: WorkspaceRuntime;
 let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
+const accountChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
 ipcMain.handle("workspace:terminals", event => {
@@ -66,6 +68,7 @@ app.on("before-quit", event => {
 	shutdownStarted = true;
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
+	for (const controller of accountChecks.values()) controller.abort();
 	void workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }).finally(() => { shutdownComplete = true; app.quit(); });
 });
 
@@ -73,7 +76,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
 	const account = workspaceRuntime.store.get().accounts.find(value => value.id === id);
 	if (!account) throw new Error("Account no longer exists.");
-	if (signIns.has(id)) throw new Error("Sign-in is already in progress.");
+	if (signIns.has(id) || accountChecks.has(id)) throw new Error("Sign-in or an account check is already in progress.");
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
 		await signInNative(account, url => shell.openExternal(url), controller.signal);
@@ -85,6 +88,19 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
 	signIns.get(id)?.abort();
+});
+ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
+	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
+	const account = id ? workspaceRuntime.store.get().accounts.find(value => value.id === id && value.harness === harness && value.kind === "native") : undefined;
+	if (id && !account) throw new Error("Account no longer exists.");
+	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
+	const controller = new AbortController(); accountChecks.set(key, controller);
+	try {
+		const status = await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+		if (shutdownStarted) throw new Error("The workspace is shutting down.");
+		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.get()); } }
+		return status;
+	} finally { accountChecks.delete(key); }
 });
 
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {

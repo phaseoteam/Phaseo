@@ -1,6 +1,7 @@
 import type { Account } from "../shared/workspace";
 import { JsonRpc } from "./jsonRpc";
 import { spawnNative } from "./nativeProcess";
+import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 
 export function isNativeAuthUrl(value: string): boolean {
 	try {
@@ -15,7 +16,7 @@ export async function signInNative(account: Account, openUrl: (url: string) => P
 	if (!isCodex && account.harness !== "claude") throw new Error("Sign-in is unavailable for this harness.");
 	const child = await spawnNative(isCodex ? "codex" : "claude", isCodex ? ["app-server", "--stdio"] : ["auth", "login"], account.configDirectory,
 		isCodex ? "@openai/codex/bin/codex.js" : undefined,
-		isCodex ? { CODEX_HOME: account.configDirectory, OPENAI_API_KEY: undefined, CODEX_API_KEY: undefined } : { CLAUDE_CONFIG_DIR: account.configDirectory, ANTHROPIC_API_KEY: undefined, ANTHROPIC_AUTH_TOKEN: undefined, ANTHROPIC_BASE_URL: undefined });
+		nativeAccountEnvironment(account));
 	const cancel = () => child.kill(); signal.addEventListener("abort", cancel, { once: true });
 	child.stderr.resume();
 	const deadline = setTimeout(cancel, 10 * 60 * 1000);

@@ -6,6 +6,7 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 
 type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -16,7 +17,7 @@ export class CodexAdapter implements AgentAdapter {
 	private rejectTurn?: (error: Error) => void;
 	private canceled = false;
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
-		this.child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", account?.configDirectory ? { CODEX_HOME: account.configDirectory, OPENAI_API_KEY: undefined, CODEX_API_KEY: undefined } : undefined);
+		this.child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", nativeAccountEnvironment(account));
 		if (this.canceled) { this.child.kill(); throw new Error("Task stopped."); }
 		const rpc = this.rpc = new JsonRpc(this.child.stdout, this.child.stdin);
 		rpc.onClose = error => this.rejectTurn?.(error);

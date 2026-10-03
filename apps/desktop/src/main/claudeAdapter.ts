@@ -1,6 +1,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { Account, Task } from "../shared/workspace";
+import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { resolveNativeCommand } from "./nativeProcess";
 import type { AttachmentContent } from "./attachments";
@@ -15,7 +16,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		async function* prompt(): AsyncGenerator<SDKUserMessage> { yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
 		const execution = query({ prompt: images.length ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
-			...(account?.configDirectory ? { env: { ...process.env, CLAUDE_CONFIG_DIR: account.configDirectory, ANTHROPIC_API_KEY: undefined, ANTHROPIC_AUTH_TOKEN: undefined, ANTHROPIC_BASE_URL: undefined } } : {}),
+			...(account?.configDirectory ? { env: { ...process.env, ...nativeAccountEnvironment(account) } } : {}),
 			pathToClaudeCodeExecutable: command.executable,
 			abortController: this.controller,
 			...(task.model === "default" ? {} : { model: task.model }),

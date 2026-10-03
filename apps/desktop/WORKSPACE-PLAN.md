@@ -65,7 +65,7 @@ interactive terminal sign-in remains a gap.
 OpenCode session forms support typed values, conditional/default fields,
 explicit external acknowledgements, cancellation and native validation retries.
 Provider-defined patterns are validated by OpenCode rather than evaluated in
-Electron's main process. Pending form rediscovery after reconnect remains a gap.
+Electron's main process. Resumed sessions rediscover pending forms.
 Phaseo Code/Plan currently accepts text documents; images require Chat or a
 vision-capable native harness. PDF OCR is not implemented.
 
@@ -92,8 +92,13 @@ project paths are excluded. JSON import restores messages and original files int
 a fresh task with the selected harness/account/project. It revalidates file bytes,
 regenerates attachment/message IDs and commits task/file references together;
 importing never starts execution or carries native runtime configuration.
+Native account checks read Codex app-server account/limits and Claude's documented
+`auth status` command. Quota windows preserve unavailable values and backend usage
+permission; percentages never imply permission to resume. Selected Claude profiles
+clear inherited OAuth/API tokens and provider billing flags across sign-in/status/run.
+Source: https://code.claude.com/docs/en/cli-reference.
 
-Evidence: desktop lint/typecheck/build pass; 114 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 123 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
@@ -105,7 +110,10 @@ verify that agent_end does not finish a task and compaction must settle first.
 An isolated OpenCode v2.0.22 binary check verified concurrent service startup,
 session creation, typed form validation/replies/cancellation and process shutdown,
 with zero inference calls. Its model catalog was empty because the test profile
-had no connected providers. Live paid inference and real provider login
+had no connected providers. Installed Codex and Claude status commands returned
+signed-out state for fresh isolated profiles with zero inference calls. Account
+quota rendering uses protocol-shaped fixtures; real signed-in quota reads remain
+unverified. Live paid inference and real provider login
 have not been exercised. Broad ledger items stay unchecked until all their parts
 have runtime and UI coverage. The desktop smoke command is `pnpm --filter
 @phaseo/desktop test:desktop`; it uses a fresh temporary user-data directory.

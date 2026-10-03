@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -196,6 +196,19 @@ app.whenReady().then(async () => {
 			await new Promise(resolve=>setTimeout(resolve,100)); if (!document.querySelector('.task-message')?.textContent.includes('Export conversation fixture')) throw new Error('Imported conversation did not render');
 		})()`);
 		result.imports = true;
+		// Quota rendering uses a protocol-shaped fixture; native read commands have
+		// separate transport tests and isolated installed-CLI verification.
+		ipcMain.removeHandler("workspace:account-status");
+		ipcMain.handle("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: true, plan: "pro", identity: "fixture@example.invalid", ordinaryUsageAllowed: false, usage: [{ id: "codex", name: "Codex", primary: { usedPercent: 25, windowDurationMins: 300, resetsAt: null }, secondary: null, spendControlReached: null }] }));
+		await window.webContents.executeJavaScript(`(async () => {
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Accounts').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Codex local login')); if (!row) throw new Error('Native account status control missing');
+			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Check status').click();
+			for(let attempt=0;attempt<30 && !row.textContent.includes('75% remaining');attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			if (!row.textContent.includes('75% remaining') || !row.textContent.includes('Included usage is blocked.') || !row.textContent.includes('Secondary window: unavailable')) throw new Error('Account quota fixture did not render');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
+		})()`);
+		result.accountStatus = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);
