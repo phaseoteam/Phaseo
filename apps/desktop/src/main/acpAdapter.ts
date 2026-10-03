@@ -26,10 +26,12 @@ export class AcpAdapter implements AgentAdapter {
 	private cancelled = false;
 	private readonly controller = new AbortController();
 	private terminals?: AcpTerminals;
-	constructor(private readonly agent: AgentConnection, private readonly mcp: McpConnection[] = []) {}
+	private grok = false;
+	constructor(private readonly agent: AgentConnection, private readonly mcp: McpConnection[] = [], private readonly environment?: NodeJS.ProcessEnv) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
-		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
+		this.grok = task.harness === "grok";
+		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", ...this.environment } }); child.stderr.resume();
 		let receiving = false; let promptSubmitted = false; let modesViaConfig = false; let nativeModes: ReturnType<typeof acpModes> = [];
 		const tools = new Map<string, ToolCallUpdate>();
 		const completion = new GrokCompletion();
@@ -100,7 +102,7 @@ export class AcpAdapter implements AgentAdapter {
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
 		const startup = setTimeout(() => connection.close(new Error("ACP initialization timed out.")), 30000);
 		try {
-			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) } } });
+			const initialized = await connection.agent.request("initialize", { protocolVersion: PROTOCOL_VERSION, clientInfo: { name: "phaseo-desktop", version: "0.1.0" }, ...(this.grok ? { _meta: { clientType: "extension" } } : {}), clientCapabilities: { fs: { readTextFile: task.mode !== "chat", writeTextFile: task.mode === "code" }, terminal: task.mode === "code", auth: { terminal: Boolean(callbacks.onTerminalAuth) } } });
 			clearTimeout(startup);
 			if (initialized.protocolVersion !== PROTOCOL_VERSION) throw new Error("This agent uses an unsupported ACP protocol version.");
 			const servers = task.mode === "chat" ? [] : this.mcp;
@@ -188,7 +190,7 @@ export class AcpAdapter implements AgentAdapter {
 	async cancel() {
 		this.cancelled = true;
 		this.controller.abort();
-		try { if (this.connection && this.sessionId) await this.connection.agent.notify("session/cancel", { sessionId: this.sessionId }); }
+		try { if (this.connection && this.sessionId) await this.connection.agent.notify("session/cancel", { sessionId: this.sessionId, ...(this.grok ? { _meta: { cancelTrigger: "ctrl_c" } } : {}) }); }
 		catch { /* Prompt cancellation can close the connection before the notification flushes. */ }
 		finally { this.connection?.close(new Error("Task stopped.")); this.child?.kill(); await this.terminals?.close(); }
 	}

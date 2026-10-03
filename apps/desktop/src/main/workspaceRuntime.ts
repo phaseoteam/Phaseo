@@ -24,6 +24,7 @@ import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { GrokAdapter } from "./grokAdapter";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -33,6 +34,7 @@ function createAdapter(harness: Harness, agent?: AgentConnection, openCode?: Ope
 	if (harness === "claude") return new ClaudeAdapter(active);
 	if (harness === "opencode") return new OpenCodeAdapter(openCode ? signal => openCode.connect(signal) : undefined, mcp, openCode?.mcp);
 	if (harness === "pi") return new PiAdapter();
+	if (harness === "grok") return new GrokAdapter(active);
 	if (harness === "acp" && agent) return new AcpAdapter(agent, active);
 	throw new Error(`${harness} execution is not connected yet. Your message remains queued.`);
 }
