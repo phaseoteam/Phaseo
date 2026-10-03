@@ -38,7 +38,9 @@ export function formAnswerError(form: AgentForm, answer: FormAnswer): string | u
 			if (field.options && !field.custom && !field.options.some(option => option.value === value)) return `Choose an option for ${label}.`;
 			if (field.format === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return `Enter an email address for ${label}.`;
 			if (field.format === "uri" && !URL.canParse(value)) return `Enter a URI for ${label}.`;
-			// Native services validate their own patterns and date formats. Do not
+			if (field.format === "date" && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(`${value}T00:00:00Z`)) || new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) !== value)) return `Enter a date for ${label}.`;
+			if (field.format === "date-time" && (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(value) || !Number.isFinite(Date.parse(value)))) return `Enter a date and time for ${label}.`;
+			// Native services validate their own patterns. Do not
 			// execute provider-supplied regular expressions in Electron's main process.
 		} else if (field.type === "number" || field.type === "integer") {
 			if (typeof value !== "number" || !Number.isFinite(value) || (field.type === "integer" && !Number.isInteger(value)) || (field.minimum !== undefined && value < field.minimum) || (field.maximum !== undefined && value > field.maximum)) return `Enter a valid ${field.type} for ${label}.`;

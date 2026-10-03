@@ -11,6 +11,12 @@ const form: AgentForm = { id: "form", title: "Scope", fields: [
 	{ key: "choices", type: "multiselect", required: true, maxItems: 2, options: [{ value: "a", label: "A" }, { value: "b", label: "B" }] },
 ] };
 describe("typed agent forms", () => {
+	it("validates calendar dates and complete timestamp formats", () => {
+		const dates: AgentForm = { id: "dates", title: "Dates", fields: [{ key: "date", type: "string", format: "date" }, { key: "time", type: "string", format: "date-time" }] };
+		expect(formAnswerError(dates, { date: "2026-10-03", time: "2026-10-03T15:00:00+01:00" })).toBeUndefined();
+		expect(formAnswerError(dates, { date: "2026-02-31" })).toContain("date");
+		expect(formAnswerError(dates, { time: "tomorrow" })).toContain("date and time");
+	});
 	it("applies active defaults and cascades visibility without sending inactive answers", () => {
 		expect(collectFormAnswer(form, { count: 4, details: "Ignored", choices: ["a"] })).toEqual({ enabled: false, profile: "local", choices: ["a"] });
 		expect(collectFormAnswer(form, { enabled: true, choices: ["a"] })).toEqual({ enabled: true, count: 2, profile: "local", choices: ["a"] });

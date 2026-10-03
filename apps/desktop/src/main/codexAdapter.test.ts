@@ -26,6 +26,24 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it("answers MCP forms for the exact native thread and rejects foreign requests", async () => {
+		let finish: (() => void) | undefined; const replies: unknown[] = [];
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") {
+				send({ id: packet.id, result: { turn: { id: "turn" } } });
+				for (const threadId of ["native", "foreign"]) send({ id: threadId, method: "mcpServer/elicitation/request", params: { threadId, serverName: "Fixture", message: "Scope", mode: "form", requestedSchema: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } } });
+				finish = () => send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } });
+			}
+			if (["native", "foreign"].includes(String(packet.id))) replies.push(packet);
+		});
+		const onForm = vi.fn().mockResolvedValue({ name: "Small" }); const execution = new CodexAdapter().run(task, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onForm });
+		await vi.waitFor(() => expect(replies).toHaveLength(2));
+		expect(replies).toContainEqual(expect.objectContaining({ id: "native", result: { action: "accept", content: { name: "Small" }, _meta: null } }));
+		expect(replies).toContainEqual(expect.objectContaining({ id: "foreign", error: expect.objectContaining({ message: "MCP request belongs to another task." }) }));
+		expect(onForm).toHaveBeenCalledOnce(); finish!(); await execution;
+	});
 	it.each(["start", "resume", "fork"])("configures MCP before submitting a %s turn", async operation => {
 		const connection: McpConnection = { id: "12345678-1234-1234-1234-123456789abc", name: "Fixture", enabled: true, transport: "http", url: "https://example.com/mcp" }; const methods: string[] = [];
 		fixture((packet, send) => {

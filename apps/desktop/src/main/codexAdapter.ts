@@ -10,6 +10,7 @@ import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
 import { readCodexModels } from "./modelCatalog";
 import type { McpConnection } from "../shared/mcp";
 import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
+import { respondMcpElicitation } from "./mcpElicitation";
 
 type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -31,6 +32,12 @@ export class CodexAdapter implements AgentAdapter {
 		// Consume diagnostics without sending credentials or arbitrary stderr to the renderer.
 		this.child.stderr.resume();
 		rpc.onRequest = async (method, params) => {
+			if (method === "mcpServer/elicitation/request") {
+				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string };
+				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
+				const result = task.mode === "chat" ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
+				return { ...result, content: "content" in result ? result.content : null, _meta: null };
+			}
 			if (method === "item/tool/requestUserInput") {
 				if (!callbacks.onQuestion) throw new Error("User questions are unavailable.");
 				const input = params as { threadId: string; questions: AgentQuestion[] };

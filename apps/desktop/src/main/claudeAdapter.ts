@@ -9,6 +9,7 @@ import { attachmentPrompt } from "./attachmentPrompt";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { waitClaudeMcp } from "./claudeMcp";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { respondMcpElicitation } from "./mcpElicitation";
 
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
@@ -32,6 +33,7 @@ export class ClaudeAdapter implements AgentAdapter {
 			permissionMode: task.mode === "plan" ? "plan" : "default",
 			...(task.mode === "chat" ? { tools: [] } : {}),
 			includePartialMessages: true,
+			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
 			settingSources: ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {
 				if (task.mode === "chat") return { behavior: "deny", message: "Tools are unavailable in Chat mode." };

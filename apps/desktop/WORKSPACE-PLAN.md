@@ -130,13 +130,20 @@ connections through new/load/fork and checks HTTP support before opening session
 Phaseo/Pi managed MCP, custom encrypted MCP credentials, OAuth management,
 catalog browsing and native plugin/skill controls remain outstanding.
 
+Codex and Claude MCP elicitations use the existing typed form UI for primitive
+fields, standard titled/single/multiple choices and HTTPS external verification.
+Unsupported schemas decline explicitly, cancellation reaches the native response,
+and Codex rejects requests belonging to another thread. Owned local server checks
+confirmed accepted form responses through both installed native engines with zero
+prompts or inference calls. Provider-specific verification modes remain outstanding.
+
 ACP agent profiles support editing, archival and restoration. Connection checks
 initialize the configured native process without creating sessions or advertising
 host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
 
-Evidence: desktop lint/typecheck/build pass; 164 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 173 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

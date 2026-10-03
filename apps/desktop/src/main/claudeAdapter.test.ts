@@ -8,6 +8,16 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
+	it.each(["chat", "code"] as const)("routes MCP user forms through the SDK callback (%s)", async mode => {
+		const onForm = vi.fn().mockResolvedValue({ name: "Small" });
+		sdk.query.mockImplementation(({ options }) => Object.assign((async function* () {
+			const result = await options.onElicitation({ serverName: "Fixture", message: "Scope", mode: "form", requestedSchema: { type: "object", properties: { name: { type: "string" } }, required: ["name"] } }, { signal: new AbortController().signal, requestId: "native-request" });
+			expect(result).toEqual(mode === "chat" ? { action: "decline" } : { action: "accept", content: { name: "Small" } });
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		await new ClaudeAdapter().run({ ...task, mode }, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onForm });
+		expect(onForm).toHaveBeenCalledTimes(mode === "chat" ? 0 : 1);
+	});
 	it.each(["chat", "code"] as const)("applies managed MCP connections with native tool permissions (%s)", async mode => {
 		const server: McpConnection = { id: "00000000-0000-4000-8000-000000000001", name: "Fixture", enabled: true, transport: "stdio", executable: process.execPath, arguments: ["fixture.mjs"] }; const onApproval = vi.fn(async () => "decline" as const);
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () { if (typeof prompt !== "string") for await (const message of prompt) expect(message.message.content).toEqual([{type:"text",text:"Use tools"}]); expect(options.mcpServers).toEqual(mode === "chat" ? {} : { [nativeMcpName(server)]: { command: process.execPath, args: ["fixture.mjs"], env: { ELECTRON_RUN_AS_NODE: "1" } } }); const decision = await options.canUseTool(`mcp__${nativeMcpName(server)}__fixture`, {}); expect(decision.behavior).toBe("deny"); if (mode === "chat") { expect(options.strictMcpConfig).toBe(true); expect(onApproval).not.toHaveBeenCalled(); } else expect(onApproval).toHaveBeenCalledOnce(); yield {type:"result",subtype:"success",is_error:false,result:"Done"}; })(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(server), status: "connected" }] }));
