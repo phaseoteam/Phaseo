@@ -54,6 +54,8 @@ function isRetiredBlogPath(pathname: string): boolean {
 }
 
 function isRouteHandlerPath(pathname: string): boolean {
+	// Key names are arbitrary text, including URLs ending in asset extensions.
+	if (withoutLocalePrefix(pathname).startsWith("/settings/keys/")) return false;
 	return (
 		pathname === "/robots.txt" ||
 		pathname === "/indexnow-key.txt" ||
@@ -220,6 +222,8 @@ export const config = {
 		"/api/account/:path*",
 		"/api/internal/:path*",
 		"/api/chat/:path*",
+		"/settings/keys/:path*",
+		"/:locale/settings/keys/:path*",
 		"/((?!api/|_next/|\\.well-known/|og/|.*\\.(?:avif|bmp|css|eot|gif|ico|jpe?g|js|json|map|mjs|mp3|mp4|ogg|otf|pdf|png|svg|ttf|txt|wasm|webmanifest|webp|woff2?|xml|zip)$).*)",
 	],
 };
