@@ -15,6 +15,7 @@ export type AgentQuestion = { id: string; header: string; question: string; isOt
 export type Task = {
 	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;
 	agentId?: string;
+	reasoningEffort?: string;
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
@@ -27,7 +28,7 @@ export type Task = {
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
-export type ModelOption = { id: string; name: string; description?: string; default?: boolean };
+export type ModelOption = { id: string; name: string; description?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
 export type ProjectFile = { name: string; path: string; directory: boolean };
@@ -44,7 +45,7 @@ export type WorkspaceCommand =
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"] }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string }
 	| { type: "send"; id: string; text: string; attachments?: string[] }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -134,6 +135,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "update-task":
 				string("title", false, 200);
 				string("model", false);
+				if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
 				break;

@@ -7,6 +7,14 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("existing conversation settings", () => {
+	it("resets model-specific effort when models change and scopes controls to Codex", () => {
+		const store = new WorkspaceStore(":memory:"); try {
+			const task = store.apply({ type: "create-task", harness: "codex", model: "first", mode: "chat" }); store.apply({ type: "update-task", id: task.id, reasoningEffort: "high" }); expect(store.getTask(task.id).reasoningEffort).toBe("high");
+			store.apply({ type: "update-task", id: task.id, model: "second" }); expect(store.getTask(task.id).reasoningEffort).toBe(""); const fork=store.apply({type:"fork",id:task.id}); expect(fork.reasoningEffort).toBe("");
+			const claude=store.apply({type:"create-task",harness:"claude",model:"default",mode:"chat"}); expect(()=>store.apply({type:"update-task",id:claude.id,reasoningEffort:"high"})).toThrow("does not expose");
+			for(const reasoningEffort of [42,"x".repeat(101),"bad\0value"]) expect(()=>validateCommand({type:"update-task",id:task.id,reasoningEffort})).toThrow();
+		} finally { store.close(); }
+	});
 	it("uses changed settings on the next turn while preserving native identity and blocking active changes", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-task-settings-")); let release!: () => void; const turn = new Promise<void>(resolve => { release = resolve; });
 		const run = vi.fn(async () => { await turn; }); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { release(); } }));

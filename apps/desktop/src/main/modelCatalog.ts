@@ -18,16 +18,24 @@ export async function codexModels(cwd: string, account?: Account): Promise<Model
 	child.on("error", error => rpc.close(error)); child.on("exit", () => rpc.close());
 	try {
 		await rpc.request("initialize", { clientInfo: { name: "phaseo_desktop", title: "Phaseo", version: "0.1.0" }, capabilities: { experimentalApi: true } }); rpc.notify("initialized");
-		const models: ModelOption[] = []; let cursor: string | null = null;
-		const seen = new Set<string>();
-		do {
-			const page: { data: { model: string; displayName: string; description: string; hidden: boolean; isDefault: boolean }[]; nextCursor: string | null } = await rpc.request("model/list", { cursor, limit: 100 });
-			models.push(...page.data.filter(model => !model.hidden).map(model => ({ id: model.model, name: model.displayName, description: model.description, default: model.isDefault })));
-			cursor = page.nextCursor;
-			if (cursor && seen.has(cursor)) throw new Error("Model catalog repeated a page.");
-			if (cursor) seen.add(cursor);
-			if (models.length > 10000) throw new Error("Model catalog exceeded the limit.");
-		} while (cursor);
-		return models;
+		return await readCodexModels(rpc);
 	} finally { rpc.close(); child.kill(); }
+}
+
+export async function readCodexModels(rpc: Pick<JsonRpc, "request">): Promise<ModelOption[]> {
+	const models: ModelOption[] = []; let cursor: string | null = null;
+	const seen = new Set<string>();
+	do {
+		const page: { data: { model: string; displayName: string; description: string; hidden: boolean; isDefault: boolean; supportedReasoningEfforts?: { reasoningEffort: string; description: string }[]; defaultReasoningEffort?: string }[]; nextCursor: string | null } = await rpc.request("model/list", { cursor, limit: 100 });
+		models.push(...page.data.filter(model => !model.hidden).map(model => ({
+			id: model.model, name: model.displayName, description: model.description, default: model.isDefault,
+			reasoningEfforts: model.supportedReasoningEfforts?.filter(option => typeof option.reasoningEffort === "string" && option.reasoningEffort.length > 0 && option.reasoningEffort.length <= 100).slice(0, 100).map(option => ({ id: option.reasoningEffort, description: typeof option.description === "string" ? option.description.slice(0, 2000) : "" })),
+			defaultReasoningEffort: typeof model.defaultReasoningEffort === "string" && model.defaultReasoningEffort.length <= 100 ? model.defaultReasoningEffort : undefined,
+		})));
+		cursor = page.nextCursor;
+		if (cursor && seen.has(cursor)) throw new Error("Model catalog repeated a page.");
+		if (cursor) seen.add(cursor);
+		if (models.length > 10000) throw new Error("Model catalog exceeded the limit.");
+	} while (cursor);
+	return models;
 }

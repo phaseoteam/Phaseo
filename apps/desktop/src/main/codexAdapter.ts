@@ -7,6 +7,7 @@ import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
+import { readCodexModels } from "./modelCatalog";
 
 type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -43,6 +44,12 @@ export class CodexAdapter implements AgentAdapter {
 		try {
 			await rpc.request("initialize", { clientInfo: { name: "phaseo_desktop", title: "Phaseo", version: "0.1.0" }, capabilities: { experimentalApi: true } });
 			rpc.notify("initialized");
+			let effort = task.reasoningEffort;
+			if (effort !== undefined) {
+				const models = await readCodexModels(rpc); const model = models.find(value => task.model === "default" ? value.default : value.id === task.model);
+				effort ||= model?.defaultReasoningEffort;
+				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new Error("The selected model does not support this reasoning effort. Update the task settings.");
+			}
 			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: "untrusted", sandbox: task.mode === "code" ? "workspace-write" : "read-only" };
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
@@ -69,6 +76,7 @@ export class CodexAdapter implements AgentAdapter {
 				};
 				void rpc.request<{ turn: { id: string } }>("turn/start", {
 					threadId: this.threadId,
+					effort: effort ?? null,
 					input: [{ type: "text", text: attachmentPrompt(text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
 				}).then(response => { if (this.rejectTurn) this.turnId = response.turn.id; }, reject);
 			});

@@ -251,14 +251,19 @@ app.whenReady().then(async () => {
 		})()`);
 		if (readFileSync(agentRequests, "utf8").trim() !== "initialize") throw new Error("ACP connection check created a session or attempted inference");
 		result.agentManagement = true;
+		// Reasoning selectors use a catalog fixture; adapter validation and a
+		// fresh installed-Codex catalog check provide separate native evidence.
+		ipcMain.removeHandler("workspace:models");
+		ipcMain.handle("workspace:models", () => [{ id: "fixture-model", name: "Fixture model", default: true, defaultReasoningEffort: "low", reasoningEfforts: [{ id: "low", description: "Fixture low" }, { id: "high", description: "Fixture high" }] }]);
 		await window.webContents.executeJavaScript(`(async () => {
 			const task=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id!==${JSON.stringify(fixtureTask.id)});
 			Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Task settings').click(); await new Promise(resolve=>setTimeout(resolve,100));
 			const form=document.querySelector('[aria-label="Task settings"]'); if(!form) throw new Error('Task settings missing');
 			const model=form.querySelector('[aria-label="Task model"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'fixture-model'); model.dispatchEvent(new Event('input',{bubbles:true}));
-			const mode=form.querySelector('[aria-label="Task mode"]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(mode,'plan'); mode.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100)); form.requestSubmit();
+			const mode=form.querySelector('[aria-label="Task mode"]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(mode,'plan'); mode.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100));
+			const effort=form.querySelector('[aria-label="Reasoning effort"]'); if(!Array.from(effort.options).some(value=>value.value==='high')) throw new Error('Native reasoning choices missing'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(effort,'high'); effort.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100)); form.requestSubmit();
 			for(let attempt=0;attempt<30 && document.querySelector('[aria-label="Task settings"]');attempt++) await new Promise(resolve=>setTimeout(resolve,100));
-			const updated=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===task.id); if(updated.model!=='fixture-model' || updated.mode!=='plan' || updated.messages[0].text!=='Export conversation fixture' || updated.status!=='idle') throw new Error('Conversation settings changed history or started execution');
+			const updated=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===task.id); if(updated.model!=='fixture-model' || updated.mode!=='plan' || updated.reasoningEffort!=='high' || updated.messages[0].text!=='Export conversation fixture' || updated.status!=='idle') throw new Error('Conversation settings changed history or started execution');
 		})()`);
 		result.taskSettings = true;
 		const secondInstance = path.join(data, "second-instance.mjs");

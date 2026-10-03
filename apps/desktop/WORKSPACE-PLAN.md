@@ -110,6 +110,12 @@ history and native session identity and never start execution by themselves;
 active/shutting-down turns block edits. OpenCode resumes and forks reapply native
 agent selection and explicit tool permissions before prompting. The isolated V2
 binary verified native agent/permission changes without inference.
+Codex task settings expose each model's native reasoning options and validate
+selected efforts before starting a turn. Returning to Default resolves the native
+model default, and changing models clears the previous model's effort selection.
+An isolated installed-Codex catalog returned eight models with reasoning options
+and a reported default, without signing in or running inference. Other harness
+reasoning controls remain outstanding.
 
 ACP agent profiles support editing, archival and restoration. Connection checks
 initialize the configured native process without creating sessions or advertising
@@ -117,7 +123,7 @@ host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
 
-Evidence: desktop lint/typecheck/build pass; 137 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 142 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

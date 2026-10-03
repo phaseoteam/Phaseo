@@ -96,12 +96,15 @@ export class WorkspaceStore {
 		const task = this.getTask(command.id);
 		switch (command.type) {
 			case "update-task":
-				if (command.model !== undefined || command.mode !== undefined) {
+				if (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before changing its model or mode.");
 					if (task.archived) throw new Error("Restore this task before changing its settings.");
 					if (task.harness === "phaseo" && command.model === "default") throw new Error("Choose a model for the Phaseo harness.");
+					if (command.reasoningEffort && task.harness !== "codex") throw new Error("This harness does not expose reasoning effort in the desktop yet.");
+					if (command.model !== undefined && command.model !== task.model) task.reasoningEffort = task.harness === "codex" ? "" : undefined;
 					if (command.model !== undefined) task.model = command.model;
 					if (command.mode !== undefined) task.mode = command.mode;
+					if (command.reasoningEffort !== undefined) task.reasoningEffort = command.reasoningEffort;
 				}
 				if (command.title !== undefined) task.title = command.title;
 				if (command.pinned !== undefined) task.pinned = command.pinned;

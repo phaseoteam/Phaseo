@@ -24,6 +24,11 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it.each(["supported", "unsupported", ""])("validates model-specific reasoning before execution (%s)", async effort => {
+		const methods: string[] = [];
+		fixture((packet, send) => { methods.push(packet.method); if(packet.method==="initialize") send({id:packet.id,result:{}}); if(packet.method==="model/list") send({id:packet.id,result:{data:[{model:"default-model",displayName:"Model",isDefault:true,defaultReasoningEffort:"supported",supportedReasoningEfforts:[{reasoningEffort:"supported",description:"Native option"}]}],nextCursor:null}}); if(packet.method==="thread/start") send({id:packet.id,result:{thread:{id:"native"}}}); if(packet.method==="turn/start") {expect(packet.params.effort).toBe("supported");send({id:packet.id,result:{turn:{id:"turn"}}});send({method:"turn/completed",params:{threadId:"native",turn:{id:"turn",status:"completed"}}});} });
+		const run=new CodexAdapter().run({...task,reasoningEffort:effort},".","Start",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"}); if(effort!=="unsupported") await run; else {await expect(run).rejects.toThrow("does not support");expect(methods).not.toContain("turn/start");expect(methods).not.toContain("thread/start");}
+	});
 	it("rejects steering precondition errors and approvals for unrelated threads", async () => {
 		let complete: (() => void) | undefined; let response: unknown;
 		fixture((packet, send) => {
