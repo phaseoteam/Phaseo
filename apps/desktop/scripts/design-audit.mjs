@@ -12,6 +12,10 @@ const seed = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
 seed.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const now = new Date().toISOString();
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-example", JSON.stringify({ id: "design-example", title: "Plan the product launch", harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: true, archived: false, queue: [], createdAt: now, updatedAt: now, messages: [{ id: "u", role: "user", text: "Help me plan the launch of our desktop workspace.", createdAt: now }, { id: "a", role: "assistant", text: "## Launch priorities\n\nStart with a clear promise: one workspace for your accounts, models, and everyday work.\n\n1. Validate the core task workflow with a small group.\n2. Prepare examples for research, writing, and coding.\n3. Gather feedback before expanding access.\n\nWe can turn these priorities into a weekly plan next.", createdAt: now }] }));
+seed.exec("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+seed.prepare("INSERT INTO agents VALUES (?, ?)").run("design-agent", JSON.stringify({ id: "design-agent", name: "Design fixture", executable: process.execPath, arguments: [path.resolve("scripts/fixtures/grok-interaction.cjs")] }));
+const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 seed.close();
 await import("../dist/main/index.mjs");
 app.whenReady().then(async () => {
@@ -55,6 +59,20 @@ try {
           await window.webContents.executeJavaScript(`document.querySelector('.task-row').click()`);
           await new Promise(resolve => setTimeout(resolve, 200));
           writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
+          for (let attempt = 0; ; attempt++) {
+            if (await window.webContents.executeJavaScript(`Boolean(document.querySelector('form.task-settings'))`)) break;
+            if (attempt > 50) throw new Error("Conversation settings did not render.");
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          const settingsLayout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form.task-settings'),s=getComputedStyle(form),r=form.getBoundingClientRect();return {padding:s.padding,width:r.width,height:r.height,title:document.querySelector('.task-title').value}})()`);
+          if (settingsLayout.padding !== "24px" || settingsLayout.height < 100 || settingsLayout.title !== "Review workspace plan") throw new Error("Conversation settings layout did not settle.");
+          writeFileSync(path.join(output, `${width}-${theme}-conversation-settings.json`), JSON.stringify(settingsLayout, null, 2));
+          writeFileSync(path.join(output, `${width}-${theme}-conversation-settings.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
         }
       }
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);

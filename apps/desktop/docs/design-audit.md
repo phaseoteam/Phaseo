@@ -1,6 +1,6 @@
 # Desktop design review
 
-Reviewed 3 October 2026 against the live Phaseo Models and Chat layouts and the web application's existing fonts, logo, palette, buttons and inputs. Screenshots use a separate local profile with one sample conversation and no connected accounts or inference calls.
+Reviewed against the live Phaseo Models and Chat layouts and the web application's existing fonts, logo, palette, buttons and inputs. Updated 4 October 2026. Screenshots use a separate local profile with sample conversations and native configuration fixtures, with no connected accounts or inference calls.
 
 ## Flow and findings
 
@@ -15,6 +15,7 @@ Reviewed 3 October 2026 against the live Phaseo Models and Chat layouts and the 
 9. **Settings:** use aligned preference rows with separate labels and helper text; indicate the current page in navigation.
 10. **Inbox:** use the same headings, list padding and readable empty-state text.
 11. **Platform:** replace the decorative marketing hero and unverified readiness/health badges with concise links to the existing web tools.
+12. **Conversation settings:** inset the model, reasoning and mode controls by 24 pixels, matching the toolbar and composer. Capture both window sizes and themes after the rendered frame settles.
 
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
@@ -26,10 +27,12 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
 
+![Conversation settings at minimum window size](screenshots/conversation-settings-small-window.png)
+
 ![Platform](screenshots/platform.png)
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing. It covers ten pages plus the sample conversation at 1440×920 and 1040×680 in light and dark modes.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 48 screenshots.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
