@@ -137,7 +137,7 @@ export function Sidebar({
 			</nav>
 
 			<div className="sidebar-footer">
-				<button className="sidebar-item" type="button" title={collapsed ? "Settings" : undefined}>
+				<button className="sidebar-item" type="button" onClick={() => onItemChange("settings")} title={collapsed ? "Settings" : undefined}>
 					<Settings size={16} strokeWidth={1.8} />
 					{collapsed ? null : <span>Settings</span>}
 				</button>

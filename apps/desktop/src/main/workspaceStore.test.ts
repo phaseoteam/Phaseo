@@ -6,6 +6,15 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+	it("retains notification settings after restart and rejects invalid updates", () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
+		try {
+			expect(store.getPreferences()).toEqual({ notifications: "off", notificationTitles: false });
+			store.savePreferences({ notifications: "attention", notificationTitles: true }); store.close(); store = new WorkspaceStore(filename);
+			expect(store.getPreferences()).toEqual({ notifications: "attention", notificationTitles: true });
+			expect(() => store.savePreferences({ notifications: ["all"] } as never)).toThrow(); expect(store.getPreferences().notifications).toBe("attention");
+		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("acknowledges only the reviewed inbox revision without changing task order or execution", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

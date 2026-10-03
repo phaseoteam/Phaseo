@@ -1,5 +1,6 @@
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
+import type { WorkspacePreferences } from "./preferences";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -67,6 +68,9 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
+	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
+	onOpenTask: (listener: (taskId?: string) => void) => () => void;
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<Workspace>;
 	chooseProject: () => Promise<Workspace>;
@@ -175,7 +179,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || !values.length || values.length > 100 || values.some(value => typeof value !== "string" || !value.trim() || value.length > 10000))) throw new Error("Invalid answers.");
 				break;
 			}
-			case "inbox-read": string("revision", false, 100); break;
+			case "inbox-read": string("revision", true, 100); break;
 			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;
 			case "queue-move":

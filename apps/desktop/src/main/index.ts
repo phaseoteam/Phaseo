@@ -1,4 +1,4 @@
-import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell } from "electron";
+import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -21,6 +21,8 @@ import { readConversation } from "./taskImport";
 import { nativeAccountStatus } from "./accountStatus";
 import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
+import { validatePreferences } from "../shared/preferences";
+import { TaskNotifications } from "./taskNotifications";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -35,6 +37,9 @@ const accountChecks = new Map<string, AbortController>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
+let taskNotifications: TaskNotifications;
+ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -74,6 +79,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted) return;
 	shutdownStarted = true;
+	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
@@ -381,11 +387,19 @@ app.whenReady().then(() => {
 	});
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	taskNotifications = new TaskNotifications({
+		focused: () => Boolean(BrowserWindow.getFocusedWindow()), supported: () => Notification.isSupported(),
+		show: (title, body, click) => { const notification = new Notification({ title, body, silent: true }); notification.on("click", click); notification.on("failed", () => {}); notification.show(); return () => { notification.removeAllListeners(); notification.close(); }; },
+		open: taskId => { if (shutdownStarted) return; const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed()) ?? createWindow(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); const id = taskId && workspaceRuntime.store.get().tasks.some(value => value.id === taskId) ? taskId : undefined; const navigate = () => { if (!window.isDestroyed()) window.webContents.send("workspace:open-task", id); }; if (window.webContents.isLoading()) window.webContents.once("did-finish-load", navigate); else navigate(); },
+	}, workspaceRuntime.store.getPreferences());
+	taskNotifications.update(workspaceRuntime.store.get());
+	app.on("browser-window-focus", () => taskNotifications.dismiss());
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	workspaceRuntime.getTerminals = () => terminalService.get();
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
+		taskNotifications.update(state);
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:changed", state);
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);

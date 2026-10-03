@@ -13,6 +13,7 @@ import { Projects } from "./views/Projects";
 import { Agents } from "./views/Agents";
 import { McpConnections } from "./views/McpConnections";
 import { Inbox } from "./views/Inbox";
+import { WorkspaceSettings } from "./views/WorkspaceSettings";
 import { CommandPalette } from "./components/CommandPalette";
 
 const Terminals = lazy(() => import("./views/Terminals").then(module => ({ default: module.Terminals })));
@@ -50,6 +51,10 @@ export function App() {
 	};
 
 	useEffect(() => {
+		return window.phaseoDesktop?.workspace.onOpenTask(id => { if (id) window.localStorage.setItem("phaseo.desktop.selectedTask", JSON.stringify(id)); setTaskRevision(value => value + 1); setSurface("workspace"); setWorkspaceItem(id ? "tasks" : "inbox"); });
+	}, [setSurface, setWorkspaceItem]);
+
+	useEffect(() => {
 		const media = window.matchMedia("(prefers-color-scheme: dark)");
 		const applyTheme = () => { document.documentElement.dataset.theme = theme === "system" ? (media.matches ? "dark" : "light") : theme; };
 		applyTheme();
@@ -75,6 +80,7 @@ export function App() {
 	}, [setSurface]);
 
 	const changeItem = (item: string) => {
+		if (item === "settings") { setSurface("workspace"); setWorkspaceItem(item); return; }
 		if (surface === "workspace") setWorkspaceItem(item);
 		else setPlatformItem(item);
 	};
@@ -86,6 +92,7 @@ export function App() {
 	else if (surface === "workspace" && activeItem === "mcp") content = <McpConnections />;
 	else if (surface === "workspace" && activeItem === "accounts") content = <Accounts />;
 	else if (surface === "workspace" && activeItem === "inbox") content = <Inbox onOpenTask={id => navigateWorkspace("tasks", id)} />;
+	else if (surface === "workspace" && activeItem === "settings") content = <WorkspaceSettings />;
 	else if (surface === "workspace" && activeItem === "tasks") content = <TaskWorkspace key={taskRevision} />;
 	else if (surface === "workspace" && activeItem === "home") content = <WorkspaceHome onNavigate={navigateWorkspace} />;
 	else if (surface === "platform" && activeItem === "overview") content = <PlatformHome />;

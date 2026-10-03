@@ -169,7 +169,9 @@ Managed removal checks tracked/untracked changes before and after stopping manag
 
 Inbox lists live approval/form requests, uncertain steering, failures, interruptions, limits and completed tasks. Attention, unread and all-activity filters link to the existing task workflow. SQLite retains exact-version read acknowledgements without changing task order or execution; reviewing an older version cannot mark a newer update read. Pending requests remain in attention after review. Electron verifies unread completion review and navigation without inference.
 
-Evidence: desktop lint/typecheck/build pass; 201 deterministic tests cover protocol,
+Settings persist notification mode and optional task-title previews in SQLite. Native Electron notifications observe semantic task/request changes, suppress foreground alerts, deduplicate repeated snapshots, group bursts and route clicks to tasks or Inbox. Startup seeds existing history without alerts; operating-system failures cannot interrupt execution. Notifications default off, and titles remain hidden unless enabled. Unit tests verify transition/OS behavior through a notification port; Electron verifies settings and the trusted click-navigation event. Actual operating-system alert display remains unverified.
+
+Evidence: desktop lint/typecheck/build pass; 208 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

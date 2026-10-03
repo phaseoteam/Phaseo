@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, AgentConnection, Attachment, Project, Task, TerminalSession, Workspace, WorkspaceCommand } from "../shared/workspace";
 import type { McpConnection } from "../shared/mcp";
+import { defaultPreferences, validatePreferences } from "../shared/preferences";
+import type { WorkspacePreferences } from "../shared/preferences";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -17,6 +19,7 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
 		for (const task of this.get().tasks) {
 			let recovered = false;
@@ -167,5 +170,7 @@ export class WorkspaceStore {
 		}
 		this.saveTask(task); return task;
 	}
+	getPreferences(): WorkspacePreferences { const row = this.db.prepare("SELECT data FROM preferences WHERE id='workspace'").get(); return row ? validatePreferences(JSON.parse(row.data as string)) : { ...defaultPreferences }; }
+	savePreferences(value: WorkspacePreferences) { const preferences = validatePreferences(value); this.db.prepare("INSERT INTO preferences (id, data) VALUES ('workspace', ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(JSON.stringify(preferences)); return preferences; }
 	close() { this.db.close(); }
 }

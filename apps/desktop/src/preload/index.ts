@@ -3,6 +3,9 @@ import type { PhaseoDesktopApi } from "../shared/desktop";
 
 const desktopApi: PhaseoDesktopApi = {
 	workspace: {
+		preferences: () => ipcRenderer.invoke("workspace:preferences"),
+		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
+		onOpenTask: listener => { const subscription = (_event: Electron.IpcRendererEvent, id?: string) => listener(id); ipcRenderer.on("workspace:open-task", subscription); return () => ipcRenderer.removeListener("workspace:open-task", subscription); },
 		get: () => ipcRenderer.invoke("workspace:get"),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
