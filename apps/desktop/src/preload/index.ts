@@ -11,6 +11,7 @@ const desktopApi: PhaseoDesktopApi = {
 		importTask: configuration => ipcRenderer.invoke("workspace:import-task", configuration),
 		attachment: (taskId, id) => ipcRenderer.invoke("workspace:attachment", taskId, id),
 		installations: () => ipcRenderer.invoke("workspace:installations"),
+		checkAgent: id => ipcRenderer.invoke("workspace:check-agent", id),
 		models: (harness, accountId, projectId) => ipcRenderer.invoke("workspace:models", harness, accountId, projectId),
 		openLink: url => ipcRenderer.invoke("workspace:open-link", url),
 		terminals: () => ipcRenderer.invoke("workspace:terminals"),

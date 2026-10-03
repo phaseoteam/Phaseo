@@ -21,7 +21,7 @@ export class AcpAdapter implements AgentAdapter {
 	constructor(private readonly agent: AgentConnection) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
-		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"] }); child.stderr.resume();
+		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
 		let receiving = false;
 		const tools = new Map<string, ToolCallUpdate>();
 		const terminals = this.terminals = new AcpTerminals(cwd, callbacks);

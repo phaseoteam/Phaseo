@@ -102,7 +102,13 @@ turns block connection changes; key rotation commits a new credential reference
 before retiring the old key. Account archival hides profiles from new task choices
 while preserving linked task history and supports restoration.
 
-Evidence: desktop lint/typecheck/build pass; 128 deterministic tests cover protocol,
+ACP agent profiles support editing, archival and restoration. Connection checks
+initialize the configured native process without creating sessions or advertising
+host filesystem/terminal access, and report native versions, capabilities and
+sign-in methods. Active turns prevent executable/argument changes. An isolated
+Electron fixture verifies connection checks and profile management without inference.
+
+Evidence: desktop lint/typecheck/build pass; 133 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

@@ -229,6 +229,28 @@ app.whenReady().then(async () => {
 		})()`);
 		if (readFileSync(path.join(data, "workspace", "credentials", `${updatedAccount.secretId}.credential`)).includes(Buffer.from("rotated-fixture-key"))) throw new Error("API key was stored without encryption");
 		result.accountManagement = true;
+		const agentFixture = path.join(data, "acp-fixture.cjs"); const agentRequests = path.join(data, "acp-requests.txt");
+		writeFileSync(agentFixture, `const readline=require('node:readline'); const fs=require('node:fs'); readline.createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line); fs.appendFileSync(${JSON.stringify(agentRequests)},request.method+'\\n'); if(request.method==='initialize') process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:request.id,result:{protocolVersion:request.params.protocolVersion,agentInfo:{name:'Smoke ACP fixture',version:'1.2.3'},agentCapabilities:{loadSession:true,promptCapabilities:{image:true}},authMethods:[{id:'browser',name:'Browser sign-in'}]}})+'\\n');});`);
+		await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;
+			const created=await api.command({type:'add-agent',name:'Fixture agent',executable:${JSON.stringify(process.execPath)},arguments:[${JSON.stringify(agentFixture)}]}); const agent=created.agents.find(value=>value.name==='Fixture agent');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Agents').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			let row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Fixture agent')); Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Check connection').click();
+			for(let attempt=0;attempt<50 && !row.textContent.includes('Smoke ACP fixture');attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			if(!row.textContent.includes('1.2.3') || !row.textContent.includes('Image input') || !row.textContent.includes('Browser sign-in')) throw new Error('ACP native connection status missing');
+			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Edit').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const form=document.querySelector('.account-form'); const name=form.querySelector('input'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(name,'Renamed agent'); name.dispatchEvent(new Event('input',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100)); form.requestSubmit();
+			for(let attempt=0;attempt<30 && (await api.get()).agents.find(value=>value.id===agent.id).name!=='Renamed agent';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			if((await api.get()).agents.find(value=>value.id===agent.id).name!=='Renamed agent') throw new Error('Agent edit failed');
+			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Archive').click();
+			for(let attempt=0;attempt<30 && !(await api.get()).agents.find(value=>value.id===agent.id).archived;attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			let rejected=false; try { await api.command({type:'create-task',harness:'acp',agentId:agent.id,model:'default',mode:'chat'}); } catch { rejected=true; } if(!rejected) throw new Error('Archived agent accepted a new task');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Archived agents').click(); await new Promise(resolve=>setTimeout(resolve,100)); row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Renamed agent')); if(!row) throw new Error('Archived agent missing'); Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Restore').click();
+			for(let attempt=0;attempt<30 && (await api.get()).agents.find(value=>value.id===agent.id).archived;attempt++) await new Promise(resolve=>setTimeout(resolve,100)); if((await api.get()).agents.find(value=>value.id===agent.id).archived) throw new Error('Agent restore failed');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
+		})()`);
+		if (readFileSync(agentRequests, "utf8").trim() !== "initialize") throw new Error("ACP connection check created a session or attempted inference");
+		result.agentManagement = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);

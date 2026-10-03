@@ -82,6 +82,15 @@ export class WorkspaceRuntime {
 			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
 			this.broadcast(); return this.store.get();
 		}
+		if (command.type === "update-agent") {
+			const agent = this.store.get().agents.find(value => value.id === command.id); if (!agent) throw new Error("Agent no longer exists.");
+			if ((command.executable !== undefined || command.arguments !== undefined) && this.store.get().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
+			if (command.name !== undefined) agent.name = command.name;
+			if (command.executable !== undefined) agent.executable = command.executable;
+			if (command.arguments !== undefined) agent.arguments = command.arguments;
+			if (command.archived !== undefined) agent.archived = command.archived;
+			this.store.saveAgent(agent); this.broadcast(); return this.store.get();
+		}
 		if (command.type === "add-account") {
 			const id = randomUUID();
 			if (command.kind === "api") {

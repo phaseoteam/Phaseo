@@ -19,6 +19,7 @@ import { piEntries } from "./piAdapter";
 import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 import { readConversation } from "./taskImport";
 import { nativeAccountStatus } from "./accountStatus";
+import { checkAcpAgent } from "./acpAgentStatus";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -30,6 +31,7 @@ let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
 const accountChecks = new Map<string, AbortController>();
+const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
 ipcMain.handle("workspace:terminals", event => {
@@ -69,6 +71,7 @@ app.on("before-quit", event => {
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
+	for (const controller of agentChecks.values()) controller.abort();
 	void workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }).finally(() => { shutdownComplete = true; app.quit(); });
 });
 
@@ -102,6 +105,14 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.get()); } }
 		return status;
 	} finally { accountChecks.delete(key); }
+});
+ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid agent check.");
+	const agent = workspaceRuntime.store.get().agents.find(value => value.id === id); if (!agent) throw new Error("Agent no longer exists.");
+	if (agentChecks.has(id)) throw new Error("This agent is already being checked.");
+	const controller = new AbortController(); agentChecks.set(id, controller);
+	try { return await checkAcpAgent(agent, app.getPath("userData"), AbortSignal.any([controller.signal, AbortSignal.timeout(30000)])); }
+	finally { agentChecks.delete(id); }
 });
 
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {

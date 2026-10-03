@@ -4,7 +4,8 @@ export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
 export type Project = { id: string; name: string; directory: string; createdAt: string };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string };
-export type AgentConnection = { id: string; name: string; executable: string; arguments: string[] };
+export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
+export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
 export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
 export type QueuedMessage = { id: string; text: string; attachments?: Attachment[]; createdAt: string };
@@ -40,6 +41,7 @@ export type WorkspaceCommand =
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
+	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean }
@@ -64,6 +66,7 @@ export type WorkspaceApi = {
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: Workspace; taskId: string } | undefined>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
+	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	openLink: (url: string) => Promise<void>;
 	terminals: () => Promise<TerminalSession[]>;
@@ -121,6 +124,11 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "update-account":
 				string("name", false, 100); string("endpoint", false); string("apiKey", false, 10000);
 				if (command.endpoint !== undefined) validateApiEndpoint(command.endpoint as string);
+				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
+				break;
+			case "update-agent":
+				string("name", false, 100); string("executable", false);
+				if (command.arguments !== undefined && (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000))) throw new Error("Invalid agent arguments.");
 				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
 				break;
 			case "update-task":
