@@ -7,7 +7,7 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 1. **Home:** replace tiny metric labels and a setup panel stretched across two empty sections with readable metrics, compact setup/running sections and a full-width recent-work list.
 2. **New task:** retain account, harness, mode and model choice; use matching input sizes, clear labels and consistent form gaps.
 3. **Conversation:** keep the title and compact actions on one row at minimum width; retain named controls for assistive technology and tooltips for handoff/settings. Keep message and composer backgrounds distinct. The long conversation remains scrollable.
-4. **Accounts:** align profile actions and apply the same form rhythm and control styling as task setup.
+4. **Accounts:** place connected profiles and account creation in separate padded sections, with the same heading, 24-pixel inset and form rhythm as Agents and Settings. Profile actions wrap instead of overflowing narrower sections. Preserve row dividers between profiles.
 5. **Projects:** use matching controls, wrap project/Git actions and show selected Files/Git tabs. This visual capture covers the empty state; the separate desktop smoke covers real file/Git interactions.
 6. **Missions:** move the heading above a padded form, make instructions span both columns, separate recurring work and retain readable weekday checkboxes.
 7. **Agents:** replace browser-default controls and an inline unpadded form with matching controls, padded rows and a two-column form.
@@ -25,6 +25,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 ![Home in dark mode](screenshots/ai-workspace-dark.png)
 
 ![Missions](screenshots/missions.png)
+
+![Accounts at minimum window size](screenshots/accounts-small-window.png)
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
 

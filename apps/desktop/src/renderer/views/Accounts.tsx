@@ -49,13 +49,15 @@ export function Accounts() {
 		try { setWorkspace(await api.command(command)); return true; }
 		catch (reason) { setError(String(reason)); return false; }
 	}
-	return <div className="page task-workspace account-page"><section>
-		<h1>Accounts</h1><p className="task-muted">Connect subscriptions or an API provider.</p>
-		<button type="button" onClick={() => { setShowArchived(value => !value); setEditing(undefined); }}>{showArchived ? "Active accounts" : "Archived accounts"}</button>
+	return <div className="page accounts-page">
+		<header className="page-heading"><div><h1>Accounts</h1><p>Connect subscriptions or an API provider.</p></div></header>
 		{error && <div className="task-error" role="alert">{error}</div>}
+		<section className="panel"><div className="panel-heading"><h2>Connected accounts</h2><button type="button" onClick={() => { setShowArchived(value => !value); setEditing(undefined); }}>{showArchived ? "Active accounts" : "Archived accounts"}</button></div>
 		{(["codex", "claude"] as const).map(harness => <article key={harness}><div className="account-row"><div><strong>{harness === "codex" ? "Codex" : "Claude Code"} local login</strong><small>Existing native profile</small></div><button type="button" disabled={!!checking} onClick={() => void check(harness)}>{checking === harness ? "Checking…" : "Check status"}</button></div>{statuses[harness] && <AccountStatus status={statuses[harness]} />}</article>)}
 		{workspace.accounts.filter(account => Boolean(account.archived) === showArchived).map(account => <article key={account.id}><div className="account-row"><div><strong>{account.name}</strong><small>{account.harness} · {account.kind === "api" ? account.harness === "cursor" ? "Cursor API key" : account.endpoint : account.configured ? "Signed in" : "Sign-in required"}</small></div>{account.kind === "api" && account.harness === "cursor" && <button type="button" disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</button>}{account.kind === "native" && <><button type="button" disabled={!!checking || signingIn === account.id} onClick={() => void check(account.harness as "codex" | "claude" | "cursor", account.id)}>{checking === account.id ? "Checking…" : "Check status"}</button><button type="button" disabled={(!!signingIn && signingIn !== account.id) || checking === account.id} onClick={() => { if (signingIn === account.id) void api?.cancelSignIn(account.id); else void signIn(account.id); }}>{signingIn === account.id ? "Cancel sign-in" : "Sign in"}</button></>}<button type="button" disabled={signingIn === account.id || checking === account.id} onClick={() => setEditing(account.id)}>Edit</button><button type="button" disabled={signingIn === account.id || checking === account.id} onClick={() => { setEditing(undefined); void update({ type: "update-account", id: account.id, archived: !account.archived }); }}>{account.archived ? "Restore" : "Archive"}</button></div>{editing === account.id && <AccountEditor account={account} onSave={update} onCancel={() => setEditing(undefined)} />}{statuses[account.id] && <AccountStatus status={statuses[account.id]} />}</article>)}
-		<form className="task-setup" onSubmit={event => { event.preventDefault(); void add(); }}>
+		</section>
+		<section className="panel"><div className="panel-heading"><h2>Add account</h2></div>
+		<form className="account-form" onSubmit={event => { event.preventDefault(); void add(); }}>
 			<label>Name<input value={name} onChange={event => setName(event.target.value)} required placeholder="Personal account" /></label>
 			<label>Provider<select value={provider} onChange={event => setProvider(event.target.value as typeof provider)}><option value="codex">OpenAI / Codex subscription</option><option value="claude">Anthropic / Claude subscription</option><option value="cursor">Cursor</option><option value="phaseo">Phaseo / compatible API</option></select></label>
 			{provider === "cursor" && <label>Connection<select value={cursorKind} onChange={event => setCursorKind(event.target.value as typeof cursorKind)}><option value="native">Browser sign-in</option><option value="api">API key</option></select></label>}
@@ -64,5 +66,6 @@ export function Accounts() {
 			<button className="task-primary" type="submit" disabled={saving || !name.trim()}>{saving ? "Connecting…" : "Add account"}</button>
 		</form>
 		<p className="task-muted">Native accounts use separate local profiles. API keys are encrypted using your device’s secure storage.</p>
-	</section></div>;
+		</section>
+	</div>;
 }
