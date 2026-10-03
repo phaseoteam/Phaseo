@@ -25,15 +25,17 @@ export function sanitizeReturnUrl(
 		decoded = raw;
 	}
 
-	const normalized = decoded.replace(/\\/g, "/");
-	if (/[\u0000-\u001F\u007F]/.test(normalized)) return fallback;
-	if (!normalized.startsWith("/")) return fallback;
-	if (normalized.startsWith("//")) return fallback;
+	const checked = decoded.replace(/\\/g, "/");
+	if (/[\u0000-\u001F\u007F]/.test(checked)) return fallback;
+	if (!checked.startsWith("/")) return fallback;
+	if (checked.startsWith("//")) return fallback;
 
-	const lower = stripPublicLocalePrefix(normalized).toLowerCase();
+	const lower = stripPublicLocalePrefix(checked).toLowerCase();
 	if (lower.startsWith("/sign-in") || lower.startsWith("/sign-up")) {
 		return fallback;
 	}
 	if (lower.startsWith("/auth/callback")) return fallback;
-	return normalized;
+	// URLSearchParams already removes the query-value encoding. Preserve path
+	// segment escapes so encoded slashes in names never become route separators.
+	return (raw.startsWith("/") ? raw : decoded).replace(/\\/g, "/");
 }

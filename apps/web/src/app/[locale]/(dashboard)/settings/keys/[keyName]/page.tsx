@@ -6,7 +6,7 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import { KeyDetailView } from "@/components/(gateway)/settings/keys/KeyDetailView";
 import { fetchSettingsKeyDetailByName, type KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 import { WebApiError } from "@/lib/web-api/client";
-import { keyDetailHref } from "@/components/(gateway)/settings/keys/keyDetailHref";
+import { keyDetailHref, matchesKeyRouteName } from "@/components/(gateway)/settings/keys/keyDetailHref";
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.headers"); return { title: t("apiKeys") }; }
 
 async function KeyDetailPage({ params, searchParams }: { params: Promise<{ keyName: string }>; searchParams: Promise<{ workspaceId?: string; prefix?: string }> }) {
@@ -21,7 +21,7 @@ async function KeyDetailPage({ params, searchParams }: { params: Promise<{ keyNa
 		if (error instanceof WebApiError && error.status === 401) redirect({ href: "/sign-in", locale: await getLocale() });
 		throw error;
 	}
-	if (data.key.name !== keyName) redirect({ href: keyDetailHref(data.key), locale: await getLocale() });
+	if (!matchesKeyRouteName(data.key.name, keyName)) redirect({ href: keyDetailHref(data.key), locale: await getLocale() });
 	return <KeyDetailView data={data} />;
 }
 

@@ -2,3 +2,12 @@ export function keyDetailHref(key: { name: string; prefix: string; workspace_id:
 	const query = new URLSearchParams({ workspaceId: key.workspace_id, prefix: key.prefix });
 	return `/settings/keys/${encodeURIComponent(key.name)}?${query.toString()}`;
 }
+
+export function matchesKeyRouteName(name: string, routeName: string) {
+	if (name === routeName) return true;
+	try {
+		return name === decodeURIComponent(routeName);
+	} catch {
+		return false;
+	}
+}
