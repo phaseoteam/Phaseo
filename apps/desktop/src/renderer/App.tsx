@@ -39,6 +39,7 @@ export function App() {
 	const [platformItem, setPlatformItem] = usePersistedState("phaseo.desktop.platform.item", "overview");
 	const [collapsed, setCollapsed] = usePersistedState("phaseo.desktop.sidebar.collapsed", false);
 	const [theme, setTheme] = usePersistedState<ThemePreference>("phaseo.desktop.theme", "system");
+	const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 	const activeItem = surface === "workspace" ? workspaceItem : platformItem;
 	const [taskRevision, setTaskRevision] = useState(0);
 	const [commandsOpen, setCommandsOpen] = useState(false);
@@ -57,7 +58,7 @@ export function App() {
 
 	useEffect(() => {
 		const media = window.matchMedia("(prefers-color-scheme: dark)");
-		const applyTheme = () => { document.documentElement.dataset.theme = theme === "system" ? (media.matches ? "dark" : "light") : theme; };
+		const applyTheme = () => { const resolved = theme === "system" ? (media.matches ? "dark" : "light") : theme; document.documentElement.dataset.theme = resolved; setResolvedTheme(resolved); };
 		applyTheme();
 		media.addEventListener("change", applyTheme);
 		return () => media.removeEventListener("change", applyTheme);
@@ -118,7 +119,7 @@ export function App() {
 					onSearch={() => setCommandsOpen(true)}
 				/>
 				<div className="app-main">
-					<Topbar surface={surface} theme={theme} onThemeChange={setTheme} onNewTask={() => navigateWorkspace("tasks")} onCommands={() => setCommandsOpen(true)} />
+					<Topbar surface={surface} theme={resolvedTheme} onThemeChange={setTheme} onNewTask={() => navigateWorkspace("tasks")} onCommands={() => setCommandsOpen(true)} />
 					<main className="content-scroll"><Suspense fallback={<p className="page task-muted" role="status">Loading workspace…</p>}>{content}</Suspense></main>
 				</div>
 			</div>

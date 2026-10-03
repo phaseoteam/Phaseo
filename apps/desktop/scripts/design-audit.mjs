@@ -1,0 +1,73 @@
+import { app, BrowserWindow } from "electron";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
+
+// A separate, disposable profile: no user accounts or inference calls.
+const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
+app.setPath("userData", data);
+mkdirSync(path.join(data, "workspace"));
+const seed = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
+seed.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+const now = new Date().toISOString();
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-example", JSON.stringify({ id: "design-example", title: "Plan the product launch", harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: true, archived: false, queue: [], createdAt: now, updatedAt: now, messages: [{ id: "u", role: "user", text: "Help me plan the launch of our desktop workspace.", createdAt: now }, { id: "a", role: "assistant", text: "## Launch priorities\n\nStart with a clear promise: one workspace for your accounts, models, and everyday work.\n\n1. Validate the core task workflow with a small group.\n2. Prepare examples for research, writing, and coding.\n3. Gather feedback before expanding access.\n\nWe can turn these priorities into a weekly plan next.", createdAt: now }] }));
+seed.close();
+await import("../dist/main/index.mjs");
+app.whenReady().then(async () => {
+const window = BrowserWindow.getAllWindows()[0];
+if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
+const output = path.resolve("../../output/playwright/design-audit", process.argv.includes("--before") ? "before" : "after");
+mkdirSync(output, { recursive: true });
+try {
+  await window.webContents.executeJavaScript(`Promise.all([400,600,700].map(weight=>document.fonts.load(weight+' 14px Montserrat'))).then(()=>true)`);
+  await new Promise(resolve => setTimeout(resolve, 500));
+  for (const [width, height] of [[1440, 920], [1040, 680]]) {
+    window.setSize(width, height);
+    for (const theme of ["light", "dark"]) {
+      await window.webContents.executeJavaScript(`(()=>{const desired=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==desired)document.querySelector('[aria-label="Use '+desired+' theme"]').click()})()`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox"]) {
+        await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-item')).find(b=>b.textContent.trim()===${JSON.stringify(page)}).click()`);
+        if (page === "Tasks") {
+          for (let attempt = 0; ; attempt++) {
+            const ready = await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-list-heading button'))`);
+            if (ready) break;
+            if (attempt > 50) throw new Error("Task list did not render.");
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          await window.webContents.executeJavaScript(`document.querySelector('.task-list-heading button').click()`);
+        }
+        const expected = { Tasks: "What would you like to do?", Home: "Your AI workspace", MCP: "MCP connections" }[page] ?? page;
+        for (let attempt = 0; ; attempt++) {
+          const ready = await window.webContents.executeJavaScript(`(()=>{const active=document.querySelector('.sidebar-item.active');return active?.textContent.trim()===${JSON.stringify(page)} && Array.from(document.querySelectorAll('h1')).some(e=>e.textContent===${JSON.stringify(expected)})})()`);
+          if (ready) break;
+          if (attempt > 50) throw new Error(`Page did not render: ${page}`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const image = await window.webContents.capturePage();
+        const name = `${width}-${theme}-${page.toLowerCase()}`;
+        writeFileSync(path.join(output, `${name}.png`), image.toPNG());
+        const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
+        writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
+        if (page === "Tasks") {
+          await window.webContents.executeJavaScript(`document.querySelector('.task-row').click()`);
+          await new Promise(resolve => setTimeout(resolve, 200));
+          writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
+        }
+      }
+      await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);
+      for (let attempt = 0; ; attempt++) {
+        if (await window.webContents.executeJavaScript(`document.querySelector('h1')?.textContent==='Platform'`)) break;
+        if (attempt > 50) throw new Error("Platform did not render.");
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      writeFileSync(path.join(output, `${width}-${theme}-platform.png`), (await window.webContents.capturePage()).toPNG());
+      await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Workspace').click()`);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  console.log("DESIGN_AUDIT", output);
+} catch (error) { console.error(error); app.exit(1); } finally { app.quit(); }
+});

@@ -47,6 +47,7 @@ function MenuItem({ children, shortcut, disabled, onClick }: {
 
 export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameProps) {
 	const [activeMenu, setActiveMenu] = useState<MenuName | null>(null);
+	const [menuLeft, setMenuLeft] = useState(0);
 	const [aboutOpen, setAboutOpen] = useState(false);
 	const [preferencesOpen, setPreferencesOpen] = useState(false);
 	const [runtime, setRuntime] = useState<DesktopRuntimeInfo>(fallbackRuntime);
@@ -96,7 +97,10 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 	const windowAction = (action: DesktopWindowAction) => void api?.performWindowAction(action);
 	const openExternal = (url: string) => { setActiveMenu(null); void api?.openExternal(url); };
 	const navigate = (destination: "missions" | "projects") => { setActiveMenu(null); onNavigate(destination); };
-	const selectMenu = (menu: MenuName) => setActiveMenu((current) => current === menu ? null : menu);
+	const selectMenu = (menu: MenuName, button: HTMLButtonElement) => {
+		setMenuLeft(button.getBoundingClientRect().left - (rootRef.current?.getBoundingClientRect().left ?? 0));
+		setActiveMenu(current => current === menu ? null : menu);
+	};
 	const checkForUpdates = async () => {
 		setActiveMenu(null);
 		setUpdate({ status: "checking" });
@@ -104,7 +108,7 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 	};
 
 	const menu = activeMenu && (
-		<div className={`desktop-menu desktop-menu-${activeMenu}`} role="menu">
+		<div className="desktop-menu" style={{ left: menuLeft }} role="menu">
 			{activeMenu === "phaseo" && <>
 				<MenuItem onClick={() => { setActiveMenu(null); setAboutOpen(true); }}>About Phaseo</MenuItem>
 				<MenuItem onClick={() => { setActiveMenu(null); setPreferencesOpen(true); }} shortcut="Ctrl+,">Preferences</MenuItem>
@@ -149,7 +153,7 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 				<div className="desktop-frame-brand"><PhaseoMark /><span>Phaseo</span></div>
 				<nav className="desktop-menu-bar" aria-label="Application menu">
 					{(["phaseo", "file", "edit", "view", "help"] as const).map((name) => (
-						<button key={name} type="button" className={activeMenu === name ? "active" : ""} onClick={() => selectMenu(name)}>
+						<button key={name} type="button" aria-haspopup="menu" aria-expanded={activeMenu === name} className={activeMenu === name ? "active" : ""} onClick={event => selectMenu(name, event.currentTarget)}>
 							{name === "phaseo" ? "Phaseo" : name[0].toUpperCase() + name.slice(1)}
 						</button>
 					))}

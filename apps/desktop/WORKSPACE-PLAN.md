@@ -12,7 +12,7 @@ Reference baseline (2026-10-03): OpenCode v2.0.22
 v0.0.46-nightly.20261003.2610 (`8ed276c246b624631e7d39241ebfd22d8314cb68`).
 Sources: https://opencode.ai/v2/docs and
 https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261003.2610.
-Use existing Phaseo desktop tokens and frame as the visual source of truth.
+Use the Phaseo website's fonts, assets, components and spacing conventions as the visual source of truth, adapted to the existing native desktop frame.
 
 ## Acceptance ledger
 
@@ -177,7 +177,9 @@ Notification click navigation is buffered in preload until the renderer subscrib
 
 Cursor uses the pinned T3 baseline's official SDK 1.0.31. Browser sign-in mints a user key through the SDK with plaintext persistence disabled; managed keys use the existing encrypted device vault, and accounts have isolated JSONL session stores. The renderer supports API-key setup/rotation, status, model discovery, task settings, native streaming/activity/cancellation and acknowledged live steering. Chat disables native tools and ambient settings; Plan uses an explicit read-only tool list; Code requires a whole-turn approval because the SDK has no per-tool approval callbacks. Native policies and Auto-review apply after approval. Managed MCP connections apply to Code turns. Forks create a fresh session with visible history rather than claiming native SDK fork support. Real SDK create/resume checks use a local model-catalogue response fixture and submit no prompt, including inside the Windows packaged archive. Cursor's SDK is proprietary; its unmodified licence notices are preserved. Real Cursor browser login, paid inference, and sandbox execution remain unverified.
 
-Design direction: desktop typography, semantic colour tokens, control sizing, focus treatment and cards should follow the current Phaseo web app. Desktop-specific navigation and workspace layouts retain those shared visual conventions.
+Desktop typography uses the web app's existing Montserrat font assets, bundled offline with their OFL notice, and its actual logo. Light/dark semantic palette values match web globals; button/input sizing and focus rings follow the web primitives. A rendered audit against the live website identified unpadded Missions forms, unstyled Agents/MCP controls, tiny labels, stretched Home panels, inaccessible sidebar footer controls at minimum height, and a collapsed conversation title at minimum width. The layout pass fixes those issues with consistent page/form spacing, restrained panel borders, readable labels, independent sidebar scrolling and wrapping conversation actions. Settings now uses aligned rows. Menu placement follows its trigger instead of hardcoded offsets. The theme action reflects the displayed theme even while following the operating system. Electron verifies all three bundled font weights and theme controls. `audit:design` captures nine screens plus a conversation at 1440×920 and 1040×680 in both themes; see `docs/design-audit.md`. This is a visual checkpoint, not complete accessibility or product-design parity.
+
+The Platform overview is a tenth captured screen. Its decorative marketing hero and unverified health/readiness badges are replaced by concise links to existing web tools; live platform data integration remains outstanding.
 
 Evidence: desktop lint/typecheck/build pass; 228 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,

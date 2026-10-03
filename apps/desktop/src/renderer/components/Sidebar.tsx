@@ -124,6 +124,7 @@ export function Sidebar({
 						<button
 							key={item.id}
 							className={activeItem === item.id ? "sidebar-item active" : "sidebar-item"}
+							aria-current={activeItem === item.id ? "page" : undefined}
 							type="button"
 							onClick={() => onItemChange(item.id)}
 							title={collapsed ? item.label : undefined}
@@ -137,7 +138,7 @@ export function Sidebar({
 			</nav>
 
 			<div className="sidebar-footer">
-				<button className="sidebar-item" type="button" onClick={() => onItemChange("settings")} title={collapsed ? "Settings" : undefined}>
+				<button className={activeItem === "settings" ? "sidebar-item active" : "sidebar-item"} aria-current={activeItem === "settings" ? "page" : undefined} type="button" onClick={() => onItemChange("settings")} title={collapsed ? "Settings" : undefined}>
 					<Settings size={16} strokeWidth={1.8} />
 					{collapsed ? null : <span>Settings</span>}
 				</button>

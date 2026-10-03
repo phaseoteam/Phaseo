@@ -20,6 +20,7 @@ pnpm --filter @phaseo/desktop lint
 pnpm --filter @phaseo/desktop typecheck
 pnpm --filter @phaseo/desktop test
 pnpm --filter @phaseo/desktop build
+pnpm --filter @phaseo/desktop audit:design
 ```
 
 ## Packaging
@@ -36,4 +37,8 @@ Release builds can set `PHASEO_DESKTOP_UPDATE_URL` to enable the in-app update c
 
 ## Security boundary
 
-The renderer has no Node.js access. Electron runs it with context isolation, sandboxing, and navigation restrictions. A narrow preload bridge exposes validated window, application, update, runtime-information, and external-navigation commands. Filesystem, Git, terminal, and agent orchestration will live behind a dedicated desktop runtime rather than in React components.
+The renderer has no Node.js access. Electron runs it with context isolation, sandboxing, and navigation restrictions. A narrow preload bridge exposes validated window, application, update, runtime-information, and external-navigation commands. Filesystem, Git, terminal, credentials and agent orchestration run in the desktop runtime.
+
+## Design reference
+
+Desktop styles reuse the website's Montserrat assets, logo and semantic theme values. The [rendered design review](docs/design-audit.md) records spacing/layout changes and remaining validation limits. `audit:design` captures the main screens in both themes at normal and minimum window sizes using an isolated sample profile.
