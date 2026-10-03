@@ -7,6 +7,16 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("existing conversation settings", () => {
+	it("persists ACP mode selections and rejects unsupported harnesses and malformed IPC", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			store.saveAgent({ id: "agent", name: "Fixture", executable: "/fixture", arguments: [] });
+			const task = store.apply({ type: "create-task", harness: "acp", agentId: "agent", model: "default", mode: "plan" });
+			store.apply({ type: "update-task", id: task.id, nativeMode: "analysis" }); expect(store.getTask(task.id)).toMatchObject({ nativeMode: "analysis", mode: "plan" }); expect(store.apply({ type: "fork", id: task.id }).nativeMode).toBe("analysis");
+			const codex = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "code" }); expect(() => store.apply({ type: "update-task", id: codex.id, nativeMode: "analysis" })).toThrow("ACP");
+			for (const nativeMode of [42, "bad\0mode", "x".repeat(1001)]) expect(() => validateCommand({ type: "update-task", id: task.id, nativeMode })).toThrow("native mode");
+		} finally { store.close(); }
+	});
 	it("resets model-specific effort when models change and scopes controls to Codex", () => {
 		const store = new WorkspaceStore(":memory:"); try {
 			const task = store.apply({ type: "create-task", harness: "codex", model: "first", mode: "chat" }); store.apply({ type: "update-task", id: task.id, reasoningEffort: "high" }); expect(store.getTask(task.id).reasoningEffort).toBe("high");

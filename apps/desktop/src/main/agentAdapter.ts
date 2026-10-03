@@ -6,6 +6,7 @@ export type AgentCallbacks = {
 	onDelta: (id: string, text: string) => void;
 	onSession: (id: string) => void;
 	onModels?: (models: ModelOption[]) => void;
+	onModes?: (modes: ModelOption[]) => void;
 	onActivity?: (activity: AgentActivity & { append?: boolean }) => void;
 	onQuestion?: (questions: AgentQuestion[]) => Promise<Record<string, string[]>>;
 	onForm?: (form: AgentForm, signal?: AbortSignal) => Promise<FormAnswer | null>;

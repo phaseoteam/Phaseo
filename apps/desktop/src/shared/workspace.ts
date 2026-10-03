@@ -18,6 +18,8 @@ export type Task = {
 	agentId?: string;
 	reasoningEffort?: string;
 	nativeModels?: ModelOption[];
+	nativeModes?: ModelOption[];
+	nativeMode?: string;
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
 	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
@@ -47,7 +49,7 @@ export type WorkspaceCommand =
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
-	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string; nativeMode?: string }
 	| { type: "send"; id: string; text: string; attachments?: string[] }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
@@ -138,6 +140,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 			case "update-task":
 				string("title", false, 200);
 				string("model", false);
+				if (command.nativeMode !== undefined && (typeof command.nativeMode !== "string" || command.nativeMode.length > 1000 || [...command.nativeMode].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid native mode.");
 				if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);

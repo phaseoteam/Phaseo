@@ -12,7 +12,7 @@ import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import { AcpTerminals } from "./acpTerminals";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
-import { acpModels } from "./acpModels";
+import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 export class AcpAdapter implements AgentAdapter {
@@ -25,7 +25,7 @@ export class AcpAdapter implements AgentAdapter {
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (this.cancelled) throw new Error("Task stopped.");
 		const child = this.child = spawn(this.agent.executable, this.agent.arguments, { cwd, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" } }); child.stderr.resume();
-		let receiving = false; let promptSubmitted = false;
+		let receiving = false; let promptSubmitted = false; let modesViaConfig = false; let nativeModes: ReturnType<typeof acpModes> = [];
 		const tools = new Map<string, ToolCallUpdate>();
 		const terminals = this.terminals = new AcpTerminals(cwd, callbacks);
 		const checkSession = (sessionId: string) => { if (this.cancelled || sessionId !== this.sessionId) throw new Error("Agent request belongs to an inactive session."); };
@@ -69,7 +69,8 @@ export class AcpAdapter implements AgentAdapter {
 				}
 				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2) });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });
-				if (update.sessionUpdate === "config_option_update") callbacks.onModels?.(acpModels(update.configOptions));
+				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(acpModels(update.configOptions)); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
+				if (update.sessionUpdate === "current_mode_update") { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
 			});
 		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
@@ -111,8 +112,14 @@ export class AcpAdapter implements AgentAdapter {
 			}
 			this.sessionId = session.sessionId; callbacks.onSession(session.sessionId);
 			const models = acpModels(session.configOptions); callbacks.onModels?.(models);
-			const mode = session.modes?.availableModes.find(mode => mode.id === task.mode);
-			if (mode) await connection.agent.request("session/set_mode", { sessionId: session.sessionId, modeId: mode.id });
+			modesViaConfig = !session.modes; nativeModes = acpModes(session.modes, session.configOptions); callbacks.onModes?.(nativeModes);
+			const modeId = task.nativeMode || task.mode; const mode = nativeModes.find(mode => mode.id === modeId);
+			if (task.nativeMode && !mode) throw new AgentInputRejectedError("This agent no longer offers the selected mode. Update the task settings.");
+			if (mode && !mode.default) {
+				if (session.modes) await connection.agent.request("session/set_mode", { sessionId: session.sessionId, modeId });
+				else { const option = session.configOptions?.find(option => option.category === "mode" && option.type === "select"); if (option) await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: modeId }); }
+				nativeModes = nativeModes.map(value => ({ ...value, default: value.id === modeId })); callbacks.onModes?.(nativeModes);
+			}
 			if (task.model !== "default") {
 				const option = session.configOptions?.find(option => option.category === "model" && option.type === "select");
 				if (!option) throw new AgentInputRejectedError("This agent does not expose model selection. Use its native default.");

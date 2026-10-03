@@ -147,8 +147,12 @@ them in task settings. Model selection uses the native configuration ID and chec
 the current catalog before prompting. Pre-prompt ACP setup failures retain the
 original input for explicit retry. An owned agent fixture verifies native model
 discovery and selection through the real Electron runtime without inference.
+ACP mode catalogs also persist and expose an independent agent-mode selector.
+Native mode/configuration methods apply the chosen value before prompting, skip
+unchanged selections and reject unavailable modes. Desktop Chat/Plan/Code controls
+still govern advertised host capabilities and permission responses.
 
-Evidence: desktop lint/typecheck/build pass; 177 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 183 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
