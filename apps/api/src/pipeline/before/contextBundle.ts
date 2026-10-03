@@ -67,6 +67,14 @@ async function readCatalogFromKv(cache: KVNamespace, model: string, endpoints: s
     } catch { return null; }
 }
 
+export async function publicCatalogHasRefreshHeadroom(model: string, endpoints: string[]): Promise<boolean> {
+    // The publisher runs every two minutes. Reuse a validated snapshot only
+    // when it remains valid beyond the next tick; never extend its deadline.
+    const catalog = await readCatalogFromKv(getCache(), model, endpoints);
+    return Boolean(catalog && catalog.expiresAt > Date.now() + 120_000 &&
+        catalog.variants.some(variant => variant.providers.length > 0));
+}
+
 async function readCatalog(model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null> {
     const key = publicCatalogKey(model, endpoints);
     const local = entries.get(key);
