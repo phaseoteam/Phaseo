@@ -71,7 +71,7 @@ export class AcpAdapter implements AgentAdapter {
 				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2) });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });
 				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(acpModels(update.configOptions)); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
-				if (update.sessionUpdate === "current_mode_update") { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
+				if (update.sessionUpdate === "current_mode_update" && !modesViaConfig) { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }
 			});
 		const connection = this.connection = app.connect(ndJsonStream(Writable.toWeb(child.stdin), Readable.toWeb(child.stdout) as ReadableStream<Uint8Array>));
 		child.on("error", error => connection.close(error)); child.on("exit", () => connection.close(new Error("ACP agent stopped.")));
@@ -114,20 +114,34 @@ export class AcpAdapter implements AgentAdapter {
 				session = await openSession();
 			}
 			this.sessionId = session.sessionId; callbacks.onSession(session.sessionId);
-			const models = acpModels(session.configOptions); callbacks.onModels?.(models);
-			modesViaConfig = !session.modes; nativeModes = acpModes(session.modes, session.configOptions); callbacks.onModes?.(nativeModes);
+			let configOptions = session.configOptions;
+			let models = acpModels(configOptions); callbacks.onModels?.(models);
+			modesViaConfig = Boolean(configOptions?.some(option => option.category === "mode" && option.type === "select")) || !session.modes;
+			nativeModes = acpModes(session.modes, configOptions); callbacks.onModes?.(nativeModes);
 			const modeId = task.nativeMode || task.mode; const mode = nativeModes.find(mode => mode.id === modeId);
 			if (task.nativeMode && !mode) throw new AgentInputRejectedError("This agent no longer offers the selected mode. Update the task settings.");
 			if (mode && !mode.default) {
-				if (session.modes) await connection.agent.request("session/set_mode", { sessionId: session.sessionId, modeId });
-				else { const option = session.configOptions?.find(option => option.category === "mode" && option.type === "select"); if (option) await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: modeId }); }
-				nativeModes = nativeModes.map(value => ({ ...value, default: value.id === modeId })); callbacks.onModes?.(nativeModes);
+				if (!modesViaConfig) {
+					await connection.agent.request("session/set_mode", { sessionId: session.sessionId, modeId });
+					nativeModes = nativeModes.map(value => ({ ...value, default: value.id === modeId }));
+				} else {
+					const option = configOptions?.find(option => option.category === "mode" && option.type === "select");
+					if (option) {
+						const result = await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: modeId });
+						configOptions = result.configOptions;
+						models = acpModels(configOptions); callbacks.onModels?.(models);
+						nativeModes = acpModes(undefined, configOptions);
+						if (!nativeModes.some(value => value.id === modeId && value.default)) throw new AgentInputRejectedError("The agent did not apply the selected mode. Update the task settings.");
+					}
+				}
+				callbacks.onModes?.(nativeModes);
 			}
 			if (task.model !== "default") {
-				const option = session.configOptions?.find(option => option.category === "model" && option.type === "select");
+				const option = configOptions?.find(option => option.category === "model" && option.type === "select");
 				if (!option) throw new AgentInputRejectedError("This agent does not expose model selection. Use its native default.");
 				if (!models.some(model => model.id === task.model)) throw new AgentInputRejectedError("This agent no longer offers the selected model. Update the task settings.");
 				const result = await connection.agent.request("session/set_config_option", { sessionId: session.sessionId, configId: option.id, value: task.model }); callbacks.onModels?.(acpModels(result.configOptions));
+				if (modesViaConfig) { nativeModes = acpModes(undefined, result.configOptions); callbacks.onModes?.(nativeModes); }
 			}
 			clearTimeout(startup); receiving = true;
 			const prompt: PromptRequest = { sessionId: session.sessionId, prompt: [{ type: "text", text: attachmentPrompt(text, attachments) }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image" as const, data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType }))] };

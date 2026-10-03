@@ -181,7 +181,11 @@ Desktop typography uses the web app's existing Montserrat font assets, bundled o
 
 The Platform overview is a tenth captured screen. Its decorative marketing hero and unverified health/readiness badges are replaced by concise links to existing web tools; live platform data integration remains outstanding.
 
-Evidence: desktop lint/typecheck/build pass; 228 deterministic tests cover protocol,
+ACP mode configuration now prefers the modern configuration selector when an agent also supplies legacy modes. Mode changes refresh the complete configuration before model validation; unavailable model choices are rejected before submitting the instruction. A mode response must confirm the chosen mode. Real SDK packet tests cover dual-mode advertisements and dependent model catalogs.
+
+An isolated official Grok 1.0.46 Windows binary startup check used verified npm archive integrity, a fresh `GROK_HOME`, disabled auto-updates and forced a process-owned agent instead of a shared leader. Initialization and signed-out session rejection passed with zero login/inference calls. This release advertises `grok.com` authentication and initial models under initialization metadata, differing from the pinned T3 implementation. Native Grok execution, authentication and extension callbacks remain unfinished; the selector stays unavailable until integrated.
+
+Evidence: desktop lint/typecheck/build pass; 231 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

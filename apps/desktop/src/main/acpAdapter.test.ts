@@ -14,6 +14,25 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each(["plan-model", "code-model"])("refreshes dependent model choices before prompting (%s)", async model => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const modeOption = { id: "mode", category: "mode", name: "Mode", type: "select" as const, currentValue: "code", options: [{ value: "code", name: "Code" }, { value: "plan", name: "Plan" }] };
+		const modelOption = (value: string) => ({ id: "model", category: "model", name: "Model", type: "select" as const, currentValue: value, options: [{ value, name: value }] });
+		const select = vi.fn(({ params }: { params: { configId: string; value: unknown } }) => {
+			if (params.configId === "mode") expect(params.value).toBe("plan");
+			else expect(params.value).toBe("plan-model");
+			return { configOptions: [{ ...modeOption, currentValue: "plan" }, modelOption("plan-model")] };
+		});
+		const prompt = vi.fn(() => ({ stopReason: "end_turn" as const }));
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native", configOptions: [modeOption, modelOption("code-model")] })).onRequest("session/set_config_option", select).onRequest("session/prompt", prompt).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const onModels = vi.fn();
+		try {
+			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run({ ...task, mode: "plan", model }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onModels, onApproval: async () => "decline" });
+			if (model === "plan-model") { await run; expect(select).toHaveBeenCalledTimes(2); expect(prompt).toHaveBeenCalledOnce(); }
+			else { await expect(run).rejects.toThrow("no longer offers"); expect(select).toHaveBeenCalledOnce(); expect(prompt).not.toHaveBeenCalled(); }
+			expect(onModels).toHaveBeenLastCalledWith([{ id: "plan-model", name: "plan-model", default: true }]);
+		} finally { connection.close(); }
+	});
 	it.each([true, false])("runs terminal authentication without sending it to authenticate (%s)", async success => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child); let signedIn = false;
 		const authenticate = vi.fn(() => ({})); const prompt = vi.fn(() => ({ stopReason: "end_turn" as const }));
@@ -25,17 +44,17 @@ describe("ACP protocol integration", () => {
 			expect(onTerminalAuth).toHaveBeenCalledOnce(); expect(authenticate).not.toHaveBeenCalled();
 		} finally { connection.close(); }
 	});
-	it.each(["native", "config", "current", "unavailable"])("selects native modes while retaining desktop permission controls (%s)", async source => {
+	it.each(["native", "config", "both", "current", "unavailable"])("selects native modes while retaining desktop permission controls (%s)", async source => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const option = { id: "mode", category: "mode", name: "Mode", type: "select" as const, currentValue: "default", options: [{ value: "analysis", name: "Analysis" }] };
-		const setMode = vi.fn(() => ({})); const setConfig = vi.fn(() => ({ configOptions: [option] })); const onApproval = vi.fn();
+		const setMode = vi.fn(() => ({})); const setConfig = vi.fn(() => ({ configOptions: [{ ...option, currentValue: "analysis" }] })); const onApproval = vi.fn();
 		const prompt = vi.fn(async ({ client }: { client: { request: (method: "session/request_permission", params: { sessionId: string; toolCall: { toolCallId: string; kind: "execute" }; options: { optionId: string; name: string; kind: "allow_once" }[] }) => Promise<unknown> } }) => { expect(await client.request("session/request_permission", { sessionId: "native", toolCall: { toolCallId: "command", kind: "execute" }, options: [{ optionId: "yes", name: "Allow", kind: "allow_once" }] })).toEqual({ outcome: { outcome: "cancelled" } }); return { stopReason: "end_turn" as const }; });
-		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => { expect(params.clientCapabilities?.terminal).toBe(false); return { protocolVersion: params.protocolVersion, agentCapabilities: {} }; }).onRequest("session/new", () => ({ sessionId: "native", ...(source === "config" ? { configOptions: [option] } : { modes: { currentModeId: source === "current" ? "analysis" : "default", availableModes: [{ id: "analysis", name: "Analysis" }] } }) })).onRequest("session/set_mode", setMode).onRequest("session/set_config_option", setConfig).onRequest("session/prompt", prompt).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => { expect(params.clientCapabilities?.terminal).toBe(false); return { protocolVersion: params.protocolVersion, agentCapabilities: {} }; }).onRequest("session/new", () => ({ sessionId: "native", ...(source === "config" || source === "both" ? { configOptions: [option] } : {}), ...(source !== "config" ? { modes: { currentModeId: source === "current" ? "analysis" : "default", availableModes: [{ id: source === "both" ? "legacy-only" : "analysis", name: "Analysis" }] } } : {}) })).onRequest("session/set_mode", setMode).onRequest("session/set_config_option", setConfig).onRequest("session/prompt", prompt).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
 		const onModes = vi.fn();
 		try {
 			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run({ ...task, mode: "plan", nativeMode: source === "unavailable" ? "missing" : "analysis" }, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onModes, onApproval });
 			if (source === "unavailable") { await expect(run).rejects.toThrow("no longer offers"); expect(prompt).not.toHaveBeenCalled(); }
-			else { await run; if (source === "current") { expect(setMode).not.toHaveBeenCalled(); expect(setConfig).not.toHaveBeenCalled(); } else expect(source === "native" ? setMode : setConfig).toHaveBeenCalledOnce(); expect(onModes).toHaveBeenLastCalledWith([{ id: "analysis", name: "Analysis", default: true }]); }
+			else { await run; if (source === "current") { expect(setMode).not.toHaveBeenCalled(); expect(setConfig).not.toHaveBeenCalled(); } else expect(source === "native" ? setMode : setConfig).toHaveBeenCalledOnce(); if (source === "both") expect(setMode).not.toHaveBeenCalled(); expect(onModes).toHaveBeenLastCalledWith([{ id: "analysis", name: "Analysis", default: true }]); }
 			expect(onApproval).not.toHaveBeenCalled();
 		} finally { connection.close(); }
 	});
