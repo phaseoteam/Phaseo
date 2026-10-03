@@ -16,7 +16,8 @@ logged. Response bodies and credentials are excluded.
 ## GitHub's role and cost
 
 GitHub Actions provides external execution, not the production log dashboard
-or incident-management service. The workflow is manual-only, uses a standard
+or incident-management service. The workflow runs on pilot pull-request changes
+and manual dispatch, uses a standard
 Ubuntu runner in the public Phaseo repository, and uploads no artifacts.
 It runs no model generations, writes to no database, and creates no incidents.
 No new packages or subscriptions are required. Hosting requests still count
@@ -33,7 +34,8 @@ Default runs publish nothing. To enable delivery, set repository variable
 `HEALTH_PILOT_PUBLISH_AXIOM=true`, variable `HEALTH_AXIOM_DATASET` to an
 existing dataset, and secret `HEALTH_AXIOM_TOKEN` to a token with ingest
 access to that dataset. The workflow only exposes it on main in the public
-phaseoteam/Phaseo repository. Local publishing requires the same environment
+phaseoteam/Phaseo repository during manual dispatch. Pull-request runs never
+receive this token or publish telemetry. Local publishing requires the same environment
 variables and the explicit `--publish-axiom` option.
 
 Five results every 15 minutes would produce 14,400 small events per 30-day

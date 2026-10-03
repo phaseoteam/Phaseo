@@ -1,8 +1,12 @@
 name: Phaseo Health Pilot
 
-# Manual-only while proving coverage and delivery. No incidents are created.
+# Public production probes on pilot changes. No incidents are created.
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/health-pilot.yml'
+      - 'scripts/health-pilot.*'
 
 permissions:
   contents: read
@@ -13,8 +17,7 @@ concurrency:
 
 jobs:
   health:
-    # Require the public repository and main before exposing any telemetry secret.
-    if: github.repository == 'phaseoteam/Phaseo' && github.event.repository.private == false && github.ref == 'refs/heads/main'
+    if: github.repository == 'phaseoteam/Phaseo' && github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,10 +38,10 @@ jobs:
       - name: Validate checker
         run: node --test scripts/health-pilot.test.mjs
       - name: Run pilot without external delivery
-        if: vars.HEALTH_PILOT_PUBLISH_AXIOM != 'true'
+        if: github.event_name != 'workflow_dispatch' || github.ref != 'refs/heads/main' || vars.HEALTH_PILOT_PUBLISH_AXIOM != 'true'
         run: node scripts/health-pilot.mjs
       - name: Run pilot with Axiom delivery
-        if: vars.HEALTH_PILOT_PUBLISH_AXIOM == 'true'
+        if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.HEALTH_PILOT_PUBLISH_AXIOM == 'true'
         env:
           HEALTH_AXIOM_TOKEN: ${{ secrets.HEALTH_AXIOM_TOKEN }}
           HEALTH_AXIOM_DATASET: ${{ vars.HEALTH_AXIOM_DATASET }}
