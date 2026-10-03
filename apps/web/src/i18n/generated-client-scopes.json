@@ -192,8 +192,9 @@
     "Product.appsDetail",
     "SettingsUI.apps"
   ],
-  "[\"Catalogue.common\",\"Catalogue.modelDetail\",\"Catalogue.models\",\"Catalogue.updatesCalendar.weekdayAnalysis.showMore\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.chat\",\"Common.ui.chatComposer\",\"Common.ui.chatRooms\",\"Common.ui.chatSettings\",\"Common.ui.filters\",\"Common.ui.media\",\"Common.ui.modelSettingsDialog\",\"Common.ui.moderation\",\"Common.ui.requestBuilder\",\"Common.ui.responseLayout\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.temporaryChat\",\"Product.chat\",\"Product.chatRooms\",\"Product.experimentsCouncil\",\"Product.tools.request\",\"SettingsUI.chatGaps\",\"SettingsUI.strings\"]": [
+  "[\"Catalogue.common\",\"Catalogue.modelDetail\",\"Catalogue.models\",\"Catalogue.updatesCalendar.weekdayAnalysis.showMore\",\"Common.ui.accessibility\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.chat\",\"Common.ui.chatComposer\",\"Common.ui.chatRooms\",\"Common.ui.chatSettings\",\"Common.ui.filters\",\"Common.ui.media\",\"Common.ui.modelSettingsDialog\",\"Common.ui.moderation\",\"Common.ui.requestBuilder\",\"Common.ui.responseLayout\",\"Common.ui.select\",\"Common.ui.status\",\"Common.ui.temporaryChat\",\"Product.chat\",\"Product.chatRooms\",\"Product.experimentsCouncil\",\"Product.tools.request\",\"SettingsUI.chatGaps\",\"SettingsUI.strings\"]": [
     "Catalogue.updatesCalendar.weekdayAnalysis.showMore",
+    "Common.ui.accessibility",
     "Common.ui.actions",
     "Common.ui.auditCopy",
     "Common.ui.chat",
@@ -445,7 +446,8 @@
     "Product.tools.request.topP",
     "Product.tools.request.user"
   ],
-  "[\"Catalogue.common\",\"Catalogue.models\",\"Common.ui.auditCopy\",\"Common.ui.chatRooms\",\"Common.ui.requestBuilder\",\"Common.ui.status\",\"Product.chat\",\"Product.chatRooms.aiElements\",\"Product.experiments\",\"Product.experimentsCouncil\"]": [
+  "[\"Catalogue.common\",\"Catalogue.models\",\"Common.ui.accessibility.openActionMenu\",\"Common.ui.auditCopy\",\"Common.ui.chatRooms\",\"Common.ui.requestBuilder\",\"Common.ui.status\",\"Product.chat\",\"Product.chatRooms.aiElements\",\"Product.experiments\",\"Product.experimentsCouncil\"]": [
+    "Common.ui.accessibility.openActionMenu",
     "Common.ui.auditCopy.chatHistoryFailed",
     "Common.ui.auditCopy.loadingChat",
     "Common.ui.chatRooms",

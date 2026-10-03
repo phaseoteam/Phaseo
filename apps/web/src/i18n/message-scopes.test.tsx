@@ -45,6 +45,16 @@ describe("route message selection", () => {
 		expect((shell.Common as Record<string, unknown>).authFlows).toBeUndefined();
 		expect((shell.Common as Record<string, Record<string, unknown>>).ui.modelEditor).toBeUndefined();
 		expect((shell.Product as Record<string, unknown>).developerMenu).toBeUndefined();
+		expect((shell.Common as Record<string, unknown>).footer).toEqual({ about: messages.Common.footer.about });
+		const accessibility = (shell.Common as Record<string, Record<string, Record<string, unknown>>>).ui.accessibility;
+		expect(accessibility.openActionMenu).toBeUndefined();
+		expect(accessibility.dropToAttachFiles).toBeUndefined();
+		const chatScope = scopes.find(scope => scope.includes("Common.ui.accessibility"));
+		expect(chatScope).toBeDefined();
+		const chatMessages = combineMessages(shell, selectClientMessages(messages, chatScope!));
+		const chatTranslate = createTranslator({ locale, messages: chatMessages, onError } as never);
+		expect(chatTranslate("Common.ui.accessibility.dropToAttachFiles" as never)).toBeTruthy();
+		expect(chatTranslate("Common.ui.accessibility.openActionMenu" as never)).toBeTruthy();
 		expect(() => selectMessages(messages, lazyScopes.developerMenu)).not.toThrow();
 		const optional = selectMessages(messages, lazyScopes.actionDock);
 		const optionalTranslate = createTranslator({ locale, messages: combineMessages(shell, optional), onError } as never);
@@ -70,12 +80,12 @@ describe("route message selection", () => {
 		expect(JSON.stringify(shell).length).toBeLessThan(JSON.stringify(messages).length / 3);
 	});
 
-	it("keeps the English homepage client dictionary below 10 KB compressed", async () => {
+	it("keeps the English homepage client dictionary below 7.5 KB compressed", async () => {
 		const messages = await getPublicMessages("en-GB");
 		const [homepage] = routeNamespaces(join(process.cwd(), "src/app/[locale]/(dashboard)")).filter(scope => scope.includes("Site.homeQuickstart"));
 		expect(homepage).toBeDefined();
 		const selected = combineMessages(selectMessages(messages, SHELL_MESSAGE_NAMESPACES), selectClientMessages(messages, homepage));
-		expect(gzipSync(JSON.stringify(selected)).byteLength).toBeLessThan(10_000);
+		expect(gzipSync(JSON.stringify(selected)).byteLength).toBeLessThan(7_500);
 		expect((selected.Site as Record<string, unknown>).home).toBeUndefined();
 		expect((selected.SettingsUI as Record<string, unknown>).providerCatalogCopy).toBeUndefined();
 	});
