@@ -21,6 +21,9 @@ public RPC response contracts are preserved. UTC end boundaries are exclusive;
 refreshing one period cannot erase the next period. The user report reads facts
 and usage directly, avoiding full compatibility-row JSON, pricing and attempts.
 The workspace report has a narrow success-only covering time index.
+The models page's free-router usage summary also has a covering partial index
+for `requested_model_input = 'phaseo/free'`, avoiding wide ordinary request
+rows when rebuilding its cached catalogue response. Its metric SQL is unchanged.
 
 Freshness is eventual: usually one or two scheduler ticks for today's day and
 the current week, longer when historical corrections or failed buckets queue.

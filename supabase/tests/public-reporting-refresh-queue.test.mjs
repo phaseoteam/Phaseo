@@ -57,6 +57,10 @@ try {
   await db.exec(`alter function refresh_public_model_user_usage_daily(timestamptz,timestamptz) rename to fixture_legacy_refresh;`);
   await db.exec(await read('../migrations/20261003094224_cover_public_workspace_retention_reads.sql'));
   await db.exec(await read(migrationFile));
+  await db.exec(await read('../migrations/20261003094842_cover_free_router_usage_reads.sql'));
+  const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
+  assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
+  assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
   const scalar = async sql => (await db.query(sql)).rows[0];
   const daily = async () => (await db.query(`select day_bucket::text,model_id,provider_id,actor_hash,requests::text,tokens::text
     from public_model_user_usage_daily where day_bucket < '2026-10-05' order by 1,2,3,4`)).rows;
