@@ -2,6 +2,7 @@ import type { Readable, Writable } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
 
 export type PiRecord = Record<string, unknown>;
+export class PiCommandRejectedError extends Error {}
 export class PiRpc {
 	private readonly decoder = new StringDecoder("utf8");
 	private buffer = "";
@@ -23,7 +24,7 @@ export class PiRpc {
 					const record = JSON.parse(line) as PiRecord;
 					if (!record || typeof record !== "object" || Array.isArray(record)) throw new Error("Invalid Pi record.");
 					const pending = typeof record.id === "string" && record.type === "response" ? this.pending.get(record.id) : undefined;
-					if (pending) { this.pending.delete(record.id as string); clearTimeout(pending.timer); if (record.success === true) pending.resolve(record.data); else pending.reject(new Error(typeof record.error === "string" ? record.error : "Pi command failed.")); }
+					if (pending) { this.pending.delete(record.id as string); clearTimeout(pending.timer); if (record.success === true) pending.resolve(record.data); else pending.reject(new PiCommandRejectedError(typeof record.error === "string" ? record.error : "Pi command failed.")); }
 					else this.onEvent(record);
 				} catch (error) { this.close(error instanceof Error ? error : new Error("Invalid Pi record.")); return; }
 			}

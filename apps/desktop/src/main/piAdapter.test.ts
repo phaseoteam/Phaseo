@@ -7,6 +7,7 @@ import type { PiRecord } from "./piRpc";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("./nativeProcess", () => ({ spawnNative: native.spawn }));
 import { PiAdapter } from "./piAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => void) {
 	const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
@@ -16,6 +17,28 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
+	it("waits for late steering admission before finishing", async () => {
+		let send!: (value: PiRecord) => void; let steerId: unknown; let stateId: unknown; let ready!: () => void;
+		const started = new Promise<void>(resolve => { ready = resolve; }); let states = 0;
+		fixture((packet, output) => {
+			send = output;
+			if (packet.type === "get_state") { states++; if(states===2) stateId=packet.id; else output({type:"response",id:packet.id,success:true,data:{sessionFile:"/session",isStreaming:false,pendingMessageCount:0}}); }
+			if (packet.type === "prompt") { output({type:"response",id:packet.id,success:true,data:{disposition:"started"}}); ready(); }
+			if (packet.type === "steer") { expect(packet.message).toBe("Late instruction"); steerId=packet.id; }
+		});
+		const adapter=new PiAdapter(); let finished=false; const run=adapter.run(task,"/project","Hello",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"}).then(()=>{finished=true;}); await started;
+		send({type:"agent_settled"}); await vi.waitFor(()=>expect(stateId).toBeDefined());
+		const steering=adapter.steer({id:"instruction",text:"Late instruction",createdAt:""},[]); send({type:"response",id:stateId,success:true,data:{isStreaming:false,pendingMessageCount:0}}); await Promise.resolve(); expect(finished).toBe(false);
+		send({type:"response",id:steerId,success:true,data:{disposition:"queued"}}); await steering; await run; expect(states).toBeGreaterThan(2);
+		await expect(adapter.steer({id:"too-late",text:"Late instruction",createdAt:""},[])).rejects.toThrow("not accepting");
+	});
+	it("distinguishes native steering rejection from disconnect and clears native queues before abort", async () => {
+		let pendingId: unknown; let ready!: () => void; const started=new Promise<void>(resolve=>{ready=resolve;}); const commands:unknown[]=[]; let attempts=0;
+		fixture((packet,output)=>{commands.push(packet.type); if(packet.type==="get_state") output({type:"response",id:packet.id,success:true,data:{sessionFile:"/session"}}); if(packet.type==="prompt") {output({type:"response",id:packet.id,success:true,data:{disposition:"started"}});ready();} if(packet.type==="steer") {attempts++; if(attempts===1) output({type:"response",id:packet.id,success:false,error:"Rejected by native handler"}); else pendingId=packet.id;} if(packet.type==="clear_queue" || packet.type==="abort") output({type:"response",id:packet.id,success:true});});
+		const adapter=new PiAdapter(); const run=adapter.run(task,"/project","Hello",{onDelta:vi.fn(),onSession:vi.fn(),onApproval:async()=>"decline"}); const stopped=expect(run).rejects.toThrow("stopped"); await started;
+		await expect(adapter.steer({id:"reject",text:"Reject",createdAt:""},[])).rejects.toBeInstanceOf(AgentInputRejectedError);
+		const uncertain=adapter.steer({id:"uncertain",text:"Uncertain",createdAt:""},[]); const uncertainRejected=expect(uncertain).rejects.not.toBeInstanceOf(AgentInputRejectedError); expect(pendingId).toBeDefined(); await adapter.cancel(); await stopped; await uncertainRejected; expect(commands.slice(-2)).toEqual(["clear_queue","abort"]);
+	});
 	it("waits past agent_end and compaction, preserves native forks and streams extension dialogs", async () => {
 		let stateCalls = 0; let send!: (value: PiRecord) => void; let promptStarted!: () => void;
 		const started = new Promise<void>(resolve => { promptStarted = resolve; });

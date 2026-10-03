@@ -80,7 +80,11 @@ identity before delivery. Rejected or unacknowledged instructions remain visible
 for explicit queue/discard decisions; restart never replays an uncertain send.
 OpenCode steering uses stable native inbox identities and waits for accepted
 instructions to settle, including submissions overlapping a completion event.
-Other harnesses still use ordinary queued messages.
+Pi live steering uses its native steering queue and preserves rejection versus
+uncertain delivery. Completion checks wait through concurrent steering admission,
+native queue consumption and compaction. Cancellation clears native queued input
+before aborting, because Pi can otherwise continue queued messages after abort.
+Claude and other harnesses still use ordinary queued messages.
 
 OpenCode resumed tasks rediscover pending forms before sending the next message,
 deduplicate snapshot/event overlap and continue consuming requests while waiting
@@ -108,7 +112,7 @@ host filesystem/terminal access, and report native versions, capabilities and
 sign-in methods. Active turns prevent executable/argument changes. An isolated
 Electron fixture verifies connection checks and profile management without inference.
 
-Evidence: desktop lint/typecheck/build pass; 133 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 135 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

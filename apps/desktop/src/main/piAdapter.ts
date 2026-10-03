@@ -1,8 +1,9 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import type { Account, Task } from "../shared/workspace";
+import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
 import { spawnNative } from "./nativeProcess";
-import { PiRpc } from "./piRpc";
+import { PiCommandRejectedError, PiRpc } from "./piRpc";
 import type { PiRecord } from "./piRpc";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
@@ -13,6 +14,15 @@ export class PiAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
 	private rpc?: PiRpc;
 	private cancelled = false;
+	private acceptingInput = false;
+	private inputGeneration = 0;
+	private readonly inputs = new Set<Promise<void>>();
+	steer(message: QueuedMessage, attachments: AttachmentContent[]): Promise<void> {
+		if (!this.rpc || !this.acceptingInput || this.cancelled) return Promise.reject(new AgentInputRejectedError("Pi is not accepting live instructions."));
+		this.inputGeneration++;
+		const sending = this.rpc.request({ type: "steer", message: attachmentPrompt(message.text, attachments), images: attachments.filter(file => file.kind === "image").map(file => ({ type: "image", data: file.dataUrl!.split(",")[1], mimeType: file.mimeType })) }).then(() => {}, error => { if (error instanceof PiCommandRejectedError) throw new AgentInputRejectedError(error.message); throw error; });
+		this.inputs.add(sending); void sending.finally(() => this.inputs.delete(sending)).catch(() => {}); return sending;
+	}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
 		if (task.mode === "code" && await callbacks.onApproval("Pi native tools", "Allow Pi to run its configured tools for this turn? Its native extensions and policies control individual tool actions.") !== "accept") throw new Error("Pi execution declined.");
 		if (this.cancelled) throw new Error("Task stopped.");
@@ -30,8 +40,10 @@ export class PiAdapter implements AgentAdapter {
 		const probeIdle = async () => {
 			if (probing || this.cancelled) return; probing = true;
 			try {
+				const generation = this.inputGeneration; const hadPending = this.inputs.size > 0;
+				await Promise.allSettled([...this.inputs]);
 				const state = await rpc.request<PiRecord>({ type: "get_state" });
-				if (state.isStreaming === false && state.isCompacting !== true && Number(state.pendingMessageCount ?? state.queuedMessageCount ?? 0) === 0) { if (failure) rejectTurn(new Error(failure)); else resolveTurn(); }
+				if (!hadPending && generation === this.inputGeneration && this.inputs.size === 0 && state.isStreaming === false && state.isCompacting !== true && Number(state.pendingMessageCount ?? state.queuedMessageCount ?? 0) === 0) { this.acceptingInput = false; if (failure) rejectTurn(new Error(failure)); else resolveTurn(); }
 				else probe = setTimeout(() => { void probeIdle(); }, 100);
 			} catch (error) { rejectTurn(error instanceof Error ? error : new Error("Pi state check failed.")); }
 			finally { probing = false; }
@@ -73,15 +85,15 @@ export class PiAdapter implements AgentAdapter {
 			}
 			const state = await rpc.request<PiRecord>({ type: "get_state" });
 			if (typeof state.sessionFile !== "string" || !state.sessionFile) throw new Error("Pi did not create a persisted session.");
-			callbacks.onSession(state.sessionFile); receiving = true;
+			callbacks.onSession(state.sessionFile); receiving = true; this.acceptingInput = true;
 			const response = await rpc.request<PiRecord | undefined>({ type: "prompt", message: attachmentPrompt(text, attachments), images: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image", data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType })) }, 0);
 			if (response?.disposition === "handled") await probeIdle();
 			await turn;
-		} finally { clearTimeout(probe); rpc.close(); child.stdin.end(); child.kill(); }
+		} finally { this.acceptingInput = false; clearTimeout(probe); rpc.close(); child.stdin.end(); child.kill(); }
 	}
 	async cancel() {
-		this.cancelled = true;
-		try { await this.rpc?.request({ type: "abort" }, 1000); }
+		this.cancelled = true; this.acceptingInput = false;
+		try { try { await this.rpc?.request({ type: "clear_queue" }, 1000); } finally { await this.rpc?.request({ type: "abort" }, 1000); } }
 		finally { this.rpc?.close(new Error("Task stopped.")); this.child?.kill(); }
 	}
 }
