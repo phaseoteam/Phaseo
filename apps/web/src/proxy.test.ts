@@ -109,6 +109,26 @@ describe("public localisation proxy", () => {
 		expect(isLocalizedPagePath("/docs/getting-started")).toBe(false);
 	});
 
+	it.each([
+		"/settings/keys/example.json",
+		"/settings/keys/key.png",
+		"/settings/keys/OAuth%3A%20https%3A%2F%2Fchatgpt.com%2Foauth%2Fclient.json?workspaceId=6108396e-0e12-425d-91ff-a02d39a346e0&prefix=38eUe1",
+	])("routes asset-like key names as pages: %s", async (path) => {
+		configureSupabase({ user: { id: "user-1" }, session: { access_token: "session-token" } });
+		const url = new URL(path, origin);
+		expect(isLocalizedPagePath(url.pathname)).toBe(true);
+		expect(unstable_doesMiddlewareMatch({ config, url: url.href })).toBe(true);
+		const response = await proxy(new NextRequest(url));
+		const rewritten = new URL(response.headers.get("x-middleware-rewrite")!);
+		expect(rewritten.pathname).toBe(`/en-GB${url.pathname}`);
+		expect(rewritten.search).toBe(url.search);
+		for (const locale of publicLocales) {
+			const localized = `/${locale}${url.pathname}`;
+			expect(isLocalizedPagePath(localized)).toBe(true);
+			expect(unstable_doesMiddlewareMatch({ config, url: `${origin}${localized}` })).toBe(true);
+		}
+	});
+
 	it("runs locale routing for dotted model identifiers", async () => {
 		const pathname = "/models/openai/gpt-4.1";
 		expect(
