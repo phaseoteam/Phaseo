@@ -62,6 +62,37 @@ try {
   await db.exec(await read('../migrations/20261003100138_isolate_reporting_signals_and_queue_repairs.sql'));
   await db.exec(await read('../migrations/20261003101150_bound_reporting_signal_shards.sql'));
   await db.exec(await read('../migrations/20261003094842_cover_free_router_usage_reads.sql'));
+  await db.exec(`alter table v2_request_facts add column byok boolean;
+    alter table gateway_requests add column byok boolean;
+    create table v2_request_attempts(request_event_id uuid,safe_metadata jsonb);
+    create table gateway_upstream_requests(gateway_request_id uuid,gateway_request_created_at timestamptz,key_source text);`);
+  await db.exec(await read('../migrations/20261003102631_preserve_reports_during_metadata_pruning.sql'));
+  await db.exec(`alter table v2_request_facts add column app_id uuid,add column cloudflare_colo text,
+    add column status_code integer,add column tool_call_count bigint default 0,add column tool_call_succeeded boolean,
+    add column structured_output_attempted boolean,add column structured_output_succeeded boolean,
+    add column latency_ms bigint,add column generation_ms bigint,add column throughput numeric,
+    add column gateway_total_ms bigint,add column internal_dispatch_ms bigint,add column cost_nanos numeric default 0;
+    alter table v2_request_attempts add column success boolean;
+    alter table v2_request_usage add column modality text default 'text',add column unit text default 'tokens';`);
+  const metrics = `requests bigint,successful_requests bigint,failed_requests bigint,rate_limited_requests bigint,
+    tool_call_count bigint,tool_call_requests bigint,tool_call_successes bigint,structured_output_attempts bigint,
+    structured_output_successes bigint,latency_sum_ms bigint,latency_count bigint,generation_sum_ms bigint,
+    generation_count bigint,throughput_sum numeric,throughput_count bigint,gateway_total_sum_ms bigint,
+    gateway_total_count bigint,internal_dispatch_sum_ms bigint,internal_dispatch_count bigint,
+    upstream_attempts bigint,failed_upstream_attempts bigint,cached_input_tokens numeric,input_tokens numeric,cost_nanos numeric`;
+  for(const table of ['private_usage_daily','public_usage_daily','public_usage_hourly']) {
+    await db.exec(`create table v2_${table}(rollup_id uuid primary key default gen_random_uuid(),
+      ${table==='public_usage_hourly'?'bucket_start timestamptz':'usage_date date'},
+      ${table==='private_usage_daily'?'workspace_id uuid,':''} app_id uuid,model_slug text,provider_model_id text,
+      cloudflare_colo text,${metrics});
+      create table v2_${table}_meters(rollup_id uuid references v2_${table} on delete cascade,
+        meter_key text,modality text,unit text,quantity numeric);`);
+  }
+  await db.exec(`create table v2_rollup_refresh_state(rollup_name text,bucket_start timestamptz,last_started_at timestamptz,
+    last_completed_at timestamptz,source_watermark timestamptz,status text,error_message text,updated_at timestamptz,
+    primary key(rollup_name,bucket_start));`);
+  await db.exec(await functionFrom('../migrations/20260722154000_v2_analytics_outbox_processor.sql','process_v2_analytics_outbox'));
+  await db.exec(await read('../migrations/20261003102642_repair_previous_analytics_grains.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
   assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
@@ -76,13 +107,13 @@ try {
     assert.fail('Queue did not drain');
   };
   await db.exec(`insert into v2_model_provider_routes values('route','provider');
-    insert into gateway_requests values('00000000-0000-0000-0000-000000000001','2026-10-03 10:00Z','model:free','free',true);
-    insert into v2_request_facts values
+    insert into gateway_requests(id,created_at,api_model_id,pricing_plan,is_free_variant) values('00000000-0000-0000-0000-000000000001','2026-10-03 10:00Z','model:free','free',true);
+    insert into v2_request_facts(request_event_id,occurred_at,workspace_id,routed_model_slug,requested_model_slug,requested_model_input,provider_model_id,safe_metadata,end_user_id,key_id,success,gateway_request_id,gateway_request_created_at) values
       ('00000000-0000-0000-0000-000000000001','2026-10-03 10:00Z','10000000-0000-0000-0000-000000000001','model','model','model:free','route','{}',null,null,true,'00000000-0000-0000-0000-000000000001','2026-10-03 10:00Z'),
       ('00000000-0000-0000-0000-000000000002','2026-10-03 23:59:59.999999Z','10000000-0000-0000-0000-000000000002','model','model','model','route','{"oauth_user_id":"20000000-0000-0000-0000-000000000001"}','end-user',null,true,null,null),
       ('00000000-0000-0000-0000-000000000003','2026-10-04 00:00Z','10000000-0000-0000-0000-000000000001',null,'model','model',null,'{}','end-user',null,false,null,null),
       ('00000000-0000-0000-0000-000000000004','2026-10-04 01:00Z','10000000-0000-0000-0000-000000000001',null,'model','model',null,'{}','end-user',null,true,null,null);
-    insert into v2_request_usage values
+    insert into v2_request_usage(request_event_id,meter_key,quantity,sequence) values
       ('00000000-0000-0000-0000-000000000001','input_tokens',1.5,0),
       ('00000000-0000-0000-0000-000000000001','input_tokens',2.5,1),
       ('00000000-0000-0000-0000-000000000001','output_tokens',8,0),
@@ -150,8 +181,54 @@ try {
   }
   assert.equal((await scalar(`select count(*)::int n from cron.job where jobname like 'refresh-public-%' and active`)).n,0);
   assert.equal((await scalar(`select has_function_privilege('anon','private.drain_public_reporting_refresh()','EXECUTE') allowed`)).allowed,false);
-  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, transaction lanes, 64-signal backoff cap, outbox repairs, generation races, rollback/backoff and permissions passed.');
+  // Run the real bounded retention function: cascaded meters must not dirty
+  // durable historical reports or create correction outbox work.
+  await db.exec(`drop trigger fixture_fail on public_model_user_usage_daily;
+    insert into v2_request_facts(request_event_id,occurred_at,workspace_id,routed_model_slug,success,byok)
+    values('00000000-0000-0000-0000-000000000099','2025-01-01','10000000-0000-0000-0000-000000000001','retained-model',true,true);
+    insert into v2_request_usage(request_event_id,meter_key,quantity,sequence) values('00000000-0000-0000-0000-000000000099','input_tokens',10,1);
+    select public.refresh_public_model_user_usage_daily('2025-01-01','2025-01-02');
+    select public.refresh_public_model_workspace_usage_weekly('2024-12-30','2025-01-06');
+    delete from private.public_reporting_refresh_queue;
+    delete from private.v2_analytics_previous_grains;
+    delete from public.v2_analytics_outbox;`);
+  const retainedReports = (await db.query(`select * from public_model_user_usage_daily where day_bucket='2025-01-01'`)).rows;
+  assert.equal((await scalar(`select public.prune_byok_request_metadata(90,100) result`)).result.v2_deleted,1);
+  assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue`)).n,0);
+  assert.equal((await scalar(`select count(*)::int n from v2_analytics_outbox`)).n,0);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,0);
+  assert.deepEqual((await db.query(`select * from public_model_user_usage_daily where day_bucket='2025-01-01'`)).rows,retainedReports);
+  assert.equal((await scalar(`select requests::int n from public_model_workspace_usage_weekly where model_id='retained-model'`)).n,1);
+  assert.equal((await scalar(`select coalesce(current_setting('phaseo.pruning_byok_metadata',true),'') flag`)).flag,'');
+  await db.exec(`update v2_request_facts set routed_model_slug='after-pruning' where request_event_id='00000000-0000-0000-0000-000000000001'`);
+  assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue`)).n,2);
+  // Seed an old V2 group, then move its last request through two identities.
+  await db.exec(`delete from private.v2_analytics_previous_grains;
+    delete from v2_analytics_outbox;
+    select private.enqueue_v2_analytics_correction('00000000-0000-0000-0000-000000000001');
+    select public.process_v2_analytics_outbox(10);
+    update v2_request_facts set occurred_at='2026-10-07',routed_model_slug='intermediate' where request_event_id='00000000-0000-0000-0000-000000000001';
+    update v2_request_facts set occurred_at='2026-10-08',routed_model_slug='final' where request_event_id='00000000-0000-0000-0000-000000000001';`);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,2);
+  await db.exec(`create trigger fixture_old_grain_fail before insert on v2_public_usage_daily
+    for each row execute function fixture_fail();`);
+  await assert.rejects(db.exec(`select public.process_v2_analytics_outbox(10)`),/fixture/);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,2);
+  await db.exec(`drop trigger fixture_old_grain_fail on v2_public_usage_daily`);
+  await db.exec(`select public.process_v2_analytics_outbox(10);`);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,1);
+  await db.exec(`select public.process_v2_analytics_outbox(10);`);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,0);
+  for(const table of ['private_usage_daily','public_usage_daily','public_usage_hourly']) {
+    assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_${table} where model_slug='after-pruning'`)).n,0);
+    assert.equal((await scalar(`select sum(requests)::int n from v2_${table} where model_slug='final'`)).n,1);
+  }
+  await db.exec(`delete from v2_request_facts where request_event_id='00000000-0000-0000-0000-000000000001';
+    select public.process_v2_analytics_outbox(10);`);
+  assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_public_usage_daily where model_slug='final'`)).n,0);
+  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, 64-signal cap, retention preservation, former-grain moves/deletions, atomic repair rollback, outbox repairs and permissions passed.');
 } catch(error) {
   console.error(error.message,error.code ?? '',error.where ?? '');
   process.exitCode=1;
 } finally { await db.close(); }
+

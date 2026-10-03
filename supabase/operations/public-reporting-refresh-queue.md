@@ -6,8 +6,14 @@ gateway's existing V2 outbox worker already updates the leaderboard rollups.
 Its backlog and watermark must be checked separately from this queue. Direct
 fact updates and meter mutations now mark their request pending in that outbox,
 so ordinary corrections no longer rely on replaying all completed history.
-The existing processor does not reconcile removed or moved-away old grains;
-those historical repairs still require an explicitly scoped repair.
+Fact moves and explicit deletions additionally record their former dimensions
+in a private queue. Each existing V2 worker call claims one former identity
+alongside its ordinary bounded batch and reuses the same metric queries to
+recompute both sides, including an old group with no remaining source rows.
+The former identity is acknowledged only after successful atomic publication.
+Hourly BYOK metadata pruning suppresses both reporting and correction signals
+for its duration, including cascaded meters, preserving durable old aggregates.
+The transaction-local suppression flag is restored before pruning returns.
 
 User counts and workspace return rates now refresh only dirty UTC periods.
 Fact inserts, corrections, deletions, usage-meter changes and authoritative
@@ -59,6 +65,8 @@ order by start_time desc limit 10;
 
 select status, count(*), min(occurred_at) as oldest
 from public.v2_analytics_outbox where status <> 'complete' group by status;
+
+select count(*), min(queued_at) as oldest from private.v2_analytics_previous_grains;
 
 select rollup_name, max(last_completed_at) as latest
 from public.v2_rollup_refresh_state group by rollup_name;
