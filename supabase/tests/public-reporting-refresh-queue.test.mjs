@@ -60,6 +60,7 @@ try {
   await db.exec(await read('../migrations/20261003094224_cover_public_workspace_retention_reads.sql'));
   await db.exec(await read(migrationFile));
   await db.exec(await read('../migrations/20261003100138_isolate_reporting_signals_and_queue_repairs.sql'));
+  await db.exec(await read('../migrations/20261003101150_bound_reporting_signal_shards.sql'));
   await db.exec(await read('../migrations/20261003094842_cover_free_router_usage_reads.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
@@ -138,12 +139,18 @@ try {
     select private.enqueue_public_reporting_refresh('2026-09-01'); commit;`);
   await db.exec(`select private.enqueue_public_reporting_refresh('2026-09-01')`);
   assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue where bucket_start='2026-09-01'`)).n,2);
+  for(let i=0;i<200;i++) {
+    await db.exec(`select private.enqueue_public_reporting_refresh('2026-10-04')`);
+  }
+  assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue where report='users_daily' and bucket_start='2026-10-04'`)).n,64);
+  assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue where report='workspaces_weekly' and bucket_start='2026-09-28'`)).n,64);
+  assert.equal((await scalar(`select (retry_after > clock_timestamp()+interval '1 hour') backed_off from private.public_reporting_refresh_backoff where report='users_daily'`)).backed_off,true);
   for(const role of ['anon','authenticated','service_role']) {
     assert.equal((await scalar(`select has_table_privilege('${role}','private.public_reporting_refresh_queue','SELECT') allowed`)).allowed,false);
   }
   assert.equal((await scalar(`select count(*)::int n from cron.job where jobname like 'refresh-public-%' and active`)).n,0);
   assert.equal((await scalar(`select has_function_privilege('anon','private.drain_public_reporting_refresh()','EXECUTE') allowed`)).allowed,false);
-  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, transaction isolation, outbox repairs, generation races, rollback/backoff and permissions passed.');
+  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, transaction lanes, 64-signal backoff cap, outbox repairs, generation races, rollback/backoff and permissions passed.');
 } catch(error) {
   console.error(error.message,error.code ?? '',error.where ?? '');
   process.exitCode=1;

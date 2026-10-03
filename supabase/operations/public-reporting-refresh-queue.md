@@ -12,9 +12,11 @@ those historical repairs still require an explicitly scoped repair.
 User counts and workspace return rates now refresh only dirty UTC periods.
 Fact inserts, corrections, deletions, usage-meter changes and authoritative
 free-variant metadata corrections mark their affected days/weeks. Signals
-coalesce within each transaction into a private default-deny queue. Concurrent
-transactions append independent signals rather than locking a shared current
-day/week tuple. No scan runs inside ingestion.
+coalesce within each transaction into a private default-deny queue. Transactions
+use one of 64 lanes per period, spreading contention instead of locking the
+same two global day/week tuples. At most 64 signals exist per period, including
+during backoff; the worker never materializes an unlimited acknowledgment array.
+No scan runs inside ingestion.
 
 One bucket runs every five minutes, with a ten-second statement timeout and
 500ms lock timeout. A failed publication preserves the last good result and
@@ -28,7 +30,11 @@ User identity, tokens, free variants, success filters, workspace hashes and
 public RPC response contracts are preserved. UTC end boundaries are exclusive;
 refreshing one period cannot erase the next period. The user report reads facts
 and usage directly, avoiding full compatibility-row JSON, pricing and attempts.
-The workspace report has a narrow success-only covering time index.
+The workspace report has a narrow success-only covering time index. Both new
+index migrations contain a single `CREATE INDEX CONCURRENTLY` statement for
+populated environment rollout through the repository's Supabase CLI 2.111.
+They are intentionally standalone; do not wrap them in a transaction or apply
+through Supabase's separate GitHub branching integration.
 The models page's free-router usage summary also has a covering partial index
 for `requested_model_input = 'phaseo/free'`, avoiding wide ordinary request
 rows when rebuilding its cached catalogue response. Its metric SQL is unchanged.
