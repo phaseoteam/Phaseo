@@ -3,7 +3,7 @@ export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
 export type Project = { id: string; name: string; directory: string; createdAt: string };
-export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean };
+export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string };
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
 export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
@@ -38,6 +38,7 @@ export type TerminalCommand = { type: "open"; projectId?: string } | { type: "wr
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
+	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
@@ -85,6 +86,12 @@ export function emptyWorkspace(): Workspace {
 	return { version: 1, projects: [], accounts: [], agents: [], tasks: [] };
 }
 
+function validateApiEndpoint(endpoint: string) {
+	const url = new URL(endpoint);
+	if (url.search || url.hash) throw new Error("Use an endpoint URL without query parameters or fragments.");
+	if (url.username || url.password || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) throw new Error("Use HTTPS or a local model endpoint.");
+}
+
 export function validateCommand(value: unknown): WorkspaceCommand {
 	if (!value || typeof value !== "object") throw new Error("Invalid workspace command.");
 	const command = value as Record<string, unknown>;
@@ -101,9 +108,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!["codex", "claude", "phaseo"].includes(command.harness as string)) throw new Error("Invalid account harness.");
 		if (command.kind === "api" && command.harness === "phaseo") {
 			string("endpoint"); string("apiKey", true, 10000);
-			const url = new URL(command.endpoint as string);
-			if (url.search || url.hash) throw new Error("Use an endpoint URL without query parameters or fragments.");
-			if (url.username || url.password || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) throw new Error("Use HTTPS or a local model endpoint.");
+			validateApiEndpoint(command.endpoint as string);
 		} else if (command.kind !== "native" || command.harness === "phaseo") throw new Error("Invalid account type.");
 	} else if (command.type === "create-task" || command.type === "handoff") {
 		if (command.type === "handoff") string("id");
@@ -113,6 +118,11 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 	} else {
 		string("id");
 		switch (command.type) {
+			case "update-account":
+				string("name", false, 100); string("endpoint", false); string("apiKey", false, 10000);
+				if (command.endpoint !== undefined) validateApiEndpoint(command.endpoint as string);
+				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
+				break;
 			case "update-task":
 				string("title", false, 200);
 				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);

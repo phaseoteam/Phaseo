@@ -93,6 +93,23 @@ export class WorkspaceRuntime {
 			this.store.saveAccount({ id, name: command.name, harness: command.harness, kind: command.kind, endpoint: command.endpoint, configDirectory, configured: command.kind === "api" });
 			this.broadcast(); return this.store.get();
 		}
+		if (command.type === "update-account") {
+			const account = this.store.get().accounts.find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
+			if (command.endpoint !== undefined || command.apiKey !== undefined) {
+				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
+				if (this.store.get().tasks.some(task => task.accountId === account.id && this.running.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
+			}
+			const oldSecret = account.secretId ?? account.id;
+			if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); this.vault.set(account.secretId, command.apiKey); account.configured = true; }
+			if (command.name !== undefined) account.name = command.name;
+			if (command.endpoint !== undefined) account.endpoint = command.endpoint;
+			if (command.archived !== undefined) account.archived = command.archived;
+			try { this.store.saveAccount(account); }
+			catch (error) { if (command.apiKey !== undefined) this.vault?.remove(account.secretId!); throw error; }
+			this.broadcast();
+			if (command.apiKey !== undefined) this.vault?.remove(oldSecret);
+			return this.store.get();
+		}
 		if (command.type === "approval") {
 			const pending = this.approvals.get(command.approvalId);
 			if (!pending || pending.taskId !== command.id) throw new Error("This approval is no longer pending.");
@@ -171,7 +188,7 @@ export class WorkspaceRuntime {
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
 		try {
-			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); return this.vault.get(accountId); };
+			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.get().accounts.find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode);
 		}
 		catch (error) {

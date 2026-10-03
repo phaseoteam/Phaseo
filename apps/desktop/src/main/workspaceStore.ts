@@ -76,7 +76,7 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "add-agent" }>): Task {
+	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" }>): Task {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");
@@ -86,7 +86,7 @@ export class WorkspaceStore {
 		}
 		if (command.type === "create-task") {
 			if (command.projectId && !this.get().projects.some(project => project.id === command.projectId)) throw new Error("Project no longer exists.");
-			if (command.accountId && !this.get().accounts.some(account => account.id === command.accountId && account.harness === command.harness && account.configured)) throw new Error("Account is unavailable for this harness. Sign in first.");
+			if (command.accountId && !this.get().accounts.some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if (command.harness === "phaseo" && !command.accountId) throw new Error("Choose an API account for the Phaseo harness.");
 			if (command.harness === "acp" && !this.get().agents.some(agent => agent.id === command.agentId)) throw new Error("Choose a connected ACP agent.");
 			const now = new Date().toISOString();

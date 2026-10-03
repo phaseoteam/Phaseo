@@ -55,7 +55,7 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 	if (accountId && !account) throw new Error("Account is unavailable.");
 	if (harness === "phaseo") {
 		if (!account) throw new Error("Choose an API account.");
-		return apiModels(account, credentialVault.get(account.id));
+		return apiModels(account, credentialVault.get(account.secretId ?? account.id));
 	}
 	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 	if (harness === "pi") return piModels(cwd);
@@ -81,7 +81,8 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	try {
 		await signInNative(account, url => shell.openExternal(url), controller.signal);
 		if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
-		account.configured = true; workspaceRuntime.store.saveAccount(account);
+		const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
+		current.configured = true; workspaceRuntime.store.saveAccount(current);
 		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return state;
 	} finally { signIns.delete(id); }
 });

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync, renameSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
 import path from "node:path";
 
 export type CredentialEncryption = { available: () => boolean; encrypt: (value: string) => Buffer; decrypt: (value: Buffer) => string };
@@ -18,4 +18,5 @@ export class SecretVault {
 		if (!this.encryption.available()) throw new Error("Secure credential storage is unavailable on this device.");
 		return this.encryption.decrypt(readFileSync(this.filename(id)));
 	}
+	remove(id: string) { rmSync(this.filename(id), { force: true }); }
 }

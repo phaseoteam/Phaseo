@@ -97,8 +97,12 @@ Native account checks read Codex app-server account/limits and Claude's document
 permission; percentages never imply permission to resume. Selected Claude profiles
 clear inherited OAuth/API tokens and provider billing flags across sign-in/status/run.
 Source: https://code.claude.com/docs/en/cli-reference.
+Account editing supports names, API endpoints and encrypted key rotation. Active
+turns block connection changes; key rotation commits a new credential reference
+before retiring the old key. Account archival hides profiles from new task choices
+while preserving linked task history and supports restoration.
 
-Evidence: desktop lint/typecheck/build pass; 123 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 128 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

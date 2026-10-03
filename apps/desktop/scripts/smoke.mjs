@@ -209,6 +209,26 @@ app.whenReady().then(async () => {
 			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
 		})()`);
 		result.accountStatus = true;
+		const updatedAccount = await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;
+			const created=await api.command({type:'add-account',name:'Fixture API account',harness:'phaseo',kind:'api',endpoint:'https://example.invalid/v1',apiKey:'initial-fixture-key'}); const account=created.accounts.find(value=>value.name==='Fixture API account');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Accounts').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			let row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Fixture API account')); row.querySelectorAll('button')[0].click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const editor=row.querySelector('form'); const inputs=editor.querySelectorAll('input'); if (inputs[2].value!=='') throw new Error('Account editor exposed a stored key');
+			for(const [input,value] of [[inputs[0],'Renamed API account'],[inputs[2],'rotated-fixture-key']]) { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value); input.dispatchEvent(new Event('input',{bubbles:true})); }
+			await new Promise(resolve=>setTimeout(resolve,100)); editor.requestSubmit();
+			for(let attempt=0;attempt<30 && row.querySelector('form');attempt++) await new Promise(resolve=>setTimeout(resolve,100)); if(row.querySelector('form')) throw new Error('Account editing did not finish');
+			let updated=(await api.get()).accounts.find(value=>value.id===account.id); if(updated.name!=='Renamed API account' || !updated.secretId || updated.secretId===account.id) throw new Error('Credential rotation metadata failed');
+			Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Archive').click();
+			for(let attempt=0;attempt<30 && !(await api.get()).accounts.find(value=>value.id===account.id).archived;attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Archived accounts').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Renamed API account')); if(!row) throw new Error('Archived account missing'); Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Restore').click();
+			for(let attempt=0;attempt<30 && (await api.get()).accounts.find(value=>value.id===account.id).archived;attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			updated=(await api.get()).accounts.find(value=>value.id===account.id); if(updated.archived) throw new Error('Account restore failed');
+			Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100)); return updated;
+		})()`);
+		if (readFileSync(path.join(data, "workspace", "credentials", `${updatedAccount.secretId}.credential`)).includes(Buffer.from("rotated-fixture-key"))) throw new Error("API key was stored without encryption");
+		result.accountManagement = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);
