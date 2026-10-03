@@ -542,8 +542,8 @@ importers:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       cn:
-        specifier: ^0.2.4
-        version: 0.2.4
+        specifier: ^0.4.0
+        version: 0.4.0
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -925,8 +925,8 @@ importers:
         specifier: ^5.101.4
         version: 5.101.4(react@19.2.8)
       cn:
-        specifier: ^0.2.4
-        version: 0.2.4
+        specifier: ^0.4.0
+        version: 0.4.0
       hono:
         specifier: ^4.12.27
         version: 4.12.30
@@ -8317,8 +8317,8 @@ packages:
       react: ^18 || ^19 || ^19.0.0-rc
       react-dom: ^18 || ^19 || ^19.0.0-rc
 
-  cn@0.2.4:
-    resolution: {integrity: sha512-SzQvoh5FwizWtQg9+JueKdjWhlfCZMdu5DqNHm9q1wUlRVmKb9WXlepR9bTTbPwzEOyX1ujJ6lcCppmn3bNUCg==}
+  cn@0.4.0:
+    resolution: {integrity: sha512-qOAeUhPwPzBxx6jaeQdo646XIKliKHc2j1ZF7Ngb1o0pJZKH5gq8FkA0aVdUdPFUDXNXyUCXpCtoJISo6dhizg==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -24840,7 +24840,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  cn@0.2.4: {}
+  cn@0.4.0: {}
 
   co@4.6.0: {}
 
