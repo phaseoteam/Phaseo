@@ -32,6 +32,8 @@ try {
       gateway_request_id uuid,gateway_request_created_at timestamptz);
     create table v2_request_usage(request_event_id uuid references v2_request_facts on delete cascade,
       meter_key text,quantity numeric,sequence int,primary key(request_event_id,meter_key,sequence));
+    create table v2_analytics_outbox(request_event_id uuid primary key,workspace_id uuid,occurred_at timestamptz,
+      status text,attempt_count int,available_at timestamptz,last_error text,updated_at timestamptz);
     create table public_model_user_usage_daily(day_bucket date,model_id text,provider_id text,actor_hash text,
       requests bigint,tokens bigint,refreshed_at timestamptz,primary key(day_bucket,model_id,provider_id,actor_hash));
     create table public_model_workspace_usage_weekly(week_start date,model_id text,workspace_hash text,
@@ -57,6 +59,7 @@ try {
   await db.exec(`alter function refresh_public_model_user_usage_daily(timestamptz,timestamptz) rename to fixture_legacy_refresh;`);
   await db.exec(await read('../migrations/20261003094224_cover_public_workspace_retention_reads.sql'));
   await db.exec(await read(migrationFile));
+  await db.exec(await read('../migrations/20261003100138_isolate_reporting_signals_and_queue_repairs.sql'));
   await db.exec(await read('../migrations/20261003094842_cover_free_router_usage_reads.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
@@ -94,10 +97,13 @@ try {
   assert.equal((await scalar(`select count(*)::int n from public_model_workspace_usage_weekly where model_id='sentinel'`)).n,1);
   assert.equal((await scalar(`select requests::int n from public_model_workspace_usage_weekly where model_id='model' and workspace_hash=md5('public-model-workspace:10000000-0000-0000-0000-000000000001')`)).n,2);
   // Corrections, authoritative free metadata, usage mutations and cascades.
-  await db.exec(`update gateway_requests set api_model_id='model',pricing_plan='standard',is_free_variant=false;
+  await db.exec(`update v2_analytics_outbox set status='complete';
+    update gateway_requests set api_model_id='model',pricing_plan='standard',is_free_variant=false;
     update v2_request_usage set quantity=21 where meter_key='total_tokens';
     update v2_request_facts set success=true where request_event_id='00000000-0000-0000-0000-000000000003';`);
   await drain();
+  assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='00000000-0000-0000-0000-000000000002'`)).status,'pending');
+  assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='00000000-0000-0000-0000-000000000003'`)).status,'pending');
   const corrected = await daily();
   await db.exec(`select fixture_legacy_refresh('2026-10-03','2026-10-05')`);
   assert.deepEqual(await daily(),corrected);
@@ -112,7 +118,7 @@ try {
     create trigger fixture_race after insert on public_model_user_usage_daily for each row execute function fixture_race();
     select private.enqueue_public_reporting_refresh('2026-10-04');`);
   await db.query('select private.drain_public_reporting_refresh()');
-  assert.equal((await scalar('select count(*)::int n from private.public_reporting_refresh_queue')).n,2);
+  assert.equal((await scalar(`select count(distinct (report,bucket_start))::int n from private.public_reporting_refresh_queue`)).n,2);
   await db.exec('drop trigger fixture_race on public_model_user_usage_daily');
   await drain();
   // Publication failure restores the old result and backs off despite new traffic.
@@ -125,12 +131,19 @@ try {
   assert.equal((await scalar(`select last_error_code from private.public_reporting_refresh_queue where report='users_daily'`)).last_error_code,'P0001');
   await db.exec(`select private.enqueue_public_reporting_refresh('2026-10-04')`);
   assert.equal((await scalar(`select (retry_after > clock_timestamp()+interval '1 hour') backed_off from private.public_reporting_refresh_queue where report='users_daily'`)).backed_off,true);
+  assert.equal((await scalar(`select (retry_after > clock_timestamp()+interval '1 hour') backed_off from private.public_reporting_refresh_backoff where report='users_daily'`)).backed_off,true);
+  // Independent transactions never share a signaling tuple; repeated meters
+  // within a transaction coalesce without losing the earlier dirty period.
+  await db.exec(`begin; select private.enqueue_public_reporting_refresh('2026-09-01');
+    select private.enqueue_public_reporting_refresh('2026-09-01'); commit;`);
+  await db.exec(`select private.enqueue_public_reporting_refresh('2026-09-01')`);
+  assert.equal((await scalar(`select count(*)::int n from private.public_reporting_refresh_queue where bucket_start='2026-09-01'`)).n,2);
   for(const role of ['anon','authenticated','service_role']) {
     assert.equal((await scalar(`select has_table_privilege('${role}','private.public_reporting_refresh_queue','SELECT') allowed`)).allowed,false);
   }
   assert.equal((await scalar(`select count(*)::int n from cron.job where jobname like 'refresh-public-%' and active`)).n,0);
   assert.equal((await scalar(`select has_function_privilege('anon','private.drain_public_reporting_refresh()','EXECUTE') allowed`)).allowed,false);
-  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, generation races, rollback/backoff and permissions passed.');
+  console.log('Public reporting queue: legacy equivalence, UTC boundaries, corrections, cascades, transaction isolation, outbox repairs, generation races, rollback/backoff and permissions passed.');
 } catch(error) {
   console.error(error.message,error.code ?? '',error.where ?? '');
   process.exitCode=1;

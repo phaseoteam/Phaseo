@@ -3,18 +3,26 @@
 The historical leaderboard cron requeued every fact from the last 90 days,
 including already completed analytics work. Keep that job disabled: the
 gateway's existing V2 outbox worker already updates the leaderboard rollups.
-Its backlog and watermark must be checked separately from this queue.
+Its backlog and watermark must be checked separately from this queue. Direct
+fact updates and meter mutations now mark their request pending in that outbox,
+so ordinary corrections no longer rely on replaying all completed history.
+The existing processor does not reconcile removed or moved-away old grains;
+those historical repairs still require an explicitly scoped repair.
 
 User counts and workspace return rates now refresh only dirty UTC periods.
 Fact inserts, corrections, deletions, usage-meter changes and authoritative
 free-variant metadata corrections mark their affected days/weeks. Signals
-coalesce into a private default-deny queue. No scan runs inside ingestion.
+coalesce within each transaction into a private default-deny queue. Concurrent
+transactions append independent signals rather than locking a shared current
+day/week tuple. No scan runs inside ingestion.
 
 One bucket runs every five minutes, with a ten-second statement timeout and
 500ms lock timeout. A failed publication preserves the last good result and
 backs off for two hours, even if new traffic arrives. Successful publication
-acknowledges only the selected generation, retaining changes committed during
-the scan. The worker does not lock a queue row during its source scan.
+acknowledges only the exact signal IDs visible before scanning, retaining changes
+committed during the scan, even when an earlier sequence number commits late.
+Backoff is stored separately and checked by the worker, so new transactions
+cannot defeat it. The worker does not lock a queue row during its source scan.
 
 User identity, tokens, free variants, success filters, workspace hashes and
 public RPC response contracts are preserved. UTC end boundaries are exclusive;
@@ -33,8 +41,10 @@ bounded buckets. Catalogue/provider identity changes that don't modify facts
 require explicitly enqueueing the affected reporting periods.
 
 ```sql
-select report, bucket_start, requested_at, retry_after, last_error_code
-from private.public_reporting_refresh_queue order by retry_after;
+select report, bucket_start, count(*) as signals, min(requested_at) as oldest
+from private.public_reporting_refresh_queue group by report, bucket_start;
+
+select * from private.public_reporting_refresh_backoff;
 
 select start_time, end_time, status, return_message
 from cron.job_run_details
