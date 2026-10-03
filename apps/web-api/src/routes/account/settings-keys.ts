@@ -123,7 +123,9 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 		key.created_by ? workspaceUserProfile(context, key.created_by) : Promise.resolve(null),
 		context.client.from("workspaces").select("name").eq("id", key.workspace_id).maybeSingle(),
 		context.userClient.rpc("get_workspace_key_usage", { p_workspace_id: key.workspace_id, p_day_start: dayStart.toISOString() }),
-		context.userClient.rpc("get_usage_chart_rollup", { p_team: key.workspace_id, p_from: chartFrom, p_to: chartTo, p_bucket: "day", p_key_id: key.id }),
+		// This RPC reads a private view. Workspace membership was verified above;
+		// keep its service-client query scoped to the authorized workspace and key.
+		context.client.rpc("get_usage_chart_rollup", { p_team: context.workspaceId, p_from: chartFrom, p_to: chartTo, p_bucket: "day", p_key_id: key.id }),
 	]);
 	if (workspace.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	let chartData = null;
