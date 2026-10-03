@@ -6,6 +6,17 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+	it("acknowledges only the reviewed inbox revision without changing task order or execution", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); task.status = "completed"; store.saveTask(task);
+			const revision = task.updatedAt; store.apply({ type: "inbox-read", id: task.id, revision });
+			expect(store.getTask(task.id)).toMatchObject({ inboxReadAt: revision, updatedAt: revision, status: "completed", queue: [] });
+			task.updatedAt = "2099-01-01T00:00:00.000Z"; task.inboxReadAt = revision; store.saveTask(task, true);
+			store.apply({ type: "inbox-read", id: task.id, revision }); expect(store.getTask(task.id).inboxReadAt).toBe(revision);
+			const command = validateCommand({ type: "inbox-read", id: task.id, revision: task.updatedAt }); if (command.type !== "inbox-read") throw new Error("Wrong command"); store.apply(command); expect(store.getTask(task.id).inboxReadAt).toBe(task.updatedAt);
+		} finally { store.close(); }
+	});
 	it("recovers unacknowledged steering without replay, including instructions whose turn already finished", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-recovery-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
 		try {

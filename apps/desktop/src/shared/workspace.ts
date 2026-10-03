@@ -31,6 +31,7 @@ export type Task = {
 	forms?: { id: string; form: AgentForm }[];
 	steering?: SteeringMessage[];
 	activities?: AgentActivity[];
+	inboxReadAt?: string;
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
@@ -45,6 +46,7 @@ export type TerminalSession = { id: string; projectId?: string; title: string; c
 export type TerminalCommand = { type: "open"; projectId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
+	| { type: "inbox-read"; id: string; revision: string }
 	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
@@ -173,6 +175,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || !values.length || values.length > 100 || values.some(value => typeof value !== "string" || !value.trim() || value.length > 10000))) throw new Error("Invalid answers.");
 				break;
 			}
+			case "inbox-read": string("revision", false, 100); break;
 			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
 			case "queue-edit": string("messageId"); string("text", true, 100000); break;
 			case "queue-move":

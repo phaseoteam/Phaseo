@@ -56,8 +56,8 @@ export class WorkspaceStore {
 	saveAgentRun(result: AgentRunResult) {
 		this.db.prepare("INSERT INTO agent_runs (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(result.run.id, JSON.stringify(result));
 	}
-	saveTask(task: Task) {
-		task.updatedAt = new Date().toISOString();
+	saveTask(task: Task, preserveUpdatedAt = false) {
+		if (!preserveUpdatedAt) task.updatedAt = new Date().toISOString();
 		this.db.prepare("INSERT INTO tasks (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(task.id, JSON.stringify(task));
 	}
 	addProject(directory: string): Project {
@@ -137,6 +137,9 @@ export class WorkspaceStore {
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
+			case "inbox-read":
+				if (task.updatedAt === command.revision) { task.inboxReadAt = command.revision; this.saveTask(task, true); }
+				return task;
 			case "steer-queue":
 			case "steer-discard": {
 				const message = task.steering?.find(value => value.id === command.messageId);

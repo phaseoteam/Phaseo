@@ -61,7 +61,7 @@ Task and attachment drafts persist across navigation, with local previews.
 ACP agents can request approved command terminals with bounded UTF-8 output,
 exit/kill/release lifecycle and process-tree cleanup. Agent-managed ACP sign-in
 offers the agent's native authentication methods when authentication is required;
-interactive terminal sign-in remains a gap.
+interactive terminal sign-in is described below.
 OpenCode session forms support typed values, conditional/default fields,
 explicit external acknowledgements, cancellation and native validation retries.
 Provider-defined patterns are validated by OpenCode rather than evaluated in
@@ -167,7 +167,9 @@ disable optional index locking. Real Git fixtures verify commit/branch isolation
 and durable project relationships, and Electron verifies the creation controls.
 Managed removal checks tracked/untracked changes before and after stopping managed MCP tools, refuses active tasks, terminals and editor/Git mutations, and preserves branches and conversations. Removed projects cannot start execution; handoff can continue their history elsewhere. Real Git tests and Electron confirmation controls verify removal. Checkout restoration and pull-request workflows remain outstanding.
 
-Evidence: desktop lint/typecheck/build pass; 198 deterministic tests cover protocol,
+Inbox lists live approval/form requests, uncertain steering, failures, interruptions, limits and completed tasks. Attention, unread and all-activity filters link to the existing task workflow. SQLite retains exact-version read acknowledgements without changing task order or execution; reviewing an older version cannot mark a newer update read. Pending requests remain in attention after review. Electron verifies unread completion review and navigation without inference.
+
+Evidence: desktop lint/typecheck/build pass; 201 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

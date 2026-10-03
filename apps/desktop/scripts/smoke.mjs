@@ -334,6 +334,10 @@ app.whenReady().then(async () => {
 		})()`);
 		if (existsSync(managedProject.directory)) throw new Error("Removed managed checkout still exists");
 		result.worktreeRemoval = true;
+		await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;Array.from(document.querySelectorAll('button')).find(button=>button.textContent.trim()==='Inbox').click();for(let attempt=0;attempt<30&&!document.querySelector('[aria-label="Inbox filter"]');attempt++)await new Promise(resolve=>setTimeout(resolve,100));const filter=document.querySelector('[aria-label="Inbox filter"]');if(!filter)throw new Error('Inbox did not open');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(filter,'unread');filter.dispatchEvent(new Event('change',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,100));const article=Array.from(document.querySelectorAll('.attention-item')).find(value=>value.querySelector('h3')?.textContent==='Owned sign-in fixture task');if(!article||!article.textContent.includes('Task completed')||!article.textContent.includes('Unread'))throw new Error('Completed task missing from unread inbox');article.querySelector('button').click();let task;for(let attempt=0;attempt<30;attempt++){task=(await api.get()).tasks.find(value=>value.title==='Owned sign-in fixture task');if(task.inboxReadAt===task.updatedAt&&document.querySelector('.task-detail'))break;await new Promise(resolve=>setTimeout(resolve,100));}if(task.inboxReadAt!==task.updatedAt||task.status!=='completed'||task.queue.length)throw new Error('Inbox review changed execution or failed to persist read state');
+		})()`);
+		result.inbox = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);
