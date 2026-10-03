@@ -14,6 +14,7 @@ import { Agents } from "./views/Agents";
 import { McpConnections } from "./views/McpConnections";
 import { Inbox } from "./views/Inbox";
 import { WorkspaceSettings } from "./views/WorkspaceSettings";
+import { Missions } from "./views/Missions";
 import { CommandPalette } from "./components/CommandPalette";
 
 const Terminals = lazy(() => import("./views/Terminals").then(module => ({ default: module.Terminals })));
@@ -93,6 +94,7 @@ export function App() {
 	else if (surface === "workspace" && activeItem === "accounts") content = <Accounts />;
 	else if (surface === "workspace" && activeItem === "inbox") content = <Inbox onOpenTask={id => navigateWorkspace("tasks", id)} />;
 	else if (surface === "workspace" && activeItem === "settings") content = <WorkspaceSettings />;
+	else if (surface === "workspace" && activeItem === "missions") content = <Missions onOpenTask={id => navigateWorkspace("tasks", id)} onNewTask={() => navigateWorkspace("tasks")} />;
 	else if (surface === "workspace" && activeItem === "tasks") content = <TaskWorkspace key={taskRevision} />;
 	else if (surface === "workspace" && activeItem === "home") content = <WorkspaceHome onNavigate={navigateWorkspace} />;
 	else if (surface === "platform" && activeItem === "overview") content = <PlatformHome />;

@@ -1,11 +1,18 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { PhaseoDesktopApi } from "../shared/desktop";
 
+const taskOpenListeners = new Set<(taskId?: string) => void>();
+let pendingTaskOpen: { id?: string } | undefined;
+ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenListeners.size) for (const listener of taskOpenListeners) listener(id); else pendingTaskOpen = { id }; });
+
 const desktopApi: PhaseoDesktopApi = {
 	workspace: {
+		missions: () => ipcRenderer.invoke("workspace:missions"),
+		mission: command => ipcRenderer.invoke("workspace:mission", command),
+		onMissionsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, missions: Parameters<typeof listener>[0]) => listener(missions); ipcRenderer.on("workspace:missions-changed", subscription); return () => ipcRenderer.removeListener("workspace:missions-changed", subscription); },
 		preferences: () => ipcRenderer.invoke("workspace:preferences"),
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
-		onOpenTask: listener => { const subscription = (_event: Electron.IpcRendererEvent, id?: string) => listener(id); ipcRenderer.on("workspace:open-task", subscription); return () => ipcRenderer.removeListener("workspace:open-task", subscription); },
+		onOpenTask: listener => { taskOpenListeners.add(listener); if (pendingTaskOpen) { const pending = pendingTaskOpen; pendingTaskOpen = undefined; listener(pending.id); } return () => { taskOpenListeners.delete(listener); }; },
 		get: () => ipcRenderer.invoke("workspace:get"),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),

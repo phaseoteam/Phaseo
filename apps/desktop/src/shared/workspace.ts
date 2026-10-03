@@ -1,6 +1,7 @@
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
+import type { Mission, MissionCommand } from "./missions";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -33,6 +34,7 @@ export type Task = {
 	steering?: SteeringMessage[];
 	activities?: AgentActivity[];
 	inboxReadAt?: string;
+	missionId?: string;
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
 export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
@@ -68,6 +70,9 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	missions: () => Promise<Mission[]>;
+	mission: (command: MissionCommand) => Promise<Mission[]>;
+	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	onOpenTask: (listener: (taskId?: string) => void) => () => void;

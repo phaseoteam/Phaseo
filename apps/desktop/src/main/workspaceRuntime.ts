@@ -127,6 +127,16 @@ export class WorkspaceRuntime {
 			this.broadcast(); return { workspace: this.store.get(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
 	}
+	startMission(id: string, now: number) {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		if (this.store.get().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This mission already has an active task.");
+		const task = this.store.missions.admit(id, now, mission => {
+			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore this mission's template task before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
+			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.nativeMode = template.nativeMode; this.store.saveTask(created);
+			return this.store.apply({ type: "send", id: created.id, text: mission.prompt });
+		});
+		this.broadcast(); this.start(task.id); return task;
+	}
 	async command(command: WorkspaceCommand): Promise<Workspace> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);

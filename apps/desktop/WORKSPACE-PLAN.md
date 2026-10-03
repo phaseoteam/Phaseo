@@ -171,7 +171,11 @@ Inbox lists live approval/form requests, uncertain steering, failures, interrupt
 
 Settings persist notification mode and optional task-title previews in SQLite. Native Electron notifications observe semantic task/request changes, suppress foreground alerts, deduplicate repeated snapshots, group bursts and route clicks to tasks or Inbox. Startup seeds existing history without alerts; operating-system failures cannot interrupt execution. Notifications default off, and titles remain hidden unless enabled. Unit tests verify transition/OS behavior through a notification port; Electron verifies settings and the trusted click-navigation event. Actual operating-system alert display remains unverified.
 
-Evidence: desktop lint/typecheck/build pass; 208 deterministic tests cover protocol,
+Missions persist interval or local-time/weekday schedules and use a selected task as the current account/harness/model/project configuration. New missions start paused. Each admitted run creates a fresh linked task and records its admission atomically with the mission; existing conversations/native sessions are not copied. The app-owned scheduler skips missed runs, prevents overlapping runs (including manually resumed older runs), leaves approvals interactive, and pauses on failure/interruption/limits. Crash recovery retains an admitted original instruction for explicit review without replay. The renderer supports create/edit/enable/pause/run/delete and run history; deleting a definition retains its task history. Real Electron exercises an owned ACP fixture without paid inference. Schedules run while the app process is open; remote/background-service schedules and explicit timezone selection remain gaps. Sources: pinned T3 contracts and scheduledTasks/Schedule.ts.
+
+Notification click navigation is buffered in preload until the renderer subscribes, so clicks during window startup are retained.
+
+Evidence: desktop lint/typecheck/build pass; 217 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

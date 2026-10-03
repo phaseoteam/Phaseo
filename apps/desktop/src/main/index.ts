@@ -23,6 +23,8 @@ import { checkAcpAgent } from "./acpAgentStatus";
 import { validateMcpCommand } from "../shared/mcp";
 import { validatePreferences } from "../shared/preferences";
 import { TaskNotifications } from "./taskNotifications";
+import { MissionService } from "./missionService";
+import { validateMissionCommand } from "../shared/missions";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -38,6 +40,9 @@ const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
 let terminalService: TerminalService;
 let taskNotifications: TaskNotifications;
+let missionService: MissionService;
+ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return workspaceRuntime.store.missions.list(); });
+ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return missionService.command(validateMissionCommand(value)); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
 ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
@@ -79,6 +84,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted) return;
 	shutdownStarted = true;
+	missionService?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
@@ -394,16 +400,20 @@ app.whenReady().then(() => {
 	}, workspaceRuntime.store.getPreferences());
 	taskNotifications.update(workspaceRuntime.store.get());
 	app.on("browser-window-focus", () => taskNotifications.dismiss());
+	missionService = new MissionService(workspaceRuntime);
+	missionService.onChange = () => { const missions = workspaceRuntime.store.missions.list(); for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:missions-changed", missions); };
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
 	workspaceRuntime.getTerminals = () => terminalService.get();
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
+		missionService.observe(state);
 		taskNotifications.update(state);
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:changed", state);
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
+	missionService.start();
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

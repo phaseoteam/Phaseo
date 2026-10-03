@@ -5,9 +5,11 @@ import type { Account, AgentConnection, Attachment, Project, Task, TerminalSessi
 import type { McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
+import { MissionStore } from "./missionStore";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
+	readonly missions: MissionStore;
 	constructor(filename: string) {
 		this.db = new DatabaseSync(filename);
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
@@ -21,6 +23,7 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS mcp_connections (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
+		this.missions = new MissionStore(this.db);
 		for (const task of this.get().tasks) {
 			let recovered = false;
 			if (task.authTerminalId) {
@@ -136,7 +139,7 @@ export class WorkspaceStore {
 				break;
 			case "fork": {
 				if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before forking it.");
-				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
+				const fork: Task = { ...task, id: randomUUID(), title: `${task.title} (fork)`, parentId: task.id, missionId: undefined, status: "idle", queue: [], steering: [], pinned: false, archived: false, nativeSessionId: undefined, nativeForkFrom: task.nativeSessionId, approvals: [], questions: [], forms: [], error: undefined, createdAt: new Date().toISOString() };
 				this.saveTask(fork); return fork;
 			}
 			case "queue-remove": task.queue = task.queue.filter(message => message.id !== command.messageId); break;
