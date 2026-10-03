@@ -121,4 +121,3 @@ returns void language sql security definer set search_path = '' as $$
     or outbox.occurred_at is distinct from excluded.occurred_at;
 $$;
 revoke all on function private.enqueue_v2_analytics_correction(uuid) from public,anon,authenticated,service_role;
-

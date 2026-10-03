@@ -231,4 +231,3 @@ try {
   console.error(error.message,error.code ?? '',error.where ?? '');
   process.exitCode=1;
 } finally { await db.close(); }
-
