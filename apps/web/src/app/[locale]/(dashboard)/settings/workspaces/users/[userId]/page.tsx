@@ -6,12 +6,15 @@ import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSec
 import { WorkspaceUserView } from "@/components/(gateway)/settings/workspaces/WorkspaceUserView";
 import { fetchWorkspaceUser, type WorkspaceUserData } from "@/lib/fetchers/internal/fetchWorkspaceUser";
 import { WebApiError } from "@/lib/web-api/client";
+import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 type Props = { params: Promise<{ userId: string }>; searchParams: Promise<{ workspaceId?: string; keyPage?: string }> };
 export async function generateMetadata() { const t = await getTranslations("SettingsUI.workspaceUser"); return { title: t("profile") }; }
 
 async function UserPage({ params, searchParams }: Props) {
 	const [{ userId }, { workspaceId, keyPage }] = await Promise.all([params, searchParams]);
+	const { userId: viewerId } = await getServerAccountContext();
+	if (viewerId === userId) redirect({ href: "/settings/profile", locale: await getLocale() });
 	if (!workspaceId) notFound();
 	let data: WorkspaceUserData;
 	try {
