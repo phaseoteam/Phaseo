@@ -25,7 +25,11 @@ accountSettingsWorkspaceUsersRouter.get("/workspace-users/:userId", async (c) =>
 		context.client.from("keys").select("id,workspace_id,name,prefix,status,created_at,last_used_at,expires_at", { count: "exact" }).eq("workspace_id", context.workspaceId).eq("created_by", userId).neq("status", "deleted").neq("name", "__chat_route_managed_key__").order("created_at", { ascending: false }).order("id").range((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
 	]);
 	if (member.error || workspace.error || keys.error) return c.json({ error: "user_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (!member.data && workspace.data?.owner_user_id !== userId && !keys.count) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	if (!member.data && workspace.data?.owner_user_id !== userId && !keys.count) {
+		const historicalKey = await context.client.from("keys").select("id").eq("workspace_id", context.workspaceId).eq("created_by", userId).limit(1);
+		if (historicalKey.error) return c.json({ error: "user_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!historicalKey.data?.length) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
+	}
 	const to = new Date();
 	const from = new Date(to); from.setUTCHours(0, 0, 0, 0); from.setUTCDate(from.getUTCDate() - 29);
 	const [profile, usage, logs] = await Promise.all([
