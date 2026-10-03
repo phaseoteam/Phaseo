@@ -8,6 +8,7 @@ import { validateCommand } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { resolveGrokCommand } from "./grokLaunch";
+import { grokAccountStatus } from "./grokAccountStatus";
 import { SecretVault } from "./secretVault";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
@@ -126,13 +127,15 @@ ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	signIns.get(id)?.abort();
 });
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
-	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
+	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
 	const account = id ? workspaceRuntime.store.get().accounts.find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
 	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
 	try {
-		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : await nativeAccountStatus(harness, account?.configDirectory ?? app.getPath("userData"), account, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+		const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]);
+		const cwd = account?.configDirectory ?? app.getPath("userData");
+		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
 		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.get()); } }
 		return status;

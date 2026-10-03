@@ -94,7 +94,7 @@ export type WorkspaceApi = {
 	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
 	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
 	signIn: (accountId: string) => Promise<Workspace>;
-	accountStatus: (harness: "codex" | "claude" | "cursor", accountId?: string) => Promise<AccountStatus>;
+	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
 	readFile: (projectId: string, filename: string) => Promise<string>;

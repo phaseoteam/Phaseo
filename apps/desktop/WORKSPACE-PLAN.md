@@ -195,6 +195,8 @@ The dedicated Grok backend now resolves the installed native binary directly, di
 
 Native harness installation discovery includes Grok and uses the same direct-binary resolver as execution. Four discovery tests verify canonical installation preference, custom installation homes, native PATH fallback and missing installations. An ACP packet test verifies the selected profile environment and interactive client metadata reach the native transport.
 
+The desktop account-status bridge now supports Grok's native `models` command without starting a session or sending a prompt. Explicit signed-in/out lines determine authentication; absent or contradictory evidence stays unknown. Output is bounded, terminal escapes are removed, selected profile environment is isolated and cancelled checks kill their process. Seven targeted tests pass. Real isolated signed-out CLI output confirms authentication can be false despite exit code zero. Sign-in and managed-account creation remain unfinished.
+
 Evidence: desktop lint/typecheck/build pass; 275 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
