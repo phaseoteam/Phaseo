@@ -18,8 +18,11 @@ describe("FooterStatusIndicator", () => {
 	it("renders recovery progress, the update and retained component impact", () => {
 		jest.mocked(useQuery).mockReturnValue({ data: {
 			ok: true, state: "monitoring", label: "Monitoring recovery", href: "https://status.phaseo.app",
-			incidents: [{ id: "1", name: "API disruption", status: "monitoring", impact: "Major outage", message: "A fix has been applied.", updatedAt: "2026-10-03T09:33:04.331Z" }],
-			components: [{ name: "Models API (/v1/models)", state: "major_outage", label: "Major outage", parent: "APIs" }],
+			incidents: [{ id: "1", name: "API disruption", status: "monitoring", impact: "raw-impact", impactState: "major_outage", message: "A fix has been applied.", updatedAt: "2026-10-03T09:33:04.331Z" }],
+			components: [
+				{ name: "Models API (/v1/models)", state: "major_outage", label: "Major outage", parent: "APIs" },
+				{ name: "Generations API", state: "major_outage", label: "Major outage", parent: "APIs" },
+			],
 		}, error: undefined } as ReturnType<typeof useQuery>);
 		const markup = renderToStaticMarkup(<FooterStatusIndicator />);
 		expect(markup).toContain("Monitoring recovery");
@@ -28,6 +31,8 @@ describe("FooterStatusIndicator", () => {
 		expect(markup).toContain("A fix has been applied.");
 		expect(markup).toMatch(/datetime="2026-10-03T09:33:04.331Z"/i);
 		expect(markup).toContain("Models API (/v1/models)");
+		expect(markup).toContain("Generations API");
+		expect(markup).not.toContain("raw-impact");
 	});
 
 	it("handles summaries without incident details", () => {

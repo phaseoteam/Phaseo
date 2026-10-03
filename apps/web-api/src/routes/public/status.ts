@@ -359,6 +359,7 @@ function incidentDetails(summary: IncidentSummary) {
 		name: String(incident.name ?? "Service incident"),
 		status: String(incident.status ?? "unknown"),
 		impact: normalizeStatus(incident.current_worst_impact ?? incident.impact).label,
+		impactState: normalizeStatus(incident.current_worst_impact ?? incident.impact).state,
 		updatedAt: typeof incident.last_update_at === "string" ? incident.last_update_at : null,
 		message: typeof incident.last_update_message === "string" ? incident.last_update_message : null,
 	}));

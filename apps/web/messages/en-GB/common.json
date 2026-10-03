@@ -360,6 +360,9 @@
 	},
 	"status": {
 		"monitoring": "Monitoring recovery",
+		"investigating": "Investigating",
+		"identified": "Identified",
+		"generationsApi": "Generations API",
 		"reportedImpact": "Reported impact: {impact}",
 		"updatedAt": "Updated {time}",
 		"unavailable": "Status unavailable",

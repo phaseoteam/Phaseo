@@ -360,6 +360,9 @@
 	},
 	"status": {
 		"monitoring": "مراقبة التعافي",
+		"investigating": "قيد التحقيق",
+		"identified": "تم تحديد السبب",
+		"generationsApi": "واجهة برمجة تطبيقات التوليد",
 		"reportedImpact": "التأثير المُبلّغ عنه: {impact}",
 		"updatedAt": "تم التحديث {time}",
 		"unavailable": "الحالة غير متاحة",

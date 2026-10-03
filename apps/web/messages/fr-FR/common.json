@@ -360,6 +360,9 @@
 	},
 	"status": {
 		"monitoring": "Rétablissement sous surveillance",
+		"investigating": "En cours d’investigation",
+		"identified": "Identifié",
+		"generationsApi": "API de génération",
 		"reportedImpact": "Impact signalé : {impact}",
 		"updatedAt": "Mis à jour {time}",
 		"unavailable": "Statut indisponible",

@@ -28,7 +28,7 @@ describe("GET /api/_web/status", () => {
 				{ name: "Models API (/v1/models)", state: "major_outage" },
 				{ name: "Generations API", state: "major_outage" },
 			],
-			incidents: [{ id: "incident-1", status: "monitoring", impact: "Major outage", message: monitoringIncident.last_update_message, updatedAt: monitoringIncident.last_update_at }],
+			incidents: [{ id: "incident-1", status: "monitoring", impact: "Major outage", impactState: "major_outage", message: monitoringIncident.last_update_message, updatedAt: monitoringIncident.last_update_at }],
 		});
 	});
 

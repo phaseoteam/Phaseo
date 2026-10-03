@@ -28,6 +28,7 @@ type StatusSummary = {
 		name: string;
 		status: string;
 		impact: string;
+		impactState?: StatusState;
 		updatedAt: string | null;
 		message: string | null;
 	}>;
@@ -203,7 +204,7 @@ export function FooterStatusIndicator() {
 
 	const styles = STATUS_STYLES[status.state] ?? STATUS_STYLES.unknown;
 	const localizeComponentName = (name: string) => {
-		if (name === "Generations API") return name;
+		if (name === "Generations API") return t("generationsApi");
 		const key = COMPONENT_NAME_KEYS[name];
 		return key ? t(`componentNames.${key}` as never) : t("componentNames.other" as never);
 	};
@@ -291,8 +292,8 @@ export function FooterStatusIndicator() {
 						<span key={incident.id || index} className="block space-y-1 px-3 py-3">
 							<span className="block text-xs font-semibold text-zinc-800 dark:text-zinc-200">{incident.name}</span>
 							<span className="block text-[11px] text-zinc-500 dark:text-zinc-400">
-								<span className="capitalize">{incident.status.replaceAll("_", " ")}</span>
-								{` · ${t("reportedImpact", { impact: incident.impact })}`}
+								<span>{incident.status === "monitoring" ? t("monitoring") : incident.status === "investigating" ? t("investigating") : incident.status === "identified" ? t("identified") : t("unknown")}</span>
+								{` · ${t("reportedImpact", { impact: incident.impactState ? t(STATUS_LABEL_KEYS[incident.impactState] as never) : incident.impact })}`}
 							</span>
 							{incident.message ? <span className="block whitespace-pre-wrap text-xs leading-relaxed text-zinc-600 dark:text-zinc-300">{incident.message}</span> : null}
 							{incident.updatedAt && Number.isFinite(Date.parse(incident.updatedAt)) ? (
