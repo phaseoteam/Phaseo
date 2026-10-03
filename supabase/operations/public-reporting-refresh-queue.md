@@ -7,9 +7,11 @@ Its backlog and watermark must be checked separately from this queue. Direct
 fact updates, meter and attempt mutations now mark their request pending in that outbox,
 so ordinary corrections no longer rely on replaying all completed history.
 Fact moves and explicit deletions additionally record their former dimensions
-in a private queue. Each existing V2 worker call claims one former identity
-coalesced by nullable workspace/hour/app/model/provider/location dimensions,
-alongside its ordinary bounded batch and reuses the same metric queries to
+in a private queue, coalesced by nullable workspace/hour/app/model/provider/location
+dimensions. Each existing V2 worker call shares its configured batch cap between
+current requests and former identities. Five slots are reserved for former
+identities when present, and spare capacity also processes repairs. The total
+claimed rows never exceeds the configured cap. The same metric queries
 recompute both sides, including an old group with no remaining source rows.
 The former identity is acknowledged only after successful atomic publication.
 Hourly BYOK metadata pruning suppresses both reporting and correction signals

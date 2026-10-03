@@ -96,6 +96,7 @@ try {
   await db.exec(await read('../migrations/20261003103314_skip_unchanged_analytics_grains.sql'));
   await db.exec(await read('../migrations/20261003103617_coalesce_former_grains_and_repair_attempts.sql'));
   await db.exec(await read('../migrations/20261003104346_omit_empty_analytics_grains.sql'));
+  await db.exec(await read('../migrations/20261003105005_share_analytics_repair_batch_budget.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
   assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
@@ -221,10 +222,11 @@ try {
   await assert.rejects(db.exec(`select public.process_v2_analytics_outbox(10)`),/fixture/);
   assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,2);
   await db.exec(`drop trigger fixture_old_grain_fail on v2_public_usage_daily`);
-  await db.exec(`select public.process_v2_analytics_outbox(10);`);
+  await db.exec(`select public.process_v2_analytics_outbox(1);`);
   assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,1);
-  await db.exec(`select public.process_v2_analytics_outbox(10);`);
+  await db.exec(`select public.process_v2_analytics_outbox(1);`);
   assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,0);
+  await db.exec(`select public.process_v2_analytics_outbox(10);`);
   for(const table of ['private_usage_daily','public_usage_daily','public_usage_hourly']) {
     assert.equal((await scalar(`select coalesce(sum(requests),0)::int n from v2_${table} where model_slug='after-pruning'`)).n,0);
     assert.equal((await scalar(`select count(*)::int n from v2_${table} where model_slug='after-pruning'`)).n,0);
@@ -247,6 +249,11 @@ try {
   await db.exec(`update v2_analytics_outbox set status='complete' where request_event_id='${attemptRequest}';
     insert into v2_request_attempts(request_event_id,success) values('${attemptRequest}',true);`);
   assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='${attemptRequest}'`)).status,'pending');
+  await db.exec(`insert into private.v2_analytics_previous_grains(workspace_id,occurred_at,model_slug)
+    select md5('workspace-'||n)::uuid,'2026-10-09','bulk-old' from generate_series(1,50) n;`);
+  const formerBefore=(await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n;
+  assert.equal((await scalar(`select public.process_v2_analytics_outbox(7) result`)).result.selected,7);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,formerBefore-5);
   await db.exec(`update v2_analytics_outbox set status='complete' where request_event_id='${attemptRequest}';
     update v2_request_attempts set success=false where request_event_id='${attemptRequest}';`);
   assert.equal((await scalar(`select status from v2_analytics_outbox where request_event_id='${attemptRequest}'`)).status,'pending');
