@@ -1,3 +1,5 @@
+import type { WorkspaceApi } from "./workspace";
+
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
 	version: string;
@@ -30,6 +32,7 @@ export type DesktopUpdateState = {
 };
 
 export type PhaseoDesktopApi = {
+	workspace: WorkspaceApi;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;
 	performWindowAction: (action: DesktopWindowAction) => Promise<void>;

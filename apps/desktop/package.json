@@ -11,7 +11,7 @@
 	},
 	"scripts": {
 		"dev": "node scripts/dev.mjs",
-		"build": "pnpm run build:main && pnpm run build:preload && pnpm run build:renderer",
+		"build": "pnpm --filter @phaseo/agent-sdk... build && pnpm run build:main && pnpm run build:preload && pnpm run build:renderer && node scripts/notices.mjs",
 		"build:main": "vite build --config vite.main.config.ts",
 		"build:preload": "vite build --config vite.preload.config.ts",
 		"build:renderer": "vite build --config vite.renderer.config.ts",
@@ -21,6 +21,7 @@
 		"lint": "eslint src vite.*.config.ts",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
+		"test:desktop": "pnpm run build && electron scripts/smoke.mjs",
 		"clean": "rimraf dist release"
 	},
 	"devDependencies": {
@@ -46,5 +47,20 @@
 		"vite": "^8.0.16",
 		"vitest": "^4.1.0"
 	},
-	"config": { "forge": "./forge.config.cjs" }
+	"config": {
+		"forge": "./forge.config.cjs"
+	},
+	"dependencies": {
+		"@agentclientprotocol/sdk": "1.5.0",
+		"@anthropic-ai/claude-agent-sdk": "0.3.276",
+		"@cursor/sdk": "1.0.31",
+		"@opencode/client": "2.0.22",
+		"@phaseo/agent-sdk": "workspace:*",
+		"@xterm/addon-fit": "0.10.0",
+		"@xterm/xterm": "5.5.0",
+		"node-pty": "1.2.0-beta.15",
+		"react-markdown": "10.1.0",
+		"remark-gfm": "4.0.1",
+		"unpdf": "1.8.1"
+	}
 }

@@ -1,16 +1,17 @@
 import { defineConfig } from "vite";
+import { builtinModules } from "node:module";
 
 export default defineConfig({
 	build: {
 		outDir: "dist/main",
 		emptyOutDir: true,
 		lib: {
-			entry: "src/main/index.ts",
+			entry: { index: "src/main/index.ts", pdfWorker: "src/main/pdfWorker.mjs" },
 			formats: ["es"],
-			fileName: () => "index.mjs",
+			fileName: (_format, name) => `${name}.mjs`,
 		},
 		rollupOptions: {
-			external: ["electron", "node:path", "node:url"],
+			external: ["electron", "node-pty", "@cursor/sdk", ...builtinModules, ...builtinModules.map(name => `node:${name}`)],
 		},
 	},
 });

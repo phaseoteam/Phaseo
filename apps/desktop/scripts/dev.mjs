@@ -35,6 +35,10 @@ function shutdown(signal) {
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 
+const dependencies = run("pnpm", ["--filter", "@phaseo/agent-sdk...", "build"]);
+const dependencyExit = await new Promise((resolve) => dependencies.once("exit", resolve));
+if (dependencyExit !== 0) process.exit(Number(dependencyExit) || 1);
+
 for (const target of ["build:main", "build:preload"]) {
 	const child = run("pnpm", ["run", target]);
 	const exitCode = await new Promise((resolve) => child.once("exit", resolve));
