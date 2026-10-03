@@ -1,5 +1,170 @@
 # @phaseo/web
 
+## 1.3.0
+
+### Minor Changes
+
+- [#2669](https://github.com/phaseoteam/Phaseo/pull/2669) [`825a293`](https://github.com/phaseoteam/Phaseo/commit/825a2930416c740eb9a495408c05e1fc0dbeb55f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add an Artificial Analysis cost per intelligence point ranking and scatter chart using matched evaluation configurations, including previews using the deployed API. Record the full methodology version separately from the API's major/minor version. Keep standalone manual index versions from hiding the imported rankings and shorten benchmark cache freshness.
+
+- [#2440](https://github.com/phaseoteam/Phaseo/pull/2440) [`a12756e`](https://github.com/phaseoteam/Phaseo/commit/a12756ea04b50d8b10bac309908e2b3d71e7de4e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make Video and Realtime rooms generally available in Chat, and add OCR and Rerank rooms with model selection, authenticated requests, readable results, and JSON downloads.
+
+- [#2686](https://github.com/phaseoteam/Phaseo/pull/2686) [`b4a7418`](https://github.com/phaseoteam/Phaseo/commit/b4a7418dfac7ba646aafc7feb6c13e8e702aea70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add per-key IP restrictions with labeled IPv4, IPv6, and CIDR entries in key settings. Enforce restrictions during gateway authentication and retain them when rotating keys.
+  
+  Move key details and editing to dedicated pages with creator information, usage summaries, and filtered request logs.
+  
+  Add daily request and spend charts, creator avatar chips, and workspace-scoped Activity filters for keys created by a user.
+
+- [#2443](https://github.com/phaseoteam/Phaseo/pull/2443) [`d97391a`](https://github.com/phaseoteam/Phaseo/commit/d97391ae0d33702621b35d350f88df31c7f100d5) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add shared SDK request controls and diagnostics, native Python async resources,
+  resumable media jobs, structured output and streaming helpers, model capability
+  preflight, and deterministic testing transports. Export submitted room requests
+  as runnable TypeScript or Python and link requests to dashboard traces.
+  
+  Python JSON requests now use HTTPX. Catch PhaseoHTTPError (or
+  httpx.HTTPStatusError) instead of urllib.error.HTTPError, and use error.status
+  for the HTTP status; error.code contains the API error code.
+
+### Patch Changes
+
+- [#2452](https://github.com/phaseoteam/Phaseo/pull/2452) [`9184c80`](https://github.com/phaseoteam/Phaseo/commit/9184c80f9c199fbf5cba5cb544db483996439eb4) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add account-level preferences for formatting, interface density, code language, sign-in landing page, sensitive-data masking, and coordinated light and dark themes.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev structured Decisions support through the `/v1/decisions` gateway endpoint, generated SDK operations, catalog pricing, and a dedicated Decisions playground.
+
+- [#2425](https://github.com/phaseoteam/Phaseo/pull/2425) [`9b68ad3`](https://github.com/phaseoteam/Phaseo/commit/9b68ad32bbad415bd591c01d2d46841fe43119d3) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add TypeSafe Jev 1.13 to the Decisions capability with the public `/v1/decisions` route, per-million-token pricing, a dedicated Decisions playground, and provider model discovery.
+
+- [#2469](https://github.com/phaseoteam/Phaseo/pull/2469) [`f7ef5bd`](https://github.com/phaseoteam/Phaseo/commit/f7ef5bdf7328e5ee44ac06d67801c5bb316fb93f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Expand chat request samples with cURL, every supported client and Agent SDK language, text API shape switching, and optional code wrapping.
+
+- [#2503](https://github.com/phaseoteam/Phaseo/pull/2503) [`280687b`](https://github.com/phaseoteam/Phaseo/commit/280687b57f92c63322f2765c197dbd82303e2330) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep chat reasoning choices compatible with model capabilities and expose the `instant` effort only in generated OpenAI-compatible request types.
+
+- [#2701](https://github.com/phaseoteam/Phaseo/pull/2701) [`4ade024`](https://github.com/phaseoteam/Phaseo/commit/4ade024f61bf8dcc36f47582d7f6f8f37b1cc68b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Reduce shared translation payloads by rendering footer copy on the server and loading chat accessibility labels within chat routes.
+
+- [#2649](https://github.com/phaseoteam/Phaseo/pull/2649) [`7b30ce4`](https://github.com/phaseoteam/Phaseo/commit/7b30ce4acc2dc4fe874d9fef91b95a91531b17df) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Register public model announcement runs before writing state, and show character-based provider prices per 1K characters.
+
+- [#2624](https://github.com/phaseoteam/Phaseo/pull/2624) [`a134fa5`](https://github.com/phaseoteam/Phaseo/commit/a134fa542da6cb529b1827aa84a85d88a31d2edf) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add the Ultrafast tier to gateway routing and the OpenAPI SDKs, and display it with a distinct badge in model and provider pricing.
+
+- [#2681](https://github.com/phaseoteam/Phaseo/pull/2681) [`5f51f0c`](https://github.com/phaseoteam/Phaseo/commit/5f51f0cc0525c3ec1c64aa2bf7151b2fefe9fb92) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Launch full-site localization across ten public locales, including locale-aware
+  App Router pages, translated product and settings catalogs, localized help
+  content, canonical and hreflang metadata, RTL/script font support, locale-safe
+  auth hand-offs, a flagged footer language switcher, typed ICU validation, and
+  the self-hosted Weblate operating foundation.
+
+- [#2477](https://github.com/phaseoteam/Phaseo/pull/2477) [`3ec3df2`](https://github.com/phaseoteam/Phaseo/commit/3ec3df2bd9af751a12bf89ac6bf1289a7a94f9b8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use shadcn scroll areas throughout request samples, keep managed gateway tools available in Agent SDK examples, and generate multi-turn starters from the latest user message.
+
+- [#2495](https://github.com/phaseoteam/Phaseo/pull/2495) [`a3eae2f`](https://github.com/phaseoteam/Phaseo/commit/a3eae2f256293c3373ae5a9e02f350416ae77853) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Match Decisions user message bubbles to Text Chat's dark accent styling.
+
+- [#2670](https://github.com/phaseoteam/Phaseo/pull/2670) [`a29d6a5`](https://github.com/phaseoteam/Phaseo/commit/a29d6a5197e9069f44aabc9ac23311363a4ebad1) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Derive chat service-tier options from active text-generation pricing SKUs and support Ultrafast requests. Exclude unpublished and expired offers while preserving Standard catalog prices. Preserve the user's selected tier and reject unavailable selections instead of automatically switching tiers.
+
+- [#2468](https://github.com/phaseoteam/Phaseo/pull/2468) [`f057991`](https://github.com/phaseoteam/Phaseo/commit/f0579917c407ee9b32d77a63a94c15be45d6b6a2) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Redesign chat request samples with SDK and Agent SDK integrations, language logos, and Shiki syntax highlighting.
+
+- [#2661](https://github.com/phaseoteam/Phaseo/pull/2661) [`7b0fda6`](https://github.com/phaseoteam/Phaseo/commit/7b0fda68256f68666d996067f120cf250f89a3e4) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Show provider meter prices directly in the Pricing section without a conditional Usage rates heading.
+
+- [#2441](https://github.com/phaseoteam/Phaseo/pull/2441) [`68c6ead`](https://github.com/phaseoteam/Phaseo/commit/68c6ead05d9c63af160d214f34bfaf32917ddbef) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Restore compact benchmark rank labels while retaining configuration-based rankings, and remove the dimmed-model chart caption.
+
+- [#2679](https://github.com/phaseoteam/Phaseo/pull/2679) [`a0a6d2c`](https://github.com/phaseoteam/Phaseo/commit/a0a6d2c93ad42101bb374be3c7c524e07ec3609f) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use shared rounded-down compact token counts across public Rankings lists, tooltips, summaries, and gateway landing-page showcases.
+
+- [#2526](https://github.com/phaseoteam/Phaseo/pull/2526) [`79f440d`](https://github.com/phaseoteam/Phaseo/commit/79f440db769f6a8f1a7e057a89bc5490f482f8f1) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Include documentation pages in global search and prioritize models in the default search view.
+
+- [#2437](https://github.com/phaseoteam/Phaseo/pull/2437) [`0b61259`](https://github.com/phaseoteam/Phaseo/commit/0b61259027ba52417bbe15d48280b078d6ca6c70) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep a model's own benchmark result visible when the comparison leaderboard is stale, rank individual configurations consistently with the chart, and ignore sentence punctuation when matching Artificial Analysis index versions.
+
+- [#2512](https://github.com/phaseoteam/Phaseo/pull/2512) [`20b0bde`](https://github.com/phaseoteam/Phaseo/commit/20b0bde99c35b85291b4dfb4567639f917d3ec06) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Render supported reasoning efforts as a dropdown and keep service tier directly below provider in chat model settings.
+
+- [#2458](https://github.com/phaseoteam/Phaseo/pull/2458) [`650c501`](https://github.com/phaseoteam/Phaseo/commit/650c5017cbe98402f706fd11ee0fcd588941c535) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Align the Decisions room with the Text chat experience by adding automatic message scrolling, inline prompt editing, Enter-to-send behavior, compact idle composition, cleared structured inputs after send, and clearer Noul and Score result displays.
+
+- [#2682](https://github.com/phaseoteam/Phaseo/pull/2682) [`9d1e0f7`](https://github.com/phaseoteam/Phaseo/commit/9d1e0f7a639067d425b80f95ebc2f7d355a28941) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Improve migration assistant mobile spacing and use sentence-case step labels.
+
+- [#2518](https://github.com/phaseoteam/Phaseo/pull/2518) [`28f1710`](https://github.com/phaseoteam/Phaseo/commit/28f1710320c394daef3b9133fe102ab9c7a05c94) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Fix model settings reasoning and service-tier selectors so supported values are displayed in the correct format and selecting a reasoning effort enables reasoning.
+
+- [#2685](https://github.com/phaseoteam/Phaseo/pull/2685) [`b56f720`](https://github.com/phaseoteam/Phaseo/commit/b56f720a8b1b587052c641f57b186cc0288afc6a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bound public catalogue requests and allow sitemap generation to fetch model metadata without gateway monitor enrichment, preventing stalled upstream requests from exhausting the prerender cache deadline.
+  
+  Pass the locale direction to Base UI so Arabic ShadCN components use RTL interaction behavior.
+
+- [#2420](https://github.com/phaseoteam/Phaseo/pull/2420) [`96cd1e5`](https://github.com/phaseoteam/Phaseo/commit/96cd1e559c1eb895488f393d6e820bb6db71332e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Make public OG cards resolve only canonical, publicly visible catalog records, fail fast when the data service is unavailable, and retain successful payloads and rendered images through shared-cache revalidation.
+
+- [#2439](https://github.com/phaseoteam/Phaseo/pull/2439) [`6750211`](https://github.com/phaseoteam/Phaseo/commit/675021141b68dc7d47b8218a6b58ca92d664c4fc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Connect modality rankings to recorded usage, persist missing workload meters, repair public meter aliases and backend retention access, and show retryable errors when ranking data cannot be loaded.
+
+- [#2453](https://github.com/phaseoteam/Phaseo/pull/2453) [`a4974fa`](https://github.com/phaseoteam/Phaseo/commit/a4974fa70c42b1e1bfadd01f28ba7295b4de1866) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Flatten the model playground header and link response request IDs to their request-log details from message metadata.
+
+- [#2675](https://github.com/phaseoteam/Phaseo/pull/2675) [`bc642ed`](https://github.com/phaseoteam/Phaseo/commit/bc642ed06d08717b4c82c900c8f333339c2f2fc7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Start a new conversation when opening Chat from a model link, preserving existing chat history.
+
+- [#2487](https://github.com/phaseoteam/Phaseo/pull/2487) [`4fa216c`](https://github.com/phaseoteam/Phaseo/commit/4fa216c81c1fad3c988907e49872da0da5f78d6b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Allow Chat Completions and Messages code samples to retain managed gateway tools.
+
+- [#2697](https://github.com/phaseoteam/Phaseo/pull/2697) [`44be7f0`](https://github.com/phaseoteam/Phaseo/commit/44be7f0dd8deb68678a89822e8132f0e74eac627) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Show monitoring recovery progress and incident updates in the footer status indicator while preserving reported service impact.
+
+- [#2502](https://github.com/phaseoteam/Phaseo/pull/2502) [`13cc86a`](https://github.com/phaseoteam/Phaseo/commit/13cc86a7b5d05e2b1b901029466e60c592ad48ba) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep the Decisions composer expanded after edits and reveal newly added options in the bounded list.
+
+- [#2698](https://github.com/phaseoteam/Phaseo/pull/2698) [`1ca9946`](https://github.com/phaseoteam/Phaseo/commit/1ca99467f06048ffb08461e572f5003acb1c4c54) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Apply account display preferences to key dates, usage summaries, chart axes and tooltips.
+
+- [#2696](https://github.com/phaseoteam/Phaseo/pull/2696) [`cbb72d1`](https://github.com/phaseoteam/Phaseo/commit/cbb72d1f7581ab5604dc0bae767b0613018048ad) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Preserve encoded key names through sign-in and avoid repeated redirects when key route parameters contain escaped characters.
+
+- [#2694](https://github.com/phaseoteam/Phaseo/pull/2694) [`c3f0717`](https://github.com/phaseoteam/Phaseo/commit/c3f07178ad3e5f879187a046a91ff54be8ec0cec) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Fix key detail pages returning 404 when a key name ends in a static file extension, including OAuth client URLs.
+
+- [#2681](https://github.com/phaseoteam/Phaseo/pull/2681) [`5f51f0c`](https://github.com/phaseoteam/Phaseo/commit/5f51f0cc0525c3ec1c64aa2bf7151b2fefe9fb92) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Complete and correct user-facing web translations across the supported locales.
+
+- [#2684](https://github.com/phaseoteam/Phaseo/pull/2684) [`b952403`](https://github.com/phaseoteam/Phaseo/commit/b952403ba791e43e909a5932dc652c8a4201b8ad) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Lower Enterprise pricing to $29/month for up to 100 workspace members and $79/month at 1,000 members. Allow smaller teams to subscribe, clarify membership-based allowances, and let Statsig control self-service rollout without an internal-admin restriction. Existing subscriptions and credit top-up fees remain unchanged.
+
+- [#2579](https://github.com/phaseoteam/Phaseo/pull/2579) [`aab03e8`](https://github.com/phaseoteam/Phaseo/commit/aab03e831175dc8e2a063bc06002b11ec3ddd8ea) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Separate provider application approval from route readiness, expose ownership proof and review decisions, support application revisions, and gate catalog editing until approval.
+
+- [#2447](https://github.com/phaseoteam/Phaseo/pull/2447) [`c099268`](https://github.com/phaseoteam/Phaseo/commit/c099268b2b56c4489f4fe2af43b1d58cd3ff3104) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Group additional routing options in model provider tables, with borderless tier badges, parenthesised region labels, and expandable service tiers that clarify explicit selection. Hide external providers unless enabled in the status filters, then show them in their own section.
+
+- [#2449](https://github.com/phaseoteam/Phaseo/pull/2449) [`68e758d`](https://github.com/phaseoteam/Phaseo/commit/68e758d5ca549e594f87816d8a7321b85f66f2fc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Open provider details when clicking table names and retain provider-page navigation in the sheet. Explain how the routing slug pins API requests to a provider, with a link to the routing documentation.
+
+- [#2685](https://github.com/phaseoteam/Phaseo/pull/2685) [`b56f720`](https://github.com/phaseoteam/Phaseo/commit/b56f720a8b1b587052c641f57b186cc0288afc6a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Avoid extra comparison requests during backend failures and serve bounded stale public catalogue data while refreshing or recovering from an outage.
+
+- [#2470](https://github.com/phaseoteam/Phaseo/pull/2470) [`c368d1a`](https://github.com/phaseoteam/Phaseo/commit/c368d1a5d02a67258d62449da9d7a3d8b9a2286c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Announce public models when their catalogue status becomes available, check for availability every minute, and add a per-model Discord announcement action to the internal model editor using the current public embed format.
+
+- [#2496](https://github.com/phaseoteam/Phaseo/pull/2496) [`33cd306`](https://github.com/phaseoteam/Phaseo/commit/33cd306401491a1bfc1e779be10de62d4048c2db) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Restrict Chat reasoning choices to the selected model's supported effort values and add an in-menu back control for nested chat actions.
+
+- [#2467](https://github.com/phaseoteam/Phaseo/pull/2467) [`ea1162c`](https://github.com/phaseoteam/Phaseo/commit/ea1162c62dab482364bded727fab4b22173526ad) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Bring Decisions chat history and result colors in line with the other chat rooms.
+
+- [#2507](https://github.com/phaseoteam/Phaseo/pull/2507) [`f1ea06f`](https://github.com/phaseoteam/Phaseo/commit/f1ea06fdffdd88d85d53626b4cb00fc6ffc0bf35) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Filter chat model settings to the selected model's supported reasoning efforts and service tiers.
+
+- [#2448](https://github.com/phaseoteam/Phaseo/pull/2448) [`b8c33ca`](https://github.com/phaseoteam/Phaseo/commit/b8c33cab339f123ac730ababde51bdf69c03c1fe) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use shallow nuqs updates for model provider sheets, table sorting, and the internal routing settings sheet. Preserve deep links and scroll position, and close request-log sheets when Back removes their query parameter.
+
+- [#2436](https://github.com/phaseoteam/Phaseo/pull/2436) [`25ab069`](https://github.com/phaseoteam/Phaseo/commit/25ab06929842957896ade97487811db61dbedd98) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Migrate client data refresh to TanStack Query with account-scoped caches, credential-free public requests, and private-data invalidation on session changes. Reauthorize provider previews, preserve private model endpoint rows, and restore repeated focus refreshes without background polling.
+  
+  Keep private query data fresh for five minutes, refresh visible private queries every five minutes, and invalidate account queries after private-model and provider-catalogue mutations. Manual refresh and sign-out bypass the freshness window.
+  
+  Prevent old private content flashing after account changes by masking saved documents and revalidating full-document history restores before cached HTML can paint.
+  
+  Use fifteen-minute public query freshness and visible polling for catalogue, pricing, performance and search views. Align public provider information, model/provider telemetry and pricing at the edge to fifteen minutes without an additional stale-serving window. Preserve five-minute private queries, explicit client invalidation/refetch, and server cache purge tags.
+
+- [#2665](https://github.com/phaseoteam/Phaseo/pull/2665) [`c0b7e78`](https://github.com/phaseoteam/Phaseo/commit/c0b7e7802d5b18ed8681903a0a1282115326d2f0) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Show availability for each service tier independently, including coming soon Ultrafast pricing.
+
+- [#2689](https://github.com/phaseoteam/Phaseo/pull/2689) [`4d33098`](https://github.com/phaseoteam/Phaseo/commit/4d330989de6993f7e741985b9294bd04b52ac083) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove unrelated shared translations from public pages, select client-only route copy, and load optional admin-tool translations on demand.
+
+- [#2429](https://github.com/phaseoteam/Phaseo/pull/2429) [`2b78b13`](https://github.com/phaseoteam/Phaseo/commit/2b78b13e7225b6ccb54c9c4a615b73455cdb26b6) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Refine the Decisions chat experience with typed question controls, local conversation history, structured result rendering, canonical Jev model identity, and complete request timing metadata. Expose provider-neutral Decisions naming across the gateway, web proxy, OpenAPI contract, and generated SDKs while keeping TypeSafe's System One terminology inside its provider adapter. Keep text generation internally streamed while preserving non-streaming client responses.
+
+- [#2683](https://github.com/phaseoteam/Phaseo/pull/2683) [`b53e4cb`](https://github.com/phaseoteam/Phaseo/commit/b53e4cbd31036f3bb7ea5a3ec395ec187c9e281a) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Remove the Monitor page and its navigation and sitemap entries.
+
+- [#2499](https://github.com/phaseoteam/Phaseo/pull/2499) [`2b4afce`](https://github.com/phaseoteam/Phaseo/commit/2b4afce6bf133ce99c7bcff7921d0bcc464258fb) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Keep long Choice and Score option lists scrollable in the Decisions composer.
+
+- [#2532](https://github.com/phaseoteam/Phaseo/pull/2532) [`510b41c`](https://github.com/phaseoteam/Phaseo/commit/510b41c74fa8ad604aa0306e40c146fa7ce56d1e) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Prioritize search result titles over subtitles and show a book icon for documentation links.
+
+- [#2485](https://github.com/phaseoteam/Phaseo/pull/2485) [`5a893df`](https://github.com/phaseoteam/Phaseo/commit/5a893dfc91c77064ea40330a70ae9096158823c0) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Match Decisions user message bubbles to Text Chat sizing and layout.
+
+- [#2450](https://github.com/phaseoteam/Phaseo/pull/2450) [`9ff8fa5`](https://github.com/phaseoteam/Phaseo/commit/9ff8fa5e3944a4d9d970bd76dd582a99b9907806) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Cache private usage dashboards, geography, and log lists in user/workspace-scoped browser memory for five minutes. Keep Live views on fresh 15-second network polling, allow manual refresh to bypass freshness, and clear private query data on sign-out and identity changes.
+  
+  Extend private caching to account/profile, workspace administration, keys, routing, guardrails, privacy, notifications, presets and feedback, private models, BYOK, webhooks, broadcast, audit activity and transaction history. Invalidate after writes and keep credential reveals, payment/MFA flows, and authorization checks fresh. Return only explicit display metadata from key-list endpoints.
+  
+  Isolate Chat and Fusion browser history, presets and preferences by user and lock storage during identity changes. Automatically migrate legacy browser history once to the first signed-in account opening Chat, preserve originals, and prevent later accounts from claiming it. Revalidate BYOK and webhook display data after mutations settle without caching revealed credentials.
+  
+  Revalidate broadcast destinations after creation, wait for every bulk API-key write before invalidating cached lists, and refresh transaction history using the actual refund response.
+  
+  Cache OAuth app lists/details, beta preferences and broadcast creation options for five minutes. Invalidate after OAuth and beta mutations, and allowlist OAuth display metadata so credentials and authorization tokens never enter the query cache.
+
+- [#2701](https://github.com/phaseoteam/Phaseo/pull/2701) [`4ade024`](https://github.com/phaseoteam/Phaseo/commit/4ade024f61bf8dcc36f47582d7f6f8f37b1cc68b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Fix missing settings translations in pages and dialogs, localize the mobile settings sheet navigation, and restore the English Docs header label.
+
+- [#2687](https://github.com/phaseoteam/Phaseo/pull/2687) [`7738a70`](https://github.com/phaseoteam/Phaseo/commit/7738a70466773b762fa05a1b30fab73ba846dd79) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Scope browser translations to route features and bound server catalogue loading to one deadline without server retries.
+
+- [#2571](https://github.com/phaseoteam/Phaseo/pull/2571) [`130dca2`](https://github.com/phaseoteam/Phaseo/commit/130dca2c79d131f47f544adbc1e07cefb4f08e4b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Expose Together Tev's Hugging Face weights and license links on model pages, and add a Tev-specific `/v1/decisions` executor with Together's published pricing.
+
+- [#2662](https://github.com/phaseoteam/Phaseo/pull/2662) [`3f0e9ac`](https://github.com/phaseoteam/Phaseo/commit/3f0e9ac9fe22b21a92787792a6e2844e9b059f5c) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Capture gateway-managed tool calls and results in opt-in R2 request logs, and show request lifecycle details in the Logs trace view.
+
+- [#2659](https://github.com/phaseoteam/Phaseo/pull/2659) [`4308c9f`](https://github.com/phaseoteam/Phaseo/commit/4308c9f506b6b377c039535fb9f8918bc80a2df8) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Use SKU meter metadata in public model pricing, show unfamiliar billing units in provider pricing, and derive provider table unit headers from the displayed rate.
+
+- [#2483](https://github.com/phaseoteam/Phaseo/pull/2483) [`e4488fe`](https://github.com/phaseoteam/Phaseo/commit/e4488fef7748da754bf4cc73b7ada68cde58eabc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Restore request code samples when reopening saved text chats and omit internal session identifiers from generated examples.
+
+- [#2700](https://github.com/phaseoteam/Phaseo/pull/2700) [`d79462e`](https://github.com/phaseoteam/Phaseo/commit/d79462e56e601d16a703b198d01c52d9c1e9feef) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Add owner/admin-only workspace user profiles with usage, keys, top models and recent logs, plus user chip context menus.
+
 ## 1.2.0
 
 ### Minor Changes
