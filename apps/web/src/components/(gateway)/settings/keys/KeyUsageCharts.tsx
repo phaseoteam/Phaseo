@@ -20,7 +20,7 @@ export function KeyUsageCharts({ chart }: { chart: KeyDetailData["chart"] }) {
 			<section className="min-w-0 rounded-xl border bg-card p-5"><h3 className="mb-4 text-sm font-medium">{t("oauthDetail.requests")}</h3>
 				<ChartContainer config={config} className="h-56 w-full"><BarChart accessibilityLayer data={chart.points} margin={{ left: 0, right: 8 }}>
 					<CartesianGrid vertical={false} /><XAxis dataKey="date" tickFormatter={label} minTickGap={35} tickLine={false} axisLine={false} /><YAxis allowDecimals={false} width={45} tickFormatter={(value) => format.number(Number(value))} tickLine={false} axisLine={false} />
-					<ChartTooltip content={<ChartTooltipContent labelFormatter={tooltipDate} formatter={(value) => format.number(Number(value), { notation: "standard" })} />} /><Bar dataKey="requests" fill="var(--color-requests)" radius={[3, 3, 0, 0]} />
+					<ChartTooltip content={<ChartTooltipContent labelFormatter={tooltipDate} formatter={(value) => format.number(Number(value))} />} /><Bar dataKey="requests" fill="var(--color-requests)" radius={[3, 3, 0, 0]} />
 				</BarChart></ChartContainer>
 			</section>
 			<section className="min-w-0 rounded-xl border bg-card p-5"><h3 className="mb-4 text-sm font-medium">{t("keyDetail.spendUsd")}</h3>
