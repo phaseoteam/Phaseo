@@ -58,10 +58,14 @@ Cross-harness handoff copies visible conversation into a fresh native session.
 Image/text attachment snapshots persist independently of their source files;
 PDF text extraction runs in a bounded worker and includes page provenance.
 Task and attachment drafts persist across navigation, with local previews.
+ACP agents can request approved command terminals with bounded UTF-8 output,
+exit/kill/release lifecycle and process-tree cleanup. Agent-managed ACP sign-in
+offers the agent's native authentication methods when authentication is required;
+interactive terminal sign-in remains a gap.
 Phaseo Code/Plan currently accepts text documents; images require Chat or a
 vision-capable native harness. PDF OCR is not implemented.
 
-Evidence: desktop lint/typecheck/build pass; 67 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 73 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

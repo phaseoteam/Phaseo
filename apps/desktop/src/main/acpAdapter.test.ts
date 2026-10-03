@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { agent, ndJsonStream } from "@agentclientprotocol/sdk";
+import { agent, ndJsonStream, RequestError } from "@agentclientprotocol/sdk";
 import type { Task } from "../shared/workspace";
 const native = vi.hoisted(() => ({ spawn: vi.fn() }));
 vi.mock("node:child_process", async importOriginal => ({ ...await importOriginal<typeof ChildProcessModule>(), spawn: native.spawn }));
@@ -13,6 +13,43 @@ import { AcpAdapter } from "./acpAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it.each([true, false])("lets the user choose native authentication without collecting credentials (%s)", async accept => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		let authenticated = false; const authenticate = vi.fn(({ params }: { params: { methodId: string } }) => { expect(params.methodId).toBe("browser"); authenticated = true; return {}; });
+		const fixture = agent({ name: "fixture" })
+			.onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {}, authMethods: [{ id: "browser", name: "Browser sign-in", description: "Open the agent’s sign-in page" }] }))
+			.onRequest("session/new", () => { if (!authenticated) throw RequestError.authRequired(); return { sessionId: "native" }; })
+			.onRequest("authenticate", authenticate)
+			.onRequest("session/prompt", () => ({ stopReason: "end_turn" }));
+		const connection = fixture.connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const onQuestion = vi.fn(async (): Promise<Record<string, string[]>> => accept ? { "auth-method": ["Browser sign-in (browser)"] } : {});
+		try {
+			const run = new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onQuestion });
+			if (accept) { await run; expect(authenticate).toHaveBeenCalledOnce(); }
+			else { await expect(run).rejects.toThrow("sign-in cancelled"); expect(authenticate).not.toHaveBeenCalled(); }
+			expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ options: [{ label: "Browser sign-in (browser)", description: "Open the agent’s sign-in page" }] })]);
+		} finally { connection.close(); }
+	});
+	it("advertises terminals and exchanges real command lifecycle packets", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-acp-protocol-terminal-"));
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() });
+		native.spawn.mockImplementation((await vi.importActual<typeof ChildProcessModule>("node:child_process")).spawn).mockReturnValueOnce(child);
+		const fixture = agent({ name: "fixture" })
+			.onRequest("initialize", ({ params }) => { expect(params.clientCapabilities?.terminal).toBe(true); return { protocolVersion: params.protocolVersion, agentCapabilities: {}, authMethods: [] }; })
+			.onRequest("session/new", () => ({ sessionId: "native" }))
+			.onRequest("session/prompt", async ({ client }) => {
+				const terminal = await client.request("terminal/create", { sessionId: "native", command: process.execPath, args: ["-e", "process.stdout.write('ACP command fixture')"] });
+				expect((await client.request("terminal/wait_for_exit", { sessionId: "native", terminalId: terminal.terminalId })).exitCode).toBe(0);
+				expect((await client.request("terminal/output", { sessionId: "native", terminalId: terminal.terminalId })).output).toBe("ACP command fixture");
+				await client.request("terminal/release", { sessionId: "native", terminalId: terminal.terminalId });
+				await expect(client.request("terminal/output", { sessionId: "native", terminalId: terminal.terminalId })).rejects.toThrow();
+				return { stopReason: "end_turn" };
+			});
+		const connection = fixture.connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, root, "Run", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" });
+		} finally { connection.close(); native.spawn.mockReset(); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("rejects image input before prompting when the agent lacks image capability", async () => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const fixture = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {}, authMethods: [] }));
