@@ -23,6 +23,7 @@ test('healthy retry recovers and invalid 200 content fails', async () => {
   const failed = await checkHttp(check, async () => new Response('Application error'));
   assert.equal(failed.success, false);
   assert.equal(failed.failure_reason, 'unexpected_content');
+  assert.equal((await checkHttp(check, async () => new Response('Models Phaseo could not load this page'))).success, false);
 });
 
 test('API must return the expected JSON contract', async () => {

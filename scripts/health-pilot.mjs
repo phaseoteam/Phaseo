@@ -32,7 +32,7 @@ export async function checkHttp(check, fetcher = fetch) {
         const data = JSON.parse(body);
         success = typeof data.message === 'string' && data.message.includes('Phaseo Gateway API');
       } else {
-        success = body.includes(check.text);
+        success = body.includes(check.text) && !/Phaseo could not load this page|Application error:/i.test(body);
       }
       reason = success ? null : 'unexpected_content';
     } catch {
@@ -73,11 +73,11 @@ export async function checkBrowser(loadPlaywright) {
     await expect(page.getByRole('heading', { level: 1, name: 'Models', exact: true })).toBeVisible();
     // Verify a rendered model link, then navigate to its page and verify content.
     stage = 'model_link';
-    const link = page.locator('main a[href^="/models/"]').filter({ visible: true, hasText: /\S/ }).first();
+    const link = page.locator('main a[href^="/models/"]').filter({ visible: true, hasText: /\S/ }).filter({ hasNot: page.locator('svg') }).first();
     await expect(link).toBeVisible();
     const href = await link.getAttribute('href');
     const modelName = (await link.innerText()).trim();
-    if (!href?.startsWith('/models/')) throw new Error('missing_model_link');
+    if (!/^\/models\/[^/]+\/[^/]+\/?$/.test(href ?? '')) throw new Error('missing_model_link');
     stage = 'model_click';
     await link.click();
     stage = 'detail_url';
