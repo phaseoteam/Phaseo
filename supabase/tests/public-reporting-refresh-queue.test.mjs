@@ -93,6 +93,7 @@ try {
     primary key(rollup_name,bucket_start));`);
   await db.exec(await functionFrom('../migrations/20260722154000_v2_analytics_outbox_processor.sql','process_v2_analytics_outbox'));
   await db.exec(await read('../migrations/20261003102642_repair_previous_analytics_grains.sql'));
+  await db.exec(await read('../migrations/20261003103314_skip_unchanged_analytics_grains.sql'));
   const freeRouterIndex = (await db.query(`select indexdef from pg_indexes where indexname='v2_request_facts_free_router_reporting_idx'`)).rows[0].indexdef;
   assert.match(freeRouterIndex, /INCLUDE \(request_event_id\)/);
   assert.match(freeRouterIndex, /requested_model_input = 'phaseo\/free'/);
@@ -209,6 +210,9 @@ try {
     select public.process_v2_analytics_outbox(10);
     update v2_request_facts set occurred_at='2026-10-07',routed_model_slug='intermediate' where request_event_id='00000000-0000-0000-0000-000000000001';
     update v2_request_facts set occurred_at='2026-10-08',routed_model_slug='final' where request_event_id='00000000-0000-0000-0000-000000000001';`);
+  assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,2);
+  await db.exec(`update v2_request_facts set occurred_at='2026-10-08 00:00:01Z'
+    where request_event_id='00000000-0000-0000-0000-000000000001'`);
   assert.equal((await scalar(`select count(*)::int n from private.v2_analytics_previous_grains`)).n,2);
   await db.exec(`create trigger fixture_old_grain_fail before insert on v2_public_usage_daily
     for each row execute function fixture_fail();`);
