@@ -359,6 +359,12 @@
 		"toggle": "Cambiar tema"
 	},
 	"status": {
+		"monitoring": "Supervisando la recuperación",
+		"investigating": "Investigando",
+		"identified": "Identificado",
+		"generationsApi": "API de generación",
+		"reportedImpact": "Impacto comunicado: {impact}",
+		"updatedAt": "Actualizado {time}",
 		"unavailable": "Estado no disponible",
 		"checking": "Comprobando el estado",
 		"openPage": "{status}. Abrir la página de estado.",

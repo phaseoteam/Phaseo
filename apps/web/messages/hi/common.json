@@ -359,6 +359,12 @@
 		"toggle": "थीम बदलें"
 	},
 	"status": {
+		"monitoring": "सेवा बहाली की निगरानी जारी",
+		"investigating": "जाँच जारी",
+		"identified": "कारण की पहचान हो गई",
+		"generationsApi": "जनरेशन API",
+		"reportedImpact": "रिपोर्ट किया गया प्रभाव: {impact}",
+		"updatedAt": "अपडेट किया गया {time}",
 		"unavailable": "स्थिति उपलब्ध नहीं है",
 		"checking": "स्थिति जांची जा रही है",
 		"openPage": "{status}। स्थिति पृष्ठ खोलें।",

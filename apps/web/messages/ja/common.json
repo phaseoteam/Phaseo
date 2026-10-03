@@ -359,6 +359,12 @@
 		"toggle": "テーマを切り替え"
 	},
 	"status": {
+		"monitoring": "復旧状況を監視中",
+		"investigating": "調査中",
+		"identified": "原因特定済み",
+		"generationsApi": "生成API",
+		"reportedImpact": "報告された影響: {impact}",
+		"updatedAt": "更新日時 {time}",
 		"unavailable": "ステータスを利用できません",
 		"checking": "ステータスを確認中",
 		"openPage": "{status}。ステータスページを開く。",

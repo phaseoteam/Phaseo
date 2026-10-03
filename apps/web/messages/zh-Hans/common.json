@@ -359,6 +359,12 @@
 		"toggle": "切换主题"
 	},
 	"status": {
+		"monitoring": "正在监测恢复情况",
+		"investigating": "调查中",
+		"identified": "已确定原因",
+		"generationsApi": "生成 API",
+		"reportedImpact": "报告的影响：{impact}",
+		"updatedAt": "更新时间 {time}",
 		"unavailable": "状态不可用",
 		"checking": "正在检查状态",
 		"openPage": "{status}。打开状态页面。",

@@ -359,6 +359,12 @@
 		"toggle": "Darstellung wechseln"
 	},
 	"status": {
+		"monitoring": "Wiederherstellung wird überwacht",
+		"investigating": "Wird untersucht",
+		"identified": "Identifiziert",
+		"generationsApi": "Generierungs-API",
+		"reportedImpact": "Gemeldete Auswirkungen: {impact}",
+		"updatedAt": "Aktualisiert {time}",
 		"unavailable": "Status nicht verfügbar",
 		"checking": "Status wird geprüft",
 		"openPage": "{status}. Statusseite öffnen.",

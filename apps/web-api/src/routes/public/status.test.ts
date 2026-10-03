@@ -6,6 +6,40 @@ afterEach(() => {
 });
 
 describe("GET /api/_web/status", () => {
+	const monitoringIncident = {
+		id: "incident-1", name: "API disruption", status: "monitoring",
+		current_worst_impact: "full_outage",
+		last_update_at: "2026-10-03T09:33:04.331Z",
+		last_update_message: "A fix has been applied. We are monitoring recovery.",
+		affected_components: [
+			{ id: "models", name: "Models API (/v1/models)", current_status: "full_outage" },
+			{ id: "generations", name: "Generations API", current_status: "full_outage" },
+		],
+	};
+
+	it("shows recovery progress while preserving reported impact and the latest update", async () => {
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(new Response(JSON.stringify({ ongoing_incidents: [monitoringIncident] })))
+			.mockResolvedValueOnce(new Response("", { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/status", {}, { ENV: "development" });
+		await expect(response.json()).resolves.toMatchObject({
+			state: "monitoring", label: "Monitoring recovery",
+			components: [
+				{ name: "Models API (/v1/models)", state: "major_outage" },
+				{ name: "Generations API", state: "major_outage" },
+			],
+			incidents: [{ id: "incident-1", status: "monitoring", impact: "Major outage", impactState: "major_outage", message: monitoringIncident.last_update_message, updatedAt: monitoringIncident.last_update_at }],
+		});
+	});
+
+	it.each(["investigating", "identified", undefined])("keeps outage status when another incident is %s", async (status) => {
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(new Response(JSON.stringify({ ongoing_incidents: [monitoringIncident, { ...monitoringIncident, id: "incident-2", status }] })))
+			.mockResolvedValueOnce(new Response("", { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/status", {}, { ENV: "development" });
+		await expect(response.json()).resolves.toMatchObject({ state: "major_outage", label: "2 services affected" });
+	});
+
   it("returns an anonymous, edge-cacheable status summary", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
