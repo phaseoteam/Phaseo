@@ -94,7 +94,7 @@ export class WorkspaceStore {
 			destination.messages = source.messages; this.saveTask(destination); return destination;
 		}
 		if (command.type === "create-task") {
-			if (command.projectId && !this.get().projects.some(project => project.id === command.projectId)) throw new Error("Project no longer exists.");
+			if (command.projectId && !this.get().projects.some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
 			if (command.accountId && !this.get().accounts.some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if (command.harness === "phaseo" && !command.accountId) throw new Error("Choose an API account for the Phaseo harness.");
 			if (command.harness === "acp" && !this.get().agents.some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");

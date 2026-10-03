@@ -165,9 +165,9 @@ terminals. Source working changes remain in the source checkout. Git mutation
 queues share the repository's common Git directory across worktrees; review reads
 disable optional index locking. Real Git fixtures verify commit/branch isolation
 and durable project relationships, and Electron verifies the creation controls.
-Worktree removal, checkout handoff and pull-request workflows remain outstanding.
+Managed removal checks tracked/untracked changes before and after stopping managed MCP tools, refuses active tasks, terminals and editor/Git mutations, and preserves branches and conversations. Removed projects cannot start execution; handoff can continue their history elsewhere. Real Git tests and Electron confirmation controls verify removal. Checkout restoration and pull-request workflows remain outstanding.
 
-Evidence: desktop lint/typecheck/build pass; 193 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 198 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

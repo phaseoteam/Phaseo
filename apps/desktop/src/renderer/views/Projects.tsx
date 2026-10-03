@@ -21,6 +21,7 @@ export function Projects() {
 	const [branches, setBranches] = useState<string[]>([]);
 	const [branchName, setBranchName] = useState("");
 	const [worktreeBranch, setWorktreeBranch] = useState(""); const [worktreeBase, setWorktreeBase] = useState("HEAD");
+	const [confirmRemove, setConfirmRemove] = useState(false);
 	const [commitMessage, setCommitMessage] = useState("");
 	const [gitBusy, setGitBusy] = useState(false);
 	const [tab, setTab] = useState<"files" | "git">("files");
@@ -57,6 +58,10 @@ export function Projects() {
 		try { const result = await api.createWorktree(id, worktreeBranch.trim(), worktreeBase.trim()); setWorkspace(result.workspace); setId(result.projectId); setDirectory(""); setPreview(undefined); setReview(undefined); setWorktreeBranch(""); setWorktreeBase("HEAD"); }
 		catch (reason) { setError(String(reason)); } finally { setGitBusy(false); }
 	}
+	async function removeWorktree() {
+		if (!api || !canNavigate()) return; setGitBusy(true); setError("");
+		try { setWorkspace(await api.removeWorktree(id)); setId(""); setDirectory(""); setPreview(undefined); setReview(undefined); setConfirmRemove(false); } catch (reason) { setError(String(reason)); } finally { setGitBusy(false); }
+	}
 	async function save() {
 		if (!api || !preview || saving) return;
 		setSaving(true); setError("");
@@ -74,7 +79,8 @@ export function Projects() {
 		catch (reason) { if (request === previewRequest.current) setError(String(reason)); }
 	}
 	return <div className="page task-workspace project-page"><section>
-		<h1>Projects</h1><div className="project-toolbar"><select aria-label="Project" value={id} onChange={event => { if (!canNavigate()) return; setId(event.target.value); setDirectory(""); setPreview(undefined); setReview(undefined); }}><option value="">Choose a project</option>{workspace.projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select><button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button><button type="button" aria-pressed={tab === "files"} onClick={() => { if (canNavigate()) setTab("files"); }}>Files</button><button type="button" aria-pressed={tab === "git"} onClick={() => { if (canNavigate()) setTab("git"); }}>Git review</button></div>
+		<h1>Projects</h1><div className="project-toolbar"><select aria-label="Project" value={id} onChange={event => { if (!canNavigate()) return; setId(event.target.value); setConfirmRemove(false); setDirectory(""); setPreview(undefined); setReview(undefined); }}><option value="">Choose a project</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select><button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button><button type="button" aria-pressed={tab === "files"} onClick={() => { if (canNavigate()) setTab("files"); }}>Files</button><button type="button" aria-pressed={tab === "git"} onClick={() => { if (canNavigate()) setTab("git"); }}>Git review</button>{workspace.projects.find(project => project.id === id)?.worktree && <button type="button" disabled={gitBusy} onClick={() => { if (canNavigate()) setConfirmRemove(true); }}>Remove worktree</button>}</div>
+		{confirmRemove && <section className="task-setup" aria-label="Remove worktree"><p>Remove this checkout and its ignored files? The branch and conversations are retained.</p><button type="button" disabled={gitBusy} onClick={() => void removeWorktree()}>Remove checkout</button><button type="button" disabled={gitBusy} onClick={() => setConfirmRemove(false)}>Cancel</button></section>}
 		{error && <p className="task-error" role="alert">{error}</p>}
 		{loading && <p className="task-muted" role="status">Loading…</p>}
 		{!id && <p className="task-muted">Open a folder to browse files and review changes.</p>}

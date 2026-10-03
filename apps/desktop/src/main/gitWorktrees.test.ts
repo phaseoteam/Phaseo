@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
-import { createGitWorktree } from "./gitWorktrees";
+import { describe, expect, it, vi } from "vitest";
+import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
 
@@ -19,6 +19,35 @@ function removeCleanWorktree(value: ReturnType<typeof fixture>, directory: strin
 	value.git(["worktree", "remove", directory]); value.git(["worktree", "prune"]);
 }
 describe("desktop Git worktrees", () => {
+	it.each(["tracked", "untracked"])("refuses %s changes and retains history and branches after clean removal", async kind => {
+		const value = fixture(); const workspaceDirectory = path.join(value.directory, "workspace"); const runtime = new WorkspaceRuntime(workspaceDirectory); let checkout: string | undefined;
+		try {
+			const source = runtime.store.addProject(value.root); const created = await runtime.createWorktree(source.id, `feature/remove-${kind}`, "HEAD"); const project = created.workspace.projects.find(value => value.id === created.projectId)!; checkout = project.directory;
+			const task = runtime.store.apply({ type: "create-task", projectId: project.id, harness: "codex", model: "default", mode: "code" }); task.messages = [{ id: "history", role: "user", text: "Retained conversation", createdAt: "" }]; runtime.store.saveTask(task);
+			const filename = path.join(checkout, kind === "tracked" ? "file.txt" : "notes.txt"); writeFileSync(filename, "Working changes\n");
+			await expect(runtime.removeWorktree(project.id)).rejects.toThrow("tracked and untracked"); expect(readFileSync(filename, "utf8")).toBe("Working changes\n");
+			if (kind === "tracked") writeFileSync(filename, "Committed\n"); else rmSync(filename);
+			if (kind === "tracked") {
+				await expect(removeGitWorktree(value.root, path.join(workspaceDirectory, "worktrees"), checkout, async () => { writeFileSync(filename, "Tool shutdown changes\n"); })).rejects.toThrow("tools were stopping");
+				expect(readFileSync(filename, "utf8")).toBe("Tool shutdown changes\n"); writeFileSync(filename, "Committed\n");
+			}
+			await expect(removeGitWorktree(value.root, path.join(workspaceDirectory, "worktrees"), value.root)).rejects.toThrow("desktop-managed");
+			const removed = await runtime.removeWorktree(project.id); expect(removed.projects.find(value => value.id === project.id)?.worktree?.removedAt).toBeTruthy(); expect(existsSync(checkout)).toBe(false); checkout = undefined;
+			expect(removed.tasks.find(value => value.id === task.id)?.messages).toEqual(task.messages); expect(value.git(["branch", "--list", `feature/remove-${kind}`])).toContain(`feature/remove-${kind}`);
+			await expect(runtime.command({ type: "create-task", projectId: project.id, harness: "codex", model: "default", mode: "code" })).rejects.toThrow("unavailable"); await expect(runtime.command({ type: "send", id: task.id, text: "Do not execute" })).rejects.toThrow("unavailable");
+		} finally { await runtime.close(); if (checkout) { const filename = path.join(checkout, kind === "tracked" ? "file.txt" : "notes.txt"); if (kind === "tracked") writeFileSync(filename, "Committed\n"); else rmSync(filename, { force: true }); removeCleanWorktree(value, checkout); } rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
+	it("blocks active terminals and tasks even through a project alias", async () => {
+		const value = fixture(); const runtime = new WorkspaceRuntime(path.join(value.directory, "workspace"), () => ({ run: async () => { await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } })); let finish: (() => void) | undefined; let checkout: string | undefined;
+		try {
+			const source = runtime.store.addProject(value.root); const created = await runtime.createWorktree(source.id, "feature/active", "HEAD"); const project = created.workspace.projects.find(value => value.id === created.projectId)!; checkout = project.directory;
+			let finishEdit!: () => void; const edit = runtime.mutateProject(project.id, async () => { await new Promise<void>(resolve => { finishEdit = resolve; }); }); try { await expect(runtime.removeWorktree(project.id)).rejects.toThrow("project edits"); } finally { finishEdit(); await edit; }
+			runtime.getTerminals = () => [{ cwd: checkout!, status: "running" }]; await expect(runtime.removeWorktree(project.id)).rejects.toThrow("Close worktree terminals"); runtime.getTerminals = () => [];
+			const alias = path.join(value.directory, "alias"); symlinkSync(checkout, alias, process.platform === "win32" ? "junction" : "dir"); const aliasProject = runtime.store.addProject(alias);
+			const state = await runtime.command({ type: "create-task", projectId: aliasProject.id, harness: "codex", model: "default", mode: "code" }); await runtime.command({ type: "send", id: state.tasks[0].id, text: "Hold task" }); await vi.waitFor(() => expect(finish).toBeDefined());
+			await expect(runtime.removeWorktree(project.id)).rejects.toThrow("Stop worktree tasks"); expect(existsSync(checkout)).toBe(true);
+		} finally { await runtime.close(); if (checkout) removeCleanWorktree(value, checkout); rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
 	it("starts from a commit while preserving source working changes", async () => {
 		const value = fixture(); const directory = path.join(value.directory, "checkout"); let created = false;
 		try {

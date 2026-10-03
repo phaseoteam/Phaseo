@@ -6,7 +6,7 @@ import path from "node:path";
 import { tmpdir } from "node:os";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ discover: vi.fn(), stop: vi.fn(), spawn: vi.fn(), resolve: vi.fn() }));
-vi.mock("@opencode/client/service", () => ({ Service: { discover: mocks.discover, stop: mocks.stop } }));
+vi.mock("@opencode/client/service", () => ({ Service: { discover: mocks.discover, stop: mocks.stop, headers: () => ({}) } }));
 vi.mock("node:child_process", async importOriginal => ({ ...await importOriginal<typeof ChildProcessModule>(), spawn: mocks.spawn }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: mocks.resolve }));
 import { OpenCodeService, resolveOpenCodeCommand } from "./openCodeService";
@@ -19,6 +19,21 @@ function fixture() {
 const endpoint = { url: "http://localhost:4096", auth: { type: "basic" as const, username: "opencode", password: "fixture-service-token" } };
 describe("OpenCode service lifecycle", () => {
 	beforeEach(() => { for (const mock of Object.values(mocks)) mock.mockReset(); mocks.stop.mockResolvedValue(undefined); });
+	it("does not start a service while releasing unused workspace tools", async () => {
+		mocks.discover.mockResolvedValue(undefined);
+		const resolve = vi.fn(); const service = new OpenCodeService(tmpdir(), resolve);
+		const synchronize = vi.spyOn(service.mcp, "synchronize").mockResolvedValue(undefined);
+		await service.releaseMcp("fixture", "project", [{ id: "fixture", enabled: true } as never]);
+		expect(synchronize).not.toHaveBeenCalled(); expect(resolve).not.toHaveBeenCalled(); expect(mocks.spawn).not.toHaveBeenCalled();
+	});
+	it("releases managed connections once per service without changing stored configuration", async () => {
+		mocks.discover.mockResolvedValue(endpoint); const service = new OpenCodeService(tmpdir(), vi.fn());
+		const synchronize = vi.spyOn(service.mcp, "synchronize").mockResolvedValue(undefined);
+		const connections = [{ id: "fixture", enabled: true } as never];
+		await service.releaseMcp("fixture", "project", connections);
+		expect(synchronize).toHaveBeenCalledOnce(); expect(synchronize.mock.lastCall?.slice(1, 5)).toEqual([endpoint.url, "fixture", "project", [{ id: "fixture", enabled: false }]]);
+		expect(connections[0]).toEqual({ id: "fixture", enabled: true }); expect(mocks.spawn).not.toHaveBeenCalled();
+	});
 	it("reuses compatible external services without taking ownership", async () => {
 		mocks.discover.mockResolvedValue(endpoint);
 		const service = new OpenCodeService(tmpdir(), vi.fn());

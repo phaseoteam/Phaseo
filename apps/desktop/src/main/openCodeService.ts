@@ -8,6 +8,8 @@ import { Service } from "@opencode/client/service";
 import type { Endpoint } from "@opencode/client/service";
 import { resolveNativeCommand } from "./nativeProcess";
 import { OpenCodeMcp } from "./openCodeMcp";
+import { OpenCode } from "@opencode/client";
+import type { McpConnection } from "../shared/mcp";
 
 const execute = promisify(execFile);
 const compatible = (version: string) => version.startsWith("2.");
@@ -69,6 +71,15 @@ export class OpenCodeService {
 		} catch (error) { child.kill(); await Service.stop({ file: this.file }).catch(() => {}); throw error; }
 	}
 	close() { return this.closing ??= this.shutdown(); }
+	async releaseMcp(cwd: string, projectId: string, connections: McpConnection[]) {
+		if (!connections.length) return;
+		const endpoints = await Promise.all([Service.discover({ version: compatible }), Service.discover({ file: this.file, version: compatible })]); const seen = new Set<string>();
+		for (const endpoint of endpoints) {
+			if (!endpoint || seen.has(endpoint.url)) continue; seen.add(endpoint.url);
+			try { await this.mcp.synchronize(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), endpoint.url, cwd, projectId, connections.map(value => ({ ...value, enabled: false })), AbortSignal.timeout(30000)); }
+			catch { throw new Error("Managed OpenCode MCP connections could not stop. Stop their native workspace tools before retrying removal."); }
+		}
+	}
 	private async shutdown() {
 		this.controller.abort();
 		await this.starting?.catch(() => {});

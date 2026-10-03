@@ -45,6 +45,7 @@ ipcMain.handle("workspace:terminals", event => {
 });
 ipcMain.handle("workspace:terminal", (event, command: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
+	if (command && typeof command === "object" && "type" in command && command.type === "open" && "projectId" in command && typeof command.projectId === "string") workspaceRuntime.assertProjectAvailable(command.projectId);
 	return terminalService.command(command);
 });
 ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
@@ -124,6 +125,7 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid project request.");
 	const project = workspaceRuntime.store.get().projects.find(value => value.id === id);
 	if (!project) throw new Error("Project no longer exists.");
+	workspaceRuntime.assertProjectAvailable(project.id);
 	return project.directory;
 }
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
@@ -137,12 +139,16 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 	return readProjectFile(root, filename);
 });
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
-ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => gitCommand(projectRoot(event, id), command));
+ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
 	return workspaceRuntime.createWorktree(id, branch, base);
+});
+ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
+	return workspaceRuntime.removeWorktree(id);
 });
 ipcMain.handle("workspace:read-document", async (event, id: unknown, filename: unknown) => {
 	const root = projectRoot(event, id);
@@ -153,7 +159,7 @@ ipcMain.handle("workspace:read-document", async (event, id: unknown, filename: u
 ipcMain.handle("workspace:write-document", async (event, id: unknown, filename: unknown, text: unknown, expectedHash: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof filename !== "string" || typeof text !== "string" || typeof expectedHash !== "string" || !/^[a-f0-9]{64}$/.test(expectedHash)) throw new Error("Invalid file edit.");
-	return writeProjectFile(root, filename, text, expectedHash);
+	return workspaceRuntime.mutateProject(id as string, () => writeProjectFile(root, filename, text, expectedHash));
 });
 
 ipcMain.handle("workspace:get", event => {
@@ -377,6 +383,7 @@ app.whenReady().then(() => {
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	terminalService = new TerminalService(workspaceRuntime.store, path.join(workspaceDirectory, "terminals"));
 	workspaceRuntime.onTerminalAuth = (request, signal) => terminalService.authenticate(request, signal);
+	workspaceRuntime.getTerminals = () => terminalService.get();
 	terminalService.onEvent = event => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:terminal-event", event); };
 	workspaceRuntime.onChange = state => {
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:changed", state);

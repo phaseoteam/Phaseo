@@ -22,7 +22,7 @@ import type { ImportedConversation } from "./taskImport";
 import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
-import { createGitWorktree } from "./gitWorktrees";
+import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
 
@@ -48,9 +48,13 @@ export class WorkspaceRuntime {
 	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
+	private readonly worktreeSources = new Map<string, number>();
+	private readonly removingWorktrees = new Set<string>();
+	private readonly projectMutations = new Map<Promise<unknown>, string>();
 	private closing = false;
 	onChange: (workspace: Workspace) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
+	getTerminals?: () => { cwd: string; status: string }[];
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
@@ -60,8 +64,34 @@ export class WorkspaceRuntime {
 	private broadcast() { this.onChange(this.store.get()); }
 	async createWorktree(projectId: string, branch: string, base: string) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
 		const operation = this.performCreateWorktree(projectId, branch, base); this.worktreeOperations.add(operation);
-		try { return await operation; } finally { this.worktreeOperations.delete(operation); }
+		try { return await operation; } finally { this.worktreeOperations.delete(operation); const count = this.worktreeSources.get(projectId)! - 1; if (count) this.worktreeSources.set(projectId, count); else this.worktreeSources.delete(projectId); }
+	}
+	assertProjectAvailable(projectId: string) {
+		const project = this.store.get().projects.find(value => value.id === projectId);
+		if (!project || project.worktree?.removedAt) throw new Error("This project is unavailable. Use Handoff to continue in another project.");
+		try { realpathSync(project.directory); } catch { throw new Error("The project folder is unavailable. Open its current location or use Handoff."); }
+		if ([...this.removingWorktrees].some(id => { const removing = this.store.get().projects.find(value => value.id === id); if (!removing) return false; try { return !path.relative(realpathSync(removing.directory), realpathSync(project.directory)); } catch { return !path.relative(removing.directory, project.directory); } })) throw new Error("Worktree removal is in progress.");
+	}
+	async mutateProject<T>(projectId: string, run: () => Promise<T>): Promise<T> {
+		if (this.closing) throw new Error("The workspace is shutting down."); this.assertProjectAvailable(projectId);
+		const operation = run(); this.projectMutations.set(operation, projectId);
+		try { return await operation; } finally { this.projectMutations.delete(operation); }
+	}
+	async removeWorktree(projectId: string) {
+		if (this.closing) throw new Error("The workspace is shutting down."); this.assertProjectAvailable(projectId);
+		const workspace = this.store.get(); const project = workspace.projects.find(value => value.id === projectId)!;
+		if (!project.worktree) throw new Error("Only desktop-managed worktrees can be removed.");
+		const sameDirectory = (directory: string) => { try { const value = realpathSync(directory); return !path.relative(realpathSync(project.directory), value); } catch { return false; } };
+		if (workspace.tasks.some(task => this.executions.has(task.id) && workspace.projects.some(value => value.id === task.projectId && sameDirectory(value.directory)))) throw new Error("Stop worktree tasks before removing their checkout.");
+		if (this.getTerminals?.().some(value => value.status === "running" && sameDirectory(value.cwd))) throw new Error("Close worktree terminals before removing their checkout.");
+		if ([...this.projectMutations.values()].some(id => workspace.projects.some(value => value.id === id && sameDirectory(value.directory)))) throw new Error("Wait for project edits and Git actions to finish before removing this worktree.");
+		if (workspace.projects.some(value => value.worktree && !value.worktree.removedAt && workspace.projects.some(source => source.id === value.worktree!.sourceProjectId && sameDirectory(source.directory))) || [...this.worktreeSources.keys()].some(id => workspace.projects.some(value => value.id === id && sameDirectory(value.directory)))) throw new Error("Remove dependent worktrees or wait for creation to finish first.");
+		const source = workspace.projects.find(value => value.id === project.worktree!.sourceProjectId); if (!source || source.worktree?.removedAt) throw new Error("The source project is unavailable.");
+		this.removingWorktrees.add(projectId);
+		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.get(); })(); this.worktreeOperations.add(operation);
+		try { return await operation; } finally { this.removingWorktrees.delete(projectId); this.worktreeOperations.delete(operation); }
 	}
 	private async performCreateWorktree(projectId: string, branch: string, base: string) {
 		const source = this.store.get().projects.find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
@@ -99,6 +129,8 @@ export class WorkspaceRuntime {
 	}
 	async command(command: WorkspaceCommand): Promise<Workspace> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
+		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
 		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
 			if (this.steeringExecutions.has(command.id)) throw new Error("Wait for the current steering instruction to finish sending.");
@@ -347,6 +379,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.steeringExecutions.values()]);
 		await Promise.allSettled([...this.imports]);
 		await Promise.allSettled([...this.worktreeOperations]);
+		await Promise.allSettled([...this.projectMutations.keys()]);
 		await this.openCode.close();
 		this.store.close();
 	}

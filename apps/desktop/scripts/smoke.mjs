@@ -328,6 +328,12 @@ app.whenReady().then(async () => {
 		})()`);
 		if (path.relative(path.join(data, "workspace", "worktrees"), managedProject.directory).split(path.sep).length !== 1) throw new Error("Managed worktree escaped its owned directory");
 		result.worktrees = true;
+		await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;const id=${JSON.stringify(managedProject.id)};const before=await api.readDocument(id,'hello.txt');await api.writeDocument(id,'hello.txt',before.text+'owned dirty fixture',before.hash);let rejected=false;try{await api.removeWorktree(id);}catch{rejected=true;}if(!rejected)throw new Error('Dirty worktree removal was allowed');const dirty=await api.readDocument(id,'hello.txt');await api.writeDocument(id,'hello.txt',before.text,dirty.hash);
+			const state=await api.command({type:'create-task',projectId:id,harness:'codex',model:'default',mode:'chat',title:'Retained checkout history'});const task=state.tasks.find(value=>value.projectId===id);if(!task)throw new Error('Worktree task missing');for(let attempt=0;attempt<30&&!Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Remove worktree');attempt++)await new Promise(resolve=>setTimeout(resolve,100));Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Remove worktree').click();await new Promise(resolve=>setTimeout(resolve,100));document.querySelector('[aria-label="Remove worktree"] button').click();let removed;for(let attempt=0;attempt<50;attempt++){removed=await api.get();if(removed.projects.find(value=>value.id===id)?.worktree?.removedAt)break;await new Promise(resolve=>setTimeout(resolve,100));}if(!removed.projects.find(value=>value.id===id)?.worktree?.removedAt||!removed.tasks.some(value=>value.id===task.id))throw new Error('Worktree removal did not retain its history');
+		})()`);
+		if (existsSync(managedProject.directory)) throw new Error("Removed managed checkout still exists");
+		result.worktreeRemoval = true;
 		const secondInstance = path.join(data, "second-instance.mjs");
 		const entry = packagedEntry ? path.resolve(packagedEntry) : fileURLToPath(new URL("../dist/main/index.mjs", import.meta.url));
 		writeFileSync(secondInstance, `import { app } from 'electron'; app.setPath('userData', ${JSON.stringify(data)}); await import(${JSON.stringify(pathToFileURL(entry).href)}); setTimeout(() => app.exit(1), 3000);`);
