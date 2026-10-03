@@ -28,8 +28,9 @@ Execute each generated statement separately, outside a transaction. Inspect
 existing indexes before retrying interrupted builds; an invalid index must
 be removed before rebuilding it. Then apply the migration to attach the
 matching child indexes and provide inheritance for future partitions.
-The migration aborts if a lock takes more than 500 ms or building takes
-more than 15 seconds. A timeout rolls back the migration; prebuilt child
+The migration first rejects any leaf without a valid matching prebuilt index,
+before it can build that index while blocking writes. It also aborts if a lock
+takes more than 500 ms or attachment takes more than 15 seconds. A timeout rolls back the migration; prebuilt child
 indexes remain available for the next attempt.
 
 Verify the parent is valid and all leaf partitions are attached. Use

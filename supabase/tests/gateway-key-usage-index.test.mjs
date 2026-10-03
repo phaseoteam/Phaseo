@@ -31,13 +31,16 @@ try {
        and workspace_id=md5('9')::uuid and success is true`
   ];
   const before = await Promise.all(queries.map(q => db.query(q)));
+  const migration = await readFile(new URL('../migrations/20261003083400_optimize_gateway_history_reads.sql', import.meta.url), 'utf8');
+  await assert.rejects(db.exec('begin;' + migration + 'commit;'), /Missing valid prebuilt/);
+  await db.exec('rollback');
+  assert.equal((await db.query(`select to_regclass('gateway_requests_success_key_workspace_cost_idx') as name`)).rows[0].name,null);
   // Production prebuilds each leaf online; the parent migration must reuse it.
   await db.exec(`create index requests_oct_success_key_workspace_cost_idx
     on requests_oct(key_id,workspace_id,created_at) include(cost_nanos)
     where success is true and key_id is not null`);
   const leafOid = (await db.query(`select
     'requests_oct_success_key_workspace_cost_idx'::regclass::oid as oid`)).rows[0].oid;
-  const migration = await readFile(new URL('../migrations/20261003083400_optimize_gateway_history_reads.sql', import.meta.url), 'utf8');
   await db.exec('begin;' + migration + 'commit;');
   assert.equal((await db.query(`select inhparent::regclass::text as parent
     from pg_inherits where inhrelid=${leafOid}`)).rows[0].parent,
@@ -57,7 +60,7 @@ try {
     where inhparent='gateway_requests_success_key_workspace_cost_idx'::regclass
       and indrelid='requests_nov'::regclass`);
   assert.equal(inherited.rows[0].n, 1);
-  console.log('Key usage results unchanged; index-only plan with zero heap fetches; future partition inheritance passed.');
+  console.log('Missing leaf preflight rejected; key usage unchanged; index-only plan with zero heap fetches; future partition inheritance passed.');
 } finally {
   await db.close();
 }
