@@ -1,6 +1,7 @@
 import { getServerAccountContext } from "./serverAccountContext";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { fetchSettingsKeysInitialData } from "./fetchSettingsKeysInitialData";
+import { matchesKeyRouteName } from "@/components/(gateway)/settings/keys/keyDetailHref";
 
 export type KeyDetailData = {
 	observedAt: number;
@@ -28,7 +29,7 @@ export async function fetchSettingsKeyDetailByName(name: string, workspaceId?: s
 	const initial = await fetchSettingsKeysInitialData(workspaceId);
 	if (!initial.currentUserId) throw new WebApiError("/api/account/settings/keys", 401);
 	const keys = initial.teamsWithKeys.flatMap((workspace) => workspace.keys)
-		.filter((key) => (prefix ? key.prefix === prefix : key.name === name) && (!workspaceId || key.workspace_id === workspaceId));
+		.filter((key) => (prefix ? key.prefix === prefix : matchesKeyRouteName(key.name, name)) && (!workspaceId || key.workspace_id === workspaceId));
 	if (!keys.length) throw new WebApiError("/api/account/settings/keys", 404);
 	if (keys.length > 1) throw new WebApiError("/api/account/settings/keys", 409, "Multiple keys share this name. Open the key from the API keys table.");
 	return fetchSettingsKeyDetail(String(keys[0].id));
