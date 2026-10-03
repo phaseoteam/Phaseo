@@ -43,3 +43,11 @@ test('Axiom credentials are required and rejected delivery fails without logging
   await assert.rejects(publishAxiom([], {}), /requires/);
   await assert.rejects(publishAxiom([], { HEALTH_AXIOM_TOKEN: 'secret', HEALTH_AXIOM_DATASET: 'events' }, async () => new Response('secret', { status: 403 })), /HTTP 403/);
 });
+
+test('Axiom rejects partial ingestion and malformed acknowledgements', async () => {
+  const env = { HEALTH_AXIOM_TOKEN: 'secret', HEALTH_AXIOM_DATASET: 'events' };
+  await publishAxiom([{}], env, async () => Response.json({ ingested: 1, failed: 0 }));
+  await assert.rejects(publishAxiom([{}, {}], env, async () => Response.json({ ingested: 1, failed: 1, failures: ['secret'] })), /did not ingest every event/);
+  await assert.rejects(publishAxiom([{}], env, async () => Response.json({ ingested: 0, failed: 0 })), /did not ingest every event/);
+  await assert.rejects(publishAxiom([{}], env, async () => new Response('secret')), /invalid result/);
+});

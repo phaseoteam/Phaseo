@@ -73,16 +73,20 @@ export async function checkBrowser(loadPlaywright) {
     await expect(page.getByRole('heading', { level: 1, name: 'Models', exact: true })).toBeVisible();
     // Verify a rendered model link, then navigate to its page and verify content.
     stage = 'model_link';
-    const link = page.locator('main a[href^="/models/"]').filter({ visible: true }).first();
+    const link = page.locator('main a[href^="/models/"]').filter({ visible: true, hasText: /\S/ }).first();
     await expect(link).toBeVisible();
     const href = await link.getAttribute('href');
+    const modelName = (await link.innerText()).trim();
     if (!href?.startsWith('/models/')) throw new Error('missing_model_link');
     stage = 'model_click';
     await link.click();
     stage = 'detail_url';
     await expect(page).toHaveURL(new RegExp('/models/.+'));
+    stage = 'detail_response';
+    const detailResponse = await page.reload({ waitUntil: 'domcontentloaded' });
+    if (!detailResponse?.ok()) return event('models-browser', false, started, { failure_reason: 'http_error', failure_step: stage });
     stage = 'detail_heading';
-    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: modelName, exact: true })).toBeVisible();
     stage = 'application_error';
     await expect(page.getByText('Application error', { exact: false })).toHaveCount(0);
     return event('models-browser', true, started);
@@ -103,8 +107,13 @@ export async function publishAxiom(events, env, fetcher = fetch) {
     body: JSON.stringify(events),
     signal: AbortSignal.timeout(15000),
   });
-  await response.body?.cancel();
-  if (!response.ok) throw new Error(`Axiom delivery failed (HTTP ${response.status})`);
+  if (!response.ok) {
+    await response.body?.cancel();
+    throw new Error(`Axiom delivery failed (HTTP ${response.status})`);
+  }
+  let result;
+  try { result = await response.json(); } catch { throw new Error('Axiom delivery returned an invalid result'); }
+  if (result.failed !== 0 || result.ingested !== events.length) throw new Error('Axiom delivery did not ingest every event');
 }
 
 export async function main(args = process.argv.slice(2), env = process.env) {
