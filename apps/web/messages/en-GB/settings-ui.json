@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "User profile",
+		"viewProfile": "Show user profile",
+		"viewKeys": "Show user keys",
+		"viewActivity": "Show user activity",
+		"viewLogs": "Show user logs",
+		"back": "Back to members",
+		"joined": "Joined {date}",
+		"usageScope": "Successful requests through keys created by this user · Past 30 days",
+		"topModels": "Top models",
+		"noKeys": "No keys created by this user.",
+		"previous": "Previous",
+		"next": "Next",
+		"recentLogs": "Recent request logs",
+		"logsScope": "Latest 50 requests through this user’s keys in the past 30 days.",
+		"logsUnavailable": "Request logs are temporarily unavailable.",
+		"noLogs": "No requests in this period.",
+		"success": "Success",
+		"failed": "Failed",
+		"owner": "Owner",
+		"admin": "Admin",
+		"member": "Member"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth Apps - Settings | Phaseo",
 		"metadataDescription": "Create and manage OAuth applications for third-party integrations with your Phaseo account.",

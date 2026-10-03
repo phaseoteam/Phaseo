@@ -30,7 +30,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 			<h2 className="mb-5 text-base font-semibold">{t("keyDetail.information")}</h2>
 			<dl className="grid gap-6 text-sm sm:grid-cols-2 lg:grid-cols-3">
 				{[
-					[t("keyDetail.prefix"), `${key.prefix}…`], [t("teams.createdBy"), key.created_by ? <UserUsageChip userId={key.created_by} name={data.creatorName} avatarUrl={data.creatorAvatarUrl} workspaceId={key.workspace_id} /> : t("teams.unknown")],
+					[t("keyDetail.prefix"), `${key.prefix}…`], [t("teams.createdBy"), key.created_by ? <UserUsageChip userId={key.created_by} name={data.creatorName} avatarUrl={data.creatorAvatarUrl} workspaceId={key.workspace_id} currentUserId={data.currentUserId} canViewWorkspaceUsers={data.canManage} /> : t("teams.unknown")],
 					[t("teams.created"), date(key.created_at, t("teams.unknown"))], [t("oauthDetail.lastUsed"), date(key.last_used_at ?? (String(usage?.last_used_at ?? "") || null), t("labels.never"))],
 					[t("strings.Expires"), date(key.expires_at, t("labels.noExpiry"))], [t("keyDetail.keyId"), key.id],
 				].map(([label, value]) => <div key={String(label)}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-all font-medium">{value}</dd></div>)}

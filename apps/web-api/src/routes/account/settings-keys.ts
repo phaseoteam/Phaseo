@@ -132,6 +132,7 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 	if (!chart.error) { try { chartData = keyUsageSeries(chart.data ?? [], chartFrom, chartTo); } catch { /* Keep unavailable data distinct from zero usage. */ } }
 	return c.json({ key, observedAt: Date.now(), creatorName: creator?.name ?? null, creatorAvatarUrl: creator?.avatarUrl ?? null, workspaceName: workspace.data?.name ?? null,
 		chart: chartData === null ? null : { from: chartFrom, to: chartTo, points: chartData },
+		currentUserId: user.id,
 		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
 		usage: usage.error ? null : (usage.data ?? []).find((row) => row.key_id === key.id) ?? {},
 	}, 200, PRIVATE_NO_STORE_HEADERS);

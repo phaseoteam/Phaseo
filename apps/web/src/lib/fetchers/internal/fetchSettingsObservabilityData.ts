@@ -20,6 +20,8 @@ export type ObservabilityRequestRow = {
 export type ObservabilityRequestResult = { rows: ObservabilityRequestRow[]; isSampled: boolean; limit: number };
 
 export type SettingsObservabilityData = {
+	currentUserId?: string;
+	canViewWorkspaceUsers?: boolean;
 	creatorFilter: { id: string; name: string | null; avatarUrl: string | null } | null;
 	appMetadataEntries: Array<[string, { id: string; title: string; appKey: string | null; imageUrl: string | null }]>;
 	appNameEntries: Array<[string, string]>;

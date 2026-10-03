@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "Profil utilisateur",
+		"viewProfile": "Voir le profil",
+		"viewKeys": "Voir les clés",
+		"viewActivity": "Voir l’activité",
+		"viewLogs": "Voir les journaux",
+		"back": "Retour aux membres",
+		"joined": "Membre depuis le {date}",
+		"usageScope": "Requêtes réussies avec les clés créées par cet utilisateur · 30 derniers jours",
+		"topModels": "Modèles principaux",
+		"noKeys": "Cet utilisateur n’a créé aucune clé.",
+		"previous": "Précédent",
+		"next": "Suivant",
+		"recentLogs": "Journaux récents",
+		"logsScope": "Les 50 dernières requêtes avec les clés de cet utilisateur sur 30 jours.",
+		"logsUnavailable": "Les journaux sont temporairement indisponibles.",
+		"noLogs": "Aucune requête sur cette période.",
+		"success": "Réussite",
+		"failed": "Échec",
+		"owner": "Propriétaire",
+		"admin": "Administrateur",
+		"member": "Membre"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "Applications OAuth - Paramètres | Phaseo",
 		"metadataDescription": "Créez et gérez des applications OAuth pour intégrer des services tiers à votre compte Phaseo.",
