@@ -1,19 +1,23 @@
-import { OpenCode, isFormAlreadySettledError, isFormInvalidAnswerError, isFormNotFoundError } from "@opencode/client";
+import { OpenCode, isConflictError, isForbiddenError, isInvalidRequestError, isSessionNotFoundError, isUnauthorizedError, isFormAlreadySettledError, isFormInvalidAnswerError, isFormNotFoundError } from "@opencode/client";
 import type { OpenCodeClient } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import { pathToFileURL } from "node:url";
-import type { Account, Task } from "../shared/workspace";
+import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 import type { AgentForm } from "../shared/agentForms";
 import type { Endpoint } from "@opencode/client/service";
 import { openCodeForm } from "./openCodeForms";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 export class OpenCodeAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	private client?: OpenCodeClient;
 	private sessionId?: string;
+	private acceptingInput = false;
+	private inputGeneration = 0;
+	private readonly inputs = new Set<Promise<unknown>>();
 	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
@@ -68,6 +72,15 @@ export class OpenCodeAdapter implements AgentAdapter {
 		void turn.catch(() => {});
 		let prompted = false;
 		let completion: Promise<void> | undefined;
+		const settle = async () => {
+			while (!this.controller.signal.aborted) {
+				const generation = this.inputGeneration;
+				const pendingInputs = this.inputs.size > 0;
+				await client.session.wait({ sessionID: session.id }, requestOptions);
+				await Promise.allSettled([...this.inputs]);
+				if (!pendingInputs && generation === this.inputGeneration && !this.inputs.size) { this.acceptingInput = false; resolveTurn(); return; }
+			}
+		};
 		const timeout = setTimeout(() => { rejectTurn(new Error("OpenCode event stream did not connect.")); this.controller.abort(); }, 30000);
 		const events = (async () => {
 			try {
@@ -92,7 +105,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 					if (prompted && event.type === "session.execution.succeeded") {
 						// The session may have accepted another input before this event arrived.
 						// Keep consuming permissions/forms while the native service settles.
-						completion ??= client.session.wait({ sessionID: session.id }, requestOptions).then(resolveTurn, rejectTurn); continue;
+						completion ??= settle().catch(rejectTurn); continue;
 					}
 					if (prompted && (event.type === "session.execution.failed" || event.type === "session.execution.interrupted")) { rejectTurn(new Error(`OpenCode execution ${event.type.endsWith("failed") ? "failed" : "was interrupted"}.`)); return; }
 				}
@@ -107,9 +120,21 @@ export class OpenCodeAdapter implements AgentAdapter {
 				await Promise.race([Promise.all(pending.filter(form => form.sessionID === session.id).map(form => requestForm(openCodeForm(form)))), turn]);
 			}
 			prompted = true;
+			this.acceptingInput = true;
 			await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, requestOptions);
 			await turn;
-		} finally { clearTimeout(timeout); this.controller.abort(); await events; }
+		} finally { this.acceptingInput = false; clearTimeout(timeout); this.controller.abort(); await events; }
+	}
+	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
+		if (!this.acceptingInput || this.controller.signal.aborted || !this.client || !this.sessionId) throw new AgentInputRejectedError("OpenCode is not ready for steering. Queue this message instead.");
+		this.inputGeneration++;
+		const delivery = this.client.session.prompt({ sessionID: this.sessionId, id: `msg_phaseo${message.id.replaceAll("-", "")}`, delivery: "steer", text: attachmentPrompt(message.text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, { signal: this.controller.signal });
+		this.inputs.add(delivery);
+		try { await delivery; }
+		catch (error) {
+			if (isInvalidRequestError(error) || isSessionNotFoundError(error) || isUnauthorizedError(error) || isForbiddenError(error) || isConflictError(error)) throw new AgentInputRejectedError(error.message, { cause: error });
+			throw error;
+		} finally { this.inputs.delete(delivery); }
 	}
 	async cancel() {
 		this.controller.abort();

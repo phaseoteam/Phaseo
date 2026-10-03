@@ -78,13 +78,15 @@ by OpenCode; the Phaseo service does not install or upgrade a global CLI.
 Codex live steering targets the active native turn and records a client message
 identity before delivery. Rejected or unacknowledged instructions remain visible
 for explicit queue/discard decisions; restart never replays an uncertain send.
+OpenCode steering uses stable native inbox identities and waits for accepted
+instructions to settle, including submissions overlapping a completion event.
 Other harnesses still use ordinary queued messages.
 
 OpenCode resumed tasks rediscover pending forms before sending the next message,
 deduplicate snapshot/event overlap and continue consuming requests while waiting
 for native execution to settle.
 
-Evidence: desktop lint/typecheck/build pass; 97 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 100 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

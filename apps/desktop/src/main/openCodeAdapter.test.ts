@@ -5,9 +5,35 @@ const sdk = vi.hoisted(() => ({ discover: vi.fn(), make: vi.fn() }));
 vi.mock("@opencode/client", async importOriginal => ({ ...await importOriginal<typeof OpenCodeModule>(), OpenCode: { make: sdk.make } }));
 vi.mock("@opencode/client/service", () => ({ Service: { discover: sdk.discover, headers: () => ({}) } }));
 import { OpenCodeAdapter } from "./openCodeAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "opencode", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("OpenCode 2 integration", () => {
+	it("distinguishes rejected native steering from uncertain network delivery", async () => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; let complete!: () => void;
+		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const completed = new Promise<void>(resolve => { complete = resolve; });
+		let count = 0; sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), wait: async () => {}, prompt: async (input: { delivery?: string }) => { if (!input.delivery) { prompted(); return; } if (++count === 1) throw { _tag: "InvalidRequestError", message: "Rejected input" }; throw new Error("Disconnected"); } }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; await completed; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		const adapter = new OpenCodeAdapter(); const run = adapter.run(task, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }); await prompt;
+		const message = { id: "instruction", text: "Change direction", createdAt: "" };
+		await expect(adapter.steer(message, [])).rejects.toBeInstanceOf(AgentInputRejectedError); await expect(adapter.steer(message, [])).rejects.toThrow("Disconnected");
+		complete(); await run;
+	});
+	it.each([true, false])("tracks steering accepted around native completion (%s)", async beforeCompletion => {
+		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; let complete!: () => void; let admit!: () => void; let firstIdle!: () => void; let secondIdle!: () => void;
+		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const completed = new Promise<void>(resolve => { complete = resolve; }); const admission = new Promise<void>(resolve => { admit = resolve; });
+		const first = new Promise<void>(resolve => { firstIdle = resolve; }); const second = new Promise<void>(resolve => { secondIdle = resolve; });
+		const wait = vi.fn().mockImplementationOnce(async () => first).mockImplementationOnce(async () => second);
+		const submit = vi.fn(async (input: { delivery?: string }) => { if (input.delivery === "steer") await admission; else prompted(); });
+		sdk.make.mockReturnValue({ session: { create: async () => ({ id: "session" }), prompt: submit, wait }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; await completed; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		const adapter = new OpenCodeAdapter(); let finished = false; const run = adapter.run(task, ".", "Start", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }).then(() => { finished = true; });
+		await prompt;
+		if (!beforeCompletion) { complete(); await vi.waitFor(() => expect(wait).toHaveBeenCalledOnce()); }
+		const delivery = adapter.steer({ id: "message-identity", text: "Change direction", createdAt: "" }, []);
+		if (beforeCompletion) { complete(); await vi.waitFor(() => expect(wait).toHaveBeenCalledOnce()); }
+		firstIdle(); admit(); await delivery; await vi.waitFor(() => expect(wait).toHaveBeenCalledTimes(2)); expect(finished).toBe(false);
+		expect(submit.mock.calls[1][0]).toMatchObject({ sessionID: "session", id: "msg_phaseomessageidentity", delivery: "steer", text: "Change direction" });
+		secondIdle(); await run; await expect(adapter.steer({ id: "late", text: "Late", createdAt: "" }, [])).rejects.toThrow("not ready");
+	});
 	it("keeps streaming requests while native settlement waits for further work", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; let idle!: () => void;
 		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const settlement = new Promise<void>(resolve => { idle = resolve; });
