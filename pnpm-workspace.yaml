@@ -13,6 +13,7 @@ allowBuilds:
   '@scarf/scarf': false
   core-js: set this to true or false
   electron: true
+  node-pty: true
   es5-ext: set this to true or false
   esbuild: true
   keytar: set this to true or false
@@ -26,6 +27,10 @@ allowBuilds:
 # Hold dependency installs until versions have been available for 7 days.
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
+  # Desktop parity is pinned to the explicitly requested current OpenCode 2 release.
+  - "@opencode/client"
+  - "@opencode/schema"
+  - "@opencode/protocol"
   - "@shadcn/react"
   - "cn"
   # Expo SDK releases are coordinated and must resolve as a compatible set.

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { DesktopFrame } from "./components/DesktopFrame";
 import { Topbar } from "./components/Topbar";
@@ -7,6 +7,13 @@ import type { ProductSurface, ThemePreference } from "./types";
 import { PlatformHome } from "./views/PlatformHome";
 import { SectionPlaceholder } from "./views/SectionPlaceholder";
 import { WorkspaceHome } from "./views/WorkspaceHome";
+import { TaskWorkspace } from "./views/TaskWorkspace";
+import { Accounts } from "./views/Accounts";
+import { Projects } from "./views/Projects";
+import { Agents } from "./views/Agents";
+import { CommandPalette } from "./components/CommandPalette";
+
+const Terminals = lazy(() => import("./views/Terminals").then(module => ({ default: module.Terminals })));
 
 const labels: Record<string, string> = {
 	inbox: "Inbox",
@@ -29,6 +36,16 @@ export function App() {
 	const [collapsed, setCollapsed] = usePersistedState("phaseo.desktop.sidebar.collapsed", false);
 	const [theme, setTheme] = usePersistedState<ThemePreference>("phaseo.desktop.theme", "system");
 	const activeItem = surface === "workspace" ? workspaceItem : platformItem;
+	const [taskRevision, setTaskRevision] = useState(0);
+	const [commandsOpen, setCommandsOpen] = useState(false);
+	const navigateWorkspace = (page: string, taskId?: string) => {
+		if (page === "tasks") {
+			if (taskId) window.localStorage.setItem("phaseo.desktop.selectedTask", JSON.stringify(taskId));
+			else window.localStorage.removeItem("phaseo.desktop.selectedTask");
+			setTaskRevision(value => value + 1);
+		}
+		setSurface("workspace"); setWorkspaceItem(page);
+	};
 
 	useEffect(() => {
 		const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -41,6 +58,7 @@ export function App() {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!(event.metaKey || event.ctrlKey)) return;
+			if (event.key.toLowerCase() === "k") { event.preventDefault(); setCommandsOpen(value => !value); }
 			if (event.key === "1") {
 				event.preventDefault();
 				setSurface("workspace");
@@ -60,7 +78,12 @@ export function App() {
 	};
 
 	let content;
-	if (surface === "workspace" && activeItem === "home") content = <WorkspaceHome />;
+	if (surface === "workspace" && (activeItem === "projects" || activeItem === "repositories")) content = <Projects />;
+	else if (surface === "workspace" && activeItem === "terminals") content = <Terminals />;
+	else if (surface === "workspace" && activeItem === "agents") content = <Agents />;
+	else if (surface === "workspace" && activeItem === "accounts") content = <Accounts />;
+	else if (surface === "workspace" && activeItem === "tasks") content = <TaskWorkspace key={taskRevision} />;
+	else if (surface === "workspace" && activeItem === "home") content = <WorkspaceHome onNavigate={navigateWorkspace} />;
 	else if (surface === "platform" && activeItem === "overview") content = <PlatformHome />;
 	else content = <SectionPlaceholder title={labels[activeItem] ?? "Workspace"} />;
 
@@ -69,7 +92,7 @@ export function App() {
 			<DesktopFrame
 				theme={theme}
 				onThemeChange={setTheme}
-				onNavigate={(destination) => { setSurface("workspace"); setWorkspaceItem(destination); }}
+				onNavigate={navigateWorkspace}
 			/>
 			<div className="app-shell">
 				<Sidebar
@@ -78,13 +101,15 @@ export function App() {
 				collapsed={collapsed}
 				onSurfaceChange={setSurface}
 				onItemChange={changeItem}
-				onCollapsedChange={setCollapsed}
+					onCollapsedChange={setCollapsed}
+					onSearch={() => setCommandsOpen(true)}
 				/>
 				<div className="app-main">
-					<Topbar surface={surface} theme={theme} onThemeChange={setTheme} />
-					<main className="content-scroll">{content}</main>
+					<Topbar surface={surface} theme={theme} onThemeChange={setTheme} onNewTask={() => navigateWorkspace("tasks")} onCommands={() => setCommandsOpen(true)} />
+					<main className="content-scroll"><Suspense fallback={<p className="page task-muted" role="status">Loading workspace…</p>}>{content}</Suspense></main>
 				</div>
 			</div>
+			{commandsOpen && <CommandPalette onClose={() => setCommandsOpen(false)} onNavigate={navigateWorkspace} onTheme={setTheme} />}
 		</div>
 	);
 }

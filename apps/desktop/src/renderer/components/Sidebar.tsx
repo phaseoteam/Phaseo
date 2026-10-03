@@ -18,14 +18,18 @@ import {
 	Settings,
 	Sparkles,
 	Workflow,
+	Terminal,
 } from "lucide-react";
 import type { NavigationItem, ProductSurface } from "../types";
 
 const workspaceNavigation: NavigationItem[] = [
 	{ id: "home", label: "Home", icon: Home },
+	{ id: "tasks", label: "Tasks", icon: MessageSquare },
+	{ id: "accounts", label: "Accounts", icon: Compass },
 	{ id: "inbox", label: "Inbox", icon: Bell },
 	{ id: "missions", label: "Missions", icon: CircleDot },
 	{ id: "projects", label: "Projects", icon: Workflow },
+	{ id: "terminals", label: "Terminals", icon: Terminal },
 	{ id: "repositories", label: "Repositories", icon: Code2 },
 	{ id: "proposals", label: "Proposals", icon: GitPullRequest },
 	{ id: "agents", label: "Agents", icon: Bot },
@@ -47,6 +51,7 @@ type SidebarProps = {
 	onSurfaceChange: (surface: ProductSurface) => void;
 	onItemChange: (item: string) => void;
 	onCollapsedChange: (collapsed: boolean) => void;
+	onSearch: () => void;
 };
 
 export function Sidebar({
@@ -56,6 +61,7 @@ export function Sidebar({
 	onSurfaceChange,
 	onItemChange,
 	onCollapsedChange,
+	onSearch,
 }: SidebarProps) {
 	const navigation = surface === "workspace" ? workspaceNavigation : platformNavigation;
 
@@ -100,7 +106,7 @@ export function Sidebar({
 				</button>
 			)}
 
-			<button className="sidebar-search" type="button" title="Search">
+			<button className="sidebar-search" type="button" title="Search" onClick={onSearch}>
 				<Search size={16} />
 				{collapsed ? null : (
 					<>

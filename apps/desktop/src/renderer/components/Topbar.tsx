@@ -5,9 +5,11 @@ type TopbarProps = {
 	surface: ProductSurface;
 	theme: ThemePreference;
 	onThemeChange: (theme: ThemePreference) => void;
+	onNewTask: () => void;
+	onCommands: () => void;
 };
 
-export function Topbar({ surface, theme, onThemeChange }: TopbarProps) {
+export function Topbar({ surface, theme, onThemeChange, onNewTask, onCommands }: TopbarProps) {
 	return (
 		<header className="topbar">
 			<div className="history-controls">
@@ -26,7 +28,7 @@ export function Topbar({ surface, theme, onThemeChange }: TopbarProps) {
 			</div>
 
 			<div className="topbar-actions">
-				<button className="command-button" type="button">
+				<button className="command-button" type="button" onClick={onCommands}>
 					<Command size={14} />
 					<span>Commands</span>
 					<kbd>⌘K</kbd>
@@ -39,9 +41,9 @@ export function Topbar({ surface, theme, onThemeChange }: TopbarProps) {
 				>
 					{theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
 				</button>
-				<button className="primary-button compact" type="button">
+				<button className="primary-button compact" type="button" onClick={onNewTask}>
 					<Plus size={15} />
-					{surface === "workspace" ? "New mission" : "New API key"}
+					New task
 				</button>
 			</div>
 		</header>

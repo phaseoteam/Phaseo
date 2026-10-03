@@ -2,6 +2,37 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { PhaseoDesktopApi } from "../shared/desktop";
 
 const desktopApi: PhaseoDesktopApi = {
+	workspace: {
+		get: () => ipcRenderer.invoke("workspace:get"),
+		command: command => ipcRenderer.invoke("workspace:command", command),
+		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
+		chooseAttachments: id => ipcRenderer.invoke("workspace:choose-attachments", id),
+		attachment: (taskId, id) => ipcRenderer.invoke("workspace:attachment", taskId, id),
+		installations: () => ipcRenderer.invoke("workspace:installations"),
+		models: (harness, accountId) => ipcRenderer.invoke("workspace:models", harness, accountId),
+		openLink: url => ipcRenderer.invoke("workspace:open-link", url),
+		terminals: () => ipcRenderer.invoke("workspace:terminals"),
+		terminal: command => ipcRenderer.invoke("workspace:terminal", command),
+		onTerminalEvent: listener => {
+			const subscription = (_event: Electron.IpcRendererEvent, event: Parameters<typeof listener>[0]) => listener(event);
+			ipcRenderer.on("workspace:terminal-event", subscription);
+			return () => ipcRenderer.removeListener("workspace:terminal-event", subscription);
+		},
+		signIn: id => ipcRenderer.invoke("workspace:sign-in", id),
+		cancelSignIn: id => ipcRenderer.invoke("workspace:cancel-sign-in", id),
+		listFiles: (id, directory) => ipcRenderer.invoke("workspace:list-files", id, directory),
+		readFile: (id, filename) => ipcRenderer.invoke("workspace:read-file", id, filename),
+		readDocument: (id, filename) => ipcRenderer.invoke("workspace:read-document", id, filename),
+		writeDocument: (id, filename, text, expectedHash) => ipcRenderer.invoke("workspace:write-document", id, filename, text, expectedHash),
+		gitReview: id => ipcRenderer.invoke("workspace:git-review", id),
+		gitCommand: (id, command) => ipcRenderer.invoke("workspace:git-command", id, command),
+		gitBranches: id => ipcRenderer.invoke("workspace:git-branches", id),
+		onChange: listener => {
+			const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state);
+			ipcRenderer.on("workspace:changed", subscription);
+			return () => ipcRenderer.removeListener("workspace:changed", subscription);
+		},
+	},
 	getRuntimeInfo: () => ipcRenderer.invoke("desktop:get-runtime-info"),
 	getWindowState: () => ipcRenderer.invoke("desktop:get-window-state"),
 	performWindowAction: (action) => ipcRenderer.invoke("desktop:window-action", action),

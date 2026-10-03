@@ -1,0 +1,44 @@
+import { describe, expect, it, vi } from "vitest";
+import type { Task } from "../shared/workspace";
+const sdk = vi.hoisted(() => ({ query: vi.fn() }));
+vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
+vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
+import { ClaudeAdapter } from "./claudeAdapter";
+
+const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
+describe("Claude SDK integration", () => {
+	it("passes image bytes through a structured native user message", async () => {
+		const received: unknown[] = [];
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () { for await (const message of prompt) received.push(message); yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
+		await new ClaudeAdapter().run(task, ".", "Describe", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }, undefined, [{ id: "image", taskId: "task", name: "image.png", kind: "image", mimeType: "image/png", size: 3, filePath: "/image", dataUrl: "data:image/png;base64,YWJj" }]);
+		expect(received).toEqual([expect.objectContaining({ type: "user", message: { role: "user", content: [{ type: "text", text: "Describe" }, { type: "image", source: { type: "base64", media_type: "image/png", data: "YWJj" } }] } })]);
+	});
+	it("returns question answers through the SDK permission seam", async () => {
+		sdk.query.mockImplementation(({ options }) => Object.assign((async function* () {
+			const decision = await options.canUseTool("AskUserQuestion", { questions: [{ header: "Scope", question: "Which scope?", options: [{ label: "Small", description: "One file" }], multiSelect: false }] });
+			expect(decision.updatedInput.answers).toEqual({ "Which scope?": "Small" });
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onQuestion = vi.fn(async () => ({ "0": ["Small"] }));
+		await new ClaudeAdapter().run(task, ".", "Plan", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline", onQuestion });
+		expect(onQuestion).toHaveBeenCalledWith([expect.objectContaining({ id: "0", question: "Which scope?", isOther: true })]);
+	});
+	it("streams text once and preserves native session identity", async () => {
+		const close = vi.fn();
+		const execution = Object.assign((async function* () {
+			yield { type: "stream_event", session_id: "native", parent_tool_use_id: null, event: { type: "message_start", message: { id: "response" } } };
+			yield { type: "stream_event", session_id: "native", parent_tool_use_id: null, event: { type: "content_block_delta", delta: { type: "text_delta", text: "Hello" } } };
+			yield { type: "assistant", session_id: "native", parent_tool_use_id: null, message: { id: "response", content: [{ type: "text", text: "Hello" }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "Hello" };
+		})(), { close });
+		sdk.query.mockReturnValue(execution);
+		const onDelta = vi.fn(); const onSession = vi.fn();
+		await new ClaudeAdapter().run(task, ".", "Hi", { onDelta, onSession, onApproval: async () => "decline" });
+		expect(onDelta).toHaveBeenCalledExactlyOnceWith("response", "Hello"); expect(onSession).toHaveBeenCalledWith("native"); expect(close).toHaveBeenCalled();
+		expect(sdk.query.mock.calls[0][0].options.tools).toEqual([]);
+	});
+	it("surfaces provider failures instead of claiming completion", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));
+		await expect(new ClaudeAdapter().run(task, ".", "Hi", { onDelta: () => {}, onSession: () => {}, onApproval: async () => "decline" })).rejects.toThrow("Failed");
+	});
+});

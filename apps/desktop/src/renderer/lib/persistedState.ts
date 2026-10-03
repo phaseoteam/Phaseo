@@ -11,7 +11,10 @@ export function usePersistedState<T>(key: string, initialValue: T) {
 	});
 
 	useEffect(() => {
-		window.localStorage.setItem(key, JSON.stringify(value));
+		try {
+			if (value === undefined) window.localStorage.removeItem(key);
+			else window.localStorage.setItem(key, JSON.stringify(value));
+		} catch { /* Keep the current session usable when browser storage is unavailable. */ }
 	}, [key, value]);
 
 	return [value, setValue] as const;
