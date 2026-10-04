@@ -127,7 +127,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 			const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
 			current.configured = true; workspaceRuntime.store.saveAccount(current);
 		}
-		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return workspaceOverview(state);
+		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
 	} finally { signIns.delete(id); releaseAccount(); }
 });
 ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
@@ -145,7 +145,7 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 		const cwd = account?.configDirectory ?? app.getPath("userData");
 		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
-		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.get()); } }
+		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.getOverview()); } }
 		return status;
 	} finally { accountChecks.delete(key); }
 });
@@ -244,7 +244,7 @@ ipcMain.handle("workspace:choose-project", async event => {
 	if (!window) throw new Error("Untrusted workspace request.");
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
-	const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return workspaceOverview(state);
+	const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
 });
 ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	const window = senderWindow(event); if (!window || typeof id !== "string") throw new Error("Invalid attachment request.");
@@ -439,7 +439,7 @@ app.whenReady().then(() => {
 		show: (title, body, click) => { const notification = new Notification({ title, body, silent: true }); notification.on("click", click); notification.on("failed", () => {}); notification.show(); return () => { notification.removeAllListeners(); notification.close(); }; },
 		open: taskId => { if (shutdownStarted) return; const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed()) ?? createWindow(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); const id = taskId && workspaceRuntime.store.get().tasks.some(value => value.id === taskId) ? taskId : undefined; const navigate = () => { if (!window.isDestroyed()) window.webContents.send("workspace:open-task", id); }; if (window.webContents.isLoading()) window.webContents.once("did-finish-load", navigate); else navigate(); },
 	}, workspaceRuntime.store.getPreferences());
-	taskNotifications.update(workspaceRuntime.store.get());
+	taskNotifications.update(workspaceRuntime.store.getOverview());
 	app.on("browser-window-focus", () => taskNotifications.dismiss());
 	missionService = new MissionService(workspaceRuntime);
 	missionService.onChange = () => { const missions = workspaceRuntime.store.missions.list(); for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:missions-changed", missions); };
@@ -450,7 +450,7 @@ app.whenReady().then(() => {
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
 		taskNotifications.update(state);
-		const overview = workspaceOverview(state);
+		const overview = state;
 		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:overview-changed", overview);
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);

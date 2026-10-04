@@ -1,7 +1,7 @@
 import type { WorkspaceRuntime } from "./workspaceRuntime";
 import type { MissionCommand } from "../shared/missions";
 import { nextMissionRun } from "../shared/missions";
-import type { Workspace } from "../shared/workspace";
+import type { WorkspaceOverview } from "../shared/workspaceOverview";
 
 export class MissionService {
 	private timer?: ReturnType<typeof setInterval>;
@@ -16,7 +16,7 @@ export class MissionService {
 			}
 			if (mission.enabled && mission.nextRunAt && Date.parse(mission.nextRunAt) <= now) { mission.nextRunAt = nextMissionRun(mission.schedule, now); runtime.store.missions.put(mission); }
 		}
-		this.observe(runtime.store.get());
+		this.observe(runtime.store.getOverview());
 	}
 	start() { if (!this.closed && !this.timer) { this.timer = setInterval(() => this.tick(), 1000); this.timer.unref(); } }
 	close() { this.closed = true; if (this.timer) clearInterval(this.timer); this.timer = undefined; }
@@ -28,7 +28,7 @@ export class MissionService {
 		else this.runtime.startMission(command.id, now);
 		this.onChange(); return store.list();
 	}
-	observe(workspace: Workspace) {
+	observe(workspace: WorkspaceOverview) {
 		if (this.closed) return; let changed = false;
 		for (const mission of this.runtime.store.missions.list()) {
 			if (!mission.lastTaskId) continue;
@@ -36,7 +36,7 @@ export class MissionService {
 			if (task && (task.status === "running" || task.status === "waiting") && mission.lastStatus !== "running") { mission.lastStatus = "running"; mission.error = undefined; this.runtime.store.missions.put(mission); changed = true; continue; }
 			if (mission.lastStatus !== "running") continue;
 			if (!task || !["completed", "failed", "interrupted", "limited"].includes(task.status)) continue;
-			mission.lastStatus = task.status as "completed" | "failed" | "interrupted" | "limited"; mission.error = task.error; mission.updatedAt = new Date(this.clock()).toISOString();
+			mission.lastStatus = task.status as "completed" | "failed" | "interrupted" | "limited"; mission.error = task.status === "completed" ? undefined : this.runtime.store.getTask(task.id).error; mission.updatedAt = new Date(this.clock()).toISOString();
 			if (task.status !== "completed") { mission.enabled = false; mission.nextRunAt = undefined; }
 			this.runtime.store.missions.put(mission); changed = true;
 		}
@@ -45,10 +45,10 @@ export class MissionService {
 	tick() {
 		if (this.closed) return;
 		try {
-			this.observe(this.runtime.store.get()); const now = this.clock();
+			const workspace = this.runtime.store.getOverview(); this.observe(workspace); const now = this.clock();
 			for (const mission of this.runtime.store.missions.list()) {
 				if (!mission.enabled || !mission.nextRunAt || Date.parse(mission.nextRunAt) > now) continue;
-				if (mission.lastStatus === "running" || this.runtime.store.get().tasks.some(task => task.missionId === mission.id && (task.status === "running" || task.status === "waiting")) || now - Date.parse(mission.nextRunAt) > 60000) { mission.nextRunAt = nextMissionRun(mission.schedule, now); this.runtime.store.missions.put(mission); this.onChange(); continue; }
+				if (mission.lastStatus === "running" || workspace.tasks.some(task => task.missionId === mission.id && (task.status === "running" || task.status === "waiting")) || now - Date.parse(mission.nextRunAt) > 60000) { mission.nextRunAt = nextMissionRun(mission.schedule, now); this.runtime.store.missions.put(mission); this.onChange(); continue; }
 				try { this.runtime.startMission(mission.id, now); }
 				catch (error) { const current = this.runtime.store.missions.get(mission.id); current.enabled = false; current.nextRunAt = undefined; current.lastStatus = "failed"; current.error = error instanceof Error ? error.message : "Mission could not start."; this.runtime.store.missions.put(current); }
 				this.onChange();

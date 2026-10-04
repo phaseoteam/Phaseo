@@ -7,6 +7,24 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("publishes streaming changes without reading unrelated conversation bodies", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-metadata-stream-"));
+		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, value) => { callbacks = value; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
+		const changed = vi.fn(); runtime.onChange = changed;
+		let fullReads: ReturnType<typeof vi.spyOn> | undefined;
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Secret input" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			fullReads = vi.spyOn(runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during streaming"); }); changed.mockClear();
+			callbacks!.onDelta("reply", "Secret streamed response");
+			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.some(message => message.text === "Secret streamed response")).toBe(true));
+			expect(changed).toHaveBeenCalled(); expect(JSON.stringify(changed.mock.calls)).not.toContain("Secret streamed response");
+			for (const [state] of changed.mock.calls) for (const task of state.tasks) expect(task).not.toHaveProperty("messages");
+			finish?.(); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(fullReads).not.toHaveBeenCalled();
+		} finally { fullReads?.mockRestore(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("keeps instructions queued during account sign-in until explicitly resumed", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-sign-in-queue-"));
 		const run = vi.fn(async () => {}); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));

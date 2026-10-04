@@ -28,7 +28,11 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
 		this.missions = new MissionStore(this.db);
-		for (const task of this.get().tasks) {
+		const recoveryTasks = this.db.prepare(`SELECT data FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
+			OR json_extract(data, '$.status') IN ('running', 'waiting')
+			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') = 'sending')`).all();
+		for (const row of recoveryTasks) {
+			const task = JSON.parse(row.data as string) as Task;
 			let recovered = false;
 			if (task.authTerminalId) {
 				const input = task.messages.find(value => value.id === task.authInputId && value.role === "user");
@@ -70,11 +74,19 @@ export class WorkspaceStore {
 			'parentId', json_extract(data, '$.parentId'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
 			'approvalsCount', coalesce(json_array_length(data, '$.approvals'), 0),
 			'answersCount', coalesce(json_array_length(data, '$.questions'), 0) + coalesce(json_array_length(data, '$.forms'), 0),
-			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected'))
+			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected')),
+			'attentionKey', json_array(
+				(SELECT json_extract(item.value, '$.id') FROM json_each(tasks.data, '$.messages') AS item WHERE json_extract(item.value, '$.role') = 'user' ORDER BY CAST(item.key AS INTEGER) DESC LIMIT 1),
+				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.approvals') AS item),
+				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.questions') AS item),
+				(SELECT json_group_array(json_extract(item.value, '$.id')) FROM json_each(tasks.data, '$.forms') AS item),
+				(SELECT json_group_array(json_array(json_extract(item.value, '$.id'), json_extract(item.value, '$.status'))) FROM json_each(tasks.data, '$.steering') AS item)
+			)
 		) AS metadata FROM tasks ORDER BY json_extract(data, '$.updatedAt') DESC, id DESC`).all().map(row => {
 			const parsed = JSON.parse(row.metadata as string);
 			const task = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== null)) as TaskOverview;
 			task.pinned = Boolean(task.pinned); task.archived = Boolean(task.archived);
+			task.attentionKey = JSON.stringify(parsed.attentionKey);
 			task.attentionReason = inboxReasonFromCounts(task);
 			return task;
 		});

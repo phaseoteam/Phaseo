@@ -15,6 +15,11 @@ function fixture(run: AgentAdapter["run"] = async () => {}) {
 	return { directory, runtime, execute, service, template, mission, advance: (milliseconds: number) => { now += milliseconds; }, now: () => now, close: async () => { service.close(); await runtime.close(); rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } };
 }
 describe("desktop missions", () => {
+	it("checks idle schedules without loading full conversation history", async () => {
+		const value = fixture(); const fullReads = vi.spyOn(value.runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during scheduling"); });
+		try { value.service.tick(); value.advance(60000); value.service.tick(); expect(fullReads).not.toHaveBeenCalled(); expect(value.execute).not.toHaveBeenCalled(); }
+		finally { fullReads.mockRestore(); await value.close(); }
+	});
 	it("starts paused and admits one fresh task atomically for each due run", async () => {
 		const value = fixture(); try {
 			value.advance(120000); value.service.tick(); expect(value.execute).not.toHaveBeenCalled();
@@ -34,6 +39,7 @@ describe("desktop missions", () => {
 	it("pauses after confirmed preflight failure while preserving the instruction for review", async () => {
 		const value = fixture(async () => { throw new AgentInputRejectedError("Owned preflight failure"); }); try {
 			value.service.command({ type: "enable", id: value.mission.id, enabled: true }); value.advance(60000); value.service.tick(); await vi.waitFor(() => expect(value.runtime.store.missions.get(value.mission.id).enabled).toBe(false));
+			expect(value.runtime.store.missions.get(value.mission.id).error).toBe("Owned preflight failure");
 			const task = value.runtime.store.get().tasks.find(task => task.missionId)!; expect(task.queue[0].text).toBe(value.mission.prompt); value.advance(86400000); value.service.tick(); expect(value.execute).toHaveBeenCalledOnce();
 		} finally { await value.close(); }
 	});

@@ -4,6 +4,24 @@ import { workspaceOverview } from "../shared/workspaceOverview";
 import { inboxReason } from "../shared/inbox";
 
 describe("workspace metadata snapshots", () => {
+	it("keeps notification identity stable during streaming and distinguishes replacement requests", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
+			task.messages = [{ id: "first-user", role: "user", text: "Secret instruction", createdAt: "" }, { id: "reply", role: "assistant", text: "Secret answer", createdAt: "" }];
+			task.forms = [{ id: "first-form", form: { id: "native-form", title: "Secret form", fields: [{ key: "answer", type: "string" }] } }];
+			store.saveTask(task);
+			const original = store.getOverview().tasks[0].attentionKey;
+			task.title = "Renamed"; task.messages[1].text += " More tokens"; task.error = "Changed error"; store.saveTask(task);
+			expect(store.getOverview().tasks[0].attentionKey).toBe(original);
+			task.forms![0].id = "replacement-form"; store.saveTask(task);
+			expect(store.getOverview().tasks[0].attentionKey).not.toBe(original);
+			expect(store.getOverview()).toEqual(workspaceOverview(store.get()));
+			task.messages.push({ id: "later-user", role: "user", text: "Later instruction", createdAt: "" }); store.saveTask(task);
+			expect(JSON.parse(store.getOverview().tasks[0].attentionKey)[0]).toBe("later-user");
+			expect(store.getOverview()).toEqual(workspaceOverview(store.get()));
+		} finally { store.close(); }
+	});
 	it("excludes conversation, draft, native request and activity bodies", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

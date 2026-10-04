@@ -4,6 +4,7 @@ import path from "node:path";
 import type { AgentActivity, AgentConnection, Workspace, WorkspaceCommand } from "../shared/workspace";
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
+import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import { ClaudeAdapter } from "./claudeAdapter";
 import { AgentInputRejectedError, type AgentAdapter } from "./agentAdapter";
 import type { Harness } from "../shared/workspace";
@@ -56,7 +57,7 @@ export class WorkspaceRuntime {
 	private readonly removingWorktrees = new Set<string>();
 	private readonly projectMutations = new Map<Promise<unknown>, string>();
 	private closing = false;
-	onChange: (workspace: Workspace) => void = () => {};
+	onChange: (workspace: WorkspaceOverview) => void = () => {};
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
@@ -65,7 +66,7 @@ export class WorkspaceRuntime {
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
 		this.openCode = new OpenCodeService(directory);
 	}
-	private broadcast() { this.onChange(this.store.get()); }
+	private broadcast() { this.onChange(this.store.getOverview()); }
 	async createWorktree(projectId: string, branch: string, base: string) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		this.assertProjectAvailable(projectId); this.worktreeSources.set(projectId, (this.worktreeSources.get(projectId) ?? 0) + 1);
