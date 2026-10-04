@@ -1,6 +1,32 @@
 # Declarative schema adoption
 
-Status: exported candidate; do not merge until equivalence and replay pass.
+Status: exported candidate; adoption blocked by an incomplete historical baseline.
+
+## Verified blocker
+
+The [first CI verification](https://github.com/phaseoteam/Phaseo/actions/runs/37234719171)
+failed while replaying `20260120000001_provisioning_keys_table.sql`:
+`relation "public.users" does not exist` (SQLSTATE 42P01). That migration
+also references `public.teams`. The history starts with pricing migrations
+and does not establish the earlier application schema. The comparison never
+reached the desired schema, so zero differences have not been established.
+
+The earliest `sql.sql` snapshot found in Git history is from 2026-02-02
+(`a90e8ff65`), after the failing migration. It explicitly says it is for
+context only and must not be executed. It is not an authoritative baseline.
+
+Resolve this before merging. Prefer recovering the original pre-January
+schema from a verified backup/export, including functions and permissions,
+then testing the entire chain. If no such baseline exists, use a separately
+reviewed re-baseline: preserve the old SQL history in an archive, generate
+and prove a complete current baseline in disposable databases, and plan the
+remote migration-record transition explicitly. Do not apply a baseline's
+CREATE statements to the existing production database or repair production
+migration records without a separately reviewed rollout.
+
+This PR contains no replacement baseline, archive move, migration-history
+repair, or production schema change. It remains a draft with a failing check
+to prevent the exported snapshot being mistaken for completed adoption.
 
 The files in `schemas/` were exported from Phaseo Prod
 (`xansbgjaduxypzsmjwct`) on 2026-10-04 with Supabase CLI 2.119.0.
