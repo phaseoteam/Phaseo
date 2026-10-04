@@ -84,6 +84,10 @@ try {
           if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");
         }
         if (page === "Accounts") {
+          const layout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="Add account"]'),row=form?.querySelector('.account-form-actions'),rect=form?.getBoundingClientRect();return {border:form&&getComputedStyle(form).borderTopWidth,column:row&&getComputedStyle(row).gridColumn,overflow:Array.from(form?.querySelectorAll('input,select')??[]).some(field=>{const r=field.getBoundingClientRect();return r.left<rect.left||r.right>rect.right;})}})()`);
+          if(layout.border!=="0px" || layout.column!=="1 / -1" || layout.overflow) throw new Error("Account fields and actions must fit the panel without duplicate separators.");
+          await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Add account"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output, `${width}-${theme}-add-account.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article')).find(row=>row.textContent.includes('Design account')).querySelectorAll('button')[0].click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
           const editorLayout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="Edit account"]');return {padding:form&&getComputedStyle(form).padding,key:form?.querySelector('input[type="password"]')?.value}})()`);
