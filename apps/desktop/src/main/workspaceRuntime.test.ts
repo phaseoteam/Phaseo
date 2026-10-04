@@ -14,7 +14,7 @@ describe("workspace orchestration", () => {
    await runtime.command({ type: "send", id, text: "/review target", nativeAction }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
    expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "/review target", nativeAction }], messages: [] }); expect(run.mock.calls[0][6]).toEqual(nativeAction);
    const other = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const otherId = other.tasks.find(task => task.id !== id)!.id;
-   await expect(runtime.command({ type: "send", id: otherId, text: "/review target", nativeAction })).rejects.toThrow("requires OpenCode"); expect(runtime.store.getTask(otherId).queue).toEqual([]);
+   await expect(runtime.command({ type: "send", id: otherId, text: "/review target", nativeAction })).rejects.toThrow("require OpenCode"); expect(runtime.store.getTask(otherId).queue).toEqual([]);
   } finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
  });
 

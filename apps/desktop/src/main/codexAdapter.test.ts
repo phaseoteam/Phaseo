@@ -26,6 +26,30 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it("admits native skills with fresh catalog checks and structured native input", async () => {
+		const cwd = process.cwd(), skillPath = `${cwd}/SKILL.md`, requests: string[] = []; let input: unknown;
+		fixture((packet, send) => {
+			requests.push(packet.method);
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "skills/list") send({ id: packet.id, result: { data: [{ cwd, errors: [], skills: [{ name: "review", path: skillPath, enabled: true, description: "Review" }] }] } });
+			if (packet.method === "turn/start") { input = packet.params.input; send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+		});
+		await new CodexAdapter().run(task, cwd, "/skill:review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { requests.push("approval"); return "accept"; } }, undefined, [], { kind: "skill", name: "review", id: skillPath, arguments: "target" });
+		expect(requests.filter(value => ["skills/list", "approval", "turn/start"].includes(value))).toEqual(["skills/list", "approval", "skills/list", "turn/start"]);
+		expect(input).toEqual([{ type: "skill", name: "review", path: skillPath }, { type: "text", text: "target", text_elements: [] }]);
+	});
+	it("retains input when an approved native skill disappears", async () => {
+		const cwd = process.cwd(), skillPath = `${cwd}/SKILL.md`; let checks = 0; const turns: unknown[] = [];
+		const child = fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "skills/list") send({ id: packet.id, result: { data: [{ cwd, errors: [], skills: checks++ ? [] : [{ name: "review", path: skillPath, enabled: true }] }] } });
+			if (packet.method === "turn/start") turns.push(packet);
+		});
+		await expect(new CodexAdapter().run(task, cwd, "target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" }, undefined, [], { kind: "skill", name: "review", id: skillPath, arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError);
+		expect(turns).toEqual([]); expect(child.kill).toHaveBeenCalled();
+	});
 	it("retains structured native plan updates and ignores other threads and turns", async () => {
 		fixture((packet, send) => {
 			if (packet.method === "initialize") send({ id: packet.id, result: {} });

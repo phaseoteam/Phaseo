@@ -12,6 +12,8 @@ import { readCodexModels } from "./modelCatalog";
 import type { McpConnection } from "../shared/mcp";
 import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
 import { respondMcpElicitation } from "./mcpElicitation";
+import { confirmCodexNativeAction } from "./codexNativeActions";
+import type { NativeAction } from "../shared/nativeActions";
 
 type CodexEvent = { threadId?: string; turnId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
@@ -24,11 +26,11 @@ export class CodexAdapter implements AgentAdapter {
 	private compacting = false;
 	private readonly controller = new AbortController();
 	constructor(private readonly mcp: McpConnection[] = []) {}
-	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
 		this.child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", nativeAccountEnvironment(account));
 		if (this.canceled) { this.child.kill(); throw new Error("Task stopped."); }
 		const rpc = this.rpc = new JsonRpc(this.child.stdout, this.child.stdin);
-		this.compacting = !attachments.length && text.trim() === "/compact";
+		this.compacting = !nativeAction && !attachments.length && text.trim() === "/compact";
 		const compactionItems = new Map<string, "running" | "completed">();
 		let compactionFailure: string | undefined;
 		rpc.onClose = error => this.rejectTurn?.(error);
@@ -70,6 +72,15 @@ export class CodexAdapter implements AgentAdapter {
 			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
 			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
 			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
+			if (nativeAction) {
+				try {
+					await confirmCodexNativeAction(rpc, cwd, nativeAction);
+					if (await callbacks.onApproval(`Run OpenAI skill ${nativeAction.name}`, nativeAction.arguments) !== "accept") throw new Error("OpenAI skill declined.");
+					this.controller.signal.throwIfAborted();
+					await confirmCodexNativeAction(rpc, cwd, nativeAction);
+					this.controller.signal.throwIfAborted();
+				} catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "OpenAI skill admission failed.", { cause: error }); }
+			}
 			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), this.controller.signal); }
 			catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); }
 			await new Promise<void>((resolve, reject) => {
@@ -120,7 +131,7 @@ export class CodexAdapter implements AgentAdapter {
 				void rpc.request<{ turn: { id: string } }>("turn/start", {
 					threadId: this.threadId,
 					effort: effort ?? null,
-					input: [{ type: "text", text: attachmentPrompt(text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
+					input: [...(nativeAction ? [{ type: "skill", name: nativeAction.name, path: nativeAction.id }] : []), { type: "text", text: attachmentPrompt(nativeAction ? nativeAction.arguments : text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
 				}).then(response => { if (this.rejectTurn) this.turnId = response.turn.id; }, reject);
 			});
 		} finally {

@@ -38,6 +38,8 @@ jobs:
                   package-manager-cache: false
             - name: Install desktop dependencies
               run: pnpm install --filter @phaseo/desktop... --frozen-lockfile
+            - name: Install pinned OpenAI native CLI for catalog verification
+              run: npm install --global @openai/codex@0.160.0
             - name: Build desktop and agent SDK
               run: pnpm --filter @phaseo/desktop build
             - name: Lint
@@ -60,6 +62,10 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/pi-native-actions-smoke.mjs
             - name: Claude native command and skill workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/claude-native-actions-smoke.mjs
+            - name: OpenAI installed native skill catalog
+              run: pnpm --filter @phaseo/desktop exec node scripts/codex-native-catalog-smoke.mjs
+            - name: OpenAI native skill picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/codex-native-picker-smoke.mjs
             - name: Harness update workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs
             - name: Chat shell and native browser
@@ -90,6 +96,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/pi-native-actions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Claude native command and skill workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/claude-native-actions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged OpenAI native skill picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/codex-native-picker-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged harness update workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat shell and native browser
@@ -115,5 +123,6 @@ jobs:
                       output/playwright/native-actions/
                       output/playwright/pi-native-actions/
                       output/playwright/claude-native-actions/
+                      output/playwright/codex-native-actions/
                       output/playwright/browser-viewport/
                   if-no-files-found: ignore

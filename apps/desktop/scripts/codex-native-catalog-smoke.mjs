@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { builtinModules } from "node:module";
+import { build } from "vite";
+const directory=mkdtempSync(path.join(tmpdir(),"phaseo-openai-catalog-")),profile=path.join(directory,"profile"),project=path.join(directory,"project");
+mkdirSync(profile);const skill=path.join(project,".agents","skills","owned-brief","SKILL.md");mkdirSync(path.dirname(skill),{recursive:true});
+writeFileSync(skill,"---\nname: owned-brief\ndescription: Owned native catalog brief\n---\nExplain the requested topic clearly.\n");
+writeFileSync(path.join(profile,"config.toml"),'model_provider = "owned"\n[model_providers.owned]\nname = "Owned unavailable endpoint"\nbase_url = "http://127.0.0.1:1/v1"\nwire_api = "responses"\n');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),".."),output=path.join(directory,"bundle");
+await build({configFile:false,root,logLevel:"silent",build:{outDir:output,emptyOutDir:true,lib:{entry:path.join(root,"src/main/codexNativeActions.ts"),formats:["es"],fileName:()=>"catalog.mjs"},rollupOptions:{external:[...builtinModules,...builtinModules.map(name=>"node:"+name)]}}});
+const {codexNativeActions}=await import(pathToFileURL(path.join(output,"catalog.mjs")).href);
+const catalog=await codexNativeActions(project,AbortSignal.timeout(30000),{id:"owned",name:"Owned profile",kind:"native",harness:"codex",configured:true,configDirectory:profile});
+assert.ok(catalog.actions.some(action=>action.name==="owned-brief"&&path.resolve(action.id)===path.resolve(skill)));
+console.log("OPENAI_NATIVE_CATALOG_SMOKE",JSON.stringify({productionCatalog:true,installedNativeProcess:true,isolatedProfile:true,projectSkill:true,skillCount:catalog.actions.length,turnSubmissions:0}));
