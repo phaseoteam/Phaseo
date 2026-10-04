@@ -8,6 +8,8 @@ General Chat in the Phaseo harness can use enabled global MCP services and servi
 
 MCP document services can provide resources alongside tools or on their own. The Phaseo harness can list resource pages and templates, then read a URI with approval. Responses are limited to 1 MB and catalogue pages to 200 entries.
 
+Prompt services can list their templates and retrieve one with approved arguments. Returned messages remain tool results; they do not change system instructions. A dedicated prompt picker is not available yet.
+
 Files & Git, pull requests, terminal and Browser share a collapsible right panel. Selecting a different chat initializes project tools from its project. Personal chats start without a project. Terminal lists follow that context; file drafts from another project are not restored into the current project's editor. At narrower widths the tools overlay the conversation and can be dismissed without losing it.
 
 ## Native browser

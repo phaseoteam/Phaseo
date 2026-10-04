@@ -4,15 +4,19 @@ import { mkdtempSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+const promptMode = process.argv.includes("--prompts");
+const expectedContent = promptMode ? "Owned prompt content" : "Owned document content";
+const identity = promptMode ? "brief" : "notes:owned";
+const argumentsValue = JSON.stringify(promptMode ? { name: "brief", arguments: { topic: "work" } } : { uri: "notes:owned" });
 const humanWait = process.argv.includes("--long-human-wait") ? 65000 : 0;
 const mode = process.argv.find(value => value.startsWith("--mode="))?.slice(7) ?? "chat";
 if (!["chat", "code", "plan"].includes(mode)) throw Error("Unsupported resource audit mode");
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-resources-native-")); app.setPath("userData", profile);
 const calls = path.join(profile, "reads.txt"), script = path.join(profile, "resources.cjs");
-writeFileSync(script, `const fs=require('node:fs');let pending;const send=value=>process.stdout.write(JSON.stringify(value)+'\\n');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.id===undefined)return;let result;
- if(r.id==='resource-form'){if(r.result?.action!=='accept'||r.result.content?.topic!=='work')throw Error('Resource form answer missing');fs.appendFileSync(process.argv[2],pending.uri+'\\n');send({jsonrpc:'2.0',id:pending.id,result:{contents:[{uri:pending.uri,text:'Owned document content'}]}});return;}
- if(r.method==='initialize')result={protocolVersion:r.params.protocolVersion,capabilities:{resources:{}},serverInfo:{name:'owned-documents',version:'1'}};
- else if(r.method==='resources/read'){pending={id:r.id,uri:r.params.uri};send({jsonrpc:'2.0',id:'resource-form',method:'elicitation/create',params:{mode:'form',message:'Which notes?',requestedSchema:{type:'object',properties:{topic:{type:'string'}},required:['topic']}}});return;}
+writeFileSync(script, `const fs=require('node:fs');const promptMode=${JSON.stringify(promptMode)};let pending;const send=value=>process.stdout.write(JSON.stringify(value)+'\\n');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.id===undefined)return;let result;
+ if(r.id==='resource-form'){if(r.result?.action!=='accept'||r.result.content?.topic!=='work')throw Error('Resource form answer missing');fs.appendFileSync(process.argv[2],pending.identity+'\\n');send({jsonrpc:'2.0',id:pending.id,result:promptMode?{messages:[{role:'user',content:{type:'text',text:'Owned prompt content'}}]}:{contents:[{uri:pending.identity,text:'Owned document content'}]}});return;}
+ if(r.method==='initialize')result={protocolVersion:r.params.protocolVersion,capabilities:promptMode?{prompts:{}}:{resources:{}},serverInfo:{name:'owned-documents',version:'1'}};
+ else if(r.method===(promptMode?'prompts/get':'resources/read')){if(promptMode&&(r.params.name!=='brief'||r.params.arguments?.topic!=='work'))throw Error('Prompt arguments missing');pending={id:r.id,identity:promptMode?r.params.name:r.params.uri};send({jsonrpc:'2.0',id:'resource-form',method:'elicitation/create',params:{mode:'form',message:'Which notes?',requestedSchema:{type:'object',properties:{topic:{type:'string'}},required:['topic']}}});return;}
  else {send({jsonrpc:'2.0',id:r.id,error:{code:-32601,message:'Unexpected method'}});return;}send({jsonrpc:'2.0',id:r.id,result});});`);
 let requests = 0, fixtureError;
 const server = createServer(async (request, response) => {
@@ -23,9 +27,8 @@ const server = createServer(async (request, response) => {
   const body = JSON.parse(raw); requests++;
   const result = (mode === "chat" ? body.messages : body.input).find(message => mode === "chat" ? message.role === "tool" : message.type === "function_call_output");
   const content = result?.content ?? result?.output;
-  if (result && !content.includes("Owned document content") && !content.includes("rejected")) throw Error("Resource result missing");
-  const tool = body.tools.map(tool => tool.function ?? tool).find(tool => tool.name.endsWith("_read_resource")); if (!tool) throw Error("Resource tool missing");
-  const argumentsValue = JSON.stringify({ uri: "notes:owned" });
+  if (result && !content.includes(expectedContent) && !content.includes("rejected")) throw Error("Resource result missing");
+  const tool = body.tools.map(tool => tool.function ?? tool).find(tool => tool.name.endsWith(promptMode ? "_get_prompt" : "_read_resource")); if (!tool) throw Error("Resource tool missing");
   const delta = result ? { content: "Document reviewed" } : { tool_calls: [{ index: 0, id: "document", type: "function", function: { name: tool.name, arguments: argumentsValue } }] };
   const output = result ? [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Document reviewed" }] }] : [{ type: "function_call", id: "document-item", call_id: "document", name: tool.name, arguments: argumentsValue }];
   const event = mode === "chat" ? { choices: [{ delta, finish_reason: result ? "stop" : "tool_calls" }] } : { type: "response.completed", response: { id: "owned-" + requests, model: "owned", status: "completed", output } };
@@ -48,7 +51,7 @@ app.whenReady().then(async () => {
     const state=await api.command({type:'create-task',title:'Documents '+decision,harness:'phaseo',mode:${JSON.stringify(mode)},model:'owned',accountId:account.id}), task=state.tasks.find(value=>!ids.includes(value.id));ids.push(task.id);await api.command({type:'update-task',id:task.id,title:'Documents '+decision});
     await api.command({type:'send',id:task.id,text:'Read owned document'});
     const waiting=await wait(async()=>{const task=await api.task(ids.at(-1));if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false;});
-    if(waiting.approvals[0].method!=='Documents · read resource'||!JSON.stringify(waiting.approvals[0]).includes('notes:owned'))throw Error('Resource approval identity missing');
+    if(waiting.approvals[0].method!==${JSON.stringify(promptMode?'Documents · get prompt':'Documents · read resource')}||!JSON.stringify(waiting.approvals[0]).includes(${JSON.stringify(identity)}))throw Error('Resource approval identity missing');
     await api.command({type:'approval',id:task.id,approvalId:waiting.approvals[0].id,decision:decision==='cancel'?'accept':decision});
     if(decision!=='decline'){
      const asking=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.forms?.length?value:false;});
@@ -67,8 +70,8 @@ app.whenReady().then(async () => {
    }
   })()`);
   if (fixtureError) throw fixtureError;
-  if (!existsSync(calls) || readFileSync(calls, "utf8").trim() !== "notes:owned" || requests !== 5) throw Error("Unexpected resource effects or requests");
-  console.log("PHASEO_RESOURCES_SMOKE", JSON.stringify({ mode, resourceOnly: true, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: 1, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
+  if (!existsSync(calls) || readFileSync(calls, "utf8").trim() !== identity || requests !== 5) throw Error("Unexpected resource effects or requests");
+  console.log(promptMode ? "PHASEO_PROMPTS_SMOKE" : "PHASEO_RESOURCES_SMOKE", JSON.stringify({ mode, resourceOnly: !promptMode, promptOnly: promptMode, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: promptMode ? 0 : 1, promptRetrievals: promptMode ? 1 : 0, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
   clearTimeout(deadline); server.close(); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); server.close(); app.exit(1); }
 });

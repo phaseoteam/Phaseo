@@ -66,6 +66,14 @@ jobs:
                     pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs "--mode=$resourceMode"
                     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                   }
+            - name: Phaseo MCP prompt retrieval
+              run: |
+                  foreach ($promptMode in @("chat", "code", "plan")) {
+                    $promptWaitOptions = @()
+                    if ($promptMode -eq "chat") { $promptWaitOptions = @("--long-human-wait") }
+                    pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --prompts "--mode=$promptMode" @promptWaitOptions
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  }
             - name: Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
             - name: Phaseo global instruction settings
@@ -130,6 +138,12 @@ jobs:
               run: |
                   foreach ($resourceMode in @("code", "plan")) {
                     pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs "--mode=$resourceMode" --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  }
+            - name: Packaged Phaseo MCP prompt retrieval
+              run: |
+                  foreach ($promptMode in @("chat", "code", "plan")) {
+                    pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --prompts "--mode=$promptMode" --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
                     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                   }
             - name: Packaged Phaseo project instructions
