@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
+const humanWait = process.argv.includes("--long-human-wait") ? 65000 : 0;
 const profile=mkdtempSync(path.join(tmpdir(),"phaseo-managed-mcp-"));app.setPath("userData",profile);
 const project=path.join(profile,"project");mkdirSync(project);mkdirSync(path.join(profile,"workspace"));
 const seed=new DatabaseSync(path.join(profile,"workspace/workspace.sqlite"));seed.exec("CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL)");
@@ -29,7 +30,7 @@ const server=createServer(async(request,response)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const endpoint=`http://127.0.0.1:${server.address().port}/v1`;
 const packagedEntry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice('--app-entry='.length);
-const deadline=setTimeout(()=>{console.error('PHASEO_MCP_SMOKE deadline');server.close();app.exit(1);},60000);
+const deadline=setTimeout(()=>{console.error('PHASEO_MCP_SMOKE deadline');server.close();app.exit(1);},humanWait+60000);
 try { await import(packagedEntry?pathToFileURL(path.resolve(packagedEntry)).href:'../dist/main/index.mjs'); } catch(error) { console.error(error);clearTimeout(deadline);server.close();app.exit(1); }
 
 app.whenReady().then(async()=>{
@@ -48,7 +49,7 @@ app.whenReady().then(async()=>{
     const overview=await api.command({type:'create-task',harness:'phaseo',accountId:account.id,model:'owned-fixture',mode:'code',projectId:'fixture'});const task=overview.tasks.find(task=>!ids.includes(task.id));ids.push(task.id);await api.command({type:'update-task',id:task.id,title:'Owned '+decision});
     await api.command({type:'send',id:task.id,text:'Read owned notes'});const waiting=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.approvals?.length?value:false;});
     if(waiting.approvals[0].method!=='Owned MCP · owned_lookup')throw Error('Approval did not identify server and tool');let blocked=false;try{await api.mcp({type:'save',connection:{...connection,enabled:false}});}catch{blocked=true;}if(!blocked)throw Error('Active Phaseo MCP configuration changed');
-    await api.command({type:'approval',id:task.id,approvalId:waiting.approvals[0].id,decision});if(decision==='accept'){const asking=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.forms?.length?value:false;});if(!asking.forms[0].form.title.startsWith('Owned MCP:')||asking.forms[0].form.fields.length!==2)throw Error('MCP form did not identify its server');const row=await wait(()=>Array.from(document.querySelectorAll('.task-row')).find(row=>row.title==='Owned '+decision));row.click();const topic=await wait(()=>document.querySelector('select[aria-label="topic"]'));Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(topic,'0');topic.dispatchEvent(new Event('change',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));const count=document.querySelector('input[aria-label="count"]');if(!count||count.type!=='number'||count.min!=='1'||count.max!=='5')throw Error('Typed MCP form did not render');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(count,'2');count.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));topic.closest('form').requestSubmit();}await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.status==='completed';});
+    await api.command({type:'approval',id:task.id,approvalId:waiting.approvals[0].id,decision});if(decision==='accept'){const asking=await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.forms?.length?value:false;});if(!asking.forms[0].form.title.startsWith('Owned MCP:')||asking.forms[0].form.fields.length!==2)throw Error('MCP form did not identify its server');await new Promise(resolve=>setTimeout(resolve,${humanWait}));const row=await wait(()=>Array.from(document.querySelectorAll('.task-row')).find(row=>row.title==='Owned '+decision));row.click();const topic=await wait(()=>document.querySelector('select[aria-label="topic"]'));Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(topic,'0');topic.dispatchEvent(new Event('change',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));const count=document.querySelector('input[aria-label="count"]');if(!count||count.type!=='number'||count.min!=='1'||count.max!=='5')throw Error('Typed MCP form did not render');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(count,'2');count.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,25));topic.closest('form').requestSubmit();}await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.status==='completed';});
    }
    await api.mcp({type:'save',connection:{...connection,enabled:false}});
    const httpConnection={id:'87654321-1234-1234-1234-123456789abe',name:'Owned HTTP',enabled:true,transport:'http',url:${JSON.stringify(endpoint.replace(/\/v1$/,'/mcp'))}};
@@ -63,6 +64,6 @@ app.whenReady().then(async()=>{
   })()`);
   if(fixtureError)throw fixtureError;
   const records=existsSync(calls)?readFileSync(calls,'utf8').trim().split('\n').map(line=>JSON.parse(line)):[];if(records.length!==1||records[0].name!=='owned_lookup'||records[0].elicitation?.action!=='accept'||records[0].elicitation?.content?.topic!=='work'||records[0].elicitation?.content?.count!==2||modelRequests!==6||httpToolCalls!==1)throw Error('Unapproved native tool or unexpected inference fixture request');
-  console.log('PHASEO_MCP_SMOKE',JSON.stringify({...result,nativeToolCalls:records.length,httpToolCalls,elicitation:true,renderedForm:true,loopbackModelRequests:modelRequests,providerInferenceCalls:0,packaged:Boolean(packagedEntry)}));clearTimeout(deadline);server.close();app.quit();
+  console.log('PHASEO_MCP_SMOKE',JSON.stringify({...result,nativeToolCalls:records.length,httpToolCalls,elicitation:true,renderedForm:true,humanWaitMs:humanWait,loopbackModelRequests:modelRequests,providerInferenceCalls:0,packaged:Boolean(packagedEntry)}));clearTimeout(deadline);server.close();app.quit();
  }catch(error){console.error(error);clearTimeout(deadline);server.close();app.exit(1);}
 });

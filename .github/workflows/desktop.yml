@@ -49,7 +49,7 @@ jobs:
             - name: Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Phaseo managed MCP tools
-              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --long-human-wait
             - name: Chat shell and native browser
               run: pnpm --filter @phaseo/desktop audit:design
             - name: Native browser viewport geometry

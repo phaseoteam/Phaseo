@@ -1,3 +1,4 @@
+import { McpCallBudget } from "./mcpCallBudget";
 import { ElicitRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { respondMcpElicitation } from "./mcpElicitation";
 import type { AgentCallbacks } from "./agentAdapter";
@@ -22,7 +23,15 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
   for (const connection of connections) {
    if (signal.aborted) throw Error("MCP setup cancelled.");
    const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: callbacks?.onForm ? { elicitation: { form: {}, url: {} } } : {} }); clients.push(client);
-   if (callbacks?.onForm) client.setRequestHandler(ElicitRequestSchema, (request, extra) => respondMcpElicitation({ ...request.params, serverName: connection.name }, callbacks, AbortSignal.any([signal, extra.signal])));
+   const budgets = new Set<McpCallBudget>(); let waitingForms = 0;
+   if (callbacks?.onForm) {
+    const formCallbacks = { ...callbacks, onForm: async (...args: Parameters<NonNullable<AgentCallbacks["onForm"]>>) => {
+     waitingForms++; for (const budget of budgets) budget.pause();
+     try { return await callbacks.onForm!(...args); }
+     finally { if (--waitingForms === 0) for (const budget of budgets) budget.resume(); }
+    } };
+    client.setRequestHandler(ElicitRequestSchema, (request, extra) => respondMcpElicitation({ ...request.params, serverName: connection.name }, formCallbacks, AbortSignal.any([signal, extra.signal])));
+   }
    const transport = connection.transport === "stdio"
     ? new StdioClientTransport({ command: connection.executable, args: connection.arguments, cwd, env: { ...getDefaultEnvironment(), ELECTRON_RUN_AS_NODE: "1" }, stderr: "ignore", maxBufferSize: 2 * 1024 * 1024 })
     : new StreamableHTTPClientTransport(new URL(connection.url));
@@ -39,10 +48,13 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
      tools.push(defineTool({ id, description: `MCP ${connection.name}: ${tool.name}. ${tool.description ?? ""}`.slice(0,4000), parameters: tool.inputSchema, requireApproval: true, onError: "return-to-model",
       async execute(input: unknown, context) {
        if (!input || typeof input !== "object" || Array.isArray(input) || JSON.stringify(input).length > 1000000) throw Error("Invalid MCP tool arguments.");
-       const result = await client.callTool({ name: tool.name, arguments: input as Record<string,unknown> }, undefined, { signal: context.signal, timeout: 60000 });
+       const budget = new McpCallBudget(); budgets.add(budget); if (waitingForms) budget.pause();
+       try {
+       const result = await client.callTool({ name: tool.name, arguments: input as Record<string,unknown> }, undefined, { signal: AbortSignal.any([signal, ...(context.signal ? [context.signal] : []), budget.signal]), timeout: 2147483647 });
        if (JSON.stringify(result).length > 1000000) throw Error("MCP tool result exceeds the 1 MB limit.");
        if (result.isError) throw Error(`MCP tool returned an error: ${JSON.stringify(result.content).slice(0,5000)}`);
        return result;
+       } finally { budgets.delete(budget); budget.dispose(); }
       },
      }));
     }
