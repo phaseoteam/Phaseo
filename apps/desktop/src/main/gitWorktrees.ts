@@ -1,4 +1,5 @@
-import { git, withGitLock } from "./gitOperations";
+import { withGitLock } from "./gitOperations";
+import { git } from "./gitProcess";
 import { realpath } from "node:fs/promises";
 import path from "node:path";
 

@@ -105,6 +105,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 38. **Select controls and workspace identity:** dropdown triggers use the website's 16-pixel chevron, 32-pixel control height, bundled font and reserved text/arrow spacing. Native option menus follow the selected light/dark scheme. Forced-colour mode retains the native arrow. The current single workspace is an identity label rather than an inactive switching button. Source and packaged rendered checks verify select styling and the identity semantics across pages in both themes/window sizes. Native menus and forced-colour rendering require separate platform checks.
 
+39. **Individual change review:** a selected file uses one padded panel with aligned wrapping actions and the shared highlighted code surface. The aggregate diff is replaced while this review is open, avoiding repeated content. Source and packaged real-repository checks verify 16-pixel insets, Montserrat and no document overflow at both window sizes in light/dark themes.
+
+![Individual changes at the small window size](screenshots/git-hunks-small-window.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 132 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.

@@ -4,6 +4,7 @@ import type { GitCommand, GitReview, ProjectFile } from "../../shared/workspace"
 import type { EditorId, EditorInstallation, ProjectOpenRequest } from "../../shared/editors";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { CodeBlock } from "../components/MessageContent";
+import { GitHunkPanel } from "../components/GitHunkPanel";
 import { usePersistedState } from "../lib/persistedState";
 
 export function Projects() {
@@ -20,6 +21,7 @@ export function Projects() {
 	const [refresh, setRefresh] = useState(0);
 	const dirty = Boolean(preview && draft !== preview.text);
 	const [review, setReview] = useState<GitReview>();
+	const [hunkFile, setHunkFile] = useState<string>();
 	const [branches, setBranches] = useState<string[]>([]);
 	const [branchName, setBranchName] = useState("");
 	const [worktreeBranch, setWorktreeBranch] = useState(""); const [worktreeBase, setWorktreeBase] = useState("HEAD");
@@ -128,11 +130,12 @@ export function Projects() {
 			<h2>Working changes</h2>
 			{review.files.length ? <div className="git-file-list">{review.files.map(file => <div className="project-toolbar" key={file.path}>
 				<code>{file.indexStatus}{file.worktreeStatus}</code><span>{file.oldPath ? `${file.oldPath} → ` : ""}{file.path}</span>
+				<button type="button" disabled={gitBusy} aria-pressed={hunkFile === file.path} onClick={() => setHunkFile(file.path)}>Review changes</button>
 				{![file.indexStatus, file.worktreeStatus].includes("D") && <button type="button" disabled={!editor || editorBusy || gitBusy} onClick={() => { if (editor) void openTarget({ editor: editor.id, filename: file.path }); }}>Open file</button>}
 				{file.worktreeStatus !== " " && <button type="button" disabled={gitBusy} onClick={() => void changeGit({ type: "stage", filename: file.path })}>Stage</button>}
 				{![" ", "?"].includes(file.indexStatus) && <button type="button" disabled={gitBusy} onClick={() => void changeGit({ type: "unstage", filename: file.path })}>Unstage</button>}
 			</div>)}</div> : <p className="task-muted">Working tree is clean.</p>}
-			<h2>Unstaged changes</h2>{review.diff ? <CodeBlock text={review.diff} language="diff" /> : <p className="task-muted">No unstaged changes.</p>}<h2>Staged changes</h2>{review.stagedDiff ? <CodeBlock text={review.stagedDiff} language="diff" /> : <p className="task-muted">No staged changes.</p>}
+			{hunkFile && review.files.some(file => file.path === hunkFile) ? <><button type="button" disabled={gitBusy} onClick={() => setHunkFile(undefined)}>All changes</button><GitHunkPanel key={`${id}:${hunkFile}`} projectId={id} filename={hunkFile} revision={review} busy={gitBusy} onCommand={changeGit} /></> : <><h2>Unstaged changes</h2>{review.diff ? <CodeBlock text={review.diff} language="diff" /> : <p className="task-muted">No unstaged changes.</p>}<h2>Staged changes</h2>{review.stagedDiff ? <CodeBlock text={review.stagedDiff} language="diff" /> : <p className="task-muted">No staged changes.</p>}</>}
 			<div className="project-toolbar"><input aria-label="Commit message" placeholder="Commit message" value={commitMessage} onChange={event => setCommitMessage(event.target.value)} /><button type="button" disabled={gitBusy || !commitMessage.trim() || !review.stagedDiff} onClick={() => void changeGit({ type: "commit", message: commitMessage })}>Commit staged changes</button></div>
 		</section>}
 	</section></div>;

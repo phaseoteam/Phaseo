@@ -51,7 +51,8 @@ export type AccountStatus = { checkedAt: string; authenticated: boolean | null; 
 export type ProjectFile = { name: string; path: string; directory: boolean };
 export type GitFile = { path: string; oldPath?: string; indexStatus: string; worktreeStatus: string };
 export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; branch: string };
-export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string };
+export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
+export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string };
 export type TerminalSession = { id: string; projectId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
 export type TerminalCommand = { type: "open"; projectId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
@@ -115,6 +116,7 @@ export type WorkspaceApi = {
 	readDocument: (projectId: string, filename: string) => Promise<{ text: string; hash: string }>;
 	writeDocument: (projectId: string, filename: string, text: string, expectedHash: string) => Promise<{ hash: string }>;
 	gitReview: (projectId: string) => Promise<GitReview>;
+	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
 };

@@ -525,3 +525,7 @@ button { color: inherit; }
 @media (forced-colors: active) {
 	:is(.page, .task-workspace, .terminal-workspace) select, :root[data-theme="dark"] :is(.page, .task-workspace, .terminal-workspace) select { appearance: auto; background-image: none; padding-right: 10px; }
 }
+.git-hunk-panel { margin-block: 24px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; }
+.git-hunk-panel h2 { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 16px; }
+.git-hunk-panel h3 { margin-block: 24px 12px; font-size: 14px; font-weight: 600; }
+.git-hunk > .project-toolbar { justify-content: space-between; margin-bottom: 8px; }

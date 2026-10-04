@@ -1,14 +1,10 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import path from "node:path";
 import { realpath } from "node:fs/promises";
 import { gitReview, parseGitStatus } from "./projectFiles";
+import { applyGitHunk } from "./gitHunks";
+import { git } from "./gitProcess";
 
-const execute = promisify(execFile);
 const locks = new Map<string, Promise<unknown>>();
-export async function git(root: string, args: string[]) {
-	return (await execute("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 30000, maxBuffer: 4 * 1024 * 1024 })).stdout;
-}
 export async function gitBranches(root: string) {
 	return (await git(root, ["for-each-ref", "--format=%(refname:short)", "refs/heads/"])).split(/\r?\n/).filter(Boolean);
 }
@@ -26,9 +22,10 @@ export async function withGitLock<T>(root: string, run: () => Promise<T>): Promi
 export async function gitCommand(root: string, value: unknown) {
 	if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid Git action.");
 	const command = value as Record<string, unknown>;
-	if (!["stage", "unstage", "create-branch", "switch-branch", "commit"].includes(String(command.type))) throw new Error("Invalid Git action.");
+	if (!["stage", "unstage", "stage-hunk", "unstage-hunk", "create-branch", "switch-branch", "commit"].includes(String(command.type))) throw new Error("Invalid Git action.");
 	return withGitLock(root, async () => {
-		if (command.type === "stage" || command.type === "unstage") {
+		if (command.type === "stage-hunk" || command.type === "unstage-hunk") await applyGitHunk(root, command);
+		else if (command.type === "stage" || command.type === "unstage") {
 			const filename = command.filename;
 			if (typeof filename !== "string" || !filename || filename.length > 10000 || filename.includes("\0") || path.isAbsolute(filename) || filename.split(/[\\/]/).some(segment => segment === ".." || segment === ".git")) throw new Error("Choose a file inside this repository.");
 			const literalPath = `:(literal)${filename.replaceAll("\\", "/")}`;
