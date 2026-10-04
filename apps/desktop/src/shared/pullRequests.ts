@@ -4,4 +4,4 @@ export type PullRequest = {
 	review: "approved" | "changes-requested" | "required" | "none";
 	checks: "passing" | "pending" | "failed" | "none" | "unknown";
 };
-export type ProjectPullRequests = { repository: string; requests: PullRequest[]; fetchedAt: string; limitReached: boolean };
+export type ProjectPullRequests = { repository: string; requests: PullRequest[]; fetchedAt: string; limitReached: boolean; nextCursor?: string };

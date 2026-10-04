@@ -21,6 +21,8 @@ const { projectPullRequests } = await import(pathToFileURL(path.join(directory, 
 const result = await projectPullRequests(repository);
 assert.equal(result.repository, "phaseoteam/Phaseo"); assert.ok(result.requests.length <= 100);
 for (const request of result.requests) assert.equal(request.url, `https://github.com/phaseoteam/Phaseo/pull/${request.number}`);
+const next = result.nextCursor ? await projectPullRequests(repository, result.nextCursor) : undefined;
+if (next) { assert.equal(next.repository, result.repository); assert.ok(next.requests.length <= 100); assert.notEqual(next.nextCursor, result.nextCursor); for (const request of next.requests) assert.equal(request.url, `https://github.com/phaseoteam/Phaseo/pull/${request.number}`); }
 assert.equal(git(["status", "--porcelain"]), before);
 assert.equal(git(["remote", "get-url", "origin"]).trim(), "https://github.com/phaseoteam/Phaseo.git");
-console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached }));
+console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length }));

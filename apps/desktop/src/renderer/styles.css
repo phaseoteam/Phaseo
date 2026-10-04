@@ -125,6 +125,8 @@
 .proposal-project label { display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
 .proposal-project p { margin: 12px 0 0; color: var(--text-muted); font-size: 12px; }
 .proposal-feedback { margin: 0; padding: 0 var(--panel-padding) var(--panel-padding); font-size: 14px; color: var(--text-muted); }
+.proposal-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
+.proposal-pagination span { flex: 1 1 180px; color: var(--text-muted); font-size: 12px; }
 .proposal-error { color: #c64949; overflow-wrap: anywhere; }
 .proposal-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
 .proposal-row > div { min-width: 0; }
