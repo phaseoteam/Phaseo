@@ -166,10 +166,10 @@ export class WorkspaceStore {
 	saveAgent(agent: AgentConnection) { this.db.prepare("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
 	getAttachment(id: string): Attachment | undefined { const row = this.db.prepare("SELECT data FROM attachments WHERE id=?").get(id); return row ? JSON.parse(row.data as string) as Attachment : undefined; }
 	saveAttachment(attachment: Attachment) { this.db.prepare("INSERT INTO attachments (id, data) VALUES (?, ?)").run(attachment.id, JSON.stringify(attachment)); }
-	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom">, attachments: Attachment[]): Task {
+	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom">, attachments: Attachment[], initialModels?: Task["nativeModels"]): Task {
 		this.db.exec("BEGIN");
 		try {
-			const task = this.apply(command);
+			const task = this.apply(command, initialModels);
 			const files = new Map(attachments.map(attachment => [attachment.id, { ...attachment, taskId: task.id }]));
 			for (const attachment of files.values()) this.saveAttachment(attachment);
 			task.title = conversation.title; task.createdAt = conversation.createdAt; task.handoffFrom = conversation.handoffFrom;
@@ -177,23 +177,24 @@ export class WorkspaceStore {
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
-	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" }>): Task {
+	apply(command: Exclude<WorkspaceCommand, { type: "add-account" | "update-account" | "add-agent" | "update-agent" }>, initialModels?: Task["nativeModels"]): Task {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");
-			const destination = this.apply({ ...command, type: "create-task" });
+			const destination = this.apply({ ...command, type: "create-task" }, initialModels);
 			destination.title = `${source.title} (handoff)`; destination.parentId = source.id; destination.handoffFrom = source.harness;
 			destination.messages = source.messages; this.saveTask(destination); return destination;
 		}
 		if (command.type === "create-task") {
-			if (command.reasoningEffort !== undefined && command.harness !== "codex") throw new Error("Initial reasoning effort currently requires the Codex harness.");
+			if (command.reasoningEffort !== undefined && !["codex", "grok"].includes(command.harness)) throw new Error("This harness does not offer initial reasoning effort.");
+			if (command.harness === "grok" && command.reasoningEffort && !initialModels?.find(model => command.model === "default" ? model.default : model.id === command.model)?.reasoningEfforts?.some(effort => effort.id === command.reasoningEffort)) throw new Error("Grok no longer offers the selected reasoning effort.");
 			if (command.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
 			if (command.projectId && !this.getProjects().some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
 			if (command.accountId && !this.getAccounts().some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if ((command.harness === "phaseo" || command.harness === "cursor") && !command.accountId) throw new Error(`Choose an account for the ${command.harness === "cursor" ? "Cursor" : "Phaseo"} harness.`);
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
-			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, reasoningEffort: command.reasoningEffort, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
+			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, reasoningEffort: command.reasoningEffort, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
 			this.saveTask(task); return task;
 		}
 		const task = this.getTask(command.id);

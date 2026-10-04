@@ -25,6 +25,7 @@ import type { Attachment } from "../shared/workspace";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { createGitWorktree, removeGitWorktree } from "./gitWorktrees";
+import { grokModelCatalog } from "./grokModelCatalog";
 import { GrokAdapter } from "./grokAdapter";
 
 const hasRequests = (task: { approvals?: unknown[]; questions?: unknown[]; forms?: unknown[] }) => Boolean(task.approvals?.length || task.questions?.length || task.forms?.length);
@@ -52,6 +53,7 @@ export class WorkspaceRuntime {
 	private readonly signingInAccounts = new Set<string>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	private readonly imports = new Set<Promise<unknown>>();
+	private readonly modelDiscoveries = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
 	private readonly worktreeSources = new Map<string, number>();
 	private readonly removingWorktrees = new Set<string>();
@@ -128,8 +130,22 @@ export class WorkspaceRuntime {
 		const execution = this.performImport(command, conversation); this.imports.add(execution);
 		try { return await execution; } finally { this.imports.delete(execution); }
 	}
+	private async initialModels(command: Extract<WorkspaceCommand, { type: "create-task" | "handoff" }>) {
+		if (command.harness !== "grok" || !command.reasoningEffort) return undefined;
+		if (command.projectId) this.assertProjectAvailable(command.projectId);
+		const project = command.projectId ? this.store.getProjects().find(value => value.id === command.projectId) : undefined;
+		const account = command.accountId ? this.store.getAccounts().find(value => value.id === command.accountId && value.harness === "grok" && value.configured && !value.archived) : undefined;
+		if (command.accountId && !account) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
+		const discovery = grokModelCatalog(project?.directory ?? this.directory, account);
+		this.modelDiscoveries.add(discovery);
+		let models;
+		try { models = await discovery; } finally { this.modelDiscoveries.delete(discovery); }
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		return models;
+	}
 	private async performImport(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: WorkspaceOverview; taskId: string }> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		const initialModels = command.harness === "grok" && command.reasoningEffort ? await this.initialModels(command) : undefined;
 		const prepared = new Map<string, Attachment>();
 		let committed = false;
 		try {
@@ -138,7 +154,7 @@ export class WorkspaceRuntime {
 				prepared.set(file.id, await this.attachments.prepare("", file.name, file.bytes));
 			}
 			if (this.closing) throw new Error("The workspace is shutting down.");
-			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()]);
+			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()], initialModels);
 			committed = true;
 			this.broadcast(); return { workspace: this.store.getOverview(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
@@ -238,7 +254,8 @@ export class WorkspaceRuntime {
 			for (const [id, pending] of this.forms) if (pending.taskId === command.id) { pending.resolve(null); this.forms.delete(id); }
 			await this.running.get(command.id)?.cancel();
 		}
-		const task = this.store.apply(command);
+		const initialModels = (command.type === "create-task" || command.type === "handoff") && command.harness === "grok" && command.reasoningEffort ? await this.initialModels(command) : undefined;
+		const task = this.store.apply(command, initialModels);
 		this.broadcast();
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
 		return this.store.getOverview();
@@ -406,6 +423,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.running.values()].map(adapter => adapter.cancel()));
 		await Promise.allSettled([...this.executions.values()]);
 		await Promise.allSettled([...this.steeringExecutions.values()]);
+		await Promise.allSettled([...this.modelDiscoveries]);
 		await Promise.allSettled([...this.imports]);
 		await Promise.allSettled([...this.worktreeOperations]);
 		await Promise.allSettled([...this.projectMutations.keys()]);

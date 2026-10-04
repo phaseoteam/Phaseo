@@ -21,7 +21,7 @@ describe("existing conversation settings", () => {
 	it("rejects malformed initial effort and unsupported harnesses before creating tasks", () => {
 		const store=new WorkspaceStore(":memory:");try {
 			for(const type of ["create-task","handoff"])for(const reasoningEffort of [42,"bad\0value","x".repeat(101)])expect(()=>validateCommand({type,id:"source",harness:"codex",model:"native",mode:"plan",reasoningEffort})).toThrow("reasoning effort");
-			expect(()=>store.apply({type:"create-task",harness:"claude",model:"default",mode:"code",reasoningEffort:"high"})).toThrow("Initial reasoning");expect(store.getOverview().tasks).toHaveLength(0);
+			expect(()=>store.apply({type:"create-task",harness:"claude",model:"default",mode:"code",reasoningEffort:"high"})).toThrow("initial reasoning");expect(store.getOverview().tasks).toHaveLength(0);
 		}finally{store.close();}
 	});
 	it("passes initial reasoning effort to the first native turn", async () => {

@@ -88,7 +88,7 @@ ipcMain.removeHandler("workspace:account-status");
 ipcMain.handle("workspace:account-status",(event,harness,id)=>harness==="codex"&&!id?{checkedAt:now,authenticated:true,identity:"fixture@example.invalid",plan:"Fixture subscription",ordinaryUsageAllowed:false,usage:[{id:"fixture",name:"Included usage",spendControlReached:false,primary:{usedPercent:25,windowDurationMins:300,resetsAt:Math.floor(Date.now()/1000)+3600},secondary:{usedPercent:80,windowDurationMins:10080,resetsAt:null}},{id:"unavailable",name:"Other usage",spendControlReached:null,primary:null,secondary:null}]}:originalAccountStatus(event,harness,id));
 const originalModels=ipcMain._invokeHandlers.get("workspace:models");
 ipcMain.removeHandler("workspace:models");
-ipcMain.handle("workspace:models",(event,harness,...args)=>harness==="codex"?[{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}]:originalModels(event,harness,...args));
+ipcMain.handle("workspace:models",(event,harness,...args)=>["codex","grok"].includes(harness)?[{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}]:originalModels(event,harness,...args));
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -137,6 +137,17 @@ try {
         if(cardLayout.some(card=>card.radius!=="24px"||card.headings.some(margin=>margin!=="0px")))throw new Error("Panel shape or heading spacing differs from the web card treatment.");
         const selectLayout = await window.webContents.executeJavaScript(`(()=>{const controls=Array.from(document.querySelectorAll('.page select,.task-workspace select,.terminal-workspace select'));return {scheme:getComputedStyle(document.documentElement).colorScheme,identity:document.querySelector('.workspace-identity')?.tagName,controls:controls.map(e=>{const s=getComputedStyle(e);return {appearance:s.appearance,padding:parseFloat(s.paddingRight),arrow:s.backgroundImage!=='none',font:s.fontFamily}})}})()`);
         if(selectLayout.scheme!==theme||selectLayout.identity!=="DIV"||selectLayout.controls.some(control=>control.appearance!=="none"||control.padding<34||!control.arrow||!control.font.includes("Montserrat")))throw new Error("Select controls diverge from the website treatment: "+JSON.stringify(selectLayout));
+        if(page==="Tasks"){
+          await window.webContents.executeJavaScript(`(()=>{const select=Array.from(document.querySelectorAll('.task-create-fields label')).find(label=>label.textContent.startsWith('Harness')).querySelector('select');select.value='grok';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+          for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('select[aria-label="Initial reasoning effort"] option[value="fixture-high"]'))`);attempt++){if(attempt>50)throw Error('Grok initial reasoning did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+          if(!await window.webContents.executeJavaScript(`(()=>{const mode=Array.from(document.querySelectorAll('.task-create-fields label')).find(label=>label.textContent.startsWith('Mode')).querySelector('select');return mode.value==='plan'&&!mode.querySelector('option[value="chat"]')})()`))throw Error('Grok setup must exclude Chat and switch to Plan');
+          await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-high';select.dispatchEvent(new Event('change',{bubbles:true}));select.scrollIntoView({block:'nearest'});})()`);
+          await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output,width+'-'+theme+'-grok-initial-settings.png'),(await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`(()=>{const select=Array.from(document.querySelectorAll('.task-create-fields label')).find(label=>label.textContent.startsWith('Harness')).querySelector('select');select.value='codex';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error('Changing harness must clear prior effort');
+        }
         if(page==="Terminals"){
           for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`document.querySelectorAll('.terminal-sessions .task-row').length===30`))break;if(attempt>50)throw new Error("Terminal session fixture did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
           await window.webContents.executeJavaScript(`document.querySelector('.terminal-sessions .task-row').click()`);
