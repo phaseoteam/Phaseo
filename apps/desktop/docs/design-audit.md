@@ -47,6 +47,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 32. **Account usage:** separate usage buckets and windows, align remaining amounts above full-width meters, and retain reset timestamps, blocked-usage messages and explicit unavailable data. Durations use singular/plural labels and over-limit windows stay at 0% remaining. Rendered account-status fixtures verify meter values/width, blocking and unknown states at both window sizes/themes. These are display fixtures; actual signed-in quota retrieval remains unverified.
 
+33. **Task history navigation:** scroll history rows independently of New task, search and archive controls. Long titles use up to two lines and remain available through the full title attribute; selected rows expose pressed state. The large-history workflow verifies independent scrolling, retained controls and title clamping while preserving paging/retry/navigation behavior.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)

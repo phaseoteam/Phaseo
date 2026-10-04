@@ -102,11 +102,11 @@ export function TaskWorkspace() {
 			<div className="task-list-heading"><strong>Tasks</strong><button type="button" aria-label="New task" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}><Plus size={16} /></button></div>
 			<label className="task-search"><Search size={14} /><input aria-label="Search tasks" placeholder="Search tasks" maxLength={512} value={query} onChange={event => setQuery(event.target.value)} /></label>
 			<button type="button" className="task-archive-filter" onClick={() => { setShowArchived(value => !value); setSelectedId(undefined); }}>{showArchived ? "Active tasks" : "Archived tasks"}</button>
-			{tasks.map(task => <button type="button" className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}
+			<div className="task-history-list">{tasks.map(task => <button type="button" title={task.title} aria-pressed={task.id === selectedId} className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}
 			{history.loading && <p className="task-muted" role="status">Loading tasks…</p>}
 			{history.error && <div className="task-muted" role="alert"><p>{history.error}</p><button type="button" onClick={history.retry}>Retry</button></div>}
 			{!history.loading && !history.error && !tasks.length && <p className="task-muted">{query ? "No matching tasks." : showArchived ? "No archived tasks." : "Your tasks will appear here."}</p>}
-			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more tasks</button>}
+			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more tasks</button>}</div>
 		</aside>
 		<section className="task-detail" aria-label="Task workspace">
 			{error && <div className="task-error" role="alert">{error}</div>}

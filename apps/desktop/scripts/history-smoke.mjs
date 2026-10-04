@@ -85,6 +85,9 @@ const atLatest = `(()=>{const host=document.querySelector('.task-messages');retu
 try {
   await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click()`);
   await wait(`document.querySelectorAll('.task-row').length===50`, "first page");
+  const historyLayout=await run(`(()=>{const list=document.querySelector('.task-history-list');list.scrollTop=list.scrollHeight;const search=document.querySelector('.task-search').getBoundingClientRect(),archive=document.querySelector('.task-archive-filter').getBoundingClientRect();return {scrolled:list.scrollTop>0,searchVisible:search.top>=0&&search.bottom<=innerHeight,archiveVisible:archive.top>=0&&archive.bottom<=innerHeight,clamp:getComputedStyle(list.querySelector('.task-row span')).webkitLineClamp}})()`);
+  if(!historyLayout.scrolled||!historyLayout.searchVisible||!historyLayout.archiveVisible||historyLayout.clamp!=="2")throw new Error("Task history must scroll independently and retain its controls.");
+  await run(`document.querySelector('.task-history-list').scrollTop=0`);
   if (!await run(`document.querySelector('.task-row').textContent.includes('History 000')`)) throw new Error("Pinned history is not first.");
   failNextHistory = true;
   await run(`Array.from(document.querySelectorAll('.task-list button')).find(button=>button.textContent==='Load more tasks').click()`);
