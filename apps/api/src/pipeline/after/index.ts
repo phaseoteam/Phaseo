@@ -350,6 +350,16 @@ export async function finalizeRequest(args: {
         ctx.gatewayTimingTrace?.mark("stream_pricing_start");
         let card: Awaited<ReturnType<typeof loadProviderPricing>>;
         try { card = await loadProviderPricing(ctx, result); }
+        catch (error) {
+            await handleFailureAudit(ctx, result, 500, "gateway", "stream_finalization_failed",
+                "Pricing could not be loaded.", {
+                    upstream_status: result.upstream.status,
+                    response_delivered: false,
+                    billing_status: "pending_reconciliation",
+                    cause: error instanceof Error ? error.message : String(error),
+                }, null, { gatewayResponse: result.normalized, rawUsage: result.bill.usage });
+            return createResponse({ requestId: ctx.requestId, error: "stream_finalization_failed", message: "Pricing could not be loaded." }, 500, makeHeaders(args.timingHeader));
+        }
         finally { ctx.gatewayTimingTrace?.mark("stream_pricing_end"); }
         return await handleStreamResponse(ctx, result, card, args.timingHeader);
     }
@@ -406,6 +416,8 @@ async function handleNonStreamResponse(
     result: RequestResult,
     timingHeader?: string
 ): Promise<Response> {
+    let card: Awaited<ReturnType<typeof loadProviderPricing>> = null;
+    try {
     // Enrich payload
     let payload = await ctx.timer.span("after_enrich_payload", () => enrichSuccessPayload(ctx, result));
     const finishReason = await ctx.timer.span("after_extract_finish_reason", () => {
@@ -435,6 +447,8 @@ async function handleNonStreamResponse(
         ...(billUsageObject ?? {}),
         ...(payloadUsageObject ?? {}),
     };
+    result.bill.usage = usageNormalized;
+    result.bill.finish_reason = finishReason;
     const toolUsage = summarizeToolUsage({
         body: ctx.body,
         ir: result.ir,
@@ -444,7 +458,7 @@ async function handleNonStreamResponse(
     // console.log("[DEBUG handleNonStreamResponse] usageNormalized:", usageNormalized);
 
     // Load pricing
-    const card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
+    card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
 
     // Calculate pricing (with tier-based markup)
     const rawUsageForPricing = {
@@ -633,5 +647,18 @@ async function handleNonStreamResponse(
     }
     const responseStatus = result.upstream.status;
     return ctx.timer.span("after_create_response", () => createResponse(responseBody, responseStatus, headers));
+    } catch (error) {
+        await handleFailureAudit(ctx, result, 500, "gateway", "nonstream_finalization_failed",
+            "Accounting finalization failed.", {
+                upstream_status: result.upstream.status,
+                response_delivered: false,
+                billing_status: "pending_reconciliation",
+                cause: error instanceof Error ? error.message : String(error),
+            }, null, {
+                gatewayResponse: result.normalized,
+                rawUsage: result.rawResponse?.usage ?? result.bill.usage,
+                pricingCard: card,
+            });
+        return createResponse({ requestId: ctx.requestId, error: "nonstream_finalization_failed", message: "Accounting finalization failed." }, 500, makeHeaders(timingHeader));
+    }
 }
-
