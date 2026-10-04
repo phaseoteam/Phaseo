@@ -19,10 +19,22 @@ db.close();
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
 let failNextHistory = false;
+let failNextDetail = false;
+let delayedTaskId = "001";
+const activeDetails = new Map(); const peakDetails = new Map();
 ipcMain.handle = function (channel, listener) {
   return originalHandle.call(this, channel, channel === "workspace:task-history" ? (event, ...args) => {
     if (failNextHistory) { failNextHistory = false; throw new Error("Owned history failure"); }
     return listener(event, ...args);
+  } : channel === "workspace:task" ? async (event, id) => {
+    const active = (activeDetails.get(id) ?? 0) + 1;
+    activeDetails.set(id, active); peakDetails.set(id, Math.max(peakDetails.get(id) ?? 0, active));
+    try {
+      if (failNextDetail) { failNextDetail = false; throw new Error("Owned detail failure"); }
+      const task = listener(event, id);
+      if (id === delayedTaskId) await new Promise(resolve => setTimeout(resolve, 300));
+      return task;
+    } finally { activeDetails.set(id, activeDetails.get(id) - 1); }
   } : listener);
 };
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
@@ -57,7 +69,24 @@ try {
   }
   if (await run(`Array.from(document.querySelectorAll('.task-list button')).some(button=>button.textContent==='Load more tasks')`)) throw new Error("History still offers an exhausted page.");
   await run(`Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('History 001')).click()`);
-  await wait(`document.querySelector('.task-title')?.value==='History 001'`, "later-page selection");
+  for (let attempt = 0; attempt < 50 && !activeDetails.get("001"); attempt++) await new Promise(resolve => setTimeout(resolve, 10));
+  if (!activeDetails.get("001")) throw new Error("Delayed task detail read did not start.");
+  await run(`Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('History 002')).click()`);
+  await wait(`document.querySelector('.task-title')?.value==='History 002'`, "later-page selection");
+  await new Promise(resolve => setTimeout(resolve, 350));
+  if (!await run(`document.querySelector('.task-title')?.value==='History 002' && document.querySelector('.task-messages').textContent.includes('Sample message 002')`)) throw new Error("An obsolete detail response replaced the selected conversation.");
+  delayedTaskId = "002";
+  for (const title of ["Revision A", "Revision B", "Final revision"]) {
+    await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:${JSON.stringify(title)}})`);
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  await wait(`document.querySelector('.task-title')?.value==='Final revision'`, "coalesced detail refresh");
+  if (peakDetails.get("002") !== 1) throw new Error("Detail refreshes overlapped for one task.");
+  delayedTaskId = undefined; failNextDetail = true;
+  await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'002',title:'Recovered detail'})`);
+  await wait(`Boolean(document.querySelector('.task-detail [role="alert"]'))`, "failed detail read");
+  await run(`Array.from(document.querySelectorAll('.task-detail button')).find(button=>button.textContent==='Retry').click()`);
+  await wait(`document.querySelector('.task-title')?.value==='Recovered detail'`, "detail retry");
   await search("RÉSUMÉ");
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 042')`, "body search");
   await search("absent"); await search("History 154");
@@ -70,7 +99,7 @@ try {
   await wait(`Array.from(document.querySelectorAll('.task-list p')).some(p=>p.textContent==='No matching tasks.')`, "empty search");
   await search(""); await run(`document.querySelector('.task-archive-filter').click()`);
   await wait(`document.querySelectorAll('.task-row').length===50`, "active history");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, bodySearch: true, rapidSearch: true, archived: true, empty: true }), "ISOLATED_DATA", data);
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

@@ -82,7 +82,10 @@ export class WorkspaceStore {
 	}
 	saveTask(task: Task, preserveUpdatedAt = false) {
 		if (!preserveUpdatedAt) task.updatedAt = new Date().toISOString();
-		this.db.prepare("INSERT INTO tasks (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(task.id, JSON.stringify(task));
+		const row = this.db.prepare(`INSERT INTO tasks (id, data) VALUES (?, json_set(?, '$.revision', 1))
+			ON CONFLICT(id) DO UPDATE SET data=json_set(excluded.data, '$.revision', coalesce(json_extract(tasks.data, '$.revision'), 0) + 1)
+			RETURNING json_extract(data, '$.revision') AS revision`).get(task.id, JSON.stringify(task));
+		task.revision = Number(row!.revision);
 	}
 	addProject(directory: string): Project {
 		const existing = this.get().projects.find(project => project.directory === directory);

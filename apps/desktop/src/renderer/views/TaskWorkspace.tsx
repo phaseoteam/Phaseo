@@ -4,6 +4,7 @@ import type { Attachment, Harness, ModelOption, Task, Workspace, WorkspaceComman
 import { emptyWorkspace } from "../../shared/workspace";
 import { usePersistedState } from "../lib/persistedState";
 import { useTaskHistory } from "../lib/useTaskHistory";
+import { useSelectedTask } from "../lib/useSelectedTask";
 import { MessageContent } from "../components/MessageContent";
 import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
@@ -53,7 +54,9 @@ export function TaskWorkspace() {
 		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
 		return () => { active = false; };
 	}, [api, harness, accountId, projectId]);
-	const selected = workspace.tasks.find(task => task.id === selectedId);
+	const selectedSnapshot = workspace.tasks.find(task => task.id === selectedId);
+	const selectedDetail = useSelectedTask(api?.task, selectedId, selectedSnapshot ? JSON.stringify([selectedSnapshot.revision, selectedSnapshot.updatedAt]) : undefined);
+	const selected = selectedDetail.task;
 	const historyRevision = JSON.stringify(workspace.tasks.map(task => [task.id, task.title, task.pinned, task.archived, task.status, task.status === "running" || task.status === "waiting" ? undefined : task.updatedAt]));
 	const history = useTaskHistory(api?.taskHistory, query, showArchived, historyRevision);
 	const tasks = history.tasks;
@@ -102,7 +105,8 @@ export function TaskWorkspace() {
 		</aside>
 		<section className="task-detail" aria-label="Task workspace">
 			{error && <div className="task-error" role="alert">{error}</div>}
-			{!selected ? <div className="task-start">
+			{selectedDetail.error && <div className="task-error" role="alert">{selectedDetail.error} <button type="button" onClick={selectedDetail.retry}>Retry</button></div>}
+			{selectedId && !selected ? <div className="task-start"><p role="status">{selectedDetail.error ? "Could not load this task." : "Loading task…"}</p><button type="button" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}>New task</button></div> : !selected ? <div className="task-start">
 				<span className="task-eyebrow">PHASEO WORKSPACE</span><h1>What would you like to do?</h1><p>Write, research, plan, or work on a project.</p>
 				<div className="task-setup">
 					<label>Project<select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal task</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>

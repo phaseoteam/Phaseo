@@ -17,6 +17,7 @@ export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" |
 export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed" };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
 export type Task = {
+	revision?: number;
 	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;
 	agentId?: string;
 	reasoningEffort?: string;
@@ -71,6 +72,7 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	task: (id: string) => Promise<Task>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;

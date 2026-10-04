@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { WorkspaceStore } from "./workspaceStore";
 
 describe("durable task history pages", () => {
+	it("advances task revisions even for a preserved timestamp and a stale snapshot", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
+			const first = store.getTask(task.id); const stale = store.getTask(task.id);
+			first.title = "First update"; store.saveTask(first, true);
+			stale.title = "Later update"; store.saveTask(stale, true);
+			expect(first.revision).toBe(2); expect(stale.revision).toBe(3);
+			expect(store.getTask(task.id)).toMatchObject({ revision: 3, title: "Later update", updatedAt: task.updatedAt });
+		} finally { store.close(); }
+	});
 	it("pages deterministically without returning conversation bodies", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {
