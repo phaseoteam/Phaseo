@@ -65,7 +65,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
    (await callbacks.onApproval(review.title, review.details) === "accept" ? approvals : rejections).push(entry.call.id);
   }
   if (signal.aborted) throw new Error("Task stopped.");
-  result = await agent.continueRun({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...context, ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }, run: result, approvals, rejections, toolOutputs, humanMessages: followUp });
+  result = await agent.continueRun({ ...options, context: { ...context, ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }, run: result, approvals, rejections, toolOutputs, humanMessages: followUp });
   followUp = undefined;
  }
  if (result.run.status !== "completed") throw new Error(result.run.error ?? `Chat run ${result.run.status}.`);

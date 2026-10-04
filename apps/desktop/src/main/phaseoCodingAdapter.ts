@@ -89,7 +89,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 				(decision === "accept" ? approvals : rejections).push(entry.call.id);
 			}
 			if (this.controller.signal.aborted) throw new Error("Task stopped.");
-			result = await agent.continueStream({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...initialContext, ...(skillTools?.snapshot().length ? { phaseoModelSkills: skillTools.snapshot() } : {}) }, run: result, approvals, rejections, toolOutputs, humanMessages: followUp });
+			result = await agent.continueStream({ ...options, context: { ...initialContext, ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(skillTools?.snapshot().length ? { phaseoModelSkills: skillTools.snapshot() } : {}) }, run: result, approvals, rejections, toolOutputs, humanMessages: followUp });
 			followUp = undefined;
 		}
 		if (result.run.status !== "completed") throw new Error(result.run.error ?? result.run.stopReason ?? `Agent run ${result.run.status}.`);
