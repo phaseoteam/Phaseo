@@ -1,3 +1,6 @@
+import { ElicitRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import { respondMcpElicitation } from "./mcpElicitation";
+import type { AgentCallbacks } from "./agentAdapter";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -7,7 +10,7 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; close: () => Promise<void> };
-export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal): Promise<PhaseoMcpSession> {
+export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
  const clients: Client[] = [], tools: AgentTool[] = [];
  const labels: Record<string,string> = {};
  const setupSignal = AbortSignal.any([signal, AbortSignal.timeout(30000)]);
@@ -18,7 +21,8 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
  try {
   for (const connection of connections) {
    if (signal.aborted) throw Error("MCP setup cancelled.");
-   const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: {} }); clients.push(client);
+   const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: callbacks?.onForm ? { elicitation: { form: {}, url: {} } } : {} }); clients.push(client);
+   if (callbacks?.onForm) client.setRequestHandler(ElicitRequestSchema, (request, extra) => respondMcpElicitation({ ...request.params, serverName: connection.name }, callbacks, AbortSignal.any([signal, extra.signal])));
    const transport = connection.transport === "stdio"
     ? new StdioClientTransport({ command: connection.executable, args: connection.arguments, cwd, env: { ...getDefaultEnvironment(), ELECTRON_RUN_AS_NODE: "1" }, stderr: "ignore", maxBufferSize: 2 * 1024 * 1024 })
     : new StreamableHTTPClientTransport(new URL(connection.url));
