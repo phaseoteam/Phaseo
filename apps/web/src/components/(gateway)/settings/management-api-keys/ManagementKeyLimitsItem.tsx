@@ -52,7 +52,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 		try {
 			await toast.promise(promise, {
 					loading: t("strings.phraseSavingLimits" as never),
-					success: t("strings.Limits updated" as never),
+					success: t("credits.Limits updated" as never),
 				error: (err) => {
 					const message =
 							localizedSettingsError(err, t, "Failed to update limits");
@@ -82,7 +82,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						{t("strings.Management API Key Limits" as never)}
+						{t("credits.Management API Key Limits" as never)}
 					</DialogTitle>
 					<DialogDescription>
 						{t("strings.phraseSetRequestLimitsForThisElevatedPrivilegeKey" as never)}
@@ -91,7 +91,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 				<form onSubmit={onSave} className="space-y-4">
 					<div className="grid grid-cols-3 gap-4">
 						<div className="space-y-2">
-							<Label>{t("strings.Daily" as never)}</Label>
+							<Label>{t("credits.Daily" as never)}</Label>
 							<Input
 								type="number"
 								value={dailyRequests}
@@ -100,7 +100,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>{t("strings.Weekly" as never)}</Label>
+							<Label>{t("credits.Weekly" as never)}</Label>
 							<Input
 								type="number"
 								value={weeklyRequests}
@@ -109,7 +109,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>{t("strings.Monthly" as never)}</Label>
+							<Label>{t("credits.Monthly" as never)}</Label>
 							<Input
 								type="number"
 								value={monthlyRequests}

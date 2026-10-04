@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "User profile",
+		"viewProfile": "Show user profile",
+		"viewKeys": "Show user keys",
+		"viewActivity": "Show user activity",
+		"viewLogs": "Show user logs",
+		"back": "Back to members",
+		"joined": "Joined {date}",
+		"usageScope": "Successful requests through keys created by this user · Past 30 days",
+		"topModels": "Top models",
+		"noKeys": "No keys created by this user.",
+		"previous": "Previous",
+		"next": "Next",
+		"recentLogs": "Recent request logs",
+		"logsScope": "Latest 50 requests through this user’s keys in the past 30 days.",
+		"logsUnavailable": "Request logs are temporarily unavailable.",
+		"noLogs": "No requests in this period.",
+		"success": "Success",
+		"failed": "Failed",
+		"owner": "Owner",
+		"admin": "Admin",
+		"member": "Member"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth Apps - Settings | Phaseo",
 		"metadataDescription": "Create and manage OAuth applications for third-party integrations with your Phaseo account.",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "Redirect URIs must match exactly, including scheme, host, path, and port."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Allow all except selected models",
 		"chooseModels": "Choose models",
 		"chooseProviders": "Choose providers",
 		"customPatternsDescription": "Add regex patterns to flag, redact, or block workspace-specific sensitive content.",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "Exclude reasoning tokens from the final response."
 	},
 	"presetPage": {
+		"fork": "Fork",
+		"copyReference": "Copy preset reference",
 		"metadataTitle": "Presets - Settings | Phaseo",
 		"settingsTitle": "Presets",
 		"settingsDescription": "Manage reusable request configurations for your API calls.",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Unknown model",
+		"noApiKey": "No API key",
+		"noApp": "No app",
 		"activity": "Activity",
 		"yourUsage": "Your usage across Phaseo.",
 		"sampledRequests": "This view is based on the first {count} requests in the selected period.",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "The provider rejected the most recent request."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Back to destinations",
 		"billingAdminsOnly": "Only workspace owners and admins can change billing settings.",
 		"managementKeysTitle": "No workspace selected",
 		"managementKeysBody": "Select a workspace in the header to view and manage its management API keys.",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "Arguments",
+		"modelCalls": "Model calls",
+		"providerAdmission": "Provider admission",
+		"providerRejected": "Provider rejected before dispatch",
+		"externalToolOrder": "These tool details come from retained payloads. Their execution order was not recorded by the gateway.",
+		"modelCall": "Model call started",
+		"modelContinuation": "Model continuation started",
+		"modelRetry": "Model retry started",
+		"nestedModelCall": "Nested model call started",
+		"responseHeaders": "Response headers received",
+		"modelCompleted": "Model call completed",
+		"toolStarted": "Tool started",
+		"orderedEvents": "Events",
+		"recordedOrder": "Recorded in execution order. Times are relative to the first event.",
+		"orderUnavailable": "Exact event order was not recorded for this request. Details are grouped below.",
+		"orderIncomplete": "This event journal is incomplete.",
 		"toolResultHasNoTextContent": "Tool result has no text content.",
 		"inRequest": "In request",
 		"toolResult": "Tool result",

@@ -40,7 +40,7 @@ export default function DeleteOAuthAppDialog({
 
 	const handleDelete = async () => {
 		if (confirmation !== appName) {
-			setError(t("strings.App name doesn't match" as never));
+			setError(t("credits.App name doesn't match" as never));
 			return;
 		}
 
@@ -59,7 +59,7 @@ export default function DeleteOAuthAppDialog({
 				return;
 			}
 
-			toast.success(`${t("strings.OAuth app" as never)} "${appName}" ${t("strings.deleted successfully" as never)}`);
+			toast.success(`${t("credits.OAuth app" as never)} "${appName}" ${t("credits.deleted successfully" as never)}`);
 
 			// Navigate back to the list
 			router.push("/settings/oauth-apps");
@@ -86,22 +86,22 @@ export default function DeleteOAuthAppDialog({
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>{t("strings.Delete OAuth App" as never)}</DialogTitle>
+					<DialogTitle>{t("credits.Delete OAuth App" as never)}</DialogTitle>
 					<DialogDescription>
-						{t("strings.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.phraseAndRevokeAllUserAuthorizations" as never)}
+						{t("credits.This will permanently delete" as never)} <strong>{appName}</strong> {t("strings.phraseAndRevokeAllUserAuthorizations" as never)}
 					</DialogDescription>
 				</DialogHeader>
 
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneAllUsersWhoAuthorizedThisAppWillLoseAccessImmediately" as never)}
+						<strong>{t("credits.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneAllUsersWhoAuthorizedThisAppWillLoseAccessImmediately" as never)}
 					</AlertDescription>
 				</Alert>
 
 				<div className="space-y-2">
 					<Label htmlFor="confirmation">
-						{t("strings.Type" as never)} <strong>{appName}</strong> {t("strings.to confirm" as never)}
+						{t("strings.Type" as never)} <strong>{appName}</strong> {t("credits.to confirm" as never)}
 					</Label>
 					<Input
 						id="confirmation"

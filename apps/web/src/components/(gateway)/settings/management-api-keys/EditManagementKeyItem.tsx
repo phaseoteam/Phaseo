@@ -113,7 +113,7 @@ export default function EditManagementKeyItem({
 		try {
 			await toast.promise(promise, {
 					loading: t("strings.phraseSavingManagementAPIKey" as never),
-					success: t("strings.Management API key updated" as never),
+					success: t("credits.Management API key updated" as never),
 				error: (err) => {
 					const message =
 							localizedSettingsError(err, t, "Failed to update key");
@@ -152,7 +152,7 @@ export default function EditManagementKeyItem({
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						<ShieldAlert className="h-5 w-5 text-amber-600" />
-						{t("strings.Edit Management API Key" as never)}
+						{t("credits.Edit Management API Key" as never)}
 					</DialogTitle>
 					<DialogDescription>
 					{t("strings.phraseUpdateTheLifecycleAndAccessLevelForThisElevatedPrivilegeKey" as never)}
@@ -165,8 +165,8 @@ export default function EditManagementKeyItem({
 						onChange={(e) => setName(e.target.value)}
 					/>
 					<div className="space-y-2">
-						<Label>{t("strings.Access level" as never)}</Label>
-		<div className="grid grid-cols-3 overflow-hidden rounded-md border border-input" role="group" aria-label={t("strings.Management key access level" as never)}>
+						<Label>{t("credits.Access level" as never)}</Label>
+		<div className="grid grid-cols-3 overflow-hidden rounded-md border border-input" role="group" aria-label={t("credits.Management key access level" as never)}>
 							{KEY_TEMPLATES.map((option) => (
 								<Button
 									key={option.value}
@@ -179,7 +179,7 @@ export default function EditManagementKeyItem({
 										setTemplateChanged(true);
 									}}
 								>
-									{option.label === "All" ? t("strings.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
+									{option.label === "All" ? t("credits.All" as never) : t(`labels.${option.label.toLowerCase()}` as never)}
 								</Button>
 							))}
 						</div>
@@ -199,7 +199,7 @@ export default function EditManagementKeyItem({
 						</p>
 					</div>
 					<div className="flex items-center justify-between">
-						<div className="text-sm">{t("strings.Paused" as never)}</div>
+						<div className="text-sm">{t("credits.Paused" as never)}</div>
 						<Switch
 							checked={paused}
 							onCheckedChange={(v: any) => setPaused(Boolean(v))}

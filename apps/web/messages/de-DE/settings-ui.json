@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "Benutzerprofil",
+		"viewProfile": "Profil anzeigen",
+		"viewKeys": "Schlüssel anzeigen",
+		"viewActivity": "Aktivität anzeigen",
+		"viewLogs": "Protokolle anzeigen",
+		"back": "Zurück zu Mitgliedern",
+		"joined": "Beigetreten am {date}",
+		"usageScope": "Erfolgreiche Anfragen über Schlüssel dieses Benutzers · Letzte 30 Tage",
+		"topModels": "Häufigste Modelle",
+		"noKeys": "Dieser Benutzer hat keine Schlüssel erstellt.",
+		"previous": "Zurück",
+		"next": "Weiter",
+		"recentLogs": "Aktuelle Anfrageprotokolle",
+		"logsScope": "Die letzten 50 Anfragen über die Schlüssel dieses Benutzers in den letzten 30 Tagen.",
+		"logsUnavailable": "Anfrageprotokolle sind vorübergehend nicht verfügbar.",
+		"noLogs": "Keine Anfragen in diesem Zeitraum.",
+		"success": "Erfolgreich",
+		"failed": "Fehlgeschlagen",
+		"owner": "Eigentümer",
+		"admin": "Administrator",
+		"member": "Mitglied"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth-Apps - Einstellungen | Phaseo",
 		"metadataDescription": "Erstellen und verwalten Sie OAuth-Anwendungen für Drittanbieter-Integrationen mit Ihrem Phaseo-Konto.",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "Weiterleitungs-URIs müssen einschließlich Schema, Host, Pfad und Port exakt übereinstimmen."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Alle außer den ausgewählten Modellen erlauben",
 		"chooseModels": "Modelle auswählen",
 		"chooseProviders": "Anbieter auswählen",
 		"customPatternsDescription": "Füge regexbasierte Muster hinzu, um arbeitsbereichsspezifische sensible Inhalte zu markieren, zu schwärzen oder zu blockieren.",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "Reasoning-Tokens nicht in die endgültige Antwort aufnehmen."
 	},
 	"presetPage": {
+		"fork": "Kopie erstellen",
+		"copyReference": "Voreinstellungsreferenz kopieren",
 		"metadataTitle": "Voreinstellungen - Einstellungen | Phaseo",
 		"settingsTitle": "Voreinstellungen",
 		"settingsDescription": "Verwalten Sie wiederverwendbare Anfragekonfigurationen für Ihre API-Aufrufe.",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Unbekanntes Modell",
+		"noApiKey": "Kein API-Schlüssel",
+		"noApp": "Keine App",
 		"activity": "Aktivität",
 		"yourUsage": "Ihre Nutzung auf Phaseo.",
 		"sampledRequests": "Diese Ansicht basiert auf den ersten {count} Anfragen im ausgewählten Zeitraum.",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "Der Anbieter hat die letzte Anfrage abgelehnt."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Zurück zu den Zielen",
 		"billingAdminsOnly": "Nur Inhaber und Admins des Arbeitsbereichs können die Abrechnungseinstellungen ändern.",
 		"managementKeysTitle": "Kein Arbeitsbereich ausgewählt",
 		"managementKeysBody": "Wähle im Kopfbereich einen Arbeitsbereich aus, um seine Management-API-Schlüssel anzusehen und zu verwalten.",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "Argumente",
+		"modelCalls": "Modellaufrufe",
+		"providerAdmission": "Anbieterzulassung",
+		"providerRejected": "Anbieter vor dem Versand abgelehnt",
+		"externalToolOrder": "Diese Tooldetails stammen aus gespeicherten Daten. Ihre Ausführungsreihenfolge wurde vom Gateway nicht erfasst.",
+		"modelCall": "Modellaufruf gestartet",
+		"modelContinuation": "Modellfortsetzung gestartet",
+		"modelRetry": "Modellwiederholung gestartet",
+		"nestedModelCall": "Verschachtelter Modellaufruf gestartet",
+		"responseHeaders": "Antwortheader empfangen",
+		"modelCompleted": "Modellaufruf abgeschlossen",
+		"toolStarted": "Tool gestartet",
+		"orderedEvents": "Ereignisse",
+		"recordedOrder": "In Ausführungsreihenfolge erfasst. Zeiten beziehen sich auf das erste Ereignis.",
+		"orderUnavailable": "Die genaue Ereignisreihenfolge wurde nicht erfasst. Details sind unten gruppiert.",
+		"orderIncomplete": "Dieses Ereignisprotokoll ist unvollständig.",
 		"toolResultHasNoTextContent": "Das Werkzeugergebnis enthält keinen Text.",
 		"inRequest": "In der Anfrage",
 		"toolResult": "Werkzeugergebnis",

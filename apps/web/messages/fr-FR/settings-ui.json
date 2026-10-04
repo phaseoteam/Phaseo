@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "Profil utilisateur",
+		"viewProfile": "Voir le profil",
+		"viewKeys": "Voir les clés",
+		"viewActivity": "Voir l’activité",
+		"viewLogs": "Voir les journaux",
+		"back": "Retour aux membres",
+		"joined": "Membre depuis le {date}",
+		"usageScope": "Requêtes réussies avec les clés créées par cet utilisateur · 30 derniers jours",
+		"topModels": "Modèles principaux",
+		"noKeys": "Cet utilisateur n’a créé aucune clé.",
+		"previous": "Précédent",
+		"next": "Suivant",
+		"recentLogs": "Journaux récents",
+		"logsScope": "Les 50 dernières requêtes avec les clés de cet utilisateur sur 30 jours.",
+		"logsUnavailable": "Les journaux sont temporairement indisponibles.",
+		"noLogs": "Aucune requête sur cette période.",
+		"success": "Réussite",
+		"failed": "Échec",
+		"owner": "Propriétaire",
+		"admin": "Administrateur",
+		"member": "Membre"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "Applications OAuth - Paramètres | Phaseo",
 		"metadataDescription": "Créez et gérez des applications OAuth pour intégrer des services tiers à votre compte Phaseo.",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "Les URI de redirection doivent correspondre exactement, y compris le schéma, l'hôte, le chemin et le port."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Tout autoriser sauf les modèles sélectionnés",
 		"chooseModels": "Choisir des modèles",
 		"chooseProviders": "Choisir des fournisseurs",
 		"customPatternsDescription": "Ajoutez des expressions régulières pour signaler, masquer ou bloquer les données sensibles propres à votre espace de travail.",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "N’incluez pas les tokens de raisonnement dans la réponse finale."
 	},
 	"presetPage": {
+		"fork": "Créer une copie",
+		"copyReference": "Copier la référence du préréglage",
 		"metadataTitle": "Préréglages - Paramètres | Phaseo",
 		"settingsTitle": "Préréglages",
 		"settingsDescription": "Gérez les configurations de requête réutilisables pour vos appels API.",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Modèle inconnu",
+		"noApiKey": "Aucune clé API",
+		"noApp": "Aucune application",
 		"activity": "Activité",
 		"yourUsage": "Votre utilisation sur Phaseo.",
 		"sampledRequests": "Cette vue est basée sur les premières requêtes {count} de la période sélectionnée.",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "Le fournisseur a rejeté la requête la plus récente."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Retour aux destinations",
 		"billingAdminsOnly": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier ses paramètres de facturation.",
 		"managementKeysTitle": "Aucun espace de travail sélectionné",
 		"managementKeysBody": "Sélectionnez un espace de travail dans l’en-tête pour afficher et gérer ses clés d’API de gestion.",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "Arguments",
+		"modelCalls": "Appels au modèle",
+		"providerAdmission": "Admission du fournisseur",
+		"providerRejected": "Fournisseur rejeté avant l’envoi",
+		"externalToolOrder": "Ces détails d’outils proviennent des données conservées. Leur ordre d’exécution n’a pas été enregistré par la passerelle.",
+		"modelCall": "Appel au modèle démarré",
+		"modelContinuation": "Continuation du modèle démarrée",
+		"modelRetry": "Nouvelle tentative démarrée",
+		"nestedModelCall": "Appel imbriqué au modèle démarré",
+		"responseHeaders": "En-têtes de réponse reçus",
+		"modelCompleted": "Appel au modèle terminé",
+		"toolStarted": "Outil démarré",
+		"orderedEvents": "Événements",
+		"recordedOrder": "Enregistrés dans l’ordre d’exécution. Les temps sont relatifs au premier événement.",
+		"orderUnavailable": "L’ordre exact des événements n’a pas été enregistré. Les détails sont regroupés ci-dessous.",
+		"orderIncomplete": "Ce journal d’événements est incomplet.",
 		"toolResultHasNoTextContent": "Le résultat de l’outil ne contient pas de texte.",
 		"inRequest": "Dans la requête",
 		"toolResult": "Résultat de l’outil",

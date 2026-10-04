@@ -16,6 +16,7 @@ import {
 import { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } from "./io-logging";
 import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
+import { lifecycleMetadata } from "../lifecycle";
 import {
 	validateStructuredOutputResponse,
 	validateToolCallResponses,
@@ -312,6 +313,7 @@ async function upsertV2RequestFact(args: {
     phaseoOverheadMs?: number | null;
     internalDispatchMs?: number | null;
     responseTimeline?: unknown;
+    lifecycleEvents?: unknown;
     gatewayTotalMs?: number | null;
     throughput?: number | null;
     edgeColo?: string | null;
@@ -613,6 +615,7 @@ async function upsertV2RequestFact(args: {
             safe_metadata: {
                 provider: args.provider ?? null,
                 response_timeline: args.responseTimeline ?? null,
+                lifecycle_events: args.lifecycleEvents ?? null,
                 routed_model: publicRoutedModel ?? args.requestedModel,
 				service_tier_requested: serviceTier.requested,
 				service_tier_observed: serviceTier.observed,
@@ -931,6 +934,7 @@ export async function auditSuccess(input: {
     providerRequest?: unknown;
     providerResponse?: unknown;
     serverToolTrace?: unknown;
+	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
     // Wide event enrichment
     teamEnrichment?: any | null;
@@ -942,7 +946,8 @@ export async function auditSuccess(input: {
     streamProviderBillingOnCancel?: "stops" | "unknown";
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
 }) {
-    const args = protectStealthAuditArgs(input);
+    const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata(input.lifecycleEvents) };
+    const args = protectStealthAuditArgs({ ...input, detailMetadata });
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
@@ -1081,6 +1086,7 @@ export async function auditSuccess(input: {
                     phaseoOverheadMs: args.phaseoOverheadMs ?? null,
                     internalDispatchMs: args.internalLatencyMs ?? null,
                     responseTimeline: args.detailMetadata?.response_timeline ?? null,
+                    lifecycleEvents: args.detailMetadata?.lifecycle_events ?? null,
                     gatewayTotalMs: args.endToEndMs ?? null,
                     throughput: args.throughput ?? null,
                     edgeColo: args.edgeColo ?? null,
@@ -1153,6 +1159,7 @@ export async function auditSuccess(input: {
                 providerRequest: args.providerRequest,
                 providerResponse: args.providerResponse,
                 serverToolTrace: args.serverToolTrace,
+				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
                 }, ioLoggingPolicy);
                 await insertGatewayRequestDetailsNonBlocking(
@@ -1240,6 +1247,7 @@ type AuditFailureBefore = {
     labels?: RequestLabel[] | null;
 };
 type AuditFailureExecute = {
+    nativeResponseId?: string | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1289,6 +1297,7 @@ type AuditFailureExecute = {
     providerRequest?: unknown;
     providerResponse?: unknown;
     serverToolTrace?: unknown;
+	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
     usage?: Record<string, unknown> | null;
@@ -1297,7 +1306,8 @@ type AuditFailureExecute = {
 };
 
 export async function auditFailure(input: AuditFailureBefore | AuditFailureExecute) {
-    const args = protectStealthAuditArgs(input);
+    const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata("lifecycleEvents" in input ? input.lifecycleEvents : undefined) };
+    const args = protectStealthAuditArgs({ ...input, detailMetadata });
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         if (args.stage === "before") {
@@ -1401,6 +1411,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             latencyMs: args.latencyMs ?? null,
                             internalDispatchMs: args.internalLatencyMs ?? null,
                             responseTimeline: args.detailMetadata?.response_timeline ?? null,
+                            lifecycleEvents: args.detailMetadata?.lifecycle_events ?? null,
                             edgeColo: args.edgeColo ?? null,
                             edgeCountry: args.edgeCountry ?? null,
                             edgeContinent: args.edgeContinent ?? null,
@@ -1500,7 +1511,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,
-            nativeResponseId: null,
+            nativeResponseId: args.nativeResponseId ?? null,
             authMethod: args.authMethod ?? "api_key",
             oauthClientId: args.oauthClientId ?? null,
             oauthUserId: args.oauthUserId ?? null,
@@ -1578,6 +1589,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerModelSlug: args.providerModelSlug ?? null,
                         stream: args.stream,
                         byok: args.byok === true,
+                        nativeResponseId: args.nativeResponseId ?? null,
                         statusCode: args.statusCode,
                         success: false,
                         errorCode: args.errorCode,
@@ -1585,6 +1597,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         generationMs: args.generationMs ?? null,
                         internalDispatchMs: args.internalLatencyMs ?? null,
                         responseTimeline: args.detailMetadata?.response_timeline ?? null,
+                        lifecycleEvents: args.detailMetadata?.lifecycle_events ?? null,
                         edgeColo: args.edgeColo ?? null,
                         edgeCountry: args.edgeCountry ?? null,
                         edgeContinent: args.edgeContinent ?? null,
@@ -1637,6 +1650,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     providerRequest: args.providerRequest,
                     providerResponse: args.providerResponse,
                     serverToolTrace: args.serverToolTrace,
+					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
                     }, ioLoggingPolicy);
                     await insertGatewayRequestDetailsNonBlocking(

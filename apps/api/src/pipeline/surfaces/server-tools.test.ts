@@ -615,6 +615,29 @@ describe("prepareServerToolsForTextRequest", () => {
 });
 
 describe("managed model tools", () => {
+	it("closes the tool event when execution throws", async () => {
+		const prepared = prepareServerToolsForTextRequest({ tools: [{ type: "phaseo:search_models" }] }, "openai.responses");
+		if (!prepared.ok) throw new Error("Expected model search configuration");
+		const end = vi.fn();
+		await expect(buildServerToolContinuation({ choices: [{ message: { role: "assistant", content: [], toolCalls: [{ id: "search", name: "phaseo_search_models", arguments: "{}" }] } }] } as any, prepared.config, {
+			searchModels: async () => { throw new Error("lookup failed"); },
+			onToolEnd: end,
+		})).rejects.toThrow("lookup failed");
+		expect(end).toHaveBeenCalledWith(expect.objectContaining({ id: "search" }), undefined);
+	});
+	it("records each tool start and end at execution time, including early-continue branches", async () => {
+		const prepared = prepareServerToolsForTextRequest({ tools: [{ type: "gateway:datetime" }] }, "openai.responses");
+		if (!prepared.ok) throw new Error("Expected datetime configuration");
+		const events: string[] = [];
+		await buildServerToolContinuation({ choices: [{ message: { role: "assistant", content: [], toolCalls: [
+			{ id: "first", name: "gateway_datetime", arguments: "{}" },
+			{ id: "second", name: "gateway_datetime", arguments: "{}" },
+		] } }] } as any, prepared.config, {
+			onToolStart: (call) => { events.push(`start:${call.id}`); },
+			onToolEnd: (call, result) => { events.push(`end:${call.id}:${result?.toolCallId}`); },
+		});
+		expect(events).toEqual(["start:first", "end:first:first", "start:second", "end:second:second"]);
+	});
 	it.each([
 		["phaseo:subagent", { model: "openai/gpt-5-nano" }, "phaseo_subagent"],
 		["phaseo:fusion", { analysis_models: ["openai/gpt-5-nano", "anthropic/claude-haiku-4.5"] }, "phaseo_fusion"],

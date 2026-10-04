@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "ملف المستخدم",
+		"viewProfile": "عرض ملف المستخدم",
+		"viewKeys": "عرض مفاتيح المستخدم",
+		"viewActivity": "عرض نشاط المستخدم",
+		"viewLogs": "عرض سجلات المستخدم",
+		"back": "العودة إلى الأعضاء",
+		"joined": "انضم في {date}",
+		"usageScope": "الطلبات الناجحة عبر مفاتيح أنشأها هذا المستخدم · آخر 30 يومًا",
+		"topModels": "أكثر النماذج استخدامًا",
+		"noKeys": "لم ينشئ هذا المستخدم أي مفاتيح.",
+		"previous": "السابق",
+		"next": "التالي",
+		"recentLogs": "سجلات الطلبات الأخيرة",
+		"logsScope": "آخر 50 طلبًا عبر مفاتيح هذا المستخدم خلال آخر 30 يومًا.",
+		"logsUnavailable": "سجلات الطلبات غير متاحة مؤقتًا.",
+		"noLogs": "لا توجد طلبات في هذه الفترة.",
+		"success": "نجاح",
+		"failed": "فشل",
+		"owner": "المالك",
+		"admin": "المسؤول",
+		"member": "العضو"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "تطبيقات OAuth - الإعدادات | Phaseo",
 		"metadataDescription": "أنشئ تطبيقات OAuth وأدرها لتمكين التكامل مع خدمات الجهات الخارجية عبر حساب Phaseo.",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "يجب أن تتطابق إعادة توجيه الـ (Phaseo) تماماً، بما في ذلك المخطط والمضيف والمسار والميناء. URIs"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "السماح بجميع النماذج باستثناء المحددة",
 		"chooseModels": "اختيار النماذج",
 		"chooseProviders": "اختيار المزوّدين",
 		"customPatternsDescription": "أضف أنماطًا باستخدام التعبيرات النمطية لتحديد محتوى حساس خاص بمساحة العمل أو تنقيحه أو حظره.",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "لا تُدرج رموز الاستدلال في الاستجابة النهائية."
 	},
 	"presetPage": {
+		"fork": "إنشاء نسخة",
+		"copyReference": "نسخ مرجع الإعداد المسبق",
 		"metadataTitle": "الإعدادات المسبقة - الإعدادات | Phaseo",
 		"settingsTitle": "الإعدادات المسبقة",
 		"settingsDescription": "أدِر إعدادات الطلب القابلة لإعادة الاستخدام في استدعاءات API.",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "نموذج غير معروف",
+		"noApiKey": "لا يوجد مفتاح API",
+		"noApp": "لا يوجد تطبيق",
 		"activity": "النشاط",
 		"yourUsage": "استخدامك عبر اكسفاكس Phaseo",
 		"sampledRequests": "ويستند هذا الرأي إلى أول طلبات من طراز {count} في الفترة المختارة.",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "رفض المزوّد أحدث طلب."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "العودة إلى الوجهات",
 		"billingAdminsOnly": "لا يمكن تغيير إعدادات الفوترة لمساحة العمل هذه إلا للمالكين والمسؤولين.",
 		"managementKeysTitle": "لم يتم تحديد مساحة عمل",
 		"managementKeysBody": "حدد مساحة عمل من الترويسة لعرض مفاتيح API الإدارية وإدارتها.",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "المعاملات",
+		"modelCalls": "استدعاءات النموذج",
+		"providerAdmission": "التحقق من قبول المزود",
+		"providerRejected": "رُفض المزود قبل الإرسال",
+		"externalToolOrder": "تفاصيل الأدوات هذه مستمدة من البيانات المحتفظ بها. لم تسجل البوابة ترتيب تنفيذها.",
+		"modelCall": "بدأ استدعاء النموذج",
+		"modelContinuation": "بدأ استدعاء متابعة النموذج",
+		"modelRetry": "بدأت إعادة محاولة النموذج",
+		"nestedModelCall": "بدأ استدعاء نموذج متداخل",
+		"responseHeaders": "تم استلام ترويسات الاستجابة",
+		"modelCompleted": "اكتمل استدعاء النموذج",
+		"toolStarted": "بدأت الأداة",
+		"orderedEvents": "الأحداث",
+		"recordedOrder": "مسجلة بترتيب التنفيذ. الأوقات محسوبة من الحدث الأول.",
+		"orderUnavailable": "لم يُسجل الترتيب الدقيق للأحداث لهذا الطلب. التفاصيل مجمعة أدناه.",
+		"orderIncomplete": "سجل الأحداث هذا غير مكتمل.",
 		"toolResultHasNoTextContent": "لا تحتوي نتيجة الأداة على نص.",
 		"inRequest": "في الطلب",
 		"toolResult": "نتيجة الأداة",

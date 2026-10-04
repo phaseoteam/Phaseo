@@ -66,6 +66,7 @@ export default function TeamsPanel({
 				activeWorkspaceId={fallbackActiveTeamId}
 				activeWorkspaceName={null}
 				personalTeamId={personalTeamId}
+				canManageWorkspace={Boolean(fallbackActiveTeamId && manageableTeamIds?.includes(fallbackActiveTeamId))}
 			/>
 			{canManageActiveTeam ? (
 				<>

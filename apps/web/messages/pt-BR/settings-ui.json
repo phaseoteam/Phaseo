@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "Perfil do usuário",
+		"viewProfile": "Ver perfil",
+		"viewKeys": "Ver chaves",
+		"viewActivity": "Ver atividade",
+		"viewLogs": "Ver registros",
+		"back": "Voltar aos membros",
+		"joined": "Entrou em {date}",
+		"usageScope": "Solicitações bem-sucedidas com chaves criadas por este usuário · Últimos 30 dias",
+		"topModels": "Principais modelos",
+		"noKeys": "Este usuário não criou chaves.",
+		"previous": "Anterior",
+		"next": "Próximo",
+		"recentLogs": "Registros recentes",
+		"logsScope": "Últimas 50 solicitações com as chaves deste usuário nos últimos 30 dias.",
+		"logsUnavailable": "Os registros estão temporariamente indisponíveis.",
+		"noLogs": "Nenhuma solicitação neste período.",
+		"success": "Sucesso",
+		"failed": "Falha",
+		"owner": "Proprietário",
+		"admin": "Administrador",
+		"member": "Membro"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "Aplicativos OAuth - Configurações | Phaseo",
 		"metadataDescription": "Crie e gerencie aplicativos OAuth para integrações de terceiros com sua conta Phaseo.",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "Os URIs de redirecionamento devem corresponder exatamente, incluindo esquema, host, caminho e porta."
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "Permitir todos, exceto os modelos selecionados",
 		"chooseModels": "Escolher modelos",
 		"chooseProviders": "Escolher provedores",
 		"customPatternsDescription": "Adicione padrões regex para sinalizar, ocultar ou bloquear conteúdo sensível específico do espaço de trabalho.",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "Não inclua tokens de raciocínio na resposta final."
 	},
 	"presetPage": {
+		"fork": "Criar uma cópia",
+		"copyReference": "Copiar referência da predefinição",
 		"metadataTitle": "Predefinições - Configurações | Phaseo",
 		"settingsTitle": "Predefinições",
 		"settingsDescription": "Gerencie configurações de solicitação reutilizáveis para suas chamadas de API.",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "Modelo desconhecido",
+		"noApiKey": "Sem chave de API",
+		"noApp": "Sem aplicativo",
 		"activity": "Atividade",
 		"yourUsage": "Seu uso no Phaseo.",
 		"sampledRequests": "Este ver é baseado em o primeiro {count} solicitações em o selecionado período.",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "O provedor rejeitou a solicitação mais recente."
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "Voltar aos destinos",
 		"billingAdminsOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as configurações de cobrança.",
 		"managementKeysTitle": "Nenhum espaço de trabalho selecionado",
 		"managementKeysBody": "Selecione um espaço de trabalho no cabeçalho para ver e gerenciar suas chaves de API de gerenciamento.",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "Argumentos",
+		"modelCalls": "Chamadas ao modelo",
+		"providerAdmission": "Admissão do provedor",
+		"providerRejected": "Provedor rejeitado antes do envio",
+		"externalToolOrder": "Estes detalhes de ferramentas vêm dos dados retidos. A ordem de execução não foi registrada pelo gateway.",
+		"modelCall": "Chamada ao modelo iniciada",
+		"modelContinuation": "Continuação do modelo iniciada",
+		"modelRetry": "Nova tentativa do modelo iniciada",
+		"nestedModelCall": "Chamada aninhada ao modelo iniciada",
+		"responseHeaders": "Cabeçalhos de resposta recebidos",
+		"modelCompleted": "Chamada ao modelo concluída",
+		"toolStarted": "Ferramenta iniciada",
+		"orderedEvents": "Eventos",
+		"recordedOrder": "Registrados na ordem de execução. Os tempos são relativos ao primeiro evento.",
+		"orderUnavailable": "A ordem exata dos eventos não foi registrada. Os detalhes estão agrupados abaixo.",
+		"orderIncomplete": "Este registro de eventos está incompleto.",
 		"toolResultHasNoTextContent": "O resultado da ferramenta não contém texto.",
 		"inRequest": "Na solicitação",
 		"toolResult": "Resultado da ferramenta",

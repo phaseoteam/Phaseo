@@ -29,7 +29,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 		try {
 			setLoading(true);
 			await write(deleteByokKeyAction(id));
-		toast.success(t("strings.Key deleted" as never));
+		toast.success(t("credits.Key deleted" as never));
 			setOpen(false);
 		} catch (err: any) {
 			console.error(err);
@@ -61,7 +61,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 
 			<AlertDialogContent>
 				<AlertDialogHeader>
-				<AlertDialogTitle>{t("strings.Delete key?" as never)}</AlertDialogTitle>
+				<AlertDialogTitle>{t("credits.Delete key?" as never)}</AlertDialogTitle>
 					<AlertDialogDescription>
 						{t("settingsCopy.byok.deleteConfirmation")}
 					</AlertDialogDescription>

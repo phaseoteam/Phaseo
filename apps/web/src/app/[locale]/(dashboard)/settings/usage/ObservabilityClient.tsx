@@ -593,12 +593,12 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 	const appMetadata = new Map(initial.appMetadataEntries);
 
 	const modelLabel = (id: string | null) => {
-		if (!id) return t("strings.Unknown model" as never);
+		if (!id) return t("observability.unknownModel" as never);
 		const meta = modelMetadata.get(id);
 		return meta?.modelName || id;
 	};
 	const keyLabel = (id: string | null) => {
-		if (!id) return t("strings.No API key" as never);
+		if (!id) return t("observability.noApiKey" as never);
 		const key = keyMap.get(id);
 		return key?.name || key?.prefix || id;
 	};
@@ -607,7 +607,7 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 		return key?.name && key?.prefix ? key.prefix : null;
 	};
 	const appLabel = (id: string | null) => {
-		if (!id) return t("strings.No app" as never);
+		if (!id) return t("observability.noApp" as never);
 		return appNames.get(id) || id;
 	};
 	const modelFilterOptions = Array.from(new Set(rawRows.flatMap((row) => {
@@ -1000,7 +1000,7 @@ const ObservabilityView = memo(function ObservabilityView({ snapshot: { initial,
 
 	return (
 		<div className="space-y-4">
-		{initial.creatorFilter && <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 text-sm"><span className="text-muted-foreground">{t("keyDetail.keysCreatedBy")}</span><UserUsageChip userId={initial.creatorFilter.id} name={initial.creatorFilter.name} avatarUrl={initial.creatorFilter.avatarUrl} workspaceId={initial.workspaceId!} /><Link className="ml-auto text-muted-foreground underline hover:text-foreground" href={`/settings/usage/${initialTab}?${clearFilterParams}`}>{t("keyDetail.clearUserFilter")}</Link></div>}
+		{initial.creatorFilter && <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-4 text-sm"><span className="text-muted-foreground">{t("keyDetail.keysCreatedBy")}</span><UserUsageChip userId={initial.creatorFilter.id} name={initial.creatorFilter.name} avatarUrl={initial.creatorFilter.avatarUrl} workspaceId={initial.workspaceId!} currentUserId={initial.currentUserId} canViewWorkspaceUsers={initial.canViewWorkspaceUsers} /><Link className="ml-auto text-muted-foreground underline hover:text-foreground" href={`/settings/usage/${initialTab}?${clearFilterParams}`}>{t("keyDetail.clearUserFilter")}</Link></div>}
 		<ObservabilityHub
 			data={data}
 			guardrailMetrics={guardrailMetrics}

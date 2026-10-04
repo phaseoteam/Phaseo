@@ -475,6 +475,7 @@ export type ProviderEnablementDiagnostics = {
 };
 
 export type ProviderAttemptLog = {
+	lifecycle_span_id?: string;
     attempt_number: number;
     started_at_unix_ms?: number | null;
     provider: string;
@@ -726,6 +727,7 @@ export type PipelineContext = {
         round: number;
         durationMs: number;
         calls: Array<{
+			spanId?: string;
             id: string;
             name: string;
             arguments?: string;
@@ -733,6 +735,10 @@ export type PipelineContext = {
             isError?: boolean;
         }>;
     }>;
+	/** Bounded ordered metadata; persisted only with opt-in retained I/O. */
+	lifecycle?: import("../lifecycle").RequestLifecycle;
+	lifecycleParentSpanId?: string;
+	lifecycleProviderSpanId?: string;
     responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];

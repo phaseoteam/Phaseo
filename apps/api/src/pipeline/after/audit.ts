@@ -7,6 +7,7 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import type { PipelineContext } from "../before/types";
+import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
@@ -277,7 +278,13 @@ export async function handleFailureAudit(
     errorMessage: string,
     errorDetails?: unknown,
     gatewayErrorPayload?: Record<string, unknown> | null,
+    accountingContext?: {
+        gatewayResponse: unknown;
+        rawUsage: unknown;
+        pricingCard?: unknown;
+    },
 ) {
+	finishStreamingProvider(ctx, "error");
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -354,6 +361,7 @@ export async function handleFailureAudit(
             providerApiModelId: result.apiModelId ?? null,
             providerModelSlug: result.providerModelSlug ?? null,
             stream: ctx.stream,
+            nativeResponseId: result.bill?.upstream_id ?? null,
             statusCode: upstreamStatus,
             errorCode: `${attribution}:${errorCode}`,
             errorMessage,
@@ -393,13 +401,24 @@ export async function handleFailureAudit(
                     | null,
             extraJson,
             requestPayload: ctx.rawBody ?? ctx.body ?? null,
-            gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
+            gatewayResponse: accountingContext?.gatewayResponse ?? gatewayErrorPayload ?? gatewayFailurePayload,
             providerRequest: result.mappedRequest ?? null,
-            providerResponse: errorDetails ?? result.rawResponse ?? null,
+            providerResponse: accountingContext ? result.rawResponse ?? null : errorDetails ?? result.rawResponse ?? null,
             serverToolTrace: ctx.serverToolTrace,
+			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),
+                ...(accountingContext ? {
+                    accounting_finalization: sanitizeForAxiom({
+                        ...(errorDetails && typeof errorDetails === "object" ? errorDetails : {}),
+                        billing_request_id: ctx.billingRequestId ?? null,
+                        native_response_id: result.bill?.upstream_id ?? null,
+                        finish_reason: result.bill?.finish_reason ?? null,
+                        raw_usage: accountingContext.rawUsage,
+                        pricing_card: accountingContext.pricingCard ?? null,
+                    }),
+                } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),
@@ -489,6 +508,10 @@ export async function handleSuccessAudit(
     nativeResponseId?: string | null,
     gatewayResponse?: unknown,
 ) {
+	finishStreamingProvider(ctx);
+	if (ctx.lifecycle && !ctx.lifecycle.events.some((event) => event.type === "response.ready")) {
+		recordLifecycleEvent(ctx, { type: "response.ready", status: statusCode });
+	}
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -676,6 +699,7 @@ export async function handleSuccessAudit(
             providerRequest: result.mappedRequest ?? null,
             providerResponse: result.rawResponse ?? null,
             serverToolTrace: ctx.serverToolTrace,
+			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),

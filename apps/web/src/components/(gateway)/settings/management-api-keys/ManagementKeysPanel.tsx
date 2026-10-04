@@ -155,7 +155,7 @@ export default function ManagementKeysPanel({ teamsWithKeys }: any) {
 					<EmptyMedia variant="icon">
 						<KeyRound className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>{t("strings.No management keys yet" as never)}</EmptyTitle>
+					<EmptyTitle>{t("credits.No management keys yet" as never)}</EmptyTitle>
 					<EmptyDescription>
 						{t("strings.phraseCreateAManagementKeyWhenYouNeedElevatedAutomationAccess" as never)}
 					</EmptyDescription>

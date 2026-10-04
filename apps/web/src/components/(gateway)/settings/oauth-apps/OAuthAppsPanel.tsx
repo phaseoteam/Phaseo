@@ -27,7 +27,7 @@ export default function OAuthAppsPanel({
 					<EmptyMedia variant="icon">
 						<AppWindow className="h-5 w-5" />
 					</EmptyMedia>
-					<EmptyTitle>{t("strings.No OAuth apps yet" as never)}</EmptyTitle>
+					<EmptyTitle>{t("credits.No OAuth apps yet" as never)}</EmptyTitle>
 					<EmptyDescription>
 						{t("strings.phraseCreateYourFirstOAuthAppToEnableThirdPartyIntegrationsWithYourPhaseoAccount" as never)}
 					</EmptyDescription>

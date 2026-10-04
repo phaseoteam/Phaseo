@@ -44,7 +44,7 @@ export default function ManagementKeyUsageItem({ k }: any) {
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>{t("strings.Usage for" as never)} {k.name}</DialogTitle>
+						<DialogTitle>{t("credits.Usage for" as never)} {k.name}</DialogTitle>
 						<DialogDescription>
 							{t("strings.phraseRequestUsageAndCostForThisManagementAPIKey" as never)}
 						</DialogDescription>
@@ -53,7 +53,7 @@ export default function ManagementKeyUsageItem({ k }: any) {
 						<div className="grid grid-cols-2 gap-4">
 							<div className="p-4 bg-muted rounded-lg">
 								<div className="text-sm text-muted-foreground">
-									{t("strings.Total Requests" as never)}
+									{t("credits.Total Requests" as never)}
 								</div>
 								<div className="text-2xl font-bold">
 									<DisplayNumber value={usage.requests} />
@@ -61,7 +61,7 @@ export default function ManagementKeyUsageItem({ k }: any) {
 							</div>
 							<div className="p-4 bg-muted rounded-lg">
 								<div className="text-sm text-muted-foreground">
-									{t("strings.Total Cost" as never)}
+									{t("credits.Total Cost" as never)}
 								</div>
 								<div className="text-2xl font-bold">
 									${(usage.costNanos / 1_000_000_000).toFixed(4)}

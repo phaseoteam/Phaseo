@@ -54,7 +54,7 @@ export default function RegenerateSecretDialog({
 
 			setNewSecret(result.data.client_secret);
 
-			toast.success(t("strings.Client secret regenerated successfully" as never));
+			toast.success(t("credits.Client secret regenerated successfully" as never));
 
 		} catch (err: any) {
 			setError(localizedSettingsError(err, t, "Failed to regenerate secret"));
@@ -67,7 +67,7 @@ export default function RegenerateSecretDialog({
 		if (newSecret) {
 			navigator.clipboard.writeText(newSecret);
 			setCopied(true);
-			toast.success(t("strings.New client secret copied to clipboard" as never));
+			toast.success(t("credits.New client secret copied to clipboard" as never));
 			setTimeout(() => setCopied(false), 2000);
 		}
 	};
@@ -85,12 +85,12 @@ export default function RegenerateSecretDialog({
 			<Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
 				<DialogTrigger asChild>
 					<Button variant="outline" size="sm">
-						{t("strings.Regenerate" as never)}
+						{t("credits.Regenerate" as never)}
 					</Button>
 				</DialogTrigger>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>{t("strings.New Client Secret" as never)}</DialogTitle>
+						<DialogTitle>{t("credits.New Client Secret" as never)}</DialogTitle>
 						<DialogDescription>
 							{t("strings.phraseSaveYourNewSecretNowItWillNotBeShownAgain" as never)}
 						</DialogDescription>
@@ -99,12 +99,12 @@ export default function RegenerateSecretDialog({
 					<Alert>
 						<AlertTriangle className="h-4 w-4" />
 						<AlertDescription>
-							<strong>{t("strings.Important:" as never)}</strong> {t("strings.phraseCopyYourNewSecretNowTheOldSecretHasBeenInvalidated" as never)}
+							<strong>{t("credits.Important:" as never)}</strong> {t("strings.phraseCopyYourNewSecretNowTheOldSecretHasBeenInvalidated" as never)}
 						</AlertDescription>
 					</Alert>
 
 					<div>
-						<label className="text-sm font-medium">{t("strings.New Client Secret" as never)}</label>
+						<label className="text-sm font-medium">{t("credits.New Client Secret" as never)}</label>
 						<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 							<div className="flex items-center justify-between gap-2">
 								<code className="text-xs break-all flex-1">{newSecret}</code>
@@ -136,12 +136,12 @@ export default function RegenerateSecretDialog({
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger asChild>
 				<Button variant="outline" size="sm">
-						{t("strings.Regenerate" as never)}
+						{t("credits.Regenerate" as never)}
 				</Button>
 			</DialogTrigger>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>{t("strings.Regenerate Client Secret?" as never)}</DialogTitle>
+					<DialogTitle>{t("credits.Regenerate Client Secret?" as never)}</DialogTitle>
 					<DialogDescription>
 						{t("oauthCopy.invalidatesCurrentSecret", { appName })}
 						{t("oauthCopy.oldSecretWarning")}
@@ -151,7 +151,7 @@ export default function RegenerateSecretDialog({
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
 					<AlertDescription>
-						<strong>{t("strings.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneTheOldSecretWillBeImmediatelyInvalidated" as never)}
+						<strong>{t("credits.Warning:" as never)}</strong> {t("strings.phraseThisActionCannotBeUndoneTheOldSecretWillBeImmediatelyInvalidated" as never)}
 					</AlertDescription>
 				</Alert>
 
@@ -170,7 +170,7 @@ export default function RegenerateSecretDialog({
 						onClick={handleRegenerate}
 						disabled={loading}
 					>
-						{loading ? t("strings.phraseRegenerating" as never) : t("strings.Regenerate Secret" as never)}
+						{loading ? t("strings.phraseRegenerating" as never) : t("credits.Regenerate Secret" as never)}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

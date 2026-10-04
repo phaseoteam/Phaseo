@@ -23,8 +23,8 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 
 	const statusText = {
 		active: t("labels.active"),
-		suspended: t("strings.Suspended" as never),
-		deleted: t("strings.Deleted" as never),
+		suspended: t("credits.Suspended" as never),
+		deleted: t("credits.Deleted" as never),
 	}[(app.status as string)] || t("strings.Unknown" as never);
 
 	return (
@@ -78,7 +78,7 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 						className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 underline decoration-transparent hover:decoration-current transition-colors duration-200"
 					>
 						<ExternalLink className="size-3" />
-						<span>{t("strings.Visit website" as never)}</span>
+						<span>{t("credits.Visit website" as never)}</span>
 					</a>
 				)}
 
@@ -90,7 +90,7 @@ export default function OAuthAppCard({ app }: OAuthAppCardProps) {
 			<CardFooter>
 				<Button variant="outline" size="sm" asChild className="w-full">
 					<Link href={`/settings/oauth-apps/${app.client_id}`}>
-						{t("strings.View Details" as never)}
+						{t("credits.View Details" as never)}
 					</Link>
 				</Button>
 			</CardFooter>

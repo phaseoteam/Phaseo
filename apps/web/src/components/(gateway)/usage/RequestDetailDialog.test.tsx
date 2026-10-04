@@ -9,9 +9,9 @@ import React from "react";
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 import RequestDetailDialog from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
+import { TraceViewGateProvider } from "./TraceViewGate";
 
 let mockTraceEnabled = false;
-jest.mock("@statsig/react-bindings", () => ({ useFeatureGate: () => ({ value: mockTraceEnabled }) }));
 
 const router = {
 	push: jest.fn(),
@@ -58,8 +58,23 @@ const historicalRequestWithoutCollections = {
 
 describe("RequestDetailDialog", () => {
 	beforeEach(() => { mockTraceEnabled = false; });
+	it("shows a server tool between model calls without payload logging", () => {
+		const events = [
+			{ type: "provider.started", span_id: "first", provider: "openai", call_kind: "initial", elapsed_ms: 10 },
+			{ type: "provider.completed", span_id: "first", elapsed_ms: 20 },
+			{ type: "tool.started", span_id: "tool", tool_name: "datetime", elapsed_ms: 20 },
+			{ type: "tool.completed", span_id: "tool", elapsed_ms: 25 },
+			{ type: "provider.started", span_id: "next", provider: "openai", call_kind: "continuation", elapsed_ms: 25 },
+			{ type: "provider.completed", span_id: "next", elapsed_ms: 45 },
+		].map((event, index) => ({ ...event, sequence: index + 1, timestamp_ms: 1000 + event.elapsed_ms }));
+		const markup = renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={{ ...historicalRequestWithoutCollections, detail_metadata: { lifecycle_events: { version: 1, events } } }} />);
+		const timeline = markup.slice(markup.indexOf("Response timeline"));
+		expect(timeline).toContain("datetime");
+		expect(timeline.indexOf("Model call")).toBeLessThan(timeline.indexOf("datetime"));
+		expect(timeline.indexOf("datetime")).toBeLessThan(timeline.indexOf("Model continuation"));
+	});
 	it("shows the Trace tab only when its rollout gate passes", () => {
-		const render = () => renderToStaticMarkup(<RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} />);
+		const render = () => renderToStaticMarkup(<TraceViewGateProvider enabled={mockTraceEnabled}><RequestDetailDialog open onOpenChange={() => {}} request={historicalRequestWithoutCollections} /></TraceViewGateProvider>);
 		expect(render()).not.toContain('value="trace"');
 		mockTraceEnabled = true;
 		expect(render()).toContain("Trace");

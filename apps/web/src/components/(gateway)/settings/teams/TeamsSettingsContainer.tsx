@@ -129,6 +129,7 @@ export default function TeamsSettingsContainer({
 					currentUserId={currentUserId}
 					personalTeamId={personalTeamId}
 					samplePreview={sampleMembersPreview}
+					canManageWorkspace={canManageActiveTeam}
 				/>
 			)}
 		</div>

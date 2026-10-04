@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "उपयोगकर्ता प्रोफ़ाइल",
+		"viewProfile": "प्रोफ़ाइल देखें",
+		"viewKeys": "कुंजियाँ देखें",
+		"viewActivity": "गतिविधि देखें",
+		"viewLogs": "लॉग देखें",
+		"back": "सदस्यों पर वापस जाएँ",
+		"joined": "{date} को शामिल हुए",
+		"usageScope": "इस उपयोगकर्ता की बनाई कुंजियों से सफल अनुरोध · पिछले 30 दिन",
+		"topModels": "शीर्ष मॉडल",
+		"noKeys": "इस उपयोगकर्ता ने कोई कुंजी नहीं बनाई है।",
+		"previous": "पिछला",
+		"next": "अगला",
+		"recentLogs": "हाल के अनुरोध लॉग",
+		"logsScope": "पिछले 30 दिनों में इस उपयोगकर्ता की कुंजियों से नवीनतम 50 अनुरोध।",
+		"logsUnavailable": "अनुरोध लॉग अस्थायी रूप से उपलब्ध नहीं हैं।",
+		"noLogs": "इस अवधि में कोई अनुरोध नहीं।",
+		"success": "सफल",
+		"failed": "विफल",
+		"owner": "मालिक",
+		"admin": "व्यवस्थापक",
+		"member": "सदस्य"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth ऐप्स - सेटिंग्स | Phaseo",
 		"metadataDescription": "अपने Phaseo खाते के साथ तृतीय-पक्ष एकीकरण के लिए OAuth ऐप बनाएं और प्रबंधित करें।",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "रीडायरेक्ट URIs को स्कीम, होस्ट, पथ और पोर्ट सहित बिल्कुल मेल खाना चाहिए।"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "चुने गए मॉडल को छोड़कर सभी को अनुमति दें",
 		"chooseModels": "मॉडल चुनें",
 		"chooseProviders": "प्रदाता चुनें",
 		"customPatternsDescription": "वर्कस्पेस के संवेदनशील कंटेंट को चिह्नित, छिपाने या रोकने के लिए regex पैटर्न जोड़ें।",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "अंतिम जवाब में तर्क वाले टोकन शामिल न करें।"
 	},
 	"presetPage": {
+		"fork": "एक प्रति बनाएँ",
+		"copyReference": "प्रीसेट का संदर्भ कॉपी करें",
 		"metadataTitle": "प्रीसेट - सेटिंग्स | Phaseo",
 		"settingsTitle": "प्रीसेट",
 		"settingsDescription": "अपने API कॉल के लिए दोबारा इस्तेमाल की जा सकने वाली अनुरोध कॉन्फ़िगरेशन प्रबंधित करें।",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "अज्ञात मॉडल",
+		"noApiKey": "कोई API कुंजी नहीं",
+		"noApp": "कोई ऐप नहीं",
 		"activity": "गतिविधि",
 		"yourUsage": "Phaseo पर आपका उपयोग।",
 		"sampledRequests": "यह दृश्य चयनित अवधि में पहले {count} अनुरोधों पर आधारित है।",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "प्रदाता ने हाल का अनुरोध अस्वीकार कर दिया।"
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "गंतव्यों पर वापस जाएँ",
 		"billingAdminsOnly": "इस कार्यस्थान की बिलिंग सेटिंग केवल मालिक और एडमिन बदल सकते हैं।",
 		"managementKeysTitle": "कोई कार्यस्थान चुना नहीं गया",
 		"managementKeysBody": "प्रबंधन API कुंजियाँ देखने और प्रबंधित करने के लिए हेडर में कोई कार्यस्थान चुनें।",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "आर्ग्युमेंट",
+		"modelCalls": "मॉडल कॉल",
+		"providerAdmission": "प्रदाता अनुमति जाँच",
+		"providerRejected": "भेजने से पहले प्रदाता अस्वीकृत",
+		"externalToolOrder": "ये टूल विवरण सुरक्षित रखे गए डेटा से हैं। गेटवे ने इनका निष्पादन क्रम दर्ज नहीं किया।",
+		"modelCall": "मॉडल कॉल शुरू",
+		"modelContinuation": "मॉडल की अगली कॉल शुरू",
+		"modelRetry": "मॉडल पुनः प्रयास शुरू",
+		"nestedModelCall": "नेस्टेड मॉडल कॉल शुरू",
+		"responseHeaders": "प्रतिक्रिया हेडर प्राप्त",
+		"modelCompleted": "मॉडल कॉल पूर्ण",
+		"toolStarted": "टूल शुरू",
+		"orderedEvents": "इवेंट",
+		"recordedOrder": "निष्पादन क्रम में दर्ज। समय पहले इवेंट के सापेक्ष है।",
+		"orderUnavailable": "इस अनुरोध के इवेंट का सटीक क्रम दर्ज नहीं किया गया। विवरण नीचे समूहों में हैं।",
+		"orderIncomplete": "यह इवेंट लॉग अधूरा है।",
 		"toolResultHasNoTextContent": "टूल परिणाम में टेक्स्ट नहीं है।",
 		"inRequest": "अनुरोध में",
 		"toolResult": "टूल परिणाम",

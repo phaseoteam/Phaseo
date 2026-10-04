@@ -31,6 +31,9 @@ minimumReleaseAgeExclude:
   - "@opencode/client"
   - "@opencode/schema"
   - "@opencode/protocol"
+  # Security patches for static-path middleware bypasses must not wait a week.
+  - "hono"
+  - "@hono/node-server"
   - "@shadcn/react"
   - "cn"
   # Expo SDK releases are coordinated and must resolve as a compatible set.

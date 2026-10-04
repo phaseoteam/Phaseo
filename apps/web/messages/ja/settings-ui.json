@@ -1,4 +1,27 @@
 {
+	"workspaceUser": {
+		"profile": "ユーザープロフィール",
+		"viewProfile": "プロフィールを表示",
+		"viewKeys": "キーを表示",
+		"viewActivity": "アクティビティを表示",
+		"viewLogs": "ログを表示",
+		"back": "メンバーに戻る",
+		"joined": "参加日: {date}",
+		"usageScope": "このユーザーが作成したキーによる成功したリクエスト · 過去30日間",
+		"topModels": "上位モデル",
+		"noKeys": "このユーザーが作成したキーはありません。",
+		"previous": "前へ",
+		"next": "次へ",
+		"recentLogs": "最近のリクエストログ",
+		"logsScope": "過去30日間のこのユーザーのキーによる最新50件のリクエスト。",
+		"logsUnavailable": "リクエストログは一時的に利用できません。",
+		"noLogs": "この期間のリクエストはありません。",
+		"success": "成功",
+		"failed": "失敗",
+		"owner": "オーナー",
+		"admin": "管理者",
+		"member": "メンバー"
+	},
 	"oauthAppsPage": {
 		"metadataTitle": "OAuth アプリ - 設定 | Phaseo",
 		"metadataDescription": "トレースに含める構造化コンテキストを選択します。",
@@ -1135,6 +1158,7 @@
 		"redirectHelp": "リダイレクトURIは、スキーム、ホスト、パス、ポートを含めて完全一致する必要があります。"
 	},
 	"guardrailEditorCopy": {
+		"allowAllExceptSelectedModels": "選択したモデル以外をすべて許可",
 		"chooseModels": "モデルを選択",
 		"chooseProviders": "プロバイダーを選択",
 		"customPatternsDescription": "ワークスペース固有の機密情報を検出、マスキング、ブロックする正規表現パターンを追加します。",
@@ -1215,6 +1239,8 @@
 		"excludeReasoningHelp": "最終応答に推論トークンを含めません。"
 	},
 	"presetPage": {
+		"fork": "コピーを作成",
+		"copyReference": "プリセットの参照をコピー",
 		"metadataTitle": "プリセット - 設定 | Phaseo",
 		"settingsTitle": "プリセット",
 		"settingsDescription": "API 呼び出しで再利用できるリクエスト設定を管理します。",
@@ -3257,6 +3283,9 @@
 		}
 	},
 	"observability": {
+		"unknownModel": "不明なモデル",
+		"noApiKey": "APIキーなし",
+		"noApp": "アプリなし",
 		"activity": "アクティビティ",
 		"yourUsage": "で Phaseo 上の使用情况。",
 		"sampledRequests": "この視図基於所選時間段内の第1つの {count} リクエスト。",
@@ -4264,6 +4293,7 @@
 		"sampleProviderRejected": "プロバイダーが直近のリクエストを拒否しました。"
 	},
 	"settingsPageCopy": {
+		"backToDestinations": "送信先に戻る",
 		"billingAdminsOnly": "このワークスペースの請求設定を変更できるのは、オーナーと管理者のみです。",
 		"managementKeysTitle": "ワークスペースが選択されていません",
 		"managementKeysBody": "管理用 API キーを表示・管理するには、ヘッダーでワークスペースを選択してください。",
@@ -5660,6 +5690,21 @@
 	},
 	"trace": {
 		"arguments": "引数",
+		"modelCalls": "モデル呼び出し",
+		"providerAdmission": "プロバイダーの実行可否確認",
+		"providerRejected": "送信前にプロバイダーを拒否",
+		"externalToolOrder": "これらのツール詳細は保存されたペイロードから取得しています。実行順序はゲートウェイで記録されていません。",
+		"modelCall": "モデル呼び出し開始",
+		"modelContinuation": "モデル継続開始",
+		"modelRetry": "モデル再試行開始",
+		"nestedModelCall": "入れ子のモデル呼び出し開始",
+		"responseHeaders": "レスポンスヘッダー受信",
+		"modelCompleted": "モデル呼び出し完了",
+		"toolStarted": "ツール開始",
+		"orderedEvents": "イベント",
+		"recordedOrder": "実行順に記録しています。時間は最初のイベントからの経過時間です。",
+		"orderUnavailable": "このリクエストでは正確なイベント順序が記録されていません。詳細は以下にまとめています。",
+		"orderIncomplete": "このイベントログは不完全です。",
 		"toolResultHasNoTextContent": "ツールの結果にテキストがありません。",
 		"inRequest": "リクエスト内",
 		"toolResult": "ツールの結果",

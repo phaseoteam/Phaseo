@@ -676,7 +676,9 @@ paths:
         - name: id
           in: query
           required: true
-          description: The ID of the generation
+          description: >-
+            Public generation ID returned by inference, in G-<ULID> format.
+            Historical identifiers, including UUIDs, are also accepted.
           schema:
             type: string
       responses:
@@ -741,6 +743,9 @@ paths:
       responses:
         '200':
           description: Chat completion response
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -778,6 +783,9 @@ paths:
       responses:
         '200':
           description: Response
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -893,6 +901,9 @@ paths:
       responses:
         '200':
           description: Message response
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8556,6 +8567,14 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: >-
+        Server-generated public request identifier. For inference requests, this
+        is the generation ID used in response payloads and request logs.
+        Caller-supplied x-request-id values do not replace it.
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: >-
         BYOK-only provider quota metadata. Omitted for managed-provider
@@ -13451,6 +13470,9 @@ components:
           format: date-time
         request_id:
           type: string
+          description: >-
+            Public generation identifier. New generations use G-<ULID> format;
+            historical logs may contain earlier identifiers, including UUIDs.
         team_id:
           type: string
         app_id:

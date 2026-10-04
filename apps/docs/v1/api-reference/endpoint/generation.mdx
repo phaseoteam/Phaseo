@@ -6,6 +6,11 @@ openapi: "GET /generations"
 ---
 Fetches the stored audit record for a given `request_id` that belongs to your team.
 
+New requests receive a server-generated `G-` generation ID, returned in the
+`x-request-id` response header and generation response. Use that ID for request
+logs, generation lookup, and support. A caller-supplied `x-request-id` does not
+replace the generation ID. Existing UUID-based log IDs remain valid for lookup.
+
 Use:
 - `GET /v1/generations?id=<request_id>`
 
@@ -19,4 +24,3 @@ Typical replay flow:
 1. Read the generation record with `GET /v1/generations?id=<request_id>`.
 2. Check `replay_supported === true`.
 3. Re-submit `replay_request` to the original endpoint named by `endpoint` such as `/v1/chat/completions` or `/v1/responses`.
-

@@ -5,6 +5,7 @@
 
 import type { GatewayResponsePayload } from "@core/types";
 import type { ByokKeyMeta, PipelineContext, ProviderAttemptLog } from "../before/types";
+import { recordLifecycleEvent, recordProviderResult } from "../lifecycle";
 import { Timer } from "../telemetry/timer";
 import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from "@/runtime/env";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
@@ -405,6 +406,7 @@ function recordProviderAttempt(
 	entry: ProviderAttemptLog,
 ): void {
 	getProviderAttempts(ctx).push(entry);
+	recordProviderResult(ctx, entry);
 }
 
 /**
@@ -594,6 +596,7 @@ export async function doRequestWithIR(
 		byok_key_id: entry.credential.kind === "byok" ? entry.credential.key.id : null,
 	}));
 	let anyPricingFound = anyPricingAvailable;
+	recordLifecycleEvent(ctx, { type: "routing.completed", model: baseModel });
 
 	for (let attempt = 0; attempt < credentialPlan.length; attempt++) {
 		const choice = credentialPlan[attempt];
@@ -696,8 +699,12 @@ async function attemptProviderWithIR(
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
+	const callKind = ctx.lifecycleParentSpanId ? "nested" : attemptNumber > 1 ? "retry" : ctx.lifecycle?.events.some((event) => event.type === "provider.started" && !event.parent_span_id) ? "continuation" : "initial";
+	const lifecycleSpanId = recordLifecycleEvent(ctx, { type: "provider.admission", provider: candidate.providerId, model: baseModel, attempt_number: attemptNumber, call_kind: callKind });
+	ctx.lifecycleProviderSpanId = lifecycleSpanId;
     const healthProvider = candidate.privateEndpoint ? routed.health.provider : candidate.providerId;
 	const credentialLog = {
+		lifecycle_span_id: lifecycleSpanId,
 		started_at_unix_ms: attemptStartedAtEpochMs,
 		credential_phase: credentialPhase,
 		key_source: credential.kind === "byok" ? "byok" as const : "gateway" as const,
@@ -732,7 +739,10 @@ async function attemptProviderWithIR(
 				testingMode: ctx.testingMode,
 			}),
 		);
-		if (freeQuotaResponse) return { ok: false, response: freeQuotaResponse };
+		if (freeQuotaResponse) {
+			recordLifecycleEvent(ctx, { type: "provider.rejected", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, outcome: "quota_rejected", status: freeQuotaResponse.status });
+			return { ok: false, response: freeQuotaResponse };
+		}
 	}
 	const admission = await timing.timer.span(`${attemptPrefix}_breaker`, () =>
 		admitThroughBreaker(
@@ -971,7 +981,9 @@ async function attemptProviderWithIR(
 				: MAX_RETRYABLE_EXECUTOR_RETRIES;
 			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
-					const nextResult = await executor(buildExecutorArgs());
+					const executorArgs = buildExecutorArgs();
+					recordLifecycleEvent(ctx, { type: "provider.started", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, attempt_number: attemptNumber, call_kind: callKind });
+					const nextResult = await executor(executorArgs);
 					const shouldRetryStatus =
 						!("terminal" in nextResult && nextResult.terminal) &&
 						allowSingleProviderRetry &&
