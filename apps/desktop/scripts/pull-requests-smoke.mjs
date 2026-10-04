@@ -17,12 +17,15 @@ git(["init", "-b", "fixture"]); git(["remote", "add", "origin", "https://github.
 const before = git(["status", "--porcelain"]);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 await build({ configFile: false, logLevel: "silent", build: { target: "node24", outDir: path.join(directory, "bundle"), emptyOutDir: false, lib: { entry: path.join(root, "src/main/projectPullRequests.ts"), formats: ["es"], fileName: () => "pull-requests.mjs" }, rolldownOptions: { external: [...builtinModules, ...builtinModules.map(name => `node:${name}`)] } } });
-const { projectPullRequests } = await import(pathToFileURL(path.join(directory, "bundle/pull-requests.mjs")).href);
+const { projectPullRequests, projectPullRequest } = await import(pathToFileURL(path.join(directory, "bundle/pull-requests.mjs")).href);
 const result = await projectPullRequests(repository);
 assert.equal(result.repository, "phaseoteam/Phaseo"); assert.ok(result.requests.length <= 100);
 for (const request of result.requests) assert.equal(request.url, `https://github.com/phaseoteam/Phaseo/pull/${request.number}`);
 const next = result.nextCursor ? await projectPullRequests(repository, result.nextCursor) : undefined;
 if (next) { assert.equal(next.repository, result.repository); assert.ok(next.requests.length <= 100); assert.notEqual(next.nextCursor, result.nextCursor); for (const request of next.requests) assert.equal(request.url, `https://github.com/phaseoteam/Phaseo/pull/${request.number}`); }
+const detailNumber = process.argv.find(value => value.startsWith("--details="))?.slice(10);
+const detail = detailNumber ? await projectPullRequest(repository, Number(detailNumber)) : undefined;
+if (detail) { assert.equal(detail.number, Number(detailNumber)); assert.equal(detail.repository, "phaseoteam/Phaseo"); assert.match(detail.headOid, /^[a-f0-9]{40}$/i); assert.ok(detail.body.length <= 200000); }
 assert.equal(git(["status", "--porcelain"]), before);
 assert.equal(git(["remote", "get-url", "origin"]).trim(), "https://github.com/phaseoteam/Phaseo.git");
-console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length }));
+console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length, detailsNumber: detail?.number, detailsState: detail?.state, detailsBodyLength: detail?.body.length }));

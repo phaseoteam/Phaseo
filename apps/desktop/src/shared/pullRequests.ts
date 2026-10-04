@@ -5,3 +5,5 @@ export type PullRequest = {
 	checks: "passing" | "pending" | "failed" | "none" | "unknown";
 };
 export type ProjectPullRequests = { repository: string; requests: PullRequest[]; fetchedAt: string; limitReached: boolean; nextCursor?: string };
+
+export type PullRequestDetails = PullRequest & { repository: string; body: string; state: "OPEN" | "CLOSED" | "MERGED"; additions: number; deletions: number; changedFiles: number; headOid: string; baseOid: string; mergeable: "MERGEABLE" | "CONFLICTING" | "UNKNOWN"; mergeState: string; fetchedAt: string };

@@ -1,10 +1,9 @@
+import { PullRequestDetail, reviewLabels, checkLabels } from "./PullRequestDetail";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectPullRequests, PullRequest } from "../../shared/pullRequests";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { watchLiveRefresh } from "../lib/liveRefresh";
 
-const reviewLabels: Record<PullRequest["review"], string> = { approved: "Approved", "changes-requested": "Changes requested", required: "Review required", none: "No review decision" };
-const checkLabels: Record<PullRequest["checks"], string> = { passing: "Checks passing", pending: "Checks pending", failed: "Checks failed", none: "No checks", unknown: "Checks unavailable" };
 export function Proposals({ initialProjectId }: { initialProjectId?: string } = {}) {
 	const api = window.phaseoDesktop?.workspace;
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
@@ -13,6 +12,7 @@ export function Proposals({ initialProjectId }: { initialProjectId?: string } = 
 	const [result, setResult] = useState<{ projectId: string; value: ProjectPullRequests; page: number }>();
 	const [pages, setPages] = useState<{ projectId: string; cursors: (string | undefined)[]; index: number }>({ projectId: "", cursors: [undefined], index: 0 });
 	const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [attempt, setAttempt] = useState(0);
+	const [selected, setSelected] = useState<number>();
 	const [linkError, setLinkError] = useState(""); const [opening, setOpening] = useState<number>();
 	const pending = useRef(false); const linkPending = useRef(false); const overviewPending = useRef(true);
 	const project = workspace.projects.find(value => value.id === projectId && !value.worktree?.removedAt);
@@ -38,24 +38,25 @@ export function Proposals({ initialProjectId }: { initialProjectId?: string } = 
 	}
 	const visible = result && project && result.projectId === project.id ? result.value : undefined;
 	const interval = !visible?.requests.length || visible.requests.some(request => ["pending", "none", "unknown"].includes(request.checks)) ? 45_000 : 60_000;
-	const liveEnabled = Boolean(api && project && visible && !error && !overviewError);
+	const liveEnabled = Boolean(api && project && visible && selected === undefined && !error && !overviewError);
 	useEffect(() => {
 		if (!liveEnabled) return;
 		return watchLiveRefresh(() => { if (pending.current || linkPending.current) return false; pending.current = true; setLoading(true); setAttempt(value => value + 1); return true; }, interval);
 	}, [api, project?.id, cursor, page, liveEnabled, interval]);
 	return <div className="page proposals-page"><h1>Pull requests</h1>
 		<section className="panel" aria-label="Pull requests" aria-busy={loading || overviewLoading}>
-			<div className="panel-heading"><h2>Open pull requests</h2><button type="button" disabled={!api || overviewLoading || (overviewError ? false : !project || loading)} onClick={refresh}>{overviewLoading || loading ? "Loading…" : error || overviewError ? "Retry" : "Refresh"}</button></div>
-			<div className="proposal-project"><label>Project<select aria-label="Pull-request project" disabled={overviewLoading || opening !== undefined} value={projectId} onChange={event => { setProjectId(event.target.value); setPages({ projectId: event.target.value, cursors: [undefined], index: 0 }); setError(""); setLinkError(""); }}><option value="">Choose a project</option>{workspace.projects.filter(value => !value.worktree?.removedAt).map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</select></label>{visible && <p>{visible.repository} · Updated {new Date(visible.fetchedAt).toLocaleTimeString()}</p>}</div>
+			{selected === undefined && <div className="panel-heading"><h2>Open pull requests</h2><button type="button" disabled={!api || overviewLoading || (overviewError ? false : !project || loading)} onClick={refresh}>{overviewLoading || loading ? "Loading…" : error || overviewError ? "Retry" : "Refresh"}</button></div>}
+			<div className="proposal-project"><label>Project<select aria-label="Pull-request project" disabled={overviewLoading || opening !== undefined} value={projectId} onChange={event => { setSelected(undefined); setProjectId(event.target.value); setPages({ projectId: event.target.value, cursors: [undefined], index: 0 }); setError(""); setLinkError(""); }}><option value="">Choose a project</option>{workspace.projects.filter(value => !value.worktree?.removedAt).map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</select></label>{visible && <p>{visible.repository} · Updated {new Date(visible.fetchedAt).toLocaleTimeString()}</p>}</div>
 			{overviewLoading && <p className="proposal-feedback" role="status">Loading projects…</p>}
 			{overviewError && <p className="proposal-feedback proposal-error" role="alert">{overviewError}</p>}
 			{!project && !overviewLoading && !overviewError && <p className="proposal-feedback">Choose a GitHub project to view its open pull requests.</p>}
 			{loading && <p className="proposal-feedback" role="status">Loading pull requests…</p>}
 			{error && <p className="proposal-feedback proposal-error" role="alert">{error}</p>}
 			{linkError && <p className="proposal-feedback proposal-error" role="alert">{linkError}</p>}
-			{visible?.requests.map(request => <article className="proposal-row" key={request.number}><div><strong>#{request.number} {request.title}</strong><small>{request.author} · {request.head} → {request.base}</small><div className="proposal-statuses">{request.draft && <span className="status-pill">Draft</span>}<span>{reviewLabels[request.review]}</span><span>{checkLabels[request.checks]}</span></div></div><button type="button" disabled={opening !== undefined} onClick={() => void open(request)}>{opening === request.number ? "Opening…" : "Open on GitHub"}</button></article>)}
-			{visible && !loading && !error && !visible.requests.length && <p className="proposal-feedback">No open pull requests.</p>}
-			{visible && result && <nav className="proposal-pagination" aria-label="Pull-request pages"><span>Page {result.page + 1} · {visible.requests.length} {visible.requests.length === 1 ? "pull request" : "pull requests"}</span>{page > 0 && <button type="button" disabled={loading || opening !== undefined} onClick={() => goToPage(0)}>First page</button>}<button type="button" disabled={loading || opening !== undefined || result.page === 0} onClick={() => goToPage(result.page - 1)}>Previous</button><button type="button" disabled={loading || opening !== undefined || !visible.nextCursor} onClick={() => goToPage(result.page + 1, visible.nextCursor)}>Next</button></nav>}
+			{selected !== undefined && project && <PullRequestDetail key={project.id + ":" + selected} projectId={project.id} number={selected} opening={opening !== undefined} onOpen={request => void open(request)} onBack={() => { const number = selected; setSelected(undefined); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(`.proposal-row[data-number="${number}"] .proposal-open`)?.focus()); }} />}
+			{selected === undefined && visible?.requests.map(request => <article className="proposal-row" data-number={request.number} key={request.number}><div><button type="button" className="proposal-open" onClick={() => { setLinkError(""); setSelected(request.number); }}>#{request.number} {request.title}</button><small>{request.author} · {request.head} → {request.base}</small><div className="proposal-statuses">{request.draft && <span className="status-pill">Draft</span>}<span>{reviewLabels[request.review]}</span><span>{checkLabels[request.checks]}</span></div></div><button type="button" disabled={opening !== undefined} onClick={() => void open(request)}>{opening === request.number ? "Opening…" : "Open on GitHub"}</button></article>)}
+			{selected === undefined && visible && !loading && !error && !visible.requests.length && <p className="proposal-feedback">No open pull requests.</p>}
+			{selected === undefined && visible && result && <nav className="proposal-pagination" aria-label="Pull-request pages"><span>Page {result.page + 1} · {visible.requests.length} {visible.requests.length === 1 ? "pull request" : "pull requests"}</span>{page > 0 && <button type="button" disabled={loading || opening !== undefined} onClick={() => goToPage(0)}>First page</button>}<button type="button" disabled={loading || opening !== undefined || result.page === 0} onClick={() => goToPage(result.page - 1)}>Previous</button><button type="button" disabled={loading || opening !== undefined || !visible.nextCursor} onClick={() => goToPage(result.page + 1, visible.nextCursor)}>Next</button></nav>}
 		</section>
 	</div>;
 }

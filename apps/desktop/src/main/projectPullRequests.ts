@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { git } from "./gitProcess";
 import { resolveNativeCommand } from "./nativeProcess";
-import type { ProjectPullRequests, PullRequest } from "../shared/pullRequests";
+import type { ProjectPullRequests, PullRequest, PullRequestDetails } from "../shared/pullRequests";
 
 const execute = promisify(execFile);
 const query = `query PhaseoPullRequests($owner:String!,$name:String!,$after:String){repository(owner:$owner,name:$name){pullRequests(first:100,after:$after,states:OPEN,orderBy:{field:UPDATED_AT,direction:DESC}){nodes{number title author{login} isDraft headRefName baseRefName updatedAt reviewDecision commits(last:1){nodes{commit{statusCheckRollup{state}}}}}pageInfo{hasNextPage endCursor}}}}`;
@@ -61,4 +61,26 @@ export async function projectPullRequests(root: string, cursor?: unknown): Promi
 		return { ...item, statusCheckRollup: !commit ? null : commit.statusCheckRollup === null ? [] : [{ state: commit.statusCheckRollup?.state }] };
 	}));
 	return { repository, requests, fetchedAt: new Date().toISOString(), limitReached: page.pageInfo.hasNextPage, nextCursor: nextCursor as string | undefined };
+}
+
+const detailQuery = `query PhaseoPullRequest($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){number title body state author{login} isDraft headRefName baseRefName headRefOid baseRefOid updatedAt reviewDecision additions deletions changedFiles mergeable mergeStateStatus commits(last:1){nodes{commit{statusCheckRollup{state}}}}}}}`;
+export function parsePullRequestDetails(repository: string, number: number, value: unknown): PullRequestDetails {
+ const item = value && typeof value === "object" ? value as Record<string, unknown> : {};
+ const commits = item.commits as { nodes?: { commit?: { statusCheckRollup?: { state?: string } | null } }[] } | undefined;
+ const commit = commits?.nodes?.[0]?.commit;
+ if (item.number !== number || typeof item.body !== "string" || item.body.length > 200000 || !["OPEN", "CLOSED", "MERGED"].includes(String(item.state)) || [item.additions,item.deletions,item.changedFiles].some(value => !Number.isSafeInteger(value) || Number(value) < 0) || [item.headRefOid,item.baseRefOid].some(value => typeof value !== "string" || !/^[a-f0-9]{40}$/i.test(value)) || typeof item.mergeStateStatus !== "string" || item.mergeStateStatus.length > 100) throw new Error("GitHub returned invalid pull-request details.");
+ const summary = parsePullRequests(repository,[{ ...item, statusCheckRollup: !commit ? null : commit.statusCheckRollup === null ? [] : [{state:commit.statusCheckRollup?.state}] }])[0];
+ return { ...summary, repository, body: item.body, state: item.state as PullRequestDetails["state"], additions: Number(item.additions), deletions: Number(item.deletions), changedFiles: Number(item.changedFiles), headOid: String(item.headRefOid), baseOid: String(item.baseRefOid), mergeable: item.mergeable === "MERGEABLE" || item.mergeable === "CONFLICTING" ? item.mergeable : "UNKNOWN", mergeState: item.mergeStateStatus, fetchedAt: new Date().toISOString() };
+}
+export async function projectPullRequest(root: string, number: unknown): Promise<PullRequestDetails> {
+ if (!Number.isSafeInteger(number) || Number(number) < 1 || Number(number) > 2147483647) throw new Error("Invalid pull-request number.");
+ let remote: string; try { remote = await git(root,["remote","get-url","origin"]); } catch { throw new Error("Choose a Git repository with an origin remote."); }
+ const repository = githubRepository(remote); const [owner,name] = repository.split("/");
+ let command: Awaited<ReturnType<typeof resolveNativeCommand>>; try { command = await resolveNativeCommand("gh"); } catch { throw new Error("Install GitHub CLI and sign in with gh auth login."); }
+ let output: string;
+ try { output = (await execute(command.executable,[...command.prefix,"api","graphql","--hostname","github.com","-f",`query=${detailQuery}`,"-F",`owner=${owner}`,"-F",`name=${name}`,"-F",`number=${number}`],{cwd:root,windowsHide:true,timeout:20000,maxBuffer:2*1024*1024,env:{...process.env,GH_PROMPT_DISABLED:"1",GH_DEBUG:""}})).stdout; }
+ catch { throw new Error("Could not load this pull request. Check GitHub CLI sign-in and repository access, then retry."); }
+ let parsed: { errors?: unknown[]; data?: { repository?: { pullRequest?: unknown } } }; try { parsed = JSON.parse(output); } catch { throw new Error("GitHub returned unreadable pull-request details."); }
+ if(parsed?.errors?.length || !parsed?.data?.repository?.pullRequest) throw new Error("GitHub returned incomplete pull-request details.");
+ return parsePullRequestDetails(repository,Number(number),parsed.data.repository.pullRequest);
 }

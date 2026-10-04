@@ -247,8 +247,10 @@ The navigation above records the earlier shell. The current workspace uses one c
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. The new chat-shell workflow writes 21 captures to `output/playwright/chat-shell/source`: sixteen shell states at 1440×920 and 1040×680 in both themes plus multiple-tab, phone-preview and downloads captures and two separately captured native browser pages. It verifies project grouping, draft preservation, contextual PR/terminal selection, actual WebContentsView navigation, per-chat history, privilege isolation, bounds, modal hiding and cleanup.
+Run `pnpm --filter @phaseo/desktop audit:design`. The new chat-shell workflow writes 25 captures to `output/playwright/chat-shell/source`: sixteen shell states at 1440×920 and 1040×680 in both themes plus multiple-tab, phone-preview and downloads captures, two separately captured native browser pages and four PR detail states. It verifies project grouping, draft preservation, contextual PR/terminal selection, actual WebContentsView navigation, per-chat history, privilege isolation, bounds, modal hiding and cleanup.
 
 After packaging, run `pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` for the same checks and captures in `output/playwright/chat-shell/packaged`. Both source and Windows archive pass. Host capturePage omits separate native-view pixels; the browser page capture documents its actual rendering separately.
 
 The earlier 284 captures and `scripts/design-audit.mjs` record the previous navigation; that historical script is not the current audit entry point. Full accessibility, scaling, macOS/Linux rendering, live provider sign-in and complete product parity remain unverified.
+
+The PR detail audit covers loading/failure/retry, retained descriptions after failed refresh, Markdown isolation, return focus and late responses after project changes. Captures await the shell’s theme transitions before recording pixels. An earlier run failed a native tablet-dimension assertion; subsequent source and archive runs passed. Its cause remains unconfirmed and native scaling verification remains open.

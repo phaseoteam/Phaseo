@@ -18,7 +18,7 @@ This is an initial browser surface, not full browser parity. Website permission 
 
 `pnpm --filter @phaseo/desktop audit:design` runs the new chat-shell smoke/audit. It uses an isolated local profile, two seeded conversations and a local HTTP site, with no provider inference. It verifies grouping, drafts, settings, project PR/terminal context, native navigation/history, chat-specific browser restoration, unsafe-address rejection, remote privilege isolation, bounds, modal hiding and cleanup.
 
-Source and Windows archive runs produce 16 shell captures across light/dark themes at 1440×920 and 1040×680, plus multiple-tab, phone-preview and downloads captures and two separate native browser page captures. Electron's host `capturePage` does not include the separate WebContentsView pixels; the native page is captured directly and is not composited into the shell screenshot.
+Source and Windows archive runs produce 16 shell captures across light/dark themes at 1440×920 and 1040×680, plus multiple-tab, phone-preview and downloads captures, two separate native browser page captures and four pull-request-detail captures. Electron's host `capturePage` does not include the separate WebContentsView pixels; the native page is captured directly and is not composited into the shell screenshot.
 
 The broader source/archive desktop smoke covers existing accounts, agents, MCP, schedules, attachments, Git, worktrees, notifications and native protocol fixtures through the new public navigation. Provider fixtures do not establish signed-in live inference or complete product parity. Multi-OS rendering, scaling and assistive-technology verification remain open.
 
@@ -47,3 +47,11 @@ Owned source and Windows archive workflows use temporary save destinations, veri
 ![Downloads](screenshots/browser-downloads.png)
 
 `pnpm --filter @phaseo/desktop test:downloads` runs three separate Electron processes against an isolated profile: download, reopen and remove its record, then reopen again. Source and Windows archive runs verify retained native paths, exact saved bytes and durable removal without deleting the file. SQLite reopening tests cover interrupted-state recovery and a one-hundred-record bound that preserves active transfers. Progress writes are limited to once per second; final states and control changes save immediately. Write failures report that history may not survive a restart, and failed removal retains the visible record. Windows CI repeats both restart audits.
+
+## Pull-request details
+
+Select a pull-request title to open its description, branches, commit, changed-file totals, state, check/review summary and conflict status inside the right panel. Back restores the list page and focus. Detail refresh retains confirmed content on failure, provides Retry and ignores late results after changing projects. Visible details use the same 45/60-second refresh policy as lists. GitHub remains available as a separate action.
+
+The production adapter reads a project’s GitHub origin through a compact native CLI GraphQL query with validated numbers, bounded output and canonical links. An installed-CLI read of PR #2702 verifies real body and commit metadata. Source and Windows archive audits cover failure/retry, retained-body refresh, Markdown isolation, Back focus and stale project responses, with light/dark captures at both window sizes. Changed-file diffs, review threads/actions, merge and background watchers remain open.
+
+![Pull-request details](screenshots/pull-request-details-small-window.png)
