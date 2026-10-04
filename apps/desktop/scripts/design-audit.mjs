@@ -128,9 +128,21 @@ async function auditPiCompaction(window,output,width,theme){
  const layout=await window.webContents.executeJavaScript(`(()=>{const card=document.querySelector('.task-activity'),summary=card.querySelector('.compaction-summary'),source=card.querySelector('.compaction-source');card.querySelector('.message-code-actions button').click();return {heading:summary.querySelector('h2')?.textContent,text:summary.textContent,inert:!summary.querySelector('untrusted'),padding:getComputedStyle(summary).padding,sourceClosed:!source.open,raw:source.querySelector('pre').textContent}})()`);
  if(layout.heading!=='Saved context'||!layout.text.includes('世界')||!layout.inert||layout.padding!=='16px'||!layout.sourceClosed)throw Error('Pi compaction summary must render readable, inert Markdown with collapsed original data');
  for(let attempt=0;!await window.webContents.executeJavaScript(`window.auditPiCopy===${JSON.stringify(layout.raw)}`);attempt++){if(attempt>50)throw Error('Pi original result copying changed');await new Promise(resolve=>setTimeout(resolve,20));}
- await window.webContents.executeJavaScript(`document.querySelector(".task-activity").open=true;document.querySelector(".compaction-summary").scrollIntoView({block:"center"})`);
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.task-activity').open`))throw Error('Copy collapsed an expanded activity');
+ await window.webContents.executeJavaScript(`document.querySelector('.compaction-summary').scrollIntoView({block:'center'})`);
  await new Promise(resolve=>setTimeout(resolve,100));
  writeFileSync(path.join(output,`${width}-${theme}-pi-compaction.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Owned clipboard failure')}}});document.querySelector('.task-activity button').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-activity .message-code-actions').textContent.includes('Copy failed')`);attempt++){if(attempt>50)throw Error('Activity copy failure did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.task-activity').open&&!document.querySelector('.compaction-source').open`))throw Error('Copy failure changed disclosure state');
+ writeFileSync(path.join(output,`${width}-${theme}-activity-copy-failure.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditPiRetry=text;}}});document.querySelector('.task-activity button').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`window.auditPiRetry===${JSON.stringify(layout.raw)}&&Boolean(document.querySelector('.task-activity button[aria-label="Result copied"]'))`);attempt++){if(attempt>50)throw Error('Activity copy retry failed');await new Promise(resolve=>setTimeout(resolve,20));}
+ await new Promise(resolve=>setTimeout(resolve,2100));
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.task-activity').open&&!document.querySelector('.compaction-source').open&&!document.querySelector('.task-activity button[aria-label="Result copied"]')`))throw Error('Copy feedback expiry changed disclosure state');
+ await window.webContents.executeJavaScript(`document.querySelector('.task-activity > summary').click();document.querySelector('.task-activity button').click()`);
+ await new Promise(resolve=>setTimeout(resolve,100));
+ if(await window.webContents.executeJavaScript(`document.querySelector('.task-activity').open`))throw Error('Copy reopened a collapsed activity');
  await openTaskActions(window);await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context').click()`);
 }
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
