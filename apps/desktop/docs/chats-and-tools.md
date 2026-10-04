@@ -67,3 +67,5 @@ The native adapter validates the request, checks head/base commit identities bef
 Twenty-four new native/parser cases and three patch-presentation cases bring the desktop suite to 560 tests across 79 files. Source/archive workflows verify initial failure/retry, 100-row bounds, failed-page retention/retry, omitted patches and both layouts. The production adapter reads all 299 files in PR #2702 across three pages without changing the temporary repository. Review threads/actions, viewed-file marks and merge remain open.
 
 ![PR files](screenshots/pull-request-files.png)
+
+Patch previews now check hunk line counts and reported addition/deletion totals. An incomplete or unsupported patch shows a warning while remaining readable. Passing this check proves changed-line coverage only, not full file contents or unchanged context. Nine additional tests bring the suite to 569 tests across 80 files.
