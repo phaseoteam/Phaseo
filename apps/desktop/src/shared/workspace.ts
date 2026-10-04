@@ -50,7 +50,7 @@ export type TerminalCommand = { type: "open"; projectId?: string } | { type: "wr
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
 	| { type: "inbox-read"; id: string; revision: string }
-	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
+	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
@@ -129,7 +129,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000)) throw new Error("Invalid agent arguments.");
 	} else if (command.type === "add-account") {
 		string("name", true, 100);
-		if (!["codex", "claude", "phaseo", "cursor"].includes(command.harness as string)) throw new Error("Invalid account harness.");
+		if (!["codex", "claude", "phaseo", "cursor", "grok"].includes(command.harness as string)) throw new Error("Invalid account harness.");
 		if (command.kind === "api" && command.harness === "phaseo") {
 			string("endpoint"); string("apiKey", true, 10000);
 			validateApiEndpoint(command.endpoint as string);

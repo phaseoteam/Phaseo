@@ -87,6 +87,10 @@ describe("workspace durability", () => {
 });
 
 describe("IPC validation", () => {
+	it("accepts native Grok profiles and rejects Grok API account creation", () => {
+		expect(() => validateCommand({ type: "add-account", name: "Personal Grok", harness: "grok", kind: "native" })).not.toThrow();
+		expect(() => validateCommand({ type: "add-account", name: "Grok", harness: "grok", kind: "api", apiKey: "fixture" })).toThrow("account type");
+	});
 	it("rejects API credentials embedded in endpoint query strings", () => {
 		expect(() => validateCommand({ type: "add-account", name: "API", harness: "phaseo", kind: "api", apiKey: "secret", endpoint: "https://api.example.test/v1?api_key=secret" })).toThrow("query parameters");
 	});

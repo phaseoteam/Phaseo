@@ -276,6 +276,21 @@ app.whenReady().then(async () => {
 		})()`);
 		if (readFileSync(path.join(data, "workspace", "credentials", `${cursorAccount.secretId}.credential`)).includes(Buffer.from("cursor-rotated-fixture-key"))) throw new Error("Cursor key was stored without encryption");
 		result.cursorAccounts = true;
+		const grokAccount = await window.webContents.executeJavaScript(`(async () => {
+			const api=window.phaseoDesktop.workspace;
+			const created=await api.command({type:'add-account',name:'Grok fixture profile',harness:'grok',kind:'native'});
+			const account=created.accounts.find(value=>value.name==='Grok fixture profile');
+			if(!account?.configDirectory || account.configured || account.kind!=='native') throw new Error('Grok profile metadata is invalid');
+			Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Accounts').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const row=Array.from(document.querySelectorAll('article')).find(article=>article.textContent.includes('Grok fixture profile'));
+			if(!row || !['Sign in','Check status','Edit','Archive'].every(label=>Array.from(row.querySelectorAll('button')).some(button=>button.textContent===label))) throw new Error('Grok profile controls missing');
+			if(!document.querySelector('option[value="grok"]')) throw new Error('Grok provider option missing');
+			await api.command({type:'update-account',id:account.id,archived:true});
+			Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			return account;
+		})()`);
+		if (!existsSync(grokAccount.configDirectory) || !grokAccount.configDirectory.startsWith(path.join(data, 'workspace', 'accounts'))) throw new Error('Grok profile directory is not isolated');
+		result.grokAccounts = true;
 		const agentFixture = path.join(data, "acp-fixture.cjs"); const agentRequests = path.join(data, "acp-requests.txt");
 		writeFileSync(agentFixture, `const readline=require('node:readline'); const fs=require('node:fs'); readline.createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line); fs.appendFileSync(${JSON.stringify(agentRequests)},request.method+'\\n'); if(request.method==='initialize') process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:request.id,result:{protocolVersion:request.params.protocolVersion,agentInfo:{name:'Smoke ACP fixture',version:'1.2.3'},agentCapabilities:{loadSession:true,promptCapabilities:{image:true}},authMethods:[{id:'browser',name:'Browser sign-in'}]}})+'\\n');});`);
 		await window.webContents.executeJavaScript(`(async () => {

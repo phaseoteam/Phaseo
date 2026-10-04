@@ -199,7 +199,9 @@ The desktop account-status bridge now supports Grok's native `models` command wi
 
 Grok's native sign-in backend uses the documented `login --oauth` browser flow in an isolated profile and requires an authenticated native status result before marking that profile configured. Cancellation settles without waiting for process exit, discovery cancellation cannot start a late process, and stalled attempts expire after ten minutes. Authentication output is drained without persistence. Six owned-process tests pass; actual browser OAuth remains unverified. Managed account creation and renderer selection remain unfinished.
 
-Evidence: desktop lint/typecheck/build pass; 291 deterministic tests cover protocol,
+Grok native profiles can now be created through Accounts, using the shared form layout and existing sign-in/cancel, status, edit and archive actions. API account creation remains unsupported for this harness and is rejected by IPC validation. The owned Electron smoke verifies profile creation, an isolated account directory, rendered actions/provider selection and archive without initiating login or inference. The dedicated task harness selector and actual browser OAuth remain outstanding.
+
+Evidence: desktop lint/typecheck/build pass; 292 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
