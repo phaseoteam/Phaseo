@@ -82,6 +82,8 @@ app.whenReady().then(async () => {
 			await api.command({type:'update-task',id:task.id,archived:true});
 			const restored = await api.command({type:'update-task',id:task.id,archived:false});
 			if (restored.tasks[0].title !== 'Electron bridge check' || !restored.tasks[0].pinned) throw new Error('IPC persistence mismatch');
+			const overview=await api.overview();const summary=overview.tasks.find(value=>value.id===task.id);if(!summary||summary.title!=='Electron bridge check'||'messages' in summary||'queue' in summary||summary.approvalsCount!==0)throw new Error('Workspace overview bridge mismatch');
+			const overviewEvents=[];const stopOverview=api.onOverviewChange(state=>overviewEvents.push(state));await api.command({type:'update-task',id:task.id,pinned:true});for(let attempt=0;attempt<30&&!overviewEvents.length;attempt++)await new Promise(resolve=>setTimeout(resolve,20));stopOverview();if(!overviewEvents.length||overviewEvents.some(state=>state.tasks.some(value=>'messages' in value||'queue' in value||'activities' in value)))throw new Error('Workspace overview event exposed task bodies');
 			const detail=await api.task(task.id);if(detail.id!==task.id||detail.title!=='Electron bridge check'||!Array.isArray(detail.messages)||!Array.isArray(detail.queue))throw new Error('Task detail bridge mismatch');
 			let invalidDetail=false;try{await api.task(42);}catch{invalidDetail=true;}if(!invalidDetail)throw new Error('Task detail accepted an invalid identifier');
 			const history = await api.taskHistory({query:'BRIDGE',archived:false,offset:0,limit:1});

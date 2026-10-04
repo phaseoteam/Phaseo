@@ -7,6 +7,8 @@ import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
+import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
+import { inboxReasonFromCounts } from "../shared/inbox";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -56,6 +58,27 @@ export class WorkspaceStore {
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");
 		return JSON.parse(row.data as string) as Task;
+	}
+	getOverview(): WorkspaceOverview {
+		const rows = (table: "projects" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
+		const tasks = this.db.prepare(`SELECT json_object(
+			'id', id, 'title', json_extract(data, '$.title'), 'harness', json_extract(data, '$.harness'),
+			'model', json_extract(data, '$.model'), 'mode', json_extract(data, '$.mode'), 'status', json_extract(data, '$.status'),
+			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'archived', coalesce(json_extract(data, '$.archived'), 0),
+			'createdAt', json_extract(data, '$.createdAt'), 'updatedAt', json_extract(data, '$.updatedAt'), 'revision', json_extract(data, '$.revision'),
+			'projectId', json_extract(data, '$.projectId'), 'accountId', json_extract(data, '$.accountId'), 'agentId', json_extract(data, '$.agentId'),
+			'parentId', json_extract(data, '$.parentId'), 'missionId', json_extract(data, '$.missionId'), 'inboxReadAt', json_extract(data, '$.inboxReadAt'),
+			'approvalsCount', coalesce(json_array_length(data, '$.approvals'), 0),
+			'answersCount', coalesce(json_array_length(data, '$.questions'), 0) + coalesce(json_array_length(data, '$.forms'), 0),
+			'steeringReviewCount', (SELECT count(*) FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') IN ('unconfirmed', 'rejected'))
+		) AS metadata FROM tasks ORDER BY json_extract(data, '$.updatedAt') DESC, id DESC`).all().map(row => {
+			const parsed = JSON.parse(row.metadata as string);
+			const task = Object.fromEntries(Object.entries(parsed).filter(([, value]) => value !== null)) as TaskOverview;
+			task.pinned = Boolean(task.pinned); task.archived = Boolean(task.archived);
+			task.attentionReason = inboxReasonFromCounts(task);
+			return task;
+		});
+		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
 		const { query, archived, offset, limit } = validateTaskHistoryQuery(value);

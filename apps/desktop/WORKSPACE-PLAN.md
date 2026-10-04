@@ -44,6 +44,8 @@ The history workflow passes against the Windows archive, including an owned fail
 
 Selected conversations now read their full task through a validated task-by-ID IPC API. Refreshes coalesce into one in-flight read for the current selection, obsolete selection replies are ignored, and failed reads offer Retry. Task saves advance a durable revision counter from the stored record, including unchanged timestamps and stale input snapshots. The renderer uses that revision for detail refreshes. The history workflow verifies delayed replies, rapid detail changes without overlapping reads and retry recovery. Global workspace snapshots still contain full tasks; their replacement remains unfinished.
 
+A typed workspace overview now projects task metadata and attention counts directly in SQLite, excluding messages, drafts, request bodies, activities, native session IDs and model catalogs. Home, Inbox and command search read this overview and its dedicated change event. Home includes failures and other unresolved attention states rather than labeling every waiting task as an approval. Tests verify payload omission, attention priority and archive behavior; Electron checks the overview read/event and Home/Inbox navigation into full detail. Other screens still use the full workspace snapshot, and the old broadcast remains during migration.
+
 Changes are confined to the desktop app and necessary integration packages.
 Keep credentials and filesystem/process execution in the trusted runtime.
 Validate IPC inputs, project boundaries, cancellation, and durable transitions.
@@ -235,7 +237,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 313 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 315 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

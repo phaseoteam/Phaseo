@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
-import type { Workspace } from "../../shared/workspace";
-import { emptyWorkspace } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 
 export function CommandPalette({ onClose, onNavigate, onTheme }: { onClose: () => void; onNavigate: (page: string, taskId?: string) => void; onTheme: (theme: "light" | "dark" | "system") => void }) {
 	const dialog = useRef<HTMLDialogElement>(null);
 	const [query, setQuery] = useState(""); const [selected, setSelected] = useState(0);
-	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace); const [error, setError] = useState("");
+	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview); const [error, setError] = useState("");
 	useEffect(() => { const element = dialog.current; element?.showModal(); return () => element?.close(); }, []);
 	useEffect(() => { document.getElementById(`workspace-command-${selected}`)?.scrollIntoView({ block: "nearest" }); }, [selected, query]);
 	useEffect(() => {
 		const api = window.phaseoDesktop?.workspace; if (!api) return;
 		let active = true;
-		void api.get().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
-		const unsubscribe = api.onChange(setWorkspace); return () => { active = false; unsubscribe(); };
+		void api.overview().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
+		const unsubscribe = api.onOverviewChange(setWorkspace); return () => { active = false; unsubscribe(); };
 	}, []);
 	const commands = [
 		{ id: "new", title: "New task", detail: "Create", action: () => onNavigate("tasks") },

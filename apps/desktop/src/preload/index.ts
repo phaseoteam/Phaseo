@@ -14,6 +14,8 @@ const desktopApi: PhaseoDesktopApi = {
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
 		onOpenTask: listener => { taskOpenListeners.add(listener); if (pendingTaskOpen) { const pending = pendingTaskOpen; pendingTaskOpen = undefined; listener(pending.id); } return () => { taskOpenListeners.delete(listener); }; },
 		get: () => ipcRenderer.invoke("workspace:get"),
+		overview: () => ipcRenderer.invoke("workspace:overview"),
+		onOverviewChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state); ipcRenderer.on("workspace:overview-changed", subscription); return () => ipcRenderer.removeListener("workspace:overview-changed", subscription); },
 		task: id => ipcRenderer.invoke("workspace:task", id),
 		taskHistory: query => ipcRenderer.invoke("workspace:task-history", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
+import { workspaceOverview } from "../shared/workspaceOverview";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { resolveGrokCommand } from "./grokLaunch";
@@ -201,6 +202,10 @@ ipcMain.handle("workspace:write-document", async (event, id: unknown, filename: 
 ipcMain.handle("workspace:get", event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.get();
+});
+ipcMain.handle("workspace:overview", event => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.getOverview();
 });
 ipcMain.handle("workspace:task-history", (event, query: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
@@ -443,7 +448,8 @@ app.whenReady().then(() => {
 	workspaceRuntime.onChange = state => {
 		missionService.observe(state);
 		taskNotifications.update(state);
-		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:changed", state);
+		const overview = workspaceOverview(state);
+		for (const window of BrowserWindow.getAllWindows()) { window.webContents.send("workspace:changed", state); window.webContents.send("workspace:overview-changed", overview); }
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();

@@ -13,7 +13,7 @@ db.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const timestamp = "2026-10-04T00:00:00.000Z";
 for (let index = 0; index < 157; index++) {
   const id = String(index).padStart(3, "0");
-  db.prepare("INSERT INTO tasks VALUES (?, ?)").run(id, JSON.stringify({ id, title: `History ${id}`, harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: index === 0, archived: index >= 155, queue: [], createdAt: timestamp, updatedAt: timestamp, messages: [{ id: `message-${id}`, role: "user", text: index === 42 ? "Résumé needle in the conversation body" : `Sample message ${id}`, createdAt: timestamp }] }));
+  db.prepare("INSERT INTO tasks VALUES (?, ?)").run(id, JSON.stringify({ id, title: `History ${id}`, harness: "phaseo", model: "default", mode: "chat", status: index === 154 ? "failed" : "completed", pinned: index === 0, archived: index >= 155, queue: [], createdAt: timestamp, updatedAt: timestamp, messages: [{ id: `message-${id}`, role: "user", text: index === 42 ? "Résumé needle in the conversation body" : `Sample message ${id}`, createdAt: timestamp }] }));
 }
 db.close();
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
@@ -99,7 +99,13 @@ try {
   await wait(`Array.from(document.querySelectorAll('.task-list p')).some(p=>p.textContent==='No matching tasks.')`, "empty search");
   await search(""); await run(`document.querySelector('.task-archive-filter').click()`);
   await wait(`document.querySelectorAll('.task-row').length===50`, "active history");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true }), "ISOLATED_DATA", data);
+  for (const page of ["Home", "Inbox"]) {
+    await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()===${JSON.stringify(page)}).click()`);
+    await wait(`Array.from(document.querySelectorAll('.attention-item')).some(row=>row.textContent.includes('History 154')&&row.textContent.includes('Task failed'))`, `${page} attention metadata`);
+    await run(`Array.from(document.querySelectorAll('.attention-item')).find(row=>row.textContent.includes('History 154')).querySelector('button').click()`);
+    await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
+  }
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });
