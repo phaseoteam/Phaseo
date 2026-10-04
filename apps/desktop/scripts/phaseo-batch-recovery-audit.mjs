@@ -97,8 +97,26 @@ if (stage) {
   active.on('exit', code => { clearTimeout(timer); if (!output.includes(marker)) reject(Error(`Owned batch child exited ${code}: ${output}`)); });
  });
  const crash = async () => {
-  if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(active.pid), '/T', '/F'], { windowsHide: true }); else active.kill('SIGKILL');
-  await new Promise(resolve => active.exitCode !== null || active.signalCode !== null ? resolve() : active.once('exit', resolve));
+  const child = active; assert.equal(child.exitCode, null); assert.equal(child.signalCode, null);
+  let killError;
+  try {
+   if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true, timeout: 15000, stdio: 'pipe' }); else assert.ok(child.kill('SIGKILL'));
+  } catch (error) {
+   // Only the known Windows already-exited tree result is admissible. Missing
+   // executables, timeouts and permission failures must still fail the audit.
+   const reasons = String(error.stderr).split(/\r?\n/).map(line => line.trim()).filter(line => line.startsWith('Reason:'));
+   if (process.platform !== 'win32' || error.status !== 128 || !reasons.length || reasons.some(line => line !== 'Reason: There is no running instance of the task.')) throw error;
+   killError = error;
+  }
+  // Windows tree traversal can report already-exited descendants after killing
+  // the parent. Confirm this exact spawned process exited before reopening it.
+  await new Promise((resolve, reject) => {
+   if (child.exitCode !== null || child.signalCode !== null) { resolve(); return; }
+   const exited = () => { clearTimeout(timer); resolve(); };
+   const timer = setTimeout(() => { child.removeListener('exit', exited); reject(Error('Owned batch parent did not exit after forced crash.', { cause: killError })); }, 5000);
+   child.once('exit', exited);
+  });
+  if (killError) console.log('BATCH_CRASH_CONFIRMED_AFTER_TREE_RACE', JSON.stringify({ pid: child.pid, exitCode: child.exitCode, signalCode: child.signalCode }));
  };
  try {
   await launch('prepare', 'BATCH_RECOVERY_PREPARED'); assert.equal(firstEffects, 0); assert.equal(secondEffects, 0); await crash();
