@@ -125,6 +125,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Website card and focus treatment](screenshots/web-card-focus-small-window.png)
 
+44. **Conversation space:** task setup scrolls within the detail pane when taller than the window. Settings retain fixed Save/Cancel actions while their fields scroll within a bounded section. Composer resizing is capped to preserve reading space. The packaged audit enlarges the composer to its limit with settings open, checks reachable Save and visible composer controls, and requires at least 70 pixels of transcript in both window sizes/themes.
+
+![Bounded conversation settings](screenshots/conversation-settings-bounded.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 136 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
