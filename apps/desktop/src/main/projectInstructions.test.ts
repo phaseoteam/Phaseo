@@ -5,6 +5,21 @@ import { describe, expect, it, vi } from "vitest";
 import { ProjectInstructions } from "./projectInstructions";
 
 describe("project instruction discovery", () => {
+	it("orders global guidance before project scopes and revisions include global changes", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-global-instructions-")), global = path.join(root, "instructions"), project = path.join(root, "project"); mkdirSync(global); mkdirSync(path.join(project, "global"), { recursive: true }); writeFileSync(path.join(global, "AGENTS.md"), "Global guidance"); writeFileSync(path.join(project, "AGENTS.md"), "Project guidance"); writeFileSync(path.join(project, "global", "AGENTS.md"), "Folder guidance");
+		try { const instructions = new ProjectInstructions(project, undefined, global); await instructions.load("global", true); expect(instructions.list().map(value => value.scope)).toEqual(["*", ".", "global"]); expect(instructions.list().map(value => value.text)).toEqual(["Global guidance", "Project guidance", "Folder guidance"]); const before = instructions.revision(); writeFileSync(path.join(global, "AGENTS.md"), "Changed global guidance"); expect(await instructions.refresh()).toBe(true); expect(instructions.revision()).not.toBe(before); rmSync(path.join(global, "AGENTS.md")); await instructions.refresh(); expect(instructions.list().map(value => value.scope)).toEqual([".", "global"]); }
+		finally { rmSync(root, { recursive: true, force: true }); }
+	});
+	it("loads global guidance for a personal chat without reading project files", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-personal-instructions-")); writeFileSync(path.join(root, "AGENTS.md"), "Global guidance");
+		try { const instructions = new ProjectInstructions(path.join(root, "nonexistent-personal-directory"), undefined, root); await instructions.loadGlobal(); expect(instructions.list()).toEqual([{ path: "global/AGENTS.md", scope: "*", text: "Global guidance" }]); }
+		finally { rmSync(root, { recursive: true, force: true }); }
+	});
+	it("does not partially update guidance when global content becomes invalid", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-global-invalid-")), global = path.join(root, "instructions"); mkdirSync(global); writeFileSync(path.join(global, "AGENTS.md"), "Valid global"); writeFileSync(path.join(root, "AGENTS.md"), "Valid project");
+		try { const instructions = new ProjectInstructions(root, undefined, global); await instructions.load(".", true); const before = instructions.revision(); writeFileSync(path.join(global, "AGENTS.md"), Buffer.from([0xff])); writeFileSync(path.join(root, "AGENTS.md"), "Changed project"); await expect(instructions.refresh()).rejects.toThrow("UTF-8"); expect(instructions.revision()).toBe(before); }
+		finally { rmSync(root, { recursive: true, force: true }); }
+	});
 	it("loads ancestor scopes in order and refreshes changed or removed guidance", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-instructions-")); mkdirSync(path.join(root, "src", "nested"), { recursive: true });
 		writeFileSync(path.join(root, "AGENTS.md"), "Root guidance"); writeFileSync(path.join(root, "src", "AGENTS.md"), "Scoped guidance");

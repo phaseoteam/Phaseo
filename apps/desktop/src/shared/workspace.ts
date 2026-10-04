@@ -6,6 +6,7 @@ import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
+import type { InstructionDocument, InstructionEdit } from "./instructions";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
 import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
@@ -97,6 +98,8 @@ export type WorkspaceApi = {
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;
 	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
+	globalInstructions: () => Promise<InstructionDocument>;
+	saveGlobalInstructions: (edit: InstructionEdit) => Promise<InstructionDocument>;
 	onOpenTask: (listener: (taskId?: string) => void) => () => void;
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;

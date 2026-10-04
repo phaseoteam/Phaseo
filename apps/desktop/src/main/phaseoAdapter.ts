@@ -8,18 +8,18 @@ import { AgentInputRejectedError } from "./agentAdapter";
 /** Compatible inference transport. Tool execution is added through the harness tool layer. */
 export class PhaseoAdapter implements AgentAdapter {
 	private controller = new AbortController();
-	constructor(private readonly credential: (id: string) => string, private readonly fetcher: typeof fetch = fetch) {}
+	constructor(private readonly credential: (id: string) => string, private readonly fetcher: typeof fetch = fetch, private readonly globalInstructionsRoot?: string) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		if (!account || account.kind !== "api" || !account.endpoint) throw new Error("Connect an API account to use the Phaseo harness.");
 		if (task.mode === "code") throw new Error("Use the Phaseo Agent SDK adapter for coding tasks.");
 		if (task.model === "default") throw new Error("Select a model for this API account.");
 		let projectInstructions = "";
-		if (task.projectId) {
-			const instructions = new ProjectInstructions(cwd);
-			try { await instructions.load(".", true); } catch (error) { throw new AgentInputRejectedError(`Project instructions were not loaded; your input was not submitted. ${error instanceof Error ? error.message : "Check AGENTS.md."}`, { cause: error }); }
+		{
+			const instructions = new ProjectInstructions(cwd, undefined, this.globalInstructionsRoot);
+			try { if (task.projectId) await instructions.load(".", true); else await instructions.loadGlobal(); } catch (error) { throw new AgentInputRejectedError(`Project instructions were not loaded; your input was not submitted. ${error instanceof Error ? error.message : "Check AGENTS.md."}`, { cause: error }); }
 			if (instructions.list().length) {
-				projectInstructions = `Apply these project instructions to this conversation. Tools remain unavailable.\n${JSON.stringify(instructions.list())}`;
-				callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: "Loaded AGENTS.md", status: "completed" });
+				projectInstructions = `Apply global guidance everywhere; project guidance takes precedence within its scope. Tools remain unavailable.\n${JSON.stringify(instructions.list())}`;
+				callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: `Loaded ${instructions.list().map(file => file.path).join(", ")}`, status: "completed" });
 			}
 		}
 		const endpoint = `${account.endpoint.replace(/\/$/, "")}/chat/completions`;

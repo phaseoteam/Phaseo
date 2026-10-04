@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { defaultPreferences } from "../../shared/preferences";
 import type { WorkspacePreferences } from "../../shared/preferences";
+import { GlobalInstructionsEditor } from "../components/GlobalInstructionsEditor";
 
 export function WorkspaceSettings() {
 	const [preferences, setPreferences] = useState(defaultPreferences);
@@ -36,6 +37,7 @@ export function WorkspaceSettings() {
 			{loadError && !loading && <div className="settings-feedback"><p className="task-error" role="alert">{loadError}</p></div>}
 			{saveError && <div className="settings-feedback"><p className="task-error" role="alert">{saveError.message}</p><button type="button" onClick={() => void save(saveError.value)}>Retry</button></div>}
 		</section>
+		<GlobalInstructionsEditor />
 	</div>;
 }
 

@@ -80,7 +80,13 @@ Phaseo project Chats load the project's root `AGENTS.md`. Code and Plan also loa
 
 More specific instructions apply to their directory and descendants. Files must be valid UTF-8 text within the registered project, at most 16 KiB each, with up to 32 loaded files and 64 KiB total. Invalid root instructions reject submission and retain queued input. Local writes and commands carry the confirmed instruction revision: changed or newly discovered instructions block execution until the model reviews them and requests a fresh approval. A saved pending approval is restored before continuing after a restart.
 
-Owned model fixtures verify root and folder scopes, approval-time changes, new instruction discovery, commands, persisted approval recovery and actual file effects. Global instructions, filesystem watchers, native instruction settings, reusable commands and skills remain in progress.
+Owned model fixtures verify root and folder scopes, approval-time changes, new instruction discovery, commands, persisted approval recovery and actual file effects. Filesystem watchers, native instruction settings and broader skill/plugin management remain in progress.
+
+Settings now includes global instructions for Phaseo Chat, Code and Plan, including personal chats. Guidance lives in the desktop profile's `workspace/instructions/AGENTS.md`, with a 16 KiB UTF-8 text limit. Project and folder guidance take precedence within their scopes. A changed global instruction revision blocks previously approved file writes and commands until the model sees the update and requests a fresh approval. Invalid guidance rejects admission before inference.
+
+The editor preserves drafts after save failures, detects external edits, offers Reload and allows clearing guidance. Nine new tests cover ordering, personal scope, global change/removal, invalid-state atomicity, BOM revisions, edit bounds, concurrent/stale saves and an actual approved file effect. Current desktop suite: 726 tests across 95 files. Source and completed Windows archive settings verification each capture four states across both themes/window sizes and verifies durable file saves, stale-write rejection, retained drafts and reload with zero provider inference. Archive hashes match the current main/preload/renderer build, and Windows CI includes both settings workflows. Signed-in provider execution and native harness instruction editors remain unverified.
+
+![Global instructions](screenshots/global-instructions.png)
 
 ## Reusable chat commands
 

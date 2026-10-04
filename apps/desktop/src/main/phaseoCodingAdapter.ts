@@ -13,12 +13,12 @@ import { AgentInputRejectedError } from "./agentAdapter";
 
 export class PhaseoCodingAdapter implements AgentAdapter {
 	private controller = new AbortController();
-	constructor(private readonly credential: (id: string) => string, private readonly store: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">, private readonly clientFactory: (account: Account, key: string) => AgentModelClient = (account, key) => createGatewayAgentClient({ clientOptions: { apiKey: key, baseUrl: account.endpoint }, includeMeta: true }), private readonly mcpConnections: McpConnection[] = []) {}
+	constructor(private readonly credential: (id: string) => string, private readonly store: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">, private readonly clientFactory: (account: Account, key: string) => AgentModelClient = (account, key) => createGatewayAgentClient({ clientOptions: { apiKey: key, baseUrl: account.endpoint }, includeMeta: true }), private readonly mcpConnections: McpConnection[] = [], private readonly globalInstructionsRoot?: string) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []) {
 		if (attachments.some(attachment => attachment.kind === "image")) throw new Error("Phaseo Code and Plan require text attachments. Use Chat or a native vision-capable harness for images.");
 		if (!account || account.kind !== "api" || !account.endpoint) throw new Error("Connect an API account to use the Phaseo harness.");
 		if (task.model === "default") throw new Error("Select a model for this API account.");
-		const instructions = new ProjectInstructions(cwd, files => callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: files.length ? `Loaded ${files.join(", ")}` : "Previously loaded project instructions no longer apply.", status: "completed" }));
+		const instructions = new ProjectInstructions(cwd, files => callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: files.length ? `Loaded ${files.join(", ")}` : "Previously loaded project instructions no longer apply.", status: "completed" }), this.globalInstructionsRoot);
 		try { await instructions.load(".", true); } catch (error) { throw new AgentInputRejectedError(`Project instructions were not loaded; your input was not submitted. ${error instanceof Error ? error.message : "Check AGENTS.md."}`, { cause: error }); }
 		const mcp = await connectPhaseoMcp(this.mcpConnections.filter(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), cwd, this.controller.signal, callbacks);
 		try {

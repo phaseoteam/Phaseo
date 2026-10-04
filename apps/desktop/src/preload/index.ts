@@ -18,6 +18,8 @@ const desktopApi: PhaseoDesktopApi = {
 		onMissionsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, missions: Parameters<typeof listener>[0]) => listener(missions); ipcRenderer.on("workspace:missions-changed", subscription); return () => ipcRenderer.removeListener("workspace:missions-changed", subscription); },
 		preferences: () => ipcRenderer.invoke("workspace:preferences"),
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
+		globalInstructions: () => ipcRenderer.invoke("workspace:global-instructions"),
+		saveGlobalInstructions: edit => ipcRenderer.invoke("workspace:save-global-instructions", edit),
 		onOpenTask: listener => { taskOpenListeners.add(listener); if (pendingTaskOpen) { const pending = pendingTaskOpen; pendingTaskOpen = undefined; listener(pending.id); } return () => { taskOpenListeners.delete(listener); }; },
 		get: () => ipcRenderer.invoke("workspace:get"),
 		nativeActions: taskId => ipcRenderer.invoke("workspace:native-actions", taskId),

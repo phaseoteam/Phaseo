@@ -14,6 +14,14 @@ const account: Account = { id: "account", name: "Owned", harness: "phaseo", kind
 const revision = (request: AgentModelRequest<unknown>) => request.instructions?.match(/instructionRevision ([a-f0-9]{64})/)?.[1];
 
 describe("Phaseo project instructions in the actual run loop", () => {
+	it("blocks an approved file effect until changed global guidance is reviewed", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-global-approval-")), global = path.join(root, "instructions"); mkdirSync(global); writeFileSync(path.join(global, "AGENTS.md"), "Initial global guidance"); writeFileSync(path.join(root, "file.txt"), "Before"); const store = new WorkspaceStore(path.join(root, "state.sqlite")); let approvals = 0;
+		try {
+			const generate = vi.fn().mockImplementationOnce(async (request: AgentModelRequest<unknown>) => { expect(request.instructions).toContain("Initial global guidance"); return { message: { role: "assistant", content: "", toolCalls: [{ id: "stale", name: "write_project_file", input: { path: "file.txt", content: "After", expectedHash: contentHash("Before"), instructionRevision: revision(request) } }] } }; }).mockImplementationOnce(async (request: AgentModelRequest<unknown>) => { expect(request.instructions).toContain("Changed global guidance"); expect(readFileSync(path.join(root, "file.txt"), "utf8")).toBe("Before"); expect(request.messages).toContainEqual(expect.objectContaining({ role: "tool", toolCallId: "stale", content: expect.stringContaining('"blocked": true') })); return { message: { role: "assistant", content: "", toolCalls: [{ id: "fresh", name: "write_project_file", input: { path: "file.txt", content: "After", expectedHash: contentHash("Before"), instructionRevision: revision(request) } }] } }; }).mockResolvedValueOnce({ message: { role: "assistant", content: "Finished" } });
+			await new PhaseoCodingAdapter(() => "unused", store, () => ({ generate }), [], global).run(task, root, "Edit", { onDelta: () => {}, onSession: () => {}, onApproval: async () => { if (++approvals === 1) writeFileSync(path.join(global, "AGENTS.md"), "Changed global guidance"); return "accept"; } }, account);
+			expect(approvals).toBe(2); expect(readFileSync(path.join(root, "file.txt"), "utf8")).toBe("After");
+		} finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("updates dynamic scopes and blocks a write whose instructions changed during approval", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-instruction-run-")); mkdirSync(path.join(root, "src")); writeFileSync(path.join(root, "AGENTS.md"), "Root guidance"); writeFileSync(path.join(root, "src", "AGENTS.md"), "Scoped guidance"); writeFileSync(path.join(root, "src", "file.txt"), "Before");
 		const store = new WorkspaceStore(path.join(root, "state.sqlite")); let approvals = 0;

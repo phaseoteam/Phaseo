@@ -64,6 +64,7 @@ export class WorkspaceRuntime {
 	onTerminalAuth?: (request: TerminalAuthRequest, signal: AbortSignal) => TerminalAuthentication;
 	getTerminals?: () => { cwd: string; status: string }[];
 	constructor(private readonly directory: string, private readonly adapterFactory = createAdapter, private readonly vault?: SecretVault) {
+		mkdirSync(path.join(directory, "instructions"), { recursive: true });
 		mkdirSync(directory, { recursive: true });
 		this.store = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 		this.attachments = new AttachmentService(path.join(directory, "attachments"), this.store);
@@ -321,7 +322,7 @@ export class WorkspaceRuntime {
 			this.assertHarnessAvailable(task.harness);
 			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections()) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions")) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
 		}
 		catch (error) {
 			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";

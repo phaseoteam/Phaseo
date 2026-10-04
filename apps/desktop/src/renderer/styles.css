@@ -714,3 +714,6 @@ button { color: inherit; }
 .prompt-command-actions { justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }
 .prompt-command-preview pre { max-height: 260px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--background); border: 1px solid var(--border); padding: 16px; border-radius: 8px; margin: 0; font-size: 13px; line-height: 1.6; }
 .prompt-command-errors { margin-top: 16px; font-size: 12px; overflow-wrap: anywhere; }
+
+.global-instructions-field { display: grid; gap: 8px; width: 100%; }
+.global-instructions-field textarea { width: 100%; min-height: 180px; resize: vertical; }

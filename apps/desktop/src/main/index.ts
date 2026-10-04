@@ -1,3 +1,4 @@
+import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
@@ -56,6 +57,7 @@ const rendererPath = path.join(currentDirectory, "../renderer/index.html");
 const developmentUrl = process.env.PHASEO_DESKTOP_DEV_URL;
 const updateFeedUrl = process.env.PHASEO_DESKTOP_UPDATE_URL;
 let workspaceRuntime: WorkspaceRuntime;
+let globalInstructions: GlobalInstructions;
 let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
@@ -70,6 +72,8 @@ let taskNotifications: TaskNotifications;
 let missionService: MissionService;
 ipcMain.handle("workspace:missions", event => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return workspaceRuntime.store.missions.list(); });
 ipcMain.handle("workspace:mission", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid mission request."); return missionService.command(validateMissionCommand(value)); });
+ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
+ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
 ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
@@ -530,6 +534,7 @@ app.whenReady().then(() => {
 	});
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
 	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
 		focused: () => Boolean(BrowserWindow.getFocusedWindow()), supported: () => Notification.isSupported(),
