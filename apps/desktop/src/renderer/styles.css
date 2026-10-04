@@ -533,3 +533,7 @@ button { color: inherit; }
 .project-worktree summary { width: fit-content; cursor: pointer; font-size: 14px; font-weight: 600; padding-block: 8px; }
 .project-worktree summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 4px; }
 .project-worktree > form { margin-top: 16px; margin-bottom: 0; }
+.review-diff { margin: 12px 0 16px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; }
+.review-diff-content { max-height: 65vh; overflow: auto; min-width: 0; scrollbar-gutter: stable; }
+.review-diff-content diffs-container { display: block; --diffs-font-size: 13px; --diffs-line-height: 21px; --diffs-font-family: ui-monospace, Consolas, monospace; --diffs-header-font-family: Montserrat, ui-sans-serif, system-ui, sans-serif; }
+.review-diff-content diffs-container + diffs-container { border-top: 1px solid var(--border); }

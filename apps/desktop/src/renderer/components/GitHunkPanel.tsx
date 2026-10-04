@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { GitCommand, GitHunkReview, GitReview } from "../../shared/workspace";
-import { CodeBlock } from "./MessageContent";
+import { DiffView } from "./DiffView";
+import type { DiffLayout } from "./diffRendering";
 
-export function GitHunkPanel({ projectId, filename, revision, busy, onCommand }: { projectId: string; filename: string; revision: GitReview; busy: boolean; onCommand: (command: GitCommand) => Promise<void> }) {
+export function GitHunkPanel({ projectId, filename, revision, busy, layout, onCommand }: { projectId: string; filename: string; revision: GitReview; busy: boolean; layout: DiffLayout; onCommand: (command: GitCommand) => Promise<void> }) {
 	const [reviews, setReviews] = useState<GitHunkReview[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -24,6 +25,6 @@ export function GitHunkPanel({ projectId, filename, revision, busy, onCommand }:
 		{loading && <p className="task-muted" role="status">Loading changes…</p>}
 		{error && <p role="alert">{error}</p>}
 		{!loading && !error && !reviews.some(review => review.hunks.length) && <p className="task-muted">No individual text changes. Use the file actions above.</p>}
-		{!loading && !error && reviews.filter(review => review.hunks.length).map(review => <div key={String(review.staged)}><h3>{review.staged ? "Staged changes" : "Unstaged changes"}</h3>{review.hunks.map(hunk => <div className="git-hunk" key={`${review.hash}:${hunk.index}`}><div className="project-toolbar"><span>Change {hunk.index + 1}</span><button type="button" disabled={busy} aria-label={`${review.staged ? "Unstage" : "Stage"} change ${hunk.index + 1} in ${filename}`} onClick={() => void change(review, hunk.index)}>{review.staged ? "Unstage change" : "Stage change"}</button></div><CodeBlock text={hunk.text} language="diff" /></div>)}</div>)}
+		{!loading && !error && reviews.filter(review => review.hunks.length).map(review => <div key={String(review.staged)}><h3>{review.staged ? "Staged changes" : "Unstaged changes"}</h3>{review.hunks.map(hunk => <div className="git-hunk" key={`${review.hash}:${hunk.index}`}><div className="project-toolbar"><span>Change {hunk.index + 1}</span><button type="button" disabled={busy} aria-label={`${review.staged ? "Unstage" : "Stage"} change ${hunk.index + 1} in ${filename}`} onClick={() => void change(review, hunk.index)}>{review.staged ? "Unstage change" : "Stage change"}</button></div><DiffView patch={hunk.patch} copyText={hunk.text} layout={layout} hideHeader /></div>)}</div>)}
 	</section>;
 }

@@ -188,20 +188,20 @@ try {
           writeFileSync(path.join(output,`${width}-${theme}-project-preview.png`),(await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
           for(let attempt=0;;attempt++){
-            if(await window.webContents.executeJavaScript(`new Set(Array.from(document.querySelectorAll('.project-review .code-token')).map(token=>getComputedStyle(token).color)).size>1`))break;
+            if(await window.webContents.executeJavaScript(`(()=>{const root=document.querySelector('.project-review diffs-container')?.shadowRoot;return root&&new Set(Array.from(root.querySelectorAll('code span[style]')).map(token=>getComputedStyle(token).color)).size>1})()`))break;
             if(attempt>50)throw new Error("Git diff highlighting did not load offline.");
             await new Promise(resolve=>setTimeout(resolve,100));
           }
           await window.webContents.executeJavaScript(`document.querySelector('.project-review button[aria-label="Copy code"]').click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
-          const reviewLayout=await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('.git-file-list .project-toolbar');return {padding:getComputedStyle(row).padding,copy:window.auditCopiedProject===document.querySelector('.project-review .message-code-block pre').textContent,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
+          const reviewLayout=await window.webContents.executeJavaScript(`(async()=>{const row=document.querySelector('.git-file-list .project-toolbar'),id=document.querySelector('select[aria-label="Project"]').value;return {padding:getComputedStyle(row).padding,copy:window.auditCopiedProject===(await window.phaseoDesktop.workspace.gitReview(id)).diff,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
           if(reviewLayout.padding!=="16px 24px"||!reviewLayout.copy||!reviewLayout.stage)throw new Error("Git review row spacing or copying is inconsistent.");
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Open file').click()`);
           await new Promise(resolve=>setTimeout(resolve,50));
           if(editorCalls.at(-1).filename!=="example.ts"||editorCalls.at(-1).editor!=="cursor")throw new Error("Git file editor action sent an incorrect target.");
           pendingEditor.resolve();await new Promise(resolve=>setTimeout(resolve,50));
 
-          await window.webContents.executeJavaScript(`document.querySelector('.project-review .message-code-block').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          await window.webContents.executeJavaScript(`document.querySelector('.project-review .review-diff').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output,`${width}-${theme}-git-review.png`),(await window.webContents.capturePage()).toPNG());
           const worktreeLayout = await window.webContents.executeJavaScript(`(()=>{const disclosure=document.querySelector('.project-worktree');if(!disclosure||disclosure.open)throw Error('Worktree disclosure must start closed');disclosure.querySelector('summary').click();disclosure.scrollIntoView({block:'nearest'});const form=disclosure.querySelector('form');return {visible:form.getBoundingClientRect().height>0,gap:getComputedStyle(form).marginTop}})()`);
           if (!worktreeLayout.visible || worktreeLayout.gap !== '16px') throw new Error('Worktree disclosure layout failed: '+JSON.stringify(worktreeLayout));

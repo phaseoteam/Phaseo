@@ -12,7 +12,7 @@ const repository = path.join(data, "repository"); mkdirSync(repository); mkdirSy
 const git = args => execFileSync("git", args, { cwd: repository, windowsHide: true }).toString();
 git(["init", "-b", "fixture"]); git(["config", "user.name", "Fixture"]); git(["config", "user.email", "fixture@example.invalid"]); git(["config", "commit.gpgsign", "false"]);
 const filename = "[literal] 世界.txt", target = path.join(repository, filename);
-const original = Array.from({ length: 30 }, (_, index) => `Line ${index}`).join("\n") + "\n";
+const original = Array.from({ length: 30 }, (_, index) => `Line ${index}${index === 3 ? ' <img src=x onerror=alert(1)> ' + 'Long context '.repeat(18) : ''}`).join("\n") + "\n";
 writeFileSync(target, original); git(["add", "--", filename]); git(["commit", "-m", "fixture"]);
 const edited = original.replace("Line 2\n", "First edit\n").replace("Line 25\n", "Second edit\n"); writeFileSync(target, edited);
 const db = new DatabaseSync(path.join(data, "workspace/workspace.sqlite")); db.exec("CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
@@ -33,6 +33,15 @@ app.whenReady().then(async () => {
 		await wait(`Boolean(document.querySelector('.git-file-list button[aria-pressed]'))`);
 		await run(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Review changes').click()`);
 		await wait(`document.querySelectorAll('.git-hunk-panel .git-hunk').length===2&&!document.querySelector('.git-hunk-panel').getAttribute('aria-busy').includes('true')`);
+		await wait(`Array.from(document.querySelectorAll('.git-hunk-panel diffs-container')).every(node=>node.shadowRoot?.querySelector('pre[data-diff-type="split"]'))&&document.querySelectorAll('.git-hunk-panel diffs-container').length===2`);
+		await run(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.hunkCopied=text}}})`);
+		const expectedCopy = await run(`window.phaseoDesktop.workspace.gitHunks('fixture',${JSON.stringify(filename)},false).then(review=>review.hunks[0].text)`);
+		await run(`document.querySelector('.git-hunk-panel button[aria-label="Copy code"]').click()`);
+		await wait(`window.hunkCopied===${JSON.stringify(expectedCopy)}`);
+		await run(`navigator.clipboard.writeText=async()=>{throw Error('Owned copy failure')};document.querySelector('.git-hunk-panel .review-diff > .message-code-actions button').click()`);
+		await wait(`document.querySelector('.git-hunk-panel .review-diff > .message-code-actions').textContent.includes('Copy failed')`);
+		await run(`navigator.clipboard.writeText=async text=>{window.hunkCopied=text};document.querySelector('.git-hunk-panel .review-diff > .message-code-actions button').click()`);
+		await wait(`Boolean(document.querySelector('.git-hunk-panel button[aria-label="Copied"]'))`);
 		const captures = path.resolve('output/playwright/git-hunks', entry ? 'packaged' : 'source'); mkdirSync(captures, { recursive: true });
 		for (const [width, height] of [[1440, 920], [1040, 680]]) {
 			window.setSize(width, height);
@@ -41,11 +50,30 @@ app.whenReady().then(async () => {
 				await new Promise(resolve => setTimeout(resolve, 150));
 				const layout = await run(`(()=>{const panel=document.querySelector('.git-hunk-panel'),style=getComputedStyle(panel);return {padding:style.paddingLeft,font:getComputedStyle(panel.querySelector('h2')).fontFamily,overflow:document.documentElement.scrollWidth>innerWidth}})()`);
 				if (layout.padding !== '16px' || !layout.font.includes('Montserrat') || layout.overflow) throw Error('Hunk layout failed: '+JSON.stringify(layout));
-				writeFileSync(path.join(captures, width+'-'+theme+'.png'), (await window.webContents.capturePage()).toPNG());
+				for (const layout of ['unified', 'split']) {
+					await run(`document.querySelector('[aria-label="Diff layout"] button:nth-child(${layout === 'unified' ? 1 : 2})').click()`);
+					await wait(`Array.from(document.querySelectorAll('.git-hunk-panel diffs-container')).every(node=>node.shadowRoot?.querySelector('pre[data-diff-type="${layout === 'split' ? 'split' : 'single'}"]'))&&document.querySelectorAll('.git-hunk-panel diffs-container').length===2`);
+					const text = await run(`document.querySelector('.git-hunk-panel diffs-container').shadowRoot.querySelector('pre').textContent`);
+					if (!text.includes('Line 2') || !text.includes('First edit')) throw Error('Diff omitted a side of the change');
+					if (await run(`Boolean(document.querySelector('.git-hunk-panel diffs-container').shadowRoot.querySelector('img,script'))`)) throw Error('Diff interpreted source markup');
+					if (layout === 'split') {
+						const columns = await run(`(()=>{const root=document.querySelector('.git-hunk-panel diffs-container').shadowRoot,left=root.querySelector('code[data-deletions] [data-line="4"]'),right=root.querySelector('code[data-additions] [data-line="4"]');return {left:left?.textContent,right:right?.textContent,aligned:Math.abs(left.getBoundingClientRect().top-right.getBoundingClientRect().top)<1,overflow:document.documentElement.scrollWidth>innerWidth}})()`);
+						if (columns.left !== columns.right || !columns.aligned || columns.overflow) throw Error('Split columns did not align: '+JSON.stringify(columns));
+					}
+					writeFileSync(path.join(captures, width+'-'+theme+'-'+layout+'.png'), (await window.webContents.capturePage()).toPNG());
+				}
 			}
 		}
 		await run(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='All changes').click()`);
 		await wait(`!document.querySelector('.git-hunk-panel')`);
+		await run(`document.querySelector('[aria-label="Diff layout"] button:first-child').click()`);
+		await wait(`localStorage.getItem('phaseo.desktop.diffLayout')==='"unified"'`);
+		await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Home').click()`);
+		await wait(`!document.querySelector('.project-review')`);
+		await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Projects').click()`);
+		await wait(`Boolean(document.querySelector('select[aria-label="Project"] option[value="fixture"]'))`);
+		await run(`(()=>{const select=document.querySelector('select[aria-label="Project"]');select.value='fixture';select.dispatchEvent(new Event('change',{bubbles:true}));Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()})()`);
+		await wait(`Boolean(document.querySelector('[aria-label="Diff layout"] button:first-child[aria-pressed="true"]'))`);
 		await run(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Review changes').click()`);
 		await wait(`document.querySelectorAll('.git-hunk-panel .git-hunk').length===2&&!document.querySelector('.git-hunk-panel').getAttribute('aria-busy').includes('true')`);
 		await run(`(()=>{const button=document.querySelectorAll('.git-hunk-panel .git-hunk > .project-toolbar button')[1];button.click();button.click()})()`);
@@ -54,6 +82,13 @@ app.whenReady().then(async () => {
 		await run(`Array.from(document.querySelectorAll('.git-hunk-panel button')).find(button=>button.textContent==='Unstage change').click()`);
 		await wait(`!Array.from(document.querySelectorAll('.git-hunk-panel button')).some(button=>button.textContent==='Unstage change')&&!document.querySelector('.git-hunk-panel').getAttribute('aria-busy').includes('true')`);
 		if (git(["diff", "--cached"]) || readFileSync(target, "utf8") !== edited) throw new Error("UI unstage changed the working file.");
-		console.log("GIT_HUNKS_SMOKE", JSON.stringify({ ...result, workingFilePreserved: true, renderer: true }), "ISOLATED_DATA", data); app.exit(0);
+		const binary = path.join(repository, 'binary.dat'); writeFileSync(binary, Buffer.from([0, 1, 2])); git(['add', '--', 'binary.dat']); git(['commit', '-m', 'binary fixture']); writeFileSync(binary, Buffer.from([0, 3, 4]));
+		await run(`Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='All changes').click();document.querySelector('[aria-label="Refresh Git review"]').click()`);
+		await wait(`document.querySelector('.project-review .message-code-block pre')?.textContent.includes('Binary files')`);
+		const raw = await run(`window.phaseoDesktop.workspace.gitReview('fixture').then(review=>review.diff)`);
+		await run(`document.querySelector('.project-review .message-code-block button[aria-label="Copy code"]').click()`);
+		await wait(`window.hunkCopied===${JSON.stringify(raw)}`);
+		if (!raw.includes('First edit') || !raw.includes('Second edit')) throw Error('Binary fallback omitted text changes');
+		console.log("GIT_HUNKS_SMOKE", JSON.stringify({ ...result, workingFilePreserved: true, renderer: true, splitAndUnified: true, literalMarkup: true, copyRecovery: true, layoutPreference: true, binaryFallback: true }), "ISOLATED_DATA", data); app.exit(0);
 	} catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

@@ -5,6 +5,8 @@ import type { EditorId, EditorInstallation, ProjectOpenRequest } from "../../sha
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { CodeBlock } from "../components/MessageContent";
 import { GitHunkPanel } from "../components/GitHunkPanel";
+import { DiffView } from "../components/DiffView";
+import type { DiffLayout } from "../components/diffRendering";
 import { usePersistedState } from "../lib/persistedState";
 
 export function Projects() {
@@ -22,6 +24,8 @@ export function Projects() {
 	const dirty = Boolean(preview && draft !== preview.text);
 	const [review, setReview] = useState<GitReview>();
 	const [hunkFile, setHunkFile] = useState<string>();
+	const [savedDiffLayout, setDiffLayout] = usePersistedState<DiffLayout>("phaseo.desktop.diffLayout", "split");
+	const diffLayout = savedDiffLayout === "unified" ? "unified" : "split";
 	const [branches, setBranches] = useState<string[]>([]);
 	const [branchName, setBranchName] = useState("");
 	const [worktreeBranch, setWorktreeBranch] = useState(""); const [worktreeBase, setWorktreeBase] = useState("HEAD");
@@ -127,6 +131,7 @@ export function Projects() {
 				<button type="button" disabled={gitBusy || !branchName.trim()} onClick={() => void changeGit({ type: "create-branch", name: branchName.trim() })}>Create branch</button>
 			</div>
 			<h2>Working changes</h2>
+			<div className="project-toolbar" role="group" aria-label="Diff layout"><button type="button" aria-pressed={diffLayout === "unified"} onClick={() => setDiffLayout("unified")}>Unified</button><button type="button" aria-pressed={diffLayout === "split"} onClick={() => setDiffLayout("split")}>Side by side</button></div>
 			{review.files.length ? <div className="git-file-list">{review.files.map(file => <div className="project-toolbar" key={file.path}>
 				<code>{file.indexStatus}{file.worktreeStatus}</code><span>{file.oldPath ? `${file.oldPath} → ` : ""}{file.path}</span>
 				<button type="button" disabled={gitBusy} aria-pressed={hunkFile === file.path} onClick={() => setHunkFile(file.path)}>Review changes</button>
@@ -134,7 +139,7 @@ export function Projects() {
 				{file.worktreeStatus !== " " && <button type="button" disabled={gitBusy} onClick={() => void changeGit({ type: "stage", filename: file.path })}>Stage</button>}
 				{![" ", "?"].includes(file.indexStatus) && <button type="button" disabled={gitBusy} onClick={() => void changeGit({ type: "unstage", filename: file.path })}>Unstage</button>}
 			</div>)}</div> : <p className="task-muted">Working tree is clean.</p>}
-			{hunkFile && review.files.some(file => file.path === hunkFile) ? <><button type="button" disabled={gitBusy} onClick={() => setHunkFile(undefined)}>All changes</button><GitHunkPanel key={`${id}:${hunkFile}`} projectId={id} filename={hunkFile} revision={review} busy={gitBusy} onCommand={changeGit} /></> : <><h2>Unstaged changes</h2>{review.diff ? <CodeBlock text={review.diff} language="diff" /> : <p className="task-muted">No unstaged changes.</p>}<h2>Staged changes</h2>{review.stagedDiff ? <CodeBlock text={review.stagedDiff} language="diff" /> : <p className="task-muted">No staged changes.</p>}</>}
+			{hunkFile && review.files.some(file => file.path === hunkFile) ? <><button type="button" disabled={gitBusy} onClick={() => setHunkFile(undefined)}>All changes</button><GitHunkPanel key={`${id}:${hunkFile}`} projectId={id} filename={hunkFile} revision={review} busy={gitBusy} layout={diffLayout} onCommand={changeGit} /></> : <><h2>Unstaged changes</h2>{review.diff ? <DiffView patch={review.diff} layout={diffLayout} /> : <p className="task-muted">No unstaged changes.</p>}<h2>Staged changes</h2>{review.stagedDiff ? <DiffView patch={review.stagedDiff} layout={diffLayout} /> : <p className="task-muted">No staged changes.</p>}</>}
 			<div className="project-toolbar"><input aria-label="Commit message" placeholder="Commit message" value={commitMessage} onChange={event => setCommitMessage(event.target.value)} /><button type="button" disabled={gitBusy || !commitMessage.trim() || !review.stagedDiff} onClick={() => void changeGit({ type: "commit", message: commitMessage })}>Commit staged changes</button></div>
 			<details className="project-worktree"><summary>Create worktree</summary>
 			<form className="project-toolbar" aria-label="Create worktree" onSubmit={event => { event.preventDefault(); void createWorktree(); }}><label>Worktree branch<input aria-label="Worktree branch" value={worktreeBranch} onChange={event => setWorktreeBranch(event.target.value)} maxLength={200} required disabled={gitBusy} /></label><label>Starting ref<input aria-label="Worktree starting ref" list="worktree-refs" value={worktreeBase} onChange={event => setWorktreeBase(event.target.value)} maxLength={1000} required disabled={gitBusy} /><datalist id="worktree-refs"><option value="HEAD" />{branches.map(branch => <option key={branch} value={branch} />)}</datalist></label><button type="submit" disabled={gitBusy || !worktreeBranch.trim() || !worktreeBase.trim()}>Create worktree</button></form>

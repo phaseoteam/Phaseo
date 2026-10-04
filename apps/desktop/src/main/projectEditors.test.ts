@@ -1,4 +1,5 @@
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -97,7 +98,8 @@ describe("external editors", () => {
 		} finally {
 			if (originalNode === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = originalNode;
 			if (originalElectron === undefined) delete process.env.ELECTRON_RUN_AS_NODE; else process.env.ELECTRON_RUN_AS_NODE = originalElectron;
-			rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+			// Yield while Windows releases the detached child's process and cwd handles.
+			await rm(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 		}
 	});
 });

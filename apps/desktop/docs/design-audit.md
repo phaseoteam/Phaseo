@@ -113,6 +113,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Worktree controls](screenshots/worktree-form.png)
 
+41. **Split and unified review:** the selected layout applies to aggregate and individual changes and persists across navigation. Paired code columns retain original line numbers, wrap long context and align both sides at minimum width. The lazily loaded Pierre viewer uses offline GitHub light/dark themes, Montserrat headers and shared copy feedback. Source and packaged checks cover literal source markup, Unicode paths, layout persistence, exact copy/retry and raw fallback for a mixed binary/text review. Eight additional captures are produced by `scripts/git-hunks-smoke.mjs`. Context expansion, virtualization and full keyboard/screen-reader review remain unverified.
+
+![Side-by-side code review](screenshots/git-review-split.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 136 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
