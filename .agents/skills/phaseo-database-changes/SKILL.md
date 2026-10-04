@@ -7,10 +7,13 @@ description: Design and implement internal Phaseo Supabase schema, migrations, R
 
 Use this skill for internal database work in the Phaseo monorepo. Treat the
 SQL schema, API data-access code, RLS policies, RPC contracts, fixtures, and
-reports as one change. Use forward migrations for schema and RPC changes.
+reports as one change. Desired definitions live in `supabase/schemas/`.
+Read `supabase/AGENTS.md` and `supabase/DECLARATIVE-SCHEMAS.md`; edit the SQL
+definitions, generate forward migrations with
+`pnpm db:schema:sync -- -f descriptive_change_name`, and commit both together.
 Catalogue content is owned by Supabase: use the connected Supabase plugin's
-`execute_sql` for targeted data changes and readback, and `apply_migration`
-for DDL. A model or pricing release does not need a data-only migration or a
+`execute_sql` for targeted data changes and readback. Schema authoring uses
+the declarative workflow, not direct live DDL. A model or pricing release does not need a data-only migration or a
 JSON fixture PR.
 
 ## Inventory the source of truth
@@ -19,7 +22,7 @@ For catalogue content, use the Supabase plugin to inspect the live `v2_*`
 tables and comparable rows. For schema, RPC, or application data-access work,
 read the repository database instructions and inspect:
 
-- `supabase/migrations/`, `supabase/tests/`, and the current schema snapshots;
+- `supabase/schemas/`, `supabase/migrations/`, and `supabase/tests/`;
 - `apps/api/docs/v2-data-model.md` and the relevant API route/RPC callers;
 - `apps/api/docs/database-driven-provider-adapters.md` for provider control
   plane ownership and fail-closed behavior;
@@ -76,6 +79,14 @@ rollback plan, and separate approval.
    when a generator or schema source exists.
 
 ## Test the boundary
+
+Run `pnpm db:schema:check` to verify desired definitions against the frozen
+baseline and newer migrations. Use `pnpm db:schema:smoke` for disposable replay
+and an incremental migration trial, plus the relevant SQL contract tests.
+Preserve existing migrations and `supabase/baseline/` SQL/history hashes.
+Do not apply the replay baseline to production, repair remote migration records,
+or bypass the replay tooling with raw `db diff`, declarative `sync`, or root
+`db reset`. Inspect exports for drift before refreshing locally edited definitions.
 
 Add deterministic SQL or application tests for:
 
