@@ -113,9 +113,13 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Worktree controls](screenshots/worktree-form.png)
 
-41. **Split and unified review:** the selected layout applies to aggregate and individual changes and persists across navigation. Paired code columns retain original line numbers, wrap long context and align both sides at minimum width. The lazily loaded Pierre viewer uses offline GitHub light/dark themes, Montserrat headers and shared copy feedback. Source and packaged checks cover literal source markup, Unicode paths, layout persistence, exact copy/retry and raw fallback for a mixed binary/text review. Eight additional captures are produced by `scripts/git-hunks-smoke.mjs`. Context expansion, virtualization and full keyboard/screen-reader review remain unverified.
+41. **Split and unified review:** the selected layout applies to aggregate and individual changes and persists across navigation. Paired code columns retain original line numbers, wrap long context and align both sides at minimum width. The lazily loaded Pierre viewer uses offline GitHub light/dark themes, Montserrat headers and shared copy feedback. Source and packaged checks cover literal source markup, Unicode paths, layout persistence, exact copy/retry and raw fallback for a mixed binary/text review. Eight additional captures are produced by `scripts/git-hunks-smoke.mjs`. Virtualization and full keyboard/screen-reader review remain unverified.
 
 ![Side-by-side code review](screenshots/git-review-split.png)
+
+42. **Expanded code context:** aggregate reviews load unchanged lines within the existing bounded pane. Pending and refresh actions share padded feedback rows. Real source and packaged workflows verify stale recovery, one request for repeated expansion, exact staged/worktree versions and Enter/Space activation. Eight extra context captures cover both layouts, themes and window sizes. Binary, invalid UTF-8 and oversized files reject expansion with local feedback.
+
+![Expanded context at minimum window size](screenshots/git-context-small-window.png)
 
 ## Reproduce and limits
 

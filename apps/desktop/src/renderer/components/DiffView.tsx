@@ -2,7 +2,7 @@ import { Component, lazy, Suspense, type ReactNode } from "react";
 import { CodeBlock } from "./MessageContent";
 import type { DiffLayout } from "./diffRendering";
 
-export type DiffViewProps = { patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean };
+export type DiffViewProps = { patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean; context?: { projectId: string; staged: boolean; hash: string }; onRefresh?: () => void };
 const Renderer = lazy(() => import("./DiffRenderer").then(module => ({ default: module.DiffRenderer })));
 
 class DiffBoundary extends Component<{ children: ReactNode; source: string; fallback: ReactNode }, { failed: boolean }> {
@@ -14,5 +14,5 @@ class DiffBoundary extends Component<{ children: ReactNode; source: string; fall
 
 export function DiffView(props: DiffViewProps) {
 	const fallback = <CodeBlock text={props.copyText ?? props.patch} language="diff" />;
-	return <DiffBoundary source={props.patch} fallback={fallback}><Suspense fallback={fallback}><Renderer {...props} /></Suspense></DiffBoundary>;
+	return <DiffBoundary source={props.patch} fallback={fallback}><Suspense fallback={fallback}><Renderer key={props.context ? `${props.context.projectId}:${props.context.staged}:${props.context.hash}` : undefined} {...props} /></Suspense></DiffBoundary>;
 }

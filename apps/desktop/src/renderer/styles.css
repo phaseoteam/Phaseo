@@ -537,3 +537,5 @@ button { color: inherit; }
 .review-diff-content { max-height: 65vh; overflow: auto; min-width: 0; scrollbar-gutter: stable; }
 .review-diff-content diffs-container { display: block; --diffs-font-size: 13px; --diffs-line-height: 21px; --diffs-font-family: ui-monospace, Consolas, monospace; --diffs-header-font-family: Montserrat, ui-sans-serif, system-ui, sans-serif; }
 .review-diff-content diffs-container + diffs-container { border-top: 1px solid var(--border); }
+.review-diff-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
+.review-diff-feedback > span { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }

@@ -21,6 +21,7 @@ import { TerminalService } from "./terminalService";
 import { contentHash, writeProjectFile } from "./projectEdits";
 import { gitBranches, gitCommand } from "./gitOperations";
 import { readGitHunks } from "./gitHunks";
+import { readGitDiffContents } from "./gitDiffContents";
 import { piEntries } from "./piAdapter";
 import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 import { readConversation } from "./taskImport";
@@ -185,6 +186,7 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 });
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:git-hunks", (event, id: unknown, filename: unknown, staged: unknown) => readGitHunks(projectRoot(event, id), filename, staged));
+ipcMain.handle("workspace:git-diff-contents", (event, id: unknown, request: unknown) => readGitDiffContents(projectRoot(event, id), request));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
 ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {

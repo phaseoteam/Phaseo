@@ -2,6 +2,7 @@ import { readdir, readFile, realpath, stat } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import type { GitFile, GitReview, ProjectFile } from "../shared/workspace";
 
 const execute = promisify(execFile);
@@ -32,11 +33,11 @@ export async function readProjectFile(root: string, filename: string): Promise<s
 export async function gitReview(root: string): Promise<GitReview> {
 	const git = async (args: string[]) => (await execute("git", ["--no-pager", ...args], { cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
 	const [status, diff, stagedDiff, branch] = await Promise.all([
-		git(["status", "--porcelain=v1", "-z"]), git(["diff", "--no-ext-diff", "--no-textconv"]),
-		git(["diff", "--cached", "--no-ext-diff", "--no-textconv"]), git(["branch", "--show-current"]),
+		git(["status", "--porcelain=v1", "-z"]), git(["diff", "--no-ext-diff", "--no-textconv", "--full-index"]),
+		git(["diff", "--cached", "--no-ext-diff", "--no-textconv", "--full-index"]), git(["branch", "--show-current"]),
 	]);
 	const files = parseGitStatus(status);
-	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, branch: branch.trim() };
+	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, diffHash: createHash("sha256").update(diff).digest("hex"), stagedDiffHash: createHash("sha256").update(stagedDiff).digest("hex"), branch: branch.trim() };
 }
 
 export function parseGitStatus(output: string): GitFile[] {

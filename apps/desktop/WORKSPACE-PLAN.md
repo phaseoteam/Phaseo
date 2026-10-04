@@ -7,11 +7,11 @@ writing, analysis, and other AI work. Own the Phaseo interface and harness;
 integrate native engines without treating subscription credentials as API keys.
 Preserve existing platform navigation and desktop security boundaries.
 
-Reference baseline (2026-10-03): OpenCode v2.0.22
+Reference baseline (2026-10-04): OpenCode v2.0.22
 (`527f0b931d1f9b3ebd34e106c51b31ce5db5b075`) and T3 Code
-v0.0.46-nightly.20261003.2610 (`8ed276c246b624631e7d39241ebfd22d8314cb68`).
+v0.0.46-nightly.20261004.2644 (`737993303d36e10674c54b95e5bd3826682c99c7`).
 Sources: https://opencode.ai/v2/docs and
-https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261003.2610.
+https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261004.2644.
 Use the Phaseo website's fonts, assets, components and spacing conventions as the visual source of truth, adapted to the existing native desktop frame.
 
 Dropdown triggers now match the web select treatment with consistent chevrons, reserved text spacing and theme-aware native menus. The single-workspace identity no longer exposes an inactive switching button. Source and packaged visual checks cover the trigger styles; native menus and forced-colour rendering remain platform verification work.
@@ -253,7 +253,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 344 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 347 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
@@ -297,4 +297,10 @@ Task history now scrolls independently of creation/search/archive controls. Long
 
 Git review now prioritizes changes and commits above a collapsed worktree form. The native disclosure preserves access to branch/ref inputs, with 16-pixel expanded spacing and no duplicate branch label. Source and packaged real-worktree workflow checks and four theme/window captures cover this hierarchy.
 
-Split/unified Git review now uses @pierre/diffs 1.5.1, the same library family used by the pinned T3 Code reference, adapted to website typography, GitHub light/dark syntax colours and wrapping code. The preference survives navigation, and the library loads only when reviewing a diff. Original line positions, Unicode paths, added/deleted text and missing-newline metadata have deterministic coverage. Unsupported metadata/binary or oversized patches retain their original raw surface and exact copying. Source and packaged real-repository workflows verify paired wrapped-line alignment, literal markup, copying failure/retry, persisted layout and unchanged working files while staging/unstaging. Eight captures cover both layouts/themes/window sizes. Full-file context expansion, large-review virtualization, line actions, PR workflows and complete accessibility remain open. Licence notices retain the Apache 2.0 licence and transitive dependencies. The editor process fixture now yields during owned-directory cleanup so Windows can release process handles.
+Split/unified Git review now uses @pierre/diffs 1.5.1, the same library family used by the pinned T3 Code reference, adapted to website typography, GitHub light/dark syntax colours and wrapping code. The preference survives navigation, and the library loads only when reviewing a diff. Original line positions, Unicode paths, added/deleted text and missing-newline metadata have deterministic coverage. Unsupported metadata/binary or oversized patches retain their original raw surface and exact copying. Source and packaged real-repository workflows verify paired wrapped-line alignment, literal markup, copying failure/retry, persisted layout and unchanged working files while staging/unstaging. Eight captures cover both layouts/themes/window sizes. Aggregate reviews now expand unchanged context from validated HEAD/index/worktree snapshots, with stale-review recovery, duplicate suppression and Enter/Space controls. Text is bounded to 1 MB and 10,000 lines; isolated hunk panels keep their partial patch. Source and packaged workflows add eight context captures. Large-review virtualization, line actions, PR workflows and complete accessibility remain open. Licence notices retain the Apache 2.0 licence and transitive dependencies. The editor process fixture now yields during owned-directory cleanup so Windows can release process handles.
+
+The October 4 nightly replaces the October 3 reference (8ed276c246b624631e7d39241ebfd22d8314cb68). Its 401-file delta has only been partially audited. Newly identified gaps remain unchecked:
+
+- [ ] PR check/comment/conflict watchers that wake the agent with deduplicated updates.
+- [ ] Model aliases and input/cache/output cost breakdowns, including speed premiums.
+- [ ] Failed workspace preparation retry and the new resume/compaction behavior.

@@ -50,6 +50,7 @@ const desktopApi: PhaseoDesktopApi = {
 		writeDocument: (id, filename, text, expectedHash) => ipcRenderer.invoke("workspace:write-document", id, filename, text, expectedHash),
 		gitReview: id => ipcRenderer.invoke("workspace:git-review", id),
 		gitHunks: (id, filename, staged) => ipcRenderer.invoke("workspace:git-hunks", id, filename, staged),
+		gitDiffContents: (id, request) => ipcRenderer.invoke("workspace:git-diff-contents", id, request),
 		gitCommand: (id, command) => ipcRenderer.invoke("workspace:git-command", id, command),
 		gitBranches: id => ipcRenderer.invoke("workspace:git-branches", id),
 	},

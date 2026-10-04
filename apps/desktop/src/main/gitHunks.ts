@@ -12,7 +12,7 @@ export function gitFilename(value: unknown): string {
 export async function readGitHunks(root: string, filename: unknown, staged: unknown): Promise<GitHunkReview> {
 	const file = gitFilename(filename);
 	if (typeof staged !== "boolean") throw new Error("Choose staged or unstaged changes.");
-	const diff = await git(root, ["diff", ...(staged ? ["--cached"] : []), "--no-ext-diff", "--no-textconv", "--no-renames", "--", `:(literal)${file}`]);
+	const diff = await git(root, ["diff", ...(staged ? ["--cached"] : []), "--no-ext-diff", "--no-textconv", "--full-index", "--no-renames", "--", `:(literal)${file}`]);
 	const hash = createHash("sha256").update(diff).digest("hex");
 	const starts = [...diff.matchAll(/^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@.*$/gm)];
 	const header = starts.length ? diff.slice(0, starts[0].index) : "";
