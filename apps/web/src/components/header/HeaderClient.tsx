@@ -23,7 +23,6 @@ import {
 	ChevronDown,
 	Scale,
 	Settings,
-	Server,
 	AppWindow,
 	Trophy,
 	MessageSquare,
@@ -173,7 +172,6 @@ export default function HeaderClient({
 		{ href: "/models", label: t("models"), icon: Boxes },
 		{ href: "/chat", label: t("chat"), icon: MessageSquare },
 		{ href: "/compare", label: t("compare"), icon: Scale },
-		{ href: "/api-providers", label: t("providers"), icon: Server },
 		{ href: "/apps", label: t("apps"), icon: AppWindow },
 		{ href: "/rankings", label: t("rankings"), icon: Trophy },
 	];
