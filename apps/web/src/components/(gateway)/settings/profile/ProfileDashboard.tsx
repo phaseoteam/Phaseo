@@ -8,6 +8,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount"
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 import { getModelDetailsHref } from "@/lib/models/modelHref"
@@ -136,7 +137,7 @@ function getProviderFromModelId(id: string): string {
 	return provider || "phaseo"
 }
 
-function useProfileFormatters() {
+function useProfileFormatters(locale: string) {
 	const format = useDisplayFormatters()
 	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
 	return {
@@ -151,6 +152,7 @@ function useProfileFormatters() {
 			timeZone: "UTC",
 		}),
 		formatMetricValue: (metric: Metric, value: number, compact = true) => {
+			if (metric === "tokens" && compact) return formatRoundedCount(value, locale)
 			if (metric === "spend") {
 				return format.number(value, {
 					style: "currency",
@@ -229,7 +231,7 @@ function ActivityHeatmap({
 	metric: Metric
 	labels: ProfileMessages
 }) {
-	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters()
+	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters(locale)
 	const days = profile.heatmapDays
 	const activeDays = days.filter((day) => day.inTrailingWindow && !day.isFuture)
 	const values = activeDays.map((day) => getMetricValue(day, metric))
@@ -457,7 +459,7 @@ export default function ProfileDashboard({
 	actions,
 }: Props) {
 	const rangeLabels = useMemo<Record<TimeRange, string>>(() => ({ today: labels.periodToday, "7d": labels.period7d, "30d": labels.period30d, "1y": labels.period1y, all: labels.periodAll }), [labels])
-	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters()
+	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters(locale)
 	const router = useRouter()
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -697,7 +699,7 @@ export default function ProfileDashboard({
 									tickLine={false}
 									axisLine={false}
 									width={52}
-									tickFormatter={(value) => formatMetricValue(metric, Number(value))}
+									tickFormatter={(value) => metric === "tokens" ? formatCompactAxisTick(Number(value), locale) : formatMetricValue(metric, Number(value))}
 								/>
 								<ChartTooltip
 									cursor={{ fill: "rgba(24,24,27,0.06)" }}
@@ -707,7 +709,7 @@ export default function ProfileDashboard({
 											labelFormatter={(label) => formatLongDate(String(label))}
 											formatter={(value) => (
 												<span className="font-mono font-semibold tabular-nums text-foreground">
-											{formatMetricValue(metric, Number(value), false)}
+											{formatMetricValue(metric, Number(value), metric === "tokens")}
 												</span>
 											)}
 										/>
