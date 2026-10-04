@@ -242,6 +242,14 @@
 .account-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--border); }
 .account-row > div { flex: 1; min-width: 0; }
 .account-row small { display: block; color: var(--text-muted); margin-top: 6px; overflow-wrap: anywhere; }
+.harness-feedback { margin: 0; padding: var(--panel-padding); color: var(--text-muted); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.harness-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; list-style: none; margin: 0; padding: var(--panel-padding); }
+.harness-list li { min-width: 0; }
+.harness-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.harness-heading strong { font-size: 14px; font-weight: 600; }
+.harness-list p { margin: 8px 0 0; color: var(--text-muted); font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.harness-list details { margin-top: 8px; color: var(--text-muted); font-size: 13px; }
+.harness-list summary { cursor: pointer; }
 .agent-command { margin-top: 8px; color: var(--text-muted); font-size: 12px; }
 .agent-command summary { cursor: pointer; }
 .agent-command code { display: block; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.6 ui-monospace, monospace; }

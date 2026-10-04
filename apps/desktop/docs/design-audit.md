@@ -183,10 +183,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Updated desktop card spacing](screenshots/website-card-spacing.png)
 
+58. **Native harness discovery:** the Agents page renders six harness results in a two-column list with 20-pixel card insets and explicit Installed/Unavailable labels. Long native diagnostics remain available in a collapsed disclosure rather than stretching each row. Initial discovery/refresh show Checking; failures stay within the panel and offer Retry; successful empty results have their own message. Existing results survive refresh failures, duplicate refresh clicks issue one request, and unmounted views ignore replies. Owned IPC fixtures cover delayed discovery, failure, retry, empty/recovered results and inert diagnostic text. Twelve additional source/package captures bring the audit to 184. These fixtures prove the UI states, not the user's installed tools or signed-in inference.
+
+![Native harness installation layout](screenshots/native-harnesses-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 172 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 184 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 172 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 184 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

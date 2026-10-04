@@ -154,6 +154,10 @@ ipcMain.removeHandler("workspace:editors");
 ipcMain.handle("workspace:editors",()=>[{id:"vscode",name:"VS Code",available:true},{id:"cursor",name:"Cursor",available:true},{id:"zed",name:"Zed",available:false}]);
 ipcMain.removeHandler("workspace:open-project");
 ipcMain.handle("workspace:open-project",async(_event,id,request)=>{editorCalls.push({id,...request});await new Promise((resolve,reject)=>{pendingEditor={resolve,reject};});});
+const installationFixture=[{harness:"codex",installed:true},{harness:"claude",installed:true},{harness:"opencode",installed:true,version:"2.0.22"},{harness:"pi",installed:false,error:"Owned unavailable installation: <untrusted> 世界"},{harness:"cursor",installed:true,version:"SDK 1.0.31"},{harness:"grok",installed:true}];
+let installationCalls=0,holdInstallations=false,failInstallations=false,emptyInstallations=false,releaseInstallations;
+ipcMain.removeHandler("workspace:installations");
+ipcMain.handle("workspace:installations",async()=>{installationCalls++;if(holdInstallations)await new Promise(resolve=>{releaseInstallations=resolve;});if(failInstallations){failInstallations=false;throw Error("Owned installation discovery failure");}return emptyInstallations?[]:installationFixture;});
 const originalAttachment=ipcMain._invokeHandlers.get("workspace:attachment");
 let failAttachment=false,holdAttachment=false,releaseAttachment;
 ipcMain.removeHandler("workspace:attachment");
@@ -232,6 +236,7 @@ try {
           if (attempt > 50) throw new Error(`Page did not render: ${page}`);
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+        if(page==="Agents")for(let attempt=0;await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel').getAttribute('aria-busy')==='true'`);attempt++){if(attempt>50)throw Error("Installation discovery did not settle");await new Promise(resolve=>setTimeout(resolve,20));}
         await new Promise(resolve => setTimeout(resolve, 100));
         const image = await window.webContents.capturePage();
         const name = `${width}-${theme}-${page.toLowerCase()}`;
@@ -345,6 +350,27 @@ try {
           await window.webContents.executeJavaScript(`document.querySelector('.project-worktree summary').click()`);
         }
         if (page === "Agents") {
+          const nativeRows=await window.webContents.executeJavaScript(`(()=>{const list=document.querySelector('.harness-list');return {count:list.children.length,padding:getComputedStyle(list).padding,columns:getComputedStyle(list).gridTemplateColumns.split(' ').length,text:list.textContent}})()`);
+          if(nativeRows.count!==6||nativeRows.padding!=='20px'||nativeRows.columns!==2||!nativeRows.text.includes('Unavailable')||!nativeRows.text.includes('SDK 1.0.31'))throw Error('Native installation rows are missing or poorly spaced');
+          const callsBefore=installationCalls;holdInstallations=true;
+          await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.native-harness-panel button');button.click();button.click()})()`);
+          for(let attempt=0;!releaseInstallations;attempt++){if(attempt>50)throw Error('Installation request did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+          if(installationCalls!==callsBefore+1||!await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel button').disabled&&document.querySelector('.native-harness-panel [role="status"]').textContent==='Checking native installations…'&&document.querySelectorAll('.harness-list li').length===6`))throw Error('Duplicate installation request or missing retained results');
+          writeFileSync(path.join(output,`${width}-${theme}-harness-pending.png`),(await window.webContents.capturePage()).toPNG());
+          failInstallations=true;holdInstallations=false;releaseInstallations();releaseInstallations=undefined;
+          for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.native-harness-panel [role="alert"]'))`);attempt++){if(attempt>50)throw Error('Installation failure did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+          if(!await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel [role="alert"]').textContent==='Owned installation discovery failure'&&document.querySelector('.native-harness-panel button').textContent==='Retry'&&document.querySelectorAll('.harness-list li').length===6`))throw Error('Installation retry or error copy is incorrect');
+          writeFileSync(path.join(output,`${width}-${theme}-harness-failure.png`),(await window.webContents.capturePage()).toPNG());
+          emptyInstallations=true;await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel button').click()`);
+          for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel').textContent.includes('No native harnesses found.')`);attempt++){if(attempt>50)throw Error('Installation empty result did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+          if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('.native-harness-panel [role="alert"]'))`))throw Error('Successful retry retained stale installation error');
+          writeFileSync(path.join(output,`${width}-${theme}-harness-empty.png`),(await window.webContents.capturePage()).toPNG());
+          emptyInstallations=false;await window.webContents.executeJavaScript(`document.querySelector('.native-harness-panel button').click()`);
+          for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelectorAll('.harness-list li').length===6&&!document.querySelector('.native-harness-panel button').disabled`);attempt++){if(attempt>50)throw Error('Installation refresh did not recover');await new Promise(resolve=>setTimeout(resolve,20));}
+          await window.webContents.executeJavaScript(`document.querySelector('.harness-list details summary').click()`);
+          if(!await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.harness-list details');return details.open&&details.querySelector('p').textContent==='Owned unavailable installation: <untrusted> 世界'&&!details.querySelector('untrusted')})()`))throw Error('Installation details must retain inert native text');
+          await window.webContents.executeJavaScript(`document.querySelector('.harness-list details summary').click()`);
+
           const command = await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.agent-command');const text=details?.querySelector('code')?.textContent;details?.querySelector('summary')?.click();return {text,open:details?.open}})()`);
           if (!command.open || !command.text.includes("grok-interaction.cjs")) throw new Error("The full agent command must remain available.");
           writeFileSync(path.join(output, `${width}-${theme}-agent-command.png`), (await window.webContents.capturePage()).toPNG());
