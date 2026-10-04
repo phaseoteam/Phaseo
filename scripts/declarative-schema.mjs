@@ -16,7 +16,8 @@ const hash = (name) => createHash("sha256").update(readFileSync(join(migrations,
 const workspace = mkdtempSync(join(tmpdir(), "phaseo-schema-"));
 const temporary = join(workspace, "supabase");
 mkdirSync(join(temporary, "migrations"), { recursive: true });
-cpSync(join(source, "config.toml"), join(temporary, "config.toml"));
+writeFileSync(join(temporary, "config.toml"), readFileSync(join(source, "config.toml"), "utf8")
+	.replace(/^project_id\s*=.*$/m, `project_id = "phaseo-schema-${workspace.split(/[\\/]/).at(-1)}"`));
 cpSync(join(source, "schemas"), join(temporary, "schemas"), { recursive: true });
 
 if (mode !== "bootstrap") {

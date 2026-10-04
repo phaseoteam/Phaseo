@@ -25,15 +25,5 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: '22'
-            - name: Generate baseline candidate when absent
-              if: hashFiles('supabase/baseline/schema.sql') == ''
-              run: node scripts/declarative-schema.mjs bootstrap
-            - name: Save baseline candidate for review
-              if: hashFiles('supabase/baseline/schema.sql') == ''
-              uses: actions/upload-artifact@v4
-              with:
-                  name: baseline-candidate
-                  path: supabase/.temp/baseline-candidate/
-                  if-no-files-found: error
             - name: Verify declarative schemas against frozen baseline and forward migrations
               run: node scripts/declarative-schema.mjs check
