@@ -10,6 +10,9 @@
 		"packages/*/*"
 	],
 	"scripts": {
+		"db:schema:export": "npx --yes supabase@2.119.0 db schema declarative generate --linked",
+		"db:schema:sync": "npx --yes supabase@2.119.0 db schema declarative sync --no-apply",
+		"db:schema:check": "node scripts/check-declarative-schema.mjs",
 		"test:catalogue-history": "node scripts/tests/catalogue-history.mjs",
 		"test:realtime-billing-review": "node --test scripts/realtime-billing-review.test.mjs",
 		"dev": "turbo run dev --parallel",
