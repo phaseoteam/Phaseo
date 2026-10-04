@@ -42,6 +42,9 @@ production or applies generated SQL. Failed comparisons retain their temporary
 directory for inspection.
 
 Both commands need a shadow Postgres runtime, such as Docker on Windows.
+`pnpm db:schema:smoke` replays the baseline and forward migrations, runs SQL
+contract tests, then generates and applies a trial incremental migration in
+the disposable database. CI runs this after the equivalence check.
 CI runs without production credentials. Raw `supabase db schema declarative
 sync` and raw `db reset` against the repository root still encounter the
 incomplete historical chain; use the replay tooling instead.

@@ -221,6 +221,7 @@ jobs:
                       data: 'packages/data/catalog/src/data/**'
                       migrations:
                           - 'supabase/migrations/**'
+                          - 'supabase/baseline/**'
                           - 'supabase/tests/**'
                           - 'supabase/config.toml'
                           - 'scripts/validate-supabase-migrations.mjs'

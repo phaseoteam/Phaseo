@@ -56,6 +56,8 @@ function getMigrationChanges(baseSha) {
 			`${baseSha}...HEAD`,
 			"--",
 			"supabase/migrations",
+			"supabase/baseline/schema.sql",
+			"supabase/baseline/history.sha256",
 		],
 		{ cwd: REPOSITORY_ROOT, encoding: "utf8" },
 	).trim();
@@ -198,13 +200,14 @@ export function validateSupabaseMigrations(baseSha = "") {
 	const added = [];
 
 	for (const change of changes) {
+		if (change.status === "A" && change.paths.length === 1 && change.paths[0].startsWith("supabase/baseline/")) continue;
 		if (change.status === "A" && change.paths.length === 1) {
 			added.push(change.paths[0]);
 			continue;
 		}
 
 		errors.push(
-			`${change.paths.join(" -> ")}: existing migrations are immutable; ` +
+			`${change.paths.join(" -> ")}: existing migrations and replay baseline are immutable; ` +
 			"add a new migration instead of modifying, deleting, or renaming one",
 		);
 	}
