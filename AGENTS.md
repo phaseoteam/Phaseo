@@ -9,11 +9,18 @@
 - Install: `pnpm install` (Node >=22.12.0).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`.
-- Data/doc checks: `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`; docs via `pnpm docs:links` then `pnpm docs:build`.
+- Archived fixture checks (only when fixtures or validators change): `pnpm validate:data`, `pnpm validate:pricing`, `pnpm validate:gateway`. These do not validate live catalogue data. Docs: `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
 ## Safety Notes
 - Avoid bulk repo-wide search/replace or scripted mass edits; use targeted, file-scoped changes only.
+
+## Database Schema Changes
+- Desired database definitions live in `supabase/schemas/`. Read `supabase/AGENTS.md` and `supabase/DECLARATIVE-SCHEMAS.md` before schema work.
+- Edit the declarative SQL, generate a forward migration with `pnpm db:schema:sync -- -f descriptive_change_name`, and commit both together. Review generated SQL before deployment.
+- Verify with `pnpm db:schema:check` and relevant SQL tests; `pnpm db:schema:smoke` exercises disposable replay and an incremental migration. Use the pinned replay tooling rather than raw `db diff`, declarative `sync`, or root `db reset`.
+- Existing migrations and the frozen replay baseline are immutable. Never apply `supabase/baseline/schema.sql` to production or repair remote migration history as part of ordinary schema work.
+- Supabase owns catalogue records. Catalogue data changes use targeted database operations and readback; schema changes follow the declarative workflow.
 
 ## Coding Style & Naming Conventions
 - TypeScript-first (ES modules, absolute imports `@/...` in the web app); Python for the SDK. Prefer named exports for shared utilities.

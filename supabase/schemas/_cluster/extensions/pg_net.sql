@@ -1,0 +1,3 @@
+CREATE EXTENSION "pg_net" SCHEMA "public";
+
+COMMENT ON EXTENSION "pg_net" IS 'Async HTTP';
