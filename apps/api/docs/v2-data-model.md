@@ -47,8 +47,11 @@ backfill and consumer cutover are verified.
   Existing ended, disabled alias rows remain as historical records. Current
   aliases are copied to canonical keys without changing their status, effective
   window, parameters or limits. Conflicting current records stop migration.
-  Generic `audio` and `audio.generate` remain distinct operations pending a
-  provider-specific semantic audit; neither is globally reclassified as speech.
+  Generic `audio` and `audio.generate` IDs are retired and rejected on new
+  writes. Reviewed speech models use `audio.speech`, realtime models use
+  `audio.realtime`, music models use `music.generate`, and audio conversation
+  through Chat Completions uses `text.generate` with audio modalities.
+  Ended, disabled generic rows remain as historical records only.
 - A route is eligible only when the model, lab, provider, and route are all
   enabled and within their effective windows.
 

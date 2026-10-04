@@ -97,17 +97,13 @@ describe("getContextCapabilityCandidates", () => {
 		expect(getContextCapabilityCandidates("audio.speech")).toEqual([
 			"audio.speech",
 			"audio/speech",
-			"audio.generate",
 		]);
 		expect(getContextCapabilityCandidates("audio/speech")).toEqual([
 			"audio/speech",
 			"audio.speech",
-			"audio.generate",
 		]);
 		expect(getContextCapabilityCandidates("audio.generate")).toEqual([
 			"audio.generate",
-			"audio.speech",
-			"audio/speech",
 		]);
 	});
 

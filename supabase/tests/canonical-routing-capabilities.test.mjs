@@ -57,5 +57,26 @@ try {
   await assert.rejects(db.exec("insert into v2_route_capabilities(provider_model_id,capability_id,status) values ('bad','audio.typo','active')"), /Unsupported routing capability/);
   await assert.rejects(db.exec("update v2_route_capabilities set status='active',effective_to=null where provider_model_id='whisper' and capability_id='audio.transcribe'"), /duplicate key/);
   assert.equal((await db.query("select canonical_routing_capability_id('audio.generate') value")).rows[0].value,"audio.generate", "generic audio generation must not be promoted to speech");
+  const retirement = await readFile(new URL("../migrations/20261004221956_retire_generic_audio_capabilities.sql", import.meta.url), "utf8");
+  await db.exec("insert into v2_route_capabilities(provider_model_id,capability_id,status) values ('generic','audio.generate','active')");
+  await assert.rejects(db.exec(`begin; ${retirement} commit;`), /Review and retire current generic audio/);
+  await db.exec("rollback; update v2_route_capabilities set status='disabled',effective_to=now() where provider_model_id='generic';");
+  await db.exec(`begin; ${retirement} commit;`);
+  await assert.rejects(db.exec("insert into v2_route_capabilities(provider_model_id,capability_id,status) values ('generic-new','audio.generate','active')"), /Unsupported routing capability/);
+  await assert.rejects(db.exec("insert into v2_capability_evidence values ('audio')"), /Unsupported routing capability/);
+  await assert.rejects(db.exec("update v2_route_capabilities set status='active',effective_to=null where provider_model_id='generic'"), /Unsupported routing capability/);
+  await db.exec("update v2_route_capabilities set metadata='{}' where provider_model_id='generic'");
+  assert.equal((await db.query("select status from v2_route_capabilities where provider_model_id='generic'")).rows[0].status,"disabled");
+  await db.exec("create table v2_pricing_skus(operation text,price_nanos bigint)");
+  const tightening = await readFile(new URL("../migrations/20261004222339_tighten_canonical_capability_boundaries.sql", import.meta.url), "utf8");
+  await db.exec(`begin; ${tightening} commit;`);
+  for (const [alias,canonical] of [["audio/speech","audio.speech"],["systemone","decisions.make"],["typed.decisions","decisions.make"],["image.generations","image.generate"]]) {
+    assert.equal((await db.query("select canonical_routing_capability_id($1) value",[alias])).rows[0].value,canonical);
+  }
+  await assert.rejects(db.exec("update v2_route_capabilities set params='[\"changed\"]' where provider_model_id='generic'"), /Historical capability aliases cannot be changed/);
+  await assert.rejects(db.exec("update v2_route_capabilities set max_input_tokens=9 where provider_model_id='old-whisper' and capability_id='audio.transcribe'"), /Historical capability aliases cannot be changed/);
+  await db.exec("insert into v2_pricing_skus values ('audio.transcribe',12345),('inference',999)");
+  assert.deepEqual((await db.query("select * from v2_pricing_skus order by price_nanos")).rows,[{operation:"inference",price_nanos:999},{operation:"audio.transcription",price_nanos:12345}]);
+  await assert.rejects(db.exec("insert into v2_pricing_skus values ('audio.generate',12345)"), /Generic audio pricing requires/);
   console.log("Canonical capability migration preserves historical records and routing configuration, normalizes aliases, and rejects unknown writes.");
 } finally { await db.close(); }

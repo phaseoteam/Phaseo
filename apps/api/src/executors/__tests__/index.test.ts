@@ -4,6 +4,11 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { OPENAI_COMPAT_CONFIG } from "@providers/openai-compatible/registry";
 
 describe("resolveProviderExecutor", () => {
+	it("does not route generic audio generation to a speech executor", () => {
+		expect(resolveProviderExecutor("deepinfra", "audio.speech")).toBeTruthy();
+		expect(resolveProviderExecutor("deepinfra", "audio.generate")).toBeNull();
+		expect(resolveProviderExecutor("openai", "audio")).toBeNull();
+	});
 	it("resolves the canonical Decisions capability and its System One alias", () => {
 		const executor = EXECUTORS_BY_PROVIDER.typesafe?.["decisions.make"];
 		expect(executor).toBeTruthy();
