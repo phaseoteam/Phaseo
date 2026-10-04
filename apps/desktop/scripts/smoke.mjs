@@ -72,11 +72,17 @@ app.whenReady().then(async () => {
 			const api = window.phaseoDesktop.workspace;
 			const initial = await api.get();
 			if (initial.tasks.length) throw new Error('Isolated workspace is not empty');
+			const installations = await api.installations();
+			if (installations.length !== 6 || new Set(installations.map(value=>value.harness)).size !== 6) throw new Error('Harness installation bridge returned incomplete rows');
+			for (const value of installations) {
+				if (['codex','claude','pi','grok'].includes(value.harness) && value.installed && !/^[0-9]+[.][0-9]+[.][0-9]+/.test(value.version ?? '')) throw new Error('Installed CLI has no confirmed version');
+				if (!value.installed && !value.error) throw new Error('Unavailable harness has no installation feedback');
+			}
 			const checkNativeOpenCode = ${Boolean(openCodeBinary)};
 			if (checkNativeOpenCode) {
 				const models = await api.models('opencode',undefined,'fixture');
 				if (!Array.isArray(models)) throw new Error('Native OpenCode model discovery failed');
-				const installation = (await api.installations()).find(value=>value.harness==='opencode');
+				const installation = installations.find(value=>value.harness==='opencode');
 				if (!installation?.installed || installation.version!=='2.0.22') throw new Error('Native OpenCode version check failed');
 			}
 			const created = await api.command({type:'create-task',harness:'codex',model:'default',mode:'chat'});
@@ -169,7 +175,7 @@ app.whenReady().then(async () => {
 			for (let attempt = 0; attempt < 50; attempt++) { if (document.querySelector('.attachment-preview pre')?.textContent.includes('Page 1\\nFixture PDF text')) { previewed = true; break; } await new Promise(resolve => setTimeout(resolve,100)); }
 			if (!previewed) throw new Error('PDF text preview did not render');
 			document.querySelector('[aria-label="Close attachment preview"]').click();
-			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true, ...(checkNativeOpenCode ? {nativeOpenCode:true} : {}) };
+			return { tasks: restored.tasks.length, bridge: true, validation: true, renderer: true, pty: true, editor: true, editConflicts: true, git: true, commands: true, attachments: true, pdf: true, harnessVersions: installations.filter(value=>value.installed).map(value=>({harness:value.harness,version:value.version})), ...(checkNativeOpenCode ? {nativeOpenCode:true} : {}) };
 			} catch (error) { throw new Error(error.stack ?? String(error)); }
 		})()`);
 		// Seed a protocol-shaped form solely for renderer interaction checks;
