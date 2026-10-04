@@ -24,18 +24,20 @@ export class PiAdapter implements AgentAdapter {
 		this.inputs.add(sending); void sending.finally(() => this.inputs.delete(sending)).catch(() => {}); return sending;
 	}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
-		if (task.mode === "code" && await callbacks.onApproval("Pi native tools", "Allow Pi to run its configured tools for this turn? Its native extensions and policies control individual tool actions.") !== "accept") throw new Error("Pi execution declined.");
+		const compact = text.trim() === "/compact" && attachments.length === 0;
+		if (task.mode === "code" && !compact && await callbacks.onApproval("Pi native tools", "Allow Pi to run its configured tools for this turn? Its native extensions and policies control individual tool actions.") !== "accept") throw new Error("Pi execution declined.");
 		if (this.cancelled) throw new Error("Task stopped.");
 		const args = ["--mode", "rpc"];
 		if (task.nativeSessionId) args.push("--session", task.nativeSessionId);
 		else if (task.nativeForkFrom) args.push("--fork", task.nativeForkFrom);
-		if (task.mode === "chat") args.push("--no-tools");
-		if (task.mode === "plan") args.push("--tools", "read,grep,find,ls");
+		if (task.mode === "chat" || compact) args.push("--no-tools");
+		if (task.mode === "plan" && !compact) args.push("--tools", "read,grep,find,ls");
 		const child = this.child = await spawnNative("pi", args, cwd, piEntries); child.stderr.resume();
 		const rpc = this.rpc = new PiRpc(child.stdout, child.stdin);
 		let resolveTurn!: () => void; let rejectTurn!: (error: Error) => void;
 		const turn = new Promise<void>((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
 		void turn.catch(() => {});
+		let manualRunning = false; let autoActivity: { id: string; title: string } | undefined; let compactionSequence = 0; let compactionEnded = false; let compactionFailure: string | undefined;
 		let receiving = false; let failure: string | undefined; let probe: ReturnType<typeof setTimeout> | undefined; let probing = false;
 		const probeIdle = async () => {
 			if (probing || this.cancelled) return; probing = true;
@@ -65,6 +67,20 @@ export class PiAdapter implements AgentAdapter {
 		rpc.onEvent = event => {
 			if (event.type === "extension_ui_request") { void dialog(event).catch(error => rpc.close(error instanceof Error ? error : new Error("Pi dialog failed."))); return; }
 			if (!receiving) return;
+			if (["compaction_start", "auto_compaction_start"].includes(String(event.type))) {
+				if (compact && event.reason === "manual") return;
+				if (!autoActivity) { autoActivity = { id: `compaction:${++compactionSequence}`, title: event.reason === "manual" ? "Context compaction" : "Automatic context compaction" }; compactionEnded = false; callbacks.onActivity?.({ ...autoActivity, type: "compaction", text: "", status: "running" }); }
+				return;
+			}
+			if (["compaction_end", "auto_compaction_end"].includes(String(event.type))) {
+				if (compact && event.reason === "manual") return;
+				if (!autoActivity && compactionEnded) return;
+				const activity = autoActivity ?? { id: `compaction:${++compactionSequence}`, title: event.reason === "manual" ? "Context compaction" : "Automatic context compaction" };
+				const result = record(event.result); const confirmed = !event.aborted && !event.errorMessage && typeof result.summary === "string";
+				callbacks.onActivity?.({ ...activity, type: "compaction", text: JSON.stringify(event, null, 2), summary: confirmed ? result.summary as string : undefined, status: confirmed ? "completed" : "failed" }); autoActivity = undefined; compactionEnded = true;
+				return;
+			}
+			if (compact) { if (event.type === "agent_settled") void probeIdle(); return; }
 			if (event.type === "message_update") {
 				const update = record(event.assistantMessageEvent);
 				if (typeof update.delta === "string" && update.type === "text_delta") callbacks.onDelta("assistant", update.delta);
@@ -85,11 +101,23 @@ export class PiAdapter implements AgentAdapter {
 			}
 			const state = await rpc.request<PiRecord>({ type: "get_state" });
 			if (typeof state.sessionFile !== "string" || !state.sessionFile) throw new Error("Pi did not create a persisted session.");
-			callbacks.onSession(state.sessionFile); receiving = true; this.acceptingInput = true;
+			callbacks.onSession(state.sessionFile); receiving = true; this.acceptingInput = !compact;
+			if (compact) {
+				manualRunning = true; callbacks.onActivity?.({ id: "compaction:manual", type: "compaction", title: "Context compaction", text: "", status: "running" });
+				const result = record(await rpc.request({ type: "compact" }, 0));
+				if (typeof result.summary !== "string") throw new Error("Pi did not confirm a compaction result.");
+				callbacks.onActivity?.({ id: "compaction:manual", type: "compaction", title: "Context compaction", text: JSON.stringify(result, null, 2), summary: result.summary, status: "completed" }); manualRunning = false;
+				await probeIdle(); await turn; return;
+			}
 			const response = await rpc.request<PiRecord | undefined>({ type: "prompt", message: attachmentPrompt(text, attachments), images: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image", data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType })) }, 0);
 			if (response?.disposition === "handled") await probeIdle();
 			await turn;
-		} finally { this.acceptingInput = false; clearTimeout(probe); rpc.close(); child.stdin.end(); child.kill(); }
+		} catch (error) { compactionFailure = error instanceof Error ? error.message : "Native compaction ended without confirmation."; throw error; }
+		finally {
+			if (manualRunning) callbacks.onActivity?.({ id: "compaction:manual", type: "compaction", title: "Context compaction", text: compactionFailure ?? "Native compaction ended without confirmation.", status: "failed" });
+			if (autoActivity) callbacks.onActivity?.({ ...autoActivity, type: "compaction", text: compactionFailure ?? "Native compaction ended without confirmation.", status: "failed" });
+			this.acceptingInput = false; clearTimeout(probe); rpc.close(); child.stdin.end(); child.kill();
+		}
 	}
 	async cancel() {
 		this.cancelled = true; this.acceptingInput = false;
