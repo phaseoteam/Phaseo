@@ -19,9 +19,16 @@ export function ConversationHistory({ task, onAttachment, children }: { task: Ta
 		else if (followingLatest.current) host.current.scrollTop = host.current.scrollHeight;
 	}, [task, messages.page, activities.page, messages.loading, activities.loading, messages.error, activities.error]);
 	useEffect(() => {
-		if (!content.current) return;
-		const observer = new ResizeObserver(() => { if (host.current && followingLatest.current && !anchor.current) host.current.scrollTop = host.current.scrollHeight; });
-		observer.observe(content.current); return () => observer.disconnect();
+		if (!content.current || !host.current) return;
+		const detail = host.current.closest<HTMLElement>(".task-detail");
+		const observer = new ResizeObserver(() => {
+			if (!host.current) return;
+			// Reserve the native scrollbar gutter in the sibling composer as well.
+			detail?.style.setProperty("--conversation-scrollbar", `${host.current.offsetWidth - host.current.clientWidth}px`);
+			if (followingLatest.current && !anchor.current) host.current.scrollTop = host.current.scrollHeight;
+		});
+		observer.observe(content.current); observer.observe(host.current);
+		return () => { observer.disconnect(); detail?.style.removeProperty("--conversation-scrollbar"); };
 	}, []);
 	function updatePosition() { if (!host.current) return; const latest = !messages.page.later && !activities.page.later && host.current.scrollHeight - host.current.clientHeight - host.current.scrollTop <= 48; followingLatest.current = latest; setShowLatest(!latest); }
 	function rememberPosition() { if (host.current) { followingLatest.current = false; const top = host.current.getBoundingClientRect().top; const entry = Array.from(host.current.querySelectorAll<HTMLElement>("[data-conversation-id]")).find(value => value.getBoundingClientRect().bottom >= top); anchor.current = { id: entry?.dataset.conversationId, top: entry?.getBoundingClientRect().top ?? top, scroll: host.current.scrollTop }; } }

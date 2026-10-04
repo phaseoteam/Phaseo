@@ -163,6 +163,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Native compaction summary](screenshots/native-compaction-small-window.png)
 
+53. **Conversation alignment and list spacing:** transcript and composer share an 800-pixel maximum reading width and 24-pixel minimum gutters. The existing resize observer accounts for the native scrollbar width so both edges align; Jump to latest follows the reading column. Task-history rows use 10-pixel vertical insets and a 6-pixel title/status gap. Source and Windows-archive rendered checks require transcript/composer edges and widths to agree within one pixel at both window sizes/themes. Long-history workflow checks retain reading anchors, pause/follow-latest behavior and delayed resize recovery. Capture count remains 164. This is a targeted spacing improvement; overall visual acceptance remains open.
+
+![Aligned conversation and composer](screenshots/conversation-aligned.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 164 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
