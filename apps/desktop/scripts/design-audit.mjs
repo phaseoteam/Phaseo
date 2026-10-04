@@ -39,6 +39,26 @@ async function auditConnectionEditor(window, output, width, theme, kind) {
  if(kind==='agent')await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.command({type:'update-agent',...${JSON.stringify(originalAgent)}})`);
  else await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.mcp({type:'save',connection:{...${JSON.stringify(saved)},archived:true,enabled:false}})`);
 }
+async function auditEditorSelection(window,output,width,theme,kind){
+ const agent=kind==='agent',label=agent?'Agent connection':'MCP connection';
+ const fixtures=await window.webContents.executeJavaScript(`(async()=>{const api=window.phaseoDesktop.workspace;const original=${agent}? (await api.overview()).agents.find(item=>item.id==='design-agent'):undefined;const created=[];for(const suffix of ${JSON.stringify(agent?['B']:['A','B'])}){const value={id:crypto.randomUUID(),name:'Owned selection '+${JSON.stringify(kind+' '+width+' '+theme)}+' '+suffix,executable:${JSON.stringify(process.execPath)},arguments:['literal '+suffix+' 世界'],transport:'stdio',enabled:false};if(${agent}){const state=await api.command({type:'add-agent',name:value.name,executable:value.executable,arguments:value.arguments});created.push(state.agents.find(item=>item.name===value.name));}else{await api.mcp({type:'save',connection:value});created.push(value);}}return {first:original??created[0],second:created.at(-1),created};})()`);
+ async function select(value){
+  await window.webContents.executeJavaScript(`(()=>{const row=Array.from(document.querySelectorAll('article')).find(row=>row.querySelector('strong')?.textContent===${JSON.stringify(value.name)});if(!row)throw Error('Owned connection row missing');Array.from(row.querySelectorAll('button')).find(button=>button.textContent==='Edit').click()})()`);
+  for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"] input')?.value===${JSON.stringify(value.name)}`);attempt++){if(attempt>50)throw Error('Selected connection did not load');await new Promise(resolve=>setTimeout(resolve,20));}
+ }
+ await new Promise(resolve=>setTimeout(resolve,100));await select(fixtures.first);
+ const callsBefore=connectionSaveCalls;holdConnectionSave=true;
+ await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]').requestSubmit()`);
+ for(let attempt=0;!pendingConnectionSave;attempt++){if(attempt>50)throw Error('Owned selection save did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ pendingConnectionSave.reject(Error('Owned previous configuration failure'));pendingConnectionSave=undefined;holdConnectionSave=false;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.connection-editor [role="alert"]'))&&!document.querySelector('.connection-fields').disabled`);attempt++){if(attempt>50)throw Error('Owned selection failure did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ await select(fixtures.second);
+ const result=await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]');return {error:Boolean(form.closest('.connection-editor').querySelector('[role="alert"]')),focus:document.activeElement===form.querySelector('input'),arguments:Array.from(form.querySelectorAll('.argument-row input')).map(input=>input.value),padding:getComputedStyle(form.querySelector('.connection-fields')).padding}})()`);
+ if(result.error||!result.focus||result.padding!=='20px'||JSON.stringify(result.arguments)!==JSON.stringify(fixtures.second.arguments)||connectionSaveCalls!==callsBefore+1)throw Error('Editor selection retained stale feedback or changed configuration');
+ writeFileSync(path.join(output,`${width}-${theme}-${kind}-editor-selection.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('form[aria-label="'+${JSON.stringify(label)}+'"] button')).find(button=>button.textContent==='Cancel').click()`);
+ for(const value of fixtures.created)await window.webContents.executeJavaScript(agent?`window.phaseoDesktop.workspace.command({type:'update-agent',id:${JSON.stringify(value.id)},archived:true})`:`window.phaseoDesktop.workspace.mcp({type:'save',connection:{...${JSON.stringify(value)},archived:true,enabled:false}})`);
+}
 async function openTaskActions(window){
  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
  for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Task actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
@@ -445,6 +465,7 @@ try {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           if(!await window.webContents.executeJavaScript(`document.activeElement===document.querySelector('form[aria-label="Agent connection"] input')`))throw Error("Editing an agent must focus its name field");
           await auditConnectionEditor(window,output,width,theme,"agent");
+          await auditEditorSelection(window,output,width,theme,"agent");
         }
         if (page === "Missions") {
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Mission configuration"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
@@ -456,6 +477,7 @@ try {
           await auditArgumentFields(window,"MCP connection");
           writeFileSync(path.join(output, `${width}-${theme}-mcp-arguments.png`), (await window.webContents.capturePage()).toPNG());
           await auditConnectionEditor(window,output,width,theme,"mcp");
+          await auditEditorSelection(window,output,width,theme,"mcp");
         }
         if (page === "Accounts") {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.accounts-page article')).find(article=>article.textContent.includes('Codex local login')).querySelector('button').click()`);

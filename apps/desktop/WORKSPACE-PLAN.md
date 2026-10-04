@@ -346,3 +346,5 @@ ACP/MCP lists and forms now have separate New/Edit cards, native pending fieldse
 Pi compaction increment: manual native RPC, current/legacy automatic events, Markdown summaries with original JSON, cancellation and durable activity summary. Official protocol baseline: earendil-works/pi main 200387122ca450d6387f033949423114a270b96c. Verification: 407 tests in 70 files; lint/typecheck/build; owned RPC-process smoke. Installed Pi and signed-in inference remain unverified; full parity and visual acceptance remain open.
 
 Activity disclosure fix: preserve native open state through copy success/failure/retry and feedback expiry; structured plans initialise open once. Source/archive visual regression coverage now has 212 captures. Full visual acceptance and feature parity remain open.
+
+Connection editor selection: clear stale save feedback when loading another ACP agent or MCP configuration. Browser regression checks validate selection, literal arguments, focus and no incidental save. Visual audit covers 220 states; full design acceptance and parity remain open.
