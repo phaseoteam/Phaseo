@@ -529,3 +529,7 @@ button { color: inherit; }
 .git-hunk-panel h2 { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: 16px; }
 .git-hunk-panel h3 { margin-block: 24px 12px; font-size: 14px; font-weight: 600; }
 .git-hunk > .project-toolbar { justify-content: space-between; margin-bottom: 8px; }
+.project-worktree { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px; }
+.project-worktree summary { width: fit-content; cursor: pointer; font-size: 14px; font-weight: 600; padding-block: 8px; }
+.project-worktree summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: 4px; }
+.project-worktree > form { margin-top: 16px; margin-bottom: 0; }

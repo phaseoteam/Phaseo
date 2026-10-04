@@ -203,6 +203,12 @@ try {
 
           await window.webContents.executeJavaScript(`document.querySelector('.project-review .message-code-block').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output,`${width}-${theme}-git-review.png`),(await window.webContents.capturePage()).toPNG());
+          const worktreeLayout = await window.webContents.executeJavaScript(`(()=>{const disclosure=document.querySelector('.project-worktree');if(!disclosure||disclosure.open)throw Error('Worktree disclosure must start closed');disclosure.querySelector('summary').click();disclosure.scrollIntoView({block:'nearest'});const form=disclosure.querySelector('form');return {visible:form.getBoundingClientRect().height>0,gap:getComputedStyle(form).marginTop}})()`);
+          if (!worktreeLayout.visible || worktreeLayout.gap !== '16px') throw new Error('Worktree disclosure layout failed: '+JSON.stringify(worktreeLayout));
+          await new Promise(resolve => setTimeout(resolve, 100));
+          await window.webContents.executeJavaScript(`document.querySelector('.project-worktree').scrollIntoView({block:'end'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output,`${width}-${theme}-worktree-form.png`),(await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`document.querySelector('.project-worktree summary').click()`);
         }
         if (page === "Agents") {
           const command = await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.agent-command');const text=details?.querySelector('code')?.textContent;details?.querySelector('summary')?.click();return {text,open:details?.open}})()`);

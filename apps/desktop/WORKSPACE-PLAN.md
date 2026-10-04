@@ -294,3 +294,5 @@ Terminal session rows now share task-list styling and selection semantics. Sessi
 Account usage now uses aligned full-width meters and separate windows/buckets, with explicit blocked/unavailable states and reset times. Unit coverage verifies over-limit display and duration labels; rendered fixtures verify meter values and widths at both window sizes/themes. All 319 desktop tests pass. Actual signed-in quota reads and reset-aware recovery remain unfinished.
 
 Task history now scrolls independently of creation/search/archive controls. Long titles use two lines with a full-title tooltip, and selection exposes pressed state. The owned large-history workflow verifies retained controls and title clamping alongside paging, retries and selected conversation behavior. Full metadata/payload pagination and comprehensive accessibility remain unfinished.
+
+Git review now prioritizes changes and commits above a collapsed worktree form. The native disclosure preserves access to branch/ref inputs, with 16-pixel expanded spacing and no duplicate branch label. Source and packaged real-worktree workflow checks and four theme/window captures cover this hierarchy.
