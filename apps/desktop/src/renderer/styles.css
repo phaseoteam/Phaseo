@@ -61,10 +61,10 @@
 .task-list-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 6px; }
 .task-search { display: flex; align-items: center; gap: 7px; margin-bottom: 15px; }
 .task-search input { min-width: 0; width: 100%; }
-.task-workspace .task-row { display: flex; width: 100%; text-align: left; align-items: flex-start; flex-direction: column; margin-bottom: 5px; background: transparent; border-color: transparent; }
+:is(.task-workspace, .terminal-workspace) .task-row { display: flex; width: 100%; text-align: left; align-items: flex-start; flex-direction: column; margin-bottom: 5px; background: transparent; border-color: transparent; }
 .task-row span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-row small, .task-muted { color: var(--text-muted); font-size: 12px; }
-.task-workspace .task-row.selected { background: var(--primary-soft); border-color: var(--border); }
+:is(.task-workspace, .terminal-workspace) .task-row.selected { background: var(--primary-soft); border-color: var(--border); }
 .task-detail { display: flex; flex: 1; min-width: 0; flex-direction: column; }
 .task-start { width: min(640px, calc(100% - 64px)); margin: auto; padding-block: 48px; }
 .task-eyebrow { font-size: 12px; color: var(--text-muted); }
@@ -149,9 +149,12 @@
 .question-option > span { min-width: 0; }
 .question-preview { display: block; max-height: 200px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); font-size: 12px; line-height: 1.6; }
 .terminal-workspace { display: grid; grid-template-columns: 245px minmax(0, 1fr); height: 100%; min-height: 500px; }
-.terminal-list { padding: 16px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid var(--border); overflow-y: auto; }
+.terminal-list { min-height: 0; padding: 16px 10px; display: flex; flex-direction: column; gap: 12px; border-right: 1px solid var(--border); overflow: hidden; }
+.terminal-list > :not(.terminal-sessions) { flex-shrink: 0; }
+.terminal-list h1 { padding-inline: 6px; }
+.terminal-sessions { min-height: 0; flex: 1; overflow-y: auto; scrollbar-gutter: stable; }
 .terminal-list h1 { font-size: 16px; margin: 0; }
-.terminal-list select { padding: 8px; border: 1px solid var(--border); border-radius: 6px; color: var(--text); background: var(--surface); }
+.terminal-detail .task-toolbar small { overflow-wrap: anywhere; }
 .terminal-detail { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .terminal-emulator { flex: 1; min-height: 0; padding: 12px; overflow: hidden; }
 .terminal-emulator .xterm { height: 100%; }

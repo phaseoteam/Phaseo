@@ -47,6 +47,8 @@ execFileSync("git",["-c","user.name=Design Fixture","-c","user.email=fixture@exa
 writeFileSync(path.join(projectDirectory,"example.ts"),projectText);
 seed.exec("CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO projects VALUES (?, ?)").run("design-project",JSON.stringify({id:"design-project",name:"Design project",directory:projectDirectory,createdAt:now}));
+seed.exec("CREATE TABLE terminals (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+for(let index=0;index<30;index++)seed.prepare("INSERT INTO terminals VALUES (?, ?)").run("design-terminal-"+index,JSON.stringify({id:"design-terminal-"+index,title:"Saved terminal "+index,cwd:projectDirectory,status:"exited",exitCode:0,createdAt:now,updatedAt:now,output:"Phaseo saved terminal\r\n"+"Owned transcript line\r\n".repeat(20)}));
 seed.close();
 const packagedEntry = process.argv.find(argument => argument.startsWith("--app-entry="))?.slice("--app-entry=".length);
 await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "../dist/main/index.mjs");
@@ -86,7 +88,7 @@ try {
     for (const theme of ["light", "dark"]) {
       await window.webContents.executeJavaScript(`(()=>{const desired=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==desired)document.querySelector('[aria-label="Use '+desired+' theme"]').click()})()`);
       await new Promise(resolve => setTimeout(resolve, 100));
-      for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox"]) {
+      for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox", "Terminals"]) {
         await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-item')).find(b=>b.textContent.trim()===${JSON.stringify(page)}).click()`);
         if (page === "Tasks") {
           for (let attempt = 0; ; attempt++) {
@@ -110,6 +112,17 @@ try {
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
+        if(page==="Terminals"){
+          for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`document.querySelectorAll('.terminal-sessions .task-row').length===30`))break;if(attempt>50)throw new Error("Terminal session fixture did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
+          await window.webContents.executeJavaScript(`document.querySelector('.terminal-sessions .task-row').click()`);
+          for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('.terminal-emulator .xterm-screen'))`))break;if(attempt>50)throw new Error("Saved terminal did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
+          await window.webContents.executeJavaScript(`document.querySelector('.terminal-sessions').scrollTop=10000`);
+          const terminalLayout=await window.webContents.executeJavaScript(`(()=>{const list=document.querySelector('.terminal-sessions'),row=list.querySelector('.selected'),create=document.querySelector('.terminal-list > button'),r=create.getBoundingClientRect();return {scrollable:list.scrollHeight>list.clientHeight,scrolled:list.scrollTop>0,createVisible:r.top>=0&&r.bottom<=innerHeight,direction:getComputedStyle(row).flexDirection,selected:row.getAttribute('aria-pressed'),height:document.querySelector('.terminal-emulator').clientHeight}})()`);
+          if(!terminalLayout.scrollable||!terminalLayout.scrolled||!terminalLayout.createVisible||terminalLayout.direction!=="column"||terminalLayout.selected!=="true"||terminalLayout.height<200)throw new Error("Terminal layout must retain controls and usable output space.");
+          await window.webContents.executeJavaScript(`document.querySelector('.terminal-sessions').scrollTop=0`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          writeFileSync(path.join(output,`${width}-${theme}-terminal-transcript.png`),(await window.webContents.capturePage()).toPNG());
+        }
         if(page==="Projects"){
           await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Project"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'design-project');select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
           for(let attempt=0;;attempt++){
