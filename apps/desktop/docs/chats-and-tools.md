@@ -12,7 +12,11 @@ The Browser uses Electron WebContentsView, with up to twenty tabs per chat, navi
 
 Remote pages have no preload, Node integration or workspace bridge. HTTP/HTTPS addresses, including local development servers, are supported. File/data/custom protocol navigation and embedded URL credentials are rejected. Main IPC requires the application's own main-frame web contents, including when another native surface belongs to its window. Native surfaces hide for app dialogs and menus, and their bounds follow the host panel and zoom.
 
-This is an initial browser surface, not full browser parity. Website permission prompts, durable browser history and remote preview routing remain to implement. Website permission requests currently return false. HTTP/HTTPS popup links open a tab in the current chat; background-tab requests retain the active tab and load when selected. Inactive native surfaces cannot request popups into another chat.
+HTTP/HTTPS popup links open a tab in the current chat; background-tab requests retain the active tab and load when selected. Inactive native surfaces cannot request popups into another chat. Durable browsing history, remote preview routing and complete browser parity remain in progress.
+
+Site permissions use a native dialog identifying the requesting origin. Choose **Deny** or **Allow for this page** for notifications, location, microphone/camera, clipboard reads, MIDI, fullscreen, pointer/keyboard capture and idle detection. Decisions last until navigation or reload; camera and microphone grants are separate. Only the visible owned main page can ask. Hiding or minimizing the window, hiding the page, navigating, closing its tab or closing the app cancels pending prompts. Focused visible main pages can use standard clipboard copy buttons. Embedded-frame permissions, persistent site settings and device/file/screen pickers remain in progress.
+
+The permission service implements both [Electron permission handlers](https://www.electronjs.org/docs/latest/api/session#sessetpermissionrequesthandlerhandler). Owned Chromium tests cover notification grant/deny, repeated requests, page reset, minimized-window rejection/cancellation, hiding/closing and cancellation of a real native dialog on navigation. They show no system notifications and access no media, location or clipboard data. Camera/microphone decisions are covered by deterministic policy tests; real devices and additional operating systems remain unverified.
 
 ## Verification
 

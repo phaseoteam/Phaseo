@@ -2,8 +2,13 @@ import { session, WebContentsView, type BrowserWindow } from "electron";
 import { browserUrl, browserViewport, browserViewportSizes, type BrowserViewport, type BrowserCommand, type BrowserState } from "../shared/browser";
 
 import { BrowserDownloads } from "./browserDownloads";
+import { BrowserPermissions } from "./browserPermissions";
 
 export class BrowserHost {
+ private permissions = new BrowserPermissions(contents => {
+  for (const [owner, views] of this.owners) for (const view of views.values()) if (view.webContents === contents && !owner.isDestroyed()) return { owner, visible: owner.isVisible() && !owner.isMinimized() && owner.contentView.children.includes(view) };
+  return undefined;
+ });
  readonly downloads = new BrowserDownloads();
  private downloadSession?: Electron.Session;
  private configureDownloads(browserSession: Electron.Session) {
@@ -26,12 +31,14 @@ export class BrowserHost {
 		if (!views) {
 			views = new Map(); this.owners.set(owner, views);
 			const ownedViews = views;
-			owner.webContents.on("did-start-loading", () => { if (!owner.isDestroyed()) for (const view of ownedViews.values()) owner.contentView.removeChildView(view); });
-			owner.once("closed", () => { for (const view of ownedViews.values()) if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); this.owners.delete(owner); });
+			const cancelPermissions = () => { for (const view of ownedViews.values()) this.permissions.cancel(view.webContents); };
+			owner.on("hide", cancelPermissions); owner.on("minimize", cancelPermissions);
+			owner.webContents.on("did-start-loading", () => { if (!owner.isDestroyed()) for (const view of ownedViews.values()) { this.permissions.cancel(view.webContents); owner.contentView.removeChildView(view); } });
+			owner.once("closed", () => { for (const view of ownedViews.values()) if (!view.webContents.isDestroyed()) { this.permissions.cancel(view.webContents); view.webContents.close({ waitForBeforeUnload: false }); } this.owners.delete(owner); });
 		}
 		let view = views.get(command.id);
 		if (command.type === "hide" || command.type === "close") {
-			if (view) { owner.contentView.removeChildView(view); if (command.type === "close") { view.webContents.close({ waitForBeforeUnload: false }); views.delete(command.id); } }
+			if (view) { this.permissions.cancel(view.webContents); owner.contentView.removeChildView(view); if (command.type === "close") { view.webContents.close({ waitForBeforeUnload: false }); views.delete(command.id); } }
 			return view && !view.webContents.isDestroyed() ? this.state(command.id, view) : undefined;
 		}
 		if (!["show", "navigate", "back", "forward", "reload", "stop", "devtools", "viewport"].includes(command.type)) throw new Error("Invalid browser action.");
@@ -41,12 +48,12 @@ export class BrowserHost {
 		if (!view) {
 			const browserSession = session.fromPartition("persist:phaseo-browser");
 			this.configureDownloads(browserSession);
-			browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-			browserSession.setPermissionCheckHandler(() => false);
+			this.permissions.configure(browserSession);
 			view = new WebContentsView({ webPreferences: { session: browserSession, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
 			views.set(command.id, view);
 			const createdView = view;
 			const contents = createdView.webContents;
+			this.permissions.register(contents);
 			const emit = (error?: string) => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, createdView), ...(error ? { error } : {}) }); };
 			contents.on("did-start-loading", () => emit()); contents.on("did-stop-loading", () => emit()); contents.on("did-navigate", () => emit()); contents.on("did-navigate-in-page", () => emit()); contents.on("page-title-updated", () => emit());
 			contents.on("dom-ready", () => this.applyViewport(createdView, this.viewports.get(createdView) ?? "desktop"));
@@ -59,7 +66,7 @@ export class BrowserHost {
 		}
 		const contents = view.webContents;
 		if (command.type === "show") {
-			for (const candidate of views.values()) owner.contentView.removeChildView(candidate);
+			for (const candidate of views.values()) { if (candidate !== view) this.permissions.cancel(candidate.webContents); owner.contentView.removeChildView(candidate); }
 			const zoom = owner.webContents.getZoomFactor(); const [width, height] = owner.getContentSize();
 			const x = Math.max(0, Math.min(width, Math.round(command.bounds.x * zoom))); const y = Math.max(0, Math.min(height, Math.round(command.bounds.y * zoom)));
 			this.frames.set(view, { x, y, width: Math.max(0, Math.min(width - x, Math.round(command.bounds.width * zoom))), height: Math.max(0, Math.min(height - y, Math.round(command.bounds.height * zoom))) });

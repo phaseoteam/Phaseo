@@ -92,6 +92,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs
             - name: Chat shell and native browser
               run: pnpm --filter @phaseo/desktop audit:design
+            - name: Native browser site permissions
+              run: pnpm --filter @phaseo/desktop exec electron scripts/browser-permissions-smoke.mjs
             - name: Native browser viewport geometry
               run: pnpm --filter @phaseo/desktop test:browser-viewport
             - name: Browser download history across restarts
@@ -144,6 +146,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat shell and native browser
               run: pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged browser site permissions
+              run: pnpm --filter @phaseo/desktop exec electron scripts/browser-permissions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged browser download history across restarts
               run: pnpm --filter @phaseo/desktop exec node scripts/browser-download-history-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged history workflows
@@ -176,4 +180,5 @@ jobs:
                         output/playwright/phaseo-skill-runtime/
                         output/playwright/phaseo-skill-recovery/
                       output/playwright/browser-viewport/
+                      output/playwright/browser-permissions/
                   if-no-files-found: ignore
