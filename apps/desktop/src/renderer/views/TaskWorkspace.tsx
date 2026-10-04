@@ -6,6 +6,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { useTaskHistory } from "../lib/useTaskHistory";
 import { useSelectedTask } from "../lib/useSelectedTask";
 import { ConversationHistory } from "../components/ConversationHistory";
+import { ApprovalRequest } from "../components/ApprovalRequest";
 import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { AgentForm } from "../components/AgentForm";
@@ -64,7 +65,11 @@ export function TaskWorkspace() {
 		if (!api) { setError("Open the desktop application to use your local workspace."); return; }
 		setError("");
 		try { const state = await api.command(value); setWorkspace(state); return state; }
-		catch (reason) { setError(reason instanceof Error ? reason.message : String(reason)); }
+		catch (reason) {
+			const message = (reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "");
+			if (["approval", "answer", "form-answer"].includes(value.type)) throw new Error(message, { cause: reason });
+			setError(message);
+		}
 	}
 	async function create() {
 		const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
@@ -135,7 +140,7 @@ export function TaskWorkspace() {
 				{settingsId === selected.id && !selected.archived && selected.status !== "running" && selected.status !== "waiting" && <TaskSettings key={selected.id} task={selected} close={() => setSettingsId(undefined)} save={async (model, mode, reasoningEffort, nativeMode) => Boolean(await command({ type: "update-task", id: selected.id, model, mode, ...(["codex", "acp", "grok"].includes(selected.harness) ? { reasoningEffort } : {}), ...(selected.harness === "acp" ? { nativeMode } : {}) }))} />}
 				<ConversationHistory key={`history:${selected.id}`} task={selected} onAttachment={id => setAttachmentPreview({ taskId: selected.id, id })}>
 					{selected.error && <div className="task-error" role="alert">{selected.error}<button type="button" onClick={() => void command({ type: "resume", id: selected.id })}>Resume</button></div>}
-					{selected.approvals?.map(approval => <div className="task-approval" key={approval.id}><strong>Approval needed</strong><pre>{approval.description}</pre>{(["decline", "accept"] as const).map(decision => <button type="button" key={decision} onClick={() => void command({ type: "approval", id: selected.id, approvalId: approval.id, decision })}>{decision === "accept" ? "Allow" : "Deny"}</button>)}</div>)}
+					{selected.approvals?.map(approval => <ApprovalRequest key={approval.id} description={approval.description} onDecision={async decision => Boolean(await command({ type: "approval", id: selected.id, approvalId: approval.id, decision }))} />)}
 					{selected.questions?.map(request => <QuestionForm key={request.id} questions={request.questions} onAnswer={async answers => Boolean(await command({ type: "answer", id: selected.id, requestId: request.id, answers }))} />)}
 					{selected.forms?.map(request => <AgentForm key={request.id} form={request.form} onAnswer={async answer => Boolean(await command({ type: "form-answer", id: selected.id, requestId: request.id, answer }))} />)}
 				{selected.authTerminalId && <Suspense fallback={<p>Opening native sign-in…</p>}><AuthTerminal id={selected.authTerminalId} /></Suspense>}

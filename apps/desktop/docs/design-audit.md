@@ -35,6 +35,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 26. **Activity results:** use readable disclosure labels and padded, bounded output with Copy result feedback. Tool, reasoning, plan and usage outputs remain inert text. Code and activity copying share exact-source handling; delayed clipboard completion cannot confirm text that changed in the meantime. The rendered audit verifies Unicode/newline preservation, failure feedback, inert markup, scrolling and stale-completion rejection through an owned clipboard fixture in both themes/window sizes.
 
+27. **Agent request controls:** approval actions use a wrapping row and bounded padded descriptions. Approval decisions and question answers show pending states and prevent duplicate submissions; question fields lock while sending and retain selected answers after failure. Typed native forms share the same action row. An isolated IPC failure fixture verifies one submission from repeated clicks, locked controls and retry recovery in both themes/window sizes. This verifies renderer behavior; live native approval delivery retains its separate protocol/runtime tests.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)
@@ -51,6 +53,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
 
+![Agent question retry at minimum window size](screenshots/agent-requests-small-window.png)
+
 ![Expanded tool result at minimum window size](screenshots/tool-result-small-window.png)
 
 ![Editing queued messages at minimum window size](screenshots/queued-messages-small-window.png)
@@ -65,8 +69,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 80 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 84 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 80 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 84 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

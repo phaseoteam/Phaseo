@@ -143,6 +143,7 @@
 .task-question label { display: grid; gap: 7px; }
 .task-question fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
 .task-question legend { font-weight: 600; }
+.task-question fieldset > p { margin: 8px 0 16px; line-height: 1.6; }
 .task-question .question-option { display: flex; align-items: flex-start; gap: 9px; margin: 8px 0; }
 .question-option small { display: block; margin-top: 3px; }
 .question-option > span { min-width: 0; }
@@ -181,8 +182,9 @@
 .task-message-user { border: 1px solid var(--border); border-radius: 10px; padding: 15px; background: var(--surface-muted); }
 .task-error { padding: 12px 18px; color: #c64949; background: var(--surface-muted); overflow-wrap: anywhere; }
 .task-approval { border: 1px solid var(--border-strong); padding: 16px; border-radius: 8px; }
-.task-approval pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-.task-approval button + button { margin-left: 8px; }
+.task-approval pre { margin: 16px 0; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; font: 12px/1.6 ui-monospace, monospace; }
+.request-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.task-approval > button + button { margin-left: 8px; }
 .task-composer { flex-shrink: 0; margin: 12px 24px 24px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px; background: var(--surface); }
 .task-composer textarea { width: 100%; min-height: 72px; resize: vertical; border: 0; background: transparent; padding: 4px; }
 .task-composer > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

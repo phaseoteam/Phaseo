@@ -30,6 +30,6 @@ export function AgentForm({ form, onAnswer }: { form: Form; onAnswer: (answer: F
 			</fieldset>;
 		})}
 		{error && <p className="task-error" role="alert">{error}</p>}
-		<button type="submit" className="task-primary" disabled={busy}>Send answers</button><button type="button" disabled={busy} onClick={() => void submit(null)}>Cancel form</button>
+		<div className="request-actions"><button type="submit" className="task-primary" disabled={busy}>{busy ? "Sending…" : "Send answers"}</button><button type="button" disabled={busy} onClick={() => void submit(null)}>Cancel form</button></div>
 	</form>;
 }

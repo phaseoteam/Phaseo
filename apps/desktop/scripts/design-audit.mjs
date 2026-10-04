@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -25,6 +25,7 @@ seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stri
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-grok-settings", JSON.stringify({ ...grokSettings, id: "design-grok-settings", title: "Review Grok reasoning", harness: "grok", agentId: undefined }));
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-queue", JSON.stringify({ ...settingsTask, id: "design-queue", title: "Review queued messages", pinned: false, harness: "phaseo", mode: "chat", queue: Array.from({length:12},(_,index)=>({id:"queued-"+index,text:"Queued instruction "+index+": "+"Long message content ".repeat(15),createdAt:now})) }));
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-requests", JSON.stringify({ ...codeExample, id: "design-requests", title: "Review agent requests", pinned: false, approvals: [{ id: "design-approval", method: "tool", description: "Inspect the requested files\n"+"Requested file detail\n".repeat(20) }], questions: [{id:"design-question",questions:[{id:"direction",header:"Direction",question:"Which approach should the agent take?",options:[{label:"Focused",description:"Apply the requested change."},{label:"Explore",description:"Compare approaches before implementing."}]}]}] }));
 seed.exec("CREATE TABLE accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO accounts VALUES (?, ?)").run("design-account", JSON.stringify({ id: "design-account", name: "Design account", harness: "phaseo", kind: "api", configured: false, endpoint: "https://example.invalid/v1" }));
 seed.close();
@@ -33,6 +34,13 @@ await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "
 app.whenReady().then(async () => {
 const window = BrowserWindow.getAllWindows()[0];
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
+const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
+let pendingRequest,requestCalls=0;
+ipcMain.removeHandler("workspace:command");
+ipcMain.handle("workspace:command",async(event,command)=>{
+  if(command.id==="design-requests" && ["approval","answer"].includes(command.type)){requestCalls++;await new Promise((resolve,reject)=>{pendingRequest=reject;});}
+  return originalCommand(event,command);
+});
 const output = path.resolve("../../output/playwright/design-audit", packagedEntry ? "packaged-after" : process.argv.includes("--before") ? "before" : "after");
 mkdirSync(output, { recursive: true });
 try {
@@ -187,6 +195,29 @@ try {
           const restoreTask=JSON.parse(restoreDb.prepare("SELECT data FROM tasks WHERE id=?").get("design-queue").data);restoreTask.activities[0].text=originalResult;
           restoreDb.prepare("UPDATE tasks SET data=? WHERE id=?").run(JSON.stringify(restoreTask),"design-queue");restoreDb.close();
           await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.command({type:'update-task',id:'design-queue',title:'Review queued messages'}).then(()=>true)`);
+
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review agent requests')).click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('section[aria-label="Approval needed"]'))`))break;
+            if(attempt>50)throw new Error("Approval fixture did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          for(const type of ["approval","answer"]){
+            const previous=requestCalls;
+            await window.webContents.executeJavaScript(type==="approval"?`(()=>{const button=document.querySelector('section[aria-label="Approval needed"] .task-primary');button.click();button.click();})()`:`(()=>{const form=document.querySelector('form[aria-label="Agent questions"]');form.querySelector('input').click();const button=form.querySelector('button[type="submit"]');button.click();button.click();})()`);
+            for(let attempt=0;!pendingRequest;attempt++){
+              if(attempt>50)throw new Error("Request submission did not reach the fixture.");
+              await new Promise(resolve=>setTimeout(resolve,20));
+            }
+            const locked=await window.webContents.executeJavaScript(type==="approval"?`Array.from(document.querySelector('section[aria-label="Approval needed"]').querySelectorAll('button')).every(button=>button.disabled)`:`document.querySelector('form[aria-label="Agent questions"] fieldset').disabled&&document.querySelector('form[aria-label="Agent questions"] button').disabled`);
+            if(!locked||requestCalls!==previous+1)throw new Error("Request pending state allowed duplicate submissions.");
+            pendingRequest(new Error("Owned request failure"));pendingRequest=undefined;
+            await new Promise(resolve=>setTimeout(resolve,100));
+            const recovered=await window.webContents.executeJavaScript(type==="approval"?`Boolean(document.querySelector('section[aria-label="Approval needed"] [role="alert"]'))&&!document.querySelector('section[aria-label="Approval needed"] .task-primary').disabled`:`Boolean(document.querySelector('form[aria-label="Agent questions"] [role="alert"]'))&&document.querySelector('form[aria-label="Agent questions"] input').checked&&!document.querySelector('form[aria-label="Agent questions"] fieldset').disabled`);
+            if(!recovered)throw new Error("Failed requests must retain their choices and allow retry.");
+          }
+          await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Agent questions"] .request-actions').scrollIntoView({block:'end'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output, `${width}-${theme}-agent-requests.png`), (await window.webContents.capturePage()).toPNG());
         }
       }
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);
