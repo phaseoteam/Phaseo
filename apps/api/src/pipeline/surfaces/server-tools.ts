@@ -3136,6 +3136,8 @@ export async function buildServerToolContinuation(
 		searchModels?: ModelSearchExecutor;
 		remainingToolCalls?: number;
 		signal?: AbortSignal;
+		onToolStart?: (call: IRToolCall) => void;
+		onToolEnd?: (call: IRToolCall, result: IRToolResult | undefined) => void;
 	},
 ) : Promise<ServerToolContinuation | null> {
 	if (options?.signal?.aborted) return null;
@@ -3206,6 +3208,8 @@ export async function buildServerToolContinuation(
 		// Keep usage from tools that finished before cancellation. The caller still
 		// needs to settle those costs, but must not start another tool.
 		if (options?.signal?.aborted) break;
+		options?.onToolStart?.(call);
+		try {
 		if (!isServerToolCall(call)) {
 			toolResults.push({
 				toolCallId: call.id,
@@ -3529,6 +3533,9 @@ export async function buildServerToolContinuation(
 					advice: advisorResult.content,
 				}),
 			});
+		}
+		} finally {
+			options?.onToolEnd?.(call, toolResults.find((result) => result.toolCallId === call.id));
 		}
 	}
 

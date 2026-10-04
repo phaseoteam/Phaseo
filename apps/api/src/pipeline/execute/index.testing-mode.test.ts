@@ -517,6 +517,8 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as any).result.provider).toBe("second");
 		expect(firstExecutor).toHaveBeenCalledTimes(1);
 		expect(secondExecutor).toHaveBeenCalledTimes(1);
+		expect(ctx.lifecycle?.events.map((event) => event.type)).toEqual(["routing.completed", "provider.started", "provider.completed", "provider.started", "provider.completed"]);
+		expect(ctx.lifecycle?.events.filter((event) => event.type === "provider.started").map((event) => event.call_kind)).toEqual(["initial", "retry"]);
 		expect(guardAllFailedMock).not.toHaveBeenCalled();
 		expect(ctx.attemptErrors?.[0]?.upstream_rate_limit_headers).toEqual({
 			"Retry-After": "10",

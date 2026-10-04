@@ -9,6 +9,7 @@ import {
     normalizeTextBodySessionId,
 } from "./session-id";
 import type { PipelineContext } from "@pipeline/before/types";
+import { finishStreamingProvider, retainedLifecycle } from "@pipeline/lifecycle";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { buildResponseTimeline } from "@pipeline/after/timing";
@@ -1080,6 +1081,11 @@ export async function handleError({
         },
     };
     if (stage === "execute") {
+		if (ctx) {
+			finishStreamingProvider(ctx, "error");
+			auditArgs.lifecycleEvents = retainedLifecycle(ctx);
+			auditArgs.serverToolTrace = ctx.serverToolTrace;
+		}
         auditArgs.stream = ctx?.stream;
         auditArgs.provider = providerForAudit;
         auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
@@ -1165,7 +1171,6 @@ export async function handleError({
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
 
 
 

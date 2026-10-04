@@ -13,6 +13,7 @@ import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import { createToolTraceRetention } from "./server-tool-trace";
+import { finishStreamingProvider, recordLifecycleEvent } from "../lifecycle";
 import type { PipelineRunnerArgs } from "./types";
 import { createManagedToolLiveResponse, type ManagedToolLiveSink } from "./server-tools.live";
 import {
@@ -815,7 +816,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					result: exec.result,
 					onEvent: liveSink?.beginRound(),
 				});
+				finishStreamingProvider(pre.ctx);
 			} catch {
+				finishStreamingProvider(pre.ctx, "error");
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
 				return await handleError({
@@ -907,6 +910,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			let nextIrRequest = irForExecution;
 			let searchObservability = pre.ctx.searchObservability ?? null;
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
+			let activeToolSpan: string | undefined;
+			let previousParentSpan: string | undefined;
+			const toolSpans = new Map<string, string>();
 
 			while (true) {
 				if (liveSink?.signal.aborted) break;
@@ -915,6 +921,16 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					latestIrResponse,
 					preparedServerTools.config,
 					{
+						onToolStart: (call) => {
+							previousParentSpan = pre.ctx.lifecycleParentSpanId;
+							activeToolSpan = recordLifecycleEvent(pre.ctx, { type: "tool.started", tool_call_id: call.id, tool_name: call.name });
+							toolSpans.set(call.id, activeToolSpan);
+							pre.ctx.lifecycleParentSpanId = activeToolSpan;
+						},
+						onToolEnd: (call, result) => {
+							pre.ctx.lifecycleParentSpanId = previousParentSpan;
+							recordLifecycleEvent(pre.ctx, { type: "tool.completed", span_id: activeToolSpan, tool_call_id: call.id, tool_name: call.name, outcome: !result || result.isError ? "error" : "success" });
+						},
 						executeAdvisor: async (advisorArgs) =>
 							executeAdvisorModel({
 								pre,
@@ -1034,7 +1050,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						...(result.isError ? { isError: true } : {}),
 					};
 					serverToolTrace.push(tracedCall);
-					serverToolRound.calls.push({ ...tracedCall, arguments: tracedCall.arguments?.slice(0, 4096), output: retainToolOutput(tracedCall.output) });
+					serverToolRound.calls.push({ ...tracedCall, spanId: toolSpans.get(call.id), arguments: tracedCall.arguments?.slice(0, 4096), output: retainToolOutput(tracedCall.output) });
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
 				}
 				if (serverToolRound.calls.length > 0) {
@@ -1113,7 +1129,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 							result: followUpResult,
 							onEvent: liveSink?.beginRound(),
 						});
+						finishStreamingProvider(pre.ctx);
 					} catch {
+						finishStreamingProvider(pre.ctx, "error");
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
 						return await handleError({
@@ -1247,6 +1265,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 
 		if (protocolResponse) {
 			exec.result.normalized = protocolResponse;
+			recordLifecycleEvent(pre.ctx, { type: "response.ready" });
 		}
 
 		timing.timer.end("execute_total", "execute_start");

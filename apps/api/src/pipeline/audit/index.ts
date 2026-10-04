@@ -931,6 +931,7 @@ export async function auditSuccess(input: {
     providerRequest?: unknown;
     providerResponse?: unknown;
     serverToolTrace?: unknown;
+	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
     // Wide event enrichment
     teamEnrichment?: any | null;
@@ -1153,6 +1154,7 @@ export async function auditSuccess(input: {
                 providerRequest: args.providerRequest,
                 providerResponse: args.providerResponse,
                 serverToolTrace: args.serverToolTrace,
+				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
                 }, ioLoggingPolicy);
                 await insertGatewayRequestDetailsNonBlocking(
@@ -1289,6 +1291,7 @@ type AuditFailureExecute = {
     providerRequest?: unknown;
     providerResponse?: unknown;
     serverToolTrace?: unknown;
+	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
     usage?: Record<string, unknown> | null;
@@ -1637,6 +1640,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     providerRequest: args.providerRequest,
                     providerResponse: args.providerResponse,
                     serverToolTrace: args.serverToolTrace,
+					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
                     }, ioLoggingPolicy);
                     await insertGatewayRequestDetailsNonBlocking(

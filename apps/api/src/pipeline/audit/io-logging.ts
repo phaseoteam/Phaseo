@@ -30,6 +30,7 @@ type GatewayIoLogInput = {
     providerRequest?: unknown;
     providerResponse?: unknown;
     serverToolTrace?: unknown;
+	lifecycleEvents?: unknown;
     metadata?: unknown;
 };
 
@@ -265,6 +266,7 @@ export async function persistGatewayIoLog(
         provider_request: policy.includeProviderPayloads ? sanitizeJsonValue(input.providerRequest) : null,
         provider_response: policy.includeProviderPayloads ? sanitizeJsonValue(input.providerResponse) : null,
         ...(input.serverToolTrace !== undefined ? { server_tool_trace: sanitizeJsonValue(input.serverToolTrace) } : {}),
+		...(input.lifecycleEvents !== undefined ? { lifecycle_events: sanitizeJsonValue(input.lifecycleEvents) } : {}),
         metadata: sanitizeJsonValue(input.metadata),
     };
     const bytes = new TextEncoder().encode(JSON.stringify(body));
