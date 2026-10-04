@@ -47,7 +47,7 @@ export function TaskWorkspace() {
 	}, [api]);
 	useEffect(() => {
 		setModels([]); setModelError("");
-		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor"].includes(harness) || (["phaseo", "cursor"].includes(harness) && !accountId)) { setModelsLoading(false); return; }
+		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(harness) || (["phaseo", "cursor"].includes(harness) && !accountId)) { setModelsLoading(false); return; }
 		let active = true; setModelsLoading(true);
 		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
 		return () => { active = false; };

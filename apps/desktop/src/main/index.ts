@@ -9,6 +9,7 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
+import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
@@ -69,7 +70,7 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 	await shell.openExternal(url.href);
 });
 ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
-	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
+	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
 	const project = projectId ? workspaceRuntime.store.get().projects.find(value => value.id === projectId) : undefined;
 	if (projectId && !project) throw new Error("Project is unavailable.");
 	const cwd = project?.directory ?? app.getPath("userData");
@@ -82,6 +83,7 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 	if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return cursorModels(credentialVault.get(account.secretId ?? account.id)); }
 	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 	if (harness === "pi") return piModels(cwd);
+    if (harness === "grok") return grokModelCatalog(cwd, account);
 	return codexModels(cwd, account);
 });
 app.on("before-quit", event => {

@@ -207,7 +207,9 @@ Grok task settings now display advertised reasoning choices and save them throug
 
 Managed MCP connection edits now include Grok in the active-task guard. An orchestration test verifies that changes are rejected without persistence while Grok executes, then become available after cancellation releases execution ownership.
 
-Evidence: desktop lint/typecheck/build pass; 295 deterministic tests cover protocol,
+Pre-task Grok model discovery now initializes the owned ACP process with file/terminal capabilities disabled, reads its advertised catalog and closes without authentication, session creation or prompts. The desktop model bridge and new-task model suggestions use this path with profile isolation. Packet tests verify public catalog parsing, unsupported-agent rejection and absence of session/prompt requests. Actual signed-in execution remains unverified.
+
+Evidence: desktop lint/typecheck/build pass; 297 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
