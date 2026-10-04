@@ -1,14 +1,15 @@
 import { FileDiff } from "@pierre/diffs/react";
 import { Check, Copy } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { parseDiffFromFile } from "@pierre/diffs";
 import type { FileDiffMetadata } from "@pierre/diffs";
 import { CodeBlock } from "./MessageContent";
 import { parseReviewPatch } from "./diffRendering";
 import { useTextCopy } from "./useTextCopy";
 import type { DiffViewProps } from "./DiffView";
 
-export function DiffRenderer({ patch, layout, copyText = patch, hideHeader = false, context, onRefresh }: DiffViewProps) {
-	const files = useMemo(() => parseReviewPatch(patch), [patch]);
+export function DiffRenderer({ contents, patch, layout, copyText = patch, hideHeader = false, context, onRefresh }: DiffViewProps) {
+	const files = useMemo(() => contents ? [parseDiffFromFile(contents.oldFile, contents.newFile)] : parseReviewPatch(patch), [patch, contents]);
 	const [theme, setTheme] = useState<"light" | "dark">(() => document.documentElement.dataset.theme === "dark" ? "dark" : "light");
 	const { status, copying, copy } = useTextCopy(copyText);
 	const [contextError, setContextError] = useState("");

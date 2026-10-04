@@ -69,3 +69,7 @@ Twenty-four new native/parser cases and three patch-presentation cases bring the
 ![PR files](screenshots/pull-request-files.png)
 
 Patch previews now check hunk line counts and reported addition/deletion totals. An incomplete or unsupported patch shows a warning while remaining readable. Passing this check proves changed-line coverage only, not full file contents or unchanged context. Nine additional tests bring the suite to 569 tests across 80 files.
+
+Full context can now load the complete supported text of a selected PR file at its merge base and head commit. Each side is limited to 1 MB and 10,000 lines; binary or unreadable files show an error. Confirmed blob bytes are checked against their Git identities, and a PR update during loading rejects the response. Missing objects are never interpreted as deletion. The original patch remains visible after a failed load. Full text supports unified/split layouts and unchanged context. See [GitHub commit comparison](https://docs.github.com/en/rest/commits/commits#compare-two-commits) and [Git blobs](https://docs.github.com/en/rest/git/blobs#get-a-blob).
+
+Current verification: 596 tests / 81 files; source and Windows archive checks capture 27 states, including failed full-context retry and actual unchanged-line rendering. Production reads verified both immutable README versions in PR #2702. Cross-fork reads, binary/oversized review, viewed marks and review actions remain open.

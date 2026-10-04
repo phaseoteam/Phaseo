@@ -1,8 +1,9 @@
 import { Component, lazy, Suspense, type ReactNode } from "react";
+import type { PullRequestContents } from "../../shared/pullRequestContents";
 import { CodeBlock } from "./MessageContent";
 import type { DiffLayout } from "./diffRendering";
 
-export type DiffViewProps = { patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean; context?: { projectId: string; staged: boolean; hash: string }; onRefresh?: () => void };
+export type DiffViewProps = { contents?: PullRequestContents; patch: string; layout: DiffLayout; copyText?: string; hideHeader?: boolean; context?: { projectId: string; staged: boolean; hash: string }; onRefresh?: () => void };
 const Renderer = lazy(() => import("./DiffRenderer").then(module => ({ default: module.DiffRenderer })));
 
 class DiffBoundary extends Component<{ children: ReactNode; source: string; fallback: ReactNode }, { failed: boolean }> {

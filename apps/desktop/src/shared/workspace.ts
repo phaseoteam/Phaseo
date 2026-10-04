@@ -1,3 +1,4 @@
+import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
 import type { AgentForm, FormAnswer } from "./agentForms";
@@ -120,6 +121,7 @@ export type WorkspaceApi = {
 	readDocument: (projectId: string, filename: string) => Promise<{ text: string; hash: string }>;
 	writeDocument: (projectId: string, filename: string, text: string, expectedHash: string) => Promise<{ hash: string }>;
 	gitReview: (projectId: string) => Promise<GitReview>;
+	pullRequestContents: (projectId: string, query: PullRequestContentsQuery) => Promise<PullRequestContents>;
 	pullRequestFiles: (projectId: string, query: PullRequestFilesQuery) => Promise<PullRequestFilesPage>;
 	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
