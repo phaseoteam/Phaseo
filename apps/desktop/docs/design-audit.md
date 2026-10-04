@@ -247,7 +247,7 @@ The navigation above records the earlier shell. The current workspace uses one c
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. The new chat-shell workflow writes 25 captures to `output/playwright/chat-shell/source`: sixteen shell states at 1440×920 and 1040×680 in both themes plus multiple-tab, phone-preview and downloads captures, two separately captured native browser pages and four PR detail states. It verifies project grouping, draft preservation, contextual PR/terminal selection, actual WebContentsView navigation, per-chat history, privilege isolation, bounds, modal hiding and cleanup.
+Run `pnpm --filter @phaseo/desktop audit:design`. The new chat-shell workflow writes 26 captures to `output/playwright/chat-shell/source`: sixteen shell states at 1440×920 and 1040×680 in both themes plus multiple-tab, phone-preview and downloads captures, two separately captured native browser pages and four PR detail states and a PR file-review state. It verifies project grouping, draft preservation, contextual PR/terminal selection, actual WebContentsView navigation, per-chat history, privilege isolation, bounds, modal hiding and cleanup.
 
 After packaging, run `pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` for the same checks and captures in `output/playwright/chat-shell/packaged`. Both source and Windows archive pass. Host capturePage omits separate native-view pixels; the browser page capture documents its actual rendering separately.
 

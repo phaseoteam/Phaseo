@@ -18,7 +18,7 @@ This is an initial browser surface, not full browser parity. Website permission 
 
 `pnpm --filter @phaseo/desktop audit:design` runs the new chat-shell smoke/audit. It uses an isolated local profile, two seeded conversations and a local HTTP site, with no provider inference. It verifies grouping, drafts, settings, project PR/terminal context, native navigation/history, chat-specific browser restoration, unsafe-address rejection, remote privilege isolation, bounds, modal hiding and cleanup.
 
-Source and Windows archive runs produce 16 shell captures across light/dark themes at 1440×920 and 1040×680, plus multiple-tab, phone-preview and downloads captures, two separate native browser page captures and four pull-request-detail captures. Electron's host `capturePage` does not include the separate WebContentsView pixels; the native page is captured directly and is not composited into the shell screenshot.
+Source and Windows archive runs produce 16 shell captures across light/dark themes at 1440×920 and 1040×680, plus multiple-tab, phone-preview and downloads captures, two separate native browser page captures and four pull-request-detail captures and a file-review capture. Electron's host `capturePage` does not include the separate WebContentsView pixels; the native page is captured directly and is not composited into the shell screenshot.
 
 The broader source/archive desktop smoke covers existing accounts, agents, MCP, schedules, attachments, Git, worktrees, notifications and native protocol fixtures through the new public navigation. Provider fixtures do not establish signed-in live inference or complete product parity. Multi-OS rendering, scaling and assistive-technology verification remain open.
 
@@ -57,3 +57,13 @@ The production adapter reads a project’s GitHub origin through a compact nativ
 ![Pull-request details](screenshots/pull-request-details-small-window.png)
 
 Live native tabs now retain their configured viewport when the tools panel remounts, even if an immediate rotate/close leaves older saved metadata. Saved preview settings apply only to a fresh unconfigured surface. Source/archive regression checks reproduce the former portrait reversion and verify both live landscape preservation and fresh phone restoration. `pnpm --filter @phaseo/desktop test:browser-viewport` runs 96 native geometry cases across four device orientations, eight fractional panel sizes and app zoom factors of 1, 1.25 and 1.5; it verifies exact page/screen dimensions, containment and centring. The evidence is written to `output/playwright/browser-viewport/geometry.json` and uploaded by Windows CI. Physical display scaling and other operating systems remain unverified.
+
+## PR file previews
+
+The Files tab pages through up to one hundred changed files at a time and keeps confirmed rows after a failed page read. Retry requests the failed page. Selecting a file shows its available GitHub patch in the existing unified/side-by-side diff viewer, with the original patch available for copying. Missing text patches and previews that exceed the display budget retain their file metadata and an explicit unavailable state. The page identifies the reviewed commit and scrolls the file area into view after loading. Automatic detail refresh pauses during file review; explicit Refresh details loads a newer revision.
+
+The native adapter validates the request, checks head/base commit identities before and after each read, and rejects changed revisions, incomplete pages and duplicate records. GitHub CLI projects bounded patch text before returning it to the app; each preview is capped at 200,000 characters and each page at 1,000,000 patch characters. [GitHub’s file API](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files) exposes at most 3,000 files; the UI reports that ceiling when reached. These are server-provided patch previews: full file blobs, unchanged context and proof of complete server patches remain open.
+
+Twenty-four new native/parser cases and three patch-presentation cases bring the desktop suite to 560 tests across 79 files. Source/archive workflows verify initial failure/retry, 100-row bounds, failed-page retention/retry, omitted patches and both layouts. The production adapter reads all 299 files in PR #2702 across three pages without changing the temporary repository. Review threads/actions, viewed-file marks and merge remain open.
+
+![PR files](screenshots/pull-request-files.png)

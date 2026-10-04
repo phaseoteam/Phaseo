@@ -683,3 +683,15 @@ button { color: inherit; }
 .proposal-detail-metadata dt { color:var(--text-muted); font-size:12px; margin-bottom:6px; }
 .proposal-detail-metadata dd { margin:0; font-size:13px; overflow-wrap:anywhere; }
 .proposal-description { min-width:0; overflow-wrap:anywhere; }
+
+.proposal-files { display:flex; flex-direction:column; gap:16px; min-width:0; }
+.proposal-files h3 { margin:0; font-size:14px; overflow-wrap:anywhere; flex:1; }
+.proposal-file-list { display:flex; flex-direction:column; gap:6px; max-height:180px; overflow:auto; scrollbar-gutter:stable; }
+.proposal-file-list button { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:4px; padding:10px 12px; flex-shrink:0; }
+.proposal-file-list button[aria-pressed="true"], .proposal-detail-actions button[aria-pressed="true"] { background:var(--primary-soft); border-color:var(--primary); }
+.proposal-file-list strong { font-size:13px; overflow-wrap:anywhere; }
+.proposal-file-list span, .proposal-file-list small, .proposal-file-preview > p { font-size:12px; color:var(--text-muted); overflow-wrap:anywhere; }
+.proposal-file-preview { min-width:0; }
+
+.proposal-file-revision { margin:0; font-size:12px; color:var(--text-muted); }
+.proposal-files { scroll-margin-top:12px; }

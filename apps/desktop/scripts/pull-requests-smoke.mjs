@@ -26,6 +26,13 @@ if (next) { assert.equal(next.repository, result.repository); assert.ok(next.req
 const detailNumber = process.argv.find(value => value.startsWith("--details="))?.slice(10);
 const detail = detailNumber ? await projectPullRequest(repository, Number(detailNumber)) : undefined;
 if (detail) { assert.equal(detail.number, Number(detailNumber)); assert.equal(detail.repository, "phaseoteam/Phaseo"); assert.match(detail.headOid, /^[a-f0-9]{40}$/i); assert.ok(detail.body.length <= 200000); }
+let files,filesPages=0,filesRead=0;
+if(detail&&process.argv.includes("--files")){
+ await build({configFile:false,logLevel:"silent",build:{target:"node24",outDir:path.join(directory,"files-bundle"),emptyOutDir:false,lib:{entry:path.join(root,"src/main/projectPullRequestFiles.ts"),formats:["es"],fileName:()=>"files.mjs"},rolldownOptions:{external:[...builtinModules,...builtinModules.map(name=>`node:${name}`)]}}});
+ const {projectPullRequestFiles}=await import(pathToFileURL(path.join(directory,"files-bundle/files.mjs")).href);
+ files=await projectPullRequestFiles(repository,{number:detail.number,page:1,headOid:detail.headOid,baseOid:detail.baseOid});assert.equal(files.total,detail.changedFiles);assert.ok(files.files.length<=100);assert.equal(files.headOid,detail.headOid);
+ filesPages=1;filesRead=files.files.length;let currentFiles=files;while(currentFiles.hasNext){filesPages++;currentFiles=await projectPullRequestFiles(repository,{number:detail.number,page:filesPages,headOid:detail.headOid,baseOid:detail.baseOid});assert.equal(currentFiles.page,filesPages);assert.equal(currentFiles.total,files.total);filesRead+=currentFiles.files.length;}assert.equal(filesRead,Math.min(files.total,3000));
+}
 assert.equal(git(["status", "--porcelain"]), before);
 assert.equal(git(["remote", "get-url", "origin"]).trim(), "https://github.com/phaseoteam/Phaseo.git");
-console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length, detailsNumber: detail?.number, detailsState: detail?.state, detailsBodyLength: detail?.body.length }));
+console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length, detailsNumber: detail?.number, detailsState: detail?.state, detailsBodyLength: detail?.body.length, filesCount: files?.files.length, filesTotal: files?.total, filesHaveNext: files?.hasNext, filesPages, filesRead }));
