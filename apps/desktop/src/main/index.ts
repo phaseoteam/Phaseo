@@ -8,9 +8,12 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
+import type { Harness } from "../shared/workspace";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
+import { resolveHarnessMaintenance } from "./harnessMaintenance";
+import { runHarnessUpdate } from "./runHarnessUpdate";
 import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
@@ -48,6 +51,8 @@ let workspaceRuntime: WorkspaceRuntime;
 let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
+const modelChecks = new Map<Harness, number>();
+let harnessUpdate: { harness: "codex" | "claude" | "pi"; controller: AbortController; completed: Promise<void> } | undefined;
 const accountChecks = new Map<string, AbortController>();
 const agentChecks = new Map<string, AbortController>();
 let credentialVault: SecretVault;
@@ -79,20 +84,25 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 });
 ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
 	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
-	const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
-	if (projectId && !project) throw new Error("Project is unavailable.");
-	const cwd = project?.directory ?? app.getPath("userData");
-	const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
-	if (accountId && !account) throw new Error("Account is unavailable.");
-	if (harness === "phaseo") {
-		if (!account) throw new Error("Choose an API account.");
-		return apiModels(account, credentialVault.get(account.secretId ?? account.id));
-	}
-	if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return cursorModels(credentialVault.get(account.secretId ?? account.id)); }
-	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
-	if (harness === "pi") return piModels(cwd);
-	if (harness === "grok") return grokModelCatalog(cwd, account);
-	return codexModels(cwd, account);
+	workspaceRuntime.assertHarnessAvailable(harness as Harness);
+	const checkedHarness = harness as Harness;
+	modelChecks.set(checkedHarness, (modelChecks.get(checkedHarness) ?? 0) + 1);
+	try {
+		const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
+		if (projectId && !project) throw new Error("Project is unavailable.");
+		const cwd = project?.directory ?? app.getPath("userData");
+		const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
+		if (accountId && !account) throw new Error("Account is unavailable.");
+		if (harness === "phaseo") {
+			if (!account) throw new Error("Choose an API account.");
+			return await apiModels(account, credentialVault.get(account.secretId ?? account.id));
+		}
+		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(credentialVault.get(account.secretId ?? account.id)); }
+		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
+		if (harness === "pi") return await piModels(cwd);
+		if (harness === "grok") return await grokModelCatalog(cwd, account);
+		return await codexModels(cwd, account);
+	} finally { const remaining = modelChecks.get(checkedHarness)! - 1; if (remaining) modelChecks.set(checkedHarness, remaining); else modelChecks.delete(checkedHarness); }
 });
 app.on("before-quit", event => {
 	if (!workspaceRuntime || shutdownComplete) return;
@@ -104,9 +114,10 @@ app.on("before-quit", event => {
 	taskNotifications?.dismiss();
 	terminalService?.close();
 	for (const controller of signIns.values()) controller.abort();
+	harnessUpdate?.controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
 	for (const controller of agentChecks.values()) controller.abort();
-	void workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }).finally(() => { shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -146,6 +157,7 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
 	const account = id ? workspaceRuntime.store.getAccounts().find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
+	workspaceRuntime.assertHarnessAvailable(harness);
 	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
 	try {
@@ -294,9 +306,40 @@ ipcMain.handle("workspace:installations", async event => {
 			if (harness === "grok") return { harness, installed: true, version: await harnessVersion(await resolveGrokCommand(), app.getPath("userData")) };
 			if (harness === "opencode") { const command = await resolveOpenCodeCommand(app.getPath("userData")); return { harness, installed: true, version: command.version }; }
 			const command = await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
-			return { harness, installed: true, version: await harnessVersion(command, app.getPath("userData")) };
+			const version = await harnessVersion(command, app.getPath("userData"));
+			const maintenance = await resolveHarnessMaintenance(harness, command);
+			return { harness, installed: true, version, maintenance: { method: maintenance.method, canUpdate: Boolean(maintenance.action) } };
 		} catch (error) { return { harness, installed: false, error: error instanceof Error ? error.message : "Installation is unavailable." }; }
 	}));
+});
+
+ipcMain.handle("workspace:update-harness", async (event, harness: unknown) => {
+	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "pi")) throw new Error("Invalid harness update request.");
+	if (shutdownStarted) throw new Error("The workspace is shutting down.");
+	if (harnessUpdate) throw new Error("A harness update is already in progress.");
+	if (modelChecks.has(harness)) throw new Error("Finish this harness's model check before updating it.");
+	const accounts = workspaceRuntime.store.getAccounts();
+	if ([...accountChecks.keys()].some(key => key === harness || accounts.some(account => account.id === key && account.harness === harness))) throw new Error("Finish this harness's account check before updating it.");
+	const release = workspaceRuntime.beginHarnessMaintenance(harness), controller = new AbortController();
+	const completed = (async () => {
+		const command = await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
+		await harnessVersion(command, app.getPath("userData"));
+		const maintenance = await resolveHarnessMaintenance(harness, command);
+		if (!maintenance.action) throw new Error("Use this harness's installer to update it.");
+		await runHarnessUpdate(maintenance.action, app.getPath("userData"), controller.signal);
+		const refreshed = await resolveNativeCommand(harness, harness === "codex" ? "@openai/codex/bin/codex.js" : harness === "pi" ? piEntries : undefined);
+		await harnessVersion(refreshed, app.getPath("userData"));
+	})();
+	harnessUpdate = { harness, controller, completed };
+	try { await completed; } finally { harnessUpdate = undefined; release(); }
+});
+ipcMain.handle("workspace:cancel-harness-update", event => {
+	if (!senderWindow(event)) throw new Error("Invalid harness update request.");
+	harnessUpdate?.controller.abort();
+});
+ipcMain.handle("workspace:harness-update-status", event => {
+	if (!senderWindow(event)) throw new Error("Invalid harness update request.");
+	return harnessUpdate?.harness;
 });
 
 function getWindowState(window: BrowserWindow) {

@@ -50,6 +50,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Phaseo managed MCP tools
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --long-human-wait
+            - name: Harness update workflow
+              run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs
             - name: Chat shell and native browser
               run: pnpm --filter @phaseo/desktop audit:design
             - name: Native browser viewport geometry
@@ -68,6 +70,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo managed MCP tools
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged harness update workflow
+              run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat shell and native browser
               run: pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged browser download history across restarts
@@ -86,5 +90,6 @@ jobs:
                   path: |
                       output/playwright/electron-workspace.png
                       output/playwright/chat-shell/
+                      output/playwright/harness-maintenance/
                       output/playwright/browser-viewport/
                   if-no-files-found: ignore

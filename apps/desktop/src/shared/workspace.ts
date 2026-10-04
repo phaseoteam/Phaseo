@@ -47,7 +47,7 @@ export type Task = {
 	missionId?: string;
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
-export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string };
+export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
 export type ModelOption = { id: string; name: string; description?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
 export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
@@ -104,6 +104,9 @@ export type WorkspaceApi = {
 	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
+	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
+	cancelHarnessUpdate: () => Promise<void>;
+	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;

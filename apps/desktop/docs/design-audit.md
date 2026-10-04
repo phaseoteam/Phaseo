@@ -256,3 +256,9 @@ The earlier 284 captures and `scripts/design-audit.mjs` record the previous navi
 The PR detail audit covers loading/failure/retry, retained descriptions after failed refresh, Markdown isolation, return focus and late responses after project changes. Captures await the shell’s theme transitions before recording pixels. A dedicated rotate/close/reopen check reproduces an orientation restoration race: stale saved metadata overwrote the live native landscape mode. The fix makes live configured state authoritative and retains saved restoration for fresh surfaces. Source/archive checks verify both paths. A separate 96-case native matrix covers fractional panel sizes and app zoom, with exact dimensions and centred containment; physical display scaling and other platforms remain open.
 
 The PR Files view now offers Load full context and identifies the merge-base/head commits after loading. The native source/archive audit verifies retry preserves the patch, full text renders unchanged lines, and both layouts remain available. Added capture: `screenshots/pull-request-full-context.png`; 27 captures per shell audit.
+
+## Harness maintenance
+
+Settings → Agents now shows confirmed versions and installer methods, with Update and a panel-level Cancel action. Cancel remains available when returning to Settings during an update. Source and Windows archive workflows exercise actual owned npm processes through the preload bridge, including failure/retry and changed ownership; the screenshot uses a synthetic fixture version and makes no real provider installation changes. Run `pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs`, adding the existing `--app-entry` archive path for the packaged app.
+
+![Harness maintenance fixture](screenshots/harness-maintenance.png)

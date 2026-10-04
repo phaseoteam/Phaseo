@@ -51,6 +51,7 @@ export class WorkspaceRuntime {
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly signingInAccounts = new Set<string>();
+	private readonly maintainingHarnesses = new Set<Harness>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly modelDiscoveries = new Set<Promise<unknown>>();
@@ -112,11 +113,24 @@ export class WorkspaceRuntime {
 	}
 	beginAccountSignIn(accountId: string): () => void {
 		if (this.closing) throw new Error("The workspace is shutting down.");
+		const account = this.store.getAccounts().find(value => value.id === accountId);
+		if (account) this.assertHarnessAvailable(account.harness);
 		this.assertAccountIdle(accountId);
 		if (this.signingInAccounts.has(accountId)) throw new Error("Account sign-in is already in progress.");
 		this.signingInAccounts.add(accountId);
 		let released = false;
 		return () => { if (!released) { released = true; this.signingInAccounts.delete(accountId); } };
+	}
+	assertHarnessAvailable(harness: Harness) {
+		if (this.maintainingHarnesses.has(harness)) throw new Error("Wait for this harness update to finish before retrying.");
+	}
+	beginHarnessMaintenance(harness: Harness): () => void {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		this.assertHarnessAvailable(harness);
+		if (this.store.getOverview().tasks.some(task => task.harness === harness && this.executions.has(task.id))) throw new Error("Stop this harness's tasks before updating it.");
+		if (this.store.getAccounts().some(account => account.harness === harness && this.signingInAccounts.has(account.id))) throw new Error("Finish this harness's sign-in before updating it.");
+		this.maintainingHarnesses.add(harness);
+		return () => { this.maintainingHarnesses.delete(harness); };
 	}
 	mcp(command: McpCommand): WorkspaceOverview {
 		if (this.closing) throw new Error("The workspace is shutting down.");
@@ -302,6 +316,7 @@ export class WorkspaceRuntime {
 		let adapter: AgentAdapter;
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
+			this.assertHarnessAvailable(task.harness);
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections()) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
 		}
