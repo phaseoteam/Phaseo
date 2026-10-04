@@ -507,6 +507,8 @@ export async function handleStreamResponse(
                 shapeStreamUsageForClient(usageForShaping),
                 buildToolUsage()
             );
+            // Preserve metering even if pricing fails before a bill can be assigned.
+            result.bill.usage = shapedUsage;
 			const baseModel = getBaseModel(ctx.model);
 			const healthContext = (result as any).healthContext ?? null;
             const healthProvider = healthContext?.provider ?? result.provider;
@@ -673,6 +675,7 @@ export async function handleStreamResponse(
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
+                    throwOnFailure: true,
                 });
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
@@ -732,6 +735,7 @@ export async function handleStreamResponse(
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
+                    throwOnFailure: true,
                 });
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
                 await handleSuccessAudit(
@@ -808,6 +812,7 @@ export async function handleStreamResponse(
                 ctx,
                 costNanos: pricedWithByok.totalNanos,
                 endpoint: ctx.endpoint,
+                throwOnFailure: true,
             });
 			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
@@ -825,6 +830,26 @@ export async function handleStreamResponse(
                 latestGatewaySnapshot,
             );
 
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                console.error("[gateway] stream finalization failed", {
+                    requestId: ctx.requestId,
+                    workspaceId: ctx.workspaceId,
+                    error: message,
+                });
+                await handleFailureAudit(
+                    ctx,
+                    result,
+                    500,
+                    "gateway",
+                    "stream_finalization_failed",
+                    "The response was delivered but accounting finalization failed.",
+                    {
+                        upstream_status: upstreamStatus,
+                        billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        cause: message,
+                    },
+                );
             } finally {
                 releaseRuntime();
             }
@@ -838,6 +863,5 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
 
 

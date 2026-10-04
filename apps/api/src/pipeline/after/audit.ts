@@ -400,6 +400,9 @@ export async function handleFailureAudit(
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),
+                ...(errorCode === "stream_finalization_failed" ? {
+                    accounting_finalization: sanitizeForAxiom(errorDetails),
+                } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
                 routing_snapshot: sanitizeForAxiom((ctx as any).routingSnapshot ?? null),

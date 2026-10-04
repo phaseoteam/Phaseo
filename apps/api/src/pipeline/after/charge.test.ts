@@ -27,7 +27,7 @@ describe("recordUsageAndChargeOnce", () => {
         expect(recordUsageAndChargeMock).toHaveBeenCalledOnce();
     });
 	beforeEach(() => {
-		recordUsageAndChargeMock.mockClear();
+		recordUsageAndChargeMock.mockReset().mockResolvedValue(undefined);
 	});
 
 	it("records usage charge once per request context", async () => {
@@ -144,5 +144,14 @@ describe("recordUsageAndChargeOnce", () => {
 		expect(recordUsageAndChargeMock.mock.calls[0]?.[0]?.requestId).not.toBe(
 			recordUsageAndChargeMock.mock.calls[1]?.[0]?.requestId,
 		);
+	});
+
+	it("surfaces exhausted stream charging retries for durable failure auditing", async () => {
+		recordUsageAndChargeMock.mockRejectedValue(new Error("database_unavailable"));
+		const ctx: any = { requestId: "req_charge_failed", workspaceId: "team_charge", meta: {} };
+		await expect(recordUsageAndChargeOnce({ ctx, costNanos: 54321, endpoint: "responses", throwOnFailure: true }))
+			.rejects.toThrow("usage_charge_persistence_failed");
+		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+		expect(ctx.meta.__usageChargeRecorded).not.toBe(true);
 	});
 });
