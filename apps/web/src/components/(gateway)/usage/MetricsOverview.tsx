@@ -174,8 +174,7 @@ export default function MetricsOverview({
 		setDialogOpen(true);
 	};
 
-	const formatNumber = (value: number) =>
-		display.number(value, { maximumFractionDigits: 0, notation: "standard" });
+	const formatNumber = display.count;
 	const formatCost = (value: number) =>
 		display.number(value, {
 			style: "currency",

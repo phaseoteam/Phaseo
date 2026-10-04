@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,7 +15,6 @@ import type { APIProviderCard, ProviderModalityKey } from "@/lib/fetchers/api-pr
 import { formatLocation } from "@/lib/locations";
 
 const MODALITIES: ProviderModalityKey[] = ["text", "image", "video", "audio", "embedding", "moderation"];
-const compact = (value: number, locale: string) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
 const country = (code: string, locale: string, unavailable: string) => {
 	if (!code) return unavailable;
 	try { return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code.toUpperCase(); } catch { return code.toUpperCase(); }
@@ -38,6 +38,8 @@ function ProviderPicker({ providers, selected, onAdd }: { providers: APIProvider
 export default function ProviderCompareDashboard({ providers }: { providers: APIProviderCard[] }) {
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
+	const displayFormat = useDisplayFormatters();
+	const compact = (value: number, _locale: string) => displayFormat.count(value);
 	const modalityLabels: Record<ProviderModalityKey, string> = {
 		text: t("modalityText"),
 		image: t("modalityImage"),

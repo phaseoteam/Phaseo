@@ -152,7 +152,7 @@ export default function TopAppsLeaderboardTable({
 											<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 										</div>
 										<p className="pl-2 text-right text-sm font-semibold tabular-nums text-foreground">
-							{format.number(app.tokens, { maximumFractionDigits: 1 })} <span className="hidden font-normal text-muted-foreground sm:inline">{tUi("apps.tokens")}</span>
+							{format.count(app.tokens)} <span className="hidden font-normal text-muted-foreground sm:inline">{tUi("apps.tokens")}</span>
 										</p>
 									</Link>
 								);

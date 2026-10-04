@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
@@ -82,22 +83,6 @@ const HISTORY_DAYS = 30;
 const INACTIVE_SERIES_OPACITY = 0.55;
 const INACTIVE_PROJECTED_OPACITY = 0.4;
 
-function formatCompactNumber(value: number): string {
-	if (!Number.isFinite(value)) return "--";
-	if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-	if (Math.abs(value) >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-	if (Math.abs(value) >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
-	return Math.round(value).toLocaleString();
-}
-
-function formatPaceGain(value: number): string {
-	const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
-	if (safeValue >= 1_000_000_000) return `+${(safeValue / 1_000_000_000).toFixed(2)}B`;
-	if (safeValue >= 1_000_000) return `+${(safeValue / 1_000_000).toFixed(2)}M`;
-	if (safeValue >= 1_000) return `+${(safeValue / 1_000).toFixed(2)}K`;
-	return `+${safeValue.toFixed(0)}`;
-}
-
 function formatDayLabel(value: string, locale: string): string {
 	const date = new Date(`${value}T00:00:00.000Z`);
 	if (!Number.isFinite(date.getTime())) return value;
@@ -173,6 +158,9 @@ export default function ModelActivityChart({
 	description: suppliedDescription,
 }: ModelActivityChartProps) {
 	const locale = useLocale();
+	const format = useDisplayFormatters();
+	const formatCompactNumber = format.count;
+	const formatPaceGain = (value: number) => `+${format.count(Number.isFinite(value) ? Math.max(0, value) : 0)}`;
 	const t = useTranslations("Catalogue.models.detail.activityChart");
 	const description = suppliedDescription ?? t("description");
 	const tokenSeries = useMemo(
@@ -380,7 +368,7 @@ export default function ModelActivityChart({
 						minTickGap={20}
 					/>
 					<YAxis
-						tickFormatter={(value) => formatCompactNumber(Number(value))}
+						tickFormatter={(value) => format.countAxisTick(Number(value))}
 						width={54}
 						tickLine={false}
 						axisLine={false}

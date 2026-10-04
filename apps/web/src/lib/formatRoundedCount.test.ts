@@ -5,10 +5,14 @@ describe("formatRoundedCount", () => {
 		[0, "0"],
 		[999, "999"],
 		[999.9, "999"],
-		[999_999, "999K"],
-		[49_910_627, "49M"],
+		[999_999, "999.99K"],
+		[49_910_627, "49.91M"],
 		[25_000_000, "25M"],
-		[1_999_999_999, "1B"],
+		[1_999_999_999, "1.99B"],
+		[1_329_999_999, "1.32B"],
+		[351_788, "351.78K"],
+		[1_303.197, "1.3K"],
+		[1_150, "1.15K"],
 		[1e12, "1T"],
 		[1e15, "1Qa"],
 		[1e18, "1Qi"],
@@ -33,12 +37,12 @@ describe("localized public counts", () => {
 	const locales = ["en-GB", "es-ES", "fr-FR", "de-DE", "pt-BR", "ja", "zh-Hans", "hi", "ar-SA"];
 	it.each(locales)("preserves floored counts and distinct axis ticks in %s", (locale) => {
 		if (locale === "en-GB") {
-			expect(formatRoundedCount(15_999, locale)).toBe("15K");
-			expect(formatRoundedCount(1_999_999_999, locale)).toBe("1B");
+			expect(formatRoundedCount(15_999, locale)).toBe("15.99K");
+			expect(formatRoundedCount(1_999_999_999, locale)).toBe("1.99B");
 		} else {
-			const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 20 });
-			expect(formatRoundedCount(15_999, locale)).toBe(compact.format(15_000));
-			expect(formatRoundedCount(1_999_999_999, locale)).toBe(compact.format(1_000_000_000));
+			const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2, roundingMode: "floor" });
+			expect(formatRoundedCount(15_999, locale)).toBe(compact.format(15_999));
+			expect(formatRoundedCount(1_999_999_999, locale)).toBe(compact.format(1_999_999_999));
 		}
 		expect(formatRoundedCount(999.9, locale)).toBe(new Intl.NumberFormat(locale).format(999));
 		expect(formatCompactAxisTick(1_250_000, locale)).not.toBe(formatCompactAxisTick(1_500_000, locale));
@@ -46,6 +50,6 @@ describe("localized public counts", () => {
 		expect(formatCompactAxisTick(Number.POSITIVE_INFINITY, locale)).toBe("--");
 	});
 	it("does not round Japanese counts up to the next ten-thousand unit", () => {
-		expect(formatRoundedCount(15_999, "ja")).toBe("1.5万");
+		expect(formatRoundedCount(15_999, "ja")).toBe("1.59万");
 	});
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import {
 	DEFAULT_DISPLAY_PREFERENCES,
@@ -144,6 +145,8 @@ export function useDisplayFormatters() {
 	const { formattingPreferences: preferences } = useDisplayPreferences();
 
 	return React.useMemo(() => ({
+		count: (value: number) => formatRoundedCount(value, preferences.locale),
+		countAxisTick: (value: number) => formatCompactAxisTick(value, preferences.locale),
 		calendarDate: (value: DisplayDateValue, fallback?: string) =>
 			formatDisplayCalendarDate(value, preferences, fallback),
 		date: (value: DisplayDateValue, fallback?: string) =>

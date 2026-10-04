@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
@@ -246,7 +247,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		false: t("no"),
 		unknown: t("unknown"),
 	}), [t]);
-	const formatTokens = (value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+	const formatTokens = useDisplayFormatters().count;
 	const countryLabel = useCallback((code: string) => {
 		if (!code) return t("unknown");
 		try {

@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
 import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getLocale, getTranslations } from "next-intl/server";
-import { DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount, DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
 export default async function AppHeader({ appId }: { appId: string }) {
 	const locale = await getLocale();
@@ -87,7 +87,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						<DisplayNumber value={app.total_tokens} />
+						<DisplayCount value={app.total_tokens} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						{t("tokensConsumedAcrossRequests")}

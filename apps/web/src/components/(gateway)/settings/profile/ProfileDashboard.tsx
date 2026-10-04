@@ -8,8 +8,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
-import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount"
-import { useDisplayFormatters, useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider"
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 import { getModelDetailsHref } from "@/lib/models/modelHref"
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient"
@@ -139,11 +138,9 @@ function getProviderFromModelId(id: string): string {
 
 function useProfileFormatters() {
 	const format = useDisplayFormatters()
-	const { formattingPreferences } = useDisplayPreferences()
-	const locale = formattingPreferences.locale
 	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
 	return {
-		formatTokenAxisTick: (value: number) => formatCompactAxisTick(value, locale),
+		formatTokenAxisTick: format.countAxisTick,
 		formatShortDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatLongDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatWeekday: (date: string) => format.dateParts(calendarValue(date), {
@@ -155,7 +152,7 @@ function useProfileFormatters() {
 			timeZone: "UTC",
 		}),
 		formatMetricValue: (metric: Metric, value: number, compact = true) => {
-			if (metric === "tokens" && compact) return formatRoundedCount(value, locale)
+			if (metric === "tokens" && compact) return format.count(value)
 			if (metric === "spend") {
 				return format.number(value, {
 					style: "currency",

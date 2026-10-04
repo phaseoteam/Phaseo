@@ -38,9 +38,7 @@ export default function ProviderTokenUsageChartClient({
 	const t = useTranslations("Catalogue.providers");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const formatCompact = (value: number, _locale?: string) => Number.isFinite(value)
-		? format.number(value, { maximumFractionDigits: 1 })
-		: "--";
+	const formatCompact = (value: number, _locale?: string) => format.count(value);
 	const formatBucketLabel = (value: string, _locale?: string) =>
 		format.calendarDate(`${value}T00:00:00.000Z`, value);
 	const [hoveredBucket, setHoveredBucket] = useState<string | null>(null);
@@ -302,7 +300,7 @@ export default function ProviderTokenUsageChartClient({
 						interval="preserveStartEnd"
 					/>
 					<YAxis
-						tickFormatter={(value) => formatCompact(Number(value), locale)}
+						tickFormatter={(value) => format.countAxisTick(Number(value))}
 						tickLine={false}
 						axisLine={false}
 						width={56}
@@ -397,7 +395,7 @@ export default function ProviderTokenUsageChartClient({
 																	: "text-foreground"
 															}`}
 														>
-													{format.number(model.tokens)}
+													{format.count(model.tokens)}
 														</td>
 													</tr>
 												))
@@ -457,7 +455,7 @@ export default function ProviderTokenUsageChartClient({
 														</Link>
 													</td>
 													<td className="px-2 py-2 text-right tabular-nums">
-												{format.number(app.tokens)}
+												{format.count(app.tokens)}
 													</td>
 													<td className="px-2 py-2 text-right">
 														{app.url && app.url !== "about:blank" ? (

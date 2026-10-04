@@ -68,8 +68,7 @@ export function GeographyUsage({
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
-	const compact = (value: number) =>
-		format.number(value, { notation: "compact", maximumFractionDigits: 1 });
+	const compact = format.count;
 	const formatPercent = (value: number) =>
 		`${format.number(value, {
 			minimumFractionDigits: 1,

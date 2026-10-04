@@ -2,4 +2,4 @@
 "@phaseo/web": patch
 ---
 
-Use shared rounded-down compact token counts in profile usage summaries, Top Models, activity averages, and chart tooltips, with precise compact chart-axis labels.
+Use one localized compact count formatter with up to two decimal places across model, provider, app, Rankings, gateway, and profile usage summaries, keeping precise compact chart-axis labels.

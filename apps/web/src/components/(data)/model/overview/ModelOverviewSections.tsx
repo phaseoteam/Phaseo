@@ -30,7 +30,7 @@ import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmark
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, { hasModelLinks } from "@/components/(data)/model/overview/ModelLinks";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount } from "@/components/display/DisplayValue";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
@@ -481,7 +481,7 @@ export async function ModelAppsSection({
 											) : null}
 										</div>
 										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
-											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> {tApps("tokens")}
+											<DisplayCount value={app.totalTokens} /> {tApps("tokens")}
 										</div>
 									</Link>
 								);

@@ -9,6 +9,7 @@ import {
 	type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useRouter } from "next/navigation";
 import { type CSSProperties, type MouseEvent } from "react";
 import { useTranslations } from "next-intl";
@@ -42,30 +43,8 @@ const MODALITIES: ModalityMeta[] = [
 	{ key: "embedding", label: "Embedding", Icon: Binary },
 ];
 
-function formatTokens(value: number): string {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-
-	const thresholds = [
-		{ value: 1_000_000_000_000_000, suffix: "Q" }, // Quadrillion
-		{ value: 1_000_000_000_000, suffix: "T" }, // Trillion
-		{ value: 1_000_000_000, suffix: "B" }, // Billion
-		{ value: 1_000_000, suffix: "M" }, // Million
-		{ value: 1_000, suffix: "K" }, // Thousand
-	] as const;
-
-	for (const threshold of thresholds) {
-		if (value >= threshold.value) {
-			const scaled = value / threshold.value;
-			const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-			const compact = scaled.toFixed(decimals).replace(/\.?0+$/, "");
-			return `${compact}${threshold.suffix}`;
-		}
-	}
-
-	return Math.round(value).toLocaleString("en-US");
-}
-
 export default function APIProviderCard({ api_provider }: Props) {
+	const formatTokens = useDisplayFormatters().count;
 	const t = useTranslations("Catalogue.providers");
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;

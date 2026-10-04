@@ -948,7 +948,9 @@ function ModelCardImpl({
 	const inputModalityDisplay = formatModalities(inputModalities);
 	const outputModalityDisplay = formatModalities(outputModalities);
 	const weeklyUsage = resolveWeeklyUsageDisplay(model);
-	const weeklyUsageValue = `${format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })}${weeklyUsage.unitSuffix}`;
+	const weeklyUsageValue = `${weeklyUsage.unitSuffix
+		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
+		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
 	const copyModelId = async () => {
 		try {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useLocale, useTranslations } from "next-intl";
 import {
 	Area,
@@ -42,10 +43,7 @@ const EMPTY_TOKEN_MILESTONES: ModelTokenMilestone[] = [];
 const EMPTY_SUCCESSOR_MILESTONES: ModelSuccessorMilestone[] = [];
 
 function formatCompact(value: number, locale: string): string {
-	return new Intl.NumberFormat(locale, {
-		notation: "compact",
-		maximumFractionDigits: 1,
-	}).format(value);
+	return formatRoundedCount(value, locale);
 }
 
 function formatDelta(value: number, locale: string): string {
@@ -243,7 +241,7 @@ export default function ModelTokenTrajectoryChart({
 					<div className="flex items-center justify-between">
 						<span>{t("tokensThatDay")}</span>
 						<span className="font-mono font-semibold">
-							{formatCompact(point.tokens, locale)}
+							{format.count(point.tokens)}
 						</span>
 					</div>
 					<div className="flex items-center justify-between text-muted-foreground">
@@ -255,7 +253,7 @@ export default function ModelTokenTrajectoryChart({
 					<div className="flex items-center justify-between text-muted-foreground">
 						<span>{t("cumulative")}</span>
 						<span className="font-mono">
-							{formatCompact(point.cumulativeTokens, locale)}
+							{format.count(point.cumulativeTokens)}
 						</span>
 					</div>
 				</div>
@@ -343,7 +341,7 @@ export default function ModelTokenTrajectoryChart({
 								axisLine={false}
 								tickLine={false}
 								tick={{ fontSize: 12, fill: "var(--chart-axis-color)" }}
-								tickFormatter={(value) => formatCompact(value, locale)}
+								tickFormatter={(value) => format.countAxisTick(Number(value))}
 							/>
 			<Tooltip content={renderTooltip} />
 							<Area
