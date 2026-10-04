@@ -1,5 +1,5 @@
 export type NativeAction = { kind: "command" | "skill"; id: string; name: string; arguments: string };
-export type NativeActionEntry = Omit<NativeAction, "arguments"> & { description: string; path?: string };
+export type NativeActionEntry = Omit<NativeAction, "arguments"> & { description: string; path?: string; argumentHint?: string };
 export type NativeActionCatalog = { actions: NativeActionEntry[] };
 export function nativeActionPrefix(action: Pick<NativeAction, "kind" | "name">) { return `/${action.kind === "skill" ? "skill:" : ""}${action.name}`; }
 export function nativeActionText(action: NativeAction) { return `${nativeActionPrefix(action)}${action.arguments ? ` ${action.arguments}` : ""}`; }

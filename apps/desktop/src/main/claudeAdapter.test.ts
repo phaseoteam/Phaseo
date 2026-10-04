@@ -4,10 +4,21 @@ const sdk = vi.hoisted(() => ({ query: vi.fn() }));
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
 import { ClaudeAdapter } from "./claudeAdapter";
+import { AgentInputRejectedError } from "./agentAdapter";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
+ it.each(["assistant", "local", "result"])("gates an explicit command until approval and refresh, retaining %s output", async output => {
+  const order: string[] = []; const inputs: unknown[] = []; const close = vi.fn(); sdk.query.mockImplementation(({ prompt }) => { const admitted = prompt[Symbol.asyncIterator]().next().then((value: IteratorResult<unknown>) => { if (!value.done) { order.push("prompt"); inputs.push(value.value); } return value; }); return Object.assign((async function* () { await admitted; if (output === "assistant") yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "answer", content: [{ type: "text", text: "Owned reply" }] } }; if (output === "local") yield { type: "system", subtype: "local_command_output", uuid: "local", session_id: "native", content: "Owned local result" }; yield { type: "result", subtype: "success", is_error: false, result: "Owned result", uuid: "result", session_id: "native" }; })(), { supportedCommands: async () => { order.push("catalog"); return [{ name: "review" }]; }, reinitialize: async () => { order.push("refresh"); return { commands: [{ name: "review" }] }; }, close }); });
+  const onDelta = vi.fn(), onActivity = vi.fn(); await new ClaudeAdapter().run(task, "/project", "handoff wrapper", { onDelta, onActivity, onSession: vi.fn(), onApproval: async () => { expect(inputs).toEqual([]); order.push("approval"); return "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" });
+  expect(order).toEqual(["catalog", "approval", "refresh", "prompt"]); expect(inputs[0]).toMatchObject({ message: { content: [{ type: "text", text: "/review target" }] } }); expect(close).toHaveBeenCalledOnce(); if (output === "assistant") { expect(onDelta).toHaveBeenCalledWith("answer", "Owned reply"); expect(onActivity).not.toHaveBeenCalled(); } else expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ title: "Native command result", text: output === "local" ? "Owned local result" : "Owned result" }));
+ });
+ it.each(["declined", "removed", "cancelled"])("retains native input before submission when a command is %s", async condition => {
+  const inputs: unknown[] = []; const close = vi.fn(); let admitted!: Promise<IteratorResult<unknown>>; sdk.query.mockImplementation(({ prompt }) => { admitted = prompt[Symbol.asyncIterator]().next(); void admitted.then(value => { if (!value.done) inputs.push(value.value); }); return { supportedCommands: async () => [{ name: "review" }], reinitialize: async () => ({ commands: [] }), close }; }); const adapter = new ClaudeAdapter();
+  await expect(adapter.run(task, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError); await admitted; expect(inputs).toEqual([]); expect(close).toHaveBeenCalledOnce();
+ });
+
 	it("publishes todo progress only after successful foreground tool results", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
 			for (const [id, parent, failed] of [["success", null, false], ["failure", null, true], ["child", "delegate", false]] as const) {

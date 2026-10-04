@@ -1,3 +1,5 @@
+import { confirmClaudeNativeAction } from "./claudeNativeActions";
+import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -15,16 +17,17 @@ import { respondMcpElicitation } from "./mcpElicitation";
 export class ClaudeAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	constructor(private readonly mcp: McpConnection[] = []) {}
-	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
 		const command = await resolveNativeCommand("claude");
+		if (nativeAction) text = nativeActionText(nativeAction);
 		const manualCompact = !attachments.length && text.trim() === "/compact";
 		if (manualCompact) text = "/compact";
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
-		const managedMcp = task.mode === "chat" ? [] : this.mcp; let promptAllowed = !managedMcp.length; let releasePrompt!: () => void;
-		const gate = managedMcp.length ? new Promise<void>(resolve => { releasePrompt = resolve; }) : Promise.resolve(); const signal = this.controller.signal;
+		const managedMcp = task.mode === "chat" ? [] : this.mcp; const gated = !!nativeAction || !!managedMcp.length; let promptAllowed = !gated; let releasePrompt!: () => void;
+		const gate = gated ? new Promise<void>(resolve => { releasePrompt = resolve; }) : Promise.resolve(); const signal = this.controller.signal;
 		async function* prompt(): AsyncGenerator<SDKUserMessage> { await gate; if (promptAllowed && !signal.aborted) yield { type: "user", message: { role: "user", content }, parent_tool_use_id: null, session_id: "" }; }
-		const execution = query({ prompt: images.length || managedMcp.length ? prompt() : attachmentPrompt(text, attachments), options: {
+		const execution = query({ prompt: images.length || gated ? prompt() : attachmentPrompt(text, attachments), options: {
 			cwd,
 			mcpServers: Object.fromEntries(managedMcp.map(server => [nativeMcpName(server), server.transport === "stdio" ? { command: server.executable, args: server.arguments, env: { ELECTRON_RUN_AS_NODE: "1" } } : { type: "http" as const, url: server.url }])),
 			...(task.mode === "chat" ? { strictMcpConfig: true } : {}),
@@ -50,7 +53,7 @@ export class ClaudeAdapter implements AgentAdapter {
 				return decision === "accept" ? { behavior: "allow", updatedInput: input } : { behavior: "deny", message: "The user declined this action." };
 			},
 		} });
-		let completed = false;
+		let completed = false; let nativeOutput = false;
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		const todos = new Map<string, { steps: PlanStep[]; text: string }>();
@@ -60,15 +63,23 @@ export class ClaudeAdapter implements AgentAdapter {
 		const compactOutput: string[] = []; let compactCommandOutput: string | undefined;
 		const compactEvents = new Set<string>();
 		try {
-			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } promptAllowed = true; releasePrompt(); }
+   if (nativeAction) {
+    const confirm = async (refresh = false) => { try { await confirmClaudeNativeAction(execution, nativeAction, signal, refresh); } catch (error) { throw new AgentInputRejectedError("Claude action was not submitted. " + (error instanceof Error ? error.message : "Check the native catalog."), { cause: error }); } };
+    await confirm(); if (signal.aborted) throw new AgentInputRejectedError("Claude action cancelled before submission.");
+    if (await callbacks.onApproval("Claude command · " + nativeAction.name, "Run this registered native action? Its skill or command can use native hooks and configured tools; tool approvals still apply.\n\n" + nativeAction.arguments) !== "accept") throw new AgentInputRejectedError("Claude action declined; your input was not submitted.");
+    if (signal.aborted) throw new AgentInputRejectedError("Claude action cancelled before submission."); await confirm(true);
+   }
+			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
+			if (gated) { promptAllowed = true; releasePrompt(); }
 			for await (const message of execution) {
 				const compactEvent = message.type === "system" && (message.subtype === "compact_boundary" || message.subtype === "status");
-				if ((compactEvent || manualCompact) && "session_id" in message && sessionId && message.session_id !== sessionId) continue;
+				if ((compactEvent || manualCompact || !!nativeAction) && "session_id" in message && sessionId && message.session_id !== sessionId) continue;
 				if ("session_id" in message && message.session_id) {
 					if (!sessionId || (message.type === "system" && message.subtype === "init")) sessionId = message.session_id;
 					callbacks.onSession(message.session_id);
 				}
 				if (manualCompact && message.type === "system" && message.subtype === "local_command_output") compactCommandOutput = message.content;
+				if (nativeAction && !manualCompact && message.type === "system" && message.subtype === "local_command_output") { nativeOutput ||= !!message.content; callbacks.onActivity?.({ id: `command:${message.uuid}`, type: "tool", title: "Native command result", text: message.content, status: "completed" }); }
 				if (compactEvent) {
 					if (compactEvents.has(message.uuid)) continue;
 					compactEvents.add(message.uuid);
@@ -91,7 +102,7 @@ export class ClaudeAdapter implements AgentAdapter {
 				if (message.type === "stream_event" && !message.parent_tool_use_id) {
 					if (message.event.type === "message_start") messageId = message.event.message.id;
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "text_delta") {
-						streamed.add(messageId); if (manualCompact) compactOutput.push(message.event.delta.text); callbacks.onDelta(messageId, message.event.delta.text);
+						nativeOutput ||= !!message.event.delta.text; streamed.add(messageId); if (manualCompact) compactOutput.push(message.event.delta.text); callbacks.onDelta(messageId, message.event.delta.text);
 					}
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "thinking_delta") callbacks.onActivity?.({ id: `${messageId}:reasoning`, type: "reasoning", title: "Reasoning", text: message.event.delta.thinking, append: true });
 				}
@@ -111,11 +122,12 @@ export class ClaudeAdapter implements AgentAdapter {
 					}
 				}
 				if (message.type === "assistant" && !message.parent_tool_use_id && !streamed.has(message.message.id)) {
-					for (const block of message.message.content) if (block.type === "text") { if (manualCompact) compactOutput.push(block.text); callbacks.onDelta(message.message.id, block.text); }
+					for (const block of message.message.content) if (block.type === "text") { nativeOutput ||= !!block.text; if (manualCompact) compactOutput.push(block.text); callbacks.onDelta(message.message.id, block.text); }
 				}
 				if (message.type === "result") {
 					if (message.subtype !== "success") throw new Error(message.errors.join("\n"));
 					if (message.is_error) throw new Error(message.result);
+					if (nativeAction && !manualCompact && !nativeOutput && message.result) callbacks.onActivity?.({ id: `command-result:${message.uuid}`, type: "tool", title: "Native command result", text: message.result, status: "completed" });
 					if (manualCompact && compactFailed && !compactBoundary) throw new Error(compactFailure ?? "Native compaction failed.");
 					if (manualCompact && !compactBoundary && !compactFailed) {
 						callbacks.onActivity?.({ id: compaction?.id ?? `compaction-result:${message.uuid}`, type: "compaction", title: "Compaction result", text: message.result || compactCommandOutput || compactOutput.join("") || "The native command finished without confirming a compaction boundary.", status: "completed" });

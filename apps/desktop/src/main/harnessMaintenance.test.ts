@@ -59,6 +59,6 @@ describe("harness maintenance ownership", () => {
 			await vi.waitFor(() => expect(existsSync(pidFile)).toBe(true)); const pid = Number(readFileSync(pidFile, "utf8"));
 			controller.abort(); await assertion;
 			await vi.waitFor(() => expect(() => process.kill(pid, 0)).toThrow());
-		} finally { controller.abort(); rmSync(directory, { recursive: true, force: true }); }
+		} finally { controller.abort(); rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 25 }); }
 	}, 10_000);
 });

@@ -1,3 +1,4 @@
+import { claudeNativeActions } from "./claudeNativeActions";
 import { piNativeActions } from "./piNativeActions";
 import { mkdir } from "node:fs/promises";
 import { openCodeNativeActions } from "./openCodeNativeActions";
@@ -58,6 +59,7 @@ let shutdownComplete = false;
 let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
 const modelChecks = new Map<Harness, number>();
+const nativeCatalogChecks = new Set<AbortController>();
 let harnessUpdate: { harness: "codex" | "claude" | "pi"; controller: AbortController; completed: Promise<void> } | undefined;
 const accountChecks = new Map<string, AbortController>();
 const agentChecks = new Map<string, AbortController>();
@@ -123,6 +125,7 @@ app.on("before-quit", event => {
 	harnessUpdate?.controller.abort();
 	for (const controller of accountChecks.values()) controller.abort();
 	for (const controller of agentChecks.values()) controller.abort();
+	for (const controller of nativeCatalogChecks) controller.abort();
 	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { shutdownComplete = true; app.quit(); });
 });
 
@@ -192,14 +195,14 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	return project.directory;
 }
 ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
-	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request.");
-	const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
-	workspaceRuntime.assertHarnessAvailable(task.harness);
-	const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
-	modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
-	try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.timeout(30000); if (task.harness === "pi") return await piNativeActions(cwd, signal); const endpoint = await workspaceRuntime.openCode.connect(signal);
-		return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal);
-	} finally { const remaining = modelChecks.get(task.harness)! - 1; if (remaining) modelChecks.set(task.harness, remaining); else modelChecks.delete(task.harness); }
+ if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
+ const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi", "claude"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
+ workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
+ const account = task.harness === "claude" && task.accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === task.accountId && value.harness === task.harness && value.kind === "native" && value.configured && !value.archived) : undefined;
+ if (task.harness === "claude" && task.accountId && !account) throw new Error("Account is unavailable."); if (account && (signIns.has(account.id) || accountChecks.has(account.id))) throw new Error("Finish this account's sign-in or check before loading commands.");
+ const controller = new AbortController(); nativeCatalogChecks.add(controller); if (account) accountChecks.set(account.id, controller); modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
+ try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]); if (task.harness === "claude") return await claudeNativeActions(cwd, signal, account); if (task.harness === "pi") return await piNativeActions(cwd, signal); const endpoint = await workspaceRuntime.openCode.connect(signal); return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal); }
+ finally { nativeCatalogChecks.delete(controller); if (account && accountChecks.get(account.id) === controller) accountChecks.delete(account.id); const remaining = modelChecks.get(task.harness)! - 1; if (remaining) modelChecks.set(task.harness, remaining); else modelChecks.delete(task.harness); }
 });
 ipcMain.handle("workspace:prompt-commands", (event, id: unknown, request: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted command request.");
