@@ -217,6 +217,8 @@ Account sign-in now owns a runtime lock until its completion/failure/cancellatio
 
 Account updates, including archive/name/connection changes, now reject during sign-in ownership. The recovery test verifies rejected updates leave the profile unchanged. Credential/endpoint changes also consult execution ownership so provider setup is covered before the adapter enters the running map.
 
+The current Windows package passes the owned archive workflow smoke, including Grok profile controls, task-mode selection and existing account-management/settings workflows. The packaged production model bridge also returns the real isolated Grok 1.0.46 catalog and reasoning choices without login or prompts. Actual browser OAuth and paid signed-in execution remain unverified.
+
 Evidence: desktop lint/typecheck/build pass; 301 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
