@@ -24,7 +24,7 @@ app.whenReady().then(async()=>{
  const wait=async(code)=>{for(let index=0;!await run(code);index++){if(index>100)throw Error('Did not settle: '+code);await new Promise(resolve=>setTimeout(resolve,30));}};
  const click=async(label)=>{await run(`(()=>{const button=Array.from(document.querySelectorAll('button')).find(value=>value.textContent.trim()===${JSON.stringify(label)});if(!button)throw Error('Missing button '+${JSON.stringify(label)});button.click()})()`);};
  const select=async(title)=>{await run(`Array.from(document.querySelectorAll('.task-list .task-row')).find(value=>value.title===${JSON.stringify(title)}).click()`);await wait(`document.querySelector('.task-title')?.value===${JSON.stringify(title)}`);};
- const capture=async(name)=>writeFileSync(path.join(output,name+'.png'),(await owner.webContents.capturePage()).toPNG());
+ const capture=async(name)=>{await run(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve(true))))`);writeFileSync(path.join(output,name+'.png'),(await owner.webContents.capturePage()).toPNG());};
  const output=path.resolve('../../output/playwright/chat-shell',entry?'packaged':'source');mkdirSync(output,{recursive:true});
  try{
  await wait(`document.querySelectorAll('.task-list .task-row').length===2`);
@@ -42,6 +42,14 @@ app.whenReady().then(async()=>{
  if(!await browser.executeJavaScript(`typeof window.phaseoDesktop==='undefined'&&typeof require==='undefined'&&typeof process==='undefined'`))throw Error('Remote browser inherited app privileges');
  const link=await browser.executeJavaScript(`(()=>{const r=document.querySelector('a').getBoundingClientRect();return {x:Math.round(r.x+5),y:Math.round(r.y+5)}})()`);browser.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...link});browser.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...link});await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/second')&&!document.querySelector('[aria-label="Browser back"]').disabled`);
  await run(`document.querySelector('[aria-label="Browser back"]').click()`);await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ await run(`document.querySelector('[aria-label="New browser tab"]').click()`);await wait(`document.querySelectorAll('.browser-tabs [role="tab"]').length===2&&document.querySelector('[aria-label="Browser address"]')?.value===''`);
+ await run(`(()=>{const input=document.querySelector('[aria-label="Browser address"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(address+'/tab-two')});input.dispatchEvent(new Event('input',{bubbles:true}))})()`);await click('Go');await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/tab-two')`);
+ const secondBrowser=webContents.getAllWebContents().find(contents=>contents.getURL()===address+'/tab-two');if(!secondBrowser||secondBrowser===browser)throw Error('Tabs share native web contents');
+ await run(`document.querySelector('.browser-tabs [role="tab"]').click()`);await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ if(!browser.navigationHistory.canGoForward())throw Error('Tab switching lost native history');await capture('browser-multiple-tabs');
+ await run(`document.querySelector('.browser-tabs [role="tab"]').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))`);await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/tab-two')`);
+ await run(`Array.from(document.querySelectorAll('.browser-tabs button[aria-label^="Close tab:"]'))[1].click()`);await wait(`document.querySelectorAll('.browser-tabs [role="tab"]').length===1&&document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ if(!secondBrowser.isDestroyed())throw Error('Closing a tab leaked its web contents');
  const nativeView=owner.contentView.children.find(view=>view.webContents===browser);const rect=await run(`(()=>{const r=document.querySelector('.browser-surface').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}})()`);if(!nativeView||Math.abs(nativeView.getBounds().x-rect.x)>1||Math.abs(nativeView.getBounds().width-rect.width)>1)throw Error('Browser bounds do not match right panel');
  if(!await run(`window.phaseoDesktop.browser({id:'project-chat',type:'navigate',url:'file:///C:/private'}).then(()=>false,()=>true)`))throw Error('Unsafe browser protocol accepted');
  await select('Plan a holiday');await wait(`document.querySelector('[aria-label="Browser address"]')?.value===''`);await select('Improve the website');await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
@@ -50,7 +58,10 @@ app.whenReady().then(async()=>{
  writeFileSync(path.join(output,'native-browser-page.png'),(await browser.capturePage()).toPNG());
  await run(`document.querySelector('[aria-label="Close tools"]').click()`);if(owner.contentView.children.includes(nativeView))throw Error('Closed panel retained a visible browser');
  await run(`window.phaseoDesktop.browser({type:'close',id:'project-chat'})`);if(!browser.isDestroyed())throw Error('Browser close did not dispose remote web contents');
- console.log('CHAT_SHELL_SMOKE '+JSON.stringify({profile,output,captures:17,nativeBrowser:true,chatGrouping:true,draftPreservation:true,contextHistory:true}));server.close();app.quit();
+ owner.webContents.reload();await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));await wait(`Boolean(document.querySelector('.task-list'))`);await click('Tools');await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ let restored;for(let attempt=0;attempt<100;attempt++){restored=webContents.getAllWebContents().find(contents=>contents.getURL()===address+'/first'&&!contents.isLoading());if(restored)break;await new Promise(resolve=>setTimeout(resolve,30));}if(!restored||restored===browser)throw Error('Saved tab did not restore into a fresh native surface');
+ await run(`document.querySelector('.browser-tabs button[aria-label^="Close tab:"]').click()`);await wait(`document.querySelectorAll('.browser-tabs [role="tab"]').length===1&&document.querySelector('[aria-label="Browser address"]')?.value===''`);if(!restored.isDestroyed())throw Error('Last-tab close leaked native contents');
+ console.log('CHAT_SHELL_SMOKE '+JSON.stringify({profile,output,captures:18,nativeBrowser:true,chatGrouping:true,draftPreservation:true,contextHistory:true,tabs:true}));server.close();app.quit();
  }catch(error){console.error(error);console.error('BROWSER_DIAGNOSTIC',webContents.getAllWebContents().map(contents=>({id:contents.id,url:contents.getURL(),back:contents.navigationHistory.canGoBack(),entryCount:contents.navigationHistory.length()})));console.error(await run(`({address:document.querySelector('[aria-label="Browser address"]')?.value,error:document.querySelector('.browser-panel [role="alert"]')?.textContent})`));server.close();app.exit(1);}
 }).catch(error=>{console.error(error);server.close();app.exit(1)});
 

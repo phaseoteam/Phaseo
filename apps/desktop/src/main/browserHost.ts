@@ -11,6 +11,7 @@ export class BrowserHost {
 		if (!views) {
 			views = new Map(); this.owners.set(owner, views);
 			const ownedViews = views;
+			owner.webContents.on("did-start-loading", () => { if (!owner.isDestroyed()) for (const view of ownedViews.values()) owner.contentView.removeChildView(view); });
 			owner.once("closed", () => { for (const view of ownedViews.values()) if (!view.webContents.isDestroyed()) view.webContents.close({ waitForBeforeUnload: false }); this.owners.delete(owner); });
 		}
 		let view = views.get(command.id);

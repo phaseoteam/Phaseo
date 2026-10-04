@@ -647,3 +647,10 @@ button { color: inherit; }
 .browser-empty p { font-size: 13px; line-height: 1.6; }
 .chat-tools-content .project-browser { flex-direction: column; }
 .chat-tools-content .project-browser > aside { flex: 0 0 auto; max-height: 160px; border-right: 0; border-bottom: 1px solid var(--border); }
+
+.browser-tabs { display: flex; gap: 4px; padding: 8px 12px; border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
+.browser-tab { display: flex; align-items: center; border-radius: 8px; background: var(--surface); flex-shrink: 0; }
+.browser-tabs button { min-height: 28px; border: 0; border-radius: 8px; padding: 4px 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+.browser-tab [role="tab"] { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.browser-tab [aria-selected="true"] { color: var(--text); background: var(--primary-soft); }
+.browser-tab-surface { flex: 1; }
