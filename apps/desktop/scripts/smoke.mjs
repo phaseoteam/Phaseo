@@ -81,6 +81,7 @@ app.whenReady().then(async () => {
 			await api.command({type:'update-task',id:task.id,title:'Electron bridge check',pinned:true});
 			await api.command({type:'update-task',id:task.id,archived:true});
 			const restored = await api.command({type:'update-task',id:task.id,archived:false});
+			if ([created, restored].some(state=>state.tasks.some(value=>'messages' in value || 'queue' in value || 'activities' in value))) throw new Error('Command reply exposed conversation bodies');
 			if (restored.tasks[0].title !== 'Electron bridge check' || !restored.tasks[0].pinned) throw new Error('IPC persistence mismatch');
 			const overview=await api.overview();const summary=overview.tasks.find(value=>value.id===task.id);if(!summary||summary.title!=='Electron bridge check'||'messages' in summary||'queue' in summary||summary.approvalsCount!==0)throw new Error('Workspace overview bridge mismatch');
 			const overviewEvents=[];const stopOverview=api.onOverviewChange(state=>overviewEvents.push(state));await api.command({type:'update-task',id:task.id,pinned:true});for(let attempt=0;attempt<30&&!overviewEvents.length;attempt++)await new Promise(resolve=>setTimeout(resolve,20));stopOverview();if(!overviewEvents.length||overviewEvents.some(state=>state.tasks.some(value=>'messages' in value||'queue' in value||'activities' in value)))throw new Error('Workspace overview event exposed task bodies');
@@ -94,11 +95,12 @@ app.whenReady().then(async () => {
 			if (!rejected) throw new Error('Malformed IPC was accepted');
 			const button = Array.from(document.querySelectorAll('button')).find(button => button.textContent.trim() === 'Tasks');
 			if (!button) throw new Error('Task navigation missing'); button.click();
-			await new Promise(resolve => setTimeout(resolve, 200));
-			const row = document.querySelector('.task-row');
+			let row;
+			for (let attempt = 0; attempt < 50; attempt++) { row = Array.from(document.querySelectorAll('.task-row')).find(value => value.textContent.includes('Electron bridge check')); if (row) break; await new Promise(resolve => setTimeout(resolve, 100)); }
 			if (!row || !row.textContent.includes('Electron bridge check')) throw new Error('Persisted task missing from renderer');
-			row.click(); await new Promise(resolve => setTimeout(resolve, 100));
-			if (document.querySelector('[aria-label="Task title"]').value !== 'Electron bridge check') throw new Error('Task detail missing');
+			row.click();
+			for (let attempt = 0; attempt < 50 && document.querySelector('[aria-label="Task title"]')?.value !== 'Electron bridge check'; attempt++) await new Promise(resolve => setTimeout(resolve, 100));
+			if (document.querySelector('[aria-label="Task title"]')?.value !== 'Electron bridge check') throw new Error('Task detail missing');
 			const terminals = await api.terminal({type:'open'}); const terminalId = terminals[0].id;
 			await api.terminal({type:'resize',id:terminalId,columns:100,rows:30});
 			const windows = (await window.phaseoDesktop.getRuntimeInfo()).platform === 'win32';

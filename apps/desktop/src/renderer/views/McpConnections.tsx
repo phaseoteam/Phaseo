@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { emptyWorkspace, type Workspace } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { McpConnection } from "../../shared/mcp";
 
 export function McpConnections() {
-	const api = window.phaseoDesktop?.workspace; const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
+	const api = window.phaseoDesktop?.workspace; const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [editing, setEditing] = useState<string>(); const [name, setName] = useState(""); const [projectId, setProjectId] = useState(""); const [transport, setTransport] = useState<"stdio" | "http">("stdio");
 	const [executable, setExecutable] = useState(""); const [argumentsText, setArgumentsText] = useState("[]"); const [url, setUrl] = useState(""); const [enabled, setEnabled] = useState(true);
 	const [error, setError] = useState(""); const [busy, setBusy] = useState(false); const [archived, setArchived] = useState(false);
-	useEffect(() => { if (!api) return; let active = true; void api.get().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); }); const unsubscribe = api.onChange(setWorkspace); return () => { active = false; unsubscribe(); }; }, [api]);
+	useEffect(() => { if (!api) return; let active = true; void api.overview().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); }); const unsubscribe = api.onOverviewChange(setWorkspace); return () => { active = false; unsubscribe(); }; }, [api]);
 	function reset() { setEditing(undefined); setName(""); setProjectId(""); setTransport("stdio"); setExecutable(""); setArgumentsText("[]"); setUrl(""); setEnabled(true); }
 	async function save(connection: McpConnection) { if (!api || busy) return false; setBusy(true); setError(""); try { setWorkspace(await api.mcp({ type: "save", connection })); return true; } catch (reason) { setError(String(reason)); return false; } finally { setBusy(false); } }
 	async function submit() {

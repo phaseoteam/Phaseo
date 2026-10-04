@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, File, Folder, FolderOpen, RefreshCw } from "lucide-react";
-import type { GitCommand, GitReview, ProjectFile, Workspace } from "../../shared/workspace";
-import { emptyWorkspace } from "../../shared/workspace";
+import type { GitCommand, GitReview, ProjectFile } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { usePersistedState } from "../lib/persistedState";
 
 export function Projects() {
 	const api = window.phaseoDesktop?.workspace;
-	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
+	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [savedEdit, setSavedEdit] = usePersistedState<{ projectId: string; filename: string; text: string; hash: string; draft: string } | undefined>("phaseo.desktop.fileDraft", undefined);
 	const [id, setId] = useState(savedEdit?.projectId ?? "");
 	const [directory, setDirectory] = useState("");
@@ -30,8 +30,10 @@ export function Projects() {
 	const previewRequest = useRef(0);
 	useEffect(() => {
 		if (!api) return;
-		void api.get().then(setWorkspace, reason => setError(String(reason)));
-		return api.onChange(setWorkspace);
+		let active = true;
+		void api.overview().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
+		const unsubscribe = api.onOverviewChange(setWorkspace);
+		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	useEffect(() => {
 		previewRequest.current += 1;

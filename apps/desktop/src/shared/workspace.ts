@@ -84,23 +84,23 @@ export type WorkspaceApi = {
 	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
 	onOpenTask: (listener: (taskId?: string) => void) => () => void;
 	get: () => Promise<Workspace>;
-	command: (command: WorkspaceCommand) => Promise<Workspace>;
-	chooseProject: () => Promise<Workspace>;
-	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: Workspace; projectId: string }>;
-	removeWorktree: (projectId: string) => Promise<Workspace>;
+	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
+	chooseProject: () => Promise<WorkspaceOverview>;
+	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
+	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
 	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
 	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
-	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: Workspace; taskId: string } | undefined>;
+	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
 	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
 	installations: () => Promise<HarnessInstallation[]>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
-	mcp: (command: McpCommand) => Promise<Workspace>;
+	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
 	openLink: (url: string) => Promise<void>;
 	terminals: () => Promise<TerminalSession[]>;
 	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
 	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
-	signIn: (accountId: string) => Promise<Workspace>;
+	signIn: (accountId: string) => Promise<WorkspaceOverview>;
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
@@ -110,7 +110,6 @@ export type WorkspaceApi = {
 	gitReview: (projectId: string) => Promise<GitReview>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
 	gitBranches: (projectId: string) => Promise<string[]>;
-	onChange: (listener: (workspace: Workspace) => void) => () => void;
 };
 
 export function emptyWorkspace(): Workspace {

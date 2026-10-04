@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import type { AgentStatus, HarnessInstallation, Workspace } from "../../shared/workspace";
-import { emptyWorkspace } from "../../shared/workspace";
+import type { AgentStatus, HarnessInstallation } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 
 export function Agents() {
 	const api = window.phaseoDesktop?.workspace;
-	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
+	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [installed, setInstalled] = useState<HarnessInstallation[]>([]);
 	const [name, setName] = useState(""); const [executable, setExecutable] = useState(""); const [argumentsText, setArgumentsText] = useState("[]");
 	const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
@@ -13,9 +13,9 @@ export function Agents() {
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		void api.get().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
+		void api.overview().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
 		void api.installations().then(value => { if (active) setInstalled(value); }, reason => { if (active) setError(String(reason)); });
-		const unsubscribe = api.onChange(setWorkspace); return () => { active = false; unsubscribe(); };
+		const unsubscribe = api.onOverviewChange(setWorkspace); return () => { active = false; unsubscribe(); };
 	}, [api]);
 	async function add() {
 		if (!api) return; setBusy(true); setError("");

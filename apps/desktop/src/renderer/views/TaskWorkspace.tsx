@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Archive, ArrowDown, ArrowRightLeft, ArrowUp, FolderOpen, GitFork, Paperclip, Pin, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
-import type { Attachment, Harness, ModelOption, Task, Workspace, WorkspaceCommand } from "../../shared/workspace";
-import { emptyWorkspace } from "../../shared/workspace";
+import type { Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { usePersistedState } from "../lib/persistedState";
 import { useTaskHistory } from "../lib/useTaskHistory";
 import { useSelectedTask } from "../lib/useSelectedTask";
@@ -13,7 +13,7 @@ import { TaskSettings } from "../components/TaskSettings";
 const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
 export function TaskWorkspace() {
-	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
+	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [selectedId, setSelectedId] = usePersistedState<string | undefined>("phaseo.desktop.selectedTask", undefined);
 	const [query, setQuery] = useState("");
 	const [showArchived, setShowArchived] = useState(false);
@@ -43,8 +43,8 @@ export function TaskWorkspace() {
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		void api.get().then(state => { if (active) setWorkspace(state); }, reason => { if (active) setError(String(reason)); });
-		const unsubscribe = api.onChange(setWorkspace);
+		void api.overview().then(state => { if (active) setWorkspace(state); }, reason => { if (active) setError(String(reason)); });
+		const unsubscribe = api.onOverviewChange(setWorkspace);
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	useEffect(() => {

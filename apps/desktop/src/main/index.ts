@@ -53,7 +53,7 @@ ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) thr
 ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
-	return workspaceRuntime.mcp(validateMcpCommand(value));
+	return workspaceOverview(workspaceRuntime.mcp(validateMcpCommand(value)));
 });
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
@@ -127,7 +127,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 			const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
 			current.configured = true; workspaceRuntime.store.saveAccount(current);
 		}
-		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return state;
+		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return workspaceOverview(state);
 	} finally { signIns.delete(id); releaseAccount(); }
 });
 ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
@@ -178,14 +178,15 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
-ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
+ipcMain.handle("workspace:create-worktree", async (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
-	return workspaceRuntime.createWorktree(id, branch, base);
+	const result = await workspaceRuntime.createWorktree(id, branch, base);
+	return { ...result, workspace: workspaceOverview(result.workspace) };
 });
-ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
+ipcMain.handle("workspace:remove-worktree", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
-	return workspaceRuntime.removeWorktree(id);
+	return workspaceOverview(await workspaceRuntime.removeWorktree(id));
 });
 ipcMain.handle("workspace:read-document", async (event, id: unknown, filename: unknown) => {
 	const root = projectRoot(event, id);
@@ -231,18 +232,19 @@ ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	const command = validateCommand(value); if (command.type !== "create-task") throw new Error("Choose a destination for the imported conversation.");
 	const result = await dialog.showOpenDialog(window, { title: "Import conversation", properties: ["openFile"], filters: [{ name: "Phaseo conversation", extensions: ["json"] }] });
 	if (result.canceled || !result.filePaths[0]) return undefined;
-	return workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
+	const imported = await workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
+	return { ...imported, workspace: workspaceOverview(imported.workspace) };
 });
-ipcMain.handle("workspace:command", (event, value: unknown) => {
+ipcMain.handle("workspace:command", async (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceRuntime.command(validateCommand(value));
+	return workspaceOverview(await workspaceRuntime.command(validateCommand(value)));
 });
 ipcMain.handle("workspace:choose-project", async event => {
 	const window = senderWindow(event);
 	if (!window) throw new Error("Untrusted workspace request.");
 	const result = await dialog.showOpenDialog(window, { properties: ["openDirectory"], title: "Open project" });
 	if (!result.canceled && result.filePaths[0]) workspaceRuntime.store.addProject(result.filePaths[0]);
-	const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return state;
+	const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return workspaceOverview(state);
 });
 ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	const window = senderWindow(event); if (!window || typeof id !== "string") throw new Error("Invalid attachment request.");
@@ -449,7 +451,7 @@ app.whenReady().then(() => {
 		missionService.observe(state);
 		taskNotifications.update(state);
 		const overview = workspaceOverview(state);
-		for (const window of BrowserWindow.getAllWindows()) { window.webContents.send("workspace:changed", state); window.webContents.send("workspace:overview-changed", overview); }
+		for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:overview-changed", overview);
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();

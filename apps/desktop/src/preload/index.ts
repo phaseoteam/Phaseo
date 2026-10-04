@@ -48,11 +48,6 @@ const desktopApi: PhaseoDesktopApi = {
 		gitReview: id => ipcRenderer.invoke("workspace:git-review", id),
 		gitCommand: (id, command) => ipcRenderer.invoke("workspace:git-command", id, command),
 		gitBranches: id => ipcRenderer.invoke("workspace:git-branches", id),
-		onChange: listener => {
-			const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state);
-			ipcRenderer.on("workspace:changed", subscription);
-			return () => ipcRenderer.removeListener("workspace:changed", subscription);
-		},
 	},
 	getRuntimeInfo: () => ipcRenderer.invoke("desktop:get-runtime-info"),
 	getWindowState: () => ipcRenderer.invoke("desktop:get-window-state"),

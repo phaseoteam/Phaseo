@@ -22,8 +22,12 @@ let failNextHistory = false;
 let failNextDetail = false;
 let delayedTaskId = "001";
 const activeDetails = new Map(); const peakDetails = new Map();
+let fullWorkspaceReads = 0;
 ipcMain.handle = function (channel, listener) {
-  return originalHandle.call(this, channel, channel === "workspace:task-history" ? (event, ...args) => {
+  return originalHandle.call(this, channel, channel === "workspace:get" ? (event, ...args) => {
+    fullWorkspaceReads++;
+    return listener(event, ...args);
+  } : channel === "workspace:task-history" ? (event, ...args) => {
     if (failNextHistory) { failNextHistory = false; throw new Error("Owned history failure"); }
     return listener(event, ...args);
   } : channel === "workspace:task" ? async (event, id) => {
@@ -41,6 +45,16 @@ await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/ind
 ipcMain.handle = originalHandle;
 app.whenReady().then(async () => {
 const window = BrowserWindow.getAllWindows()[0];
+const originalSend = window.webContents.send;
+let overviewBroadcasts = 0;
+window.webContents.send = function (channel, ...args) {
+  if (channel === "workspace:changed") throw new Error("Full conversation history was broadcast.");
+  if (channel === "workspace:overview-changed") {
+    overviewBroadcasts++;
+    if (args[0].tasks.some(task => "messages" in task || "queue" in task || "activities" in task)) throw new Error("Overview broadcast contains task bodies.");
+  }
+  return originalSend.call(this, channel, ...args);
+};
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
 const run = expression => window.webContents.executeJavaScript(expression);
 async function wait(expression, label) {
@@ -105,7 +119,8 @@ try {
     await run(`Array.from(document.querySelectorAll('.attention-item')).find(row=>row.textContent.includes('History 154')).querySelector('button').click()`);
     await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
   }
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true }), "ISOLATED_DATA", data);
+  if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4) throw new Error("History navigation must use metadata reads and broadcasts.");
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true, metadataOnly: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

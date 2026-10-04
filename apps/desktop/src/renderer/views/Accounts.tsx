@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import type { AccountStatus as NativeAccountStatus, Workspace, WorkspaceCommand } from "../../shared/workspace";
-import { emptyWorkspace } from "../../shared/workspace";
+import type { AccountStatus as NativeAccountStatus, WorkspaceCommand } from "../../shared/workspace";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { AccountStatus } from "../components/AccountStatus";
 import { AccountEditor } from "../components/AccountEditor";
 
 export function Accounts() {
 	const api = window.phaseoDesktop?.workspace;
-	const [workspace, setWorkspace] = useState<Workspace>(emptyWorkspace);
+	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [name, setName] = useState("");
 	const [provider, setProvider] = useState<"codex" | "claude" | "phaseo" | "cursor" | "grok">("codex");
 	const [cursorKind, setCursorKind] = useState<"native" | "api">("native");
@@ -20,8 +20,10 @@ export function Accounts() {
 	const [editing, setEditing] = useState<string>(); const [showArchived, setShowArchived] = useState(false);
 	useEffect(() => {
 		if (!api) return;
-		void api.get().then(setWorkspace, reason => setError(String(reason)));
-		return api.onChange(setWorkspace);
+		let active = true;
+		void api.overview().then(value => { if (active) setWorkspace(value); }, reason => { if (active) setError(String(reason)); });
+		const unsubscribe = api.onOverviewChange(setWorkspace);
+		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	async function add() {
 		if (!api) { setError("Open the desktop application to connect an account."); return; }
