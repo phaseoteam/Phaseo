@@ -221,9 +221,15 @@ importers:
       remark-gfm:
         specifier: 4.0.1
         version: 4.0.1
+      remark-parse:
+        specifier: 11.0.0
+        version: 11.0.0
       shiki:
         specifier: 4.4.3
         version: 4.4.3
+      unified:
+        specifier: 11.0.5
+        version: 11.0.5
       unpdf:
         specifier: 1.8.1
         version: 1.8.1

@@ -68,7 +68,9 @@
 		"node-pty": "1.2.0-beta.15",
 		"react-markdown": "10.1.0",
 		"remark-gfm": "4.0.1",
+		"remark-parse": "11.0.0",
 		"shiki": "4.4.3",
+		"unified": "11.0.5",
 		"unpdf": "1.8.1",
 		"yaml": "^2.9.0"
 	}

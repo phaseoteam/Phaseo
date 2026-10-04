@@ -154,3 +154,6 @@ Assistant examples retain explicit role labels in the editable draft. PNG, JPEG,
 
 
 The same MCP prompt chooser works with configured HTTP services. Owned source/archive checks cover global/project isolation, pages, text and image previews, explicit insertion, failure/retry, cancellation and session termination. These checks use the installed SDK’s 2025-11-25 handshake/session transport; Approved in-chat HTTP prompt retrieval and resource reads also pass source/archive Chat, Code and Plan checks, including server-requested forms, denial, cancellation and all three session terminations. Newer protocol revisions, authenticated HTTP services and resource subscriptions remain separate validation work.
+
+
+Assistant file links retain their descriptive labels. A complete local-file destination missing its closing angle bracket is corrected for display; original chat text stays unchanged. Code, HTML, directives, remote URLs and incomplete destinations remain literal. Project file actions use the existing editor bridge and show pending/error feedback; personal-chat file references remain inert.

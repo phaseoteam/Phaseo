@@ -1,10 +1,12 @@
 import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Children, createContext, isValidElement, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Children, createContext, isValidElement, useContext, useEffect, useRef, useState, useMemo, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
 import { Check, Copy } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
 import { parseFileReference } from "../../shared/editors";
+
+import { repairFileLinks } from "./repairFileLinks";
 
 const ProjectContext = createContext<string | undefined>(undefined);
 
@@ -59,6 +61,7 @@ const markdownComponents: Components = {
 		pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
 };
 
-export function MessageContent({ text, projectId }: { text: string; projectId?: string }) {
-	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} urlTransform={messageUrl}>{text}</ReactMarkdown></div></ProjectContext>;
+export function MessageContent({ text, projectId, repairLocalLinks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean }) {
+	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
+	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
 }

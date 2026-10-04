@@ -297,3 +297,10 @@ MCP image insertion (2026-10-04): supported image previews now use the existing 
 HTTP prompt chooser and minimum-window actions (2026-10-04): the same command UI is exercised over owned HTTP services with a separate seven-state/three-width/two-theme matrix. A partially clipped Insert action in the minimum-window image state now stays in a sticky themed footer with a separator; capture checks require the button itself to fit inside the dialog. Successful insertion restores composer focus after dialog cleanup, while cancellation retains trigger restoration. Source/archive verification and screenshots are recorded alongside the transport audit; overall visual/accessibility acceptance remains open.
 
 ![HTTP prompt image and visible insertion action](screenshots/mcp-prompt-http-image.png)
+
+
+Assistant file-link verification (2026-10-04): the existing conversation file button now renders a repaired complete local destination while retaining its descriptive label. Source and fresh Windows archive each pass ready/pending/error captures at 1440×920, 1180×800 and 1040×680 in both themes (36 total), bounded message geometry, keyboard activation, duplicate-click prevention, error feedback, literal code, personal-chat inertness and original text preservation. Editor calls use an owned IPC fixture; actual commercial-editor launch is not proven. Source intermediate light and archived minimum dark error captures were visually reviewed; website typography, chat grouping, composer and tool placement remain unchanged.
+
+![Assistant file label](screenshots/assistant-file-link.png)
+
+![File action error at minimum size](screenshots/assistant-file-link-error.png)

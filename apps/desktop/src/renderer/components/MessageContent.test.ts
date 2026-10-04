@@ -18,4 +18,13 @@ describe("conversation file links", () => {
 		expect(html).toContain("File</span>");
 		expect(html).not.toContain("<button");
 	});
+	it("repairs only opted-in assistant rendering and preserves descriptive file labels", () => {
+		const text = "Inspect [the request handler](<E:/project/main.ts:7) next.";
+		const html = renderToStaticMarkup(createElement(MessageContent, { projectId: "fixture", text, repairLocalLinks: true }));
+		expect(html).toContain('aria-label="Open E:/project/main.ts at line 7 in editor"');
+		expect(html).toContain(">the request handler</button>");
+		const original = renderToStaticMarkup(createElement(MessageContent, { projectId: "fixture", text }));
+		expect(original).not.toContain('class="message-file-link"');
+		expect(text).toBe("Inspect [the request handler](<E:/project/main.ts:7) next.");
+	});
 });
