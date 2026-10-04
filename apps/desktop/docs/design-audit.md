@@ -49,6 +49,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 33. **Task history navigation:** scroll history rows independently of New task, search and archive controls. Long titles use up to two lines and remain available through the full title attribute; selected rows expose pressed state. The large-history workflow verifies independent scrolling, retained controls and title clamping while preserving paging/retry/navigation behavior.
 
+34. **Project surface consistency:** file navigation uses a 16-pixel inset, the filename and editing actions occupy opposite ends of a wrapping toolbar, and file/Git previews retain the shared code surface's 16-pixel padding, 13-pixel text and square inner corners. Dialog and empty-state headings use the bundled semibold weight. Rendered assertions check preview/navigation insets, text size, inner corners and toolbar alignment at both window sizes/themes.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)

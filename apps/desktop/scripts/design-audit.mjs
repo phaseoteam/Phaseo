@@ -142,6 +142,8 @@ try {
           await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedProject=text;}}});document.querySelector('.project-browser button[aria-label="Copy code"]').click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
           if(!await window.webContents.executeJavaScript(`window.auditCopiedProject===${JSON.stringify(projectText)}`))throw new Error("File preview copying changed source formatting.");
+          const previewSpacing=await window.webContents.executeJavaScript(`(()=>{const pre=document.querySelector('.project-browser pre'),toolbar=document.querySelector('.project-browser > section > .project-toolbar'),aside=document.querySelector('.project-browser > aside');return {padding:getComputedStyle(pre).padding,font:getComputedStyle(pre).fontSize,radius:getComputedStyle(pre).borderRadius,aside:getComputedStyle(aside).padding,alignment:getComputedStyle(toolbar).justifyContent}})()`);
+          if(previewSpacing.padding!=="16px"||previewSpacing.font!=="13px"||previewSpacing.radius!=="0px"||previewSpacing.aside!=="16px"||previewSpacing.alignment!=="space-between")throw new Error("Project preview does not use consistent code and navigation spacing.");
           writeFileSync(path.join(output,`${width}-${theme}-project-preview.png`),(await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
           for(let attempt=0;;attempt++){
