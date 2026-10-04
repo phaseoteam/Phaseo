@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProjectPullRequests, PullRequest } from "../../shared/pullRequests";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
+import { watchLiveRefresh } from "../lib/liveRefresh";
 import { usePersistedState } from "../lib/persistedState";
 
 const reviewLabels: Record<PullRequest["review"], string> = { approved: "Approved", "changes-requested": "Changes requested", required: "Review required", none: "No review decision" };
@@ -37,6 +38,12 @@ export function Proposals() {
 		try { await api.openLink(request.url); } catch (reason) { setLinkError(message(reason)); } finally { linkPending.current = false; setOpening(undefined); }
 	}
 	const visible = result && project && result.projectId === project.id ? result.value : undefined;
+	const interval = !visible?.requests.length || visible.requests.some(request => ["pending", "none", "unknown"].includes(request.checks)) ? 45_000 : 60_000;
+	const liveEnabled = Boolean(api && project && visible && !error && !overviewError);
+	useEffect(() => {
+		if (!liveEnabled) return;
+		return watchLiveRefresh(() => { if (pending.current || linkPending.current) return false; pending.current = true; setLoading(true); setAttempt(value => value + 1); return true; }, interval);
+	}, [api, project?.id, cursor, page, liveEnabled, interval]);
 	return <div className="page proposals-page"><h1>Proposals</h1>
 		<section className="panel" aria-label="Pull requests" aria-busy={loading || overviewLoading}>
 			<div className="panel-heading"><h2>Open pull requests</h2><button type="button" disabled={!api || overviewLoading || (overviewError ? false : !project || loading)} onClick={refresh}>{overviewLoading || loading ? "Loading…" : error || overviewError ? "Retry" : "Refresh"}</button></div>
@@ -49,7 +56,7 @@ export function Proposals() {
 			{linkError && <p className="proposal-feedback proposal-error" role="alert">{linkError}</p>}
 			{visible?.requests.map(request => <article className="proposal-row" key={request.number}><div><strong>#{request.number} {request.title}</strong><small>{request.author} · {request.head} → {request.base}</small><div className="proposal-statuses">{request.draft && <span className="status-pill">Draft</span>}<span>{reviewLabels[request.review]}</span><span>{checkLabels[request.checks]}</span></div></div><button type="button" disabled={opening !== undefined} onClick={() => void open(request)}>{opening === request.number ? "Opening…" : "Open on GitHub"}</button></article>)}
 			{visible && !loading && !error && !visible.requests.length && <p className="proposal-feedback">No open pull requests.</p>}
-			{visible && result && <nav className="proposal-pagination" aria-label="Pull-request pages"><span>Page {result.page + 1} · {visible.requests.length} pull requests</span>{page > 0 && <button type="button" disabled={loading || opening !== undefined} onClick={() => goToPage(0)}>First page</button>}<button type="button" disabled={loading || opening !== undefined || result.page === 0} onClick={() => goToPage(result.page - 1)}>Previous</button><button type="button" disabled={loading || opening !== undefined || !visible.nextCursor} onClick={() => goToPage(result.page + 1, visible.nextCursor)}>Next</button></nav>}
+			{visible && result && <nav className="proposal-pagination" aria-label="Pull-request pages"><span>Page {result.page + 1} · {visible.requests.length} {visible.requests.length === 1 ? "pull request" : "pull requests"}</span>{page > 0 && <button type="button" disabled={loading || opening !== undefined} onClick={() => goToPage(0)}>First page</button>}<button type="button" disabled={loading || opening !== undefined || result.page === 0} onClick={() => goToPage(result.page - 1)}>Previous</button><button type="button" disabled={loading || opening !== undefined || !visible.nextCursor} onClick={() => goToPage(result.page + 1, visible.nextCursor)}>Next</button></nav>}
 		</section>
 	</div>;
 }

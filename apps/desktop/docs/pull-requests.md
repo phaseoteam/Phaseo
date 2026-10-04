@@ -20,7 +20,7 @@ page. Changing project resets pagination and ignores obsolete replies.
 PR details, review actions, merge checks/actions, background watchers, GitHub
 account selection, enterprise hosts and other Git providers remain unfinished.
 The T3 nightly check-refresh hook remains a reference for future live refresh;
-this view refreshes only on selection or explicit Refresh/Retry.
+the selected page also refreshes while visible: every 45 seconds for empty, pending or unavailable check states, and 60 seconds for settled states. Focus/visibility return is limited to one refresh per ten seconds; six idle minutes pause polling until interaction resumes. Page errors pause automatic retry. Manual Refresh/Retry remains available. This is foreground refresh, with no background watcher or task wakeups.
 
 Requests have a 20-second deadline and a 2 MiB output bound. Partial GraphQL
 responses and malformed/excessive records fail explicitly. Unknown check states
@@ -46,3 +46,7 @@ by the cards.
 
 References: [GitHub cursor pagination](https://docs.github.com/en/graphql/guides/using-pagination-in-the-graphql-api), [GitHub CLI API](https://cli.github.com/manual/gh_api) and the pinned
 [T3 nightly refresh hook](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/web/src/hooks/usePullRequestChecksRefresh.ts).
+
+Eight deterministic timer/event cases cover first-read suppression, 45/60-second intervals, focus coalescing, hidden/idle pauses, resumed interaction, busy admission and cleanup. Owned source/archive browser cases drive the production controller clock, confirm one IPC read when a timer and focus arrive together, project pending checks to passing, choose the settled interval, prove successive responses do not reset the idle clock, resume after interaction and stop the timer after project removal. Native OS visibility and complete background-watcher parity remain separate checks.
+
+The idle browser fixture isolates its virtual clock from incidental trusted input in the owned audit window and waits for rendered reads to settle. It exercises the production controller using explicit synthetic interaction; it does not establish native OS focus or visibility behavior. The archive and source renderer assets are verified identical.

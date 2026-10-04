@@ -233,10 +233,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Pull-request page navigation](screenshots/proposals-pagination-small-window.png)
 
+70. **Foreground PR updates:** visible PR pages refresh pending/empty/unavailable checks every 45 seconds and settled checks every 60 seconds, coalesce focus returns, pause hidden/idle work and stop after navigation. Failed reads retain explicit Retry without an automatic retry loop. Eight timer/event tests and owned source/archive browser checks verify the controller and IPC integration, including pending-to-passing updates, idle pause across successive responses, interaction recovery and cleanup. Four additional captures bring the audit to 284. Background watchers, task wakeups and native multi-OS visibility remain unfinished.
+
+![Foreground PR updates](screenshots/proposals-live-refresh-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers twelve pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 280 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers twelve pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 284 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 280 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 284 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
