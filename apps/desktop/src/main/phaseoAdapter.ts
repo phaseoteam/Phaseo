@@ -10,16 +10,18 @@ import { ProjectInstructions } from "./projectInstructions";
 import { AgentInputRejectedError } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { runPhaseoChat } from "./phaseoChatRun";
+import type { McpConnection } from "../shared/mcp";
 
 /** Compatible Chat inference, with durable skill execution when a run store is supplied. */
 export class PhaseoAdapter implements AgentAdapter {
 	private controller = new AbortController();
-	constructor(private readonly credential: (id: string) => string | Promise<string>, private readonly fetcher: typeof fetch = fetch, private readonly globalInstructionsRoot?: string, private readonly store?: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">) {}
+	constructor(private readonly credential: (id: string) => string | Promise<string>, private readonly fetcher: typeof fetch = fetch, private readonly globalInstructionsRoot?: string, private readonly store?: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">, private readonly mcpConnections: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
 		if (!account || account.kind !== "api" || !account.endpoint) throw new Error("Connect an API account to use the Phaseo harness.");
 		if (task.mode === "code") throw new Error("Use the Phaseo Agent SDK adapter for coding tasks.");
 		if (task.model === "default") throw new Error("Select a model for this API account.");
-		if (this.store) return runPhaseoChat(task, cwd, text, callbacks, account, attachments, nativeAction, { store: this.store, globalRoot: this.globalInstructionsRoot, fetcher: this.fetcher, credential: this.credential, signal: this.controller.signal });
+		if (this.store) return runPhaseoChat(task, cwd, text, callbacks, account, attachments, nativeAction, { store: this.store, globalRoot: this.globalInstructionsRoot, fetcher: this.fetcher, credential: this.credential, signal: this.controller.signal, mcpConnections: this.mcpConnections });
+		if (this.mcpConnections.some(connection => connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId))) throw new AgentInputRejectedError("MCP Chat requires durable run storage. Your instruction was not submitted.");
 		const skills = this.globalInstructionsRoot ? new PhaseoSkills(path.dirname(this.globalInstructionsRoot), task.projectId ? cwd : undefined) : undefined;
 		if (nativeAction && !skills) throw new AgentInputRejectedError("Phaseo skill storage is unavailable.");
 		const approvedSkill = nativeAction ? await skills!.approve(nativeAction, callbacks, this.controller.signal) : undefined;

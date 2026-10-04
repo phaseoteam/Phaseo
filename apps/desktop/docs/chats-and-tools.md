@@ -4,6 +4,8 @@ Chats are the desktop workspace's primary navigation. Each chat can be personal 
 
 The centre keeps the selected conversation mounted while opening tools and settings. Message drafts and history position survive those interactions. Accounts, agents, MCP connections and schedules live under Settings; Inbox and the existing Platform surface remain available from the sidebar footer.
 
+General Chat in the Phaseo harness can use enabled global MCP services and services associated with its project. Each tool call needs approval and identifies the service and tool. Chat has no built-in project file or command tools. Failed connection setup preserves queued input; interrupted approvals can resume from saved chat state. Stop affected chats before editing their connections.
+
 Files & Git, pull requests, terminal and Browser share a collapsible right panel. Selecting a different chat initializes project tools from its project. Personal chats start without a project. Terminal lists follow that context; file drafts from another project are not restored into the current project's editor. At narrower widths the tools overlay the conversation and can be dismissed without losing it.
 
 ## Native browser
