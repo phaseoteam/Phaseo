@@ -8,13 +8,13 @@ import { editorArguments, editorCandidates, findEditor, launchEditor, openProjec
 
 describe("external editors", () => {
 	it("resolves an absolute alias of the registered project before computing its relative target", async () => {
-		const directory = realpathSync(mkdtempSync(path.join(tmpdir(), "phaseo-editor-alias-"))), project = path.join(directory, "project"), alias = path.join(directory, "alias"); mkdirSync(project); writeFileSync(path.join(project, "main.ts"), "Owned source"); symlinkSync(project, alias, process.platform === "win32" ? "junction" : "dir");
+		const directory = realpathSync.native(mkdtempSync(path.join(tmpdir(), "phaseo-editor-alias-"))), project = path.join(directory, "project"), alias = path.join(directory, "alias"); mkdirSync(project); writeFileSync(path.join(project, "main.ts"), "Owned source"); symlinkSync(project, alias, process.platform === "win32" ? "junction" : "dir");
 		const ports = { find: vi.fn(async () => "/owned/editor"), launch: vi.fn(async () => undefined), reveal: vi.fn(), openFolder: vi.fn(async () => "") };
 		try { await openProjectTarget(project, { editor: "vscode", filename: path.join(alias, "main.ts"), line: 2 }, ports); expect(ports.launch).toHaveBeenCalledWith("/owned/editor", ["--goto", `${path.join(project, "main.ts")}:2`], project); }
 		finally { rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("maps structured positions to editor launch styles and resolves in-project absolute paths", async () => {
-		const project = realpathSync(mkdtempSync(path.join(tmpdir(), "phaseo-editor-")));
+		const project = realpathSync.native(mkdtempSync(path.join(tmpdir(), "phaseo-editor-")));
 		const target = path.join(project, "main.ts"); writeFileSync(target, "owned source");
 		const ports = { find: vi.fn(async () => "/owned/editor"), launch: vi.fn(async () => undefined), reveal: vi.fn(), openFolder: vi.fn(async () => "") };
 		try {
@@ -44,7 +44,7 @@ describe("external editors", () => {
 	});
 	it("opens registered project targets as literal editor arguments and reveals files without executing them", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-editor-"));
-		const project = path.join(realpathSync(directory), "project"); mkdirSync(project);
+		const project = path.join(realpathSync.native(directory), "project"); mkdirSync(project);
 		const filename = "notes & $(literal) # 世界.txt"; writeFileSync(path.join(project, filename), "owned text");
 		const ports = { find: vi.fn(async () => "/owned/editor"), launch: vi.fn(async () => undefined), reveal: vi.fn(), openFolder: vi.fn(async () => "") };
 		try {

@@ -13,7 +13,7 @@ export function windowsCredentialEncryption(fallback: CredentialEncryption): Cre
   const script = `Add-Type -AssemblyName System.Security; $credentialBytes=[Convert]::FromBase64String([Console]::In.ReadToEnd()); $credentialEntropy=[Text.Encoding]::UTF8.GetBytes('Phaseo desktop credentials v1'); $protectedBytes=[Security.Cryptography.ProtectedData]::${operation}($credentialBytes,$credentialEntropy,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($protectedBytes))`;
   try {
    const result = (await new Promise<string>((resolve, reject) => {
-    const child = execFile(executable, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop'; " + script], { encoding: "utf8", timeout: 5000, maxBuffer: 128 * 1024, windowsHide: true, env: { SystemRoot: systemRoot, WINDIR: systemRoot } }, (error, stdout) => { if (error) reject(new Error("Credential helper failed.")); else resolve(stdout); });
+    const child = execFile(executable, ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference='Stop'; " + script], { encoding: "utf8", timeout: 30_000, maxBuffer: 128 * 1024, windowsHide: true, env: { SystemRoot: systemRoot, WINDIR: systemRoot } }, (error, stdout) => { if (error) reject(new Error("Credential helper failed.")); else resolve(stdout); });
     child.stdin?.on("error", () => reject(new Error("Credential helper input failed.")));
     child.stdin?.end(bytes.toString("base64"));
    })).trim();
