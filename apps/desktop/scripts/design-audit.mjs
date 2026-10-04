@@ -60,6 +60,15 @@ ipcMain.handle("workspace:attachment",async(event,taskId,id)=>{
   if(id===previewId){if(holdAttachment)await new Promise(resolve=>{releaseAttachment=resolve;});if(failAttachment){failAttachment=false;throw new Error("Owned attachment failure");}}
   return originalAttachment(event,taskId,id);
 });
+const originalOverview=ipcMain._invokeHandlers.get("workspace:overview");
+let holdOverview=false,failOverview=false,releaseOverview,heldOverview;
+ipcMain.removeHandler("workspace:overview");
+ipcMain.handle("workspace:overview",async event=>{
+  const value=await originalOverview(event);
+  if(holdOverview){heldOverview=value;await new Promise(resolve=>{releaseOverview=resolve;});}
+  if(failOverview){failOverview=false;throw new Error("Owned command search failure");}
+  return value;
+});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -311,6 +320,35 @@ try {
           if(closedPreview.open||!closedPreview.classes?.includes('attachment-chip'))throw new Error("Attachment close state: "+JSON.stringify(closedPreview));
         }
       }
+      holdOverview=true;failOverview=true;
+      await window.webContents.executeJavaScript(`(()=>{const trigger=document.querySelector('.command-button');trigger.focus();trigger.click()})()`);
+      for(let attempt=0;!releaseOverview;attempt++){if(attempt>50)throw new Error("Command overview did not reach fixture.");await new Promise(resolve=>setTimeout(resolve,20));}
+      if(!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.command-palette [role="status"]'))&&document.activeElement?.getAttribute('role')==='combobox'`))throw new Error("Command loading or search focus is missing.");
+      holdOverview=false;releaseOverview();releaseOverview=undefined;
+      for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`document.querySelector('.command-palette [role="alert"]')?.textContent==='Owned command search failure'`))break;if(attempt>50)throw new Error("Command failure feedback missing.");await new Promise(resolve=>setTimeout(resolve,100));}
+      writeFileSync(path.join(output,`${width}-${theme}-commands-failure.png`),(await window.webContents.capturePage()).toPNG());
+      await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.command-feedback button')).find(button=>button.textContent==='Retry').click()`);
+      for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`!document.querySelector('.command-palette [role="status"]')&&!document.querySelector('.command-palette [role="alert"]')&&document.querySelector('.command-results').textContent.includes('Plan the product launch')`))break;if(attempt>50)throw new Error("Command retry did not recover task search.");await new Promise(resolve=>setTimeout(resolve,100));}
+      await window.webContents.executeJavaScript(`(()=>{const input=document.querySelector('.command-search input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'No match owned fixture');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+      await new Promise(resolve=>setTimeout(resolve,100));
+      if(!await window.webContents.executeJavaScript(`!document.querySelector('.command-results button')&&!document.querySelector('.command-search input').hasAttribute('aria-activedescendant')`))throw new Error("Empty command results have a stale active option.");
+      writeFileSync(path.join(output,`${width}-${theme}-commands-empty.png`),(await window.webContents.capturePage()).toPNG());
+      window.focus();window.webContents.focus();window.webContents.sendInputEvent({type:"keyDown",keyCode:"Escape"});window.webContents.sendInputEvent({type:"keyUp",keyCode:"Escape"});
+      await new Promise(resolve=>setTimeout(resolve,100));
+      if(!await window.webContents.executeJavaScript(`!document.querySelector('.command-palette')&&document.activeElement?.classList.contains('command-button')`))throw new Error("Command Escape did not restore trigger focus.");
+      holdOverview=true;
+      await window.webContents.executeJavaScript(`document.querySelector('.command-button').focus();document.querySelector('.command-button').click()`);
+      for(let attempt=0;!releaseOverview;attempt++){if(attempt>50)throw new Error("Delayed overview did not reach fixture.");await new Promise(resolve=>setTimeout(resolve,20));}
+      const latestTitle="Newest overview fixture "+"long-title-".repeat(12);
+      const latestOverview={...heldOverview,tasks:heldOverview.tasks.map((task,index)=>index===0?{...task,title:latestTitle}:task)};
+      window.webContents.send("workspace:overview-changed",latestOverview);
+      await new Promise(resolve=>setTimeout(resolve,100));holdOverview=false;releaseOverview();releaseOverview=undefined;
+      await new Promise(resolve=>setTimeout(resolve,100));
+      if(!await window.webContents.executeJavaScript(`document.querySelector('.command-results').textContent.includes(${JSON.stringify(latestTitle)})`))throw new Error("A stale initial overview replaced newer command results.");
+      await window.webContents.executeJavaScript(`(()=>{const input=document.querySelector('.command-search input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Newest overview');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+      await new Promise(resolve=>setTimeout(resolve,100));
+      writeFileSync(path.join(output,`${width}-${theme}-commands-results.png`),(await window.webContents.capturePage()).toPNG());
+      await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Close commands"]').click()`);
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);
       for (let attempt = 0; ; attempt++) {
         if (await window.webContents.executeJavaScript(`document.querySelector('h1')?.textContent==='Platform'`)) break;
