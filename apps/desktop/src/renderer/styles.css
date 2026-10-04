@@ -732,3 +732,10 @@ button { color: inherit; }
 
 .global-instructions-field { display: grid; gap: 8px; width: 100%; }
 .global-instructions-field textarea { width: 100%; min-height: 180px; resize: vertical; }
+
+.proposal-reviews, .proposal-review-comments { display:flex; flex-direction:column; gap:16px; min-width:0; scroll-margin-top:12px; }
+.proposal-reviews h3 { margin:0; font-size:14px; overflow-wrap:anywhere; flex:1; }
+.proposal-thread-list { max-height:240px; }
+.proposal-review-comment { border-top:1px solid var(--border); padding-top:16px; min-width:0; overflow-wrap:anywhere; }
+.proposal-review-comment header { display:flex; flex-wrap:wrap; gap:8px; align-items:baseline; margin-bottom:12px; font-size:12px; }
+.proposal-review-comment time { color:var(--text-muted); font-size:11px; }

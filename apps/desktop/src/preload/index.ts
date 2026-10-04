@@ -66,6 +66,7 @@ const desktopApi: PhaseoDesktopApi = {
 		gitReview: id => ipcRenderer.invoke("workspace:git-review", id),
 		pullRequestContents: (id, query) => ipcRenderer.invoke("workspace:pull-request-contents", id, query),
 		pullRequestFiles: (id, query) => ipcRenderer.invoke("workspace:pull-request-files", id, query),
+		pullRequestThreads: (id, query) => ipcRenderer.invoke("workspace:pull-request-threads", id, query),
 		pullRequest: (id, number) => ipcRenderer.invoke("workspace:pull-request", id, number),
 		pullRequests: (id, cursor) => ipcRenderer.invoke("workspace:pull-requests", id, cursor),
 		gitHunks: (id, filename, staged) => ipcRenderer.invoke("workspace:git-hunks", id, filename, staged),

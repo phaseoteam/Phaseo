@@ -54,6 +54,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Assistant file links
               run: pnpm --filter @phaseo/desktop exec electron scripts/file-links-smoke.mjs
+            - name: PR review threads
+              run: pnpm --filter @phaseo/desktop exec electron scripts/review-threads-smoke.mjs
             - name: Chat reference copy workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/chat-reference-smoke.mjs
             - name: Phaseo managed MCP tools
@@ -144,6 +146,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged assistant file links
               run: pnpm --filter @phaseo/desktop exec electron scripts/file-links-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged PR review threads
+              run: pnpm --filter @phaseo/desktop exec electron scripts/review-threads-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat reference copy workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/chat-reference-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo managed MCP tools
@@ -245,6 +249,7 @@ jobs:
                       output/playwright/phaseo-batch-recovery/
                       output/playwright/chat-reference/
                       output/playwright/file-links/
+                      output/playwright/review-threads/
                         output/playwright/phaseo-skill-runtime/
                         output/playwright/phaseo-skill-recovery/
                       output/playwright/browser-viewport/

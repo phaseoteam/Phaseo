@@ -157,3 +157,6 @@ The same MCP prompt chooser works with configured HTTP services. Owned source/ar
 
 
 Assistant file links retain their descriptive labels. A complete local-file destination missing its closing angle bracket is corrected for display; original chat text stays unchanged. Code, HTML, directives, remote URLs and incomplete destinations remain literal. Project file actions use the existing editor bridge and show pending/error feedback; personal-chat file references remain inert.
+
+
+In **PRs**, open a pull request and choose **Review threads**. Thread pages show locations, base/head side, resolution and outdated state. Select a thread to read its full Markdown comments; thread and comment pages navigate independently. Failed reads retain confirmed content and offer Retry. Changed commits require refreshed PR details. This view uses the project’s GitHub CLI account and is read-only; replies, resolution, review submissions and merge actions remain in progress.

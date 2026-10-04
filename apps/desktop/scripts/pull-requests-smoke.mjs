@@ -40,6 +40,17 @@ if(files&&process.argv.includes("--contents")){
  const file=files.files.find(file=>file.status==="modified"&&file.preview==="available"&&/\.(?:ts|tsx|md)$/.test(file.filename));assert.ok(file,"Expected an owned text file in the first page");
  contents=await projectPullRequestContents(repository,{number:detail.number,page:1,headOid:detail.headOid,baseOid:detail.baseOid,filename:file.filename});assert.match(contents.mergeBaseOid,/^[a-f0-9]{40}$/i);assert.equal(contents.headOid,detail.headOid);assert.ok(contents.oldFile&&contents.newFile);assert.notEqual(contents.oldFile.contents,contents.newFile.contents);
 }
+let reviewThreadsRead=0,reviewCommentsRead=0;
+if(detail&&process.argv.includes('--threads')){
+ await build({configFile:false,logLevel:'silent',build:{target:'node24',outDir:path.join(directory,'reviews-bundle'),emptyOutDir:false,lib:{entry:path.join(root,'src/main/projectPullRequestThreads.ts'),formats:['es'],fileName:()=> 'reviews.mjs'},rolldownOptions:{external:[...builtinModules,...builtinModules.map(name=>`node:${name}`)]}}});
+ const {projectPullRequestThreads}=await import(pathToFileURL(path.join(directory,'reviews-bundle/reviews.mjs')).href);
+ const binding={number:detail.number,headOid:detail.headOid,baseOid:detail.baseOid};let cursor;const pages=new Set();
+ do{const page=await projectPullRequestThreads(repository,{...binding,type:'threads',cursor});assert.equal(page.type,'threads');reviewThreadsRead+=page.threads.length;
+  for(const thread of page.threads){let commentCursor;const commentPages=new Set();do{const comments=await projectPullRequestThreads(repository,{...binding,type:'comments',threadId:thread.id,cursor:commentCursor});assert.equal(comments.type,'comments');reviewCommentsRead+=comments.comments.length;commentCursor=comments.nextCursor;if(commentCursor){assert.ok(!commentPages.has(commentCursor));commentPages.add(commentCursor);assert.ok(commentPages.size<=1000);}}while(commentCursor);}
+  cursor=page.nextCursor;if(cursor){assert.ok(!pages.has(cursor));pages.add(cursor);assert.ok(pages.size<=1000);}
+ }while(cursor);
+}
+
 assert.equal(git(["status", "--porcelain"]), before);
 assert.equal(git(["remote", "get-url", "origin"]).trim(), "https://github.com/phaseoteam/Phaseo.git");
-console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length, detailsNumber: detail?.number, detailsState: detail?.state, detailsBodyLength: detail?.body.length, filesCount: files?.files.length, filesTotal: files?.total, filesHaveNext: files?.hasNext, filesPages, filesRead, contentsFile:contents?.newFile?.name, oldBytes:contents?Buffer.byteLength(contents.oldFile.contents):undefined,newBytes:contents?Buffer.byteLength(contents.newFile.contents):undefined,mergeBaseOid:contents?.mergeBaseOid }));
+console.log("PULL_REQUESTS_SMOKE", JSON.stringify({ installedCli: true, productionAdapter: true, readOnly: true, count: result.requests.length, limitReached: result.limitReached, pages: next ? 2 : 1, nextPageCount: next?.requests.length, detailsNumber: detail?.number, detailsState: detail?.state, detailsBodyLength: detail?.body.length, filesCount: files?.files.length, filesTotal: files?.total, filesHaveNext: files?.hasNext, filesPages, filesRead, reviewThreadsRead,reviewCommentsRead,contentsFile:contents?.newFile?.name, oldBytes:contents?Buffer.byteLength(contents.oldFile.contents):undefined,newBytes:contents?Buffer.byteLength(contents.newFile.contents):undefined,mergeBaseOid:contents?.mergeBaseOid }));

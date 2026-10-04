@@ -304,3 +304,10 @@ Assistant file-link verification (2026-10-04): the existing conversation file bu
 ![Assistant file label](screenshots/assistant-file-link.png)
 
 ![File action error at minimum size](screenshots/assistant-file-link-error.png)
+
+
+PR review threads (2026-10-04): the existing right PR panel gains a Review threads tab using the established file-list, pagination and Markdown primitives. Final source/archive native checks each capture six states at three widths in both themes (72 total): discovery error, ready comments, comment page, thread page, pending and empty. They verify keyboard selection, single-comment copy, failure/retry with retained data, duplicate guards, late responses after changing chats, Markdown isolation and bounded geometry. The sections reuse the Files scroll inset. Source intermediate light comments and archived minimum dark thread-page captures were visually inspected; no left navigation pane was added. Replies, resolution, review submissions and wider accessibility acceptance remain open.
+
+![PR review comments](screenshots/pr-review-comments.png)
+
+![Paged review threads](screenshots/pr-review-threads.png)

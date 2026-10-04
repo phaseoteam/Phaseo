@@ -1,3 +1,4 @@
+import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
 import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
@@ -136,6 +137,7 @@ export type WorkspaceApi = {
 	gitReview: (projectId: string) => Promise<GitReview>;
 	pullRequestContents: (projectId: string, query: PullRequestContentsQuery) => Promise<PullRequestContents>;
 	pullRequestFiles: (projectId: string, query: PullRequestFilesQuery) => Promise<PullRequestFilesPage>;
+	pullRequestThreads: (projectId: string, query: PullRequestThreadsQuery) => Promise<PullRequestThreadsPage>;
 	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
 	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
