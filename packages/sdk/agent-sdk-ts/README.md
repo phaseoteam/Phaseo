@@ -278,6 +278,10 @@ const agent = createAgent({
 
 Tools run serially by default, including approved tools resumed from a pause. Context updates from each serial tool are available to the next tool. Before resuming, the runtime validates all required approval decisions and manual outputs, so an incomplete response cannot start an earlier approved tool.
 
+When a state store is configured, serial approved/manual continuations save a start marker before each action and checkpoint each confirmed result. Failed or cancelled continuations retain completed results, remaining calls, context, and deferred human messages. Resume requires fresh decisions for the remaining calls. An `executionStartedAt` marker means an interrupted action may already have had effects; inspect those effects before approving it again. This journal does not guarantee exactly-once external effects or cover partial parallel batches or automatic tool execution.
+
+Cancellation propagates even when a tool uses `onError: "return-to-model"`; interrupted actions are not consumed as confirmed error results.
+
 With explicit concurrency, tools may finish in any order. The runtime still persists tool-result messages in tool-call order.
 
 ### Typed item streams

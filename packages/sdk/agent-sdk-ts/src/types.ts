@@ -213,6 +213,8 @@ export type AgentStopWhen = AgentStopCondition | AgentStopCondition[];
 export type AgentPendingToolCall = {
 	call: AgentToolCall;
 	kind: "approval" | "hitl" | "manual";
+	/** Persisted before execution; an interrupted call may already have had effects. */
+	executionStartedAt?: string;
 	reason?: string;
 };
 
@@ -225,6 +227,8 @@ export type AgentHumanPause = {
 	requestedAt: string;
 	kind?: "human_review" | "tool_approval" | "hitl" | "manual_tool";
 	pendingToolCalls?: AgentPendingToolCall[];
+	/** Human messages deferred until the pending tool results are complete. */
+	continuationMessages?: AgentMessage[];
 };
 
 export type AgentHumanReviewRequest = { reason: string; payload?: unknown };

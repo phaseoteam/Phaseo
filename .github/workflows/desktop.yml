@@ -70,6 +70,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs
             - name: Phaseo queue forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs --queue=true
+            - name: Phaseo partial batch forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-batch-recovery-audit.mjs
             - name: Phaseo skill forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs
             - name: Phaseo Chat skill forced-crash recovery
@@ -122,6 +124,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo queue forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs --queue=true --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo partial batch forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-batch-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo skill forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo Chat skill forced-crash recovery
@@ -167,6 +171,7 @@ jobs:
                       output/playwright/phaseo-questions/
                       output/playwright/phaseo-question-recovery/
                       output/playwright/phaseo-queue-recovery/
+                      output/playwright/phaseo-batch-recovery/
                       output/playwright/chat-reference/
                         output/playwright/phaseo-skill-runtime/
                         output/playwright/phaseo-skill-recovery/

@@ -63,13 +63,14 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 
 		const messages = phaseoConversationMessages(task.messages, text, attachments, requestedAction?.arguments);
 		let followUp = previous && previous.run.status !== "completed" ? messages.slice(-1) : undefined;
-		let result = previous?.run.status === "waiting_for_human" && previous.run.pause?.pendingToolCalls?.length
+		let result = previous?.run.pause?.pendingToolCalls?.length
 			? previous
 			: previous && previous.run.status !== "completed"
 			? await agent.continueStream({ ...options, run: previous, humanMessages: followUp })
 			: await agent.stream({ ...options, input: requestedAction?.arguments ?? text, messages });
 		if (previous && result !== previous) followUp = undefined;
-		while (result.run.status === "waiting_for_human") {
+		while (result.run.status === "waiting_for_human" || result.run.pause?.pendingToolCalls?.length) {
+			this.controller.signal.throwIfAborted();
 			const pending = result.run.pause?.pendingToolCalls ?? [];
 			if (!pending.length) throw new Error("This run needs a human response that is not supported yet.");
 			const approvals: string[] = []; const rejections: string[] = []; const toolOutputs: { toolCallId: string; output: unknown }[] = [];
@@ -85,7 +86,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 					try { review = await skillTools?.review(entry.call); if (!review) throw new Error("Skill storage is unavailable."); }
 					catch (error) { this.controller.signal.throwIfAborted(); callbacks.onActivity?.({ id: entry.call.id, type: "tool", title: "Skill unavailable", text: error instanceof Error ? error.message : "Could not review this skill.", status: "failed" }); rejections.push(entry.call.id); continue; }
 				}
-				const decision = await callbacks.onApproval(review?.title ?? mcp.labels[entry.call.name] ?? entry.call.name, review?.details ?? JSON.stringify(entry.call.input, null, 2));
+				const decision = await callbacks.onApproval(review?.title ?? mcp.labels[entry.call.name] ?? entry.call.name, (entry.executionStartedAt ? "This action started before the interruption and may already have completed. Check its effects before approving again.\n\n" : "") + (review?.details ?? JSON.stringify(entry.call.input, null, 2)));
 				(decision === "accept" ? approvals : rejections).push(entry.call.id);
 			}
 			if (this.controller.signal.aborted) throw new Error("Task stopped.");

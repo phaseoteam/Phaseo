@@ -8,6 +8,41 @@ import { AgentGatewayError } from "../errors";
 import type { AgentMessage, AgentRunResult } from "../types";
 
 describe("Agent SDK runtime loop", () => {
+ it("retains confirmed effects when next-turn configuration fails", async () => {
+  let step = 0, saved: AgentRunResult<unknown, string> | undefined;
+  const effect = vi.fn(() => "Confirmed effect");
+  const agent = createAgent<string, unknown>({ id: "configuration-failure", tools: [defineTool({ id: "effect", requireApproval: true, execute: effect, nextTurnParams: { model: () => { throw Error("Owned configuration failure"); } } })] });
+  const state = { load: async () => saved ?? null, save: async (result: AgentRunResult<unknown, string>) => { saved = structuredClone(result); } };
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "Done", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "effect", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Work", client, state });
+  await expect(agent.continueRun({ run: paused, client, state, approvals: ["one"], humanMessages: [{ role: "user", content: "Keep this follow-up" }] })).rejects.toThrow("Owned configuration failure");
+  expect(saved!.run.pause).toBeNull();
+  expect(saved!.run.messages.at(-1)?.content).toBe("Keep this follow-up");
+  const result = await agent.continueRun({ run: saved!, client, state });
+  expect(result.run.status).toBe("completed"); expect(effect).toHaveBeenCalledOnce();
+  expect(result.stepResults?.[0].toolResults.map(item => item.toolCallId)).toEqual(["one"]);
+ });
+ it.each(["failed", "cancelled", "cancelled-with-model-errors"] as const)("preserves completed serial tools and queued input after a %s continuation", async status => {
+  let firstCalls=0,secondCalls=0,step=0;const controller=new AbortController();let saved:AgentRunResult<unknown,string>|undefined;
+  const state={load:async()=>saved??null,save:async(result:AgentRunResult<unknown,string>)=>{saved=structuredClone(result);}};
+  const agent=createAgent<string,unknown>({id:"serial-checkpoint-"+status,toolExecution:{onError:status==="cancelled-with-model-errors"?"return-to-model":"fail-run"},tools:[defineTool({id:"first",requireApproval:true,execute:(_input,runtime)=>{firstCalls++;runtime.setContext({value:"retained"});return "Confirmed first effect";}}),defineTool({id:"second",requireApproval:true,execute:(_input,runtime)=>{if(++secondCalls===1){if(status.startsWith("cancelled"))controller.abort();throw Error("Owned interruption");}return runtime.context;}})]});
+  const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"first",input:{}},{id:"two",name:"second",input:{}}]}:{})}})};
+  const paused=await agent.run({input:"Work",client,state});const continuing=agent.continueRun({run:paused,client,state,signal:controller.signal,approvals:["one","two"],humanMessages:[{role:"user",content:"Queued follow-up"}]});
+  if(status==="failed")await expect(continuing).rejects.toThrow("Owned interruption");else expect((await continuing).run.status).toBe("cancelled");
+  expect(firstCalls).toBe(1);expect(saved!.run.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one"]);expect(saved!.run.context).toEqual({value:"retained"});expect(saved!.run.pause!.pendingToolCalls!.map(entry=>entry.call.id)).toEqual(["two"]);expect(saved!.run.pause!.pendingToolCalls![0].executionStartedAt).toEqual(expect.any(String));expect(saved!.run.pause!.continuationMessages).toEqual([{role:"user",content:"Queued follow-up"}]);
+  const result=await agent.continueRun({run:saved!,client,state,approvals:["two"]});expect(result.run.status).toBe("completed");expect(firstCalls).toBe(1);expect(secondCalls).toBe(2);expect(result.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one","two"]);expect(result.messages.filter(message=>message.content==="Queued follow-up")).toHaveLength(1);expect(result.messages.at(-2)).toEqual({role:"user",content:"Queued follow-up"});expect(result.run.error).toBeUndefined();expect(result.run.pause).toBeNull();
+ });
+ it("does not start a serial effect when its start checkpoint cannot be saved",async()=>{
+  const effect=vi.fn(()=>"Owned effect");let step=0;const agent=createAgent<string,unknown>({id:"start-checkpoint",tools:[defineTool({id:"effect",requireApproval:true,execute:effect})]});const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"effect",input:{}}]}:{})}})};
+  const state={load:async()=>null,save:async(result:AgentRunResult<unknown,string>)=>{if(result.run.pause?.pendingToolCalls?.some(entry=>entry.executionStartedAt))throw Error("Owned checkpoint failure");}};
+  const paused=await agent.run({input:"Work",client,state});await expect(agent.continueRun({run:paused,client,state,approvals:["one"]})).rejects.toThrow("Owned checkpoint failure");expect(effect).not.toHaveBeenCalled();
+ });
+ it("checks cancellation after saving a serial start checkpoint",async()=>{
+  const effect=vi.fn(()=>"Owned effect"),controller=new AbortController();let step=0;const agent=createAgent<string,unknown>({id:"cancel-start",tools:[defineTool({id:"effect",requireApproval:true,execute:effect})]});const client={generate:async()=>({message:{role:"assistant" as const,content:"Done",...(step++===0?{toolCalls:[{id:"one",name:"effect",input:{}}]}:{})}})};
+  const state={load:async()=>null,save:async(result:AgentRunResult<unknown,string>)=>{if(result.run.pause?.pendingToolCalls?.some(entry=>entry.executionStartedAt))controller.abort();}};
+  const paused=await agent.run({input:"Work",client,state});const result=await agent.continueRun({run:paused,client,state,signal:controller.signal,approvals:["one"]});expect(result.run.status).toBe("cancelled");expect(effect).not.toHaveBeenCalled();
+ });
+
  it("keeps mixed approval, rejection and manual outputs in call order", async () => {
   let step = 0; const rejected = vi.fn(() => "must not run");
   const agent = createAgent({ id: "mixed-continuation", tools: [defineTool({ id: "read", requireApproval: true, execute: (_input, runtime) => runtime.context }), defineTool({ id: "denied", requireApproval: true, execute: rejected }), defineTool({ id: "manual", execute: false, onResponseReceived: (output, runtime) => { runtime.setContext({ value: output }); return output; } })] });

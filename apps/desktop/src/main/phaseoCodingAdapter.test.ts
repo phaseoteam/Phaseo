@@ -9,6 +9,25 @@ import { PhaseoCodingAdapter } from "./phaseoCodingAdapter";
 const task: Task = { id: "task", title: "Task", harness: "phaseo", model: "model", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1" };
 describe("Phaseo coding run loop", () => {
+ it.each(["code", "plan"] as const)("reviews only the unfinished serial MCP effect after SQLite recovery in %s", async mode => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-serial-recovery-")); let store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const script = path.join(root, "server.cjs"), calls = path.join(root, "calls.txt");
+   writeFileSync(script,`const readline=require('node:readline'),fs=require('node:fs');readline.createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.id===undefined)return;let result;if(r.method==='initialize')result={protocolVersion:r.params.protocolVersion,capabilities:{tools:{}},serverInfo:{name:'owned',version:'1'}};else if(r.method==='tools/list')result={tools:[{name:'effect',inputSchema:{type:'object',properties:{value:{type:'string'}},required:['value']}}]};else if(r.method==='tools/call'){fs.appendFileSync(process.argv[2],r.params.arguments.value+'\\n');if(r.params.arguments.value==='second'){process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:r.id,error:{code:-32603,message:'Owned interrupted effect'}})+'\\n');return;}result={content:[{type:'text',text:'Confirmed first effect'}]};}else result={};process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:r.id,result})+'\\n');});`);
+   const connections = [{id:"12345678-1234-1234-1234-123456789abc",name:"Owned",enabled:true,transport:"stdio" as const,executable:process.execPath,arguments:[script,calls]}];
+   let runId = "";
+   const generate = vi.fn(async request => { const name = request.tools.find((tool: {id:string}) => tool.id.startsWith("phaseo_")).id; return {message:{role:"assistant" as const,content:"",toolCalls:[{id:"one",name,input:{value:"first"}},{id:"two",name,input:{value:"second"}}]}}; });
+   const adapter = new PhaseoCodingAdapter(()=>"owned-key",store,()=>({generate}),connections);
+   await expect(adapter.run({...task,mode},root,"Perform owned effects",{onSession:id=>{runId=id;},onDelta:()=>{},onApproval:async()=>"accept",onActivity:activity=>{if(activity.id==="two" && activity.status==="running")void adapter.cancel();}},account)).rejects.toThrow("abort");
+   const saved = store.loadAgentRun(runId)!; expect(saved.run.pause?.pendingToolCalls?.map(entry=>entry.call.id)).toEqual(["two"]); expect(saved.run.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one"]);
+   store.close(); store = new WorkspaceStore(path.join(root,"state.sqlite"));
+   const approval = vi.fn(async (_title, details) => {expect(details).toContain("may already have completed");return "decline" as const;});
+   const resumed = vi.fn(async request => {expect(request.messages.filter((message:{role:string})=>message.role==="tool").map((message:{toolCallId:string})=>message.toolCallId)).toEqual(["one","two"]);return {message:{role:"assistant" as const,content:"Recovered"}};});
+   await new PhaseoCodingAdapter(()=>"owned-key",store,()=>({generate:resumed}),connections).run({...task,mode,nativeSessionId:runId},root,"Continue",{onSession:()=>{},onDelta:()=>{},onApproval:approval},account);
+   expect(approval).toHaveBeenCalledOnce();expect(resumed).toHaveBeenCalledOnce();expect(readFileSync(calls,"utf8").trim().split("\n")).toEqual(["first"]);expect(store.loadAgentRun(runId)?.run.status).toBe("completed");
+  } finally {store.close();rmSync(root,{recursive:true,force:true});}
+ });
+
  it.each(["code", "plan"] as const)("retains images and role history through pending skill recovery in %s", async mode => {
   const root = mkdtempSync(path.join(tmpdir(), "phaseo-code-images-")), global = path.join(root, "instructions"), skill = path.join(root, "skills/explain/SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(skill), { recursive: true }); writeFileSync(skill, "---\nname: explain\ndescription: Explain images\n---\nOriginal guidance");
   const image = { id: "image", taskId: task.id, name: "owned.png", kind: "image" as const, mimeType: "image/png", size: 3, filePath: "owned.png", dataUrl: "data:image/png;base64,YWJj" };
