@@ -1,3 +1,4 @@
+import type { NativeAction } from "../shared/nativeActions";
 import type { Account, AgentActivity, AgentQuestion, ModelOption, QueuedMessage, Task } from "../shared/workspace";
 import type { AttachmentContent } from "./attachments";
 import type { AgentForm, FormAnswer } from "../shared/agentForms";
@@ -14,7 +15,7 @@ export type AgentCallbacks = {
 	onApproval: (method: string, description: string) => Promise<"accept" | "decline">;
 };
 export interface AgentAdapter {
-	run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments?: AttachmentContent[]): Promise<void>;
+	run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments?: AttachmentContent[], nativeAction?: NativeAction): Promise<void>;
 	steer?: (message: QueuedMessage, attachments: AttachmentContent[]) => Promise<void>;
 	cancel(): Promise<void>;
 }

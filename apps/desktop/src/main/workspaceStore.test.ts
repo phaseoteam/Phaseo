@@ -6,6 +6,17 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+ it("persists native queued actions and preserves argument edits without guessing plain text intent", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-queue-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
+  try { const task = store.apply({ type: "create-task", harness: "opencode", model: "default", mode: "chat" }); const nativeAction = { kind: "command" as const, id: "review", name: "review", arguments: "first" };
+   const input = validateCommand({ type: "send", id: task.id, text: "/review first", nativeAction }); if (input.type !== "send") throw new Error("Expected send"); store.apply(input); store.close(); store = new WorkspaceStore(filename);
+   const message = store.getTask(task.id).queue[0]; expect(message.nativeAction).toEqual(nativeAction);
+   store.apply({ type: "queue-edit", id: task.id, messageId: message.id, text: "/review second" }); expect(store.getTask(task.id).queue[0].nativeAction?.arguments).toBe("second");
+   store.apply({ type: "queue-edit", id: task.id, messageId: message.id, text: "Plain instruction" }); expect(store.getTask(task.id).queue[0].nativeAction).toBeUndefined();
+   expect(() => validateCommand({ type: "send", id: task.id, text: "different", nativeAction })).toThrow(); expect(() => validateCommand({ type: "steer", id: task.id, text: "/review first", nativeAction })).toThrow();
+  } finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
+ });
+
 	it("persists only advertised Grok reasoning choices and clears them when the model changes", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

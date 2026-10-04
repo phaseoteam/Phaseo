@@ -97,8 +97,12 @@ Review $1 against $2 and explain your findings.
 
 `$ARGUMENTS` inserts all supplied text. Numbered arguments accept quoted phrases; the last numbered placeholder receives the remaining arguments. Templates without placeholders append the supplied arguments. Preview reloads the file; editing uses its confirmed hash to reject an external change. Invalid command files remain visible as diagnostics while valid commands are available. Files are limited to 16 KiB, catalogs to 200 commands, and expansion to the composer's message limit. Template expansion does not execute shell code or alter harness, model or permission settings.
 
-Native command catalogs/execution, nested command names, advanced frontmatter, command deletion/import, skills and plugin management remain in progress.
+For OpenCode chats, the same dialog has an OpenCode catalog of registered commands and skills. Select an action and enter arguments to prepare an explicit draft; Send or Queue submits it. Commands require approval before native execution, and native tool permissions still apply. Skills activate through the native skill API before submitting their task. Changing the draft prefix clears native execution intent; queued argument edits retain it. Catalogs use the same personal-chat or project directory as execution. Other harness catalogs, Phaseo skills, nested saved command names, advanced frontmatter, deletion/import and plugin management remain in progress.
 
 Current verification: 669 tests / 90 files; source and Windows archive command workflows each capture 13 states across both themes/window sizes. They verify keyboard selection, draft/focus preservation, scope, UI creation, stale edit rejection and native browser hide/restore, with zero submissions or provider inference.
 
 ![Command preview](screenshots/prompt-command-preview.png)
+
+OpenCode native actions add fourteen deterministic cases for catalog scope/metadata, explicit identities, argument edits, queue persistence/rejection, command approval/catalog changes, skill ordering and durable output reconciliation. Current verification: 683 tests / 91 files. Source and completed Windows archive picker workflows each capture 18 states, preserve drafts across chat switches, verify native browser hide/restore and make zero native submissions or provider inference calls. Command execution is covered by owned protocol fixtures; signed-in native execution remains unverified.
+
+![Native action picker](screenshots/native-action-picker.png)

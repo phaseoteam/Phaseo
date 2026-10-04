@@ -9,6 +9,27 @@ import { AgentInputRejectedError } from "./agentAdapter";
 
 const task: Task = { id: "task", title: "Task", harness: "opencode", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("OpenCode 2 integration", () => {
+ it.each(["accept", "decline"] as const)("requires explicit command approval and settles state-only commands (%s)", async decision => {
+  sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); const submit = vi.fn(async () => {}); const create = vi.fn(async () => ({ id: "session" }));
+  const commandList = vi.fn(async () => ({ data: [{ name: "review" }] })); const skillList = vi.fn(async () => ({ data: [] }));
+  sdk.make.mockReturnValue({ command: { list: commandList }, skill: { list: skillList }, message: { list: async () => ({ data: [] }) }, session: { create, command: submit, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void; signal: AbortSignal }) { options.onActivity(); await new Promise(resolve => options.signal.addEventListener("abort", resolve, { once: true })); yield { type: "session.execution.succeeded", data: { sessionID: "other" } }; } } });
+  const run = new OpenCodeAdapter().run({ ...task, mode: "chat" }, ".", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => decision }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" });
+  if (decision === "decline") { await expect(run).rejects.toBeInstanceOf(AgentInputRejectedError); expect(submit).not.toHaveBeenCalled(); expect(create).not.toHaveBeenCalled(); }
+  else { await run; expect(submit).toHaveBeenCalledWith({ sessionID: "session", name: "review", text: "target", files: [], delivery: "queue" }, expect.anything()); expect(commandList).toHaveBeenCalledTimes(2); }
+ });
+ it("rejects a native command removed while the approval is open", async () => {
+  sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); const create = vi.fn(); const list = vi.fn().mockResolvedValueOnce({ data: [{ name: "review" }] }).mockResolvedValueOnce({ data: [] });
+  sdk.make.mockReturnValue({ command: { list }, skill: { list: async () => ({ data: [] }) }, session: { create } });
+  await expect(new OpenCodeAdapter().run({ ...task, mode: "chat" }, ".", "/review", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "" })).rejects.toBeInstanceOf(AgentInputRejectedError); expect(create).not.toHaveBeenCalled();
+ });
+ it("activates a native skill without execution before submitting its task", async () => {
+  sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); const order: string[] = []; let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+  const skill = vi.fn(async () => { order.push("skill"); }); const submit = vi.fn(async () => { order.push("prompt"); prompted(); });
+  sdk.make.mockReturnValue({ command: { list: async () => ({ data: [] }) }, skill: { list: async () => ({ data: [{ id: "native", name: "Research" }] }) }, session: { create: async () => ({ id: "session" }), skill, prompt: submit, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+  await new OpenCodeAdapter().run({ ...task, mode: "chat" }, ".", "/skill:Research topic", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" }, undefined, [], { kind: "skill", id: "native", name: "Research", arguments: "topic" });
+  expect(order).toEqual(["skill", "prompt"]); expect(skill).toHaveBeenCalledWith({ sessionID: "session", id: "native", resume: false }, expect.anything()); expect(submit).toHaveBeenCalledWith({ sessionID: "session", text: "topic", files: [] }, expect.anything());
+ });
+
 	it("distinguishes rejected native steering from uncertain network delivery", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; let complete!: () => void;
 		const prompt = new Promise<void>(resolve => { prompted = resolve; }); const completed = new Promise<void>(resolve => { complete = resolve; });

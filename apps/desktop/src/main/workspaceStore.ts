@@ -1,3 +1,4 @@
+import { updateNativeActionText } from "../shared/nativeActions";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
@@ -40,7 +41,7 @@ export class WorkspaceStore {
 			let recovered = false;
 			if (task.authTerminalId) {
 				const input = task.messages.find(value => value.id === task.authInputId && value.role === "user");
-				if (input && !task.messages.some(value => value.role === "assistant" && value.id.startsWith(`${input.id}:`))) { if (!task.queue.some(value => value.id === input.id)) task.queue.unshift({ id: input.id, text: input.text, attachments: input.attachments, createdAt: input.createdAt }); task.messages = task.messages.filter(value => value.id !== input.id); }
+				if (input && !task.messages.some(value => value.role === "assistant" && value.id.startsWith(`${input.id}:`))) { if (!task.queue.some(value => value.id === input.id)) task.queue.unshift({ id: input.id, text: input.text, nativeAction: input.nativeAction, attachments: input.attachments, createdAt: input.createdAt }); task.messages = task.messages.filter(value => value.id !== input.id); }
 				task.authTerminalId = undefined; task.authInputId = undefined; recovered = true;
 			}
 			for (const message of task.steering ?? []) if (message.status === "sending") { message.status = "unconfirmed"; message.error = "The application stopped before delivery was confirmed."; recovered = true; }
@@ -230,7 +231,7 @@ export class WorkspaceStore {
 				if (task.archived) throw new Error("Restore this task before sending a message.");
 				{
 					const attachments = command.attachments?.map(id => { const attachment = this.getAttachment(id); if (!attachment || attachment.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return attachment; });
-					task.queue.push({ id: randomUUID(), text: command.text, ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
+					task.queue.push({ id: randomUUID(), text: command.text, ...(command.nativeAction ? { nativeAction: command.nativeAction } : {}), ...(attachments?.length ? { attachments } : {}), createdAt: new Date().toISOString() });
 				}
 				if (task.title === "New task") task.title = command.text.slice(0, 80);
 				break;
@@ -254,7 +255,7 @@ export class WorkspaceStore {
 			case "queue-edit": {
 				const message = task.queue.find(message => message.id === command.messageId);
 				if (!message) throw new Error("This message is no longer queued.");
-				message.text = command.text; break;
+				message.text = command.text; if (message.nativeAction) message.nativeAction = updateNativeActionText(message.nativeAction, command.text); break;
 			}
 			case "queue-move": {
 				const index = task.queue.findIndex(message => message.id === command.messageId);

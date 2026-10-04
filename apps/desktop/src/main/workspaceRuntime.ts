@@ -186,6 +186,7 @@ export class WorkspaceRuntime {
 	async command(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
+		if (command.type === "send" && command.nativeAction && this.store.getTask(command.id).harness !== "opencode") throw new Error("This native action requires OpenCode.");
 		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
 		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
@@ -317,6 +318,7 @@ export class WorkspaceRuntime {
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
+			if (task.queue[0]?.nativeAction && task.harness !== "opencode") throw new Error("This native action requires OpenCode.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections()) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
 		}
@@ -407,7 +409,7 @@ export class WorkspaceRuntime {
 					const current = this.store.getTask(id); current.status = "waiting"; current.questions ??= []; current.questions.push({ id: requestId, questions });
 					this.store.saveTask(current); this.broadcast();
 				}),
-			}, this.store.getAccounts().find(account => account.id === task.accountId), attachments);
+			}, this.store.getAccounts().find(account => account.id === task.accountId), attachments, message.nativeAction ? { ...message.nativeAction, arguments: handoffPrompt(task, message.nativeAction.arguments) } : undefined);
 			flush(); if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";

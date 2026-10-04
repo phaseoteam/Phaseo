@@ -1,3 +1,4 @@
+import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
@@ -19,8 +20,8 @@ export type Account = { id: string; name: string; harness: Harness; kind: "nativ
 export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
 export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
 export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
-export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
-export type QueuedMessage = { id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type Message = { nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
+export type QueuedMessage = { nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number } };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
@@ -71,7 +72,7 @@ export type WorkspaceCommand =
 	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string; nativeMode?: string }
-	| { type: "send"; id: string; text: string; attachments?: string[] }
+	| { type: "send"; id: string; text: string; attachments?: string[]; nativeAction?: NativeAction }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
 	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
 	| { type: "cancel"; id: string }
@@ -84,6 +85,7 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	nativeActions: (taskId: string) => Promise<NativeActionCatalog>;
 	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
 	overview: () => Promise<WorkspaceOverview>;
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
@@ -194,6 +196,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 				break;
 			case "send": case "steer":
 				string("text", true, 100000);
+				if (command.nativeAction !== undefined) { if (command.type !== "send") throw new Error("Native actions cannot steer a turn."); const action = validateNativeAction(command.nativeAction); if (nativeActionText(action) !== command.text) throw new Error("Native action does not match this message."); command.nativeAction = action; }
 				if (command.attachments !== undefined && (!Array.isArray(command.attachments) || command.attachments.length > 10 || command.attachments.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) || new Set(command.attachments).size !== command.attachments.length)) throw new Error("Invalid attachments.");
 				break;
 			case "cancel": case "resume": case "fork": break;

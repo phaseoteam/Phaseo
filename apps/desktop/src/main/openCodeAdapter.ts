@@ -1,4 +1,7 @@
-import { OpenCode, isConflictError, isForbiddenError, isInvalidRequestError, isSessionNotFoundError, isUnauthorizedError, isFormAlreadySettledError, isFormInvalidAnswerError, isFormNotFoundError } from "@opencode/client";
+import { OpenCodeCommandOutput } from "./openCodeCommandOutput";
+import { openCodeNativeActions } from "./openCodeNativeActions";
+import type { NativeAction } from "../shared/nativeActions";
+import { OpenCode, isConflictError, isForbiddenError, isInvalidRequestError, isSessionNotFoundError, isUnauthorizedError, isFormAlreadySettledError, isFormInvalidAnswerError, isFormNotFoundError, isCommandNotFoundError, isSkillNotFoundError } from "@opencode/client";
 import type { OpenCodeClient } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import { pathToFileURL } from "node:url";
@@ -21,7 +24,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 	private inputGeneration = 0;
 	private readonly inputs = new Set<Promise<unknown>>();
 	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp()) {}
-	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
 		const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
 		if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
 		if (this.controller.signal.aborted) throw new Error("Task stopped.");
@@ -32,6 +35,17 @@ export class OpenCodeAdapter implements AgentAdapter {
 			return { providerID: task.model.slice(0, separator), id: task.model.slice(separator + 1) };
 		})();
 		const requestOptions = { signal: this.controller.signal };
+		const confirmAction = async () => {
+			if (!nativeAction) return;
+			try { const catalog = await openCodeNativeActions(client, cwd, AbortSignal.any([this.controller.signal, AbortSignal.timeout(15000)])); if (!catalog.actions.some(action => action.kind === nativeAction.kind && action.id === nativeAction.id && action.name === nativeAction.name)) throw new Error("This native action is no longer available in this project."); }
+			catch (error) { throw new AgentInputRejectedError("Native action was not submitted. " + (error instanceof Error ? error.message : "Check the native catalog."), { cause: error }); }
+		};
+		await confirmAction();
+		if (nativeAction?.kind === "command") {
+			if (await callbacks.onApproval("OpenCode command · " + nativeAction.name, "Run this registered native command? Its template can run shell code or change the native agent/model.\n\n" + nativeAction.arguments) !== "accept") throw new AgentInputRejectedError("Native command declined; your input was not submitted.");
+			if (this.controller.signal.aborted) throw new AgentInputRejectedError("Native command cancelled before submission.");
+			await confirmAction();
+		}
 		if (task.mode !== "chat") { try { await this.mcpManager.synchronize(client, endpoint.url, cwd, task.projectId, this.mcp, this.controller.signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } }
 		const forms = new Map<string, AbortController>(); const seenForms = new Set<string>();
 		const formJobs = new Map<string, Promise<void>>();
@@ -81,13 +95,15 @@ export class OpenCodeAdapter implements AgentAdapter {
 		let compaction: { id: string; title: string } | undefined;
 		const compactionEvents = new Set<string>();
 		let completion: Promise<void> | undefined;
+		const commandOutput = nativeAction?.kind === "command" ? new OpenCodeCommandOutput(client, session.id, this.controller.signal, callbacks.onDelta) : undefined;
+		try { await commandOutput?.start(); } catch (error) { throw new AgentInputRejectedError("Native command was not submitted because its output history could not be checked.", { cause: error }); }
 		const settle = async () => {
 			while (!this.controller.signal.aborted) {
 				const generation = this.inputGeneration;
 				const pendingInputs = this.inputs.size > 0;
 				await client.session.wait({ sessionID: session.id }, requestOptions);
 				await Promise.allSettled([...this.inputs]);
-				if (!pendingInputs && generation === this.inputGeneration && !this.inputs.size) { this.acceptingInput = false; resolveTurn(); return; }
+				if (!pendingInputs && generation === this.inputGeneration && !this.inputs.size) { this.acceptingInput = false; await commandOutput?.finish(); resolveTurn(); return; }
 			}
 		};
 		const timeout = setTimeout(() => { rejectTurn(new Error("OpenCode event stream did not connect.")); this.controller.abort(); }, 30000);
@@ -112,7 +128,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 							compaction = undefined;
 						}
 					}
-					if (event.type === "session.text.delta") callbacks.onDelta(event.data.assistantMessageID, event.data.delta);
+					if (event.type === "session.text.delta") { if (commandOutput) commandOutput.stream(event.data.assistantMessageID, event.data.delta); else callbacks.onDelta(event.data.assistantMessageID, event.data.delta); }
 					if (event.type === "session.reasoning.delta") callbacks.onActivity?.({ id: `${event.data.assistantMessageID}:reasoning:${event.data.ordinal}`, type: "reasoning", title: "Reasoning", text: event.data.delta, append: true });
 					if (event.type === "session.tool.input.started") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: event.data.name, text: "", status: "running" });
 					if (event.type === "session.tool.called") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: "Tool call", text: JSON.stringify(event.data.input, null, 2), status: "running" });
@@ -143,7 +159,18 @@ export class OpenCodeAdapter implements AgentAdapter {
 			}
 			prompted = true;
 			this.acceptingInput = true;
-			if (!attachments.length && text.trim() === "/compact") await client.session.compact({ sessionID: session.id }, requestOptions);
+			if (nativeAction) {
+				try {
+					if (nativeAction.kind === "command") {
+						await client.session.command({ sessionID: session.id, name: nativeAction.id, text: attachmentPrompt(nativeAction.arguments, attachments), files: attachments.filter(file => file.kind === "image").map(file => ({ uri: pathToFileURL(file.filePath).href, name: file.name })), delivery: "queue" }, requestOptions);
+						// Some registered commands only change state and emit no execution event.
+						completion ??= settle().catch(rejectTurn);
+					} else {
+						await client.session.skill({ sessionID: session.id, id: nativeAction.id, resume: false }, requestOptions);
+						await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(nativeAction.arguments || `Use the activated skill ${nativeAction.name} for this task.`, attachments), files: attachments.filter(file => file.kind === "image").map(file => ({ uri: pathToFileURL(file.filePath).href, name: file.name })) }, requestOptions);
+					}
+				} catch (error) { if (isCommandNotFoundError(error) || isSkillNotFoundError(error)) throw new AgentInputRejectedError("Native action was not submitted because it is no longer available.", { cause: error }); throw error; }
+			} else if (!attachments.length && text.trim() === "/compact") await client.session.compact({ sessionID: session.id }, requestOptions);
 			else await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, requestOptions);
 			await turn;
 		} finally {

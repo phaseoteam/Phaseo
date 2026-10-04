@@ -1,3 +1,7 @@
+import { mkdir } from "node:fs/promises";
+import { openCodeNativeActions } from "./openCodeNativeActions";
+import { OpenCode } from "@opencode/client";
+import { Service } from "@opencode/client/service";
 import { PromptCommands } from "./promptCommands";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles } from "./projectPullRequestFiles";
@@ -186,6 +190,16 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	workspaceRuntime.assertProjectAvailable(project.id);
 	return project.directory;
 }
+ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
+	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request.");
+	const task = workspaceRuntime.store.getTask(id); if (task.harness !== "opencode") throw new Error("Native action discovery is unavailable for this harness.");
+	workspaceRuntime.assertHarnessAvailable(task.harness);
+	const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
+	modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
+	try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.timeout(30000); const endpoint = await workspaceRuntime.openCode.connect(signal);
+		return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal);
+	} finally { const remaining = modelChecks.get(task.harness)! - 1; if (remaining) modelChecks.set(task.harness, remaining); else modelChecks.delete(task.harness); }
+});
 ipcMain.handle("workspace:prompt-commands", (event, id: unknown, request: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted command request.");
 	const project = id === undefined ? undefined : projectRoot(event, id);
@@ -323,7 +337,7 @@ ipcMain.handle("workspace:update-harness", async (event, harness: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "pi")) throw new Error("Invalid harness update request.");
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	if (harnessUpdate) throw new Error("A harness update is already in progress.");
-	if (modelChecks.has(harness)) throw new Error("Finish this harness's model check before updating it.");
+	if (modelChecks.has(harness)) throw new Error("Finish this harness's catalog check before updating it.");
 	const accounts = workspaceRuntime.store.getAccounts();
 	if ([...accountChecks.keys()].some(key => key === harness || accounts.some(account => account.id === key && account.harness === harness))) throw new Error("Finish this harness's account check before updating it.");
 	const release = workspaceRuntime.beginHarnessMaintenance(harness), controller = new AbortController();

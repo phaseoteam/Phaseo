@@ -8,6 +8,16 @@ import { WorkspaceStore } from "./workspaceStore";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+ it("retains explicit native actions on preflight rejection and rejects other harnesses before enqueueing", async () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-admission-")); const run = vi.fn<AgentAdapter["run"]>(async () => { throw new AgentInputRejectedError("Catalog unavailable"); }); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+  try { const nativeAction = { kind: "command" as const, id: "review", name: "review", arguments: "target" }; const state = await runtime.command({ type: "create-task", harness: "opencode", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+   await runtime.command({ type: "send", id, text: "/review target", nativeAction }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+   expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "/review target", nativeAction }], messages: [] }); expect(run.mock.calls[0][6]).toEqual(nativeAction);
+   const other = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const otherId = other.tasks.find(task => task.id !== id)!.id;
+   await expect(runtime.command({ type: "send", id: otherId, text: "/review target", nativeAction })).rejects.toThrow("requires OpenCode"); expect(runtime.store.getTask(otherId).queue).toEqual([]);
+  } finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+ });
+
 	it("sets up execution and publishes streaming changes without reading unrelated conversation bodies", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-metadata-stream-"));
 		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
