@@ -55,7 +55,7 @@ try {
         const expected = { Tasks: "What would you like to do?", Home: "Your AI workspace", MCP: "MCP connections" }[page] ?? page;
         for (let attempt = 0; ; attempt++) {
           const ready = await window.webContents.executeJavaScript(`(()=>{const active=document.querySelector('.sidebar-item.active');return active?.textContent.trim()===${JSON.stringify(page)} && Array.from(document.querySelectorAll('h1')).some(e=>e.textContent===${JSON.stringify(expected)})})()`);
-          if (ready) break;
+          if (ready && (page !== "Tasks" || await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-row'))`))) break;
           if (attempt > 50) throw new Error(`Page did not render: ${page}`);
           await new Promise(resolve => setTimeout(resolve, 100));
         }

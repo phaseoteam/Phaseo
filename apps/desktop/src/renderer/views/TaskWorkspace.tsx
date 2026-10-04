@@ -3,6 +3,7 @@ import { Archive, ArrowDown, ArrowRightLeft, ArrowUp, FolderOpen, GitFork, Paper
 import type { Attachment, Harness, ModelOption, Task, Workspace, WorkspaceCommand } from "../../shared/workspace";
 import { emptyWorkspace } from "../../shared/workspace";
 import { usePersistedState } from "../lib/persistedState";
+import { useTaskHistory } from "../lib/useTaskHistory";
 import { MessageContent } from "../components/MessageContent";
 import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
@@ -53,7 +54,9 @@ export function TaskWorkspace() {
 		return () => { active = false; };
 	}, [api, harness, accountId, projectId]);
 	const selected = workspace.tasks.find(task => task.id === selectedId);
-	const tasks = workspace.tasks.filter(task => task.archived === showArchived && `${task.title} ${task.messages.map(message => message.text).join(" ")}`.toLowerCase().includes(query.toLowerCase())).sort((a, b) => Number(b.pinned) - Number(a.pinned));
+	const historyRevision = JSON.stringify(workspace.tasks.map(task => [task.id, task.title, task.pinned, task.archived, task.status, task.status === "running" || task.status === "waiting" ? undefined : task.updatedAt]));
+	const history = useTaskHistory(api?.taskHistory, query, showArchived, historyRevision);
+	const tasks = history.tasks;
 	async function command(value: WorkspaceCommand) {
 		if (!api) { setError("Open the desktop application to use your local workspace."); return; }
 		setError("");
@@ -87,12 +90,15 @@ export function TaskWorkspace() {
 		} catch (reason) { setError(String(reason)); } finally { setUploading(false); }
 	}
 	return <div className="task-workspace">
-		<aside className="task-list" aria-label="Tasks">
+		<aside className="task-list" aria-label="Tasks" aria-busy={history.loading}>
 			<div className="task-list-heading"><strong>Tasks</strong><button type="button" aria-label="New task" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}><Plus size={16} /></button></div>
-			<label className="task-search"><Search size={14} /><input aria-label="Search tasks" placeholder="Search tasks" value={query} onChange={event => setQuery(event.target.value)} /></label>
+			<label className="task-search"><Search size={14} /><input aria-label="Search tasks" placeholder="Search tasks" maxLength={512} value={query} onChange={event => setQuery(event.target.value)} /></label>
 			<button type="button" className="task-archive-filter" onClick={() => { setShowArchived(value => !value); setSelectedId(undefined); }}>{showArchived ? "Active tasks" : "Archived tasks"}</button>
 			{tasks.map(task => <button type="button" className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}
-			{!tasks.length && <p className="task-muted">Your tasks will appear here.</p>}
+			{history.loading && <p className="task-muted" role="status">Loading tasks…</p>}
+			{history.error && <div className="task-muted" role="alert"><p>{history.error}</p><button type="button" onClick={history.retry}>Retry</button></div>}
+			{!history.loading && !history.error && !tasks.length && <p className="task-muted">{query ? "No matching tasks." : showArchived ? "No archived tasks." : "Your tasks will appear here."}</p>}
+			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more tasks</button>}
 		</aside>
 		<section className="task-detail" aria-label="Task workspace">
 			{error && <div className="task-error" role="alert">{error}</div>}

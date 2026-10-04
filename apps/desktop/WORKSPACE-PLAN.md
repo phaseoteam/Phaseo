@@ -38,7 +38,9 @@ does not establish completion. Tests must cover runtime behavior and UI states.
 
 ## Implementation and evidence
 
-Task-history pagination has a bounded SQLite query and trusted IPC/preload API. Pages return only task summaries, ordered by pins, updated time and a deterministic ID tie-breaker. Search checks titles and message text with Unicode case folding and literal punctuation. Tests cover 155 tasks, archive separation, payload privacy and invalid bounds; the source Electron smoke checks the bridge. Renderer paging and removal of full-history workspace broadcasts remain unfinished, so the history ledger item remains unchecked.
+Task-history pagination has a bounded SQLite query and trusted IPC/preload API. Pages return only task summaries, ordered by pins, updated time and a deterministic ID tie-breaker. Search checks titles and message text with Unicode case folding and literal punctuation. The renderer loads 50-row pages with loading, retry, empty and Load more states; changing search/archive resets paging and ignores obsolete requests. The isolated 155-task Electron workflow verifies later-page selection, Unicode message search, rapid searches, page reset, archive switching and exhausted/empty results. Full-history workspace snapshots still carry conversation bodies and remain a scalability gap, so the history ledger item stays unchecked.
+
+The history workflow passes against the Windows archive, including an owned failed-read fixture that preserves visible rows and succeeds after Retry. CI now runs source and packaged history checks. Active streaming timestamps do not continuously restart history loading; status transitions still refresh the list. Broader Electron fixtures wait for paged rows before opening native model/authentication tasks. Markdown component renderers retain stable identities so history refreshes do not remount code blocks.
 
 Changes are confined to the desktop app and necessary integration packages.
 Keep credentials and filesystem/process execution in the trusted runtime.

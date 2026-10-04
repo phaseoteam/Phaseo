@@ -1,4 +1,4 @@
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Children, isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
@@ -34,13 +34,15 @@ function CodeBlock({ children }: { children?: ReactNode }) {
 	return <div className="message-code-block"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : language || "Code"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div><pre ref={code}>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children}</pre></div>;
 }
 
-export function MessageContent({ text }: { text: string }) {
-	return <div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+const markdownComponents: Components = {
 		a: ({ href, children }) => {
 			const safe = typeof href === "string" && /^https?:\/\//i.test(href);
 			return safe ? <a href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); void window.phaseoDesktop.workspace.openLink(href).catch(() => {}); } }}>{children}</a> : <span>{children}</span>;
 		},
 		img: ({ alt }) => <span>{alt || "Image"}</span>,
 		pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
-	}}>{text}</ReactMarkdown></div>;
+};
+
+export function MessageContent({ text }: { text: string }) {
+	return <div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{text}</ReactMarkdown></div>;
 }
