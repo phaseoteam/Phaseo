@@ -6,6 +6,18 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+	it("persists only advertised Grok reasoning choices and clears them when the model changes", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			const task = store.apply({ type: "create-task", harness: "grok", model: "default", mode: "plan" });
+			task.nativeModels = [{ id: "native-a", name: "A", default: true, reasoningEfforts: [{ id: "low", description: "Low" }] }, { id: "native-b", name: "B" }]; store.saveTask(task);
+			store.apply({ type: "update-task", id: task.id, reasoningEffort: "low" }); expect(store.getTask(task.id).reasoningEffort).toBe("low");
+			expect(() => store.apply({ type: "update-task", id: task.id, reasoningEffort: "unavailable" })).toThrow("does not offer");
+			expect(store.getTask(task.id).reasoningEffort).toBe("low");
+			store.apply({ type: "update-task", id: task.id, model: "native-b" }); expect(store.getTask(task.id).reasoningEffort).toBeUndefined();
+			expect(() => store.apply({ type: "update-task", id: task.id, reasoningEffort: "low" })).toThrow("does not offer");
+		} finally { store.close(); }
+	});
 	it("creates Grok Code/Plan tasks while rejecting unsupported Chat creation and updates", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

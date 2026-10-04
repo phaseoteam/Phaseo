@@ -203,7 +203,9 @@ Grok native profiles can now be created through Accounts, using the shared form 
 
 The task and handoff harness selector now offers Grok Code/Plan with existing local login or a configured managed profile. Selecting Grok from Chat switches to Plan, and task settings omit Chat. Store validation rejects unsupported Chat creation/updates. Unit tests verify supported task creation and rejected updates; Electron verifies selector/mode behavior without inference. Grok model discovery before task creation, reasoning controls, Chat isolation and actual signed-in execution still need completion.
 
-Evidence: desktop lint/typecheck/build pass; 293 deterministic tests cover protocol,
+Grok task settings now display advertised reasoning choices and save them through validated task updates. Unavailable efforts are rejected without overwriting the saved choice; changing model clears the old effort. The isolated visual audit includes Grok settings in both themes/window sizes and verifies the offered reasoning choices and absence of Chat. Signed-in native execution remains unverified.
+
+Evidence: desktop lint/typecheck/build pass; 294 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

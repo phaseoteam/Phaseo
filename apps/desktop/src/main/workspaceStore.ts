@@ -120,7 +120,7 @@ export class WorkspaceStore {
 					if (command.reasoningEffort && task.harness !== "codex") {
 						const modelId = command.model ?? task.model;
 						const model = task.nativeModels?.find(value => modelId === "default" ? value.default : value.id === modelId);
-						if (task.harness !== "acp" || !model?.reasoningEfforts?.some(value => value.id === command.reasoningEffort)) throw new Error("This harness does not offer the selected reasoning effort.");
+						if (!["acp", "grok"].includes(task.harness) || !model?.reasoningEfforts?.some(value => value.id === command.reasoningEffort)) throw new Error("This harness does not offer the selected reasoning effort.");
 					}
 					if (command.nativeMode !== undefined && task.harness !== "acp") throw new Error("Native mode selection requires an ACP agent.");
 					if (command.model !== undefined && command.model !== task.model) task.reasoningEffort = task.harness === "codex" ? "" : undefined;
