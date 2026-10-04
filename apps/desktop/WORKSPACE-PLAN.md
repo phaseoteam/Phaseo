@@ -9,9 +9,9 @@ Preserve existing platform navigation and desktop security boundaries.
 
 Reference baseline (2026-10-04): OpenCode v2.0.22
 (`527f0b931d1f9b3ebd34e106c51b31ce5db5b075`) and T3 Code
-v0.0.46-nightly.20261004.2644 (`737993303d36e10674c54b95e5bd3826682c99c7`).
+v0.0.46-nightly.20261004.2648 (`5a96895a85b43c838da6c89cf21068b99c003d5a`).
 Sources: https://opencode.ai/v2/docs and
-https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261004.2644.
+https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261004.2648.
 Use the Phaseo website's fonts, assets, components and spacing conventions as the visual source of truth, adapted to the existing native desktop frame.
 
 Dropdown triggers now match the web select treatment with consistent chevrons, reserved text spacing and theme-aware native menus. The single-workspace identity no longer exposes an inactive switching button. Source and packaged visual checks cover the trigger styles; native menus and forced-colour rendering remain platform verification work.
@@ -414,3 +414,7 @@ Tool calls now use a monotonic 60-second active execution budget that pauses onl
 ### HTTP MCP session termination
 
 Phaseo managed HTTP clients now request SDK session termination before closing their transports, including partial setup and cancellation cleanup. Termination is bounded to two seconds; rejection or timeout still closes the client and records an unconfirmed-cleanup activity without remote error details. Four cases cover order, failure, timeout/timer cleanup and direct stdio close. Current suite: 625 tests / 84 files. Source and completed Windows archive audits assign a real session ID, validate its termination DELETE and verify the owned server has zero sessions afterward, while preserving stdio/HTTP calls, forms, scope, approval/denial and queued-input retention. No provider inference is used. Servers may decline explicit termination according to their protocol support; OAuth, richer MCP interactions and full parity remain open.
+
+### Reference refresh: T3 nightly 2648
+
+Verified the published tag and compared its source with nightly 2644. The chat/project/sidebar model remains consistent with the implemented shell. New desktop-relevant changes include stable Working-section ordering by last send, provider account names on subagent cards, provider updates across installation methods, paginated PR review replies, Shift-held PR actions, and fetching tool output when an activity expands. Cross-machine draft selection, remote relay behavior and mobile dictation/simulator controls also changed. These are comparison requirements, not implemented-parity claims; remote access, provider maintenance, delegation and complete PR review remain unchecked. OpenCode tag enumeration still identifies v2.0.22 as the latest numbered V2 tag.
