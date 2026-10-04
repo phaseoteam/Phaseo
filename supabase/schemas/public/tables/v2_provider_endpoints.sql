@@ -24,7 +24,9 @@ CREATE TABLE "public"."v2_provider_endpoints" (
   CONSTRAINT "v2_provider_endpoints_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'degraded'::text, 'deprecated'::text, 'disabled'::text]))),
   CONSTRAINT "v2_provider_endpoints_timeout_check" CHECK (((timeout_ms > 0) AND (timeout_ms <= 900000))),
   CONSTRAINT "v2_provider_endpoints_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE,
-  CONSTRAINT "v2_provider_endpoints_service_tier_slug_fkey" FOREIGN KEY (service_tier_slug) REFERENCES public.v2_service_tiers(service_tier_slug) ON DELETE RESTRICT
+  CONSTRAINT "v2_provider_endpoints_service_tier_slug_fkey" FOREIGN KEY (service_tier_slug) REFERENCES public.v2_service_tiers(service_tier_slug) ON DELETE RESTRICT,
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_provider_endpoints"
@@ -35,6 +37,11 @@ CREATE INDEX v2_provider_endpoints_lookup_idx ON public.v2_provider_endpoints US
 CREATE INDEX v2_provider_endpoints_provider_slug_auth_profile_id_idx ON public.v2_provider_endpoints USING btree (provider_slug, auth_profile_id);
 
 CREATE INDEX v2_provider_endpoints_service_tier_slug_idx ON public.v2_provider_endpoints USING btree (service_tier_slug);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_provider_endpoints
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE POLICY "service_role_full_access" ON "public"."v2_provider_endpoints"
   FOR ALL

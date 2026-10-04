@@ -17,7 +17,9 @@ CREATE TABLE "public"."v2_execution_plans" (
   CONSTRAINT "v2_execution_plans_provider_model_id_capability_id_fkey" FOREIGN KEY (provider_model_id, capability_id)
     REFERENCES public.v2_route_capabilities(provider_model_id, capability_id) ON DELETE CASCADE,
   CONSTRAINT "v2_execution_plans_provider_model_id_route_variant_id_fkey" FOREIGN KEY (provider_model_id, route_variant_id)
-    REFERENCES public.v2_route_variants(provider_model_id, variant_id) ON DELETE CASCADE
+    REFERENCES public.v2_route_variants(provider_model_id, variant_id) ON DELETE CASCADE,
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_execution_plans"
@@ -26,6 +28,11 @@ ALTER TABLE "public"."v2_execution_plans"
 CREATE INDEX v2_execution_plans_provider_model_id_capability_id_idx ON public.v2_execution_plans USING btree (provider_model_id, capability_id);
 
 CREATE INDEX v2_execution_plans_provider_model_id_route_variant_id_idx ON public.v2_execution_plans USING btree (provider_model_id, route_variant_id);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_execution_plans
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE TRIGGER prevent_published_execution_plan_mutation
   BEFORE INSERT OR DELETE OR UPDATE ON public.v2_execution_plans

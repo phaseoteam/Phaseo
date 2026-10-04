@@ -20,7 +20,9 @@ CREATE TABLE "public"."v2_capability_constraints" (
   CONSTRAINT "v2_capability_constraints_provider_model_id_fkey" FOREIGN KEY (provider_model_id) REFERENCES public.v2_model_provider_routes(provider_model_id) ON DELETE CASCADE,
   CONSTRAINT "v2_capability_constraints_provider_slug_provider_model_id_fkey" FOREIGN KEY (provider_slug, provider_model_id)
     REFERENCES public.v2_model_provider_routes(provider_slug, provider_model_id) ON DELETE CASCADE,
-  CONSTRAINT "v2_capability_constraints_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE
+  CONSTRAINT "v2_capability_constraints_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE,
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_capability_constraints"
@@ -29,6 +31,11 @@ ALTER TABLE "public"."v2_capability_constraints"
 CREATE INDEX v2_capability_constraints_lookup_idx ON public.v2_capability_constraints USING btree (provider_slug, provider_model_id, capability_id, status, priority);
 
 CREATE INDEX v2_capability_constraints_provider_model_id_idx ON public.v2_capability_constraints USING btree (provider_model_id);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_capability_constraints
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE POLICY "service_role_full_access" ON "public"."v2_capability_constraints"
   FOR ALL

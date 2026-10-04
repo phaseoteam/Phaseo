@@ -19,7 +19,9 @@ CREATE TABLE "public"."v2_provider_capability_adapters" (
   CONSTRAINT "v2_provider_capability_adapters_window_check" CHECK (((effective_to IS NULL) OR (effective_from IS NULL) OR (effective_to > effective_from))),
   CONSTRAINT "v2_provider_capability_adapte_provider_slug_capability_id__fkey" FOREIGN KEY (provider_slug, capability_id, provider_endpoint_id)
     REFERENCES public.v2_provider_endpoints(provider_slug, capability_id, provider_endpoint_id) ON DELETE RESTRICT,
-  CONSTRAINT "v2_provider_capability_adapters_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE
+  CONSTRAINT "v2_provider_capability_adapters_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE,
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_provider_capability_adapters"
@@ -31,6 +33,11 @@ CREATE INDEX v2_provider_capability_adapte_provider_slug_capability_id__idx ON p
   USING btree (provider_slug, capability_id, provider_endpoint_id);
 
 CREATE INDEX v2_provider_capability_adapters_lookup_idx ON public.v2_provider_capability_adapters USING btree (provider_slug, capability_id, status);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_provider_capability_adapters
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE POLICY "service_role_full_access" ON "public"."v2_provider_capability_adapters"
   FOR ALL

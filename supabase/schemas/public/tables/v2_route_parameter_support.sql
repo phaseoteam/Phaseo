@@ -14,13 +14,20 @@ CREATE TABLE "public"."v2_route_parameter_support" (
     CHECK ((support_level = ANY (ARRAY['native'::text, 'emulated'::text, 'ignored'::text, 'unsupported'::text, 'unknown'::text]))),
   CONSTRAINT "v2_route_parameter_support_pkey" PRIMARY KEY (provider_model_id, capability_id, parameter_key),
   CONSTRAINT "v2_route_parameter_support_provider_model_id_capability_id_fkey" FOREIGN KEY (provider_model_id, capability_id)
-    REFERENCES public.v2_route_capabilities(provider_model_id, capability_id) ON DELETE CASCADE
+    REFERENCES public.v2_route_capabilities(provider_model_id, capability_id) ON DELETE CASCADE,
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_route_parameter_support"
   ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX v2_route_parameter_support_lookup_idx ON public.v2_route_parameter_support USING btree (capability_id, parameter_key, support_level, provider_model_id);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_route_parameter_support
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE POLICY "service_role_full_access" ON "public"."v2_route_parameter_support"
   FOR ALL

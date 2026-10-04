@@ -15,13 +15,20 @@ CREATE TABLE "public"."v2_capability_adapters" (
   CONSTRAINT "v2_capability_adapters_key" UNIQUE (adapter_key, adapter_version),
   CONSTRAINT "v2_capability_adapters_pkey" PRIMARY KEY (capability_adapter_id),
   CONSTRAINT "v2_capability_adapters_status_check" CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'deprecated'::text, 'disabled'::text]))),
-  CONSTRAINT "v2_capability_adapters_version_check" CHECK ((adapter_version > 0))
+  CONSTRAINT "v2_capability_adapters_version_check" CHECK ((adapter_version > 0)),
+  CONSTRAINT "canonical_capability_id" CHECK (((public.canonical_routing_capability_id(capability_id) IS
+    NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))))
 );
 
 ALTER TABLE "public"."v2_capability_adapters"
   ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX v2_capability_adapters_lookup_idx ON public.v2_capability_adapters USING btree (capability_id, status, adapter_key, adapter_version DESC);
+
+CREATE TRIGGER canonical_routing_capability
+  BEFORE INSERT OR UPDATE ON public.v2_capability_adapters
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_canonical_routing_capability();
 
 CREATE POLICY "service_role_full_access" ON "public"."v2_capability_adapters"
   FOR ALL

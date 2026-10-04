@@ -55,6 +55,12 @@ CLI-generated load-order manifest, alongside the SQL files.
 
 ## Chat URL drift
 
+The later production migration `20261004221046_canonical_routing_capabilities`
+was restored from production's recorded SQL with its existing version.
+Its two functions and nine tables' constraints/triggers are represented in
+the desired definitions and tested during replay. Production already records
+this version, so it must not be replayed or assigned a new deployment version.
+
 Production's chat attribution function retained a legacy URL despite historical
 repository definitions using `phaseo.app`. The forward migration
 `20261004215447_canonical_chat_app_identity.sql` changes future attribution to
