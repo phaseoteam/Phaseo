@@ -157,7 +157,7 @@ app.whenReady().then(async () => {
 			if (!committed) throw new Error('Git commit did not finish');
 			window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,bubbles:true}));
 			await new Promise(resolve => setTimeout(resolve,100));
-			const search = document.querySelector('[aria-label="Search commands and tasks"]');
+			const search = document.querySelector('[aria-label="Search commands and chats"]');
 			if (!search || document.activeElement !== search) throw new Error('Command search did not receive focus');
 			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(search,'Electron bridge check'); search.dispatchEvent(new Event('input',{bubbles:true}));
 			await new Promise(resolve => setTimeout(resolve,100));

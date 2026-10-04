@@ -883,7 +883,7 @@ try {
   const beforeCreation = await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.map(task=>task.id))`);
   const creationFields = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-create-fields input,.task-create-fields select')).map(control=>control.value).join('\\0')`);
   holdCreation=true;
-  const clickCreate=()=>window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create task'));button.scrollIntoView({block:'nearest'});button.click();button.click()})()`);
+  const clickCreate=()=>window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create chat'));button.scrollIntoView({block:'nearest'});button.click();button.click()})()`);
   await clickCreate();
   for(let attempt=0;!pendingCreation;attempt++){if(attempt>50)throw Error('Creation fixture did not receive command');await new Promise(resolve=>setTimeout(resolve,20));}
   if(creationCalls!==1||!await window.webContents.executeJavaScript(`document.querySelector('.task-create-fields').disabled && Array.from(document.querySelectorAll('.task-controls button')).every(button=>button.disabled)`))throw Error('Task setup duplicated creation or allowed pending edits');
