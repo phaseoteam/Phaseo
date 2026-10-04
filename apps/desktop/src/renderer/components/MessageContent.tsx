@@ -5,11 +5,11 @@ import type { CodeToken } from "./codeHighlight";
 import { Check, Copy } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
 
-function CodeBlock({ children }: { children?: ReactNode }) {
+export function CodeBlock({ children, text: source, language: sourceLanguage }: { children?: ReactNode; text?: string; language?: string }) {
 	const child = Children.toArray(children)[0];
 	const element = isValidElement<{ className?: string; children?: ReactNode }>(child) ? child : undefined;
-	const language = /^language-([\w+#-]+)$/.exec(element?.props.className ?? "")?.[1]?.toLowerCase() ?? "";
-	const text = typeof element?.props.children === "string" ? element.props.children : "";
+	const language = sourceLanguage ?? /^language-([\w+#-]+)$/.exec(element?.props.className ?? "")?.[1]?.toLowerCase() ?? "";
+	const text = source ?? (typeof element?.props.children === "string" ? element.props.children : "");
 	const { status, copying, copy } = useTextCopy(text);
 	const [highlight, setHighlight] = useState<{ text: string; language: string; tokens: CodeToken[][] }>();
 	useEffect(() => {
@@ -21,7 +21,7 @@ function CodeBlock({ children }: { children?: ReactNode }) {
 		return () => { active = false; clearTimeout(timer); };
 	}, [text, language]);
 	const tokens = highlight?.text === text && highlight.language === language ? highlight.tokens : undefined;
-	return <div className="message-code-block"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : language || "Code"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div><pre>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children}</pre></div>;
+	return <div className="message-code-block"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : language || "Code"}</span><button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy code"}</button></div><pre>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children ?? <code>{text}</code>}</pre></div>;
 }
 
 const markdownComponents: Components = {

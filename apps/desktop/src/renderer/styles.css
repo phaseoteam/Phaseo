@@ -218,7 +218,12 @@ form.project-toolbar { align-items: end; }
 .project-browser { display: flex; border: 1px solid var(--border); border-radius: 8px; min-height: 400px; }
 .project-browser > aside { flex: 0 0 230px; border-right: 1px solid var(--border); padding: 10px; }
 .project-browser > aside button { width: 100%; justify-content: flex-start; margin-bottom: 4px; overflow-wrap: anywhere; text-align: left; }
-.project-browser > section { flex: 1; min-width: 0; padding: 18px; }
+.project-browser > section { flex: 1; min-width: 0; padding: 24px; }
+.project-review h2 { margin: 24px 0 16px; font-size: 16px; font-weight: 600; }
+.git-file-list { overflow: hidden; margin-bottom: 24px; border: 1px solid var(--border); border-radius: 8px; }
+.git-file-list .project-toolbar { margin: 0; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+.git-file-list .project-toolbar:last-child { border-bottom: 0; }
+.git-file-list .project-toolbar > span { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
 .project-editor { width: 100%; min-height: 55vh; resize: vertical; border: 1px solid var(--border); border-radius: 6px; padding: 12px; background: var(--surface-muted); color: var(--text); font: 12px/1.6 ui-monospace, monospace; tab-size: 4; }
 .command-palette { width: min(620px, calc(100vw - 40px)); padding: 0; margin-top: 15vh; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
 .command-palette::backdrop { background: rgb(0 0 0 / .5); }

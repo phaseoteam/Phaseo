@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { execFileSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
@@ -28,6 +29,17 @@ seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-queue", JSON.stringi
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-requests", JSON.stringify({ ...codeExample, id: "design-requests", title: "Review agent requests", pinned: false, approvals: [{ id: "design-approval", method: "tool", description: "Inspect the requested files\n"+"Requested file detail\n".repeat(20) }], questions: [{id:"design-question",questions:[{id:"direction",header:"Direction",question:"Which approach should the agent take?",options:[{label:"Focused",description:"Apply the requested change."},{label:"Explore",description:"Compare approaches before implementing."}]}]}] }));
 seed.exec("CREATE TABLE accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO accounts VALUES (?, ?)").run("design-account", JSON.stringify({ id: "design-account", name: "Design account", harness: "phaseo", kind: "api", configured: false, endpoint: "https://example.invalid/v1" }));
+const projectDirectory=path.join(data,"project");mkdirSync(projectDirectory);
+const projectText='const greeting = "Hello, 世界";\nconsole.log(greeting);\n';
+writeFileSync(path.join(projectDirectory,"example.ts"),'const greeting = "Hello";\n');
+execFileSync("git",["init","-b","main"],{cwd:projectDirectory,stdio:"ignore"});
+execFileSync("git",["config","core.autocrlf","false"],{cwd:projectDirectory});
+execFileSync("git",["config","commit.gpgsign","false"],{cwd:projectDirectory});
+execFileSync("git",["add","example.ts"],{cwd:projectDirectory});
+execFileSync("git",["-c","user.name=Design Fixture","-c","user.email=fixture@example.invalid","commit","-m","Initial fixture"],{cwd:projectDirectory,stdio:"ignore"});
+writeFileSync(path.join(projectDirectory,"example.ts"),projectText);
+seed.exec("CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+seed.prepare("INSERT INTO projects VALUES (?, ?)").run("design-project",JSON.stringify({id:"design-project",name:"Design project",directory:projectDirectory,createdAt:now}));
 seed.close();
 const packagedEntry = process.argv.find(argument => argument.startsWith("--app-entry="))?.slice("--app-entry=".length);
 await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "../dist/main/index.mjs");
@@ -75,6 +87,36 @@ try {
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
+        if(page==="Projects"){
+          await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Project"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'design-project');select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-browser aside button')).some(button=>button.textContent.includes('example.ts'))`))break;
+            if(attempt>50)throw new Error("Project file list did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-browser aside button')).find(button=>button.textContent.includes('example.ts')).click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`new Set(Array.from(document.querySelectorAll('.project-browser .code-token')).map(token=>getComputedStyle(token).color)).size>1`))break;
+            if(attempt>50)throw new Error("Project syntax highlighting did not load offline.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedProject=text;}}});document.querySelector('.project-browser button[aria-label="Copy code"]').click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`window.auditCopiedProject===${JSON.stringify(projectText)}`))throw new Error("File preview copying changed source formatting.");
+          writeFileSync(path.join(output,`${width}-${theme}-project-preview.png`),(await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`new Set(Array.from(document.querySelectorAll('.project-review .code-token')).map(token=>getComputedStyle(token).color)).size>1`))break;
+            if(attempt>50)throw new Error("Git diff highlighting did not load offline.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`document.querySelector('.project-review button[aria-label="Copy code"]').click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const reviewLayout=await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('.git-file-list .project-toolbar');return {padding:getComputedStyle(row).padding,copy:window.auditCopiedProject===document.querySelector('.project-review .message-code-block pre').textContent,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
+          if(reviewLayout.padding!=="16px 24px"||!reviewLayout.copy||!reviewLayout.stage)throw new Error("Git review row spacing or copying is inconsistent.");
+          await window.webContents.executeJavaScript(`document.querySelector('.project-review .message-code-block').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output,`${width}-${theme}-git-review.png`),(await window.webContents.capturePage()).toPNG());
+        }
         if (page === "Agents") {
           const command = await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.agent-command');const text=details?.querySelector('code')?.textContent;details?.querySelector('summary')?.click();return {text,open:details?.open}})()`);
           if (!command.open || !command.text.includes("grok-interaction.cjs")) throw new Error("The full agent command must remain available.");
