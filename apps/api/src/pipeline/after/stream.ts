@@ -671,13 +671,13 @@ export async function handleStreamResponse(
                     result.bill.finish_reason = normalizedFinishReason;
                 }
 
+				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
                     throwOnFailure: true,
                 });
-				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
                 await handleSuccessAudit(
                     ctx,
@@ -731,13 +731,13 @@ export async function handleStreamResponse(
 					}),
 				};
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
+				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: pricedWithByok.totalNanos,
                     endpoint: ctx.endpoint,
                     throwOnFailure: true,
                 });
-				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
                 await handleSuccessAudit(
                     ctx,
                     result,
@@ -808,13 +808,13 @@ export async function handleStreamResponse(
             result.bill.finish_reason = cachedFinishReason ?? result.bill.finish_reason;
             await maybeWriteStickyForUsage(result.bill.usage);
 
+			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
             await recordUsageAndChargeOnce({
                 ctx,
                 costNanos: pricedWithByok.totalNanos,
                 endpoint: ctx.endpoint,
                 throwOnFailure: true,
             });
-			await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: result.bill.usage, reservation: result.providerRateLimitReservation });
 
             await handleSuccessAudit(
                 ctx,

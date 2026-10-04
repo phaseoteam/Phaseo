@@ -189,6 +189,7 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
     });
 
 	it.each(["pricing_rule_missing:cached_read_text_tokens", "usage_charge_persistence_failed"])("persists usage and pending accounting after %s on a delivered response", async (failure) => {
+		recordManagedProviderTokensOnceMock.mockClear();
 		auditSuccessMock.mockReset().mockResolvedValue(undefined);
 		auditFailureMock.mockReset().mockResolvedValue(undefined);
 		recordUsageAndChargeOnceMock.mockReset().mockResolvedValue(undefined);
@@ -216,6 +217,7 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 				expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
 			} else {
 				expect(recordUsageAndChargeOnceMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 54321, throwOnFailure: true }));
+				expect(recordManagedProviderTokensOnceMock.mock.invocationCallOrder.at(-1)).toBeLessThan(recordUsageAndChargeOnceMock.mock.invocationCallOrder[0]);
 			}
 			expect(auditSuccessMock).not.toHaveBeenCalled();
 			expect(auditFailureMock).toHaveBeenCalledTimes(1);
