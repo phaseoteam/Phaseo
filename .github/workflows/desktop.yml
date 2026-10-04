@@ -48,6 +48,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop test
             - name: Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
+            - name: Chat shell and native browser
+              run: pnpm --filter @phaseo/desktop audit:design
             - name: Paged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs
             - name: Verify project editor bridge
@@ -58,6 +60,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron-forge package
             - name: Packaged Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged chat shell and native browser
+              run: pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Verify packaged project editor bridge
@@ -69,5 +73,7 @@ jobs:
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: desktop-workspace-evidence
-                  path: output/playwright/electron-workspace.png
+                  path: |
+                      output/playwright/electron-workspace.png
+                      output/playwright/chat-shell/
                   if-no-files-found: ignore

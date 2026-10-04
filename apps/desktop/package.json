@@ -23,7 +23,7 @@
 		"test": "vitest run",
 		"test:desktop": "pnpm run build && electron scripts/smoke.mjs",
 		"test:history": "pnpm run build && electron scripts/history-smoke.mjs",
-		"audit:design": "pnpm run build && electron scripts/design-audit.mjs",
+		"audit:design": "pnpm run build && electron scripts/chat-shell-smoke.mjs",
 		"clean": "rimraf dist release"
 	},
 	"devDependencies": {

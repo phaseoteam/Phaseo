@@ -125,7 +125,7 @@ export class WorkspaceStore {
 	taskHistory(value: unknown): TaskHistoryPage {
 		const { query, archived, offset, limit } = validateTaskHistoryQuery(value);
 		const rows = this.db.prepare(`SELECT json_object(
-			'id', id, 'title', json_extract(data, '$.title'),
+			'id', id, 'title', json_extract(data, '$.title'), 'projectId', json_extract(data, '$.projectId'),
 			'harness', json_extract(data, '$.harness'), 'status', json_extract(data, '$.status'),
 			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'updatedAt', json_extract(data, '$.updatedAt')
 		) AS summary FROM tasks
@@ -136,7 +136,7 @@ export class WorkspaceStore {
 		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
 			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
 		`).all(Number(archived), query, query, query, limit + 1, offset);
-		return { tasks: rows.slice(0, limit).map(row => { const summary = JSON.parse(row.summary as string); return { ...summary, pinned: Boolean(summary.pinned) }; }), hasMore: rows.length > limit };
+		return { tasks: rows.slice(0, limit).map(row => { const summary = JSON.parse(row.summary as string); return { ...summary, projectId: summary.projectId ?? undefined, pinned: Boolean(summary.pinned) }; }), hasMore: rows.length > limit };
 	}
 	loadAgentRun(id: string): AgentRunResult | null {
 		const row = this.db.prepare("SELECT data FROM agent_runs WHERE id = ?").get(id);

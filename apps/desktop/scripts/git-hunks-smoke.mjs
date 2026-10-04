@@ -1,3 +1,4 @@
+import { installChatNavigation } from "./chat-navigation.mjs";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -25,7 +26,9 @@ ipcMain.handle = originalHandle;
 app.whenReady().then(async () => {
 	try {
 		const window = BrowserWindow.getAllWindows()[0];
+		window.webContents.setBackgroundThrottling(false);
 		if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
+		await installChatNavigation(window);
 		const run = expression => window.webContents.executeJavaScript(expression);
 		async function wait(expression) { for (let attempt = 0; attempt < 100; attempt++) { if (await run(expression)) return; await new Promise(resolve => setTimeout(resolve, 50)); } throw new Error("Hunk UI did not settle: " + expression); }
 		const captures = path.resolve('output/playwright/git-hunks', entry ? 'packaged' : 'source'); mkdirSync(captures, { recursive: true });
@@ -33,7 +36,7 @@ app.whenReady().then(async () => {
 		if (Object.values(result).some(value => !value) || readFileSync(target, "utf8") !== edited) throw new Error("Hunk workflow failed: " + JSON.stringify(result));
 		const full = await run(`(async()=>{const api=window.phaseoDesktop.workspace,review=await api.gitReview('fixture');return api.gitDiffContents('fixture',{filename:${JSON.stringify(filename)},staged:false,hash:review.diffHash})})()`);
 		if (full.oldFile.contents !== original || full.newFile.contents !== edited) throw Error('Bridge returned incorrect full file versions');
-		await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Projects').click()`);
+		await run(`window.__auditNavigate('Projects')`);
 		await wait(`Boolean(document.querySelector('select[aria-label="Project"] option[value="fixture"]'))`);
 		await run(`(()=>{const select=document.querySelector('select[aria-label="Project"]');select.value='fixture';select.dispatchEvent(new Event('change',{bubbles:true}));Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()})()`);
 		await wait(`Boolean(document.querySelector('.git-file-list button[aria-pressed]'))`);
@@ -98,9 +101,9 @@ app.whenReady().then(async () => {
 		await wait(`!document.querySelector('.git-hunk-panel')`);
 		await run(`document.querySelector('[aria-label="Diff layout"] button:first-child').click()`);
 		await wait(`localStorage.getItem('phaseo.desktop.diffLayout')==='"unified"'`);
-		await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Home').click()`);
+		await run(`document.querySelector('[aria-label="Close tools"]').click()`);
 		await wait(`!document.querySelector('.project-review')`);
-		await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Projects').click()`);
+		await run(`window.__auditNavigate('Projects')`);
 		await wait(`Boolean(document.querySelector('select[aria-label="Project"] option[value="fixture"]'))`);
 		await run(`(()=>{const select=document.querySelector('select[aria-label="Project"]');select.value='fixture';select.dispatchEvent(new Event('change',{bubbles:true}));Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()})()`);
 		await wait(`Boolean(document.querySelector('[aria-label="Diff layout"] button:first-child[aria-pressed="true"]'))`);

@@ -603,3 +603,47 @@ button { color: inherit; }
 .review-diff-content diffs-container + diffs-container { border-top: 1px solid var(--border); }
 .review-diff-feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.6; }
 .review-diff-feedback > span { flex: 1 1 240px; min-width: 0; overflow-wrap: anywhere; }
+
+/* Chats own the workspace; supporting tools share one contextual right panel. */
+.chat-shell { display: flex; height: 100%; min-height: 0; overflow: hidden; }
+.chat-shell-main { flex: 1; min-width: 0; position: relative; height: 100%; }
+.chat-shell-main > .task-workspace { min-height: 0; }
+.chat-shell .task-list { width: 246px; padding: 20px 12px 12px; background: var(--surface); }
+.chat-group h2 { margin: 20px 10px 8px; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.chat-group:empty { display: none; }
+.chat-sidebar-footer { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+.chat-sidebar-footer button { flex: 1; font-size: 12px; padding: 6px; background: transparent; border-color: transparent; }
+.chat-tools { display: flex; flex-direction: column; width: clamp(360px, 40vw, 680px); flex-shrink: 0; border-left: 1px solid var(--border); min-height: 0; background: var(--background); }
+.chat-tools-header, .chat-settings-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
+.chat-tools-header nav, .chat-settings-header nav { display: flex; gap: 4px; flex-wrap: wrap; }
+:is(.chat-tools-header, .chat-settings-header, .browser-toolbar) button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+:is(.chat-tools-header, .chat-settings-header) button[aria-pressed="true"] { background: var(--primary-soft); color: var(--text); }
+:is(.chat-tools-header, .chat-settings-header, .browser-toolbar) button:hover { background: var(--surface-hover); }
+.chat-tools-content, .chat-settings-content { flex: 1; min-height: 0; overflow: auto; }
+.chat-tools-content > .page { width: 100%; margin: 0; padding: 20px; }
+.chat-tools-content .project-page { display: block; height: auto; }
+.chat-tools-content .project-page > section { width: auto; }
+.chat-tools-content .terminal-workspace { flex-direction: column; height: 100%; min-height: 0; }
+.chat-tools-content .terminal-list { width: 100%; max-height: 220px; border-right: 0; border-bottom: 1px solid var(--border); }
+.chat-settings-overlay { position: absolute; inset: 0 0 0 246px; display: flex; flex-direction: column; background: var(--background); z-index: 2; }
+.browser-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.browser-toolbar { display: flex; align-items: center; gap: 4px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.browser-toolbar input { flex: 1; min-width: 0; height: 32px; border: 1px solid var(--border); border-radius: 8px; background: var(--input); color: var(--text); padding: 4px 10px; font: inherit; font-size: 12px; }
+.browser-toolbar button:disabled { opacity: .4; cursor: default; }
+.browser-surface { flex: 1; min-height: 0; background: var(--background); }
+.chat-shell button:focus-visible, .browser-toolbar input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (max-width: 1150px) {
+ .chat-tools { position: absolute; top: 0; right: 0; bottom: 0; width: min(540px, calc(100% - 246px)); z-index: 3; box-shadow: -12px 0 32px color-mix(in oklch, var(--text) 8%, transparent); }
+ .chat-shell { position: relative; }
+}
+@media (max-width: 700px) {
+ .chat-shell .task-list { width: 180px; }
+ .chat-settings-overlay { left: 180px; }
+ .chat-tools { width: 100%; }
+}
+
+.browser-empty { padding: 32px 24px; color: var(--text-muted); }
+.browser-empty h2 { color: var(--text); font-size: 16px; margin: 0 0 12px; }
+.browser-empty p { font-size: 13px; line-height: 1.6; }
+.chat-tools-content .project-browser { flex-direction: column; }
+.chat-tools-content .project-browser > aside { flex: 0 0 auto; max-height: 160px; border-right: 0; border-bottom: 1px solid var(--border); }

@@ -9,16 +9,17 @@ import { DiffView } from "../components/DiffView";
 import type { DiffLayout } from "../components/diffRendering";
 import { usePersistedState } from "../lib/persistedState";
 
-export function Projects() {
+export function Projects({ initialProjectId }: { initialProjectId?: string } = {}) {
 	const api = window.phaseoDesktop?.workspace;
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [savedEdit, setSavedEdit] = usePersistedState<{ projectId: string; filename: string; text: string; hash: string; draft: string } | undefined>("phaseo.desktop.fileDraft", undefined);
-	const [id, setId] = useState(savedEdit?.projectId ?? "");
+	const restoredEdit = initialProjectId === undefined || initialProjectId === savedEdit?.projectId ? savedEdit : undefined;
+	const [id, setId] = useState(initialProjectId ?? restoredEdit?.projectId ?? "");
 	const [directory, setDirectory] = useState("");
 	const [files, setFiles] = useState<ProjectFile[]>([]);
-	const [preview, setPreview] = useState<{ filename: string; text: string; hash: string } | undefined>(savedEdit);
-	const [draft, setDraft] = useState(savedEdit?.draft ?? "");
-	const [editing, setEditing] = useState(Boolean(savedEdit));
+	const [preview, setPreview] = useState<{ filename: string; text: string; hash: string } | undefined>(restoredEdit);
+	const [draft, setDraft] = useState(restoredEdit?.draft ?? "");
+	const [editing, setEditing] = useState(Boolean(restoredEdit));
 	const [saving, setSaving] = useState(false);
 	const [refresh, setRefresh] = useState(0);
 	const dirty = Boolean(preview && draft !== preview.text);

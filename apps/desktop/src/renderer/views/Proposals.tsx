@@ -2,15 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import type { ProjectPullRequests, PullRequest } from "../../shared/pullRequests";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { watchLiveRefresh } from "../lib/liveRefresh";
-import { usePersistedState } from "../lib/persistedState";
 
 const reviewLabels: Record<PullRequest["review"], string> = { approved: "Approved", "changes-requested": "Changes requested", required: "Review required", none: "No review decision" };
 const checkLabels: Record<PullRequest["checks"], string> = { passing: "Checks passing", pending: "Checks pending", failed: "Checks failed", none: "No checks", unknown: "Checks unavailable" };
-export function Proposals() {
+export function Proposals({ initialProjectId }: { initialProjectId?: string } = {}) {
 	const api = window.phaseoDesktop?.workspace;
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [overviewLoading, setOverviewLoading] = useState(true); const [overviewError, setOverviewError] = useState(""); const [overviewAttempt, setOverviewAttempt] = useState(0);
-	const [projectId, setProjectId] = usePersistedState("phaseo.desktop.proposals.project", "");
+	const [projectId, setProjectId] = useState(initialProjectId ?? "");
 	const [result, setResult] = useState<{ projectId: string; value: ProjectPullRequests; page: number }>();
 	const [pages, setPages] = useState<{ projectId: string; cursors: (string | undefined)[]; index: number }>({ projectId: "", cursors: [undefined], index: 0 });
 	const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [attempt, setAttempt] = useState(0);
@@ -44,7 +43,7 @@ export function Proposals() {
 		if (!liveEnabled) return;
 		return watchLiveRefresh(() => { if (pending.current || linkPending.current) return false; pending.current = true; setLoading(true); setAttempt(value => value + 1); return true; }, interval);
 	}, [api, project?.id, cursor, page, liveEnabled, interval]);
-	return <div className="page proposals-page"><h1>Proposals</h1>
+	return <div className="page proposals-page"><h1>Pull requests</h1>
 		<section className="panel" aria-label="Pull requests" aria-busy={loading || overviewLoading}>
 			<div className="panel-heading"><h2>Open pull requests</h2><button type="button" disabled={!api || overviewLoading || (overviewError ? false : !project || loading)} onClick={refresh}>{overviewLoading || loading ? "Loading…" : error || overviewError ? "Retry" : "Refresh"}</button></div>
 			<div className="proposal-project"><label>Project<select aria-label="Pull-request project" disabled={overviewLoading || opening !== undefined} value={projectId} onChange={event => { setProjectId(event.target.value); setPages({ projectId: event.target.value, cursors: [undefined], index: 0 }); setError(""); setLinkError(""); }}><option value="">Choose a project</option>{workspace.projects.filter(value => !value.worktree?.removedAt).map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</select></label>{visible && <p>{visible.repository} · Updated {new Date(visible.fetchedAt).toLocaleTimeString()}</p>}</div>

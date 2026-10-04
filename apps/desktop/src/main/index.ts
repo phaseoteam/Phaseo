@@ -1,5 +1,6 @@
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
 import path from "node:path";
+import { BrowserHost } from "./browserHost";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
@@ -359,8 +360,12 @@ function createWindow(): BrowserWindow {
 
 function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
 	if (event.senderFrame !== event.sender.mainFrame) return null;
-	return BrowserWindow.fromWebContents(event.sender);
+	const owner = BrowserWindow.fromWebContents(event.sender);
+	return owner?.webContents === event.sender ? owner : null;
 }
+
+const browserHost = new BrowserHost();
+ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
 
 ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
 		platform: process.platform,

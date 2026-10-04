@@ -5,11 +5,11 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import type { TerminalCommand, TerminalSession, WorkspaceApi } from "../../shared/workspace";
 
-export function Terminals() {
+export function Terminals({ initialProjectId }: { initialProjectId?: string } = {}) {
 	const api = window.phaseoDesktop?.workspace;
 	const [sessions, setSessions] = useState<TerminalSession[]>([]);
 	const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
-	const [projectId, setProjectId] = useState("");
+	const [projectId, setProjectId] = useState(initialProjectId ?? "");
 	const [selectedId, setSelectedId] = useState("");
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -30,7 +30,7 @@ export function Terminals() {
 		finally { setBusy(false); }
 	}
 	const selected = sessions.find(session => session.id === selectedId);
-	return <div className="terminal-workspace"><aside className="terminal-list"><h1>Terminals</h1><select aria-label="Terminal project" value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal terminal</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select><button className="task-primary" type="button" disabled={busy} onClick={() => void command({ type: "open", ...(projectId ? { projectId } : {}) })}><Plus size={14} /> New terminal</button><div className="terminal-sessions" aria-label="Terminal sessions">{sessions.map(session => <button type="button" aria-pressed={selectedId === session.id} className={`task-row ${selectedId === session.id ? "selected" : ""}`} key={session.id} onClick={() => setSelectedId(session.id)}><span>{session.title}</span><small>{session.status}{session.exitCode !== undefined ? ` · exit ${session.exitCode}` : ""}</small></button>)}</div></aside><section className="terminal-detail">
+	return <div className="terminal-workspace"><aside className="terminal-list"><h1>Terminals</h1><select aria-label="Terminal project" disabled={initialProjectId !== undefined} value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal terminal</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}</select><button className="task-primary" type="button" disabled={busy} onClick={() => void command({ type: "open", ...(projectId ? { projectId } : {}) })}><Plus size={14} /> New terminal</button><div className="terminal-sessions" aria-label="Terminal sessions">{sessions.filter(session => initialProjectId === undefined || (session.projectId ?? "") === initialProjectId).map(session => <button type="button" aria-pressed={selectedId === session.id} className={`task-row ${selectedId === session.id ? "selected" : ""}`} key={session.id} onClick={() => setSelectedId(session.id)}><span>{session.title}</span><small>{session.status}{session.exitCode !== undefined ? ` · exit ${session.exitCode}` : ""}</small></button>)}</div></aside><section className="terminal-detail">
 		{error && <p className="task-error" role="alert">{error}</p>}
 		{selected ? <><header className="task-toolbar"><div><strong>{selected.title}</strong><small>{selected.cwd}</small></div>{selected.status === "running" ? <button type="button" aria-label="Close terminal" disabled={busy} onClick={() => void command({ type: "close", id: selected.id })}><Square size={14} /></button> : <button type="button" aria-label="Delete transcript" disabled={busy} onClick={() => void command({ type: "delete", id: selected.id })}><Trash2 size={14} /></button>}</header>{api && <TerminalView key={selected.id} session={selected} api={api} onError={setError} />}</> : <div className="empty-state"><h2>Open a terminal</h2><p>Run local commands in a project or personal workspace.</p></div>}
 	</section></div>;

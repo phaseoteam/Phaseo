@@ -19,6 +19,7 @@ describe("durable task history pages", () => {
 			const ids: string[] = [];
 			for (let index = 0; index < 155; index++) {
 				const task = store.apply({ type: "create-task", harness: "codex", model: "default", mode: "chat" });
+				task.projectId = index === 0 ? "project-metadata" : undefined;
 				task.updatedAt = "2026-10-04T00:00:00.000Z"; task.pinned = index === 0;
 				task.messages = [{ id: "message", role: "user", text: "Private conversation body", createdAt: task.updatedAt }];
 				store.saveTask(task, true); ids.push(task.id);
@@ -30,6 +31,8 @@ describe("durable task history pages", () => {
 			expect(results.map(task => task.id)).toEqual([ids[0], ...ids.slice(1).sort().reverse()]);
 			expect(JSON.stringify(results)).not.toContain("Private conversation body");
 			expect(results[0].pinned).toBe(true);
+			expect(results[0].projectId).toBe("project-metadata");
+			expect(results[1].projectId).toBeUndefined();
 		} finally { store.close(); }
 	});
 	it("searches titles and messages with Unicode casing and literal punctuation, separating archived tasks", () => {

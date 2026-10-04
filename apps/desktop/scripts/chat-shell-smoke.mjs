@@ -1,0 +1,57 @@
+import { app, BrowserWindow, webContents, ipcMain } from 'electron';
+import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { createServer } from 'node:http';
+import { DatabaseSync } from 'node:sqlite';
+import { execFileSync } from 'node:child_process';
+const profile=mkdtempSync(path.join(tmpdir(),'phaseo-chat-shell-'));app.setPath('userData',profile);
+mkdirSync(path.join(profile,'workspace'));
+const project=path.join(profile,'project');mkdirSync(project);writeFileSync(path.join(project,'hello.txt'),'Owned file content');
+execFileSync('git',['init','-b','fixture'],{cwd:project,stdio:'ignore'});
+const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
+db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL); CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)');
+db.prepare('INSERT INTO projects VALUES (?, ?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
+for(const [id,title,projectId] of [['personal','Plan a holiday',undefined],['project-chat','Improve the website','project']])db.prepare('INSERT INTO tasks VALUES (?, ?)').run(id,JSON.stringify({id,title,projectId,harness:'phaseo',model:'default',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],createdAt:now,updatedAt:now,messages:[{id:id+'-message',role:'assistant',text:'Owned conversation content',createdAt:now}]}));db.close();
+const server=createServer((request,response)=>{response.writeHead(200,{'Content-Type':'text/html'});response.end(`<html><head><title>Owned ${request.url}</title></head><body style="font:18px system-ui;padding:30px"><h1>Browser inside your chat</h1><p>${request.url}</p><a href="/second">Next page</a></body></html>`);});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const address=`http://127.0.0.1:${server.address().port}`;
+const entry=process.argv.find(value=>value.startsWith('--app-entry='))?.slice(12);await import(entry?pathToFileURL(path.resolve(entry)).href:'../dist/main/index.mjs');
+app.whenReady().then(async()=>{
+ const owner=BrowserWindow.getAllWindows()[0];owner.webContents.setBackgroundThrottling(false);
+ if(owner.webContents.isLoading())await new Promise(resolve=>owner.webContents.once('did-finish-load',resolve));
+ let proposalProject;ipcMain.removeHandler("workspace:pull-requests");ipcMain.handle("workspace:pull-requests",(_event,id)=>{proposalProject=id;return {repository:"owned/fixture",requests:[],fetchedAt:now,limitReached:false}});
+ const run=async code=>{try{return await owner.webContents.executeJavaScript(code)}catch(error){console.error("FAILED_SCRIPT",code);throw error}};
+ const wait=async(code)=>{for(let index=0;!await run(code);index++){if(index>100)throw Error('Did not settle: '+code);await new Promise(resolve=>setTimeout(resolve,30));}};
+ const click=async(label)=>{await run(`(()=>{const button=Array.from(document.querySelectorAll('button')).find(value=>value.textContent.trim()===${JSON.stringify(label)});if(!button)throw Error('Missing button '+${JSON.stringify(label)});button.click()})()`);};
+ const select=async(title)=>{await run(`Array.from(document.querySelectorAll('.task-list .task-row')).find(value=>value.title===${JSON.stringify(title)}).click()`);await wait(`document.querySelector('.task-title')?.value===${JSON.stringify(title)}`);};
+ const capture=async(name)=>writeFileSync(path.join(output,name+'.png'),(await owner.webContents.capturePage()).toPNG());
+ const output=path.resolve('../../output/playwright/chat-shell',entry?'packaged':'source');mkdirSync(output,{recursive:true});
+ try{
+ await wait(`document.querySelectorAll('.task-list .task-row').length===2`);
+ if(!await run(`!document.querySelector('.sidebar')&&Array.from(document.querySelectorAll('.chat-group h2')).map(value=>value.textContent).join(',')==='Personal,Website'`))throw Error('Chat-first navigation or grouping missing');
+ await select('Improve the website');
+ await run(`(()=>{const input=document.querySelector('textarea[aria-label="Message"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Keep this draft');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+ await click('Tools');await wait(`Boolean(document.querySelector('.browser-surface'))`);
+ await click('Files & Git');await wait(`Boolean(document.querySelector('.project-browser'))`);
+ if(!await run(`document.querySelector('textarea[aria-label="Message"]').value==='Keep this draft'&&document.querySelector('.task-title').value==='Improve the website'`))throw Error('Opening tools reset the chat');
+ await click('PRs');await wait(`document.querySelector('.proposals-page')?.textContent.includes('No open pull requests.')`);if(proposalProject!=='project')throw Error('PR panel did not follow chat project');await click('Terminal');await wait(`document.querySelector('[aria-label="Terminal project"]')?.value==='project'`);await click('Settings');await wait(`Boolean(document.querySelector('.chat-settings-overlay'))`);await click('Accounts');await wait(`Boolean(document.querySelector('.accounts-page'))`);await run(`document.querySelector('[aria-label="Back to chat"]').click()`);
+ if(!await run(`document.querySelector('textarea[aria-label="Message"]').value==='Keep this draft'`))throw Error('Settings reset the draft');
+ await click('Browser');await wait(`Boolean(document.querySelector('.browser-surface'))`);
+ await run(`(()=>{const input=document.querySelector('[aria-label="Browser address"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(address+'/first')});input.dispatchEvent(new Event('input',{bubbles:true}))})()`);await click('Go');
+ let browser;for(let index=0;index<100;index++){browser=webContents.getAllWebContents().find(contents=>contents!==owner.webContents&&contents.getURL()===address+'/first'&&!contents.isLoading());if(browser)break;await new Promise(resolve=>setTimeout(resolve,30));}if(!browser)throw Error('Native browser did not navigate');
+ if(!await browser.executeJavaScript(`typeof window.phaseoDesktop==='undefined'&&typeof require==='undefined'&&typeof process==='undefined'`))throw Error('Remote browser inherited app privileges');
+ const link=await browser.executeJavaScript(`(()=>{const r=document.querySelector('a').getBoundingClientRect();return {x:Math.round(r.x+5),y:Math.round(r.y+5)}})()`);browser.sendInputEvent({type:'mouseDown',button:'left',clickCount:1,...link});browser.sendInputEvent({type:'mouseUp',button:'left',clickCount:1,...link});await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/second')&&!document.querySelector('[aria-label="Browser back"]').disabled`);
+ await run(`document.querySelector('[aria-label="Browser back"]').click()`);await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ const nativeView=owner.contentView.children.find(view=>view.webContents===browser);const rect=await run(`(()=>{const r=document.querySelector('.browser-surface').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}})()`);if(!nativeView||Math.abs(nativeView.getBounds().x-rect.x)>1||Math.abs(nativeView.getBounds().width-rect.width)>1)throw Error('Browser bounds do not match right panel');
+ if(!await run(`window.phaseoDesktop.browser({id:'project-chat',type:'navigate',url:'file:///C:/private'}).then(()=>false,()=>true)`))throw Error('Unsafe browser protocol accepted');
+ await select('Plan a holiday');await wait(`document.querySelector('[aria-label="Browser address"]')?.value===''`);await select('Improve the website');await wait(`document.querySelector('[aria-label="Browser address"]')?.value?.endsWith('/first')`);
+ await run(`document.querySelector('.topbar .command-button:has(kbd)').click()`);await wait(`Boolean(document.querySelector('dialog[open]'))`);if(owner.contentView.children.includes(nativeView))throw Error('Browser covers command palette');await run(`document.querySelector('dialog').dispatchEvent(new Event('cancel',{cancelable:true}))`);await wait(`!document.querySelector('dialog[open]')`);
+ for(const [width,height] of [[1440,920],[1040,680]]){owner.setSize(width,height);for(const theme of ['light','dark']){await run(`(()=>{const button=document.querySelector('[aria-label="Use ${theme} theme"]');button?.click()})()`);await new Promise(resolve=>setTimeout(resolve,120));await capture(`${width}-${theme}-browser`);await run(`document.querySelector('[aria-label="Close tools"]').click()`);await capture(`${width}-${theme}-chats`);await click('Settings');await capture(`${width}-${theme}-settings`);await run(`document.querySelector('[aria-label="Back to chat"]').click()`);await click('Tools');await click('Files & Git');await wait(`Boolean(document.querySelector('.project-browser'))&&!document.querySelector('.project-page [role="status"]')&&document.querySelector('.project-browser').textContent.includes('hello.txt')`);await capture(`${width}-${theme}-files`);await click('Browser');}}
+ writeFileSync(path.join(output,'native-browser-page.png'),(await browser.capturePage()).toPNG());
+ await run(`document.querySelector('[aria-label="Close tools"]').click()`);if(owner.contentView.children.includes(nativeView))throw Error('Closed panel retained a visible browser');
+ await run(`window.phaseoDesktop.browser({type:'close',id:'project-chat'})`);if(!browser.isDestroyed())throw Error('Browser close did not dispose remote web contents');
+ console.log('CHAT_SHELL_SMOKE '+JSON.stringify({profile,output,captures:17,nativeBrowser:true,chatGrouping:true,draftPreservation:true,contextHistory:true}));server.close();app.quit();
+ }catch(error){console.error(error);console.error('BROWSER_DIAGNOSTIC',webContents.getAllWebContents().map(contents=>({id:contents.id,url:contents.getURL(),back:contents.navigationHistory.canGoBack(),entryCount:contents.navigationHistory.length()})));console.error(await run(`({address:document.querySelector('[aria-label="Browser address"]')?.value,error:document.querySelector('.browser-panel [role="alert"]')?.textContent})`));server.close();app.exit(1);}
+}).catch(error=>{console.error(error);server.close();app.exit(1)});
+
+setTimeout(()=>{console.error("Chat shell smoke timed out");server.close();app.exit(1)},60000).unref();

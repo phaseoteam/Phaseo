@@ -1,7 +1,7 @@
 import type { Task } from "./workspace";
 
 export type TaskHistoryQuery = { query: string; archived: boolean; offset: number; limit: number };
-export type TaskSummary = Pick<Task, "id" | "title" | "harness" | "status" | "pinned" | "updatedAt">;
+export type TaskSummary = Pick<Task, "id" | "title" | "harness" | "status" | "pinned" | "updatedAt" | "projectId">;
 export type TaskHistoryPage = { tasks: TaskSummary[]; hasMore: boolean };
 
 export function validateTaskHistoryQuery(value: unknown): TaskHistoryQuery {

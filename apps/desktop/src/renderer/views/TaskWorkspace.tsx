@@ -1,5 +1,5 @@
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, FolderOpen, Paperclip, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
 import type { Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
@@ -16,7 +16,7 @@ import { TaskActions } from "../components/TaskActions";
 import { TaskSettings } from "../components/TaskSettings";
 const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
-export function TaskWorkspace() {
+export function TaskWorkspace({ onContextChange, footer }: { onContextChange?: (context: { id?: string; projectId?: string }) => void; footer?: ReactNode }) {
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [selectedId, setSelectedId] = usePersistedState<string | undefined>("phaseo.desktop.selectedTask", undefined);
 	const [query, setQuery] = useState("");
@@ -68,6 +68,7 @@ export function TaskWorkspace() {
 	const selectedSnapshot = workspace.tasks.find(task => task.id === selectedId);
 	const selectedDetail = useSelectedTask(api?.task, selectedId, selectedSnapshot ? JSON.stringify([selectedSnapshot.revision, selectedSnapshot.updatedAt]) : undefined);
 	const selected = selectedDetail.task;
+	useEffect(() => { onContextChange?.({ id: selectedId, projectId: selected?.projectId ?? selectedSnapshot?.projectId ?? (!selectedId ? projectId || undefined : undefined) }); }, [selectedId, selected?.projectId, selectedSnapshot?.projectId, projectId, onContextChange]);
 	const historyRevision = JSON.stringify(workspace.tasks.map(task => [task.id, task.title, task.pinned, task.archived, task.status, task.status === "running" || task.status === "waiting" ? undefined : task.updatedAt]));
 	const history = useTaskHistory(api?.taskHistory, query, showArchived, historyRevision);
 	const tasks = history.tasks;
@@ -119,15 +120,16 @@ export function TaskWorkspace() {
 		} catch (reason) { setError(String(reason)); } finally { setUploading(false); }
 	}
 	return <div className="task-workspace">
-		<aside className="task-list" aria-label="Tasks" aria-busy={history.loading}>
-			<div className="task-list-heading"><strong>Tasks</strong><button type="button" aria-label="New task" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}><Plus size={16} /></button></div>
-			<label className="task-search"><Search size={14} /><input aria-label="Search tasks" placeholder="Search tasks" maxLength={512} value={query} onChange={event => setQuery(event.target.value)} /></label>
-			<button type="button" className="task-archive-filter" onClick={() => { setShowArchived(value => !value); setSelectedId(undefined); }}>{showArchived ? "Active tasks" : "Archived tasks"}</button>
-			<div className="task-history-list">{tasks.map(task => <button type="button" title={task.title} aria-pressed={task.id === selectedId} className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}
-			{history.loading && <p className="task-muted" role="status">Loading tasks…</p>}
+		<aside className="task-list" aria-label="Chats" aria-busy={history.loading}>
+			<div className="task-list-heading"><strong>Chats</strong><button type="button" aria-label="New chat" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}><Plus size={16} /></button></div>
+			<label className="task-search"><Search size={14} /><input aria-label="Search chats" placeholder="Search chats" maxLength={512} value={query} onChange={event => setQuery(event.target.value)} /></label>
+			<button type="button" className="task-archive-filter" onClick={() => { setShowArchived(value => !value); setSelectedId(undefined); }}>{showArchived ? "Active chats" : "Archived chats"}</button>
+			<div className="task-history-list">{[undefined, ...workspace.projects.filter(project => tasks.some(task => task.projectId === project.id)).map(project => project.id), ...Array.from(new Set(tasks.map(task => task.projectId).filter(id => id && !workspace.projects.some(project => project.id === id))))].map(group => <div className="chat-group" key={group ?? "personal"}><h2>{group ? workspace.projects.find(project => project.id === group)?.name ?? "Unavailable project" : "Personal"}</h2>{tasks.filter(task => task.projectId === group).map(task => <button type="button" title={task.title} aria-pressed={task.id === selectedId} className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}</div>)}
+			{history.loading && <p className="task-muted" role="status">Loading chats…</p>}
 			{history.error && <div className="task-muted" role="alert"><p>{history.error}</p><button type="button" onClick={history.retry}>Retry</button></div>}
-			{!history.loading && !history.error && !tasks.length && <p className="task-muted">{query ? "No matching tasks." : showArchived ? "No archived tasks." : "Your tasks will appear here."}</p>}
-			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more tasks</button>}</div>
+			{!history.loading && !history.error && !tasks.length && <p className="task-muted">{query ? "No matching chats." : showArchived ? "No archived chats." : "Your chats will appear here."}</p>}
+			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more chats</button>}</div>
+			{footer && <div className="chat-sidebar-footer">{footer}</div>}
 		</aside>
 		<section className="task-detail" aria-label="Task workspace">
 			{error && <div className="task-error" role="alert">{error}</div>}
@@ -135,7 +137,7 @@ export function TaskWorkspace() {
 			{selectedId && !selected ? <div className="task-start"><p role="status">{selectedDetail.error ? "Could not load this task." : "Loading task…"}</p><button type="button" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}>New task</button></div> : !selected ? <div className="task-start">
 				<span className="task-eyebrow">PHASEO WORKSPACE</span><h1>What would you like to do?</h1><p>Write, research, plan, or work on a project.</p>
 				<fieldset className="task-setup task-create-fields" aria-label="Task configuration" disabled={busy}>
-					<label>Project<select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal task</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>
+					<label>Project<select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal chat</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>
 					<button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button>
 					<label>Mode<select value={mode} onChange={event => setMode(event.target.value as Task["mode"])}>{harness !== "grok" && <option value="chat">Chat</option>}<option value="code">Code</option><option value="plan">Plan</option></select></label>
 					<label>Harness<select value={harness} onChange={event => { setHarness(event.target.value as Harness); if (event.target.value === "grok" && mode === "chat") setMode("plan"); setAccountId(""); setAgentId(""); setModel("default"); }}><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="opencode">OpenCode 2</option><option value="pi">Pi</option><option value="cursor">Cursor</option><option value="grok">Grok</option><option value="phaseo">Phaseo</option><option value="acp">ACP agent</option></select></label>

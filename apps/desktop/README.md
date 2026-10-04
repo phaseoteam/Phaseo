@@ -1,6 +1,6 @@
 # Phaseo Desktop
 
-Phaseo Desktop is the workspace-first client for Phaseo's developer experience platform. It brings software planning, agent activity, repositories, reviews, and the Phaseo model platform into one focused desktop application.
+Phaseo Desktop organises coding and everyday AI work around chats, with optional projects and a contextual panel for files, Git, pull requests, terminals and a native browser. Accounts and harness choices remain available for each chat. See [Chats and tools](docs/chats-and-tools.md) for the current shell, verification and remaining browser capabilities.
 
 ## Development
 
