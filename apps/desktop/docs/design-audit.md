@@ -262,3 +262,12 @@ The PR Files view now offers Load full context and identifies the merge-base/hea
 Settings → Agents now shows confirmed versions and installer methods, with Update and a panel-level Cancel action. Cancel remains available when returning to Settings during an update. Source and Windows archive workflows exercise actual owned npm processes through the preload bridge, including failure/retry and changed ownership; the screenshot uses a synthetic fixture version and makes no real provider installation changes. Run `pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs`, adding the existing `--app-entry` archive path for the packaged app.
 
 ![Harness maintenance fixture](screenshots/harness-maintenance.png)
+
+
+## Queued messages
+
+The queue uses a native disclosure aligned with the conversation and composer. It starts collapsed when selecting a chat, keeping queued items from taking transcript space until requested. Enter expands it; editing, moving and removal remain inside the conversation. Expanded lists retain bounded scrolling.
+
+Source and fresh Windows archive forced-process audits exercise all three Phaseo modes. Edited/reordered/removed input survives restart and the remaining messages are delivered once. Native keyboard activation, edit/cancel, composer alignment and visibility pass in light/dark at 1440×920 and 1040×680 (48 matrix captures). These use owned loopback model responses, with zero provider inference. Run the existing question recovery coordinator with `--queue=true`; add its archive entry argument for packaged verification.
+
+![Collapsed queued messages](screenshots/queued-messages.png)

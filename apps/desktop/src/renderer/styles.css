@@ -253,7 +253,9 @@
 .task-composer textarea { width: 100%; min-height: 72px; max-height: min(200px, 12vh); resize: vertical; border: 0; background: transparent; padding: 4px; }
 .task-composer > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .task-composer small { flex: 1; color: var(--text-muted); font-size: 11px; }
-.task-queue { flex-shrink: 0; padding: 16px 24px; border-top: 1px solid var(--border); font-size: 12px; }
+.task-queue { flex-shrink: 0; width: min(var(--conversation-width), calc(100% - 48px - var(--conversation-scrollbar))); align-self: center; margin-right: var(--conversation-scrollbar); font-size: 12px; }
+.task-queue summary { padding: 8px 0; cursor: pointer; font-weight: 600; }
+.task-queue summary::marker { color: var(--text-muted); }
 .task-queue-items { max-height: min(180px, 25vh); overflow-y: auto; margin-top: 12px; scrollbar-gutter: stable; }
 .task-queue-items > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-block: 8px; border-bottom: 1px solid var(--border); }
 .task-queue-items > div:last-child { border-bottom: 0; }

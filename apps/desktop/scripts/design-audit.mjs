@@ -705,7 +705,7 @@ try {
             if(attempt>50)throw new Error("Queue fixture did not render.");
             await new Promise(resolve=>setTimeout(resolve,100));
           }
-          await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items button').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          await window.webContents.executeJavaScript(`document.querySelector('.task-queue').open=true;document.querySelector('.task-queue-items button').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           const queueLayout=await window.webContents.executeJavaScript(`(()=>{const items=document.querySelector('.task-queue-items'),composer=document.querySelector('.task-composer'),editor=items.querySelector('textarea'),r=items.getBoundingClientRect(),c=composer.getBoundingClientRect(),e=editor.getBoundingClientRect();items.scrollTop=items.scrollHeight;return {height:r.height,scrollable:items.scrollHeight>items.clientHeight,lastReachable:items.scrollTop>0,composerVisible:c.bottom<=innerHeight,editorFits:e.left>=r.left&&e.right<=r.right,transcriptHeight:document.querySelector('.task-messages').clientHeight}})()`);
           if(queueLayout.height>181 || !queueLayout.scrollable || !queueLayout.lastReachable || !queueLayout.composerVisible || !queueLayout.editorFits || queueLayout.transcriptHeight<50)throw new Error("Queued messages must preserve usable conversation and composer space: "+JSON.stringify(queueLayout));
           await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items').scrollTop=0`);

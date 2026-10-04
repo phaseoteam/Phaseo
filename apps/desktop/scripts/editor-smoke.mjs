@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 
-const data = realpathSync(mkdtempSync(path.join(tmpdir(), "phaseo-editor-smoke-")));
+const data = realpathSync.native(mkdtempSync(path.join(tmpdir(), "phaseo-editor-smoke-")));
 app.setPath("userData", data);
 const project = path.join(data, "project"); mkdirSync(project);
 const filename = "notes & 世界.txt"; writeFileSync(path.join(project, filename), "Owned document");

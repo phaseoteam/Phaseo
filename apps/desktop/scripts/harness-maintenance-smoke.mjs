@@ -3,7 +3,7 @@ import { realpathSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, exis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-const profile=realpathSync(mkdtempSync(path.join(tmpdir(),'phaseo-harness-maintenance-')));app.setPath('userData',profile);
+const profile=realpathSync.native(mkdtempSync(path.join(tmpdir(),'phaseo-harness-maintenance-')));app.setPath('userData',profile);
 const prefix=path.join(profile,'owned & npm prefix'),root=path.join(prefix,'node_modules/@openai/codex'),npmRoot=path.join(prefix,'node_modules/npm');
 mkdirSync(path.join(root,'bin'),{recursive:true});mkdirSync(path.join(npmRoot,'bin'),{recursive:true});
 const versionFile=path.join(profile,'version.json'),modeFile=path.join(profile,'mode.txt'),calls=path.join(profile,'calls.jsonl'),started=path.join(profile,'started');
