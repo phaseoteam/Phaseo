@@ -6,6 +6,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { DatabaseSync } from 'node:sqlite';
 const arg = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
 const entry = arg('app-entry'), stage = arg('stage');
 if (stage) {
@@ -21,8 +22,18 @@ if (stage) {
   const run = code => owner.webContents.executeJavaScript(code);
   const wait = async code => { for (let i = 0; i < 600; i++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error('Batch recovery did not settle: ' + code); };
   let id;
-  if (stage === 'write') {
+  if (stage === 'prepare') {
    id = await run(`(async()=>{const api=window.phaseoDesktop.workspace;const state=await api.command({type:'add-account',name:'Owned batch recovery',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned batch recovery').id;await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Owned batch',enabled:true,transport:'http',url:${JSON.stringify(endpoint.replace(/\/v1$/, '/mcp'))}}});const created=await api.command({type:'create-task',harness:'phaseo',accountId,model:'owned',mode:${JSON.stringify(mode)}});const id=created.tasks[0].id;await api.command({type:'send',id,text:'Perform two owned effects'});return id})()`);
+   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
+   await run(`window.phaseoDesktop.workspace.command({type:'send',id:${JSON.stringify(id)},text:'Queued batch follow-up'})`);
+   writeFileSync(path.join(profile, 'pending.json'), JSON.stringify({ taskId: id, runId: task.nativeSessionId }));
+   console.log('BATCH_RECOVERY_PREPARED'); return;
+  }
+  id = JSON.parse(readFileSync(path.join(profile, 'pending.json'), 'utf8')).taskId;
+  const restored = await run(`window.phaseoDesktop.workspace.task(${JSON.stringify(id)})`); assert.equal(restored.status, 'interrupted');
+  assert.deepEqual(restored.queue.map(message => message.text), stage === 'write' ? ['Queued batch follow-up'] : []);
+  await run(`window.phaseoDesktop.workspace.command({type:'resume',id:${JSON.stringify(id)}})`);
+  if (stage === 'write') {
    for (let index = 0; index < 2; index++) {
     const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
     await run(`window.phaseoDesktop.workspace.command({type:'approval',id:${JSON.stringify(id)},approvalId:${JSON.stringify(task.approvals[0].id)},decision:'accept'})`);
@@ -31,9 +42,6 @@ if (stage) {
    writeFileSync(path.join(profile, 'pending.json'), JSON.stringify({ taskId: id, runId: task.nativeSessionId }));
    console.log('BATCH_RECOVERY_PENDING'); return;
   }
-  id = JSON.parse(readFileSync(path.join(profile, 'pending.json'), 'utf8')).taskId;
-  const restored = await run(`window.phaseoDesktop.workspace.task(${JSON.stringify(id)})`); assert.equal(restored.status, 'interrupted');
-  await run(`window.phaseoDesktop.workspace.command({type:'resume',id:${JSON.stringify(id)}})`);
   const task = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
   assert.equal(task.approvals.length, 1); assert.ok(task.approvals[0].description.includes('may already have completed'));
   await wait(`Array.from(document.querySelectorAll('.task-row')).some(row=>row.title===${JSON.stringify(task.title)})`);
@@ -45,7 +53,8 @@ if (stage) {
    writeFileSync(path.join(output, `interrupted-action-${theme}-${width}.png`), (await owner.webContents.capturePage()).toPNG());
   }
   await run(`window.phaseoDesktop.workspace.command({type:'approval',id:${JSON.stringify(id)},approvalId:${JSON.stringify(task.approvals[0].id)},decision:'decline'})`);
-  await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'})()`);
+  const finished = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.status==='completed'?task:false})()`);
+  assert.equal(finished.messages.filter(message => message.role === 'user' && message.text === 'Queued batch follow-up').length, 1);
   console.log('BATCH_RECOVERY_RESUMED'); clearTimeout(deadline); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); app.exit(1); } });
 } else for (const mode of ['code', 'plan']) {
@@ -74,6 +83,7 @@ if (stage) {
   } else {
    const results = body.input.filter(item => item.type === 'function_call_output'); assert.deepEqual(results.map(item => item.call_id), ['one', 'two']);
    assert.ok(results[0].output.includes('Confirmed first effect')); assert.ok(results[1].output.includes('rejected'));
+   assert.equal(body.input.filter(item => item.role === 'user' && item.content === 'Queued batch follow-up').length, 1);
    output = [{ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: 'Owned batch recovered.' }] }];
   }
   response.writeHead(200, { 'content-type': 'text/event-stream' }); response.end('data: ' + JSON.stringify({ type: 'response.completed', response: { id: `owned-${requests}`, model: 'owned', status: 'completed', output } }) + '\n\n');
@@ -86,12 +96,23 @@ if (stage) {
   const receive = data => { output += data.toString(); if (output.includes(marker)) { clearTimeout(timer); resolve(); } }; active.stdout.on('data', receive); active.stderr.on('data', receive);
   active.on('exit', code => { clearTimeout(timer); if (!output.includes(marker)) reject(Error(`Owned batch child exited ${code}: ${output}`)); });
  });
- try {
-  await launch('write', 'BATCH_RECOVERY_PENDING'); for (let i = 0; i < 200 && !held; i++) await new Promise(resolve => setTimeout(resolve, 25)); assert.ok(held);
+ const crash = async () => {
   if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(active.pid), '/T', '/F'], { windowsHide: true }); else active.kill('SIGKILL');
-  await new Promise(resolve => active.exitCode !== null || active.signalCode !== null ? resolve() : active.once('exit', resolve)); held.destroy();
+  await new Promise(resolve => active.exitCode !== null || active.signalCode !== null ? resolve() : active.once('exit', resolve));
+ };
+ try {
+  await launch('prepare', 'BATCH_RECOVERY_PREPARED'); assert.equal(firstEffects, 0); assert.equal(secondEffects, 0); await crash();
+  await launch('write', 'BATCH_RECOVERY_PENDING'); for (let i = 0; i < 200 && !held; i++) await new Promise(resolve => setTimeout(resolve, 25)); assert.ok(held);
+  await crash(); held.destroy();
+  const pending = JSON.parse(readFileSync(path.join(profile, 'pending.json'), 'utf8'));
+  const db = new DatabaseSync(path.join(profile, 'workspace/workspace.sqlite'));
+  const checkpoint = JSON.parse(db.prepare('SELECT data FROM agent_runs WHERE id=?').get(pending.runId).data); db.close();
+  assert.deepEqual(checkpoint.run.pause.pendingToolCalls.map(item => item.call.id), ['two']);
+  assert.equal(typeof checkpoint.run.pause.pendingToolCalls[0].executionStartedAt, 'string');
+  assert.deepEqual(checkpoint.run.messages.filter(message => message.role === 'tool').map(message => message.toolCallId), ['one']);
+  assert.deepEqual(checkpoint.run.pause.continuationMessages, [{ role: 'user', content: 'Queued batch follow-up' }]);
   await launch('read', 'BATCH_RECOVERY_RESUMED'); await new Promise(resolve => active.exitCode !== null ? resolve() : active.once('exit', resolve));
   if (fixtureError) throw fixtureError; assert.equal(firstEffects, 1); assert.equal(secondEffects, 1); assert.equal(requests, 2);
-  console.log('PHASEO_BATCH_RECOVERY_AUDIT', JSON.stringify({ mode, packaged: Boolean(entry), firstEffects, interruptedSecondAttempts: secondEffects, loopbackModelRequests: requests, providerInferenceCalls: 0, captures: 4 }));
+  console.log('PHASEO_BATCH_RECOVERY_AUDIT', JSON.stringify({ mode, packaged: Boolean(entry), forcedCrashes: 2, durableFollowUp: true, firstEffects, interruptedSecondAttempts: secondEffects, loopbackModelRequests: requests, providerInferenceCalls: 0, captures: 4 }));
  } finally { if (active?.exitCode === null && active?.signalCode === null) active.kill(); held?.destroy(); server.closeAllConnections(); server.close(); }
 }
