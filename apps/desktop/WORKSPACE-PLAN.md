@@ -350,3 +350,5 @@ Activity disclosure fix: preserve native open state through copy success/failure
 Connection editor selection: clear stale save feedback when loading another ACP agent or MCP configuration. Browser regression checks validate selection, literal arguments, focus and no incidental save. Visual audit covers 220 states; full design acceptance and parity remain open.
 
 Settings recovery: initial preference reads show loading and recover through Retry. Saving freezes controls, preserves confirmed values after failure and retries the requested selection exactly once. Feedback aligns with website card insets. Source/archive failure/recovery fixtures bring visual coverage to 236 captures; OS notification delivery, full design acceptance and parity remain open.
+
+Sidebar increment: active selection remains visible through background navigation and supported window resizing; collapsed controls have explicit accessible labels. Source/archive navigation fixtures cover focus retention, row size, surface switching and restoration. Visual audit covers 244 states; full visual/accessibility acceptance and feature parity remain open.

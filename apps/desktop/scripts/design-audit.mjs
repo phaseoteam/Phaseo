@@ -42,6 +42,35 @@ async function auditSettingsRecovery(window,output,width,theme){
  writeFileSync(path.join(output,`${width}-${theme}-settings.png`),(await window.webContents.capturePage()).toPNG());
  await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.savePreferences(${JSON.stringify(original)})`);
 }
+async function auditSidebarNavigation(window,output,width,height,theme){
+ const visible=()=>window.webContents.executeJavaScript(`(()=>{const host=document.querySelector('.sidebar-navigation'),active=host.querySelector('[aria-current="page"]');if(!active)return false;const a=active.getBoundingClientRect(),h=host.getBoundingClientRect();return a.top>=h.top-1&&a.bottom<=h.bottom+1})()`);
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-navigation button')).find(button=>button.textContent==='MCP').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation [aria-current="page"]')?.textContent==='MCP'`);attempt++){if(attempt>50)throw Error('Sidebar selection did not change');await new Promise(resolve=>setTimeout(resolve,20));}
+ window.setSize(width,height+80);await new Promise(resolve=>setTimeout(resolve,100));
+ await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation').scrollTop=0`);
+ window.setSize(width,680);
+ for(let attempt=0;!await visible();attempt++){if(attempt>50)throw Error('Sidebar active item disappeared after resize');await new Promise(resolve=>setTimeout(resolve,20));}
+ window.setSize(width,height);await new Promise(resolve=>setTimeout(resolve,100));
+ await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation').scrollTop=10000;document.querySelector('.command-button').focus()`);
+ window.webContents.send('workspace:open-task','design-example');
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation [aria-current="page"]')?.textContent==='Tasks'`)||!await visible();attempt++){if(attempt>50)throw Error('Background navigation did not reveal its active sidebar item');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.activeElement===document.querySelector('.command-button')`))throw Error('Sidebar selection stole keyboard focus');
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-row.selected'))&&!document.querySelector('.task-list [role="status"]')`);attempt++){if(attempt>50)throw Error('Sidebar navigation task rows did not settle');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,`${width}-${theme}-sidebar-active.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Collapse sidebar"]').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.sidebar-collapsed'))&&Math.round(document.querySelector('.sidebar').getBoundingClientRect().width)===58`);attempt++){if(attempt>50)throw Error('Sidebar did not collapse to its icon rail');await new Promise(resolve=>setTimeout(resolve,20));}
+ const controls=await window.webContents.executeJavaScript(`({labels:Array.from(document.querySelectorAll('.sidebar-navigation button')).map(button=>button.getAttribute('aria-label')),search:document.querySelector('.sidebar-search').getAttribute('aria-label'),settings:document.querySelector('.sidebar-footer button').getAttribute('aria-label'),height:document.querySelector('.sidebar-navigation button').getBoundingClientRect().height})`);
+ if(controls.labels.some(label=>!label)||!controls.labels.includes('MCP')||controls.search!=='Search'||controls.settings!=='Settings'||controls.height!==34||!await visible())throw Error('Collapsed navigation has unnamed or clipped controls');
+ writeFileSync(path.join(output,`${width}-${theme}-sidebar-collapsed.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Switch to Platform"]').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('nav[aria-label="platform navigation"] button[aria-label="Overview"]'))`);attempt++){if(attempt>50)throw Error('Collapsed surface switch did not navigate');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`document.querySelector('.sidebar-footer button[aria-label="Settings"]').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('nav[aria-label="workspace navigation"]'))&&document.querySelector('.sidebar-footer [aria-current="page"]')?.getAttribute('aria-label')==='Settings'`);attempt++){if(attempt>50)throw Error('Collapsed Settings did not return to workspace');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation button[aria-label="Tasks"]').click();document.querySelector('button[aria-label="Expand sidebar"]').click()`);
+ for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.sidebar-collapsed'))||Math.round(document.querySelector('.sidebar').getBoundingClientRect().width)!==246`)||!await visible();attempt++){if(attempt>50)throw Error('Expanded sidebar lost active selection or width');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-navigation button')).find(button=>button.textContent==='Terminals').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.sidebar-navigation [aria-current="page"]')?.textContent==='Terminals'`);attempt++){if(attempt>50)throw Error('Sidebar fixture did not restore its initial page');await new Promise(resolve=>setTimeout(resolve,20));}
+}
 async function auditArgumentFields(window, formLabel) {
  const values=[' two words "quoted" 世界 ','','literal; --flag'];
  await window.webContents.executeJavaScript(`(async()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(formLabel)}+'"]'),fields=form.querySelector('.argument-fields');while(fields.querySelector('input')){fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));}for(const value of ${JSON.stringify(values)}){fields.querySelector('.add-argument').click();await new Promise(resolve=>requestAnimationFrame(resolve));const input=fields.querySelector('.argument-row:last-of-type input');if(document.activeElement!==input)throw Error('New argument was not focused');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>requestAnimationFrame(resolve));}fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));const remaining=Array.from(fields.querySelectorAll('input')).map(input=>input.value);if(JSON.stringify(remaining)!==JSON.stringify(['','literal; --flag']))throw Error('Removing an argument changed other values');if(getComputedStyle(fields).gridColumn!=='1 / -1'||getComputedStyle(fields.querySelector('.argument-row')).gap!=='8px')throw Error('Argument fields are not aligned');form.scrollIntoView({block:'nearest'});})()`);
@@ -773,6 +802,7 @@ try {
       writeFileSync(path.join(output, `${width}-${theme}-platform.png`), (await window.webContents.capturePage()).toPNG());
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Workspace').click()`);
       await new Promise(resolve => setTimeout(resolve, 100));
+      await auditSidebarNavigation(window,output,width,height,theme);
     }
   }
   async function retryCatalogue(scope,name){

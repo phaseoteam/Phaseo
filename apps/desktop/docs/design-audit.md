@@ -211,10 +211,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Settings save feedback](screenshots/settings-recovery-small-window.png)
 
+65. **Sidebar selection and collapsed controls:** the active navigation item is revealed after selection, surface/collapse changes and sidebar resizing, without changing row size or moving keyboard focus. Collapsed item, Search, Settings, surface switch and expansion controls have explicit accessible labels, following the website sidebar pattern. Owned source/archive cases exercise resize within the supported 680-pixel minimum, background task navigation from a scrolled list, collapse/expand and Platform-to-workspace Settings navigation. Each helper restores its starting page before subsequent model-discovery cases. Eight captures bring the visual audit to 244. Full screen-reader and multi-platform acceptance remain separate requirements.
+
+![Collapsed desktop sidebar](screenshots/sidebar-collapsed-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 236 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 244 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 236 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 244 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

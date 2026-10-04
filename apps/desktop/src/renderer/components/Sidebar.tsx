@@ -1,4 +1,5 @@
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
+import { useLayoutEffect, useRef } from "react";
 import {
 	Activity,
 	Bell,
@@ -65,12 +66,27 @@ export function Sidebar({
 	onSearch,
 }: SidebarProps) {
 	const navigation = surface === "workspace" ? workspaceNavigation : platformNavigation;
+	const navigationHost = useRef<HTMLElement>(null);
+	useLayoutEffect(() => {
+		const host = navigationHost.current;
+		if (!host) return;
+		const reveal = () => {
+			const active = host.querySelector<HTMLElement>('[aria-current="page"]');
+			if (!active) return;
+			const item = active.getBoundingClientRect(), bounds = host.getBoundingClientRect();
+			if (item.top < bounds.top || item.bottom > bounds.bottom) active.scrollIntoView({ block: "nearest", inline: "nearest" });
+		};
+		reveal();
+		const observer = new ResizeObserver(reveal); observer.observe(host);
+		return () => observer.disconnect();
+	}, [activeItem, surface, collapsed]);
 
 	return (
 		<aside className={collapsed ? "sidebar sidebar-collapsed" : "sidebar"}>
 			{collapsed ? (
 				<button
 					className="surface-icon-button"
+					aria-label={surface === "workspace" ? "Switch to Platform" : "Switch to Workspace"}
 					type="button"
 					onClick={() => onSurfaceChange(surface === "workspace" ? "platform" : "workspace")}
 					title={surface === "workspace" ? "Switch to Platform" : "Switch to Workspace"}
@@ -106,7 +122,7 @@ export function Sidebar({
 				</div>
 			)}
 
-			<button className="sidebar-search" type="button" aria-keyshortcuts={shortcutKeys("K")} title="Search" onClick={onSearch}>
+			<button className="sidebar-search" type="button" aria-label="Search" aria-keyshortcuts={shortcutKeys("K")} title="Search" onClick={onSearch}>
 				<Search size={16} />
 				{collapsed ? null : (
 					<>
@@ -116,7 +132,7 @@ export function Sidebar({
 				)}
 			</button>
 
-			<nav className="sidebar-navigation" aria-label={`${surface} navigation`}>
+			<nav ref={navigationHost} className="sidebar-navigation" aria-label={`${surface} navigation`}>
 				{navigation.map((item) => {
 					const Icon = item.icon;
 					return (
@@ -124,6 +140,7 @@ export function Sidebar({
 							key={item.id}
 							className={activeItem === item.id ? "sidebar-item active" : "sidebar-item"}
 							aria-current={activeItem === item.id ? "page" : undefined}
+							aria-label={collapsed ? item.label : undefined}
 							type="button"
 							onClick={() => onItemChange(item.id)}
 							title={collapsed ? item.label : undefined}
@@ -137,12 +154,13 @@ export function Sidebar({
 			</nav>
 
 			<div className="sidebar-footer">
-				<button className={activeItem === "settings" ? "sidebar-item active" : "sidebar-item"} aria-current={activeItem === "settings" ? "page" : undefined} type="button" onClick={() => onItemChange("settings")} title={collapsed ? "Settings" : undefined}>
+				<button className={activeItem === "settings" ? "sidebar-item active" : "sidebar-item"} aria-label="Settings" aria-current={activeItem === "settings" ? "page" : undefined} type="button" onClick={() => onItemChange("settings")} title={collapsed ? "Settings" : undefined}>
 					<Settings size={16} strokeWidth={1.8} />
 					{collapsed ? null : <span>Settings</span>}
 				</button>
 				<button
 					className="sidebar-item"
+					aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
 					type="button"
 					onClick={() => onCollapsedChange(!collapsed)}
 					title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
