@@ -66,6 +66,15 @@ describe("ACP protocol integration", () => {
 		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval: async () => "decline" }); expect(onQuestion).toHaveBeenCalledOnce(); }
 		finally { connection.close(); }
 	});
+	it.each(["Implement plan", "Cancel", "Add validation first."])("returns native plan-review decisions through questions (%s)", async answer => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const onQuestion = vi.fn(async () => ({ "grok-plan-review": [answer] })); const onApproval = vi.fn(async () => "decline" as const);
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			const response = await client.request("_x.ai/exit_plan_mode", { method: "_x.ai/exit_plan_mode", params: { sessionId: "native", toolCallId: "plan", planContent: "Review, implement, verify." } });
+			expect(response).toEqual(answer === "Implement plan" ? { outcome: "approved" } : answer === "Cancel" ? { outcome: "abandoned" } : { outcome: "request_changes", feedback: answer }); return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		try { await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onQuestion, onApproval }); expect(onQuestion).toHaveBeenCalledExactlyOnceWith([expect.objectContaining({ id: "grok-plan-review", isOther: true, options: [expect.objectContaining({ label: "Implement plan", preview: "Review, implement, verify." }), { label: "Cancel" }] })]); expect(onApproval).not.toHaveBeenCalled(); } finally { connection.close(); }
+	});
 	it.each(["plan", "chat", "code-accept", "code-decline", "missing-plan"])("captures proposed plans and gates implementation (%s)", async scenario => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const onApproval = vi.fn(async () => scenario === "code-accept" ? "accept" as const : "decline" as const); const onActivity = vi.fn();

@@ -221,7 +221,11 @@ The current Windows package passes the owned archive workflow smoke, including G
 
 Rendered Markdown code blocks now offer Copy with success/failure feedback. The renderer reads only the displayed code text, preserves formatting, and avoids confirming stale text after streaming changes. The isolated Electron audit verifies exact indentation/Unicode/newline preservation and failure feedback through an owned clipboard fixture in both themes/window sizes; actual operating-system clipboard writing is not covered by that fixture.
 
-Evidence: desktop lint/typecheck/build pass; 301 deterministic tests cover protocol,
+Grok Code-mode plan review now offers implementation, cancellation or written revision feedback through the existing question form. Packet tests verify approved, abandoned and request_changes responses, including validation against malformed selections. Plan-mode capture remains separate. Actual signed-in plan revision remains unverified.
+
+The new-task Create and Import controls now share an 8-pixel spaced, wrapping action row. The isolated rendered design audit checks the row in both themes and window sizes.
+
+Evidence: desktop lint/typecheck/build pass; 306 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

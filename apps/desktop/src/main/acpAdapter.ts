@@ -16,7 +16,7 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { acpModels, acpModes } from "./acpModels";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { GrokCompletion, grokCompletionMethods } from "./grokCompletion";
-import { grokPlanMethods, grokPlanRequest, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
+import { grokPlanMethods, grokPlanRequest, grokPlanReview, grokPlanReviewResponse, grokQuestionMethods, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
 import { grokModels, grokModelStream } from "./grokModels";
 
 export class AcpAdapter implements AgentAdapter {
@@ -95,6 +95,10 @@ export class AcpAdapter implements AgentAdapter {
 			if (!receiving || !params.plan) return { outcome: "abandoned", feedback: "Provide the proposed plan before requesting implementation." };
 			callbacks.onActivity?.({ id: params.toolCallId, type: "plan", title: "Proposed plan", text: params.plan });
 			if (task.mode !== "code") return { outcome: "abandoned", feedback: "The plan is captured. Wait for a later implementation instruction in Code mode." };
+			if (callbacks.onQuestion) {
+				const answers = await callbacks.onQuestion([grokPlanReview(params.plan)]);
+				return this.cancelled ? { outcome: "abandoned" } : grokPlanReviewResponse(answers);
+			}
 			const decision = await callbacks.onApproval("Implement plan", params.plan);
 			return { outcome: !this.cancelled && decision === "accept" ? "approved" : "abandoned" };
 		});

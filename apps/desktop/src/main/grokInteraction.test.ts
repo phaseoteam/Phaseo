@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { grokPlanRequest, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
+import { grokPlanRequest, grokPlanReview, grokPlanReviewResponse, grokQuestionRequest, grokQuestionResponse } from "./grokInteraction";
 
 const request = { sessionId: "native", toolCallId: "question", mode: "default", questions: [{ id: "choice", question: "Choose", options: [{ label: "A", preview: "Proposed A" }, { label: "B" }] }] };
 describe("Grok interactive requests", () => {
+	it("offers bounded plan previews and returns explicit implementation, cancellation or revisions", () => {
+		expect(grokPlanReview("x".repeat(10001)).options?.[0].preview).toHaveLength(10000);
+		expect(grokPlanReviewResponse({ "grok-plan-review": ["Implement plan"] })).toEqual({ outcome: "approved" });
+		expect(grokPlanReviewResponse({ "grok-plan-review": ["Cancel"] })).toEqual({ outcome: "abandoned" });
+		expect(grokPlanReviewResponse({ "grok-plan-review": ["  Add migration validation.  "] })).toEqual({ outcome: "request_changes", feedback: "Add migration validation." });
+	});
+	it("cannot approve malformed, inherited or ambiguous plan-review answers", () => {
+		for (const answers of [{}, { "grok-plan-review": [] }, { "grok-plan-review": ["Implement plan", "Cancel"] }, { "grok-plan-review": [" "] }, { "grok-plan-review": ["x".repeat(10001)] }, Object.create({ "grok-plan-review": ["Implement plan"] })]) expect(grokPlanReviewResponse(answers)).toEqual({ outcome: "abandoned" });
+	});
 	it("returns a selected preview and cancels ambiguous single-choice answers", () => {
 		const { questions } = grokQuestionRequest(request);
 		expect(grokQuestionResponse(questions, { choice: ["A"] })).toEqual({ outcome: "accepted", answers: { Choose: ["A"] }, annotations: { Choose: { preview: "Proposed A" } } });

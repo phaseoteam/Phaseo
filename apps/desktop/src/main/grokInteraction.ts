@@ -11,6 +11,17 @@ function payload(value: unknown, methods: readonly string[]) {
 export const grokQuestionMethods = ["x.ai/ask_user_question", "_x.ai/ask_user_question"] as const;
 export const grokPlanMethods = ["x.ai/exit_plan_mode", "_x.ai/exit_plan_mode"] as const;
 
+export function grokPlanReview(plan: string): AgentQuestion {
+	return { id: "grok-plan-review", header: "Plan review", question: "Implement this plan, cancel, or describe the changes you want.", options: [{ label: "Implement plan", preview: plan.slice(0, 10000) }, { label: "Cancel" }], isOther: true, multiSelect: false };
+}
+export function grokPlanReviewResponse(answers: Record<string, string[]>) {
+	const values = Object.hasOwn(answers, "grok-plan-review") ? answers["grok-plan-review"] : undefined;
+	if (!Array.isArray(values) || values.length !== 1 || typeof values[0] !== "string" || !values[0].trim() || values[0].length > 10000) return { outcome: "abandoned" as const };
+	if (values[0] === "Implement plan") return { outcome: "approved" as const };
+	if (values[0] === "Cancel") return { outcome: "abandoned" as const };
+	return { outcome: "request_changes" as const, feedback: values[0].trim() };
+}
+
 export function grokQuestionRequest(value: unknown): { sessionId: string; toolCallId: string; questions: AgentQuestion[] } {
 	const input = payload(value, grokQuestionMethods);
 	const sessionId = string(input.sessionId, 1000); const toolCallId = string(input.toolCallId, 1000);
