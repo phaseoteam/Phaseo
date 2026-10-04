@@ -16,6 +16,20 @@ import { grokCompletionMethods } from "./grokCompletion";
 
 const task: Task = { id: "task", title: "Task", harness: "acp", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("ACP protocol integration", () => {
+	it("normalizes native foreground plan notifications without accepting foreign sessions", async () => {
+		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
+		const connection = agent({ name: "fixture" }).onRequest("initialize", ({ params }) => ({ protocolVersion: params.protocolVersion, agentCapabilities: {} })).onRequest("session/new", () => ({ sessionId: "native" })).onRequest("session/prompt", async ({ client }) => {
+			for (const sessionId of ["foreign", "native"]) await client.notify("session/update", { sessionId, update: { sessionUpdate: "plan", entries: [{ content: "Inspect", status: "completed", priority: "high" }, { content: "Verify", status: "in_progress", priority: "medium" }] } });
+			return { stopReason: "end_turn" };
+		}).connect(ndJsonStream(Writable.toWeb(child.stdout), Readable.toWeb(child.stdin) as ReadableStream<Uint8Array>));
+		const onActivity = vi.fn();
+		try {
+			await new AcpAdapter({ id: "agent", name: "Fixture", executable: "fixture", arguments: [] }).run(task, tmpdir(), "Plan", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onActivity });
+			expect(onActivity).toHaveBeenCalledTimes(1);
+			expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ steps: [{ text: "Inspect", status: "completed" }, { text: "Verify", status: "in_progress" }] }));
+		} finally { connection.close(); }
+	});
+
 	it("passes the owned Grok profile and interactive client metadata through ACP", async () => {
 		const child = Object.assign(new EventEmitter(), { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() }); native.spawn.mockReturnValue(child);
 		const initialize = vi.fn();

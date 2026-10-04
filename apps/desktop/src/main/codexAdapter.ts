@@ -1,3 +1,4 @@
+import { parsePlanSteps } from "../shared/planSteps";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
 import { JsonRpc, JsonRpcResponseError } from "./jsonRpc";
@@ -12,7 +13,7 @@ import type { McpConnection } from "../shared/mcp";
 import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
 import { respondMcpElicitation } from "./mcpElicitation";
 
-type CodexEvent = { threadId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
+type CodexEvent = { threadId?: string; turnId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
 export class CodexAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
 	private rpc?: JsonRpc;
@@ -75,7 +76,7 @@ export class CodexAdapter implements AgentAdapter {
 					if (method === "turn/started" && event.turn) this.turnId = event.turn.id;
 					if (method === "item/agentMessage/delta" && typeof event.delta === "string") callbacks.onDelta(event.itemId ?? "assistant", event.delta);
 					if ((method === "item/reasoning/summaryTextDelta" || method === "item/reasoning/textDelta") && typeof event.delta === "string") callbacks.onActivity?.({ id: event.itemId ?? "reasoning", type: "reasoning", title: "Reasoning", text: event.delta, append: true });
-					if (method === "turn/plan/updated") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: `${event.explanation ?? ""}\n${JSON.stringify(event.plan, null, 2)}` });
+					if (method === "turn/plan/updated" && (!event.turnId || !this.turnId || event.turnId === this.turnId)) callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: `${event.explanation ?? ""}\n${JSON.stringify(event.plan, null, 2)}`, steps: parsePlanSteps(event.plan, "codex"), explanation: typeof event.explanation === "string" ? event.explanation : undefined });
 					if (method === "thread/tokenUsage/updated") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(event.tokenUsage, null, 2) });
 					if ((method === "item/started" || method === "item/completed") && event.item && event.item.type !== "agentMessage" && event.item.type !== "userMessage") {
 						const item = event.item;

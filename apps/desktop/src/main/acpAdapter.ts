@@ -1,3 +1,4 @@
+import { parsePlanSteps } from "../shared/planSteps";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
@@ -77,7 +78,7 @@ export class AcpAdapter implements AgentAdapter {
 					const tool = { ...tools.get(update.toolCallId), ...update }; tools.set(update.toolCallId, tool);
 					callbacks.onActivity?.({ id: tool.toolCallId, type: "tool", title: tool.title ?? "Tool", text: JSON.stringify(tool.rawOutput ?? tool.content ?? tool.rawInput ?? {}, null, 2), status: tool.status === "completed" ? "completed" : tool.status === "failed" ? "failed" : "running" });
 				}
-				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2) });
+				if (update.sessionUpdate === "plan") callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: JSON.stringify(update.entries, null, 2), steps: parsePlanSteps(update.entries, "acp") });
 				if (update.sessionUpdate === "usage_update") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(update, null, 2) });
 				if (update.sessionUpdate === "config_option_update") { callbacks.onModels?.(update.configOptions.some(option => option.category === "model" && option.type === "select") ? acpModels(update.configOptions) : nativeGrokModels); if (modesViaConfig) { nativeModes = acpModes(undefined, update.configOptions); callbacks.onModes?.(nativeModes); } }
 				if (update.sessionUpdate === "current_mode_update" && !modesViaConfig) { nativeModes = nativeModes.map(mode => ({ ...mode, default: mode.id === update.currentModeId })); callbacks.onModes?.(nativeModes); }

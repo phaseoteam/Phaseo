@@ -1,9 +1,10 @@
-import { Check, Copy } from "lucide-react";
+import { Check, Circle, CircleDot, Copy } from "lucide-react";
 import type { AgentActivity } from "../../shared/workspace";
 import { useTextCopy } from "./useTextCopy";
 
 const labels = { tool: "Tool result", reasoning: "Reasoning", plan: "Plan", usage: "Usage" };
 export function ActivityResult({ activity }: { activity: AgentActivity }) {
 	const { status, copying, copy } = useTextCopy(activity.text);
-	return <details className="task-activity"><summary>{activity.title}{activity.status ? ` · ${activity.status}` : ""}</summary><div className="activity-result"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : labels[activity.type]}</span><button type="button" disabled={copying || !activity.text} onClick={() => void copy()} aria-label={status === "copied" ? "Result copied" : "Copy result"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy result"}</button></div><pre>{activity.text}</pre></div></details>;
+	const steps = activity.type === "plan" ? activity.steps : undefined;
+	return <details className="task-activity" open={Boolean(steps?.length)}><summary>{activity.title}{activity.status ? ` · ${activity.status}` : ""}{steps?.length ? ` · ${steps.filter(step => step.status === "completed").length}/${steps.length} completed` : ""}</summary><div className="activity-result"><div className="message-code-actions"><span aria-live="polite">{status === "failed" ? "Copy failed" : labels[activity.type]}</span><button type="button" disabled={copying || !activity.text} onClick={() => void copy()} aria-label={status === "copied" ? "Result copied" : "Copy result"}>{status === "copied" ? <Check size={14} /> : <Copy size={14} />}{status === "copied" ? "Copied" : "Copy result"}</button></div>{steps?.length ? <>{activity.explanation && <p className="plan-explanation">{activity.explanation}</p>}<ol className="plan-steps">{steps.map((step, index) => <li key={index} data-status={step.status}>{step.status === "completed" ? <Check size={16} aria-hidden /> : step.status === "in_progress" ? <CircleDot size={16} aria-hidden /> : <Circle size={16} aria-hidden />}<span>{step.text}<small>{step.status === "in_progress" ? "In progress" : step.status === "completed" ? "Completed" : "Pending"}</small></span></li>)}</ol><details className="plan-source"><summary>Original result</summary><pre>{activity.text}</pre></details></> : <pre>{activity.text}</pre>}</div></details>;
 }

@@ -8,6 +8,20 @@ import { nativeMcpName, type McpConnection } from "../shared/mcp";
 
 const task: Task = { id: "task", title: "Task", harness: "claude", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Claude SDK integration", () => {
+	it("publishes todo progress only after successful foreground tool results", async () => {
+		sdk.query.mockReturnValue(Object.assign((async function* () {
+			for (const [id, parent, failed] of [["success", null, false], ["failure", null, true], ["child", "delegate", false]] as const) {
+				yield { type: "assistant", parent_tool_use_id: parent, session_id: "native", message: { id, content: [{ type: "tool_use", id, name: "TodoWrite", input: { todos: [{ content: "Inspect", status: "completed" }, { content: "Verify", status: "pending" }] } }] } };
+				yield { type: "user", parent_tool_use_id: parent, session_id: "native", message: { content: [{ type: "tool_result", tool_use_id: id, content: "Result", is_error: failed }] } };
+			}
+			yield { type: "result", subtype: "success", is_error: false, result: "Done" };
+		})(), { close: vi.fn() }));
+		const onActivity = vi.fn();
+		await new ClaudeAdapter().run({ ...task, mode: "code" }, ".", "Plan", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept", onActivity });
+		const plans = onActivity.mock.calls.map(([activity]) => activity).filter(activity => activity.type === "plan");
+		expect(plans).toEqual([expect.objectContaining({ id: "todo-plan", steps: [{ text: "Inspect", status: "completed" }, { text: "Verify", status: "pending" }] })]);
+	});
+
 	it.each(["chat", "code"] as const)("routes MCP user forms through the SDK callback (%s)", async mode => {
 		const onForm = vi.fn().mockResolvedValue({ name: "Small" });
 		sdk.query.mockImplementation(({ options }) => Object.assign((async function* () {
@@ -56,7 +70,7 @@ describe("Claude SDK integration", () => {
 		const onDelta = vi.fn(); const onSession = vi.fn();
 		await new ClaudeAdapter().run(task, ".", "Hi", { onDelta, onSession, onApproval: async () => "decline" });
 		expect(onDelta).toHaveBeenCalledExactlyOnceWith("response", "Hello"); expect(onSession).toHaveBeenCalledWith("native"); expect(close).toHaveBeenCalled();
-		expect(sdk.query.mock.calls[0][0].options.tools).toEqual([]);
+		expect(sdk.query.mock.lastCall![0].options.tools).toEqual([]);
 	});
 	it("surfaces provider failures instead of claiming completion", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "error_during_execution", errors: ["Failed"] }; })(), { close: vi.fn() }));

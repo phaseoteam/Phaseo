@@ -1,3 +1,4 @@
+import { parsePlanSteps, type PlanStep } from "../shared/planSteps";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 import type { Account, Task } from "../shared/workspace";
@@ -50,6 +51,7 @@ export class ClaudeAdapter implements AgentAdapter {
 		let completed = false;
 		let messageId = "assistant";
 		const streamed = new Set<string>();
+		const todos = new Map<string, { steps: PlanStep[]; text: string }>();
 		try {
 			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } promptAllowed = true; releasePrompt(); }
 			for await (const message of execution) {
@@ -63,10 +65,18 @@ export class ClaudeAdapter implements AgentAdapter {
 				}
 				if (message.type === "assistant") for (const block of message.message.content) {
 					if (block.type === "tool_use") callbacks.onActivity?.({ id: block.id, type: "tool", title: block.name, text: JSON.stringify(block.input, null, 2), status: "running" });
+					if (block.type === "tool_use" && block.name === "TodoWrite" && !message.parent_tool_use_id) {
+						const steps = parsePlanSteps((block.input as { todos?: unknown } | null)?.todos, "claude");
+						if (steps) todos.set(block.id, { steps, text: JSON.stringify(block.input, null, 2) });
+					}
 					if (block.type === "thinking") callbacks.onActivity?.({ id: `${message.message.id}:reasoning`, type: "reasoning", title: "Reasoning", text: block.thinking, status: "completed" });
 				}
 				if (message.type === "user" && Array.isArray(message.message.content)) for (const block of message.message.content) {
 					if (block.type === "tool_result") callbacks.onActivity?.({ id: block.tool_use_id, type: "tool", title: "Tool result", text: typeof block.content === "string" ? block.content : JSON.stringify(block.content, null, 2), status: block.is_error ? "failed" : "completed" });
+					if (block.type === "tool_result" && !message.parent_tool_use_id) {
+						const plan = todos.get(block.tool_use_id); todos.delete(block.tool_use_id);
+						if (plan && !block.is_error) callbacks.onActivity?.({ id: "todo-plan", type: "plan", title: "Task progress", ...plan });
+					}
 				}
 				if (message.type === "assistant" && !message.parent_tool_use_id && !streamed.has(message.message.id)) {
 					for (const block of message.message.content) if (block.type === "text") callbacks.onDelta(message.message.id, block.text);

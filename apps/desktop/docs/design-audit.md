@@ -55,6 +55,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 36. **Conversation file references:** project file links use the website's link styling, carry line/column positions into the selected editor, prevent repeated pending opens and show inline failure/retry feedback. Owned IPC fixtures verify the complete requested project/file/position in both themes/window sizes. Native editor argument tests cover launch syntax; installed editor UI navigation remains unverified.
 
+37. **Structured task progress:** show native plan steps with completed counts, readable explanations, explicit status labels and inert literal text. The card sizes against its conversation pane; steps and original results scroll independently so summary/copy controls remain accessible. A 30-step fixture verifies counts, statuses, containment, scrolling and exact source copying in both themes/window sizes. Separate native protocol/runtime tests cover admission and persistence; these captures do not prove live provider execution.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)
@@ -97,12 +99,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Conversation file reference retry at minimum window size](screenshots/file-reference-small-window.png)
 
+![Structured task progress at minimum window size](screenshots/task-progress-small-window.png)
+
 ![Platform](screenshots/platform.png)
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 128 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 132 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 128 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 132 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

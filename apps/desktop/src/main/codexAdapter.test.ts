@@ -26,6 +26,23 @@ function fixture(onRequest: (packet: { id: number; method: string; params: Recor
 const task: Task = { id: "task", title: "Task", harness: "codex", model: "default", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 
 describe("Codex native integration", () => {
+	it("retains structured native plan updates and ignores other threads and turns", async () => {
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") {
+				send({ method: "turn/started", params: { threadId: "native", turn: { id: "turn" } } });
+				for (const [threadId, turnId] of [["foreign", "turn"], ["native", "old"], ["native", "turn"]]) send({ method: "turn/plan/updated", params: { threadId, turnId, explanation: "Plan", plan: [{ step: "Inspect", status: "inProgress" }] } });
+				send({ id: packet.id, result: { turn: { id: "turn" } } });
+				send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } });
+			}
+		});
+		const onActivity = vi.fn();
+		await new CodexAdapter().run(task, ".", "Plan", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline", onActivity });
+		expect(onActivity).toHaveBeenCalledTimes(1);
+		expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({ id: "plan", explanation: "Plan", steps: [{ text: "Inspect", status: "in_progress" }] }));
+	});
+
 	it("answers MCP forms for the exact native thread and rejects foreign requests", async () => {
 		let finish: (() => void) | undefined; const replies: unknown[] = [];
 		fixture((packet, send) => {

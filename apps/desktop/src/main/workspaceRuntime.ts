@@ -316,8 +316,8 @@ export class WorkspaceRuntime {
 				current.activities ??= [];
 				const activityId = `${message.id}:${activity.id}`;
 				const existing = current.activities.find(value => value.id === activityId);
-				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; }
-				else current.activities.push({ id: activityId, type: activity.type, title: activity.title, text: activity.text, status: activity.status });
+				if (existing) { existing.text = activity.append ? existing.text + activity.text : activity.text; existing.status = activity.status; existing.title = activity.title; existing.steps = activity.steps; existing.explanation = activity.explanation; }
+				else current.activities.push({ id: activityId, type: activity.type, title: activity.title, text: activity.text, status: activity.status, steps: activity.steps, explanation: activity.explanation });
 			}
 			this.store.saveTask(current); deltas.clear(); activities = []; this.broadcast();
 		};

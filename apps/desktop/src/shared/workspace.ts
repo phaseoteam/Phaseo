@@ -5,6 +5,7 @@ import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
 import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
+import type { PlanStep } from "./planSteps";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -16,7 +17,7 @@ export type Attachment = { id: string; taskId: string; name: string; kind: "text
 export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
 export type QueuedMessage = { id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
-export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed" };
+export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
 export type Task = {
 	revision?: number;

@@ -180,6 +180,8 @@ describe("workspace orchestration", () => {
 				prompts.push(text); callbacks.onSession("native"); callbacks.onDelta("response", "Reply to "); callbacks.onDelta("response", text);
 				callbacks.onActivity?.({ id: "tool", type: "tool", title: "Read file", text: "Started", status: "running" });
 				callbacks.onActivity?.({ id: "tool", type: "tool", title: "Read file", text: "Contents", status: "completed" });
+				callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: "Before", steps: [{ text: "Inspect", status: "pending" }] });
+				callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: "After", explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] });
 				await new Promise<void>(resolve => { finish = resolve; });
 			}, cancel: async () => { finish?.(); },
 		});
@@ -195,6 +197,9 @@ describe("workspace orchestration", () => {
 			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.filter(message => message.role === "assistant")).toHaveLength(2));
 			expect(runtime.store.getTask(id).messages.find(message => message.role === "assistant")?.text).toBe("Reply to First");
 			expect(runtime.store.getTask(id).activities?.[0]).toMatchObject({ text: "Contents", status: "completed" });
+			expect(runtime.store.getTask(id).activities?.[1]).toMatchObject({ text: "After", explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] });
+			const reader = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+			try { expect(reader.getTask(id).activities?.[1]).toMatchObject({ explanation: "Confirmed update", steps: [{ text: "Inspect", status: "completed" }] }); } finally { reader.close(); }
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("requires an explicit decision and does not drain queued work after cancellation", async () => {
