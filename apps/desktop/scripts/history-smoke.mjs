@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from "electron";
-import { mkdtempSync, mkdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -15,6 +15,10 @@ for (let index = 0; index < 157; index++) {
   const id = String(index).padStart(3, "0");
   db.prepare("INSERT INTO tasks VALUES (?, ?)").run(id, JSON.stringify({ id, title: `History ${id}`, harness: "phaseo", model: "default", mode: "chat", status: index === 154 ? "failed" : "completed", pinned: index === 0, archived: index >= 155, queue: [], createdAt: timestamp, updatedAt: timestamp, messages: [{ id: `message-${id}`, role: "user", text: index === 42 ? "Résumé needle in the conversation body" : `Sample message ${id}`, createdAt: timestamp }] }));
 }
+const longHistory = JSON.parse(db.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
+longHistory.messages = Array.from({ length: 125 }, (_, index) => ({ id: `long-${index}`, role: "user", text: index === 0 ? "Résumé needle in the conversation body" : `Conversation item ${String(index).padStart(3, "0")}`, createdAt: timestamp }));
+longHistory.activities = Array.from({ length: 120 }, (_, index) => ({ id: `activity-${index}`, type: "tool", title: `History activity ${index}`, text: `Tool result ${index}`, status: "completed" }));
+db.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(longHistory));
 db.close();
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
@@ -103,6 +107,34 @@ try {
   await wait(`document.querySelector('.task-title')?.value==='Recovered detail'`, "detail retry");
   await search("RÉSUMÉ");
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 042')`, "body search");
+  await run(`document.querySelector('.task-row').click()`);
+  await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50&&document.querySelectorAll('.task-activity').length===50`, "recent conversation history");
+  if (!await run(`document.querySelector('.task-message').textContent.includes('Conversation item 075')`)) throw new Error("Conversation did not open at recent history.");
+  const captures = path.resolve("../../output/playwright/history-smoke"); mkdirSync(captures, { recursive: true });
+  writeFileSync(path.join(captures, entry ? "packaged-conversation.png" : "conversation.png"), (await window.webContents.capturePage()).toPNG());
+  const anchorTop = await run(`(()=>{document.querySelector('.task-messages').scrollTop=150;return Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top})()`);
+  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
+  await wait(`document.querySelectorAll('.task-message').length===100`, "older conversation page");
+  const restoredTop = await run(`Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top`);
+  if (Math.abs(anchorTop - restoredTop) > 1) throw new Error("Loading older messages moved the reading position.");
+  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
+  await wait(`document.querySelectorAll('.task-message').length===125`, "oldest conversation page");
+  if (!await run(`document.querySelector('.task-message').textContent.includes('Résumé needle')&&!Array.from(document.querySelectorAll('.task-messages button')).some(button=>button.textContent==='Load older messages')`)) throw new Error("Oldest conversation history is inaccessible.");
+  for (const count of [100, 120]) {
+    await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older activities').click()`);
+    await wait(`document.querySelectorAll('.task-activity').length===${count}`, `activity page ${count}`);
+  }
+  await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Home').click()`);
+  await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click()`);
+  await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50`, "conversation history resets on reopen");
+  const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
+  try {
+    const task = JSON.parse(liveHistory.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
+    task.messages.push({ id: "live-arrival", role: "assistant", text: "New reply while reading history", createdAt: timestamp });
+    liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
+  } finally { liveHistory.close(); }
+  await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
+  await wait(`document.querySelectorAll('.task-message').length===51&&document.querySelector('.task-message').textContent.includes('Conversation item 075')&&document.querySelector('.task-messages').textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
   await search("absent"); await search("History 154");
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 154')`, "rapid search");
   await search("");
@@ -120,7 +152,7 @@ try {
     await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
   }
   if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4) throw new Error("History navigation must use metadata reads and broadcasts.");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true, metadataOnly: true }), "ISOLATED_DATA", data);
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

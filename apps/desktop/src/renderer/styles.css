@@ -155,6 +155,8 @@
 .task-question input, .task-question select, .task-question textarea { color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font: inherit; }
 .task-archive-filter { margin: 0 10px 8px; color: var(--text-muted); font-size: 12px; }
 .task-messages { flex: 1; min-height: 0; overflow: auto; padding: 24px max(24px, calc((100% - 800px) / 2)); }
+.conversation-history-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.conversation-history-controls small { color: var(--text-muted); font-size: 12px; }
 .task-message { margin-bottom: 26px; }
 .task-message small { display: block; color: var(--text-muted); margin-bottom: 9px; font-size: 11px; }
 .task-message > div { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; font-size: 14px; }
