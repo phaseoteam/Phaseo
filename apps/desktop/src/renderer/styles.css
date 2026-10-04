@@ -29,6 +29,7 @@
 	--primary-foreground: oklch(0.977 0.013 236.62);
 	--shadow: 0 1px 2px rgba(17, 20, 24, 0.04), 0 8px 28px rgba(17, 20, 24, 0.04);
 	--radius: 10px;
+	--radius-card: min(calc(var(--radius) * 2.6), 24px);
 }
 
 :root[data-theme="dark"] {
@@ -404,6 +405,7 @@ button { color: inherit; }
 
 .topbar { display: grid; height: 54px; min-height: 54px; grid-template-columns: 150px 1fr auto; align-items: center; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 92%, transparent); padding: 0 16px; -webkit-app-region: drag; }
 .topbar button { -webkit-app-region: no-drag; }
+:where(.sidebar, .topbar, .desktop-menu, .desktop-menu-bar, .window-controls) button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .history-controls { display: flex; gap: 3px; }
 .history-controls button, .icon-button { display: grid; width: 29px; height: 29px; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--text-muted); }
 .history-controls button:not(:disabled):hover, .icon-button:hover { background: var(--surface-hover); cursor: pointer; }
@@ -436,11 +438,11 @@ button { color: inherit; }
 .metric-blue .metric-icon { background: var(--primary-soft); color: var(--primary-text); }
 
 .workspace-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); align-items: start; gap: 24px; }
-.panel { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.panel { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); overflow: hidden; }
 .recent-panel { grid-column: 1 / -1; }
 .panel-heading { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--border); padding: 20px 24px; }
-.panel-heading h2 { margin: 0 0 4px; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
-.panel-heading p { margin: 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.panel-heading h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.panel-heading p { margin: 6px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
 .count-pill, .status-pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); padding: 2px 8px; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
 .attention-list { padding: 0 24px; }
 .attention-item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 17px 0; }

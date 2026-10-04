@@ -304,3 +304,5 @@ The October 4 nightly replaces the October 3 reference (8ed276c246b624631e7d3924
 - [ ] PR check/comment/conflict watchers that wake the agent with deduplicated updates.
 - [ ] Model aliases and input/cache/output cost breakdowns, including speed premiums.
 - [ ] Failed workspace preparation retry and the new resume/compaction behavior.
+
+Desktop panels now follow the current web Card radius formula, with description-only heading gaps and themed shell focus outlines. Packaged rendered checks verify card shape and header focus across themes/window sizes; full accessibility remains unchecked. Grok setup copy names its own native account.

@@ -121,6 +121,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Expanded context at minimum window size](screenshots/git-context-small-window.png)
 
+43. **Web card and focus treatment:** panels use the website card’s capped 24-pixel radius derived from its 10-pixel base token. Headings no longer reserve description spacing when no description is present. Header, sidebar and native-menu buttons use the website focus-ring colour rather than the platform accent. The packaged audit checks computed panel/heading styles and header focus in both themes/window sizes. Grok task setup now names its own account and native permissions.
+
+![Website card and focus treatment](screenshots/web-card-focus-small-window.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 136 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
