@@ -32,6 +32,7 @@ export type DesktopUpdateState = {
 };
 
 export type PhaseoDesktopApi = {
+	readonly platform: NodeJS.Platform;
 	workspace: WorkspaceApi;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;

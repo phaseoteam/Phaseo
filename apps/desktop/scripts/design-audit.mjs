@@ -139,6 +139,14 @@ try {
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
         const shellFocus = await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.command-button');button.focus();return {outline:getComputedStyle(button).outlineColor,ring:getComputedStyle(document.documentElement).getPropertyValue('--ring').trim()}})()`);
         if(!shellFocus.outline.startsWith('oklch('))throw new Error("Shell focus must use the web theme ring.");
+        if(page==="Home"&&!await window.webContents.executeJavaScript(`!document.querySelector('.activity-panel')&&document.querySelector('.recent-panel').getBoundingClientRect().top>document.querySelector('.attention-panel').getBoundingClientRect().bottom`))throw new Error("Idle home must show recent work directly after attention.");
+        if(page==="Home"){
+          const idleOverview=await window.webContents.executeJavaScript('window.phaseoDesktop.workspace.overview()');
+          window.webContents.send("workspace:overview-changed",{...idleOverview,tasks:idleOverview.tasks.map((task,index)=>index===0?{...task,status:"running"}:task)});
+          for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.activity-panel .home-task-row'))`);attempt++){if(attempt>50)throw new Error("Running tasks were hidden on home.");await new Promise(resolve=>setTimeout(resolve,20));}
+          window.webContents.send("workspace:overview-changed",idleOverview);
+          for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.activity-panel'))`);attempt++){if(attempt>50)throw new Error("Idle home did not recover its compact layout.");await new Promise(resolve=>setTimeout(resolve,20));}
+        }
         const cardLayout = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.panel')).map(panel=>({radius:getComputedStyle(panel).borderRadius,headings:Array.from(panel.querySelectorAll('.panel-heading h2')).map(heading=>getComputedStyle(heading).margin)}))`);
         if(cardLayout.some(card=>card.radius!=="24px"||card.headings.some(margin=>margin!=="0px")))throw new Error("Panel shape or heading spacing differs from the web card treatment.");
         const selectLayout = await window.webContents.executeJavaScript(`(()=>{const controls=Array.from(document.querySelectorAll('.page select,.task-workspace select,.terminal-workspace select'));return {scheme:getComputedStyle(document.documentElement).colorScheme,identity:document.querySelector('.workspace-identity')?.tagName,controls:controls.map(e=>{const s=getComputedStyle(e);return {appearance:s.appearance,padding:parseFloat(s.paddingRight),arrow:s.backgroundImage!=='none',font:s.fontFamily}})}})()`);
@@ -449,9 +457,21 @@ try {
         }
       }
       holdOverview=true;failOverview=true;
-      await window.webContents.executeJavaScript(`(()=>{const trigger=document.querySelector('.command-button');trigger.focus();trigger.click()})()`);
+      const shortcutPlatform=await window.webContents.executeJavaScript('window.phaseoDesktop.platform');
+      if(shortcutPlatform!==process.platform)throw new Error("Shortcut platform differs from native runtime.");
+      const shortcutModifier=process.platform==="darwin"?"meta":"control";
+      const expectedShortcut=process.platform==="darwin"?"⌘K":"Ctrl+K";
+      if(!await window.webContents.executeJavaScript(`document.querySelector('.command-button kbd')?.textContent===${JSON.stringify(expectedShortcut)}`))throw new Error("Command shortcut label differs from native runtime.");
+      await window.webContents.executeJavaScript(`document.querySelector('.command-button').focus()`);
+      await window.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,isComposing:true}));`);
+      if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('.command-palette'))`))throw new Error("Composition opened command search.");
+      window.focus();window.webContents.focus();
+      window.webContents.sendInputEvent({type:"keyDown",keyCode:"K",modifiers:[shortcutModifier]});
+      window.webContents.sendInputEvent({type:"keyUp",keyCode:"K",modifiers:[shortcutModifier]});
       for(let attempt=0;!releaseOverview;attempt++){if(attempt>50)throw new Error("Command overview did not reach fixture.");await new Promise(resolve=>setTimeout(resolve,20));}
       if(!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.command-palette [role="status"]'))&&document.activeElement?.getAttribute('role')==='combobox'`))throw new Error("Command loading or search focus is missing.");
+      await window.webContents.executeJavaScript(`window.dispatchEvent(new KeyboardEvent('keydown',{key:'k',ctrlKey:true,repeat:true}));`);
+      if(!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.command-palette'))`))throw new Error("Repeated shortcut closed command search.");
       holdOverview=false;releaseOverview();releaseOverview=undefined;
       for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`document.querySelector('.command-palette [role="alert"]')?.textContent==='Owned command search failure'`))break;if(attempt>50)throw new Error("Command failure feedback missing.");await new Promise(resolve=>setTimeout(resolve,100));}
       writeFileSync(path.join(output,`${width}-${theme}-commands-failure.png`),(await window.webContents.capturePage()).toPNG());

@@ -443,6 +443,7 @@ button { color: inherit; }
 .metric-card strong { align-self: end; font-size: 21px; font-weight: 600; letter-spacing: -.03em; }
 .metric-blue .metric-icon { background: var(--primary-soft); color: var(--primary-text); }
 
+.workspace-grid:not(:has(.activity-panel)) { grid-template-columns: minmax(0, 1fr); }
 .workspace-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr); align-items: start; gap: 24px; }
 .panel { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); overflow: hidden; }
 .recent-panel { grid-column: 1 / -1; }

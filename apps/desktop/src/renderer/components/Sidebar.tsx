@@ -1,3 +1,4 @@
+import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
 import {
 	Activity,
 	Bell,
@@ -105,12 +106,12 @@ export function Sidebar({
 				</div>
 			)}
 
-			<button className="sidebar-search" type="button" title="Search" onClick={onSearch}>
+			<button className="sidebar-search" type="button" aria-keyshortcuts={shortcutKeys("K")} title="Search" onClick={onSearch}>
 				<Search size={16} />
 				{collapsed ? null : (
 					<>
 						<span>Search</span>
-						<kbd>⌘K</kbd>
+						<kbd>{shortcutLabel("K")}</kbd>
 					</>
 				)}
 			</button>

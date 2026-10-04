@@ -1,3 +1,4 @@
+import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
 import { ArrowLeft, ArrowRight, Command, Moon, Plus, Sun } from "lucide-react";
 import type { ProductSurface, ThemePreference } from "../types";
 
@@ -28,10 +29,10 @@ export function Topbar({ surface, theme, onThemeChange, onNewTask, onCommands }:
 			</div>
 
 			<div className="topbar-actions">
-				<button className="command-button" type="button" onClick={onCommands}>
+				<button className="command-button" type="button" aria-keyshortcuts={shortcutKeys("K")} onClick={onCommands}>
 					<Command size={14} />
 					<span>Commands</span>
-					<kbd>⌘K</kbd>
+					<kbd>{shortcutLabel("K")}</kbd>
 				</button>
 				<button
 					className="icon-button"

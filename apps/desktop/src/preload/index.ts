@@ -6,6 +6,7 @@ let pendingTaskOpen: { id?: string } | undefined;
 ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenListeners.size) for (const listener of taskOpenListeners) listener(id); else pendingTaskOpen = { id }; });
 
 const desktopApi: PhaseoDesktopApi = {
+	platform: process.platform,
 	workspace: {
 		missions: () => ipcRenderer.invoke("workspace:missions"),
 		mission: command => ipcRenderer.invoke("workspace:mission", command),

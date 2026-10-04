@@ -1,3 +1,4 @@
+import { shortcutLabel } from "../lib/shortcuts";
 import { useEffect, useRef, useState } from "react";
 import {
 	Check,
@@ -111,30 +112,30 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 		<div className="desktop-menu" style={{ left: menuLeft }} role="menu">
 			{activeMenu === "phaseo" && <>
 				<MenuItem onClick={() => { setActiveMenu(null); setAboutOpen(true); }}>About Phaseo</MenuItem>
-				<MenuItem onClick={() => { setActiveMenu(null); setPreferencesOpen(true); }} shortcut="Ctrl+,">Preferences</MenuItem>
+				<MenuItem onClick={() => { setActiveMenu(null); setPreferencesOpen(true); }} shortcut={shortcutLabel(",")}>Preferences</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem onClick={checkForUpdates}>Check for updates…</MenuItem>
 				<div className="desktop-menu-separator" />
-				<MenuItem onClick={() => appAction("quit")} shortcut="Alt+F4">Quit Phaseo</MenuItem>
+				<MenuItem onClick={() => appAction("quit")} shortcut={runtime.platform === "darwin" ? undefined : "Alt+F4"}>Quit Phaseo</MenuItem>
 			</>}
 			{activeMenu === "file" && <>
-				<MenuItem onClick={() => navigate("missions")} shortcut="Ctrl+N">New mission</MenuItem>
-				<MenuItem onClick={() => navigate("projects")} shortcut="Ctrl+Shift+N">New project</MenuItem>
+				<MenuItem onClick={() => navigate("missions")} shortcut={shortcutLabel("N")}>New mission</MenuItem>
+				<MenuItem onClick={() => navigate("projects")} shortcut={shortcutLabel("Shift+N")}>New project</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem disabled>Open repository…</MenuItem>
 			</>}
 			{activeMenu === "edit" && <>
-				<MenuItem onClick={() => appAction("cut")} shortcut="Ctrl+X">Cut</MenuItem>
-				<MenuItem onClick={() => appAction("copy")} shortcut="Ctrl+C">Copy</MenuItem>
-				<MenuItem onClick={() => appAction("paste")} shortcut="Ctrl+V">Paste</MenuItem>
-				<MenuItem onClick={() => appAction("select-all")} shortcut="Ctrl+A">Select all</MenuItem>
+				<MenuItem onClick={() => appAction("cut")} shortcut={shortcutLabel("X")}>Cut</MenuItem>
+				<MenuItem onClick={() => appAction("copy")} shortcut={shortcutLabel("C")}>Copy</MenuItem>
+				<MenuItem onClick={() => appAction("paste")} shortcut={shortcutLabel("V")}>Paste</MenuItem>
+				<MenuItem onClick={() => appAction("select-all")} shortcut={shortcutLabel("A")}>Select all</MenuItem>
 			</>}
 			{activeMenu === "view" && <>
-				<MenuItem onClick={() => appAction("reload")} shortcut="Ctrl+R">Reload</MenuItem>
+				<MenuItem onClick={() => appAction("reload")} shortcut={shortcutLabel("R")}>Reload</MenuItem>
 				<div className="desktop-menu-separator" />
-				<MenuItem onClick={() => appAction("zoom-in")} shortcut="Ctrl++">Zoom in</MenuItem>
-				<MenuItem onClick={() => appAction("zoom-out")} shortcut="Ctrl+-">Zoom out</MenuItem>
-				<MenuItem onClick={() => appAction("zoom-reset")} shortcut="Ctrl+0">Actual size</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-in")} shortcut={shortcutLabel("+")}>Zoom in</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-out")} shortcut={shortcutLabel("-")}>Zoom out</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-reset")} shortcut={shortcutLabel("0")}>Actual size</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem onClick={() => appAction("toggle-full-screen")} shortcut="F11">Full screen</MenuItem>
 			</>}

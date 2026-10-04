@@ -145,6 +145,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Model discovery recovery](screenshots/model-discovery-retry.png)
 
+49. **Idle home layout and native shortcuts:** when no task is running, attention and recent work use the full content width; the zero running count remains in the summary. Active tasks restore the Running panel through overview updates. The owned rendered fixture checks both transitions. Header, search, menus and composer use the host platform's shortcut labels and accessible key descriptions; the composer describes Send or Queue as appropriate. Source and packaged Windows workflows open command search with native Ctrl+K, verify Escape restores focus, and check composition/repeat guards. macOS/Linux execution and live IME behaviour remain unverified.
+
+![Idle home with recent work visible](screenshots/idle-home-small-window.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 146 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.

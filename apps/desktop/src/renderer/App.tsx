@@ -66,8 +66,8 @@ export function App() {
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (!(event.metaKey || event.ctrlKey)) return;
-			if (event.key.toLowerCase() === "k") { event.preventDefault(); setCommandsOpen(value => !value); }
+			if (event.isComposing || !(event.metaKey || event.ctrlKey)) return;
+			if (event.key.toLowerCase() === "k") { event.preventDefault(); if (!event.repeat) setCommandsOpen(value => !value); }
 			if (event.key === "1") {
 				event.preventDefault();
 				setSurface("workspace");
