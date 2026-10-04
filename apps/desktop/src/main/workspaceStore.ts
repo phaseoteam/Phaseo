@@ -53,6 +53,10 @@ export class WorkspaceStore {
 	getTerminals(): TerminalSession[] { return this.db.prepare("SELECT data FROM terminals").all().map(row => JSON.parse(row.data as string) as TerminalSession).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)); }
 	saveTerminal(session: TerminalSession) { session.updatedAt = new Date().toISOString(); this.db.prepare("INSERT INTO terminals (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(session.id, JSON.stringify(session)); }
 	deleteTerminal(id: string) { this.db.prepare("DELETE FROM terminals WHERE id=?").run(id); }
+	getProjects(): Project[] { return this.db.prepare("SELECT data FROM projects").all().map(row => JSON.parse(row.data as string) as Project); }
+	getAccounts(): Account[] { return this.db.prepare("SELECT data FROM accounts").all().map(row => JSON.parse(row.data as string) as Account); }
+	getAgents(): AgentConnection[] { return this.db.prepare("SELECT data FROM agents").all().map(row => JSON.parse(row.data as string) as AgentConnection); }
+	getMcpConnections(): McpConnection[] { return this.db.prepare("SELECT data FROM mcp_connections").all().map(row => JSON.parse(row.data as string) as McpConnection); }
 	get(): Workspace {
 		const rows = (table: "projects" | "tasks" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
 		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks: rows("tasks").sort((a: Task, b: Task) => b.updatedAt.localeCompare(a.updatedAt)) };
@@ -64,7 +68,6 @@ export class WorkspaceStore {
 		return JSON.parse(row.data as string) as Task;
 	}
 	getOverview(): WorkspaceOverview {
-		const rows = (table: "projects" | "accounts" | "agents" | "mcp_connections") => this.db.prepare(`SELECT data FROM ${table}`).all().map(row => JSON.parse(row.data as string));
 		const tasks = this.db.prepare(`SELECT json_object(
 			'id', id, 'title', json_extract(data, '$.title'), 'harness', json_extract(data, '$.harness'),
 			'model', json_extract(data, '$.model'), 'mode', json_extract(data, '$.mode'), 'status', json_extract(data, '$.status'),
@@ -90,7 +93,7 @@ export class WorkspaceStore {
 			task.attentionReason = inboxReasonFromCounts(task);
 			return task;
 		});
-		return { version: 1, projects: rows("projects"), accounts: rows("accounts"), agents: rows("agents"), mcpConnections: rows("mcp_connections"), tasks };
+		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections(), tasks };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
 		const { query, archived, offset, limit } = validateTaskHistoryQuery(value);
@@ -123,7 +126,7 @@ export class WorkspaceStore {
 		task.revision = Number(row!.revision);
 	}
 	addProject(directory: string): Project {
-		const existing = this.get().projects.find(project => project.directory === directory);
+		const existing = this.getProjects().find(project => project.directory === directory);
 		if (existing) return existing;
 		const project: Project = { id: randomUUID(), directory, name: directory.split(/[\\/]/).filter(Boolean).at(-1) ?? directory, createdAt: new Date().toISOString() };
 		this.db.prepare("INSERT INTO projects (id, data) VALUES (?, ?)").run(project.id, JSON.stringify(project));
@@ -157,10 +160,10 @@ export class WorkspaceStore {
 		}
 		if (command.type === "create-task") {
 			if (command.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
-			if (command.projectId && !this.get().projects.some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
-			if (command.accountId && !this.get().accounts.some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
+			if (command.projectId && !this.getProjects().some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
+			if (command.accountId && !this.getAccounts().some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if ((command.harness === "phaseo" || command.harness === "cursor") && !command.accountId) throw new Error(`Choose an account for the ${command.harness === "cursor" ? "Cursor" : "Phaseo"} harness.`);
-			if (command.harness === "acp" && !this.get().agents.some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
+			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
 			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
 			this.saveTask(task); return task;

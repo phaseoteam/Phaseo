@@ -41,7 +41,7 @@ describe("existing conversation settings", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-task-settings-")); let release!: () => void; const turn = new Promise<void>(resolve => { release = resolve; });
 		const run = vi.fn(async () => { await turn; }); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { release(); } }));
 		try {
-			const created = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "plan" }); const task = created.tasks[0]; task.nativeSessionId = "native-session"; task.messages = [{ id: "history", role: "user", text: "Previous", createdAt: "" }]; runtime.store.saveTask(task);
+			const created = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "plan" }); const task = runtime.store.getTask(created.tasks[0].id); task.nativeSessionId = "native-session"; task.messages = [{ id: "history", role: "user", text: "Previous", createdAt: "" }]; runtime.store.saveTask(task);
 			await runtime.command({ type: "update-task", id: task.id, model: "new-model", mode: "code" }); await runtime.command({ type: "send", id: task.id, text: "Implement" }); await vi.waitFor(() => expect(run).toHaveBeenCalled());
 			expect(run.mock.calls[0]).toEqual(expect.arrayContaining([expect.objectContaining({ model: "new-model", mode: "code", nativeSessionId: "native-session", messages: expect.arrayContaining([expect.objectContaining({ id: "history" })]) })]));
 			await expect(runtime.command({ type: "update-task", id: task.id, model: "other" })).rejects.toThrow("stop"); expect(runtime.store.getTask(task.id).model).toBe("new-model"); release(); await vi.waitFor(() => expect(runtime.store.getTask(task.id).status).toBe("completed"));

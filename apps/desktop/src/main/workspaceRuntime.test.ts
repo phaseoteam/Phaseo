@@ -4,19 +4,22 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
+import { WorkspaceStore } from "./workspaceStore";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
-	it("publishes streaming changes without reading unrelated conversation bodies", async () => {
+	it("sets up execution and publishes streaming changes without reading unrelated conversation bodies", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-metadata-stream-"));
 		let callbacks: AgentCallbacks | undefined; let finish: (() => void) | undefined;
 		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, value) => { callbacks = value; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); } }));
 		const changed = vi.fn(); runtime.onChange = changed;
 		let fullReads: ReturnType<typeof vi.spyOn> | undefined;
 		try {
+			fullReads = vi.spyOn(runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during execution"); });
 			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "chat" }); const id = state.tasks[0].id;
+			expect(state.tasks[0]).not.toHaveProperty("messages");
 			await runtime.command({ type: "send", id, text: "Secret input" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
-			fullReads = vi.spyOn(runtime.store, "get").mockImplementation(() => { throw new Error("Full history read during streaming"); }); changed.mockClear();
+			changed.mockClear();
 			callbacks!.onDelta("reply", "Secret streamed response");
 			await vi.waitFor(() => expect(runtime.store.getTask(id).messages.some(message => message.text === "Secret streamed response")).toBe(true));
 			expect(changed).toHaveBeenCalled(); expect(JSON.stringify(changed.mock.calls)).not.toContain("Secret streamed response");
@@ -107,7 +110,9 @@ describe("workspace orchestration", () => {
 			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(finish).toBeDefined());
 			const delivery = runtime.command({ type: "steer", id, text: "Change direction" }); await vi.waitFor(() => expect(reject).toBeDefined());
 			await expect(runtime.command({ type: "steer", id, text: "Duplicate" })).rejects.toThrow("Wait for");
-			await runtime.close(); expect((await delivery).tasks[0].steering?.[0].status).toBe("unconfirmed");
+			await runtime.close(); expect((await delivery).tasks[0].steeringReviewCount).toBe(1);
+			const restored = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
+			try { expect(restored.getTask(id).steering?.[0].status).toBe("unconfirmed"); } finally { restored.close(); }
 		} finally { rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {

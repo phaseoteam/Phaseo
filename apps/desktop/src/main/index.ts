@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import type { DesktopAppAction, DesktopUpdateState, DesktopWindowAction } from "../shared/desktop";
 import { isAllowedExternalUrl } from "../shared/desktop";
 import { validateCommand } from "../shared/workspace";
-import { workspaceOverview } from "../shared/workspaceOverview";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { resolveGrokCommand } from "./grokLaunch";
@@ -53,7 +52,7 @@ ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) thr
 ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences(value)); taskNotifications.configure(preferences); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
-	return workspaceOverview(workspaceRuntime.mcp(validateMcpCommand(value)));
+	return workspaceRuntime.mcp(validateMcpCommand(value));
 });
 ipcMain.handle("workspace:terminals", event => {
 	if (!senderWindow(event)) throw new Error("Invalid terminal request.");
@@ -72,10 +71,10 @@ ipcMain.handle("workspace:open-link", async (event, value: unknown) => {
 });
 ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: unknown, projectId: unknown) => {
 	if (!senderWindow(event) || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(String(harness)) || (accountId !== undefined && typeof accountId !== "string") || (projectId !== undefined && typeof projectId !== "string")) throw new Error("Model discovery is unavailable for this harness.");
-	const project = projectId ? workspaceRuntime.store.get().projects.find(value => value.id === projectId) : undefined;
+	const project = projectId ? workspaceRuntime.store.getProjects().find(value => value.id === projectId) : undefined;
 	if (projectId && !project) throw new Error("Project is unavailable.");
 	const cwd = project?.directory ?? app.getPath("userData");
-	const account = accountId ? workspaceRuntime.store.get().accounts.find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
+	const account = accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === harness && value.configured) : undefined;
 	if (accountId && !account) throw new Error("Account is unavailable.");
 	if (harness === "phaseo") {
 		if (!account) throw new Error("Choose an API account.");
@@ -103,7 +102,7 @@ app.on("before-quit", event => {
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
-	const account = workspaceRuntime.store.get().accounts.find(value => value.id === id);
+	const account = workspaceRuntime.store.getAccounts().find(value => value.id === id);
 	if (!account) throw new Error("Account no longer exists.");
 	if (account.kind !== "native" || account.archived) throw new Error("Choose an active native account for sign-in.");
 	if (signIns.has(id) || accountChecks.has(id)) throw new Error("Sign-in or an account check is already in progress.");
@@ -113,7 +112,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 		if (account.harness === "cursor") {
 			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
 			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
-			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
+			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
 			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); credentialVault.set(newSecret, result.apiKey); current.secretId = newSecret; current.configured = true;
 			try { workspaceRuntime.store.saveAccount(current); } catch (error) { credentialVault.remove(newSecret); throw error; } credentialVault.remove(oldSecret);
 		} else {
@@ -124,7 +123,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 				if (status.authenticated !== true) throw new Error("Grok did not confirm this profile is signed in.");
 				if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
 			}
-			const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
+			const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
 			current.configured = true; workspaceRuntime.store.saveAccount(current);
 		}
 		const state = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(state); return state;
@@ -136,7 +135,7 @@ ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 });
 ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: unknown) => {
 	if (!senderWindow(event) || (harness !== "codex" && harness !== "claude" && harness !== "cursor" && harness !== "grok") || (id !== undefined && typeof id !== "string")) throw new Error("Invalid account status request.");
-	const account = id ? workspaceRuntime.store.get().accounts.find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
+	const account = id ? workspaceRuntime.store.getAccounts().find(value => value.id === id && value.harness === harness && (value.kind === "native" || harness === "cursor")) : undefined;
 	if (id && !account) throw new Error("Account no longer exists.");
 	const key = id as string | undefined ?? harness; if (accountChecks.has(key) || (id && signIns.has(id))) throw new Error("An account check or sign-in is already in progress.");
 	const controller = new AbortController(); accountChecks.set(key, controller);
@@ -145,13 +144,13 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 		const cwd = account?.configDirectory ?? app.getPath("userData");
 		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
-		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.getOverview()); } }
+		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.getOverview()); } }
 		return status;
 	} finally { accountChecks.delete(key); }
 });
 ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid agent check.");
-	const agent = workspaceRuntime.store.get().agents.find(value => value.id === id); if (!agent) throw new Error("Agent no longer exists.");
+	const agent = workspaceRuntime.store.getAgents().find(value => value.id === id); if (!agent) throw new Error("Agent no longer exists.");
 	if (agentChecks.has(id)) throw new Error("This agent is already being checked.");
 	const controller = new AbortController(); agentChecks.set(id, controller);
 	try { return await checkAcpAgent(agent, app.getPath("userData"), AbortSignal.any([controller.signal, AbortSignal.timeout(30000)])); }
@@ -160,7 +159,7 @@ ipcMain.handle("workspace:check-agent", async (event, id: unknown) => {
 
 function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid project request.");
-	const project = workspaceRuntime.store.get().projects.find(value => value.id === id);
+	const project = workspaceRuntime.store.getProjects().find(value => value.id === id);
 	if (!project) throw new Error("Project no longer exists.");
 	workspaceRuntime.assertProjectAvailable(project.id);
 	return project.directory;
@@ -178,15 +177,14 @@ ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) =>
 ipcMain.handle("workspace:git-review", (event, id: unknown) => gitReview(projectRoot(event, id)));
 ipcMain.handle("workspace:git-command", (event, id: unknown, command: unknown) => { const root = projectRoot(event, id); return workspaceRuntime.mutateProject(id as string, () => gitCommand(root, command)); });
 ipcMain.handle("workspace:git-branches", (event, id: unknown) => gitBranches(projectRoot(event, id)));
-ipcMain.handle("workspace:create-worktree", async (event, id: unknown, branch: unknown, base: unknown) => {
+ipcMain.handle("workspace:create-worktree", (event, id: unknown, branch: unknown, base: unknown) => {
 	projectRoot(event, id);
 	if (typeof id !== "string" || typeof branch !== "string" || typeof base !== "string") throw new Error("Invalid worktree request.");
-	const result = await workspaceRuntime.createWorktree(id, branch, base);
-	return { ...result, workspace: workspaceOverview(result.workspace) };
+	return workspaceRuntime.createWorktree(id, branch, base);
 });
-ipcMain.handle("workspace:remove-worktree", async (event, id: unknown) => {
+ipcMain.handle("workspace:remove-worktree", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid worktree request.");
-	return workspaceOverview(await workspaceRuntime.removeWorktree(id));
+	return workspaceRuntime.removeWorktree(id);
 });
 ipcMain.handle("workspace:read-document", async (event, id: unknown, filename: unknown) => {
 	const root = projectRoot(event, id);
@@ -232,12 +230,11 @@ ipcMain.handle("workspace:import-task", async (event, value: unknown) => {
 	const command = validateCommand(value); if (command.type !== "create-task") throw new Error("Choose a destination for the imported conversation.");
 	const result = await dialog.showOpenDialog(window, { title: "Import conversation", properties: ["openFile"], filters: [{ name: "Phaseo conversation", extensions: ["json"] }] });
 	if (result.canceled || !result.filePaths[0]) return undefined;
-	const imported = await workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
-	return { ...imported, workspace: workspaceOverview(imported.workspace) };
+	return workspaceRuntime.importTask(command, await readConversation(result.filePaths[0]));
 });
-ipcMain.handle("workspace:command", async (event, value: unknown) => {
+ipcMain.handle("workspace:command", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceOverview(await workspaceRuntime.command(validateCommand(value)));
+	return workspaceRuntime.command(validateCommand(value));
 });
 ipcMain.handle("workspace:choose-project", async event => {
 	const window = senderWindow(event);
@@ -437,7 +434,7 @@ app.whenReady().then(() => {
 	taskNotifications = new TaskNotifications({
 		focused: () => Boolean(BrowserWindow.getFocusedWindow()), supported: () => Notification.isSupported(),
 		show: (title, body, click) => { const notification = new Notification({ title, body, silent: true }); notification.on("click", click); notification.on("failed", () => {}); notification.show(); return () => { notification.removeAllListeners(); notification.close(); }; },
-		open: taskId => { if (shutdownStarted) return; const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed()) ?? createWindow(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); const id = taskId && workspaceRuntime.store.get().tasks.some(value => value.id === taskId) ? taskId : undefined; const navigate = () => { if (!window.isDestroyed()) window.webContents.send("workspace:open-task", id); }; if (window.webContents.isLoading()) window.webContents.once("did-finish-load", navigate); else navigate(); },
+		open: taskId => { if (shutdownStarted) return; const window = BrowserWindow.getAllWindows().find(value => !value.isDestroyed()) ?? createWindow(); if (window.isMinimized()) window.restore(); window.show(); window.focus(); const id = taskId && workspaceRuntime.store.getOverview().tasks.some(value => value.id === taskId) ? taskId : undefined; const navigate = () => { if (!window.isDestroyed()) window.webContents.send("workspace:open-task", id); }; if (window.webContents.isLoading()) window.webContents.once("did-finish-load", navigate); else navigate(); },
 	}, workspaceRuntime.store.getPreferences());
 	taskNotifications.update(workspaceRuntime.store.getOverview());
 	app.on("browser-window-focus", () => taskNotifications.dismiss());

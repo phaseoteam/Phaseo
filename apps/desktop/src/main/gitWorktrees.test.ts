@@ -33,7 +33,7 @@ describe("desktop Git worktrees", () => {
 			}
 			await expect(removeGitWorktree(value.root, path.join(workspaceDirectory, "worktrees"), value.root)).rejects.toThrow("desktop-managed");
 			const removed = await runtime.removeWorktree(project.id); expect(removed.projects.find(value => value.id === project.id)?.worktree?.removedAt).toBeTruthy(); expect(existsSync(checkout)).toBe(false); checkout = undefined;
-			expect(removed.tasks.find(value => value.id === task.id)?.messages).toEqual(task.messages); expect(value.git(["branch", "--list", `feature/remove-${kind}`])).toContain(`feature/remove-${kind}`);
+			expect(removed.tasks.some(value => value.id === task.id)).toBe(true); expect(runtime.store.getTask(task.id).messages).toEqual(task.messages); expect(value.git(["branch", "--list", `feature/remove-${kind}`])).toContain(`feature/remove-${kind}`);
 			await expect(runtime.command({ type: "create-task", projectId: project.id, harness: "codex", model: "default", mode: "code" })).rejects.toThrow("unavailable"); await expect(runtime.command({ type: "send", id: task.id, text: "Do not execute" })).rejects.toThrow("unavailable");
 		} finally { await runtime.close(); if (checkout) { const filename = path.join(checkout, kind === "tracked" ? "file.txt" : "notes.txt"); if (kind === "tracked") writeFileSync(filename, "Committed\n"); else rmSync(filename, { force: true }); removeCleanWorktree(value, checkout); } rmSync(value.directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);

@@ -41,7 +41,7 @@ export class TerminalService {
 		if (command.type === "open") {
 			if (this.running.size >= 10 || this.store.getTerminals().length >= 50) throw new Error("Close a terminal or delete an old transcript first.");
 			if (command.projectId !== undefined && typeof command.projectId !== "string") throw new Error("Invalid project.");
-			const project = command.projectId ? this.store.get().projects.find(project => project.id === command.projectId) : undefined;
+			const project = command.projectId ? this.store.getProjects().find(project => project.id === command.projectId) : undefined;
 			if (command.projectId && !project) throw new Error("Project no longer exists.");
 			const id = randomUUID(); const cwd = project?.directory ?? path.join(this.directory, id); mkdirSync(cwd, { recursive: true });
 			const session: TerminalSession = { id, projectId: project?.id, title: project?.name ?? "Personal terminal", cwd, output: "", status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };

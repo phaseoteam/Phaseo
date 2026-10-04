@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdirSync, realpathSync } from "node:fs";
 import path from "node:path";
-import type { AgentActivity, AgentConnection, Workspace, WorkspaceCommand } from "../shared/workspace";
+import type { AgentActivity, AgentConnection, WorkspaceCommand } from "../shared/workspace";
 import { CodexAdapter } from "./codexAdapter";
 import { WorkspaceStore } from "./workspaceStore";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
@@ -50,7 +50,7 @@ export class WorkspaceRuntime {
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly signingInAccounts = new Set<string>();
-	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
+	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
 	private readonly worktreeSources = new Map<string, number>();
@@ -74,10 +74,10 @@ export class WorkspaceRuntime {
 		try { return await operation; } finally { this.worktreeOperations.delete(operation); const count = this.worktreeSources.get(projectId)! - 1; if (count) this.worktreeSources.set(projectId, count); else this.worktreeSources.delete(projectId); }
 	}
 	assertProjectAvailable(projectId: string) {
-		const project = this.store.get().projects.find(value => value.id === projectId);
+		const project = this.store.getProjects().find(value => value.id === projectId);
 		if (!project || project.worktree?.removedAt) throw new Error("This project is unavailable. Use Handoff to continue in another project.");
 		try { realpathSync(project.directory); } catch { throw new Error("The project folder is unavailable. Open its current location or use Handoff."); }
-		if ([...this.removingWorktrees].some(id => { const removing = this.store.get().projects.find(value => value.id === id); if (!removing) return false; try { return !path.relative(realpathSync(removing.directory), realpathSync(project.directory)); } catch { return !path.relative(removing.directory, project.directory); } })) throw new Error("Worktree removal is in progress.");
+		if ([...this.removingWorktrees].some(id => { const removing = this.store.getProjects().find(value => value.id === id); if (!removing) return false; try { return !path.relative(realpathSync(removing.directory), realpathSync(project.directory)); } catch { return !path.relative(removing.directory, project.directory); } })) throw new Error("Worktree removal is in progress.");
 	}
 	async mutateProject<T>(projectId: string, run: () => Promise<T>): Promise<T> {
 		if (this.closing) throw new Error("The workspace is shutting down."); this.assertProjectAvailable(projectId);
@@ -86,7 +86,7 @@ export class WorkspaceRuntime {
 	}
 	async removeWorktree(projectId: string) {
 		if (this.closing) throw new Error("The workspace is shutting down."); this.assertProjectAvailable(projectId);
-		const workspace = this.store.get(); const project = workspace.projects.find(value => value.id === projectId)!;
+		const workspace = this.store.getOverview(); const project = workspace.projects.find(value => value.id === projectId)!;
 		if (!project.worktree) throw new Error("Only desktop-managed worktrees can be removed.");
 		const sameDirectory = (directory: string) => { try { const value = realpathSync(directory); return !path.relative(realpathSync(project.directory), value); } catch { return false; } };
 		if (workspace.tasks.some(task => this.executions.has(task.id) && workspace.projects.some(value => value.id === task.projectId && sameDirectory(value.directory)))) throw new Error("Stop worktree tasks before removing their checkout.");
@@ -95,18 +95,18 @@ export class WorkspaceRuntime {
 		if (workspace.projects.some(value => value.worktree && !value.worktree.removedAt && workspace.projects.some(source => source.id === value.worktree!.sourceProjectId && sameDirectory(source.directory))) || [...this.worktreeSources.keys()].some(id => workspace.projects.some(value => value.id === id && sameDirectory(value.directory)))) throw new Error("Remove dependent worktrees or wait for creation to finish first.");
 		const source = workspace.projects.find(value => value.id === project.worktree!.sourceProjectId); if (!source || source.worktree?.removedAt) throw new Error("The source project is unavailable.");
 		this.removingWorktrees.add(projectId);
-		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.get(); })(); this.worktreeOperations.add(operation);
+		const operation = (async () => { await removeGitWorktree(source.directory, path.join(this.directory, "worktrees"), project.directory, () => this.openCode.releaseMcp(project.directory, projectId, workspace.mcpConnections)); project.worktree!.removedAt = new Date().toISOString(); this.store.saveProject(project); this.broadcast(); return this.store.getOverview(); })(); this.worktreeOperations.add(operation);
 		try { return await operation; } finally { this.removingWorktrees.delete(projectId); this.worktreeOperations.delete(operation); }
 	}
 	private async performCreateWorktree(projectId: string, branch: string, base: string) {
-		const source = this.store.get().projects.find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
+		const source = this.store.getProjects().find(value => value.id === projectId); if (!source) throw new Error("Project no longer exists.");
 		const root = path.join(this.directory, "worktrees"); mkdirSync(root, { recursive: true }); const directory = path.join(realpathSync(root), randomUUID());
 		const baseCommit = await createGitWorktree(source.directory, directory, branch, base);
-		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); return { workspace: this.store.get(), projectId: project.id }; }
+		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); return { workspace: this.store.getOverview(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
 	assertAccountIdle(accountId: string) {
-		if (this.store.get().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
+		if (this.store.getOverview().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
 	}
 	beginAccountSignIn(accountId: string): () => void {
 		if (this.closing) throw new Error("The workspace is shutting down.");
@@ -116,19 +116,19 @@ export class WorkspaceRuntime {
 		let released = false;
 		return () => { if (!released) { released = true; this.signingInAccounts.delete(accountId); } };
 	}
-	mcp(command: McpCommand): Workspace {
+	mcp(command: McpCommand): WorkspaceOverview {
 		if (this.closing) throw new Error("The workspace is shutting down.");
-		const connection = command.connection; const workspace = this.store.get(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
+		const connection = command.connection; const workspace = this.store.getOverview(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
 		if (connection.projectId && !workspace.projects.some(project => project.id === connection.projectId)) throw new Error("Project no longer exists.");
 		if (!previous && workspace.mcpConnections.length >= 100) throw new Error("The workspace supports up to 100 MCP connections.");
 		if (workspace.tasks.some(task => this.executions.has(task.id) && ["codex", "claude", "opencode", "acp", "cursor", "grok"].includes(task.harness) && ((!connection.projectId || task.projectId === connection.projectId) || (previous && (!previous.projectId || task.projectId === previous.projectId))))) throw new Error("Stop affected tasks before changing their MCP connections.");
-		this.store.saveMcp(connection); this.broadcast(); return this.store.get();
+		this.store.saveMcp(connection); this.broadcast(); return this.store.getOverview();
 	}
-	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
+	async importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: WorkspaceOverview; taskId: string }> {
 		const execution = this.performImport(command, conversation); this.imports.add(execution);
 		try { return await execution; } finally { this.imports.delete(execution); }
 	}
-	private async performImport(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: Workspace; taskId: string }> {
+	private async performImport(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: ImportedConversation): Promise<{ workspace: WorkspaceOverview; taskId: string }> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const prepared = new Map<string, Attachment>();
 		let committed = false;
@@ -140,12 +140,12 @@ export class WorkspaceRuntime {
 			if (this.closing) throw new Error("The workspace is shutting down.");
 			const task = this.store.importTask(command, { title: conversation.title, createdAt: conversation.createdAt, handoffFrom: conversation.harness, messages: conversation.messages.map(message => ({ ...message, attachments: message.attachments?.map(id => { const file = prepared.get(id); if (!file) throw new Error("An imported attachment is missing."); return file; }) })) }, [...prepared.values()]);
 			committed = true;
-			this.broadcast(); return { workspace: this.store.get(), taskId: task.id };
+			this.broadcast(); return { workspace: this.store.getOverview(), taskId: task.id };
 		} catch (error) { if (!committed) await Promise.allSettled([...prepared.values()].map(file => this.attachments.discard(file))); throw error; }
 	}
 	startMission(id: string, now: number) {
 		if (this.closing) throw new Error("The workspace is shutting down.");
-		if (this.store.get().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This mission already has an active task.");
+		if (this.store.getOverview().tasks.some(task => task.missionId === id && (task.status === "running" || task.status === "waiting" || this.executions.has(task.id)))) throw new Error("This mission already has an active task.");
 		const task = this.store.missions.admit(id, now, mission => {
 			const template = this.store.getTask(mission.templateTaskId); if (template.archived) throw new Error("Restore this mission's template task before running it."); if (template.projectId) this.assertProjectAvailable(template.projectId);
 			const created = this.store.apply({ type: "create-task", harness: template.harness, model: template.model, mode: template.mode, accountId: template.accountId, projectId: template.projectId, agentId: template.agentId }); created.title = mission.title; created.missionId = mission.id; created.reasoningEffort = template.reasoningEffort; created.nativeMode = template.nativeMode; this.store.saveTask(created);
@@ -153,7 +153,7 @@ export class WorkspaceRuntime {
 		});
 		this.broadcast(); this.start(task.id); return task;
 	}
-	async command(command: WorkspaceCommand): Promise<Workspace> {
+	async command(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
 		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
@@ -165,16 +165,16 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "add-agent") {
 			this.store.saveAgent({ id: randomUUID(), name: command.name, executable: command.executable, arguments: command.arguments });
-			this.broadcast(); return this.store.get();
+			this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "update-agent") {
-			const agent = this.store.get().agents.find(value => value.id === command.id); if (!agent) throw new Error("Agent no longer exists.");
-			if ((command.executable !== undefined || command.arguments !== undefined) && this.store.get().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
+			const agent = this.store.getAgents().find(value => value.id === command.id); if (!agent) throw new Error("Agent no longer exists.");
+			if ((command.executable !== undefined || command.arguments !== undefined) && this.store.getOverview().tasks.some(task => task.agentId === agent.id && this.running.has(task.id))) throw new Error("Stop this agent's running tasks before changing its command.");
 			if (command.name !== undefined) agent.name = command.name;
 			if (command.executable !== undefined) agent.executable = command.executable;
 			if (command.arguments !== undefined) agent.arguments = command.arguments;
 			if (command.archived !== undefined) agent.archived = command.archived;
-			this.store.saveAgent(agent); this.broadcast(); return this.store.get();
+			this.store.saveAgent(agent); this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "add-account") {
 			const id = randomUUID();
@@ -185,15 +185,15 @@ export class WorkspaceRuntime {
 			const configDirectory = command.kind === "native" ? path.join(this.directory, "accounts", id) : undefined;
 			if (configDirectory) mkdirSync(configDirectory, { recursive: true });
 			this.store.saveAccount({ id, name: command.name, harness: command.harness, kind: command.kind, endpoint: command.endpoint, configDirectory, configured: command.kind === "api" });
-			this.broadcast(); return this.store.get();
+			this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "update-account") {
-			const account = this.store.get().accounts.find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
+			const account = this.store.getAccounts().find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
 			if (this.signingInAccounts.has(account.id)) throw new Error("Finish or cancel account sign-in before changing this account.");
 			if (account.harness === "cursor" && command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service.");
 			if (command.endpoint !== undefined || command.apiKey !== undefined) {
 				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
-				if (this.store.get().tasks.some(task => task.accountId === account.id && this.executions.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
+				if (this.store.getOverview().tasks.some(task => task.accountId === account.id && this.executions.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
 			}
 			const oldSecret = account.secretId ?? account.id;
 			if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); this.vault.set(account.secretId, command.apiKey); account.configured = true; }
@@ -204,7 +204,7 @@ export class WorkspaceRuntime {
 			catch (error) { if (command.apiKey !== undefined) this.vault?.remove(account.secretId!); throw error; }
 			this.broadcast();
 			if (command.apiKey !== undefined) this.vault?.remove(oldSecret);
-			return this.store.get();
+			return this.store.getOverview();
 		}
 		if (command.type === "approval") {
 			const pending = this.approvals.get(command.approvalId);
@@ -212,7 +212,7 @@ export class WorkspaceRuntime {
 			const task = this.store.getTask(command.id); task.approvals = task.approvals?.filter(value => value.id !== command.approvalId); task.status = hasRequests(task) ? "waiting" : "running";
 			this.store.saveTask(task); this.broadcast();
 			this.approvals.delete(command.approvalId); pending.resolve(command.decision);
-			return this.store.get();
+			return this.store.getOverview();
 		}
 		if (command.type === "answer") {
 			const pending = this.questions.get(command.requestId);
@@ -221,7 +221,7 @@ export class WorkspaceRuntime {
 			if (!pending || pending.taskId !== task.id || !request) throw new Error("This question is no longer pending.");
 			if (request.questions.some(question => !command.answers[question.id]?.length)) throw new Error("Answer every question.");
 			task.questions = task.questions?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
-			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.answers); return this.store.get();
+			this.store.saveTask(task); this.broadcast(); this.questions.delete(command.requestId); pending.resolve(command.answers); return this.store.getOverview();
 		}
 		if (command.type === "form-answer") {
 			const pending = this.forms.get(command.requestId); const task = this.store.getTask(command.id);
@@ -229,7 +229,7 @@ export class WorkspaceRuntime {
 			if (!pending || pending.taskId !== task.id || !request) throw new Error("This form is no longer pending.");
 			if (command.answer !== null) { const error = formAnswerError(request.form, command.answer); if (error) throw new Error(error); }
 			task.forms = task.forms?.filter(value => value.id !== command.requestId); task.status = hasRequests(task) ? "waiting" : "running";
-			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.get();
+			this.store.saveTask(task); this.broadcast(); this.forms.delete(command.requestId); pending.resolve(command.answer); return this.store.getOverview();
 		}
 		if (command.type === "cancel") {
 			this.store.apply(command);
@@ -241,9 +241,9 @@ export class WorkspaceRuntime {
 		const task = this.store.apply(command);
 		this.broadcast();
 		if (command.type === "send" || command.type === "resume" || command.type === "steer-queue") this.start(task.id);
-		return this.store.get();
+		return this.store.getOverview();
 	}
-	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<Workspace> {
+	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<WorkspaceOverview> {
 		const task = this.store.getTask(command.id); const adapter = this.running.get(task.id);
 		if (task.archived || !adapter?.steer || !["running", "waiting"].includes(task.status)) throw new Error("This task is not ready for live steering.");
 		if ((task.steering?.length ?? 0) >= 10) throw new Error("Resolve the outstanding steering instructions first.");
@@ -261,7 +261,7 @@ export class WorkspaceRuntime {
 			const current = this.store.getTask(task.id); const pending = current.steering?.find(value => value.id === message.id);
 			if (pending) { pending.status = !sending || error instanceof AgentInputRejectedError ? "rejected" : "unconfirmed"; pending.error = error instanceof Error ? error.message : "Steering delivery failed."; this.store.saveTask(current); }
 		}
-		this.broadcast(); return this.store.get();
+		this.broadcast(); return this.store.getOverview();
 	}
 	private start(id: string) {
 		if (this.closing || this.executions.has(id)) return;
@@ -284,9 +284,9 @@ export class WorkspaceRuntime {
 		if (!task.queue.length) return;
 		let adapter: AgentAdapter;
 		try {
-			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.get().accounts.find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
+			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.get().mcpConnections) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode, this.store.get().mcpConnections, task.projectId);
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
 		}
 		catch (error) {
 			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
@@ -296,7 +296,7 @@ export class WorkspaceRuntime {
 		const message = task.queue.shift()!;
 		task.messages.push({ ...message, role: "user" }); task.status = "running"; task.error = undefined;
 		this.store.saveTask(task); this.broadcast();
-		const project = this.store.get().projects.find(value => value.id === task.projectId);
+		const project = this.store.getProjects().find(value => value.id === task.projectId);
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
 		const deltas = new Map<string, string>();
 		let activities: (AgentActivity & { append?: boolean })[] = [];
@@ -333,7 +333,7 @@ export class WorkspaceRuntime {
 			if (attachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			await adapter.run(task, cwd, handoffPrompt(task, message.text), {
 				...(this.onTerminalAuth ? { onTerminalAuth: async (args: string[], env: Record<string, string>, title: string, signal: AbortSignal) => {
-					const agent = this.store.get().agents.find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
+					const agent = this.store.getAgents().find(value => value.id === task.agentId); if (!agent || this.closing || signal.aborted) throw new Error("Native sign-in cancelled.");
 					const auth = this.onTerminalAuth!({ agent, args, env, title, cwd, taskId: id, projectId: task.projectId }, signal);
 					const current = this.store.getTask(id); current.authTerminalId = auth.session.id; current.authInputId = message.id; current.status = "waiting"; this.store.saveTask(current); this.broadcast();
 					try { await auth.completed; } finally { const current = this.store.getTask(id); current.authTerminalId = undefined; current.authInputId = undefined; if (current.status === "waiting") current.status = hasRequests(current) ? "waiting" : "running"; this.store.saveTask(current); this.broadcast(); }
@@ -375,7 +375,7 @@ export class WorkspaceRuntime {
 					const current = this.store.getTask(id); current.status = "waiting"; current.questions ??= []; current.questions.push({ id: requestId, questions });
 					this.store.saveTask(current); this.broadcast();
 				}),
-			}, this.store.get().accounts.find(account => account.id === task.accountId), attachments);
+			}, this.store.getAccounts().find(account => account.id === task.accountId), attachments);
 			flush(); if (streamError) throw streamError;
 			const current = this.store.getTask(id);
 			if (current.status !== "interrupted") current.status = "completed";
