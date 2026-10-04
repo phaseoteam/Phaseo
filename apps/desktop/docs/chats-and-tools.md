@@ -144,3 +144,10 @@ Claude catalog lifecycle follow-up: source and Windows archive bridge audits sta
 ![OpenAI native skill picker](screenshots/openai-native-skill-picker.png)
 
 All native catalogs share keyboard navigation: arrows cycle results, Home/End select the first/last result, and Enter opens its arguments. Search and argument fields receive focus on entry and Back. IME composition keeps Enter for text entry. The search exposes its active option to assistive technology, distinguishes an empty catalog from no matching results, and clears stale choices while refreshing or after discovery failure.
+
+
+## MCP prompts
+
+Open **Commands → MCP prompts** in any chat to browse enabled global services and services associated with that chat’s project. Search or use the arrow keys, Home/End and Enter to select a prompt. Enter its arguments, then choose **Load prompt** to review the resolved text. **Insert into chat** appends the text to the current draft; Send remains a separate action. Changing an argument requires reloading before insertion.
+
+Assistant examples retain explicit role labels in the editable draft. Media messages remain available in the full preview but cannot yet be inserted as attachments. Closing the dialog cancels its pending service request. Failed discovery can be retried with Refresh; discovery is currently all-or-nothing across enabled services. This picker does not handle server elicitation; approved in-chat MCP calls support interactive forms. Authentication, media insertion and resource subscriptions remain in progress.

@@ -13,10 +13,12 @@ import { AgentInputRejectedError } from "./agentAdapter";
 import { phaseoMcpResourceTools } from "./phaseoMcpResources";
 import { phaseoMcpPromptTools } from "./phaseoMcpPrompts";
 
-export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; close: () => Promise<void> };
+type PromptServer = { id: string; name: string; projectId?: string; list: ReturnType<typeof phaseoMcpPromptTools>["list"]; get: ReturnType<typeof phaseoMcpPromptTools>["get"] };
+export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; promptServers: PromptServer[]; close: () => Promise<void> };
 export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
  const clients: Client[] = [], tools: AgentTool[] = [];
  const labels: Record<string,string> = {};
+ const promptServers: PromptServer[] = [];
  const http = new Map<Client,{transport:StreamableHTTPClientTransport;connection:McpConnection}>();
  const setupSignal = AbortSignal.any([signal, AbortSignal.timeout(30000)]);
  let closing: Promise<void> | undefined;
@@ -46,6 +48,7 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
     const prompts = phaseoMcpPromptTools(client, connection, signal, { active: budgets, waiting: () => waitingForms > 0 });
     if (tools.length + prompts.tools.length > 500) throw Error("MCP tool discovery exceeded its supported limits.");
     tools.push(...prompts.tools); Object.assign(labels, prompts.labels);
+    promptServers.push({ id: connection.id, name: connection.name, projectId: connection.projectId, list: prompts.list, get: prompts.get });
    }
    if (capabilities?.resources) {
     const resources = phaseoMcpResourceTools(client, connection, signal, { active: budgets, waiting: () => waitingForms > 0 });
@@ -81,7 +84,7 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    } while (cursor);
   }
   if (setupSignal.aborted) throw Error("MCP setup cancelled or timed out.");
-  return { tools, labels, close };
+  return { tools, labels, promptServers, close };
  } catch {
   await close();
   throw new AgentInputRejectedError(signal.aborted ? "MCP setup cancelled. Your instruction was not submitted." : "MCP setup failed. Check enabled connections and server access, then retry. Your instruction was not submitted.");

@@ -24,6 +24,7 @@ const desktopApi: PhaseoDesktopApi = {
 		get: () => ipcRenderer.invoke("workspace:get"),
 		nativeActions: taskId => ipcRenderer.invoke("workspace:native-actions", taskId),
 		promptCommands: (projectId, request) => ipcRenderer.invoke("workspace:prompt-commands", projectId, request),
+		mcpPrompts: (taskId, request) => ipcRenderer.invoke("workspace:mcp-prompts", taskId, request),
 		overview: () => ipcRenderer.invoke("workspace:overview"),
 		onOverviewChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state); ipcRenderer.on("workspace:overview-changed", subscription); return () => ipcRenderer.removeListener("workspace:overview-changed", subscription); },
 		task: id => ipcRenderer.invoke("workspace:task", id),

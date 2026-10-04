@@ -8,6 +8,7 @@ import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import { PromptCommands } from "./promptCommands";
+import { McpPromptCatalogService } from "./mcpPromptCatalog";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles } from "./projectPullRequestFiles";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
@@ -65,6 +66,7 @@ let shutdownStarted = false;
 const signIns = new Map<string, AbortController>();
 const modelChecks = new Map<Harness, number>();
 const nativeCatalogChecks = new Set<AbortController>();
+const mcpPromptChecks = new Map<string, { controller: AbortController; taskId: string; senderId: number }>();
 let harnessUpdate: { harness: "codex" | "claude" | "pi"; controller: AbortController; completed: Promise<void> } | undefined;
 const accountChecks = new Map<string, AbortController>();
 const agentChecks = new Map<string, AbortController>();
@@ -219,6 +221,26 @@ ipcMain.handle("workspace:prompt-commands", (event, id: unknown, request: unknow
 	if (!senderWindow(event)) throw new Error("Untrusted command request.");
 	const project = id === undefined ? undefined : projectRoot(event, id);
 	return new PromptCommands(app.getPath("userData"), project).request(request);
+});
+ipcMain.handle("workspace:mcp-prompts", async (event, id: unknown, request: unknown) => {
+ if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid MCP prompt request.");
+ if (shutdownStarted) throw new Error("The workspace is shutting down.");
+ if (!request || typeof request !== "object" || Array.isArray(request) || !("requestId" in request) || typeof request.requestId !== "string" || !/^[a-f0-9-]{36}$/.test(request.requestId)) throw new Error("Invalid MCP prompt request identity.");
+ const requestId = request.requestId;
+ if ("type" in request && request.type === "cancel") {
+  const pending = mcpPromptChecks.get(requestId);
+  if (pending?.taskId === id && pending.senderId === event.sender.id) pending.controller.abort();
+  return { prompts: [] };
+ }
+ if (mcpPromptChecks.has(requestId) || [...mcpPromptChecks.values()].some(value => value.taskId === id && value.senderId === event.sender.id && !value.controller.signal.aborted)) throw new Error("MCP prompt loading is already in progress.");
+ const task = workspaceRuntime.store.getTask(id), cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
+ const controller = new AbortController(); nativeCatalogChecks.add(controller);
+ mcpPromptChecks.set(requestId, { controller, taskId: id, senderId: event.sender.id });
+ const abort = () => controller.abort(); event.sender.once("destroyed", abort);
+ try {
+  if (!task.projectId) await mkdir(cwd, { recursive: true });
+  return await new McpPromptCatalogService(workspaceRuntime.store.getMcpConnections(), cwd, task.projectId).request(request, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+ } finally { event.sender.removeListener("destroyed", abort); mcpPromptChecks.delete(requestId); nativeCatalogChecks.delete(controller); }
 });
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);

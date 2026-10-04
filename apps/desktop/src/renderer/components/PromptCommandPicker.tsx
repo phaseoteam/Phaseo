@@ -1,10 +1,11 @@
+import { McpPromptPicker } from "./McpPromptPicker";
 import { NativeActionPicker } from "./NativeActionPicker";
 import type { NativeAction } from "../../shared/nativeActions";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Plus, Search, X } from "lucide-react";
 import type { PromptCommand, PromptCommandCatalog, PromptCommandPreview } from "../../shared/promptCommands";
 export function PromptCommandPicker({ projectId, taskId, native, onClose, onInsert }: { projectId?: string; taskId: string; native?: "opencode" | "pi" | "claude" | "codex" | "phaseo"; onClose: () => void; onInsert: (text: string, action?: NativeAction) => void }) {
- const [nativeTab, setNativeTab] = useState(false);
+ const [tab, setTab] = useState<"saved" | "native" | "mcp">("saved");
  const api = window.phaseoDesktop?.workspace; const dialog = useRef<HTMLDialogElement>(null); const operation = useRef(0); const pending = useRef(false);
  const [catalog, setCatalog] = useState<PromptCommandCatalog>({ commands: [], errors: [] }); const [query, setQuery] = useState(""); const [index, setIndex] = useState(0); const [attempt, setAttempt] = useState(0);
  const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [preview, setPreview] = useState<PromptCommandPreview>(); const [argumentsValue, setArguments] = useState("");
@@ -33,9 +34,9 @@ export function PromptCommandPicker({ projectId, taskId, native, onClose, onInse
  }
  return <dialog className="prompt-command-dialog" ref={dialog} aria-label="Chat commands" onCancel={event => { event.preventDefault(); onClose(); }}>
   <div className="prompt-command-heading"><h2>{editing ? hash === "new" ? "New command" : "Edit command" : preview ? `/${preview.name}` : "Commands"}</h2><button type="button" aria-label="Close chat commands" onClick={onClose}><X size={16} /></button></div>
-  {native && !editing && !preview && <div className="prompt-command-actions"><button type="button" aria-pressed={!nativeTab} className={!nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(false)}>Saved prompts</button><button type="button" aria-pressed={nativeTab} className={nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(true)}>{native === "pi" ? "Pi" : native === "claude" ? "Claude" : native === "codex" ? "OpenAI" : native === "phaseo" ? "Phaseo" : "OpenCode"}</button></div>}
+  {!editing && !preview && <div className="prompt-command-actions"><button type="button" aria-pressed={tab === "saved"} className={tab === "saved" ? "task-primary" : undefined} onClick={() => setTab("saved")}>Saved prompts</button>{native && <button type="button" aria-pressed={tab === "native"} className={tab === "native" ? "task-primary" : undefined} onClick={() => setTab("native")}>{native === "pi" ? "Pi" : native === "claude" ? "Claude" : native === "codex" ? "OpenAI" : native === "phaseo" ? "Phaseo" : "OpenCode"}</button>}<button type="button" aria-pressed={tab === "mcp"} className={tab === "mcp" ? "task-primary" : undefined} onClick={() => setTab("mcp")}>MCP prompts</button></div>}
   {error && <p className="task-error" role="alert">{error}</p>}
-  {nativeTab ? <NativeActionPicker taskId={taskId} onInsert={(text, action) => { onInsert(text, action); onClose(); }} /> : editing ? <form className="prompt-command-editor" onSubmit={event => { event.preventDefault(); void save(); }}>
+  {tab === "mcp" ? <McpPromptPicker taskId={taskId} onInsert={text => { onInsert(text); onClose(); }} /> : tab === "native" ? <NativeActionPicker taskId={taskId} onInsert={(text, action) => { onInsert(text, action); onClose(); }} /> : editing ? <form className="prompt-command-editor" onSubmit={event => { event.preventDefault(); void save(); }}>
    <label>Name<input aria-label="Command name" maxLength={64} required readOnly={hash !== "new"} value={name} onChange={event => setName(event.target.value)} placeholder="review" /></label>
    <label>Scope<select aria-label="Command scope" disabled={hash !== "new" || busy} value={scope} onChange={event => setScope(event.target.value as PromptCommand["scope"])}><option value="global">All chats</option>{projectId && <option value="project">This project</option>}</select></label>
    <label>Description<input aria-label="Command description" maxLength={240} value={description} onChange={event => setDescription(event.target.value)} /></label>

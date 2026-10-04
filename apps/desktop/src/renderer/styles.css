@@ -699,6 +699,13 @@ button { color: inherit; }
 .proposal-files { scroll-margin-top:12px; }
 .prompt-command-dialog { width: min(640px, calc(100vw - 48px)); max-height: calc(100dvh - 64px); overflow: auto; color: var(--text); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; padding: 24px; font: inherit; }
 .prompt-command-dialog::backdrop { background: #0006; }
+.mcp-prompt-picker { overflow-wrap: anywhere; margin-top: 16px; }
+.mcp-prompt-picker :is(h3, p) { margin: 0; }
+.mcp-prompt-picker .prompt-command-results button > span { flex: 1; }
+.mcp-prompt-picker .prompt-command-results button > small { flex-shrink: 0; white-space: nowrap; }
+.mcp-prompt-picker .prompt-command-results strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mcp-prompt-picker textarea { width: 100%; min-height: 140px; max-height: 260px; resize: vertical; line-height: 1.6; }
+.mcp-prompt-picker fieldset { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .prompt-command-heading, .prompt-command-search, .prompt-command-actions { display: flex; align-items: center; gap: 12px; }
 .prompt-command-heading { justify-content: space-between; margin-bottom: 20px; }
 .prompt-command-heading h2 { margin: 0; font-size: 18px; }

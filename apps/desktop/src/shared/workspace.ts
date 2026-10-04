@@ -1,5 +1,6 @@
 import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
 import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
+import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
@@ -88,6 +89,7 @@ export type WorkspaceCommand =
 export type WorkspaceApi = {
 	nativeActions: (taskId: string) => Promise<NativeActionCatalog>;
 	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
+	mcpPrompts: (taskId: string, request: McpPromptRequest) => Promise<McpPromptCatalog | McpPromptPreview>;
 	overview: () => Promise<WorkspaceOverview>;
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
 	task: (id: string) => Promise<Task>;

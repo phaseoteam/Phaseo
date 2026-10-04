@@ -280,3 +280,10 @@ Chat actions includes Copy chat ID, following the pinned T3 thread-reference beh
 Source/archive native keyboard, failure/retry, pending guard and chat-switch checks pass with eight light/dark large/compact captures. Clipboard writes use an owned renderer fixture; the system clipboard is preserved. Existing native workspace workflows pass in both builds, including fork/pin/archive, exports and native compaction.
 
 ![Chat reference action](screenshots/chat-reference.png)
+
+
+MCP composer prompt picker (2026-10-04): reuses the existing Commands dialog, website Montserrat, theme tokens and controls. Explicit metadata search, argument fields, read-only preview and draft insertion occupy the conversation flow without another navigation pane. Native source/archive audits cover catalog, no matches, arguments, preview, media, error and loading at 1440×920, 1180×800 and 1040×680 in both themes (42 captures per build). Keyboard selection, IME Enter, focus restoration, changed-argument rejection, duplicate-load protection, retry and cancellation are checked. Visual review exposed and corrected cramped preview height, excess paragraph margins and long names squeezing service labels; full names remain visible on selection. Media attachment insertion and full visual/accessibility acceptance remain open.
+
+![MCP prompt catalog](screenshots/mcp-prompt-catalog.png)
+
+![MCP prompt preview](screenshots/mcp-prompt-preview.png)
