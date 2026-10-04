@@ -14,10 +14,11 @@ if (!["bootstrap", "check", "sync", "smoke"].includes(mode)) throw new Error("Ex
 const files = readdirSync(migrations).filter((name) => name.endsWith(".sql")).sort();
 const hash = (name) => createHash("sha256").update(readFileSync(join(migrations, name), "utf8").replaceAll("\r\n", "\n")).digest("hex");
 const workspace = mkdtempSync(join(tmpdir(), "phaseo-schema-"));
+const projectId = `phaseo-schema-${workspace.split(/[\\/]/).at(-1)}`;
 const temporary = join(workspace, "supabase");
 mkdirSync(join(temporary, "migrations"), { recursive: true });
 writeFileSync(join(temporary, "config.toml"), readFileSync(join(source, "config.toml"), "utf8")
-	.replace(/^project_id\s*=.*$/m, `project_id = "phaseo-schema-${workspace.split(/[\\/]/).at(-1)}"`));
+	.replace(/^project_id\s*=.*$/m, `project_id = "${projectId}"`));
 cpSync(join(source, "schemas"), join(temporary, "schemas"), { recursive: true });
 
 if (mode !== "bootstrap") {
@@ -47,17 +48,25 @@ const run = (args) => {
 	}
 };
 if (mode === "smoke") {
+	// psql accepts rollback-only multi-statement tests; CLI db query uses prepared statements.
+	const query = (sql) => {
+		const result = spawnSync("docker", ["exec", "-i", `supabase_db_${projectId}`, "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-f", "-"], {
+			input: sql, encoding: "utf8", stdio: ["pipe", "inherit", "inherit"],
+		});
+		if (result.error) throw result.error;
+		if (result.status !== 0) throw new Error(`SQL smoke test failed (${result.status ?? 1})`);
+	};
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
 		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql"]) {
-			run(["db", "query", "--local", "--file", join(source, "tests", file)]);
+			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
 			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");
 		run(["db", "schema", "declarative", "sync", "--no-apply", "--strict-coverage", "-f", "trial_incremental_change"]);
 		run(["migration", "up", "--local"]);
-		run(["db", "query", "--local", "DO $$ BEGIN ASSERT to_regclass('public.phaseo_declarative_smoke') IS NOT NULL; ASSERT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.phaseo_declarative_smoke'::regclass); END $$;"]);
+		query("DO $$ BEGIN ASSERT to_regclass('public.phaseo_declarative_smoke') IS NOT NULL; ASSERT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.phaseo_declarative_smoke'::regclass); END $$;");
 		console.log("Replay, SQL smoke tests, and a generated incremental migration passed");
 	} finally {
 		run(["stop", "--no-backup"]);
