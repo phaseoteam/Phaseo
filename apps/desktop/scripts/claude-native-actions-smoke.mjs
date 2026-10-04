@@ -1,13 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow } from "electron";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { realpathSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createServer } from "node:http";
 import { DatabaseSync } from "node:sqlite";
-const profile=mkdtempSync(path.join(tmpdir(),'phaseo-claude-native-actions-'));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
+const profile=realpathSync.native(mkdtempSync(path.join(tmpdir(),'phaseo-claude-native-actions-')));app.setPath('userData',profile);mkdirSync(path.join(profile,'workspace'));
 const project=path.join(profile,'project');mkdirSync(project);const now=new Date().toISOString();const db=new DatabaseSync(path.join(profile,'workspace/workspace.sqlite'));
 db.exec('CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE TABLE tasks (id TEXT PRIMARY KEY,data TEXT NOT NULL);CREATE TABLE accounts (id TEXT PRIMARY KEY,data TEXT NOT NULL)');db.prepare('INSERT INTO projects VALUES (?,?)').run('project',JSON.stringify({id:'project',name:'Website',directory:project,createdAt:now}));
 for(const [id,title,projectId] of [['personal','Owned personal',undefined],['project-chat','Owned project','project']])db.prepare('INSERT INTO tasks VALUES (?,?)').run(id,JSON.stringify({id,title,projectId,harness:'claude',accountId:'owned-account',model:'default',mode:'chat',status:'completed',pinned:false,archived:false,queue:[],messages:[{id:id+'-message',role:'assistant',text:'Owned history',createdAt:now}],createdAt:now,updatedAt:now}));db.prepare('INSERT INTO accounts VALUES (?,?)').run('owned-account',JSON.stringify({id:'owned-account',name:'Owned Claude',harness:'claude',kind:'native',configured:true,configDirectory:path.join(profile,'owned-account')}));db.close();mkdirSync(path.join(profile,'owned-account'));
