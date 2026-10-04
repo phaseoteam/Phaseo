@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { realpathSync, existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -17,7 +17,9 @@ describe("harness maintenance ownership", () => {
 		try {
 			const command = { executable: process.execPath, prefix: [target] }, lookup = { home: directory, searchPath: bin };
 			const value = await resolveHarnessMaintenance("codex", command, lookup);
-			expect(value.method).toBe("npm"); expect(value.action?.args.slice(1)).toEqual(["install", "--global", "--prefix", prefix, "--allow-scripts=@openai/codex", "@openai/codex@latest"]);
+			expect(value.method).toBe("npm"); expect(value.action?.args.slice(1)).toEqual(["install", "--global", "--prefix", realpathSync(prefix), "--allow-scripts=@openai/codex", "@openai/codex@latest"]);
+			const alias = path.join(directory, "prefix-alias"); symlinkSync(prefix, alias, process.platform === "win32" ? "junction" : "dir");
+			expect(await resolveHarnessMaintenance("codex", command, { ...lookup, searchPath: process.platform === "win32" ? alias : path.join(alias, "bin") })).toEqual(value);
 			expect(await resolveHarnessMaintenance("codex", command, { ...lookup, searchPath: path.join(prefix, "node_modules", ".bin") })).toEqual({ method: "manual" });
 			writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "foreign-package", bin: { codex: "bin/codex.js" } }));
 			expect(await resolveHarnessMaintenance("codex", command, lookup)).toEqual({ method: "manual" });
@@ -27,7 +29,9 @@ describe("harness maintenance ownership", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-maintenance-")), launcher = path.join(directory, ".local", "bin", process.platform === "win32" ? "claude.exe" : "claude");
 		mkdirSync(path.dirname(launcher), { recursive: true }); writeFileSync(launcher, "owned");
 		try {
-			expect(await resolveHarnessMaintenance("claude", { executable: launcher, prefix: [] }, { home: directory, searchPath: path.dirname(launcher) })).toEqual({ method: "native", action: { executable: launcher, args: ["update"] } });
+			expect(await resolveHarnessMaintenance("claude", { executable: launcher, prefix: [] }, { home: directory, searchPath: path.dirname(launcher) })).toEqual({ method: "native", action: { executable: realpathSync(launcher), args: ["update"] } });
+			const alias = path.join(directory, "home-alias"); symlinkSync(directory, alias, process.platform === "win32" ? "junction" : "dir");
+			expect(await resolveHarnessMaintenance("claude", { executable: path.join(alias, ".local/bin", path.basename(launcher)), prefix: [] }, { home: alias, searchPath: "" })).toEqual({ method: "native", action: { executable: realpathSync(launcher), args: ["update"] } });
 			const custom = path.join(directory, "custom"); writeFileSync(custom, "owned");
 			expect(await resolveHarnessMaintenance("claude", { executable: custom, prefix: [] }, { home: directory, searchPath: directory })).toEqual({ method: "manual" });
 		} finally { rmSync(directory, { recursive: true, force: true }); }

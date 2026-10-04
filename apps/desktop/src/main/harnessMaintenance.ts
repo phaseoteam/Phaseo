@@ -54,15 +54,23 @@ export async function resolveHarnessMaintenance(harness: Harness, command: Comma
 			if (!owner || command.prefix.length > 1 || (process.platform === "win32" && path.dirname(command.prefix[0] ?? command.executable).includes(`${path.sep}.bin`))) continue;
 			const launcherDirectory = process.platform === "win32" ? owner : path.join(owner, "bin");
 			const samePath = (value: string) => process.platform === "win32" ? path.resolve(value).toLowerCase() === launcherDirectory.toLowerCase() : path.resolve(value) === launcherDirectory;
-			if (!lookup.searchPath.split(path.delimiter).some(value => path.isAbsolute(value) && samePath(value))) continue;
+			let registered = false;
+			for (const value of lookup.searchPath.split(path.delimiter).filter(value => path.isAbsolute(value))) {
+				try { if (samePath(await realpath(value))) { registered = true; break; } } catch { /* Ignore unavailable PATH directories. */ }
+			}
+			if (!registered) continue;
 			const npm = await npmCommand(lookup);
 			return { method: "npm", ...(npm ? { action: { executable: npm.executable, args: [...npm.args, "install", "--global", "--prefix", owner, `--allow-scripts=${name}`, `${name}@latest`] } } : {}) };
 		} catch { /* Metadata does not establish ownership. */ }
 	}
 	if (harness === "claude" && !command.prefix.length) {
-		const launcher = path.join(lookup.home, ".local", "bin", process.platform === "win32" ? "claude.exe" : "claude");
-		const versions = path.join(lookup.home, ".local", "share", "claude", "versions") + path.sep;
-		if ((path.isAbsolute(command.executable) ? path.resolve(command.executable) === launcher : command.executable === "claude") && (target === launcher || target.startsWith(versions))) return { method: "native", action: { executable: target, args: ["update"] } };
+		try {
+			const home = await realpath(lookup.home), launcher = path.join(home, ".local", "bin", process.platform === "win32" ? "claude.exe" : "claude");
+			const versions = path.join(home, ".local", "share", "claude", "versions") + path.sep;
+			const claimed = path.isAbsolute(command.executable) ? path.join(await realpath(path.dirname(command.executable)), path.basename(command.executable)) : command.executable;
+			const equal = (a: string, b: string) => process.platform === "win32" ? a.toLowerCase() === b.toLowerCase() : a === b;
+			if ((equal(claimed, launcher) || command.executable === "claude") && (equal(target, launcher) || target.startsWith(versions))) return { method: "native", action: { executable: target, args: ["update"] } };
+		} catch { /* Native profile ownership could not be established. */ }
 	}
 	return { method: "manual" };
 }

@@ -65,7 +65,7 @@ type EditorPorts = {
 
 export async function openProjectTarget(root: string, value: unknown, ports: EditorPorts): Promise<void> {
 	const request = validateProjectOpen(value);
-	const relative = request.filename && path.isAbsolute(request.filename) ? path.relative(await realpath(root), request.filename) : request.filename ?? "";
+	const relative = request.filename && path.isAbsolute(request.filename) ? path.relative(await realpath(root), await realpath(request.filename)) : request.filename ?? "";
 	const target = await resolveProjectPath(root, relative);
 	const metadata = await stat(target);
 	if (request.filename ? !metadata.isFile() : !metadata.isDirectory()) throw new Error("Choose an existing project file or folder.");

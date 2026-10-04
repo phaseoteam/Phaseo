@@ -18,7 +18,7 @@
 		"start": "electron .",
 		"package": "pnpm run build && electron-forge make",
 		"package:dir": "pnpm run build && electron-forge package",
-		"lint": "eslint src vite.*.config.ts",
+		"lint": "eslint src vite.*.config.ts vitest.config.ts",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:desktop": "pnpm run build && electron scripts/smoke.mjs",

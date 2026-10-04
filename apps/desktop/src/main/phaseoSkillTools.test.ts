@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { realpathSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createAgent } from "@phaseo/agent-sdk";
@@ -44,7 +44,7 @@ describe("model-requested Phaseo skill tools", () => {
    const result = await agent.continueRun({ run: restored!, client, state, approvals: ["activate"] });
    expect(result.run.status).toBe("completed");
    if (changed) { expect(await toolkit.instructions()).toEqual([]); expect(result.run.context).toBeUndefined(); expect(JSON.stringify(result.run.messages)).toContain("Skill changed during approval"); }
-   else { expect(await toolkit.instructions()).toEqual([{ path: file, text: "Owned private skill body" }]); const context = store.loadAgentRun(result.run.id)?.run.context; expect(context).toEqual({ phaseoModelSkills: [expect.objectContaining({ id: "global:review", name: "review" })] }); expect(JSON.stringify(context)).not.toContain("Owned private skill body"); }
+   else { expect(await toolkit.instructions()).toEqual([{ path: realpathSync(file), text: "Owned private skill body" }]); const context = store.loadAgentRun(result.run.id)?.run.context; expect(context).toEqual({ phaseoModelSkills: [expect.objectContaining({ id: "global:review", name: "review" })] }); expect(JSON.stringify(context)).not.toContain("Owned private skill body"); }
   } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
  });
 });
