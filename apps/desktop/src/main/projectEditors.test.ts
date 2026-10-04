@@ -97,7 +97,7 @@ describe("external editors", () => {
 		} finally {
 			if (originalNode === undefined) delete process.env.NODE_OPTIONS; else process.env.NODE_OPTIONS = originalNode;
 			if (originalElectron === undefined) delete process.env.ELECTRON_RUN_AS_NODE; else process.env.ELECTRON_RUN_AS_NODE = originalElectron;
-			rmSync(project, { recursive: true, force: true });
+			rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 		}
 	});
 });

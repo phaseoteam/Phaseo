@@ -9,6 +9,7 @@ import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 import type { TaskOverview, WorkspaceOverview } from "../shared/workspaceOverview";
 import { inboxReasonFromCounts } from "../shared/inbox";
+import { validateConversationPageQuery, type ConversationPage } from "../shared/conversationPage";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
@@ -66,6 +67,22 @@ export class WorkspaceStore {
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");
 		return JSON.parse(row.data as string) as Task;
+	}
+	conversationPage(value: unknown): ConversationPage {
+		const query = validateConversationPageQuery(value);
+		const jsonPath = query.kind === "messages" ? "$.messages" : "$.activities";
+		const row = this.db.prepare(`WITH selected AS (SELECT data FROM tasks WHERE id = ?),
+			items AS (SELECT CAST(item.key AS INTEGER) AS position, item.value FROM selected, json_each(selected.data, ?) AS item),
+			metadata AS (SELECT coalesce(json_extract(data, '$.revision'), 0) AS revision, coalesce(json_array_length(data, ?), 0) AS total,
+				(SELECT position FROM items WHERE json_extract(value, '$.id') = ? LIMIT 1) AS anchor FROM selected),
+			bounds AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor WHEN ? IS NOT NULL THEN min(total, anchor + 1 + ?) ELSE total END AS end_index FROM metadata),
+			window AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor + 1 ELSE max(0, end_index - ?) END AS start_index FROM bounds)
+			SELECT revision, total, anchor, start_index, end_index,
+				(SELECT json_group_array(json(value)) FROM (SELECT value FROM items WHERE position >= start_index AND position < end_index ORDER BY position LIMIT ?)) AS entries FROM window`)
+			.get(query.taskId, jsonPath, jsonPath, query.beforeId ?? query.afterId ?? null, query.beforeId ?? null, query.afterId ?? null, query.limit, query.afterId ?? null, query.limit, query.limit);
+		if (!row) throw new Error("Task no longer exists.");
+		if ((query.beforeId || query.afterId) && row.anchor === null) throw new Error("Conversation position no longer exists. Reload the latest history.");
+		return { kind: query.kind, entries: JSON.parse(row.entries as string), earlier: Number(row.start_index), later: Number(row.total) - Number(row.end_index), revision: Number(row.revision) };
 	}
 	getOverview(): WorkspaceOverview {
 		const tasks = this.db.prepare(`SELECT json_object(

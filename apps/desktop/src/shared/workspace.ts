@@ -3,6 +3,7 @@ import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
+import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
 import type { WorkspaceOverview } from "./workspaceOverview";
 import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 import type { PlanStep } from "./planSteps";
@@ -79,6 +80,7 @@ export type WorkspaceApi = {
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
 	task: (id: string) => Promise<Task>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
+	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;

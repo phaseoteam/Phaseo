@@ -18,6 +18,7 @@ const desktopApi: PhaseoDesktopApi = {
 		onOverviewChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state); ipcRenderer.on("workspace:overview-changed", subscription); return () => ipcRenderer.removeListener("workspace:overview-changed", subscription); },
 		task: id => ipcRenderer.invoke("workspace:task", id),
 		taskHistory: query => ipcRenderer.invoke("workspace:task-history", query),
+		conversationPage: query => ipcRenderer.invoke("workspace:conversation-page", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),
