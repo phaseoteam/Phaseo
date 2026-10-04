@@ -39,6 +39,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 28. **File and Git review:** reuse the conversation code surface for file previews and staged/unstaged diffs, including offline highlighting and exact-source copying. Separate unstaged/staged headings and specific empty states clarify what will be committed. Changed-file rows use consistent insets, wrap long paths and align staging controls. An owned real Git repository verifies TypeScript and diff colours, exact Unicode/newline copying and row layout in both themes/window sizes.
 
+29. **Attachment preview:** use the shared text/code surface for exact copying and offline highlighting, keep the modal within the window with a 24-pixel inset, and scroll long content independently. Failed reads offer Retry and preserve the provider error without transport prefixes. Escape closes the modal and explicitly restores focus to its trigger. An owned stored-attachment fixture verifies loading, failure/retry, Unicode/newline copying, bounded scrolling, modal containment and native Escape/focus behavior in both themes/window sizes. The packaged workflow separately verifies PDF text extraction and preview.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)
@@ -54,6 +56,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 ![Account editing at minimum window size](screenshots/account-editor-small-window.png)
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
+
+![Attachment preview at minimum window size](screenshots/attachment-preview-small-window.png)
 
 ![File preview at minimum window size](screenshots/project-preview-small-window.png)
 
@@ -75,8 +79,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 92 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 100 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 92 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 100 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

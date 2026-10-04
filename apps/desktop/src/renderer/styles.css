@@ -236,12 +236,19 @@ form.project-toolbar { align-items: end; }
 .command-results small { color: var(--text-muted); }
 .attachment-chip { display: inline-flex; align-items: center; gap: 6px; margin: 4px; border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12px; }
 .task-composer .attachment-drafts { justify-content: flex-start; flex-wrap: wrap; }
-.attachment-preview { width: min(900px, calc(100vw - 60px)); border: 1px solid var(--border); border-radius: 10px; padding: 20px; background: var(--surface); color: var(--text); }
+.attachment-preview { width: min(900px, calc(100vw - 64px)); max-height: calc(100vh - 64px); border: 1px solid var(--border); border-radius: 12px; padding: 24px; background: var(--surface); color: var(--text); }
+.attachment-preview[open] { display: flex; flex-direction: column; }
 .attachment-preview::backdrop { background: rgb(0 0 0 / .5); }
-.attachment-preview header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.attachment-preview button { border: 0; background: transparent; color: inherit; cursor: pointer; }
+.attachment-preview header { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
+.attachment-preview header strong { min-width: 0; overflow-wrap: anywhere; }
+.attachment-preview header button { flex-shrink: 0; width: 32px; height: 32px; padding: 0; }
+.attachment-preview .message-code-block { display: flex; flex-direction: column; min-height: 0; margin: 0; }
+.attachment-preview .message-code-actions { flex-shrink: 0; }
+.attachment-state { margin: 0; padding-block: 24px; }
+.attachment-state p { margin: 0 0 16px; }
+.attachment-preview header button { border: 0; background: transparent; color: inherit; cursor: pointer; }
 .attachment-preview img { display: block; max-width: 100%; max-height: 65vh; margin: auto; object-fit: contain; }
-.attachment-preview pre { max-height: 65vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.attachment-preview pre { min-height: 0; margin: 0; padding: 16px; max-height: 65vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface-muted); font: 12px/1.6 ui-monospace, monospace; }
 .project-browser pre, .project-review pre { overflow: auto; font-size: 12px; line-height: 1.6; max-height: 65vh; background: var(--surface-muted); border-radius: 6px; padding: 12px; }
 
 * { box-sizing: border-box; }

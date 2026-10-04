@@ -16,6 +16,13 @@ const now = new Date().toISOString();
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-example", JSON.stringify({ id: "design-example", title: "Plan the product launch", harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: true, archived: false, queue: [], createdAt: now, updatedAt: now, messages: [{ id: "u", role: "user", text: "Help me plan the launch of our desktop workspace.", createdAt: now }, { id: "a", role: "assistant", text: "## Launch priorities\n\nStart with a clear promise: one workspace for your accounts, models, and everyday work.\n\n1. Validate the core task workflow with a small group.\n2. Prepare examples for research, writing, and coding.\n3. Gather feedback before expanding access.\n\nWe can turn these priorities into a weekly plan next.", createdAt: now }] }));
 seed.exec("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const codeExample = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
+const previewText='const greeting = "Hello, 世界";\n'+"// Attachment line with preserved indentation\n".repeat(80);
+const previewId="12345678-1234-1234-1234-123456789012";
+const previewAttachment={id:previewId,taskId:"design-example",name:"notes.ts",kind:"text",mimeType:"text/plain",size:Buffer.byteLength(previewText)};
+seed.exec("CREATE TABLE attachments (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+seed.prepare("INSERT INTO attachments VALUES (?, ?)").run(previewId,JSON.stringify(previewAttachment));
+mkdirSync(path.join(data,"workspace/attachments"));writeFileSync(path.join(data,"workspace/attachments",previewId),previewText);
+codeExample.messages[0].attachments=[previewAttachment];
 const fence = String.fromCharCode(96).repeat(3);
 codeExample.messages[1].text += `\n\n${fence}ts\nconst greeting = "Hello, 世界";\n  console.log(greeting);\n${fence}`;
 codeExample.activities = [{ id: "design-result", type: "tool", title: "Inspect project files", status: "completed", text: "  Résumé result\n<untrusted> remains text\n" + "Long result line\n".repeat(30) }];
@@ -46,6 +53,13 @@ await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "
 app.whenReady().then(async () => {
 const window = BrowserWindow.getAllWindows()[0];
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
+const originalAttachment=ipcMain._invokeHandlers.get("workspace:attachment");
+let failAttachment=false,holdAttachment=false,releaseAttachment;
+ipcMain.removeHandler("workspace:attachment");
+ipcMain.handle("workspace:attachment",async(event,taskId,id)=>{
+  if(id===previewId){if(holdAttachment)await new Promise(resolve=>{releaseAttachment=resolve;});if(failAttachment){failAttachment=false;throw new Error("Owned attachment failure");}}
+  return originalAttachment(event,taskId,id);
+});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -260,6 +274,41 @@ try {
           }
           await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Agent questions"] .request-actions').scrollIntoView({block:'end'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output, `${width}-${theme}-agent-requests.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Plan the product launch')).click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-message .attachment-chip'))`))break;
+            if(attempt>50)throw new Error("Attachment trigger did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          failAttachment=true;holdAttachment=true;
+          await window.webContents.executeJavaScript(`(()=>{const trigger=document.querySelector('.task-message .attachment-chip');trigger.focus();trigger.click()})()`);
+          for(let attempt=0;!releaseAttachment;attempt++){
+            if(attempt>50)throw new Error("Attachment read did not reach the fixture.");
+            await new Promise(resolve=>setTimeout(resolve,20));
+          }
+          if(!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.attachment-preview[open] [role="status"]'))&&document.activeElement?.getAttribute('aria-label')==='Close attachment preview'`))throw new Error("Attachment loading or modal focus is missing.");
+          holdAttachment=false;releaseAttachment();releaseAttachment=undefined;
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`document.querySelector('.attachment-preview [role="alert"]')?.textContent==='Owned attachment failure'`))break;
+            if(attempt>50)throw new Error("Attachment failure did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          writeFileSync(path.join(output,`${width}-${theme}-attachment-failure.png`),(await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.attachment-preview button')).find(button=>button.textContent==='Retry').click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`new Set(Array.from(document.querySelectorAll('.attachment-preview .code-token')).map(token=>getComputedStyle(token).color)).size>1`))break;
+            if(attempt>50)throw new Error("Attachment retry did not load highlighted text.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedAttachment=text;}}});document.querySelector('.attachment-preview button[aria-label="Copy code"]').click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const attachmentLayout=await window.webContents.executeJavaScript(`(()=>{const dialog=document.querySelector('.attachment-preview'),r=dialog.getBoundingClientRect(),pre=dialog.querySelector('pre');return {fits:r.top>=0&&r.bottom<=innerHeight,padding:getComputedStyle(dialog).padding,scrollable:pre.scrollHeight>pre.clientHeight,copy:window.auditCopiedAttachment===${JSON.stringify(previewText)}}})()`);
+          if(!attachmentLayout.fits||attachmentLayout.padding!=="24px"||!attachmentLayout.scrollable||!attachmentLayout.copy)throw new Error("Attachment sizing or exact copying is inconsistent.");
+          writeFileSync(path.join(output,`${width}-${theme}-attachment-preview.png`),(await window.webContents.capturePage()).toPNG());
+          window.focus();window.webContents.focus();window.webContents.sendInputEvent({type:"keyDown",keyCode:"Escape"});window.webContents.sendInputEvent({type:"keyUp",keyCode:"Escape"});
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const closedPreview=await window.webContents.executeJavaScript(`({open:Boolean(document.querySelector('.attachment-preview')),tag:document.activeElement?.tagName,classes:document.activeElement?.getAttribute('class')})`);
+          if(closedPreview.open||!closedPreview.classes?.includes('attachment-chip'))throw new Error("Attachment close state: "+JSON.stringify(closedPreview));
         }
       }
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);
