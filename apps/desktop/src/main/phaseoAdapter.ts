@@ -2,15 +2,26 @@ import type { Account, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
+import { ProjectInstructions } from "./projectInstructions";
+import { AgentInputRejectedError } from "./agentAdapter";
 
 /** Compatible inference transport. Tool execution is added through the harness tool layer. */
 export class PhaseoAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	constructor(private readonly credential: (id: string) => string, private readonly fetcher: typeof fetch = fetch) {}
-	async run(task: Task, _cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		if (!account || account.kind !== "api" || !account.endpoint) throw new Error("Connect an API account to use the Phaseo harness.");
 		if (task.mode === "code") throw new Error("Use the Phaseo Agent SDK adapter for coding tasks.");
 		if (task.model === "default") throw new Error("Select a model for this API account.");
+		let projectInstructions = "";
+		if (task.projectId) {
+			const instructions = new ProjectInstructions(cwd);
+			try { await instructions.load(".", true); } catch (error) { throw new AgentInputRejectedError(`Project instructions were not loaded; your input was not submitted. ${error instanceof Error ? error.message : "Check AGENTS.md."}`, { cause: error }); }
+			if (instructions.list().length) {
+				projectInstructions = `Apply these project instructions to this conversation. Tools remain unavailable.\n${JSON.stringify(instructions.list())}`;
+				callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: "Loaded AGENTS.md", status: "completed" });
+			}
+		}
 		const endpoint = `${account.endpoint.replace(/\/$/, "")}/chat/completions`;
 		const messages: { role: string; content: string | ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[] }[] = task.messages.filter(message => message.role === "user" || message.role === "assistant").map(message => {
 			const files = attachments.filter(attachment => message.attachments?.some(value => value.id === attachment.id));
@@ -20,6 +31,7 @@ export class PhaseoAdapter implements AgentAdapter {
 		});
 		// The runtime normally persists the user message before execution.
 		if (task.messages.at(-1)?.role !== "user" || task.messages.at(-1)?.text !== text) messages.push({ role: "user", content: text });
+		if (projectInstructions) messages.unshift({ role: "system", content: projectInstructions });
 		const response = await this.fetcher(endpoint, {
 			method: "POST", signal: this.controller.signal, redirect: "error",
 			headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.credential(account.id)}` },

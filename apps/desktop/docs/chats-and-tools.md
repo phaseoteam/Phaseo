@@ -73,3 +73,11 @@ Patch previews now check hunk line counts and reported addition/deletion totals.
 Full context can now load the complete supported text of a selected PR file at its merge base and head commit. Each side is limited to 1 MB and 10,000 lines; binary or unreadable files show an error. Confirmed blob bytes are checked against their Git identities, and a PR update during loading rejects the response. Missing objects are never interpreted as deletion. The original patch remains visible after a failed load. Full text supports unified/split layouts and unchanged context. See [GitHub commit comparison](https://docs.github.com/en/rest/commits/commits#compare-two-commits) and [Git blobs](https://docs.github.com/en/rest/git/blobs#get-a-blob).
 
 Current verification: 596 tests / 81 files; source and Windows archive checks capture 27 states, including failed full-context retry and actual unchanged-line rendering. Production reads verified both immutable README versions in PR #2702. Cross-fork reads, binary/oversized review, viewed marks and review actions remain open.
+
+## Project instructions
+
+Phaseo project Chats load the project's root `AGENTS.md`. Code and Plan also load directory-scoped `AGENTS.md` files when inspecting files or directories. Edit these files through the existing Files panel. Personal Chats do not load project instructions; native harnesses retain their own discovery rules.
+
+More specific instructions apply to their directory and descendants. Files must be valid UTF-8 text within the registered project, at most 16 KiB each, with up to 32 loaded files and 64 KiB total. Invalid root instructions reject submission and retain queued input. Local writes and commands carry the confirmed instruction revision: changed or newly discovered instructions block execution until the model reviews them and requests a fresh approval. A saved pending approval is restored before continuing after a restart.
+
+Owned model fixtures verify root and folder scopes, approval-time changes, new instruction discovery, commands, persisted approval recovery and actual file effects. Global instructions, filesystem watchers, native instruction settings, reusable commands and skills remain in progress.
