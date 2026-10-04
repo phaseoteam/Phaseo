@@ -64,6 +64,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skills-smoke.mjs
             - name: Phaseo structured questions
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-questions-smoke.mjs
+            - name: Phaseo question forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs
             - name: Phaseo skill forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs
             - name: Phaseo Chat skill forced-crash recovery
@@ -110,6 +112,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skills-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo structured questions
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-questions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo question forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-question-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo skill forced-crash recovery
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo Chat skill forced-crash recovery
@@ -153,6 +157,7 @@ jobs:
                       output/playwright/global-instructions/
                       output/playwright/phaseo-skills/
                       output/playwright/phaseo-questions/
+                      output/playwright/phaseo-question-recovery/
                         output/playwright/phaseo-skill-runtime/
                         output/playwright/phaseo-skill-recovery/
                       output/playwright/browser-viewport/
