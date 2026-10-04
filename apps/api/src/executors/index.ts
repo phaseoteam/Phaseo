@@ -192,7 +192,6 @@ const CAPABILITY_ALIASES: Record<string, Capability> = {
 	"images.generations": "image.generate",
 	"images.edits": "image.edit",
 	"image.edits": "image.edit",
-	"audio.generate": "audio.speech",
 	"audio/speech": "audio.speech",
 	"audio.transcribe": "audio.transcription",
 	"audio.translation": "audio.translations",

@@ -29,7 +29,7 @@ const ENDPOINT_METADATA: EndpointMetadata[] = [
         id: "chat.completions",
         public_path: "/v1/chat/completions",
         collection: "text",
-        aliases: ["chat/completions", "text.generate", "audio"],
+        aliases: ["chat/completions", "text.generate"],
     },
     {
         id: "responses",
@@ -65,7 +65,7 @@ const ENDPOINT_METADATA: EndpointMetadata[] = [
         id: "audio.speech",
         public_path: "/v1/audio/speech",
         collection: "audio",
-        aliases: ["audio/speech", "audio.generate"],
+        aliases: ["audio/speech"],
     },
     {
         id: "audio.transcription",

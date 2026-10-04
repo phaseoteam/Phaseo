@@ -28,7 +28,13 @@ const IMAGE_CONTEXT_CAPABILITY_ALIASES = [
 const AUDIO_SPEECH_CONTEXT_CAPABILITY_ALIASES = [
 	"audio.speech",
 	"audio/speech",
-	"audio.generate",
+] as const;
+const MEDIA_CONTEXT_CAPABILITY_GROUPS = [
+	["audio.transcription", "audio.transcribe", "audio.transcriptions"],
+	["audio.translations", "audio.translate"],
+	["audio.realtime", "realtime"],
+	["image.edit", "images.edits"],
+	["video.generate", "video.generation", "video.generations"],
 ] as const;
 const TEXT_CONTEXT_CAPABILITY_ALIASES = [
 	"responses",
@@ -56,6 +62,10 @@ function isGoogleImageGenerationModel(model: string | null | undefined): boolean
 export function getContextCapabilityCandidates(capability: string, model?: string): string[] {
 	const normalized = normalizeContextCapability(capability);
 	if (!normalized) return [];
+	const mediaGroup = MEDIA_CONTEXT_CAPABILITY_GROUPS.find((group) =>
+		(group as readonly string[]).includes(normalized),
+	);
+	if (mediaGroup) return Array.from(new Set([mediaGroup[0], normalized, ...mediaGroup]));
 	if (
 		TEXT_CONTEXT_CAPABILITY_ALIASES.includes(
 			normalized as (typeof TEXT_CONTEXT_CAPABILITY_ALIASES)[number],
