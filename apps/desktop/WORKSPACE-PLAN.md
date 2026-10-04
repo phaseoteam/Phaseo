@@ -225,6 +225,8 @@ Grok Code-mode plan review now offers implementation, cancellation or written re
 
 The new-task Create and Import controls now share an 8-pixel spaced, wrapping action row. The isolated rendered design audit checks the row in both themes and window sizes.
 
+Agent and MCP submit/cancel actions now share a full-width action row beneath the fields. Long agent commands remain fully inspectable through a native disclosure with wrapped code; connection results have a padded section. The 68-capture isolated audit checks agent command expansion and editor controls in both themes/window sizes, plus MCP action-row placement. This is layout evidence, not a complete accessibility audit.
+
 Evidence: desktop lint/typecheck/build pass; 306 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,

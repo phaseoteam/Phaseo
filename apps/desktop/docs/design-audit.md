@@ -20,6 +20,7 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 14. **Settings actions:** group Save and Cancel beneath the fields rather than spreading them across separate grid cells. Use the website's primary-button treatment for Save and allow the action row to wrap.
 15. **Account editing:** use the same 24-pixel padded form as account creation, with grouped actions and a named form. Capture the complete editor after scrolling it into view and verify the key field remains empty.
 16. **Code blocks:** add a compact copy toolbar with success/failure feedback. The rendered audit uses an owned clipboard fixture to verify indentation, Unicode and trailing-newline preservation without writing to the user's clipboard.
+17. **Agent and MCP forms:** place submit/cancel controls together below the fields. Keep long agent commands in an expandable, wrapped code surface; native disclosure preserves keyboard operation and the complete command. Give connection-result text its own padded section. Additional captures cover expanded commands and agent editing in both themes/window sizes.
 
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
@@ -41,6 +42,6 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 60 screenshots, including code blocks, account editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 68 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.

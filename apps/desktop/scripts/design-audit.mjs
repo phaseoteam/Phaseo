@@ -63,6 +63,20 @@ try {
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
+        if (page === "Agents") {
+          const command = await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.agent-command');const text=details?.querySelector('code')?.textContent;details?.querySelector('summary')?.click();return {text,open:details?.open}})()`);
+          if (!command.open || !command.text.includes("grok-interaction.cjs")) throw new Error("The full agent command must remain available.");
+          writeFileSync(path.join(output, `${width}-${theme}-agent-command.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();document.querySelector('form[aria-label="Agent connection"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Agent connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,count:row?.querySelectorAll('button').length}})()`);
+          if (actions.gap !== "8px" || actions.count !== 2) throw new Error("Agent editor actions need consistent spacing.");
+          writeFileSync(path.join(output, `${width}-${theme}-agent-editor.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('form[aria-label="Agent connection"] button')).find(button=>button.textContent==='Cancel').click()`);
+        }
+        if (page === "MCP") {
+          const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="MCP connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
+          if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");
+        }
         if (page === "Accounts") {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article')).find(row=>row.textContent.includes('Design account')).querySelectorAll('button')[0].click()`);
           await new Promise(resolve=>setTimeout(resolve,100));

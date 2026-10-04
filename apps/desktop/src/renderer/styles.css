@@ -191,6 +191,12 @@
 .account-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 0; border-bottom: 1px solid var(--border); }
 .account-row > div { flex: 1; min-width: 0; }
 .account-row small { display: block; color: var(--text-muted); margin-top: 6px; overflow-wrap: anywhere; }
+.agent-command { margin-top: 8px; color: var(--text-muted); font-size: 12px; }
+.agent-command summary { cursor: pointer; }
+.agent-command code { display: block; margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.6 ui-monospace, monospace; }
+.account-status { padding: 16px 24px 24px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.account-status p { margin: 0 0 8px; }
+.account-status small { display: block; font-size: 12px; }
 .project-page { display: block; }
 .project-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 20px; }
 .project-toolbar label { display: grid; gap: 8px; font-size: 13px; }
