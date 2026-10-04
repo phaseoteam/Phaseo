@@ -7,6 +7,20 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("keeps instructions queued during account sign-in until explicitly resumed", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-sign-in-queue-"));
+		const run = vi.fn(async () => {}); const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => {} }));
+		try {
+			runtime.store.saveAccount({ id: "owned", name: "Owned", harness: "grok", kind: "native", configured: true, configDirectory: directory });
+			const state = await runtime.command({ type: "create-task", harness: "grok", accountId: "owned", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			const release = runtime.beginAccountSignIn("owned"); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress");
+			await runtime.command({ type: "send", id, text: "Retain instruction" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
+			expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "Retain instruction" }], messages: [], error: expect.stringContaining("sign-in") }); expect(run).not.toHaveBeenCalled();
+			release(); const nextRelease = runtime.beginAccountSignIn("owned"); release(); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress"); nextRelease();
+			expect(run).not.toHaveBeenCalled(); await runtime.command({ type: "resume", id }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			expect(run).toHaveBeenCalledOnce(); expect(runtime.store.getTask(id).queue).toHaveLength(0);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("prevents native profile sign-in while that account owns an execution", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-account-execution-"));
 		let finish: (() => void) | undefined;

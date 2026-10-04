@@ -48,6 +48,7 @@ export class WorkspaceRuntime {
 	private readonly questions = new Map<string, { taskId: string; resolve: (answers: Record<string, string[]>) => void }>();
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
+	private readonly signingInAccounts = new Set<string>();
 	private readonly steeringExecutions = new Map<string, Promise<Workspace>>();
 	private readonly imports = new Set<Promise<unknown>>();
 	private readonly worktreeOperations = new Set<Promise<unknown>>();
@@ -105,6 +106,14 @@ export class WorkspaceRuntime {
 	}
 	assertAccountIdle(accountId: string) {
 		if (this.store.get().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
+	}
+	beginAccountSignIn(accountId: string): () => void {
+		if (this.closing) throw new Error("The workspace is shutting down.");
+		this.assertAccountIdle(accountId);
+		if (this.signingInAccounts.has(accountId)) throw new Error("Account sign-in is already in progress.");
+		this.signingInAccounts.add(accountId);
+		let released = false;
+		return () => { if (!released) { released = true; this.signingInAccounts.delete(accountId); } };
 	}
 	mcp(command: McpCommand): Workspace {
 		if (this.closing) throw new Error("The workspace is shutting down.");
@@ -274,6 +283,7 @@ export class WorkspaceRuntime {
 		let adapter: AgentAdapter;
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.get().accounts.find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
+			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
 			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential) : new PhaseoCodingAdapter(credential, this.store) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.get().mcpConnections) : this.adapterFactory(task.harness, this.store.get().agents.find(agent => agent.id === task.agentId), this.openCode, this.store.get().mcpConnections, task.projectId);
 		}
 		catch (error) {

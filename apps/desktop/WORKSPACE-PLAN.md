@@ -213,7 +213,9 @@ The production Electron model bridge has now been checked against the isolated o
 
 Native account sign-in now rejects attempts while that account owns an active execution, including Grok and other native profiles. The check uses runtime execution ownership and releases after cancellation. An orchestration test verifies the affected account is blocked while an unrelated account remains available. Preventing new task starts during an already-active sign-in still needs implementation.
 
-Evidence: desktop lint/typecheck/build pass; 300 deterministic tests cover protocol,
+Account sign-in now owns a runtime lock until its completion/failure/cancellation cleanup. New instructions for that account remain queued and fail before adapter submission; releasing the lock does not replay them, and explicit Resume submits them once. Duplicate sign-in ownership is rejected and release is idempotent. The orchestration test verifies retained input, no provider call during sign-in and explicit recovery afterward.
+
+Evidence: desktop lint/typecheck/build pass; 301 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

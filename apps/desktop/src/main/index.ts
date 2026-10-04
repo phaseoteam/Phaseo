@@ -106,7 +106,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	if (!account) throw new Error("Account no longer exists.");
 	if (account.kind !== "native" || account.archived) throw new Error("Choose an active native account for sign-in.");
 	if (signIns.has(id) || accountChecks.has(id)) throw new Error("Sign-in or an account check is already in progress.");
-	workspaceRuntime.assertAccountIdle(id);
+	const releaseAccount = workspaceRuntime.beginAccountSignIn(id);
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
 		if (account.harness === "cursor") {
@@ -127,7 +127,7 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 			current.configured = true; workspaceRuntime.store.saveAccount(current);
 		}
 		const state = workspaceRuntime.store.get(); workspaceRuntime.onChange(state); return state;
-	} finally { signIns.delete(id); }
+	} finally { signIns.delete(id); releaseAccount(); }
 });
 ipcMain.handle("workspace:cancel-sign-in", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid sign-in request.");
