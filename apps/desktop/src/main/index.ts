@@ -83,7 +83,7 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 	if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return cursorModels(credentialVault.get(account.secretId ?? account.id)); }
 	if (harness === "opencode") return openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 	if (harness === "pi") return piModels(cwd);
-    if (harness === "grok") return grokModelCatalog(cwd, account);
+	if (harness === "grok") return grokModelCatalog(cwd, account);
 	return codexModels(cwd, account);
 });
 app.on("before-quit", event => {
