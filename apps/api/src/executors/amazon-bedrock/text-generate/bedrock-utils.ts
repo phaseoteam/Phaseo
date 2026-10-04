@@ -229,6 +229,21 @@ export function resolveMantleAuth(args: ExecutorExecuteArgs): {
 	if (!rawKey) throw new Error(`${args.providerId}_key_missing`);
 
 	const parsed = parseBedrockCredentialMaterial(rawKey);
+	const runtimeRegion = BEDROCK_RUNTIME_REGIONS[args.providerId];
+	if (runtimeRegion) {
+		const expectedPrefix = args.providerId.slice("amazon-bedrock-".length);
+		if (args.providerModelSlug !== `${expectedPrefix}.anthropic.claude-opus-5-5`) {
+			throw new Error("amazon_bedrock_runtime_profile_required");
+		}
+		const region = runtimeRegion;
+		const baseUrl = `https://bedrock-runtime.${region}.amazonaws.com`;
+		return {
+			keyInfo,
+			auth: parsed
+				? { mode: "sigv4", region, baseUrl, credentials: { ...parsed, region, baseUrl } }
+				: { mode: "bearer", token: rawKey, region, baseUrl },
+		};
+	}
 	const baseUrlRaw =
 		parsed?.baseUrl ||
 		bindings.AMAZON_BEDROCK_MANTLE_BASE_URL;
@@ -264,6 +279,14 @@ export function resolveMantleAuth(args: ExecutorExecuteArgs): {
 			},
 	};
 }
+
+export const BEDROCK_RUNTIME_REGIONS: Record<string, string> = {
+	"amazon-bedrock-global": "us-east-1",
+	"amazon-bedrock-us": "us-east-1",
+	"amazon-bedrock-eu": "eu-west-1",
+	"amazon-bedrock-jp": "ap-northeast-1",
+	"amazon-bedrock-au": "ap-southeast-2",
+};
 
 export function assertBedrockMantleBaseUrl(value: string): void {
 	let hostname: string;

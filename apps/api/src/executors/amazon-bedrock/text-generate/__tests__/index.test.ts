@@ -165,6 +165,43 @@ describe("amazon-bedrock text executor", () => {
 			.not.toThrow();
 	});
 
+	it.each([
+		["global", "us-east-1"],
+		["us", "us-east-1"],
+		["eu", "eu-west-1"],
+		["jp", "ap-northeast-1"],
+		["au", "ap-southeast-2"],
+	])("routes the %s Opus 5.5 profile through Bedrock Runtime in %s", async (scope, region) => {
+		const providerId = `amazon-bedrock-${scope}`;
+		const profileId = `${scope}.anthropic.claude-opus-5-5`;
+		const mock = installFetchMock([{
+			match: (url) => url === `https://bedrock-runtime.${region}.amazonaws.com/anthropic/v1/messages`,
+			onRequest: (call) => {
+				expect(call.headers["x-api-key"]).toBe("test-bedrock-key");
+				expect(call.bodyJson?.model).toBe(profileId);
+			},
+			response: jsonResponse({ id: "msg_runtime", type: "message", role: "assistant", model: profileId,
+				content: [{ type: "text", text: "runtime ok" }], stop_reason: "end_turn",
+				usage: { input_tokens: 3, output_tokens: 2 } }),
+		}]);
+		try {
+			const result = await execute(buildArgs({ model: "anthropic/claude-opus-5.5", stream: false,
+				messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }] },
+				{ providerId, providerModelSlug: profileId }));
+			expect(result.kind).toBe("completed");
+			expect(mock.calls).toHaveLength(1);
+		} finally {
+			mock.restore();
+		}
+	});
+
+	it("rejects a profile that does not match the regional Bedrock offer", async () => {
+		await expect(execute(buildArgs({ model: "anthropic/claude-opus-5.5", stream: false,
+			messages: [{ role: "user", content: [{ type: "text", text: "hello" }] }] },
+			{ providerId: "amazon-bedrock-eu", providerModelSlug: "global.anthropic.claude-opus-5-5" })))
+			.rejects.toThrow("amazon_bedrock_runtime_profile_required");
+	});
+
 	it("signs Mantle AWS-credential requests with the Bedrock SigV4 service", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/openai/v1/chat/completions"),

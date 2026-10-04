@@ -36,6 +36,13 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it("uses the global endpoint for Gemini 3.1 Flash-Lite", () => {
+		const bindings = { GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-east5" };
+		expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", "gemini-3.1-flash-lite"))
+			.toBe("https://aiplatform.googleapis.com/v1/projects/test-project/locations/global");
+		expect(resolveVertexApiBase(bindings, "google-vertex", "gemini", "gemini-2.5-flash-lite"))
+			.toBe("https://us-east5-aiplatform.googleapis.com/v1/projects/test-project/locations/us-east5");
+	});
 	it("routes managed GPT OSS 20B to its supported region and preserves SSE usage", async () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
