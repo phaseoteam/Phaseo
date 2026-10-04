@@ -205,7 +205,9 @@ The task and handoff harness selector now offers Grok Code/Plan with existing lo
 
 Grok task settings now display advertised reasoning choices and save them through validated task updates. Unavailable efforts are rejected without overwriting the saved choice; changing model clears the old effort. The isolated visual audit includes Grok settings in both themes/window sizes and verifies the offered reasoning choices and absence of Chat. Signed-in native execution remains unverified.
 
-Evidence: desktop lint/typecheck/build pass; 294 deterministic tests cover protocol,
+Managed MCP connection edits now include Grok in the active-task guard. An orchestration test verifies that changes are rejected without persistence while Grok executes, then become available after cancellation releases execution ownership.
+
+Evidence: desktop lint/typecheck/build pass; 295 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

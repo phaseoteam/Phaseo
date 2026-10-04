@@ -7,6 +7,22 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("prevents managed MCP changes during Grok execution and releases the guard after cancellation", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-grok-mcp-"));
+		let finish: (() => void) | undefined;
+		const run = vi.fn(async () => { await new Promise<void>(resolve => { finish = resolve; }); });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { finish?.(); } }));
+		const connection = { id: "fixture", name: "Fixture", transport: "http" as const, url: "https://example.invalid/mcp", enabled: false };
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "grok", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+			expect(() => runtime.mcp({ type: "save", connection })).toThrow("Stop affected tasks");
+			expect(runtime.store.get().mcpConnections).toHaveLength(0);
+			await runtime.command({ type: "cancel", id });
+			await vi.waitFor(() => expect(() => runtime.mcp({ type: "save", connection })).not.toThrow());
+			expect(runtime.store.get().mcpConnections).toEqual([connection]);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("retains discovered native models across workspace restart", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-native-models-"));
 		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, callbacks) => { callbacks.onModels?.([{ id: "native-model", name: "Native model", default: true }]); callbacks.onModes?.([{ id: "analysis", name: "Analysis", default: true }]); }, cancel: async () => {} }));
