@@ -75,6 +75,10 @@ try {
           writeFileSync(path.join(output, `${width}-${theme}-agent-editor.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('form[aria-label="Agent connection"] button')).find(button=>button.textContent==='Cancel').click()`);
         }
+        if (page === "Missions") {
+          const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Mission configuration"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
+          if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("Mission form actions need their own spaced row.");
+        }
         if (page === "MCP") {
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="MCP connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
           if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");

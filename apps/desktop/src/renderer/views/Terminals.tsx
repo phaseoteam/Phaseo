@@ -17,9 +17,9 @@ export function Terminals() {
 		if (!api) return;
 		let active = true;
 		void api.terminals().then(value => { if (active) setSessions(value); }, reason => { if (active) setError(String(reason)); });
-		void api.get().then(value => { if (active) setProjects(value.projects.filter(project => !project.worktree?.removedAt)); }, reason => { if (active) setError(String(reason)); });
+		void api.overview().then(value => { if (active) setProjects(value.projects.filter(project => !project.worktree?.removedAt)); }, reason => { if (active) setError(String(reason)); });
 		const unsubscribe = api.onTerminalEvent(event => setSessions(values => event.session ? [event.session, ...values.filter(value => value.id !== event.sessionId)] : values.map(value => value.id === event.sessionId ? { ...value, output: (value.output + (event.data ?? "")).slice(-1024 * 1024) } : value)));
-		const unsubscribeWorkspace = api.onChange(value => { const projects = value.projects.filter(project => !project.worktree?.removedAt); setProjects(projects); setProjectId(current => projects.some(project => project.id === current) ? current : ""); });
+		const unsubscribeWorkspace = api.onOverviewChange(value => { const projects = value.projects.filter(project => !project.worktree?.removedAt); setProjects(projects); setProjectId(current => projects.some(project => project.id === current) ? current : ""); });
 		return () => { active = false; unsubscribe(); unsubscribeWorkspace(); };
 	}, [api]);
 	async function command(command: TerminalCommand) {
