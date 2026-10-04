@@ -25,6 +25,9 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 19. **Task history:** use database-backed 50-row pages, matching controls for Load more/Retry, loading feedback and specific empty states. A separate 155-task Electron workflow checks paging, later-page selection, searches and archive switching. Stable Markdown renderer functions preserve code highlighting and copy feedback during history refreshes.
 20. **Attention summaries:** Home and Inbox use metadata without conversation/request bodies. Home labels the count Needs attention and includes failures, interrupted work, limits and unresolved requests. Rendered history checks verify a failed task appears on both screens and opens its full conversation. Command search uses the same metadata snapshot.
 21. **Conversation history:** initially show 50 recent messages and activities, with matching controls and counts for older entries. Keep the reading position when prepending messages and the visible history boundary when a new reply arrives. The separate history workflow verifies 125 messages and 120 activities, expansion, reopening and live updates. Full selected-task payloads and permanently bounded rendering remain open work.
+22. **Live conversation navigation:** open at the latest entry and follow new content while the reader stays near the bottom. Scrolling back pauses following and reveals Jump to latest. Returning to the bottom resumes following. Observe delayed content resizing so highlighting, fonts and expanded results preserve this behavior. Source and packaged fixtures verify following, pausing, returning, delayed resizing and the older-history reading anchor.
+
+23. **Panel list alignment:** recent and running task rows use the same 24-pixel horizontal inset as their headings, square internal edges and one separator per row. Secondary metadata uses regular weight. This removes inherited button outlines from the list; refreshed Home captures cover both themes and window sizes.
 
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
@@ -39,6 +42,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 ![Account editing at minimum window size](screenshots/account-editor-small-window.png)
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
+
+![Reading older history in the Windows package](screenshots/reading-history.png)
 
 ![Conversation settings at minimum window size](screenshots/conversation-settings-small-window.png)
 

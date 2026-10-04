@@ -113,10 +113,11 @@
 .task-toolbar small { display: block; margin-top: 5px; color: var(--text-muted); }
 .task-toolbar .task-title { width: 100%; border: 0; padding: 0; background: transparent; color: var(--text); font: inherit; font-weight: 600; }
 .task-title:focus { outline: 1px solid var(--border); border-radius: 4px; }
-.home-task-row { display: flex; align-items: center; width: 100%; gap: 12px; padding: 14px 18px; border: 0; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; }
+.page .home-task-row { display: flex; align-items: center; width: 100%; gap: 12px; padding: 16px 24px; border-radius: 0; border: 0; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; }
 .home-task-row strong { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.home-task-row small { color: var(--text-muted); }
-.home-task-row:hover { background: var(--surface); }
+.home-task-row small { color: var(--text-muted); font-weight: 400; }
+.page .home-task-row:hover { background: var(--surface-hover); }
+.panel-heading + .home-task-row { border-top: 0; }
 .task-composer textarea, .task-queue textarea { font: inherit; }
 .message-markdown { white-space: normal; line-height: 1.65; overflow-wrap: anywhere; }
 .message-markdown > :first-child { margin-top: 0; }
@@ -155,6 +156,8 @@
 .task-question input, .task-question select, .task-question textarea { color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font: inherit; }
 .task-archive-filter { margin: 0 10px 8px; color: var(--text-muted); font-size: 12px; }
 .task-messages { flex: 1; min-height: 0; overflow: auto; padding: 24px max(24px, calc((100% - 800px) / 2)); }
+.conversation-scroll-region { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.conversation-latest { position: absolute; right: 32px; bottom: 16px; background: var(--surface); box-shadow: 0 2px 8px #0002; }
 .conversation-history-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
 .conversation-history-controls small { color: var(--text-muted); font-size: 12px; }
 .task-message { margin-bottom: 26px; }

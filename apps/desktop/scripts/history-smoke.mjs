@@ -71,6 +71,17 @@ async function wait(expression, label) {
 async function search(query) {
   await run(`(()=>{const input=document.querySelector('input[aria-label="Search tasks"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 }
+async function publishReply(text, title) {
+  const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
+  try {
+    const task = JSON.parse(liveHistory.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
+    task.messages.push({ id: `live-${task.messages.length}`, role: "assistant", text, createdAt: timestamp });
+    task.activities.push({ id: `live-activity-${task.activities.length}`, type: "tool", title, text: "Owned live activity", status: "completed" });
+    liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
+  } finally { liveHistory.close(); }
+  await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
+}
+const atLatest = `(()=>{const host=document.querySelector('.task-messages');return Boolean(host)&&host.scrollHeight-host.clientHeight-host.scrollTop<2})()`;
 try {
   await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click()`);
   await wait(`document.querySelectorAll('.task-row').length===50`, "first page");
@@ -109,10 +120,13 @@ try {
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 042')`, "body search");
   await run(`document.querySelector('.task-row').click()`);
   await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50&&document.querySelectorAll('.task-activity').length===50`, "recent conversation history");
+  await wait(atLatest, "conversation opens at latest");
   if (!await run(`document.querySelector('.task-message').textContent.includes('Conversation item 075')`)) throw new Error("Conversation did not open at recent history.");
   const captures = path.resolve("../../output/playwright/history-smoke"); mkdirSync(captures, { recursive: true });
   writeFileSync(path.join(captures, entry ? "packaged-conversation.png" : "conversation.png"), (await window.webContents.capturePage()).toPNG());
   const anchorTop = await run(`(()=>{document.querySelector('.task-messages').scrollTop=150;return Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top})()`);
+  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "jump control while reading older history");
+  writeFileSync(path.join(captures, entry ? "packaged-reading-history.png" : "reading-history.png"), (await window.webContents.capturePage()).toPNG());
   await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);
   await wait(`document.querySelectorAll('.task-message').length===100`, "older conversation page");
   const restoredTop = await run(`Array.from(document.querySelectorAll('.task-message')).find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top`);
@@ -127,14 +141,23 @@ try {
   await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Home').click()`);
   await run(`Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click()`);
   await wait(`document.querySelector('.task-title')?.value==='History 042'&&document.querySelectorAll('.task-message').length===50`, "conversation history resets on reopen");
-  const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
-  try {
-    const task = JSON.parse(liveHistory.prepare("SELECT data FROM tasks WHERE id='042'").get().data);
-    task.messages.push({ id: "live-arrival", role: "assistant", text: "New reply while reading history", createdAt: timestamp });
-    liveHistory.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(task));
-  } finally { liveHistory.close(); }
-  await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'042',title:'History 042'})`);
+  await wait(atLatest, "reopened conversation follows latest");
+  await run(`document.querySelector('.task-messages').scrollTop=100`);
+  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "reading history pauses automatic following");
+  await publishReply("New reply while reading history", "New activity while reading history");
   await wait(`document.querySelectorAll('.task-message').length===51&&document.querySelector('.task-message').textContent.includes('Conversation item 075')&&document.querySelector('.task-messages').textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
+  if (!await run(`Math.abs(document.querySelector('.task-messages').scrollTop-100)<1&&Boolean(document.querySelector('.conversation-latest'))`)) throw new Error("A live update pulled the reader away from older history.");
+  await run(`document.querySelector('.conversation-latest').click()`);
+  await wait(`${atLatest}&&!document.querySelector('.conversation-latest')`, "jump resumes latest following");
+  await publishReply("Reply while following latest", "Activity while following latest");
+  await wait(`document.querySelectorAll('.task-message').length===52&&document.querySelector('.task-messages').textContent.includes('Activity while following latest')&&${atLatest}`, "new content follows the latest position");
+  await run(`(()=>{const activity=Array.from(document.querySelectorAll('.task-activity')).at(-1);activity.open=true;activity.querySelector('pre').textContent='Owned delayed result\\n'.repeat(30)})()`);
+  await wait(atLatest, "delayed content resizing follows latest");
+  await run(`document.querySelector('.task-messages').scrollTop=100`);
+  await wait(`Boolean(document.querySelector('.conversation-latest'))`, "pause after delayed content");
+  await run(`Array.from(document.querySelectorAll('.task-activity')).at(-1).querySelector('pre').textContent='Short owned result'`);
+  await new Promise(resolve => setTimeout(resolve, 100));
+  if (!await run(`Math.abs(document.querySelector('.task-messages').scrollTop-100)<1`)) throw new Error("Delayed resizing moved a reader away from older history.");
   await search("absent"); await search("History 154");
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 154')`, "rapid search");
   await search("");
@@ -152,7 +175,7 @@ try {
     await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
   }
   if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4) throw new Error("History navigation must use metadata reads and broadcasts.");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true }), "ISOLATED_DATA", data);
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, homeAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true, followLatest: true, pauseFollowing: true, jumpToLatest: true, delayedLayout: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });
