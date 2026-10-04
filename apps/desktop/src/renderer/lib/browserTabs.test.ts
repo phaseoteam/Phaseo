@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { browserTabs, updateBrowserTab } from "./browserTabs";
+import { browserTabs, updateBrowserTab, openBrowserTab } from "./browserTabs";
 describe("chat browser tabs", () => {
+ it("routes foreground and background requests without altering the source tab", () => {const group=browserTabs(null,"chat");const request={sourceId:"chat",url:"https://example.com/page",background:false};const foreground=openBrowserTab(group,request,"chat:new");expect(foreground.active).toBe("chat:new");expect(foreground.tabs[0]).toEqual(group.tabs[0]);expect(foreground.tabs[1].url).toBe(request.url);expect(openBrowserTab(group,{...request,background:true},"chat:new").active).toBe("chat");});
+ it("ignores requests belonging to another chat", () => {const group=browserTabs(null,"chat");expect(openBrowserTab(group,{sourceId:"other",url:"https://example.com",background:false},"chat:new")).toBe(group);});
+ it("rejects unsafe popup targets and enforces the tab bound", () => {const group=browserTabs(null,"chat");expect(()=>openBrowserTab(group,{sourceId:"chat",url:"file:///private",background:false},"chat:new")).toThrow();const full=browserTabs({active:"chat:0",tabs:Array.from({length:20},(_,i)=>({id:"chat:"+i,url:"",title:"Tab"}))},"chat");expect(()=>openBrowserTab(full,{sourceId:"chat:0",url:"https://example.com",background:false},"chat:new")).toThrow("Close a browser tab");});
  it.each([null, 1, [], {}, {tabs:null}])("recovers malformed state %j", value => expect(browserTabs(value,"chat")).toEqual({active:"chat",tabs:[{id:"chat",title:"New tab",url:""}]}));
  it("rejects foreign and duplicate IDs, unsafe saved URLs and missing active tabs", () => {
   expect(browserTabs({active:"missing",tabs:[{id:"other",url:"https://example.com"},{id:"chat",url:"file:///private",title:"Saved"},{id:"chat",url:"https://example.com"},{id:"chat:second",url:"https://example.com",title:"x".repeat(200)}]},"chat")).toEqual({active:"chat",tabs:[{id:"chat",url:"",title:"Saved"},{id:"chat:second",url:"https://example.com/",title:"x".repeat(120)}]});

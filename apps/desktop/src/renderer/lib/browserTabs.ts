@@ -1,4 +1,4 @@
-import { browserUrl, type BrowserState } from "../../shared/browser";
+import { browserUrl, type BrowserState, type BrowserOpenTab } from "../../shared/browser";
 export type BrowserTab = { id: string; title: string; url: string };
 export type BrowserTabs = { active: string; tabs: BrowserTab[] };
 export function browserTabs(value: unknown, context: string): BrowserTabs {
@@ -15,4 +15,11 @@ export function browserTabs(value: unknown, context: string): BrowserTabs {
 }
 export function updateBrowserTab(group: BrowserTabs, state: BrowserState): BrowserTabs {
  return { ...group, tabs: group.tabs.map(tab => tab.id === state.id ? { id: tab.id, url: state.url || (state.loading ? tab.url : ""), title: state.title || state.url || (state.loading ? tab.title : "New tab") } : tab) };
+}
+
+export function openBrowserTab(group: BrowserTabs, request: BrowserOpenTab, id: string): BrowserTabs {
+ if (!group.tabs.some(tab => tab.id === request.sourceId)) return group;
+ if (group.tabs.length >= 20) throw new Error("Close a browser tab before opening another.");
+ const url = browserUrl(request.url);
+ return { active: request.background ? group.active : id, tabs: [...group.tabs, { id, title: url, url }] };
 }

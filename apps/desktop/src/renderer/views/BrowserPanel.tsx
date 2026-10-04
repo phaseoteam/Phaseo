@@ -2,13 +2,18 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowLeft, ArrowRight, RotateCw, Square, Plus, X } from "lucide-react";
 import type { BrowserState } from "../../shared/browser";
 import { usePersistedState } from "../lib/persistedState";
-import { browserTabs, updateBrowserTab, type BrowserTabs } from "../lib/browserTabs";
+import { browserTabs, updateBrowserTab, openBrowserTab, type BrowserTabs } from "../lib/browserTabs";
 
 export function BrowserPanel({ context, covered }: { context: string; covered: boolean }) {
  const [saved, setSaved] = usePersistedState<Record<string, BrowserTabs>>("phaseo.desktop.browserTabs", {});
  const group = browserTabs(saved?.[context], context);
  const [tabError, setTabError] = useState("");
+ useEffect(() => { document.getElementById("browser-tab-" + group.active)?.scrollIntoView({ block: "nearest", inline: "nearest" }); }, [group.active]);
  const update = useCallback((state: BrowserState) => setSaved(values => { const existing = browserTabs(values?.[context], context); const next = updateBrowserTab(existing, state); if (JSON.stringify(existing) === JSON.stringify(next)) return values; return { ...values, [context]: next }; }), [context, setSaved]);
+ useEffect(() => window.phaseoDesktop?.onBrowserOpenTab(request => {
+  const id = context + ":" + crypto.randomUUID();
+  setSaved(values => { const current = browserTabs(values?.[context], context); try { const next = openBrowserTab(current, request, id); return next === current ? values : { ...values, [context]: next }; } catch (reason) { queueMicrotask(() => setTabError(reason instanceof Error ? reason.message : String(reason))); return values; } });
+ }), [context, setSaved]);
  const select = (id: string) => setSaved(values => ({ ...values, [context]: { ...browserTabs(values?.[context], context), active: id } }));
  const add = () => { if (group.tabs.length >= 20) return; const id = context + ":" + crypto.randomUUID(); setSaved(values => { const current = browserTabs(values?.[context], context); return { ...values, [context]: { active: id, tabs: [...current.tabs, { id, title: "New tab", url: "" }] } }; }); };
  async function close(id: string) { try { await window.phaseoDesktop?.browser({ type: "close", id }); setSaved(values => { const current = browserTabs(values?.[context], context); const tabs = current.tabs.filter(tab => tab.id !== id); const replacement = context + ":" + crypto.randomUUID(); return { ...values, [context]: tabs.length ? { tabs, active: current.active === id ? tabs[Math.min(current.tabs.findIndex(tab => tab.id === id), tabs.length - 1)].id : current.active } : { active: replacement, tabs: [{ id: replacement, title: "New tab", url: "" }] } }; }); setTabError(""); } catch (reason) { setTabError(String(reason)); } }

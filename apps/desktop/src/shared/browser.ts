@@ -1,3 +1,4 @@
+export type BrowserOpenTab = { sourceId: string; url: string; background: boolean };
 export type BrowserState = { id: string; url: string; title: string; loading: boolean; canGoBack: boolean; canGoForward: boolean; error?: string };
 export type BrowserCommand = { id: string } & (
 	| { type: "show"; bounds: { x: number; y: number; width: number; height: number } }

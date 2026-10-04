@@ -8,6 +8,7 @@ ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenLis
 const desktopApi: PhaseoDesktopApi = {
 	platform: process.platform,
 	browser: command => ipcRenderer.invoke("desktop:browser", command),
+	onBrowserOpenTab: listener => { const subscription = (_event: Electron.IpcRendererEvent, request: Parameters<typeof listener>[0]) => listener(request); ipcRenderer.on("desktop:browser-open-tab", subscription); return () => ipcRenderer.removeListener("desktop:browser-open-tab", subscription); },
 	onBrowserState: listener => { const subscription = (_event: Electron.IpcRendererEvent, state: Parameters<typeof listener>[0]) => listener(state); ipcRenderer.on("desktop:browser-state", subscription); return () => ipcRenderer.removeListener("desktop:browser-state", subscription); },
 	workspace: {
 		missions: () => ipcRenderer.invoke("workspace:missions"),

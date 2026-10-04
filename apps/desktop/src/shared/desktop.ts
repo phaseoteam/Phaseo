@@ -1,4 +1,4 @@
-import type { BrowserCommand, BrowserState } from "./browser";
+import type { BrowserCommand, BrowserState, BrowserOpenTab } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 
 export type DesktopRuntimeInfo = {
@@ -36,6 +36,7 @@ export type PhaseoDesktopApi = {
 	readonly platform: NodeJS.Platform;
 	workspace: WorkspaceApi;
 	browser: (command: BrowserCommand) => Promise<BrowserState | undefined>;
+	onBrowserOpenTab: (listener: (request: BrowserOpenTab) => void) => () => void;
 	onBrowserState: (listener: (state: BrowserState) => void) => () => void;
 	getRuntimeInfo: () => Promise<DesktopRuntimeInfo>;
 	getWindowState: () => Promise<DesktopWindowState>;

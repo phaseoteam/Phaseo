@@ -35,7 +35,7 @@ export class BrowserHost {
 			contents.on("did-fail-load", (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit(description); });
 			contents.on("will-navigate", event => { try { browserUrl(event.url); } catch { event.preventDefault(); emit("This address cannot be opened in the browser."); } });
 			contents.on("will-redirect", event => { try { browserUrl(event.url); } catch { event.preventDefault(); } });
-			contents.setWindowOpenHandler(({ url }) => { try { void contents.loadURL(browserUrl(url)).catch(reason => emit(String(reason))); } catch { emit("This address cannot be opened in the browser."); } return { action: "deny" }; });
+			contents.setWindowOpenHandler(({ url, disposition }) => { try { const target = browserUrl(url); if (!owner.isDestroyed() && owner.contentView.children.includes(createdView)) owner.webContents.send("desktop:browser-open-tab", { sourceId: command.id, url: target, background: disposition === "background-tab" }); } catch { emit("This address cannot be opened in the browser."); } return { action: "deny" }; });
 		}
 		const contents = view.webContents;
 		if (command.type === "show") {
@@ -44,7 +44,7 @@ export class BrowserHost {
 			const x = Math.max(0, Math.min(width, Math.round(command.bounds.x * zoom))); const y = Math.max(0, Math.min(height, Math.round(command.bounds.y * zoom)));
 			view.setBounds({ x, y, width: Math.max(0, Math.min(width - x, Math.round(command.bounds.width * zoom))), height: Math.max(0, Math.min(height - y, Math.round(command.bounds.height * zoom))) });
 			owner.contentView.addChildView(view); view.setVisible(Boolean(contents.getURL()));
-		} else if (url) { view.setVisible(true); void contents.loadURL(url).catch(reason => { if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, view), error: String(reason) }); }); }
+		} else if (url) { view.setVisible(true); void contents.loadURL(url).catch(reason => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, view), error: String(reason) }); }); }
 		else if (command.type === "back" && contents.navigationHistory.canGoBack()) contents.navigationHistory.goBack();
 		else if (command.type === "forward" && contents.navigationHistory.canGoForward()) contents.navigationHistory.goForward();
 		else if (command.type === "reload") contents.reload();
