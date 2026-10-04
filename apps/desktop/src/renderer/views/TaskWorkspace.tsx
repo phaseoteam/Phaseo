@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Archive, ArrowDown, ArrowRightLeft, ArrowUp, FolderOpen, GitFork, Paperclip, Pin, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
 import type { Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
@@ -36,6 +36,8 @@ export function TaskWorkspace() {
 	const [handoffId, setHandoffId] = useState<string>();
 	const [error, setError] = useState("");
 	const [busy, setBusy] = useState(false);
+	const setupPending = useRef(false);
+	const [setupAction, setSetupAction] = useState<"create" | "import">();
 	const [uploading, setUploading] = useState(false);
 	const [attachmentPreview, setAttachmentPreview] = useState<{ taskId: string; id: string }>();
 	const [attachmentDrafts, setAttachmentDrafts] = usePersistedState<Record<string, Attachment[]>>("phaseo.desktop.attachmentDrafts", {});
@@ -72,15 +74,20 @@ export function TaskWorkspace() {
 		}
 	}
 	async function create() {
-		const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
-		if (state) { setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); setHandoffId(undefined); }
+		if (setupPending.current || busy) return;
+		setupPending.current = true; setSetupAction("create"); setBusy(true);
+		try {
+			const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
+			if (state) { setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); setHandoffId(undefined); }
+		} finally { setupPending.current = false; setSetupAction(undefined); setBusy(false); }
 	}
 	async function importConversation() {
-		if (!api || busy) return; setBusy(true); setError("");
+		if (!api || setupPending.current || busy) return;
+		setupPending.current = true; setSetupAction("import"); setBusy(true); setError("");
 		try {
 			const result = await api.importTask({ type: "create-task", harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
 			if (result) { setWorkspace(result.workspace); setSelectedId(result.taskId); setHandoffId(undefined); }
-		} catch (reason) { setError(String(reason)); } finally { setBusy(false); }
+		} catch (reason) { setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); } finally { setupPending.current = false; setSetupAction(undefined); setBusy(false); }
 	}
 	async function send(delivery: "send" | "steer" = "send") {
 		if (!selected || (!text.trim() && !pendingAttachments.length) || busy || uploading) return;
@@ -113,7 +120,7 @@ export function TaskWorkspace() {
 			{selectedDetail.error && <div className="task-error" role="alert">{selectedDetail.error} <button type="button" onClick={selectedDetail.retry}>Retry</button></div>}
 			{selectedId && !selected ? <div className="task-start"><p role="status">{selectedDetail.error ? "Could not load this task." : "Loading task…"}</p><button type="button" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}>New task</button></div> : !selected ? <div className="task-start">
 				<span className="task-eyebrow">PHASEO WORKSPACE</span><h1>What would you like to do?</h1><p>Write, research, plan, or work on a project.</p>
-				<div className="task-setup">
+				<fieldset className="task-setup task-create-fields" aria-label="Task configuration" disabled={busy}>
 					<label>Project<select value={projectId} onChange={event => setProjectId(event.target.value)}><option value="">Personal task</option>{workspace.projects.filter(project => !project.worktree?.removedAt).map(project => <option value={project.id} key={project.id}>{project.name}</option>)}</select></label>
 					<button type="button" onClick={() => { if (api) void api.chooseProject().then(setWorkspace, reason => setError(String(reason))); }}><FolderOpen size={16} /> Open folder</button>
 					<label>Mode<select value={mode} onChange={event => setMode(event.target.value as Task["mode"])}>{harness !== "grok" && <option value="chat">Chat</option>}<option value="code">Code</option><option value="plan">Plan</option></select></label>
@@ -121,11 +128,11 @@ export function TaskWorkspace() {
 					{harness === "acp" && <label>Agent<select value={agentId} onChange={event => setAgentId(event.target.value)}><option value="">Choose a connected agent</option>{workspace.agents.filter(agent => !agent.archived).map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select></label>}
 					{harness !== "acp" && harness !== "pi" && <label>Account<select value={accountId} onChange={event => setAccountId(event.target.value)}><option value="">{harness === "phaseo" ? "Choose an API account" : harness === "cursor" ? "Choose a Cursor account" : "Existing local login"}</option>{workspace.accounts.filter(account => account.harness === harness && !account.archived).map(account => <option key={account.id} value={account.id} disabled={!account.configured}>{account.name}{account.configured ? "" : " — sign-in required"}</option>)}</select></label>}
 					<label>Model<input list="workspace-models" value={model} onChange={event => setModel(event.target.value)} aria-label="Model" /><datalist id="workspace-models">{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</datalist>{modelsLoading && <small>Loading models…</small>}{modelError && <small>{modelError}</small>}</label>
-				</div>
+				</fieldset>
 				{handoffId && <p className="task-muted">Continue “{workspace.tasks.find(task => task.id === handoffId)?.title}” with the selected harness. Conversation messages carry over; native tool state stays with the original task.</p>}
 				<div className="task-controls">
-				<button className="task-primary" type="button" onClick={() => void create()} disabled={!model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "cursor" && !accountId) || (harness === "acp" && !agentId)}>{handoffId ? "Create handoff" : "Create task"} <Plus size={16} /></button>
-				{!handoffId && <button type="button" disabled={busy || !model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "cursor" && !accountId) || (harness === "acp" && !agentId)} onClick={() => void importConversation()}>Import conversation</button>}
+				<button className="task-primary" type="button" onClick={() => void create()} disabled={busy || !model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "cursor" && !accountId) || (harness === "acp" && !agentId)}>{setupAction === "create" ? "Creating…" : handoffId ? "Create handoff" : "Create task"} <Plus size={16} /></button>
+				{!handoffId && <button type="button" disabled={busy || !model.trim() || (harness === "phaseo" && (!accountId || model === "default")) || (harness === "cursor" && !accountId) || (harness === "acp" && !agentId)} onClick={() => void importConversation()}>{setupAction === "import" ? "Importing…" : "Import conversation"}</button>}
 				</div>
 				<small className="task-muted">{harness === "phaseo" ? "Code and Plan require a Responses-compatible API account. File changes require approval." : harness === "cursor" ? "Uses your selected Cursor account. Code mode requires approval for native tools for each turn." : harness === "pi" ? "Uses Pi’s native account, extensions and tool policies. Models use provider/model names." : harness === "acp" ? "Uses the connected agent’s native account and settings." : harness === "opencode" ? "Uses your local OpenCode 2 service and its connected accounts." : harness === "grok" ? "Uses your selected Grok account and native Code or Plan permissions." : `Uses ${accountId ? "your selected" : "your existing local"} ${harness === "claude" ? "Claude Code" : "Codex"} account.`}</small>
 			</div> : <>
