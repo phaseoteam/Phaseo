@@ -75,14 +75,24 @@ export class WorkspaceStore {
 			items AS (SELECT CAST(item.key AS INTEGER) AS position, item.value FROM selected, json_each(selected.data, ?) AS item),
 			metadata AS (SELECT coalesce(json_extract(data, '$.revision'), 0) AS revision, coalesce(json_array_length(data, ?), 0) AS total,
 				(SELECT position FROM items WHERE json_extract(value, '$.id') = ? LIMIT 1) AS anchor FROM selected),
-			bounds AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor WHEN ? IS NOT NULL THEN min(total, anchor + 1 + ?) ELSE total END AS end_index FROM metadata),
-			window AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor + 1 ELSE max(0, end_index - ?) END AS start_index FROM bounds)
+			bounds AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor WHEN ? IS NOT NULL THEN min(total, anchor + 1 + ?) WHEN ? IS NOT NULL THEN min(total, anchor + ?) ELSE total END AS end_index FROM metadata),
+			window AS (SELECT *, CASE WHEN ? IS NOT NULL THEN anchor + 1 WHEN ? IS NOT NULL THEN anchor ELSE max(0, end_index - ?) END AS start_index FROM bounds)
 			SELECT revision, total, anchor, start_index, end_index,
 				(SELECT json_group_array(json(value)) FROM (SELECT value FROM items WHERE position >= start_index AND position < end_index ORDER BY position LIMIT ?)) AS entries FROM window`)
-			.get(query.taskId, jsonPath, jsonPath, query.beforeId ?? query.afterId ?? null, query.beforeId ?? null, query.afterId ?? null, query.limit, query.afterId ?? null, query.limit, query.limit);
+			.get(query.taskId, jsonPath, jsonPath, query.beforeId ?? query.afterId ?? query.fromId ?? null, query.beforeId ?? null, query.afterId ?? null, query.limit, query.fromId ?? null, query.limit, query.afterId ?? null, query.fromId ?? null, query.limit, query.limit);
 		if (!row) throw new Error("Task no longer exists.");
-		if ((query.beforeId || query.afterId) && row.anchor === null) throw new Error("Conversation position no longer exists. Reload the latest history.");
+		if ((query.beforeId || query.afterId || query.fromId) && row.anchor === null) throw new Error("Conversation position no longer exists. Reload the latest history.");
 		return { kind: query.kind, entries: JSON.parse(row.entries as string), earlier: Number(row.start_index), later: Number(row.total) - Number(row.end_index), revision: Number(row.revision) };
+	}
+	getTaskView(id: string): Task {
+		const row = this.db.prepare(`SELECT json_set(json_remove(data, '$.messages', '$.activities'),
+			'$.messages', json((SELECT json_group_array(json(value)) FROM (SELECT value FROM json_each(tasks.data, '$.messages') ORDER BY CAST(key AS INTEGER) DESC LIMIT 50))),
+			'$.activities', json((SELECT json_group_array(json(value)) FROM (SELECT value FROM json_each(tasks.data, '$.activities') ORDER BY CAST(key AS INTEGER) DESC LIMIT 50))),
+			'$.conversationCounts', json_object('messages', coalesce(json_array_length(data, '$.messages'), 0), 'activities', coalesce(json_array_length(data, '$.activities'), 0))) AS view FROM tasks WHERE id = ?`).get(id);
+		if (!row) throw new Error("Task no longer exists.");
+		const task = JSON.parse(row.view as string) as Task;
+		task.messages.reverse(); task.activities?.reverse();
+		return task;
 	}
 	getOverview(): WorkspaceOverview {
 		const tasks = this.db.prepare(`SELECT json_object(

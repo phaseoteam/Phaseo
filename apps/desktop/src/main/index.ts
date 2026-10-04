@@ -220,7 +220,7 @@ ipcMain.handle("workspace:task-history", (event, query: unknown) => {
 });
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
-	return workspaceRuntime.store.getTask(id);
+	return workspaceRuntime.store.getTaskView(id);
 });
 ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");

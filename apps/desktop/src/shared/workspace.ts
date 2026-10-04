@@ -21,6 +21,7 @@ export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" |
 export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
 export type Task = {
+	conversationCounts?: { messages: number; activities: number };
 	revision?: number;
 	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;
 	agentId?: string;
