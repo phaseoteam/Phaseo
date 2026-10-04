@@ -248,8 +248,8 @@ try {
           window.webContents.send("workspace:overview-changed",idleOverview);
           for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.activity-panel'))`);attempt++){if(attempt>50)throw new Error("Idle home did not recover its compact layout.");await new Promise(resolve=>setTimeout(resolve,20));}
         }
-        const cardLayout = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.panel')).map(panel=>({radius:getComputedStyle(panel).borderRadius,headings:Array.from(panel.querySelectorAll('.panel-heading h2')).map(heading=>getComputedStyle(heading).margin)}))`);
-        if(cardLayout.some(card=>card.radius!=="24px"||card.headings.some(margin=>margin!=="0px")))throw new Error("Panel shape or heading spacing differs from the web card treatment.");
+        const cardLayout = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.panel')).map(panel=>({radius:getComputedStyle(panel).borderRadius,headers:Array.from(panel.querySelectorAll('.panel-heading')).map(heading=>({padding:getComputedStyle(heading).padding,border:getComputedStyle(heading).borderBottomWidth})),headings:Array.from(panel.querySelectorAll('.panel-heading h2')).map(heading=>getComputedStyle(heading).margin)}))`);
+        if(cardLayout.some(card=>card.radius!=="24px"||card.headers.some(header=>header.padding!=="20px 20px 0px"||header.border!=="0px")||card.headings.some(margin=>margin!=="0px")))throw new Error("Panel shape or heading spacing differs from the web card treatment.");
         const selectLayout = await window.webContents.executeJavaScript(`(()=>{const controls=Array.from(document.querySelectorAll('.page select,.task-workspace select,.terminal-workspace select'));return {scheme:getComputedStyle(document.documentElement).colorScheme,identity:document.querySelector('.workspace-identity')?.tagName,controls:controls.map(e=>{const s=getComputedStyle(e);return {appearance:s.appearance,padding:parseFloat(s.paddingRight),arrow:s.backgroundImage!=='none',font:s.fontFamily}})}})()`);
         if(selectLayout.scheme!==theme||selectLayout.identity!=="DIV"||selectLayout.controls.some(control=>control.appearance!=="none"||control.padding<34||!control.arrow||!control.font.includes("Montserrat")))throw new Error("Select controls diverge from the website treatment: "+JSON.stringify(selectLayout));
         if(page==="Tasks"){
@@ -377,7 +377,7 @@ try {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article')).find(row=>row.textContent.includes('Design account')).querySelectorAll('button')[0].click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
           const editorLayout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="Edit account"]');return {padding:form&&getComputedStyle(form).padding,key:form?.querySelector('input[type="password"]')?.value}})()`);
-          if(editorLayout.padding!=="24px" || editorLayout.key!=="") throw new Error("Account editor spacing or empty-key state is inconsistent.");
+          if(editorLayout.padding!=="20px" || editorLayout.key!=="") throw new Error("Account editor spacing or empty-key state is inconsistent.");
           await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Edit account"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output, `${width}-${theme}-account-editor.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelector('form[aria-label="Edit account"]').querySelectorAll('button')).find(button=>button.textContent==='Cancel').click()`);

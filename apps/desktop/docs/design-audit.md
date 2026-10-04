@@ -179,6 +179,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Readable native compaction metrics](screenshots/compaction-metrics-small-window.png)
 
+57. **Website card spacing:** panel headings, account forms/rows, mission forms, settings fields, Home rows and platform links share the website Card primitive's 20-pixel inset. Headers no longer add a redundant divider; list separators remain between items. Attention descriptions and panel helper text use 14-pixel type. The audit checks header insets, absent header borders and account edit spacing in both themes/window sizes. This is a focused spacing pass; overall visual acceptance remains open.
+
+![Updated desktop card spacing](screenshots/website-card-spacing.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 172 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
