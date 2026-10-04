@@ -82,7 +82,7 @@ export function TaskWorkspace() {
 		}
 	}
 	async function compact() {
-		if (compactionPending.current || busy || !selected || !["opencode", "codex"].includes(selected.harness) || !selected.nativeSessionId || selected.archived || selected.status === "running" || selected.status === "waiting") return;
+		if (compactionPending.current || busy || !selected || !["opencode", "codex", "claude"].includes(selected.harness) || !selected.nativeSessionId || selected.archived || selected.status === "running" || selected.status === "waiting") return;
 		compactionPending.current = true; setBusy(true);
 		try { await command({ type: "send", id: selected.id, text: "/compact" }); }
 		finally { compactionPending.current = false; setBusy(false); }

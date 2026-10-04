@@ -17,6 +17,8 @@ export class ClaudeAdapter implements AgentAdapter {
 	constructor(private readonly mcp: McpConnection[] = []) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = []): Promise<void> {
 		const command = await resolveNativeCommand("claude");
+		const manualCompact = !attachments.length && text.trim() === "/compact";
+		if (manualCompact) text = "/compact";
 		const images = attachments.filter(attachment => attachment.kind === "image");
 		const content: SDKUserMessage["message"]["content"] = [{ type: "text", text: attachmentPrompt(text, attachments) }, ...images.map(attachment => ({ type: "image" as const, source: { type: "base64" as const, media_type: attachment.mimeType as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: attachment.dataUrl!.split(",")[1] } }))];
 		const managedMcp = task.mode === "chat" ? [] : this.mcp; let promptAllowed = !managedMcp.length; let releasePrompt!: () => void;
@@ -52,14 +54,42 @@ export class ClaudeAdapter implements AgentAdapter {
 		let messageId = "assistant";
 		const streamed = new Set<string>();
 		const todos = new Map<string, { steps: PlanStep[]; text: string }>();
+		let sessionId = task.nativeSessionId;
+		let compaction: { id: string; title: string } | undefined;
+		let compactBoundary = false; let compactFailed = false; let compactFailure: string | undefined;
+		const compactOutput: string[] = []; let compactCommandOutput: string | undefined;
+		const compactEvents = new Set<string>();
 		try {
 			if (managedMcp.length) { try { await waitClaudeMcp(execution, managedMcp, signal); } catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); } promptAllowed = true; releasePrompt(); }
 			for await (const message of execution) {
-				if ("session_id" in message && message.session_id) callbacks.onSession(message.session_id);
+				const compactEvent = message.type === "system" && (message.subtype === "compact_boundary" || message.subtype === "status");
+				if ((compactEvent || manualCompact) && "session_id" in message && sessionId && message.session_id !== sessionId) continue;
+				if ("session_id" in message && message.session_id) {
+					if (!sessionId || (message.type === "system" && message.subtype === "init")) sessionId = message.session_id;
+					callbacks.onSession(message.session_id);
+				}
+				if (manualCompact && message.type === "system" && message.subtype === "local_command_output") compactCommandOutput = message.content;
+				if (compactEvent) {
+					if (compactEvents.has(message.uuid)) continue;
+					compactEvents.add(message.uuid);
+					if (message.subtype === "status" && message.status === "compacting" && !compaction) {
+						compaction = { id: `compaction:${message.uuid}`, title: "Context compaction" };
+						callbacks.onActivity?.({ ...compaction, type: "compaction", text: "", status: "running" });
+					}
+					if (message.subtype === "status" && message.compact_result === "failed") {
+						callbacks.onActivity?.({ ...(compaction ?? { id: `compaction:${message.uuid}`, title: "Context compaction" }), type: "compaction", text: message.compact_error ?? "Native compaction failed.", status: "failed" });
+						compaction = undefined; compactFailed = true; compactFailure = message.compact_error;
+					}
+					if (message.subtype === "compact_boundary") {
+						compactBoundary = true;
+						callbacks.onActivity?.({ id: compaction?.id ?? `compaction:${message.uuid}`, type: "compaction", title: message.compact_metadata.trigger === "auto" ? "Automatic context compaction" : "Context compaction", text: JSON.stringify(message.compact_metadata, null, 2), status: "completed" });
+						compaction = undefined;
+					}
+				}
 				if (message.type === "stream_event" && !message.parent_tool_use_id) {
 					if (message.event.type === "message_start") messageId = message.event.message.id;
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "text_delta") {
-						streamed.add(messageId); callbacks.onDelta(messageId, message.event.delta.text);
+						streamed.add(messageId); if (manualCompact) compactOutput.push(message.event.delta.text); callbacks.onDelta(messageId, message.event.delta.text);
 					}
 					if (message.event.type === "content_block_delta" && message.event.delta.type === "thinking_delta") callbacks.onActivity?.({ id: `${messageId}:reasoning`, type: "reasoning", title: "Reasoning", text: message.event.delta.thinking, append: true });
 				}
@@ -79,16 +109,24 @@ export class ClaudeAdapter implements AgentAdapter {
 					}
 				}
 				if (message.type === "assistant" && !message.parent_tool_use_id && !streamed.has(message.message.id)) {
-					for (const block of message.message.content) if (block.type === "text") callbacks.onDelta(message.message.id, block.text);
+					for (const block of message.message.content) if (block.type === "text") { if (manualCompact) compactOutput.push(block.text); callbacks.onDelta(message.message.id, block.text); }
 				}
 				if (message.type === "result") {
 					if (message.subtype !== "success") throw new Error(message.errors.join("\n"));
 					if (message.is_error) throw new Error(message.result);
+					if (manualCompact && compactFailed && !compactBoundary) throw new Error(compactFailure ?? "Native compaction failed.");
+					if (manualCompact && !compactBoundary && !compactFailed) {
+						callbacks.onActivity?.({ id: compaction?.id ?? `compaction-result:${message.uuid}`, type: "compaction", title: "Compaction result", text: message.result || compactCommandOutput || compactOutput.join("") || "The native command finished without confirming a compaction boundary.", status: "completed" });
+						compaction = undefined;
+					}
 					completed = true;
 				}
 			}
 			if (!completed) throw new Error("Claude stopped before completing the turn.");
-		} finally { execution.close(); releasePrompt?.(); }
+		} finally {
+			execution.close(); releasePrompt?.();
+			if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "The native stream ended without confirming compaction completion.", status: "failed" });
+		}
 	}
 	async cancel() { this.controller.abort(); }
 }

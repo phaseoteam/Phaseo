@@ -171,10 +171,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Native compaction status](screenshots/openai-compaction-small-window.png)
 
+55. **Claude compaction results:** initialized Claude tasks share the same Compact context menu action. Confirmed boundary metadata and a later no-op explanation occupy the existing bounded result cards; the label Compaction result distinguishes details from a generated summary. Owned source/packaged fixtures check exact metadata/no-op copying, literal markup/Unicode and one delivered menu command per theme/window size. Four extra captures bring the audit to 172. The production adapter separately verifies the installed CLI's empty-history no-op against an isolated profile/endpoint, with no inference request. Signed-in successful compaction and complete visual acceptance remain open.
+
+![Claude native compaction results](screenshots/claude-compaction-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 168 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 172 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 168 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 172 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

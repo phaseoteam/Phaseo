@@ -38,10 +38,22 @@ The menu now exposes Compact context for initialized OpenAI and OpenCode tasks. 
 
 Primary protocol evidence: [OpenAI app-server compaction](https://developers.openai.com/codex/app-server/#trigger-thread-compaction) and the installed CLI 0.154.0 schema.
 
+## Implemented Claude controls
+
+Initialized Claude tasks share Compact context in the task menu. Bare manual commands use the SDK's native `/compact` path and retain the selected resume/fork and permission settings. Native compacting status and `compact_boundary` messages project running/completed activity; boundaries preserve exact metadata, including the native manual/automatic trigger. Metadata is not presented as a generated summary. Duplicate and foreign-session lifecycle messages are ignored. Explicit manual compaction failure rejects the run; interrupted streams retain unconfirmed completion.
+
+A successful command without a boundary is shown as Compaction result. The adapter retains native result text, local command output or native assistant output, including the installed CLI's empty-history explanation. An empty native result with no output retains an explicit lack-of-confirmation message. No local history is replaced.
+
+Reference: [Claude SDK command contract](https://code.claude.com/docs/en/agent-sdk/slash-commands#compact-history-with-compact), installed SDK 0.3.276 declarations and the pinned [T3 Claude adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts).
+
 ## Verification and remaining work
 
 OpenCode has nine deterministic protocol/runtime cases. OpenAI adds thirteen cases covering request/event ordering, manual/automatic dispatch, turn matching, duplicates, admission rejection, native failure, Stop/disconnection, steering, unchanged prompts and SQLite reopening/export history. Source and Windows-archive UI fixtures verify exact OpenCode summary copying and OpenAI status-only layout, delivered menu commands and retained drafts across themes/window sizes.
 
 `pnpm --filter @phaseo/desktop exec node scripts/native-compaction-smoke.mjs` compiles the production OpenAI adapter and runs the installed native CLI against an owned loopback provider and a fresh temporary profile. It verifies seed output, native resume, two provider requests, matching compaction item lifecycle and turn settlement. No user account, copied credentials or paid provider is used. This proves the installed process integration against the owned fixture; signed-in service execution remains unverified. The script requires the native CLI on PATH and does not run as part of the deterministic suite.
+
+Claude adds twelve deterministic SDK/runtime cases covering confirmed metadata, duplicates, foreign sessions, native output/no-op/failure, Stop, ordinary attached input and durable history/export. Owned source/packaged UI fixtures check exact metadata and no-op copying, literal text, result labelling and menu delivery across themes/window sizes.
+
+`pnpm --filter @phaseo/desktop exec node scripts/claude-compaction-smoke.mjs` compiles the production adapter and runs the installed CLI (verified with 2.1.218) using an empty temporary profile and owned loopback endpoint. The native no-op explanation is retained without claiming a boundary. The fixture permits only the observed `/api/hello` startup handshake; any inference request fails the check. This proves the native empty-history path, not successful paid/signed-in compaction.
 
 Compaction for other engines, live provider event ordering/failure recovery, streamed OpenCode summary deltas and full resume behavior remain open. Rollback and file snapshots remain separate unchecked requirements: native session history, local durable history and project file state must stay consistent across rollback.

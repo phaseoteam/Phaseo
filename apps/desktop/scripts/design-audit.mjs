@@ -75,6 +75,18 @@ async function auditOpenAiCompaction(window,output,width,theme){
  await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
  writeFileSync(path.join(output,`${width}-${theme}-openai-compaction.png`),(await window.webContents.capturePage()).toPNG());
 }
+async function auditClaudeCompaction(window,output,width,theme){
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review Claude compaction')).click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-title')?.value==='Review Claude compaction'&&document.querySelectorAll('.task-activity').length===2`);attempt++){if(attempt>50)throw new Error('Claude compaction results did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ const result=await window.webContents.executeJavaScript(`(()=>{const cards=Array.from(document.querySelectorAll('.task-activity'));for(const card of cards)card.open=true;const source=cards[0].querySelector('pre').textContent;const noOp=cards[1].querySelector('pre').textContent;Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditClaudeCopy=text}}});cards[1].querySelector('button').click();cards[1].scrollIntoView({block:'nearest'});return {source,noOp,title:cards[1].querySelector('summary').textContent,inert:!cards[1].querySelector('untrusted'),label:cards[1].querySelector('.message-code-actions span').textContent}})()`);
+ if(JSON.parse(result.source).trigger!=='auto'||result.noOp!=='Not enough messages to compact. <untrusted> 世界'||result.title!=='Compaction result · completed'||!result.inert||result.label!=='Compaction result')throw new Error('Claude metadata/no-op was changed or mislabelled');
+ for(let attempt=0;!await window.webContents.executeJavaScript(`window.auditClaudeCopy==='Not enough messages to compact. <untrusted> 世界'&&Boolean(document.querySelector('.task-activity:last-of-type button[aria-label="Result copied"]'))`);attempt++){if(attempt>50)throw new Error('Claude native result copying failed');await new Promise(resolve=>setTimeout(resolve,20));}
+ await openTaskActions(window);
+ await window.webContents.executeJavaScript(`(()=>{const action=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context');if(!action||action.hasAttribute('data-disabled'))throw Error('Claude compact action unavailable');action.click()})()`);
+ for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu'))`);attempt++){if(attempt>50)throw new Error('Claude compact action did not settle');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+ writeFileSync(path.join(output,`${width}-${theme}-claude-compaction.png`),(await window.webContents.capturePage()).toPNG());
+}
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
 app.setPath("userData", data);
 mkdirSync(path.join(data, "workspace"));
@@ -103,6 +115,7 @@ seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-progress",JSON.strin
 seed.prepare("INSERT INTO agents VALUES (?, ?)").run("design-agent", JSON.stringify({ id: "design-agent", name: "Design fixture", executable: process.execPath, arguments: [path.resolve("scripts/fixtures/grok-interaction.cjs")] }));
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-compaction",JSON.stringify({...codeExample,id:"design-compaction",title:"Review native compaction",harness:"opencode",mode:"chat",pinned:false,nativeSessionId:"owned-native-session",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-compaction",type:"compaction",title:"Context compaction",status:"completed",text:nativeSummary}]}));
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-openai-compaction",JSON.stringify({...codeExample,id:"design-openai-compaction",title:"Review OpenAI compaction",harness:"codex",mode:"chat",pinned:false,nativeSessionId:"owned-native-thread",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-compact-item",type:"compaction",title:"Context compaction",status:"completed",text:""}]}));
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-claude-compaction",JSON.stringify({...codeExample,id:"design-claude-compaction",title:"Review Claude compaction",harness:"claude",mode:"chat",pinned:false,nativeSessionId:"owned-claude-session",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-claude-boundary",type:"compaction",title:"Automatic context compaction",status:"completed",text:JSON.stringify({trigger:"auto",pre_tokens:1234,post_tokens:234,duration_ms:80},null,2)},{id:"native-claude-result",type:"compaction",title:"Compaction result",status:"completed",text:"Not enough messages to compact. <untrusted> 世界"}]}));
 const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
@@ -173,11 +186,12 @@ const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
-let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0,nativeCompactCalls=0;
+let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0,nativeCompactCalls=0,claudeCompactCalls=0;
 ipcMain.removeHandler("workspace:command");
 ipcMain.handle("workspace:command",async(event,command)=>{
-  if(["design-compaction","design-openai-compaction"].includes(command.id)&&command.type==="send"){
+  if(["design-compaction","design-openai-compaction","design-claude-compaction"].includes(command.id)&&command.type==="send"){
     if(command.text!=="/compact"||command.attachments?.length)throw new Error("Invalid native compaction delivery");
+    if(command.id==="design-claude-compaction"){claudeCompactCalls++;return originalOverview(event);}
     if(command.id==="design-openai-compaction"){nativeCompactCalls++;return originalOverview(event);}
     compactCalls++;if(holdCompact)await new Promise((resolve,reject)=>{pendingCompact={resolve,reject};});
     return originalOverview(event);
@@ -420,6 +434,7 @@ try {
           writeFileSync(path.join(output,`${width}-${theme}-task-progress.png`),(await window.webContents.capturePage()).toPNG());
           await auditNativeCompaction(window,output,width,theme,nativeSummary);
           await auditOpenAiCompaction(window,output,width,theme);
+          await auditClaudeCompaction(window,output,width,theme);
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
           await new Promise(resolve => setTimeout(resolve, 100));
           await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
@@ -684,7 +699,7 @@ async function auditCompactDelivery(){
  for(let attempt=0;compactCalls!==2||!await window.webContents.executeJavaScript(`!document.querySelector('[role="alert"]')&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`);attempt++){if(attempt>50)throw new Error('Compaction retry did not preserve draft or clear error');await new Promise(resolve=>setTimeout(resolve,20));}
 }
   await auditCompactDelivery();
-  if(nativeCompactCalls!==4)throw new Error("Native compact requests were not delivered exactly once per theme/window fixture");
+  if(nativeCompactCalls!==4||claudeCompactCalls!==4)throw new Error("Native compact requests were not delivered exactly once per theme/window fixture");
 console.log("DESIGN_AUDIT", output);
 } catch (error) { console.error(error); app.exit(1); } finally { app.quit(); }
 });
