@@ -182,14 +182,16 @@
 .task-approval { border: 1px solid var(--border-strong); padding: 16px; border-radius: 8px; }
 .task-approval pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .task-approval button + button { margin-left: 8px; }
-.task-composer { margin: 12px 24px 24px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px; background: var(--surface); }
+.task-composer { flex-shrink: 0; margin: 12px 24px 24px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px; background: var(--surface); }
 .task-composer textarea { width: 100%; min-height: 72px; resize: vertical; border: 0; background: transparent; padding: 4px; }
-.task-composer > div { display: flex; align-items: center; gap: 8px; }
+.task-composer > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .task-composer small { flex: 1; color: var(--text-muted); font-size: 11px; }
-.task-queue { padding: 10px 24px; border-top: 1px solid var(--border); font-size: 12px; }
-.task-queue > div { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.task-queue span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.task-queue textarea { flex: 1; min-height: 64px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; resize: vertical; }
+.task-queue { flex-shrink: 0; padding: 16px 24px; border-top: 1px solid var(--border); font-size: 12px; }
+.task-queue-items { max-height: min(180px, 25vh); overflow-y: auto; margin-top: 12px; scrollbar-gutter: stable; }
+.task-queue-items > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-block: 8px; border-bottom: 1px solid var(--border); }
+.task-queue-items > div:last-child { border-bottom: 0; }
+.task-queue span { flex: 1 1 120px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-queue textarea { flex: 1 0 100%; width: 100%; min-height: 64px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 8px; resize: vertical; }
 .account-page { display: block; }
 .account-page > section { max-width: 960px; margin-inline: auto; }
 .account-page h1, .project-page h1 { margin: 0 0 12px; font-size: 24px; font-weight: 600; letter-spacing: -.025em; }

@@ -23,6 +23,7 @@ const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = 
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-grok-settings", JSON.stringify({ ...grokSettings, id: "design-grok-settings", title: "Review Grok reasoning", harness: "grok", agentId: undefined }));
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-queue", JSON.stringify({ ...settingsTask, id: "design-queue", title: "Review queued messages", pinned: false, harness: "phaseo", mode: "chat", queue: Array.from({length:12},(_,index)=>({id:"queued-"+index,text:"Queued instruction "+index+": "+"Long message content ".repeat(15),createdAt:now})) }));
 seed.exec("CREATE TABLE accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO accounts VALUES (?, ?)").run("design-account", JSON.stringify({ id: "design-account", name: "Design account", harness: "phaseo", kind: "api", configured: false, endpoint: "https://example.invalid/v1" }));
 seed.close();
@@ -147,6 +148,17 @@ try {
           writeFileSync(path.join(output, `${width}-${theme}-conversation-settings.json`), JSON.stringify(settingsLayout, null, 2));
           writeFileSync(path.join(output, `${width}-${theme}-conversation-settings.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review queued messages')).click()`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items')?.children.length===12`))break;
+            if(attempt>50)throw new Error("Queue fixture did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items button').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          const queueLayout=await window.webContents.executeJavaScript(`(()=>{const items=document.querySelector('.task-queue-items'),composer=document.querySelector('.task-composer'),editor=items.querySelector('textarea'),r=items.getBoundingClientRect(),c=composer.getBoundingClientRect(),e=editor.getBoundingClientRect();items.scrollTop=items.scrollHeight;return {height:r.height,scrollable:items.scrollHeight>items.clientHeight,lastReachable:items.scrollTop>0,composerVisible:c.bottom<=innerHeight,editorFits:e.left>=r.left&&e.right<=r.right,transcriptHeight:document.querySelector('.task-messages').clientHeight}})()`);
+          if(queueLayout.height>181 || !queueLayout.scrollable || !queueLayout.lastReachable || !queueLayout.composerVisible || !queueLayout.editorFits || queueLayout.transcriptHeight<50)throw new Error("Queued messages must preserve usable conversation and composer space: "+JSON.stringify(queueLayout));
+          await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items').scrollTop=0`);
+          writeFileSync(path.join(output, `${width}-${theme}-queued-messages.png`), (await window.webContents.capturePage()).toPNG());
         }
       }
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);

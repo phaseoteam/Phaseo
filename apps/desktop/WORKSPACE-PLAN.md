@@ -262,3 +262,5 @@ have runtime and UI coverage. The desktop smoke command is `pnpm --filter
 Validation: desktop lint, typecheck, deterministic unit/integration tests, builds,
 and rendered desktop workflows. Live paid inference requires the user's
 authorized credentials and must be reported separately from fixture evidence.
+
+Conversation queue layout now has a bounded scrolling region with an entry count. Editors occupy their own row and controls wrap; the composer retains its height. Rendered fixtures exercise 12 long queued instructions at both window sizes and themes, verifying the final entry stays reachable and conversation/composer space remains visible. This improves queue usability without claiming complete queue or accessibility parity.
