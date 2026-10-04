@@ -72,6 +72,7 @@
 .task-start > p { color: var(--text-muted); }
 .task-setup { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-block: 30px; }
 .task-settings { margin: 0; padding: 24px; border-bottom: 1px solid var(--border); }
+.task-settings-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
 .task-setup label, .account-form label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
 .task-setup label:has(> input[type="checkbox"]), .account-form label:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; }
 .task-setup :is(input:not([type="checkbox"]), select, textarea), .account-form :is(input:not([type="checkbox"]), select, textarea) { width: 100%; }
