@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
@@ -25,11 +26,12 @@ seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-grok-settings", JSON
 seed.exec("CREATE TABLE accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO accounts VALUES (?, ?)").run("design-account", JSON.stringify({ id: "design-account", name: "Design account", harness: "phaseo", kind: "api", configured: false, endpoint: "https://example.invalid/v1" }));
 seed.close();
-await import("../dist/main/index.mjs");
+const packagedEntry = process.argv.find(argument => argument.startsWith("--app-entry="))?.slice("--app-entry=".length);
+await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "../dist/main/index.mjs");
 app.whenReady().then(async () => {
 const window = BrowserWindow.getAllWindows()[0];
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
-const output = path.resolve("../../output/playwright/design-audit", process.argv.includes("--before") ? "before" : "after");
+const output = path.resolve("../../output/playwright/design-audit", packagedEntry ? "packaged-after" : process.argv.includes("--before") ? "before" : "after");
 mkdirSync(output, { recursive: true });
 try {
   await window.webContents.executeJavaScript(`Promise.all([400,600,700].map(weight=>document.fonts.load(weight+' 14px Montserrat'))).then(()=>true)`);
@@ -93,6 +95,12 @@ try {
           await new Promise(resolve => setTimeout(resolve, 200));
           const messageLayout = await window.webContents.executeJavaScript(`(()=>{const message=document.querySelector('.message-markdown'),heading=message?.querySelector('h2'),paragraph=heading?.nextElementSibling;return {whiteSpace:message&&getComputedStyle(message).whiteSpace,headingGap:heading&&paragraph?paragraph.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null}})()`);
           if (messageLayout.whiteSpace !== "normal" || messageLayout.headingGap === null || messageLayout.headingGap > 20) throw new Error("Markdown conversation spacing is inconsistent.");
+          for (let attempt = 0; ; attempt++) {
+            const highlighted = await window.webContents.executeJavaScript(`(()=>{const tokens=Array.from(document.querySelectorAll('.message-code-block .code-token'));return tokens.length>0&&new Set(tokens.map(token=>getComputedStyle(token).color)).size>1})()`);
+            if (highlighted) break;
+            if (attempt > 50) throw new Error("Code highlighting did not load offline in the current theme.");
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
           await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedCode=text;}}});document.querySelector('button[aria-label="Copy code"]').click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
           const copied = await window.webContents.executeJavaScript(`window.auditCopiedCode==='const greeting = "Hello, 世界";\\n  console.log(greeting);\\n' && Boolean(document.querySelector('button[aria-label="Copied"]'))`);
