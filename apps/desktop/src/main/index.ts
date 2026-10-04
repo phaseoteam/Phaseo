@@ -13,6 +13,7 @@ import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
+import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 import { apiModels, codexModels } from "./modelCatalog";
 import { openCodeModels, piModels } from "./nativeModels";
 import { resolveOpenCodeCommand } from "./openCodeService";
@@ -169,6 +170,13 @@ ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) 
 	if (typeof directory !== "string") throw new Error("Invalid directory.");
 	return listProjectFiles(root, directory);
 });
+ipcMain.handle("workspace:editors", event => {
+	if (!senderWindow(event)) throw new Error("Untrusted editor request.");
+	return editorInstallations();
+});
+ipcMain.handle("workspace:open-project", (event, id: unknown, request: unknown) => openProjectTarget(projectRoot(event, id), request, {
+	find: findEditor, launch: launchEditor, reveal: filename => shell.showItemInFolder(filename), openFolder: directory => shell.openPath(directory),
+}));
 ipcMain.handle("workspace:read-file", (event, id: unknown, filename: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof filename !== "string") throw new Error("Invalid filename.");

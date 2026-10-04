@@ -4,6 +4,7 @@ import type { WorkspacePreferences } from "./preferences";
 import type { Mission, MissionCommand } from "./missions";
 import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
 import type { WorkspaceOverview } from "./workspaceOverview";
+import type { EditorInstallation, ProjectOpenRequest } from "./editors";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -104,6 +105,8 @@ export type WorkspaceApi = {
 	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
 	cancelSignIn: (accountId: string) => Promise<void>;
 	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
+	editors: () => Promise<EditorInstallation[]>;
+	openProject: (projectId: string, request: ProjectOpenRequest) => Promise<void>;
 	readFile: (projectId: string, filename: string) => Promise<string>;
 	readDocument: (projectId: string, filename: string) => Promise<{ text: string; hash: string }>;
 	writeDocument: (projectId: string, filename: string, text: string, expectedHash: string) => Promise<{ hash: string }>;

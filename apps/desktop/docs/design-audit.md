@@ -51,6 +51,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 34. **Project surface consistency:** file navigation uses a 16-pixel inset, the filename and editing actions occupy opposite ends of a wrapping toolbar, and file/Git previews retain the shared code surface's 16-pixel padding, 13-pixel text and square inner corners. Dialog and empty-state headings use the bundled semibold weight. Rendered assertions check preview/navigation insets, text size, inner corners and toolbar alignment at both window sizes/themes.
 
+35. **External editor actions:** project editor selection and refresh use the shared wrapping toolbar; preview actions group Edit, Open and Reveal controls. The browser stays within the window with independently scrolling navigation/code and an editor that fills the available pane. Rendered assertions verify preview/edit containment. The preferred available editor persists. Pending opens disable repeated clicks and errors allow retry. Owned IPC fixtures verify project, file, reveal and Git targets in both themes/window sizes. Separate runtime tests verify paths and launching; these captures do not prove installed editor windows open.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)

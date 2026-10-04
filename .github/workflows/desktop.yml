@@ -50,12 +50,16 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Paged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs
+            - name: Verify project editor bridge
+              run: pnpm --filter @phaseo/desktop exec electron scripts/editor-smoke.mjs
             - name: Package Windows app
               run: pnpm --filter @phaseo/desktop exec electron-forge package
             - name: Packaged Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Verify packaged project editor bridge
+              run: pnpm --filter @phaseo/desktop exec electron scripts/editor-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Upload desktop evidence
               if: always()
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

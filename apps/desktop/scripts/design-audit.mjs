@@ -55,6 +55,11 @@ await import(packagedEntry ? pathToFileURL(path.resolve(packagedEntry)).href : "
 app.whenReady().then(async () => {
 const window = BrowserWindow.getAllWindows()[0];
 if (window.webContents.isLoading()) await new Promise(resolve => window.webContents.once("did-finish-load", resolve));
+let editorCalls=[],pendingEditor;
+ipcMain.removeHandler("workspace:editors");
+ipcMain.handle("workspace:editors",()=>[{id:"vscode",name:"VS Code",available:true},{id:"cursor",name:"Cursor",available:true},{id:"zed",name:"Zed",available:false}]);
+ipcMain.removeHandler("workspace:open-project");
+ipcMain.handle("workspace:open-project",async(_event,id,request)=>{editorCalls.push({id,...request});await new Promise((resolve,reject)=>{pendingEditor={resolve,reject};});});
 const originalAttachment=ipcMain._invokeHandlers.get("workspace:attachment");
 let failAttachment=false,holdAttachment=false,releaseAttachment;
 ipcMain.removeHandler("workspace:attachment");
@@ -142,8 +147,35 @@ try {
           await window.webContents.executeJavaScript(`Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedProject=text;}}});document.querySelector('.project-browser button[aria-label="Copy code"]').click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
           if(!await window.webContents.executeJavaScript(`window.auditCopiedProject===${JSON.stringify(projectText)}`))throw new Error("File preview copying changed source formatting.");
-          const previewSpacing=await window.webContents.executeJavaScript(`(()=>{const pre=document.querySelector('.project-browser pre'),toolbar=document.querySelector('.project-browser > section > .project-toolbar'),aside=document.querySelector('.project-browser > aside');return {padding:getComputedStyle(pre).padding,font:getComputedStyle(pre).fontSize,radius:getComputedStyle(pre).borderRadius,aside:getComputedStyle(aside).padding,alignment:getComputedStyle(toolbar).justifyContent}})()`);
-          if(previewSpacing.padding!=="16px"||previewSpacing.font!=="13px"||previewSpacing.radius!=="0px"||previewSpacing.aside!=="16px"||previewSpacing.alignment!=="space-between")throw new Error("Project preview does not use consistent code and navigation spacing.");
+          const previewSpacing=await window.webContents.executeJavaScript(`(()=>{const pre=document.querySelector('.project-browser pre'),toolbar=document.querySelector('.project-browser > section > .project-toolbar'),aside=document.querySelector('.project-browser > aside');return {padding:getComputedStyle(pre).padding,font:getComputedStyle(pre).fontSize,radius:getComputedStyle(pre).borderRadius,aside:getComputedStyle(aside).padding,alignment:getComputedStyle(toolbar).justifyContent,fits:document.querySelector('.project-browser').getBoundingClientRect().bottom<=innerHeight-24}})()`);
+          if(previewSpacing.padding!=="16px"||previewSpacing.font!=="13px"||previewSpacing.radius!=="0px"||previewSpacing.aside!=="16px"||previewSpacing.alignment!=="space-between"||!previewSpacing.fits)throw new Error("Project preview does not use consistent code and navigation spacing.");
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-preview-actions button')).find(button=>button.textContent==='Edit').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          if(!await window.webContents.executeJavaScript(`(()=>{const editor=document.querySelector('.project-editor'),pane=document.querySelector('.project-browser > section');return editor.getBoundingClientRect().bottom<=pane.getBoundingClientRect().bottom-23&&editor.clientHeight>=100})()`))throw new Error("File editing does not fit its project pane.");
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-browser > section button')).find(button=>button.textContent==='Discard').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          editorCalls=[];
+          await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="External editor"]').value='cursor';document.querySelector('select[aria-label="External editor"]').dispatchEvent(new Event('change',{bubbles:true}))`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          await window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.project-preview-actions button')).find(button=>button.textContent==='Open in Cursor');button.click();button.click()})()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          if(editorCalls.length!==1||editorCalls[0].id!=="design-project"||editorCalls[0].editor!=="cursor"||editorCalls[0].filename!=="example.ts"||!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-preview-actions button')).every(button=>button.disabled)`))throw new Error("Editor selection or duplicate-open protection failed.");
+          pendingEditor.reject(new Error("Owned editor failure"));
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`document.querySelector('[role="alert"]').textContent==='Owned editor failure'`))throw new Error("Editor failure feedback is missing.");
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-preview-actions button')).find(button=>button.textContent==='Open in Cursor').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));pendingEditor.resolve();
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(editorCalls.length!==2||!await window.webContents.executeJavaScript(`localStorage.getItem('phaseo.desktop.editor')==='"cursor"'&&!document.querySelector('[role="alert"]')`))throw new Error("Editor retry or preference persistence failed.");
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-editor-actions button')).find(button=>button.textContent==='Open project').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          if(editorCalls.at(-1).filename!==undefined||editorCalls.at(-1).editor!=="cursor")throw new Error("Project editor action sent an incorrect target.");
+          pendingEditor.resolve();await new Promise(resolve=>setTimeout(resolve,50));
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-preview-actions button')).find(button=>button.textContent==='Reveal file').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          if(editorCalls.at(-1).filename!=="example.ts"||editorCalls.at(-1).editor!=="file-manager")throw new Error("File reveal action sent an incorrect target.");
+          pendingEditor.resolve();await new Promise(resolve=>setTimeout(resolve,50));
+
           writeFileSync(path.join(output,`${width}-${theme}-project-preview.png`),(await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-toolbar button')).find(button=>button.textContent==='Git review').click()`);
           for(let attempt=0;;attempt++){
@@ -155,6 +187,11 @@ try {
           await new Promise(resolve=>setTimeout(resolve,100));
           const reviewLayout=await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('.git-file-list .project-toolbar');return {padding:getComputedStyle(row).padding,copy:window.auditCopiedProject===document.querySelector('.project-review .message-code-block pre').textContent,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
           if(reviewLayout.padding!=="16px 24px"||!reviewLayout.copy||!reviewLayout.stage)throw new Error("Git review row spacing or copying is inconsistent.");
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Open file').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));
+          if(editorCalls.at(-1).filename!=="example.ts"||editorCalls.at(-1).editor!=="cursor")throw new Error("Git file editor action sent an incorrect target.");
+          pendingEditor.resolve();await new Promise(resolve=>setTimeout(resolve,50));
+
           await window.webContents.executeJavaScript(`document.querySelector('.project-review .message-code-block').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output,`${width}-${theme}-git-review.png`),(await window.webContents.capturePage()).toPNG());
         }
