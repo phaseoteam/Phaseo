@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron';
+import { javascriptLiteral } from './javascript-literal.mjs';
 import { realpathSync, mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -10,9 +11,9 @@ const versionFile=path.join(profile,'version.json'),modeFile=path.join(profile,'
 writeFileSync(versionFile,JSON.stringify('1.2.3'));writeFileSync(modeFile,'success');
 writeFileSync(path.join(prefix,'codex.cmd'),'@echo off\r\nexit /b 99\r\n');
 writeFileSync(path.join(root,'package.json'),JSON.stringify({name:'@openai/codex',bin:{codex:'bin/codex.js'}}));
-writeFileSync(path.join(root,'bin/codex.js'),`const fs=require('fs');if(process.argv[2]!=='--version')process.exit(99);console.log('codex-cli '+JSON.parse(fs.readFileSync(${JSON.stringify(versionFile)},'utf8')));`);
+writeFileSync(path.join(root,'bin/codex.js'),`const fs=require('fs');if(process.argv[2]!=='--version')process.exit(99);console.log('codex-cli '+JSON.parse(fs.readFileSync(${javascriptLiteral(versionFile)},'utf8')));`);
 writeFileSync(path.join(npmRoot,'package.json'),JSON.stringify({name:'npm'}));
-writeFileSync(path.join(npmRoot,'bin/npm-cli.js'),`const fs=require('fs');const args=process.argv.slice(2);if(JSON.stringify(args)!==${JSON.stringify(JSON.stringify(['install','--global','--prefix',prefix,'--allow-scripts=@openai/codex','@openai/codex@latest']))})process.exit(99);fs.appendFileSync(${JSON.stringify(calls)},JSON.stringify(args)+'\\n');fs.writeFileSync(${JSON.stringify(started)},'owned');const mode=fs.readFileSync(${JSON.stringify(modeFile)},'utf8');if(mode==='hang')setInterval(()=>{},1000);else if(mode==='fail'){console.error('private fixture diagnostic');process.exit(1);}else fs.writeFileSync(${JSON.stringify(versionFile)},JSON.stringify('1.2.4'));`);
+writeFileSync(path.join(npmRoot,'bin/npm-cli.js'),`const fs=require('fs');const args=process.argv.slice(2);if(JSON.stringify(args)!==${javascriptLiteral(JSON.stringify(['install','--global','--prefix',prefix,'--allow-scripts=@openai/codex','@openai/codex@latest']))})process.exit(99);fs.appendFileSync(${javascriptLiteral(calls)},JSON.stringify(args)+'\\n');fs.writeFileSync(${javascriptLiteral(started)},'owned');const mode=fs.readFileSync(${javascriptLiteral(modeFile)},'utf8');if(mode==='hang')setInterval(()=>{},1000);else if(mode==='fail'){console.error('private fixture diagnostic');process.exit(1);}else fs.writeFileSync(${javascriptLiteral(versionFile)},JSON.stringify('1.2.4'));`);
 process.env.PATH=[prefix,path.join(process.env.SystemRoot??'C:/Windows','System32')].join(path.delimiter);
 let owner;
 const deadline=setTimeout(()=>{console.error('Harness maintenance audit timed out');app.exit(1)},60000);

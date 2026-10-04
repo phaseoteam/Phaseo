@@ -52,6 +52,8 @@ jobs:
               run: pnpm --filter @phaseo/agent-sdk test
             - name: Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
+            - name: JavaScript literal encoding
+              run: pnpm --filter @phaseo/desktop exec electron scripts/javascript-literal-smoke.mjs
             - name: Assistant file links
               run: pnpm --filter @phaseo/desktop exec electron scripts/file-links-smoke.mjs
             - name: PR review threads

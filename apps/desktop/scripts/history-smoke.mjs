@@ -1,4 +1,5 @@
 import { installChatNavigation } from "./chat-navigation.mjs";
+import { javascriptLiteral } from "./javascript-literal.mjs";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -88,7 +89,7 @@ async function wait(expression, label) {
   throw new Error(`History workflow did not settle: ${label}`);
 }
 async function search(query) {
-  await run(`(()=>{const input=document.querySelector('input[aria-label="Search chats"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await run(`(()=>{const input=document.querySelector('input[aria-label="Search chats"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${javascriptLiteral(query)});input.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 }
 async function publishReply(text, title) {
   const liveHistory = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
