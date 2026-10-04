@@ -1,3 +1,4 @@
+import { phaseoQuestionTools, answerPhaseoQuestion } from "./phaseoQuestionTools";
 import { phaseoPlanTools, publishPhaseoPlan } from "./phaseoPlanTools";
 import path from "node:path";
 import { createAgent } from "@phaseo/agent-sdk";
@@ -23,7 +24,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
  if (!nativeAction && continuing) nativeAction = restoredPhaseoSkill(continuing.run.context, text);
  const skills = globalRoot ? new PhaseoSkills(path.dirname(globalRoot), task.projectId ? cwd : undefined) : undefined;
  const toolkit = skills ? new PhaseoSkillTools(skills, signal) : undefined;
- if (continuing?.run.pause?.pendingToolCalls?.some(entry => !["list_skills", "load_skill"].includes(entry.call.name))) throw new AgentInputRejectedError("This pending run requires tools unavailable in Chat. Resume it in its original mode.");
+ if (continuing?.run.pause?.pendingToolCalls?.some(entry => !["list_skills", "load_skill", "ask_user", "update_plan", "read_plan"].includes(entry.call.name))) throw new AgentInputRejectedError("This pending run requires tools unavailable in Chat. Resume it in its original mode.");
  if (!skills && (nativeAction || (continuing?.run.context && typeof continuing.run.context === "object" && "phaseoModelSkills" in continuing.run.context))) throw new AgentInputRejectedError("Phaseo skill storage is unavailable.");
  const approved = nativeAction ? await skills!.approve(nativeAction, callbacks, signal) : undefined;
  if (approved) callbacks.onActivity?.({ id: "selected-skill", type: "tool", title: "Skill activated", text: approved.name, status: "completed" });
@@ -44,22 +45,27 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
   const completion = await readChatCompletion(response, delta => callbacks.onDelta(id, delta));
   return { message: { role: "assistant", content: completion.text, toolCalls: completion.calls } };
  } };
- const agent = createAgent<string, unknown>({ id: "phaseo-desktop", model: task.model, maxSteps: 40, tools: [...phaseoPlanTools(), ...toolkit?.tools() ?? []], instructions: async () => { await refresh(); return `Help the user with their work. Apply global guidance everywhere; project guidance takes precedence within its scope. Plan tracking, skill discovery and approved activation are available; filesystem, command and MCP tools are unavailable in Chat.\n${instructions.prompt()}`; } });
+ const agent = createAgent<string, unknown>({ id: "phaseo-desktop", model: task.model, maxSteps: 40, tools: [...phaseoPlanTools(), ...phaseoQuestionTools(), ...toolkit?.tools() ?? []], instructions: async () => { await refresh(); return `Help the user with their work. Apply global guidance everywhere; project guidance takes precedence within its scope. Plan tracking, structured questions, skill discovery and approved activation are available; filesystem, command and MCP tools are unavailable in Chat.\n${instructions.prompt()}`; } });
  const context = { ...(previous && previous.run.status !== "completed" && previous.run.context && typeof previous.run.context === "object" ? previous.run.context : {}), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) };
  const options = { client, signal, context: context as unknown, onEvent: (event: AgentEvent) => { if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: event.toolName, text: event.error ?? JSON.stringify(event.output ?? "", null, 2), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed" }); }, state: { load: async (id: string) => store.loadAgentRun(id) as AgentRunResult<unknown, string> | null, save: async (result: AgentRunResult<unknown, string>) => { const active = toolkit?.snapshot(); store.saveAgentRun(active?.length ? { ...result, run: { ...result.run, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), phaseoModelSkills: active } } } : result); publishPhaseoPlan(result.run.context, callbacks); callbacks.onSession(result.run.id); } } };
  let result = continuing?.run.status === "waiting_for_human" && continuing.run.pause?.pendingToolCalls?.length ? continuing : continuing ? await agent.continueRun({ ...options, run: continuing, humanMessages: followUp }) : await agent.run({ ...options, input: requested ? requested.arguments : text, messages });
  if (continuing && result !== continuing) followUp = undefined;
  while (result.run.status === "waiting_for_human") {
   const pending = result.run.pause?.pendingToolCalls ?? []; if (!pending.length) throw new Error("This Chat run requires an unsupported human response.");
-  const approvals: string[] = [], rejections: string[] = [];
+  const approvals: string[] = [], rejections: string[] = []; const toolOutputs: { toolCallId: string; output: unknown }[] = [];
   for (const entry of pending) {
+   if (entry.call.name === "ask_user") {
+    try { toolOutputs.push({ toolCallId: entry.call.id, output: await answerPhaseoQuestion(entry.call.input, callbacks, signal) }); }
+    catch (error) { signal.throwIfAborted(); toolOutputs.push({ toolCallId: entry.call.id, output: { error: error instanceof Error ? error.message : "Question unavailable." } }); }
+    continue;
+   }
    let review: { title: string; details: string };
    try { if (!toolkit || entry.call.name !== "load_skill") throw new Error("This tool is unavailable in Chat."); review = await toolkit.review(entry.call); }
    catch (error) { signal.throwIfAborted(); callbacks.onActivity?.({ id: entry.call.id, type: "tool", title: "Skill unavailable", text: error instanceof Error ? error.message : "Could not review skill.", status: "failed" }); rejections.push(entry.call.id); continue; }
    (await callbacks.onApproval(review.title, review.details) === "accept" ? approvals : rejections).push(entry.call.id);
   }
   if (signal.aborted) throw new Error("Task stopped.");
-  result = await agent.continueRun({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...context, ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }, run: result, approvals, rejections, humanMessages: followUp });
+  result = await agent.continueRun({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...context, ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }, run: result, approvals, rejections, toolOutputs, humanMessages: followUp });
   followUp = undefined;
  }
  if (result.run.status !== "completed") throw new Error(result.run.error ?? `Chat run ${result.run.status}.`);

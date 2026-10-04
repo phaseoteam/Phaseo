@@ -24,7 +24,7 @@ const server = createServer(async (request, response) => {
   assert.equal(history.filter(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => (part.image_url?.url ?? part.image_url) === "data:image/png;base64," + image)).length, 1);
   const instructions = mode === "chat" ? body.messages.find(message => message.role === "system")?.content : body.instructions;
   const tools = body.tools.map(tool => tool.function ?? tool); assert.ok(tools.some(tool => (tool.name ?? tool.id) === "load_skill"));
-  if (mode !== "code") assert.ok(tools.every(tool => ["list_skills", "load_skill", ...(mode === "plan" ? ["project_files"] : [])].includes(tool.name ?? tool.id)));
+  if (mode !== "code") assert.ok(tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill", ...(mode === "plan" ? ["project_files"] : [])].includes(tool.name ?? tool.id)));
   if (mode === "chat") {
    assert.equal(request.url, "/v1/chat/completions");
    if (step === 1) { assert.ok(!instructions.includes(skillBody)); name = "list_skills"; input = {}; }

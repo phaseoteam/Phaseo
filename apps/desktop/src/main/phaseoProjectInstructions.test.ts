@@ -109,7 +109,7 @@ describe("Phaseo project instructions in the actual run loop", () => {
 				const fetcher = vi.fn().mockResolvedValue(new Response("data: [DONE]\n\n")); await new PhaseoAdapter(() => "unused", fetcher).run({ ...task, mode }, root, "Write owned text", callbacks, account);
 				const body = JSON.parse(fetcher.mock.calls[0][1].body); expect(body.messages[0]).toEqual(expect.objectContaining({ role: "system", content: expect.stringContaining("Owned project writing style") })); expect(body.tools).toBeUndefined();
 			} else {
-				const generate = vi.fn(async (request: AgentModelRequest<unknown>) => { expect(request.instructions).toContain("Owned project writing style"); expect(request.tools.map(tool => tool.id)).toEqual(["update_plan", "read_plan", "project_files"]); return { message: { role: "assistant" as const, content: "Owned plan" } }; });
+				const generate = vi.fn(async (request: AgentModelRequest<unknown>) => { expect(request.instructions).toContain("Owned project writing style"); expect(request.tools.map(tool => tool.id)).toEqual(["update_plan", "read_plan", "ask_user", "project_files"]); return { message: { role: "assistant" as const, content: "Owned plan" } }; });
 				await new PhaseoCodingAdapter(() => "unused", store, () => ({ generate })).run({ ...task, mode }, root, "Plan owned work", callbacks, account);
 			}
 		} finally { store.close(); rmSync(root, { recursive: true, force: true }); }

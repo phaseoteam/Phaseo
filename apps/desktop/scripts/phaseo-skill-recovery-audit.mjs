@@ -23,7 +23,7 @@ const server = createServer(async (request, response) => {
   if (mode === "chat") {
    assert.equal(request.url, "/v1/chat/completions");
    const guidance = body.messages.find(message => message.role === "system")?.content;
-   assert.ok(body.tools.every(tool => ["list_skills", "load_skill"].includes(tool.function.name)));
+   assert.ok(body.tools.every(tool => ["update_plan", "read_plan", "ask_user", "list_skills", "load_skill"].includes(tool.function.name)));
    assert.ok(body.messages.some(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => part.image_url?.url === "data:image/png;base64," + image)));
    assert.equal(body.messages.filter(message => message.role === "user" && JSON.stringify(message.content).includes("Owned crash recovery")).length, 1);
    if (calls === 1) { assert.ok(!guidance.includes("Initial crash guidance")); name = "load_skill"; input = { id: "global:review" }; }
