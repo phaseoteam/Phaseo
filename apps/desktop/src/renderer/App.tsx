@@ -46,6 +46,7 @@ export function App() {
 	const [taskRevision, setTaskRevision] = useState(0);
 	const [commandsOpen, setCommandsOpen] = useState(false);
 	const [tool, setTool] = useState<"projects" | "proposals" | "terminals" | "browser">();
+	const [chatCommandsOpen, setChatCommandsOpen] = useState(false);
 	const [chatContext, setChatContext] = useState<{ id?: string; projectId?: string }>({});
 	const onChatContext = useCallback((context: { id?: string; projectId?: string }) => setChatContext(context), []);
 	const settingsPages = ["settings", "accounts", "agents", "mcp", "missions"];
@@ -104,7 +105,7 @@ export function App() {
 	else settingsContent = <WorkspaceSettings />;
 	const footer = <><button type="button" onClick={() => setWorkspaceItem("inbox")}>Inbox</button><button type="button" onClick={() => setWorkspaceItem("settings")}>Settings</button><button type="button" onClick={() => setSurface("platform")}>Platform</button></>;
 	const content = surface === "workspace" ? <div className="chat-shell">
-		<div className="chat-shell-main"><TaskWorkspace key={taskRevision} onContextChange={onChatContext} footer={footer} />
+		<div className="chat-shell-main"><TaskWorkspace key={taskRevision} onContextChange={onChatContext} onOverlayChange={setChatCommandsOpen} footer={footer} />
 		{(settingsOpen || workspaceItem === "inbox") && <section className="chat-settings-overlay" aria-label={settingsOpen ? "Settings" : "Inbox"}>
 			<header className="chat-settings-header"><nav aria-label="Settings sections">{settingsOpen && settingsPages.map(page => <button key={page} type="button" aria-pressed={workspaceItem === page} onClick={() => setWorkspaceItem(page)}>{({ settings: "General", accounts: "Accounts", agents: "Agents", mcp: "MCP", missions: "Schedules" } as Record<string, string>)[page]}</button>)}</nav><button type="button" aria-label="Back to chat" onClick={() => setWorkspaceItem("tasks")}><X size={16} /></button></header>
 			<div className="chat-settings-content">{settingsOpen ? settingsContent : <Inbox onOpenTask={id => navigateWorkspace("tasks", id)} />}</div>
@@ -114,7 +115,7 @@ export function App() {
 			{tool === "projects" && <Projects key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
 			{tool === "proposals" && <Proposals key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
 			{tool === "terminals" && <Terminals key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
-			{tool === "browser" && <BrowserPanel context={chatContext.id ?? "draft"} covered={commandsOpen || settingsOpen || workspaceItem === "inbox"} />}
+			{tool === "browser" && <BrowserPanel context={chatContext.id ?? "draft"} covered={commandsOpen || chatCommandsOpen || settingsOpen || workspaceItem === "inbox"} />}
 		</div></aside>}
 	</div> : activeItem === "overview" ? <PlatformHome /> : <SectionPlaceholder title={labels[activeItem] ?? "Platform"} />;
 

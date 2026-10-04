@@ -52,6 +52,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --long-human-wait
             - name: Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
+            - name: Reusable chat commands
+              run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs
             - name: Harness update workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs
             - name: Chat shell and native browser
@@ -74,6 +76,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged reusable chat commands
+              run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged harness update workflow
               run: pnpm --filter @phaseo/desktop exec electron scripts/harness-maintenance-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat shell and native browser
@@ -95,5 +99,6 @@ jobs:
                       output/playwright/electron-workspace.png
                       output/playwright/chat-shell/
                       output/playwright/harness-maintenance/
+                      output/playwright/prompt-commands/
                       output/playwright/browser-viewport/
                   if-no-files-found: ignore

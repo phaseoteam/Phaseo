@@ -1,3 +1,4 @@
+import { PromptCommands } from "./promptCommands";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles } from "./projectPullRequestFiles";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
@@ -185,6 +186,11 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 	workspaceRuntime.assertProjectAvailable(project.id);
 	return project.directory;
 }
+ipcMain.handle("workspace:prompt-commands", (event, id: unknown, request: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted command request.");
+	const project = id === undefined ? undefined : projectRoot(event, id);
+	return new PromptCommands(app.getPath("userData"), project).request(request);
+});
 ipcMain.handle("workspace:list-files", (event, id: unknown, directory: unknown) => {
 	const root = projectRoot(event, id);
 	if (typeof directory !== "string") throw new Error("Invalid directory.");

@@ -1,3 +1,4 @@
+import { PromptCommandPicker } from "../components/PromptCommandPicker";
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, FolderOpen, Paperclip, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
@@ -16,14 +17,17 @@ import { TaskActions } from "../components/TaskActions";
 import { TaskSettings } from "../components/TaskSettings";
 const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
-export function TaskWorkspace({ onContextChange, footer }: { onContextChange?: (context: { id?: string; projectId?: string }) => void; footer?: ReactNode }) {
+export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { onOverlayChange?: (open: boolean) => void; onContextChange?: (context: { id?: string; projectId?: string }) => void; footer?: ReactNode }) {
 	const [workspace, setWorkspace] = useState<WorkspaceOverview>(emptyOverview);
 	const [selectedId, setSelectedId] = usePersistedState<string | undefined>("phaseo.desktop.selectedTask", undefined);
+	const [promptCommandsId, setPromptCommandsId] = useState<string>();
+	useEffect(() => { setPromptCommandsId(undefined); }, [selectedId]);
 	const [query, setQuery] = useState("");
 	const [showArchived, setShowArchived] = useState(false);
 	const [editingQueue, setEditingQueue] = useState<string>();
 	const [settingsId, setSettingsId] = useState<string>();
 	const compactionPending = useRef(false);
+	const composerInput = useRef<HTMLTextAreaElement>(null);
 	const [queueText, setQueueText] = useState("");
 	const [drafts, setDrafts] = usePersistedState<Record<string, string>>("phaseo.desktop.messageDrafts", {});
 	const text = selectedId ? drafts[selectedId] ?? "" : "";
@@ -68,6 +72,7 @@ export function TaskWorkspace({ onContextChange, footer }: { onContextChange?: (
 	const selectedSnapshot = workspace.tasks.find(task => task.id === selectedId);
 	const selectedDetail = useSelectedTask(api?.task, selectedId, selectedSnapshot ? JSON.stringify([selectedSnapshot.revision, selectedSnapshot.updatedAt]) : undefined);
 	const selected = selectedDetail.task;
+	useEffect(() => { onOverlayChange?.(!!selected && promptCommandsId === selected.id); return () => onOverlayChange?.(false); }, [selected?.id, promptCommandsId, onOverlayChange]);
 	useEffect(() => { onContextChange?.({ id: selectedId, projectId: selected?.projectId ?? selectedSnapshot?.projectId ?? (!selectedId ? projectId || undefined : undefined) }); }, [selectedId, selected?.projectId, selectedSnapshot?.projectId, projectId, onContextChange]);
 	const historyRevision = JSON.stringify(workspace.tasks.map(task => [task.id, task.title, task.pinned, task.archived, task.status, task.status === "running" || task.status === "waiting" ? undefined : task.updatedAt]));
 	const history = useTaskHistory(api?.taskHistory, query, showArchived, historyRevision);
@@ -174,13 +179,14 @@ export function TaskWorkspace({ onContextChange, footer }: { onContextChange?: (
 				</ConversationHistory>
 				{selected.steering?.map(message => <div className="task-approval" key={message.id}><strong>{message.status === "sending" ? "Sending steering instruction…" : message.status === "rejected" ? "Instruction not sent" : "Delivery unconfirmed"}</strong><p>{message.text}</p>{message.attachments?.map(attachment => <button type="button" key={attachment.id} onClick={() => setAttachmentPreview({ taskId: selected.id, id: attachment.id })}>{attachment.name}</button>)}{message.error && <p>{message.error}</p>}{message.status === "unconfirmed" && <p>Queueing this instruction may send it twice.</p>}<button type="button" disabled={message.status === "sending" || selected.archived} onClick={() => void command({ type: "steer-queue", id: selected.id, messageId: message.id })}>Queue instead</button><button type="button" disabled={message.status === "sending"} onClick={() => void command({ type: "steer-discard", id: selected.id, messageId: message.id })}>Discard</button></div>)}
 				{selected.queue.length > 0 && <section className="task-queue" aria-label="Queued messages"><strong>Queued messages ({selected.queue.length})</strong><div className="task-queue-items">{selected.queue.map(message => <div key={message.id}>{editingQueue === message.id ? <><textarea aria-label="Queued message" value={queueText} onChange={event => setQueueText(event.target.value)} /><button type="button" disabled={!queueText.trim()} onClick={() => { void command({ type: "queue-edit", id: selected.id, messageId: message.id, text: queueText }).then(state => { if (state) setEditingQueue(undefined); }); }}>Save</button><button type="button" onClick={() => setEditingQueue(undefined)}>Cancel</button></> : <><span>{message.text}</span><button type="button" onClick={() => { setEditingQueue(message.id); setQueueText(message.text); }}>Edit</button></>}<button type="button" aria-label="Move message up" onClick={() => void command({ type: "queue-move", id: selected.id, messageId: message.id, direction: "up" })}><ArrowUp size={14} /></button><button type="button" aria-label="Move message down" onClick={() => void command({ type: "queue-move", id: selected.id, messageId: message.id, direction: "down" })}><ArrowDown size={14} /></button><button type="button" onClick={() => void command({ type: "queue-remove", id: selected.id, messageId: message.id })}>Remove</button></div>)}</div></section>}
-				<form className="task-composer" onSubmit={event => { event.preventDefault(); void send(); }}><textarea aria-label="Message" aria-keyshortcuts={shortcutKeys("Enter")} maxLength={100000} placeholder="Describe your task…" value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (!event.nativeEvent.isComposing && !event.repeat && (event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void send(); } }} />
+				<form className="task-composer" onSubmit={event => { event.preventDefault(); void send(); }}><textarea ref={composerInput} aria-label="Message" aria-keyshortcuts={shortcutKeys("Enter")} maxLength={100000} placeholder="Describe your task…" value={text} onChange={event => setText(event.target.value)} onKeyDown={event => { if (!event.nativeEvent.isComposing && !event.repeat && (event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void send(); } }} />
 					{pendingAttachments.length > 0 && <div className="attachment-drafts">{pendingAttachments.map(attachment => <span className="attachment-chip" key={attachment.id}><button type="button" aria-label={`Preview ${attachment.name}`} onClick={() => setAttachmentPreview({ taskId: selected.id, id: attachment.id })}>{attachment.name}</button><button type="button" aria-label={`Remove ${attachment.name}`} onClick={() => setAttachmentDrafts(current => ({ ...current, [selected.id]: (current[selected.id] ?? []).filter(value => value.id !== attachment.id) }))}><X size={12} /></button></span>)}</div>}
 					{["codex", "opencode", "pi", "cursor"].includes(selected.harness) && (selected.status === "running" || selected.status === "waiting") && <button type="button" disabled={(!text.trim() && !pendingAttachments.length) || busy || uploading || selected.archived || selected.steering?.some(message => message.status === "sending")} onClick={() => void send("steer")}>Steer current turn</button>}
-					<div><button type="button" disabled={uploading || busy || selected.archived || pendingAttachments.length >= 10} onClick={() => void attach()}><Paperclip size={14} />{uploading ? "Adding…" : "Attach files"}</button><small>{shortcutLabel("Enter")} to {selected.status === "running" || selected.status === "waiting" ? "queue" : "send"}</small>{selected.status === "running" || selected.status === "waiting" ? <button type="button" onClick={() => void command({ type: "cancel", id: selected.id })}><Square size={14} /> Stop</button> : null}<button className="task-primary" disabled={(!text.trim() && !pendingAttachments.length) || busy || uploading || selected.archived} type="submit"><Send size={14} />{selected.status === "running" || selected.status === "waiting" ? "Queue" : "Send"}</button></div>
+					<div><button type="button" disabled={uploading || busy || selected.archived || pendingAttachments.length >= 10} onClick={() => void attach()}><Paperclip size={14} />{uploading ? "Adding…" : "Attach files"}</button><button type="button" disabled={busy || selected.archived} onClick={() => setPromptCommandsId(selected.id)}>Commands</button><small>{shortcutLabel("Enter")} to {selected.status === "running" || selected.status === "waiting" ? "queue" : "send"}</small>{selected.status === "running" || selected.status === "waiting" ? <button type="button" onClick={() => void command({ type: "cancel", id: selected.id })}><Square size={14} /> Stop</button> : null}<button className="task-primary" disabled={(!text.trim() && !pendingAttachments.length) || busy || uploading || selected.archived} type="submit"><Send size={14} />{selected.status === "running" || selected.status === "waiting" ? "Queue" : "Send"}</button></div>
 				</form>
 			</>}
 		</section>
+		{promptCommandsId === selected?.id && selected && <PromptCommandPicker key={selected.id} projectId={selected.projectId} onClose={() => setPromptCommandsId(undefined)} onInsert={value => { const next = text ? `${text}\n\n${value}` : value; if (next.length > 100000) throw new Error("The draft exceeds the message limit."); setText(next); requestAnimationFrame(() => composerInput.current?.focus()); }} />}
 		{attachmentPreview && <AttachmentPreview {...attachmentPreview} onClose={() => setAttachmentPreview(undefined)} />}
 	</div>;
 }

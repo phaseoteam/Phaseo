@@ -81,3 +81,24 @@ Phaseo project Chats load the project's root `AGENTS.md`. Code and Plan also loa
 More specific instructions apply to their directory and descendants. Files must be valid UTF-8 text within the registered project, at most 16 KiB each, with up to 32 loaded files and 64 KiB total. Invalid root instructions reject submission and retain queued input. Local writes and commands carry the confirmed instruction revision: changed or newly discovered instructions block execution until the model reviews them and requests a fresh approval. A saved pending approval is restored before continuing after a restart.
 
 Owned model fixtures verify root and folder scopes, approval-time changes, new instruction discovery, commands, persisted approval recovery and actual file effects. Global instructions, filesystem watchers, native instruction settings, reusable commands and skills remain in progress.
+
+## Reusable chat commands
+
+Use **Commands** beside the composer to find, preview, create or edit a saved prompt. Commands can belong to **All chats** or **This project**. The picker shows both scopes explicitly, including commands that share a name. Insertion appends the expanded text to the current draft and returns focus to the composer; sending remains a separate action.
+
+Global commands live in the desktop profile's `commands` directory. Project commands live in `.phaseo/commands`. Files use a lowercase name with letters, numbers and hyphens, and Markdown with optional YAML `description` frontmatter:
+
+```md
+---
+description: Review a change
+---
+Review $1 against $2 and explain your findings.
+```
+
+`$ARGUMENTS` inserts all supplied text. Numbered arguments accept quoted phrases; the last numbered placeholder receives the remaining arguments. Templates without placeholders append the supplied arguments. Preview reloads the file; editing uses its confirmed hash to reject an external change. Invalid command files remain visible as diagnostics while valid commands are available. Files are limited to 16 KiB, catalogs to 200 commands, and expansion to the composer's message limit. Template expansion does not execute shell code or alter harness, model or permission settings.
+
+Native command catalogs/execution, nested command names, advanced frontmatter, command deletion/import, skills and plugin management remain in progress.
+
+Current verification: 669 tests / 90 files; source and Windows archive command workflows each capture 13 states across both themes/window sizes. They verify keyboard selection, draft/focus preservation, scope, UI creation, stale edit rejection and native browser hide/restore, with zero submissions or provider inference.
+
+![Command preview](screenshots/prompt-command-preview.png)

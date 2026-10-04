@@ -1,3 +1,4 @@
+import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
 import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
 import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
 import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
@@ -83,6 +84,7 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
 	overview: () => Promise<WorkspaceOverview>;
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
 	task: (id: string) => Promise<Task>;
