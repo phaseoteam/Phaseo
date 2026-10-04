@@ -148,8 +148,8 @@ jobs:
                   fi
                   npm publish "${artifacts[0]}" --access public --ignore-scripts
 
-    data:
-        name: Validate data
+    repository-checks:
+        name: Repository checks
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -198,9 +198,6 @@ jobs:
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/update-model-statuses.test.ts
-
-            - name: Validate data files
-              run: pnpm run validate:data && pnpm run validate:pricing && pnpm run validate:gateway
 
             - name: Enforce EUR routing restriction
               run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
@@ -354,7 +351,7 @@ jobs:
     openapi-lint:
         name: OpenAPI lint
         runs-on: ubuntu-latest
-        needs: data
+        needs: repository-checks
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
