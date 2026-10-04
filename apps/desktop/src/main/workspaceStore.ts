@@ -1,3 +1,4 @@
+import { BrowserDownloadStore } from "./browserDownloadStore";
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import type { AgentRunResult } from "@phaseo/agent-sdk";
@@ -14,6 +15,7 @@ import { validateConversationPageQuery, type ConversationPage } from "../shared/
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
 	readonly missions: MissionStore;
+	readonly browserDownloads: BrowserDownloadStore;
 	constructor(filename: string) {
 		this.db = new DatabaseSync(filename);
 		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
@@ -29,6 +31,7 @@ export class WorkspaceStore {
 			CREATE TABLE IF NOT EXISTS preferences (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			PRAGMA user_version=1;`);
 		this.missions = new MissionStore(this.db);
+		this.browserDownloads = new BrowserDownloadStore(this.db);
 		const recoveryTasks = this.db.prepare(`SELECT data FROM tasks WHERE json_extract(data, '$.authTerminalId') IS NOT NULL
 			OR json_extract(data, '$.status') IN ('running', 'waiting')
 			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.steering') AS item WHERE json_extract(item.value, '$.status') = 'sending')`).all();

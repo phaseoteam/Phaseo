@@ -96,6 +96,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted) return;
 	shutdownStarted = true;
+	browserHost.downloads.close();
 	missionService?.close();
 	taskNotifications?.dismiss();
 	terminalService?.close();
@@ -455,6 +456,7 @@ app.whenReady().then(() => {
 	});
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	browserHost.downloads.configure(workspaceRuntime.store.browserDownloads);
 	taskNotifications = new TaskNotifications({
 		focused: () => Boolean(BrowserWindow.getFocusedWindow()), supported: () => Notification.isSupported(),
 		show: (title, body, click) => { const notification = new Notification({ title, body, silent: true }); notification.on("click", click); notification.on("failed", () => {}); notification.show(); return () => { notification.removeAllListeners(); notification.close(); }; },

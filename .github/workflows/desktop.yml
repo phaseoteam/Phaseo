@@ -50,6 +50,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Chat shell and native browser
               run: pnpm --filter @phaseo/desktop audit:design
+            - name: Browser download history across restarts
+              run: pnpm --filter @phaseo/desktop exec node scripts/browser-download-history-audit.mjs
             - name: Paged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs
             - name: Verify project editor bridge
@@ -62,6 +64,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged chat shell and native browser
               run: pnpm --filter @phaseo/desktop exec electron scripts/chat-shell-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged browser download history across restarts
+              run: pnpm --filter @phaseo/desktop exec node scripts/browser-download-history-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged history workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/history-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Verify packaged project editor bridge

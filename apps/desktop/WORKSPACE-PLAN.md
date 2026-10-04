@@ -374,3 +374,7 @@ Added per-tab persisted Desktop, Phone and Tablet modes, portrait/landscape rota
 ### Browser downloads
 
 Added native-session downloads with the native save workflow, chat-scoped progress, pause/resume/cancel, confirmed-path reveal and metadata removal. Bounded active admission and retained records; owner shutdown cancels active items. Five new deterministic cases and source/archive loopback workflows verify lifecycle, byte fidelity, chat isolation, view hiding and action guards. Current suite: 502 tests / 75 files; shell audit: 21 captures. Save-dialog/OS folder interaction, durable download history and restart recovery remain open. All parity acceptance items remain open.
+
+### Durable browser download history
+
+Stored native download metadata in the existing workspace SQLite database. Confirmed completion and removal survive process restarts; unfinished entries recover as terminal interruptions. Preserved active records while bounding retained history to one hundred, throttled progress writes, and flushed final/control state before workspace shutdown. Six new tests cover real database reopening, metadata-only deletion, recovery, bounds, ownership and write/removal failure. Source and packaged three-process audits verify native downloads, saved paths/bytes and removal across two restarts. Current suite: 508 tests / 76 files. Automatic interrupted-transfer resumption and full parity remain open.
