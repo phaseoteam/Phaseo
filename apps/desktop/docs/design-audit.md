@@ -187,10 +187,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Native harness installation layout](screenshots/native-harnesses-small-window.png)
 
+59. **Argument fields:** ACP agents and local MCP connections use a shared full-width argument fieldset instead of a JSON input. Add focuses the new field; each row has a labelled removal action. Arguments retain spaces, quotes, Unicode and empty values; no trimming or shell parsing is introduced. Fields follow the existing native limits (100 arguments, 10,000 characters each). Source/package UI fixtures verify focus, exact controlled values, removal without changing other rows and 8-pixel row gaps. Source/package desktop smoke checks save a literal five-argument MCP configuration through real preload/IPC and confirm the stored values before editing/archive/restore. Four additional MCP captures bring the visual audit to 188. Native tool execution and general visual acceptance remain separate checks.
+
+![Individual command argument fields](screenshots/command-argument-fields.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 184 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 188 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 184 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 188 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

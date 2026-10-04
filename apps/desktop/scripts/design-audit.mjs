@@ -8,6 +8,10 @@ import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
 let activeTaskFixture,taskActionCalls=0;
+async function auditArgumentFields(window, formLabel) {
+ const values=[' two words "quoted" 世界 ','','literal; --flag'];
+ await window.webContents.executeJavaScript(`(async()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(formLabel)}+'"]'),fields=form.querySelector('.argument-fields');while(fields.querySelector('input')){fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));}for(const value of ${JSON.stringify(values)}){fields.querySelector('.add-argument').click();await new Promise(resolve=>requestAnimationFrame(resolve));const input=fields.querySelector('.argument-row:last-of-type input');if(document.activeElement!==input)throw Error('New argument was not focused');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>requestAnimationFrame(resolve));}fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));const remaining=Array.from(fields.querySelectorAll('input')).map(input=>input.value);if(JSON.stringify(remaining)!==JSON.stringify(['','literal; --flag']))throw Error('Removing an argument changed other values');if(getComputedStyle(fields).gridColumn!=='1 / -1'||getComputedStyle(fields.querySelector('.argument-row')).gap!=='8px')throw Error('Argument fields are not aligned');form.scrollIntoView({block:'nearest'});})()`);
+}
 async function openTaskActions(window){
  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
  for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Task actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
@@ -377,6 +381,7 @@ try {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();document.querySelector('form[aria-label="Agent connection"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Agent connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,count:row?.querySelectorAll('button').length}})()`);
           if (actions.gap !== "8px" || actions.count !== 2) throw new Error("Agent editor actions need consistent spacing.");
+          await auditArgumentFields(window,"Agent connection");
           writeFileSync(path.join(output, `${width}-${theme}-agent-editor.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('form[aria-label="Agent connection"] button')).find(button=>button.textContent==='Cancel').click()`);
         }
@@ -387,6 +392,8 @@ try {
         if (page === "MCP") {
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="MCP connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
           if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");
+          await auditArgumentFields(window,"MCP connection");
+          writeFileSync(path.join(output, `${width}-${theme}-mcp-arguments.png`), (await window.webContents.capturePage()).toPNG());
         }
         if (page === "Accounts") {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.accounts-page article')).find(article=>article.textContent.includes('Codex local login')).querySelector('button').click()`);

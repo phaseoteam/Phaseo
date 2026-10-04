@@ -93,6 +93,13 @@
 .task-setup label:has(> input[type="checkbox"]), .account-form label:has(> input[type="checkbox"]) { flex-direction: row; align-items: center; }
 .task-setup :is(input:not([type="checkbox"]), select, textarea), .account-form :is(input:not([type="checkbox"]), select, textarea) { width: 100%; }
 .account-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: var(--panel-padding); border-top: 1px solid var(--border); }
+.argument-fields { display: grid; grid-column: 1 / -1; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.argument-fields legend { margin-bottom: 8px; padding: 0; font-size: 13px; }
+.argument-fields > p { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.argument-row { display: flex; gap: 8px; min-width: 0; }
+.argument-row input { flex: 1; }
+.argument-row button { flex-shrink: 0; width: 32px; padding: 0; }
+.argument-fields .add-argument { justify-self: start; }
 .account-form > button { justify-self: start; align-self: end; }
 .panel-heading + .account-form { border-top: 0; }
 .account-form-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
