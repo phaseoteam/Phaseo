@@ -1,6 +1,7 @@
-import { lazy, Suspense, useEffect, useState, useCallback } from "react";
+import { lazy, Suspense, useEffect, useState, useCallback, type CSSProperties } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { DesktopFrame } from "./components/DesktopFrame";
+import { ToolsResizeHandle } from "./components/ToolsResizeHandle";
 import { Topbar } from "./components/Topbar";
 import { usePersistedState } from "./lib/persistedState";
 import type { ProductSurface, ThemePreference } from "./types";
@@ -45,6 +46,8 @@ export function App() {
 	const activeItem = surface === "workspace" ? workspaceItem : platformItem;
 	const [taskRevision, setTaskRevision] = useState(0);
 	const [commandsOpen, setCommandsOpen] = useState(false);
+	const [toolsWidth, setToolsWidth] = usePersistedState("phaseo.desktop.tools.width", 480);
+	const safeToolsWidth = Number.isFinite(toolsWidth) ? Math.max(320, Math.min(900, toolsWidth)) : 480;
 	const [tool, setTool] = useState<"projects" | "proposals" | "terminals" | "browser">();
 	const [chatCommandsOpen, setChatCommandsOpen] = useState(false);
 	const [chatContext, setChatContext] = useState<{ id?: string; projectId?: string }>({});
@@ -103,7 +106,7 @@ export function App() {
 	else if (workspaceItem === "mcp") settingsContent = <McpConnections />;
 	else if (workspaceItem === "missions") settingsContent = <Missions onOpenTask={id => navigateWorkspace("tasks", id)} onNewTask={() => navigateWorkspace("tasks")} />;
 	else settingsContent = <WorkspaceSettings />;
-	const footer = <><button type="button" onClick={() => setWorkspaceItem("inbox")}>Inbox</button><button type="button" onClick={() => setWorkspaceItem("settings")}>Settings</button><button type="button" onClick={() => setSurface("platform")}>Platform</button></>;
+	const footer = <><button type="button" onClick={() => setWorkspaceItem("inbox")}>Inbox</button><button type="button" onClick={() => setWorkspaceItem("settings")}>Settings</button></>;
 	const content = surface === "workspace" ? <div className="chat-shell">
 		<div className="chat-shell-main"><TaskWorkspace key={taskRevision} onContextChange={onChatContext} onOverlayChange={setChatCommandsOpen} footer={footer} />
 		{(settingsOpen || workspaceItem === "inbox") && <section className="chat-settings-overlay" aria-label={settingsOpen ? "Settings" : "Inbox"}>
@@ -111,7 +114,7 @@ export function App() {
 			<div className="chat-settings-content">{settingsOpen ? settingsContent : <Inbox onOpenTask={id => navigateWorkspace("tasks", id)} />}</div>
 		</section>}
 		</div>
-		{tool && !settingsOpen && workspaceItem !== "inbox" && <aside className="chat-tools" aria-label="Chat tools"><header className="chat-tools-header"><nav aria-label="Chat tool tabs">{(["projects", "proposals", "terminals", "browser"] as const).map(page => <button type="button" key={page} aria-pressed={tool === page} onClick={() => setTool(page)}>{({ projects: "Files & Git", proposals: "PRs", terminals: "Terminal", browser: "Browser" })[page]}</button>)}</nav><button type="button" aria-label="Close tools" onClick={() => setTool(undefined)}><PanelRightClose size={16} /></button></header><div className="chat-tools-content">
+		{tool && !settingsOpen && workspaceItem !== "inbox" && <aside className="chat-tools" aria-label="Chat tools" style={{ "--tools-width": `${safeToolsWidth}px` } as CSSProperties}><ToolsResizeHandle width={safeToolsWidth} onChange={setToolsWidth} /><header className="chat-tools-header"><nav aria-label="Chat tool tabs">{(["projects", "proposals", "terminals", "browser"] as const).map(page => <button type="button" key={page} aria-pressed={tool === page} onClick={() => setTool(page)}>{({ projects: "Files & Git", proposals: "PRs", terminals: "Terminal", browser: "Browser" })[page]}</button>)}</nav><button type="button" aria-label="Close tools" onClick={() => setTool(undefined)}><PanelRightClose size={16} /></button></header><div className="chat-tools-content">
 			{tool === "projects" && <Projects key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
 			{tool === "proposals" && <Proposals key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
 			{tool === "terminals" && <Terminals key={chatContext.projectId ?? "personal"} initialProjectId={chatContext.projectId ?? ""} />}
@@ -137,7 +140,7 @@ export function App() {
 					onSearch={() => setCommandsOpen(true)}
 				/>}
 				<div className="app-main">
-					<Topbar surface={surface} theme={resolvedTheme} onThemeChange={setTheme} onNewTask={() => navigateWorkspace("tasks")} onCommands={() => setCommandsOpen(true)} onChats={() => { setSurface("workspace"); setWorkspaceItem("tasks"); }} onTools={() => setTool(value => value ? undefined : "browser")} />
+					<Topbar onSurfaceChange={setSurface} surface={surface} theme={resolvedTheme} onThemeChange={setTheme} onNewTask={() => navigateWorkspace("tasks")} onCommands={() => setCommandsOpen(true)} onChats={() => { setSurface("workspace"); setWorkspaceItem("tasks"); }} onTools={() => setTool(value => value ? undefined : "browser")} />
 					<main className="content-scroll"><Suspense fallback={<p className="page task-muted" role="status">Loading workspace…</p>}>{content}</Suspense></main>
 				</div>
 			</div>

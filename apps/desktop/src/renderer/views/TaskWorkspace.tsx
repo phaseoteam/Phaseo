@@ -9,6 +9,7 @@ import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOve
 import { usePersistedState } from "../lib/persistedState";
 import { useTaskHistory } from "../lib/useTaskHistory";
 import { useSelectedTask } from "../lib/useSelectedTask";
+import { ScrollArea } from "../components/ScrollArea";
 import { ConversationHistory } from "../components/ConversationHistory";
 import { ApprovalRequest } from "../components/ApprovalRequest";
 import { QuestionForm } from "../components/QuestionForm";
@@ -161,11 +162,11 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 			<div className="task-list-heading"><strong>Chats</strong><button type="button" aria-label="New chat" onClick={() => { setSelectedId(undefined); setHandoffId(undefined); }}><Plus size={16} /></button></div>
 			<label className="task-search"><Search size={14} /><input aria-label="Search chats" placeholder="Search chats" maxLength={512} value={query} onChange={event => setQuery(event.target.value)} /></label>
 			<button type="button" className="task-archive-filter" onClick={() => { setShowArchived(value => !value); setSelectedId(undefined); }}>{showArchived ? "Active chats" : "Archived chats"}</button>
-			<div className="task-history-list">{[undefined, ...workspace.projects.filter(project => tasks.some(task => task.projectId === project.id)).map(project => project.id), ...Array.from(new Set(tasks.map(task => task.projectId).filter(id => id && !workspace.projects.some(project => project.id === id))))].map(group => <div className="chat-group" key={group ?? "personal"}><h2>{group ? workspace.projects.find(project => project.id === group)?.name ?? "Unavailable project" : "Personal"}</h2>{tasks.filter(task => task.projectId === group).map(task => <button type="button" title={task.title} aria-pressed={task.id === selectedId} className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}</div>)}
+			<ScrollArea className="chat-history-scroll" viewportClassName="task-history-list">{[undefined, ...workspace.projects.filter(project => tasks.some(task => task.projectId === project.id)).map(project => project.id), ...Array.from(new Set(tasks.map(task => task.projectId).filter(id => id && !workspace.projects.some(project => project.id === id))))].map(group => <div className="chat-group" key={group ?? "personal"}><h2>{group ? workspace.projects.find(project => project.id === group)?.name ?? "Unavailable project" : "Personal"}</h2>{tasks.filter(task => task.projectId === group).map(task => <button type="button" title={task.title} aria-pressed={task.id === selectedId} className={`task-row ${task.id === selectedId ? "selected" : ""}`} key={task.id} onClick={() => setSelectedId(task.id)}><span>{task.pinned ? "● " : ""}{task.title}</span><small>{task.harness} · {task.status}</small></button>)}</div>)}
 			{history.loading && <p className="task-muted" role="status">Loading chats…</p>}
 			{history.error && <div className="task-muted" role="alert"><p>{history.error}</p><button type="button" onClick={history.retry}>Retry</button></div>}
 			{!history.loading && !history.error && !tasks.length && <p className="task-muted">{query ? "No matching chats." : showArchived ? "No archived chats." : "Your chats will appear here."}</p>}
-			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more chats</button>}</div>
+			{history.hasMore && <button type="button" disabled={history.loading} onClick={history.loadMore}>Load more chats</button>}</ScrollArea>
 			{footer && <div className="chat-sidebar-footer">{footer}</div>}
 		</aside>
 		<section className="task-detail" aria-label="Task workspace">
@@ -190,7 +191,7 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 				</div>
 				<small className="task-muted">{harness === "phaseo" ? "Code and Plan require a Responses-compatible API account. File changes require approval." : harness === "cursor" ? "Uses your selected Cursor account. Code mode requires approval for native tools for each turn." : harness === "pi" ? "Uses Pi’s native account, extensions and tool policies. Models use provider/model names." : harness === "acp" ? "Uses the connected agent’s native account and settings." : harness === "opencode" ? "Uses your local OpenCode 2 service and its connected accounts." : harness === "grok" ? `Uses your ${accountId ? "selected" : "existing local"} Grok account and native Code or Plan permissions.` : `Uses ${accountId ? "your selected" : "your existing local"} ${harness === "claude" ? "Claude Code" : "Codex"} account.`}</small>
 			</div> : <>
-				<header className="task-toolbar"><div><input className="task-title" aria-label="Task title" key={selected.id + selected.title} defaultValue={selected.title} maxLength={200} onBlur={event => { const title = event.target.value.trim(); if (title && title !== selected.title) void command({ type: "update-task", id: selected.id, title }); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} /><small>{selected.harness} · {selected.mode} · {selected.status}</small></div>
+				<header className="task-toolbar"><div><input className="task-title" aria-label="Task title" key={selected.id + selected.title} defaultValue={selected.title} maxLength={200} onBlur={event => { const title = event.target.value.trim(); if (title && title !== selected.title) void command({ type: "update-task", id: selected.id, title }); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} /></div>
 					<TaskActions key={selected.id} task={selected} busy={busy}
 						onCompact={() => void compact()}
 						onArchive={() => { void command({ type: "update-task", id: selected.id, archived: !selected.archived }).then(state => { if (state) setSelectedId(undefined); }); }}

@@ -40,11 +40,13 @@ const activeConversation = new Map(); let peakConversation = 0;
 let delayedTaskId = "001";
 const activeDetails = new Map(); const peakDetails = new Map();
 let fullWorkspaceReads = 0;
+const historyReads = [];
 ipcMain.handle = function (channel, listener) {
   return originalHandle.call(this, channel, channel === "workspace:get" ? (event, ...args) => {
     fullWorkspaceReads++;
     return listener(event, ...args);
   } : channel === "workspace:task-history" ? (event, ...args) => {
+    historyReads.push({ query: args[0].query, archived: args[0].archived, offset: args[0].offset });
     if (failNextHistory) { failNextHistory = false; throw new Error("Owned history failure"); }
     return listener(event, ...args);
   } : channel === "workspace:conversation-page" ? async (event, query) => {
@@ -112,6 +114,7 @@ try {
   await run(`document.querySelector('.task-history-list').scrollTop=0`);
   if (!await run(`document.querySelector('.task-row').textContent.includes('History 000')`)) throw new Error("Pinned history is not first.");
   failNextHistory = true;
+  const appendReadsStart = historyReads.length;
   await run(`Array.from(document.querySelectorAll('.task-list button')).find(button=>button.textContent==='Load more chats').click()`);
   await wait(`Boolean(document.querySelector('.task-list [role="alert"]'))`, "failed page");
   if (!await run(`document.querySelectorAll('.task-row').length===50`)) throw new Error("A failed page discarded visible history.");
@@ -122,6 +125,8 @@ try {
     await wait(`document.querySelectorAll('.task-row').length===${count}`, `page ${count}`);
   }
   if (await run(`Array.from(document.querySelectorAll('.task-list button')).some(button=>button.textContent==='Load more chats')`)) throw new Error("History still offers an exhausted page.");
+  const appendOffsets = historyReads.slice(appendReadsStart).map(read => read.offset);
+  if (JSON.stringify(appendOffsets) !== JSON.stringify([50, 50, 100, 150])) throw new Error("Appending history reread confirmed pages: " + JSON.stringify(appendOffsets));
   await run(`Array.from(document.querySelectorAll('.task-row')).find(button=>button.textContent.includes('History 001')).click()`);
   for (let attempt = 0; attempt < 50 && !activeDetails.get("001"); attempt++) await new Promise(resolve => setTimeout(resolve, 10));
   if (!activeDetails.get("001")) throw new Error("Delayed task detail read did not start.");

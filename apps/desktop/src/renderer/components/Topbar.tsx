@@ -1,6 +1,7 @@
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
 import { PanelRight, MessageSquare, Command, Moon, Plus, Sun } from "lucide-react";
 import type { ProductSurface, ThemePreference } from "../types";
+import { Select } from "./Select";
 
 type TopbarProps = {
 	surface: ProductSurface;
@@ -10,18 +11,15 @@ type TopbarProps = {
 	onCommands: () => void;
 	onChats: () => void;
 	onTools: () => void;
+	onSurfaceChange: (surface: ProductSurface) => void;
 };
 
-export function Topbar({ surface, theme, onThemeChange, onNewTask, onCommands, onChats, onTools }: TopbarProps) {
+export function Topbar({ surface, theme, onThemeChange, onNewTask, onCommands, onChats, onTools, onSurfaceChange }: TopbarProps) {
 	return (
 		<header className="topbar">
 			<button type="button" className="icon-button" aria-label="Chats" onClick={onChats}><MessageSquare size={16} /></button>
 
-			<div className="topbar-context">
-				<span>Phaseo</span>
-				<span className="breadcrumb-separator">/</span>
-				<strong>{surface === "workspace" ? "Chats" : "Platform"}</strong>
-			</div>
+			<div className="topbar-surface"><Select label="Product" value={surface} onValueChange={value => onSurfaceChange(value as ProductSurface)} options={[{ value: "workspace", label: "Chat" }, { value: "platform", label: "Platform" }]} /></div>
 
 			<div className="topbar-actions">
 				{surface === "workspace" && <button type="button" className="command-button" onClick={onTools}><PanelRight size={15} />Tools</button>}

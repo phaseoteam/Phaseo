@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TaskHistoryPage, TaskHistoryQuery } from "../../shared/taskHistory";
 
 export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskHistoryPage>) | undefined, query: string, archived: boolean, revision: string) {
@@ -10,21 +10,31 @@ export function useTaskHistory(read: ((query: TaskHistoryQuery) => Promise<TaskH
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [retry, setRetry] = useState(0);
+	const confirmed = useRef<{ key: string; revision: string; read: typeof read; count: number; page: TaskHistoryPage } | undefined>(undefined);
 	useEffect(() => {
 		if (!read) return;
 		let active = true;
 		setLoading(true); setError("");
 		const timer = setTimeout(() => {
 			void (async () => {
-				const tasks: TaskHistoryPage["tasks"] = [];
-				let hasMore = false;
-				for (let index = 0; index < count; index++) {
+				const previous = confirmed.current;
+				const append = previous && previous.key === key && previous.revision === revision && previous.read === read && previous.count < count;
+				const tasks: TaskHistoryPage["tasks"] = append ? [...previous.page.tasks] : [];
+				let hasMore = append ? previous.page.hasMore : false;
+				let completed = append ? previous.count : 0;
+				for (let index = completed; index < count; index++) {
+					if (index > 0 && !hasMore) break;
 					const page = await read({ query, archived, offset: index * 50, limit: 50 });
 					if (!active) return;
 					tasks.push(...page.tasks); hasMore = page.hasMore;
+					completed = index + 1;
 					if (!hasMore) break;
 				}
-				if (active) setResult({ key, page: { tasks: [...new Map(tasks.map(task => [task.id, task])).values()], hasMore } });
+				if (active) {
+					const page = { tasks: [...new Map(tasks.map(task => [task.id, task])).values()], hasMore };
+					confirmed.current = { key, revision, read, count: completed, page };
+					setResult({ key, page });
+				}
 			})().catch(reason => { if (active) setError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setLoading(false); });
 		}, 150);
 		return () => { active = false; clearTimeout(timer); };
