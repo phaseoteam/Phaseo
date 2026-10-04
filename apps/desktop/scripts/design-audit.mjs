@@ -86,6 +86,9 @@ ipcMain.handle("workspace:overview",async event=>{
 const originalAccountStatus=ipcMain._invokeHandlers.get("workspace:account-status");
 ipcMain.removeHandler("workspace:account-status");
 ipcMain.handle("workspace:account-status",(event,harness,id)=>harness==="codex"&&!id?{checkedAt:now,authenticated:true,identity:"fixture@example.invalid",plan:"Fixture subscription",ordinaryUsageAllowed:false,usage:[{id:"fixture",name:"Included usage",spendControlReached:false,primary:{usedPercent:25,windowDurationMins:300,resetsAt:Math.floor(Date.now()/1000)+3600},secondary:{usedPercent:80,windowDurationMins:10080,resetsAt:null}},{id:"unavailable",name:"Other usage",spendControlReached:null,primary:null,secondary:null}]}:originalAccountStatus(event,harness,id));
+const originalModels=ipcMain._invokeHandlers.get("workspace:models");
+ipcMain.removeHandler("workspace:models");
+ipcMain.handle("workspace:models",(event,harness,...args)=>harness==="codex"?[{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}]:originalModels(event,harness,...args));
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -472,10 +475,17 @@ try {
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-list-heading button'))`);attempt++){if(attempt>50)throw Error('Task setup did not render');await new Promise(resolve=>setTimeout(resolve,50));}
   await window.webContents.executeJavaScript(`document.querySelector('.task-list-heading button').click()`);
   await new Promise(resolve=>setTimeout(resolve,100));
+  for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('select[aria-label="Initial reasoning effort"] option[value="fixture-high"]'))`);attempt++){if(attempt>50)throw Error('Initial reasoning catalogue not rendered');await new Promise(resolve=>setTimeout(resolve,20));}
+  await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-high';select.dispatchEvent(new Event('change',{bubbles:true}));const model=document.querySelector('input[aria-label="Model"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'custom');model.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error('Changing initial model must reset effort');
+  await window.webContents.executeJavaScript(`(()=>{const model=document.querySelector('input[aria-label="Model"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'default');model.dispatchEvent(new Event('input',{bubbles:true}));})()`);
+  await new Promise(resolve=>setTimeout(resolve,50));
+  await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-high';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
   const beforeCreation = await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.map(task=>task.id))`);
   const creationFields = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-create-fields input,.task-create-fields select')).map(control=>control.value).join('\\0')`);
   holdCreation=true;
-  const clickCreate=()=>window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create task'));button.click();button.click()})()`);
+  const clickCreate=()=>window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create task'));button.scrollIntoView({block:'nearest'});button.click();button.click()})()`);
   await clickCreate();
   for(let attempt=0;!pendingCreation;attempt++){if(attempt>50)throw Error('Creation fixture did not receive command');await new Promise(resolve=>setTimeout(resolve,20));}
   if(creationCalls!==1||!await window.webContents.executeJavaScript(`document.querySelector('.task-create-fields').disabled && Array.from(document.querySelectorAll('.task-controls button')).every(button=>button.disabled)`))throw Error('Task setup duplicated creation or allowed pending edits');
@@ -491,14 +501,20 @@ try {
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))`);attempt++){if(attempt>50)throw Error('Created task did not open');await new Promise(resolve=>setTimeout(resolve,20));}
   const afterCreation=await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.map(task=>task.id))`);
   if(afterCreation.length!==beforeCreation.length+1||beforeCreation.some(id=>!afterCreation.includes(id)))throw Error('Creation must persist exactly one new task');
+  const createdId=afterCreation.find(id=>!beforeCreation.includes(id));
+  if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.task(${JSON.stringify(createdId)}).then(task=>task.reasoningEffort)`)!=='fixture-high')throw Error('Initial effort did not persist');
   await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Handoff"]').click()`);
-  await new Promise(resolve=>setTimeout(resolve,100));holdCreation=true;
-  await window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create handoff'));button.click();button.click()})()`);
+  await new Promise(resolve=>setTimeout(resolve,100));
+  if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error("Handoff must reset model-specific effort");
+  await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-low';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);
+  holdCreation=true;
+  await window.webContents.executeJavaScript(`(()=>{const button=Array.from(document.querySelectorAll('.task-controls button')).find(button=>button.textContent.includes('Create handoff'));button.scrollIntoView({block:'nearest'});button.click();button.click()})()`);
   for(let attempt=0;!pendingCreation;attempt++){if(attempt>50)throw Error('Handoff fixture not reached');await new Promise(resolve=>setTimeout(resolve,20));}
   if(creationCalls!==3||!await window.webContents.executeJavaScript(`document.querySelector('.task-create-fields').disabled`))throw Error('Handoff duplicated creation');
   pendingCreation.resolve();pendingCreation=undefined;holdCreation=false;
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))`);attempt++){if(attempt>50)throw Error('Handoff did not open');await new Promise(resolve=>setTimeout(resolve,20));}
   if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.length)`)!==beforeCreation.length+2)throw Error('Handoff must persist exactly one new task');
+  if(!await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(async state=>{const task=state.tasks.find(value=>! ${JSON.stringify(afterCreation)}.includes(value.id));return (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort==='fixture-low'})`))throw Error("Handoff effort did not persist");
   console.log("DESIGN_AUDIT", output);
 } catch (error) { console.error(error); app.exit(1); } finally { app.quit(); }
 });

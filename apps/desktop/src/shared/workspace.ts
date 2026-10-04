@@ -64,8 +64,8 @@ export type WorkspaceCommand =
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
-	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
-	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"] }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
+	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string; nativeMode?: string }
 	| { type: "send"; id: string; text: string; attachments?: string[] }
 	| { type: "steer"; id: string; text: string; attachments?: string[] }
@@ -158,6 +158,7 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
 		if (!["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
 		string("model"); string("projectId", false); string("accountId", false); string("agentId", false);
+		if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 	} else {
 		string("id");
 		switch (command.type) {

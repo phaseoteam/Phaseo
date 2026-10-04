@@ -253,7 +253,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 347 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 350 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
@@ -310,3 +310,5 @@ Desktop panels now follow the current web Card radius formula, with description-
 Conversation settings keep Save/Cancel visible outside bounded scrolling fields. Composer resizing and task setup are bounded to the current window. The packaged layout fixture checks simultaneous settings and maximum composer height while retaining readable transcript space. Full accessibility and scaling validation remain open.
 
 Task creation, handoff and import now share a synchronous pending guard. Configuration stays locked during delivery; failures preserve selections and permit retry. Source creation and packaged creation/handoff workflows verify duplicate suppression and durable results without inference. Full native subscription execution remains unverified.
+
+Initial OpenAI reasoning selection now uses the native model catalogue in task setup, resets when model/account/project changes, and is persisted on create/import/handoff. Default omits an explicit override. Malformed IPC and other-harness overrides reject; the native adapter validates against its current catalogue before starting a turn. Reopened SQLite and first-turn fixtures pass; source and packaged UI checks verify advertised options, resets, retry preservation and distinct destination effort. Initial reasoning/native-mode selection for other harnesses and live signed-in execution remain open.

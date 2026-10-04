@@ -133,6 +133,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Task creation pending](screenshots/task-create-pending.png)
 
+46. **Initial native reasoning:** task setup offers the selected OpenAI model’s advertised reasoning choices and native default within the existing two-column form. Model changes and handoff setup reset the prior choice. The catalogue is an owned fixture in the layout audit; source and packaged checks verify choice/reset, retry preservation and saved creation/handoff values. The first native turn and unsupported-model rejection have deterministic runtime/protocol coverage. Live account execution and initial choices for other harnesses remain separate gaps.
+
+![Initial reasoning selection](screenshots/task-initial-reasoning.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 138 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.

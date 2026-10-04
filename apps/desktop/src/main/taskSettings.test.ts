@@ -7,6 +7,29 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("existing conversation settings", () => {
+	it("persists initial effort through creation, handoff, import and database reopening", () => {
+		const directory=mkdtempSync(path.join(tmpdir(),"phaseo-initial-effort-")),filename=path.join(directory,"workspace.sqlite");let store=new WorkspaceStore(filename);
+		try {
+			const source=store.apply({type:"create-task",harness:"codex",model:"native",mode:"plan",reasoningEffort:"high"});
+			const destination=store.apply({type:"handoff",id:source.id,harness:"codex",model:"other",mode:"code",reasoningEffort:"low"});
+			const imported=store.importTask({type:"create-task",harness:"codex",model:"native",mode:"chat",reasoningEffort:"medium"},{title:"Imported",messages:[],createdAt:"2026-10-04T00:00:00Z"},[]);
+			store.close();store=new WorkspaceStore(filename);
+			expect(store.getTask(source.id).reasoningEffort).toBe("high");expect(store.getTask(destination.id)).toMatchObject({reasoningEffort:"low",parentId:source.id});expect(store.getTask(imported.id).reasoningEffort).toBe("medium");
+			expect(store.apply({type:"create-task",harness:"codex",model:"custom",mode:"code"}).reasoningEffort).toBeUndefined();
+		} finally {store.close();rmSync(directory,{recursive:true,force:true});}
+	});
+	it("rejects malformed initial effort and unsupported harnesses before creating tasks", () => {
+		const store=new WorkspaceStore(":memory:");try {
+			for(const type of ["create-task","handoff"])for(const reasoningEffort of [42,"bad\0value","x".repeat(101)])expect(()=>validateCommand({type,id:"source",harness:"codex",model:"native",mode:"plan",reasoningEffort})).toThrow("reasoning effort");
+			expect(()=>store.apply({type:"create-task",harness:"claude",model:"default",mode:"code",reasoningEffort:"high"})).toThrow("Initial reasoning");expect(store.getOverview().tasks).toHaveLength(0);
+		}finally{store.close();}
+	});
+	it("passes initial reasoning effort to the first native turn", async () => {
+		const directory=mkdtempSync(path.join(tmpdir(),"phaseo-effort-turn-")),run=vi.fn(async()=>{}),runtime=new WorkspaceRuntime(directory,()=>({run,cancel:async()=>{}}));
+		try {const created=await runtime.command({type:"create-task",harness:"codex",model:"native",mode:"plan",reasoningEffort:"high"});await runtime.command({type:"send",id:created.tasks[0].id,text:"Plan"});await vi.waitFor(()=>expect(run).toHaveBeenCalledOnce());expect(run.mock.calls[0]).toEqual(expect.arrayContaining([expect.objectContaining({reasoningEffort:"high",model:"native",mode:"plan"})]));}
+		finally{await runtime.close();rmSync(directory,{recursive:true,force:true});}
+	});
+
 	it("persists ACP mode selections and rejects unsupported harnesses and malformed IPC", () => {
 		const store = new WorkspaceStore(":memory:");
 		try {

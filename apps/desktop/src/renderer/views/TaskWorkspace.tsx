@@ -27,6 +27,7 @@ export function TaskWorkspace() {
 	const [projectId, setProjectId] = useState("");
 	const [mode, setMode] = useState<Task["mode"]>("chat");
 	const [model, setModel] = useState("default");
+	const [reasoningEffort, setReasoningEffort] = useState("");
 	const [models, setModels] = useState<ModelOption[]>([]);
 	const [modelError, setModelError] = useState("");
 	const [modelsLoading, setModelsLoading] = useState(false);
@@ -51,12 +52,13 @@ export function TaskWorkspace() {
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	useEffect(() => {
-		setModels([]); setModelError("");
+		setModels([]); setModelError(""); setReasoningEffort("");
 		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(harness) || (["phaseo", "cursor"].includes(harness) && !accountId)) { setModelsLoading(false); return; }
 		let active = true; setModelsLoading(true);
 		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
 		return () => { active = false; };
 	}, [api, harness, accountId, projectId]);
+	const setupModel = models.find(value => model === "default" ? value.default : value.id === model);
 	const selectedSnapshot = workspace.tasks.find(task => task.id === selectedId);
 	const selectedDetail = useSelectedTask(api?.task, selectedId, selectedSnapshot ? JSON.stringify([selectedSnapshot.revision, selectedSnapshot.updatedAt]) : undefined);
 	const selected = selectedDetail.task;
@@ -77,7 +79,7 @@ export function TaskWorkspace() {
 		if (setupPending.current || busy) return;
 		setupPending.current = true; setSetupAction("create"); setBusy(true);
 		try {
-			const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
+			const state = await command({ ...(handoffId ? { type: "handoff" as const, id: handoffId } : { type: "create-task" as const }), harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}), ...(harness === "codex" && reasoningEffort ? { reasoningEffort } : {}) });
 			if (state) { setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); setHandoffId(undefined); }
 		} finally { setupPending.current = false; setSetupAction(undefined); setBusy(false); }
 	}
@@ -85,7 +87,7 @@ export function TaskWorkspace() {
 		if (!api || setupPending.current || busy) return;
 		setupPending.current = true; setSetupAction("import"); setBusy(true); setError("");
 		try {
-			const result = await api.importTask({ type: "create-task", harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}) });
+			const result = await api.importTask({ type: "create-task", harness, model, mode, ...(projectId ? { projectId } : {}), ...(accountId ? { accountId } : {}), ...(agentId ? { agentId } : {}), ...(harness === "codex" && reasoningEffort ? { reasoningEffort } : {}) });
 			if (result) { setWorkspace(result.workspace); setSelectedId(result.taskId); setHandoffId(undefined); }
 		} catch (reason) { setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); } finally { setupPending.current = false; setSetupAction(undefined); setBusy(false); }
 	}
@@ -127,7 +129,8 @@ export function TaskWorkspace() {
 					<label>Harness<select value={harness} onChange={event => { setHarness(event.target.value as Harness); if (event.target.value === "grok" && mode === "chat") setMode("plan"); setAccountId(""); setAgentId(""); setModel("default"); }}><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="opencode">OpenCode 2</option><option value="pi">Pi</option><option value="cursor">Cursor</option><option value="grok">Grok</option><option value="phaseo">Phaseo</option><option value="acp">ACP agent</option></select></label>
 					{harness === "acp" && <label>Agent<select value={agentId} onChange={event => setAgentId(event.target.value)}><option value="">Choose a connected agent</option>{workspace.agents.filter(agent => !agent.archived).map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select></label>}
 					{harness !== "acp" && harness !== "pi" && <label>Account<select value={accountId} onChange={event => setAccountId(event.target.value)}><option value="">{harness === "phaseo" ? "Choose an API account" : harness === "cursor" ? "Choose a Cursor account" : "Existing local login"}</option>{workspace.accounts.filter(account => account.harness === harness && !account.archived).map(account => <option key={account.id} value={account.id} disabled={!account.configured}>{account.name}{account.configured ? "" : " — sign-in required"}</option>)}</select></label>}
-					<label>Model<input list="workspace-models" value={model} onChange={event => setModel(event.target.value)} aria-label="Model" /><datalist id="workspace-models">{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</datalist>{modelsLoading && <small>Loading models…</small>}{modelError && <small>{modelError}</small>}</label>
+					<label>Model<input list="workspace-models" value={model} onChange={event => { setModel(event.target.value); setReasoningEffort(""); }} aria-label="Model" /><datalist id="workspace-models">{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</datalist>{modelsLoading && <small>Loading models…</small>}{modelError && <small>{modelError}</small>}</label>
+					{harness === "codex" && <label>Reasoning effort<select aria-label="Initial reasoning effort" value={reasoningEffort} disabled={modelsLoading} onChange={event => setReasoningEffort(event.target.value)}><option value="">Default{setupModel?.defaultReasoningEffort ? ` (${setupModel.defaultReasoningEffort})` : ""}</option>{setupModel?.reasoningEfforts?.map(value => <option key={value.id} value={value.id} title={value.description}>{value.id}</option>)}</select></label>}
 				</fieldset>
 				{handoffId && <p className="task-muted">Continue “{workspace.tasks.find(task => task.id === handoffId)?.title}” with the selected harness. Conversation messages carry over; native tool state stays with the original task.</p>}
 				<div className="task-controls">
@@ -141,7 +144,7 @@ export function TaskWorkspace() {
 					<button type="button" aria-label={selected.archived ? "Restore task" : "Archive task"} disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { void command({ type: "update-task", id: selected.id, archived: !selected.archived }).then(state => { if (state) setSelectedId(undefined); }); }}><Archive size={16} /></button>
 					<button type="button" aria-label={selected.pinned ? "Unpin task" : "Pin task"} onClick={() => void command({ type: "update-task", id: selected.id, pinned: !selected.pinned })}><Pin size={16} /></button>
 					<button type="button" aria-label="Fork task history" onClick={() => { void command({ type: "fork", id: selected.id }).then(state => { if (state) setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); }); }}><GitFork size={16} /></button>
-					<button type="button" aria-label="Handoff" title="Handoff" disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { setHandoffId(selected.id); setProjectId(workspace.projects.some(project => project.id === selected.projectId && !project.worktree?.removedAt) ? selected.projectId! : ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setSelectedId(undefined); }}><ArrowRightLeft size={16} /></button>
+					<button type="button" aria-label="Handoff" title="Handoff" disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { setHandoffId(selected.id); setProjectId(workspace.projects.some(project => project.id === selected.projectId && !project.worktree?.removedAt) ? selected.projectId! : ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setReasoningEffort(""); setSelectedId(undefined); }}><ArrowRightLeft size={16} /></button>
 				<button type="button" aria-label="Task settings" title="Task settings" aria-expanded={settingsId === selected.id} disabled={selected.archived || selected.status === "running" || selected.status === "waiting"} onClick={() => setSettingsId(value => value === selected.id ? undefined : selected.id)}><Settings2 size={16} /></button>
 				</header>
 				{settingsId === selected.id && !selected.archived && selected.status !== "running" && selected.status !== "waiting" && <TaskSettings key={selected.id} task={selected} close={() => setSettingsId(undefined)} save={async (model, mode, reasoningEffort, nativeMode) => Boolean(await command({ type: "update-task", id: selected.id, model, mode, ...(["codex", "acp", "grok"].includes(selected.harness) ? { reasoningEffort } : {}), ...(selected.harness === "acp" ? { nativeMode } : {}) }))} />}
