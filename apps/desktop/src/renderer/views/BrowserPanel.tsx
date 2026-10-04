@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ArrowLeft, ArrowRight, RotateCw, Square, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, RotateCw, Square, Plus, X, Code2 } from "lucide-react";
 import type { BrowserState } from "../../shared/browser";
 import { usePersistedState } from "../lib/persistedState";
 import { browserTabs, updateBrowserTab, openBrowserTab, type BrowserTabs } from "../lib/browserTabs";
@@ -40,14 +40,14 @@ function BrowserSurface({ context, covered, initialUrl, onState }: { context: st
 		const observer = new ResizeObserver(resize); observer.observe(slot.current); window.addEventListener("resize", resize); resize();
 		return () => { active = false; observer.disconnect(); modals.disconnect(); unsubscribe(); window.removeEventListener("resize", resize); void api.browser({ type: "hide", id: context }); };
 	}, [api, context, covered, onState]);
-	async function action(type: "back" | "forward" | "reload" | "stop") { try { await api?.browser({ type, id: context }); } catch (reason) { setError(String(reason)); } }
+	async function action(type: "back" | "forward" | "reload" | "stop" | "devtools") { try { await api?.browser({ type, id: context }); } catch (reason) { setError(String(reason)); } }
 	async function navigate() { try { setError(""); const url = /^[a-z][a-z\d+.-]*:/i.test(address) ? address : `https://${address}`; await api?.browser({ type: "navigate", id: context, url }); } catch (reason) { setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); } }
 	return <div className="browser-panel browser-tab-surface" role="tabpanel" id={"browser-page-" + context} aria-labelledby={"browser-tab-" + context}>
 		<form className="browser-toolbar" onSubmit={event => { event.preventDefault(); void navigate(); }}>
 			<button type="button" aria-label="Browser back" disabled={!state?.canGoBack} onClick={() => void action("back")}><ArrowLeft size={15} /></button>
 			<button type="button" aria-label="Browser forward" disabled={!state?.canGoForward} onClick={() => void action("forward")}><ArrowRight size={15} /></button>
 			<button type="button" aria-label={state?.loading ? "Stop loading" : "Reload page"} onClick={() => void action(state?.loading ? "stop" : "reload")}>{state?.loading ? <Square size={15} /> : <RotateCw size={15} />}</button>
-			<input aria-label="Browser address" placeholder="Enter a URL" value={address} onChange={event => setAddress(event.target.value)} /><button type="submit" disabled={!address.trim()}>Go</button>
+			<input aria-label="Browser address" placeholder="Enter a URL" value={address} onChange={event => setAddress(event.target.value)} /><button type="submit" disabled={!address.trim()}>Go</button><button type="button" aria-label="Developer tools" aria-pressed={state?.devToolsOpen ?? false} disabled={!state?.url} onClick={() => void action("devtools")}><Code2 size={15} /></button>
 		</form>
 		{error && <p className="task-error" role="alert">{error}</p>}
 		<div className="browser-surface" ref={slot} aria-label={state?.title || "Web page"}>{!state?.url && <div className="browser-empty"><h2>Browse alongside your chat</h2><p>Enter a website or local development address.</p></div>}</div>

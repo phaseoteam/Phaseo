@@ -19,7 +19,7 @@ export class BrowserHost {
 			if (view) { owner.contentView.removeChildView(view); if (command.type === "close") { view.webContents.close({ waitForBeforeUnload: false }); views.delete(command.id); } }
 			return view && !view.webContents.isDestroyed() ? this.state(command.id, view) : undefined;
 		}
-		if (!["show", "navigate", "back", "forward", "reload", "stop"].includes(command.type)) throw new Error("Invalid browser action.");
+		if (!["show", "navigate", "back", "forward", "reload", "stop", "devtools"].includes(command.type)) throw new Error("Invalid browser action.");
 		const url = command.type === "navigate" ? browserUrl(command.url) : undefined;
 		if (command.type === "show" && (!command.bounds || ![command.bounds.x, command.bounds.y, command.bounds.width, command.bounds.height].every(Number.isFinite) || command.bounds.width < 0 || command.bounds.height < 0)) throw new Error("Invalid browser bounds.");
 		if (!view) {
@@ -32,6 +32,8 @@ export class BrowserHost {
 			const contents = createdView.webContents;
 			const emit = (error?: string) => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, createdView), ...(error ? { error } : {}) }); };
 			contents.on("did-start-loading", () => emit()); contents.on("did-stop-loading", () => emit()); contents.on("did-navigate", () => emit()); contents.on("did-navigate-in-page", () => emit()); contents.on("page-title-updated", () => emit());
+			contents.on("devtools-opened", () => emit()); contents.on("devtools-closed", () => emit());
+			contents.on("before-input-event", (event, input) => { if (input.type === "keyDown" && !input.isAutoRepeat && (input.key === "F12" || (input.key.toLowerCase() === "i" && ((input.control && input.shift) || (input.meta && input.alt))))) { event.preventDefault(); this.toggleDevTools(contents); } });
 			contents.on("did-fail-load", (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit(description); });
 			contents.on("will-navigate", event => { try { browserUrl(event.url); } catch { event.preventDefault(); emit("This address cannot be opened in the browser."); } });
 			contents.on("will-redirect", event => { try { browserUrl(event.url); } catch { event.preventDefault(); } });
@@ -49,10 +51,12 @@ export class BrowserHost {
 		else if (command.type === "forward" && contents.navigationHistory.canGoForward()) contents.navigationHistory.goForward();
 		else if (command.type === "reload") contents.reload();
 		else if (command.type === "stop") contents.stop();
+		else if (command.type === "devtools") this.toggleDevTools(contents);
 		return this.state(command.id, view);
 	}
+	private toggleDevTools(contents: Electron.WebContents) { if (contents.isDevToolsOpened()) contents.closeDevTools(); else contents.openDevTools({ mode: "detach" }); }
 	private state(id: string, view: WebContentsView): BrowserState {
 		const contents = view.webContents;
-		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward() };
+		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward(), devToolsOpen: contents.isDevToolsOpened() };
 	}
 }
