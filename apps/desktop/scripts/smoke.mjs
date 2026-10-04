@@ -278,6 +278,7 @@ app.whenReady().then(async () => {
 		result.cursorAccounts = true;
 		const grokAccount = await window.webContents.executeJavaScript(`(async () => {
 			const api=window.phaseoDesktop.workspace;
+			const previousTaskTitle=document.querySelector('.task-title')?.value;
 			const created=await api.command({type:'add-account',name:'Grok fixture profile',harness:'grok',kind:'native'});
 			const account=created.accounts.find(value=>value.name==='Grok fixture profile');
 			if(!account?.configDirectory || account.configured || account.kind!=='native') throw new Error('Grok profile metadata is invalid');
@@ -287,6 +288,12 @@ app.whenReady().then(async () => {
 			if(!document.querySelector('option[value="grok"]')) throw new Error('Grok provider option missing');
 			await api.command({type:'update-account',id:account.id,archived:true});
 			Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			document.querySelector('button[aria-label="New task"]').click(); await new Promise(resolve=>setTimeout(resolve,100));
+			const harnessSelect=Array.from(document.querySelectorAll('label')).find(label=>label.textContent.startsWith('Harness')).querySelector('select');
+			Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(harnessSelect,'grok'); harnessSelect.dispatchEvent(new Event('change',{bubbles:true})); await new Promise(resolve=>setTimeout(resolve,100));
+			const modeSelect=Array.from(document.querySelectorAll('label')).find(label=>label.textContent.startsWith('Mode')).querySelector('select');
+			if(modeSelect.value!=='plan' || modeSelect.querySelector('option[value="chat"]')) throw new Error('Grok task modes are inconsistent');
+			Array.from(document.querySelectorAll('.task-row')).find(row=>row.querySelector('span')?.textContent===previousTaskTitle).click(); await new Promise(resolve=>setTimeout(resolve,100));
 			return account;
 		})()`);
 		if (!existsSync(grokAccount.configDirectory) || !grokAccount.configDirectory.startsWith(path.join(data, 'workspace', 'accounts'))) throw new Error('Grok profile directory is not isolated');

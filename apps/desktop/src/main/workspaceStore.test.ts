@@ -6,6 +6,18 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 
 describe("workspace durability", () => {
+	it("creates Grok Code/Plan tasks while rejecting unsupported Chat creation and updates", () => {
+		const store = new WorkspaceStore(":memory:");
+		try {
+			for (const mode of ["code", "plan"] as const) {
+				const task = store.apply({ type: "create-task", harness: "grok", model: "default", mode });
+				expect(task).toMatchObject({ harness: "grok", mode });
+				expect(() => store.apply({ type: "update-task", id: task.id, mode: "chat" })).toThrow("Code and Plan");
+				expect(store.getTask(task.id).mode).toBe(mode);
+			}
+			expect(() => store.apply({ type: "create-task", harness: "grok", model: "default", mode: "chat" })).toThrow("Code and Plan");
+		} finally { store.close(); }
+	});
 	it("retains notification settings after restart and rejects invalid updates", () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
 		try {

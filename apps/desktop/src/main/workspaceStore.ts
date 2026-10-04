@@ -100,6 +100,7 @@ export class WorkspaceStore {
 			destination.messages = source.messages; this.saveTask(destination); return destination;
 		}
 		if (command.type === "create-task") {
+			if (command.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
 			if (command.projectId && !this.get().projects.some(project => project.id === command.projectId && !project.worktree?.removedAt)) throw new Error("Project no longer exists or its worktree has been removed.");
 			if (command.accountId && !this.get().accounts.some(account => account.id === command.accountId && account.harness === command.harness && account.configured && !account.archived)) throw new Error("Account is unavailable for this harness. Restore it or sign in first.");
 			if ((command.harness === "phaseo" || command.harness === "cursor") && !command.accountId) throw new Error(`Choose an account for the ${command.harness === "cursor" ? "Cursor" : "Phaseo"} harness.`);
@@ -114,6 +115,7 @@ export class WorkspaceStore {
 				if (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined) {
 					if (task.status === "running" || task.status === "waiting") throw new Error("Stop this task before changing its model or mode.");
 					if (task.archived) throw new Error("Restore this task before changing its settings.");
+					if (task.harness === "grok" && command.mode === "chat") throw new Error("Grok currently supports Code and Plan tasks.");
 					if (task.harness === "phaseo" && command.model === "default") throw new Error("Choose a model for the Phaseo harness.");
 					if (command.reasoningEffort && task.harness !== "codex") {
 						const modelId = command.model ?? task.model;

@@ -201,7 +201,9 @@ Grok's native sign-in backend uses the documented `login --oauth` browser flow i
 
 Grok native profiles can now be created through Accounts, using the shared form layout and existing sign-in/cancel, status, edit and archive actions. API account creation remains unsupported for this harness and is rejected by IPC validation. The owned Electron smoke verifies profile creation, an isolated account directory, rendered actions/provider selection and archive without initiating login or inference. The dedicated task harness selector and actual browser OAuth remain outstanding.
 
-Evidence: desktop lint/typecheck/build pass; 292 deterministic tests cover protocol,
+The task and handoff harness selector now offers Grok Code/Plan with existing local login or a configured managed profile. Selecting Grok from Chat switches to Plan, and task settings omit Chat. Store validation rejects unsupported Chat creation/updates. Unit tests verify supported task creation and rejected updates; Electron verifies selector/mode behavior without inference. Grok model discovery before task creation, reasoning controls, Chat isolation and actual signed-in execution still need completion.
+
+Evidence: desktop lint/typecheck/build pass; 293 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
