@@ -175,6 +175,10 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Claude native compaction results](screenshots/claude-compaction-small-window.png)
 
+56. **Readable compaction metrics:** confirmed Claude boundaries show native Before/After token counts and Duration in a semantic definition list with 16-pixel insets, 6-pixel label/value gaps and tabular numerals. Optional values remain absent when unavailable; invalid metrics retain the raw result. Original result starts collapsed, while Copy preserves the full native JSON. Runtime tests cover valid zeros, omitted/invalid values and SQLite reopening. Source and packaged UI fixtures verify values, spacing, collapsed data and exact copying across both themes/window sizes. Existing captures are updated; the count remains 172. Overall visual acceptance remains open.
+
+![Readable native compaction metrics](screenshots/compaction-metrics-small-window.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 172 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.

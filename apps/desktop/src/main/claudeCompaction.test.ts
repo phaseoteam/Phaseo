@@ -26,7 +26,16 @@ describe("Claude native compaction", () => {
 		fixture([status, boundary, success]); const callbacks = sink();
 		await new ClaudeAdapter().run(task, ".", "  /compact\n", callbacks);
 		expect(sdk.query.mock.calls[0][0]).toMatchObject({ prompt: "/compact", options: { resume: "session" } });
-		expect(callbacks.onActivity.mock.calls.map(([activity]) => activity)).toEqual([{ id: "compaction:started", title: "Context compaction", type: "compaction", text: "", status: "running" }, { id: "compaction:started", title: "Context compaction", type: "compaction", text: JSON.stringify(metadata, null, 2), status: "completed" }]); expect(callbacks.onDelta).not.toHaveBeenCalled();
+		expect(callbacks.onActivity.mock.calls.map(([activity]) => activity)).toEqual([{ id: "compaction:started", title: "Context compaction", type: "compaction", text: "", status: "running" }, { id: "compaction:started", title: "Context compaction", type: "compaction", text: JSON.stringify(metadata, null, 2), status: "completed", compaction: { beforeTokens: 1234, afterTokens: 234, durationMs: 80 } }]); expect(callbacks.onDelta).not.toHaveBeenCalled();
+	});
+	it.each([
+		[{ trigger: "manual", pre_tokens: 12 }, { beforeTokens: 12 }],
+		[{ trigger: "manual", pre_tokens: 0, post_tokens: 0, duration_ms: 0 }, { beforeTokens: 0, afterTokens: 0, durationMs: 0 }],
+		[{ trigger: "manual", pre_tokens: -1 }, undefined],
+		[{ trigger: "manual", pre_tokens: 12, post_tokens: -1, duration_ms: -1 }, { beforeTokens: 12 }],
+	])("projects only valid advertised metrics (%j)", async (nativeMetadata, expected) => {
+		fixture([{ ...boundary, compact_metadata: nativeMetadata }, success]); const callbacks = sink(); await new ClaudeAdapter().run(task, ".", "/compact", callbacks);
+		expect(callbacks.onActivity.mock.lastCall?.[0].compaction).toEqual(expected); expect(callbacks.onActivity.mock.lastCall?.[0].text).toBe(JSON.stringify(nativeMetadata, null, 2));
 	});
 	it("deduplicates boundary/status messages and ignores foreign sessions", async () => {
 		fixture([{ ...status, session_id: "foreign" }, status, status, { ...boundary, session_id: "foreign" }, boundary, boundary, success]); const callbacks = sink();
@@ -73,8 +82,8 @@ describe("Claude native compaction", () => {
 		try {
 			const state = await runtime.command({ type: "create-task", harness: "claude", model: "default", mode: "chat" }); id = state.tasks[0].id; const original = runtime.store.getTask(id); original.nativeSessionId = "session"; original.messages = [{ id: "old-user", role: "user", text: "Original input", createdAt: original.createdAt }, { id: "old-answer", role: "assistant", text: "Saved answer 世界", createdAt: original.createdAt }]; runtime.store.saveTask(original);
 			await runtime.command({ type: "send", id, text: "/compact" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed")); const saved = runtime.store.getTask(id);
-			expect(saved.messages.map(message => message.text)).toEqual(["Original input", "Saved answer 世界", "/compact"]); expect(saved.activities?.[0]).toMatchObject({ type: "compaction", status: "completed", text: JSON.stringify(metadata, null, 2) }); const exported = JSON.parse(await taskExport(saved, "json", runtime.attachments)); expect(exported.messages.map((message: { text: string }) => message.text)).toEqual(saved.messages.map(message => message.text));
+			expect(saved.messages.map(message => message.text)).toEqual(["Original input", "Saved answer 世界", "/compact"]); expect(saved.activities?.[0]).toMatchObject({ type: "compaction", status: "completed", text: JSON.stringify(metadata, null, 2) }); expect(saved.activities?.[0].compaction).toEqual({ beforeTokens: 1234, afterTokens: 234, durationMs: 80 }); const exported = JSON.parse(await taskExport(saved, "json", runtime.attachments)); expect(exported.messages.map((message: { text: string }) => message.text)).toEqual(saved.messages.map(message => message.text));
 		} finally { await runtime.close(); }
-		const reopened = new WorkspaceStore(path.join(directory, "workspace.sqlite")); try { expect(reopened.getTask(id).activities?.[0].text).toBe(JSON.stringify(metadata, null, 2)); } finally { reopened.close(); rmSync(directory, { recursive: true, force: true }); }
+		const reopened = new WorkspaceStore(path.join(directory, "workspace.sqlite")); try { expect(reopened.getTask(id).activities?.[0].text).toBe(JSON.stringify(metadata, null, 2)); expect(reopened.getTask(id).activities?.[0].compaction).toEqual({ beforeTokens: 1234, afterTokens: 234, durationMs: 80 }); } finally { reopened.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });

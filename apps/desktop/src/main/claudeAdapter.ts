@@ -82,7 +82,9 @@ export class ClaudeAdapter implements AgentAdapter {
 					}
 					if (message.subtype === "compact_boundary") {
 						compactBoundary = true;
-						callbacks.onActivity?.({ id: compaction?.id ?? `compaction:${message.uuid}`, type: "compaction", title: message.compact_metadata.trigger === "auto" ? "Automatic context compaction" : "Context compaction", text: JSON.stringify(message.compact_metadata, null, 2), status: "completed" });
+						const metadata = message.compact_metadata;
+						const compactionInfo = Number.isSafeInteger(metadata.pre_tokens) && metadata.pre_tokens >= 0 ? { beforeTokens: metadata.pre_tokens, ...(Number.isSafeInteger(metadata.post_tokens) && metadata.post_tokens! >= 0 ? { afterTokens: metadata.post_tokens } : {}), ...(Number.isFinite(metadata.duration_ms) && metadata.duration_ms! >= 0 ? { durationMs: metadata.duration_ms } : {}) } : undefined;
+						callbacks.onActivity?.({ id: compaction?.id ?? `compaction:${message.uuid}`, type: "compaction", title: message.compact_metadata.trigger === "auto" ? "Automatic context compaction" : "Context compaction", text: JSON.stringify(message.compact_metadata, null, 2), status: "completed", compaction: compactionInfo });
 						compaction = undefined;
 					}
 				}
