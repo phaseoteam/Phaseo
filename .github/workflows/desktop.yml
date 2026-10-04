@@ -52,6 +52,8 @@ jobs:
               run: pnpm --filter @phaseo/agent-sdk test
             - name: Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
+            - name: Chat reference copy workflow
+              run: pnpm --filter @phaseo/desktop exec electron scripts/chat-reference-smoke.mjs
             - name: Phaseo managed MCP tools
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --long-human-wait
             - name: Phaseo project instructions
@@ -102,6 +104,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron-forge package
             - name: Packaged Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged chat reference copy workflow
+              run: pnpm --filter @phaseo/desktop exec electron scripts/chat-reference-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo managed MCP tools
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo project instructions
@@ -163,6 +167,7 @@ jobs:
                       output/playwright/phaseo-questions/
                       output/playwright/phaseo-question-recovery/
                       output/playwright/phaseo-queue-recovery/
+                      output/playwright/chat-reference/
                         output/playwright/phaseo-skill-runtime/
                         output/playwright/phaseo-skill-recovery/
                       output/playwright/browser-viewport/

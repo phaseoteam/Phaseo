@@ -160,24 +160,24 @@ async function auditEditorSelection(window,output,width,theme,kind){
  for(const value of fixtures.created)await window.webContents.executeJavaScript(agent?`window.phaseoDesktop.workspace.command({type:'update-agent',id:${JSON.stringify(value.id)},archived:true})`:`window.phaseoDesktop.workspace.mcp({type:'save',connection:{...${JSON.stringify(value)},archived:true,enabled:false}})`);
 }
 async function openTaskActions(window){
- await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
- for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Task actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Chat actions"]').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Chat actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
 }
 async function auditTaskActions(window,output,width,theme){
- await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').focus()`);
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Chat actions"]').focus()`);
  window.focus();window.webContents.focus();window.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});window.webContents.sendInputEvent({type:'char',keyCode:'\r'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
- for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Keyboard task actions did not open: '+JSON.stringify(await window.webContents.executeJavaScript(`({active:document.activeElement?.outerHTML,trigger:document.querySelector('button[aria-label="Task actions"]')?.outerHTML,menus:Array.from(document.querySelectorAll('[role="menu"]')).map(menu=>menu.outerHTML)})`)));await new Promise(resolve=>setTimeout(resolve,20));}
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Keyboard task actions did not open: '+JSON.stringify(await window.webContents.executeJavaScript(`({active:document.activeElement?.outerHTML,trigger:document.querySelector('button[aria-label="Chat actions"]')?.outerHTML,menus:Array.from(document.querySelectorAll('[role="menu"]')).map(menu=>menu.outerHTML)})`)));await new Promise(resolve=>setTimeout(resolve,20));}
  const layout=await window.webContents.executeJavaScript(`(()=>{const menu=document.querySelector('.task-actions-menu'),r=menu.getBoundingClientRect(),title=document.querySelector('.task-title').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,title:title.width,font:getComputedStyle(menu).fontFamily,items:menu.querySelectorAll('[role="menuitem"]').length}})()`);
- if(layout.x<0||layout.y<0||layout.right>layout.width||layout.bottom>layout.height||layout.title<300||!layout.font.includes('Montserrat')||layout.items!==6)throw new Error('Task action layout: '+JSON.stringify(layout));
+ if(layout.x<0||layout.y<0||layout.right>layout.width||layout.bottom>layout.height||layout.title<300||!layout.font.includes('Montserrat')||layout.items!==7)throw new Error('Task action layout: '+JSON.stringify(layout));
  for(let attempt=0;!await window.webContents.executeJavaScript(`document.activeElement?.getAttribute('role')==='menuitem'`);attempt++){if(attempt>50)throw new Error('Task menu initial focus failed.');await new Promise(resolve=>setTimeout(resolve,20));}
  window.webContents.sendInputEvent({type:'keyDown',keyCode:'Down'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Down'});
  await new Promise(resolve=>setTimeout(resolve,50));
- if(!await window.webContents.executeJavaScript(`document.activeElement?.textContent==='Fork task history'`))throw new Error('Task menu arrow navigation failed: '+await window.webContents.executeJavaScript(`document.activeElement?.outerHTML`));
+ if(!await window.webContents.executeJavaScript(`document.activeElement?.textContent==='Fork chat history'`))throw new Error('Task menu arrow navigation failed: '+await window.webContents.executeJavaScript(`document.activeElement?.outerHTML`));
  await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
  writeFileSync(path.join(output,`${width}-${theme}-task-actions.png`),(await window.webContents.capturePage()).toPNG());
  window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
  await new Promise(resolve=>setTimeout(resolve,100));
- if(!await window.webContents.executeJavaScript(`!document.querySelector('.task-actions-menu')&&document.activeElement?.getAttribute('aria-label')==='Task actions'`))throw new Error('Task menu Escape did not restore focus.');
+ if(!await window.webContents.executeJavaScript(`!document.querySelector('.task-actions-menu')&&document.activeElement?.getAttribute('aria-label')==='Chat actions'`))throw new Error('Task menu Escape did not restore focus.');
 }
 async function auditActiveTaskActions(window,output,width,theme){
  const id=await window.webContents.executeJavaScript(`JSON.parse(localStorage.getItem('phaseo.desktop.selectedTask'))`);
@@ -189,8 +189,8 @@ async function auditActiveTaskActions(window,output,width,theme){
   for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-toolbar small')?.textContent.endsWith(${JSON.stringify(status)})`);attempt++){if(attempt>50)throw new Error('Active task fixture did not refresh');await new Promise(resolve=>setTimeout(resolve,20));}
   await openTaskActions(window);
   const before=taskActionCalls;
-  const controls=await window.webContents.executeJavaScript(`(()=>{const items=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]'));const blocked=['Fork task history','Handoff','Archive task'];const result=items.map(item=>({label:item.textContent,disabled:item.hasAttribute('data-disabled')}));for(const item of items.filter(item=>blocked.includes(item.textContent)))item.click();return {items:result,queue:document.querySelector('.task-composer small')?.textContent,settings:document.querySelector('button[aria-label="Task settings"]')?.disabled}})()`);
-  const blocked=['Fork task history','Handoff','Archive task'];
+  const controls=await window.webContents.executeJavaScript(`(()=>{const items=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]'));const blocked=['Fork chat history','Handoff','Archive chat'];const result=items.map(item=>({label:item.textContent,disabled:item.hasAttribute('data-disabled')}));for(const item of items.filter(item=>blocked.includes(item.textContent)))item.click();return {items:result,queue:document.querySelector('.task-composer small')?.textContent,settings:document.querySelector('button[aria-label="Task settings"]')?.disabled}})()`);
+  const blocked=['Fork chat history','Handoff','Archive chat'];
   if(controls.items.some(item=>item.disabled!==blocked.includes(item.label))||!controls.queue.endsWith(' to queue')||!controls.settings)throw new Error('Active task controls: '+JSON.stringify(controls));
   await new Promise(resolve=>setTimeout(resolve,100));
   if(taskActionCalls!==before||!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))&&Boolean(document.querySelector('.task-actions-menu'))`))throw new Error('Disabled task action was delivered');
@@ -926,7 +926,7 @@ async function auditCompactDelivery(){
  await window.webContents.executeJavaScript(`(()=>{const item=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context');item.click();item.click()})()`);
  for(let attempt=0;!pendingCompact;attempt++){if(attempt>50)throw new Error('Compaction delivery did not reach owned fixture');await new Promise(resolve=>setTimeout(resolve,20));}
  await openTaskActions(window);
- if(compactCalls!==1||!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).filter(item=>item.textContent!=='Pin task').every(item=>item.hasAttribute('data-disabled'))&&document.querySelector('button[aria-label="Task settings"]').disabled&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`))throw new Error('Compaction delivery was duplicated or controls/draft changed');
+ if(compactCalls!==1||!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).filter(item=>!['Pin chat','Copy chat ID'].includes(item.textContent)).every(item=>item.hasAttribute('data-disabled'))&&document.querySelector('button[aria-label="Task settings"]').disabled&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`))throw new Error('Compaction delivery was duplicated or controls/draft changed');
  writeFileSync(path.join(output,'1040-dark-compaction-delivery-pending.png'),(await window.webContents.capturePage()).toPNG());
  window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
  holdCompact=false;pendingCompact.reject(new Error('Owned compaction delivery failure'));pendingCompact=undefined;

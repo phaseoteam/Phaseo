@@ -271,3 +271,12 @@ The queue uses a native disclosure aligned with the conversation and composer. I
 Source and fresh Windows archive forced-process audits exercise all three Phaseo modes. Edited/reordered/removed input survives restart and the remaining messages are delivered once. Native keyboard activation, edit/cancel, composer alignment and visibility pass in light/dark at 1440×920 and 1040×680 (48 matrix captures). These use owned loopback model responses, with zero provider inference. Run the existing question recovery coordinator with `--queue=true`; add its archive entry argument for packaged verification.
 
 ![Collapsed queued messages](screenshots/queued-messages.png)
+
+
+## Chat references
+
+Chat actions includes Copy chat ID, following the pinned T3 thread-reference behavior. The menu stays open for copied/failed/retry feedback and prevents another activation while a copy is pending. Pin, fork and archive labels consistently say chat. The copied value is the stable local chat identity.
+
+Source/archive native keyboard, failure/retry, pending guard and chat-switch checks pass with eight light/dark large/compact captures. Clipboard writes use an owned renderer fixture; the system clipboard is preserved. Existing native workspace workflows pass in both builds, including fork/pin/archive, exports and native compaction.
+
+![Chat reference action](screenshots/chat-reference.png)
