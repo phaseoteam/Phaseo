@@ -116,6 +116,11 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 		} else {
 			await signInNative(account, url => shell.openExternal(url), controller.signal);
 			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
+			if (account.harness === "grok") {
+				const status = await grokAccountStatus(account.configDirectory!, account, AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]));
+				if (status.authenticated !== true) throw new Error("Grok did not confirm this profile is signed in.");
+				if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled.");
+			}
 			const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id); if (!current) throw new Error("Account no longer exists.");
 			current.configured = true; workspaceRuntime.store.saveAccount(current);
 		}

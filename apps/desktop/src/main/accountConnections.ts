@@ -2,6 +2,7 @@ import type { Account } from "../shared/workspace";
 import { JsonRpc } from "./jsonRpc";
 import { spawnNative } from "./nativeProcess";
 import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
+import { grokSignIn } from "./grokSignIn";
 
 export function isNativeAuthUrl(value: string): boolean {
 	try {
@@ -12,6 +13,7 @@ export function isNativeAuthUrl(value: string): boolean {
 
 export async function signInNative(account: Account, openUrl: (url: string) => Promise<void>, signal: AbortSignal): Promise<void> {
 	if (!account.configDirectory || account.kind !== "native") throw new Error("Choose a native account to sign in.");
+	if (account.harness === "grok") return grokSignIn(account, signal);
 	const isCodex = account.harness === "codex";
 	if (!isCodex && account.harness !== "claude") throw new Error("Sign-in is unavailable for this harness.");
 	const child = await spawnNative(isCodex ? "codex" : "claude", isCodex ? ["app-server", "--stdio"] : ["auth", "login"], account.configDirectory,
