@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { realpathSync, mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { builtinModules } from "node:module";
 import { build } from "vite";
-const directory=mkdtempSync(path.join(tmpdir(),"phaseo-openai-catalog-")),profile=path.join(directory,"profile"),project=path.join(directory,"project");
+const directory=realpathSync.native(mkdtempSync(path.join(tmpdir(),"phaseo-openai-catalog-"))),profile=path.join(directory,"profile"),project=path.join(directory,"project");
 mkdirSync(profile);const skill=path.join(project,".agents","skills","owned-brief","SKILL.md");mkdirSync(path.dirname(skill),{recursive:true});
 writeFileSync(skill,"---\nname: owned-brief\ndescription: Owned native catalog brief\n---\nExplain the requested topic clearly.\n");
 writeFileSync(path.join(profile,"config.toml"),'model_provider = "owned"\n[model_providers.owned]\nname = "Owned unavailable endpoint"\nbase_url = "http://127.0.0.1:1/v1"\nwire_api = "responses"\n');
