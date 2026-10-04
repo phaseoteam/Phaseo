@@ -18,6 +18,8 @@ const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = 
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-grok-settings", JSON.stringify({ ...grokSettings, id: "design-grok-settings", title: "Review Grok reasoning", harness: "grok", agentId: undefined }));
+seed.exec("CREATE TABLE accounts (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
+seed.prepare("INSERT INTO accounts VALUES (?, ?)").run("design-account", JSON.stringify({ id: "design-account", name: "Design account", harness: "phaseo", kind: "api", configured: false, endpoint: "https://example.invalid/v1" }));
 seed.close();
 await import("../dist/main/index.mjs");
 app.whenReady().then(async () => {
@@ -57,6 +59,15 @@ try {
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
+        if (page === "Accounts") {
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article')).find(row=>row.textContent.includes('Design account')).querySelectorAll('button')[0].click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const editorLayout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="Edit account"]');return {padding:form&&getComputedStyle(form).padding,key:form?.querySelector('input[type="password"]')?.value}})()`);
+          if(editorLayout.padding!=="24px" || editorLayout.key!=="") throw new Error("Account editor spacing or empty-key state is inconsistent.");
+          await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Edit account"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output, `${width}-${theme}-account-editor.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`Array.from(document.querySelector('form[aria-label="Edit account"]').querySelectorAll('button')).find(button=>button.textContent==='Cancel').click()`);
+        }
         if (page === "Tasks") {
           await window.webContents.executeJavaScript(`document.querySelector('.task-row').click()`);
           await new Promise(resolve => setTimeout(resolve, 200));

@@ -78,6 +78,7 @@
 .task-setup :is(input:not([type="checkbox"]), select, textarea), .account-form :is(input:not([type="checkbox"]), select, textarea) { width: 100%; }
 .account-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding: 24px; border-top: 1px solid var(--border); }
 .account-form > button { justify-self: start; align-self: end; }
+.account-form-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
 .accounts-page > .panel + .panel { margin-top: 24px; }
 .panel > .task-muted { margin: 0; padding: 20px 24px; }
 .panel .account-row { padding: 20px 24px; }

@@ -18,6 +18,7 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 12. **Conversation settings:** inset the model, reasoning and mode controls by 24 pixels, matching the toolbar and composer. Capture both window sizes and themes after the rendered frame settles.
 13. **Conversation typography:** prevent the general message rule from preserving Markdown whitespace between rendered blocks. Use explicit heading, paragraph and list spacing; retain preformatted code. The audit verifies normal Markdown whitespace and a heading-to-paragraph gap no greater than 20 pixels (currently 12 pixels).
 14. **Settings actions:** group Save and Cancel beneath the fields rather than spreading them across separate grid cells. Use the website's primary-button treatment for Save and allow the action row to wrap.
+15. **Account editing:** use the same 24-pixel padded form as account creation, with grouped actions and a named form. Capture the complete editor after scrolling it into view and verify the key field remains empty.
 
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
@@ -29,6 +30,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Accounts at minimum window size](screenshots/accounts-small-window.png)
 
+![Account editing at minimum window size](screenshots/account-editor-small-window.png)
+
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
 
 ![Conversation settings at minimum window size](screenshots/conversation-settings-small-window.png)
@@ -37,6 +40,6 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 52 screenshots, including Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers ten pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 56 screenshots, including account editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
