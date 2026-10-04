@@ -17,6 +17,18 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
+ it.each(["command", "skill"] as const)("executes an explicitly selected %s through the native slash prompt", async kind => {
+  const packets: PiRecord[] = []; const id = kind === "skill" ? "skill:research" : "review"; const name = kind === "skill" ? "research" : id;
+  const child = fixture((packet, output) => { packets.push(packet); if (packet.type === "get_commands") output({ type: "response", id: packet.id, success: true, data: { commands: [{ name: id, source: kind === "skill" ? "skill" : "extension", description: "Owned" }] } }); if (packet.type === "get_state") output({ type: "response", id: packet.id, success: true, data: { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } }); if (packet.type === "prompt") { output({ type: "message_update", assistantMessageEvent: { type: "text_delta", delta: "Owned reply" } }); output({ type: "response", id: packet.id, success: true, data: { disposition: "handled" } }); } });
+  const approval = vi.fn(async () => "accept" as const); const delta = vi.fn(); await new PiAdapter().run(task, "/project", "handoff wrapper", { onDelta: delta, onSession: vi.fn(), onApproval: approval }, undefined, [], { kind, id, name, arguments: "target" });
+  expect(packets.filter(packet => packet.type === "get_commands")).toHaveLength(2); expect(packets.find(packet => packet.type === "prompt")?.message).toBe("/" + id + " target"); expect(approval).toHaveBeenCalledOnce(); expect(delta).toHaveBeenCalledWith("assistant", "Owned reply"); expect(child.kill).toHaveBeenCalledOnce();
+ });
+ it.each(["declined", "removed", "cancelled"])("retains input before submission when a native action is %s", async condition => {
+  let reads = 0; const packets: PiRecord[] = []; const child = fixture((packet, output) => { packets.push(packet); if (packet.type === "get_commands") output({ type: "response", id: packet.id, success: true, data: { commands: condition === "removed" && ++reads === 2 ? [] : [{ name: "review", source: "prompt" }] } }); if (["clear_queue", "abort"].includes(String(packet.type))) output({ type: "response", id: packet.id, success: true }); });
+  const adapter = new PiAdapter(); await expect(adapter.run({ ...task, mode: "code" }, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError);
+  expect(packets.some(packet => packet.type === "prompt")).toBe(false); expect(child.kill).toHaveBeenCalled();
+ });
+
 	it("waits for late steering admission before finishing", async () => {
 		let send!: (value: PiRecord) => void; let steerId: unknown; let stateId: unknown; let ready!: () => void;
 		const started = new Promise<void>(resolve => { ready = resolve; }); let states = 0;

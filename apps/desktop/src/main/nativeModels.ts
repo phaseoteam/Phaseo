@@ -3,7 +3,7 @@ import { Service } from "@opencode/client/service";
 import type { ModelOption } from "../shared/workspace";
 import { spawnNative } from "./nativeProcess";
 import { PiRpc } from "./piRpc";
-import { piEntries } from "./piAdapter";
+import { piEntries } from "./piLaunch";
 import type { Endpoint } from "@opencode/client/service";
 
 export async function openCodeModels(cwd: string, connected?: Endpoint): Promise<ModelOption[]> {

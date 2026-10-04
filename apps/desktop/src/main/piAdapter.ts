@@ -1,3 +1,6 @@
+import { piEntries } from "./piLaunch";
+import { piNativeActionCatalog } from "./piNativeActions";
+import { nativeActionText, type NativeAction } from "../shared/nativeActions";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import type { Account, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
@@ -8,7 +11,6 @@ import type { PiRecord } from "./piRpc";
 import type { AttachmentContent } from "./attachments";
 import { attachmentPrompt } from "./attachmentPrompt";
 
-export const piEntries = ["@earendil-works/pi-coding-agent/dist/bundle/cli.js", "@earendil-works/pi-coding-agent/dist/cli.js", "@mariozechner/pi-coding-agent/dist/cli.js"];
 const record = (value: unknown): PiRecord => value && typeof value === "object" && !Array.isArray(value) ? value as PiRecord : {};
 export class PiAdapter implements AgentAdapter {
 	private child?: ChildProcessWithoutNullStreams;
@@ -23,9 +25,9 @@ export class PiAdapter implements AgentAdapter {
 		const sending = this.rpc.request({ type: "steer", message: attachmentPrompt(message.text, attachments), images: attachments.filter(file => file.kind === "image").map(file => ({ type: "image", data: file.dataUrl!.split(",")[1], mimeType: file.mimeType })) }).then(() => {}, error => { if (error instanceof PiCommandRejectedError) throw new AgentInputRejectedError(error.message); throw error; });
 		this.inputs.add(sending); void sending.finally(() => this.inputs.delete(sending)).catch(() => {}); return sending;
 	}
-	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = []) {
-		const compact = text.trim() === "/compact" && attachments.length === 0;
-		if (task.mode === "code" && !compact && await callbacks.onApproval("Pi native tools", "Allow Pi to run its configured tools for this turn? Its native extensions and policies control individual tool actions.") !== "accept") throw new Error("Pi execution declined.");
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction) {
+		const compact = !nativeAction && text.trim() === "/compact" && attachments.length === 0;
+		if (task.mode === "code" && !compact && !nativeAction && await callbacks.onApproval("Pi native tools", "Allow Pi to run its configured tools for this turn? Its native extensions and policies control individual tool actions.") !== "accept") throw new Error("Pi execution declined.");
 		if (this.cancelled) throw new Error("Task stopped.");
 		const args = ["--mode", "rpc"];
 		if (task.nativeSessionId) args.push("--session", task.nativeSessionId);
@@ -99,6 +101,12 @@ export class PiAdapter implements AgentAdapter {
 				if (separator < 1 || separator === task.model.length - 1) throw new Error("Pi models use provider/model names.");
 				await rpc.request({ type: "set_model", provider: task.model.slice(0, separator), modelId: task.model.slice(separator + 1) });
 			}
+			if (nativeAction) {
+    const confirm = async () => { try { const catalog = piNativeActionCatalog(await rpc.request({ type: "get_commands" }, 15000)); if (!catalog.actions.some(action => action.kind === nativeAction.kind && action.id === nativeAction.id && action.name === nativeAction.name)) throw new Error("This Pi action is no longer available."); } catch (error) { throw new AgentInputRejectedError("Pi action was not submitted. " + (error instanceof Error ? error.message : "Check the native catalog."), { cause: error }); } };
+    await confirm(); if (this.cancelled) throw new AgentInputRejectedError("Pi action cancelled before submission.");
+    if (await callbacks.onApproval("Pi " + nativeAction.kind + " · " + nativeAction.name, "Run this native action? Pi's extensions and native policies control its effects and configured tools.\n\n" + nativeAction.arguments) !== "accept") throw new AgentInputRejectedError("Pi action declined; your input was not submitted.");
+    if (this.cancelled) throw new AgentInputRejectedError("Pi action cancelled before submission."); await confirm();
+   }
 			const state = await rpc.request<PiRecord>({ type: "get_state" });
 			if (typeof state.sessionFile !== "string" || !state.sessionFile) throw new Error("Pi did not create a persisted session.");
 			callbacks.onSession(state.sessionFile); receiving = true; this.acceptingInput = !compact;
@@ -109,7 +117,7 @@ export class PiAdapter implements AgentAdapter {
 				callbacks.onActivity?.({ id: "compaction:manual", type: "compaction", title: "Context compaction", text: JSON.stringify(result, null, 2), summary: result.summary, status: "completed" }); manualRunning = false;
 				await probeIdle(); await turn; return;
 			}
-			const response = await rpc.request<PiRecord | undefined>({ type: "prompt", message: attachmentPrompt(text, attachments), images: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image", data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType })) }, 0);
+			const response = await rpc.request<PiRecord | undefined>({ type: "prompt", message: attachmentPrompt(nativeAction ? nativeActionText(nativeAction) : text, attachments), images: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "image", data: attachment.dataUrl!.split(",")[1], mimeType: attachment.mimeType })) }, 0);
 			if (response?.disposition === "handled") await probeIdle();
 			await turn;
 		} catch (error) { compactionFailure = error instanceof Error ? error.message : "Native compaction ended without confirmation."; throw error; }

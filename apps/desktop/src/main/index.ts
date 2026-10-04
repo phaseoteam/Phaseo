@@ -1,3 +1,4 @@
+import { piNativeActions } from "./piNativeActions";
 import { mkdir } from "node:fs/promises";
 import { openCodeNativeActions } from "./openCodeNativeActions";
 import { OpenCode } from "@opencode/client";
@@ -35,7 +36,7 @@ import { gitBranches, gitCommand } from "./gitOperations";
 import { projectPullRequests, projectPullRequest } from "./projectPullRequests";
 import { readGitHunks } from "./gitHunks";
 import { readGitDiffContents } from "./gitDiffContents";
-import { piEntries } from "./piAdapter";
+import { piEntries } from "./piLaunch";
 import { exportFilename, saveTaskExport, taskExport } from "./taskExport";
 import { readConversation } from "./taskImport";
 import { nativeAccountStatus } from "./accountStatus";
@@ -192,11 +193,11 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 }
 ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
 	if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request.");
-	const task = workspaceRuntime.store.getTask(id); if (task.harness !== "opencode") throw new Error("Native action discovery is unavailable for this harness.");
+	const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
 	workspaceRuntime.assertHarnessAvailable(task.harness);
 	const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
 	modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
-	try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.timeout(30000); const endpoint = await workspaceRuntime.openCode.connect(signal);
+	try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.timeout(30000); if (task.harness === "pi") return await piNativeActions(cwd, signal); const endpoint = await workspaceRuntime.openCode.connect(signal);
 		return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal);
 	} finally { const remaining = modelChecks.get(task.harness)! - 1; if (remaining) modelChecks.set(task.harness, remaining); else modelChecks.delete(task.harness); }
 });
