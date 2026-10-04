@@ -10,7 +10,7 @@ const source = join(root, "supabase");
 const migrations = join(source, "migrations");
 const baseline = join(source, "baseline");
 const mode = process.argv[2];
-if (!["bootstrap", "check", "sync"].includes(mode)) throw new Error("Expected bootstrap, check, or sync");
+if (!["bootstrap", "check", "sync", "smoke"].includes(mode)) throw new Error("Expected bootstrap, check, sync, or smoke");
 const files = readdirSync(migrations).filter((name) => name.endsWith(".sql")).sort();
 const hash = (name) => createHash("sha256").update(readFileSync(join(migrations, name), "utf8").replaceAll("\r\n", "\n")).digest("hex");
 const workspace = mkdtempSync(join(tmpdir(), "phaseo-schema-"));
@@ -43,9 +43,27 @@ const run = (args) => {
 	if (result.error) throw result.error;
 	if (result.status !== 0) {
 		console.error(`Isolated review workspace: ${workspace}`);
-		process.exit(result.status ?? 1);
+		throw new Error(`Supabase command failed (${result.status ?? 1})`);
 	}
 };
+if (mode === "smoke") {
+	try {
+		run(["db", "start"]);
+		run(["migration", "up", "--local"]);
+		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql"]) {
+			run(["db", "query", "--local", "--file", join(source, "tests", file)]);
+		}
+		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
+			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");
+		run(["db", "schema", "declarative", "sync", "--no-apply", "--strict-coverage", "-f", "trial_incremental_change"]);
+		run(["migration", "up", "--local"]);
+		run(["db", "query", "--local", "DO $$ BEGIN ASSERT to_regclass('public.phaseo_declarative_smoke') IS NOT NULL; ASSERT (SELECT relrowsecurity FROM pg_class WHERE oid = 'public.phaseo_declarative_smoke'::regclass); END $$;"]);
+		console.log("Replay, SQL smoke tests, and a generated incremental migration passed");
+	} finally {
+		run(["stop", "--no-backup"]);
+	}
+	process.exit(0);
+}
 run(["db", "schema", "declarative", "sync", "--no-apply", "--no-cache", "--strict-coverage", "-f", mode === "bootstrap" ? "schema_baseline" : "declarative_change", ...(mode === "sync" ? process.argv.slice(3) : [])]);
 const generated = readdirSync(join(temporary, "migrations")).filter((name) => name.endsWith(".sql") && !before.has(name)).sort();
 if (mode === "bootstrap") {

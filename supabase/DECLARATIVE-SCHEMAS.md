@@ -1,86 +1,73 @@
-# Declarative schema adoption
+# Declarative schemas
 
-Status: exported candidate; adoption blocked by an incomplete historical baseline.
+Database definitions live in `schemas/`. Deployment still uses forward SQL
+files in `migrations/`; schema files are never applied directly to production.
 
-## Verified blocker
+## Replay baseline
 
-The [first CI verification](https://github.com/phaseoteam/Phaseo/actions/runs/37234719171)
-failed while replaying `20260120000001_provisioning_keys_table.sql`:
-`relation "public.users" does not exist` (SQLSTATE 42P01). That migration
-also references `public.teams`. The history starts with pricing migrations
-and does not establish the earlier application schema. The comparison never
-reached the desired schema, so zero differences have not been established.
+The deployed history omits the original application schema. Empty-database
+replay fails at `20260120000001_provisioning_keys_table.sql` because
+`public.users` is missing. The context-only `sql.sql` snapshot is not executable.
 
-The earliest `sql.sql` snapshot found in Git history is from 2026-02-02
-(`a90e8ff65`), after the failing migration. It explicitly says it is for
-context only and must not be executed. It is not an authoritative baseline.
+`baseline/schema.sql` provides a complete starting point for isolated replay.
+It was generated with Supabase CLI 2.119.0 from the 2026-10-04 production schema
+export, in [CI run 37237888760](https://github.com/phaseoteam/Phaseo/actions/runs/37237888760).
+It includes private objects, permissions, policies, the auth signup trigger,
+extensions, partitions, and scheduled jobs. It contains no application rows.
 
-Resolve this before merging. Prefer recovering the original pre-January
-schema from a verified backup/export, including functions and permissions,
-then testing the entire chain. If no such baseline exists, use a separately
-reviewed re-baseline: preserve the old SQL history in an archive, generate
-and prove a complete current baseline in disposable databases, and plan the
-remote migration-record transition explicitly. Do not apply a baseline's
-CREATE statements to the existing production database or repair production
-migration records without a separately reviewed rollout.
+`baseline/history.sha256` identifies all 756 deployed migrations represented
+by that snapshot, through version `20261003130000`. Hashes normalize CRLF to
+LF. Tooling rejects changed/missing historical files and newly added migrations
+that predate the cutoff. Preserve the baseline and historical files unchanged.
 
-This PR contains no replacement baseline, archive move, migration-history
-repair, or production schema change. It remains a draft with a failing check
-to prevent the exported snapshot being mistaken for completed adoption.
+The baseline is **for empty disposable databases only**. It is outside the
+production migration directory. Do not deploy it, run it against production,
+or repair remote migration records. All original migrations remain in place
+for existing environments and audit history. Production migration records
+need no changes for this workflow.
 
-The files in `schemas/` were exported from Phaseo Prod
-(`xansbgjaduxypzsmjwct`) on 2026-10-04 with Supabase CLI 2.119.0.
-The export contains 658 SQL files and the CLI's generated export manifest.
-It includes `public`, `private`, `catalogue_private`, the custom trigger on
-`auth.users`, extension declarations, grants, policies, and scheduled jobs.
-No application data was exported. Keep the manifest alongside the SQL files.
-The export is a snapshot, not evidence that historical migrations replay.
+## Daily workflow
 
-At checkout `2a84658993c7477296c1ac4461d59044d3c732dc`, all 756 repository
-migration versions matched production's recorded versions. This checks IDs
-only, not SQL contents or schema equivalence. Existing migrations remain
-unchanged. `sql.sql` is an old context-only snapshot and must not be used as
-an executable baseline.
+1. Edit the desired definitions in `schemas/`.
+2. Run `pnpm db:schema:sync -- -f descriptive_change_name`.
+3. Review the generated forward migration and test it locally.
+4. Commit the definitions and migration together, then open a PR.
 
-## Before adoption
+`pnpm db:schema:check` prepares a temporary Supabase project with the frozen
+baseline and migrations newer than its cutoff. It invokes strict coverage
+with CLI 2.119.0 and fails if any schema difference generates a migration.
+`db:schema:sync` uses the same replay history and copies only newly generated
+migrations back into the deployment directory. Neither command connects to
+production or applies generated SQL. Failed comparisons retain their temporary
+directory for inspection.
 
-1. Use CLI 2.119.0 for export, sync, and verification. The package scripts pin
-   it independently of the existing production deployment CLI.
-2. Run `pnpm db:schema:check` in an isolated checkout with Docker available.
-   It rebuilds shadow state from migrations and requires strict coverage and
-   zero generated migrations. It never applies generated SQL. A failure may
-   leave a review migration in that checkout; inspect it before removing it.
-3. Investigate missing historical baseline objects or differences reported
-   by the new engine. Do not rewrite deployed history, mark remote migrations
-   repaired, or push generated catch-up SQL as part of this export.
-4. Replay the complete migration chain in a disposable local Supabase
-   project, then run the database smoke tests. Verify wallets, authorization,
-   signup triggers, grants, partitions, and RPC contracts explicitly.
-5. Make a small local schema change, generate its migration, and verify its
-   application. Revert the trial definitions and trial migration afterward.
-6. Re-export if production changes during review, then repeat the checks.
+Both commands need a shadow Postgres runtime, such as Docker on Windows.
+CI runs without production credentials. Raw `supabase db schema declarative
+sync` and raw `db reset` against the repository root still encounter the
+incomplete historical chain; use the replay tooling instead.
 
-Export was verified to complete on Windows without Docker using 2.119.0.
-Sync still requires a shadow Postgres runtime; this machine lacks Docker.
-The isolated GitHub workflow runs the comparison without production secrets.
-Do not equate a successful export with a completed transition.
+Exports use `pnpm db:schema:export` against the linked database. Review drift
+before replacing locally edited definitions. Keep `.pgdelta-export.json`, the
+CLI-generated load-order manifest, alongside the SQL files.
 
-## After adoption
+## Chat URL drift
 
-Edit the desired definitions in `schemas/`, then run
-`pnpm db:schema:sync -- -f descriptive_change_name`. Review the generated
-incremental migrations and test locally before opening a PR. Commit both
-the definitions and migration. Deployment continues through the existing
-migration pipeline; schema files are not applied directly to production.
+Production's chat attribution function retained a legacy URL despite historical
+repository definitions using `phaseo.app`. The forward migration
+`20261004215447_canonical_chat_app_identity.sql` changes future attribution to
+`https://phaseo.app/chat`, preserving function privileges. It does not backfill
+existing app rows. The frozen baseline retains the old value and is excluded
+from the active-domain scan; desired definitions and forward migrations are checked.
 
-Avoid schema edits through production Studio or the SQL editor: sync compares
-the files with migration history, not with the live database. Use exports to
-inspect drift, not to replace locally edited definitions without review.
+## Boundaries
 
-Keep data backfills, storage bucket records, and unsupported objects in
-forward migrations. Review cron jobs and extension-managed objects through
-their supported APIs. `--strict-coverage` failures must be investigated;
-do not silently disable coverage to obtain a green check.
+Data backfills, storage bucket records, and unsupported objects require forward
+migrations. Investigate strict-coverage failures rather than disabling coverage.
+Schema equivalence verifies structure and permissions, not application data or
+every runtime behavior; run relevant SQL smoke tests for functional changes.
+
+The production deployment pipeline is unchanged. The replay baseline does not
+replace production history or authorize applying migrations or merging this PR.
 
 See the [declarative schema guide](https://supabase.com/docs/guides/local-development/declarative-database-schemas)
-and [diff engine migration guide](https://supabase.com/docs/guides/local-development/diff-engines).
+and [diff engines](https://supabase.com/docs/guides/local-development/diff-engines).

@@ -13,6 +13,7 @@
 		"db:schema:export": "npx --yes supabase@2.119.0 db schema declarative generate --linked",
 		"db:schema:sync": "node scripts/declarative-schema.mjs sync",
 		"db:schema:check": "node scripts/declarative-schema.mjs check",
+		"db:schema:smoke": "node scripts/declarative-schema.mjs smoke",
 		"test:catalogue-history": "node scripts/tests/catalogue-history.mjs",
 		"test:realtime-billing-review": "node --test scripts/realtime-billing-review.test.mjs",
 		"dev": "turbo run dev --parallel",
