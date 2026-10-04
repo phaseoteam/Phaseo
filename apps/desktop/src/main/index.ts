@@ -9,6 +9,7 @@ import { OpenCode } from "@opencode/client";
 import { Service } from "@opencode/client/service";
 import { PromptCommands } from "./promptCommands";
 import { McpPromptCatalogService } from "./mcpPromptCatalog";
+import { importMcpPromptAttachments } from "./mcpPromptAttachments";
 import { projectPullRequestContents } from "./projectPullRequestContents";
 import { projectPullRequestFiles } from "./projectPullRequestFiles";
 import { app, autoUpdater, BrowserWindow, dialog, ipcMain, Menu, Notification, safeStorage, shell } from "electron";
@@ -352,6 +353,14 @@ ipcMain.handle("workspace:choose-attachments", async (event, id: unknown) => {
 	if (shutdownStarted) throw new Error("The workspace is shutting down.");
 	const imported = await Promise.allSettled(result.filePaths.map(filename => workspaceRuntime.attachments.import(id, filename)));
 	return { attachments: imported.flatMap(value => value.status === "fulfilled" ? [value.value] : []), errors: imported.flatMap(value => value.status === "rejected" ? [value.reason instanceof Error ? value.reason.message : "Attachment import failed."] : []) };
+});
+ipcMain.handle("workspace:mcp-prompt-attachments", async (event, id: unknown, messages: unknown) => {
+ if (!senderWindow(event) || typeof id !== "string") throw Error("Invalid prompt attachment request.");
+ if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw Error("This chat is unavailable for prompt insertion.");
+ return importMcpPromptAttachments(id, messages, workspaceRuntime.attachments, attachments => {
+  if (shutdownStarted || workspaceRuntime.store.getTask(id).archived) throw Error("This chat is unavailable for prompt insertion.");
+  workspaceRuntime.store.saveAttachments(attachments);
+ });
 });
 ipcMain.handle("workspace:attachment", async (event, taskId: unknown, id: unknown) => {
 	if (!senderWindow(event) || typeof taskId !== "string" || typeof id !== "string") throw new Error("Invalid attachment request.");

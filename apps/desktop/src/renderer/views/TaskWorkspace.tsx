@@ -1,3 +1,4 @@
+import type { McpPromptPreview } from "../../shared/mcpPrompts";
 import { nativeActionText, updateNativeActionText, type NativeAction } from "../../shared/nativeActions";
 import { PromptCommandPicker } from "../components/PromptCommandPicker";
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
@@ -118,6 +119,27 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 		try { if (await command({ type: delivery, id: selected.id, text: nativeDraft ? nativeActionText(nativeDraft) : text.trim() ? text : "Please review the attached files.", ...(delivery === "send" && nativeDraft ? { nativeAction: nativeDraft } : {}), attachments: pendingAttachments.map(attachment => attachment.id) })) { setText(""); setAttachmentDrafts(current => { const next = { ...current }; delete next[selected.id]; return next; }); } }
 		finally { setBusy(false); }
 	}
+	function insertCommand(value: string, action?: NativeAction, prompt?: McpPromptPreview) {
+		if (!selected) throw new Error("Choose a chat before inserting a prompt.");
+		if (prompt) {
+			const next = text ? `${text}\n\n${value}` : value;
+			if (next.length > 100000) throw new Error("The draft exceeds the message limit.");
+			if (pendingAttachments.length + (prompt.imageCount ?? 0) > 10) throw new Error("Only 10 files can be attached to one message.");
+			if (!api || uploading) throw new Error("Wait for attachments to finish loading.");
+			return api.mcpPromptAttachments(selected.id, prompt.messages).then(result => {
+				if (result.text !== value) throw new Error("The prompt changed before insertion. Reload it.");
+				setText(next);
+				setAttachmentDrafts(current => ({ ...current, [selected.id]: [...current[selected.id] ?? [], ...result.attachments] }));
+				requestAnimationFrame(() => composerInput.current?.focus());
+			});
+		}
+		const nextAction = action ? { ...action, arguments: [action.arguments, text].filter(Boolean).join("\n\n") } : undefined;
+		const next = nextAction ? nativeActionText(nextAction) : text ? `${text}\n\n${value}` : value;
+		if (next.length > 100000) throw new Error("The draft exceeds the message limit.");
+		setText(next);
+		if (nextAction) setNativeDrafts(current => ({ ...current, [selected.id]: nextAction }));
+		requestAnimationFrame(() => composerInput.current?.focus());
+	}
 	async function attach() {
 		if (!api || !selected || uploading) return;
 		setUploading(true); setError("");
@@ -190,7 +212,7 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 				</form>
 			</>}
 		</section>
-		{promptCommandsId === selected?.id && selected && <PromptCommandPicker key={selected.id} taskId={selected.id} native={selected.harness === "opencode" || selected.harness === "pi" || selected.harness === "claude" || selected.harness === "codex" || selected.harness === "phaseo" ? selected.harness : undefined} projectId={selected.projectId} onClose={() => setPromptCommandsId(undefined)} onInsert={(value, action) => { const nextAction = action ? { ...action, arguments: [action.arguments, text].filter(Boolean).join("\n\n") } : undefined; const next = nextAction ? nativeActionText(nextAction) : text ? `${text}\n\n${value}` : value; if (next.length > 100000) throw new Error("The draft exceeds the message limit."); setText(next); if (nextAction) setNativeDrafts(current => ({ ...current, [selected.id]: nextAction })); requestAnimationFrame(() => composerInput.current?.focus()); }} />}
+		{promptCommandsId === selected?.id && selected && <PromptCommandPicker key={selected.id} taskId={selected.id} native={selected.harness === "opencode" || selected.harness === "pi" || selected.harness === "claude" || selected.harness === "codex" || selected.harness === "phaseo" ? selected.harness : undefined} projectId={selected.projectId} onClose={() => setPromptCommandsId(undefined)} onInsert={insertCommand} />}
 		{attachmentPreview && <AttachmentPreview {...attachmentPreview} onClose={() => setAttachmentPreview(undefined)} />}
 	</div>;
 }

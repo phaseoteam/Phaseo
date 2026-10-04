@@ -7,7 +7,7 @@ import { extractPdfText } from "./pdfText";
 export type AttachmentContent = Attachment & { filePath: string; text?: string; dataUrl?: string };
 export type AttachmentRepository = { getAttachment: (id: string) => Attachment | undefined; saveAttachment: (attachment: Attachment) => void };
 
-function imageMime(bytes: Buffer): string | undefined {
+export function imageMime(bytes: Buffer): string | undefined {
 	if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return "image/png";
 	if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255) return "image/jpeg";
 	if (["GIF87a", "GIF89a"].includes(bytes.subarray(0, 6).toString("ascii"))) return "image/gif";

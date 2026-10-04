@@ -126,8 +126,14 @@ app.whenReady().then(async () => {
 			await new Promise(resolve => setTimeout(resolve,200));
 			const projectSelect = document.querySelector('select[aria-label="Project"]');
 			Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(projectSelect,'fixture'); projectSelect.dispatchEvent(new Event('change',{bubbles:true}));
-			await new Promise(resolve => setTimeout(resolve,200));
-			Array.from(document.querySelectorAll('.project-browser aside button')).find(button => button.textContent.includes('hello.txt')).click();
+			let fileButton;
+			for (let attempt = 0; attempt < 100; attempt++) {
+				fileButton = Array.from(document.querySelectorAll('.project-browser aside button')).find(button => button.textContent.includes('hello.txt'));
+				if (fileButton) break;
+				await new Promise(resolve => setTimeout(resolve,100));
+			}
+			if (!fileButton) throw new Error('Project file listing did not display hello.txt.');
+			fileButton.click();
 			await new Promise(resolve => setTimeout(resolve,100));
 			Array.from(document.querySelectorAll('.project-browser button')).find(button => button.textContent.trim() === 'Edit').click();
 			await new Promise(resolve => setTimeout(resolve,100));

@@ -287,3 +287,8 @@ MCP composer prompt picker (2026-10-04): reuses the existing Commands dialog, we
 ![MCP prompt catalog](screenshots/mcp-prompt-catalog.png)
 
 ![MCP prompt preview](screenshots/mcp-prompt-preview.png)
+
+
+MCP image insertion (2026-10-04): supported image previews now use the existing dialog with bounded 180-pixel image height, wrapped rows, role captions and a readable ordered draft preview. Source/fresh archive checks use an owned 128×80 PNG, assert decoded dimensions and exact stored bytes, retain the draft after invalid-image rejection, insert once after double clicks and restore/preview the attachment after renderer reload. The existing seven-state, three-width, light/dark capture matrix remains 42 per build. Packaged light intermediate rendering was visually inspected; audio, blob/link resource insertion and live media interpretation remain open. Embedded text resources retain URI labels and their source material in the draft without network access.
+
+![MCP image prompt](screenshots/mcp-prompt-image.png)

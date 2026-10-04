@@ -90,6 +90,7 @@ export type WorkspaceApi = {
 	nativeActions: (taskId: string) => Promise<NativeActionCatalog>;
 	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
 	mcpPrompts: (taskId: string, request: McpPromptRequest) => Promise<McpPromptCatalog | McpPromptPreview>;
+	mcpPromptAttachments: (taskId: string, messages: McpPromptPreview["messages"]) => Promise<{ text: string; attachments: Attachment[] }>;
 	overview: () => Promise<WorkspaceOverview>;
 	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
 	task: (id: string) => Promise<Task>;

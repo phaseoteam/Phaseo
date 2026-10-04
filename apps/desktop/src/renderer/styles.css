@@ -705,6 +705,10 @@ button { color: inherit; }
 .mcp-prompt-picker .prompt-command-results button > small { flex-shrink: 0; white-space: nowrap; }
 .mcp-prompt-picker .prompt-command-results strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mcp-prompt-picker textarea { width: 100%; min-height: 140px; max-height: 260px; resize: vertical; line-height: 1.6; }
+.mcp-prompt-images { display: flex; flex-wrap: wrap; gap: 12px; }
+.mcp-prompt-images figure { margin: 0; max-width: 100%; }
+.mcp-prompt-images img { display: block; max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 6px; }
+.mcp-prompt-images figcaption { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
 .mcp-prompt-picker fieldset { display: grid; gap: 16px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .prompt-command-heading, .prompt-command-search, .prompt-command-actions { display: flex; align-items: center; gap: 12px; }
 .prompt-command-heading { justify-content: space-between; margin-bottom: 20px; }

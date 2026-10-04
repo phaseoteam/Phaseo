@@ -172,6 +172,11 @@ export class WorkspaceStore {
 	saveAgent(agent: AgentConnection) { this.db.prepare("INSERT INTO agents (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data=excluded.data").run(agent.id, JSON.stringify(agent)); }
 	getAttachment(id: string): Attachment | undefined { const row = this.db.prepare("SELECT data FROM attachments WHERE id=?").get(id); return row ? JSON.parse(row.data as string) as Attachment : undefined; }
 	saveAttachment(attachment: Attachment) { this.db.prepare("INSERT INTO attachments (id, data) VALUES (?, ?)").run(attachment.id, JSON.stringify(attachment)); }
+	saveAttachments(attachments: Attachment[]) {
+		this.db.exec("BEGIN");
+		try { for (const attachment of attachments) this.saveAttachment(attachment); this.db.exec("COMMIT"); }
+		catch (error) { this.db.exec("ROLLBACK"); throw error; }
+	}
 	importTask(command: Extract<WorkspaceCommand, { type: "create-task" }>, conversation: Pick<Task, "title" | "messages" | "createdAt" | "handoffFrom">, attachments: Attachment[], initialModels?: Task["nativeModels"]): Task {
 		this.db.exec("BEGIN");
 		try {
