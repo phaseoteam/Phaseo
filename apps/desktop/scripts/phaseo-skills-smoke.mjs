@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 import { createServer } from "node:http";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,6 +7,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-skill-runtime-")); app.setPath("userData", profile);
+const image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aJ1sAAAAASUVORK5CYII=";
+writeFileSync(path.join(profile, "owned.png"), Buffer.from(image, "base64"));
+dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path.join(profile, "owned.png")] });
 const project = path.join(profile, "project"), workspace = path.join(profile, "workspace"), skill = path.join(workspace, "skills/review/SKILL.md"); mkdirSync(project); mkdirSync(path.dirname(skill), { recursive: true });
 const skillBody = "Use concrete examples. Owned skill instructions."; writeFileSync(skill, `---\nname: review\ndescription: Review clearly\n---\n${skillBody}`);
 const db = new DatabaseSync(path.join(workspace, "workspace.sqlite")); db.exec("CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL)"); db.prepare("INSERT INTO projects VALUES (?,?)").run("project", JSON.stringify({ id: "project", name: "Owned project", directory: project, createdAt: new Date().toISOString() })); db.close();
@@ -17,6 +20,8 @@ const server = createServer(async (request, response) => {
   if (new URL(request.url, "http://owned.local").pathname.replace(/\/$/, "") === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ data: ["chat", "plan", "code"].map(mode => ({ id: "owned-" + mode })) })); return; }
   if (request.method !== "POST") { console.log("OWNED_READ", request.method, request.url); response.statusCode = 404; response.end(); return; }
   const body = JSON.parse(raw), mode = body.model.replace("owned-", ""); assert.ok(mode in calls); const step = ++calls[mode]; let name, input, output;
+  const history = mode === "chat" ? body.messages : body.input;
+  assert.equal(history.filter(message => message.role === "user" && Array.isArray(message.content) && message.content.some(part => (part.image_url?.url ?? part.image_url) === "data:image/png;base64," + image)).length, 1);
   const instructions = mode === "chat" ? body.messages.find(message => message.role === "system")?.content : body.instructions;
   const tools = body.tools.map(tool => tool.function ?? tool); assert.ok(tools.some(tool => (tool.name ?? tool.id) === "load_skill"));
   if (mode !== "code") assert.ok(tools.every(tool => ["list_skills", "load_skill", ...(mode === "plan" ? ["project_files"] : [])].includes(tool.name ?? tool.id)));
@@ -47,7 +52,7 @@ app.whenReady().then(async () => {
   const accountId = await run(`(async()=>{const state=await window.phaseoDesktop.workspace.command({type:'add-account',name:'Owned skill fixture',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});return state.accounts.find(account=>account.name==='Owned skill fixture').id})()`);
   const output = path.resolve("../../output/playwright/phaseo-skill-runtime", entry ? "packaged" : "source"); mkdirSync(output, { recursive: true }); let captures = 0;
   for (const mode of ["chat", "plan", "code"]) {
-   const id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,before=new Set((await api.overview()).tasks.map(task=>task.id));const state=await api.command({type:'create-task',projectId:'project',harness:'phaseo',accountId:${JSON.stringify(accountId)},model:'owned-${mode}',mode:'${mode}'});const id=state.tasks.find(task=>!before.has(task.id)).id;await api.command({type:'send',id,text:${JSON.stringify(mode === "plan" ? "/skill:review Owned plan" : "Owned " + mode)},${mode === "plan" ? "nativeAction:{kind:'skill',id:'global:review',name:'review',arguments:'Owned plan'}," : ""}});return id})()`);
+   const id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,before=new Set((await api.overview()).tasks.map(task=>task.id));const state=await api.command({type:'create-task',projectId:'project',harness:'phaseo',accountId:${JSON.stringify(accountId)},model:'owned-${mode}',mode:'${mode}'});const id=state.tasks.find(task=>!before.has(task.id)).id;const imported=await api.chooseAttachments(id);if(imported.errors.length||imported.attachments.length!==1)throw Error('Owned image import failed');await api.command({type:'send',id,attachments:imported.attachments.map(file=>file.id),text:${JSON.stringify(mode === "plan" ? "/skill:review Owned plan" : "Owned " + mode)},${mode === "plan" ? "nativeAction:{kind:'skill',id:'global:review',name:'review',arguments:'Owned plan'}," : ""}});return id})()`);
    const pending = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(id)});if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false})()`);
    assert.equal(pending.approvals[0].method, "Use Phaseo skill review"); assert.ok(pending.approvals[0].description.includes(skillBody)); if (mode === "plan") assert.equal(calls.plan, 0);
    await wait(`Array.from(document.querySelectorAll('.task-row')).some(row=>row.title===${JSON.stringify(pending.title)})`); await run(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.title===${JSON.stringify(pending.title)}).click()`); await wait(`document.querySelector('[aria-label="Approval needed"] pre')?.textContent.includes(${JSON.stringify(skillBody)})`);
@@ -61,6 +66,6 @@ app.whenReady().then(async () => {
   await wait(`Array.from(document.querySelectorAll('.task-row')).some(row=>row.title===${JSON.stringify(deniedPending.title)})`); await run(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.title===${JSON.stringify(deniedPending.title)}).click()`); await wait(`document.querySelector('[aria-label="Approval needed"] pre')?.textContent.includes('Owned deny')`);
   await run(`Array.from(document.querySelectorAll('[aria-label="Approval needed"] button')).find(button=>button.textContent==='Deny').click()`);
   const denied = await wait(`(async()=>{const task=await window.phaseoDesktop.workspace.task(${JSON.stringify(deniedId)});return task.status==='failed'?task:false})()`); assert.equal(denied.queue.length, 1); assert.equal(denied.queue[0].nativeAction.id, "global:review"); assert.equal(denied.queue[0].text, "/skill:review Owned deny"); assert.ok(!denied.messages.some(message => message.role === "user"));
-  assert.ok(!fixtureError); assert.deepEqual(calls, { chat: 3, plan: 1, code: 3 }); console.log("PHASEO_SKILLS_SMOKE", JSON.stringify({ renderedSkillApprovals: 3, modelDiscovery: true, explicitPlan: true, chatPlanRestrictions: true, confirmedFileEffect: true, deniedPreflightQueueRetained: true, captures, loopbackModelRequests: 7, providerInferenceCalls: 0, packaged: Boolean(entry) })); clearTimeout(deadline); server.close(); app.quit();
+  assert.ok(!fixtureError); assert.deepEqual(calls, { chat: 3, plan: 1, code: 3 }); console.log("PHASEO_SKILLS_SMOKE", JSON.stringify({ renderedSkillApprovals: 3, modelDiscovery: true, explicitPlan: true, chatPlanRestrictions: true, imagesInAllModes: true, confirmedFileEffect: true, deniedPreflightQueueRetained: true, captures, loopbackModelRequests: 7, providerInferenceCalls: 0, packaged: Boolean(entry) })); clearTimeout(deadline); server.close(); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); server.close(); app.exit(1); }
 });

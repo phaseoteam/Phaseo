@@ -9,7 +9,7 @@ import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import { phaseoTools } from "./phaseoTools";
 import type { AttachmentContent } from "./attachments";
-import { attachmentPrompt } from "./attachmentPrompt";
+import { phaseoConversationMessages } from "./attachmentPrompt";
 import { connectPhaseoMcp } from "./phaseoMcp";
 import type { McpConnection } from "../shared/mcp";
 import { ProjectInstructions } from "./projectInstructions";
@@ -19,7 +19,6 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 	private controller = new AbortController();
 	constructor(private readonly credential: (id: string) => string | Promise<string>, private readonly store: Pick<WorkspaceStore, "loadAgentRun" | "saveAgentRun">, private readonly clientFactory: (account: Account, key: string) => AgentModelClient = (account, key) => createGatewayAgentClient({ clientOptions: { apiKey: key, baseUrl: account.endpoint }, includeMeta: true }), private readonly mcpConnections: McpConnection[] = [], private readonly globalInstructionsRoot?: string) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction) {
-		if (attachments.some(attachment => attachment.kind === "image")) throw new Error("Phaseo Code and Plan require text attachments. Use Chat or a native vision-capable harness for images.");
 		if (!account || account.kind !== "api" || !account.endpoint) throw new Error("Connect an API account to use the Phaseo harness.");
 		if (task.model === "default") throw new Error("Select a model for this API account.");
 		const previous = task.nativeSessionId ? this.store.loadAgentRun(task.nativeSessionId) as AgentRunResult<unknown, string> | null : null;
@@ -59,11 +58,14 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 			if (event.type === "step.completed" && event.usage) callbacks.onActivity?.({ id: `usage:${event.stepIndex}`, type: "usage", title: "Usage", text: JSON.stringify(event.usage, null, 2) });
 		} };
 
+		const messages = phaseoConversationMessages(task.messages, text, attachments, requestedAction?.arguments);
+		let followUp = previous && previous.run.status !== "completed" ? messages.slice(-1) : undefined;
 		let result = previous?.run.status === "waiting_for_human" && previous.run.pause?.pendingToolCalls?.length
 			? previous
 			: previous && previous.run.status !== "completed"
-			? await agent.continueStream({ ...options, run: previous, humanInput: attachmentPrompt(requestedAction ? requestedAction.arguments : text, attachments.filter(attachment => task.messages.at(-1)?.attachments?.some(value => value.id === attachment.id))) })
-			: await agent.stream({ ...options, input: task.messages.filter(message => message.role === "user" || message.role === "assistant").map(message => `${message.role}: ${attachmentPrompt(nativeAction && message === task.messages.at(-1) && message.role === "user" ? nativeAction.arguments : message.text, attachments.filter(attachment => message.attachments?.some(value => value.id === attachment.id)))}`).join("\n\n") || (requestedAction ? requestedAction.arguments : text) });
+			? await agent.continueStream({ ...options, run: previous, humanMessages: followUp })
+			: await agent.stream({ ...options, input: requestedAction?.arguments ?? text, messages });
+		if (previous && result !== previous) followUp = undefined;
 		while (result.run.status === "waiting_for_human") {
 			const pending = result.run.pause?.pendingToolCalls ?? [];
 			if (!pending.length) throw new Error("This run needs a human response that is not supported yet.");
@@ -79,7 +81,8 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 				(decision === "accept" ? approvals : rejections).push(entry.call.id);
 			}
 			if (this.controller.signal.aborted) throw new Error("Task stopped.");
-			result = await agent.continueStream({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...initialContext, ...(skillTools?.snapshot().length ? { phaseoModelSkills: skillTools.snapshot() } : {}) }, run: result, approvals, rejections });
+			result = await agent.continueStream({ ...options, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), ...initialContext, ...(skillTools?.snapshot().length ? { phaseoModelSkills: skillTools.snapshot() } : {}) }, run: result, approvals, rejections, humanMessages: followUp });
+			followUp = undefined;
 		}
 		if (result.run.status !== "completed") throw new Error(result.run.error ?? result.run.stopReason ?? `Agent run ${result.run.status}.`);
 		if (!streamedSteps.size) {

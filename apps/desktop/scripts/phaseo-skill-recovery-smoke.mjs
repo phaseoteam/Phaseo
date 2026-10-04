@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 const argument = name => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3);
 const profile = argument("profile"), stage = argument("stage"), endpoint = argument("endpoint"), entry = argument("app-entry"); assert.ok(profile && endpoint && ["write", "read"].includes(stage)); app.setPath("userData", profile);
 const mode = argument("mode") ?? "code"; assert.ok(["chat", "code"].includes(mode));
-if (mode === "chat") dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path.join(profile, "owned.png")] });
+dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [path.join(profile, "owned.png")] });
 const deadline = setTimeout(() => { console.error("Skill recovery stage expired", stage); app.exit(1); }, 45000);
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
 app.whenReady().then(async () => {
@@ -15,7 +15,7 @@ app.whenReady().then(async () => {
   const run = code => owner.webContents.executeJavaScript(code), wait = async code => { for (let index = 0; index < 400; index++) { const value = await run(code); if (value) return value; await new Promise(resolve => setTimeout(resolve, 25)); } throw Error("Recovery UI did not settle: " + code); };
   let id;
   if (stage === "write") {
-   id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,state=await api.command({type:'add-account',name:'Owned crash fixture',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned crash fixture').id;const created=await api.command({type:'create-task',${mode === "code" ? "projectId:'project'," : ""}harness:'phaseo',accountId,model:'owned',mode:${JSON.stringify(mode)}});const id=created.tasks[0].id;${mode === "chat" ? "const imported=await api.chooseAttachments(id);if(imported.errors.length||imported.attachments.length!==1)throw Error('Owned image import failed');" : ""}await api.command({type:'send',id,text:'Owned crash recovery',${mode === "chat" ? "attachments:imported.attachments.map(file=>file.id)" : ""}});return id})()`);
+   id = await run(`(async()=>{const api=window.phaseoDesktop.workspace,state=await api.command({type:'add-account',name:'Owned crash fixture',kind:'api',harness:'phaseo',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'});const accountId=state.accounts.find(account=>account.name==='Owned crash fixture').id;const created=await api.command({type:'create-task',${mode === "code" ? "projectId:'project'," : ""}harness:'phaseo',accountId,model:'owned',mode:${JSON.stringify(mode)}});const id=created.tasks[0].id;const imported=await api.chooseAttachments(id);if(imported.errors.length||imported.attachments.length!==1)throw Error('Owned image import failed');await api.command({type:'send',id,text:'Owned crash recovery',attachments:imported.attachments.map(file=>file.id)});return id})()`);
   } else {
    id = JSON.parse(readFileSync(path.join(profile, "pending.json"), "utf8")).taskId;
    const recovered = await run(`window.phaseoDesktop.workspace.task(${JSON.stringify(id)})`); assert.equal(recovered.status, "interrupted"); assert.equal(recovered.approvals.length, 0);

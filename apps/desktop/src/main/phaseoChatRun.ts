@@ -1,13 +1,13 @@
 import path from "node:path";
 import { createAgent } from "@phaseo/agent-sdk";
-import type { AgentEvent, AgentMessage, AgentModelClient, AgentRunResult } from "@phaseo/agent-sdk";
+import type { AgentEvent, AgentModelClient, AgentRunResult } from "@phaseo/agent-sdk";
 import type { Account, Task } from "../shared/workspace";
 import type { NativeAction } from "../shared/nativeActions";
 import type { AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
 import type { WorkspaceStore } from "./workspaceStore";
 import type { AttachmentContent } from "./attachments";
-import { attachmentPrompt } from "./attachmentPrompt";
+import { phaseoConversationMessages } from "./attachmentPrompt";
 import { PhaseoSkills, restoredPhaseoSkill } from "./phaseoSkills";
 import { PhaseoSkillTools } from "./phaseoSkillTools";
 import { ProjectInstructions } from "./projectInstructions";
@@ -30,14 +30,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
  const instructions = new ProjectInstructions(cwd, files => callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: `Loaded ${files.join(", ")}`, status: "completed" }), globalRoot, async () => [...selected ? [await selected()] : [], ...await toolkit?.instructions() ?? []]);
  const refresh = () => task.projectId ? instructions.load(".", true) : instructions.loadGlobal();
  try { await refresh(); } catch (error) { throw new AgentInputRejectedError("Chat instructions could not be loaded; input was not submitted.", { cause: error }); }
- const messages: AgentMessage[] = task.messages.filter(message => message.role === "user" || message.role === "assistant").map(message => {
-  const files = attachments.filter(file => message.attachments?.some(value => value.id === file.id));
-  const content = attachmentPrompt(requested && message === task.messages.at(-1) && message.role === "user" ? requested.arguments : message.text, files);
-  if (message.role === "assistant") return { role: "assistant", content };
-  const images = files.filter(file => file.kind === "image");
-  return { role: "user", content: images.length ? [{ type: "text", text: content }, ...images.map(file => ({ type: "image_url" as const, image_url: { url: file.dataUrl! } }))] : content };
- });
- if (task.messages.at(-1)?.role !== "user" || task.messages.at(-1)?.text !== text) messages.push({ role: "user", content: requested ? requested.arguments : text });
+ const messages = phaseoConversationMessages(task.messages, text, attachments, requested?.arguments);
  let followUp = continuing ? messages.slice(-1) : undefined;
  let step = continuing?.run.stepCount ?? 0;
  const client: AgentModelClient = { generate: async request => {
