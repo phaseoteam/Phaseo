@@ -95,6 +95,7 @@ describe("persistGatewayIoLog", () => {
 			providerRequest: { prompt: "Hello" },
 			providerResponse: { output: "Hi" },
 			metadata: { session_id: "session_1" },
+			lifecycleEvents: { version: 1, events: [{ sequence: 1, type: "provider.started", elapsed_ms: 0, timestamp_ms: 1000 }], truncated: false },
 		});
 
 		expect(result).toMatchObject({
@@ -123,6 +124,7 @@ describe("persistGatewayIoLog", () => {
 			workspace_id: "workspace_1",
 			provider_request: { prompt: "Hello" },
 			provider_response: { output: "Hi" },
+			lifecycle_events: { version: 1, events: [{ sequence: 1, type: "provider.started", elapsed_ms: 0, timestamp_ms: 1000 }], truncated: false },
 		});
 		expect(options).toMatchObject({
 			httpMetadata: { contentType: "application/json" },

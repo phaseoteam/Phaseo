@@ -13,6 +13,7 @@ import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
 import { auditFailure } from "../audit";
 import { createToolTraceRetention } from "./server-tool-trace";
+import { finishStreamingProvider, recordLifecycleEvent } from "../lifecycle";
 import type { PipelineRunnerArgs } from "./types";
 import { createManagedToolLiveResponse, type ManagedToolLiveSink } from "./server-tools.live";
 import {
@@ -815,7 +816,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					result: exec.result,
 					onEvent: liveSink?.beginRound(),
 				});
+				finishStreamingProvider(pre.ctx);
 			} catch {
+				finishStreamingProvider(pre.ctx, "error");
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
 				return await handleError({
@@ -907,14 +910,39 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			let nextIrRequest = irForExecution;
 			let searchObservability = pre.ctx.searchObservability ?? null;
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
+			let activeToolSpan: string | undefined;
+			let previousParentSpan: string | undefined;
 
 			while (true) {
 				if (liveSink?.signal.aborted) break;
 				const roundStartedAt = Date.now();
+				const serverToolRound: NonNullable<typeof pre.ctx.serverToolTrace>[number] = {
+					round: serverToolRounds + 1, durationMs: 0, calls: [],
+				};
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
 					{
+						onToolStart: (call) => {
+							previousParentSpan = pre.ctx.lifecycleParentSpanId;
+							activeToolSpan = recordLifecycleEvent(pre.ctx, { type: "tool.started", tool_call_id: call.id, tool_name: call.name });
+							pre.ctx.lifecycleParentSpanId = activeToolSpan;
+						},
+						onToolEnd: (call, result) => {
+							pre.ctx.lifecycleParentSpanId = previousParentSpan;
+							recordLifecycleEvent(pre.ctx, { type: "tool.completed", span_id: activeToolSpan, tool_call_id: call.id, tool_name: call.name, outcome: !result || result.isError ? "error" : "success" });
+							if (call.name && call.name !== "tool_call") {
+								serverToolRound.calls.push({
+									id: call.id, name: call.name, spanId: activeToolSpan,
+									arguments: call.arguments?.slice(0, 4096),
+									...(result ? { output: retainToolOutput(result.content) } : {}),
+									...(!result || result.isError ? { isError: true } : {}),
+								});
+								serverToolRound.durationMs = Math.max(0, Date.now() - roundStartedAt);
+								if (serverToolRound.calls.length === 1) serverToolExecutionTrace.push(serverToolRound);
+								pre.ctx.serverToolTrace = serverToolExecutionTrace;
+							}
+						},
 						executeAdvisor: async (advisorArgs) =>
 							executeAdvisorModel({
 								pre,
@@ -995,11 +1023,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 				serverToolRounds += 1;
-				const serverToolRound: NonNullable<typeof pre.ctx.serverToolTrace>[number] = {
-					round: serverToolRounds,
-					durationMs: Math.max(0, Date.now() - roundStartedAt),
-					calls: [],
-				};
+				serverToolRound.durationMs = Math.max(0, Date.now() - roundStartedAt);
 				serverToolUsage.datetimeRequests += continuation.usage.datetimeRequests ?? 0;
 				const webSearchRequestsBefore = serverToolUsage.webSearchRequests;
 				serverToolUsage.webSearchRequests += continuation.usage.webSearchRequests ?? 0;
@@ -1034,12 +1058,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						...(result.isError ? { isError: true } : {}),
 					};
 					serverToolTrace.push(tracedCall);
-					serverToolRound.calls.push({ ...tracedCall, arguments: tracedCall.arguments?.slice(0, 4096), output: retainToolOutput(tracedCall.output) });
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
-				}
-				if (serverToolRound.calls.length > 0) {
-					serverToolExecutionTrace.push(serverToolRound);
-					pre.ctx.serverToolTrace = serverToolExecutionTrace;
 				}
 				if (continuation.advisorUsage) {
 					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
@@ -1113,7 +1132,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 							result: followUpResult,
 							onEvent: liveSink?.beginRound(),
 						});
+						finishStreamingProvider(pre.ctx);
 					} catch {
+						finishStreamingProvider(pre.ctx, "error");
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
 						return await handleError({
@@ -1247,6 +1268,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 
 		if (protocolResponse) {
 			exec.result.normalized = protocolResponse;
+			recordLifecycleEvent(pre.ctx, { type: "response.ready" });
 		}
 
 		timing.timer.end("execute_total", "execute_start");

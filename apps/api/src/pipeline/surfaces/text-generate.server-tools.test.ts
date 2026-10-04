@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
 import { runTextGeneratePipeline } from "./text-generate";
+import { recordLifecycleEvent } from "../lifecycle";
 
 const detectTextProtocolMock = vi.fn();
 const decodeProtocolMock = vi.fn();
@@ -170,6 +171,38 @@ describe("runTextGeneratePipeline server tools", () => {
 			},
 		}));
 		getResponseCacheMock.mockReturnValue(null);
+	});
+
+	it("retains each tool at its execution boundary and gives repeated call IDs separate spans", async () => {
+		const actual = await vi.importActual<typeof import("./server-tools")>("./server-tools");
+		buildServerToolContinuationMock.mockImplementation(actual.buildServerToolContinuation);
+		let turn = 0;
+		doRequestWithIRMock.mockImplementation(async (ctx: any) => {
+			const span = recordLifecycleEvent(ctx, { type: "provider.started", call_kind: turn === 0 ? "initial" : "continuation" });
+			recordLifecycleEvent(ctx, { type: "provider.completed", span_id: span });
+			const toolTurn = turn++ === 0;
+			return { result: { kind: "completed", upstream: new Response(null, { status: 200 }), bill: { usage: {}, currency: "USD" }, ir: {
+				choices: [{ message: { role: "assistant", content: toolTurn ? [] : [{ type: "text", text: "Final answer" }], ...(toolTurn ? { toolCalls: [
+					{ id: "same-id", name: "gateway_datetime", arguments: '{"timezones":["UTC"]}' },
+					{ id: "same-id", name: "gateway_datetime", arguments: '{"timezones":["Europe/London"]}' },
+				] } : {}) } }],
+			} } };
+		});
+		encodeProtocolMock.mockReturnValue({ choices: [{ message: { content: "Final answer" } }] });
+		finalizeRequestMock.mockResolvedValue(new Response("ok"));
+		const args = createArgs();
+		try {
+			await runTextGeneratePipeline(args);
+			expect(args.pre.ctx.lifecycle.events.map((event: any) => event.type)).toEqual([
+				"provider.started", "provider.completed", "tool.started", "tool.completed", "tool.started", "tool.completed", "provider.started", "provider.completed", "response.ready",
+			]);
+			expect(args.pre.ctx.serverToolTrace[0].calls.map((call: any) => call.spanId)).toEqual(["event-3", "event-5"]);
+			expect(args.pre.ctx.serverToolTrace[0].calls[0].arguments).toContain("UTC");
+			expect(args.pre.ctx.serverToolTrace[0].calls[1].arguments).toContain("Europe/London");
+		} finally {
+			buildServerToolContinuationMock.mockReset();
+			doRequestWithIRMock.mockReset();
+		}
 	});
 
 	it("preserves provider-approved empty successes through final billing", async () => {

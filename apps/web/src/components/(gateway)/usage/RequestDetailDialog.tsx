@@ -60,6 +60,7 @@ import {
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
+import { readLifecycleJournal } from "./OrderedLifecycleEvents";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -1082,9 +1083,26 @@ export default function RequestDetailDialog({
 						  ]
 						: []),
 			  ];
+	const lifecycleJournal = readLifecycleJournal(request.detail_metadata?.lifecycle_events);
+	const firstModelStartMs = lifecycleJournal?.events.find((event) => event.type === "provider.started")?.elapsed_ms ?? 0;
+	const executionTimelineItems = lifecycleJournal?.events
+		.filter((event) => event.type === "provider.started" || event.type === "tool.started")
+		.map((event) => {
+			const completion = lifecycleJournal.events.find((candidate) => candidate.sequence > event.sequence && candidate.span_id === event.span_id && candidate.type === (event.type === "tool.started" ? "tool.completed" : "provider.completed"));
+			const isTool = event.type === "tool.started";
+			const callLabel = t((event.call_kind === "continuation" ? "trace.modelContinuation" : event.call_kind === "nested" ? "trace.nestedModelCall" : event.call_kind === "retry" ? "trace.modelRetry" : "trace.modelCall") as never);
+			return {
+				key: `execution-${event.sequence}`,
+				startMs: (timelineTiming.routingMs ?? 0) + Math.max(0, event.elapsed_ms - firstModelStartMs),
+				label: <span className="min-w-0 break-words">{isTool ? `${t("trace.toolStarted" as never)} · ${event.tool_name ?? ""}` : `${callLabel} · ${event.provider ? providerNames?.get(event.provider) ?? event.provider : ""}`}</span>,
+				duration: completion ? Math.max(0, completion.elapsed_ms - event.elapsed_ms) : null,
+				colorClass: isTool ? "bg-amber-500" : "bg-emerald-500",
+			};
+		});
 	const responseTimelineItems = [
 		{
 			key: "phaseo-routing",
+			...(executionTimelineItems?.length ? { startMs: 0 } : {}),
 			label: (
 				<div className="flex min-w-0 items-center gap-2" title={t("usageGaps.requestPreparation")}>
 					<Logo id="phaseo" alt="" width={14} height={14} className="shrink-0" />
@@ -1094,7 +1112,7 @@ export default function RequestDetailDialog({
 			duration: timelineTiming.routingMs,
 			colorClass: "bg-violet-500",
 		},
-		...providerTimelineItems,
+		...(executionTimelineItems?.length ? executionTimelineItems : providerTimelineItems),
 	];
 	const sessionFilterHref = request.session_id
 		? buildUsageLogsFilterHref({

@@ -7,6 +7,7 @@ import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
 import { isStealthRequest } from "../stealth";
 import type { PipelineContext } from "../before/types";
+import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
@@ -283,6 +284,7 @@ export async function handleFailureAudit(
         pricingCard?: unknown;
     },
 ) {
+	finishStreamingProvider(ctx, "error");
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -403,6 +405,7 @@ export async function handleFailureAudit(
             providerRequest: result.mappedRequest ?? null,
             providerResponse: accountingContext ? result.rawResponse ?? null : errorDetails ?? result.rawResponse ?? null,
             serverToolTrace: ctx.serverToolTrace,
+			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),
@@ -505,6 +508,10 @@ export async function handleSuccessAudit(
     nativeResponseId?: string | null,
     gatewayResponse?: unknown,
 ) {
+	finishStreamingProvider(ctx);
+	if (ctx.lifecycle && !ctx.lifecycle.events.some((event) => event.type === "response.ready")) {
+		recordLifecycleEvent(ctx, { type: "response.ready", status: statusCode });
+	}
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -692,6 +699,7 @@ export async function handleSuccessAudit(
             providerRequest: result.mappedRequest ?? null,
             providerResponse: result.rawResponse ?? null,
             serverToolTrace: ctx.serverToolTrace,
+			lifecycleEvents: retainedLifecycle(ctx),
             detailMetadata: {
                 stage: "execute",
                 response_timeline: buildResponseTimeline(ctx),

@@ -2,6 +2,7 @@ import React from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import { GenerationTraceView } from "./GenerationTraceView";
+import { OrderedLifecycleEvents, readLifecycleJournal } from "./OrderedLifecycleEvents";
 import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 import messages0 from "../../../../messages/en-GB/settings-ui.json";
@@ -33,4 +34,15 @@ test.each(Object.keys(catalogs) as Array<keyof typeof catalogs>)("renders retain
 	expect(completion).not.toContain("Intermediate provider answer");
 	expect(html).toContain("123 ms");
 	expect(html).toContain("Search result");
+	const journal = readLifecycleJournal({ version: 1, events: [
+		{ sequence: 1, type: "provider.started", span_id: "model", call_kind: "initial", elapsed_ms: 0, timestamp_ms: 1000 },
+		{ sequence: 2, type: "provider.response", span_id: "model", elapsed_ms: 1, timestamp_ms: 1001 },
+		{ sequence: 3, type: "provider.completed", span_id: "model", elapsed_ms: 2, timestamp_ms: 1002 },
+		{ sequence: 4, type: "tool.started", span_id: "tool", elapsed_ms: 3, timestamp_ms: 1003 },
+		{ sequence: 5, type: "tool.completed", span_id: "tool", elapsed_ms: 4, timestamp_ms: 1004 },
+		{ sequence: 6, type: "provider.started", span_id: "followup", call_kind: "continuation", elapsed_ms: 5, timestamp_ms: 1005 },
+		{ sequence: 7, type: "provider.started", span_id: "retry", call_kind: "retry", elapsed_ms: 6, timestamp_ms: 1006 },
+		{ sequence: 8, type: "provider.started", span_id: "child", call_kind: "nested", elapsed_ms: 7, timestamp_ms: 1007 },
+	] });
+	expect(() => renderToStaticMarkup(<NextIntlClientProvider locale={locale} timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><OrderedLifecycleEvents journal={journal!} toolResults={new Map()} /></NextIntlClientProvider>)).not.toThrow();
 });
