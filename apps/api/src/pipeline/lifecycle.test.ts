@@ -5,6 +5,12 @@ import { finishStreamingProvider, recordLifecycleEvent, recordProviderResult, re
 const context = () => ({} as PipelineContext);
 
 describe("ordered request lifecycle", () => {
+	it("does not classify local admission failures as executed model calls", () => {
+		const ctx = context();
+		const span = recordLifecycleEvent(ctx, { type: "provider.admission" });
+		recordProviderResult(ctx, { lifecycle_span_id: span, provider: "test", outcome: "blocked" } as ProviderAttemptLog);
+		expect(ctx.lifecycle?.events.map((event) => event.type)).toEqual(["provider.admission", "provider.rejected"]);
+	});
 	it("orders model, tool, and continuation even when every timestamp is identical", () => {
 		const clock = vi.spyOn(Date, "now").mockReturnValue(1000);
 		try {

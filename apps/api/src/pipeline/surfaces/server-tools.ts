@@ -3208,6 +3208,7 @@ export async function buildServerToolContinuation(
 		// Keep usage from tools that finished before cancellation. The caller still
 		// needs to settle those costs, but must not start another tool.
 		if (options?.signal?.aborted) break;
+		const resultStartIndex = toolResults.length;
 		options?.onToolStart?.(call);
 		try {
 		if (!isServerToolCall(call)) {
@@ -3535,7 +3536,7 @@ export async function buildServerToolContinuation(
 			});
 		}
 		} finally {
-			options?.onToolEnd?.(call, toolResults.find((result) => result.toolCallId === call.id));
+			options?.onToolEnd?.(call, toolResults.slice(resultStartIndex).find((result) => result.toolCallId === call.id));
 		}
 	}
 

@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "Arguments",
 		"modelCalls": "Model calls",
+		"providerAdmission": "Provider admission",
+		"providerRejected": "Provider rejected before dispatch",
+		"externalToolOrder": "These tool details come from retained payloads. Their execution order was not recorded by the gateway.",
 		"modelCall": "Model call started",
 		"modelContinuation": "Model continuation started",
 		"modelRetry": "Model retry started",

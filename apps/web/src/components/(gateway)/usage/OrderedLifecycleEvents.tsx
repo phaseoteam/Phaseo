@@ -47,6 +47,8 @@ export function OrderedLifecycleEvents({ journal, toolResults, providerNames }: 
 	const t = useTranslations("SettingsUI");
 	const starts = new Map(journal.events.filter((event) => event.type.endsWith(".started")).map((event) => [event.span_id, event]));
 	const labels = {
+		"provider.admission": t("trace.providerAdmission" as never),
+		"provider.rejected": t("trace.providerRejected" as never),
 		"routing.completed": t("strings.Routing" as never),
 		"provider.started": t("trace.modelCall" as never),
 		"provider.response": t("trace.responseHeaders" as never),
@@ -86,7 +88,7 @@ export function OrderedLifecycleEvents({ journal, toolResults, providerNames }: 
 						<summary className="cursor-pointer text-xs text-muted-foreground">{t("trace.toolResult" as never)}</summary>
 						<div className="mt-2 text-[10px] text-muted-foreground">{t("trace.arguments" as never)}</div>
 						<pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs">{typeof result.arguments === "string" ? result.arguments : JSON.stringify(result.arguments, null, 2)}</pre>
-						<pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs">{typeof result.output === "string" ? result.output : JSON.stringify(result.output, null, 2)}</pre>
+						{result.output == null ? <p className="mt-3 text-xs text-muted-foreground">{t("trace.noExecutionResultWasCapturedWithThisResponse" as never)}</p> : <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs">{typeof result.output === "string" ? result.output : JSON.stringify(result.output, null, 2)}</pre>}
 					</details> : null}
 					{event.type === "tool.completed" && !result ? <p className="ml-12 mt-2 text-xs text-muted-foreground">{t("trace.noExecutionResultWasCapturedWithThisResponse" as never)}</p> : null}
 				</li>;

@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "参数",
 		"modelCalls": "模型调用",
+		"providerAdmission": "提供商准入检查",
+		"providerRejected": "提供商在发送前被拒绝",
+		"externalToolOrder": "这些工具详情来自保留的载荷。网关未记录其执行顺序。",
 		"modelCall": "模型调用开始",
 		"modelContinuation": "模型继续调用开始",
 		"modelRetry": "模型重试开始",

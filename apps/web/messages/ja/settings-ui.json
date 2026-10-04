@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "引数",
 		"modelCalls": "モデル呼び出し",
+		"providerAdmission": "プロバイダーの実行可否確認",
+		"providerRejected": "送信前にプロバイダーを拒否",
+		"externalToolOrder": "これらのツール詳細は保存されたペイロードから取得しています。実行順序はゲートウェイで記録されていません。",
 		"modelCall": "モデル呼び出し開始",
 		"modelContinuation": "モデル継続開始",
 		"modelRetry": "モデル再試行開始",

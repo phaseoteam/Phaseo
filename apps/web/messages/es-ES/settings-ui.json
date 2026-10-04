@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "Argumentos",
 		"modelCalls": "Llamadas al modelo",
+		"providerAdmission": "Admisión del proveedor",
+		"providerRejected": "Proveedor rechazado antes del envío",
+		"externalToolOrder": "Estos detalles de herramientas provienen de los datos retenidos. La puerta de enlace no registró su orden de ejecución.",
 		"modelCall": "Llamada al modelo iniciada",
 		"modelContinuation": "Continuación del modelo iniciada",
 		"modelRetry": "Reintento del modelo iniciado",

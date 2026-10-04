@@ -556,10 +556,12 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const [activeStep, setActiveStep] = React.useState(lifecycleNavigation[0].id);
 	const payload = asRecord(ioLog?.payload);
 	const journal = readLifecycleJournal(payload?.lifecycle_events);
-	const navigation = journal ? lifecycleNavigation.filter((step) => step.id !== "trace-tools") : lifecycleNavigation;
+	const hasJournal = journal !== null;
 	const inputPayload = getInputPayload(payload);
 	const inputMessages = extractInputMessages(inputPayload);
 	const response = chooseResponse(payload);
+	const externalToolDetails = response.toolCalls.length > 0 || response.toolResults.length > 0;
+	const navigation = journal && !externalToolDetails ? lifecycleNavigation.filter((step) => step.id !== "trace-tools") : lifecycleNavigation;
 	const serverToolRounds = extractServerToolTrace(payload?.server_tool_trace);
 	const serverToolCalls = serverToolRounds.flatMap((round) => round.calls);
 	const retainedToolResults = new Map(serverToolCalls.filter((call) => call.spanId).map((call) => [call.spanId!, { output: call.output, arguments: call.arguments }]));
@@ -567,6 +569,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const reportedToolCount = toolUsage.reduce((sum, entry) => sum + entry.count, 0);
 	const visibleToolCallCount = serverToolCalls.length + response.toolCalls.length;
 	const toolActivityCount = Math.max(reportedToolCount, visibleToolCallCount, response.toolResults.length);
+	const toolDetailsCount = journal ? Math.max(response.toolCalls.length, response.toolResults.length) : toolActivityCount;
 	const hasToolDetails = visibleToolCallCount > 0 || response.toolResults.length > 0;
 	const requestId = request.request_id;
 	const rawInput = stringify(inputPayload);
@@ -606,7 +609,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 		}, { root: scrollRoot, rootMargin: "-14% 0px -70% 0px", threshold: 0 });
 		steps.forEach((step) => observer.observe(step));
 		return () => observer.disconnect();
-	}, [requestId]);
+	}, [requestId, hasJournal, externalToolDetails]);
 
 	function jumpToStep(id: string) {
 		traceRootRef.current?.querySelector<HTMLElement>('[data-lifecycle-step="' + id + '"]')
@@ -640,7 +643,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 			</div>
 
 			<nav aria-label={t("trace.requestLifecycle" as never)} className="-mx-3 border-y border-border/70 bg-background px-2 py-2 sm:-mx-4 sm:px-3">
-				<div className={cn("grid gap-1", journal ? "grid-cols-4" : "grid-cols-5")}>
+				<div className={cn("grid gap-1", navigation.length === 4 ? "grid-cols-4" : "grid-cols-5")}>
 					{navigation.map((step) => {
 						const active = activeStep === step.id;
 						const StepIcon = step.icon;
@@ -721,12 +724,13 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						</div> : attempts.length === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">{t("trace.noProviderAttemptDetailsWereRecordedForThisRequest" as never)}</div> : null}
 					</div>
 				</LifecycleStep>
-				<LifecycleStep id="trace-tools" title={t("trace.toolActivity" as never)}
-					summary={toolActivityCount > 0 ? t("trace.toolRequestCount" as never, { count: toolActivityCount } as never) : t("trace.gatewayAndProviderToolCallsWhenPresent" as never)}
-					icon={Wrench} badge={<StatusPill>{toolActivityCount > 0 ? t("trace.callCount" as never, { count: toolActivityCount } as never) : t("trace.noCallsRecorded" as never)}</StatusPill>}>
+				</>}
+				{!journal || externalToolDetails ? <LifecycleStep id="trace-tools" title={t("trace.toolActivity" as never)}
+					summary={journal ? t("trace.externalToolOrder" as never) : toolDetailsCount > 0 ? t("trace.toolRequestCount" as never, { count: toolDetailsCount } as never) : t("trace.gatewayAndProviderToolCallsWhenPresent" as never)}
+					icon={Wrench} badge={<StatusPill>{toolDetailsCount > 0 ? t("trace.callCount" as never, { count: toolDetailsCount } as never) : t("trace.noCallsRecorded" as never)}</StatusPill>}>
 					<div className="space-y-3">
-						{toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label}>{entry.count.toLocaleString()} {t(("trace.tool" + entry.label.replaceAll(" ", "")) as never)}</StatusPill>)}</div> : null}
-						{serverToolRounds.map((round) => (
+						{!journal && toolUsage.length > 0 ? <div className="flex flex-wrap gap-1.5">{toolUsage.map((entry) => <StatusPill key={entry.label}>{entry.count.toLocaleString()} {t(("trace.tool" + entry.label.replaceAll(" ", "")) as never)}</StatusPill>)}</div> : null}
+						{(!journal ? serverToolRounds : []).map((round) => (
 							<div key={round.key} className="border-l-2 border-border pl-3.5">
 								<div className="mb-2 flex flex-wrap items-center justify-between gap-2">
 									<div className="flex items-center gap-2 text-xs font-semibold"><span className="inline-flex size-5 items-center justify-center rounded-sm border border-border/70 bg-background/70 font-mono text-[10px] text-muted-foreground">{round.round}</span>{t("trace.gatewayToolRound" as never)}</div>
@@ -757,9 +761,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						</div> : null}
 						{toolActivityCount === 0 ? <div className="border-l-2 border-border bg-muted/20 px-3 py-2.5 text-xs text-muted-foreground">{t("trace.noToolCallsOrServerToolExecutionsWereRecordedForThisRequest" as never)}</div> : null}
 					</div>
-				</LifecycleStep>
-
-				</>}
+				</LifecycleStep> : null}
 				<LifecycleStep id="trace-response" title={t("strings.Response" as never)}
 					summary={response.text ? t("trace.finalResponseReturnedByTheGateway" as never) : t("trace.noFinalTextResponseWasCaptured" as never)}
 					icon={MessageSquareText} badge={<StatusPill tone={responseTone}>{request.status_code ?? (request.success ? "Complete" : "Error")}</StatusPill>}>

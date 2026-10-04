@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "Arguments",
 		"modelCalls": "Appels au modèle",
+		"providerAdmission": "Admission du fournisseur",
+		"providerRejected": "Fournisseur rejeté avant l’envoi",
+		"externalToolOrder": "Ces détails d’outils proviennent des données conservées. Leur ordre d’exécution n’a pas été enregistré par la passerelle.",
 		"modelCall": "Appel au modèle démarré",
 		"modelContinuation": "Continuation du modèle démarrée",
 		"modelRetry": "Nouvelle tentative démarrée",

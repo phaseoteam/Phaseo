@@ -700,7 +700,7 @@ async function attemptProviderWithIR(
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
 	const callKind = ctx.lifecycleParentSpanId ? "nested" : attemptNumber > 1 ? "retry" : ctx.lifecycle?.events.some((event) => event.type === "provider.started" && !event.parent_span_id) ? "continuation" : "initial";
-	const lifecycleSpanId = recordLifecycleEvent(ctx, { type: "provider.started", provider: candidate.providerId, model: baseModel, attempt_number: attemptNumber, call_kind: callKind });
+	const lifecycleSpanId = recordLifecycleEvent(ctx, { type: "provider.admission", provider: candidate.providerId, model: baseModel, attempt_number: attemptNumber, call_kind: callKind });
 	ctx.lifecycleProviderSpanId = lifecycleSpanId;
     const healthProvider = candidate.privateEndpoint ? routed.health.provider : candidate.providerId;
 	const credentialLog = {
@@ -740,7 +740,7 @@ async function attemptProviderWithIR(
 			}),
 		);
 		if (freeQuotaResponse) {
-			recordLifecycleEvent(ctx, { type: "provider.completed", span_id: lifecycleSpanId, outcome: "quota_rejected", status: freeQuotaResponse.status });
+			recordLifecycleEvent(ctx, { type: "provider.rejected", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, outcome: "quota_rejected", status: freeQuotaResponse.status });
 			return { ok: false, response: freeQuotaResponse };
 		}
 	}
@@ -981,7 +981,9 @@ async function attemptProviderWithIR(
 				: MAX_RETRYABLE_EXECUTOR_RETRIES;
 			for (let retryAttempt = 0; retryAttempt <= maxRetries; retryAttempt += 1) {
 				try {
-					const nextResult = await executor(buildExecutorArgs());
+					const executorArgs = buildExecutorArgs();
+					recordLifecycleEvent(ctx, { type: "provider.started", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, attempt_number: attemptNumber, call_kind: callKind });
+					const nextResult = await executor(executorArgs);
 					const shouldRetryStatus =
 						!("terminal" in nextResult && nextResult.terminal) &&
 						allowSingleProviderRetry &&

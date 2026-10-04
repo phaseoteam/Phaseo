@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "Argumentos",
 		"modelCalls": "Chamadas ao modelo",
+		"providerAdmission": "Admissão do provedor",
+		"providerRejected": "Provedor rejeitado antes do envio",
+		"externalToolOrder": "Estes detalhes de ferramentas vêm dos dados retidos. A ordem de execução não foi registrada pelo gateway.",
 		"modelCall": "Chamada ao modelo iniciada",
 		"modelContinuation": "Continuação do modelo iniciada",
 		"modelRetry": "Nova tentativa do modelo iniciada",

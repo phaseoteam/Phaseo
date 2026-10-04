@@ -34,6 +34,24 @@ test("uses sequence instead of timestamps and interleaves tool execution between
 	expect(view).toContain("Final answer");
 });
 
+test("keeps client-managed tool details alongside the ordered gateway journal", () => {
+	const view = renderToStaticMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" onError={(error) => { throw error; }} messages={{ SettingsUI: messages }}><GenerationTraceView request={{ request_id: "fixture", success: true } as RequestRow} timelineItems={[]} ioLog={{
+		status: "stored", storage_provider: "cloudflare_r2", bytes: 100, retention_until: null, error: null,
+		payload: {
+			lifecycle_events: { version: 1, events: [{ sequence: 1, type: "provider.started", elapsed_ms: 0, timestamp_ms: 1000 }] },
+			gateway_response: { output: [
+				{ type: "function_call", call_id: "client1", name: "lookup_weather", arguments: '{"city":"York"}' },
+				{ type: "function_call_output", call_id: "client1", output: "Sunny result" },
+			] },
+		},
+	}} /></NextIntlClientProvider>);
+	expect(view).toContain('id="trace-tools"');
+	expect(view).toContain("lookup_weather");
+	expect(view).toContain("York");
+	expect(view).toContain("Sunny result");
+	expect(view).toContain("Their execution order was not recorded by the gateway");
+});
+
 test("rejects malformed event metadata and marks partial journals", () => {
 	expect(readLifecycleJournal({ version: 2, events: [] })).toBeNull();
 	const good = { sequence: 1, type: "tool.started", elapsed_ms: 0, timestamp_ms: 1000 };

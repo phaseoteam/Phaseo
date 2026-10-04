@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "आर्ग्युमेंट",
 		"modelCalls": "मॉडल कॉल",
+		"providerAdmission": "प्रदाता अनुमति जाँच",
+		"providerRejected": "भेजने से पहले प्रदाता अस्वीकृत",
+		"externalToolOrder": "ये टूल विवरण सुरक्षित रखे गए डेटा से हैं। गेटवे ने इनका निष्पादन क्रम दर्ज नहीं किया।",
 		"modelCall": "मॉडल कॉल शुरू",
 		"modelContinuation": "मॉडल की अगली कॉल शुरू",
 		"modelRetry": "मॉडल पुनः प्रयास शुरू",

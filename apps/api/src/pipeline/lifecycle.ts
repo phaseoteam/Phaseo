@@ -4,7 +4,7 @@ export type LifecycleEvent = {
 	sequence: number;
 	timestamp_ms: number;
 	elapsed_ms: number;
-	type: "routing.completed" | "provider.started" | "provider.response" | "provider.completed" | "tool.started" | "tool.completed" | "response.ready";
+	type: "routing.completed" | "provider.admission" | "provider.rejected" | "provider.started" | "provider.response" | "provider.completed" | "tool.started" | "tool.completed" | "response.ready";
 	span_id?: string;
 	parent_span_id?: string;
 	provider?: string;
@@ -53,8 +53,9 @@ export function recordLifecycleEvent(ctx: PipelineContext, input: Omit<Lifecycle
 
 export function recordProviderResult(ctx: PipelineContext, entry: ProviderAttemptLog) {
 	if (!entry.lifecycle_span_id) return;
+	const dispatched = ctx.lifecycle?.events.some((event) => event.span_id === entry.lifecycle_span_id && event.type === "provider.started");
 	recordLifecycleEvent(ctx, {
-		type: entry.response_kind === "stream" && entry.outcome === "success" ? "provider.response" : "provider.completed",
+		type: !dispatched ? "provider.rejected" : entry.response_kind === "stream" && entry.outcome === "success" ? "provider.response" : "provider.completed",
 		span_id: entry.lifecycle_span_id,
 		provider: entry.provider, model: entry.model,
 		attempt_number: entry.attempt_number,

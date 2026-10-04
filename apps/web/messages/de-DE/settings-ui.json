@@ -5691,6 +5691,9 @@
 	"trace": {
 		"arguments": "Argumente",
 		"modelCalls": "Modellaufrufe",
+		"providerAdmission": "Anbieterzulassung",
+		"providerRejected": "Anbieter vor dem Versand abgelehnt",
+		"externalToolOrder": "Diese Tooldetails stammen aus gespeicherten Daten. Ihre Ausführungsreihenfolge wurde vom Gateway nicht erfasst.",
 		"modelCall": "Modellaufruf gestartet",
 		"modelContinuation": "Modellfortsetzung gestartet",
 		"modelRetry": "Modellwiederholung gestartet",
