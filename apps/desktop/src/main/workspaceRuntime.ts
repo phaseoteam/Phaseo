@@ -188,10 +188,11 @@ export class WorkspaceRuntime {
 		}
 		if (command.type === "update-account") {
 			const account = this.store.get().accounts.find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
+			if (this.signingInAccounts.has(account.id)) throw new Error("Finish or cancel account sign-in before changing this account.");
 			if (account.harness === "cursor" && command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service.");
 			if (command.endpoint !== undefined || command.apiKey !== undefined) {
 				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
-				if (this.store.get().tasks.some(task => task.accountId === account.id && this.running.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
+				if (this.store.get().tasks.some(task => task.accountId === account.id && this.executions.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
 			}
 			const oldSecret = account.secretId ?? account.id;
 			if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); this.vault.set(account.secretId, command.apiKey); account.configured = true; }

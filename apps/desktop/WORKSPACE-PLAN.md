@@ -215,6 +215,8 @@ Native account sign-in now rejects attempts while that account owns an active ex
 
 Account sign-in now owns a runtime lock until its completion/failure/cancellation cleanup. New instructions for that account remain queued and fail before adapter submission; releasing the lock does not replay them, and explicit Resume submits them once. Duplicate sign-in ownership is rejected and release is idempotent. The orchestration test verifies retained input, no provider call during sign-in and explicit recovery afterward.
 
+Account updates, including archive/name/connection changes, now reject during sign-in ownership. The recovery test verifies rejected updates leave the profile unchanged. Credential/endpoint changes also consult execution ownership so provider setup is covered before the adapter enters the running map.
+
 Evidence: desktop lint/typecheck/build pass; 301 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,

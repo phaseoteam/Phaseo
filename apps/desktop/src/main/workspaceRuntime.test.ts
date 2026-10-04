@@ -14,6 +14,10 @@ describe("workspace orchestration", () => {
 			runtime.store.saveAccount({ id: "owned", name: "Owned", harness: "grok", kind: "native", configured: true, configDirectory: directory });
 			const state = await runtime.command({ type: "create-task", harness: "grok", accountId: "owned", model: "default", mode: "plan" }); const id = state.tasks[0].id;
 			const release = runtime.beginAccountSignIn("owned"); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress");
+			await expect(runtime.command({ type: "update-account", id: "owned", archived: true })).rejects.toThrow("Finish or cancel");
+			await expect(runtime.command({ type: "update-account", id: "owned", name: "Changed during login" })).rejects.toThrow("Finish or cancel");
+			expect(runtime.store.get().accounts.find(account => account.id === "owned")).toMatchObject({ name: "Owned" });
+			expect(runtime.store.get().accounts.find(account => account.id === "owned")?.archived).toBeUndefined();
 			await runtime.command({ type: "send", id, text: "Retain instruction" }); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("failed"));
 			expect(runtime.store.getTask(id)).toMatchObject({ queue: [{ text: "Retain instruction" }], messages: [], error: expect.stringContaining("sign-in") }); expect(run).not.toHaveBeenCalled();
 			release(); const nextRelease = runtime.beginAccountSignIn("owned"); release(); expect(() => runtime.beginAccountSignIn("owned")).toThrow("already in progress"); nextRelease();
