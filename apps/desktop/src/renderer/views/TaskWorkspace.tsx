@@ -30,6 +30,13 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 	const [settingsId, setSettingsId] = useState<string>();
 	const compactionPending = useRef(false);
 	const composerInput = useRef<HTMLTextAreaElement>(null);
+	const focusComposerAfterCommands = useRef(false);
+	useEffect(() => {
+		if (promptCommandsId === undefined && focusComposerAfterCommands.current) {
+			focusComposerAfterCommands.current = false;
+			composerInput.current?.focus();
+		}
+	}, [promptCommandsId]);
 	const [queueText, setQueueText] = useState("");
 	const [drafts, setDrafts] = usePersistedState<Record<string, string>>("phaseo.desktop.messageDrafts", {});
 	const [nativeDrafts, setNativeDrafts] = usePersistedState<Record<string, NativeAction>>("phaseo.desktop.nativeActionDrafts", {});
@@ -130,7 +137,7 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 				if (result.text !== value) throw new Error("The prompt changed before insertion. Reload it.");
 				setText(next);
 				setAttachmentDrafts(current => ({ ...current, [selected.id]: [...current[selected.id] ?? [], ...result.attachments] }));
-				requestAnimationFrame(() => composerInput.current?.focus());
+				focusComposerAfterCommands.current = true;
 			});
 		}
 		const nextAction = action ? { ...action, arguments: [action.arguments, text].filter(Boolean).join("\n\n") } : undefined;
@@ -138,7 +145,7 @@ export function TaskWorkspace({ onContextChange, onOverlayChange, footer }: { on
 		if (next.length > 100000) throw new Error("The draft exceeds the message limit.");
 		setText(next);
 		if (nextAction) setNativeDrafts(current => ({ ...current, [selected.id]: nextAction }));
-		requestAnimationFrame(() => composerInput.current?.focus());
+		focusComposerAfterCommands.current = true;
 	}
 	async function attach() {
 		if (!api || !selected || uploading) return;

@@ -96,6 +96,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --mode=chat
             - name: MCP composer prompt picker
               run: pnpm --filter @phaseo/desktop exec electron scripts/mcp-prompt-picker-smoke.mjs
+            - name: HTTP MCP composer prompt picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/mcp-prompt-picker-smoke.mjs --http
             - name: Reusable chat commands
               run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs
             - name: OpenCode native command and skill picker
@@ -170,6 +172,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --mode=chat --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged MCP composer prompt picker
               run: pnpm --filter @phaseo/desktop exec electron scripts/mcp-prompt-picker-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged HTTP MCP composer prompt picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/mcp-prompt-picker-smoke.mjs --http --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged reusable chat commands
               run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged OpenCode native command and skill picker

@@ -15,15 +15,18 @@ const revision = (request: AgentModelRequest<unknown>) => request.instructions?.
 
 describe("Phaseo project instructions in the actual run loop", () => {
 	it("defers a file effect requested alongside new skill guidance and requires a fresh revision", async () => {
+		const started = performance.now(), stages: { stage: string; ms: number }[] = []; const mark = (stage: string) => stages.push({ stage, ms: Math.round(performance.now() - started) });
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-model-skill-effect-")), global = path.join(root, "instructions"), file = path.join(root, "skills", "review", "SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(file), { recursive: true }); writeFileSync(file, "---\nname: review\ndescription: Review changes\n---\nNew model-selected guidance"); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+		mark("setup");
 		try {
 			const generate = vi.fn().mockImplementationOnce(async (request: AgentModelRequest<unknown>) => ({ message: { role: "assistant", content: "", toolCalls: [{ id: "activate", name: "load_skill", input: { id: "global:review" } }, { id: "old-effect", name: "write_project_file", input: { path: "effect.txt", content: "Owned", expectedHash: "new", instructionRevision: revision(request) } }] } }))
 			.mockImplementationOnce(async (request: AgentModelRequest<unknown>) => { expect(request.instructions).toContain("New model-selected guidance"); expect(() => readFileSync(path.join(root, "effect.txt"))).toThrow(); expect(request.messages).toContainEqual(expect.objectContaining({ role: "tool", toolCallId: "old-effect", isError: true })); return { message: { role: "assistant", content: "", toolCalls: [{ id: "fresh-effect", name: "write_project_file", input: { path: "effect.txt", content: "Owned", expectedHash: "new", instructionRevision: revision(request) } }] } }; }).mockResolvedValueOnce({ message: { role: "assistant", content: "Finished" } });
 			const approval = vi.fn(async () => "accept" as const);
 			await new PhaseoCodingAdapter(() => "unused", store, () => ({ generate }), [], global).run(task, root, "Review and edit", { onDelta: () => {}, onSession: () => {}, onApproval: approval }, account);
+			mark("execution");
 			expect(approval).toHaveBeenCalledTimes(2); expect(approval.mock.calls[0]).toEqual(["Use Phaseo skill review", expect.stringContaining("New model-selected guidance")]); expect(readFileSync(path.join(root, "effect.txt"), "utf8")).toBe("Owned");
-		} finally { store.close(); rmSync(root, { recursive: true, force: true }); }
-	});
+		} finally { store.close(); rmSync(root, { recursive: true, force: true }); mark("cleanup"); if (performance.now() - started > 1000) console.log("PROJECT_INSTRUCTION_INTEGRATION_TIMING", stages); }
+	}, 15000);
 	it.each(["code", "plan"] as const)("discovers and loads two model-selected skills with durable recovery in %s", async mode => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-model-skill-adapter-")), global = path.join(root, "instructions"); mkdirSync(global);
 		const makeSkill = (name: string, body: string) => { const file = path.join(root, "skills", name, "SKILL.md"); mkdirSync(path.dirname(file), { recursive: true }); writeFileSync(file, `---\nname: ${name}\ndescription: ${name} guidance\nuser-invocable: false\n---\n${body}`); return file; };
