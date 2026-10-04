@@ -106,11 +106,11 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 	if (!account) throw new Error("Account no longer exists.");
 	if (account.kind !== "native" || account.archived) throw new Error("Choose an active native account for sign-in.");
 	if (signIns.has(id) || accountChecks.has(id)) throw new Error("Sign-in or an account check is already in progress.");
+	workspaceRuntime.assertAccountIdle(id);
 	const controller = new AbortController(); signIns.set(id, controller);
 	try {
 		if (account.harness === "cursor") {
 			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
-			if (workspaceRuntime.store.get().tasks.some(task => task.accountId === id && (task.status === "running" || task.status === "waiting"))) throw new Error("Stop this account's tasks before signing in again.");
 			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
 			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.get().accounts.find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
 			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); credentialVault.set(newSecret, result.apiKey); current.secretId = newSecret; current.configured = true;

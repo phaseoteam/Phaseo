@@ -7,6 +7,20 @@ import { WorkspaceRuntime } from "./workspaceRuntime";
 import { AgentInputRejectedError } from "./agentAdapter";
 
 describe("workspace orchestration", () => {
+	it("prevents native profile sign-in while that account owns an execution", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-account-execution-"));
+		let finish: (() => void) | undefined;
+		const run = vi.fn(async () => { await new Promise<void>(resolve => { finish = resolve; }); });
+		const runtime = new WorkspaceRuntime(directory, () => ({ run, cancel: async () => { finish?.(); } }));
+		try {
+			runtime.store.saveAccount({ id: "owned", name: "Owned", harness: "grok", kind: "native", configured: true, configDirectory: directory });
+			const state = await runtime.command({ type: "create-task", harness: "grok", accountId: "owned", model: "default", mode: "plan" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(run).toHaveBeenCalledOnce());
+			expect(() => runtime.assertAccountIdle("owned")).toThrow("Stop this account");
+			expect(() => runtime.assertAccountIdle("unrelated")).not.toThrow();
+			await runtime.command({ type: "cancel", id }); await vi.waitFor(() => expect(() => runtime.assertAccountIdle("owned")).not.toThrow());
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("prevents managed MCP changes during Grok execution and releases the guard after cancellation", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-grok-mcp-"));
 		let finish: (() => void) | undefined;

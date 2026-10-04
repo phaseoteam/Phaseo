@@ -211,7 +211,9 @@ Pre-task Grok model discovery now initializes the owned ACP process with file/te
 
 The production Electron model bridge has now been checked against the isolated official Grok 1.0.46 binary: it returns Grok 4.6/4.5 and advertised reasoning choices without login, session or prompt requests. Additional packet tests verify stalled-discovery deadlines and launch-error cleanup.
 
-Evidence: desktop lint/typecheck/build pass; 299 deterministic tests cover protocol,
+Native account sign-in now rejects attempts while that account owns an active execution, including Grok and other native profiles. The check uses runtime execution ownership and releases after cancellation. An orchestration test verifies the affected account is blocked while an unrelated account remains available. Preventing new task starts during an already-active sign-in still needs implementation.
+
+Evidence: desktop lint/typecheck/build pass; 300 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

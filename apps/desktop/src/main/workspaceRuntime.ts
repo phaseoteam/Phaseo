@@ -103,6 +103,9 @@ export class WorkspaceRuntime {
 		try { const project = this.store.addProject(directory); project.name = `${source.name} · ${branch}`; project.worktree = { sourceProjectId: source.id, branch, baseCommit }; this.store.saveProject(project); this.broadcast(); return { workspace: this.store.get(), projectId: project.id }; }
 		catch (error) { throw new Error(`The worktree was created at ${directory}, but project registration failed. Open that folder to recover it.`, { cause: error }); }
 	}
+	assertAccountIdle(accountId: string) {
+		if (this.store.get().tasks.some(task => task.accountId === accountId && this.executions.has(task.id))) throw new Error("Stop this account's tasks before signing in again.");
+	}
 	mcp(command: McpCommand): Workspace {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		const connection = command.connection; const workspace = this.store.get(); const previous = workspace.mcpConnections.find(value => value.id === connection.id);
