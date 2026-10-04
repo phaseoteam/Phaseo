@@ -17,6 +17,7 @@ seed.exec("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const codeExample = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
 const fence = String.fromCharCode(96).repeat(3);
 codeExample.messages[1].text += `\n\n${fence}ts\nconst greeting = "Hello, 世界";\n  console.log(greeting);\n${fence}`;
+codeExample.activities = [{ id: "design-result", type: "tool", title: "Inspect project files", status: "completed", text: "  Résumé result\n<untrusted> remains text\n" + "Long result line\n".repeat(30) }];
 seed.prepare("UPDATE tasks SET data = ? WHERE id = ?").run(JSON.stringify(codeExample), "design-example");
 seed.prepare("INSERT INTO agents VALUES (?, ?)").run("design-agent", JSON.stringify({ id: "design-agent", name: "Design fixture", executable: process.execPath, arguments: [path.resolve("scripts/fixtures/grok-interaction.cjs")] }));
 const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
@@ -159,6 +160,33 @@ try {
           if(queueLayout.height>181 || !queueLayout.scrollable || !queueLayout.lastReachable || !queueLayout.composerVisible || !queueLayout.editorFits || queueLayout.transcriptHeight<50)throw new Error("Queued messages must preserve usable conversation and composer space: "+JSON.stringify(queueLayout));
           await window.webContents.executeJavaScript(`document.querySelector('.task-queue-items').scrollTop=0`);
           writeFileSync(path.join(output, `${width}-${theme}-queued-messages.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`document.querySelector('.task-activity summary').click();document.querySelector('.task-activity').scrollIntoView({block:'nearest'});Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCopiedResult=text;}}});document.querySelector('button[aria-label="Copy result"]').click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          const activityCopy=await window.webContents.executeJavaScript(`(()=>{const activity=document.querySelector('.task-activity'),pre=activity.querySelector('pre');return {copied:window.auditCopiedResult===pre.textContent&&Boolean(activity.querySelector('button[aria-label="Result copied"]')),inert:!pre.querySelector('untrusted'),scrollable:pre.scrollHeight>pre.clientHeight,padding:getComputedStyle(pre).padding}})()`);
+          if(!activityCopy.copied || !activityCopy.inert || !activityCopy.scrollable || activityCopy.padding!=="16px")throw new Error("Tool result copying or layout is inconsistent.");
+          await window.webContents.executeJavaScript(`navigator.clipboard.writeText=async()=>{throw new Error('Owned result copy failure');};document.querySelector('button[aria-label="Result copied"]').click()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`document.querySelector('.activity-result .message-code-actions span').textContent==='Copy failed'`))throw new Error("Tool result copy failure feedback is missing.");
+          writeFileSync(path.join(output, `${width}-${theme}-tool-result.png`), (await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`navigator.clipboard.writeText=()=>new Promise(resolve=>{window.auditResolveResultCopy=resolve;});document.querySelector('button[aria-label="Copy result"]').click()`);
+          const resultDb=new DatabaseSync(path.join(data,"workspace/workspace.sqlite"));
+          const updatedTask=JSON.parse(resultDb.prepare("SELECT data FROM tasks WHERE id=?").get("design-queue").data);
+          const originalResult=updatedTask.activities[0].text;
+          updatedTask.activities[0].text="Changed while copying";
+          resultDb.prepare("UPDATE tasks SET data=? WHERE id=?").run(JSON.stringify(updatedTask),"design-queue");resultDb.close();
+          await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.command({type:'update-task',id:'design-queue',title:'Review queued messages'}).then(()=>true)`);
+          for(let attempt=0;;attempt++){
+            if(await window.webContents.executeJavaScript(`document.querySelector('.task-activity pre')?.textContent==='Changed while copying'`))break;
+            if(attempt>50)throw new Error("Changed tool result did not render.");
+            await new Promise(resolve=>setTimeout(resolve,100));
+          }
+          await window.webContents.executeJavaScript(`window.auditResolveResultCopy()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`!document.querySelector('button[aria-label="Result copied"]')&&!document.querySelector('button[aria-label="Copy result"]').disabled`))throw new Error("A stale clipboard completion confirmed changed content.");
+          const restoreDb=new DatabaseSync(path.join(data,"workspace/workspace.sqlite"));
+          const restoreTask=JSON.parse(restoreDb.prepare("SELECT data FROM tasks WHERE id=?").get("design-queue").data);restoreTask.activities[0].text=originalResult;
+          restoreDb.prepare("UPDATE tasks SET data=? WHERE id=?").run(JSON.stringify(restoreTask),"design-queue");restoreDb.close();
+          await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.command({type:'update-task',id:'design-queue',title:'Review queued messages'}).then(()=>true)`);
         }
       }
       await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(b=>b.textContent==='Platform').click()`);

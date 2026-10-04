@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Paperclip } from "lucide-react";
 import type { Task } from "../../shared/workspace";
+import { ActivityResult } from "./ActivityResult";
 import { MessageContent } from "./MessageContent";
 
 const pageSize = 50;
@@ -32,7 +33,7 @@ export function ConversationHistory({ task, onAttachment, children }: { task: Ta
 		{messageStart > 0 && <div className="conversation-history-controls"><button type="button" onClick={() => { rememberPosition(); setFirstMessage(task.messages[Math.max(0, messageStart - pageSize)].id); }}>Load older messages</button><small>{messageStart} earlier messages</small></div>}
 		{task.messages.length ? task.messages.slice(messageStart).map(message => <article className={`task-message task-message-${message.role}`} key={message.id}><small>{message.role === "user" ? "You" : message.role === "assistant" ? task.harness : message.role}</small>{message.role === "assistant" ? <MessageContent text={message.text} /> : <div>{message.text}</div>}{message.attachments?.map(attachment => <button type="button" className="attachment-chip" key={attachment.id} onClick={() => onAttachment(attachment.id)}><Paperclip size={12} />{attachment.name}</button>)}</article>) : <p className="task-muted">Send a message to start.</p>}
 		{activityStart > 0 && <div className="conversation-history-controls"><button type="button" onClick={() => { rememberPosition(); setFirstActivity(task.activities![Math.max(0, activityStart - pageSize)].id); }}>Load older activities</button><small>{activityStart} earlier activities</small></div>}
-		{task.activities?.slice(activityStart).map(activity => <details className="task-activity" key={activity.id}><summary>{activity.title}{activity.status ? ` · ${activity.status}` : ""}</summary><pre>{activity.text}</pre></details>)}
+		{task.activities?.slice(activityStart).map(activity => <ActivityResult key={activity.id} activity={activity} />)}
 		{children}
 	</div></div>{showLatest && <button type="button" className="conversation-latest" onClick={jumpToLatest}><ArrowDown size={14} />Jump to latest</button>}</div>;
 }
