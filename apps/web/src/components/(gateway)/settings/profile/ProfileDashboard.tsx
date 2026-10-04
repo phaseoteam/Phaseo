@@ -9,7 +9,7 @@ import { toast } from "sonner"
 
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types"
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount"
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider"
+import { useDisplayFormatters, useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider"
 import { buildProfileShareCardPayload } from "@/lib/profileShare"
 import { getModelDetailsHref } from "@/lib/models/modelHref"
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient"
@@ -137,10 +137,13 @@ function getProviderFromModelId(id: string): string {
 	return provider || "phaseo"
 }
 
-function useProfileFormatters(locale: string) {
+function useProfileFormatters() {
 	const format = useDisplayFormatters()
+	const { formattingPreferences } = useDisplayPreferences()
+	const locale = formattingPreferences.locale
 	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
 	return {
+		formatTokenAxisTick: (value: number) => formatCompactAxisTick(value, locale),
 		formatShortDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatLongDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatWeekday: (date: string) => format.dateParts(calendarValue(date), {
@@ -231,7 +234,7 @@ function ActivityHeatmap({
 	metric: Metric
 	labels: ProfileMessages
 }) {
-	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters(locale)
+	const { formatLongDate, formatMetricValue, formatMonth, formatWeekday } = useProfileFormatters()
 	const days = profile.heatmapDays
 	const activeDays = days.filter((day) => day.inTrailingWindow && !day.isFuture)
 	const values = activeDays.map((day) => getMetricValue(day, metric))
@@ -459,7 +462,7 @@ export default function ProfileDashboard({
 	actions,
 }: Props) {
 	const rangeLabels = useMemo<Record<TimeRange, string>>(() => ({ today: labels.periodToday, "7d": labels.period7d, "30d": labels.period30d, "1y": labels.period1y, all: labels.periodAll }), [labels])
-	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters(locale)
+	const { formatLongDate, formatMetricValue, formatShortDate, formatTokenAxisTick } = useProfileFormatters()
 	const router = useRouter()
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -699,7 +702,7 @@ export default function ProfileDashboard({
 									tickLine={false}
 									axisLine={false}
 									width={52}
-									tickFormatter={(value) => metric === "tokens" ? formatCompactAxisTick(Number(value), locale) : formatMetricValue(metric, Number(value))}
+									tickFormatter={(value) => metric === "tokens" ? formatTokenAxisTick(Number(value)) : formatMetricValue(metric, Number(value))}
 								/>
 								<ChartTooltip
 									cursor={{ fill: "rgba(24,24,27,0.06)" }}
