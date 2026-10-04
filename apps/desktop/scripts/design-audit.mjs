@@ -73,6 +73,8 @@ try {
           await window.webContents.executeJavaScript(`Array.from(document.querySelector('form[aria-label="Edit account"]').querySelectorAll('button')).find(button=>button.textContent==='Cancel').click()`);
         }
         if (page === "Tasks") {
+          const actionLayout = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('.task-start .task-controls'),buttons=row?.querySelectorAll('button');return {gap:row&&getComputedStyle(row).gap,wrap:row&&getComputedStyle(row).flexWrap,count:buttons?.length}})()`);
+          if (actionLayout.gap !== "8px" || actionLayout.wrap !== "wrap" || actionLayout.count !== 2) throw new Error("New-task actions need separate, wrapping controls.");
           await window.webContents.executeJavaScript(`document.querySelector('.task-row').click()`);
           await new Promise(resolve => setTimeout(resolve, 200));
           const messageLayout = await window.webContents.executeJavaScript(`(()=>{const message=document.querySelector('.message-markdown'),heading=message?.querySelector('h2'),paragraph=heading?.nextElementSibling;return {whiteSpace:message&&getComputedStyle(message).whiteSpace,headingGap:heading&&paragraph?paragraph.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null}})()`);
