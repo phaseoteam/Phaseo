@@ -18,7 +18,7 @@ export type Attachment = { id: string; taskId: string; name: string; kind: "text
 export type Message = { id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
 export type QueuedMessage = { id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
-export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string };
+export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string };
 export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
 export type Task = {
 	conversationCounts?: { messages: number; activities: number };

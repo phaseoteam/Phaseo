@@ -2,7 +2,7 @@ import { Check, Circle, CircleDot, CircleSlash, Copy } from "lucide-react";
 import type { AgentActivity } from "../../shared/workspace";
 import { useTextCopy } from "./useTextCopy";
 
-const labels = { tool: "Tool result", reasoning: "Reasoning", plan: "Plan", usage: "Usage" };
+const labels = { tool: "Tool result", reasoning: "Reasoning", plan: "Plan", usage: "Usage", compaction: "Compaction summary" };
 export function ActivityResult({ activity }: { activity: AgentActivity }) {
 	const { status, copying, copy } = useTextCopy(activity.text);
 	const steps = activity.type === "plan" ? activity.steps : undefined;

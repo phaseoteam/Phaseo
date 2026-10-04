@@ -52,6 +52,17 @@ async function auditActiveTaskActions(window,output,width,theme){
  activeTaskFixture=undefined;window.webContents.send('workspace:overview-changed',overview);
  for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-toolbar small')?.textContent.endsWith(${JSON.stringify(source.status)})`);attempt++){if(attempt>50)throw new Error('Task fixture did not restore');await new Promise(resolve=>setTimeout(resolve,20));}
 }
+async function auditNativeCompaction(window,output,width,theme,nativeSummary){
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review native compaction')).click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-title')?.value==='Review native compaction'&&document.querySelector('.task-activity summary')?.textContent==='Context compaction · completed'`);attempt++){if(attempt>50)throw new Error('Native compaction summary did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`(()=>{const result=document.querySelector('.task-activity');result.open=true;result.scrollIntoView({block:'start'});Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.auditCompactionCopy=text}}});result.querySelector('button').click()})()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`window.auditCompactionCopy===${JSON.stringify(nativeSummary)}&&document.querySelector('.task-activity pre')?.textContent===${JSON.stringify(nativeSummary)}&&!document.querySelector('.task-activity untrusted')&&Boolean(document.querySelector('.task-activity button[aria-label="Result copied"]'))`);attempt++){if(attempt>50)throw new Error('Compaction summary text or copy changed');await new Promise(resolve=>setTimeout(resolve,20));}
+ await openTaskActions(window);
+ if(!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).some(item=>item.textContent==='Compact context'&&!item.hasAttribute('data-disabled'))`))throw new Error('Initialized OpenCode compact action missing');
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
+ await new Promise(resolve=>setTimeout(resolve,100));await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+ writeFileSync(path.join(output,`${width}-${theme}-native-compaction.png`),(await window.webContents.capturePage()).toPNG());
+}
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
 app.setPath("userData", data);
 mkdirSync(path.join(data, "workspace"));
@@ -59,6 +70,7 @@ const seed = new DatabaseSync(path.join(data, "workspace/workspace.sqlite"));
 seed.exec("CREATE TABLE tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const now = new Date().toISOString();
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-example", JSON.stringify({ id: "design-example", title: "Plan the product launch", harness: "phaseo", model: "default", mode: "chat", status: "completed", pinned: true, archived: false, queue: [], createdAt: now, updatedAt: now, messages: [{ id: "u", role: "user", text: "Help me plan the launch of our desktop workspace.", createdAt: now }, { id: "a", role: "assistant", text: "## Launch priorities\n\nStart with a clear promise: one workspace for your accounts, models, and everyday work.\n\n1. Validate the core task workflow with a small group.\n2. Prepare examples for research, writing, and coding.\n3. Gather feedback before expanding access.\n\nWe can turn these priorities into a weekly plan next.", createdAt: now }] }));
+const nativeSummary="  Native summary\n<untrusted> remains literal 世界\n"+"Keep the original conversation in local history.\n".repeat(30);
 seed.exec("CREATE TABLE agents (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 const codeExample = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
 const previewText='const greeting = "Hello, 世界";\n'+"// Attachment line with preserved indentation\n".repeat(80);
@@ -77,6 +89,7 @@ const progressText=JSON.stringify(progressSteps,null,2);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-progress",JSON.stringify({...codeExample,id:"design-progress",title:"Review task progress",pinned:false,activities:[{id:"progress",type:"plan",title:"Plan",explanation:"Inspect the current flow, implement the change, and verify the result.",text:progressText,steps:progressSteps}]}));
 
 seed.prepare("INSERT INTO agents VALUES (?, ?)").run("design-agent", JSON.stringify({ id: "design-agent", name: "Design fixture", executable: process.execPath, arguments: [path.resolve("scripts/fixtures/grok-interaction.cjs")] }));
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-compaction",JSON.stringify({...codeExample,id:"design-compaction",title:"Review native compaction",harness:"opencode",mode:"chat",pinned:false,nativeSessionId:"owned-native-session",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-compaction",type:"compaction",title:"Context compaction",status:"completed",text:nativeSummary}]}));
 const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
@@ -147,9 +160,14 @@ const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
-let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0;
+let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0;
 ipcMain.removeHandler("workspace:command");
 ipcMain.handle("workspace:command",async(event,command)=>{
+  if(command.id==="design-compaction"&&command.type==="send"){
+    if(command.text!=="/compact"||command.attachments?.length)throw new Error("Invalid native compaction delivery");
+    compactCalls++;if(holdCompact)await new Promise((resolve,reject)=>{pendingCompact={resolve,reject};});
+    return originalOverview(event);
+  }
   if(holdCreation && ["create-task","handoff"].includes(command.type)){creationCalls++;await new Promise((resolve,reject)=>{pendingCreation={resolve,reject};});}
   if(command.id==="design-requests" && ["approval","answer"].includes(command.type)){requestCalls++;await new Promise((resolve,reject)=>{pendingRequest=reject;});}
   if(command.type==="fork"||command.type==="handoff"||(command.type==="update-task"&&command.archived!==undefined))taskActionCalls++;
@@ -384,6 +402,7 @@ try {
           if(!await window.webContents.executeJavaScript(`(()=>{const list=document.querySelector('.plan-steps'),step=list.querySelector('[data-status="cancelled"]');list.scrollTop=step.offsetTop-list.offsetTop;const r=step.getBoundingClientRect(),pane=list.getBoundingClientRect();return r.top>=pane.top&&r.bottom<=pane.bottom})()`))throw new Error("Cancelled progress step is not reachable in the checklist.");
           await new Promise(resolve=>setTimeout(resolve,100));
           writeFileSync(path.join(output,`${width}-${theme}-task-progress.png`),(await window.webContents.capturePage()).toPNG());
+          await auditNativeCompaction(window,output,width,theme,nativeSummary);
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
           await new Promise(resolve => setTimeout(resolve, 100));
           await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
@@ -630,6 +649,24 @@ try {
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))`);attempt++){if(attempt>50)throw Error('Handoff did not open');await new Promise(resolve=>setTimeout(resolve,20));}
   if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.length)`)!==beforeCreation.length+2)throw Error('Handoff must persist exactly one new task');
   if(!await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(async state=>{const task=state.tasks.find(value=>! ${JSON.stringify(afterCreation)}.includes(value.id));return (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort==='fixture-low'})`))throw Error("Handoff effort did not persist");
+async function auditCompactDelivery(){
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review native compaction')).click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-title')?.value==='Review native compaction'`);attempt++){if(attempt>50)throw new Error('Compaction delivery fixture did not open');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`(()=>{const input=document.querySelector('.task-composer textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Keep this draft 世界');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+ holdCompact=true;await openTaskActions(window);
+ await window.webContents.executeJavaScript(`(()=>{const item=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context');item.click();item.click()})()`);
+ for(let attempt=0;!pendingCompact;attempt++){if(attempt>50)throw new Error('Compaction delivery did not reach owned fixture');await new Promise(resolve=>setTimeout(resolve,20));}
+ await openTaskActions(window);
+ if(compactCalls!==1||!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).filter(item=>item.textContent!=='Pin task').every(item=>item.hasAttribute('data-disabled'))&&document.querySelector('button[aria-label="Task settings"]').disabled&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`))throw new Error('Compaction delivery was duplicated or controls/draft changed');
+ writeFileSync(path.join(output,'1040-dark-compaction-delivery-pending.png'),(await window.webContents.capturePage()).toPNG());
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
+ holdCompact=false;pendingCompact.reject(new Error('Owned compaction delivery failure'));pendingCompact=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('[role="alert"]')).some(item=>item.textContent==='Owned compaction delivery failure')&&!document.querySelector('button[aria-label="Task settings"]').disabled`);attempt++){if(attempt>50)throw new Error('Compaction failure recovery did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,'1040-dark-compaction-delivery-failure.png'),(await window.webContents.capturePage()).toPNG());
+ await openTaskActions(window);await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context').click()`);
+ for(let attempt=0;compactCalls!==2||!await window.webContents.executeJavaScript(`!document.querySelector('[role="alert"]')&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`);attempt++){if(attempt>50)throw new Error('Compaction retry did not preserve draft or clear error');await new Promise(resolve=>setTimeout(resolve,20));}
+}
+  await auditCompactDelivery();
   console.log("DESIGN_AUDIT", output);
 } catch (error) { console.error(error); app.exit(1); } finally { app.quit(); }
 });

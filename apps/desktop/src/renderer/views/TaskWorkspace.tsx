@@ -23,6 +23,7 @@ export function TaskWorkspace() {
 	const [showArchived, setShowArchived] = useState(false);
 	const [editingQueue, setEditingQueue] = useState<string>();
 	const [settingsId, setSettingsId] = useState<string>();
+	const compactionPending = useRef(false);
 	const [queueText, setQueueText] = useState("");
 	const [drafts, setDrafts] = usePersistedState<Record<string, string>>("phaseo.desktop.messageDrafts", {});
 	const text = selectedId ? drafts[selectedId] ?? "" : "";
@@ -79,6 +80,12 @@ export function TaskWorkspace() {
 			if (["approval", "answer", "form-answer"].includes(value.type)) throw new Error(message, { cause: reason });
 			setError(message);
 		}
+	}
+	async function compact() {
+		if (compactionPending.current || busy || !selected || selected.harness !== "opencode" || !selected.nativeSessionId || selected.archived || selected.status === "running" || selected.status === "waiting") return;
+		compactionPending.current = true; setBusy(true);
+		try { await command({ type: "send", id: selected.id, text: "/compact" }); }
+		finally { compactionPending.current = false; setBusy(false); }
 	}
 	async function create() {
 		if (setupPending.current || busy) return;
@@ -146,12 +153,13 @@ export function TaskWorkspace() {
 			</div> : <>
 				<header className="task-toolbar"><div><input className="task-title" aria-label="Task title" key={selected.id + selected.title} defaultValue={selected.title} maxLength={200} onBlur={event => { const title = event.target.value.trim(); if (title && title !== selected.title) void command({ type: "update-task", id: selected.id, title }); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} /><small>{selected.harness} · {selected.mode} · {selected.status}</small></div>
 					<TaskActions key={selected.id} task={selected} busy={busy}
+						onCompact={() => void compact()}
 						onArchive={() => { void command({ type: "update-task", id: selected.id, archived: !selected.archived }).then(state => { if (state) setSelectedId(undefined); }); }}
 						onPin={() => void command({ type: "update-task", id: selected.id, pinned: !selected.pinned })}
 						onFork={() => { void command({ type: "fork", id: selected.id }).then(state => { if (state) setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); }); }}
 						onHandoff={() => { setHandoffId(selected.id); setProjectId(workspace.projects.some(project => project.id === selected.projectId && !project.worktree?.removedAt) ? selected.projectId! : ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setReasoningEffort(""); setSelectedId(undefined); }}
 						onExport={format => { if (!api) return; setBusy(true); setError(""); void api.exportTask(selected.id, format).catch(reason => setError(String(reason))).finally(() => setBusy(false)); }} />
-				<button type="button" aria-label="Task settings" title="Task settings" aria-expanded={settingsId === selected.id} disabled={selected.archived || selected.status === "running" || selected.status === "waiting"} onClick={() => setSettingsId(value => value === selected.id ? undefined : selected.id)}><Settings2 size={16} /></button>
+				<button type="button" aria-label="Task settings" title="Task settings" aria-expanded={settingsId === selected.id} disabled={busy || selected.archived || selected.status === "running" || selected.status === "waiting"} onClick={() => setSettingsId(value => value === selected.id ? undefined : selected.id)}><Settings2 size={16} /></button>
 				</header>
 				{settingsId === selected.id && !selected.archived && selected.status !== "running" && selected.status !== "waiting" && <TaskSettings key={selected.id} task={selected} close={() => setSettingsId(undefined)} save={async (model, mode, reasoningEffort, nativeMode) => Boolean(await command({ type: "update-task", id: selected.id, model, mode, ...(["codex", "acp", "grok"].includes(selected.harness) ? { reasoningEffort } : {}), ...(selected.harness === "acp" ? { nativeMode } : {}) }))} />}
 				<ConversationHistory key={`history:${selected.id}`} task={selected} onAttachment={id => setAttachmentPreview({ taskId: selected.id, id })}>

@@ -78,6 +78,8 @@ export class OpenCodeAdapter implements AgentAdapter {
 		const turn = new Promise<void>((resolve, reject) => { resolveTurn = resolve; rejectTurn = reject; });
 		void turn.catch(() => {});
 		let prompted = false;
+		let compaction: { id: string; title: string } | undefined;
+		const compactionEvents = new Set<string>();
 		let completion: Promise<void> | undefined;
 		const settle = async () => {
 			while (!this.controller.signal.aborted) {
@@ -97,6 +99,19 @@ export class OpenCodeAdapter implements AgentAdapter {
 					}
 					if ((event.type === "form.replied" || event.type === "form.cancelled") && event.data.sessionID === session.id) { seenForms.add(event.data.id); forms.get(event.data.id)?.abort(); continue; }
 					if (!("data" in event) || !("sessionID" in event.data) || event.data.sessionID !== session.id) continue;
+					if (event.type === "session.compaction.started" || event.type === "session.compaction.ended" || event.type === "session.compaction.failed") {
+						if (compactionEvents.has(event.id)) continue;
+						compactionEvents.add(event.id);
+						const activity = event.type !== "session.compaction.started" && compaction ? compaction : { id: `compaction:${event.id}`, title: event.data.reason === "auto" ? "Automatic context compaction" : "Context compaction" };
+						if (event.type === "session.compaction.started") {
+							if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "Another native compaction started without confirming this one's completion.", status: "failed" });
+							compaction = activity;
+							callbacks.onActivity?.({ ...activity, type: "compaction", text: "", status: "running" });
+						} else {
+							callbacks.onActivity?.({ ...activity, type: "compaction", text: event.type === "session.compaction.ended" ? event.data.text : JSON.stringify(event.data.error, null, 2), status: event.type === "session.compaction.ended" ? "completed" : "failed" });
+							compaction = undefined;
+						}
+					}
 					if (event.type === "session.text.delta") callbacks.onDelta(event.data.assistantMessageID, event.data.delta);
 					if (event.type === "session.reasoning.delta") callbacks.onActivity?.({ id: `${event.data.assistantMessageID}:reasoning:${event.data.ordinal}`, type: "reasoning", title: "Reasoning", text: event.data.delta, append: true });
 					if (event.type === "session.tool.input.started") callbacks.onActivity?.({ id: event.data.id, type: "tool", title: event.data.name, text: "", status: "running" });
@@ -128,9 +143,13 @@ export class OpenCodeAdapter implements AgentAdapter {
 			}
 			prompted = true;
 			this.acceptingInput = true;
-			await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, requestOptions);
+			if (!attachments.length && text.trim() === "/compact") await client.session.compact({ sessionID: session.id }, requestOptions);
+			else await client.session.prompt({ sessionID: session.id, text: attachmentPrompt(text, attachments), files: attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ uri: pathToFileURL(attachment.filePath).href, name: attachment.name })) }, requestOptions);
 			await turn;
-		} finally { this.acceptingInput = false; clearTimeout(timeout); this.controller.abort(); await events; }
+		} finally {
+			this.acceptingInput = false; clearTimeout(timeout); this.controller.abort(); await events;
+			if (compaction) callbacks.onActivity?.({ ...compaction, type: "compaction", title: "Compaction completion unconfirmed", text: "The native stream ended without confirming compaction completion.", status: "failed" });
+		}
 	}
 	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
 		if (!this.acceptingInput || this.controller.signal.aborted || !this.client || !this.sessionId) throw new AgentInputRejectedError("OpenCode is not ready for steering. Queue this message instead.");
