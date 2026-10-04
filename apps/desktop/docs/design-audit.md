@@ -223,6 +223,12 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Projects empty state](screenshots/projects-empty-small-window.png)
 
+68. **Project and Git cards:** file browsing, changed-file lists and hunk review use the website’s 24-pixel card radius and 20-pixel inset. Branch controls and the commit field are grouped into separate cards, and the commit field has a persistent label. Source and archive audits verify the revised navigation inset and editor fit without changing code-block padding or Git operations.
+
+![Project browser](screenshots/project-browser-small-window.png)
+
+![Git review cards](screenshots/git-review-cards-small-window.png)
+
 ## Reproduce and limits
 
 Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers twelve pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 268 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.

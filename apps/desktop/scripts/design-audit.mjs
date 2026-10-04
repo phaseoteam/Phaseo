@@ -478,10 +478,10 @@ try {
           await new Promise(resolve=>setTimeout(resolve,100));
           if(!await window.webContents.executeJavaScript(`window.auditCopiedProject===${JSON.stringify(projectText)}`))throw new Error("File preview copying changed source formatting.");
           const previewSpacing=await window.webContents.executeJavaScript(`(()=>{const pre=document.querySelector('.project-browser pre'),toolbar=document.querySelector('.project-browser > section > .project-toolbar'),aside=document.querySelector('.project-browser > aside');return {padding:getComputedStyle(pre).padding,font:getComputedStyle(pre).fontSize,radius:getComputedStyle(pre).borderRadius,aside:getComputedStyle(aside).padding,alignment:getComputedStyle(toolbar).justifyContent,fits:document.querySelector('.project-browser').getBoundingClientRect().bottom<=innerHeight-24}})()`);
-          if(previewSpacing.padding!=="16px"||previewSpacing.font!=="13px"||previewSpacing.radius!=="0px"||previewSpacing.aside!=="16px"||previewSpacing.alignment!=="space-between"||!previewSpacing.fits)throw new Error("Project preview does not use consistent code and navigation spacing.");
+          if(previewSpacing.padding!=="16px"||previewSpacing.font!=="13px"||previewSpacing.radius!=="0px"||previewSpacing.aside!=="20px"||previewSpacing.alignment!=="space-between"||!previewSpacing.fits)throw new Error("Project preview does not use consistent code and navigation spacing.");
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-preview-actions button')).find(button=>button.textContent==='Edit').click()`);
           await new Promise(resolve=>setTimeout(resolve,50));
-          if(!await window.webContents.executeJavaScript(`(()=>{const editor=document.querySelector('.project-editor'),pane=document.querySelector('.project-browser > section');return editor.getBoundingClientRect().bottom<=pane.getBoundingClientRect().bottom-23&&editor.clientHeight>=100})()`))throw new Error("File editing does not fit its project pane.");
+          if(!await window.webContents.executeJavaScript(`(()=>{const editor=document.querySelector('.project-editor'),pane=document.querySelector('.project-browser > section');return editor.getBoundingClientRect().bottom<=pane.getBoundingClientRect().bottom-19&&editor.clientHeight>=100})()`))throw new Error("File editing does not fit its project pane.");
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.project-browser > section button')).find(button=>button.textContent==='Discard').click()`);
           await new Promise(resolve=>setTimeout(resolve,50));
           editorCalls=[];
@@ -515,8 +515,8 @@ try {
           }
           await window.webContents.executeJavaScript(`document.querySelector('.project-review button[aria-label="Copy code"]').click()`);
           await new Promise(resolve=>setTimeout(resolve,100));
-          const reviewLayout=await window.webContents.executeJavaScript(`(async()=>{const row=document.querySelector('.git-file-list .project-toolbar'),id=document.querySelector('select[aria-label="Project"]').value;return {padding:getComputedStyle(row).padding,copy:window.auditCopiedProject===(await window.phaseoDesktop.workspace.gitReview(id)).diff,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
-          if(reviewLayout.padding!=="16px 24px"||!reviewLayout.copy||!reviewLayout.stage)throw new Error("Git review row spacing or copying is inconsistent.");
+          const reviewLayout=await window.webContents.executeJavaScript(`(async()=>{const row=document.querySelector('.git-file-list .project-toolbar'),id=document.querySelector('select[aria-label="Project"]').value;return {padding:getComputedStyle(row).padding,branchInset:getComputedStyle(document.querySelector(".project-git-controls > .task-muted")).padding,copy:window.auditCopiedProject===(await window.phaseoDesktop.workspace.gitReview(id)).diff,stage:Array.from(row.querySelectorAll('button')).some(button=>button.textContent==='Stage')}})()`);
+          if(reviewLayout.padding!=="20px"||reviewLayout.branchInset!=="0px"||!reviewLayout.copy||!reviewLayout.stage)throw new Error("Git review row spacing or copying is inconsistent.");
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.git-file-list button')).find(button=>button.textContent==='Open file').click()`);
           await new Promise(resolve=>setTimeout(resolve,50));
           if(editorCalls.at(-1).filename!=="example.ts"||editorCalls.at(-1).editor!=="cursor")throw new Error("Git file editor action sent an incorrect target.");

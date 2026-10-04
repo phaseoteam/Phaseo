@@ -79,7 +79,7 @@ app.whenReady().then(async () => {
 				await run(`(()=>{const theme=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==theme)document.querySelector('[aria-label="Use '+theme+' theme"]').click();document.querySelector('.git-hunk-panel').scrollIntoView({block:'start'})})()`);
 				await new Promise(resolve => setTimeout(resolve, 150));
 				const layout = await run(`(()=>{const panel=document.querySelector('.git-hunk-panel'),style=getComputedStyle(panel);return {padding:style.paddingLeft,font:getComputedStyle(panel.querySelector('h2')).fontFamily,overflow:document.documentElement.scrollWidth>innerWidth}})()`);
-				if (layout.padding !== '16px' || !layout.font.includes('Montserrat') || layout.overflow) throw Error('Hunk layout failed: '+JSON.stringify(layout));
+				if (layout.padding !== '20px' || !layout.font.includes('Montserrat') || layout.overflow) throw Error('Hunk layout failed: '+JSON.stringify(layout));
 				for (const layout of ['unified', 'split']) {
 					await run(`document.querySelector('[aria-label="Diff layout"] button:nth-child(${layout === 'unified' ? 1 : 2})').click()`);
 					await wait(`Array.from(document.querySelectorAll('.git-hunk-panel diffs-container')).every(node=>node.shadowRoot?.querySelector('pre[data-diff-type="${layout === 'split' ? 'split' : 'single'}"]'))&&document.querySelectorAll('.git-hunk-panel diffs-container').length===2`);
