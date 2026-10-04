@@ -88,7 +88,13 @@ ipcMain.removeHandler("workspace:account-status");
 ipcMain.handle("workspace:account-status",(event,harness,id)=>harness==="codex"&&!id?{checkedAt:now,authenticated:true,identity:"fixture@example.invalid",plan:"Fixture subscription",ordinaryUsageAllowed:false,usage:[{id:"fixture",name:"Included usage",spendControlReached:false,primary:{usedPercent:25,windowDurationMins:300,resetsAt:Math.floor(Date.now()/1000)+3600},secondary:{usedPercent:80,windowDurationMins:10080,resetsAt:null}},{id:"unavailable",name:"Other usage",spendControlReached:null,primary:null,secondary:null}]}:originalAccountStatus(event,harness,id));
 const originalModels=ipcMain._invokeHandlers.get("workspace:models");
 ipcMain.removeHandler("workspace:models");
-ipcMain.handle("workspace:models",(event,harness,...args)=>["codex","grok"].includes(harness)?[{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}]:originalModels(event,harness,...args));
+let failModels=false,holdModels=false,releaseModels,modelCalls=0;
+ipcMain.handle("workspace:models",async(event,harness,...args)=>{
+ if(!["codex","grok"].includes(harness))return originalModels(event,harness,...args);
+ modelCalls++;if(failModels){failModels=false;throw Error("Owned model catalogue failure");}
+ if(holdModels){holdModels=false;await new Promise(resolve=>{releaseModels=resolve});}
+ return [{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}];
+});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -482,10 +488,29 @@ try {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
+  async function retryCatalogue(scope,name){
+ const alert=JSON.stringify(scope+' .model-discovery-feedback [role="alert"]'),feedback=JSON.stringify(scope+' .model-discovery-feedback'),status=JSON.stringify(scope+' .model-discovery-feedback[role="status"]'),button=JSON.stringify(scope+' button[aria-label="Retry models"]');
+ const values=()=>window.webContents.executeJavaScript('Array.from(document.querySelectorAll('+JSON.stringify(scope+' input,'+scope+' select')+')).map(control=>control.value).join("|")');
+ for(let attempt=0;!await window.webContents.executeJavaScript('document.querySelector('+alert+')?.textContent.includes("Owned model catalogue failure")');attempt++){if(attempt>50)throw Error('Model failure not rendered');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(await window.webContents.executeJavaScript('document.querySelector('+alert+').textContent.includes("Error invoking remote method")'))throw Error('Model error exposes transport prefix');
+ if(scope==='.task-create-fields')await window.webContents.executeJavaScript('(()=>{const input=document.querySelector('+JSON.stringify('input[aria-label="Model"]')+');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set.call(input,"fixture-model");input.dispatchEvent(new Event("input",{bubbles:true}));})()');
+ const fields=await values();
+ writeFileSync(path.join(output,'1040-dark-'+name+'-failure.png'),(await window.webContents.capturePage()).toPNG());
+ const calls=modelCalls;holdModels=true;
+ await window.webContents.executeJavaScript('(()=>{const button=document.querySelector('+button+');button.click();button.click()})()');
+ for(let attempt=0;!releaseModels;attempt++){if(attempt>50)throw Error('Retry not delivered');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(modelCalls!==calls+1||!await window.webContents.executeJavaScript('document.querySelector('+status+')?.textContent.includes("Loading models")'))throw Error('Model retry duplicates requests or lacks status');
+ writeFileSync(path.join(output,'1040-dark-'+name+'-pending.png'),(await window.webContents.capturePage()).toPNG());
+ releaseModels();releaseModels=undefined;
+ for(let attempt=0;await window.webContents.executeJavaScript('Boolean(document.querySelector('+feedback+'))');attempt++){if(attempt>50)throw Error('Retry did not recover');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(await values()!==fields)throw Error('Model retry changed selections');
+}
+  failModels=true;
   await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.surface-switcher button')).find(button=>button.textContent==='Workspace').click();Array.from(document.querySelectorAll('.sidebar-item')).find(button=>button.textContent.trim()==='Tasks').click()`);
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-list-heading button'))`);attempt++){if(attempt>50)throw Error('Task setup did not render');await new Promise(resolve=>setTimeout(resolve,50));}
   await window.webContents.executeJavaScript(`document.querySelector('.task-list-heading button').click()`);
   await new Promise(resolve=>setTimeout(resolve,100));
+  await retryCatalogue(".task-create-fields","initial-models");
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('select[aria-label="Initial reasoning effort"] option[value="fixture-high"]'))`);attempt++){if(attempt>50)throw Error('Initial reasoning catalogue not rendered');await new Promise(resolve=>setTimeout(resolve,20));}
   await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-high';select.dispatchEvent(new Event('change',{bubbles:true}));const model=document.querySelector('input[aria-label="Model"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'custom');model.dispatchEvent(new Event('input',{bubbles:true}));})()`);
   await new Promise(resolve=>setTimeout(resolve,50));
@@ -512,6 +537,10 @@ try {
   for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))`);attempt++){if(attempt>50)throw Error('Created task did not open');await new Promise(resolve=>setTimeout(resolve,20));}
   const afterCreation=await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(state=>state.tasks.map(task=>task.id))`);
   if(afterCreation.length!==beforeCreation.length+1||beforeCreation.some(id=>!afterCreation.includes(id)))throw Error('Creation must persist exactly one new task');
+  failModels=true;
+  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
+  await retryCatalogue('.task-settings','settings-models');
+  await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-settings-actions button')).find(button=>button.textContent==='Cancel').click()`);
   const createdId=afterCreation.find(id=>!beforeCreation.includes(id));
   if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.task(${JSON.stringify(createdId)}).then(task=>task.reasoningEffort)`)!=='fixture-high')throw Error('Initial effort did not persist');
   await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Handoff"]').click()`);

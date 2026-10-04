@@ -10,6 +10,7 @@ import { ApprovalRequest } from "../components/ApprovalRequest";
 import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { AgentForm } from "../components/AgentForm";
+import { ModelDiscoveryFeedback } from "../components/ModelDiscoveryFeedback";
 import { TaskSettings } from "../components/TaskSettings";
 const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
@@ -30,6 +31,7 @@ export function TaskWorkspace() {
 	const [reasoningEffort, setReasoningEffort] = useState("");
 	const [models, setModels] = useState<ModelOption[]>([]);
 	const [modelError, setModelError] = useState("");
+	const [modelsAttempt, setModelsAttempt] = useState(0);
 	const [modelsLoading, setModelsLoading] = useState(false);
 	const [harness, setHarness] = useState<Harness>("codex");
 	const [accountId, setAccountId] = useState("");
@@ -52,12 +54,13 @@ export function TaskWorkspace() {
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
 	useEffect(() => {
-		setModels([]); setModelError(""); setReasoningEffort("");
+		setModelError("");
 		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor", "grok"].includes(harness) || (["phaseo", "cursor"].includes(harness) && !accountId)) { setModelsLoading(false); return; }
 		let active = true; setModelsLoading(true);
-		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError(reason instanceof Error ? reason.message : String(reason)); }).finally(() => { if (active) setModelsLoading(false); });
+		void api.models(harness, accountId || undefined, projectId || undefined).then(result => { if (active) setModels(result); }, reason => { if (active) setModelError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }).finally(() => { if (active) setModelsLoading(false); });
 		return () => { active = false; };
-	}, [api, harness, accountId, projectId]);
+	}, [api, harness, accountId, projectId, modelsAttempt]);
+	useEffect(() => { setModels([]); setReasoningEffort(""); }, [harness, accountId, projectId]);
 	const setupModel = models.find(value => model === "default" ? value.default : value.id === model);
 	const selectedSnapshot = workspace.tasks.find(task => task.id === selectedId);
 	const selectedDetail = useSelectedTask(api?.task, selectedId, selectedSnapshot ? JSON.stringify([selectedSnapshot.revision, selectedSnapshot.updatedAt]) : undefined);
@@ -129,8 +132,8 @@ export function TaskWorkspace() {
 					<label>Harness<select value={harness} onChange={event => { setHarness(event.target.value as Harness); if (event.target.value === "grok" && mode === "chat") setMode("plan"); setAccountId(""); setAgentId(""); setModel("default"); }}><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="opencode">OpenCode 2</option><option value="pi">Pi</option><option value="cursor">Cursor</option><option value="grok">Grok</option><option value="phaseo">Phaseo</option><option value="acp">ACP agent</option></select></label>
 					{harness === "acp" && <label>Agent<select value={agentId} onChange={event => setAgentId(event.target.value)}><option value="">Choose a connected agent</option>{workspace.agents.filter(agent => !agent.archived).map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}</select></label>}
 					{harness !== "acp" && harness !== "pi" && <label>Account<select value={accountId} onChange={event => setAccountId(event.target.value)}><option value="">{harness === "phaseo" ? "Choose an API account" : harness === "cursor" ? "Choose a Cursor account" : "Existing local login"}</option>{workspace.accounts.filter(account => account.harness === harness && !account.archived).map(account => <option key={account.id} value={account.id} disabled={!account.configured}>{account.name}{account.configured ? "" : " — sign-in required"}</option>)}</select></label>}
-					<label>Model<input list="workspace-models" value={model} onChange={event => { setModel(event.target.value); setReasoningEffort(""); }} aria-label="Model" /><datalist id="workspace-models">{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</datalist>{modelsLoading && <small>Loading models…</small>}{modelError && <small>{modelError}</small>}</label>
-					{["codex", "grok"].includes(harness) && <label>Reasoning effort<select aria-label="Initial reasoning effort" value={reasoningEffort} disabled={modelsLoading} onChange={event => setReasoningEffort(event.target.value)}><option value="">Default{setupModel?.defaultReasoningEffort ? ` (${setupModel.defaultReasoningEffort})` : ""}</option>{setupModel?.reasoningEfforts?.map(value => <option key={value.id} value={value.id} title={value.description}>{value.id}</option>)}</select></label>}
+					<div className="model-field"><label>Model<input list="workspace-models" value={model} onChange={event => { setModel(event.target.value); setReasoningEffort(""); }} aria-label="Model" /><datalist id="workspace-models">{models.map(model => <option key={model.id} value={model.id}>{model.name}</option>)}</datalist></label><ModelDiscoveryFeedback loading={modelsLoading} error={modelError} retry={() => setModelsAttempt(value => value + 1)} disabled={busy} /></div>
+					{["codex", "grok"].includes(harness) && <label>Reasoning effort<select aria-label="Initial reasoning effort" value={reasoningEffort} disabled={modelsLoading} onChange={event => setReasoningEffort(event.target.value)}><option value="">Default{setupModel?.defaultReasoningEffort ? ` (${setupModel.defaultReasoningEffort})` : ""}</option>{reasoningEffort && !setupModel?.reasoningEfforts?.some(value => value.id === reasoningEffort) && <option value={reasoningEffort}>{reasoningEffort} (availability unverified)</option>}{setupModel?.reasoningEfforts?.map(value => <option key={value.id} value={value.id} title={value.description}>{value.id}</option>)}</select></label>}
 				</fieldset>
 				{handoffId && <p className="task-muted">Continue “{workspace.tasks.find(task => task.id === handoffId)?.title}” with the selected harness. Conversation messages carry over; native tool state stays with the original task.</p>}
 				<div className="task-controls">

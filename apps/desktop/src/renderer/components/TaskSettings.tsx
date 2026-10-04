@@ -1,22 +1,24 @@
 import { useEffect, useState } from "react";
+import { ModelDiscoveryFeedback } from "./ModelDiscoveryFeedback";
 import type { ModelOption, Task } from "../../shared/workspace";
 
 export function TaskSettings({ task, save, close }: { task: Task; save: (model: string, mode: Task["mode"], reasoningEffort: string, nativeMode: string) => Promise<boolean>; close: () => void }) {
 	const [model, setModel] = useState(task.model); const [mode, setMode] = useState(task.mode);
 	const [reasoningEffort, setReasoningEffort] = useState(task.reasoningEffort ?? "");
 	const [nativeMode, setNativeMode] = useState(task.nativeMode ?? "");
+	const [attempt, setAttempt] = useState(0);
 	const [models, setModels] = useState<ModelOption[]>(task.nativeModels ?? []); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const [saving, setSaving] = useState(false);
 	useEffect(() => {
 		const api = window.phaseoDesktop?.workspace;
 		if (!api || !["codex", "phaseo", "opencode", "pi", "cursor"].includes(task.harness)) return;
-		let active = true; setLoading(true);
-		void api.models(task.harness, task.accountId, task.projectId).then(value => { if (active) setModels(value); }, reason => { if (active) setError(String(reason)); }).finally(() => { if (active) setLoading(false); });
+		let active = true; setLoading(true); setError("");
+		void api.models(task.harness, task.accountId, task.projectId).then(value => { if (active) setModels(value); }, reason => { if (active) setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }).finally(() => { if (active) setLoading(false); });
 		return () => { active = false; };
-	}, [task.harness, task.accountId, task.projectId]);
+	}, [task.harness, task.accountId, task.projectId, attempt]);
 	const selectedModel = models.find(value => model === "default" ? value.default : value.id === model);
 	return <form className="task-setup task-settings" aria-label="Task settings" onSubmit={event => { event.preventDefault(); setSaving(true); void save(model.trim(), mode, reasoningEffort, nativeMode).then(success => { if (success) close(); }).finally(() => setSaving(false)); }}>
 		<div className="task-settings-fields">
-			<label>Model<input aria-label="Task model" list="task-settings-models" value={model} onChange={event => { setModel(event.target.value); setReasoningEffort(""); }} required maxLength={1000} disabled={saving} /><datalist id="task-settings-models">{models.map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</datalist>{loading && <small>Loading models…</small>}{error && <small>{error}</small>}</label>
+			<div className="model-field"><label>Model<input aria-label="Task model" list="task-settings-models" value={model} onChange={event => { setModel(event.target.value); setReasoningEffort(""); }} required maxLength={1000} disabled={saving} /><datalist id="task-settings-models">{models.map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</datalist></label><ModelDiscoveryFeedback loading={loading} error={error} retry={() => setAttempt(value => value + 1)} disabled={saving} /></div>
 			{(task.harness === "codex" || (["acp", "grok"].includes(task.harness) && (selectedModel?.reasoningEfforts?.length || reasoningEffort))) && <label>Reasoning effort<select aria-label="Reasoning effort" value={reasoningEffort} disabled={saving || loading} onChange={event => setReasoningEffort(event.target.value)}><option value="">Default{selectedModel?.defaultReasoningEffort ? ` (${selectedModel.defaultReasoningEffort})` : ""}</option>{reasoningEffort && !selectedModel?.reasoningEfforts?.some(value => value.id === reasoningEffort) && <option value={reasoningEffort}>{reasoningEffort} (availability unverified)</option>}{selectedModel?.reasoningEfforts?.map(value => <option key={value.id} value={value.id} title={value.description}>{value.id}</option>)}</select></label>}
 			<label>Mode<select aria-label="Task mode" value={mode} onChange={event => setMode(event.target.value as Task["mode"])} disabled={saving}>{task.harness !== "grok" && <option value="chat">Chat</option>}<option value="code">Code</option><option value="plan">Plan</option></select></label>
 			{task.harness === "acp" && <label>Agent mode<select aria-label="Agent mode" value={nativeMode} disabled={saving} onChange={event => setNativeMode(event.target.value)}><option value="">Automatic</option>{nativeMode && !task.nativeModes?.some(value => value.id === nativeMode) && <option value={nativeMode}>{nativeMode} (availability unverified)</option>}{task.nativeModes?.map(value => <option key={value.id} value={value.id} title={value.description}>{value.name}</option>)}</select></label>}

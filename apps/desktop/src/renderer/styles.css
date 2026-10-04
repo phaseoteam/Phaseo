@@ -79,6 +79,10 @@
 .task-start h1 { margin: 12px 0; font-size: 28px; font-weight: 600; letter-spacing: -.025em; }
 .task-start > p { color: var(--text-muted); }
 .task-setup { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-block: 30px; }
+.model-field { min-width: 0; }
+.model-discovery-feedback { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; }
+.model-discovery-feedback small { flex: 1; min-width: 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.model-discovery-feedback button { flex-shrink: 0; min-height: 28px; padding: 2px 8px; font-size: 12px; }
 .task-create-fields { min-width: 0; border: 0; padding: 0; margin-inline: 0; }
 .task-settings { display: flex; flex-direction: column; flex-shrink: 0; min-height: 0; max-height: 40%; margin: 0; padding: 24px; border-bottom: 1px solid var(--border); }
 .task-settings-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
