@@ -23,13 +23,17 @@ db.prepare("UPDATE tasks SET data=? WHERE id='042'").run(JSON.stringify(longHist
 const largeHistory = JSON.parse(db.prepare("SELECT data FROM tasks WHERE id='043'").get().data);
 largeHistory.messages = Array.from({ length: 1000 }, (_, index) => ({ id: `large-${index}`, role: "user", text: `Large history item ${index}`, createdAt: timestamp }));
 db.prepare("UPDATE tasks SET data=? WHERE id='043'").run(JSON.stringify(largeHistory));
+const byteHistory=JSON.parse(db.prepare("SELECT data FROM tasks WHERE id='044'").get().data);
+byteHistory.messages=Array.from({length:8},(_,index)=>({id:'bytes-'+index,role:'user',text:'😀\t'.repeat(100000),createdAt:timestamp}));
+byteHistory.activities=Array.from({length:8},(_,index)=>({id:'byte-activity-'+index,type:'tool',title:'Owned large output '+index,text:'😀\t'.repeat(100000),status:'completed'}));
+db.prepare("UPDATE tasks SET data=? WHERE id='044'").run(JSON.stringify(byteHistory));
 db.close();
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
 let failNextHistory = false;
 let failNextDetail = false;
 let failNextConversation = false;
-let detailBodiesBounded = true;
+let detailBodiesBounded = true, byteBodiesBounded = true, peakPageBytes = 0;
 let delayedConversation = false;
 const activeConversation = new Map(); let peakConversation = 0;
 let delayedTaskId = "001";
@@ -45,14 +49,14 @@ ipcMain.handle = function (channel, listener) {
   } : channel === "workspace:conversation-page" ? async (event, query) => {
     if(failNextConversation){failNextConversation=false;throw new Error("Owned conversation page failure");}
     const key=query.taskId+':'+query.kind, count=(activeConversation.get(key)??0)+1;activeConversation.set(key,count);peakConversation=Math.max(peakConversation,count);
-    try{const page=listener(event,query);if(delayedConversation&&query.taskId==='043'&&query.beforeId){delayedConversation=false;await new Promise(resolve=>setTimeout(resolve,300));}return page;}finally{activeConversation.set(key,activeConversation.get(key)-1);}
+    try{const page=listener(event,query);const bytes=Buffer.byteLength(JSON.stringify(page.entries));peakPageBytes=Math.max(peakPageBytes,bytes);if(bytes>2*1024*1024)byteBodiesBounded=false;if(delayedConversation&&query.taskId==='043'&&query.beforeId){delayedConversation=false;await new Promise(resolve=>setTimeout(resolve,300));}return page;}finally{activeConversation.set(key,activeConversation.get(key)-1);}
   } : channel === "workspace:task" ? async (event, id) => {
     const active = (activeDetails.get(id) ?? 0) + 1;
     activeDetails.set(id, active); peakDetails.set(id, Math.max(peakDetails.get(id) ?? 0, active));
     try {
       if (failNextDetail) { failNextDetail = false; throw new Error("Owned detail failure"); }
       const task = listener(event, id);
-      if(task.messages.length>50||(task.activities?.length??0)>50)detailBodiesBounded=false;
+      if(task.messages.length>50||(task.activities?.length??0)>50)detailBodiesBounded=false;if(Buffer.byteLength(JSON.stringify(task.messages))>2*1024*1024||Buffer.byteLength(JSON.stringify(task.activities??[]))>2*1024*1024)byteBodiesBounded=false;
       if (id === delayedTaskId) await new Promise(resolve => setTimeout(resolve, 300));
       return task;
     } finally { activeDetails.set(id, activeDetails.get(id) - 1); }
@@ -217,6 +221,14 @@ try {
   await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:large-850'`, "large history before jumping");
   await run(`document.querySelector('.conversation-latest').click()`);
   await wait(`document.querySelectorAll('.task-message').length===50&&document.querySelector('.task-message')?.dataset.conversationId==='message:large-950'&&${atLatest}`, "large conversation jumps to latest");
+
+  await search("History 044");await wait(`Boolean(document.querySelector('.task-row[title="History 044"]'))`,"large body chat search");await run(`document.querySelector('.task-row[title="History 044"]').click()`);
+  const byteWindow=`(()=>{const rows=Array.from(document.querySelectorAll('.task-message'));return rows.length<=3&&rows.every((row,index)=>index===0||Number(row.dataset.conversationId.split('bytes-')[1])===Number(rows[index-1].dataset.conversationId.split('bytes-')[1])+1)})()`;
+  await wait(`document.querySelector('.task-title')?.value==='History 044'&&document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-5'&&document.querySelectorAll('.task-activity').length===3`,"large body initial byte window");
+  for(const start of [2,0]){await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older messages').click()`);await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-${start}'`,"large body older window "+start);if(!await run(byteWindow))throw Error("Large body renderer retained excess/non-contiguous messages");}
+  for(const start of [3,5]){await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load newer messages').click()`);await wait(`document.querySelector('.task-message')?.dataset.conversationId==='message:bytes-${start}'`,"large body newer window "+start);if(!await run(byteWindow))throw Error("Large body newer window exceeded retained byte limit");}
+  await run(`Array.from(document.querySelectorAll('.task-messages button')).find(button=>button.textContent==='Load older activities').click()`);await wait(`document.querySelector('.task-activity')?.textContent.includes('Owned large output 2')`,"large activity byte window");
+  if(!byteBodiesBounded||peakPageBytes<1024*1024)throw Error("Large body byte instrumentation failed");
   await search("absent"); await search("History 154");
   await wait(`document.querySelectorAll('.task-row').length===1&&document.querySelector('.task-row').textContent.includes('History 154')`, "rapid search");
   await search("");
@@ -234,7 +246,7 @@ try {
     await wait(`document.querySelector('.task-title')?.value==='History 154'`, `${page} detail navigation`);
   }
   if (fullWorkspaceReads !== 0 || overviewBroadcasts < 4 || !detailBodiesBounded || peakConversation>1) throw new Error("History navigation must use metadata broadcasts, bounded bodies and coalesced page requests.");
-  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, chatAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true, followLatest: true, pauseFollowing: true, jumpToLatest: true, delayedLayout: true, boundedDetails: true, boundedMessages: true, boundedActivities: true, pageRetry: true, pageRefresh: true, coalescedPages: true }), "ISOLATED_DATA", data);
+  console.log("HISTORY_SMOKE", JSON.stringify({ pages: true, retry: true, pinned: true, selection: true, staleDetails: true, coalescedDetails: true, detailRetry: true, bodySearch: true, rapidSearch: true, archived: true, empty: true, chatAttention: true, inboxAttention: true, metadataOnly: true, recentMessages: true, recentActivities: true, readingAnchor: true, liveHistory: true, followLatest: true, pauseFollowing: true, jumpToLatest: true, delayedLayout: true, boundedDetails: true, byteBoundedPages: byteBodiesBounded, peakPageBytes, byteBoundedRenderer: true, boundedMessages: true, boundedActivities: true, pageRetry: true, pageRefresh: true, coalescedPages: true }), "ISOLATED_DATA", data);
   app.exit(0);
 } catch (error) { console.error(error); app.exit(1); }
 }).catch(error => { console.error(error); app.exit(1); });

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import type { ConversationPage, ConversationPageQuery } from "../../shared/conversationPage";
+import { conversationWindow, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
 import type { Task } from "../../shared/workspace";
 
 function recentPage(task: Task, kind: ConversationPage["kind"]): ConversationPage {
@@ -33,7 +33,7 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 			if (!mounted.current) return;
 			const previous = current.current;
 			const total = result.earlier + result.entries.length + result.later;
-			const entries = mode === "older" ? [...result.entries, ...previous.entries].slice(0, 100) : mode === "newer" ? [...previous.entries, ...result.entries].slice(-100) : result.entries;
+			const entries = mode === "older" ? conversationWindow([...result.entries, ...previous.entries], "start") : mode === "newer" ? conversationWindow([...previous.entries, ...result.entries], "end") : result.entries;
 			const earlier = mode === "newer" ? total - result.later - entries.length : result.earlier;
 			apply({ ...result, entries, earlier, later: total - earlier - entries.length });
 			if ((mode !== "replace" && previous.revision !== result.revision) || result.revision < (source.current.revision ?? 0)) refreshPending.current = true;
@@ -60,7 +60,7 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 			else apply(latest);
 			return;
 		}
-		const entries = [...previous.entries.slice(0, start), ...latest.entries].slice(-100);
+		const entries = conversationWindow([...previous.entries.slice(0, start), ...latest.entries], "end");
 		apply({ ...latest, entries, earlier: latest.earlier + latest.entries.length - entries.length });
 	}
 	useEffect(() => { refresh(); }, [task]); // Refresh the visible window as task revisions arrive.
