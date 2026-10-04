@@ -10,6 +10,7 @@ const maybeOpenOnRecentErrorsMock = vi.fn();
 const maybeWriteStickyRoutingFromUsageMock = vi.fn();
 const classifyProviderHealthImpactMock = vi.fn();
 const recordManagedProviderTokensOnceMock = vi.fn();
+const calculatePricingMock = vi.fn();
 
 vi.mock("../audit", () => ({
 	auditSuccess: (...args: any[]) => auditSuccessMock(...args),
@@ -58,7 +59,7 @@ vi.mock("../pricing/byok-fee", () => ({
 }));
 
 vi.mock("./pricing", () => ({
-	calculatePricing: (usage: any) => ({
+	calculatePricing: (usage: any, ...args: any[]) => calculatePricingMock(usage, ...args) ?? ({
 		pricedUsage: usage,
 		totalCents: 0,
 		totalNanos: 0,
@@ -75,7 +76,7 @@ vi.mock("@/runtime/env", () => ({
 
 import { handleStreamResponse } from "./stream";
 
-function makeOpenAIStream(): Response {
+function makeOpenAIStream(usage: any = { prompt_tokens: 11, completion_tokens: 4, total_tokens: 15 }): Response {
 	const frames = [
 		{
 			id: "chatcmpl_local_usage_test",
@@ -93,7 +94,7 @@ function makeOpenAIStream(): Response {
 			id: "chatcmpl_local_usage_test",
 			object: "chat.completion.chunk",
 			choices: [],
-			usage: { prompt_tokens: 11, completion_tokens: 4, total_tokens: 15 },
+			usage,
 		},
 	];
 	const body = frames
@@ -187,6 +188,58 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
         expect(reportProbeResultMock).toHaveBeenCalledWith("chat.completions", scopedProvider, "openai/gpt-5.6-luna", !failed);
     });
 
+	it.each(["pricing_rule_missing:cached_read_text_tokens", "usage_charge_persistence_failed"])("persists usage and pending accounting after %s on a delivered response", async (failure) => {
+		recordManagedProviderTokensOnceMock.mockClear();
+		auditSuccessMock.mockReset().mockResolvedValue(undefined);
+		auditFailureMock.mockReset().mockResolvedValue(undefined);
+		recordUsageAndChargeOnceMock.mockReset().mockResolvedValue(undefined);
+		onCallEndMock.mockReset().mockResolvedValue(undefined);
+		classifyProviderHealthImpactMock.mockReset().mockReturnValue("success");
+		if (failure.startsWith("pricing_rule_missing")) {
+			calculatePricingMock.mockImplementation(() => { throw new Error(failure); });
+		} else {
+			calculatePricingMock.mockImplementation((usage) => ({ pricedUsage: usage, totalNanos: 54321, totalCents: 0, currency: "USD" }));
+			recordUsageAndChargeOnceMock.mockRejectedValue(new Error(failure));
+		}
+		try {
+			const upstream = makeOpenAIStream({ prompt_tokens: 11, completion_tokens: 4, total_tokens: 15, prompt_tokens_details: { cached_tokens: 5 } });
+			const ctx = { ...baseCtx(), billingRequestId: "billing_local" };
+			const providerResponse = { id: "provider_response", usage: { prompt_tokens: 11 } };
+			const response = await handleStreamResponse(ctx, {
+				kind: "stream", stream: upstream.body, upstream, provider: "novita",
+				usageFinalizer: async () => null,
+				rawResponse: providerResponse,
+				bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null, upstream_id: "provider_response" },
+			} as any, { rules: [] } as any);
+			expect(await response.text()).toContain("hello");
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			if (failure.startsWith("pricing_rule_missing")) {
+				expect(recordUsageAndChargeOnceMock).not.toHaveBeenCalled();
+			} else {
+				expect(recordUsageAndChargeOnceMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 54321, throwOnFailure: true }));
+				expect(recordManagedProviderTokensOnceMock.mock.invocationCallOrder.at(-1)).toBeLessThan(recordUsageAndChargeOnceMock.mock.invocationCallOrder[0]);
+			}
+			expect(auditSuccessMock).not.toHaveBeenCalled();
+			expect(auditFailureMock).toHaveBeenCalledTimes(1);
+			expect(auditFailureMock.mock.calls[0][0]).toMatchObject({
+				errorCode: "gateway:stream_finalization_failed",
+				providerResponse,
+				nativeResponseId: "provider_response",
+				usage: { input_tokens: 11, output_tokens: 4, total_tokens: 15, input_tokens_details: { cached_tokens: 5 } },
+				detailMetadata: { accounting_finalization: {
+					upstream_status: 200, billing_status: "pending_reconciliation",
+					cause: failure,
+					billing_request_id: "billing_local",
+					finish_reason: "stop",
+					pricing_card: { rules: [] },
+				} },
+			});
+			expect(auditFailureMock.mock.calls[0][0].gatewayResponse).not.toHaveProperty("error");
+			expect(auditFailureMock.mock.calls[0][0].detailMetadata.accounting_finalization.raw_usage).toBeTruthy();
+		} finally {
+			calculatePricingMock.mockReset();
+		}
+	});
 	it("passes trailing usage-only tokens into charging and persisted audit facts", async () => {
 		auditSuccessMock.mockReset().mockResolvedValue(undefined);
 		emitGatewayRequestEventMock.mockReset().mockResolvedValue(undefined);

@@ -15,6 +15,7 @@ export async function recordUsageAndChargeOnce(args: {
 	ctx: PipelineContext;
 	costNanos: number;
 	endpoint: string;
+	throwOnFailure?: boolean;
 }): Promise<void> {
 	const { ctx, costNanos, endpoint } = args;
 	if (ctx.testingMode) return;
@@ -53,4 +54,7 @@ export async function recordUsageAndChargeOnce(args: {
 		cost_nanos: costNanos,
 		attempts: CHARGE_RETRY_DELAYS_MS.length,
 	});
+	if (args.throwOnFailure) {
+		throw new Error("usage_charge_persistence_failed", { cause: lastError });
+	}
 }
