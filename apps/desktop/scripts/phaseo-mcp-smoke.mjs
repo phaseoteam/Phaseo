@@ -11,14 +11,15 @@ const project=path.join(profile,"project");mkdirSync(project);mkdirSync(path.joi
 const seed=new DatabaseSync(path.join(profile,"workspace/workspace.sqlite"));seed.exec("CREATE TABLE projects (id TEXT PRIMARY KEY,data TEXT NOT NULL)");
 for(const id of ['fixture','other'])seed.prepare("INSERT INTO projects VALUES (?,?)").run(id,JSON.stringify({id,name:id,directory:project,createdAt:new Date().toISOString()}));seed.close();
 const calls=path.join(profile,"calls.jsonl"),fixture=fileURLToPath(new URL('./fixtures/phaseo-mcp.cjs',import.meta.url));
-let modelRequests=0,httpToolCalls=0,fixtureError;
+let modelRequests=0,httpToolCalls=0,httpTerminations=0,fixtureError;const httpSessions=new Set();
 const server=createServer(async(request,response)=>{
  try{
   if(request.url==="/mcp"){
+   if(request.method==="DELETE"){if(request.headers["mcp-session-id"]!=="owned-session")throw Error("Wrong cleanup session");if(!httpSessions.delete("owned-session"))throw Error("Unknown cleanup session");httpTerminations++;response.writeHead(204);response.end();return;}
    if(request.method!=="POST"){response.writeHead(405);response.end();return;}
-   let raw='';for await(const chunk of request)raw+=chunk;const rpc=JSON.parse(raw);if(rpc.id===undefined){response.writeHead(202);response.end();return;}
+   let raw='';for await(const chunk of request)raw+=chunk;const rpc=JSON.parse(raw);if(rpc.method==='initialize')httpSessions.add('owned-session');else if(!httpSessions.has(request.headers['mcp-session-id']))throw Error('Request outside live session');if(rpc.id===undefined){response.writeHead(202);response.end();return;}
    let result;if(rpc.method==='initialize')result={protocolVersion:rpc.params.protocolVersion,capabilities:{tools:{}},serverInfo:{name:'owned-http-mcp',version:'1'}};else if(rpc.method==='tools/list')result={tools:[{name:'owned_http_lookup',description:'Read owned HTTP notes',inputSchema:{type:'object'}}]};else if(rpc.method==='tools/call'){if(rpc.params.name!=='owned_http_lookup')throw Error('Unexpected HTTP tool');httpToolCalls++;result={content:[{type:'text',text:'Owned HTTP MCP result'}]};}else result={};
-   response.writeHead(200,{'content-type':'application/json'});response.end(JSON.stringify({jsonrpc:'2.0',id:rpc.id,result}));return;
+   response.writeHead(200,{'content-type':'application/json',...(rpc.method==='initialize'?{'mcp-session-id':'owned-session'}:{})});response.end(JSON.stringify({jsonrpc:'2.0',id:rpc.id,result}));return;
   }
   if(new URL(request.url,"http://owned.local").pathname==="/v1/models"&&request.method==="GET"){response.writeHead(200,{"content-type":"application/json"});response.end(JSON.stringify({object:"list",data:[{id:"owned-fixture",object:"model"}]}));return;}
   if(request.url!=="/v1/responses"||request.method!=="POST")throw Error(`Unexpected fixture endpoint: ${request.method} ${request.url}`);
@@ -63,7 +64,7 @@ app.whenReady().then(async()=>{
    return {approval:true,denial:true,scope:true,activeConfigurationGuard:true,preflightQueueRetention:true,completedTasks:ids.length};
   })()`);
   if(fixtureError)throw fixtureError;
-  const records=existsSync(calls)?readFileSync(calls,'utf8').trim().split('\n').map(line=>JSON.parse(line)):[];if(records.length!==1||records[0].name!=='owned_lookup'||records[0].elicitation?.action!=='accept'||records[0].elicitation?.content?.topic!=='work'||records[0].elicitation?.content?.count!==2||modelRequests!==6||httpToolCalls!==1)throw Error('Unapproved native tool or unexpected inference fixture request');
-  console.log('PHASEO_MCP_SMOKE',JSON.stringify({...result,nativeToolCalls:records.length,httpToolCalls,elicitation:true,renderedForm:true,humanWaitMs:humanWait,loopbackModelRequests:modelRequests,providerInferenceCalls:0,packaged:Boolean(packagedEntry)}));clearTimeout(deadline);server.close();app.quit();
+  const records=existsSync(calls)?readFileSync(calls,'utf8').trim().split('\n').map(line=>JSON.parse(line)):[];if(records.length!==1||records[0].name!=='owned_lookup'||records[0].elicitation?.action!=='accept'||records[0].elicitation?.content?.topic!=='work'||records[0].elicitation?.content?.count!==2||modelRequests!==6||httpToolCalls!==1||httpTerminations!==1||httpSessions.size!==0)throw Error('Unapproved native tool or unexpected inference fixture request');
+  console.log('PHASEO_MCP_SMOKE',JSON.stringify({...result,nativeToolCalls:records.length,httpToolCalls,httpTerminations,remainingHttpSessions:httpSessions.size,elicitation:true,renderedForm:true,humanWaitMs:humanWait,loopbackModelRequests:modelRequests,providerInferenceCalls:0,packaged:Boolean(packagedEntry)}));clearTimeout(deadline);server.close();app.quit();
  }catch(error){console.error(error);clearTimeout(deadline);server.close();app.exit(1);}
 });

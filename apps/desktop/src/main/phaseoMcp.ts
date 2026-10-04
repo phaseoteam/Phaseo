@@ -1,3 +1,4 @@
+import { closeMcpClient } from "./closeMcpClient";
 import { McpCallBudget } from "./mcpCallBudget";
 import { ElicitRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { respondMcpElicitation } from "./mcpElicitation";
@@ -14,9 +15,10 @@ export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,strin
 export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
  const clients: Client[] = [], tools: AgentTool[] = [];
  const labels: Record<string,string> = {};
+ const http = new Map<Client,{transport:StreamableHTTPClientTransport;connection:McpConnection}>();
  const setupSignal = AbortSignal.any([signal, AbortSignal.timeout(30000)]);
  let closing: Promise<void> | undefined;
- const close = () => closing ??= (async () => { signal.removeEventListener("abort", stop); await Promise.allSettled(clients.map(client => client.close())); })();
+ const close = () => closing ??= (async () => { signal.removeEventListener("abort", stop); await Promise.allSettled(clients.map(client => { const entry=http.get(client); return closeMcpClient(client,entry?()=>entry.transport.terminateSession():undefined,()=>callbacks?.onActivity?.({id:`mcp-cleanup:${entry?.connection.id}`,type:"tool",title:`${entry?.connection.name}: session cleanup`,text:"Could not confirm server session cleanup.",status:"failed"})); })); })();
  const stop = () => { void close(); };
  signal.addEventListener("abort", stop, { once: true });
  try {
@@ -35,6 +37,7 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    const transport = connection.transport === "stdio"
     ? new StdioClientTransport({ command: connection.executable, args: connection.arguments, cwd, env: { ...getDefaultEnvironment(), ELECTRON_RUN_AS_NODE: "1" }, stderr: "ignore", maxBufferSize: 2 * 1024 * 1024 })
     : new StreamableHTTPClientTransport(new URL(connection.url));
+   if (transport instanceof StreamableHTTPClientTransport) http.set(client,{transport,connection});
    await client.connect(transport, { signal: setupSignal, timeout: 30000 });
    let cursor: string | undefined; const cursors = new Set<string>(), names = new Set<string>();
    do {
