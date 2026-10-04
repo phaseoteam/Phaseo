@@ -374,7 +374,11 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 
 			if (autoCalls.length) {
 				run.status = "waiting_for_tools"; step.status = "executing_tools";
-				const executed = await mapConcurrent(autoCalls, concurrency, async ({ call, tool }) => ({ ...(await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming })), call, input: call.input }));
+				const executed = await mapConcurrent(autoCalls, concurrency, async ({ call, tool }) => {
+					const execution = await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming });
+					if (concurrency === 1) currentContext = execution.context;
+					return { ...execution, call, input: call.input };
+				});
 				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
 				await applyNextTurnParams(nextParams, nextTurn as any, { ...turn, messages: run.messages, context: currentContext });
 			}

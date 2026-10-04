@@ -1,3 +1,4 @@
+import { defineTool } from "../index";
 import { describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
@@ -7,6 +8,13 @@ import { AgentGatewayError } from "../errors";
 import type { AgentMessage, AgentRunResult } from "../types";
 
 describe("Agent SDK runtime loop", () => {
+ it("passes context changes to later automatic tools in the same serial batch", async () => {
+  let step = 0;
+  const agent = createAgent({ id: "serial-context", tools: [defineTool({ id: "change", execute: (_input, runtime) => { runtime.setContext({ value: "updated" }); return "changed"; } }), defineTool({ id: "read", execute: (_input, runtime) => runtime.context })] });
+  const result = await agent.run({ input: "Update", context: { value: "initial" }, client: { generate: async () => ({ message: { role: "assistant", content: "", ...(step++ === 0 ? { toolCalls: [{ id: "change", name: "change", input: {} }, { id: "read", name: "read", input: {} }] } : {}) } }) } });
+  expect(result.run.context).toEqual({ value: "updated" }); expect(JSON.parse(result.run.messages.find(message => message.role === "tool" && message.toolCallId === "read")!.content as string)).toEqual({ value: "updated" });
+ });
+
 	it("resumes human review with structured input and rejects an empty response", async () => {
 		const agent = createAgent<string, string>({ id: "image-review", humanReview: ({ response }) => response.message.content === "Review needed" ? { reason: "image_review" } : null });
 		const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "Review needed" } }).mockImplementationOnce(async request => {

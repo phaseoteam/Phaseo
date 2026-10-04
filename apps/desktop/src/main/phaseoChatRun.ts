@@ -1,3 +1,4 @@
+import { phaseoPlanTools, publishPhaseoPlan } from "./phaseoPlanTools";
 import path from "node:path";
 import { createAgent } from "@phaseo/agent-sdk";
 import type { AgentEvent, AgentModelClient, AgentRunResult } from "@phaseo/agent-sdk";
@@ -17,6 +18,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
  const { store, globalRoot, fetcher, credential, signal } = dependencies;
  const previous = task.nativeSessionId ? store.loadAgentRun(task.nativeSessionId) as AgentRunResult<unknown, string> | null : null;
  const continuing = previous && previous.run.status !== "completed" ? previous : undefined;
+ if (continuing) publishPhaseoPlan(continuing.run.context, callbacks);
  const requested = nativeAction;
  if (!nativeAction && continuing) nativeAction = restoredPhaseoSkill(continuing.run.context, text);
  const skills = globalRoot ? new PhaseoSkills(path.dirname(globalRoot), task.projectId ? cwd : undefined) : undefined;
@@ -42,9 +44,9 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
   const completion = await readChatCompletion(response, delta => callbacks.onDelta(id, delta));
   return { message: { role: "assistant", content: completion.text, toolCalls: completion.calls } };
  } };
- const agent = createAgent<string, unknown>({ id: "phaseo-desktop", model: task.model, maxSteps: 40, tools: toolkit?.tools() ?? [], instructions: async () => { await refresh(); return `Help the user with their work. Apply global guidance everywhere; project guidance takes precedence within its scope. Only skill discovery and approved activation are available; filesystem, command and MCP tools are unavailable in Chat.\n${instructions.prompt()}`; } });
- const context = { ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) };
- const options = { client, signal, context: context as unknown, onEvent: (event: AgentEvent) => { if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: event.toolName, text: event.error ?? JSON.stringify(event.output ?? "", null, 2), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed" }); }, state: { load: async (id: string) => store.loadAgentRun(id) as AgentRunResult<unknown, string> | null, save: async (result: AgentRunResult<unknown, string>) => { const active = toolkit?.snapshot(); store.saveAgentRun(active?.length ? { ...result, run: { ...result.run, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), phaseoModelSkills: active } } } : result); callbacks.onSession(result.run.id); } } };
+ const agent = createAgent<string, unknown>({ id: "phaseo-desktop", model: task.model, maxSteps: 40, tools: [...phaseoPlanTools(), ...toolkit?.tools() ?? []], instructions: async () => { await refresh(); return `Help the user with their work. Apply global guidance everywhere; project guidance takes precedence within its scope. Plan tracking, skill discovery and approved activation are available; filesystem, command and MCP tools are unavailable in Chat.\n${instructions.prompt()}`; } });
+ const context = { ...(previous && previous.run.status !== "completed" && previous.run.context && typeof previous.run.context === "object" ? previous.run.context : {}), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) };
+ const options = { client, signal, context: context as unknown, onEvent: (event: AgentEvent) => { if (event.type === "tool.started" || event.type === "tool.completed" || event.type === "tool.failed") callbacks.onActivity?.({ id: event.toolCallId, type: "tool", title: event.toolName, text: event.error ?? JSON.stringify(event.output ?? "", null, 2), status: event.type === "tool.started" ? "running" : event.type === "tool.failed" ? "failed" : "completed" }); }, state: { load: async (id: string) => store.loadAgentRun(id) as AgentRunResult<unknown, string> | null, save: async (result: AgentRunResult<unknown, string>) => { const active = toolkit?.snapshot(); store.saveAgentRun(active?.length ? { ...result, run: { ...result.run, context: { ...(result.run.context && typeof result.run.context === "object" ? result.run.context : {}), phaseoModelSkills: active } } } : result); publishPhaseoPlan(result.run.context, callbacks); callbacks.onSession(result.run.id); } } };
  let result = continuing?.run.status === "waiting_for_human" && continuing.run.pause?.pendingToolCalls?.length ? continuing : continuing ? await agent.continueRun({ ...options, run: continuing, humanMessages: followUp }) : await agent.run({ ...options, input: requested ? requested.arguments : text, messages });
  if (continuing && result !== continuing) followUp = undefined;
  while (result.run.status === "waiting_for_human") {
