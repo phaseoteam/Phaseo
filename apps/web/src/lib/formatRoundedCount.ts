@@ -17,9 +17,9 @@ export function formatRoundedCount(value: number, locale?: string): string {
 
 	for (const [threshold, suffix] of COUNT_UNITS) {
 		if (value >= threshold) {
-			const rounded = Math.floor(value / threshold);
-			if (locale && !locale.startsWith("en")) return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 20 }).format(rounded * threshold);
-			return `${rounded.toLocaleString(locale, { useGrouping: false })}${suffix}`;
+			if (locale && !locale.startsWith("en")) return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 2, roundingMode: "floor" }).format(value);
+			const rounded = new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 2, roundingMode: "floor" }).format(value / threshold);
+			return `${rounded}${suffix}`;
 		}
 	}
 

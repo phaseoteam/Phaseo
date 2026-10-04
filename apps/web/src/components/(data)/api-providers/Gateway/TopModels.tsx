@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { fetchFrontendAPIProviderTopModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { getLocale, getTranslations } from "next-intl/server";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -68,7 +68,7 @@ export default async function TopModels({
 											</div>
 										</td>
 										<td className="py-2 px-2 text-right tabular-nums">
-											<DisplayNumber value={model.total_tokens ?? model.request_count} />
+											<DisplayCount value={model.total_tokens ?? model.request_count} />
 										</td>
 										<td className="py-2 px-2 text-right tabular-nums">
 											{model.median_latency_ms != null

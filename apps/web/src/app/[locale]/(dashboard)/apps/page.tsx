@@ -18,7 +18,7 @@ import {
 import { buildMetadata } from "@/lib/seo";
 import { getPublicAppPath } from "@/lib/apps/publicAppPath";
 import { getTranslations } from "next-intl/server";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 
 const TOP_APPS_QUERY_LIMIT = 100;
 const MOST_POPULAR_LIMIT = 4;
@@ -202,7 +202,7 @@ function PopularAppRow({
 				<AppCategoryTags categoryCsv={app.appCategory} className="mt-1.5" />
 			</div>
 			<div className="shrink-0 text-right">
-				<p className="text-base font-semibold tabular-nums tracking-tight sm:text-lg"><DisplayNumber value={app.tokens} options={{ maximumFractionDigits: 1 }} /></p>
+				<p className="text-base font-semibold tabular-nums tracking-tight sm:text-lg"><DisplayCount value={app.tokens} /></p>
 				<p className="text-[11px] text-muted-foreground">{tokensPeriodLabel}</p>
 				<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
 					<TrendingUp className="size-3" />
@@ -340,7 +340,7 @@ export default async function AppsPage() {
 								</div>
 								<div className="text-right">
 									<div className="text-sm font-semibold tabular-nums text-foreground">
-										<DisplayNumber value={app.currentWeekTokens} options={{ maximumFractionDigits: 1 }} />
+										<DisplayCount value={app.currentWeekTokens} />
 									</div>
 									<div className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
 										<TrendingUp className="h-3 w-3" />

@@ -261,7 +261,7 @@ export default function MetricChartCard({
 								tick={{ fontSize: 10 }}
 								width={45}
 								tickFormatter={(value) =>
-									displayFormat.number(Number(value), {
+									metricType === "number" ? displayFormat.countAxisTick(Number(value)) : displayFormat.number(Number(value), {
 										...(metricType === "currency"
 											? { style: "currency" as const, currency: "USD" }
 											: {}),

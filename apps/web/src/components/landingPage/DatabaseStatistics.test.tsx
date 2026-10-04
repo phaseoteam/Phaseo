@@ -71,6 +71,6 @@ describe("DatabaseStats", () => {
 		expect(html).toMatch(
 			/<a[^>]*href="\/rankings"[^>]*>.*Monthly tokens routed/,
 		);
-		expect(html).toContain("49M+");
+		expect(html).toContain("49.91M+");
 	});
 });

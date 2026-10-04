@@ -5,7 +5,7 @@ import { HeroProviderMarquee } from "./HeroProviderMarquee";
 import type { GatewayMarketingMetrics } from "@/lib/fetchers/gateway/getMarketingMetrics";
 import { resolveLogo } from "@/lib/logos";
 import { useTranslations } from "next-intl";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 
 interface HeroSectionProps {
 	metrics: GatewayMarketingMetrics;
@@ -35,7 +35,7 @@ export function HeroSection({ metrics }: HeroSectionProps) {
 		},
 		{
 			label: t("tokens24h"),
-			value: <DisplayNumber value={metrics.summary.tokens24h ?? 0} />,
+			value: <DisplayCount value={metrics.summary.tokens24h ?? 0} />,
 		},
 	];
 
