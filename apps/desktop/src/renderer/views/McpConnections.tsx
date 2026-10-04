@@ -19,7 +19,7 @@ export function McpConnections() {
 		if (await save(transport === "stdio" ? { ...common, transport, executable, arguments: [...argumentsValue] } : { ...common, transport, url }, true)) reset();
 	}
 	const visibleConnections = workspace.mcpConnections.filter(connection => Boolean(connection.archived) === archived);
-	return <div className="page accounts-page"><h1>MCP connections</h1><p>Used by Codex, Claude, OpenCode and compatible ACP agents in Code and Plan mode. Changes apply on the next turn.</p>{error && <p className="task-error" role="alert">{error}</p>}
+	return <div className="page accounts-page"><h1>MCP connections</h1><p>Used by Phaseo, Codex, Claude, OpenCode and compatible ACP agents in Code and Plan mode. Changes apply on the next turn.</p>{error && <p className="task-error" role="alert">{error}</p>}
 		<section className="panel"><div className="panel-heading"><h2>Connections</h2><button type="button" disabled={busy} onClick={() => { setArchived(value => !value); reset(); }}>{archived ? "Active connections" : "Archived connections"}</button></div>
 			{visibleConnections.map(connection => <article className="account-row" key={connection.id}><div><strong>{connection.name}</strong><small>{connection.transport === "stdio" ? "Local process" : "HTTP"} · {connection.projectId ? workspace.projects.find(project => project.id === connection.projectId)?.name ?? "Missing project" : "All projects"} · {connection.enabled && !connection.archived ? "Enabled" : "Disabled"}</small></div>
 				{!connection.archived && <button type="button" disabled={busy} onClick={() => void save({ ...connection, enabled: !connection.enabled })}>{connection.enabled ? "Disable" : "Enable"}</button>}

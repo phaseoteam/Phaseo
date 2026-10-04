@@ -175,6 +175,9 @@ importers:
       '@cursor/sdk':
         specifier: 1.0.31
         version: 1.0.31
+      '@modelcontextprotocol/sdk':
+        specifier: 1.30.0
+        version: 1.30.0(@cfworker/json-schema@4.1.1)(zod@4.6.5)
       '@opencode/client':
         specifier: 2.0.22
         version: 2.0.22(effect@4.0.0-rc.112)

@@ -11,7 +11,7 @@ export default defineConfig({
 			fileName: (_format, name) => `${name}.mjs`,
 		},
 		rollupOptions: {
-			external: ["electron", "node-pty", "@cursor/sdk", ...builtinModules, ...builtinModules.map(name => `node:${name}`)],
+			external: ["electron", "node-pty", "@cursor/sdk", /^@modelcontextprotocol\/sdk(?:\/|$)/, ...builtinModules, ...builtinModules.map(name => `node:${name}`)],
 		},
 	},
 });

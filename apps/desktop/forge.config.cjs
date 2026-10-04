@@ -27,11 +27,12 @@ module.exports = {
 			const copied = new Set();
 			await copyRuntimePackage("node-pty", __dirname, buildPath, copied);
 			await copyRuntimePackage("@cursor/sdk", __dirname, buildPath, copied);
+			await copyRuntimePackage("@modelcontextprotocol/sdk", __dirname, buildPath, copied);
 			await copyRuntimePackage(`@cursor/sdk-${platform}-${arch}`, path.dirname(require.resolve("@cursor/sdk")), buildPath, copied);
 			await fs.access(path.join(buildPath, "node_modules/node-pty/prebuilds", `${platform}-${arch}`));
 			const manifestPath = path.join(buildPath, "package.json");
 			const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
-			manifest.dependencies = { "node-pty": manifest.dependencies["node-pty"], "@cursor/sdk": manifest.dependencies["@cursor/sdk"] };
+			manifest.dependencies = { "node-pty": manifest.dependencies["node-pty"], "@cursor/sdk": manifest.dependencies["@cursor/sdk"], "@modelcontextprotocol/sdk": manifest.dependencies["@modelcontextprotocol/sdk"] };
 			delete manifest.devDependencies;
 			await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 		},
