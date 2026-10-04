@@ -9,6 +9,39 @@ import { DatabaseSync } from "node:sqlite";
 // A separate, disposable profile: no user accounts or inference calls.
 let activeTaskFixture,taskActionCalls=0;
 let holdConnectionSave=false,pendingConnectionSave,connectionSaveCalls=0;
+let holdSettingsRead=false,pendingSettingsRead,settingsReadCalls=0,holdSettingsSave=false,pendingSettingsSave,settingsSaveCalls=0;
+async function auditSettingsRecovery(window,output,width,theme){
+ const readBefore=settingsReadCalls;
+ for(let attempt=0;!pendingSettingsRead;attempt++){if(attempt>50)throw Error('Settings read did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.settings-feedback [role="status"]').textContent==='Loading settings…'&&Array.from(document.querySelectorAll('.settings-fields input,.settings-fields select')).every(control=>control.disabled)`))throw Error('Settings loading must be visible and disable controls');
+ writeFileSync(path.join(output,`${width}-${theme}-settings-loading.png`),(await window.webContents.capturePage()).toPNG());
+ pendingSettingsRead.reject(Error('Owned settings read failure'));pendingSettingsRead=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.settings-feedback [role="alert"]')?.textContent==='Owned settings read failure'`);attempt++){if(attempt>50)throw Error('Readable settings load failure missing');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,`${width}-${theme}-settings-load-failure.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.settings-page .panel-heading button');button.click();button.click()})()`);
+ for(let attempt=0;!pendingSettingsRead;attempt++){if(attempt>50)throw Error('Settings load retry did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(settingsReadCalls!==readBefore+1)throw Error('Duplicate settings retry was delivered');
+ holdSettingsRead=false;pendingSettingsRead.resolve();pendingSettingsRead=undefined;
+ for(let attempt=0;await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Desktop alerts"]').disabled`);attempt++){if(attempt>50)throw Error('Settings load retry did not recover');await new Promise(resolve=>setTimeout(resolve,20));}
+ const original=await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.preferences().then(value=>value.preferences)`);
+ const selected=original.notifications==='all'?'attention':'all',saveBefore=settingsSaveCalls;holdSettingsSave=true;
+ await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Desktop alerts"]');select.value=${JSON.stringify(selected)};select.dispatchEvent(new Event('change',{bubbles:true}));select.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+ for(let attempt=0;!pendingSettingsSave;attempt++){if(attempt>50)throw Error('Settings save did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(settingsSaveCalls!==saveBefore+1||!await window.webContents.executeJavaScript(`document.querySelector('.settings-feedback [role="status"]').textContent==='Saving…'&&Array.from(document.querySelectorAll('.settings-fields input,.settings-fields select')).every(control=>control.disabled)`))throw Error('Settings save did not freeze controls or prevent duplicates');
+ writeFileSync(path.join(output,`${width}-${theme}-settings-save-pending.png`),(await window.webContents.capturePage()).toPNG());
+ pendingSettingsSave.reject(Error('Owned settings save failure'));pendingSettingsSave=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.settings-feedback [role="alert"]')?.textContent==='Owned settings save failure'`);attempt++){if(attempt>50)throw Error('Readable settings save failure missing');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Desktop alerts"]').value===${JSON.stringify(original.notifications)}&&getComputedStyle(document.querySelector('.settings-feedback')).padding==='0px 20px 20px'`))throw Error('Failed settings save changed confirmed values or card insets');
+ writeFileSync(path.join(output,`${width}-${theme}-settings-save-failure.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.settings-feedback button');button.click();button.click()})()`);
+ for(let attempt=0;!pendingSettingsSave;attempt++){if(attempt>50)throw Error('Settings save retry did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(settingsSaveCalls!==saveBefore+2)throw Error('Settings save retry was duplicated');
+ holdSettingsSave=false;pendingSettingsSave.resolve();pendingSettingsSave=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`!document.querySelector('.settings-feedback [role="alert"]')&&!document.querySelector('select[aria-label="Desktop alerts"]').disabled&&document.querySelector('select[aria-label="Desktop alerts"]').value===${JSON.stringify(selected)}`);attempt++){if(attempt>50)throw Error('Settings save retry did not confirm requested values');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.preferences().then(value=>value.preferences.notifications)`)!==selected)throw Error('Settings retry did not persist');
+ writeFileSync(path.join(output,`${width}-${theme}-settings.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.savePreferences(${JSON.stringify(original)})`);
+}
 async function auditArgumentFields(window, formLabel) {
  const values=[' two words "quoted" 世界 ','','literal; --flag'];
  await window.webContents.executeJavaScript(`(async()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(formLabel)}+'"]'),fields=form.querySelector('.argument-fields');while(fields.querySelector('input')){fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));}for(const value of ${JSON.stringify(values)}){fields.querySelector('.add-argument').click();await new Promise(resolve=>requestAnimationFrame(resolve));const input=fields.querySelector('.argument-row:last-of-type input');if(document.activeElement!==input)throw Error('New argument was not focused');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>requestAnimationFrame(resolve));}fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));const remaining=Array.from(fields.querySelectorAll('input')).map(input=>input.value);if(JSON.stringify(remaining)!==JSON.stringify(['','literal; --flag']))throw Error('Removing an argument changed other values');if(getComputedStyle(fields).gridColumn!=='1 / -1'||getComputedStyle(fields.querySelector('.argument-row')).gap!=='8px')throw Error('Argument fields are not aligned');form.scrollIntoView({block:'nearest'});})()`);
@@ -269,6 +302,12 @@ ipcMain.handle("workspace:task",async(event,id)=>{const task=await originalTask(
 const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
+const originalPreferences=ipcMain._invokeHandlers.get("workspace:preferences");
+ipcMain.removeHandler("workspace:preferences");
+ipcMain.handle("workspace:preferences",async(event)=>{settingsReadCalls++;if(holdSettingsRead)await new Promise((resolve,reject)=>{pendingSettingsRead={resolve,reject};});return originalPreferences(event);});
+const originalSavePreferences=ipcMain._invokeHandlers.get("workspace:save-preferences");
+ipcMain.removeHandler("workspace:save-preferences");
+ipcMain.handle("workspace:save-preferences",async(event,value)=>{settingsSaveCalls++;if(holdSettingsSave)await new Promise((resolve,reject)=>{pendingSettingsSave={resolve,reject};});return originalSavePreferences(event,value);});
 const originalMcp=ipcMain._invokeHandlers.get("workspace:mcp");
 ipcMain.removeHandler("workspace:mcp");
 ipcMain.handle("workspace:mcp",async(event,command)=>{if(holdConnectionSave){connectionSaveCalls++;await new Promise((resolve,reject)=>{pendingConnectionSave={resolve,reject};});}return originalMcp(event,command);});
@@ -301,6 +340,7 @@ try {
       await window.webContents.executeJavaScript(`(()=>{const desired=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==desired)document.querySelector('[aria-label="Use '+desired+' theme"]').click()})()`);
       await new Promise(resolve => setTimeout(resolve, 100));
       for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox", "Terminals"]) {
+        if(page==='Settings')holdSettingsRead=true;
         await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-item')).find(b=>b.textContent.trim()===${JSON.stringify(page)}).click()`);
         if (page === "Tasks") {
           for (let attempt = 0; ; attempt++) {
@@ -323,6 +363,7 @@ try {
         const image = await window.webContents.capturePage();
         const name = `${width}-${theme}-${page.toLowerCase()}`;
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
+        if(page==='Settings')await auditSettingsRecovery(window,output,width,theme);
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
         const shellFocus = await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.command-button');button.focus();return {outline:getComputedStyle(button).outlineColor,ring:getComputedStyle(document.documentElement).getPropertyValue('--ring').trim()}})()`);

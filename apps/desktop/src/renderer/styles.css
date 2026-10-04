@@ -122,6 +122,9 @@
 .mission-list details { margin-top: 20px; color: var(--text-muted); font-size: 12px; }
 .settings-page { max-width: 960px; }
 .settings-fields { padding: 0 var(--panel-padding); }
+.settings-feedback { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 0 var(--panel-padding) var(--panel-padding); }
+.settings-feedback p { margin: 0; font-size: 14px; }
+.settings-feedback .task-error { padding: 0; background: transparent; }
 .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 0; border-bottom: 1px solid var(--border); }
 .setting-row:last-child { border-bottom: 0; }
 .setting-row strong { display: block; font-size: 14px; font-weight: 600; }
