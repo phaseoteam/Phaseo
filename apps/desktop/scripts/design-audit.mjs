@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
+let activeTaskFixture,taskActionCalls=0;
 async function openTaskActions(window){
  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
  for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Task actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
@@ -26,6 +27,30 @@ async function auditTaskActions(window,output,width,theme){
  window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
  await new Promise(resolve=>setTimeout(resolve,100));
  if(!await window.webContents.executeJavaScript(`!document.querySelector('.task-actions-menu')&&document.activeElement?.getAttribute('aria-label')==='Task actions'`))throw new Error('Task menu Escape did not restore focus.');
+}
+async function auditActiveTaskActions(window,output,width,theme){
+ const id=await window.webContents.executeJavaScript(`JSON.parse(localStorage.getItem('phaseo.desktop.selectedTask'))`);
+ const overview=await window.webContents.executeJavaScript('window.phaseoDesktop.workspace.overview()');
+ const source=overview.tasks.find(task=>task.id===id);
+ for(const status of ['running','waiting']){
+  activeTaskFixture={id,status};
+  window.webContents.send('workspace:overview-changed',{...overview,tasks:overview.tasks.map(task=>task.id===id?{...task,revision:task.revision+1,status,updatedAt:new Date().toISOString()}:task)});
+  for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-toolbar small')?.textContent.endsWith(${JSON.stringify(status)})`);attempt++){if(attempt>50)throw new Error('Active task fixture did not refresh');await new Promise(resolve=>setTimeout(resolve,20));}
+  await openTaskActions(window);
+  const before=taskActionCalls;
+  const controls=await window.webContents.executeJavaScript(`(()=>{const items=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]'));const blocked=['Fork task history','Handoff','Archive task'];const result=items.map(item=>({label:item.textContent,disabled:item.hasAttribute('data-disabled')}));for(const item of items.filter(item=>blocked.includes(item.textContent)))item.click();return {items:result,queue:document.querySelector('.task-composer small')?.textContent,settings:document.querySelector('button[aria-label="Task settings"]')?.disabled}})()`);
+  const blocked=['Fork task history','Handoff','Archive task'];
+  if(controls.items.some(item=>item.disabled!==blocked.includes(item.label))||!controls.queue.endsWith(' to queue')||!controls.settings)throw new Error('Active task controls: '+JSON.stringify(controls));
+  await new Promise(resolve=>setTimeout(resolve,100));
+  if(taskActionCalls!==before||!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-title'))&&Boolean(document.querySelector('.task-actions-menu'))`))throw new Error('Disabled task action was delivered');
+  for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-row.selected small')?.textContent.endsWith(${JSON.stringify(status)})`);attempt++){if(attempt>50)throw new Error('Active history fixture did not refresh');await new Promise(resolve=>setTimeout(resolve,20));}
+  await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+  writeFileSync(path.join(output,`${width}-${theme}-task-actions-${status}.png`),(await window.webContents.capturePage()).toPNG());
+  window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
+  for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu'))`);attempt++){if(attempt>50)throw new Error('Active menu did not close');await new Promise(resolve=>setTimeout(resolve,20));}
+ }
+ activeTaskFixture=undefined;window.webContents.send('workspace:overview-changed',overview);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-toolbar small')?.textContent.endsWith(${JSON.stringify(source.status)})`);attempt++){if(attempt>50)throw new Error('Task fixture did not restore');await new Promise(resolve=>setTimeout(resolve,20));}
 }
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
 app.setPath("userData", data);
@@ -115,12 +140,19 @@ ipcMain.handle("workspace:models",async(event,harness,...args)=>{
  if(holdModels){holdModels=false;await new Promise(resolve=>{releaseModels=resolve});}
  return [{id:"fixture-model",name:"Fixture model",default:true,defaultReasoningEffort:"fixture-low",reasoningEfforts:[{id:"fixture-high",description:"High"},{id:"fixture-low",description:"Low"}]}];
 });
+const originalTask=ipcMain._invokeHandlers.get("workspace:task");
+ipcMain.removeHandler("workspace:task");
+ipcMain.handle("workspace:task",async(event,id)=>{const task=await originalTask(event,id);return activeTaskFixture?.id===id?{...task,status:activeTaskFixture.status}:task;});
+const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
+ipcMain.removeHandler("workspace:task-history");
+ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0;
 ipcMain.removeHandler("workspace:command");
 ipcMain.handle("workspace:command",async(event,command)=>{
   if(holdCreation && ["create-task","handoff"].includes(command.type)){creationCalls++;await new Promise((resolve,reject)=>{pendingCreation={resolve,reject};});}
   if(command.id==="design-requests" && ["approval","answer"].includes(command.type)){requestCalls++;await new Promise((resolve,reject)=>{pendingRequest=reject;});}
+  if(command.type==="fork"||command.type==="handoff"||(command.type==="update-task"&&command.archived!==undefined))taskActionCalls++;
   return originalCommand(event,command);
 });
 const output = path.resolve("../../output/playwright/design-audit", packagedEntry ? "packaged-after" : process.argv.includes("--before") ? "before" : "after");
@@ -328,6 +360,7 @@ try {
           writeFileSync(path.join(output, `${width}-${theme}-conversation.json`), JSON.stringify(messageLayout, null, 2));
           writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
           await auditTaskActions(window,output,width,theme);
+          await auditActiveTaskActions(window,output,width,theme);
           editorCalls=[];
           await window.webContents.executeJavaScript(`(()=>{const link=document.querySelector('.message-file-link');link.scrollIntoView({block:'nearest'});link.click();link.click()})()`);
           await new Promise(resolve=>setTimeout(resolve,100));

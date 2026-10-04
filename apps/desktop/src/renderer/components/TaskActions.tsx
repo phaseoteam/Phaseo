@@ -18,7 +18,7 @@ export function TaskActions({ task, busy, onArchive, onPin, onFork, onHandoff, o
 			<Menu.Positioner className="task-actions-positioner" align="end" sideOffset={8}>
 				<Menu.Popup className="task-actions-menu" aria-label="Task actions">
 					<Menu.Item onClick={onPin}><Pin size={16} />{task.pinned ? "Unpin task" : "Pin task"}</Menu.Item>
-					<Menu.Item onClick={onFork}><GitFork size={16} />Fork task history</Menu.Item>
+					<Menu.Item disabled={active} onClick={onFork}><GitFork size={16} />Fork task history</Menu.Item>
 					<Menu.Item disabled={active} onClick={onHandoff}><ArrowRightLeft size={16} />Handoff</Menu.Item>
 					<Menu.Separator />
 					<Menu.Item disabled={busy} onClick={() => onExport("markdown")}><Download size={16} />Export Markdown</Menu.Item>
