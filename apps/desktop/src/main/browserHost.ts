@@ -1,7 +1,9 @@
 import { session, WebContentsView, type BrowserWindow } from "electron";
-import { browserUrl, type BrowserCommand, type BrowserState } from "../shared/browser";
+import { browserUrl, browserViewport, browserViewportSizes, type BrowserViewport, type BrowserCommand, type BrowserState } from "../shared/browser";
 
 export class BrowserHost {
+	private frames = new WeakMap<WebContentsView, Electron.Rectangle>();
+	private viewports = new WeakMap<WebContentsView, BrowserViewport>();
 	private owners = new Map<BrowserWindow, Map<string, WebContentsView>>();
 	command(owner: BrowserWindow, value: unknown): BrowserState | undefined {
 		if (!value || typeof value !== "object") throw new Error("Invalid browser request.");
@@ -19,7 +21,8 @@ export class BrowserHost {
 			if (view) { owner.contentView.removeChildView(view); if (command.type === "close") { view.webContents.close({ waitForBeforeUnload: false }); views.delete(command.id); } }
 			return view && !view.webContents.isDestroyed() ? this.state(command.id, view) : undefined;
 		}
-		if (!["show", "navigate", "back", "forward", "reload", "stop", "devtools"].includes(command.type)) throw new Error("Invalid browser action.");
+		if (!["show", "navigate", "back", "forward", "reload", "stop", "devtools", "viewport"].includes(command.type)) throw new Error("Invalid browser action.");
+		const viewport = command.type === "viewport" ? browserViewport(command.viewport) : undefined;
 		const url = command.type === "navigate" ? browserUrl(command.url) : undefined;
 		if (command.type === "show" && (!command.bounds || ![command.bounds.x, command.bounds.y, command.bounds.width, command.bounds.height].every(Number.isFinite) || command.bounds.width < 0 || command.bounds.height < 0)) throw new Error("Invalid browser bounds.");
 		if (!view) {
@@ -32,6 +35,7 @@ export class BrowserHost {
 			const contents = createdView.webContents;
 			const emit = (error?: string) => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, createdView), ...(error ? { error } : {}) }); };
 			contents.on("did-start-loading", () => emit()); contents.on("did-stop-loading", () => emit()); contents.on("did-navigate", () => emit()); contents.on("did-navigate-in-page", () => emit()); contents.on("page-title-updated", () => emit());
+			contents.on("dom-ready", () => this.applyViewport(createdView, this.viewports.get(createdView) ?? "desktop"));
 			contents.on("devtools-opened", () => emit()); contents.on("devtools-closed", () => emit());
 			contents.on("before-input-event", (event, input) => { if (input.type === "keyDown" && !input.isAutoRepeat && (input.key === "F12" || (input.key.toLowerCase() === "i" && ((input.control && input.shift) || (input.meta && input.alt))))) { event.preventDefault(); this.toggleDevTools(contents); } });
 			contents.on("did-fail-load", (_event, code, description, _url, mainFrame) => { if (mainFrame && code !== -3) emit(description); });
@@ -44,7 +48,8 @@ export class BrowserHost {
 			for (const candidate of views.values()) owner.contentView.removeChildView(candidate);
 			const zoom = owner.webContents.getZoomFactor(); const [width, height] = owner.getContentSize();
 			const x = Math.max(0, Math.min(width, Math.round(command.bounds.x * zoom))); const y = Math.max(0, Math.min(height, Math.round(command.bounds.y * zoom)));
-			view.setBounds({ x, y, width: Math.max(0, Math.min(width - x, Math.round(command.bounds.width * zoom))), height: Math.max(0, Math.min(height - y, Math.round(command.bounds.height * zoom))) });
+			this.frames.set(view, { x, y, width: Math.max(0, Math.min(width - x, Math.round(command.bounds.width * zoom))), height: Math.max(0, Math.min(height - y, Math.round(command.bounds.height * zoom))) });
+			this.applyViewport(view, this.viewports.get(view) ?? "desktop");
 			owner.contentView.addChildView(view); view.setVisible(Boolean(contents.getURL()));
 		} else if (url) { view.setVisible(true); void contents.loadURL(url).catch(reason => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, view), error: String(reason) }); }); }
 		else if (command.type === "back" && contents.navigationHistory.canGoBack()) contents.navigationHistory.goBack();
@@ -52,11 +57,23 @@ export class BrowserHost {
 		else if (command.type === "reload") contents.reload();
 		else if (command.type === "stop") contents.stop();
 		else if (command.type === "devtools") this.toggleDevTools(contents);
+		else if (viewport) { this.applyViewport(view, viewport); this.viewports.set(view, viewport); }
 		return this.state(command.id, view);
+	}
+	private applyViewport(view: WebContentsView, viewport: BrowserViewport) {
+		const frame = this.frames.get(view) ?? view.getBounds();
+		if (viewport === "desktop") { view.setBounds(frame); if (view.webContents.getURL() && (this.viewports.get(view) ?? "desktop") !== "desktop") view.webContents.disableDeviceEmulation(); return; }
+		const size = browserViewportSizes[viewport];
+		const scale = Math.min(1, frame.width / size.width, frame.height / size.height);
+		const width = Math.max(0, Math.round(size.width * scale)); const height = Math.max(0, Math.round(size.height * scale));
+		view.setBounds({ x: frame.x + Math.round((frame.width - width) / 2), y: frame.y + Math.round((frame.height - height) / 2), width, height });
+		if (!view.webContents.getURL()) return;
+		const bounds = view.getBounds();
+		view.webContents.enableDeviceEmulation({ screenPosition: "mobile", screenSize: size, viewPosition: { x: 0, y: 0 }, deviceScaleFactor: 1, viewSize: size, scale: Math.max(.1, Math.min(1, bounds.width / size.width, bounds.height / size.height)) });
 	}
 	private toggleDevTools(contents: Electron.WebContents) { if (contents.isDevToolsOpened()) contents.closeDevTools(); else contents.openDevTools({ mode: "detach" }); }
 	private state(id: string, view: WebContentsView): BrowserState {
 		const contents = view.webContents;
-		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward(), devToolsOpen: contents.isDevToolsOpened() };
+		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward(), devToolsOpen: contents.isDevToolsOpened(), viewport: this.viewports.get(view) ?? "desktop" };
 	}
 }
