@@ -138,7 +138,7 @@ function MetadataRow({
 }) {
 	return (
 		<div className="flex items-center justify-between gap-4">
-			<span className="text-muted-foreground">{label}</span>
+			<span className="shrink-0 whitespace-nowrap text-muted-foreground">{label}</span>
 			<div className="min-w-0 text-right font-medium text-foreground">
 				{children}
 			</div>
