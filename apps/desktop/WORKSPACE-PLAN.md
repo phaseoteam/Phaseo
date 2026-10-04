@@ -38,6 +38,8 @@ does not establish completion. Tests must cover runtime behavior and UI states.
 
 ## Implementation and evidence
 
+Task-history pagination has a bounded SQLite query and trusted IPC/preload API. Pages return only task summaries, ordered by pins, updated time and a deterministic ID tie-breaker. Search checks titles and message text with Unicode case folding and literal punctuation. Tests cover 155 tasks, archive separation, payload privacy and invalid bounds; the source Electron smoke checks the bridge. Renderer paging and removal of full-history workspace broadcasts remain unfinished, so the history ledger item remains unchecked.
+
 Changes are confined to the desktop app and necessary integration packages.
 Keep credentials and filesystem/process execution in the trusted runtime.
 Validate IPC inputs, project boundaries, cancellation, and durable transitions.
@@ -229,7 +231,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 309 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 312 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit

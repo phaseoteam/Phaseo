@@ -202,6 +202,10 @@ ipcMain.handle("workspace:get", event => {
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.get();
 });
+ipcMain.handle("workspace:task-history", (event, query: unknown) => {
+	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
+	return workspaceRuntime.store.taskHistory(query);
+});
 ipcMain.handle("workspace:export-task", async (event, id: unknown, format: unknown) => {
 	const window = senderWindow(event);
 	if (!window || typeof id !== "string" || (format !== "markdown" && format !== "json")) throw new Error("Invalid conversation export.");

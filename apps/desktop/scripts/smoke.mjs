@@ -82,6 +82,9 @@ app.whenReady().then(async () => {
 			await api.command({type:'update-task',id:task.id,archived:true});
 			const restored = await api.command({type:'update-task',id:task.id,archived:false});
 			if (restored.tasks[0].title !== 'Electron bridge check' || !restored.tasks[0].pinned) throw new Error('IPC persistence mismatch');
+			const history = await api.taskHistory({query:'BRIDGE',archived:false,offset:0,limit:1});
+			if(history.tasks.length!==1 || history.tasks[0].id!==task.id || !history.tasks[0].pinned || history.hasMore || 'messages' in history.tasks[0]) throw new Error('Task history bridge mismatch');
+			let invalidHistory=false;try{await api.taskHistory({query:'',archived:false,offset:0,limit:1000});}catch{invalidHistory=true;}if(!invalidHistory)throw new Error('Task history accepted an unbounded request');
 			let rejected = false;
 			try { await api.command({type:'send',id:task.id,text:42}); } catch { rejected = true; }
 			if (!rejected) throw new Error('Malformed IPC was accepted');

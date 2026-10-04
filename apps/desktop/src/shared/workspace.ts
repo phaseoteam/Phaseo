@@ -2,6 +2,7 @@ import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
 import type { Mission, MissionCommand } from "./missions";
+import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
 export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
 export type Harness = typeof harnesses[number];
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -70,6 +71,7 @@ export type WorkspaceCommand =
 	| { type: "queue-edit"; id: string; messageId: string; text: string }
 	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
 export type WorkspaceApi = {
+	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	missions: () => Promise<Mission[]>;
 	mission: (command: MissionCommand) => Promise<Mission[]>;
 	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;

@@ -14,6 +14,7 @@ const desktopApi: PhaseoDesktopApi = {
 		savePreferences: preferences => ipcRenderer.invoke("workspace:save-preferences", preferences),
 		onOpenTask: listener => { taskOpenListeners.add(listener); if (pendingTaskOpen) { const pending = pendingTaskOpen; pendingTaskOpen = undefined; listener(pending.id); } return () => { taskOpenListeners.delete(listener); }; },
 		get: () => ipcRenderer.invoke("workspace:get"),
+		taskHistory: query => ipcRenderer.invoke("workspace:task-history", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),
 		chooseProject: () => ipcRenderer.invoke("workspace:choose-project"),
 		createWorktree: (id, branch, base) => ipcRenderer.invoke("workspace:create-worktree", id, branch, base),

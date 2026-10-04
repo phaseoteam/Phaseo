@@ -6,12 +6,14 @@ import type { McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
 import { MissionStore } from "./missionStore";
+import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
 
 export class WorkspaceStore {
 	private readonly db: DatabaseSync;
 	readonly missions: MissionStore;
 	constructor(filename: string) {
 		this.db = new DatabaseSync(filename);
+		this.db.function("history_lower", { deterministic: true }, value => typeof value === "string" ? value.toLowerCase() : "");
 		this.db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;
 			CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, data TEXT NOT NULL);
 			CREATE TABLE IF NOT EXISTS tasks (id TEXT PRIMARY KEY, data TEXT NOT NULL);
@@ -54,6 +56,22 @@ export class WorkspaceStore {
 		const row = this.db.prepare("SELECT data FROM tasks WHERE id = ?").get(id);
 		if (!row) throw new Error("Task no longer exists.");
 		return JSON.parse(row.data as string) as Task;
+	}
+	taskHistory(value: unknown): TaskHistoryPage {
+		const { query, archived, offset, limit } = validateTaskHistoryQuery(value);
+		const rows = this.db.prepare(`SELECT json_object(
+			'id', id, 'title', json_extract(data, '$.title'),
+			'harness', json_extract(data, '$.harness'), 'status', json_extract(data, '$.status'),
+			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'updatedAt', json_extract(data, '$.updatedAt')
+		) AS summary FROM tasks
+		WHERE coalesce(json_extract(data, '$.archived'), 0) = ?
+		AND (? = '' OR instr(history_lower(json_extract(data, '$.title')), history_lower(?)) > 0
+			OR EXISTS (SELECT 1 FROM json_each(tasks.data, '$.messages') AS message
+				WHERE instr(history_lower(json_extract(message.value, '$.text')), history_lower(?)) > 0))
+		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
+			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
+		`).all(Number(archived), query, query, query, limit + 1, offset);
+		return { tasks: rows.slice(0, limit).map(row => { const summary = JSON.parse(row.summary as string); return { ...summary, pinned: Boolean(summary.pinned) }; }), hasMore: rows.length > limit };
 	}
 	loadAgentRun(id: string): AgentRunResult | null {
 		const row = this.db.prepare("SELECT data FROM agent_runs WHERE id = ?").get(id);
