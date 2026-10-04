@@ -434,6 +434,7 @@
 			"status": "État",
 			"code": "Code",
 			"request": "Requête",
+			"viewRequestLog": "Voir le journal de la requête",
 			"requestId": "ID de requête",
 			"endpoint": "Point de terminaison",
 			"model": "Modèle",

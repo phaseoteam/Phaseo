@@ -434,6 +434,7 @@
 			"status": "状态",
 			"code": "代码",
 			"request": "请求",
+			"viewRequestLog": "查看请求日志",
 			"requestId": "请求 ID",
 			"endpoint": "端点",
 			"model": "模型",

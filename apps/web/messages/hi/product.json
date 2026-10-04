@@ -434,6 +434,7 @@
 			"status": "स्थिति",
 			"code": "कोड",
 			"request": "अनुरोध",
+			"viewRequestLog": "अनुरोध लॉग देखें",
 			"requestId": "अनुरोध ID",
 			"endpoint": "एंडपॉइंट",
 			"model": "मॉडल",

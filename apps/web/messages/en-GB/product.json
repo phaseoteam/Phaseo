@@ -434,6 +434,7 @@
 			"status": "Status",
 			"code": "Code",
 			"request": "Request",
+			"viewRequestLog": "View Request Log",
 			"requestId": "Request ID",
 			"endpoint": "Endpoint",
 			"model": "Model",

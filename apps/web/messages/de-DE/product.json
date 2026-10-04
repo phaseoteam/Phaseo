@@ -434,6 +434,7 @@
 			"status": "Status",
 			"code": "Code",
 			"request": "Anfrage",
+			"viewRequestLog": "Anfrageprotokoll anzeigen",
 			"requestId": "Anfrage-ID",
 			"endpoint": "Endpunkt",
 			"model": "Modell",
