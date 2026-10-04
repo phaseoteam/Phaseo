@@ -297,20 +297,24 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			if (run.status === "waiting_for_human" && run.pause?.pendingToolCalls?.length) {
 				const approved = asDecisionMap(options.approveToolCalls ?? options.approvals); const rejected = asDecisionMap(options.rejectToolCalls ?? options.rejections); const outputs = new Map((options.toolOutputs ?? []).map((entry) => [entry.toolCallId, entry.output]));
 				const pending = run.pause.pendingToolCalls;
-				const executions: Array<Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext; call: AgentToolCall; input: unknown }>> = [];
-				for (const entry of pending) {
+				const admitted = pending.map((entry) => {
 					const tool = tools.find((candidate) => candidate.id === entry.call.name);
 					if (!tool) throw new Error(`Tool not found: ${entry.call.name}`);
-					if (rejected.has(entry.call.id)) {
-						const reason = rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human";
-						run.messages.push({ role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: reason }), isError: true });
-						continue;
+					const rejection = rejected.has(entry.call.id) ? rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human" : undefined;
+					if (rejection === undefined) {
+						if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
+						if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
 					}
-					if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
-					if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
-					executions.push(executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming }).then((result) => ({ ...result, call: entry.call, input: entry.call.input })));
-				}
-				for (const execution of await Promise.all(executions)) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+					return { entry, tool, rejection };
+				});
+				const executions = await mapConcurrent(admitted, concurrency, async ({ entry, tool, rejection }) => {
+					const execution = rejection !== undefined
+						? { message: { role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: rejection }), isError: true } as AgentMessage, context: currentContext, nextTurnParams: undefined }
+						: await executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming });
+					if (concurrency === 1) currentContext = execution.context;
+					return { ...execution, rejection, call: entry.call, input: entry.call.input };
+				});
+				for (const execution of executions) { run.messages.push(execution.message); if (execution.rejection === undefined) currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
 				run.pause = null;
 			} else if (run.status === "waiting_for_human" && !(options.humanMessages !== undefined ? options.humanMessages.length : options.humanInput)) throw new Error(`Run ${run.id} is waiting for human input`);
 			if (options.humanMessages !== undefined) run.messages.push(...structuredClone(options.humanMessages));

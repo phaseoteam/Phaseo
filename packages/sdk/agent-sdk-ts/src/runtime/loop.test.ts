@@ -8,6 +8,37 @@ import { AgentGatewayError } from "../errors";
 import type { AgentMessage, AgentRunResult } from "../types";
 
 describe("Agent SDK runtime loop", () => {
+ it("keeps mixed approval, rejection and manual outputs in call order", async () => {
+  let step = 0; const rejected = vi.fn(() => "must not run");
+  const agent = createAgent({ id: "mixed-continuation", tools: [defineTool({ id: "read", requireApproval: true, execute: (_input, runtime) => runtime.context }), defineTool({ id: "denied", requireApproval: true, execute: rejected }), defineTool({ id: "manual", execute: false, onResponseReceived: (output, runtime) => { runtime.setContext({ value: output }); return output; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "read", input: {} }, { id: "two", name: "denied", input: {} }, { id: "three", name: "manual", input: {} }, { id: "four", name: "read", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", context: { value: "original" }, client });
+  const result = await agent.continueRun({ run: paused, approvals: ["one", "four"], rejections: ["two"], toolOutputs: [{ toolCallId: "three", output: "updated" }], client });
+  const messages = result.run.messages.filter(message => message.role === "tool"); expect(messages.map(message => message.toolCallId)).toEqual(["one", "two", "three", "four"]); expect(messages[1].isError).toBe(true); expect(JSON.parse(messages[3].content as string)).toEqual({ value: "updated" }); expect(result.run.context).toEqual({ value: "updated" }); expect(rejected).not.toHaveBeenCalled();
+ });
+
+ it("resumes approved tools serially with the preceding context", async () => {
+  let completed = false, step = 0;
+  const agent = createAgent({ id: "approved-order", tools: [defineTool({ id: "first", requireApproval: true, execute: async (_input, runtime) => { await Promise.resolve(); runtime.setContext({ value: "updated" }); completed = true; return "first"; } }), defineTool({ id: "second", requireApproval: true, execute: (_input, runtime) => { expect(completed).toBe(true); return runtime.context; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "first", input: {} }, { id: "two", name: "second", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", context: { value: "original" }, client });
+  const result = await agent.continueRun({ run: paused, approvals: ["one", "two"], client });
+  expect(result.run.context).toEqual({ value: "updated" }); expect(JSON.parse(result.run.messages.find(message => message.role === "tool" && message.toolCallId === "two")!.content as string)).toEqual({ value: "updated" });
+ });
+ it("validates every pending decision before starting an approved effect", async () => {
+  const effect = vi.fn(() => "owned effect"), agent = createAgent({ id: "all-decisions", tools: [defineTool({ id: "effect", requireApproval: true, execute: effect })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", toolCalls: [{ id: "one", name: "effect", input: {} }, { id: "two", name: "effect", input: {} }] } }) };
+  const paused = await agent.run({ input: "Do work", client });
+  await expect(agent.continueRun({ run: paused, approvals: ["one"], client })).rejects.toThrow("Missing approval decision"); expect(effect).not.toHaveBeenCalled();
+ });
+ it("honors explicit parallel approval execution and keeps call ordering", async () => {
+  let release: () => void = () => {}, step = 0; const gate = new Promise<void>(resolve => { release = resolve; }), finished: string[] = [];
+  const agent = createAgent({ id: "parallel-approval", toolExecution: { toolConcurrency: 2 }, tools: [defineTool({ id: "first", requireApproval: true, execute: async () => { await gate; finished.push("first"); return "first"; } }), defineTool({ id: "second", requireApproval: true, execute: () => { finished.push("second"); release(); return "second"; } })] });
+  const client = { generate: async () => ({ message: { role: "assistant" as const, content: "", ...(step++ === 0 ? { toolCalls: [{ id: "one", name: "first", input: {} }, { id: "two", name: "second", input: {} }] } : {}) } }) };
+  const paused = await agent.run({ input: "Do work", client }), result = await agent.continueRun({ run: paused, approvals: ["one", "two"], client });
+  expect(finished).toEqual(["second", "first"]); expect(result.run.messages.filter(message => message.role === "tool").map(message => message.toolCallId)).toEqual(["one", "two"]);
+ });
+
  it("passes context changes to later automatic tools in the same serial batch", async () => {
   let step = 0;
   const agent = createAgent({ id: "serial-context", tools: [defineTool({ id: "change", execute: (_input, runtime) => { runtime.setContext({ value: "updated" }); return "changed"; } }), defineTool({ id: "read", execute: (_input, runtime) => runtime.context })] });

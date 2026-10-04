@@ -276,7 +276,9 @@ const agent = createAgent({
 });
 ```
 
-The runtime still persists tool-result messages in tool-call order.
+Tools run serially by default, including approved tools resumed from a pause. Context updates from each serial tool are available to the next tool. Before resuming, the runtime validates all required approval decisions and manual outputs, so an incomplete response cannot start an earlier approved tool.
+
+With explicit concurrency, tools may finish in any order. The runtime still persists tool-result messages in tool-call order.
 
 ### Typed item streams
 

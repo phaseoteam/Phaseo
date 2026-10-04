@@ -87,12 +87,12 @@ describe("external editors", () => {
 		} finally { rmSync(project, { recursive: true, force: true }); }
 	});
 	it("launches a real owned process with literal arguments and clears inherited Electron/Node execution flags", async () => {
-		const project = mkdtempSync(path.join(tmpdir(), "phaseo-editor-"));
+		const project = realpathSync.native(mkdtempSync(path.join(tmpdir(), "phaseo-editor-")));
 		const output = path.join(project, "result.json"), literal = "世界 & $(do-not-run) # text";
 		const originalNode = process.env.NODE_OPTIONS, originalElectron = process.env.ELECTRON_RUN_AS_NODE;
 		try {
 			process.env.NODE_OPTIONS = "--invalid-owned-option"; process.env.ELECTRON_RUN_AS_NODE = "1";
-			await launchEditor(process.execPath, ["-e", "require('node:fs').writeFileSync(process.argv[1], JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),pid:process.pid,node:process.env.NODE_OPTIONS,electron:process.env.ELECTRON_RUN_AS_NODE}))", output, literal], project);
+			await launchEditor(process.execPath, ["-e", "const fs=require('node:fs'), output=process.argv[1], temporary=output+'.tmp';fs.writeFileSync(temporary, JSON.stringify({args:process.argv.slice(2),cwd:process.cwd(),pid:process.pid,node:process.env.NODE_OPTIONS,electron:process.env.ELECTRON_RUN_AS_NODE}));fs.renameSync(temporary,output)", output, literal], project);
 			let result: string | undefined;
 			for (let attempt = 0; attempt < 100; attempt++) { try { result = readFileSync(output, "utf8"); break; } catch { await new Promise(resolve => setTimeout(resolve, 20)); } }
 			expect(result).toBeDefined();

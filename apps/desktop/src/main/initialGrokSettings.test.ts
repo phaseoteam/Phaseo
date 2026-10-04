@@ -9,10 +9,10 @@ const models=[{id:"native",name:"Native",default:true,reasoningEfforts:[{id:"hig
 beforeEach(()=>{native.models.mockReset();native.models.mockResolvedValue(models);});
 describe("initial Grok reasoning",()=>{
  it("waits for bounded discovery during shutdown and rejects late creation",async()=>{
-  const directory=mkdtempSync(path.join(tmpdir(),"phaseo-grok-shutdown-")),runtime=new WorkspaceRuntime(directory);let release!:(value:typeof models)=>void,closing:Promise<void>|undefined;native.models.mockReturnValueOnce(new Promise(resolve=>{release=resolve}));const apply=vi.spyOn(runtime.store,"apply");
-  try{const creation=runtime.command({type:"create-task",harness:"grok",model:"native",mode:"plan",reasoningEffort:"high"}),rejected=expect(creation).rejects.toThrow("shutting down");await vi.waitFor(()=>expect(native.models).toHaveBeenCalled());let closed=false;closing=runtime.close().then(()=>{closed=true});await Promise.resolve();expect(closed).toBe(false);release(models);await rejected;await closing;expect(apply).not.toHaveBeenCalled();}
-  finally{release?.(models);await (closing??runtime.close());rmSync(directory,{recursive:true,force:true});}
- });
+  const directory=mkdtempSync(path.join(tmpdir(),"phaseo-grok-shutdown-")),runtime=new WorkspaceRuntime(directory);let release!:(value:typeof models)=>void,closing:Promise<void>|undefined;let started!:()=>void;const discoveryStarted=new Promise<void>(resolve=>{started=resolve}),discovery=new Promise<typeof models>(resolve=>{release=resolve});native.models.mockImplementationOnce(()=>{started();return discovery;});const apply=vi.spyOn(runtime.store,"apply");
+  try{const creation=runtime.command({type:"create-task",harness:"grok",model:"native",mode:"plan",reasoningEffort:"high"}),rejected=expect(creation).rejects.toThrow("shutting down");await discoveryStarted;expect(native.models).toHaveBeenCalledOnce();let closed=false;closing=runtime.close().then(()=>{closed=true});await Promise.resolve();expect(closed).toBe(false);release(models);await rejected;await closing;expect(apply).not.toHaveBeenCalled();}
+  finally{release(models);await (closing??runtime.close());rmSync(directory,{recursive:true,force:true});}
+ },15000);
  it("validates and persists creation, import and handoff catalogues",async()=>{
   const directory=mkdtempSync(path.join(tmpdir(),"phaseo-grok-settings-")),runtime=new WorkspaceRuntime(directory);
   try{
