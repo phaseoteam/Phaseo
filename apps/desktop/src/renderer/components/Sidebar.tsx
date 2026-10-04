@@ -3,7 +3,6 @@ import {
 	Bell,
 	Boxes,
 	Bot,
-	ChevronDown,
 	CircleDot,
 	Code2,
 	Compass,
@@ -97,14 +96,13 @@ export function Sidebar({
 			)}
 
 			{collapsed ? null : (
-				<button className="workspace-picker" type="button">
+				<div className="workspace-identity">
 					<span className="workspace-avatar">P</span>
 					<span>
 						<strong>Phaseo</strong>
 						<small>Product workspace</small>
 					</span>
-					<ChevronDown size={14} />
-				</button>
+				</div>
 			)}
 
 			<button className="sidebar-search" type="button" title="Search" onClick={onSearch}>

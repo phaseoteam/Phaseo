@@ -14,6 +14,8 @@ Sources: https://opencode.ai/v2/docs and
 https://github.com/pingdotgg/t3code/releases/tag/v0.0.46-nightly.20261003.2610.
 Use the Phaseo website's fonts, assets, components and spacing conventions as the visual source of truth, adapted to the existing native desktop frame.
 
+Dropdown triggers now match the web select treatment with consistent chevrons, reserved text spacing and theme-aware native menus. The single-workspace identity no longer exposes an inactive switching button. Source and packaged visual checks cover the trigger styles; native menus and forced-colour rendering remain platform verification work.
+
 ## Acceptance ledger
 
 Every unchecked item remains a parity gap. A visible control or mock response
