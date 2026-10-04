@@ -6,6 +6,8 @@ openapi: "/de/openapi/v1/openapi.localized.yaml GET /generations"
 ---
 Ruft den gespeicherten Auditdatensatz für eine zu deinem Team gehörende `request_id` ab.
 
+Neue Anfragen erhalten eine vom Server erzeugte Generierungs-ID mit dem Präfix `G-`, die im Antwortheader `x-request-id` und in der Generierungsantwort zurückgegeben wird. Verwende sie für Protokolle, Abfragen und Support. Ein vom Client übermittelter `x-request-id` ersetzt diese ID nicht. Frühere UUID-basierte Protokoll-IDs bleiben für Abfragen gültig.
+
 Verwende:
 - `GET /v1/generations?id=<request_id>`
 

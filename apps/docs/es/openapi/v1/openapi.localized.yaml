@@ -726,6 +726,9 @@ paths:
       responses:
         '200':
           description: Respuesta de finalización de chat
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -769,6 +772,9 @@ paths:
       responses:
         '200':
           description: Respuesta
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -883,6 +889,9 @@ paths:
       responses:
         '200':
           description: Respuesta del mensaje
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8224,6 +8233,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: Identificador público de solicitud generado por el servidor. Para solicitudes de inferencia, es el ID de generación usado en respuestas y registros. Los valores x-request-id del cliente no lo sustituyen.
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: Metadatos de cuota del proveedor, solo para BYOK. Se omiten en las solicitudes gestionadas por Phaseo.
       schema:
@@ -12962,6 +12976,7 @@ components:
           format: date-time
         request_id:
           type: string
+          description: Identificador público de generación. Las nuevas generaciones usan el formato G-<ULID>; los registros históricos pueden contener identificadores anteriores, incluidos UUID.
         team_id:
           type: string
         app_id:

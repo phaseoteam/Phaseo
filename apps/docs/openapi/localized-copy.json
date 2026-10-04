@@ -7921,6 +7921,26 @@
 			"zh-Hans": "用于具备视觉能力的决策模型的嵌入图像。Clef接受PNG、JPEG或WebP，不支持远程URL。每张图像最多4 MiB和1,600万像素，解码后数据总量最多8 MiB，每个请求体最多13 MiB。",
 			"hi": "विज़न समर्थित निर्णय मॉडलों के लिए एम्बेड किए गए चित्र। Clef PNG, JPEG या WebP स्वीकार करता है; रिमोट URL समर्थित नहीं हैं। हर चित्र की सीमा 4 MiB और 16 मेगापिक्सल, कुल डिकोड डेटा की सीमा 8 MiB और हर अनुरोध बॉडी की सीमा 13 MiB है।",
 			"ar": "صور مضمّنة لنماذج القرار التي تدعم الرؤية. يقبل Clef صيغ PNG أو JPEG أو WebP؛ الروابط البعيدة غير مدعومة. الحد الأقصى 4 MiB و16 ميغابكسل لكل صورة، و8 MiB لإجمالي البيانات بعد فك الترميز، و13 MiB لكل جسم طلب."
+		},
+		"Server-generated public request identifier. For inference requests, this is the generation ID used in response payloads and request logs. Caller-supplied x-request-id values do not replace it.": {
+			"es": "Identificador público de solicitud generado por el servidor. Para solicitudes de inferencia, es el ID de generación usado en respuestas y registros. Los valores x-request-id del cliente no lo sustituyen.",
+			"fr": "Identifiant public de requête généré par le serveur. Pour les requêtes d’inférence, il identifie la génération dans les réponses et les journaux. Les valeurs x-request-id du client ne le remplacent pas.",
+			"de": "Vom Server erzeugte öffentliche Anfragekennung. Bei Inferenzanfragen ist dies die Generierungs-ID in Antworten und Anfrageprotokollen. Vom Client übermittelte x-request-id-Werte ersetzen sie nicht.",
+			"pt-BR": "Identificador público de solicitação gerado pelo servidor. Em solicitações de inferência, é o ID da geração usado nas respostas e nos registros. Valores x-request-id enviados pelo cliente não o substituem.",
+			"hi": "सर्वर द्वारा बनाया गया सार्वजनिक अनुरोध पहचानकर्ता। अनुमान अनुरोधों में यह प्रतिक्रियाओं और अनुरोध लॉग में इस्तेमाल होने वाला जनरेशन ID है। क्लाइंट के x-request-id मान इसे नहीं बदलते।",
+			"ja": "サーバーが生成する公開リクエスト識別子。推論リクエストでは、レスポンスとリクエストログで使用する生成 ID です。クライアントが指定した x-request-id では置き換えられません。",
+			"zh-Hans": "服务器生成的公开请求标识符。对于推理请求，它是响应和请求日志中使用的生成 ID。客户端提供的 x-request-id 值不会替换它。",
+			"ar": "معرّف طلب عام ينشئه الخادم. في طلبات الاستدلال، هو معرّف الإنشاء المستخدم في الاستجابات وسجلات الطلبات. لا تستبدله قيم x-request-id التي يرسلها العميل."
+		},
+		"Public generation identifier. New generations use G-<ULID> format; historical logs may contain earlier identifiers, including UUIDs.": {
+			"es": "Identificador público de generación. Las nuevas generaciones usan el formato G-<ULID>; los registros históricos pueden contener identificadores anteriores, incluidos UUID.",
+			"fr": "Identifiant public de génération. Les nouvelles générations utilisent le format G-<ULID> ; les anciens journaux peuvent contenir des identifiants antérieurs, notamment des UUID.",
+			"de": "Öffentliche Generierungskennung. Neue Generierungen verwenden das Format G-<ULID>; historische Protokolle können frühere Kennungen einschließlich UUIDs enthalten.",
+			"pt-BR": "Identificador público de geração. Novas gerações usam o formato G-<ULID>; registros históricos podem conter identificadores anteriores, incluindo UUIDs.",
+			"hi": "सार्वजनिक जनरेशन पहचानकर्ता। नए जनरेशन G-<ULID> प्रारूप का उपयोग करते हैं; पुराने लॉग में UUID सहित पुराने पहचानकर्ता हो सकते हैं।",
+			"ja": "公開生成識別子。新しい生成は G-<ULID> 形式を使用します。過去のログには UUID などの以前の識別子が含まれる場合があります。",
+			"zh-Hans": "公开生成标识符。新的生成使用 G-<ULID> 格式；历史日志可能包含 UUID 等旧标识符。",
+			"ar": "معرّف إنشاء عام. تستخدم عمليات الإنشاء الجديدة التنسيق G-<ULID>؛ وقد تحتوي السجلات التاريخية على معرّفات سابقة، بما فيها UUID."
 		}
 	},
 	"GET /apps": {

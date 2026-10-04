@@ -6,6 +6,8 @@ openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /generations"
 ---
 Busca o registro de auditoria armazenado para um `request_id` da sua equipe.
 
+Novas solicitações recebem um ID de geração `G-` criado pelo servidor, retornado no cabeçalho de resposta `x-request-id` e na resposta da geração. Use esse ID para registros, consultas e suporte. Um `x-request-id` enviado pelo cliente não substitui esse ID. IDs UUID de registros antigos continuam válidos para consultas.
+
 Use:
 - `GET /v1/generations?id=<request_id>`
 

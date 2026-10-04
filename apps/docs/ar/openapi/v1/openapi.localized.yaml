@@ -726,6 +726,9 @@ paths:
       responses:
         '200':
           description: استجابة إكمال المحادثة
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -769,6 +772,9 @@ paths:
       responses:
         '200':
           description: استجابة
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -883,6 +889,9 @@ paths:
       responses:
         '200':
           description: استجابة الرسالة
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8224,6 +8233,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: معرّف طلب عام ينشئه الخادم. في طلبات الاستدلال، هو معرّف الإنشاء المستخدم في الاستجابات وسجلات الطلبات. لا تستبدله قيم x-request-id التي يرسلها العميل.
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: بيانات وصفية لحصة المزوّد خاصة بـ BYOK فقط. تُحذف في الطلبات التي تستخدم مزوّداً مُداراً.
       schema:
@@ -12962,6 +12976,7 @@ components:
           format: date-time
         request_id:
           type: string
+          description: معرّف إنشاء عام. تستخدم عمليات الإنشاء الجديدة التنسيق G-<ULID>؛ وقد تحتوي السجلات التاريخية على معرّفات سابقة، بما فيها UUID.
         team_id:
           type: string
         app_id:

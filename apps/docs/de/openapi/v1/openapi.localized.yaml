@@ -726,6 +726,9 @@ paths:
       responses:
         '200':
           description: Antwort der Chat-Vervollständigung
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -769,6 +772,9 @@ paths:
       responses:
         '200':
           description: Antwort
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -883,6 +889,9 @@ paths:
       responses:
         '200':
           description: Nachrichtenantwort
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8224,6 +8233,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: Vom Server erzeugte öffentliche Anfragekennung. Bei Inferenzanfragen ist dies die Generierungs-ID in Antworten und Anfrageprotokollen. Vom Client übermittelte x-request-id-Werte ersetzen sie nicht.
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: Anbieter-Kontingentmetadaten nur für BYOK. Bei Anfragen über verwaltete Anbieter werden sie weggelassen.
       schema:
@@ -12962,6 +12976,7 @@ components:
           format: date-time
         request_id:
           type: string
+          description: Öffentliche Generierungskennung. Neue Generierungen verwenden das Format G-<ULID>; historische Protokolle können frühere Kennungen einschließlich UUIDs enthalten.
         team_id:
           type: string
         app_id:
