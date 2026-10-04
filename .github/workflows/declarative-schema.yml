@@ -6,7 +6,8 @@ on:
             - 'supabase/schemas/**'
             - 'supabase/migrations/**'
             - 'supabase/config.toml'
-            - 'scripts/check-declarative-schema.mjs'
+            - 'supabase/baseline/**'
+            - 'scripts/declarative-schema.mjs'
             - '.github/workflows/declarative-schema.yml'
     workflow_dispatch:
     merge_group:
@@ -24,5 +25,15 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: '22'
-            - name: Verify declarative schemas against migration history
-              run: node scripts/check-declarative-schema.mjs
+            - name: Generate baseline candidate when absent
+              if: hashFiles('supabase/baseline/schema.sql') == ''
+              run: node scripts/declarative-schema.mjs bootstrap
+            - name: Save baseline candidate for review
+              if: hashFiles('supabase/baseline/schema.sql') == ''
+              uses: actions/upload-artifact@v4
+              with:
+                  name: baseline-candidate
+                  path: supabase/.temp/baseline-candidate/
+                  if-no-files-found: error
+            - name: Verify declarative schemas against frozen baseline and forward migrations
+              run: node scripts/declarative-schema.mjs check
