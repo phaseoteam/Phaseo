@@ -37,6 +37,18 @@ backfill and consumer cutover are verified.
   SKU carries its tier and resolves to its global route variant by default.
 - `v2_route_capabilities` keeps endpoint/capability status and parameter facts
   queryable for routing and display.
+- Routing capability IDs use the vocabulary in
+  `canonical_routing_capability_id(text)`. Writes to the routing and adapter
+  tables normalize known endpoint aliases and reject unknown IDs. For example,
+  `audio.transcribe` becomes `audio.transcription`, `embeddings` becomes
+  `text.embed`, and `images.generations` becomes `image.generate`.
+  Provider discovery observations retain their original endpoint identifiers;
+  promotion into routing tables applies the same normalization boundary.
+  Existing ended, disabled alias rows remain as historical records. Current
+  aliases are copied to canonical keys without changing their status, effective
+  window, parameters or limits. Conflicting current records stop migration.
+  Generic `audio` and `audio.generate` remain distinct operations pending a
+  provider-specific semantic audit; neither is globally reclassified as speech.
 - A route is eligible only when the model, lab, provider, and route are all
   enabled and within their effective windows.
 
