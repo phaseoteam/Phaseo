@@ -59,7 +59,7 @@ jobs:
             - name: Phaseo general Chat MCP tools
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --chat
             - name: Phaseo MCP resources
-              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --long-human-wait
             - name: Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
             - name: Phaseo global instruction settings

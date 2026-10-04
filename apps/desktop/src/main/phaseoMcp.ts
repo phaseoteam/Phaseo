@@ -42,7 +42,7 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
    await client.connect(transport, { signal: setupSignal, timeout: 30000 });
    const capabilities = client.getServerCapabilities();
    if (capabilities?.resources) {
-    const resources = phaseoMcpResourceTools(client, connection, signal);
+    const resources = phaseoMcpResourceTools(client, connection, signal, { active: budgets, waiting: () => waitingForms > 0 });
     if (tools.length + resources.tools.length > 500) throw Error("MCP tool discovery exceeded its supported limits.");
     tools.push(...resources.tools); Object.assign(labels, resources.labels);
    }

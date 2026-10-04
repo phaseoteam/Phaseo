@@ -1,11 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const ports=vi.hoisted(()=>({clients:[] as {connect:ReturnType<typeof vi.fn>;listTools:ReturnType<typeof vi.fn>;callTool:ReturnType<typeof vi.fn>;setRequestHandler:ReturnType<typeof vi.fn>;close:ReturnType<typeof vi.fn>}[],transports:[] as unknown[]}));
-vi.mock("@modelcontextprotocol/sdk/client/index.js",()=>({Client:class {getServerCapabilities=()=>({tools:{}});setRequestHandler=vi.fn();connect=vi.fn().mockResolvedValue(undefined);listTools=vi.fn().mockResolvedValue({tools:[{name:"search",description:"Find notes",inputSchema:{type:"object"}}]});callTool=vi.fn().mockResolvedValue({content:[{type:"text",text:"Found"}]});close=vi.fn().mockResolvedValue(undefined);constructor(){ports.clients.push(this);}}}));
+const ports=vi.hoisted(()=>({clients:[] as {getServerCapabilities:ReturnType<typeof vi.fn>;readResource:ReturnType<typeof vi.fn>;connect:ReturnType<typeof vi.fn>;listTools:ReturnType<typeof vi.fn>;callTool:ReturnType<typeof vi.fn>;setRequestHandler:ReturnType<typeof vi.fn>;close:ReturnType<typeof vi.fn>}[],transports:[] as unknown[]}));
+vi.mock("@modelcontextprotocol/sdk/client/index.js",()=>({Client:class {getServerCapabilities=vi.fn().mockReturnValue({tools:{}});readResource=vi.fn();setRequestHandler=vi.fn();connect=vi.fn().mockResolvedValue(undefined);listTools=vi.fn().mockResolvedValue({tools:[{name:"search",description:"Find notes",inputSchema:{type:"object"}}]});callTool=vi.fn().mockResolvedValue({content:[{type:"text",text:"Found"}]});close=vi.fn().mockResolvedValue(undefined);constructor(){ports.clients.push(this);}}}));
 vi.mock("@modelcontextprotocol/sdk/client/stdio.js",()=>({getDefaultEnvironment:()=>({PATH:"owned-path"}),StdioClientTransport:class {constructor(parameters:unknown){ports.transports.push(parameters);}}}));
 vi.mock("@modelcontextprotocol/sdk/client/streamableHttp.js",()=>({StreamableHTTPClientTransport:class {terminateSession=vi.fn().mockResolvedValue(undefined);constructor(url:URL){ports.transports.push(url.href);}}}));
 import { connectPhaseoMcp } from "./phaseoMcp";
 const connection={id:"12345678-1234-1234-1234-123456789abc",name:"Notes",enabled:true,transport:"stdio" as const,executable:"/owned/node",arguments:["/owned/server.mjs"]};
 describe("Phaseo managed MCP",()=>{
+ it.each(["deadline", "cancel"])("pauses resource deadlines during human forms and retains %s", async outcome => {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+  const controller = new AbortController(); let answer!: () => void;
+  const onForm = vi.fn(() => new Promise<{ topic: string }>(resolve => { answer = () => resolve({ topic: "work" }); }));
+  try {
+   const request = connectPhaseoMcp([connection], "/owned", controller.signal, { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept", onForm });
+   ports.clients[0].getServerCapabilities.mockReturnValue({ resources: {} });
+   const session = await request;
+   expect(ports.clients[0].listTools).not.toHaveBeenCalled();
+   let callSignal!: AbortSignal;
+   ports.clients[0].readResource.mockImplementation((_params, options: { signal: AbortSignal }) => new Promise((_resolve, reject) => { callSignal = options.signal; callSignal.addEventListener("abort", () => reject(Error("Owned resource stopped")), { once: true }); }));
+   const execute = session.tools.find(tool => tool.id.endsWith("_read_resource"))!.execute;
+   if (typeof execute !== "function") throw Error("No execute");
+   const call = Promise.resolve(execute({ uri: "notes:owned" }, { signal: controller.signal } as never));
+   const rejected = expect(call).rejects.toThrow("Owned resource stopped");
+   const handler = ports.clients[0].setRequestHandler.mock.calls[0][1] as (request: { params: Record<string, unknown> }, extra: { signal: AbortSignal }) => Promise<unknown>;
+   const form = handler({ params: { mode: "form", message: "Owned", requestedSchema: { type: "object", properties: { topic: { type: "string" } } } } }, { signal: new AbortController().signal });
+   vi.advanceTimersByTime(3600000); expect(callSignal.aborted).toBe(false);
+   if (outcome === "cancel") controller.abort();
+   answer(); await form;
+   if (outcome === "deadline") { vi.advanceTimersByTime(59999); expect(callSignal.aborted).toBe(false); vi.advanceTimersByTime(1); }
+   await rejected; await session.close(); expect(vi.getTimerCount()).toBe(0);
+  } finally { vi.useRealTimers(); }
+ });
  beforeEach(()=>{ports.clients.length=0;ports.transports.length=0;});
  it("discovers provider-valid tools with explicit approval and a minimal process environment",async()=>{const session=await connectPhaseoMcp([connection],"/owned",new AbortController().signal);expect(session.tools[0]).toMatchObject({requireApproval:true,parameters:{type:"object"}});expect(session.tools[0].id).toMatch(/^[a-zA-Z0-9_]{1,64}$/);expect(ports.transports[0]).toEqual({command:connection.executable,args:connection.arguments,cwd:"/owned",env:{PATH:"owned-path",ELECTRON_RUN_AS_NODE:"1"},stderr:"ignore",maxBufferSize:2097152});await session.close();expect(ports.clients[0].close).toHaveBeenCalledOnce();});
  it("isolates matching tool names on different servers and supports HTTP",async()=>{const session=await connectPhaseoMcp([connection,{...connection,id:"87654321-1234-1234-1234-123456789abc",transport:"http",url:"https://owned.example/mcp"}],"/owned",new AbortController().signal);expect(new Set(session.tools.map(tool=>tool.id)).size).toBe(2);expect(ports.transports[1]).toBe("https://owned.example/mcp");await session.close();});
