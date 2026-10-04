@@ -60,6 +60,12 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --chat
             - name: Phaseo MCP resources
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --long-human-wait
+            - name: Phaseo Code and Plan MCP resources
+              run: |
+                  foreach ($resourceMode in @("code", "plan")) {
+                    pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs "--mode=$resourceMode"
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  }
             - name: Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
             - name: Phaseo global instruction settings
@@ -120,6 +126,12 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-mcp-smoke.mjs --chat --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo MCP resources
               run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo Code and Plan MCP resources
+              run: |
+                  foreach ($resourceMode in @("code", "plan")) {
+                    pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs "--mode=$resourceMode" --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+                    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  }
             - name: Packaged Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo global instruction settings

@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const humanWait = process.argv.includes("--long-human-wait") ? 65000 : 0;
+const mode = process.argv.find(value => value.startsWith("--mode="))?.slice(7) ?? "chat";
+if (!["chat", "code", "plan"].includes(mode)) throw Error("Unsupported resource audit mode");
 const profile = mkdtempSync(path.join(tmpdir(), "phaseo-resources-native-")); app.setPath("userData", profile);
 const calls = path.join(profile, "reads.txt"), script = path.join(profile, "resources.cjs");
 writeFileSync(script, `const fs=require('node:fs');let pending;const send=value=>process.stdout.write(JSON.stringify(value)+'\\n');require('node:readline').createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.id===undefined)return;let result;
@@ -15,15 +17,19 @@ writeFileSync(script, `const fs=require('node:fs');let pending;const send=value=
 let requests = 0, fixtureError;
 const server = createServer(async (request, response) => {
  try {
-  if (request.url === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ object: "list", data: [{ id: "owned", object: "model" }] })); return; }
-  if (request.url !== "/v1/chat/completions") throw Error("Unexpected owned endpoint");
+  if (request.method === "GET" && new URL(request.url, "http://owned.local").pathname === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ object: "list", data: [{ id: "owned", object: "model" }] })); return; }
+  if (request.url !== (mode === "chat" ? "/v1/chat/completions" : "/v1/responses")) throw Error(`Unexpected owned endpoint: ${request.method} ${request.url}`);
   let raw = ""; for await (const chunk of request) { raw += chunk; if (raw.length > 1000000) throw Error("Large owned body"); }
   const body = JSON.parse(raw); requests++;
-  const result = body.messages.find(message => message.role === "tool");
-  if (result && !result.content.includes("Owned document content") && !result.content.includes("rejected")) throw Error("Resource result missing");
-  const tool = body.tools.find(tool => tool.function.name.endsWith("_read_resource")); if (!tool) throw Error("Resource tool missing");
-  const delta = result ? { content: "Document reviewed" } : { tool_calls: [{ index: 0, id: "document", type: "function", function: { name: tool.function.name, arguments: JSON.stringify({ uri: "notes:owned" }) } }] };
-  response.setHeader("content-type", "text/event-stream"); response.end(`data: ${JSON.stringify({ choices: [{ delta, finish_reason: result ? "stop" : "tool_calls" }] })}\n\ndata: [DONE]\n\n`);
+  const result = (mode === "chat" ? body.messages : body.input).find(message => mode === "chat" ? message.role === "tool" : message.type === "function_call_output");
+  const content = result?.content ?? result?.output;
+  if (result && !content.includes("Owned document content") && !content.includes("rejected")) throw Error("Resource result missing");
+  const tool = body.tools.map(tool => tool.function ?? tool).find(tool => tool.name.endsWith("_read_resource")); if (!tool) throw Error("Resource tool missing");
+  const argumentsValue = JSON.stringify({ uri: "notes:owned" });
+  const delta = result ? { content: "Document reviewed" } : { tool_calls: [{ index: 0, id: "document", type: "function", function: { name: tool.name, arguments: argumentsValue } }] };
+  const output = result ? [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Document reviewed" }] }] : [{ type: "function_call", id: "document-item", call_id: "document", name: tool.name, arguments: argumentsValue }];
+  const event = mode === "chat" ? { choices: [{ delta, finish_reason: result ? "stop" : "tool_calls" }] } : { type: "response.completed", response: { id: "owned-" + requests, model: "owned", status: "completed", output } };
+  response.setHeader("content-type", "text/event-stream"); response.end(`data: ${JSON.stringify(event)}\n\n${mode === "chat" ? "data: [DONE]\n\n" : ""}`);
  } catch (error) { fixtureError = error; response.writeHead(500); response.end("Owned fixture failed"); }
 });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -39,7 +45,7 @@ app.whenReady().then(async () => {
    await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Documents',enabled:true,transport:'stdio',executable:${JSON.stringify(process.execPath)},arguments:${JSON.stringify([script, calls])}}});
    const ids=[];
    for(const decision of ['accept','decline','cancel']){
-    const state=await api.command({type:'create-task',title:'Documents '+decision,harness:'phaseo',mode:'chat',model:'owned',accountId:account.id}), task=state.tasks.find(value=>!ids.includes(value.id));ids.push(task.id);await api.command({type:'update-task',id:task.id,title:'Documents '+decision});
+    const state=await api.command({type:'create-task',title:'Documents '+decision,harness:'phaseo',mode:${JSON.stringify(mode)},model:'owned',accountId:account.id}), task=state.tasks.find(value=>!ids.includes(value.id));ids.push(task.id);await api.command({type:'update-task',id:task.id,title:'Documents '+decision});
     await api.command({type:'send',id:task.id,text:'Read owned document'});
     const waiting=await wait(async()=>{const task=await api.task(ids.at(-1));if(task.status==='failed')throw Error(task.error);return task.approvals?.length?task:false;});
     if(waiting.approvals[0].method!=='Documents · read resource'||!JSON.stringify(waiting.approvals[0]).includes('notes:owned'))throw Error('Resource approval identity missing');
@@ -62,7 +68,7 @@ app.whenReady().then(async () => {
   })()`);
   if (fixtureError) throw fixtureError;
   if (!existsSync(calls) || readFileSync(calls, "utf8").trim() !== "notes:owned" || requests !== 5) throw Error("Unexpected resource effects or requests");
-  console.log("PHASEO_RESOURCES_SMOKE", JSON.stringify({ resourceOnly: true, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: 1, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
+  console.log("PHASEO_RESOURCES_SMOKE", JSON.stringify({ mode, resourceOnly: true, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: 1, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
   clearTimeout(deadline); server.close(); app.quit();
  } catch (error) { console.error(error); clearTimeout(deadline); server.close(); app.exit(1); }
 });
