@@ -13,6 +13,21 @@ function fixture() {
 }
 beforeEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); });
 describe("Cursor SDK harness", () => {
+	it("publishes only successful complete foreground todo snapshots, preserving cancellation and clearing", async () => {
+		const { run, callbacks } = fixture();
+		const result = { status: "success", value: { todos: [{ content: "Inspect 世界", status: "completed" }, { content: "Implement", status: "inProgress" }, { content: "Skipped", status: "cancelled" }], totalCount: 3 } };
+		const event = { type: "tool_call", agent_id: "session", run_id: "run", call_id: "todo", name: "updateTodos", status: "completed", args: { todos: [{ content: "Unconfirmed", status: "pending" }] }, result };
+		Object.assign(run, { id: "run", agentId: "session" });
+		run.stream.mockImplementation(async function* () {
+			for (const patch of [{ status: "running" }, { status: "error" }, { agent_id: "child" }, { run_id: "old-run" }, { truncated: { result: true } }, { result: { status: "error", error: "Failed" } }, { result: undefined }, { result: { status: "success", value: { todos: [{ content: "Bad", status: "unknown" }] } } }, {}]) yield { ...event, ...patch } as never;
+			yield { ...event, call_id: "clear", result: { status: "success", value: { todos: [], totalCount: 0 } } } as never;
+		});
+		await new CursorAdapter("/data", () => "key").run(task, "/project", "Hello", callbacks, account);
+		const plans = callbacks.onActivity.mock.calls.map(([activity]) => activity).filter(activity => activity.type === "plan");
+		expect(plans).toHaveLength(2);
+		expect(plans[0]).toMatchObject({ id: "run:todos", text: JSON.stringify(result, null, 2), steps: [{ text: "Inspect 世界", status: "completed" }, { text: "Implement", status: "in_progress" }, { text: "Skipped", status: "cancelled" }] });
+		expect(plans[1]).toMatchObject({ id: "run:todos", steps: [] });
+	});
 	it("disables native tools and inherited settings for Chat and limits Plan tools", () => {
 		const options = cursorOptions(task, "/project", "secret", {} as never, []); expect(options.tools).toEqual([]); expect(options.local?.settingSources).toEqual([]); expect(options.mcpServers).toEqual({});
 		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, []); expect(plan.tools).toContain("read"); expect(plan.tools).not.toContain("shell"); expect(plan.tools).not.toContain("task"); expect(plan.local?.settingSources).toEqual([]);

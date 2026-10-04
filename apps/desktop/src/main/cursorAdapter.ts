@@ -9,6 +9,7 @@ import { attachmentPrompt } from "./attachmentPrompt";
 import { handoffPrompt } from "./handoffPrompt";
 import { nativeMcpName } from "../shared/mcp";
 import type { McpConnection } from "../shared/mcp";
+import { parsePlanSteps } from "../shared/planSteps";
 
 export function assertCursorBackend() {
 	const backend = process.env.CURSOR_BACKEND_URL;
@@ -45,6 +46,11 @@ export class CursorAdapter implements AgentAdapter {
 			for await (const event of this.activeRun.stream()) {
 				if (event.type === "thinking") callbacks.onActivity?.({ id: `${event.run_id}:thinking`, type: "reasoning", title: "Reasoning", text: event.text, append: true });
 				if (event.type === "tool_call") callbacks.onActivity?.({ id: event.call_id, type: "tool", title: event.name, text: JSON.stringify({ args: event.args, result: event.result }).slice(0, 100000), status: event.status === "error" ? "failed" : event.status });
+				if (event.type === "tool_call" && event.name === "updateTodos" && event.status === "completed" && event.agent_id === this.agent.agentId && event.run_id === this.activeRun.id && !event.truncated?.result) {
+					const result = event.result as { status?: unknown; value?: { todos?: unknown } } | undefined;
+					const steps = result?.status === "success" ? parsePlanSteps(result.value?.todos, "cursor") : undefined;
+					if (steps) callbacks.onActivity?.({ id: `${event.run_id}:todos`, type: "plan", title: "Task progress", text: JSON.stringify(event.result, null, 2), steps });
+				}
 				if (event.type === "usage") callbacks.onActivity?.({ id: `${event.run_id}:usage`, type: "usage", title: "Token usage", text: JSON.stringify(event.usage) });
 				if (event.type === "task") callbacks.onActivity?.({ id: `${event.run_id}:task`, type: "tool", title: "Native task", text: event.text ?? event.status ?? "" });
 			}

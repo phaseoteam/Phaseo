@@ -10,4 +10,9 @@ describe("native plan steps", () => {
 	it("rejects malformed, unknown and excessive steps instead of inventing progress", () => {
 		for (const value of [null, {}, [null], [{ step: "Inspect", status: "in_progress" }], [{ step: "", status: "pending" }], [{ step: "Do work", status: "unknown" }], [{ step: "x".repeat(10001), status: "pending" }], Array(201).fill({ step: "Work", status: "pending" })]) expect(parsePlanSteps(value, "codex")).toBeUndefined();
 	});
+	it("retains Cursor cancellation without accepting it for other native schemas", () => {
+		expect(parsePlanSteps([{ content: "Next", status: "inProgress" }, { content: "Skipped 世界", status: "cancelled" }], "cursor")).toEqual([{ text: "Next", status: "in_progress" }, { text: "Skipped 世界", status: "cancelled" }]);
+		expect(parsePlanSteps([{ content: "Next", status: "in_progress" }], "cursor")).toBeUndefined();
+		for (const source of ["claude", "acp", "codex"] as const) expect(parsePlanSteps([{ content: "Skipped", step: "Skipped", status: "cancelled" }], source)).toBeUndefined();
+	});
 });

@@ -16,6 +16,8 @@ Use the Phaseo website's fonts, assets, components and spacing conventions as th
 
 Dropdown triggers now match the web select treatment with consistent chevrons, reserved text spacing and theme-aware native menus. The single-workspace identity no longer exposes an inactive switching button. Source and packaged visual checks cover the trigger styles; native menus and forced-colour rendering remain platform verification work.
 
+Cursor SDK 1.0.31 foreground updateTodos completions now project confirmed result snapshots into structured progress. The adapter validates agent/run ownership, requires successful untruncated results and preserves cancelled steps and empty-list clears. Failed/malformed updates remain raw tool activity. Native SDK fixtures and shared rendered cancellation checks cover this path; live subscription execution remains unverified. The installed OpenCode V2 client exposes no todo event and the pinned T3 OpenCode2 adapter declares no plan/todo emission, so no unsupported event mapping was invented.
+
 ## Acceptance ledger
 
 Every unchecked item remains a parity gap. A visible control or mock response
@@ -249,7 +251,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 335 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 337 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
