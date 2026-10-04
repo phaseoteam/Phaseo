@@ -555,7 +555,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 	const traceRootRef = React.useRef<HTMLDivElement>(null);
 	const [activeStep, setActiveStep] = React.useState(lifecycleNavigation[0].id);
 	const payload = asRecord(ioLog?.payload);
-	const journal = readLifecycleJournal(payload?.lifecycle_events);
+	const journal = readLifecycleJournal(payload?.lifecycle_events ?? request.detail_metadata?.lifecycle_events);
 	const hasJournal = journal !== null;
 	const inputPayload = getInputPayload(payload);
 	const inputMessages = extractInputMessages(inputPayload);

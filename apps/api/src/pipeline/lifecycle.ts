@@ -75,3 +75,16 @@ export function finishStreamingProvider(ctx: PipelineContext, outcome = "success
 export function retainedLifecycle(ctx: PipelineContext) {
 	return ctx.lifecycle ? { version: 1, events: ctx.lifecycle.events, truncated: ctx.lifecycle.truncated } : undefined;
 }
+
+/** Operational metadata only: never persist tool arguments, outputs, or payload fields. */
+export function lifecycleMetadata(value: unknown) {
+	if (!value || typeof value !== "object") return undefined;
+	const journal = value as { version?: number; events?: LifecycleEvent[]; truncated?: boolean };
+	if (journal.version !== 1 || !Array.isArray(journal.events)) return undefined;
+	return { version: 1, truncated: journal.truncated === true, events: journal.events.slice(0, 1024).map((event) => ({
+		sequence: event.sequence, timestamp_ms: event.timestamp_ms, elapsed_ms: event.elapsed_ms, type: event.type,
+		span_id: event.span_id, parent_span_id: event.parent_span_id,
+		provider: event.provider, model: event.model, call_kind: event.call_kind,
+		tool_name: event.tool_name, status: event.status, outcome: event.outcome,
+	})) };
+}

@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PipelineContext, ProviderAttemptLog } from "./before/types";
-import { finishStreamingProvider, recordLifecycleEvent, recordProviderResult, retainedLifecycle } from "./lifecycle";
+import { finishStreamingProvider, lifecycleMetadata, recordLifecycleEvent, recordProviderResult, retainedLifecycle } from "./lifecycle";
 
 const context = () => ({} as PipelineContext);
 
 describe("ordered request lifecycle", () => {
+	it("retains ordered operational metadata without tool payloads", () => {
+		const metadata = lifecycleMetadata({ version: 1, events: [{ sequence: 1, timestamp_ms: 1000, elapsed_ms: 5, type: "tool.started", tool_name: "datetime", span_id: "tool1", arguments: "private prompt", output: "private result", tool_call_id: "private-id" }] });
+		expect(metadata?.events[0]).toMatchObject({ sequence: 1, type: "tool.started", tool_name: "datetime", span_id: "tool1" });
+		expect(JSON.stringify(metadata)).not.toContain("private");
+	});
 	it("does not classify local admission failures as executed model calls", () => {
 		const ctx = context();
 		const span = recordLifecycleEvent(ctx, { type: "provider.admission" });

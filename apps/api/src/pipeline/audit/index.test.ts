@@ -72,7 +72,7 @@ describe("audit request detail persistence", () => {
 	});
 
 	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {
-		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
 			data: { id: "row_retry", created_at: "2026-09-20T08:58:00Z", workspace_id: "ws_retry" },
 			error: null,
 		}) }) }));
@@ -84,6 +84,7 @@ describe("audit request detail persistence", () => {
 
 		await auditSuccess({
 			requestId: "req_retry", workspaceId: "ws_retry", provider: "google-ai-studio",
+			lifecycleEvents: { version: 1, events: [{ sequence: 1, type: "tool.started", timestamp_ms: 1000, elapsed_ms: 10, tool_name: "datetime", arguments: "private tool input", output: "private tool output" }] },
 			model: "google/gemini-2.5-flash-lite", endpoint: "chat.completions", stream, byok: false,
 			usagePriced: { input_tokens: 273, output_tokens: 20, total_tokens: 293 },
 			totalCents: 0, totalNanos: 35_300, currency: "USD", statusCode: 200, finishReason: "tool_calls",
@@ -102,6 +103,10 @@ describe("audit request detail persistence", () => {
 		expect(event).toMatchObject({ request_id: "req_retry", stream, tool_call_count: 1 });
 		expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_images", quantity: 1 }));
 		expect(JSON.stringify(event)).not.toContain("data:image");
+		expect(event.safe_metadata.lifecycle_events.events[0]).toMatchObject({ sequence: 1, tool_name: "datetime" });
+		expect(JSON.stringify(event.safe_metadata.lifecycle_events)).not.toContain("private tool");
+		expect(insert.mock.calls[0][0].detail_metadata.lifecycle_events.events[0]).toMatchObject({ type: "tool.started", tool_name: "datetime" });
+		expect(persistGatewayIoLogMock).not.toHaveBeenCalled();
 	});
 
 	it("reports the database code and message when analytics retries are exhausted", async () => {
