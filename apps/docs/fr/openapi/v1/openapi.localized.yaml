@@ -726,6 +726,9 @@ paths:
       responses:
         '200':
           description: Réponse de complétion de chat
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -769,6 +772,9 @@ paths:
       responses:
         '200':
           description: Réponse
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -883,6 +889,9 @@ paths:
       responses:
         '200':
           description: Réponse du message
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8224,6 +8233,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: Identifiant public de requête généré par le serveur. Pour les requêtes d’inférence, il identifie la génération dans les réponses et les journaux. Les valeurs x-request-id du client ne le remplacent pas.
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: Métadonnées de quota du fournisseur, uniquement pour BYOK. Omission pour les requêtes utilisant un fournisseur géré.
       schema:
@@ -12962,6 +12976,7 @@ components:
           format: date-time
         request_id:
           type: string
+          description: Identifiant public de génération. Les nouvelles générations utilisent le format G-<ULID> ; les anciens journaux peuvent contenir des identifiants antérieurs, notamment des UUID.
         team_id:
           type: string
         app_id:

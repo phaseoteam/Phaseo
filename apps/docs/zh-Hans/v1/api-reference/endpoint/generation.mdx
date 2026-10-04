@@ -6,6 +6,8 @@ openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /generations"
 ---
 获取属于你团队的指定 `request_id` 的已存储审计记录。
 
+新请求会获得服务器生成的 `G-` 生成 ID，通过 `x-request-id` 响应标头和生成响应返回。请使用此 ID 查询请求日志、查找生成记录及联系支持。客户端提供的 `x-request-id` 不会替换生成 ID。历史日志的 UUID 标识符仍可用于查询。
+
 使用：
 - `GET /v1/generations?id=<request_id>`
 

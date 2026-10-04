@@ -2,6 +2,10 @@ import { generatePublicId } from "@/pipeline/before/genId";
 
 const requestIds = new WeakMap<Request, string>();
 
+export function inheritRequestId(source: Request, target: Request): void {
+	requestIds.set(target, requestIdFor(source));
+}
+
 export function requestIdFor(request: Request): string {
 	const existing = requestIds.get(request);
 	if (existing) return existing;

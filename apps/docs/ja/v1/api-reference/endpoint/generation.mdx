@@ -6,6 +6,8 @@ openapi: "/ja/openapi/v1/openapi.localized.yaml GET /generations"
 ---
 チームに属する`request_id`の保存済み監査レコードを取得します。
 
+新しいリクエストにはサーバーが生成した `G-` 生成 ID が割り当てられ、レスポンスヘッダー `x-request-id` と生成レスポンスで返されます。ログ、生成の検索、サポートにはこの ID を使用してください。クライアントが指定した `x-request-id` では置き換えられません。過去の UUID 形式のログ ID も引き続き検索に使用できます。
+
 次を使用します。
 - `GET /v1/generations?id=<request_id>`
 

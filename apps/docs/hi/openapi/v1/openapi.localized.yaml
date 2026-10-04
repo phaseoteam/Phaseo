@@ -726,6 +726,9 @@ paths:
       responses:
         '200':
           description: चैट completion का प्रतिसाद
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -769,6 +772,9 @@ paths:
       responses:
         '200':
           description: जवाब
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -883,6 +889,9 @@ paths:
       responses:
         '200':
           description: संदेश का प्रतिसाद
+          headers:
+            x-request-id:
+              $ref: '#/components/headers/PublicRequestId'
           content:
             application/json:
               schema:
@@ -8224,6 +8233,11 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
   headers:
+    PublicRequestId:
+      description: सर्वर द्वारा बनाया गया सार्वजनिक अनुरोध पहचानकर्ता। अनुमान अनुरोधों में यह प्रतिक्रियाओं और अनुरोध लॉग में इस्तेमाल होने वाला जनरेशन ID है। क्लाइंट के x-request-id मान इसे नहीं बदलते।
+      schema:
+        type: string
+        pattern: ^G-[0-9A-HJKMNP-TV-Z]{26}$
     UpstreamRateLimitValue:
       description: केवल BYOK के लिए प्रदाता कोटा मेटाडेटा। प्रबंधित-प्रदाता अनुरोधों में शामिल नहीं होता।
       schema:
@@ -12962,6 +12976,7 @@ components:
           format: date-time
         request_id:
           type: string
+          description: सार्वजनिक जनरेशन पहचानकर्ता। नए जनरेशन G-<ULID> प्रारूप का उपयोग करते हैं; पुराने लॉग में UUID सहित पुराने पहचानकर्ता हो सकते हैं।
         team_id:
           type: string
         app_id:
