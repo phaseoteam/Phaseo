@@ -126,3 +126,5 @@ Eight new tests cover scope/identity bounds, selected-profile isolation, owned d
 Claude catalog lifecycle follow-up: source and Windows archive bridge audits stall native initialization for the real 15-second deadline. Concurrent sign-in, account status, harness update and duplicate catalog reads reject before side effects. Timeout stops both owned relay/SDK child processes, releases guards and allows a fresh successful catalog read. No additional user prompts or provider inference occur. T3 nightly 2648 remains the latest published release on recheck.
 
 ![OpenAI native skill picker](screenshots/openai-native-skill-picker.png)
+
+All native catalogs share keyboard navigation: arrows cycle results, Home/End select the first/last result, and Enter opens its arguments. Search and argument fields receive focus on entry and Back. IME composition keeps Enter for text entry. The search exposes its active option to assistive technology, distinguishes an empty catalog from no matching results, and clears stale choices while refreshing or after discovery failure.
