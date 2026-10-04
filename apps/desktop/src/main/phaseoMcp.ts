@@ -10,6 +10,7 @@ import { createHash } from "node:crypto";
 import { defineTool, type AgentTool } from "@phaseo/agent-sdk";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
 import { AgentInputRejectedError } from "./agentAdapter";
+import { phaseoMcpResourceTools } from "./phaseoMcpResources";
 
 export type PhaseoMcpSession = { tools: AgentTool[]; labels: Record<string,string>; close: () => Promise<void> };
 export async function connectPhaseoMcp(connections: McpConnection[], cwd: string, signal: AbortSignal, callbacks?: AgentCallbacks): Promise<PhaseoMcpSession> {
@@ -39,6 +40,13 @@ export async function connectPhaseoMcp(connections: McpConnection[], cwd: string
     : new StreamableHTTPClientTransport(new URL(connection.url));
    if (transport instanceof StreamableHTTPClientTransport) http.set(client,{transport,connection});
    await client.connect(transport, { signal: setupSignal, timeout: 30000 });
+   const capabilities = client.getServerCapabilities();
+   if (capabilities?.resources) {
+    const resources = phaseoMcpResourceTools(client, connection, signal);
+    if (tools.length + resources.tools.length > 500) throw Error("MCP tool discovery exceeded its supported limits.");
+    tools.push(...resources.tools); Object.assign(labels, resources.labels);
+   }
+   if (!capabilities?.tools) continue;
    let cursor: string | undefined; const cursors = new Set<string>(), names = new Set<string>();
    do {
     const page = await client.listTools(cursor ? { cursor } : {}, { signal: setupSignal, timeout: 30000 });
