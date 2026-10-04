@@ -8,9 +8,36 @@ import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
 let activeTaskFixture,taskActionCalls=0;
+let holdConnectionSave=false,pendingConnectionSave,connectionSaveCalls=0;
 async function auditArgumentFields(window, formLabel) {
  const values=[' two words "quoted" 世界 ','','literal; --flag'];
  await window.webContents.executeJavaScript(`(async()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(formLabel)}+'"]'),fields=form.querySelector('.argument-fields');while(fields.querySelector('input')){fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));}for(const value of ${JSON.stringify(values)}){fields.querySelector('.add-argument').click();await new Promise(resolve=>requestAnimationFrame(resolve));const input=fields.querySelector('.argument-row:last-of-type input');if(document.activeElement!==input)throw Error('New argument was not focused');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>requestAnimationFrame(resolve));}fields.querySelector('.argument-row button').click();await new Promise(resolve=>requestAnimationFrame(resolve));const remaining=Array.from(fields.querySelectorAll('input')).map(input=>input.value);if(JSON.stringify(remaining)!==JSON.stringify(['','literal; --flag']))throw Error('Removing an argument changed other values');if(getComputedStyle(fields).gridColumn!=='1 / -1'||getComputedStyle(fields.querySelector('.argument-row')).gap!=='8px')throw Error('Argument fields are not aligned');form.scrollIntoView({block:'nearest'});})()`);
+}
+async function auditConnectionEditor(window, output, width, theme, kind) {
+ const label=kind==='agent'?'Agent connection':'MCP connection';
+ const originalAgent=kind==='agent'?await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(value=>value.agents.find(agent=>agent.id==='design-agent'))`):undefined;
+ if(kind==='mcp')await window.webContents.executeJavaScript(`(async()=>{const form=document.querySelector('form[aria-label="MCP connection"]');for(const [input,value] of [[form.querySelector('input'),${JSON.stringify('Owned editor '+width+' '+theme)}],[Array.from(form.querySelectorAll('label input')).find(input=>input.type==='text'&&input!==form.querySelector('input')),${JSON.stringify(process.execPath)}]]){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>requestAnimationFrame(resolve));}})()`);
+ const before=await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]'),fieldset=form.querySelector('.connection-fields');return {values:Array.from(form.querySelectorAll('input')).map(input=>input.value),arguments:Array.from(form.querySelectorAll('.argument-row input')).map(input=>input.value),name:form.querySelector('input').value,padding:getComputedStyle(fieldset).padding,heading:form.closest('.connection-editor').querySelector('h2').textContent}})()`);
+ if(before.padding!=='20px'||before.heading!==(kind==='agent'?'Edit agent':'New connection'))throw Error('Connection editor heading or inset is incorrect');
+ const callsBefore=connectionSaveCalls;holdConnectionSave=true;
+ await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]');form.requestSubmit();form.requestSubmit()})()`);
+ for(let attempt=0;!pendingConnectionSave;attempt++){if(attempt>50)throw Error('Connection save did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(connectionSaveCalls!==callsBefore+1||!await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]');return form.querySelector('.connection-fields').disabled&&Array.from(form.querySelectorAll('input,select,button')).every(control=>control.matches(':disabled'))&&form.querySelector('button[type="submit"]').textContent==='Saving…'})()`))throw Error('Connection save must freeze fields and reject duplicate submits');
+ writeFileSync(path.join(output,`${width}-${theme}-${kind}-save-pending.png`),(await window.webContents.capturePage()).toPNG());
+ pendingConnectionSave.reject(Error('Owned configuration save failure'));pendingConnectionSave=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.connection-editor [role="alert"]'))`);attempt++){if(attempt>50)throw Error('Connection save failure did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ const failed=await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]'),card=form.closest('.connection-editor');card.scrollIntoView({block:'nearest'});return {values:Array.from(form.querySelectorAll('input')).map(input=>input.value),error:card.querySelector('[role="alert"]').textContent,disabled:form.querySelector('.connection-fields').disabled}})()`);
+ if(failed.disabled||failed.error!=='Owned configuration save failure'||JSON.stringify(failed.values)!==JSON.stringify(before.values))throw Error('Failed save must preserve editable configuration and readable inline feedback');
+ writeFileSync(path.join(output,`${width}-${theme}-${kind}-save-failure.png`),(await window.webContents.capturePage()).toPNG());
+ await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]').requestSubmit()`);
+ for(let attempt=0;!pendingConnectionSave;attempt++){if(attempt>50)throw Error('Connection retry did not start');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(connectionSaveCalls!==callsBefore+2)throw Error('Connection retry did not issue exactly one request');
+ holdConnectionSave=false;pendingConnectionSave.resolve();pendingConnectionSave=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="'+${JSON.stringify(label)}+'"]');return !form.querySelector('.connection-fields').disabled&&form.querySelector('input').value===''&&!form.closest('.connection-editor').querySelector('[role="alert"]')})()`);attempt++){if(attempt>50)throw Error('Successful connection retry did not clear the editor');await new Promise(resolve=>setTimeout(resolve,20));}
+ const saved=await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.overview().then(value=>value[${JSON.stringify(kind==='agent'?'agents':'mcpConnections')}].find(item=>item.name===${JSON.stringify(before.name)}))`);
+ if(!saved||JSON.stringify(saved.arguments)!==JSON.stringify(before.arguments))throw Error('Retry did not persist literal arguments');
+ if(kind==='agent')await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.command({type:'update-agent',...${JSON.stringify(originalAgent)}})`);
+ else await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.mcp({type:'save',connection:{...${JSON.stringify(saved)},archived:true,enabled:false}})`);
 }
 async function openTaskActions(window){
  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
@@ -196,10 +223,14 @@ ipcMain.handle("workspace:task",async(event,id)=>{const task=await originalTask(
 const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
+const originalMcp=ipcMain._invokeHandlers.get("workspace:mcp");
+ipcMain.removeHandler("workspace:mcp");
+ipcMain.handle("workspace:mcp",async(event,command)=>{if(holdConnectionSave){connectionSaveCalls++;await new Promise((resolve,reject)=>{pendingConnectionSave={resolve,reject};});}return originalMcp(event,command);});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0,nativeCompactCalls=0,claudeCompactCalls=0;
 ipcMain.removeHandler("workspace:command");
 ipcMain.handle("workspace:command",async(event,command)=>{
+  if(holdConnectionSave&&command.type==="update-agent"&&command.id==="design-agent"){connectionSaveCalls++;await new Promise((resolve,reject)=>{pendingConnectionSave={resolve,reject};});}
   if(["design-compaction","design-openai-compaction","design-claude-compaction"].includes(command.id)&&command.type==="send"){
     if(command.text!=="/compact"||command.attachments?.length)throw new Error("Invalid native compaction delivery");
     if(command.id==="design-claude-compaction"){claudeCompactCalls++;return originalOverview(event);}
@@ -378,12 +409,15 @@ try {
           const command = await window.webContents.executeJavaScript(`(()=>{const details=document.querySelector('.agent-command');const text=details?.querySelector('code')?.textContent;details?.querySelector('summary')?.click();return {text,open:details?.open}})()`);
           if (!command.open || !command.text.includes("grok-interaction.cjs")) throw new Error("The full agent command must remain available.");
           writeFileSync(path.join(output, `${width}-${theme}-agent-command.png`), (await window.webContents.capturePage()).toPNG());
-          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();document.querySelector('form[aria-label="Agent connection"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Agent connection"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,count:row?.querySelectorAll('button').length}})()`);
           if (actions.gap !== "8px" || actions.count !== 2) throw new Error("Agent editor actions need consistent spacing.");
           await auditArgumentFields(window,"Agent connection");
           writeFileSync(path.join(output, `${width}-${theme}-agent-editor.png`), (await window.webContents.capturePage()).toPNG());
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('form[aria-label="Agent connection"] button')).find(button=>button.textContent==='Cancel').click()`);
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('article button')).find(button=>button.textContent==='Edit').click();new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          if(!await window.webContents.executeJavaScript(`document.activeElement===document.querySelector('form[aria-label="Agent connection"] input')`))throw Error("Editing an agent must focus its name field");
+          await auditConnectionEditor(window,output,width,theme,"agent");
         }
         if (page === "Missions") {
           const actions = await window.webContents.executeJavaScript(`(()=>{const row=document.querySelector('form[aria-label="Mission configuration"] .account-form-actions');return {gap:row&&getComputedStyle(row).gap,column:row&&getComputedStyle(row).gridColumn,count:row?.querySelectorAll('button').length}})()`);
@@ -394,6 +428,7 @@ try {
           if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");
           await auditArgumentFields(window,"MCP connection");
           writeFileSync(path.join(output, `${width}-${theme}-mcp-arguments.png`), (await window.webContents.capturePage()).toPNG());
+          await auditConnectionEditor(window,output,width,theme,"mcp");
         }
         if (page === "Accounts") {
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.accounts-page article')).find(article=>article.textContent.includes('Codex local login')).querySelector('button').click()`);

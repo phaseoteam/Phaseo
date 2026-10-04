@@ -100,6 +100,8 @@
 .argument-row input { flex: 1; }
 .argument-row button { flex-shrink: 0; width: 32px; padding: 0; }
 .argument-fields .add-argument { justify-self: start; }
+.connection-editor > .task-error { margin: var(--panel-padding) var(--panel-padding) 0; }
+.connection-fields { min-width: 0; margin: 0; border: 0; }
 .account-form > button { justify-self: start; align-self: end; }
 .panel-heading + .account-form { border-top: 0; }
 .account-form-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
