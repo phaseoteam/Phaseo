@@ -167,10 +167,14 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Aligned conversation and composer](screenshots/conversation-aligned.png)
 
+54. **OpenAI compaction status:** the shared task menu exposes Compact context for initialized OpenAI tasks. Compaction items without native summary text render a padded status row, with no empty code block or unusable Copy action. Owned source/packaged fixtures verify the rendered status, 16-pixel padding, delivered native menu request and retained draft at both window sizes/themes. Four additional captures bring the audit to 168. The production adapter separately passes against the installed CLI and an owned local provider; this does not establish signed-in service execution.
+
+![Native compaction status](screenshots/openai-compaction-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 164 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 168 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 164 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 168 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

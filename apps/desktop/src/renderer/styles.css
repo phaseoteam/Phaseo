@@ -162,6 +162,7 @@
 :root[data-theme="dark"] .code-token { color: var(--code-dark, inherit); }
 .task-activity { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 12px 0; }
 .task-activity summary { cursor: pointer; padding: 12px 16px; overflow-wrap: anywhere; color: var(--text); font-size: 14px; }
+.compaction-status { margin: 0; padding: 16px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
 .activity-result { border-top: 1px solid var(--border); background: var(--surface-muted); }
 .task-auth-terminal { display: flex; flex-direction: column; gap: 8px; height: 340px; min-height: 240px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; }
 .task-activity pre { margin: 0; padding: 16px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 320px; overflow: auto; font: 12px/1.6 ui-monospace, monospace; }

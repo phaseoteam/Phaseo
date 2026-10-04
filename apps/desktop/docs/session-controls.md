@@ -30,8 +30,18 @@ Reference implementations:
 - [OpenCode adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/OpenCode2AdapterV2.ts)
 - [OpenAI adapter](https://github.com/pingdotgg/t3code/blob/737993303d36e10674c54b95e5bd3826682c99c7/apps/server/src/orchestration-v2/Adapters/CodexAdapterV2.ts)
 
+## Implemented OpenAI controls
+
+Bare, attachment-free `/compact` now calls `thread/compact/start`. Request acknowledgement and the matching native turn completion are both required before settling. Native `contextCompaction` items project running/completed activity with their actual item identity; duplicate, foreign and stale events are ignored. Unfinished items retain native failure details or explicit unconfirmed-completion feedback. Manual compaction rejects steering, while queued input remains available. Ordinary text and attachments retain the normal prompt path.
+
+The menu now exposes Compact context for initialized OpenAI and OpenCode tasks. OpenAI's declared item has no summary field: the renderer shows status without an empty source pane or Copy button. It does not fabricate a summary or replace local messages.
+
+Primary protocol evidence: [OpenAI app-server compaction](https://developers.openai.com/codex/app-server/#trigger-thread-compaction) and the installed CLI 0.154.0 schema.
+
 ## Verification and remaining work
 
-Nine deterministic protocol/runtime cases cover native admission rejection, manual dispatch, automatic events, exact summary text, duplicate and foreign events, settlement, failure, Stop and disconnection. A real SQLite fixture checks original messages, reopening and unchanged conversation export history. Owned source and Windows-archive UI fixtures check exact summary copying, literal markup/Unicode, duplicate delivery suppression, failure/retry and retained drafts across themes/window sizes. These fixtures do not establish signed-in native execution.
+OpenCode has nine deterministic protocol/runtime cases. OpenAI adds thirteen cases covering request/event ordering, manual/automatic dispatch, turn matching, duplicates, admission rejection, native failure, Stop/disconnection, steering, unchanged prompts and SQLite reopening/export history. Source and Windows-archive UI fixtures verify exact OpenCode summary copying and OpenAI status-only layout, delivered menu commands and retained drafts across themes/window sizes.
 
-OpenAI and other native engines' compaction remain unimplemented. Live provider event ordering, streamed compaction deltas and full resume behavior remain unverified. Rollback and file snapshots remain separate unchecked requirements: native session history, local durable history and project file state must stay consistent across a rollback.
+`pnpm --filter @phaseo/desktop exec node scripts/native-compaction-smoke.mjs` compiles the production OpenAI adapter and runs the installed native CLI against an owned loopback provider and a fresh temporary profile. It verifies seed output, native resume, two provider requests, matching compaction item lifecycle and turn settlement. No user account, copied credentials or paid provider is used. This proves the installed process integration against the owned fixture; signed-in service execution remains unverified. The script requires the native CLI on PATH and does not run as part of the deterministic suite.
+
+Compaction for other engines, live provider event ordering/failure recovery, streamed OpenCode summary deltas and full resume behavior remain open. Rollback and file snapshots remain separate unchecked requirements: native session history, local durable history and project file state must stay consistent across rollback.

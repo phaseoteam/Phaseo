@@ -21,7 +21,7 @@ export function TaskActions({ task, busy, onArchive, onPin, onFork, onHandoff, o
 					<Menu.Item onClick={onPin}><Pin size={16} />{task.pinned ? "Unpin task" : "Pin task"}</Menu.Item>
 					<Menu.Item disabled={active || busy} onClick={onFork}><GitFork size={16} />Fork task history</Menu.Item>
 					<Menu.Item disabled={active || busy} onClick={onHandoff}><ArrowRightLeft size={16} />Handoff</Menu.Item>
-					{task.harness === "opencode" && task.nativeSessionId && <Menu.Item disabled={active || busy || task.archived} onClick={onCompact}><Minimize2 size={16} />Compact context</Menu.Item>}
+					{["opencode", "codex"].includes(task.harness) && task.nativeSessionId && <Menu.Item disabled={active || busy || task.archived} onClick={onCompact}><Minimize2 size={16} />Compact context</Menu.Item>}
 					<Menu.Separator />
 					<Menu.Item disabled={busy} onClick={() => onExport("markdown")}><Download size={16} />Export Markdown</Menu.Item>
 					<Menu.Item disabled={busy} onClick={() => onExport("json")}><Download size={16} />Export JSON with files</Menu.Item>

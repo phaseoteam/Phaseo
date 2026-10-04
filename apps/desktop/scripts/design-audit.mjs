@@ -63,6 +63,18 @@ async function auditNativeCompaction(window,output,width,theme,nativeSummary){
  await new Promise(resolve=>setTimeout(resolve,100));await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
  writeFileSync(path.join(output,`${width}-${theme}-native-compaction.png`),(await window.webContents.capturePage()).toPNG());
 }
+async function auditOpenAiCompaction(window,output,width,theme){
+ await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review OpenAI compaction')).click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.task-title')?.value==='Review OpenAI compaction'&&document.querySelector('.task-activity summary')?.textContent==='Context compaction · completed'`);attempt++){if(attempt>50)throw new Error('OpenAI compaction did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ await window.webContents.executeJavaScript(`(()=>{document.querySelector('.task-activity').open=true;const input=document.querySelector('.task-composer textarea');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,'Keep native draft 世界');input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.compaction-status')?.textContent==='Native context compacted.'&&!document.querySelector('.task-activity pre')&&!document.querySelector('.task-activity button')&&getComputedStyle(document.querySelector('.compaction-status')).padding==='16px'`))throw new Error('Status-only compaction fabricated summary/copy controls or lost padding');
+ await openTaskActions(window);
+ await window.webContents.executeJavaScript(`(()=>{const action=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Compact context');if(!action||action.hasAttribute('data-disabled'))throw Error('OpenAI compact action unavailable');action.click()})()`);
+ for(let attempt=0;await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu'))`);attempt++){if(attempt>50)throw new Error('Compact menu did not settle');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.task-composer textarea').value==='Keep native draft 世界'&&!document.querySelector('[role="alert"]')`))throw new Error('Native compaction changed the draft or failed');
+ await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+ writeFileSync(path.join(output,`${width}-${theme}-openai-compaction.png`),(await window.webContents.capturePage()).toPNG());
+}
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
 app.setPath("userData", data);
 mkdirSync(path.join(data, "workspace"));
@@ -90,6 +102,7 @@ seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-progress",JSON.strin
 
 seed.prepare("INSERT INTO agents VALUES (?, ?)").run("design-agent", JSON.stringify({ id: "design-agent", name: "Design fixture", executable: process.execPath, arguments: [path.resolve("scripts/fixtures/grok-interaction.cjs")] }));
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-compaction",JSON.stringify({...codeExample,id:"design-compaction",title:"Review native compaction",harness:"opencode",mode:"chat",pinned:false,nativeSessionId:"owned-native-session",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-compaction",type:"compaction",title:"Context compaction",status:"completed",text:nativeSummary}]}));
+seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-openai-compaction",JSON.stringify({...codeExample,id:"design-openai-compaction",title:"Review OpenAI compaction",harness:"codex",mode:"chat",pinned:false,nativeSessionId:"owned-native-thread",messages:codeExample.messages.map(message=>({...message,attachments:undefined})),activities:[{id:"native-compact-item",type:"compaction",title:"Context compaction",status:"completed",text:""}]}));
 const settingsTask = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-example").data);
 seed.prepare("INSERT INTO tasks VALUES (?, ?)").run("design-settings", JSON.stringify({ ...settingsTask, id: "design-settings", title: "Review workspace plan", pinned: false, harness: "acp", agentId: "design-agent", mode: "plan", nativeModels: [{ id: "grok-fixture-b", name: "Fixture B", default: true, reasoningEfforts: [{ id: "high", description: "High" }, { id: "low", description: "Low" }], defaultReasoningEffort: "high" }], nativeModes: [{ id: "plan", name: "Plan", default: true }] }));
 const grokSettings = JSON.parse(seed.prepare("SELECT data FROM tasks WHERE id = ?").get("design-settings").data);
@@ -160,11 +173,12 @@ const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
-let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0;
+let pendingRequest,requestCalls=0,holdCreation=false,pendingCreation,creationCalls=0,holdCompact=false,pendingCompact,compactCalls=0,nativeCompactCalls=0;
 ipcMain.removeHandler("workspace:command");
 ipcMain.handle("workspace:command",async(event,command)=>{
-  if(command.id==="design-compaction"&&command.type==="send"){
+  if(["design-compaction","design-openai-compaction"].includes(command.id)&&command.type==="send"){
     if(command.text!=="/compact"||command.attachments?.length)throw new Error("Invalid native compaction delivery");
+    if(command.id==="design-openai-compaction"){nativeCompactCalls++;return originalOverview(event);}
     compactCalls++;if(holdCompact)await new Promise((resolve,reject)=>{pendingCompact={resolve,reject};});
     return originalOverview(event);
   }
@@ -405,6 +419,7 @@ try {
           await new Promise(resolve=>setTimeout(resolve,100));
           writeFileSync(path.join(output,`${width}-${theme}-task-progress.png`),(await window.webContents.capturePage()).toPNG());
           await auditNativeCompaction(window,output,width,theme,nativeSummary);
+          await auditOpenAiCompaction(window,output,width,theme);
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
           await new Promise(resolve => setTimeout(resolve, 100));
           await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);
@@ -669,6 +684,7 @@ async function auditCompactDelivery(){
  for(let attempt=0;compactCalls!==2||!await window.webContents.executeJavaScript(`!document.querySelector('[role="alert"]')&&document.querySelector('.task-composer textarea').value==='Keep this draft 世界'`);attempt++){if(attempt>50)throw new Error('Compaction retry did not preserve draft or clear error');await new Promise(resolve=>setTimeout(resolve,20));}
 }
   await auditCompactDelivery();
-  console.log("DESIGN_AUDIT", output);
+  if(nativeCompactCalls!==4)throw new Error("Native compact requests were not delivered exactly once per theme/window fixture");
+console.log("DESIGN_AUDIT", output);
 } catch (error) { console.error(error); app.exit(1); } finally { app.quit(); }
 });
