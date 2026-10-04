@@ -219,6 +219,8 @@ Account updates, including archive/name/connection changes, now reject during si
 
 The current Windows package passes the owned archive workflow smoke, including Grok profile controls, task-mode selection and existing account-management/settings workflows. The packaged production model bridge also returns the real isolated Grok 1.0.46 catalog and reasoning choices without login or prompts. Actual browser OAuth and paid signed-in execution remain unverified.
 
+Rendered Markdown code blocks now offer Copy with success/failure feedback. The renderer reads only the displayed code text, preserves formatting, and avoids confirming stale text after streaming changes. The isolated Electron audit verifies exact indentation/Unicode/newline preservation and failure feedback through an owned clipboard fixture in both themes/window sizes; actual operating-system clipboard writing is not covered by that fixture.
+
 Evidence: desktop lint/typecheck/build pass; 301 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
