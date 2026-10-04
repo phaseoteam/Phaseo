@@ -4,6 +4,8 @@ import { mkdtempSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { startContentHttpFixture } from "./fixtures/mcp-content-http.mjs";
+const httpMode = process.argv.includes("--http");
 const promptMode = process.argv.includes("--prompts");
 const expectedContent = promptMode ? "Owned prompt content" : "Owned document content";
 const identity = promptMode ? "brief" : "notes:owned";
@@ -18,6 +20,8 @@ writeFileSync(script, `const fs=require('node:fs');const promptMode=${JSON.strin
  if(r.method==='initialize')result={protocolVersion:r.params.protocolVersion,capabilities:promptMode?{prompts:{}}:{resources:{}},serverInfo:{name:'owned-documents',version:'1'}};
  else if(r.method===(promptMode?'prompts/get':'resources/read')){if(promptMode&&(r.params.name!=='brief'||r.params.arguments?.topic!=='work'))throw Error('Prompt arguments missing');pending={id:r.id,identity:promptMode?r.params.name:r.params.uri};send({jsonrpc:'2.0',id:'resource-form',method:'elicitation/create',params:{mode:'form',message:'Which notes?',requestedSchema:{type:'object',properties:{topic:{type:'string'}},required:['topic']}}});return;}
  else {send({jsonrpc:'2.0',id:r.id,error:{code:-32601,message:'Unexpected method'}});return;}send({jsonrpc:'2.0',id:r.id,result});});`);
+const httpFixture = httpMode ? await startContentHttpFixture(calls, promptMode) : undefined;
+const connection = { id: "12345678-1234-1234-1234-123456789abc", name: "Documents", enabled: true, ...(httpMode ? { transport: "http", url: httpFixture.url } : { transport: "stdio", executable: process.execPath, arguments: [script, calls] }) };
 let requests = 0, fixtureError;
 const server = createServer(async (request, response) => {
  try {
@@ -37,7 +41,7 @@ const server = createServer(async (request, response) => {
 });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const endpoint = `http://127.0.0.1:${server.address().port}/v1`, entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice(12);
-const deadline = setTimeout(() => { console.error("Resource audit deadline"); server.close(); app.exit(1); }, humanWait + 60000);
+const deadline = setTimeout(() => { console.error("Resource audit deadline"); void httpFixture?.close(); server.close(); app.exit(1); }, humanWait + 60000);
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
 app.whenReady().then(async () => {
  try {
@@ -45,7 +49,7 @@ app.whenReady().then(async () => {
   await owner.webContents.executeJavaScript(`(async()=>{
    const api=window.phaseoDesktop.workspace, wait=async predicate=>{for(let i=0;i<300;i++){const value=await predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}throw Error('Resource workflow wait expired');};
    const overview=await api.command({type:'add-account',name:'Owned documents',harness:'phaseo',kind:'api',endpoint:${JSON.stringify(endpoint)},apiKey:'owned-unused'}), account=overview.accounts.find(value=>value.name==='Owned documents');
-   await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Documents',enabled:true,transport:'stdio',executable:${JSON.stringify(process.execPath)},arguments:${JSON.stringify([script, calls])}}});
+   await api.mcp({type:'save',connection:${JSON.stringify(connection)}});
    const ids=[];
    for(const decision of ['accept','decline','cancel']){
     const state=await api.command({type:'create-task',title:'Documents '+decision,harness:'phaseo',mode:${JSON.stringify(mode)},model:'owned',accountId:account.id}), task=state.tasks.find(value=>!ids.includes(value.id));ids.push(task.id);await api.command({type:'update-task',id:task.id,title:'Documents '+decision});
@@ -59,7 +63,7 @@ app.whenReady().then(async () => {
      if(decision==='cancel'){
       await api.command({type:'cancel',id:task.id});
       await wait(async()=>{const value=await api.task(task.id);return value.status==='interrupted'&&!value.forms?.length;});
-      await wait(async()=>{try{await api.mcp({type:'save',connection:{id:'12345678-1234-1234-1234-123456789abc',name:'Documents',enabled:false,transport:'stdio',executable:${JSON.stringify(process.execPath)},arguments:${JSON.stringify([script, calls])}}});return true;}catch{return false;}});
+      await wait(async()=>{try{await api.mcp({type:'save',connection:${JSON.stringify({ ...connection, enabled: false })}});return true;}catch{return false;}});
       continue;
      }
      await new Promise(resolve=>setTimeout(resolve,${humanWait}));
@@ -70,8 +74,9 @@ app.whenReady().then(async () => {
    }
   })()`);
   if (fixtureError) throw fixtureError;
+  if (httpFixture && (httpFixture.failure || httpFixture.sessions.size || httpFixture.initialized !== 3 || httpFixture.terminated !== 3)) throw httpFixture.failure ?? Error("HTTP content sessions were not fully terminated.");
   if (!existsSync(calls) || readFileSync(calls, "utf8").trim() !== identity || requests !== 5) throw Error("Unexpected resource effects or requests");
-  console.log(promptMode ? "PHASEO_PROMPTS_SMOKE" : "PHASEO_RESOURCES_SMOKE", JSON.stringify({ mode, resourceOnly: !promptMode, promptOnly: promptMode, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: promptMode ? 0 : 1, promptRetrievals: promptMode ? 1 : 0, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
-  clearTimeout(deadline); server.close(); app.quit();
- } catch (error) { console.error(error); clearTimeout(deadline); server.close(); app.exit(1); }
+  console.log(promptMode ? "PHASEO_PROMPTS_SMOKE" : "PHASEO_RESOURCES_SMOKE", JSON.stringify({ mode, transport: httpMode ? "http" : "stdio", httpSessionsTerminated: httpFixture?.terminated, resourceOnly: !promptMode, promptOnly: promptMode, elicitation: true, renderedForm: true, cancellation: true, configurationGuardReleased: true, humanWaitMs: humanWait, approval: true, denial: true, resourceReads: promptMode ? 0 : 1, promptRetrievals: promptMode ? 1 : 0, loopbackModelRequests: requests, providerInferenceCalls: 0, packaged: Boolean(entry) }));
+  clearTimeout(deadline); server.close(); await httpFixture?.close(); app.quit();
+ } catch (error) { console.error(error); clearTimeout(deadline); server.close(); await httpFixture?.close(); app.exit(1); }
 });

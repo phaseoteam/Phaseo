@@ -74,6 +74,16 @@ jobs:
                     pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --prompts "--mode=$promptMode" @promptWaitOptions
                     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
                   }
+            - name: Phaseo HTTP MCP content
+              run: |
+                  foreach ($contentKind in @("prompts", "resources")) {
+                    foreach ($contentMode in @("chat", "code", "plan")) {
+                      $contentOptions = @("--http", "--mode=$contentMode")
+                      if ($contentKind -eq "prompts") { $contentOptions += "--prompts" }
+                      pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs @contentOptions
+                      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                    }
+                  }
             - name: Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
             - name: Phaseo global instruction settings
@@ -149,6 +159,16 @@ jobs:
                   foreach ($promptMode in @("chat", "code", "plan")) {
                     pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs --prompts "--mode=$promptMode" --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
                     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                  }
+            - name: Packaged Phaseo HTTP MCP content
+              run: |
+                  foreach ($contentKind in @("prompts", "resources")) {
+                    foreach ($contentMode in @("chat", "code", "plan")) {
+                      $contentOptions = @("--http", "--mode=$contentMode", "--app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs")
+                      if ($contentKind -eq "prompts") { $contentOptions += "--prompts" }
+                      pnpm --filter @phaseo/desktop exec electron scripts/phaseo-resources-smoke.mjs @contentOptions
+                      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+                    }
                   }
             - name: Packaged Phaseo project instructions
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
