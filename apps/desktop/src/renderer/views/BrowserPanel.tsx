@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { ArrowLeft, ArrowRight, RotateCw, Square, Plus, X, Code2 } from "lucide-react";
 import { browserViewportSizes, type BrowserViewport, type BrowserState } from "../../shared/browser";
 import { usePersistedState } from "../lib/persistedState";
-import { browserTabs, updateBrowserTab, openBrowserTab, type BrowserTabs } from "../lib/browserTabs";
+import { browserTabs, browserViewportToRestore, updateBrowserTab, openBrowserTab, type BrowserTabs } from "../lib/browserTabs";
 
 export function BrowserPanel({ context, covered }: { context: string; covered: boolean }) {
  const [saved, setSaved] = usePersistedState<Record<string, BrowserTabs>>("phaseo.desktop.browserTabs", {});
@@ -40,7 +40,7 @@ function BrowserSurface({ context, covered, concealed, initialUrl, initialViewpo
 		setState(undefined); setAddress(""); setError("");
 		if (!api || !slot.current) return;
 		let active = true; let restored = false; let viewportRestored = false;
-		const apply = (value?: BrowserState) => { if (active && value?.id === context) { if (!viewportRestored) { viewportRestored = true; if (value.viewport !== restoreViewport.current) { void api.browser({ type: "viewport", id: context, viewport: restoreViewport.current }).then(apply, reason => { if (active) setError(String(reason)); }); return; } } if (!value.url && restoreUrl.current && !restored) { restored = true; void api.browser({ type: "navigate", id: context, url: restoreUrl.current }).catch(reason => { if (active) setError(String(reason)); }); return; } if (restored && !value.url) { setState(value); setAddress(restoreUrl.current); setError(value.error ?? ""); return; } setState(value); setAddress(value.url); setError(value.error ?? ""); onState(value); } };
+		const apply = (value?: BrowserState) => { if (active && value?.id === context) { if (!viewportRestored) { viewportRestored = true; restoreViewport.current = browserViewportToRestore(value, restoreViewport.current); if (value.viewport !== restoreViewport.current) { void api.browser({ type: "viewport", id: context, viewport: restoreViewport.current }).then(apply, reason => { if (active) setError(String(reason)); }); return; } } if (!value.url && restoreUrl.current && !restored) { restored = true; void api.browser({ type: "navigate", id: context, url: restoreUrl.current }).catch(reason => { if (active) setError(String(reason)); }); return; } if (restored && !value.url) { setState(value); setAddress(restoreUrl.current); setError(value.error ?? ""); return; } setState(value); setAddress(value.url); setError(value.error ?? ""); onState(value); } };
 		const unsubscribe = api.onBrowserState(apply);
 		let lastBounds = "";
 		const resize = () => { if (covered || document.querySelector('dialog[open], [role="dialog"], [aria-modal="true"], [role="menu"]') || !slot.current) { if (lastBounds !== "hidden") void api.browser({ type: "hide", id: context }); lastBounds = "hidden"; return; } const rect = slot.current.getBoundingClientRect(); const signature = JSON.stringify([rect.x, rect.y, rect.width, rect.height]); if (signature === lastBounds) return; lastBounds = signature; void api.browser({ type: "show", id: context, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(apply, reason => { if (active) setError(String(reason)); }); };

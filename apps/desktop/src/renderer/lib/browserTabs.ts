@@ -24,3 +24,5 @@ export function openBrowserTab(group: BrowserTabs, request: BrowserOpenTab, id: 
  const url = browserUrl(request.url);
  return { active: request.background ? group.active : id, tabs: [...group.tabs, { id, title: url, url, viewport: "desktop" }] };
 }
+
+export function browserViewportToRestore(state: Pick<BrowserState, "viewport" | "configured">, saved: BrowserViewport): BrowserViewport { return state.configured ? state.viewport : saved; }

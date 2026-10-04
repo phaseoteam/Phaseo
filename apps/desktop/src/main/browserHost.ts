@@ -14,6 +14,7 @@ export class BrowserHost {
    event.preventDefault();
   });
  }
+	private configured = new WeakSet<WebContentsView>();
 	private frames = new WeakMap<WebContentsView, Electron.Rectangle>();
 	private viewports = new WeakMap<WebContentsView, BrowserViewport>();
 	private owners = new Map<BrowserWindow, Map<string, WebContentsView>>();
@@ -64,13 +65,13 @@ export class BrowserHost {
 			this.frames.set(view, { x, y, width: Math.max(0, Math.min(width - x, Math.round(command.bounds.width * zoom))), height: Math.max(0, Math.min(height - y, Math.round(command.bounds.height * zoom))) });
 			this.applyViewport(view, this.viewports.get(view) ?? "desktop");
 			owner.contentView.addChildView(view); view.setVisible(Boolean(contents.getURL()));
-		} else if (url) { view.setVisible(true); void contents.loadURL(url).catch(reason => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, view), error: String(reason) }); }); }
+		} else if (url) { this.configured.add(view); view.setVisible(true); void contents.loadURL(url).catch(reason => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(command.id, view), error: String(reason) }); }); }
 		else if (command.type === "back" && contents.navigationHistory.canGoBack()) contents.navigationHistory.goBack();
 		else if (command.type === "forward" && contents.navigationHistory.canGoForward()) contents.navigationHistory.goForward();
 		else if (command.type === "reload") contents.reload();
 		else if (command.type === "stop") contents.stop();
 		else if (command.type === "devtools") this.toggleDevTools(contents);
-		else if (viewport) { this.applyViewport(view, viewport); this.viewports.set(view, viewport); }
+		else if (viewport) { this.applyViewport(view, viewport); this.viewports.set(view, viewport); this.configured.add(view); }
 		return this.state(command.id, view);
 	}
 	private applyViewport(view: WebContentsView, viewport: BrowserViewport) {
@@ -87,6 +88,6 @@ export class BrowserHost {
 	private toggleDevTools(contents: Electron.WebContents) { if (contents.isDevToolsOpened()) contents.closeDevTools(); else contents.openDevTools({ mode: "detach" }); }
 	private state(id: string, view: WebContentsView): BrowserState {
 		const contents = view.webContents;
-		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward(), devToolsOpen: contents.isDevToolsOpened(), viewport: this.viewports.get(view) ?? "desktop" };
+		return { id, url: contents.getURL(), title: contents.getTitle(), loading: contents.isLoading(), canGoBack: contents.navigationHistory.canGoBack(), canGoForward: contents.navigationHistory.canGoForward(), devToolsOpen: contents.isDevToolsOpened(), viewport: this.viewports.get(view) ?? "desktop", configured: this.configured.has(view) };
 	}
 }

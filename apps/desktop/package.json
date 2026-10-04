@@ -22,6 +22,7 @@
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:desktop": "pnpm run build && electron scripts/smoke.mjs",
+		"test:browser-viewport": "node scripts/browser-viewport-geometry-audit.mjs",
 		"test:downloads": "pnpm run build && node scripts/browser-download-history-audit.mjs",
 		"test:history": "pnpm run build && electron scripts/history-smoke.mjs",
 		"audit:design": "pnpm run build && electron scripts/chat-shell-smoke.mjs",
