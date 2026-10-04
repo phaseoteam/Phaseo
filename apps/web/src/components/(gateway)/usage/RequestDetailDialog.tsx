@@ -10,7 +10,7 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
+import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
 import {
 	Dialog,
 	DialogContent,
@@ -1094,7 +1094,17 @@ export default function RequestDetailDialog({
 			return {
 				key: `execution-${event.sequence}`,
 				startMs: (timelineTiming.routingMs ?? 0) + Math.max(0, event.elapsed_ms - firstModelStartMs),
-				label: <span className="min-w-0 break-words">{isTool ? `${t("trace.toolStarted" as never)} · ${event.tool_name ?? ""}` : `${callLabel} · ${event.provider ? providerNames?.get(event.provider) ?? event.provider : ""}`}</span>,
+				label: (
+					<div className="flex min-w-0 items-center gap-2" title={isTool ? t("trace.toolStarted" as never) : callLabel}>
+						{isTool ? <Wrench size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" /> : event.provider ? <Logo id={event.provider} width={14} height={14} className="shrink-0" /> : <Bot size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />}
+						<div className="min-w-0">
+							{isTool ? <span className="block truncate font-medium">{event.tool_name?.replace(/^gateway_/, "") ?? t("trace.toolStarted" as never)}</span> : <>
+								{event.provider ? <Link href={`/api-providers/${encodeURIComponent(event.provider)}`} className="block truncate font-medium underline decoration-transparent transition-colors hover:decoration-foreground/70">{providerNames?.get(event.provider) ?? event.provider}</Link> : <span className="block truncate font-medium">{s("Provider")}</span>}
+								{event.call_kind && event.call_kind !== "initial" ? <span className="block truncate text-[10px] text-muted-foreground">{callLabel}</span> : null}
+							</>}
+						</div>
+					</div>
+				),
 				duration: completion ? Math.max(0, completion.elapsed_ms - event.elapsed_ms) : null,
 				colorClass: isTool ? "bg-amber-500" : "bg-emerald-500",
 			};

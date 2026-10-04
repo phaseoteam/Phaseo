@@ -197,6 +197,7 @@ export function DetailTimingBar({
 									style={{
 										marginLeft: `${leftPct}%`,
 										width: `${Math.min(widthPct, 100 - leftPct)}%`,
+										...(positioned && item.duration === 0 ? { minWidth: "2px" } : {}),
 									}}
 								/>
 							</div>
