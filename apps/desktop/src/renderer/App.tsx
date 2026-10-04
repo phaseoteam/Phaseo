@@ -10,6 +10,7 @@ import { WorkspaceHome } from "./views/WorkspaceHome";
 import { TaskWorkspace } from "./views/TaskWorkspace";
 import { Accounts } from "./views/Accounts";
 import { Projects } from "./views/Projects";
+import { Proposals } from "./views/Proposals";
 import { Agents } from "./views/Agents";
 import { McpConnections } from "./views/McpConnections";
 import { Inbox } from "./views/Inbox";
@@ -91,6 +92,7 @@ export function App() {
 	if (surface === "workspace" && (activeItem === "projects" || activeItem === "repositories")) content = <Projects />;
 	else if (surface === "workspace" && activeItem === "terminals") content = <Terminals />;
 	else if (surface === "workspace" && activeItem === "agents") content = <Agents />;
+	else if (surface === "workspace" && activeItem === "proposals") content = <Proposals />;
 	else if (surface === "workspace" && activeItem === "mcp") content = <McpConnections />;
 	else if (surface === "workspace" && activeItem === "accounts") content = <Accounts />;
 	else if (surface === "workspace" && activeItem === "inbox") content = <Inbox onOpenTask={id => navigateWorkspace("tasks", id)} />;

@@ -8,6 +8,31 @@ import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
 let activeTaskFixture,taskActionCalls=0;
+let holdProposals=false,pendingProposals,proposalCalls=0,emptyProposals=false,failProposalLink=false,proposalLinks=[];
+const proposalFixture={repository:'phaseoteam/Phaseo',fetchedAt:'2026-10-04T00:00:00Z',limitReached:false,requests:[{number:2702,title:'Keep <untrusted> 世界 and review the desktop changes',url:'https://github.com/phaseoteam/Phaseo/pull/2702',author:'fixture',draft:true,head:'feature/desktop',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'required',checks:'pending'},{number:2703,title:'Ready for review',url:'https://github.com/phaseoteam/Phaseo/pull/2703',author:'fixture',draft:false,head:'feature/next',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'approved',checks:'passing'}]};
+async function auditProposals(window,output,width,theme){
+ const select=value=>window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Pull-request project"]');select.value=${JSON.stringify(value)};select.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+ const waitPending=async()=>{for(let attempt=0;!pendingProposals;attempt++){if(attempt>50)throw Error('Pull-request read did not start');await new Promise(resolve=>setTimeout(resolve,20));}};
+ holdProposals=true;await select('design-project');await waitPending();
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.proposals-page [role="status"]').textContent==='Loading pull requests…'&&document.querySelector('.proposals-page .panel-heading button').disabled`))throw Error('Pull-request loading feedback is missing');
+ writeFileSync(path.join(output,`${width}-${theme}-proposals-loading.png`),(await window.webContents.capturePage()).toPNG());
+ pendingProposals.reject(Error('Owned pull-request read failure'));pendingProposals=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.proposals-page [role="alert"]')?.textContent==='Owned pull-request read failure'`);attempt++){if(attempt>50)throw Error('Pull-request error was not readable');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,`${width}-${theme}-proposals-failure.png`),(await window.webContents.capturePage()).toPNG());
+ const before=proposalCalls;await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.proposals-page .panel-heading button');button.click();button.click()})()`);await waitPending();if(proposalCalls!==before+1)throw Error('Pull-request retry was duplicated');
+ holdProposals=false;pendingProposals.resolve();pendingProposals=undefined;
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelectorAll('.proposal-row').length===2&&!document.querySelector('.proposals-page [role="status"]')`);attempt++){if(attempt>50)throw Error('Pull-request retry did not recover');await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!await window.webContents.executeJavaScript(`document.querySelector('.proposal-row').textContent.includes('<untrusted> 世界')&&!document.querySelector('.proposal-row untrusted')&&getComputedStyle(document.querySelector('.proposal-row')).padding==='20px'`))throw Error('Pull-request content or card spacing changed');
+ writeFileSync(path.join(output,`${width}-${theme}-proposals-results.png`),(await window.webContents.capturePage()).toPNG());
+ failProposalLink=true;await window.webContents.executeJavaScript(`document.querySelector('.proposal-row button').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.proposals-page [role="alert"]')?.textContent==='Owned pull-request link failure'`);attempt++){if(attempt>50)throw Error('Pull-request link failure did not render');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,`${width}-${theme}-proposals-link-failure.png`),(await window.webContents.capturePage()).toPNG());
+ failProposalLink=false;const links=proposalLinks.length;await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.proposal-row button');button.click();button.click()})()`);await new Promise(resolve=>setTimeout(resolve,100));if(proposalLinks.length!==links+1||proposalLinks.at(-1)!==proposalFixture.requests[0].url)throw Error('Pull-request link retry changed its URL or duplicated delivery');
+ holdProposals=true;await window.webContents.executeJavaScript(`document.querySelector('.proposals-page .panel-heading button').click()`);await waitPending();await select('');pendingProposals.resolve();pendingProposals=undefined;holdProposals=false;await new Promise(resolve=>setTimeout(resolve,100));if(await window.webContents.executeJavaScript(`Boolean(document.querySelector('.proposal-row'))`))throw Error('Obsolete project response remained visible');
+ emptyProposals=true;await select('design-project');for(let attempt=0;!await window.webContents.executeJavaScript(`document.querySelector('.proposals-page').textContent.includes('No open pull requests.')`);attempt++){if(attempt>50)throw Error('Pull-request empty state missing');await new Promise(resolve=>setTimeout(resolve,20));}
+ writeFileSync(path.join(output,`${width}-${theme}-proposals-empty.png`),(await window.webContents.capturePage()).toPNG());emptyProposals=false;await select('');
+ let rejected=false;try{await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.pullRequests('unregistered-project')`);}catch{rejected=true;}if(!rejected)throw Error('Unregistered pull-request project was accepted');
+}
 let holdConnectionSave=false,pendingConnectionSave,connectionSaveCalls=0;
 let holdSettingsRead=false,pendingSettingsRead,settingsReadCalls=0,holdSettingsSave=false,pendingSettingsSave,settingsSaveCalls=0;
 async function auditSettingsRecovery(window,output,width,theme){
@@ -332,6 +357,10 @@ const originalTaskHistory=ipcMain._invokeHandlers.get("workspace:task-history");
 ipcMain.removeHandler("workspace:task-history");
 ipcMain.handle("workspace:task-history",async(event,query)=>{const page=await originalTaskHistory(event,query);return activeTaskFixture?{...page,tasks:page.tasks.map(task=>task.id===activeTaskFixture.id?{...task,status:activeTaskFixture.status}:task)}:page;});
 const originalPreferences=ipcMain._invokeHandlers.get("workspace:preferences");
+const originalPullRequests=ipcMain._invokeHandlers.get('workspace:pull-requests');ipcMain.removeHandler('workspace:pull-requests');
+ipcMain.handle('workspace:pull-requests',async(event,id)=>{if(id!=='design-project')return originalPullRequests(event,id);proposalCalls++;if(holdProposals)await new Promise((resolve,reject)=>{pendingProposals={resolve,reject};});return {...proposalFixture,requests:emptyProposals?[]:proposalFixture.requests};});
+const originalOpenLink=ipcMain._invokeHandlers.get('workspace:open-link');ipcMain.removeHandler('workspace:open-link');
+ipcMain.handle('workspace:open-link',async(event,url)=>{if(proposalFixture.requests.some(request=>request.url===url)){proposalLinks.push(url);if(failProposalLink)throw Error('Owned pull-request link failure');return;}return originalOpenLink(event,url);});
 ipcMain.removeHandler("workspace:preferences");
 ipcMain.handle("workspace:preferences",async(event)=>{settingsReadCalls++;if(holdSettingsRead)await new Promise((resolve,reject)=>{pendingSettingsRead={resolve,reject};});return originalPreferences(event);});
 const originalSavePreferences=ipcMain._invokeHandlers.get("workspace:save-preferences");
@@ -368,7 +397,7 @@ try {
     for (const theme of ["light", "dark"]) {
       await window.webContents.executeJavaScript(`(()=>{const desired=${JSON.stringify(theme)};if(document.documentElement.dataset.theme!==desired)document.querySelector('[aria-label="Use '+desired+' theme"]').click()})()`);
       await new Promise(resolve => setTimeout(resolve, 100));
-      for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox", "Terminals"]) {
+      for (const page of ["Home", "Tasks", "Accounts", "Projects", "Missions", "Agents", "MCP", "Settings", "Inbox", "Proposals", "Terminals"]) {
         if(page==='Settings')holdSettingsRead=true;
         await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.sidebar-item')).find(b=>b.textContent.trim()===${JSON.stringify(page)}).click()`);
         if (page === "Tasks") {
@@ -393,6 +422,7 @@ try {
         const name = `${width}-${theme}-${page.toLowerCase()}`;
         writeFileSync(path.join(output, `${name}.png`), image.toPNG());
         if(page==='Settings')await auditSettingsRecovery(window,output,width,theme);
+        if(page==='Proposals')await auditProposals(window,output,width,theme);
         const measurements = await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('h1,h2,h3,label,.page,.panel,.task-setup,.account-row,.task-toolbar')).map(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();return {tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:s.fontSize,padding:s.padding,width:r.width,height:r.height,x:r.x,y:r.y}})`);
         writeFileSync(path.join(output, `${name}.json`), JSON.stringify(measurements, null, 2));
         const shellFocus = await window.webContents.executeJavaScript(`(()=>{const button=document.querySelector('.command-button');button.focus();return {outline:getComputedStyle(button).outlineColor,ring:getComputedStyle(document.documentElement).getPropertyValue('--ring').trim()}})()`);

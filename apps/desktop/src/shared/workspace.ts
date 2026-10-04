@@ -1,3 +1,4 @@
+import type { ProjectPullRequests } from "./pullRequests";
 import type { AgentForm, FormAnswer } from "./agentForms";
 import type { McpCommand, McpConnection } from "./mcp";
 import type { WorkspacePreferences } from "./preferences";
@@ -118,6 +119,7 @@ export type WorkspaceApi = {
 	readDocument: (projectId: string, filename: string) => Promise<{ text: string; hash: string }>;
 	writeDocument: (projectId: string, filename: string, text: string, expectedHash: string) => Promise<{ hash: string }>;
 	gitReview: (projectId: string) => Promise<GitReview>;
+	pullRequests: (projectId: string) => Promise<ProjectPullRequests>;
 	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
 	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
 	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;

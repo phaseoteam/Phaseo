@@ -215,10 +215,18 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Collapsed desktop sidebar](screenshots/sidebar-collapsed-small-window.png)
 
+66. **GitHub proposals:** the former placeholder now has project selection and open pull-request cards with draft, native review-decision and aggregate check states. The cards use 20-pixel insets and inert titles/branch names. Owned source/archive cases cover delayed reads, readable failures, repeated Retry clicks, successful results, failed/retried exact link delivery, obsolete project responses, empty results and rejection of unregistered projects. Twenty-four added captures bring the audit to 268. A separate installed-CLI smoke reads 100 real PRs through the production adapter and confirms the native has-next-page flag. This does not establish PR review, merge, watcher, pagination or full GitHub-account parity.
+
+![GitHub pull-request view](screenshots/proposals-small-window.png)
+
+67. **Section spacing:** direct page headings now leave 24 pixels before their content, the Proposals project selector has a full 20-pixel inset below its card header, and the Projects empty state uses the website card treatment with an icon, heading and readable body copy. This addresses specific crowded and unfinished sections; it does not establish complete visual acceptance.
+
+![Projects empty state](screenshots/projects-empty-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 244 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers twelve pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 268 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 244 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 268 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
