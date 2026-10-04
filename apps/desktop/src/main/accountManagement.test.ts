@@ -6,13 +6,36 @@ import { SecretVault } from "./secretVault";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { validateCommand } from "../shared/workspace";
 
-function fixture() {
+function fixture(encrypt: (value: string) => Buffer | Promise<Buffer> = value => Buffer.from(`encrypted:${value}`)) {
 	const root = mkdtempSync(path.join(tmpdir(), "phaseo-account-management-")); const directory = path.join(root, "vault");
-	const vault = new SecretVault(directory, { available: () => true, encrypt: value => Buffer.from(`encrypted:${value}`), decrypt: value => value.toString().slice(10) });
+	const vault = new SecretVault(directory, { available: () => true, encrypt, decrypt: value => value.toString().slice(10) });
 	return { root, directory, vault, runtime: new WorkspaceRuntime(root, undefined, vault) };
 }
 
 describe("account management", () => {
+	it("reserves an account while an asynchronous rotation is pending", async () => {
+		let finish: (value: Buffer) => void = () => {}; const encryption = vi.fn<(value: string) => Buffer | Promise<Buffer>>(value => Buffer.from(`encrypted:${value}`));
+		const { root, vault, runtime } = fixture(encryption);
+		try {
+			const state = await runtime.command({ type: "add-account", name: "API", harness: "phaseo", kind: "api", endpoint: "https://owned.invalid/v1", apiKey: "old-key" }); const account = state.accounts[0];
+			encryption.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+			const rotating = runtime.command({ type: "update-account", id: account.id, apiKey: "new-key" });
+			await expect(runtime.command({ type: "update-account", id: account.id, name: "Competing change" })).rejects.toThrow("credential change");
+			expect(() => runtime.beginAccountSignIn(account.id)).toThrow("credential change"); expect(await vault.get(account.id)).toBe("old-key");
+			expect(() => runtime.beginHarnessMaintenance("phaseo")).toThrow("credential change");
+			finish(Buffer.from("encrypted:new-key")); await rotating;
+			expect(await vault.get(runtime.store.getAccounts()[0].secretId!)).toBe("new-key"); await runtime.command({ type: "update-account", id: account.id, name: "After rotation" });
+		} finally { finish(Buffer.from("encrypted:new-key")); await runtime.close(); rmSync(root, { recursive: true, force: true }); }
+	});
+	it("waits for pending encryption on shutdown without saving a late account", async () => {
+		let finish: (value: Buffer) => void = () => {}; const { root, directory, runtime } = fixture(() => new Promise(resolve => { finish = resolve; }));
+		try {
+			const pending = runtime.command({ type: "add-account", name: "API", harness: "phaseo", kind: "api", endpoint: "https://owned.invalid/v1", apiKey: "owned-key" });
+			const rejected = expect(pending).rejects.toThrow("shutting down"); let closed = false; const closing = runtime.close().then(() => { closed = true; });
+			await new Promise(resolve => setImmediate(resolve)); expect(closed).toBe(false);
+			finish(Buffer.from("encrypted:owned-key")); await rejected; await closing; expect(readdirSync(directory)).toEqual([]);
+		} finally { finish(Buffer.from("encrypted:owned-key")); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("rotates keys, retains linked tasks across archival and uses the new credential reference", async () => {
 		const { root, directory, vault, runtime } = fixture();
 		const fetcher = vi.fn(async () => new Response('data: {"choices":[{"delta":{"content":"Reply"}}]}\n\ndata: [DONE]\n\n')); vi.stubGlobal("fetch", fetcher);
@@ -20,7 +43,7 @@ describe("account management", () => {
 			const state = await runtime.command({ type: "add-account", name: "API", harness: "phaseo", kind: "api", endpoint: "https://old.example.invalid/v1", apiKey: "old-key" }); const account = state.accounts[0];
 			const tasks = await runtime.command({ type: "create-task", harness: "phaseo", model: "model", mode: "chat", accountId: account.id }); const id = tasks.tasks[0].id;
 			await runtime.command({ type: "update-account", id: account.id, name: "Updated API", endpoint: "https://new.example.invalid/v1", apiKey: "new-key", archived: true });
-			const updated = runtime.store.get().accounts[0]; expect(updated.secretId).not.toBe(account.id); expect(vault.get(updated.secretId!)).toBe("new-key"); expect(readdirSync(directory)).toEqual([`${updated.secretId}.credential`]);
+			const updated = runtime.store.get().accounts[0]; expect(updated.secretId).not.toBe(account.id); expect(await vault.get(updated.secretId!)).toBe("new-key"); expect(readdirSync(directory)).toEqual([`${updated.secretId}.credential`]);
 			expect(JSON.stringify(runtime.store.get())).not.toMatch(/old-key|new-key/); expect(runtime.store.getTask(id).accountId).toBe(account.id);
 			await expect(runtime.command({ type: "create-task", harness: "phaseo", model: "model", mode: "chat", accountId: account.id })).rejects.toThrow("Restore");
 			await runtime.command({ type: "update-account", id: account.id, archived: false }); await runtime.command({ type: "send", id, text: "Start" });
@@ -34,7 +57,7 @@ describe("account management", () => {
 			const state = await runtime.command({ type: "add-account", name: "API", harness: "phaseo", kind: "api", endpoint: "https://old.example.invalid/v1", apiKey: "old-key" }); const account = state.accounts[0];
 			vi.spyOn(runtime.store, "saveAccount").mockImplementationOnce(() => { throw new Error("Save failed"); });
 			await expect(runtime.command({ type: "update-account", id: account.id, endpoint: "https://new.example.invalid/v1", apiKey: "new-key" })).rejects.toThrow("Save failed");
-			expect(vault.get(account.id)).toBe("old-key"); expect(runtime.store.get().accounts[0].endpoint).toBe(account.endpoint); expect(readdirSync(directory)).toEqual([`${account.id}.credential`]);
+			expect(await vault.get(account.id)).toBe("old-key"); expect(runtime.store.get().accounts[0].endpoint).toBe(account.endpoint); expect(readdirSync(directory)).toEqual([`${account.id}.credential`]);
 		} finally { await runtime.close(); rmSync(root, { recursive: true, force: true }); }
 	});
 	it("keeps native authentication under its native profile while allowing renaming", async () => {

@@ -10,7 +10,7 @@ const fileLimit = 16 * 1024;
 /** Run-owned instruction state, refreshed before filesystem tools execute. */
 export class ProjectInstructions {
 	private readonly files = new Map<string, Instruction>();
-	constructor(private readonly root: string, private readonly onChange: (files: string[]) => void = () => {}, private readonly globalRoot?: string) {}
+	constructor(private readonly root: string, private readonly onChange: (files: string[]) => void = () => {}, private readonly globalRoot?: string, private readonly skill?: () => Promise<{ path: string; text: string } | { path: string; text: string }[]>) {}
 	list() { const depth = (scope: string) => scope === "*" ? -1 : scope === "." ? 0 : scope.split("/").length; return [...this.files.values()].sort((a, b) => depth(a.scope) - depth(b.scope) || a.path.localeCompare(b.path)); }
 	revision() { return contentHash(JSON.stringify(this.list())); }
 	prompt() {
@@ -19,6 +19,8 @@ export class ProjectInstructions {
 	private async withGlobal() {
 		const next = new Map(this.files);
 		if (this.globalRoot) { const global = new ProjectInstructions(this.globalRoot); await global.load(".", true); const instruction = global.list()[0]; if (instruction) next.set("@global", { path: "global/AGENTS.md", scope: "*", text: instruction.text }); else next.delete("@global"); }
+		for (const key of next.keys()) if (key.startsWith("@skill:")) next.delete(key);
+		if (this.skill) { const value = await this.skill(), skills = Array.isArray(value) ? value : [value]; for (const [index, skill] of skills.entries()) next.set(`@skill:${index}`, { ...skill, scope: "*" }); }
 		return next;
 	}
 	async loadGlobal() { return this.commit(await this.withGlobal()); }
@@ -47,7 +49,7 @@ export class ProjectInstructions {
 	}
 	async refresh(): Promise<boolean> {
 		const next = await this.withGlobal();
-		for (const filename of new Set(["AGENTS.md", ...[...this.files.keys()].filter(filename => filename !== "@global")])) {
+		for (const filename of new Set(["AGENTS.md", ...[...this.files.keys()].filter(filename => filename !== "@global" && !filename.startsWith("@skill:"))])) {
 			const text = await this.read(filename);
 			if (text === undefined) next.delete(filename); else next.set(filename, { path: filename, scope: path.posix.dirname(filename), text });
 		}

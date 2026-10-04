@@ -1,3 +1,4 @@
+import { PhaseoSkills } from "./phaseoSkills";
 import { GlobalInstructions } from "./globalInstructions";
 import { codexNativeActions } from "./codexNativeActions";
 import { claudeNativeActions } from "./claudeNativeActions";
@@ -27,6 +28,7 @@ import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
+import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, listProjectFiles, readProjectFile } from "./projectFiles";
 import { editorInstallations, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
@@ -108,9 +110,9 @@ ipcMain.handle("workspace:models", async (event, harness: unknown, accountId: un
 		if (accountId && !account) throw new Error("Account is unavailable.");
 		if (harness === "phaseo") {
 			if (!account) throw new Error("Choose an API account.");
-			return await apiModels(account, credentialVault.get(account.secretId ?? account.id));
+			return await apiModels(account, await credentialVault.get(account.secretId ?? account.id));
 		}
-		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(credentialVault.get(account.secretId ?? account.id)); }
+		if (harness === "cursor") { if (!account || account.archived) throw new Error("Choose a connected Cursor account."); return await cursorModels(await credentialVault.get(account.secretId ?? account.id)); }
 		if (harness === "opencode") return await openCodeModels(cwd, await workspaceRuntime.openCode.connect());
 		if (harness === "pi") return await piModels(cwd);
 		if (harness === "grok") return await grokModelCatalog(cwd, account);
@@ -131,6 +133,8 @@ app.on("before-quit", event => {
 	for (const controller of accountChecks.values()) controller.abort();
 	for (const controller of agentChecks.values()) controller.abort();
 	for (const controller of nativeCatalogChecks) controller.abort();
+	// Stop renderer IPC before the runtime closes its database.
+	for (const window of BrowserWindow.getAllWindows()) window.destroy();
 	void Promise.allSettled([workspaceRuntime.close().catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed]).finally(() => { shutdownComplete = true; app.quit(); });
 });
 
@@ -147,7 +151,9 @@ ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
 			if (!credentialVault.available()) throw new Error("Secure credential storage is unavailable on this device.");
 			const result = await cursorSignIn(url => shell.openExternal(url), controller.signal);
 			if (shutdownStarted || controller.signal.aborted) throw new Error("Sign-in cancelled."); const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id && !value.archived); if (!current) throw new Error("Account is unavailable.");
-			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); credentialVault.set(newSecret, result.apiKey); current.secretId = newSecret; current.configured = true;
+			const oldSecret = current.secretId ?? current.id; const newSecret = randomUUID(); await credentialVault.set(newSecret, result.apiKey);
+			if (shutdownStarted || controller.signal.aborted) { credentialVault.remove(newSecret); throw new Error("Sign-in cancelled."); }
+			current.secretId = newSecret; current.configured = true;
 			try { workspaceRuntime.store.saveAccount(current); } catch (error) { credentialVault.remove(newSecret); throw error; } credentialVault.remove(oldSecret);
 		} else {
 			await signInNative(account, url => shell.openExternal(url), controller.signal);
@@ -177,7 +183,7 @@ ipcMain.handle("workspace:account-status", async (event, harness: unknown, id: u
 	try {
 		const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]);
 		const cwd = account?.configDirectory ?? app.getPath("userData");
-		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
+		const status = harness === "cursor" ? await cursorAccountStatus(account?.configured ? await credentialVault.get(account.secretId ?? account.id) : undefined) : harness === "grok" ? await grokAccountStatus(cwd, account, signal) : await nativeAccountStatus(harness, cwd, account, signal);
 		if (shutdownStarted) throw new Error("The workspace is shutting down.");
 		if (account && status.authenticated !== null) { const current = workspaceRuntime.store.getAccounts().find(value => value.id === account.id); if (current) { current.configured = status.authenticated; workspaceRuntime.store.saveAccount(current); workspaceRuntime.onChange(workspaceRuntime.store.getOverview()); } }
 		return status;
@@ -201,12 +207,12 @@ function projectRoot(event: Electron.IpcMainInvokeEvent, id: unknown) {
 }
 ipcMain.handle("workspace:native-actions", async (event, id: unknown) => {
  if (!senderWindow(event) || typeof id !== "string") throw new Error("Invalid native action request."); if (shutdownStarted) throw new Error("The workspace is shutting down.");
- const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi", "claude", "codex"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
+ const task = workspaceRuntime.store.getTask(id); if (!["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("Native action discovery is unavailable for this harness.");
  workspaceRuntime.assertHarnessAvailable(task.harness); const cwd = task.projectId ? projectRoot(event, task.projectId) : path.join(app.getPath("userData"), "tasks", task.id);
  const account = (task.harness === "claude" || task.harness === "codex") && task.accountId ? workspaceRuntime.store.getAccounts().find(value => value.id === task.accountId && value.harness === task.harness && value.kind === "native" && value.configured && !value.archived) : undefined;
  if ((task.harness === "claude" || task.harness === "codex") && task.accountId && !account) throw new Error("Account is unavailable."); if (account && (signIns.has(account.id) || accountChecks.has(account.id))) throw new Error("Finish this account's sign-in or check before loading commands.");
  const controller = new AbortController(); nativeCatalogChecks.add(controller); if (account) accountChecks.set(account.id, controller); modelChecks.set(task.harness, (modelChecks.get(task.harness) ?? 0) + 1);
- try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]); if (task.harness === "codex") return await codexNativeActions(cwd, signal, account); if (task.harness === "claude") return await claudeNativeActions(cwd, signal, account); if (task.harness === "pi") return await piNativeActions(cwd, signal); const endpoint = await workspaceRuntime.openCode.connect(signal); return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal); }
+ try { if (!task.projectId) await mkdir(cwd, { recursive: true }); const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]); if (task.harness === "phaseo") return await new PhaseoSkills(path.join(app.getPath("userData"), "workspace"), task.projectId ? cwd : undefined).catalog(signal); if (task.harness === "codex") return await codexNativeActions(cwd, signal, account); if (task.harness === "claude") return await claudeNativeActions(cwd, signal, account); if (task.harness === "pi") return await piNativeActions(cwd, signal); const endpoint = await workspaceRuntime.openCode.connect(signal); return await openCodeNativeActions(OpenCode.make({ baseUrl: endpoint.url, headers: Service.headers(endpoint) }), cwd, signal); }
  finally { nativeCatalogChecks.delete(controller); if (account && accountChecks.get(account.id) === controller) accountChecks.delete(account.id); const remaining = modelChecks.get(task.harness)! - 1; if (remaining) modelChecks.set(task.harness, remaining); else modelChecks.delete(task.harness); }
 });
 ipcMain.handle("workspace:prompt-commands", (event, id: unknown, request: unknown) => {
@@ -262,22 +268,27 @@ ipcMain.handle("workspace:write-document", async (event, id: unknown, filename: 
 });
 
 ipcMain.handle("workspace:get", event => {
+	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.get();
 });
 ipcMain.handle("workspace:overview", event => {
+	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.getOverview();
 });
 ipcMain.handle("workspace:task-history", (event, query: unknown) => {
+	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.taskHistory(query);
 });
 ipcMain.handle("workspace:task", (event, id: unknown) => {
+	if (shutdownStarted) return;
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
 	return workspaceRuntime.store.getTaskView(id);
 });
 ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
+	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
 	return workspaceRuntime.store.conversationPage(query);
 });
@@ -528,10 +539,10 @@ autoUpdater.on("error", (error) => broadcastUpdateState({ status: "error", messa
 app.whenReady().then(() => {
 	if (!primaryInstance) return;
 	const workspaceDirectory = path.join(app.getPath("userData"), "workspace");
-	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), {
+	const vault = new SecretVault(path.join(workspaceDirectory, "credentials"), windowsCredentialEncryption({
 		available: () => safeStorage.isEncryptionAvailable() && (process.platform !== "linux" || safeStorage.getSelectedStorageBackend() !== "basic_text"),
-		encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value),
-	});
+		encrypt: value => safeStorage.encryptStringAsync(value), decrypt: async value => (await safeStorage.decryptStringAsync(value)).result,
+	}));
 	credentialVault = vault;
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));

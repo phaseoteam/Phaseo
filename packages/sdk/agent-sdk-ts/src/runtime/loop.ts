@@ -36,6 +36,7 @@ type RuntimeOptions<TInput, TOutput, TContext> = {
 	rejections?: Array<string | AgentToolDecision>;
 	toolOutputs?: AgentToolOutput[];
 	humanInput?: string;
+	humanMessages?: AgentMessage[];
 };
 
 const EMPTY_USAGE: AgentUsageSummary = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 };
@@ -311,8 +312,9 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 				}
 				for (const execution of await Promise.all(executions)) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
 				run.pause = null;
-			} else if (run.status === "waiting_for_human" && !options.humanInput) throw new Error(`Run ${run.id} is waiting for human input`);
-			if (options.humanInput) run.messages.push({ role: "user", content: options.humanInput });
+			} else if (run.status === "waiting_for_human" && !(options.humanMessages !== undefined ? options.humanMessages.length : options.humanInput)) throw new Error(`Run ${run.id} is waiting for human input`);
+			if (options.humanMessages !== undefined) run.messages.push(...structuredClone(options.humanMessages));
+			else if (options.humanInput) run.messages.push({ role: "user", content: options.humanInput });
 			run.status = "running"; run.updatedAt = nowIso();
 			await emit(options.onEvent, { type: "run.resumed", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, previousStatus });
 		} else run.status = "running";
@@ -444,7 +446,8 @@ export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefin
 	const run: AgentRunRecord<TInput, TContext, TOutput> = { id: runId, agentId: definition.id, status: "queued", input: options.input, context: options.context, messages: [], pause: null, stopReason: null, usage: { ...EMPTY_USAGE }, createdAt, updatedAt: createdAt, stepCount: 0 };
 	const staticInstructions = typeof definition.instructions === "string" ? definition.instructions : undefined;
 	if (staticInstructions) run.messages.push({ role: "system", content: staticInstructions });
-	run.messages.push({ role: "user", content: toPromptText(options.input) });
+	if (options.messages !== undefined) run.messages.push(...structuredClone(options.messages));
+	else run.messages.push({ role: "user", content: toPromptText(options.input) });
 	const initial = buildResult(run, [], []);
 	await options.state?.save(initial);
 	await emit(options.onEvent, { type: "run.started", runId, agentId: definition.id, timestamp: nowIso(), status: run.status });

@@ -4,8 +4,34 @@ import * as fs from "node:fs";
 import { createAgent } from "../agent";
 import { createAgentDevtools } from "../devtools";
 import { AgentGatewayError } from "../errors";
+import type { AgentMessage, AgentRunResult } from "../types";
 
 describe("Agent SDK runtime loop", () => {
+	it("resumes human review with structured input and rejects an empty response", async () => {
+		const agent = createAgent<string, string>({ id: "image-review", humanReview: ({ response }) => response.message.content === "Review needed" ? { reason: "image_review" } : null });
+		const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "Review needed" } }).mockImplementationOnce(async request => {
+			expect(request.messages.at(-1)).toEqual({ role: "user", content: [{ type: "text", text: "Use this correction" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] });
+			return { message: { role: "assistant", content: "Approved answer" } };
+		});
+		const pending = await agent.run({ input: "Draft", client: { generate } });
+		await expect(agent.continueRun({ run: structuredClone(pending), client: { generate }, humanInput: "Ignored fallback", humanMessages: [] })).rejects.toThrow("waiting for human input");
+		expect(generate).toHaveBeenCalledTimes(1);
+		const result = await agent.continueRun({ run: pending, client: { generate }, humanMessages: [{ role: "user", content: [{ type: "text", text: "Use this correction" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }] });
+		expect(result.run.status).toBe("completed"); expect(result.output).toBe("Approved answer");
+	});
+	it("retains structured multimodal history through a saved approval and continuation", async () => {
+		const messages: AgentMessage[] = [{ role: "user", content: "Earlier question" }, { role: "assistant", content: "Earlier answer" }, { role: "user", content: [{ type: "text", text: "Review this image" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }];
+		const expected = structuredClone(messages), saved = new Map<string, AgentRunResult<unknown, string>>();
+		const state = { load: async (id: string) => saved.get(id) ?? null, save: async (result: AgentRunResult<unknown, string>) => { saved.set(result.run.id, structuredClone(result)); } };
+		const agent = createAgent<string, unknown>({ id: "history", tools: [{ id: "review", requireApproval: true, execute: () => "Reviewed" }] });
+		const generate = vi.fn().mockImplementationOnce(async request => { expect(request.messages).toEqual(expected); messages[0].content = "Mutated caller history"; return { message: { role: "assistant", content: "", toolCalls: [{ id: "approval", name: "review", input: {} }] } }; }).mockImplementationOnce(async request => { expect(request.messages.slice(0, 3)).toEqual(expected); return { message: { role: "assistant", content: "Done" } }; });
+		const pending = await agent.run({ input: "Must not replace messages", messages, client: { generate }, state });
+		expect(pending.run.messages.slice(0, 3)).toEqual(expected); expect(pending.run.status).toBe("waiting_for_human");
+		const followUp: AgentMessage[] = [{ role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,ZGVm" } }] }];
+		const result = await agent.continueRun({ run: saved.get(pending.run.id)!, client: { generate }, state, approvals: ["approval"], humanMessages: followUp });
+		expect(result.run.status).toBe("completed"); expect(result.run.messages.slice(0, 3)).toEqual(expected);
+		expect(result.run.messages.at(-2)).toEqual(followUp[0]); followUp[0].content = "Changed caller follow-up"; expect(result.run.messages.at(-2)?.content).not.toBe("Changed caller follow-up");
+	});
 	it("pauses a run for human review and exposes pause metadata", async () => {
 		const events: string[] = [];
 		const client = {

@@ -51,6 +51,8 @@ export class WorkspaceRuntime {
 	private readonly forms = new Map<string, { taskId: string; resolve: (answer: FormAnswer | null) => void }>();
 	private readonly executions = new Map<string, Promise<void>>();
 	private readonly signingInAccounts = new Set<string>();
+	private readonly credentialChanges = new Set<string>();
+	private readonly commands = new Set<Promise<WorkspaceOverview>>();
 	private readonly maintainingHarnesses = new Set<Harness>();
 	private readonly steeringExecutions = new Map<string, Promise<WorkspaceOverview>>();
 	private readonly imports = new Set<Promise<unknown>>();
@@ -118,6 +120,7 @@ export class WorkspaceRuntime {
 		if (account) this.assertHarnessAvailable(account.harness);
 		this.assertAccountIdle(accountId);
 		if (this.signingInAccounts.has(accountId)) throw new Error("Account sign-in is already in progress.");
+		if (this.credentialChanges.has(accountId)) throw new Error("Wait for this account's credential change to finish.");
 		this.signingInAccounts.add(accountId);
 		let released = false;
 		return () => { if (!released) { released = true; this.signingInAccounts.delete(accountId); } };
@@ -130,6 +133,7 @@ export class WorkspaceRuntime {
 		this.assertHarnessAvailable(harness);
 		if (this.store.getOverview().tasks.some(task => task.harness === harness && this.executions.has(task.id))) throw new Error("Stop this harness's tasks before updating it.");
 		if (this.store.getAccounts().some(account => account.harness === harness && this.signingInAccounts.has(account.id))) throw new Error("Finish this harness's sign-in before updating it.");
+		if (this.store.getAccounts().some(account => account.harness === harness && this.credentialChanges.has(account.id))) throw new Error("Wait for this harness's credential change to finish.");
 		this.maintainingHarnesses.add(harness);
 		return () => { this.maintainingHarnesses.delete(harness); };
 	}
@@ -185,10 +189,14 @@ export class WorkspaceRuntime {
 		this.broadcast(); this.start(task.id); return task;
 	}
 	async command(command: WorkspaceCommand): Promise<WorkspaceOverview> {
+		const operation = this.applyCommand(command); this.commands.add(operation);
+		try { return await operation; } finally { this.commands.delete(operation); }
+	}
+	private async applyCommand(command: WorkspaceCommand): Promise<WorkspaceOverview> {
 		if (this.closing) throw new Error("The workspace is shutting down.");
 		if ((command.type === "create-task" || command.type === "handoff") && command.projectId) this.assertProjectAvailable(command.projectId);
-		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex"].includes(this.store.getTask(command.id).harness)) throw new Error("This native action requires OpenCode, Pi, Claude or OpenAI.");
-		if (command.type === "send" && command.nativeAction?.kind === "command" && this.store.getTask(command.id).harness === "codex") throw new Error("Native commands require OpenCode, Pi or Claude; OpenAI supports native skills.");
+		if (command.type === "send" && command.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("This action requires a supported harness.");
+		if (command.type === "send" && command.nativeAction?.kind === "command" && ["codex", "phaseo"].includes(this.store.getTask(command.id).harness)) throw new Error("Native commands require OpenCode, Pi or Claude; OpenAI supports native skills.");
 		if (command.type === "send" || command.type === "resume") { const projectId = this.store.getTask(command.id).projectId; if (projectId) this.assertProjectAvailable(projectId); }
 		if (command.type === "update-task" && (command.model !== undefined || command.mode !== undefined || command.reasoningEffort !== undefined || command.nativeMode !== undefined) && this.executions.has(command.id)) throw new Error("Wait for this task to stop before changing its settings.");
 		if (command.type === "steer") {
@@ -213,31 +221,38 @@ export class WorkspaceRuntime {
 			const id = randomUUID();
 			if (command.kind === "api") {
 				if (!this.vault || !command.apiKey) throw new Error("Secure credential storage is unavailable.");
-				this.vault.set(id, command.apiKey);
+				await this.vault.set(id, command.apiKey);
 			}
 			const configDirectory = command.kind === "native" ? path.join(this.directory, "accounts", id) : undefined;
 			if (configDirectory) mkdirSync(configDirectory, { recursive: true });
-			this.store.saveAccount({ id, name: command.name, harness: command.harness, kind: command.kind, endpoint: command.endpoint, configDirectory, configured: command.kind === "api" });
+			try {
+				if (this.closing) throw new Error("The workspace is shutting down.");
+				this.store.saveAccount({ id, name: command.name, harness: command.harness, kind: command.kind, endpoint: command.endpoint, configDirectory, configured: command.kind === "api" });
+			} catch (error) { if (command.kind === "api") this.vault?.remove(id); throw error; }
 			this.broadcast(); return this.store.getOverview();
 		}
 		if (command.type === "update-account") {
 			const account = this.store.getAccounts().find(value => value.id === command.id); if (!account) throw new Error("Account no longer exists.");
 			if (this.signingInAccounts.has(account.id)) throw new Error("Finish or cancel account sign-in before changing this account.");
+			if (this.credentialChanges.has(account.id)) throw new Error("Wait for this account's credential change to finish.");
 			if (account.harness === "cursor" && command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service.");
 			if (command.endpoint !== undefined || command.apiKey !== undefined) {
 				if (account.kind !== "api") throw new Error("Native credentials are managed through native sign-in.");
 				if (this.store.getOverview().tasks.some(task => task.accountId === account.id && this.executions.has(task.id))) throw new Error("Stop this account's running tasks before changing its connection.");
 			}
 			const oldSecret = account.secretId ?? account.id;
-			if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); this.vault.set(account.secretId, command.apiKey); account.configured = true; }
-			if (command.name !== undefined) account.name = command.name;
-			if (command.endpoint !== undefined) account.endpoint = command.endpoint;
-			if (command.archived !== undefined) account.archived = command.archived;
-			try { this.store.saveAccount(account); }
-			catch (error) { if (command.apiKey !== undefined) this.vault?.remove(account.secretId!); throw error; }
-			this.broadcast();
-			if (command.apiKey !== undefined) this.vault?.remove(oldSecret);
-			return this.store.getOverview();
+			if (command.apiKey !== undefined) this.credentialChanges.add(account.id);
+			try {
+				if (command.apiKey !== undefined) { if (!this.vault) throw new Error("Secure credential storage is unavailable."); account.secretId = randomUUID(); await this.vault.set(account.secretId, command.apiKey); account.configured = true; }
+				if (command.name !== undefined) account.name = command.name;
+				if (command.endpoint !== undefined) account.endpoint = command.endpoint;
+				if (command.archived !== undefined) account.archived = command.archived;
+				try { if (this.closing) throw new Error("The workspace is shutting down."); this.store.saveAccount(account); }
+				catch (error) { if (command.apiKey !== undefined) this.vault?.remove(account.secretId!); throw error; }
+				this.broadcast();
+				if (command.apiKey !== undefined) this.vault?.remove(oldSecret);
+				return this.store.getOverview();
+			} finally { this.credentialChanges.delete(account.id); }
 		}
 		if (command.type === "approval") {
 			const pending = this.approvals.get(command.approvalId);
@@ -320,9 +335,10 @@ export class WorkspaceRuntime {
 		try {
 			const credential = (accountId: string) => { if (!this.vault) throw new Error("Credential storage is unavailable."); const account = this.store.getAccounts().find(value => value.id === accountId); if (!account) throw new Error("Account no longer exists."); return this.vault.get(account.secretId ?? account.id); };
 			this.assertHarnessAvailable(task.harness);
-			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
+			if (task.queue[0]?.nativeAction && !["opencode", "pi", "claude", "codex", "phaseo"].includes(task.harness)) throw new Error("This native action requires a supported native harness.");
 			if (task.accountId && this.signingInAccounts.has(task.accountId)) throw new Error("Finish this account's sign-in before retrying the instruction.");
-			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions")) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
+			if (task.accountId && this.credentialChanges.has(task.accountId)) throw new Error("Wait for this account's credential change to finish.");
+			adapter = task.harness === "phaseo" ? task.mode === "chat" ? new PhaseoAdapter(credential, undefined, path.join(this.directory, "instructions"), this.store) : new PhaseoCodingAdapter(credential, this.store, undefined, this.store.getMcpConnections(), path.join(this.directory, "instructions")) : task.harness === "cursor" ? new CursorAdapter(this.directory, credential, this.store.getMcpConnections()) : this.adapterFactory(task.harness, this.store.getAgents().find(agent => agent.id === task.agentId), this.openCode, this.store.getMcpConnections(), task.projectId);
 		}
 		catch (error) {
 			task.status = "failed"; task.error = error instanceof Error ? error.message : "Harness unavailable.";
@@ -446,6 +462,7 @@ export class WorkspaceRuntime {
 		await Promise.allSettled([...this.imports]);
 		await Promise.allSettled([...this.worktreeOperations]);
 		await Promise.allSettled([...this.projectMutations.keys()]);
+		await Promise.allSettled([...this.commands]);
 		await this.openCode.close();
 		this.store.close();
 	}

@@ -48,6 +48,8 @@ jobs:
               run: pnpm --filter @phaseo/desktop typecheck
             - name: Runtime tests
               run: pnpm --filter @phaseo/desktop test
+            - name: Agent SDK runtime tests
+              run: pnpm --filter @phaseo/agent-sdk test
             - name: Electron workflows
               run: pnpm --filter @phaseo/desktop exec electron scripts/smoke.mjs
             - name: Phaseo managed MCP tools
@@ -56,6 +58,14 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs
             - name: Phaseo global instruction settings
               run: pnpm --filter @phaseo/desktop exec electron scripts/global-instructions-smoke.mjs
+            - name: Phaseo skill picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skill-picker-smoke.mjs
+            - name: Phaseo skill approvals and execution
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skills-smoke.mjs
+            - name: Phaseo skill forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs
+            - name: Phaseo Chat skill forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --mode=chat
             - name: Reusable chat commands
               run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs
             - name: OpenCode native command and skill picker
@@ -92,6 +102,14 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/project-instructions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged Phaseo global instruction settings
               run: pnpm --filter @phaseo/desktop exec electron scripts/global-instructions-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo skill picker
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skill-picker-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo skill approvals and execution
+              run: pnpm --filter @phaseo/desktop exec electron scripts/phaseo-skills-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo skill forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
+            - name: Packaged Phaseo Chat skill forced-crash recovery
+              run: pnpm --filter @phaseo/desktop exec node scripts/phaseo-skill-recovery-audit.mjs --mode=chat --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged reusable chat commands
               run: pnpm --filter @phaseo/desktop exec electron scripts/prompt-commands-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Packaged OpenCode native command and skill picker
@@ -129,5 +147,8 @@ jobs:
                       output/playwright/claude-native-actions/
                       output/playwright/codex-native-actions/
                       output/playwright/global-instructions/
+                      output/playwright/phaseo-skills/
+                        output/playwright/phaseo-skill-runtime/
+                        output/playwright/phaseo-skill-recovery/
                       output/playwright/browser-viewport/
                   if-no-files-found: ignore

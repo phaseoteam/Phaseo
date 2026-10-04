@@ -63,7 +63,8 @@ export type AgentItem<TOutput = unknown> =
 	| AgentOutputItem<TOutput>;
 
 export type AgentMessage =
-	| { role: "system" | "user"; content: string }
+	| { role: "system"; content: string }
+	| { role: "user"; content: string | ({ type: "text"; text: string } | { type: "image_url"; image_url: { url: string } })[] }
 	| { role: "assistant"; content: string; toolCalls?: AgentToolCall[]; reasoning?: string }
 	| { role: "tool"; content: string; toolCallId: string; name: string; isError?: boolean };
 
@@ -320,6 +321,8 @@ export type AgentEventHandler = (event: AgentEvent) => MaybePromise<void>;
 
 export type AgentRunOptions<TInput = unknown, TContext = unknown, TOutput = unknown> = {
 	input: TInput;
+	/** Conversation messages used instead of coercing input into a single user message. */
+	messages?: AgentMessage[];
 	client: AgentModelClient<TContext>;
 	context?: TContext;
 	model?: AgentDynamicValue<string, TContext>;
@@ -338,10 +341,12 @@ export type AgentRunOptions<TInput = unknown, TContext = unknown, TOutput = unkn
 	state?: AgentStateAccessor<TInput, TContext, TOutput>;
 };
 
-export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext = unknown> = Omit<AgentRunOptions<TInput, TContext, TOutput>, "input"> & {
+export type AgentContinueOptions<TInput = unknown, TOutput = unknown, TContext = unknown> = Omit<AgentRunOptions<TInput, TContext, TOutput>, "input" | "messages"> & {
 	run?: AgentRunResult<TOutput, TInput, TContext>;
 	runId?: string;
 	humanInput?: string;
+	/** Structured follow-up messages appended after pending tool results. */
+	humanMessages?: AgentMessage[];
 	approveToolCalls?: Array<string | AgentToolDecision>;
 	rejectToolCalls?: Array<string | AgentToolDecision>;
 	/** Concise aliases for approveToolCalls and rejectToolCalls. */

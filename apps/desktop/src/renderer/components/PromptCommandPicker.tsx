@@ -3,7 +3,7 @@ import type { NativeAction } from "../../shared/nativeActions";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Plus, Search, X } from "lucide-react";
 import type { PromptCommand, PromptCommandCatalog, PromptCommandPreview } from "../../shared/promptCommands";
-export function PromptCommandPicker({ projectId, taskId, native, onClose, onInsert }: { projectId?: string; taskId: string; native?: "opencode" | "pi" | "claude" | "codex"; onClose: () => void; onInsert: (text: string, action?: NativeAction) => void }) {
+export function PromptCommandPicker({ projectId, taskId, native, onClose, onInsert }: { projectId?: string; taskId: string; native?: "opencode" | "pi" | "claude" | "codex" | "phaseo"; onClose: () => void; onInsert: (text: string, action?: NativeAction) => void }) {
  const [nativeTab, setNativeTab] = useState(false);
  const api = window.phaseoDesktop?.workspace; const dialog = useRef<HTMLDialogElement>(null); const operation = useRef(0); const pending = useRef(false);
  const [catalog, setCatalog] = useState<PromptCommandCatalog>({ commands: [], errors: [] }); const [query, setQuery] = useState(""); const [index, setIndex] = useState(0); const [attempt, setAttempt] = useState(0);
@@ -33,7 +33,7 @@ export function PromptCommandPicker({ projectId, taskId, native, onClose, onInse
  }
  return <dialog className="prompt-command-dialog" ref={dialog} aria-label="Chat commands" onCancel={event => { event.preventDefault(); onClose(); }}>
   <div className="prompt-command-heading"><h2>{editing ? hash === "new" ? "New command" : "Edit command" : preview ? `/${preview.name}` : "Commands"}</h2><button type="button" aria-label="Close chat commands" onClick={onClose}><X size={16} /></button></div>
-  {native && !editing && !preview && <div className="prompt-command-actions"><button type="button" aria-pressed={!nativeTab} className={!nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(false)}>Saved prompts</button><button type="button" aria-pressed={nativeTab} className={nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(true)}>{native === "pi" ? "Pi" : native === "claude" ? "Claude" : native === "codex" ? "OpenAI" : "OpenCode"}</button></div>}
+  {native && !editing && !preview && <div className="prompt-command-actions"><button type="button" aria-pressed={!nativeTab} className={!nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(false)}>Saved prompts</button><button type="button" aria-pressed={nativeTab} className={nativeTab ? "task-primary" : undefined} onClick={() => setNativeTab(true)}>{native === "pi" ? "Pi" : native === "claude" ? "Claude" : native === "codex" ? "OpenAI" : native === "phaseo" ? "Phaseo" : "OpenCode"}</button></div>}
   {error && <p className="task-error" role="alert">{error}</p>}
   {nativeTab ? <NativeActionPicker taskId={taskId} onInsert={(text, action) => { onInsert(text, action); onClose(); }} /> : editing ? <form className="prompt-command-editor" onSubmit={event => { event.preventDefault(); void save(); }}>
    <label>Name<input aria-label="Command name" maxLength={64} required readOnly={hash !== "new"} value={name} onChange={event => setName(event.target.value)} placeholder="review" /></label>

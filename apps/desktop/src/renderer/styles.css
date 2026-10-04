@@ -709,6 +709,7 @@ button { color: inherit; }
 .prompt-command-results span small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .prompt-command-dialog small { color: var(--text-muted); font-size: 12px; }
 .prompt-command-editor, .prompt-command-preview { display: grid; gap: 16px; }
+.native-action-warnings { max-height: 112px; overflow: auto; white-space: pre-wrap; margin: 0; }
 .prompt-command-dialog label { display: grid; gap: 8px; font-size: 13px; }
 .prompt-command-editor textarea { min-height: 180px; resize: vertical; }
 .prompt-command-actions { justify-content: flex-end; flex-wrap: wrap; margin-top: 4px; }

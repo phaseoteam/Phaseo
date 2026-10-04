@@ -25,7 +25,7 @@ export class CursorAdapter implements AgentAdapter {
 	private activeRun?: Run;
 	private stopped = false;
 	private readonly steering = new Set<Promise<void>>();
-	constructor(private readonly directory: string, private readonly credential: (id: string) => string, private readonly connections: McpConnection[] = []) {}
+	constructor(private readonly directory: string, private readonly credential: (id: string) => string | Promise<string>, private readonly connections: McpConnection[] = []) {}
 	private async dispose(agent: SDKAgent | undefined, failed: boolean) {
 		try { await agent?.[Symbol.asyncDispose](); } catch (error) { if (!failed) throw error; }
 	}
@@ -33,7 +33,7 @@ export class CursorAdapter implements AgentAdapter {
 		let submitted = false; let hadText = false; let failed = false;
 		try {
 			assertCursorBackend(); if (!account || account.harness !== "cursor" || !account.configured || account.archived) throw new Error("Choose a connected Cursor account.");
-			const apiKey = this.credential(account.id);
+			const apiKey = await this.credential(account.id);
 			if (task.mode === "code" && await callbacks.onApproval("Cursor native tools", "Allow Cursor to read and change files, run commands, use configured MCP servers and access the network for this turn? Cursor's SDK has no per-tool prompts; native policies and Auto-review apply.") !== "accept") throw new Error("Cursor native execution was declined. Choose Chat or Plan, or retry with approval.");
 			if (this.stopped) throw new Error("Cursor task stopped.");
 			const prompt = attachmentPrompt(task.nativeForkFrom && !task.nativeSessionId ? handoffPrompt({ ...task, handoffFrom: "cursor", nativeForkFrom: undefined }, text) : text, attachments);

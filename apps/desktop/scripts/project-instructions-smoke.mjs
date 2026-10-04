@@ -20,13 +20,13 @@ const server = createServer(async (request, response) => {
   if (url.pathname === "/v1/models") { response.setHeader("content-type", "application/json"); response.end(JSON.stringify({ data: [{ id: "owned-fixture" }] })); return; }
   const body = JSON.parse(raw); calls++;
   if (url.pathname === "/v1/chat/completions") {
-   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(!body.tools, "Chat has tools");
+   chatCalls++; assert(body.messages.some(message => message.role === "system" && message.content.includes("Owned root guidance")), "Chat root missing"); assert(!JSON.stringify(body.messages).includes("Owned scoped guidance"), "Chat scope leaked"); assert(body.tools?.every(tool => ["list_skills", "load_skill"].includes(tool.function.name)), "Chat mutation tools");
    response.setHeader("content-type", "text/event-stream"); response.end('data: {"choices":[{"delta":{"content":"Owned chat finished"}}]}\n\ndata: [DONE]\n\n'); return;
   }
   assert(url.pathname === "/v1/responses", "Unexpected endpoint");
   const instructions = body.instructions ?? ""; assert(instructions.includes("Owned root guidance"), "Root missing");
   const tools = body.tools.map(tool => tool.function ?? tool); const writable = tools.some(tool => tool.name === "write_project_file"); let output;
-  if (!writable) { planCalls++; assert(tools.length === 1 && tools[0].name === "project_files", "Plan mutation tools"); output = [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Owned plan finished" }] }]; }
+  if (!writable) { planCalls++; assert(tools.some(tool => tool.name === "project_files") && tools.every(tool => ["project_files", "list_skills", "load_skill"].includes(tool.name)), "Plan mutation tools"); output = [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Owned plan finished" }] }]; }
   else {
    codeCalls++; const revision = instructions.match(/instructionRevision ([a-f0-9]{64})/)?.[1]; assert(revision, "Revision missing");
    let name, input;
