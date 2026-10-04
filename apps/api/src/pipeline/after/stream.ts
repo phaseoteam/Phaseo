@@ -846,8 +846,15 @@ export async function handleStreamResponse(
                     "The response was delivered but accounting finalization failed.",
                     {
                         upstream_status: upstreamStatus,
+                        response_delivered: true,
                         billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
                         cause: message,
+                    },
+                    null,
+                    {
+                        gatewayResponse: latestGatewaySnapshot,
+                        rawUsage: usageRaw ?? latestStreamUsageRaw ?? result.bill.usage,
+                        pricingCard: card,
                     },
                 );
             } finally {
@@ -863,5 +870,4 @@ export async function handleStreamResponse(
 export function handlePassthroughFallback(upstream: Response): Response {
     return passthrough(upstream);
 }
-
 

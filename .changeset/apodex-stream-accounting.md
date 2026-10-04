@@ -2,4 +2,4 @@
 "@phaseo/gateway-api": patch
 ---
 
-Persist streamed usage and pending accounting details when pricing or charge persistence fails during finalization.
+Persist usage, response evidence, pricing context and billing identifiers when streamed or non-streamed request finalization fails.

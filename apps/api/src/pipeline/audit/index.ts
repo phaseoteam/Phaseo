@@ -1240,6 +1240,7 @@ type AuditFailureBefore = {
     labels?: RequestLabel[] | null;
 };
 type AuditFailureExecute = {
+    nativeResponseId?: string | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1500,7 +1501,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             provider: args.provider ?? null,
             stream: !!args.stream,
             byok: !!args.byok,
-            nativeResponseId: null,
+            nativeResponseId: args.nativeResponseId ?? null,
             authMethod: args.authMethod ?? "api_key",
             oauthClientId: args.oauthClientId ?? null,
             oauthUserId: args.oauthUserId ?? null,
@@ -1578,6 +1579,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerModelSlug: args.providerModelSlug ?? null,
                         stream: args.stream,
                         byok: args.byok === true,
+                        nativeResponseId: args.nativeResponseId ?? null,
                         statusCode: args.statusCode,
                         success: false,
                         errorCode: args.errorCode,

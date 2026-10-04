@@ -202,10 +202,13 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 		}
 		try {
 			const upstream = makeOpenAIStream({ prompt_tokens: 11, completion_tokens: 4, total_tokens: 15, prompt_tokens_details: { cached_tokens: 5 } });
-			const response = await handleStreamResponse(baseCtx(), {
+			const ctx = { ...baseCtx(), billingRequestId: "billing_local" };
+			const providerResponse = { id: "provider_response", usage: { prompt_tokens: 11 } };
+			const response = await handleStreamResponse(ctx, {
 				kind: "stream", stream: upstream.body, upstream, provider: "novita",
 				usageFinalizer: async () => null,
-				bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null },
+				rawResponse: providerResponse,
+				bill: { cost_cents: 0, currency: "USD", usage: null, finish_reason: null, upstream_id: "provider_response" },
 			} as any, { rules: [] } as any);
 			expect(await response.text()).toContain("hello");
 			await new Promise((resolve) => setTimeout(resolve, 0));
@@ -218,12 +221,19 @@ describe("handleStreamResponse OpenAI usage finalization", () => {
 			expect(auditFailureMock).toHaveBeenCalledTimes(1);
 			expect(auditFailureMock.mock.calls[0][0]).toMatchObject({
 				errorCode: "gateway:stream_finalization_failed",
+				providerResponse,
+				nativeResponseId: "provider_response",
 				usage: { input_tokens: 11, output_tokens: 4, total_tokens: 15, input_tokens_details: { cached_tokens: 5 } },
 				detailMetadata: { accounting_finalization: {
 					upstream_status: 200, billing_status: "pending_reconciliation",
 					cause: failure,
+					billing_request_id: "billing_local",
+					finish_reason: "stop",
+					pricing_card: { rules: [] },
 				} },
 			});
+			expect(auditFailureMock.mock.calls[0][0].gatewayResponse).not.toHaveProperty("error");
+			expect(auditFailureMock.mock.calls[0][0].detailMetadata.accounting_finalization.raw_usage).toBeTruthy();
 		} finally {
 			calculatePricingMock.mockReset();
 		}
