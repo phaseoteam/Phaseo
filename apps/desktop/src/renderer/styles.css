@@ -616,7 +616,7 @@ button { color: inherit; }
 .chat-tools { display: flex; flex-direction: column; width: clamp(360px, 40vw, 680px); flex-shrink: 0; border-left: 1px solid var(--border); min-height: 0; background: var(--background); }
 .chat-tools-header, .chat-settings-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border); }
 .chat-tools-header nav, .chat-settings-header nav { display: flex; gap: 4px; flex-wrap: wrap; }
-:is(.chat-tools-header, .chat-settings-header, .browser-toolbar) button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
+:is(.chat-tools-header, .chat-settings-header, .browser-toolbar, .browser-download-toolbar, .browser-downloads) button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-muted); font: inherit; font-size: 12px; cursor: pointer; }
 :is(.chat-tools-header, .chat-settings-header) button[aria-pressed="true"] { background: var(--primary-soft); color: var(--text); }
 :is(.chat-tools-header, .chat-settings-header, .browser-toolbar) button:hover { background: var(--surface-hover); }
 .chat-tools-content, .chat-settings-content { flex: 1; min-height: 0; overflow: auto; }
@@ -658,3 +658,17 @@ button { color: inherit; }
 .browser-preview-toolbar { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
 .browser-preview-toolbar select { min-height: 28px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); padding: 4px 8px; font: inherit; }
 .browser-preview-toolbar button { display: inline-flex; align-items: center; justify-content: center; min-height: 28px; border: 0; border-radius: 8px; background: transparent; color: var(--text-muted); padding: 4px 8px; cursor: pointer; }
+
+.browser-download-toolbar { display:flex; justify-content:flex-end; padding:6px 12px; border-bottom:1px solid var(--border); }
+.browser-downloads { flex:1; min-height:0; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+.browser-downloads h2 { margin:0; font-size:16px; }
+.browser-downloads article { padding:16px; border:1px solid var(--border); border-radius:var(--radius); display:flex; flex-direction:column; gap:10px; }
+.browser-downloads strong { overflow-wrap:anywhere; }
+.browser-downloads span { color:var(--text-muted); font-size:12px; }
+.browser-downloads article > div { display:flex; flex-wrap:wrap; gap:8px; }
+.browser-downloads progress { width:100%; accent-color:var(--primary); }
+.browser-tab-surface[hidden] { display:none; }
+
+.browser-downloads button { border-color:var(--border); background:var(--surface); color:var(--text); }
+:is(.browser-downloads, .browser-download-toolbar) button:hover { background:var(--surface-hover); }
+.browser-download-toolbar button[aria-pressed="true"] { color:var(--text); background:var(--primary-soft); }

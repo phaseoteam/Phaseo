@@ -1,3 +1,4 @@
+import type { BrowserDownload, BrowserDownloadCommand } from "./browserDownloads";
 import type { BrowserCommand, BrowserState, BrowserOpenTab } from "./browser";
 import type { WorkspaceApi } from "./workspace";
 
@@ -35,6 +36,8 @@ export type DesktopUpdateState = {
 export type PhaseoDesktopApi = {
 	readonly platform: NodeJS.Platform;
 	workspace: WorkspaceApi;
+	browserDownload: (command: BrowserDownloadCommand) => Promise<BrowserDownload[]>;
+	onBrowserDownloads: (listener: (downloads: BrowserDownload[]) => void) => () => void;
 	browser: (command: BrowserCommand) => Promise<BrowserState | undefined>;
 	onBrowserOpenTab: (listener: (request: BrowserOpenTab) => void) => () => void;
 	onBrowserState: (listener: (state: BrowserState) => void) => () => void;

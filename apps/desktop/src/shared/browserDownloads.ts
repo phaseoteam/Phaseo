@@ -1,0 +1,2 @@
+export type BrowserDownload = { id: string; sourceId: string; filename: string; url: string; path: string; received: number; total: number; status: "progressing" | "paused" | "completed" | "cancelled" | "interrupted"; resumable: boolean; finished: boolean; error?: string };
+export type BrowserDownloadCommand = { type: "list" } | { type: "pause" | "resume" | "cancel" | "reveal" | "dismiss"; id: string };

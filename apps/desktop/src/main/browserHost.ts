@@ -1,7 +1,19 @@
 import { session, WebContentsView, type BrowserWindow } from "electron";
 import { browserUrl, browserViewport, browserViewportSizes, type BrowserViewport, type BrowserCommand, type BrowserState } from "../shared/browser";
 
+import { BrowserDownloads } from "./browserDownloads";
+
 export class BrowserHost {
+ readonly downloads = new BrowserDownloads();
+ private downloadSession?: Electron.Session;
+ private configureDownloads(browserSession: Electron.Session) {
+  if (this.downloadSession === browserSession) return;
+  this.downloadSession = browserSession;
+  browserSession.on("will-download", (event, item, contents) => {
+   for (const [owner, views] of this.owners) for (const [id, view] of views) if (view.webContents === contents && !owner.isDestroyed()) { this.downloads.accept(owner, id, item); return; }
+   event.preventDefault();
+  });
+ }
 	private frames = new WeakMap<WebContentsView, Electron.Rectangle>();
 	private viewports = new WeakMap<WebContentsView, BrowserViewport>();
 	private owners = new Map<BrowserWindow, Map<string, WebContentsView>>();
@@ -27,6 +39,7 @@ export class BrowserHost {
 		if (command.type === "show" && (!command.bounds || ![command.bounds.x, command.bounds.y, command.bounds.width, command.bounds.height].every(Number.isFinite) || command.bounds.width < 0 || command.bounds.height < 0)) throw new Error("Invalid browser bounds.");
 		if (!view) {
 			const browserSession = session.fromPartition("persist:phaseo-browser");
+			this.configureDownloads(browserSession);
 			browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
 			browserSession.setPermissionCheckHandler(() => false);
 			view = new WebContentsView({ webPreferences: { session: browserSession, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });

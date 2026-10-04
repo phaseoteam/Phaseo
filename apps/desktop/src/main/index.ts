@@ -366,6 +366,7 @@ function senderWindow(event: Electron.IpcMainInvokeEvent): BrowserWindow | null 
 
 const browserHost = new BrowserHost();
 ipcMain.handle("desktop:browser", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted browser request."); return browserHost.command(owner, command); });
+ipcMain.handle("desktop:browser-download", (event, command: unknown) => { const owner = senderWindow(event); if (!owner) throw new Error("Untrusted download request."); return browserHost.downloads.command(owner, command); });
 
 ipcMain.handle("desktop:get-runtime-info", (event) => senderWindow(event) ? ({
 		platform: process.platform,

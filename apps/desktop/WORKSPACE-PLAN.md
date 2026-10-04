@@ -370,3 +370,7 @@ Browser inspector increment: the selected website tab has a native detached deve
 ### Native responsive browser previews
 
 Added per-tab persisted Desktop, Phone and Tablet modes, portrait/landscape rotation and centred native fit. Deferred emulation until the first document is ready to support choosing a device on a blank tab. Owned source and Windows archive workflows verify real viewport/screen dimensions, modal and panel restoration and invalid-mode rejection. The desktop suite passes 497 tests across 74 files; current shell audits produce 20 captures. Physical devices, touch, custom dimensions, user agents, downloads, permissions and full parity remain open.
+
+### Browser downloads
+
+Added native-session downloads with the native save workflow, chat-scoped progress, pause/resume/cancel, confirmed-path reveal and metadata removal. Bounded active admission and retained records; owner shutdown cancels active items. Five new deterministic cases and source/archive loopback workflows verify lifecycle, byte fidelity, chat isolation, view hiding and action guards. Current suite: 502 tests / 75 files; shell audit: 21 captures. Save-dialog/OS folder interaction, durable download history and restart recovery remain open. All parity acceptance items remain open.
