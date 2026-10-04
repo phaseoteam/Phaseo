@@ -239,7 +239,7 @@ Agent and MCP submit/cancel actions now share a full-width action row beneath th
 
 Conversation code now uses Shiki 4.4.3, matching the website's GitHub light/dark colours. Selected common grammars load locally on demand; unsupported or oversized blocks keep plain text. React token rendering preserves inert markup, indentation, Unicode and trailing newlines. Unit tests verify exact source preservation and bounded fallback; the rendered audit verifies visible colours and clipboard feedback in both themes/window sizes. Copy feedback now survives unrelated renders and resets only when the code text/language changes.
 
-Evidence: desktop lint/typecheck/build pass; 318 deterministic tests cover protocol,
+Evidence: desktop lint/typecheck/build pass; 319 deterministic tests cover protocol,
 queue ordering, cancellation, secret storage, filesystem boundaries, stream framing,
 and SDK approval continuation. An isolated Electron smoke test verified task CRUD,
 IPC validation, renderer navigation, real PTY execution, editor saving and stale-edit
@@ -276,3 +276,5 @@ Attachment text previews reuse offline code rendering and exact-source copying w
 Command search now has loading/retry feedback, contained long titles and explicit keyboard focus restoration. Newer overview events supersede a delayed initial response, and active-option scrolling uses the visible bounded index. Owned metadata fixtures verify failure recovery, empty results, stale-response handling and native Escape/focus behavior in both themes/window sizes. Full metadata pagination and comprehensive accessibility remain unfinished.
 
 Terminal session rows now share task-list styling and selection semantics. Sessions scroll independently of project/new-terminal controls, shared control sizing replaces local overrides, and close/delete controls disable during mutation. A 30-session rendered transcript fixture verifies scrolling, control visibility and usable output space in both themes/window sizes. Real PTY execution retains separate packaged workflow coverage; full terminal management/accessibility parity remains unfinished.
+
+Account usage now uses aligned full-width meters and separate windows/buckets, with explicit blocked/unavailable states and reset times. Unit coverage verifies over-limit display and duration labels; rendered fixtures verify meter values and widths at both window sizes/themes. All 319 desktop tests pass. Actual signed-in quota reads and reset-aware recovery remain unfinished.

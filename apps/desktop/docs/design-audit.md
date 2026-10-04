@@ -45,6 +45,8 @@ Reviewed against the live Phaseo Models and Chat layouts and the web application
 
 31. **Terminals:** use the shared task-row treatment for stacked title/status and selected-session emphasis. Saved sessions scroll independently while project selection and New terminal remain visible. Terminal controls use shared sizing; working directories wrap. Close/delete controls disable during mutations. A 30-session stored-transcript fixture verifies list scrolling, retained controls, selection semantics and usable terminal space in both themes/window sizes; existing PTY workflow checks retain execution coverage.
 
+32. **Account usage:** separate usage buckets and windows, align remaining amounts above full-width meters, and retain reset timestamps, blocked-usage messages and explicit unavailable data. Durations use singular/plural labels and over-limit windows stay at 0% remaining. Rendered account-status fixtures verify meter values/width, blocking and unknown states at both window sizes/themes. These are display fixtures; actual signed-in quota retrieval remains unverified.
+
 The sidebar now scrolls independently while Settings and Collapse remain accessible. Application menus align to the selected trigger as text sizes change. The desktop uses the web logo rather than an invented mark.
 
 ![Home](screenshots/ai-workspace.png)
@@ -60,6 +62,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 ![Account editing at minimum window size](screenshots/account-editor-small-window.png)
 
 ![Conversation at minimum window size](screenshots/conversation-small-window.png)
+
+![Account usage at minimum window size](screenshots/account-usage-small-window.png)
 
 ![Saved terminal at minimum window size](screenshots/terminal-small-window.png)
 
@@ -87,8 +91,8 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 120 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 124 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 120 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 124 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.

@@ -11,4 +11,8 @@ describe("account usage display", () => {
 		const markup = renderToStaticMarkup(<AccountStatus status={{ checkedAt: "2026-10-03T12:00:00Z", authenticated: null, usageError: "Codex did not provide usage limits." }} />);
 		expect(markup).toContain("Authentication status unavailable"); expect(markup).toContain("Codex did not provide usage limits."); expect(markup).not.toContain("% remaining");
 	});
+	it("keeps over-limit windows bounded and labels durations correctly", () => {
+		const markup = renderToStaticMarkup(<AccountStatus status={{ checkedAt: "2026-10-03T12:00:00Z", authenticated: true, usage: [{ id: "fixture", name: "Fixture", spendControlReached: null, primary: { usedPercent: 120, windowDurationMins: 10080, resetsAt: null }, secondary: { usedPercent: 25, windowDurationMins: 300, resetsAt: null } }] }} />);
+		expect(markup).toContain("0% remaining"); expect(markup).toContain("7 days"); expect(markup).toContain("5 hours"); expect(markup).not.toContain("-20%");
+	});
 });

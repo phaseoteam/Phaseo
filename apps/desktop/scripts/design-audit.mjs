@@ -71,6 +71,9 @@ ipcMain.handle("workspace:overview",async event=>{
   if(failOverview){failOverview=false;throw new Error("Owned command search failure");}
   return value;
 });
+const originalAccountStatus=ipcMain._invokeHandlers.get("workspace:account-status");
+ipcMain.removeHandler("workspace:account-status");
+ipcMain.handle("workspace:account-status",(event,harness,id)=>harness==="codex"&&!id?{checkedAt:now,authenticated:true,identity:"fixture@example.invalid",plan:"Fixture subscription",ordinaryUsageAllowed:false,usage:[{id:"fixture",name:"Included usage",spendControlReached:false,primary:{usedPercent:25,windowDurationMins:300,resetsAt:Math.floor(Date.now()/1000)+3600},secondary:{usedPercent:80,windowDurationMins:10080,resetsAt:null}},{id:"unavailable",name:"Other usage",spendControlReached:null,primary:null,secondary:null}]}:originalAccountStatus(event,harness,id));
 const originalCommand=ipcMain._invokeHandlers.get("workspace:command");
 let pendingRequest,requestCalls=0;
 ipcMain.removeHandler("workspace:command");
@@ -172,6 +175,13 @@ try {
           if (actions.gap !== "8px" || actions.column !== "1 / -1" || actions.count !== 1) throw new Error("MCP form actions need their own spaced row.");
         }
         if (page === "Accounts") {
+          await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.accounts-page article')).find(article=>article.textContent.includes('Codex local login')).querySelector('button').click()`);
+          for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`document.querySelectorAll('.account-status progress').length===2`))break;if(attempt>50)throw new Error("Account usage fixture did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
+          const usageLayout=await window.webContents.executeJavaScript(`(()=>{const status=document.querySelector('.account-status');return {meters:Array.from(status.querySelectorAll('progress')).map(meter=>({value:meter.value,width:meter.clientWidth,parent:meter.parentElement.clientWidth})),blocked:status.textContent.includes('Included usage is blocked.'),unknown:status.textContent.includes('Primary window: unavailable'),weekly:status.textContent.includes('7 days')}})()`);
+          if(usageLayout.meters[0].value!==75||usageLayout.meters[1].value!==20||usageLayout.meters.some(meter=>meter.width!==meter.parent)||!usageLayout.blocked||!usageLayout.unknown||!usageLayout.weekly)throw new Error("Account usage values or layout are inconsistent.");
+          await window.webContents.executeJavaScript(`document.querySelector('.account-status').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+          writeFileSync(path.join(output,`${width}-${theme}-account-usage.png`),(await window.webContents.capturePage()).toPNG());
+
           const layout = await window.webContents.executeJavaScript(`(()=>{const form=document.querySelector('form[aria-label="Add account"]'),row=form?.querySelector('.account-form-actions'),rect=form?.getBoundingClientRect();return {border:form&&getComputedStyle(form).borderTopWidth,column:row&&getComputedStyle(row).gridColumn,overflow:Array.from(form?.querySelectorAll('input,select')??[]).some(field=>{const r=field.getBoundingClientRect();return r.left<rect.left||r.right>rect.right;})}})()`);
           if(layout.border!=="0px" || layout.column!=="1 / -1" || layout.overflow) throw new Error("Account fields and actions must fit the panel without duplicate separators.");
           await window.webContents.executeJavaScript(`document.querySelector('form[aria-label="Add account"]').scrollIntoView({block:'nearest'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
