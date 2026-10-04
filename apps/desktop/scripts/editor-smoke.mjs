@@ -30,12 +30,13 @@ app.whenReady().then(async () => {
 			if(editors.length!==20||editors.some(editor=>typeof editor.id!=='string'||typeof editor.available!=='boolean'||'executable' in editor))throw new Error('Invalid editor metadata');
 			await api.openProject('fixture',{editor:'file-manager',filename:${JSON.stringify(filename)}});
 			await api.openProject('fixture',{editor:'file-manager'});
-			for(const [id,request] of [['fixture',{editor:'file-manager',filename:'../private.txt'}],['missing',{editor:'file-manager'}],['removed',{editor:'file-manager'}],['fixture',{editor:'powershell.exe'}]]){
+			await api.openProject('fixture',{editor:'file-manager',filename:${JSON.stringify(path.join(project, filename))}});
+			for(const [id,request] of [['fixture',{editor:'file-manager',filename:'../private.txt'}],['missing',{editor:'file-manager'}],['removed',{editor:'file-manager'}],['fixture',{editor:'powershell.exe'}],['fixture',{editor:'vscode',filename:${JSON.stringify(filename)},line:0}],['fixture',{editor:'file-manager',filename:${JSON.stringify(filename)},line:1}]]){
 				let rejected=false;try{await api.openProject(id,request);}catch{rejected=true;}if(!rejected)throw new Error('Invalid editor request accepted');
 			}
 			return {editorCount:editors.length};
 		})()`);
-		if (reveals.length !== 1 || folders.length !== 1) throw new Error("Invalid request reached the operating-system port.");
+		if (reveals.length !== 2 || folders.length !== 1) throw new Error("Invalid request reached the operating-system port.");
 		for (const name of ["workspace:editors", "workspace:open-project"]) {
 			let rejected = false;
 			try { await ipcMain._invokeHandlers.get(name)({ sender: { id: -1 } }, "fixture", { editor: "file-manager" }); } catch { rejected = true; }

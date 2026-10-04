@@ -47,6 +47,9 @@ execFileSync("git",["-c","user.name=Design Fixture","-c","user.email=fixture@exa
 writeFileSync(path.join(projectDirectory,"example.ts"),projectText);
 seed.exec("CREATE TABLE projects (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 seed.prepare("INSERT INTO projects VALUES (?, ?)").run("design-project",JSON.stringify({id:"design-project",name:"Design project",directory:projectDirectory,createdAt:now}));
+codeExample.projectId="design-project";
+codeExample.messages[1].text+='\n\nReview [example.ts:2:1](example.ts#L2C1).';
+seed.prepare("UPDATE tasks SET data = ? WHERE id = ?").run(JSON.stringify(codeExample),"design-example");
 seed.exec("CREATE TABLE terminals (id TEXT PRIMARY KEY, data TEXT NOT NULL)");
 for(let index=0;index<30;index++)seed.prepare("INSERT INTO terminals VALUES (?, ?)").run("design-terminal-"+index,JSON.stringify({id:"design-terminal-"+index,title:"Saved terminal "+index,cwd:projectDirectory,status:"exited",exitCode:0,createdAt:now,updatedAt:now,output:"Phaseo saved terminal\r\n"+"Owned transcript line\r\n".repeat(20)}));
 seed.close();
@@ -259,6 +262,17 @@ try {
           await window.webContents.executeJavaScript(`document.querySelector('.task-messages').scrollTop=0;new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output, `${width}-${theme}-conversation.json`), JSON.stringify(messageLayout, null, 2));
           writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
+          editorCalls=[];
+          await window.webContents.executeJavaScript(`(()=>{const link=document.querySelector('.message-file-link');link.scrollIntoView({block:'nearest'});link.click();link.click()})()`);
+          await new Promise(resolve=>setTimeout(resolve,100));
+          if(editorCalls.length!==1||editorCalls[0].id!=="design-project"||editorCalls[0].filename!=="example.ts"||editorCalls[0].line!==2||editorCalls[0].column!==1||!await window.webContents.executeJavaScript(`document.querySelector('.message-file-link').disabled`))throw new Error("Conversation file link lost its target or submitted twice.");
+          pendingEditor.reject(new Error("Owned file link failure"));await new Promise(resolve=>setTimeout(resolve,100));
+          if(!await window.webContents.executeJavaScript(`document.querySelector('.message-link-feedback[role="alert"]').textContent==='Owned file link failure'`))throw new Error("File link error feedback is missing.");
+          writeFileSync(path.join(output,`${width}-${theme}-file-reference.png`),(await window.webContents.capturePage()).toPNG());
+          await window.webContents.executeJavaScript(`document.querySelector('.message-file-link').click()`);
+          await new Promise(resolve=>setTimeout(resolve,50));pendingEditor.resolve();await new Promise(resolve=>setTimeout(resolve,100));
+          if(editorCalls.length!==2||!await window.webContents.executeJavaScript(`!document.querySelector('.message-link-feedback')&&!document.querySelector('.message-file-link').disabled`))throw new Error("File link retry did not recover.");
+
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-row')).find(row=>row.textContent.includes('Review workspace plan')).click()`);
           await new Promise(resolve => setTimeout(resolve, 100));
           await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task settings"]').click()`);

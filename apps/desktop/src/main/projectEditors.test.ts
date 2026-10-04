@@ -6,6 +6,19 @@ import { editorDefinitions, validateProjectOpen } from "../shared/editors";
 import { editorArguments, editorCandidates, findEditor, launchEditor, openProjectTarget } from "./projectEditors";
 
 describe("external editors", () => {
+	it("maps structured positions to editor launch styles and resolves in-project absolute paths", async () => {
+		const project = mkdtempSync(path.join(tmpdir(), "phaseo-editor-"));
+		const target = path.join(project, "main.ts"); writeFileSync(target, "owned source");
+		const ports = { find: vi.fn(async () => "/owned/editor"), launch: vi.fn(async () => undefined), reveal: vi.fn(), openFolder: vi.fn(async () => "") };
+		try {
+			await openProjectTarget(project, { editor: "vscode", filename: target, line: 12, column: 3 }, ports);
+			expect(ports.launch).toHaveBeenLastCalledWith("/owned/editor", ["--goto", `${target}:12:3`], project);
+			await openProjectTarget(project, { editor: "zed", filename: "main.ts", line: 4 }, ports);
+			expect(ports.launch).toHaveBeenLastCalledWith("/owned/editor", [`${target}:4`], project);
+			await openProjectTarget(project, { editor: "webstorm", filename: "main.ts", line: 8, column: 2 }, ports);
+			expect(ports.launch).toHaveBeenLastCalledWith("/owned/editor", ["--line", "8", "--column", "2", target], project);
+		} finally { rmSync(project, { recursive: true, force: true }); }
+	});
 	it("discovers native installations without treating current-directory shims as commands", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-editor-"));
 		try {

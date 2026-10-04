@@ -1,9 +1,9 @@
-import { access, stat } from "node:fs/promises";
+import { access, realpath, stat } from "node:fs/promises";
 import { constants } from "node:fs";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { homedir } from "node:os";
-import { editorDefinitions, validateProjectOpen, type EditorId, type EditorInstallation } from "../shared/editors";
+import { editorDefinitions, validateProjectOpen, type EditorId, type EditorInstallation, type FileReference } from "../shared/editors";
 import { resolveProjectPath } from "./projectFiles";
 
 type EditorDefinition = typeof editorDefinitions[number];
@@ -35,11 +35,14 @@ export async function editorInstallations(): Promise<EditorInstallation[]> {
 	return Promise.all(editorDefinitions.map(async editor => ({ id: editor.id, name: editor.name, available: Boolean(await findEditor(editor)) })));
 }
 
-export function editorArguments(editor: EditorDefinition, target: string, executable?: string): string[] {
+export function editorArguments(editor: EditorDefinition, target: string, executable?: string, position?: Pick<FileReference, "line" | "column">): string[] {
 	const args = "args" in editor ? [...editor.args] : [];
 	// The Kiro terminal launcher needs `ide`; its native app already is the IDE.
 	if (editor.id === "kiro" && executable && path.basename(executable) !== "kiro") args.length = 0;
-	return [...args, target];
+	if (!position?.line) return [...args, target];
+	if ("positionStyle" in editor && editor.positionStyle === "line-column") return [...args, "--line", String(position.line), ...(position.column ? ["--column", String(position.column)] : []), target];
+	const location = `${target}:${position.line}${position.column ? `:${position.column}` : ""}`;
+	return [...args, ...(editor.id === "zed" ? [] : ["--goto"]), location];
 }
 
 export async function launchEditor(executable: string, args: string[], cwd: string): Promise<void> {
@@ -62,7 +65,8 @@ type EditorPorts = {
 
 export async function openProjectTarget(root: string, value: unknown, ports: EditorPorts): Promise<void> {
 	const request = validateProjectOpen(value);
-	const target = await resolveProjectPath(root, request.filename ?? "");
+	const relative = request.filename && path.isAbsolute(request.filename) ? path.relative(await realpath(root), request.filename) : request.filename ?? "";
+	const target = await resolveProjectPath(root, relative);
 	const metadata = await stat(target);
 	if (request.filename ? !metadata.isFile() : !metadata.isDirectory()) throw new Error("Choose an existing project file or folder.");
 	if (request.editor === "file-manager") {
@@ -73,5 +77,5 @@ export async function openProjectTarget(root: string, value: unknown, ports: Edi
 	const editor = editorDefinitions.find(editor => editor.id === request.editor)!;
 	const executable = await ports.find(editor);
 	if (!executable) throw new Error(`${editor.name} is unavailable. Install it and refresh the editor list.`);
-	await ports.launch(executable, editorArguments(editor, target, executable), await resolveProjectPath(root, ""));
+	await ports.launch(executable, editorArguments(editor, target, executable, request), await resolveProjectPath(root, ""));
 }

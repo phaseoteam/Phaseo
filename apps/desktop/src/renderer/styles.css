@@ -133,6 +133,10 @@
 .message-markdown table { display: block; overflow-x: auto; border-collapse: collapse; }
 .message-markdown th, .message-markdown td { border: 1px solid var(--border); padding: 6px 10px; }
 .message-markdown a { color: var(--primary-text); }
+.message-markdown .message-file-link { display: inline; min-height: 0; padding: 0; border: 0; border-radius: 2px; background: transparent; color: var(--primary-text); font: inherit; text-decoration: underline; text-underline-offset: 3px; text-align: inherit; }
+.message-markdown .message-file-link:hover { background: transparent; text-decoration-thickness: 2px; }
+.message-link-feedback { margin-left: 8px; color: var(--text-muted); font-size: 13px; }
+.message-link-feedback[role="alert"] { color: #c64949; }
 .message-code-block { margin-bottom: 16px; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .message-code-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
 .message-code-actions button { min-height: 28px; padding: 2px 8px; font-size: 12px; font-weight: 400; }

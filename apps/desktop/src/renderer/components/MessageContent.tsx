@@ -1,9 +1,38 @@
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Children, isValidElement, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { Children, createContext, isValidElement, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
 import { Check, Copy } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
+import { parseFileReference } from "../../shared/editors";
+
+const ProjectContext = createContext<string | undefined>(undefined);
+
+function MessageLink({ href, children }: { href?: string; children?: ReactNode }) {
+	const projectId = useContext(ProjectContext);
+	const pending = useRef(false);
+	const [busy, setBusy] = useState(false), [error, setError] = useState("");
+	const reference = href ? parseFileReference(href) : undefined;
+	async function openFile() {
+		const api = window.phaseoDesktop?.workspace;
+		if (!api || !projectId || !reference || pending.current) return;
+		pending.current = true; setBusy(true); setError("");
+		try {
+			const editors = await api.editors();
+			let preferred: unknown;
+			try { preferred = JSON.parse(localStorage.getItem("phaseo.desktop.editor") ?? "null"); } catch { /* Fall back to an available editor. */ }
+			const editor = editors.find(editor => editor.available && editor.id === preferred) ?? editors.find(editor => editor.available);
+			if (!editor) throw new Error("Install an editor and select it in Projects.");
+			await api.openProject(projectId, { editor: editor.id, ...reference });
+		} catch (reason) { setError(String(reason).replace(/^Error: (?:Error invoking remote method '[^']+': (?:Error: )?)?/, "")); }
+		finally { pending.current = false; setBusy(false); }
+	}
+	if (reference && projectId) return <span><button type="button" className="message-file-link" disabled={busy} aria-label={`Open ${reference.filename}${reference.line ? ` at line ${reference.line}` : ""} in editor`} onClick={() => void openFile()}>{children}</button>{busy && <span className="message-link-feedback" role="status">Opening…</span>}{error && <span className="message-link-feedback" role="alert">{error}</span>}</span>;
+	const safe = typeof href === "string" && /^https?:\/\//i.test(href);
+	return safe ? <a href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); void window.phaseoDesktop.workspace.openLink(href).catch(() => {}); } }}>{children}</a> : <span>{children}</span>;
+}
+
+function messageUrl(href: string) { return parseFileReference(href) ? href : defaultUrlTransform(href); }
 
 export function CodeBlock({ children, text: source, language: sourceLanguage }: { children?: ReactNode; text?: string; language?: string }) {
 	const child = Children.toArray(children)[0];
@@ -25,14 +54,11 @@ export function CodeBlock({ children, text: source, language: sourceLanguage }: 
 }
 
 const markdownComponents: Components = {
-		a: ({ href, children }) => {
-			const safe = typeof href === "string" && /^https?:\/\//i.test(href);
-			return safe ? <a href={href} target="_blank" rel="noreferrer" onClick={event => { if (window.phaseoDesktop?.workspace) { event.preventDefault(); void window.phaseoDesktop.workspace.openLink(href).catch(() => {}); } }}>{children}</a> : <span>{children}</span>;
-		},
+		a: ({ href, children }) => <MessageLink key={href} href={href}>{children}</MessageLink>,
 		img: ({ alt }) => <span>{alt || "Image"}</span>,
 		pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
 };
 
-export function MessageContent({ text }: { text: string }) {
-	return <div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{text}</ReactMarkdown></div>;
+export function MessageContent({ text, projectId }: { text: string; projectId?: string }) {
+	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents} urlTransform={messageUrl}>{text}</ReactMarkdown></div></ProjectContext>;
 }
