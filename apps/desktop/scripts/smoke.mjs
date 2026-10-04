@@ -212,7 +212,9 @@ app.whenReady().then(async () => {
 		result.steeringRecovery = true;
 		for (const format of ["markdown", "json"]) {
 			const extension = format === "markdown" ? "md" : "json";
-			await window.webContents.executeJavaScript(`(() => { const picker=document.querySelector('[aria-label="Export conversation"]'); if (!picker) throw new Error('Export control missing'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(picker,${JSON.stringify(format)}); picker.dispatchEvent(new Event('change',{bubbles:true})); })()`);
+			await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
+			for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu'))`);attempt++){if(attempt>50)throw new Error('Export menu missing');await new Promise(resolve=>setTimeout(resolve,20));}
+			await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent===${JSON.stringify(format === "markdown" ? "Export Markdown" : "Export JSON with files")}).click()`);
 			const filename = path.join(data, `Electron bridge check.${extension}`);
 			for (let attempt = 0; attempt < 50 && !existsSync(filename); attempt++) await new Promise(resolve => setTimeout(resolve, 100));
 			const exported = readFileSync(filename, "utf8");
@@ -232,6 +234,25 @@ app.whenReady().then(async () => {
 			await new Promise(resolve=>setTimeout(resolve,100)); if (!document.querySelector('.task-message')?.textContent.includes('Export conversation fixture')) throw new Error('Imported conversation did not render');
 		})()`);
 		result.imports = true;
+		const priorTask=await window.webContents.executeJavaScript(`(async function verifyTaskActions(sourceId){
+ const api=window.phaseoDesktop.workspace;
+ async function choose(label){
+  document.querySelector('button[aria-label="Task actions"]').click();
+  for(let attempt=0;!document.querySelector('.task-actions-menu');attempt++){if(attempt>50)throw new Error('Task action menu missing');await new Promise(resolve=>setTimeout(resolve,20));}
+  const item=Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent===label);if(!item||item.hasAttribute('data-disabled'))throw new Error('Task action unavailable: '+label);item.click();
+  for(let attempt=0;document.querySelector('.task-actions-menu');attempt++){if(attempt>50)throw new Error('Task action menu did not close');await new Promise(resolve=>setTimeout(resolve,20));}
+ }
+ const priorSelection=JSON.parse(localStorage.getItem("phaseo.desktop.selectedTask"));
+ const before=await api.get();await choose('Fork task history');let fork;
+ for(let attempt=0;attempt<50;attempt++){fork=(await api.get()).tasks.find(task=>!before.tasks.some(old=>old.id===task.id));if(fork&&document.querySelector('.task-title')?.value===fork.title)break;await new Promise(resolve=>setTimeout(resolve,20));}
+ if(!fork||fork.messages[0]?.text!=='Export conversation fixture'||fork.id===sourceId||fork.parentId!==priorSelection)throw new Error('Task menu fork lost history or failed to select the fork');
+ for(const pinned of [true,false]){await choose(pinned?'Pin task':'Unpin task');for(let attempt=0;(await api.task(fork.id)).pinned!==pinned;attempt++){if(attempt>50)throw new Error('Task menu pin did not persist');await new Promise(resolve=>setTimeout(resolve,20));}}
+ await choose('Archive task');for(let attempt=0;!(await api.task(fork.id)).archived||document.querySelector('.task-title');attempt++){if(attempt>50)throw new Error('Task menu archive did not persist or clear selection');await new Promise(resolve=>setTimeout(resolve,20));}
+ return priorSelection;
+})(${JSON.stringify(fixtureTask.id)})`);
+		window.webContents.send("workspace:open-task",priorTask);
+		await window.webContents.executeJavaScript(`(async()=>{for(let attempt=0;JSON.parse(localStorage.getItem("phaseo.desktop.selectedTask"))!==${JSON.stringify(priorTask)}||!document.querySelector(".task-title");attempt++){if(attempt>50)throw new Error("Task action fixture did not restore its source");await new Promise(resolve=>setTimeout(resolve,20));}})()`);
+		result.taskActions = true;
 		// Quota rendering uses a protocol-shaped fixture; native read commands have
 		// separate transport tests and isolated installed-CLI verification.
 		ipcMain.removeHandler("workspace:account-status");
@@ -351,7 +372,7 @@ app.whenReady().then(async () => {
 		ipcMain.removeHandler("workspace:models");
 		ipcMain.handle("workspace:models", () => [{ id: "fixture-model", name: "Fixture model", default: true, defaultReasoningEffort: "low", reasoningEfforts: [{ id: "low", description: "Fixture low" }, { id: "high", description: "Fixture high" }] }]);
 		await window.webContents.executeJavaScript(`(async () => {
-			const task=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id!==${JSON.stringify(fixtureTask.id)});
+			const task=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===${JSON.stringify(priorTask)});
 			document.querySelector('button[aria-label="Task settings"]').click(); await new Promise(resolve=>setTimeout(resolve,100));
 			const form=document.querySelector('form[aria-label="Task settings"]'); if(!form) throw new Error('Task settings missing');
 			const model=form.querySelector('[aria-label="Task model"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(model,'fixture-model'); model.dispatchEvent(new Event('input',{bubbles:true}));

@@ -7,6 +7,26 @@ import { execFileSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 
 // A separate, disposable profile: no user accounts or inference calls.
+async function openTaskActions(window){
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').click()`);
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Task actions did not open.');await new Promise(resolve=>setTimeout(resolve,20));}
+}
+async function auditTaskActions(window,output,width,theme){
+ await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Task actions"]').focus()`);
+ window.focus();window.webContents.focus();window.webContents.sendInputEvent({type:'keyDown',keyCode:'Enter'});window.webContents.sendInputEvent({type:'char',keyCode:'\r'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Enter'});
+ for(let attempt=0;!await window.webContents.executeJavaScript(`Boolean(document.querySelector('.task-actions-menu [role="menuitem"]'))`);attempt++){if(attempt>50)throw new Error('Keyboard task actions did not open: '+JSON.stringify(await window.webContents.executeJavaScript(`({active:document.activeElement?.outerHTML,trigger:document.querySelector('button[aria-label="Task actions"]')?.outerHTML,menus:Array.from(document.querySelectorAll('[role="menu"]')).map(menu=>menu.outerHTML)})`)));await new Promise(resolve=>setTimeout(resolve,20));}
+ const layout=await window.webContents.executeJavaScript(`(()=>{const menu=document.querySelector('.task-actions-menu'),r=menu.getBoundingClientRect(),title=document.querySelector('.task-title').getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,width:innerWidth,height:innerHeight,title:title.width,font:getComputedStyle(menu).fontFamily,items:menu.querySelectorAll('[role="menuitem"]').length}})()`);
+ if(layout.x<0||layout.y<0||layout.right>layout.width||layout.bottom>layout.height||layout.title<300||!layout.font.includes('Montserrat')||layout.items!==6)throw new Error('Task action layout: '+JSON.stringify(layout));
+ for(let attempt=0;!await window.webContents.executeJavaScript(`document.activeElement?.getAttribute('role')==='menuitem'`);attempt++){if(attempt>50)throw new Error('Task menu initial focus failed.');await new Promise(resolve=>setTimeout(resolve,20));}
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Down'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Down'});
+ await new Promise(resolve=>setTimeout(resolve,50));
+ if(!await window.webContents.executeJavaScript(`document.activeElement?.textContent==='Fork task history'`))throw new Error('Task menu arrow navigation failed: '+await window.webContents.executeJavaScript(`document.activeElement?.outerHTML`));
+ await window.webContents.executeJavaScript(`new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+ writeFileSync(path.join(output,`${width}-${theme}-task-actions.png`),(await window.webContents.capturePage()).toPNG());
+ window.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'});window.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'});
+ await new Promise(resolve=>setTimeout(resolve,100));
+ if(!await window.webContents.executeJavaScript(`!document.querySelector('.task-actions-menu')&&document.activeElement?.getAttribute('aria-label')==='Task actions'`))throw new Error('Task menu Escape did not restore focus.');
+}
 const data = mkdtempSync(path.join(tmpdir(), "phaseo-design-audit-"));
 app.setPath("userData", data);
 mkdirSync(path.join(data, "workspace"));
@@ -307,6 +327,7 @@ try {
           await window.webContents.executeJavaScript(`document.querySelector('.task-messages').scrollTop=0;new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
           writeFileSync(path.join(output, `${width}-${theme}-conversation.json`), JSON.stringify(messageLayout, null, 2));
           writeFileSync(path.join(output, `${width}-${theme}-conversation.png`), (await window.webContents.capturePage()).toPNG());
+          await auditTaskActions(window,output,width,theme);
           editorCalls=[];
           await window.webContents.executeJavaScript(`(()=>{const link=document.querySelector('.message-file-link');link.scrollIntoView({block:'nearest'});link.click();link.click()})()`);
           await new Promise(resolve=>setTimeout(resolve,100));
@@ -563,7 +584,8 @@ try {
   await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-settings-actions button')).find(button=>button.textContent==='Cancel').click()`);
   const createdId=afterCreation.find(id=>!beforeCreation.includes(id));
   if(await window.webContents.executeJavaScript(`window.phaseoDesktop.workspace.task(${JSON.stringify(createdId)}).then(task=>task.reasoningEffort)`)!=='fixture-high')throw Error('Initial effort did not persist');
-  await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Handoff"]').click()`);
+  await openTaskActions(window);
+  await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.task-actions-menu [role="menuitem"]')).find(item=>item.textContent==='Handoff').click()`);
   await new Promise(resolve=>setTimeout(resolve,100));
   if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error("Handoff must reset model-specific effort");
   await window.webContents.executeJavaScript(`(()=>{const select=document.querySelector('select[aria-label="Initial reasoning effort"]');select.value='fixture-low';select.dispatchEvent(new Event('change',{bubbles:true}));})()`);

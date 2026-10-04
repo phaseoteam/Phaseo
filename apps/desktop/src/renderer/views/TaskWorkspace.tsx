@@ -1,6 +1,6 @@
 import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Archive, ArrowDown, ArrowRightLeft, ArrowUp, FolderOpen, GitFork, Paperclip, Pin, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
+import { ArrowDown, ArrowUp, FolderOpen, Paperclip, Plus, Search, Send, Settings2, Square, X } from "lucide-react";
 import type { Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { usePersistedState } from "../lib/persistedState";
@@ -12,6 +12,7 @@ import { QuestionForm } from "../components/QuestionForm";
 import { AttachmentPreview } from "../components/AttachmentPreview";
 import { AgentForm } from "../components/AgentForm";
 import { ModelDiscoveryFeedback } from "../components/ModelDiscoveryFeedback";
+import { TaskActions } from "../components/TaskActions";
 import { TaskSettings } from "../components/TaskSettings";
 const AuthTerminal = lazy(() => import("./Terminals").then(module => ({ default: module.AuthTerminal })));
 
@@ -144,11 +145,12 @@ export function TaskWorkspace() {
 				<small className="task-muted">{harness === "phaseo" ? "Code and Plan require a Responses-compatible API account. File changes require approval." : harness === "cursor" ? "Uses your selected Cursor account. Code mode requires approval for native tools for each turn." : harness === "pi" ? "Uses Pi’s native account, extensions and tool policies. Models use provider/model names." : harness === "acp" ? "Uses the connected agent’s native account and settings." : harness === "opencode" ? "Uses your local OpenCode 2 service and its connected accounts." : harness === "grok" ? `Uses your ${accountId ? "selected" : "existing local"} Grok account and native Code or Plan permissions.` : `Uses ${accountId ? "your selected" : "your existing local"} ${harness === "claude" ? "Claude Code" : "Codex"} account.`}</small>
 			</div> : <>
 				<header className="task-toolbar"><div><input className="task-title" aria-label="Task title" key={selected.id + selected.title} defaultValue={selected.title} maxLength={200} onBlur={event => { const title = event.target.value.trim(); if (title && title !== selected.title) void command({ type: "update-task", id: selected.id, title }); }} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} /><small>{selected.harness} · {selected.mode} · {selected.status}</small></div>
-					<select aria-label="Export conversation" value="" disabled={busy} onChange={event => { const format = event.target.value; if (!api || (format !== "markdown" && format !== "json")) return; setBusy(true); setError(""); void api.exportTask(selected.id, format).catch(reason => setError(String(reason))).finally(() => setBusy(false)); }}><option value="">Export…</option><option value="markdown">Markdown (.md)</option><option value="json">JSON with files (.json)</option></select>
-					<button type="button" aria-label={selected.archived ? "Restore task" : "Archive task"} disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { void command({ type: "update-task", id: selected.id, archived: !selected.archived }).then(state => { if (state) setSelectedId(undefined); }); }}><Archive size={16} /></button>
-					<button type="button" aria-label={selected.pinned ? "Unpin task" : "Pin task"} onClick={() => void command({ type: "update-task", id: selected.id, pinned: !selected.pinned })}><Pin size={16} /></button>
-					<button type="button" aria-label="Fork task history" onClick={() => { void command({ type: "fork", id: selected.id }).then(state => { if (state) setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); }); }}><GitFork size={16} /></button>
-					<button type="button" aria-label="Handoff" title="Handoff" disabled={selected.status === "running" || selected.status === "waiting"} onClick={() => { setHandoffId(selected.id); setProjectId(workspace.projects.some(project => project.id === selected.projectId && !project.worktree?.removedAt) ? selected.projectId! : ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setReasoningEffort(""); setSelectedId(undefined); }}><ArrowRightLeft size={16} /></button>
+					<TaskActions key={selected.id} task={selected} busy={busy}
+						onArchive={() => { void command({ type: "update-task", id: selected.id, archived: !selected.archived }).then(state => { if (state) setSelectedId(undefined); }); }}
+						onPin={() => void command({ type: "update-task", id: selected.id, pinned: !selected.pinned })}
+						onFork={() => { void command({ type: "fork", id: selected.id }).then(state => { if (state) setSelectedId(state.tasks.find(task => !workspace.tasks.some(existing => existing.id === task.id))?.id); }); }}
+						onHandoff={() => { setHandoffId(selected.id); setProjectId(workspace.projects.some(project => project.id === selected.projectId && !project.worktree?.removedAt) ? selected.projectId! : ""); setMode(selected.mode); setHarness(selected.harness); setAccountId(""); setAgentId(""); setModel("default"); setReasoningEffort(""); setSelectedId(undefined); }}
+						onExport={format => { if (!api) return; setBusy(true); setError(""); void api.exportTask(selected.id, format).catch(reason => setError(String(reason))).finally(() => setBusy(false)); }} />
 				<button type="button" aria-label="Task settings" title="Task settings" aria-expanded={settingsId === selected.id} disabled={selected.archived || selected.status === "running" || selected.status === "waiting"} onClick={() => setSettingsId(value => value === selected.id ? undefined : selected.id)}><Settings2 size={16} /></button>
 				</header>
 				{settingsId === selected.id && !selected.archived && selected.status !== "running" && selected.status !== "waiting" && <TaskSettings key={selected.id} task={selected} close={() => setSettingsId(undefined)} save={async (model, mode, reasoningEffort, nativeMode) => Boolean(await command({ type: "update-task", id: selected.id, model, mode, ...(["codex", "acp", "grok"].includes(selected.harness) ? { reasoningEffort } : {}), ...(selected.harness === "acp" ? { nativeMode } : {}) }))} />}

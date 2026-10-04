@@ -149,10 +149,16 @@ The sidebar now scrolls independently while Settings and Collapse remain accessi
 
 ![Idle home with recent work visible](screenshots/idle-home-small-window.png)
 
+50. **Conversation header:** export, pin, archive, fork and handoff share a labelled Task actions menu; settings remains directly accessible. The title retains at least 300 pixels at both audited window sizes. The menu uses Base UI 1.6.0, the website's existing primitive, with matching typography, 32-pixel rows, shared theme colours and bounded placement. Native Windows Enter, arrow navigation and Escape/focus restoration pass in source and packaged workflows. Four extra captures cover both themes/window sizes. Real owned UI workflows verify both export formats, fork history and parent identity, persisted pin/unpin, archive and handoff. Full screen-reader, macOS/Linux and live provider execution remain unverified.
+
+![Conversation header at minimum width](screenshots/conversation-header-small-window.png)
+
+![Task actions at minimum width](screenshots/task-actions-small-window.png)
+
 ## Reproduce and limits
 
-Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 146 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
+Run `pnpm --filter @phaseo/desktop audit:design`. Captures and DOM size/spacing observations are written to `output/playwright/design-audit/after`. The audit waits for the selected page heading before capturing; conversation settings also wait for a rendered frame and verify their inset. It covers eleven pages plus conversation and settings states at 1440×920 and 1040×680 in light and dark modes: 150 screenshots, including code blocks, account editing, expanded agent commands, agent editing and Grok reasoning settings in each theme/window size.
 
 Focus rings, larger labels and current-page semantics improve readability and navigation. Screenshots do not verify screen-reader operation, complete keyboard focus management, contrast in every state, Windows scaling, macOS/Linux rendering, large histories, or live provider sign-in. Those remain separate checks.
 
-After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 146 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
+After packaging, `pnpm --filter @phaseo/desktop exec electron scripts/design-audit.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs` runs the same 150 captures against the archive and writes `output/playwright/design-audit/packaged-after`. The Windows archive passes this audit, including offline highlighting and exact code copying through the owned clipboard fixture.
