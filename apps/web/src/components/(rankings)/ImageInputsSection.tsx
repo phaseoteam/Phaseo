@@ -42,6 +42,7 @@ export async function ImageInputsSection() {
 			</div>
 			{result.data.length ? (
 				<UsageStackedBar
+				leaderboardMetric={"image_inputs"}
 					data={result.data}
 					metric="tokens"
 					nameMap={nameMap}

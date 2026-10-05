@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { fetchFrontendRankingPeriodLeaderboard } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { useLocale, useTranslations } from "next-intl";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
+import type { ModelLeaderboardMeta, TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
+import { startOfUTCWeek } from "./time-buckets";
 import { Logo } from "@/components/Logo";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";
@@ -30,8 +33,8 @@ import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
+	leaderboardMetric?: string;
 	data: TimeseriesData[];
-	leaderboardData?: TimeseriesData[];
 	metric?: "requests" | "tokens" | "users";
 	nameMap?: Record<string, string>;
 	logoIdMap?: Record<string, string | null>;
@@ -70,6 +73,12 @@ const CLOSED_LICENSE_VALUES = new Set([
 	"n/a",
 	"none",
 ]);
+
+function formatPeriodTimestamp(value: string, locale: string) {
+	return new Date(value).toLocaleString(locale, {
+		day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC",
+	});
+}
 
 function timeseriesValue(
 	row: TimeseriesData,
@@ -118,58 +127,6 @@ function isOpenModelLicense(license?: string | null) {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
 
-function periodWindows(period: LeaderboardPeriod, nowMs: number) {
-	switch (period) {
-		case "month":
-			return {
-				currentStart: nowMs - 30 * DAY_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 60 * DAY_MS,
-				previousEnd: nowMs - 30 * DAY_MS,
-			};
-		case "trending":
-			return {
-				currentStart: nowMs - WEEK_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * WEEK_MS,
-				previousEnd: nowMs - WEEK_MS,
-			};
-		case "today":
-			return {
-				currentStart: nowMs - DAY_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * DAY_MS,
-				previousEnd: nowMs - DAY_MS,
-			};
-		case "week":
-		default:
-			return {
-				currentStart: nowMs - WEEK_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * WEEK_MS,
-				previousEnd: nowMs - WEEK_MS,
-			};
-	}
-}
-
-function hasPeriodData(
-	data: TimeseriesData[],
-	period: LeaderboardPeriod,
-	nowMs: number,
-	metric: "requests" | "tokens" | "users",
-) {
-	const { currentStart, currentEnd } = periodWindows(period, nowMs);
-	return data.some((row) => {
-		const bucketTs = new Date(row.bucket).getTime();
-		return (
-			Number.isFinite(bucketTs) &&
-			bucketTs >= currentStart &&
-			bucketTs < currentEnd &&
-			timeseriesValue(row, metric) > 0
-		);
-	});
-}
-
 function optionLabel<TValue extends string>(
 	options: Array<{ label: string; value: TValue }>,
 	value: TValue,
@@ -177,17 +134,9 @@ function optionLabel<TValue extends string>(
 	return options.find((option) => option.value === value)?.label ?? value;
 }
 
-function startOfWeek(date: Date) {
-	const d = new Date(date);
-	d.setHours(0, 0, 0, 0);
-	const day = (d.getDay() + 6) % 7;
-	d.setDate(d.getDate() - day);
-	return d;
-}
-
 export function UsageStackedBar({
+	leaderboardMetric = "text_tokens",
 	data,
-	leaderboardData,
 	metric = "requests",
 	nameMap = {},
 	logoIdMap = {},
@@ -222,21 +171,31 @@ export function UsageStackedBar({
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
-	const [leaderboardPeriod, setLeaderboardPeriod] =
-		useState<LeaderboardPeriod>(() => {
-			if (hasPeriodData(leaderboardData ?? data, "week", nowMs, metric)) {
-				return "week";
-			}
-			if (hasPeriodData(leaderboardData ?? data, "month", nowMs, metric)) {
-				return "month";
-			}
-			if (hasPeriodData(leaderboardData ?? data, "today", nowMs, metric)) {
-				return "today";
-			}
-			return "week";
-		});
+	const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>("week");
 	const [modelFilter, setModelFilter] = useState<ModelFilter>("all");
 	const [chartScale, setChartScale] = useState<ChartScale>("linear");
+	const [periodResult, setPeriodResult] = useState<{
+		key: string;
+		data: Array<{ model_id: string; current: number; previous: number }>;
+		models?: Record<string, ModelLeaderboardMeta>;
+		period?: { start: string; end: string; previousStart: string };
+		error?: boolean;
+	} | null>(null);
+	const periodKey = `${leaderboardMetric}:${leaderboardPeriod}`;
+	useEffect(() => {
+		let cancelled = false;
+		const days = leaderboardPeriod === "today" ? 1 : leaderboardPeriod === "month" ? 30 : 7;
+		fetchFrontendRankingPeriodLeaderboard(leaderboardMetric, days).then(async (result) => {
+			const ids = result.data.map((row) => row.model_id);
+			const metadata = ids.length ? await fetchPublicWebApi<{ models: Record<string, ModelLeaderboardMeta> }>(
+				`/api/_web/rankings/model-meta?ids=${encodeURIComponent(ids.join(","))}`,
+			).catch(() => ({ models: {} })) : { models: {} };
+			if (!cancelled) setPeriodResult({ key: periodKey, data: result.data, models: metadata.models, period: result.period });
+		}).catch(() => {
+			if (!cancelled) setPeriodResult({ key: periodKey, data: [], error: true });
+		});
+		return () => { cancelled = true; };
+	}, [leaderboardMetric, leaderboardPeriod, periodKey]);
 	const emptyTitle = metric === "users" ? t("usageNoUniqueUserData") : t("usageNoWeeklyData");
 	const emptyDescription = metric === "users"
 		? t("usageUniqueUserRefresh")
@@ -296,12 +255,12 @@ export function UsageStackedBar({
 	}
 
 	const existingBucketTs = Array.from(bucketMap.keys());
-	const currentWeekTs = startOfWeek(new Date(nowMs)).getTime();
+	const currentWeekTs = startOfUTCWeek(new Date(nowMs)).getTime();
 	const endWeekTs =
 		existingBucketTs.length > 0
 			? Math.max(...existingBucketTs, currentWeekTs)
 			: currentWeekTs;
-	const endWeek = startOfWeek(new Date(endWeekTs));
+	const endWeek = startOfUTCWeek(new Date(endWeekTs));
 	for (let i = 51; i >= 0; i -= 1) {
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
@@ -317,43 +276,10 @@ export function UsageStackedBar({
 	const leaderboardUnit = valueUnit ?? t(
 		(metric === "tokens" ? "usageTokensUnit" : metric === "users" ? "usageUsersUnit" : "usageRequestsUnit") as never,
 	);
-	const { currentStart, currentEnd, previousStart, previousEnd } = periodWindows(
-		leaderboardPeriod,
-		nowMs,
-	);
-	const currentPeriodTotals = new Map<string, number>();
-	const previousPeriodTotals = new Map<string, number>();
-	const leaderboardRows = leaderboardData ?? data;
-
-	for (const row of leaderboardRows) {
-		const bucketTs = new Date(row.bucket).getTime();
-		if (!Number.isFinite(bucketTs)) continue;
-		const rawKey = row.model_id?.trim() || "Unknown";
-		const keyLower = rawKey.toLowerCase();
-		if (keyLower === "unknown" || keyLower === "other") continue;
-		const value = timeseriesValue(row, metric);
-		if (!Number.isFinite(value) || value <= 0) continue;
-		if (bucketTs >= currentStart && bucketTs < currentEnd) {
-			currentPeriodTotals.set(
-				rawKey,
-				(currentPeriodTotals.get(rawKey) ?? 0) + value,
-			);
-		} else if (bucketTs >= previousStart && bucketTs < previousEnd) {
-			previousPeriodTotals.set(
-				rawKey,
-				(previousPeriodTotals.get(rawKey) ?? 0) + value,
-			);
-		}
-	}
-
-	let rankedLeaderboardModels = Array.from(
-		new Set([
-			...Array.from(currentPeriodTotals.keys()),
-			...Array.from(previousPeriodTotals.keys()),
-		]),
-	).map((model) => {
-		const current = currentPeriodTotals.get(model) ?? 0;
-		const previous = previousPeriodTotals.get(model) ?? 0;
+	let rankedLeaderboardModels = (periodResult?.key === periodKey ? periodResult.data : []).map((row) => {
+		const model = row.model_id;
+		const current = Number(row.current);
+		const previous = Number(row.previous);
 		const changePct =
 			previous > 0
 				? ((current - previous) / previous) * 100
@@ -365,7 +291,7 @@ export function UsageStackedBar({
 
 	const matchesModelFilter = (modelId: string) => {
 		if (modelFilter === "all") return true;
-		const isOpen = isOpenModelLicense(modelLicenseMap[modelId]);
+		const isOpen = isOpenModelLicense(periodResult?.models?.[modelId]?.license ?? modelLicenseMap[modelId]);
 		return modelFilter === "open" ? isOpen : !isOpen;
 	};
 
@@ -497,6 +423,7 @@ export function UsageStackedBar({
 			<ChartContainer config={chartConfig} className="h-[420px] w-full">
 				<BarChart
 					data={chartData}
+					barCategoryGap="10%"
 					margin={{
 						top: showScaleToggle ? 42 : 16,
 						right: 12,
@@ -586,7 +513,7 @@ export function UsageStackedBar({
 								...(otherPayload ? [otherPayload] : []),
 							];
 							if (!filteredPayload.length) return null;
-							const weeklyTotal = filteredPayload.reduce(
+							const weeklyTotal = sortedPayload.reduce(
 								(sum, item) => sum + Number(item?.value ?? 0),
 								0
 							);
@@ -754,6 +681,11 @@ export function UsageStackedBar({
 						</DropdownMenu>
 					</div>
 				</div>
+				<p className="text-xs text-muted-foreground">
+					{periodResult?.key === periodKey && periodResult.period
+						? t("usageRollingPeriodComparison", { start: formatPeriodTimestamp(periodResult.period.start, locale), end: formatPeriodTimestamp(periodResult.period.end, locale) })
+						: t("usageRollingComparison")}
+				</p>
 				{hasLeaderboardEntries ? (
 					<div className="grid gap-x-16 gap-y-1 md:grid-cols-2">
 						{listColumns.map((column, columnIndex) => (
@@ -766,16 +698,17 @@ export function UsageStackedBar({
 									? columnRowIndex
 									: listColumnSplit + columnRowIndex;
 								const model = entry.model;
+								const meta = periodResult?.models?.[model];
 								const organisationId = inferOrganisationId(
 									model,
-									logoIdMap[model],
+									meta?.organisation_id ?? logoIdMap[model],
 								);
 								const logoHref = organisationHref(organisationId);
 								const modelHref = getModelDetailsHref(organisationId, model);
 								const logoId = organisationId ?? model;
-								const modelName = formatModelDisplayName(nameMap[model], model);
+								const modelName = formatModelDisplayName(meta?.name ?? nameMap[model], model);
 								const organisationName =
-									(organisationId
+									meta?.organisation_name ?? (organisationId
 										? organisationNameMap[model] ?? organisationNameMap[organisationId]
 										: null) ?? organisationId;
 								const changeLabel = formatChange(entry.changePct, locale, t("usageChangeNew"));
@@ -861,7 +794,7 @@ export function UsageStackedBar({
 					</div>
 				) : (
 					<EmptyLeaderboardPreview
-						title={t("usageNoDataForPeriod", { period: selectedPeriodLabel })}
+						title={periodResult?.key !== periodKey ? t("usageLoadingLeaderboard") : periodResult.error ? t("usageLeaderboardUnavailable") : t("usageNoDataForPeriod", { period: selectedPeriodLabel })}
 						description={t("usageLeaderboardEmpty")}
 					/>
 				)}

@@ -13,6 +13,17 @@ export async function fetchFrontendRankingBenchmarks() {
 	return { ...result, intelligence_value: buildArtificialAnalysisValue(result.benchmarks) };
 }
 
+export type RankingPeriodResponse = {
+	data: Array<{ model_id: string; current: number; previous: number }>;
+	period: { start: string; end: string; previousStart: string };
+};
+
+export function fetchFrontendRankingPeriodLeaderboard(metric: string, days: 1 | 7 | 30) {
+	return fetchPublicWebApi<RankingPeriodResponse>(
+		`/api/_web/rankings/period-leaderboard?metric=${encodeURIComponent(metric)}&days=${days}`,
+	);
+}
+
 export async function fetchFrontendRankingFastestModels(days = 30, limit = 20) {
 	return fetchPublicWebApi<{ data: PerformanceData[] }>(
 		`/api/_web/rankings/fastest-models?days=${encodeURIComponent(String(days))}&limit=${encodeURIComponent(String(limit))}`,

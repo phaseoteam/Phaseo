@@ -33,6 +33,30 @@ function csv(value: string | undefined, max = 500) {
 
 export const publicRankingsRouter = new Hono<{ Bindings: Env }>();
 
+const PERIOD_METRICS = ["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "tool_calls", "users"];
+
+publicRankingsRouter.get("/rankings/period-leaderboard", async (c) => {
+	const metric = c.req.query("metric") || "text_tokens";
+	const days = Number(c.req.query("days") || 7);
+	if (!PERIOD_METRICS.includes(metric) || ![1, 7, 30].includes(days)) {
+		return c.json({ error: "invalid_ranking_period" }, 400);
+	}
+	try {
+		const asOf = new Date();
+		const dayMs = 24 * 60 * 60 * 1000;
+		const { data, error } = await getDataClient(c.env).rpc("get_public_period_leaderboard", { p_metric: metric, p_days: days, p_as_of: asOf.toISOString() });
+		if (error) throw error;
+		return withPublicCache(c.json({ data: data ?? [], period: {
+			start: new Date(asOf.getTime() - days * dayMs).toISOString(),
+			end: asOf.toISOString(),
+			previousStart: new Date(asOf.getTime() - 2 * days * dayMs).toISOString(),
+		} }), LIVE_CACHE);
+	} catch (error) {
+		console.error("[web-api/rankings] period leaderboard failed", error);
+		return c.json({ error: "ranking_period_unavailable" }, 503);
+	}
+});
+
 publicRankingsRouter.get("/rankings/performance", async (c) => {
 	try { const { data, error } = await getDataClient(c.env).rpc("get_public_model_performance", { p_hours: bounded(c.req.query("hours"), 24, 24 * 30) }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
 	catch (error) { console.error("[web-api/rankings] performance failed", error); return c.json({ error: "ranking_performance_unavailable" }, 503); }
@@ -54,7 +78,9 @@ publicRankingsRouter.get("/rankings/fastest-models", async (c) => {
 
 publicRankingsRouter.get("/rankings/market-share", async (c) => {
 	const dimension = c.req.query("dimension") === "provider" ? "provider" : "organization";
-	try { const { data, error } = await getDataClient(c.env).rpc("get_public_market_share", { p_dimension: dimension, p_time_range: c.req.query("time_range") || "week" }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
+	const timeRange = c.req.query("time_range") || "week";
+	if (!["today", "24h", "week", "4w", "month", "year"].includes(timeRange)) return c.json({ error: "invalid_ranking_period" }, 400);
+	try { const { data, error } = await getDataClient(c.env).rpc("get_public_market_share_rolling", { p_dimension: dimension, p_time_range: timeRange, p_as_of: new Date().toISOString() }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
 	catch (error) { console.error("[web-api/rankings] market share failed", error); return c.json({ error: "market_share_unavailable" }, 503); }
 });
 
@@ -344,12 +370,14 @@ publicRankingsRouter.get("/rankings/context-lengths", async (c) => {
 
 publicRankingsRouter.get("/rankings/top-apps", async (c) => {
 	const timeRange = c.req.query("time_range")?.trim() || "week";
+	if (!["today", "24h", "week", "4w", "month", "year"].includes(timeRange)) return c.json({ error: "invalid_ranking_period" }, 400);
 	const limit = bounded(c.req.query("limit"), 20, 100);
 	try {
 		const client = getDataClient(c.env);
-		const { data, error } = await client.rpc("get_public_top_apps", {
+		const { data, error } = await client.rpc("get_public_top_apps_rolling", {
 			p_time_range: timeRange,
 			p_limit: limit,
+			p_as_of: new Date().toISOString(),
 		});
 		if (error) throw error;
 		const rows = (data ?? []) as Array<Record<string, unknown>>;

@@ -1,4 +1,5 @@
 "use client";
+import { startOfUTCWeek } from "./time-buckets";
 
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -36,14 +37,6 @@ function formatPercent(value: number, locale: string, lessThanOneLabel: string) 
 }
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-function startOfWeek(date: Date) {
-	const d = new Date(date);
-	d.setHours(0, 0, 0, 0);
-	const day = (d.getDay() + 6) % 7;
-	d.setDate(d.getDate() - day);
-	return d;
-}
 
 export function MarketShareStackedBar({
 	data,
@@ -119,12 +112,12 @@ export function MarketShareStackedBar({
 	}
 
 	const existingBucketTs = Array.from(bucketMap.keys());
-	const currentWeekTs = startOfWeek(new Date(nowMs)).getTime();
+	const currentWeekTs = startOfUTCWeek(new Date(nowMs)).getTime();
 	const endWeekTs =
 		existingBucketTs.length > 0
 			? Math.max(...existingBucketTs, currentWeekTs)
 			: currentWeekTs;
-	const endWeek = startOfWeek(new Date(endWeekTs));
+	const endWeek = startOfUTCWeek(new Date(endWeekTs));
 	for (let i = 51; i >= 0; i -= 1) {
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
@@ -214,6 +207,7 @@ export function MarketShareStackedBar({
 		<ChartContainer config={chartConfig} className="h-[360px] w-full">
 			<BarChart
 				data={chartData}
+				barCategoryGap="10%"
 				margin={{ top: 16, right: 12, left: 0, bottom: 32 }}
 			>
 				<CartesianGrid vertical={false} className="stroke-muted" />

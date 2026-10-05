@@ -74,8 +74,8 @@ export async function ToolCallsSection() {
 			</div>
 			{result.data.length ? (
 				<UsageStackedBar
+				leaderboardMetric={"tool_calls"}
 					data={result.data}
-					leaderboardData={result.data}
 					metric="requests"
 					nameMap={nameMap}
 					logoIdMap={logoIdMap}

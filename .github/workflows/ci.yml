@@ -195,6 +195,7 @@ jobs:
               run: |
                   pnpm test:catalogue-history
                   pnpm test:realtime-billing-review
+                  node supabase/tests/rankings-rolling-periods.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/update-model-statuses.test.ts
@@ -436,6 +437,7 @@ jobs:
                   pnpm run validate:i18n
                   pnpm --filter @phaseo/web audit:i18n:ui
                   pnpm --filter @phaseo/web test:i18n:ui-audit
+                  pnpm --filter @phaseo/web test --runTestsByPath 'src/app/(dashboard)/rankings/RankingsPageContent.test.tsx' 'src/components/(rankings)/UsageStackedBar.test.tsx' 'src/components/(rankings)/time-buckets.test.ts'
                   pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
 
             - name: Web API lint, test & build
