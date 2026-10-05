@@ -82,6 +82,20 @@ from the active-domain scan; desired definitions and forward migrations are chec
 
 ## Boundaries
 
+The recorded production versions `20261004222307`, `20261004222834`, and
+`20261005104010` are restored with their recorded SQL. The first two duplicate
+the repository's retirement and boundary migrations; disposable replay checks
+exact equivalence and applies each change once. The last registers the existing
+desktop OAuth client and changes no schema.
+
+Before production migration preview, CI reads the destination's migration
+statements through the Management API in read-only mode. It omits the three
+known timestamp duplicates from its disposable checkout only when the original
+version is unrecorded and both local SQL copies exactly match the destination's
+recorded SQL. Missing evidence or different SQL stops deployment. Committed
+migrations and remote history records remain unchanged. New migrations still
+pass the normal dry-run and apply steps.
+
 Data backfills, storage bucket records, and unsupported objects require forward
 migrations. Investigate strict-coverage failures rather than disabling coverage.
 Schema equivalence verifies structure and permissions, not application data or

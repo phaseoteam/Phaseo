@@ -251,6 +251,9 @@ jobs:
                   MIGRATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
               run: node scripts/validate-supabase-migrations.mjs "${MIGRATION_BASE_SHA}"
 
+            - name: Test migration history reconciliation
+              run: node --test scripts/declarative-replay-history.test.mjs scripts/prepare-production-migrations.test.mjs scripts/validate-supabase-migrations.test.mjs
+
     migrate-production:
         name: Apply production database migrations
         runs-on: ubuntu-latest
@@ -299,6 +302,9 @@ jobs:
                   npx --yes supabase@2.111.0 link \
                     --project-ref "${SUPABASE_PROJECT_ID}" \
                     --password "${SUPABASE_DB_PASSWORD}"
+
+            - name: Verify and omit already-applied timestamp duplicates
+              run: node scripts/prepare-production-migrations.mjs
 
             - name: Preview pending production migrations
               shell: bash
