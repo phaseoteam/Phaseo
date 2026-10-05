@@ -74,12 +74,6 @@ const CLOSED_LICENSE_VALUES = new Set([
 	"none",
 ]);
 
-function formatPeriodTimestamp(value: string, locale: string) {
-	return new Date(value).toLocaleString(locale, {
-		day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC",
-	});
-}
-
 function timeseriesValue(
 	row: TimeseriesData,
 	metric: "requests" | "tokens" | "users",
@@ -178,7 +172,6 @@ export function UsageStackedBar({
 		key: string;
 		data: Array<{ model_id: string; current: number; previous: number }>;
 		models?: Record<string, ModelLeaderboardMeta>;
-		period?: { start: string; end: string; previousStart: string };
 		error?: boolean;
 	} | null>(null);
 	const periodKey = `${leaderboardMetric}:${leaderboardPeriod}`;
@@ -190,7 +183,7 @@ export function UsageStackedBar({
 			const metadata = ids.length ? await fetchPublicWebApi<{ models: Record<string, ModelLeaderboardMeta> }>(
 				`/api/_web/rankings/model-meta?ids=${encodeURIComponent(ids.join(","))}`,
 			).catch(() => ({ models: {} })) : { models: {} };
-			if (!cancelled) setPeriodResult({ key: periodKey, data: result.data, models: metadata.models, period: result.period });
+			if (!cancelled) setPeriodResult({ key: periodKey, data: result.data, models: metadata.models });
 		}).catch(() => {
 			if (!cancelled) setPeriodResult({ key: periodKey, data: [], error: true });
 		});
@@ -681,11 +674,6 @@ export function UsageStackedBar({
 						</DropdownMenu>
 					</div>
 				</div>
-				<p className="text-xs text-muted-foreground">
-					{periodResult?.key === periodKey && periodResult.period
-						? t("usageRollingPeriodComparison", { start: formatPeriodTimestamp(periodResult.period.start, locale), end: formatPeriodTimestamp(periodResult.period.end, locale) })
-						: t("usageRollingComparison")}
-				</p>
 				{hasLeaderboardEntries ? (
 					<div className="grid gap-x-16 gap-y-1 md:grid-cols-2">
 						{listColumns.map((column, columnIndex) => (
