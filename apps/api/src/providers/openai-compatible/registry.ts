@@ -17,6 +17,7 @@ import { VOYAGE_OPENAI_COMPAT_CONFIGS } from "../voyage/config";
 import { DEEPINFRA_OPENAI_COMPAT_CONFIGS } from "../deepinfra/config";
 import { IO_NET_OPENAI_COMPAT_CONFIGS } from "../io-net/config";
 import { DEEPSEEK_OPENAI_COMPAT_CONFIGS } from "../deepseek/config";
+import { REFLECTION_OPENAI_COMPAT_CONFIGS } from "../reflection/config";
 import { FEATHERLESS_OPENAI_COMPAT_CONFIGS } from "../featherless/config";
 import { FRIENDLI_OPENAI_COMPAT_CONFIGS } from "../friendli/config";
 import { GMI_CLOUD_OPENAI_COMPAT_CONFIGS } from "../gmicloud/config";
@@ -161,4 +162,5 @@ export const OPENAI_COMPAT_CONFIG = {
 	...WAFER_OPENAI_COMPAT_CONFIGS,
 	...TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS,
 	...OPENROUTER_OPENAI_COMPAT_CONFIGS,
+	...REFLECTION_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

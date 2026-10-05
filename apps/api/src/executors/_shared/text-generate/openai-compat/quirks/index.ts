@@ -54,6 +54,7 @@ import { sambaNovaQuirks } from "../providers/sambanova/quirks";
 import { scalewayQuirks } from "../providers/scaleway/quirks";
 import { weightsAndBiasesQuirks } from "../providers/weights-and-biases/quirks";
 import { defaultQuirks } from "./default";
+import { reflectionQuirks } from "../providers/reflection/quirks";
 
 /**
  * Provider quirks registry
@@ -69,6 +70,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"z-ai": zaiQuirks,
 	zai: zaiQuirks,
 	deepseek: deepseekQuirks,
+	reflection: reflectionQuirks,
 	mistral: mistralQuirks,
 	"mistral-eu": mistralQuirks,
 	"moonshot-ai": moonshotQuirks,

@@ -24,6 +24,7 @@ import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as googleMusic } from "./google/music-generate";
 import { executor as xAiText } from "./x-ai/text-generate";
 import { executor as deepseekText } from "./deepseek/text-generate";
+import { executor as reflectionText } from "./reflection/text-generate";
 import { executor as minimaxText } from "./minimax/text-generate";
 import { executor as alibabaText } from "./alibaba/text-generate";
 import { executor as qwenText } from "./qwen/text-generate";
@@ -503,6 +504,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	sakana: { "text.generate": sakanaText },
 	scaleway: { "text.generate": scalewayText, embeddings: openaiEmbeddings, rerank: openaiRerank, "audio.transcription": nonTextAdapterExecutor },
 	"thinking-machines": { "text.generate": thinkingMachinesText },
+	reflection: { "text.generate": reflectionText },
 	"black-forest-labs": { "image.generate": blackForestLabsImage, "image.edit": blackForestLabsImage, "video.generate": blackForestLabsVideo },
 	elevenlabs: { "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor, "music.generate": nonTextAdapterExecutor },
 };

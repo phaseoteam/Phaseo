@@ -55,6 +55,7 @@ export function irToOpenAIChat(
 			};
 
 			const providerSupportsAssistantReasoningContent =
+				providerId === "reflection" ||
 				providerId === "deepseek" ||
 				providerId === "z-ai" ||
 				providerId === "zai" ||
