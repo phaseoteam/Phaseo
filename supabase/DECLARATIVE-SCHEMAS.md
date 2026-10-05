@@ -67,6 +67,12 @@ only its temporary copy with a no-op, applying the recorded `20261004221046`
 version once. A mismatch stops replay for review. Neither historical file nor
 production migration records are changed.
 
+The desired routing definitions also include the later retirement and boundary
+migrations, through `20261004222339`: generic audio IDs stay retired, endpoint
+aliases normalize consistently, historical aliases are immutable, and the
+pricing operation trigger uses the same vocabulary. Replay checks these final
+definitions instead of reverting to the earlier routing rules.
+
 Production's chat attribution function retained a legacy URL despite historical
 repository definitions using `phaseo.app`. The forward migration
 `20261004215447_canonical_chat_app_identity.sql` changes future attribution to

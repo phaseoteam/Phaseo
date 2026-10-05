@@ -4,6 +4,11 @@ declare routing_table text;
 begin
   assert public.canonical_routing_capability_id('audio.transcribe') = 'audio.transcription', 'production capability mapping missing';
   assert public.canonical_routing_capability_id('unsupported.operation') is null, 'unknown capability accepted';
+  assert public.canonical_routing_capability_id('audio') is null, 'retired generic audio capability accepted';
+  assert public.canonical_routing_capability_id('chat/completions') = 'text.generate', 'slash endpoint alias missing';
+  assert public.canonical_routing_capability_id('document.parse') = 'parse', 'document endpoint alias missing';
+  assert exists (select 1 from pg_trigger where tgrelid = 'public.v2_pricing_skus'::regclass and tgname = 'canonical_pricing_operation'), 'pricing operation trigger missing';
+  assert not has_function_privilege('anon', 'public.normalize_routing_pricing_operation()', 'EXECUTE'), 'anon can execute pricing trigger function';
   foreach routing_table in array array['v2_route_capabilities', 'v2_capability_adapters', 'v2_capability_constraints', 'v2_capability_evidence', 'v2_capability_parameters', 'v2_execution_plans', 'v2_provider_capability_adapters', 'v2_provider_endpoints', 'v2_route_parameter_support'] loop
     assert exists (select 1 from pg_trigger where tgrelid = to_regclass('public.' || routing_table) and tgname = 'canonical_routing_capability'), 'production capability trigger missing';
     assert exists (select 1 from pg_constraint where conrelid = to_regclass('public.' || routing_table) and conname = 'canonical_capability_id'), 'production capability constraint missing';
