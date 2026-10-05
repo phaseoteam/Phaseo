@@ -20,26 +20,43 @@ begin
     where (v_full_to::timestamp at time zone 'UTC') < p_to
       -- A range within a single UTC day is already entirely in the first edge.
       and v_full_to >= v_full_from
+  ), daily_rows as materialized (
+    select d.rollup_id, d.model_slug, d.provider_model_id, d.app_id,
+      d.requests, d.successful_requests, d.tool_call_count
+    from public.v2_public_usage_daily d
+    where d.usage_date >= v_full_from and d.usage_date < v_full_to
+  ), daily_meter_totals as (
+    select u.rollup_id, u.meter_key, sum(u.quantity) as quantity
+    from public.v2_public_usage_daily_meters u
+    join daily_rows d on d.rollup_id = u.rollup_id
+    group by u.rollup_id, u.meter_key
+  ), daily_meters as (
+    select m.rollup_id, jsonb_object_agg(m.meter_key, m.quantity) as meters
+    from daily_meter_totals m group by m.rollup_id
+  ), edge_rows as materialized (
+    select f.request_event_id, f.routed_model_slug, f.requested_model_slug,
+      f.provider_model_id, f.app_id, f.success, f.tool_call_count
+    from edges e
+    join public.v2_request_facts f on f.occurred_at >= e.start_at and f.occurred_at < e.end_at
+    where lower(coalesce(f.routed_model_slug, f.requested_model_slug)) not in ('unknown', 'other')
+  ), edge_meter_totals as (
+    select u.request_event_id, u.meter_key, sum(u.quantity) as quantity
+    from public.v2_request_usage u
+    join edge_rows f on f.request_event_id = u.request_event_id
+    group by u.request_event_id, u.meter_key
+  ), edge_meters as (
+    select m.request_event_id, jsonb_object_agg(m.meter_key, m.quantity) as meters
+    from edge_meter_totals m group by m.request_event_id
   ), usage_rows as (
     select d.model_slug as model_id, d.provider_model_id, d.app_id, d.requests,
       d.successful_requests, d.tool_call_count, meter_values.meters
-    from public.v2_public_usage_daily d
-    left join lateral (
-      select jsonb_object_agg(m.meter_key, m.quantity) as meters
-      from (select u.meter_key, sum(u.quantity) as quantity from public.v2_public_usage_daily_meters u
-        where u.rollup_id = d.rollup_id group by u.meter_key) m
-    ) meter_values on true
-    where d.usage_date >= v_full_from and d.usage_date < v_full_to
+    from daily_rows d
+    left join daily_meters meter_values on meter_values.rollup_id = d.rollup_id
     union all
     select coalesce(f.routed_model_slug, f.requested_model_slug), f.provider_model_id, f.app_id,
       1::bigint, case when f.success then 1 else 0 end::bigint, f.tool_call_count::bigint, meter_values.meters
-    from edges e
-    join public.v2_request_facts f on f.occurred_at >= e.start_at and f.occurred_at < e.end_at
-    left join lateral (
-      select jsonb_object_agg(m.meter_key, m.quantity) as meters
-      from (select u.meter_key, sum(u.quantity) as quantity from public.v2_request_usage u
-        where u.request_event_id = f.request_event_id group by u.meter_key) m
-    ) meter_values on true
+    from edge_rows f
+    left join edge_meters meter_values on meter_values.request_event_id = f.request_event_id
   )
   select u.model_id, r.provider_slug, u.app_id, u.requests, u.successful_requests, u.tool_call_count, coalesce(u.meters, '{}'::jsonb)
   from usage_rows u
