@@ -1,7 +1,6 @@
 // components/header/AuthControls.tsx  (SERVER COMPONENT)
 import { connection } from "next/server";
-import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
-import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
+import { getHeaderAccountData } from "./getHeaderAccountData";
 import HeaderClient from "./HeaderClient";
 
 export default async function AuthControls({
@@ -12,18 +11,7 @@ export default async function AuthControls({
 	// Supabase Auth reads token expiry during initialization. Explicitly defer
 	// that indirect Date.now() access until a request is available.
 	await connection();
-	let data: InternalAuthHeaderData = {
-		isLoggedIn: false,
-		user: undefined,
-		teams: [],
-		currentTeamId: undefined,
-		userRole: undefined,
-	};
-	try {
-		data = await fetchInternalAuthHeaderData({ limit: 50 });
-	} catch {
-		// Keep the header renderable if the internal route is unavailable.
-	}
+	const data = await getHeaderAccountData();
 
 	if (!data.isLoggedIn) {
 		return (
