@@ -2,8 +2,11 @@ import { GeographyUsage } from "@/components/(gateway)/usage/GeographyUsage";
 import { fetchFrontendRankingGeography } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { getTranslations } from "next-intl/server";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { connection } from "next/server";
 
 export async function PublicGeography() {
+	// Keep API failures out of the static shell so retries can fetch fresh data.
+	await connection();
 	const t = await getTranslations("Catalogue.rankings");
 	const result = await fetchFrontendRankingGeography(30).catch(() => null);
 	if (!result) return <RankingUnavailable id="geography" title={t("countries")} />;

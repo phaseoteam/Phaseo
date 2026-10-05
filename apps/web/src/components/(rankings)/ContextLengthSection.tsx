@@ -2,12 +2,15 @@ import { fetchFrontendRankingContextLengths } from "@/lib/fetchers/frontend/fetc
 import { VerticalRankingChart } from "@/components/(rankings)/VerticalRankingChart";
 import { getLocale, getTranslations } from "next-intl/server";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { connection } from "next/server";
 
 function formatRequests(value: number, locale: string) {
 	return new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
 export async function ContextLengthSection() {
+	// Keep API failures out of the static shell so retries can fetch fresh data.
+	await connection();
 	const [t, locale] = await Promise.all([getTranslations("Catalogue.rankings"), getLocale()]);
 	const result = await fetchFrontendRankingContextLengths(30).catch(() => null);
 	if (!result) return <RankingUnavailable id="context-length" title={t("contextLength")} />;
