@@ -79,3 +79,6 @@ CREATE POLICY "v2_pricing_skus_public_select" ON "public"."v2_pricing_skus"
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_pricing_skus" TO "anon", "authenticated", "service_role";
 
 COMMENT ON TABLE "public"."v2_pricing_skus" IS 'Versioned billable SKU attached to exactly one v2 provider/model route.';
+
+CREATE TRIGGER canonical_pricing_operation BEFORE INSERT OR UPDATE ON public.v2_pricing_skus
+FOR EACH ROW EXECUTE FUNCTION public.normalize_routing_pricing_operation();

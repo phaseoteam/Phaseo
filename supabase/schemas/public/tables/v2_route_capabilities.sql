@@ -16,7 +16,7 @@ CREATE TABLE "public"."v2_route_capabilities" (
   CONSTRAINT "v2_route_capabilities_window_check" CHECK (((effective_to IS NULL) OR (effective_from IS NULL) OR (effective_to > effective_from))),
   CONSTRAINT "canonical_capability_id" CHECK ((((public.canonical_routing_capability_id(capability_id) IS
     NOT NULL) AND (capability_id = public.canonical_routing_capability_id(capability_id))) OR ((status = 'disabled'::text) AND (effective_to IS
-    NOT NULL) AND (public.canonical_routing_capability_id(capability_id) IS NOT NULL))))
+    NOT NULL) AND ((public.canonical_routing_capability_id(capability_id) IS NOT NULL) OR (capability_id IN ('audio', 'audio.generate'))))))
 );
 
 ALTER TABLE "public"."v2_route_capabilities"
