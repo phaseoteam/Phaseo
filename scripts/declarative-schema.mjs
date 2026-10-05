@@ -4,6 +4,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareReplayMigration } from "./declarative-replay-history.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = join(root, "supabase");
@@ -31,7 +32,9 @@ if (mode !== "bootstrap") {
 	const historical = new Set(history.map(([, name]) => name));
 	for (const name of files.filter((name) => !historical.has(name))) {
 		if (name.split("_")[0] <= cutoff) throw new Error(`Migration predates replay baseline: ${name}`);
-		cpSync(join(migrations, name), join(temporary, "migrations", name));
+		writeFileSync(join(temporary, "migrations", name), prepareReplayMigration(name,
+			readFileSync(join(migrations, name), "utf8"),
+			(recordedName) => readFileSync(join(migrations, recordedName), "utf8")));
 	}
 	cpSync(join(baseline, "schema.sql"), join(temporary, "migrations", `${cutoff}_schema_baseline.sql`));
 }

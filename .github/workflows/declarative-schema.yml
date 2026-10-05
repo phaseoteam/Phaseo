@@ -9,6 +9,8 @@ on:
             - 'supabase/baseline/**'
             - 'supabase/tests/**'
             - 'scripts/declarative-schema.mjs'
+            - 'scripts/declarative-replay-history.mjs'
+            - 'scripts/declarative-replay-history.test.mjs'
             - '.github/workflows/declarative-schema.yml'
     workflow_dispatch:
     merge_group:
@@ -26,6 +28,8 @@ jobs:
             - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
               with:
                   node-version: '22'
+            - name: Test disposable replay history preparation
+              run: node --test scripts/declarative-replay-history.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations
               run: node scripts/declarative-schema.mjs check
             - name: Replay baseline and exercise an incremental migration

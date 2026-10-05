@@ -1,14 +1,18 @@
-CREATE OR REPLACE FUNCTION public.canonical_routing_capability_id (
-  p_id text
-)
-  RETURNS text
-  LANGUAGE sql
-  IMMUTABLE
-  PARALLEL SAFE
-  STRICT
-  SET search_path TO 'pg_catalog'
-  AS $function$
-  select case lower(trim(p_id))
+create or replace function public.canonical_routing_capability_id(p_id text)
+returns text language sql immutable strict parallel safe
+set search_path = pg_catalog
+as $$
+  select case replace(lower(trim(p_id)), '/', '.')
+    when 'image.generations' then 'image.generate'
+    when 'image.edits' then 'image.edit'
+    when 'decision.make' then 'decisions.make'
+    when 'systemone' then 'decisions.make'
+    when 'system.one' then 'decisions.make'
+    when 'typed.decisions' then 'decisions.make'
+    when 'audio.translation' then 'audio.translations'
+    when 'batch.create' then 'batch'
+    when 'document.parse' then 'parse'
+    when 'videos' then 'video.generate'
     when 'audio.transcribe' then 'audio.transcription'
     when 'audio.transcriptions' then 'audio.transcription'
     when 'embeddings' then 'text.embed'
@@ -28,17 +32,15 @@ CREATE OR REPLACE FUNCTION public.canonical_routing_capability_id (
     when 'audio.translate' then 'audio.translations'
     when 'video.generation' then 'video.generate'
     when 'video.generations' then 'video.generate'
-    else case when lower(trim(p_id)) = any(array[
+    else case when replace(lower(trim(p_id)), '/', '.') = any(array[
       'text.generate','text.embed','text.rerank','text.moderate',
       'image.generate','image.edit','image.vary','video.generate','video.edit',
       'audio.speech','audio.transcription','audio.translations','audio.realtime',
       'music.generate','decisions.make','ocr','parse','batch',
-      'tool.call','structured.output','voice.design',
-      -- These existing operations are ambiguous and are NOT synonyms for speech.
-      'audio','audio.generate'
-    ]) then lower(trim(p_id)) else null end
+      'tool.call','structured.output','voice.design'
+    ]) then replace(lower(trim(p_id)), '/', '.') else null end
   end;
-$function$;
+$$;
 
 GRANT EXECUTE ON FUNCTION "public"."canonical_routing_capability_id"(text) TO "anon", "authenticated";
 

@@ -61,6 +61,18 @@ Its two functions and nine tables' constraints/triggers are represented in
 the desired definitions and tested during replay. Production already records
 this version, so it must not be replayed or assigned a new deployment version.
 
+The earlier repository migration `20261004220029_canonical_routing_capabilities`
+contains identical SQL. Disposable replay verifies that equivalence and replaces
+only its temporary copy with a no-op, applying the recorded `20261004221046`
+version once. A mismatch stops replay for review. Neither historical file nor
+production migration records are changed.
+
+The desired routing definitions also include the later retirement and boundary
+migrations, through `20261004222339`: generic audio IDs stay retired, endpoint
+aliases normalize consistently, historical aliases are immutable, and the
+pricing operation trigger uses the same vocabulary. Replay checks these final
+definitions instead of reverting to the earlier routing rules.
+
 Production's chat attribution function retained a legacy URL despite historical
 repository definitions using `phaseo.app`. The forward migration
 `20261004215447_canonical_chat_app_identity.sql` changes future attribution to
