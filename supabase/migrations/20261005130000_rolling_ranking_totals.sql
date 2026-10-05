@@ -136,18 +136,21 @@ begin
     union all
     -- Match the actor identity and model normalization used by the daily user rollup.
     select e.is_current,
-      public.public_leaderboard_model_id(gr.canonical_model_id, gr.model_id, gr.requested_model_id,
-        gr.routed_model_id, authoritative.api_model_id, gr.provider, authoritative.pricing_plan, authoritative.is_free_variant),
+      public.public_leaderboard_model_id(
+        coalesce(fact.routed_model_slug, fact.requested_model_slug),
+        coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input),
+        fact.requested_model_input, fact.routed_model_slug, authoritative.api_model_id,
+        route.provider_slug, authoritative.pricing_plan, authoritative.is_free_variant),
       md5('public-model-user:' || coalesce(
-        nullif(to_jsonb(gr)->>'oauth_user_id', ''), nullif(to_jsonb(gr)->>'end_user_id', ''),
-        nullif(to_jsonb(gr)->>'workspace_id', ''), nullif(to_jsonb(gr)->>'team_id', ''), nullif(to_jsonb(gr)->>'key_id', '')
+        nullif(fact.safe_metadata->>'oauth_user_id', '')::uuid::text,
+        nullif(fact.end_user_id, ''), fact.workspace_id::text, fact.key_id::text
       ))
     from edges e
-    join public.v2_rpc_gateway_requests_legacy_shape gr on gr.created_at >= e.start_at and gr.created_at < e.end_at
-    left join public.v2_request_facts fact on fact.request_event_id = gr.id
+    join public.v2_request_facts fact on fact.occurred_at >= e.start_at and fact.occurred_at < e.end_at
+    left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
     left join public.gateway_requests authoritative on authoritative.id = fact.gateway_request_id
       and authoritative.created_at = fact.gateway_request_created_at
-    where p_metric = 'users' and gr.success is true
+    where p_metric = 'users' and fact.success is true
   ), totals as (
     select q.model_id, coalesce(sum(q.value) filter (where q.is_current), 0) as current,
       coalesce(sum(q.value) filter (where not q.is_current), 0) as previous

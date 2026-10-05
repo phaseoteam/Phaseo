@@ -20,12 +20,11 @@ await db.exec(`
   );
   create table v2_request_facts (request_event_id text primary key, occurred_at timestamptz,
     routed_model_slug text, requested_model_slug text, provider_model_id text, tool_call_count bigint,
-    gateway_request_id text, gateway_request_created_at timestamptz);
+    gateway_request_id text, gateway_request_created_at timestamptz,
+    requested_model_input text default 'model', safe_metadata jsonb default '{}',
+    end_user_id text, workspace_id uuid, key_id uuid);
   create table v2_request_usage (request_event_id text, meter_key text, quantity numeric);
   create table gateway_requests (id text, created_at timestamptz, api_model_id text, pricing_plan text, is_free_variant boolean);
-  create table v2_rpc_gateway_requests_legacy_shape (id text, created_at timestamptz, canonical_model_id text,
-    model_id text, requested_model_id text, routed_model_id text, provider text, oauth_user_id text,
-    end_user_id text, workspace_id text, team_id text, key_id text, success boolean);
   create function public.public_leaderboard_model_id(text,text,text,text,text,text,text,boolean) returns text
     language sql as $$ select coalesce($1,$2,$3,$4,$5) $$;
   insert into v2_models values ('model',false,'active'), ('hidden',true,'active');
@@ -66,7 +65,7 @@ const DAY = 24 * 60 * 60 * 1000;
 let events;
 async function seed(asOf) {
   await db.exec(`truncate v2_request_facts, v2_request_usage, v2_rpc_gateway_model_usage_daily, v2_public_usage_daily_meters,
-    v2_public_usage_daily, public_model_user_usage_daily, v2_rpc_gateway_requests_legacy_shape`);
+    v2_public_usage_daily, public_model_user_usage_daily`);
   const end = Date.parse(asOf);
   events = [
     [0,10000], [-3600000,1], [-DAY,2], [-DAY-1,4], [-2*DAY,8], [-2*DAY-1,16],
@@ -75,13 +74,11 @@ async function seed(asOf) {
     [3600000,20000],
   ].map(([offset, value], i) => ({ id: String(i), at: end+offset, value, actor: i % 3 ? 'repeat' : 'second' }));
   for (const event of events) {
-    await db.query(`insert into v2_request_facts (request_event_id,occurred_at,routed_model_slug,requested_model_slug,provider_model_id,tool_call_count,app_id)
-      values ($1,$2,'model','model','route',$3,$4)`,
-      [event.id, new Date(event.at).toISOString(), event.value, `00000000-0000-0000-0000-00000000000${Number(event.id)%2+1}`]);
+    await db.query(`insert into v2_request_facts (request_event_id,occurred_at,routed_model_slug,requested_model_slug,provider_model_id,tool_call_count,app_id,end_user_id)
+      values ($1,$2,'model','model','route',$3,$4,$5)`,
+      [event.id, new Date(event.at).toISOString(), event.value, `00000000-0000-0000-0000-00000000000${Number(event.id)%2+1}`,event.actor]);
     await db.query(`insert into v2_request_usage values ($1,'input_text_tokens',$2), ($1,'output_video_seconds',$2 / 10.0),
       ($1,'image_inputs',3), ($1,'input_images',9999), ($1,'cached_read_tokens',5), ($1,'cached_input_tokens',9999)`, [event.id,event.value]);
-    await db.query(`insert into v2_rpc_gateway_requests_legacy_shape values ($1,$2,'model','model','model','model','provider',
-      null,$3,'workspace',null,null,true)`, [event.id,new Date(event.at).toISOString(),event.actor]);
   }
   await db.exec(`
     insert into v2_rpc_gateway_model_usage_daily (day_bucket,model_id,input_text_tokens,video_seconds,image_inputs,cached_read_tokens)
@@ -95,17 +92,18 @@ async function seed(asOf) {
       join v2_request_usage u on u.request_event_id = f.request_event_id
       group by d.rollup_id,u.meter_key;
     insert into public_model_user_usage_daily
-      select distinct (created_at at time zone 'UTC')::date, 'model', md5('public-model-user:' || end_user_id)
-      from v2_rpc_gateway_requests_legacy_shape;
+      select distinct (occurred_at at time zone 'UTC')::date, 'model', md5('public-model-user:' || end_user_id)
+      from v2_request_facts;
   `);
   // These facts must never affect public totals or be queried as whole-day fallbacks.
   await db.query(`insert into v2_request_facts (request_event_id,occurred_at,routed_model_slug,requested_model_slug,provider_model_id,tool_call_count,gateway_request_id,gateway_request_created_at) values
     ('hidden',$1,'hidden','hidden','route',99999,null,null), ('stealth',$1,'model','model','stealth',99999,null,null)`,
     [new Date(end-3600000).toISOString()]);
   await db.exec(`insert into v2_request_usage values ('hidden','input_text_tokens',99999),('stealth','input_text_tokens',99999)`);
-  await db.query(`insert into v2_rpc_gateway_requests_legacy_shape (id,created_at,canonical_model_id,end_user_id,success)
-    values ('hidden',$1,'hidden','private',true), ('failed',$1,'model','failed-only',false), ('no-actor',$1,'model',null,true)`,
+  await db.query(`insert into v2_request_facts (request_event_id,occurred_at,routed_model_slug,end_user_id,success)
+    values ('failed',$1,'model','failed-only',false), ('no-actor',$1,'model',null,true)`,
     [new Date(end-3600000).toISOString()]);
+  await db.exec(`update v2_request_facts set end_user_id = 'private' where request_event_id = 'hidden'`);
 }
 const read = async (metric, days, asOf) => (await db.query('select * from get_public_period_leaderboard($1,$2,$3)',[metric,days,asOf])).rows
   .map(row => ({...row,current:Number(row.current),previous:Number(row.previous)}));
@@ -169,5 +167,17 @@ await db.query("select * from get_public_top_apps_rolling(20,'month',$1)",['2026
 await db.query("select * from get_public_market_share_rolling('provider','year',$1)",['2026-03-30T12:34:56.789Z']);
 await db.exec('reset role; set role anon');
 await assert.rejects(read('text_tokens',7,'2026-03-30T12:34:56.789Z'),/permission denied/);
+await db.exec(`reset role; truncate v2_request_facts, public_model_user_usage_daily;
+  insert into v2_request_facts (request_event_id,occurred_at,routed_model_slug,safe_metadata,end_user_id,workspace_id,key_id) values
+    ('oauth-1','2026-03-30T11:00Z','model','{"oauth_user_id":"ABCDEFAB-0000-0000-0000-000000000001"}','ignored-one','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003'),
+    ('oauth-2','2026-03-30T11:01Z','model','{"oauth_user_id":"abcdefab-0000-0000-0000-000000000001"}','ignored-two',null,null),
+    ('end-user','2026-03-30T11:02Z','model','{}','end-user','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003'),
+    ('workspace','2026-03-30T11:03Z','model','{}','', '00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000003'),
+    ('key','2026-03-30T11:04Z','model','{}',null,null,'00000000-0000-0000-0000-000000000003');
+  insert into public_model_user_usage_daily values
+    ('2026-03-28','model',md5('public-model-user:abcdefab-0000-0000-0000-000000000001')),
+    ('2026-03-21','model',md5('public-model-user:abcdefab-0000-0000-0000-000000000001'));
+`);
+assert.deepEqual(await read('users',7,'2026-03-30T12:34:56.789Z'),[{model_id:'model',current:4,previous:1}]);
 await db.close();
 console.log('Rolling model/app/market totals, all periods, both cutoffs, overlap, distinct users, aliases, fractional meters, app privacy, UTC/DST and access passed.');
