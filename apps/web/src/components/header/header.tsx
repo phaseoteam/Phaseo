@@ -18,17 +18,21 @@ import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messag
 import { getPublicMessages } from "@/i18n/messages";
 import { isPublicLocale } from "@/i18n/routing";
 import { getSettingsNavigationCopy } from "@/components/(gateway)/settings/Sidebar.labels";
+import { getHeaderAccountData } from "./getHeaderAccountData";
+import { connection } from "next/server";
 
 const showHeaderAnnouncement = false;
 
 async function GatedSettingsSidebarTrigger() {
+	await connection();
 	const locale = await getLocale();
 	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
-	const [showAutoRouting, messages, navigationMessages] = await Promise.all([
+	const [showAutoRouting, messages, navigationMessages, account] = await Promise.all([
 		autoRoutingFlag(), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
+		getHeaderAccountData(),
 	]);
 	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
-	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} copy={copy} />;
+	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} copy={copy} providerMode={account.providerMode === true} />;
 }
 
 export default async function Header() {

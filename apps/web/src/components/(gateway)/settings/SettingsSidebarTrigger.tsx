@@ -49,11 +49,13 @@ export default function SettingsSidebarTrigger({
 	showBroadcast = true,
 	showWebhooks = true,
 	showAutoRouting = false,
+	providerMode = false,
 }: {
 	copy: SettingsNavigationCopy;
 	showBroadcast?: boolean;
 	showWebhooks?: boolean;
 	showAutoRouting?: boolean;
+	providerMode?: boolean;
 }) {
 	const t = useTranslations("SettingsUI");
 	const pathname = usePathname() ?? "";
@@ -69,14 +71,17 @@ export default function SettingsSidebarTrigger({
 		getClientSnapshot,
 		getServerSnapshot,
 	);
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting });
+	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showAutoRouting, providerMode });
 	const activeNav = getActiveSettingsNav(pathname, {
 		showBroadcast,
 		showWebhooks,
 		showAutoRouting,
+		providerMode,
 	});
 	const activeItem = activeNav?.item ?? null;
-	const activeScope = activeNav?.group.scope ?? "personal";
+	const activeScope = providerMode && pathname === "/settings/account/providers"
+		? "provider" : activeNav?.group.scope ?? "personal";
+	const businessScope = providerMode ? "provider" : "workspace";
 	const [scopeSelection, setScopeSelection] = useState<{
 		routeScope: SettingsScope;
 		selectedScope: SettingsScope;
@@ -255,16 +260,16 @@ export default function SettingsSidebarTrigger({
 							</button>
 							<button
 								type="button"
-								aria-pressed={visibleScope === "workspace"}
-								onClick={() => selectScope("workspace")}
+								aria-pressed={visibleScope === businessScope}
+								onClick={() => selectScope(businessScope)}
 								className={cn(
 									"flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium",
-									visibleScope === "workspace"
+										visibleScope === businessScope
 										? "bg-background text-foreground shadow-sm"
 										: "text-muted-foreground hover:text-foreground",
 								)}
 							>
-								<Building2 className="size-3.5" /> {t("settingsCopy.settingsSidebar.workspaceScope")}
+								<Building2 className="size-3.5" /> {providerMode ? copy.labels.Provider : t("settingsCopy.settingsSidebar.workspaceScope")}
 							</button>
 						</div>
 					</div>
@@ -290,6 +295,16 @@ export default function SettingsSidebarTrigger({
 							})}
 						</div>
 					</ScrollArea>
+					{!providerMode && (
+						<div className="shrink-0 border-t p-3">
+							<Link href="/settings/account/providers" onClick={close}
+								aria-current={pathname === "/settings/account/providers" ? "page" : undefined}
+								className="flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium hover:bg-accent/70 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
+								<Building2 className="size-4" aria-hidden="true" />
+								{copy.labels["Become a Provider"]}
+							</Link>
+						</div>
+					)}
 				</SheetContent>
 			</Sheet>
 		</div>

@@ -17,7 +17,7 @@ export const SETTINGS_LABEL_KEYS = {
 export const SETTINGS_NEW_LABEL_KEYS = {
     Preferences: "preferences", "Billing & Credits": "billingCredits", Activity: "activity", "Realtime Sessions": "realtimeSessions",
     "Private Models": "privateModels", "Discovery queue": "discoveryQueue", "Your Models": "yourModels",
-    "Provider Review": "providerReview", Integrations: "integrations", Provider: "provider",
+    "Provider Review": "providerReview", Integrations: "integrations", Provider: "provider", "Become a Provider": "becomeProvider",
 } as const;
 
 export type SettingsNavigationCopy = {
