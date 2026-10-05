@@ -15,7 +15,7 @@ CREATE OR REPLACE FUNCTION public.get_public_geography_usage (
   STABLE
   SET search_path TO ''
   AS $function$
-  with scoped_facts as materialized (
+  with scoped_facts as (
     select request_event_id, workspace_id, edge_country
     from public.v2_request_facts
     where occurred_at >= p_from
@@ -25,6 +25,8 @@ CREATE OR REPLACE FUNCTION public.get_public_geography_usage (
   request_tokens as (
     select
       fact.request_event_id,
+      fact.workspace_id,
+      fact.edge_country,
       coalesce(
         nullif(sum(usage.quantity) filter (
           where usage.meter_key in ('input_tokens', 'output_tokens')
@@ -42,18 +44,23 @@ CREATE OR REPLACE FUNCTION public.get_public_geography_usage (
     from scoped_facts fact
     left join public.v2_request_usage usage
       on usage.request_event_id = fact.request_event_id
-    group by fact.request_event_id
+     and usage.meter_key in (
+       'input_tokens', 'output_tokens',
+       'input_text_tokens', 'output_text_tokens',
+       'input_image_tokens', 'output_image_tokens',
+       'input_audio_tokens', 'output_audio_tokens',
+       'input_video_tokens', 'output_video_tokens'
+     )
+    group by fact.request_event_id, fact.workspace_id, fact.edge_country
   ),
   countries as (
     select
-      fact.edge_country as country_code,
+      tokens.edge_country as country_code,
       count(*)::bigint as requests,
       coalesce(sum(tokens.tokens), 0) as tokens,
-      count(distinct fact.workspace_id)::bigint as workspace_count
-    from scoped_facts fact
-    left join request_tokens tokens
-      on tokens.request_event_id = fact.request_event_id
-    group by fact.edge_country
+      count(distinct tokens.workspace_id)::bigint as workspace_count
+    from request_tokens tokens
+    group by tokens.edge_country
   )
   select
     country.country_code,

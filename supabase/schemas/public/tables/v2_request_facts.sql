@@ -177,6 +177,8 @@ CREATE INDEX v2_request_facts_model_time_idx ON public.v2_request_facts USING bt
 
 CREATE INDEX v2_request_facts_occurred_brin_idx ON public.v2_request_facts USING brin (occurred_at);
 
+CREATE INDEX v2_request_facts_public_distribution_idx ON public.v2_request_facts USING btree (occurred_at) INCLUDE (request_event_id, workspace_id, edge_country);
+
 CREATE INDEX v2_request_facts_provider_route_time_idx ON public.v2_request_facts USING btree (provider_model_id, occurred_at DESC);
 
 CREATE INDEX v2_request_facts_routed_colo_time_idx ON public.v2_request_facts USING btree (routed_model_slug, cloudflare_colo, occurred_at DESC)
