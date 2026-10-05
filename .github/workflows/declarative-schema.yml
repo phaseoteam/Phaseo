@@ -36,7 +36,7 @@ jobs:
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: rolling-ranking-query-migration
-                  path: supabase/migrations/*optimize_rolling_ranking_queries.sql
+                  path: supabase/migrations/*declarative_change.sql
                   if-no-files-found: error
             - name: Replay baseline and exercise an incremental migration
               run: node scripts/declarative-schema.mjs smoke
