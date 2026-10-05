@@ -25,6 +25,7 @@ const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 export const CLI_CLIENT_ID = "phaseo_cli";
+export const DESKTOP_CLIENT_ID = "phaseo_desktop";
 export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
 const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
 
@@ -189,7 +190,7 @@ export function isLegacyOAuthExchangeEnabled(): boolean {
 }
 
 export function isOAuthClientUsable(clientId: string): boolean {
-	return isFirstPartyCliClient(clientId) || isThirdPartyOAuthEnabled();
+	return isFirstPartyCliClient(clientId) || clientId === DESKTOP_CLIENT_ID || isThirdPartyOAuthEnabled();
 }
 
 export function normalizeScopes(raw: unknown, fallback: readonly string[] = []): string[] {
@@ -734,10 +735,16 @@ function isCimdLoopbackRedirectUri(client: OAuthClient, redirectUri: string): bo
 	}
 }
 
+function isDesktopLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
+	if (client.id !== DESKTOP_CLIENT_ID || !client.is_first_party || client.registration_source !== "first_party" || client.client_type !== "public" || !client.redirect_uris.includes("http://127.0.0.1/callback")) return false;
+	try { const url = new URL(redirectUri); return url.protocol === "http:" && url.hostname === "127.0.0.1" && url.pathname === "/callback" && !url.username && !url.password && !url.search && !url.hash; } catch { return false; }
+}
+
 export function assertRedirectAllowed(client: OAuthClient, redirectUri: string): boolean {
 	return client.redirect_uris.some((uri) => uri === redirectUri)
 		|| isCliLoopbackRedirectUri(client, redirectUri)
-		|| isCimdLoopbackRedirectUri(client, redirectUri);
+		|| isCimdLoopbackRedirectUri(client, redirectUri)
+		|| isDesktopLoopbackRedirectUri(client, redirectUri);
 }
 
 export async function ensureGrant(args: {
