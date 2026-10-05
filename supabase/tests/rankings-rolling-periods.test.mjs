@@ -48,7 +48,7 @@ await db.exec(`
     $$ select coalesce(split_part($1,'/',3),$2) $$;
   grant select on all tables in schema public to service_role;
 `);
-for (const migration of ['20261005130000_rolling_ranking_totals', '20261005140000_rolling_app_and_market_totals']) {
+for (const migration of ['20261005130000_rolling_ranking_totals', '20261005130100_rolling_app_and_market_totals']) {
   await db.exec(await readFile(new URL(`../migrations/${migration}.sql`, import.meta.url), 'utf8'));
 }
 for (const [metric, meters, value] of [
