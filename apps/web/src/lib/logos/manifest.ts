@@ -482,6 +482,10 @@ export const logoManifest = {
 	qwen: {
 		color: "/logos/qwen.svg",
 	},
+	reflection: {
+		light: "/logos/reflection_light.svg",
+		dark: "/logos/reflection_dark.svg",
+	},
 	requesty: {
 		color: "/logos/requesty.svg",
 	},

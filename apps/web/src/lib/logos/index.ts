@@ -151,6 +151,7 @@ normalisedAliasMap.set(normalise("tencent-coding-plan"), "tencent");
 normalisedAliasMap.set(normalise("tencent-token-plan"), "tencent");
 normalisedAliasMap.set(normalise("tencent-tokenhub"), "tencent");
 normalisedAliasMap.set(normalise("wafer.ai"), "wafer");
+normalisedAliasMap.set(normalise("reflection-ai"), "reflection");
 normalisedAliasMap.set(normalise("x-ai"), "spacex-ai");
 normalisedAliasMap.set(normalise("xai"), "spacex-ai");
 
