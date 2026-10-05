@@ -62,7 +62,7 @@ if (mode === "smoke") {
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
-		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql"]) {
+		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),

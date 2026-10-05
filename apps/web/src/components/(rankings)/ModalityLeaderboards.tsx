@@ -121,6 +121,7 @@ function TopChart({
 				</p>
 			</div>
 			<UsageStackedBar
+				leaderboardMetric={section.metrics[0]?.id}
 				data={section.primaryTimeseries}
 				metric="tokens"
 				nameMap={nameMap}

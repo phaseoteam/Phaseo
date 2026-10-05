@@ -1,8 +1,14 @@
 import { ModalityLeaderboardsServer, type RankingModality } from "@/app/[locale]/(dashboard)/rankings/RankingsPageContent";
 import { fetchFrontendRankingModalityTimeseries } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendRankingPeriodLeaderboard } from "@/lib/fetchers/frontend/fetchRankingSections";
 
+jest.mock("next-intl/server", () => ({
+    getLocale: jest.fn(async () => "en-GB"),
+    getTranslations: jest.fn(async () => (key: string) => ({ usageTokensUnit: "tokens", usageImagesUnit: "images", usageSecondsUnit: "seconds" }[key] ?? key)),
+}));
+jest.mock("@/lib/auth/localized-metadata", () => ({}));
 jest.mock("@/lib/seo", () => ({}));
-jest.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({}));
+jest.mock("@/lib/fetchers/frontend/fetchRankingSections", () => ({ fetchFrontendRankingPeriodLeaderboard: jest.fn() }));
 jest.mock("@/lib/fetchers/frontend/fetchPublicCatalog", () => ({
 	fetchFrontendRankingModalityTimeseries: jest.fn(),
 	fetchFrontendModelLeaderboardMetaByIds: jest.fn(async () => ({})),
@@ -26,7 +32,11 @@ jest.mock("@/components/(data)/model/ModelPageToc", () => ({}));
 jest.mock("@/components/(rankings)/ModalityLeaderboards", () => ({ ModalityLeaderboards: () => null }));
 
 const fetchSeries = jest.mocked(fetchFrontendRankingModalityTimeseries);
+const fetchPeriod = jest.mocked(fetchFrontendRankingPeriodLeaderboard);
 beforeEach(() => {
+	fetchPeriod.mockReset();
+	fetchPeriod.mockResolvedValue({ data: [{ model_id: "lab/model", current: 9, previous: 3 }],
+		period: { start: "2026-09-05T12:00:00Z", end: "2026-10-05T12:00:00Z", previousStart: "2026-08-06T12:00:00Z" } });
 	fetchSeries.mockReset();
 	fetchSeries.mockResolvedValue({ data: [
 		{ bucket: "2026-09-07T00:00:00Z", model_id: "lab/model", requests: 1, tokens: 2.75 },
@@ -43,11 +53,11 @@ it.each([
 	const result = await ModalityLeaderboardsServer({ modality: modality as RankingModality });
 	const section = result.props.sections[0];
 	expect(fetchSeries).toHaveBeenCalledWith(metric, "year");
-	expect(fetchSeries).toHaveBeenCalledWith(metric, "month");
-	expect(fetchSeries.mock.calls.length).toBeLessThanOrEqual(3);
+	expect(fetchPeriod).toHaveBeenCalledWith(metric, 30);
+	expect(fetchSeries).toHaveBeenCalledTimes(1);
 	expect(section.valueUnit).toBe(unit);
 	expect(section.primaryTimeseries).toHaveLength(2);
-	expect(section.metrics[0].entries[0]).toMatchObject({ model_id: "lab/model", value: 6, value_label: `6 ${unit}` });
+	expect(section.metrics[0].entries[0]).toMatchObject({ model_id: "lab/model", value: 9, value_label: `9 ${unit}` });
 });
 
 it("keeps successful monthly data when the weekly chart fetch fails", async () => {

@@ -41,9 +41,9 @@ import {
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import {
 	fetchFrontendRankingFastestModels,
+	fetchFrontendRankingPeriodLeaderboard,
 } from "@/lib/fetchers/frontend/fetchRankingSections";
 import type {
-	TimeseriesData,
 	PerformanceData,
 } from "@/lib/fetchers/rankings/getRankingsData";
 import { modalityMetrics, secondaryModalityMetrics } from "@/lib/fetchers/rankings/modalityMetrics";
@@ -326,8 +326,8 @@ export async function ModalityLeaderboardsServer({ modality }: { modality: Ranki
 	const secondary = secondaryModalityMetrics[modality];
 	const [series, monthly, secondaryMonthly] = await Promise.all([
 		fetchFrontendRankingModalityTimeseries(primary.metric, "year").catch(() => null),
-		fetchFrontendRankingModalityTimeseries(primary.metric, "month").catch(() => null),
-		secondary ? fetchFrontendRankingModalityTimeseries(secondary.metric, "month").catch(() => null) : null,
+		fetchFrontendRankingPeriodLeaderboard(primary.metric, 30).catch(() => null),
+		secondary ? fetchFrontendRankingPeriodLeaderboard(secondary.metric, 30).catch(() => null) : null,
 	]);
 	const modelIds = [...new Set([...(series?.data ?? []), ...(monthly?.data ?? []), ...(secondaryMonthly?.data ?? [])]
 		.map((row) => row.model_id).filter((id) => id && !["other", "unknown"].includes(id.toLowerCase())))];
@@ -337,11 +337,11 @@ export async function ModalityLeaderboardsServer({ modality }: { modality: Ranki
 	const nameMap = Object.fromEntries(modelIds.map((id) => [id, formatModelDisplayName(metaMap[id]?.name, id)]));
 	const logoIdMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_id ?? id]));
 	const organisationNameMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_name ?? null]));
-	const entries = (rows: TimeseriesData[], unit: string): ModalityLeaderboardEntry[] => {
+	const entries = (rows: Array<{ model_id: string; current: number }>, unit: string): ModalityLeaderboardEntry[] => {
 		const totals = new Map<string, number>();
 		for (const row of rows) {
 			if (!modelIds.includes(row.model_id)) continue;
-			const value = Number(row.tokens);
+			const value = Number(row.current);
 			if (Number.isFinite(value) && value > 0) totals.set(row.model_id, (totals.get(row.model_id) ?? 0) + value);
 		}
 		return [...totals].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([id, value], index) => ({
@@ -471,7 +471,7 @@ async function UniqueUsersSectionServer() {
 			</div>
 			<UsageStackedBar
 				data={result.data}
-				leaderboardData={result.data}
+				leaderboardMetric="users"
 				metric="users"
 				nameMap={nameMap}
 				logoIdMap={logoIdMap}
