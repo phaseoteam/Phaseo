@@ -36,11 +36,13 @@ try {
     ['get_public_geography_usage',"now()-interval '30 days',now(),1,2"],
     ['get_public_geography_usage',"now()-interval '30 days',now(),4,1"],
   ]) {
-    assert.deepEqual((await db.query(`select * from public.${name}(${args})`)).rows,
-      (await db.query(`select * from public.reference_${name}(${args})`)).rows,`${name}(${args})`);
+    const withoutLabel = rows => rows.map(({ bucket_label, ...row }) => row);
+    assert.deepEqual(withoutLabel((await db.query(`select * from public.${name}(${args})`)).rows),
+      withoutLabel((await db.query(`select * from public.reference_${name}(${args})`)).rows),`${name}(${args})`);
   }
   const context = (await db.query(`select * from get_public_context_length_distribution(30,1,1)`)).rows;
   assert.equal(context.length,6);
+  assert.deepEqual(context.map(row=>row.bucket_label),['Under 4K','4K–16K','16K–32K','32K–64K','64K–128K','128K+']);
   assert.deepEqual(context.map(row=>Number(row.requests)),[0,2,1,1,0,1]);
   assert.deepEqual(context.map(row=>Number(row.share_percent)),[0,40,20,20,0,20]);
   assert.equal((await db.query(`select * from get_public_context_length_distribution(30,6,1)`)).rows.length,0);

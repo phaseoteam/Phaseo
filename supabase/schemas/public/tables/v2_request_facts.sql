@@ -317,3 +317,6 @@ COMMENT ON COLUMN "public"."v2_request_facts"."tool_call_succeeded" IS 'Request-
 COMMENT ON COLUMN "public"."v2_request_facts"."tpot_ms" IS 'Average time per output token after the first token.';
 
 COMMENT ON TABLE "public"."v2_request_facts" IS 'Queryable observability extension for one authoritative gateway_requests row; raw bodies never belong in Supabase.';
+
+CREATE INDEX v2_request_facts_public_ranking_idx ON public.v2_request_facts USING btree (occurred_at)
+  INCLUDE (request_event_id, routed_model_slug, requested_model_slug, provider_model_id, app_id, success, tool_call_count);
