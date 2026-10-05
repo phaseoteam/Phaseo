@@ -4,6 +4,10 @@ set local role service_role;
 do $$
 declare metric text; days integer; period text; dimension text;
 begin
+  perform * from public.get_public_context_length_distribution(30, 1, 1);
+  perform * from public.get_public_geography_usage(now() - interval '30 days', now(), 1, 1);
+  assert to_regclass('public.v2_request_facts_public_distribution_idx') is not null;
+  assert to_regclass('public.v2_request_usage_public_tokens_idx') is not null;
   foreach metric in array array['text_tokens','image_inputs','image_outputs','audio_tokens',
     'audio_seconds','speech_seconds','transcription_seconds','video_tokens','video_seconds',
     'cached_tokens','embedding_tokens','rerank_quad_tokens','tool_calls','users'] loop

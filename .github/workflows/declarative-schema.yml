@@ -31,11 +31,6 @@ jobs:
             - name: Test disposable replay history preparation
               run: node --test scripts/declarative-replay-history.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations
-              run: node scripts/declarative-schema.mjs sync -f optimize_ranking_distributions
-            - name: Export generated migrations
-              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-              with:
-                  name: ranking-distribution-migrations
-                  path: supabase/migrations/20261005*.sql
+              run: node scripts/declarative-schema.mjs check
             - name: Replay baseline and exercise an incremental migration
               run: node scripts/declarative-schema.mjs smoke
