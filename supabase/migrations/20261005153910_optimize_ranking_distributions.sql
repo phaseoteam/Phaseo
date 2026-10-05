@@ -172,10 +172,3 @@ CREATE OR REPLACE FUNCTION public.get_public_geography_usage (
     and country.workspace_count >= greatest(coalesce(p_min_workspaces, 1), 1)
   order by country.requests desc, country.country_code;
 $function$;
-
-CREATE INDEX v2_request_facts_public_distribution_idx ON public.v2_request_facts USING btree (occurred_at) INCLUDE (request_event_id, workspace_id, edge_country);
-
-CREATE INDEX v2_request_usage_public_tokens_idx ON public.v2_request_usage USING btree (request_event_id, meter_key) INCLUDE (quantity)
-  WHERE
-    (meter_key = ANY (ARRAY['input_tokens'::text, 'output_tokens'::text, 'prompt_tokens'::text, 'input_text_tokens'::text, 'output_text_tokens'::text, 'input_image_tokens'::text,
-    'output_image_tokens'::text, 'input_audio_tokens'::text, 'output_audio_tokens'::text, 'input_video_tokens'::text, 'output_video_tokens'::text]));
