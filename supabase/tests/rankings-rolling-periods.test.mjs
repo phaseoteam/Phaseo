@@ -51,6 +51,7 @@ await db.exec(`
 for (const migration of ['20261005130000_rolling_ranking_totals', '20261005130100_rolling_app_and_market_totals']) {
   await db.exec(await readFile(new URL(`../migrations/${migration}.sql`, import.meta.url), 'utf8'));
 }
+await db.exec(await readFile(new URL('../schemas/public/functions/get_public_ranking_usage_window.sql', import.meta.url), 'utf8'));
 for (const [metric, meters, value] of [
   ['tokens',{total_tokens:10,input_tokens:20,output_tokens:30},10],
   ['tokens',{input_tokens:4},4],

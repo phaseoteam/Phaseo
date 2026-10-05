@@ -58,10 +58,10 @@ CREATE OR REPLACE FUNCTION public.get_public_context_length_distribution (
   buckets(bucket_key, bucket_label, bucket_order, min_tokens, max_tokens) as (
     values
       ('under_4k', 'Under 4K', 1, 0::bigint, 4095::bigint),
-      ('4k_16k', '4Kâ€“16K', 2, 4096::bigint, 16383::bigint),
-      ('16k_32k', '16Kâ€“32K', 3, 16384::bigint, 32767::bigint),
-      ('32k_64k', '32Kâ€“64K', 4, 32768::bigint, 65535::bigint),
-      ('64k_128k', '64Kâ€“128K', 5, 65536::bigint, 131071::bigint),
+        ('4k_16k', '4K–16K', 2, 4096::bigint, 16383::bigint),
+        ('16k_32k', '16K–32K', 3, 16384::bigint, 32767::bigint),
+        ('32k_64k', '32K–64K', 4, 32768::bigint, 65535::bigint),
+        ('64k_128k', '64K–128K', 5, 65536::bigint, 131071::bigint),
       ('128k_plus', '128K+', 6, 131072::bigint, null::bigint)
   ),
   counts as (
