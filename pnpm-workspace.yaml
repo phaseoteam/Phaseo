@@ -1,5 +1,6 @@
 packages:
   - "apps/*"
+  - "!apps/desktop-new"
   - "packages/*/*"
   - "examples/ai-sdk-v7-quickstart"
 

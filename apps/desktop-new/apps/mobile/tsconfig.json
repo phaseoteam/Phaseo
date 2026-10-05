@@ -1,9 +1,0 @@
-{
-  "extends": "expo/tsconfig.base.json",
-  "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true
-  }
-}

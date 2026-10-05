@@ -71,11 +71,7 @@ function resolveDesktopClerkFrontendApiHostname(
   }
 }
 
-export const desktopClerkFrontendApiHostname = resolveDesktopClerkFrontendApiHostname(
-  typeof __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__ === "undefined"
-    ? undefined
-    : __T3CODE_BUILD_CLERK_PUBLISHABLE_KEY__,
-);
+export const desktopClerkFrontendApiHostname: string | undefined = undefined;
 
 function createDesktopClerkBridge(stateDir: string, isDevelopment: boolean) {
   return createClerkBridge({

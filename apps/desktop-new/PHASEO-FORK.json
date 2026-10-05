@@ -1,0 +1,7 @@
+{
+  "upstream": "https://github.com/pingdotgg/t3code.git",
+  "revision": "7812230572f2d7e042d8d14ada2381fc71377560",
+  "tag": "v0.0.46-nightly.20261005.2676",
+  "prefix": "apps/desktop-new",
+  "license": "MIT"
+}
