@@ -134,6 +134,7 @@ import {
 } from "../threadSelectionStore";
 import { useAcknowledgeThreadWoke, useThreadActions } from "../hooks/useThreadActions";
 import { useHandleNewThread } from "../hooks/useHandleNewThread";
+import { useScratchProject } from "../hooks/useScratchProject";
 import { useTerminalFocus } from "../hooks/useTerminalFocus";
 import { isCommandPaletteOpen, openCommandPalette } from "../commandPaletteBus";
 import { startNewThreadFromContext } from "../lib/chatThreadActions";
@@ -2408,6 +2409,7 @@ export default function Sidebar() {
     },
   });
   const newThreadContext = useHandleNewThread();
+  const { scratchEnvironmentId, startScratchThread } = useScratchProject();
   const openAddProjectCommandPalette = useCallback(
     () => openCommandPalette({ open: "add-project" }),
     [],
@@ -4787,12 +4789,18 @@ export default function Sidebar() {
     updateThreadJumpHintsVisibility(shouldShowJumpHintsNow);
   }, [shouldShowJumpHintsNow, updateThreadJumpHintsVisibility]);
 
-  // New thread defaults to the project you're in (active thread's project,
-  // falling back to the top project) — same resolution the command palette
-  // uses. The command palette already offers a "New thread in..." submenu
-  // for multi-project setups.
+  // New chat is personal; Shift-click explicitly keeps the current project.
   const handleNewThreadClick = useCallback(
     (event?: ReactMouseEvent) => {
+      const personalEnvironment = scratchEnvironmentId(
+        newThreadContext.activeThread?.environmentId ??
+          newThreadContext.activeDraftThread?.environmentId ?? primaryEnvironmentId,
+      );
+      if (!event?.shiftKey && personalEnvironment !== null) {
+        if (isMobile) setOpenMobile(false);
+        void startScratchThread(personalEnvironment);
+        return;
+      }
       // One project: nothing to pick, create immediately. Shift+click creates
       // directly in the current project even with several projects, skipping
       // the palette picker.
@@ -4809,20 +4817,10 @@ export default function Sidebar() {
       if (isMobile) setOpenMobile(false);
       openCommandPalette({ open: "new-thread-in" });
     },
-    [isMobile, newThreadContext, projectGroups.length, setOpenMobile],
+    [isMobile, newThreadContext, primaryEnvironmentId, projectGroups.length, scratchEnvironmentId, setOpenMobile, startScratchThread],
   );
 
-  // The button mirrors chat.new: in multi-project setups both route through
-  // the command palette's "New thread in..." picker, and in single-project
-  // setups both create immediately. In multi-project setups the label is only
-  // the picker's shortcut: falling back to chat.newLocal would advertise the
-  // same shortcut for both the picker and direct create. In single-project
-  // setups both commands create directly, so chat.newLocal is a valid
-  // fallback. The second tooltip line (multi-project only) advertises
-  // shift+click and its keyboard twin chat.newLocal for direct create.
-  const newThreadShortcutLabel =
-    shortcutLabelForCommand(keybindings, "chat.new") ??
-    (projectGroups.length <= 1 ? shortcutLabelForCommand(keybindings, "chat.newLocal") : undefined);
+  const newThreadShortcutLabel = shortcutLabelForCommand(keybindings, "chat.new");
   const newThreadInProjectShortcutLabel = shortcutLabelForCommand(keybindings, "chat.newLocal");
   return (
     <>
@@ -4971,10 +4969,10 @@ export default function Sidebar() {
               }
               onNewProject={openAddProjectCommandPalette}
               onNewThread={handleNewThreadClick}
-              newThreadDisabled={projects.length === 0}
+              newThreadDisabled={projects.length === 0 && scratchEnvironmentId(primaryEnvironmentId) === null}
               newThreadShortcutLabel={newThreadShortcutLabel}
               newThreadInProjectShortcutLabel={newThreadInProjectShortcutLabel}
-              showNewThreadInProjectHint={projectGroups.length > 1}
+              showNewThreadInProjectHint={projects.length > 0}
               searchInputRef={threadSearchInputRef}
               searchQuery={threadSearchQuery}
               onSearchQueryChange={(value) => {

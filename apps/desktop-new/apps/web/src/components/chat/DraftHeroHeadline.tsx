@@ -242,7 +242,7 @@ export function DraftHeroHeadline({
           }
         >
           <span className="min-w-0 truncate">
-            {isScratchDraft ? "No project" : (activeProjectDisplayName ?? "Choose a project")}
+            {isScratchDraft ? "Add project" : (activeProjectDisplayName ?? "Choose a project")}
           </span>
         </TooltipTrigger>
         {activeProjectDisplayName && !isScratchDraft ? (

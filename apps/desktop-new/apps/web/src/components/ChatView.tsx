@@ -4182,7 +4182,7 @@ export default function ChatView(props: ChatViewProps) {
           providerSubagentModels,
           reportedModelSelection,
         );
-  const mountComposerContextStrip = shouldShowComposerContextStrip({
+  const mountComposerContextStrip = !activeProjectIsScratch && shouldShowComposerContextStrip({
     isDraftHeroState,
     persistInActiveThreads: settings.persistComposerContextStrip,
     hasActiveProject: activeProject !== null && !showProviderSubagentBar,
@@ -4190,7 +4190,7 @@ export default function ChatView(props: ChatViewProps) {
     showEnvironmentIndicator: showComposerEnvironmentIndicator,
     hostsRestingComposerControls: routeKind === "server",
   });
-  const showComposerContextStrip = shouldShowComposerContextStrip({
+  const showComposerContextStrip = !activeProjectIsScratch && shouldShowComposerContextStrip({
     isDraftHeroState,
     persistInActiveThreads: settings.persistComposerContextStrip,
     hasActiveProject: activeProject !== null && !showProviderSubagentBar,
@@ -10675,6 +10675,7 @@ export default function ChatView(props: ChatViewProps) {
     ) : null
   ) : null;
   const threadDetailsPanelProps: ThreadDetailsPanelProps = {
+    isPersonalChat: activeProjectIsScratch,
     anchor: threadPanelPopoverAnchorRef,
     handle: threadPanelPopoverHandle,
     onPresentationChange: setThreadPanelPresentation,
@@ -10873,7 +10874,7 @@ export default function ChatView(props: ChatViewProps) {
             activeThreadId={activeThread.id}
             isServerThread={isServerThread}
             activeThreadTitle={activeThread.title}
-            activeProject={activeProject ?? null}
+            activeProject={activeProjectIsScratch ? null : activeProject ?? null}
             rightPanelOpen={inlineRightPanelOwnsTitleBar}
             onNewThreadInProject={handleNewThreadInActiveProject}
             {...(activeDraftLogicalProjectKey

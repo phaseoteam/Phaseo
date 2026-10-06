@@ -121,6 +121,13 @@ function ChatRouteGlobalShortcuts() {
       if (command === "chat.new") {
         event.preventDefault();
         event.stopPropagation();
+        const personalEnvironment = scratchEnvironmentId(
+          activeThread?.environmentId ?? activeDraftThread?.environmentId ?? primaryEnvironmentId,
+        );
+        if (personalEnvironment !== null) {
+          void startScratchThread(personalEnvironment);
+          return;
+        }
         // The default sidebar routes creation through the command palette
         // whenever there is a real choice to make; the legacy sidebar (and
         // single-project setups) keep the immediate contextual create.

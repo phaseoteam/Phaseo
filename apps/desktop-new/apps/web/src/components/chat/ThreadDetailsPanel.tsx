@@ -40,6 +40,7 @@ export interface ThreadDetailsPanelProps extends Pick<
   "anchor" | "handle" | "onPresentationChange"
 > {
   forceNewWorktree?: boolean;
+  isPersonalChat?: boolean;
   environmentId: EnvironmentId;
   threadId: ThreadId;
   draftId?: DraftId;
@@ -149,7 +150,7 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
               </div>
             ) : null}
 
-            <div className="flex flex-col">
+            {!props.isPersonalChat ? <div className="flex flex-col">
               {density === "full" && showEnvironment ? (
                 <BranchToolbarEnvironmentSelector
                   displayMode="panel"
@@ -191,10 +192,10 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
                   onDeleteScript={props.onDeleteProjectScript}
                 />
               ) : null}
-            </div>
+            </div> : null}
           </ThreadDetailsSection>
 
-          {props.gitCwd ? (
+          {!props.isPersonalChat && props.gitCwd ? (
             <ThreadDetailsSection
               headingId="thread-details-version-control-heading"
               title="Version Control"

@@ -13,12 +13,13 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "../components/
 import { SidebarInset } from "../components/ui/sidebar";
 import { WorkspacePageHeader } from "../components/WorkspacePageHeader";
 import { useNewThreadHandler } from "../hooks/useHandleNewThread";
+import { useScratchProject } from "../hooks/useScratchProject";
 import {
   useAllEnvironmentShellsBootstrapped,
   useProjects,
   useThreadShells,
 } from "../state/entities";
-import { useEnvironments } from "../state/environments";
+import { useEnvironments, usePrimaryEnvironmentId } from "../state/environments";
 import { APP_DISPLAY_NAME } from "~/branding";
 import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 
@@ -35,15 +36,17 @@ function ChatIndexRouteView() {
 }
 
 /**
- * Landing on the index route drops straight into a draft thread for the most
- * recently active project, so the first screen is a prompt instead of a dead
- * end. Falls back to an add-project hero when no project exists yet.
+ * Start with a personal chat. Environments without a scratch workspace retain
+ * their project-based draft flow.
  */
 function IndexDraftLanding() {
   const projects = useProjects();
   const threads = useThreadShells();
   const bootstrapped = useAllEnvironmentShellsBootstrapped();
   const handleNewThread = useNewThreadHandler();
+  const { scratchEnvironmentId, openScratchProject } = useScratchProject();
+  const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const personalEnvironmentId = bootstrapped ? scratchEnvironmentId(primaryEnvironmentId) : null;
   const startingRef = useRef(false);
   const [startState, setStartState] = useState({ failed: false, retryRequest: 0 });
 
@@ -56,22 +59,26 @@ function IndexDraftLanding() {
   );
 
   useEffect(() => {
-    if (mostRecentProject === null || startingRef.current) {
+    if ((personalEnvironmentId === null && mostRecentProject === null) || startingRef.current) {
       return;
     }
     startingRef.current = true;
-    void handleNewThread(scopeProjectRef(mostRecentProject.environmentId, mostRecentProject.id), {
-      replace: true,
-    }).catch(() => {
+    void (async () => {
+      const project = personalEnvironmentId !== null
+        ? await openScratchProject(personalEnvironmentId)
+        : mostRecentProject;
+      if (!project) throw new Error("Could not open the chat workspace.");
+      await handleNewThread(scopeProjectRef(project.environmentId, project.id), { replace: true });
+    })().catch(() => {
       startingRef.current = false;
       setStartState((state) => ({ ...state, failed: true }));
     });
-  }, [handleNewThread, mostRecentProject, startState.retryRequest]);
+  }, [handleNewThread, mostRecentProject, openScratchProject, personalEnvironmentId, startState.retryRequest]);
 
   if (!bootstrapped) {
     return null;
   }
-  if (mostRecentProject !== null) {
+  if (personalEnvironmentId !== null || mostRecentProject !== null) {
     return startState.failed ? (
       <DraftStartError
         onRetry={() => {
@@ -94,9 +101,9 @@ function DraftStartError({ onRetry }: { readonly onRetry: () => void }) {
       {isElectron ? <WorkspacePageHeader electron /> : null}
       <Empty className="flex-1">
         <EmptyHeader className="max-w-md">
-          <EmptyTitle>Couldn’t start a new thread</EmptyTitle>
+          <EmptyTitle>Couldn’t start a new chat</EmptyTitle>
           <EmptyDescription>
-            The project is still available. Try opening the draft again.
+            Try opening the chat again.
           </EmptyDescription>
           <div className="mt-5 flex justify-center">
             <Button size="sm" onClick={onRetry}>

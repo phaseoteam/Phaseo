@@ -1896,7 +1896,7 @@ function OpenCommandPaletteDialog(props: {
           </>
         ),
         icon: <SquarePenIcon className={ITEM_ICON_CLASS} />,
-        shortcutCommand: "chat.new",
+        shortcutCommand: "chat.newLocal",
         run: async () => {
           await startNewThreadFromContext({
             activeDraftThread,
@@ -1924,9 +1924,9 @@ function OpenCommandPaletteDialog(props: {
       kind: "action",
       value: "action:new-thread-without-project",
       searchTerms: ["new thread", "no project", "without project", "none", "chat"],
-      title: "New thread without a project",
+      title: "New chat",
       icon: <MessageSquareDashedIcon className={ITEM_ICON_CLASS} />,
-      shortcutCommand: "chat.newWithoutProject",
+      shortcutCommand: "chat.new",
       run: () => startScratchThread(scratchTargetEnvironmentId),
     });
   }
