@@ -37,12 +37,18 @@ begin
   -- Keep their history and canonical models intact.
   update public.v2_model_provider_routes route
   set status = 'retired', routing_enabled = false,
-      provider_availability_status = 'removed', phaseo_status = 'disabled', updated_at = now()
+      provider_availability_status = 'removed', phaseo_status = 'disabled',
+      metadata = route.metadata || jsonb_build_object('release_scheduled', false), updated_at = now()
   where route.provider_slug = p_provider_slug
     and provider_approved
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and not exists (select 1 from jsonb_array_elements(p_models) incoming
-      where coalesce(nullif(incoming ->> 'providerModelSlug', ''), incoming ->> 'id') = route.provider_model_slug);
+      where coalesce(nullif(incoming ->> 'providerModelSlug', ''), incoming ->> 'id') = route.provider_model_slug
+        and (lower(incoming ->> 'id') = route.model_slug or exists (
+          select 1 from public.v2_model_aliases alias where alias.alias_slug = lower(incoming ->> 'id')
+            and alias.model_slug = route.model_slug and alias.enabled
+            and (alias.effective_from is null or alias.effective_from <= now())
+            and (alias.effective_to is null or alias.effective_to > now()))));
 
   update public.v2_route_variants variant set status = 'disabled', routing_enabled = false, updated_at = now()
   from public.v2_model_provider_routes route
@@ -52,6 +58,14 @@ begin
   update public.v2_route_capabilities capability set status = 'disabled', updated_at = now()
   from public.v2_model_provider_routes route
   where capability.provider_model_id = route.provider_model_id and route.provider_slug = p_provider_slug
+    and route.metadata ->> 'managed_by' = 'provider_catalog' and route.status = 'retired';
+
+  update public.v2_pricing_skus sku
+  set status = case when sku.effective_from >= now() then 'disabled' else 'deprecated' end,
+      effective_to = case when sku.effective_from < now() then now() else sku.effective_to end, updated_at = now()
+  from public.v2_model_provider_routes route
+  where sku.provider_model_id = route.provider_model_id and sku.status = 'active'
+    and sku.sku_code = 'provider-catalog-standard' and route.provider_slug = p_provider_slug
     and route.metadata ->> 'managed_by' = 'provider_catalog' and route.status = 'retired';
 
   update public.provider_catalog_models

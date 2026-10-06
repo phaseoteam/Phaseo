@@ -96,6 +96,39 @@ begin
   assert (select status='retired' and not routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='upstream-b');
   assert (select status='active' from public.v2_model_provider_routes where provider_model_id='catalog-contract-manual');
 
+  -- A provider offer can reference a shared model without rewriting its facts.
+  insert into public.v2_models (model_slug,lab_slug,name,hidden)
+  values ('catalog-contract-test/shared','catalog-contract-test','Shared canonical name',false);
+  bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/shared"'),'{0,name}','"Provider display name"');
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select name='Shared canonical name' from public.v2_models where model_slug='catalog-contract-test/shared');
+  assert (select status='retired' from public.v2_model_provider_routes where provider_model_id=offer_id);
+  assert (select routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and model_slug='catalog-contract-test/shared');
+
+  -- Scheduled offers stay hidden and activate automatically when their release is due.
+  bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/future"'),'{0,providerModelSlug}','"future"');
+  bad_document := jsonb_set(bad_document,'{0,availableFrom}',to_jsonb((now()+interval '1 day')::text));
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select hidden from public.v2_models where model_slug='catalog-contract-test/future');
+  assert (select not routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='future');
+  assert public.activate_due_provider_catalog_releases()=0;
+  update public.v2_model_provider_routes set effective_from=now()-interval '1 minute'
+  where provider_slug='catalog-contract-test' and provider_model_slug='future';
+  update public.v2_pricing_skus set effective_from=now()-interval '1 minute'
+  where provider_model_id=(select provider_model_id from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='future');
+  assert public.activate_due_provider_catalog_releases()=1;
+  assert (select not hidden from public.v2_models where model_slug='catalog-contract-test/future');
+
+  -- A removed upcoming offer must never be reactivated by the release scheduler.
+  bad_document := jsonb_set(jsonb_set(bad_document,'{0,id}','"catalog-contract-test/cancelled"'),'{0,providerModelSlug}','"cancelled"');
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+
   -- An approved provider can clear its feed without deleting historical records.
   run2 := gen_random_uuid();
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
@@ -103,6 +136,16 @@ begin
   assert (select status='retired' and not routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   assert (select count(*)=2 from public.v2_pricing_skus where provider_model_id=offer_id);
   assert (select status='active' from public.v2_model_provider_routes where provider_model_id='catalog-contract-manual');
+  update public.v2_model_provider_routes set effective_from=now()-interval '1 minute'
+  where provider_slug='catalog-contract-test' and provider_model_slug='cancelled';
+  assert public.activate_due_provider_catalog_releases()=0;
+  assert (select hidden from public.v2_models where model_slug='catalog-contract-test/cancelled');
+  assert not exists(select 1 from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+  assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
+  assert (select count(*)=1 from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
 
   -- Revoked approval cannot publish changes or create new canonical models.
   update public.v2_providers set metadata=jsonb_set(metadata,'{self_serve,provider_review_status}','"paused"') where provider_slug='catalog-contract-test';

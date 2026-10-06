@@ -59,14 +59,16 @@ begin
   end if;
 
   pricing_hash := md5(candidate.pricing::text || coalesce(candidate.available_from::text, ''));
-  select provider_model_id, phaseo_status in ('blocked', 'unsupported'),
-      metadata ->> 'catalog_pricing_hash' is distinct from pricing_hash
+  select route.provider_model_id, route.phaseo_status in ('blocked', 'unsupported'),
+      route.metadata ->> 'catalog_pricing_hash' is distinct from pricing_hash
+        or not exists (select 1 from public.v2_pricing_skus sku where sku.provider_model_id = route.provider_model_id
+          and sku.sku_code = 'provider-catalog-standard' and sku.status = 'active')
     into provider_model_id_value, route_blocked, pricing_changed
-  from public.v2_model_provider_routes
-  where provider_slug = candidate.provider_slug
-    and model_slug = candidate.canonical_model_slug
-    and provider_model_slug = candidate.provider_model_slug
-  order by created_at limit 1;
+  from public.v2_model_provider_routes route
+  where route.provider_slug = candidate.provider_slug
+    and route.model_slug = candidate.canonical_model_slug
+    and route.provider_model_slug = candidate.provider_model_slug
+  order by route.created_at limit 1;
   if provider_model_id_value is null then
     provider_model_id_value := candidate.provider_slug || ':' || candidate.canonical_model_slug || ':' || candidate.provider_model_slug;
   end if;

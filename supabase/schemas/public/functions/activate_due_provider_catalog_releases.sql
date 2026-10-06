@@ -21,6 +21,8 @@ begin
       and route.metadata ->> 'managed_by' = 'provider_catalog'
       and route.metadata ->> 'release_scheduled' = 'true'
       and route.access_scope = 'internal'
+      and route.status = 'disabled'
+      and route.provider_availability_status = 'coming_soon'
       and route.effective_from is not null
       and route.effective_from <= now()
       and (route.effective_to is null or route.effective_to > now())
