@@ -19,6 +19,7 @@ type PublicModelRow = {
 	hidden: boolean | null;
 	status: string | null;
 	catalogue_status: string | null;
+	lab?: { name?: string | null; metadata?: { colour?: string | null } | null } | null;
 };
 
 type AnnouncementStateRow = {
@@ -36,6 +37,8 @@ type PendingAnnouncement = {
 	catalogueStatus: string;
 	modelName: string;
 	labSlug: string;
+	creatorName: string;
+	creatorColor?: string;
 	modelUrl: string;
 	imageUrl: string;
 	stateAttemptCount: number;
@@ -140,7 +143,7 @@ async function loadPublicModels(): Promise<PublicModelRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("v2_models")
-			.select("model_slug,name,lab_slug,hidden,status,catalogue_status")
+			.select("model_slug,name,lab_slug,hidden,status,catalogue_status,lab:v2_labs!v2_models_lab_slug_fkey(name,metadata)")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model catalog");
@@ -384,6 +387,8 @@ function toNotification(model: PublicModelRow, stateAttemptCount: number): Pendi
 		catalogueStatus: model.catalogue_status?.trim().toLowerCase() ?? "",
 		modelName: normalizeName(model.name, modelSlug),
 		labSlug,
+		creatorName: model.lab?.name?.trim() || displayLabName(labSlug),
+		creatorColor: model.lab?.metadata?.colour?.trim() || undefined,
 		modelUrl: modelUrl(modelSlug),
 		imageUrl: modelImageUrl(modelSlug),
 		stateAttemptCount,
@@ -494,7 +499,8 @@ export async function runPublicModelAnnouncementCheck(args: {
 						modelUrl: model.modelUrl,
 						imageUrl: model.imageUrl,
 						creatorId: model.labSlug,
-						creatorName: displayLabName(model.labSlug),
+						creatorName: model.creatorName,
+						creatorColor: model.creatorColor,
 						changeSummaryLines: [
 							newlyAvailableModelSlugs.has(model.modelSlug)
 								? "Now available in the public Phaseo model catalog."
