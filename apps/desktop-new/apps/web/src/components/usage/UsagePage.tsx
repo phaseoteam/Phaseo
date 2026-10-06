@@ -1,6 +1,5 @@
 import { ChatGptUsageButton } from "../settings/ChatGptUsageButton";
 import { usesChatGptSharing } from "@t3tools/shared/usageLimits";
-import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { useAtomValue } from "@effect/atom-react";
 import {
   ProviderDriverKind,
@@ -76,6 +75,7 @@ import {
 import { WorkspacePageContainer } from "../WorkspacePageContainer";
 import { WorkspacePageHeader } from "../WorkspacePageHeader";
 import { UsageLimitsSection } from "./UsageLimits";
+import { GatewayUsageSummary, gatewaySources } from "./GatewayUsageSummary";
 import { UsagePriceOverrides } from "./UsagePriceOverrides";
 import { UsageProviderChart } from "./UsageProviderChart";
 import { SpeedPremium, UsageModelDialog } from "./UsageModelDialog";
@@ -131,7 +131,6 @@ export function UsagePage() {
   }));
   const metric = preferences.metric;
   const showingLimits = metric === "limits";
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [limitsNow, setLimitsNow] = useState(() => Date.now());
   const refreshingRef = useRef(false);
   const [breakdown, setBreakdown] = useState<"model" | "time">("model");
@@ -145,6 +144,7 @@ export function UsagePage() {
     window,
     selectedEnvironmentIds,
   );
+  const gatewayUsage = gatewaySources(selectedEnvironments.map(environment => environment.summary));
   const presentations = useAtomValue(environmentPresentations.presentationsAtom);
   const cursorAccessEnvironments = cursorKeychainAccessEnvironments(selectedEnvironments);
   const sourceMessages = [
@@ -274,15 +274,13 @@ export function UsagePage() {
     return () => globalThis.window.removeEventListener("keydown", onUsageKeyDown, true);
   }, []);
 
-  const refreshWindow = () => {
+  const onAutoRefresh = useEffectEvent(() => {
     if (refreshingRef.current) return;
 
     if (showingLimits) {
       refreshingRef.current = true;
-      setIsRefreshing(true);
       void refreshLimits().finally(() => {
         refreshingRef.current = false;
-        setIsRefreshing(false);
       });
       return;
     }
@@ -296,12 +294,15 @@ export function UsagePage() {
       setWindowSelection({ days: windowDays, window: nextWindow });
     }
     refreshingRef.current = true;
-    setIsRefreshing(true);
     void refresh(nextWindow).finally(() => {
       refreshingRef.current = false;
-      setIsRefreshing(false);
     });
-  };
+  });
+  useEffect(() => {
+    if (showingLimits) return;
+    const timer = globalThis.setInterval(() => { onAutoRefresh(); }, 5 * 60 * 1000);
+    return () => globalThis.clearInterval(timer);
+  }, [showingLimits]);
   const connectedLimitsEnvironments = [...presentations]
     .filter(
       ([environmentId, presentation]) =>
@@ -383,16 +384,7 @@ export function UsagePage() {
             </Toggle>
           ))}
         </ToggleGroup>
-        <Button
-          onClick={refreshWindow}
-          aria-label={showingLimits ? "Refresh limits" : "Refresh usage"}
-          aria-busy={isRefreshing}
-          disabled={isRefreshing}
-          size="icon-sm"
-          variant="ghost"
-        >
-          <RefreshIcon size="sm" refreshing={isRefreshing} />
-        </Button>
+
       </div>
       <div className="col-span-2 ms-auto flex min-w-0 items-center justify-end gap-1 xl:hidden">
         <Select
@@ -446,16 +438,7 @@ export function UsagePage() {
             ))}
           </SelectPopup>
         </Select>
-        <Button
-          onClick={refreshWindow}
-          aria-label={showingLimits ? "Refresh limits" : "Refresh usage"}
-          aria-busy={isRefreshing}
-          disabled={isRefreshing}
-          size="icon-sm"
-          variant="ghost"
-        >
-          <RefreshIcon size="sm" refreshing={isRefreshing} />
-        </Button>
+
       </div>
     </div>
   );
@@ -495,11 +478,13 @@ export function UsagePage() {
               <UsageSkeleton />
             ) : (
               <>
+                <GatewayUsageSummary sources={gatewayUsage} nativeTokens={merged.totalTokens} />
                 {sourceMessages.map((message) => (
                   <p key={message} className="mb-4 text-sm text-muted-foreground">
                     {message}
                   </p>
                 ))}
+                <h2 className="mb-4 text-sm font-medium">Local usage</h2>
                 <section className="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
                   <div className="flex min-w-0 flex-col gap-5">
                     <div className="flex flex-col gap-1">

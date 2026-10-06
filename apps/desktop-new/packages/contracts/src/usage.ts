@@ -220,6 +220,19 @@ export const UsageSummaryInput = Schema.Struct({
 });
 export type UsageSummaryInput = typeof UsageSummaryInput.Type;
 
+export const GatewayUsage = Schema.Struct({
+  sourceId: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  status: Schema.Literals(["ok", "partial", "failed", "cached"]),
+  inputTokens: NonNegativeInt,
+  outputTokens: NonNegativeInt,
+  chargedUsd: Schema.Number,
+  requests: NonNegativeInt,
+  missingUsage: NonNegativeInt,
+  readAt: Schema.String,
+});
+export type GatewayUsage = typeof GatewayUsage.Type;
+
 export const UsageSummary = Schema.Struct({
   contractVersion: Schema.Number,
   readAt: Schema.String,
@@ -228,6 +241,7 @@ export const UsageSummary = Schema.Struct({
   untilDay: UsageDay,
   buckets: ForwardCompatibleArray(UsageBucket),
   sources: ForwardCompatibleArray(UsageSource),
+  gatewayUsage: Schema.optional(ForwardCompatibleArray(GatewayUsage)),
   pricing: UsagePricing,
   /** Wall-clock cost of the scan, surfaced in diagnostics. */
   scanDurationMs: NonNegativeInt,

@@ -43,7 +43,7 @@ app.all("/auth/*", auth);
 const oauth = lazyRouter("/oauth", () => import("@/routes/oauth").then(module => module.oauthRouter));
 app.all("/oauth", oauth);
 app.all("/oauth/*", oauth);
-const desktop = lazyRouter("/desktop", () => import("@/routes/desktop-sessions").then(module => module.desktopSessionsRoutes));
+const desktop = lazyRouter("/desktop", () => import("@/routes/desktop-usage").then(module => module.desktopUsageRoutes));
 app.all("/desktop/*", desktop);
 app.route("/v1", v1Router);
 const internal = lazyRouter("/internal", () => import("@/routes/internal").then(module => module.internalRouter));

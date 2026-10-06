@@ -71,6 +71,7 @@ import {
   type ScanCache,
 } from "./usageScanCache.ts";
 import type { UsageRecord } from "./usageTranscripts.ts";
+import * as PhaseoUsageReader from "./phaseoUsageReader.ts";
 
 const LITELLM_RATES_URL =
   "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
@@ -190,6 +191,7 @@ export const make = Effect.gen(function* () {
   const config = yield* ServerConfig.ServerConfig;
   const settingsService = yield* ServerSettings.ServerSettingsService;
   const httpClient = yield* HttpClient.HttpClient;
+  const readGatewayUsage = yield* PhaseoUsageReader.make;
   const hostEnvironment = yield* HostProcessEnvironment;
   const platform = yield* HostProcessPlatform;
 
@@ -972,7 +974,11 @@ export const make = Effect.gen(function* () {
     );
     // Waiting stays interruptible. The detached scan continues for other
     // callers and still warms the cache if this caller leaves.
-    return yield* Deferred.await(deferred);
+    const [summary, gatewayUsage] = yield* Effect.all(
+      [Deferred.await(deferred), readGatewayUsage(input, settings)],
+      { concurrency: 2 },
+    );
+    return { ...summary, gatewayUsage };
   });
 
   return { readSummary, refreshRates } as const;
