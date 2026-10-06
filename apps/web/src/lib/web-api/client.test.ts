@@ -8,6 +8,12 @@ import {
 jest.mock("@/lib/fetchers/internal/accountAuthClient", () => ({ getBrowserAccessToken: async () => "session-token" }));
 
 describe("Cloudflare web API client", () => {
+	it("preserves catalog field validation issues",async()=>{
+		const issues=[{path:"data[0].pricing[0].meter_key",message:"Unknown pricing meter: test."}];
+		const mocked=jest.spyOn(global,"fetch").mockResolvedValue(Response.json({error:"catalog_invalid",issues},{status:422}));
+		await expect(fetchAccountWebApi("/api/account/settings/provider-onboarding/catalog/test","test-token")).rejects.toMatchObject({status:422,issues});
+		mocked.mockRestore();
+	});
 	it("authenticates Realtime billing polling and preserves its abort signal", async () => {
 		process.env.WEB_API_ORIGIN = "https://phaseo.app";
 		const signal = new AbortController().signal;

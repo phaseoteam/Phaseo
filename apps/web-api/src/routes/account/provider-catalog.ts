@@ -42,7 +42,7 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
-	description: "Version 1 of the Phaseo provider catalog. Approved providers publish validated catalog changes automatically. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing.",
+	description: "Version 1 of the Phaseo provider catalog. Approved providers update existing model offers automatically. New canonical models require administrator approval. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,

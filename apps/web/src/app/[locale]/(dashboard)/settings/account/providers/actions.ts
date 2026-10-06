@@ -1,7 +1,7 @@
 "use server";
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
 import { setActiveWorkspaceCookieOrThrow } from "@/utils/workspaceCookie";
@@ -105,11 +105,15 @@ export async function fetchProviderCatalogVersionAction(providerSlug: string) {
 }
 
 export async function updateProviderCatalogAction(providerSlug: string, catalog: { data: ProviderManagedCatalogModel[] } | { mode: "remote" }, expectedUpdatedAt: string) {
-	return fetchAccountWebApi<{ ok: true } & ProviderManagedCatalog>(
+	try { return await fetchAccountWebApi<{ ok: true; sync_warning?: string | null } & ProviderManagedCatalog>(
 		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
 		await accessToken(),
 		{ method: "PUT", body: JSON.stringify({ catalog, expectedUpdatedAt }) },
 	);
+	} catch (error) {
+		if (error instanceof WebApiError && error.status === 422) return { ok: false, issues: error.issues ?? [{ path: "catalog", message: error.detail ?? "Invalid catalog" }] } as const;
+		throw error;
+	}
 }
 
 export async function submitProviderOnboardingAction(input: {

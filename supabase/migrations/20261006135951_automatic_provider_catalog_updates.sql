@@ -1,3 +1,5 @@
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.apply_provider_catalog_snapshot (
   p_provider_slug text,
   p_run_id        uuid,
@@ -227,8 +229,7 @@ begin
         insert into public.provider_catalog_model_requests(provider_slug,model_slug,source_run_id,model)
         values(p_provider_slug,model_slug_value,p_run_id,model)
         on conflict(provider_slug,model_slug) do update set
-          source_run_id=excluded.source_run_id,model=excluded.model,
-          updated_at=case when provider_catalog_model_requests.model is distinct from excluded.model or provider_catalog_model_requests.status in ('withdrawn','approved') then now() else provider_catalog_model_requests.updated_at end,
+          source_run_id=excluded.source_run_id,model=excluded.model,updated_at=now(),
           status=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then 'pending' else provider_catalog_model_requests.status end,
           notification_sent_at=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then null else provider_catalog_model_requests.notification_sent_at end
         returning status,reason into request_status,request_reason;
@@ -299,11 +300,3 @@ begin
   return applied_count;
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) FROM PUBLIC, "anon", "authenticated";

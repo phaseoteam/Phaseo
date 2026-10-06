@@ -62,7 +62,7 @@ if (mode === "smoke") {
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
-		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql"]) {
+		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_model_requests.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
@@ -97,5 +97,13 @@ if (mode === "bootstrap") {
 		if (existsSync(join(migrations, name))) throw new Error(`Migration already exists: ${name}`);
 		cpSync(join(temporary, "migrations", name), join(migrations, name));
 	}
+	// Refresh generated dependency metadata from the same disposable replay.
+	// Copy only the manifest; authored SQL remains the desired source of truth.
+	try {
+		run(["db", "start"]);
+		run(["migration", "up", "--local"]);
+		run(["db", "schema", "declarative", "generate", "--local", "--strict-coverage", "--output-dir", "exported-schemas", "--overwrite"]);
+		cpSync(join(workspace,"exported-schemas",".pgdelta-export.json"),join(source,"schemas",".pgdelta-export.json"));
+	} finally { run(["stop","--no-backup"]); }
 	console.log(`Generated ${generated.length} forward migration(s); review before deployment`);
 }

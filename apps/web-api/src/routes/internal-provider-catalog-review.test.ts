@@ -14,6 +14,32 @@ const CONTACT_ID = "22222222-2222-4222-8222-222222222222";
 describe("provider application review API", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
+	it("restricts new-model review to admins", async () => {
+		vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL)=>{
+			const url=String(input);
+			if(url.includes("/auth/v1/user"))return Response.json({id:CONTACT_ID});
+			if(url.includes("/rest/v1/users"))return Response.json([{role:"user"}]);
+			throw new Error("Unauthorized review reached the database");
+		}));
+		const response=await app.request("https://phaseo.app/api/internal/provider-catalog/model-requests",{headers:{authorization:"Bearer test"}},env);
+		expect(response.status).toBe(403);
+	});
+	it("reviews the displayed model revision through the atomic RPC",async()=>{
+		let rpcBody:Record<string,unknown>|null=null;
+		vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+			const url=input instanceof Request?input.url:String(input);
+			if(url.includes("/auth/v1/user"))return Response.json({id:ADMIN_ID});
+			if(url.includes("/rest/v1/users"))return Response.json([{role:"admin"}]);
+			if(url.includes("/rpc/review_provider_catalog_model_request")){rpcBody=JSON.parse(String(init?.body));return Response.json("sample");}
+			if(url.includes("/rpc/claim_provider_catalog_sync_lease"))return Response.json(false);
+			if(url.includes("/rest/v1/provider_catalog_sources"))return Response.json([]);
+			throw new Error("Unexpected test request");
+		}));
+		const response=await app.request(`https://phaseo.app/api/internal/provider-catalog/model-requests/${CONTACT_ID}`,{method:"PATCH",headers:{authorization:"Bearer test","content-type":"application/json"},body:JSON.stringify({decision:"approved",expectedUpdatedAt:"2026-10-06T00:00:00Z"})},env,{waitUntil:vi.fn()} as never);
+		expect(response.status).toBe(200);
+		expect(rpcBody).toMatchObject({p_request_id:CONTACT_ID,p_reviewed_by:ADMIN_ID,p_expected_updated_at:"2026-10-06T00:00:00Z"});
+	});
+
 	it("shows a submitted application and allows identity approval before route setup is ready", async () => {
 		let reviewRpcBody: Record<string, unknown> | null = null;
 		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

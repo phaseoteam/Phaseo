@@ -269,7 +269,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 
 		const document = body?.catalog ?? body;
 		const preview = await validateProviderCatalogPricingMeters(client, normalizeProviderCatalog(document));
-		if (!preview.valid) return c.json({ ok: false, error: "catalog_invalid", issues: preview.issues }, 422, PRIVATE_NO_STORE_HEADERS);
+		if (!preview.valid) return c.json({ ok: false, error: "catalog_invalid", message: preview.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 5).join("; "), issues: preview.issues }, 422, PRIVATE_NO_STORE_HEADERS);
 		const managedDocument = { data: preview.allModels.map((model) => catalogModelDocument({
 			model_slug: model.id,
 			provider_model_slug: model.providerModelSlug,

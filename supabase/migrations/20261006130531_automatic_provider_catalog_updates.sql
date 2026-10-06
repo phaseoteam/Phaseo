@@ -1,3 +1,32 @@
+SET local check_function_bodies = off;
+
+CREATE TABLE "public"."provider_catalog_model_requests" (
+  "id"                    uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "provider_slug"         text                     NOT NULL,
+  "model_slug"            text                     NOT NULL,
+  "source_run_id"         uuid                     NOT NULL,
+  "model"                 jsonb                    NOT NULL,
+  "status"                text                     NOT NULL DEFAULT 'pending'::text,
+  "reason"                text,
+  "reviewed_by"           uuid,
+  "reviewed_at"           timestamp with time zone,
+  "notification_sent_at"  timestamp with time zone,
+  "notification_lease"    uuid,
+  "notification_retry_at" timestamp with time zone NOT NULL DEFAULT now(),
+  "created_at"            timestamp with time zone NOT NULL DEFAULT now(),
+  "updated_at"            timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "provider_catalog_model_requests_model_check" CHECK ((jsonb_typeof(model) = 'object'::text)),
+  CONSTRAINT "provider_catalog_model_requests_pkey" PRIMARY KEY (id),
+  CONSTRAINT "provider_catalog_model_requests_provider_slug_model_slug_key" UNIQUE (provider_slug, model_slug),
+  CONSTRAINT "provider_catalog_model_requests_status_check"
+    CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'needs_changes'::text, 'withdrawn'::text])))
+);
+
+ALTER TABLE "public"."provider_catalog_model_requests"
+  ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE "public"."provider_catalog_model_requests" FROM "anon", "authenticated";
+
 CREATE OR REPLACE FUNCTION public.apply_provider_catalog_snapshot (
   p_provider_slug text,
   p_run_id        uuid,
@@ -21,10 +50,7 @@ declare
   provider_approved boolean;
   provider_lab_slug text;
   pending_count integer := 0;
-  rejected_count integer := 0;
-  changes_count integer := 0;
   request_status text;
-  request_reason text;
 begin
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
@@ -227,18 +253,14 @@ begin
         insert into public.provider_catalog_model_requests(provider_slug,model_slug,source_run_id,model)
         values(p_provider_slug,model_slug_value,p_run_id,model)
         on conflict(provider_slug,model_slug) do update set
-          source_run_id=excluded.source_run_id,model=excluded.model,
-          updated_at=case when provider_catalog_model_requests.model is distinct from excluded.model or provider_catalog_model_requests.status in ('withdrawn','approved') then now() else provider_catalog_model_requests.updated_at end,
+          source_run_id=excluded.source_run_id,model=excluded.model,updated_at=now(),
           status=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then 'pending' else provider_catalog_model_requests.status end,
           notification_sent_at=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then null else provider_catalog_model_requests.notification_sent_at end
-        returning status,reason into request_status,request_reason;
+        returning status into request_status;
         update public.provider_catalog_sync_models set decision=case when request_status in ('rejected','needs_changes') then request_status else 'pending' end,
-          match_type='new_model',decision_reason=coalesce(request_reason,'New canonical model requires administrator approval.')
+          match_type='new_model',decision_reason='New canonical model requires administrator approval.'
         where run_id=p_run_id and model_slug=model_slug_value;
-        if request_status='rejected' then rejected_count := rejected_count + 1;
-        elsif request_status='needs_changes' then changes_count := changes_count + 1;
-        else pending_count := pending_count + 1;
-        end if;
+        pending_count := pending_count + 1;
         applied_count := applied_count + 1;
         continue;
       end if;
@@ -286,24 +308,106 @@ begin
   where provider_slug=p_provider_slug and status in ('pending','needs_changes')
     and not exists(select 1 from jsonb_array_elements(p_models) submitted where submitted->>'id'=model_slug);
   update public.provider_catalog_sync_runs
-  set review_status = case
-        when provider_approved is not true then 'pending'
-        when pending_count>0 then case when applied_count>pending_count+rejected_count+changes_count then 'partially_approved' else 'pending' end
-        when changes_count>0 then 'needs_changes'
-        when rejected_count>0 then case when applied_count>rejected_count then 'partially_approved' else 'rejected' end
-        else 'approved' end,
-      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count-rejected_count-changes_count else 0 end,
-        'pending', case when provider_approved then pending_count else applied_count end,'rejected',rejected_count,'needs_changes',changes_count)
+  set review_status = case when provider_approved and pending_count=0 then 'approved' when provider_approved and applied_count>pending_count then 'partially_approved' else 'pending' end,
+      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count else 0 end,
+        'pending', case when provider_approved then pending_count else applied_count end)
   where id = p_run_id;
 
   return applied_count;
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) TO "service_role";
+CREATE OR REPLACE FUNCTION public.claim_provider_model_notifications (
+  p_lease uuid
+)
+  RETURNS SETOF uuid
+  LANGUAGE sql
+  SET search_path TO 'public'
+  AS $function$
+  with eligible as (
+    select request.id from public.provider_catalog_model_requests request
+    join public.provider_catalog_sources source using(provider_slug)
+    where request.status='pending' and request.notification_sent_at is null and request.notification_retry_at<=now()
+      and source.status='active'
+    order by request.created_at limit 100 for update of request skip locked
+  ) update public.provider_catalog_model_requests request set notification_lease=p_lease,notification_retry_at=now()+interval '15 minutes'
+    from eligible where request.id=eligible.id returning request.id;
+$function$;
 
-REVOKE ALL ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."claim_provider_model_notifications"(uuid) FROM PUBLIC, "anon", "authenticated";
 
-GRANT EXECUTE ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) TO "postgres";
+CREATE OR REPLACE FUNCTION public.review_provider_catalog_model_request (
+  p_request_id          uuid,
+  p_decision            text,
+  p_reason              text,
+  p_reviewed_by         uuid,
+  p_expected_updated_at timestamp with time zone DEFAULT NULL::timestamp WITH time zone
+)
+  RETURNS text
+  LANGUAGE plpgsql
+  SET search_path TO 'public'
+  AS $function$
+declare proposal public.provider_catalog_model_requests; provider_id text;
+begin
+  if p_decision not in ('approved','rejected','needs_changes') then raise exception 'invalid_model_review_decision'; end if;
+  if p_decision <> 'approved' and nullif(btrim(p_reason),'') is null then raise exception 'model_review_reason_required'; end if;
+  select provider_slug into provider_id from public.provider_catalog_model_requests where id=p_request_id;
+  perform 1 from public.v2_providers where provider_slug=provider_id for update;
+  select * into proposal from public.provider_catalog_model_requests where id=p_request_id for update;
+  if not found or proposal.status='withdrawn' then raise exception 'model_request_unavailable'; end if;
+  if p_expected_updated_at is not null and proposal.updated_at <> p_expected_updated_at then raise exception 'model_request_changed'; end if;
+  if not exists(select 1 from public.provider_catalog_models where provider_slug=proposal.provider_slug and model_slug=proposal.model_slug and status='active' and source_run_id=proposal.source_run_id) then raise exception 'model_request_superseded'; end if;
+  if p_decision='approved' then
+    insert into public.v2_labs(lab_slug,name,status,routable,metadata)
+    values(split_part(proposal.model_slug,'/',1),split_part(proposal.model_slug,'/',1),'disabled',false,'{"created_from_provider_proposal":true}') on conflict(lab_slug) do nothing;
+    insert into public.v2_models(model_slug,lab_slug,name,description,status,hidden,input_modalities,output_modalities,variant_kind,metadata)
+    values(lower(proposal.model_slug),split_part(lower(proposal.model_slug),'/',1),proposal.model->>'name',proposal.model->>'description','active',true,
+      array(select jsonb_array_elements_text(proposal.model->'inputModalities')),
+      array(select jsonb_array_elements_text(proposal.model->'outputModalities')),
+      case when proposal.model_slug like '%:free' then 'free' else 'standard' end,
+      jsonb_build_object('created_from_provider_proposal',true,'provider_catalog_owner',proposal.provider_slug,'approved_request_id',proposal.id))
+    on conflict(model_slug) do nothing;
+    update public.provider_catalog_sources set refresh_requested=true,next_poll_at=now(),updated_at=now() where provider_slug=proposal.provider_slug;
+  end if;
+  update public.provider_catalog_model_requests set status=p_decision,reason=case when p_decision='approved' then null else p_reason end,reviewed_by=p_reviewed_by,reviewed_at=now(),updated_at=now() where id=proposal.id;
+  update public.provider_catalog_sync_models set decision=p_decision,decision_reason=p_reason,reviewed_by=p_reviewed_by,reviewed_at=now() where run_id=proposal.source_run_id and model_slug=proposal.model_slug;
+  insert into public.provider_catalog_review_events(run_id,model_slug,decision,reason,actor_user_id) values(proposal.source_run_id,proposal.model_slug,p_decision,p_reason,p_reviewed_by);
+  return proposal.provider_slug;
+end;
+$function$;
 
-REVOKE ALL ON FUNCTION "public"."apply_provider_catalog_snapshot"(text, uuid, jsonb) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."review_provider_catalog_model_request"(uuid, text, text, uuid, timestamp WITH time zone) FROM PUBLIC, "anon", "authenticated";
+
+ALTER TABLE "public"."provider_catalog_model_requests"
+  ADD CONSTRAINT "provider_catalog_model_requests_provider_slug_fkey" FOREIGN KEY (provider_slug) REFERENCES public.v2_providers(provider_slug) ON DELETE CASCADE;
+
+ALTER TABLE "public"."provider_catalog_model_requests"
+  ADD CONSTRAINT "provider_catalog_model_requests_reviewed_by_fkey" FOREIGN KEY (reviewed_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE "public"."provider_catalog_model_requests"
+  ADD CONSTRAINT "provider_catalog_model_requests_source_run_id_fkey" FOREIGN KEY (source_run_id) REFERENCES public.provider_catalog_sync_runs(id) ON DELETE CASCADE;
+
+CREATE INDEX provider_catalog_model_requests_queue_idx ON public.provider_catalog_model_requests USING btree (status, created_at);
+
+CREATE POLICY "deny_direct_client_access" ON "public"."provider_catalog_model_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "anon", "authenticated"
+  USING (false)
+  WITH CHECK (false);
+
+REVOKE ALL ON FUNCTION "public"."claim_provider_model_notifications"(uuid) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."claim_provider_model_notifications"(uuid) TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."claim_provider_model_notifications"(uuid) TO "service_role";
+
+REVOKE ALL ON FUNCTION "public"."review_provider_catalog_model_request"(uuid, text, text, uuid, timestamp WITH time zone) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."review_provider_catalog_model_request"(uuid, text, text, uuid, timestamp WITH time zone) TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."review_provider_catalog_model_request"(uuid, text, text, uuid, timestamp WITH time zone) TO "service_role";
+
+REVOKE ALL ON TABLE "public"."provider_catalog_model_requests" FROM "service_role";
+
+GRANT INSERT, SELECT, UPDATE ON TABLE "public"."provider_catalog_model_requests" TO "service_role";
