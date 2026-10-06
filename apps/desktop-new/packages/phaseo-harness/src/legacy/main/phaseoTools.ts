@@ -91,13 +91,18 @@ export function phaseoTools(root: string, writable: boolean, instructions?: Proj
   });
   const command = defineTool({
     id: "run_project_command",
+    onError: "return-to-model",
     description: `Run a command in the project after approval, using ${process.platform === "win32" ? "PowerShell" : "sh"}. Commands stop after 60 seconds and return the exit code and output.`,
     requireApproval: true,
     parameters: {
       type: "object",
       properties: {
         command: { type: "string" },
-        directory: { type: "string" },
+        directory: {
+          type: "string",
+          description:
+            "Workspace-relative working directory. Omit or use . for the workspace root. Do not use an absolute path.",
+        },
         instructionRevision: {
           type: "string",
           description: "Current project instruction revision.",

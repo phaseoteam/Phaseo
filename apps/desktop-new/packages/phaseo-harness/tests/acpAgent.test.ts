@@ -73,6 +73,65 @@ const fixture = async (
 };
 
 describe("Phaseo native harness ACP boundary", () => {
+  it("returns rejected command paths to the model without failing the turn", async () => {
+    const requests: AgentModelRequest[] = [];
+    const f = await fixture({
+      generate: async () => {
+        throw new Error("Expected streaming");
+      },
+      async *stream(request) {
+        requests.push(request);
+        if (requests.length === 1) {
+          yield {
+            type: "response.completed",
+            response: {
+              message: {
+                role: "assistant",
+                content: "",
+                toolCalls: [
+                  {
+                    id: "bad-command",
+                    name: "run_project_command",
+                    input: {
+                      command: "echo should-not-run",
+                      directory: NodePath.resolve(NodeOs.tmpdir()),
+                    },
+                  },
+                ],
+              },
+            },
+          };
+        } else {
+          const error = request.messages.find(
+            (message) => message.role === "tool" && message.toolCallId === "bad-command",
+          );
+          expect(error?.content).toContain("Choose a path inside this project");
+          yield { type: "response.output_text.delta", delta: "The command path was rejected." };
+          yield {
+            type: "response.completed",
+            response: {
+              message: {
+                role: "assistant",
+                content: "The command path was rejected.",
+              },
+            },
+          };
+        }
+      },
+    });
+    try {
+      expect((await f.prompt("Test command error recovery")).stopReason).toBe("end_turn");
+      expect(requests).toHaveLength(2);
+      expect(
+        f.updates.some(
+          (update) => update.sessionUpdate === "tool_call_update" && update.status === "failed",
+        ),
+      ).toBe(true);
+    } finally {
+      await f.close();
+    }
+  });
+
   it("streams thinking, executes the existing file tools, and ends with one final response in order", async () => {
     const requests: AgentModelRequest[] = [];
     const f = await fixture({
