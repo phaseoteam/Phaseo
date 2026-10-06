@@ -18,14 +18,14 @@ export default function DesktopSessionsPanel({ scope, timeRange }: {
   return <Card>
     <CardHeader><CardTitle>Your desktop sessions</CardTitle><p className="text-sm text-muted-foreground">Latest 100 completed turns from Claude Code and Codex. Token usage covers the main agent.</p></CardHeader>
     <CardContent>
-      {query.isPending ? <p className="text-sm text-muted-foreground">Loading sessionsâ€¦</p> : query.isError ?
+      {query.isPending ? <p className="text-sm text-muted-foreground">Loading sessions…</p> : query.isError ?
         <p className="text-sm text-muted-foreground">Desktop history is currently unavailable.</p> : !sessions.length ?
         <p className="text-sm text-muted-foreground">No desktop sessions in this period.</p> :
         <Table><TableHeader><TableRow><TableHead>Session</TableHead><TableHead>Model</TableHead><TableHead>Status</TableHead><TableHead>Turns</TableHead><TableHead>Time worked</TableHead><TableHead>Reported tokens</TableHead><TableHead>Last activity</TableHead></TableRow></TableHeader>
           <TableBody>{sessions.map((session) => <TableRow key={session.key}>
-            <TableCell><a className="inline-flex items-center gap-2 hover:underline" href={`${session.desktop_scheme}://app/${session.environment_id}/${session.session_id}`} title="Open chat in desktop">
+            <TableCell><a className="inline-flex items-center gap-2 hover:underline" href={`${session.desktop_scheme}://app/${encodeURIComponent(session.environment_id)}/${encodeURIComponent(session.session_id)}`} title="Open chat in desktop">
               <Logo id={session.provider === "codex" ? "openai" : "anthropic"} width={16} height={16} />
-              {session.provider === "codex" ? "Codex" : "Claude Code"} Â· {session.session_id.slice(0, 8)}
+              {session.provider === "codex" ? "Codex" : "Claude Code"} · {session.session_id.slice(0, 8)}
             </a></TableCell>
             <TableCell>{session.model}</TableCell><TableCell className="capitalize">{session.status}</TableCell>
             <TableCell>{session.turns}</TableCell><TableCell>{Math.round(session.durationMs / 1000)}s</TableCell>

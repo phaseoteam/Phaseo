@@ -450,7 +450,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					/>
 				);
 			} else if (detailQuery.isPending) {
-				detailDialog = <p role="status">{t("strings.Loading request detailsâ€¦" as never)}</p>;
+				detailDialog = <p role="status">{t("strings.Loading request details…" as never)}</p>;
 			} else {
 				detailDialog = (
 					<RouteRequestDetailErrorDialog

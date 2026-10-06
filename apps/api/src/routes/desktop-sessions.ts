@@ -9,7 +9,7 @@ import { DESKTOP_CLIENT_ID } from "@/lib/oauth/service";
 
 export const desktopTurnSchema = z.object({
   environment_id: z.string().regex(/^[\w-]{1,200}$/),
-  session_id: z.string().regex(/^[\w-]{1,200}$/),
+  session_id: z.string().regex(/^[\w:%~.-]{1,512}$/),
   turn_id: z.string().min(1).max(300),
   provider: z.enum(["codex", "claudeAgent"]),
   model: z.string().min(1).max(256),
