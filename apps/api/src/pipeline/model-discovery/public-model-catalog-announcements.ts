@@ -455,12 +455,6 @@ export async function runPublicModelAnnouncementCheck(args: {
 				return modelSlug ? [modelSlug] : [];
 			}),
 		);
-		const newlyAvailableModelSlugs = new Set(
-			newlyAvailableModels.flatMap((model) => {
-				const modelSlug = normalizeSlug(model.model_slug);
-				return modelSlug ? [modelSlug] : [];
-			}),
-		);
 		const pendingModels = models.flatMap((model) => {
 			const modelSlug = normalizeSlug(model.model_slug);
 			if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return [];
@@ -501,9 +495,6 @@ export async function runPublicModelAnnouncementCheck(args: {
 						creatorId: model.labSlug,
 						creatorName: model.creatorName,
 						creatorColor: model.creatorColor,
-						changeSummaryLines: newlyAvailableModelSlugs.has(model.modelSlug)
-							? []
-							: ["Added to the public Phaseo model catalog."],
 					})),
 					readBindingEnv(["DISCORD_ROLE_ID"]),
 					{
