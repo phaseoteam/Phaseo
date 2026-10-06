@@ -44,6 +44,14 @@ explicit zero totals, provider IDs, resolver precedence, grants and permission
 denials. It also checks indexed model selection and the cron command through a
 local adapter, including disabled and absent jobs.
 
+The forward SQL was generated from the desired definitions in disposable
+[CI run 37482819328](https://github.com/phaseoteam/Phaseo/actions/runs/37482819328).
+Review replaced the generated resolver drop with `CREATE OR REPLACE` to retain
+dependent objects, and replaced cleanup unschedule/reschedule with `alter_job`
+to retain the destination's active state. Deployment limits and a validity check
+protect reuse of the online index build. Full schema equivalence and replay run
+in CI; local generation/check cannot run without Docker or Podman.
+
 ## Production rollout
 
 Apply only after production migration approval. Do not run the fixture SQL as
@@ -60,7 +68,7 @@ create index concurrently v2_request_facts_resolved_model_time_idx
   ((coalesce(routed_model_slug, requested_model_slug, requested_model_input)), occurred_at desc);
 ```
 
-3. Apply `20261006144429_optimize_public_model_timeout_queries.sql` in a
+3. Apply `20261006145526_optimize_public_model_timeout_queries.sql` in a
    transaction. Its normal index creation is skipped when the valid online
    build exists. Lock acquisition is capped at 500 ms and statements at 15 s.
 4. Confirm index validity, retained function grants and cleanup command. Compare

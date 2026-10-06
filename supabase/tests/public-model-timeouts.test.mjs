@@ -88,13 +88,36 @@ const before = await snapshot();
 await db.exec('savepoint permissions_before; set role anon');
 await assert.rejects(db.query('select resolve_public_model_id($1,$2)',['alias-a',null]),{code:'42501'});
 await db.exec('rollback to savepoint permissions_before; reset role');
+await db.exec(`grant usage on schema private to anon,authenticated,service_role;
+  grant select on all tables in schema public,private to anon,authenticated,service_role;
+  alter role service_role bypassrls;
+  alter view private.v2_rpc_gateway_requests_compat set (security_invoker=true);
+  alter table v2_request_facts enable row level security;
+  alter table v2_request_usage enable row level security;
+  create policy fixture_member_facts on v2_request_facts to authenticated using (latency_ms < 100);
+  create policy fixture_member_usage on v2_request_usage to authenticated using
+    (exists(select 1 from v2_request_facts fact where fact.request_event_id=v2_request_usage.request_event_id));`);
+async function roleSnapshots() {
+  const results=[];
+  for (const role of ['anon','authenticated','service_role']) {
+    await db.exec(`set role ${role}`);
+    results.push(await snapshot());
+    await db.exec('reset role');
+  }
+  return results;
+}
+const rolesBefore=await roleSnapshots();
+// Restore the permission-denial boundary used earlier before applying the patch.
+await db.exec('alter view private.v2_rpc_models_compat set (security_invoker=true); revoke select on v2_models from anon');
 const grantsBefore = (await db.query("select proacl::text from pg_proc where oid='get_model_performance_overview(text)'::regprocedure")).rows;
-await db.exec(await read('../migrations/20261006144429_optimize_public_model_timeout_queries.sql'));
+await db.exec(await read('../migrations/20261006145526_optimize_public_model_timeout_queries.sql'));
 assert.deepEqual(await snapshot(),before,'all metric values, boundaries, token fallbacks and resolver precedence are preserved');
 assert.deepEqual((await db.query("select proacl::text from pg_proc where oid='get_model_performance_overview(text)'::regprocedure")).rows,grantsBefore,'existing RPC grants are preserved');
 await db.exec('savepoint permissions; set role anon');
 await assert.rejects(db.query('select resolve_public_model_id($1,$2)',['alias-a',null]),{code:'42501'});
 await db.exec('rollback to savepoint permissions; reset role');
+await db.exec('grant select on v2_models to anon; alter view private.v2_rpc_models_compat reset (security_invoker)');
+assert.deepEqual(await roleSnapshots(),rolesBefore,'RLS-scoped reads preserve metrics for each caller role');
 assert.equal((await db.query("select prosecdef from pg_proc where oid='resolve_public_model_id(text,text)'::regprocedure")).rows[0].prosecdef,false);
 await db.exec('commit; set timezone=\'UTC\';');
 // A selective model must be an index condition, not a post-scan filter.
@@ -113,7 +136,7 @@ await db.exec(`create schema cron;
     (23,'provider-health-refresh-queue','keep command','* * * * *',true);
   create function cron.alter_job(bigint,command text) returns void language sql as
     'update cron.job set command = $2 where jobid = $1';`);
-const migration = await read('../migrations/20261006144429_optimize_public_model_timeout_queries.sql');
+const migration = await read('../migrations/20261006145526_optimize_public_model_timeout_queries.sql');
 const cronBlock = migration.slice(migration.indexOf('do $block$')).replace(
   "exists (select 1 from pg_extension where extname = 'pg_cron')",'true');
 await db.exec(cronBlock);
