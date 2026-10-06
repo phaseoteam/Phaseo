@@ -16,12 +16,15 @@ insert into public.provider_onboarding_submissions(provider_slug,submitted_by,pr
 values('provider-email-review-test','bda9db07-3cd1-4c2e-b17a-35f7ce953e01','Provider review contract','https://example.invalid','new','managed');
 set local role service_role;
 select public.review_provider_application('provider-email-review-test','approved',null,null);
+insert into public.provider_catalog_events(provider_slug,workspace_id,event_type,title,message)
+values('provider-email-review-test','bda9db07-3cd1-4c2e-b17a-35f7ce953e03','catalog_needs_changes','Catalog changes','Contract notification');
 reset role;
 do $test$
 begin
  assert (select metadata#>>'{self_serve,provider_review_status}'='approved' from public.v2_providers where provider_slug='provider-email-review-test');
  assert (select count(*)=1 from public.email_outbox where workspace_id='bda9db07-3cd1-4c2e-b17a-35f7ce953e03' and kind='provider_application_reviewed' and to_email='provider-review-owner@example.invalid');
  assert not exists(select 1 from public.email_outbox where user_id='bda9db07-3cd1-4c2e-b17a-35f7ce953e02');
+ assert (select count(*)=1 from public.email_outbox where workspace_id='bda9db07-3cd1-4c2e-b17a-35f7ce953e03' and kind='catalog_needs_changes' and to_email='provider-review-owner@example.invalid');
  assert not has_function_privilege('authenticated','public.enqueue_provider_catalog_event_email()','execute');
 end $test$;
 rollback;
