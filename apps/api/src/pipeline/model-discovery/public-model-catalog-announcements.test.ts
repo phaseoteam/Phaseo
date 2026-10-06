@@ -47,6 +47,7 @@ type ModelRow = {
 	hidden: boolean;
 	status: string;
 	catalogue_status?: string | null;
+	lab?: { name: string; metadata: { colour: string } };
 };
 
 type StateRow = {
@@ -244,7 +245,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 	});
 
 	it.each(["new", "pending"])("announces a %s preview release", async (state) => {
-		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview" };
+		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview", lab: { name: "Mistral AI", metadata: { colour: "#e97a35" } } };
 		const supabase = buildClient([model], [
 			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0 },
 			...(state === "pending" ? [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] : []),
@@ -253,6 +254,9 @@ describe("runPublicModelAnnouncementCheck", () => {
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
 		expect(await runPublicModelAnnouncementCheck({ runId: "preview-run", notify: true })).toMatchObject({ notified: 1, pending: 0, error: null });
 		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "announced", catalogue_status_snapshot: "preview" });
+		expect(mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[0]).toEqual([
+			expect.objectContaining({ creatorName: "Mistral AI", creatorColor: "#e97a35" }),
+		]);
 	});
 
 	it.each([
