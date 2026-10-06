@@ -1120,7 +1120,7 @@ function renderTablePriceSummary(
 	const variantLabels = [summary.primary.label, summary.secondary?.label]
 		.filter((label): label is string => Boolean(label));
 	return (
-		<div className="text-right">
+		<div className="text-right" title={summary.primary.modality === "multimodal" ? summary.primary.label : undefined}>
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
