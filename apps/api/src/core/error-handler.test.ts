@@ -646,6 +646,21 @@ describe("execute rate-limit attribution", () => {
 		request_id: "G-FREE-QUOTA",
 	};
 
+	it.each(["invalid\r\nheader", "unicode-\u2603", "x".repeat(257), "unknown"])(
+		"omits unsafe correlation headers without interrupting error audits (%s)", async (requestId) => {
+			const audit = vi.fn(async (_args: any) => {});
+			const response = await handleError({
+				stage: "execute", endpoint: "responses",
+				res: new Response(JSON.stringify({ ...quotaBody, request_id: requestId }), { status: 429 }),
+				auditFailure: audit,
+			});
+			expect(response.status).toBe(429);
+			expect(response.headers.get("X-Request-Id")).toBeNull();
+			expect(await response.json()).toMatchObject({ reason: "free_requests_per_day", error_origin: "user" });
+			expect(audit).toHaveBeenCalledOnce();
+		},
+	);
+
 	it("preserves a denial from the actual daily free quota guard", async () => {
 		const admit = vi.fn(async () => ({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 }));
 		const bindings = vi.spyOn(runtimeEnv, "getBindingsIfConfigured").mockReturnValue({
@@ -733,7 +748,9 @@ describe("execute rate-limit attribution", () => {
 		const response = await handleError({
 			stage: "execute", endpoint: "responses",
 			res: new Response(JSON.stringify(body), { status: 429, headers: { "Retry-After": "15" } }),
-			ctx: { meta: {}, requestId: "G-UPSTREAM", providers: [{ providerId: "provider" }] } as any,
+			ctx: { meta: {}, requestId: "G-UPSTREAM", providers: [{ providerId: "provider" }],
+				providerAttempts: [{ attempt_number: 1, provider: "provider", endpoint: "responses",
+					model: "test/model", outcome: "upstream_non_2xx", status: 429, duration_ms: 10 }] } as any,
 			auditFailure: audit,
 		});
 		expect(await response.json()).toMatchObject({ error_origin: "upstream", error_type: "system", retry_after_seconds: 15 });
@@ -741,5 +758,20 @@ describe("execute rate-limit attribution", () => {
 		expect(response.headers.get("Retry-After")).toBe("15");
 		expect(audit.mock.calls[0][0]).toMatchObject({ provider: "provider", providerResponse: body, errorCode: "upstream:upstream_error" });
 		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ provider: "provider", errorType: "system", providerResponse: body }));
+	});
+
+	it("does not attribute an undispatched managed-provider rate limit to a candidate", async () => {
+		const audit = vi.fn(async (_args: any) => {});
+		await handleError({
+			stage: "execute", endpoint: "responses",
+			res: new Response(JSON.stringify({ error: "provider_capacity_exhausted" }), { status: 429 }),
+			ctx: { meta: {}, providers: [{ providerId: "undispatched" }],
+				attemptErrors: [{ provider: "undispatched", type: "provider_rate_limited", status: 429 }],
+				providerAttempts: [{ attempt_number: 1, provider: "undispatched", endpoint: "responses",
+					model: "test/model", outcome: "rate_limited", status: 429, duration_ms: 0 }] } as any,
+			auditFailure: audit,
+		});
+		expect(audit.mock.calls[0][0]).toMatchObject({ provider: null });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ provider: null }));
 	});
 });

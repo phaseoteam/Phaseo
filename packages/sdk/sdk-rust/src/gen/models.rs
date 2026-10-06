@@ -970,6 +970,8 @@ pub struct ErrorResponse {
 	pub provider_payment_required_provider: Option<String>,
 	pub provider_payment_required_support_notice: Option<String>,
 	pub reason: Option<String>,
+	pub request_id: Option<String>,
+	pub retry_after_seconds: Option<i64>,
 	pub routing_diagnostics: Option<HashMap<String, String>>,
 	pub status_code: Option<i64>,
 	pub upstream_error: Option<HashMap<String, String>>,

@@ -1641,6 +1641,8 @@ type ErrorResponse struct {
 	ProviderPaymentRequiredProvider *string `json:"provider_payment_required_provider,omitempty"`
 	ProviderPaymentRequiredSupportNotice *string `json:"provider_payment_required_support_notice,omitempty"`
 	Reason *string `json:"reason,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	RetryAfterSeconds *int `json:"retry_after_seconds,omitempty"`
 	RoutingDiagnostics *map[string]interface{} `json:"routing_diagnostics,omitempty"`
 	StatusCode *int `json:"status_code,omitempty"`
 	UpstreamError *map[string]interface{} `json:"upstream_error,omitempty"`

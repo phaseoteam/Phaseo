@@ -865,6 +865,8 @@ class ErrorResponse(TypedDict):
 	provider_payment_required_provider: NotRequired[str]
 	provider_payment_required_support_notice: NotRequired[str]
 	reason: NotRequired[str]
+	request_id: NotRequired[str]
+	retry_after_seconds: NotRequired[int]
 	routing_diagnostics: NotRequired[ErrorRoutingDiagnostics]
 	status_code: NotRequired[int]
 	upstream_error: NotRequired[ErrorUpstreamError]

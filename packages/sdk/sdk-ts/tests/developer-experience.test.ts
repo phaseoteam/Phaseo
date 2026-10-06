@@ -4,12 +4,26 @@ import { createMockTransport } from "../src/testing.js";
 import { PhaseoHttpError } from "../src/runtime/client.js";
 import { JobHandle } from "../src/jobHandle.js";
 import { DevToolsWriter } from "../src/devtools/core.js";
+import type { ErrorResponse } from "../src/oapi-gen/models/ErrorResponse.js";
 
 afterEach(() => vi.useRealTimers());
 const setup = (fixtures: Parameters<typeof createMockTransport>[0], options = {}) => {
   const mock = createMockTransport(fixtures);
   return { mock, client: new Phaseo({ apiKey: "test", baseUrl: "https://example.test/v1", fetchImpl: mock.fetchImpl, ...options }) };
 };
+
+test("local free quota errors preserve typed correlation and retry metadata", async () => {
+  const body: ErrorResponse = {
+    error: "key_limit_exceeded", error_origin: "user", error_type: "user",
+    request_id: "req_free_quota", retry_after_seconds: 3600, reason: "free_requests_per_day",
+  };
+  const { client, mock } = setup([{ method: "POST", path: "/v1/responses", status: 429,
+    headers: { "x-request-id": body.request_id!, "retry-after": String(body.retry_after_seconds) }, json: body }]);
+  await expect(client.request("POST", "/responses", { body: { model: "test/free" } })).rejects.toMatchObject({
+    status: 429, code: "key_limit_exceeded", requestId: "req_free_quota", retryAfterMs: 3600000, body,
+  });
+  mock.assertDone();
+});
 
 test("safe read retries honor Retry-After; scoped options do not change the original", async () => {
   const { client, mock } = setup([

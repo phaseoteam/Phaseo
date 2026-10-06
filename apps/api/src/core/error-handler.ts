@@ -786,7 +786,12 @@ export async function handleError({
         body?.request_id ??
         body?.requestId ??
         "unknown";
-    if (generationId !== "unknown") headers.set("X-Request-Id", String(generationId));
+    if (
+        typeof generationId === "string" && generationId !== "unknown" &&
+        generationId.length <= 256 && /^[\x20-\x7e]+$/.test(generationId)
+    ) {
+        headers.set("X-Request-Id", generationId);
+    }
     const retryAfter = extractDownstreamRateLimitHeaders(res.headers, { includeQuotaDetails: false })["Retry-After"];
     if (retryAfter != null) headers.set("Retry-After", retryAfter);
     console.log("Gateway error details", {
@@ -1022,7 +1027,7 @@ export async function handleError({
             attempt.outcome !== "blocked" && attempt.outcome !== "no_pricing" &&
             attempt.outcome !== "unsupported_executor" && attempt.outcome !== "rate_limited",
         ).at(-1)?.provider ??
-        (errorOrigin === "upstream" ? ctx?.providers?.[0]?.providerId : null) ?? null;
+        null;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -1188,8 +1193,6 @@ export async function handleError({
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
-
 
 
 

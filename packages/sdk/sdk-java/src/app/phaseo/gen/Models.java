@@ -970,6 +970,8 @@ public final class Models {
 		public String provider_payment_required_provider;
 		public String provider_payment_required_support_notice;
 		public String reason;
+		public String request_id;
+		public Integer retry_after_seconds;
 		public Object routing_diagnostics;
 		public Integer status_code;
 		public Object upstream_error;

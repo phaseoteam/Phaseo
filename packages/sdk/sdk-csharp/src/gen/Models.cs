@@ -2361,6 +2361,12 @@ public sealed class ErrorResponse
 	[JsonPropertyName("reason")]
 	public string? Reason { get; set; }
 
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("retry_after_seconds")]
+	public long? RetryAfterSeconds { get; set; }
+
 	[JsonPropertyName("routing_diagnostics")]
 	public Dictionary<string, object>? RoutingDiagnostics { get; set; }
 

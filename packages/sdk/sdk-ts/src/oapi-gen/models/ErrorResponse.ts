@@ -67,6 +67,8 @@ export interface ErrorResponse {
   provider_payment_required_provider?: string;
   provider_payment_required_support_notice?: string;
   reason?: string;
+  request_id?: string;
+  retry_after_seconds?: number;
   routing_diagnostics?: {
     filterStages?: {
       afterCount?: number;
