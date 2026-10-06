@@ -3,7 +3,7 @@ create table public.desktop_session_turns (
   workspace_id uuid not null references public.workspaces(id) on delete cascade,
   user_id uuid not null references auth.users(id) on delete cascade,
   environment_id text not null check (length(environment_id) between 1 and 200),
-  session_id text not null check (length(session_id) between 1 and 200),
+  session_id text not null check (length(session_id) between 1 and 512),
   turn_id text not null check (length(turn_id) between 1 and 300),
   provider text not null check (provider in ('codex','claudeAgent')),
   model text not null check (length(model) between 1 and 256),

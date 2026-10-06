@@ -11,12 +11,17 @@ export function desktopSessionLink(
       url.host !== "app" ||
       url.username ||
       url.password ||
-      !/^\/[\w-]{1,200}\/[\w-]{1,200}$/.test(url.pathname) ||
       url.search ||
       url.hash
     )
       return undefined;
-    return url.toString();
+    const parts = url.pathname.split("/");
+    if (parts.length !== 3) return undefined;
+    const environmentId = decodeURIComponent(parts[1]!);
+    const threadId = decodeURIComponent(parts[2]!);
+    if (!/^[\w-]{1,200}$/.test(environmentId) || !/^[\w:%~.-]{1,512}$/.test(threadId))
+      return undefined;
+    return `${url.protocol}//app/${encodeURIComponent(environmentId)}/${encodeURIComponent(threadId)}`;
   } catch {
     return undefined;
   }

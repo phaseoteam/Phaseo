@@ -13,3 +13,10 @@ it("opens only a safe chat route in the correct desktop build", () => {
   ])
     expect(desktopSessionLink(url, false)).toBeUndefined();
 });
+
+it("preserves escaped native/delegated IDs without allowing path escapes", () => {
+  expect(
+    desktopSessionLink("t3code://app/env-1/thread%3Adelegated-task%3Acommand%253Achild", false),
+  ).toBe("t3code://app/env-1/thread%3Adelegated-task%3Acommand%253Achild");
+  expect(desktopSessionLink("t3code://app/env-1/%2Foutside", false)).toBeUndefined();
+});

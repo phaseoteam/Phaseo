@@ -47,3 +47,7 @@ it("wires the first-party endpoint through the Worker runtime", async () => {
   const response = await desktopSessionsRoutes.request("https://api.phaseo.app/session-turns", { method: "POST", body: JSON.stringify(payload) }, { SUPABASE_URL: "https://test.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "fixture" }, { waitUntil() {}, passThroughOnException() {} });
   expect(response.status).toBe(200);
 });
+
+it("accepts stable delegated chat IDs", async () => {
+  expect((await handleDesktopSessionTurn(request({ ...payload, session_id: "thread:delegated-task:command%3Achild" }))).status).toBe(200);
+});
