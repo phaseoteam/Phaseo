@@ -78,3 +78,30 @@ Die Fragensemantik des Anbieters ist in der [API-Referenz](https://docs.typesafe
 Sie können auch eine Zeichenfolge `data:image/png;base64,...` in `images` übergeben. Clef akzeptiert bis zu vier PNG-, JPEG- oder WebP-Bilder mit jeweils höchstens 4 MiB und 16 Megapixeln, insgesamt höchstens 8 MiB dekodierten Bilddaten und einem Anfragekörper von 13 MiB. Remote-URLs werden nicht unterstützt. Cloudflare prüft Bildformate und Abmessungen. Modelle ohne Bildunterstützung lehnen Bildanfragen ab.
 
 Clef akzeptiert höchstens 64 Fragen mit IDs aus bis zu 100 Buchstaben, Ziffern, Unterstrichen, Punkten oder Bindestrichen. Auswahlfragen benötigen 2–255 Optionen; Bewertungsfragen benötigen 2–10 Stufen. Siehe die [Clef-Dokumentation](https://developers.cloudflare.com/workers-ai/models/clef/) von Cloudflare.
+
+### GPT-6 Luna
+
+Verwenden Sie `openai/gpt-6-luna` mit dem bestehenden Decisions-Format von Phaseo. Der OpenAI-Adapter wandelt `state` in Eingabedaten, `noul` in Prädikate, Auswahlkriterien in Optionen und Bewertungskriterien in geordnete Stufen um. Objekte und Arrays im Zustand oder in Anweisungen werden als JSON-Text serialisiert.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "state": "I was charged twice for my order.",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "Payments and refunds",
+        "other": "Everything else"
+      }
+    }
+  }
+}
+```
+
+Luna akzeptiert dasselbe Feld `images` für eingebettete Bilder wie Clef. Phaseo begrenzt derzeit alle Entscheidungsanfragen auf vier PNG-, JPEG- oder WebP-Bilder und 128 benannte Fragen. Das arraybasierte Anfrageformat von OpenAI wird von Phaseo nicht akzeptiert.
+
+Lehnt OpenAI eine Frage ab, lautet die Antwort unter dem ursprünglichen Fragenschlüssel `{ "type": "refusal" }`. Prüfen Sie den Antworttyp, bevor Sie eine Wahrscheinlichkeit, Auswahl oder Bewertung verwenden.
+
+OpenAI Decisions ist in der öffentlichen Beta. Der Standardpreis für Eingaben beträgt $0.10 pro Million Tokens, ohne separate Ausgabe- oder Cachegebühren; Multiplikatoren für lange Kontexte gelten. Diese Preise gelten für Decisions und ändern die Chatpreise von Luna nicht. Siehe den [OpenAI-Decisions-Leitfaden](https://developers.openai.com/api/docs/guides/decisions).

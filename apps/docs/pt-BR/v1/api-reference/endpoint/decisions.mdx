@@ -78,3 +78,30 @@ Para a semântica das perguntas do provedor, consulte a [referência da API](htt
 Você também pode fornecer uma string `data:image/png;base64,...` em `images`. O Clef aceita até quatro imagens PNG, JPEG ou WebP, cada uma com no máximo 4 MiB e 16 megapixels, com até 8 MiB de dados de imagem decodificados no total e um corpo de requisição de 13 MiB. URLs remotas não são suportadas. O Cloudflare valida os formatos e dimensões das imagens. Modelos sem suporte a imagens rejeitam requisições com imagens.
 
 O Clef aceita no máximo 64 perguntas, com IDs de até 100 letras, dígitos, sublinhados, pontos ou hífens. Perguntas de escolha exigem de 2 a 255 opções; perguntas de pontuação exigem de 2 a 10 níveis. Consulte a [documentação do Clef](https://developers.cloudflare.com/workers-ai/models/clef/) do Cloudflare.
+
+### GPT-6 Luna
+
+Use `openai/gpt-6-luna` com o formato Decisions existente do Phaseo. O adaptador OpenAI converte `state` em dados de entrada, `noul` em predicados, critérios de escolha em opções e critérios de pontuação em níveis ordenados. Objetos e arrays no estado ou nas instruções são serializados como texto JSON.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "state": "I was charged twice for my order.",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "Payments and refunds",
+        "other": "Everything else"
+      }
+    }
+  }
+}
+```
+
+O Luna aceita o mesmo campo `images` para imagens incorporadas que o Clef. Atualmente, o Phaseo limita todas as solicitações de decisão a quatro imagens PNG, JPEG ou WebP e 128 perguntas nomeadas. O formato de solicitação do OpenAI baseado em arrays não é aceito pelo Phaseo.
+
+Se o OpenAI recusar uma pergunta, a resposta será `{ "type": "refusal" }` na chave original da pergunta. Confira o tipo da resposta antes de usar uma probabilidade, escolha ou pontuação.
+
+OpenAI Decisions está em beta pública. A tarifa padrão de entrada é $0.10 por milhão de tokens, sem cobranças separadas por saída ou cache; aplicam-se multiplicadores de contexto longo. Essas tarifas são do Decisions e não alteram os preços de chat do Luna. Consulte o [guia de OpenAI Decisions](https://developers.openai.com/api/docs/guides/decisions).

@@ -78,3 +78,30 @@ Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `
 也可以在`images`中提供`data:image/png;base64,...`字符串。Clef最多接受四张PNG、JPEG或WebP图像，每张最多4 MiB和1,600万像素，解码后图像数据总量最多8 MiB，请求体最多13 MiB。不支持远程URL。Cloudflare会验证图像格式和尺寸。不支持图像的模型会拒绝图像请求。
 
 Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或连字符。选择题需要2–255个选项，评分题需要2–10个等级。请参阅Cloudflare的[Clef文档](https://developers.cloudflare.com/workers-ai/models/clef/)。
+
+### GPT-6 Luna
+
+使用`openai/gpt-6-luna`和Phaseo现有的Decisions格式。OpenAI适配器将`state`转换为输入数据，将`noul`转换为谓词，将选择标准转换为选项，将评分标准转换为有序等级。状态或指令中的对象和数组会序列化为JSON文本。
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "state": "I was charged twice for my order.",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "Payments and refunds",
+        "other": "Everything else"
+      }
+    }
+  }
+}
+```
+
+Luna接受与Clef相同的内嵌图像字段`images`。Phaseo目前将所有决策请求限制为四张PNG、JPEG或WebP图像和128个具名问题。Phaseo不接受OpenAI基于数组的请求格式。
+
+如果OpenAI拒绝回答某个问题，其答案会在原始问题键下返回`{ "type": "refusal" }`。使用概率、选项或评分前，请先检查答案类型。
+
+OpenAI Decisions目前处于公开测试阶段。标准输入价格为每百万token $0.10，不单独收取输出或缓存费用；长上下文价格倍数仍适用。这些价格仅适用于Decisions，不会改变Luna聊天的价格。请参阅[OpenAI Decisions指南](https://developers.openai.com/api/docs/guides/decisions)。

@@ -60,6 +60,33 @@ Jev supports mixing all three question types in one request; Span-01 supports `n
 
 For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
 
+### GPT-6 Luna
+
+Use `openai/gpt-6-luna` with Phaseo's existing Decisions format. The OpenAI adapter maps `state` to input evidence, `noul` to predicates, choice criteria to options, and score criteria to ordered levels. Objects and arrays in state or instructions are serialized as JSON text.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "state": "I was charged twice for my order.",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "Payments and refunds",
+        "other": "Everything else"
+      }
+    }
+  }
+}
+```
+
+Luna accepts the same embedded `images` field as Clef. Phaseo currently limits all decision requests to four PNG, JPEG, or WebP images and 128 named questions. The OpenAI array-based request format is not accepted by Phaseo.
+
+If OpenAI declines a question, its answer is `{ "type": "refusal" }` under the original question key. Check the answer type before using a probability, choice, or score.
+
+OpenAI Decisions is in public beta. Its standard input rate is $0.10 per million tokens, with no separate output or cache charges; long-context multipliers apply. These rates belong to Decisions and do not change Luna chat pricing. See the [OpenAI Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
+
 ### Image decisions with Clef
 
 `cloudflare/clef` and `cloudflare/clef-flash` support all three question types and embedded images through Cloudflare Workers AI. Each has a 65,536-token context window. Input costs $0.24 per million tokens for Clef and $0.09 for Clef Flash.

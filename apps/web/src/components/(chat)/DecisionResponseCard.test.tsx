@@ -10,6 +10,15 @@ function renderToStaticMarkup(children: ReactNode) {
 }
 
 describe("DecisionResponseCard", () => {
+	it("renders a refused question without a score or probability", () => {
+		const html = renderToStaticMarkup(
+			<DecisionResponseCard result={{ answers: { decision: { type: "refusal" } } }} />,
+		);
+		expect(html).toContain("No decision output returned.");
+		expect(html).not.toMatch(/>\d+(?:\.\d+)?%</);
+		expect(html).not.toContain("Weighted average");
+	});
+
 	it("renders a Noul answer once without a repeated summary and strip", () => {
 		const html = renderToStaticMarkup(
 			<DecisionResponseCard

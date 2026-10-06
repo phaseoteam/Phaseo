@@ -355,6 +355,10 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 	].filter((option) => Number.isFinite(option));
 	const maxScore = scoreOptions.length > 0 ? Math.max(...scoreOptions) : undefined;
 
+	if (answer.type === "refusal") {
+		return <div className="w-full py-1 text-sm text-muted-foreground">{tCopy("noDecision")}</div>;
+	}
+
 	if (isNoul) {
 		return (
 			<div className="w-full py-1 text-sm leading-relaxed text-foreground">
