@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
 import { isSafeOAuthRedirectUrl } from "@/lib/oauth/safeUrls";
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
+import { isRegisteredOAuthRedirectAllowed } from "@/lib/oauth/registeredRedirect";
 
 export async function generateMetadata(): Promise<Metadata> {
 	const t = await getTranslations("Common.authFlows.oauthConsent");
@@ -331,8 +332,8 @@ async function ConsentPageContent({ searchParams }: ConsentPageProps) {
 		}
 		const registeredRedirectUris = parseRedirectUris(resolvedAppMetadata.redirect_uris);
 		if (
-			registeredRedirectUris.length > 0 &&
-			!registeredRedirectUris.includes(params.redirect_uri)
+			(registeredRedirectUris.length > 0 || params.client_id === "phaseo_desktop") &&
+			!isRegisteredOAuthRedirectAllowed({ client_id: params.client_id, redirect_uris: registeredRedirectUris, is_first_party: resolvedAppMetadata.is_first_party, registration_source: resolvedAppMetadata.registration_source }, params.redirect_uri)
 		) {
 			return (
 				<div className="container max-w-2xl mx-auto py-12">

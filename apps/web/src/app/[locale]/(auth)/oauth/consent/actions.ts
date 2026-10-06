@@ -1,6 +1,7 @@
 "use server";
 
 import { apiBaseUrl } from "@/lib/oauth/apiBaseUrl";
+import { isRegisteredOAuthRedirectAllowed } from "@/lib/oauth/registeredRedirect";
 import { createClient } from "@/utils/supabase/server";
 import { validateSelectedAuthorizationScopes } from "./scopeSelection";
 
@@ -37,6 +38,8 @@ interface ConsentResult {
 interface RegisteredOAuthClient {
 	client_id: string;
 	redirect_uris: string[];
+	is_first_party: boolean;
+	registration_source?: string;
 }
 
 async function loadRegisteredOAuthClient(
@@ -55,6 +58,8 @@ async function loadRegisteredOAuthClient(
 	if (!payload || String(payload.client_id ?? "") !== clientId) return null;
 	return {
 		client_id: clientId,
+		is_first_party: payload.is_first_party === true,
+		registration_source: typeof payload.registration_source === "string" ? payload.registration_source : undefined,
 		redirect_uris: Array.isArray(payload.redirect_uris)
 			? payload.redirect_uris.filter((value): value is string => typeof value === "string")
 			: [],
@@ -309,7 +314,6 @@ export async function denyAuthorizationAction(input: {
 		const { data: { session } } = await supabase.auth.getSession();
 		if (!session?.access_token) return { error: "Unauthorized" };
 		const registeredClient = await loadRegisteredOAuthClient(session.access_token, clientId);
-		const registeredRedirectUris = registeredClient?.redirect_uris ?? [];
 		let isCliLoopback = false;
 		if (clientId === "phaseo_cli" || clientId === "aistats_cli") {
 			try {
@@ -322,7 +326,7 @@ export async function denyAuthorizationAction(input: {
 				isCliLoopback = false;
 			}
 		}
-		if (!registeredRedirectUris.includes(input.redirect_uri) && !isCliLoopback) {
+		if (!(registeredClient && isRegisteredOAuthRedirectAllowed(registeredClient, input.redirect_uri)) && !isCliLoopback) {
 			return { error: "OAuth client or redirect URI is invalid" };
 		}
 
