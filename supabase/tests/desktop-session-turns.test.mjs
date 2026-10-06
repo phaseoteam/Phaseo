@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { PGlite } from "@electric-sql/pglite";
+const db = new PGlite();
+const user = "11111111-1111-4111-8111-111111111111", other = "22222222-2222-4222-8222-222222222222", workspace = "33333333-3333-4333-8333-333333333333";
+try {
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+    create schema auth; create table auth.users (id uuid primary key);
+    create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true),'')::uuid $$;
+    grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;
+    create table public.workspaces (id uuid primary key, owner_user_id uuid);
+    create table public.workspace_members (workspace_id uuid, user_id uuid);
+    grant select on public.workspaces,public.workspace_members to authenticated;
+    insert into auth.users values ('${user}'),('${other}');
+    insert into public.workspaces values ('${workspace}','${user}');
+    insert into public.workspace_members values ('${workspace}','${user}'),('${workspace}','${other}');`);
+  await db.exec(await readFile(new URL('../migrations/20261006153000_desktop_session_turns.sql', import.meta.url), 'utf8'));
+  const insert = `insert into desktop_session_turns (workspace_id,user_id,environment_id,session_id,turn_id,provider,model,status,started_at,completed_at,input_tokens,output_tokens,usage_status,desktop_scheme) values ('${workspace}','${user}','env','chat','turn','codex','model','completed','2026-10-06T14:00:00Z','2026-10-06T14:00:10Z',null,null,'unavailable','t3code')`;
+  await db.exec(insert);
+  await assert.rejects(db.exec(insert));
+  await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub','${user}',false);`);
+  assert.equal((await db.query('select * from desktop_session_turns')).rows.length, 1);
+  await assert.rejects(db.exec("update desktop_session_turns set model='forged'"));
+  await assert.rejects(db.exec(insert.replace("'turn'", "'second'")));
+  await db.exec(`select set_config('request.jwt.claim.sub','${other}',false);`);
+  assert.equal((await db.query('select * from desktop_session_turns')).rows.length, 0);
+  await db.exec(`reset role; delete from workspace_members where user_id='${user}'; update workspaces set owner_user_id='${other}'; set role authenticated; select set_config('request.jwt.claim.sub','${user}',false);`);
+  assert.equal((await db.query('select * from desktop_session_turns')).rows.length, 0);
+  console.log('Desktop session schema: ownership, RLS, revocation and write restrictions passed.');
+} finally { await db.close(); }

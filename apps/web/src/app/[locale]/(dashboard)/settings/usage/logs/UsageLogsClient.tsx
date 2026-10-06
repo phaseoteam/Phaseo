@@ -14,6 +14,7 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { WebApiError } from "@/lib/web-api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
+import DesktopSessionsPanel from "@/components/(gateway)/usage/DesktopSessionsPanel";
 import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
 import UsageViewFilters from "@/components/(gateway)/usage/UsageViewFilters";
@@ -316,6 +317,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 		);
 
 		content = (
+			<div className="space-y-6">
 			<SessionsPanel
 				settingsTargetId="request-column-settings"
 				initialSessions={data.sessions}
@@ -330,6 +332,8 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				providerFilter={sessionProviderFilter}
 				sessionFilter={sessionFilter}
 			/>
+			<DesktopSessionsPanel scope={scope} timeRange={timeRange} />
+			</div>
 		);
 	} else {
 		const data = initialData.view === "logs" ? initialData.data : null;
@@ -446,7 +450,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 					/>
 				);
 			} else if (detailQuery.isPending) {
-				detailDialog = <p role="status">{t("strings.Loading request details…" as never)}</p>;
+				detailDialog = <p role="status">{t("strings.Loading request detailsâ€¦" as never)}</p>;
 			} else {
 				detailDialog = (
 					<RouteRequestDetailErrorDialog

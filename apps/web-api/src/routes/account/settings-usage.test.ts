@@ -413,3 +413,28 @@ describe("account usage settings routes", () => {
 		});
 	});
 });
+
+describe("native desktop session history", () => {
+  it("scopes history to the signed-in user and active workspace", async () => {
+    let history: URL | undefined;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      if (url.pathname === "/auth/v1/user") return Response.json({ id: "viewer" });
+      if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+      if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+      if (url.pathname.endsWith("desktop_session_turns")) { history = url; return Response.json([]); }
+      return Response.json([]);
+    }));
+    const response = await app.request("https://phaseo.app/api/account/settings/usage/desktop-sessions?workspaceId=workspace-1&from=2026-10-01&to=2026-10-06", { headers: { authorization: "Bearer token" } }, env);
+    expect(response.status).toBe(200);
+    expect(history?.searchParams.get("user_id")).toBe("eq.viewer");
+    expect(history?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+    expect(history?.searchParams.get("limit")).toBe("100");
+    expect(await response.json()).toEqual({ turns: [] });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
+  it("rejects unauthenticated requests", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 401 })));
+    expect((await app.request("https://phaseo.app/api/account/settings/usage/desktop-sessions?workspaceId=workspace-1&from=2026-10-01&to=2026-10-06", {}, env)).status).toBe(401);
+  });
+});

@@ -646,3 +646,18 @@ accountSettingsUsageRouter.get("/usage/alerts", async (c) => {
 		.sort((left, right) => Math.min(left.retirementDaysUntil ?? Infinity, left.deprecationDaysUntil ?? Infinity) - Math.min(right.retirementDaysUntil ?? Infinity, right.deprecationDaysUntil ?? Infinity));
 	return c.json({ signedIn: true, warnings, workspaceId }, 200, PRIVATE_NO_STORE_HEADERS);
 });
+
+// Native desktop metadata is separate from gateway usage and accounting.
+accountSettingsUsageRouter.get("/usage/desktop-sessions", async (c) => {
+  const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.query("workspaceId") });
+  if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
+  const from = c.req.query("from"), to = c.req.query("to");
+  if (!from || !to || !Number.isFinite(Date.parse(from)) || !Number.isFinite(Date.parse(to)) || Date.parse(from) > Date.parse(to)) return c.json({ error: "invalid_range" }, 400, PRIVATE_NO_STORE_HEADERS);
+  const result = await context.userClient.from("desktop_session_turns")
+    .select("environment_id,session_id,turn_id,provider,model,status,started_at,completed_at,input_tokens,output_tokens,usage_status,desktop_scheme")
+    .eq("workspace_id", context.workspaceId).eq("user_id", context.user.id)
+    .gte("completed_at", new Date(from).toISOString()).lte("completed_at", new Date(to).toISOString())
+    .order("completed_at", { ascending: false }).limit(100);
+  if (result.error) return c.json({ error: "desktop_history_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+  return c.json({ turns: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+});
