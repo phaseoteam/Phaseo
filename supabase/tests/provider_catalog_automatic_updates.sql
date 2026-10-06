@@ -148,13 +148,23 @@ begin
   assert (select count(*)=1 from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
 
   -- Revoked approval cannot publish changes or create new canonical models.
-  update public.v2_providers set metadata=jsonb_set(metadata,'{self_serve,provider_review_status}','"paused"') where provider_slug='catalog-contract-test';
+  perform public.set_self_serve_provider_review('catalog-contract-test','paused','Contract pause',null);
+  assert (select status='paused' from public.provider_catalog_sources where provider_slug='catalog-contract-test');
+  assert (select not routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   run2 := gen_random_uuid();
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
   bad_document := jsonb_set(document,'{0,id}','"catalog-contract-test/not-approved"');
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
   assert not exists(select 1 from public.v2_models where model_slug='catalog-contract-test/not-approved');
   assert (select review_status='pending' from public.provider_catalog_sync_runs where id=run2);
+  perform public.set_self_serve_provider_review('catalog-contract-test','approved',null,null);
+  assert (select status='active' and refresh_requested from public.provider_catalog_sources where provider_slug='catalog-contract-test');
+  assert (select not routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+  assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
+  assert public.activate_due_provider_catalog_releases()=0;
 end
 $test$;
 

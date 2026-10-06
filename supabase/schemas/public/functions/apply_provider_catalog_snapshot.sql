@@ -37,7 +37,9 @@ begin
   -- Keep their history and canonical models intact.
   update public.v2_model_provider_routes route
   set status = 'retired', routing_enabled = false,
-      provider_availability_status = 'removed', phaseo_status = 'disabled',
+      provider_availability_status = 'removed',
+      phaseo_status = case when route.phaseo_status in ('blocked', 'unsupported') then route.phaseo_status
+        when route.access_scope = 'internal' then 'testing' else 'disabled' end,
       metadata = route.metadata || jsonb_build_object('release_scheduled', false), updated_at = now()
   where route.provider_slug = p_provider_slug
     and provider_approved
