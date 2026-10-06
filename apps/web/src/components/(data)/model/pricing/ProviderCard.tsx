@@ -1,4 +1,5 @@
 "use client";
+import { GroupedInputPrice } from "./GroupedInputPrice";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 import { localizedPricingDisplayLabel } from "@/i18n/pricing-display";
 
@@ -1122,7 +1123,7 @@ function renderTablePriceSummary(
 	return (
 		<div className="text-right">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
-				{summary.secondary
+				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
 					: summary.primary.formattedPrice}
 			</div>

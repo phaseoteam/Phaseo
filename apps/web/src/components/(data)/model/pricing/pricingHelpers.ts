@@ -31,6 +31,9 @@ export type PriceComparisonKind = "discount" | "vs-standard";
 export type PriceComparisonDirection = "cheaper" | "pricier" | "same" | null;
 
 export type TokenTier = {
+    conditions?: Condition[];
+    timeWindows?: ProviderPricing["pricing_rules"][number]["time_windows"];
+    scheduledBasePer1M?: number | null;
     per1M: number;
     price: number;
     label: string; // range or condition label
@@ -1207,6 +1210,9 @@ export function buildProviderSections(
                 range ??
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
             const tier: TokenTier = {
+                conditions: conds,
+                timeWindows: r.time_windows ?? [],
+                scheduledBasePer1M: perMillionIfTokens(unit, Number(r.price_per_unit), unitSize),
                 per1M: per1M ?? 0,
                 price,
                 label,
@@ -1607,6 +1613,7 @@ export type ProviderTablePriceDirection =
     | "cachewrite";
 
 export type ProviderTablePriceColumn = {
+    groupedModalities?: Modality[];
     key: string;
     direction: ProviderTablePriceDirection;
     modality: Modality;
@@ -1903,7 +1910,7 @@ export function buildProviderTablePriceColumns(
     );
     const showModality = visibleModalities.size > 1;
 
-    const columns = PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
+    let columns: ProviderTablePriceColumn[] = PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
         const columnKeys = new Map<string, { modality: Modality; unitLabel: string }>();
         for (const candidate of candidatesByDirection.get(direction) ?? []) {
             const key = `${candidate.modality}:${candidate.unitLabel}`;
@@ -1938,6 +1945,42 @@ export function buildProviderTablePriceColumns(
             }));
     });
 
+    const inputColumns = columns.filter((column) =>
+        column.direction === "input" && column.unitLabel === "Per 1M tokens" &&
+        ["text", "image", "audio", "video"].includes(column.modality),
+    );
+    const inputModalities = inputColumns.map((column) => column.modality);
+    const canGroupInputs = inputColumns.length > 1 && sectionsByOffering.every((sections) => {
+        const profiles = inputModalities.map((modality) => {
+            const triples = {
+                text: sections.textTokens, image: sections.imageTokens,
+                audio: sections.audioTokens, video: sections.videoTokens,
+            };
+            const tiers = triples[modality as keyof typeof triples]?.in;
+            if (!tiers?.length || tiers.some((tier) => !Number.isFinite(tier.per1M))) return null;
+            // Compare complete profiles, not the cheapest displayed or rounded price.
+            return JSON.stringify(tiers.map((tier) => ({
+                per1M: tier.per1M, basePer1M: tier.basePer1M ?? null,
+                label: tier.label, conditions: tier.conditions ?? [],
+                timeWindows: tier.timeWindows ?? [],
+                scheduledBasePer1M: tier.scheduledBasePer1M ?? tier.per1M,
+                comparisonKind: tier.comparisonKind ?? null,
+                comparisonDirection: tier.comparisonDirection ?? null,
+                discountEndsAt: tier.discountEndsAt ?? null,
+                effFrom: tier.effFrom ?? null, effTo: tier.effTo ?? null,
+                isCurrent: tier.isCurrent,
+            })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
+        });
+        return profiles.every((profile) => profile !== null && profile === profiles[0]);
+    });
+    if (canGroupInputs) {
+        const grouped: ProviderTablePriceColumn = {
+            ...inputColumns[0]!, key: `input:${inputModalities.join("+")}:Per 1M tokens`,
+            modality: "multimodal", label: "Input", groupedModalities: inputModalities,
+        };
+        columns = [grouped, ...columns.filter((column) => !inputColumns.includes(column))];
+    }
+
     if (!showModality) return columns;
     const multimodalDirectionOrder: ProviderTablePriceDirection[] = [
         "input",
@@ -1946,6 +1989,8 @@ export function buildProviderTablePriceColumns(
         "output",
     ];
     return columns.sort((left, right) => {
+        if (left.groupedModalities) return -1;
+        if (right.groupedModalities) return 1;
         const modalityDelta =
             PROVIDER_TABLE_MODALITY_ORDER.indexOf(left.modality) -
             PROVIDER_TABLE_MODALITY_ORDER.indexOf(right.modality);
@@ -1964,12 +2009,16 @@ export function buildProviderTablePriceSummaryForColumn(
     const candidates = sortTablePriceCandidates(
         getProviderTablePriceCandidates(sections, column.direction)
             .filter((candidate) =>
-                candidate.modality === column.modality &&
+                (column.groupedModalities?.includes(candidate.modality) ?? candidate.modality === column.modality) &&
                 candidate.isPrimary &&
                 candidate.unitLabel === column.unitLabel,
             ),
     );
-    const primary = candidates[0] ?? null;
+    const primary = candidates[0]
+        ? column.groupedModalities
+            ? { ...candidates[0], modality: "multimodal" as const, label: column.groupedModalities.map((modality) => modalityLabel(modality)).join(", ") }
+            : candidates[0]
+        : null;
     const highest = candidates.at(-1) ?? null;
     const secondary = primary && highest && primary.formattedPrice !== highest.formattedPrice
         ? highest
@@ -1977,7 +2026,7 @@ export function buildProviderTablePriceSummaryForColumn(
     return {
         primary,
         secondary,
-        extraCount: Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
+        extraCount: column.groupedModalities ? 0 : Math.max(candidates.length - (secondary ? 2 : primary ? 1 : 0), 0),
         sortValue: primary?.sortValue ?? null,
     };
 }

@@ -575,6 +575,85 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	function matchingInputProvider(price = 1.5): ProviderPricing {
+		const provider = makeProviderPricing();
+		const base = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			...["text", "image", "video"].map((modality) => ({
+				...base, id: `input-${modality}`, meter: `input_${modality}_tokens`,
+				unit: "token", unit_size: 1_000_000, price_per_unit: price, match: [],
+			})),
+			{ ...base, id: "output-text", meter: "output_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 7.5, match: [] },
+			{ ...base, id: "output-image", meter: "output_image_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 30, match: [] },
+		];
+		return provider;
+	}
+
+	test("combines equal token inputs and preserves unique output columns and sorting", () => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+		expect(columns.map((column) => column.label)).toEqual(["Input", "Text Output", "Image Output"]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { formattedPrice: "$1.5", modality: "multimodal", label: "Text, Image, Video" },
+			secondary: null, extraCount: 0, sortValue: 1.5,
+		});
+	});
+
+	test("compares inputs within each provider rather than across provider prices", () => {
+		const sections = [1.5, 0.75].map((price) => buildProviderSections(matchingInputProvider(price), "standard"));
+		const columns = buildProviderTablePriceColumns(sections);
+		expect(columns[0]!.label).toBe("Input");
+		expect(buildProviderTablePriceSummaryForColumn(sections[1]!, columns[0]!).sortValue).toBe(0.75);
+	});
+
+	test("groups identical prices selected from different duplicate endpoint sources", () => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		sections.textTokens!.in[0]!.endpoint = "image.generate";
+		sections.imageTokens!.in[0]!.endpoint = "text.generate";
+		sections.videoTokens!.in[0]!.endpoint = "image.generate";
+		expect(buildProviderTablePriceColumns([sections])[0]!.label).toBe("Input");
+	});
+
+	test.each(["identical", "different windows", "different base rates"])("compares complete recurring schedules: %s", (schedule) => {
+		const provider = matchingInputProvider();
+		for (const rule of provider.pricing_rules.filter((rule) => rule.meter.startsWith("input_"))) {
+			rule.time_windows = [{ label: "Peak", timezone: "UTC", start_time: "01:00", end_time: schedule === "different windows" && rule.meter === "input_image_tokens" ? "04:00" : "03:00", price_per_unit: 2 }];
+			if (schedule === "different base rates" && rule.meter === "input_image_tokens") rule.price_per_unit = 1;
+		}
+		const sections = buildProviderSections(provider, "standard", new Date("2026-10-06T02:00:00Z"));
+		expect(sections.textTokens!.in[0]!.per1M).toBe(2);
+		expect(sections.imageTokens!.in[0]!.per1M).toBe(2);
+		expect(buildProviderTablePriceColumns([sections]).some((column) => column.groupedModalities)).toBe(schedule === "identical");
+	});
+
+	test.each([true, false])("compares every context band, not only the cheapest rate (matching: %s)", (matching) => {
+		const provider = matchingInputProvider();
+		for (const modality of ["text", "image", "video"]) {
+			const base = provider.pricing_rules.find((rule) => rule.meter === `input_${modality}_tokens`)!;
+			base.match = [{ path: "request.input_tokens", op: "lte", value: 200000 }];
+			provider.pricing_rules.push({ ...base, id: `large-${modality}`, price_per_unit: !matching && modality === "image" ? 4 : 3, match: [{ path: "request.input_tokens", op: "gt", value: 200000 }] });
+		}
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+		expect(columns.some((column) => column.groupedModalities)).toBe(matching);
+	});
+
+	test.each(["different rate", "missing modality", "different condition", "different discount", "mixed unit"])(
+		"retains separate inputs when a provider has %s", (difference) => {
+			const provider = matchingInputProvider();
+			const image = provider.pricing_rules[1]!;
+			if (difference === "different rate") image.price_per_unit = 1.50001;
+			if (difference === "missing modality") provider.pricing_rules.splice(1, 1);
+			if (difference === "different condition") image.match = [{ path: "request.input_tokens", op: "lte", value: 200000 }];
+			if (difference === "different discount") image.effective_to = "2099-01-01T00:00:00Z";
+			if (difference === "mixed unit") { image.unit = "image"; image.unit_size = 1; }
+			const columns = buildProviderTablePriceColumns([
+				buildProviderSections(matchingInputProvider(), "standard"),
+				buildProviderSections(provider, "standard"),
+			]);
+			expect(columns.some((column) => column.groupedModalities)).toBe(false);
+		},
+	);
+
 	test("separates text and audio token pricing into modality columns", () => {
 		const provider = makeProviderPricing();
 		const baseRule = provider.pricing_rules[0]!;
