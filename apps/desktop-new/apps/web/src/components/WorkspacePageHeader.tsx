@@ -2,12 +2,14 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { cn } from "../lib/utils";
 import { COLLAPSED_SIDEBAR_TITLEBAR_INSET_CLASS } from "../workspaceTitlebar";
+import { WorkspaceNavigation } from "./WorkspaceNavigation";
 
 /** Shared workspace top-bar geometry. */
 export function WorkspacePageHeader({
   electron = false,
   reserveNativeControls = electron,
   className,
+  children,
   ...props
 }: ComponentPropsWithoutRef<"header"> & {
   readonly electron?: boolean;
@@ -24,6 +26,9 @@ export function WorkspacePageHeader({
         className,
       )}
       {...props}
-    />
+    >
+      <WorkspaceNavigation />
+      {children}
+    </header>
   );
 }
