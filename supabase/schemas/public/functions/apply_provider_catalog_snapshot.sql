@@ -21,6 +21,8 @@ declare
   provider_approved boolean;
   provider_lab_slug text;
   pending_count integer := 0;
+  rejected_count integer := 0;
+  changes_count integer := 0;
   request_status text;
 begin
   select case when p.metadata ? 'self_serve'
@@ -231,7 +233,10 @@ begin
         update public.provider_catalog_sync_models set decision=case when request_status in ('rejected','needs_changes') then request_status else 'pending' end,
           match_type='new_model',decision_reason='New canonical model requires administrator approval.'
         where run_id=p_run_id and model_slug=model_slug_value;
-        pending_count := pending_count + 1;
+        if request_status='rejected' then rejected_count := rejected_count + 1;
+        elsif request_status='needs_changes' then changes_count := changes_count + 1;
+        else pending_count := pending_count + 1;
+        end if;
         applied_count := applied_count + 1;
         continue;
       end if;
@@ -279,9 +284,14 @@ begin
   where provider_slug=p_provider_slug and status in ('pending','needs_changes')
     and not exists(select 1 from jsonb_array_elements(p_models) submitted where submitted->>'id'=model_slug);
   update public.provider_catalog_sync_runs
-  set review_status = case when provider_approved and pending_count=0 then 'approved' when provider_approved and applied_count>pending_count then 'partially_approved' else 'pending' end,
-      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count else 0 end,
-        'pending', case when provider_approved then pending_count else applied_count end)
+  set review_status = case
+        when not provider_approved then 'pending'
+        when pending_count>0 then case when applied_count>pending_count+rejected_count+changes_count then 'partially_approved' else 'pending' end
+        when changes_count>0 then 'needs_changes'
+        when rejected_count>0 then case when applied_count>rejected_count then 'partially_approved' else 'rejected' end
+        else 'approved' end,
+      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count-rejected_count-changes_count else 0 end,
+        'pending', case when provider_approved then pending_count else applied_count end,'rejected',rejected_count,'needs_changes',changes_count)
   where id = p_run_id;
 
   return applied_count;

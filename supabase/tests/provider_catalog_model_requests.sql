@@ -21,7 +21,11 @@ begin
   perform public.review_provider_catalog_model_request(request_id,'rejected','Insufficient evidence',null);
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
   assert (select status='rejected' from public.provider_catalog_model_requests where id=request_id);
+  assert (select review_status='rejected' and review_summary->>'pending'='0' and review_summary->>'rejected'='1' from public.provider_catalog_sync_runs where id=request_run);
   assert not exists(select 1 from public.v2_models where model_slug='catalog-review-test/model');
+  perform public.review_provider_catalog_model_request(request_id,'needs_changes','Clarify model identity',null);
+  perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
+  assert (select review_status='needs_changes' and review_summary->>'pending'='0' and review_summary->>'needs_changes'='1' from public.provider_catalog_sync_runs where id=request_run);
   perform public.review_provider_catalog_model_request(request_id,'approved',null,null);
   assert exists(select 1 from public.v2_models where model_slug='catalog-review-test/model' and hidden);
   assert (select refresh_requested from public.provider_catalog_sources where provider_slug='catalog-review-test');

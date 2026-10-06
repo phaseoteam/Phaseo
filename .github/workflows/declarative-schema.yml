@@ -46,6 +46,7 @@ jobs:
                   git ls-files --others --exclude-standard supabase/migrations | while IFS= read -r file; do
                     cp "$file" generated-migrations/
                   done
+                  cp supabase/schemas/.pgdelta-export.json generated-migrations/
             - name: Replay baseline and exercise an incremental migration
               if: inputs.generate_migration != true
               run: node scripts/declarative-schema.mjs smoke
@@ -54,5 +55,6 @@ jobs:
               uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
               with:
                   name: generated-forward-migrations
-                  path: generated-migrations/*.sql
+                  path: generated-migrations/
+                  include-hidden-files: true
                   retention-days: 3
