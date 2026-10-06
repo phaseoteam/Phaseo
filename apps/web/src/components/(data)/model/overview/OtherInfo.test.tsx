@@ -7,7 +7,7 @@ jest.mock("next-intl/server", () => ({
 }));
 
 jest.mock("@/components/display/DisplayValue", () => ({
-	DisplayNumber: ({ value }: { value: number }) => <span>{value}</span>,
+	DisplayNumber: ({ value, options }: { value: number; options?: Intl.NumberFormatOptions }) => <span>{new Intl.NumberFormat("en-GB", options).format(value)}</span>,
 }));
 
 test("renders total and active parameters alongside training tokens and license", async () => {
@@ -19,10 +19,10 @@ test("renders total and active parameters alongside training tokens and license"
 			{ detail_name: "license", detail_value: "Apache 2.0 (planned)" },
 		],
 	}));
-	expect(html).toContain("501000000000");
+	expect(html).toContain("501bn");
 	expect(html).toContain("activeParameters");
-	expect(html).toContain("23000000000");
-	expect(html).toContain("23800000000000");
+	expect(html).toContain("23bn");
+	expect(html).toContain("23.8tn");
 	expect(html).toContain("Apache 2.0 (planned)");
 });
 
