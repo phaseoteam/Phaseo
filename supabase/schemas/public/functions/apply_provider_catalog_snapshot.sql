@@ -20,6 +20,8 @@ declare
   match_type_value text;
   provider_approved boolean;
   provider_lab_slug text;
+  pending_count integer := 0;
+  request_status text;
 begin
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
@@ -219,17 +221,19 @@ begin
           and split_part(canonical_slug, '/', 1) is distinct from provider_lab_slug then
           raise exception 'provider_catalog_namespace_not_owned: %', model_slug_value;
         end if;
-        insert into public.v2_labs (lab_slug, name, status, routable, metadata)
-        values (split_part(canonical_slug, '/', 1), split_part(canonical_slug, '/', 1), 'disabled', false,
-          jsonb_build_object('created_from_provider_proposal', true)) on conflict (lab_slug) do nothing;
-        insert into public.v2_models (model_slug, lab_slug, name, description, status, hidden, input_modalities, output_modalities, variant_kind, metadata)
-        values (canonical_slug, split_part(canonical_slug, '/', 1), coalesce(nullif(model ->> 'name', ''), canonical_slug),
-          nullif(model ->> 'description', ''), 'active', true,
-          array(select jsonb_array_elements_text(model -> 'inputModalities')),
-          array(select jsonb_array_elements_text(model -> 'outputModalities')),
-          case when canonical_slug like '%:free' then 'free' else 'standard' end,
-          jsonb_build_object('created_from_provider_proposal', true, 'provider_catalog_owner', p_provider_slug))
-        on conflict (model_slug) do nothing;
+        insert into public.provider_catalog_model_requests(provider_slug,model_slug,source_run_id,model)
+        values(p_provider_slug,model_slug_value,p_run_id,model)
+        on conflict(provider_slug,model_slug) do update set
+          source_run_id=excluded.source_run_id,model=excluded.model,updated_at=now(),
+          status=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then 'pending' else provider_catalog_model_requests.status end,
+          notification_sent_at=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then null else provider_catalog_model_requests.notification_sent_at end
+        returning status into request_status;
+        update public.provider_catalog_sync_models set decision=case when request_status in ('rejected','needs_changes') then request_status else 'pending' end,
+          match_type='new_model',decision_reason='New canonical model requires administrator approval.'
+        where run_id=p_run_id and model_slug=model_slug_value;
+        pending_count := pending_count + 1;
+        applied_count := applied_count + 1;
+        continue;
       end if;
       select m.hidden, m.metadata ->> 'provider_catalog_owner', m.released_at into canonical_hidden, canonical_owner, canonical_released_at
       from public.v2_models m where m.model_slug = canonical_slug for update;
@@ -237,6 +241,8 @@ begin
         or exists (select 1 from public.v2_model_provider_routes r where r.model_slug = canonical_slug and r.is_stealth) then
         raise exception 'provider_catalog_model_unavailable: %', model_slug_value;
       end if;
+      update public.provider_catalog_model_requests set status='approved',updated_at=now()
+      where provider_slug=p_provider_slug and model_slug=model_slug_value and status<>'approved';
       update public.v2_models
       set name = coalesce(nullif(model ->> 'name', ''), canonical_slug), description = nullif(model ->> 'description', ''),
           input_modalities = array(select jsonb_array_elements_text(model -> 'inputModalities')),
@@ -269,10 +275,13 @@ begin
     applied_count := applied_count + 1;
   end loop;
 
+  update public.provider_catalog_model_requests set status='withdrawn',updated_at=now()
+  where provider_slug=p_provider_slug and status in ('pending','needs_changes')
+    and not exists(select 1 from jsonb_array_elements(p_models) submitted where submitted->>'id'=model_slug);
   update public.provider_catalog_sync_runs
-  set review_status = case when provider_approved then 'approved' else 'pending' end,
-      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count else 0 end,
-        'pending', case when provider_approved then 0 else applied_count end)
+  set review_status = case when provider_approved and pending_count=0 then 'approved' when provider_approved and applied_count>pending_count then 'partially_approved' else 'pending' end,
+      review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count else 0 end,
+        'pending', case when provider_approved then pending_count else applied_count end)
   where id = p_run_id;
 
   return applied_count;

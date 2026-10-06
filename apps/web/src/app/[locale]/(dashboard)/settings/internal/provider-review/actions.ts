@@ -1,11 +1,17 @@
 "use server";
 
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { fetchInternalProviderApplications, type InternalProviderApplicationCursor } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
+import { fetchInternalProviderApplications, fetchProviderModelRequests, type InternalProviderApplicationCursor } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 import { fetchInternalWebApi, WebApiError } from "@/lib/web-api/client";
 
 export async function fetchMoreProviderApplicationsAction(cursor: InternalProviderApplicationCursor) {
 	return fetchInternalProviderApplications(cursor);
+}
+
+export async function refreshProviderModelRequestsAction() {return fetchProviderModelRequests();}
+export async function reviewProviderModelRequestAction(input:{requestId:string;decision:"approved"|"rejected"|"needs_changes";reason?:string;expectedUpdatedAt:string}) {
+	const context=await getServerAccountContext();
+	return fetchInternalWebApi<{ok:true}>(`/api/internal/provider-catalog/model-requests/${encodeURIComponent(input.requestId)}`,context.accessToken,{method:"PATCH",body:JSON.stringify({decision:input.decision,reason:input.reason,expectedUpdatedAt:input.expectedUpdatedAt})});
 }
 
 export async function reviewProviderCatalogModelAction(input: {

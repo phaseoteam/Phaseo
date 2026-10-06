@@ -9,6 +9,13 @@ values ('catalog-contract-test', 'Catalog contract test', 'not_ready', 'https://
 insert into public.provider_catalog_sources (provider_slug, management_mode)
 values ('catalog-contract-test', 'managed');
 
+-- Previously approved canonical identities; provider offers remain automatic.
+insert into public.v2_labs(lab_slug,name) values('catalog-contract-test','Contract test');
+insert into public.v2_models(model_slug,lab_slug,name,hidden,metadata)
+select 'catalog-contract-test/'||slug,'catalog-contract-test',slug,true,
+  '{"provider_catalog_owner":"catalog-contract-test","created_from_provider_proposal":true}'::jsonb
+from unnest(array['model-a','model-b','future','cancelled','multi']) slug;
+
 do $test$
 declare
   run1 uuid := gen_random_uuid();
@@ -226,7 +233,8 @@ begin
   run2 := gen_random_uuid();
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-unapproved','manual');
   perform public.apply_provider_catalog_snapshot('catalog-contract-unapproved',run2,bad_document);
-  assert exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
+  assert not exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
+  assert exists(select 1 from public.provider_catalog_model_requests where model_slug='catalog-contract-unapproved/model' and status='pending');
 end
 $test$;
 

@@ -1,5 +1,6 @@
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
+import { notifyPendingProviderModels } from "@/lib/provider-model-notifications";
 import {
 	fetchAndValidateProviderCatalog,
 	normalizeProviderCatalog,
@@ -202,6 +203,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
 		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, updated_at: now }).eq("provider_slug", providerSlug);
 		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
+		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Provider catalog sync failed.";

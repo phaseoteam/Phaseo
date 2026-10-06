@@ -6,12 +6,14 @@ const PUBLIC_WEB_API_TIMEOUT_MS = 15_000;
 export class WebApiError extends Error {
 	readonly status: number;
 	readonly detail?: string;
+	readonly issues?: Array<{ path: string; message: string }>;
 
-	constructor(path: string, status: number, detail?: string) {
+	constructor(path: string, status: number, detail?: string, issues?: Array<{ path: string; message: string }>) {
 		super(detail || `Cloudflare web API request failed (${status}): ${path}`);
 		this.name = "WebApiError";
 		this.status = status;
 		this.detail = detail;
+		this.issues = issues;
 	}
 }
 
@@ -24,7 +26,7 @@ async function readJsonPayload<T>(
 	response: Response,
 	path: string,
 ): Promise<
-	(T & { error?: unknown; message?: unknown; detail?: unknown }) | undefined
+		(T & { error?: unknown; message?: unknown; detail?: unknown; issues?: Array<{path:string;message:string}> }) | undefined
 > {
 	const body = await response.text();
 	if (!body.trim()) return undefined;
@@ -111,6 +113,7 @@ export async function fetchAccountWebApi<T>(
 				: typeof payload?.detail === "string"
 					? payload.detail
 					: typeof payload?.error === "string" ? payload.error : undefined,
+			Array.isArray(payload?.issues) ? payload.issues.slice(0, 10) : undefined,
 		);
 	}
 	return payload as T;

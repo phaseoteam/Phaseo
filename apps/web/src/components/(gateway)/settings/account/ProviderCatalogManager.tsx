@@ -123,6 +123,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 	const [loading, setLoading] = React.useState(false);
 	const [loadError, setLoadError] = React.useState<string | null>(null);
 	const [saving, setSaving] = React.useState(false);
+	const [validationIssues, setValidationIssues] = React.useState<Array<{path:string;message:string}>>([]);
 	const [dirty, setDirty] = React.useState(false);
 	const [stale, setStale] = React.useState(false);
 	React.useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
@@ -223,7 +224,6 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 
 	async function saveCatalog() {
 		if (!source || loading || saving || loadError || stale) return;
-		if (!models.length) return toast.error(t("providerCatalogCopy.modelsRequired"));
 		if (!zoneValid) return toast.error(t("providerCatalogCopy.zoneRequired"));
 		setSaving(true);
 		try {
@@ -240,13 +240,16 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 				output_modalities: outputDraft === undefined ? model.output_modalities : outputDraft.split(",").map((value) => value.trim()).filter(Boolean),
 			}));
 			const result = await updateProviderCatalogAction(providerSlug, { data: documentModels }, source.catalog_version);
+			if (!result.ok) { setValidationIssues([...result.issues]); return; }
+			setValidationIssues([]);
 			await invalidateAccountQueries(queryClient);
 			setModels(result.models ?? []);
 			setSource(result.source);
 			setLatestRun(result.latest_run);
 			setDirty(false);
 			setStale(false);
-			toast.success(t("providerCatalogCopy.catalogSaved"));
+			if (result.sync_warning) toast.warning(result.sync_warning);
+			else toast.success(t("providerCatalogCopy.catalogSaved"));
 		} catch (error) {
 			if (error instanceof Error && /Catalog changed|409/.test(error.message)) setStale(true);
 			toast.error(error instanceof Error && error.message === "provider_price_invalid" ? t("providerCatalogCopy.priceRequired") : error instanceof Error ? localizedProviderCatalogMessage(error.message, t) : t("providerCatalogCopy.saveFailed"));
@@ -258,6 +261,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		setSaving(true);
 		try {
 			const result = await updateProviderCatalogAction(providerSlug, { mode: "remote" }, source.catalog_version);
+			if (!result.ok) { setValidationIssues([...result.issues]); return; }
 			await invalidateAccountQueries(queryClient);
 			setModels(result.models ?? []);
 			setSource(result.source);
@@ -281,6 +285,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		</div>
 		{stale ? <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border-l-2 border-amber-500 bg-amber-500/5 px-4 py-3 text-sm"><span className="flex items-center gap-2"><AlertCircle className="size-4 text-amber-600" />{t("providerCatalogCopy.stale")}</span><Button type="button" size="sm" variant="outline" onClick={() => { if (!dirty || window.confirm(t("providerCatalogCopy.latestConfirm"))) void loadCatalog(providerSlug); }}>{t("providerCatalogCopy.reloadLatest")}</Button></div> : null}
 		{loadError ? <p role="alert" className="py-10 text-sm text-destructive">{loadError}</p> : null}
+		{validationIssues.length ? <ul role="alert" className="space-y-1 text-sm text-destructive">{validationIssues.map((issue,index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul> : null}
 		{!source && !loadError ? <p className="py-10 text-sm text-muted-foreground">{t("providerCatalogCopy.loading")}</p> : null}
 		{source ? <>
 			<div className="flex flex-wrap items-end justify-between gap-4 text-xs text-muted-foreground"><div>{source.management_mode === "managed" ? t("providerCatalogCopy.managedInPhaseo") : t("providerCatalogCopy.remoteImported")}{latestRun ? ` · ${reviewStatusLabel(latestRun.review_status)}` : ""}{source.last_error ? <span className="ml-2 text-amber-600">{t("providerCatalogCopy.lastSync", {error: localizedProviderCatalogMessage(source.last_error, t)})}</span> : null}</div>{source.management_mode === "managed" && source.catalog_url ? <Button size="sm" variant="ghost" onClick={() => void switchToRemote()} disabled={saving}>{t("providerCatalogCopy.useRemote")}</Button> : null}</div>

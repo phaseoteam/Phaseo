@@ -1,4 +1,5 @@
 import type { Env } from "@/env";
+import { notifyPendingProviderModels } from "@/lib/provider-model-notifications";
 import { activateDueProviderCatalogReleases, runProviderCatalogPollingJob } from "@/routes/account/provider-catalog-sync";
 
 export async function handleProviderCatalogScheduledEvent(_event: ScheduledController, env: Env): Promise<void> {
@@ -14,4 +15,5 @@ export async function handleProviderCatalogScheduledEvent(_event: ScheduledContr
 	} catch (error) {
 		console.error("provider_catalog_poll_failed", error instanceof Error ? error.message : String(error));
 	}
+	await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 }

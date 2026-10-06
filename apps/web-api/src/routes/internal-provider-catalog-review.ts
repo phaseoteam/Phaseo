@@ -244,6 +244,27 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/reviews", async (c) =
 	catch { return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); }
 });
 
+internalProviderCatalogReviewRouter.get("/provider-catalog/model-requests", async (c) => {
+	if (!await adminUser(c)) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const result = await getDataClient(c.env).from("provider_catalog_model_requests").select("id,provider_slug,model_slug,model,status,reason,created_at,updated_at").in("status", ["pending", "needs_changes"]).order("created_at").limit(100);
+	return result.error ? c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS) : c.json({ requests: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
+internalProviderCatalogReviewRouter.patch("/provider-catalog/model-requests/:requestId", async (c) => {
+	const user = await adminUser(c);
+	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const requestId = z.string().uuid().safeParse(c.req.param("requestId"));
+	const body=await c.req.json().catch(() => null);
+	const parsed = decisionSchema.safeParse(body);
+	const expected=z.string().datetime({offset:true}).safeParse(body?.expectedUpdatedAt);
+	if (!requestId.success || !parsed.success || !expected.success) return c.json({ error: "invalid_review" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (parsed.data.decision !== "approved" && !parsed.data.reason?.trim()) return c.json({ error: "review_reason_required" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await getDataClient(c.env).rpc("review_provider_catalog_model_request", { p_request_id: requestId.data, p_decision: parsed.data.decision, p_reason: parsed.data.reason ?? null, p_reviewed_by: user.id, p_expected_updated_at:expected.data });
+	if (result.error) return c.json({ error: "model_review_conflict" }, 409, PRIVATE_NO_STORE_HEADERS);
+	if (parsed.data.decision === "approved") c.executionCtx.waitUntil(syncProviderCatalog(c.env, String(result.data), "manual").catch(() => { console.error("provider_model_approval_sync_failed"); }));
+	return c.json({ ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 internalProviderCatalogReviewRouter.patch("/provider-catalog/reviews/:runId/models/:modelSlug", async (c) => {
 	const user = await adminUser(c);
 	if (!user) return c.json({ error: "unauthorized" }, 403, PRIVATE_NO_STORE_HEADERS);
