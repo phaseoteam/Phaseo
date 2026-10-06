@@ -42,19 +42,19 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
-	description: "Serve this Phaseo-specific JSON document from any public HTTPS URL, including URLs with query parameters. Conditional prices are retained for review and cannot be promoted automatically into routing.",
+	description: "Version 1 of the Phaseo provider catalog. Approved providers publish validated catalog changes automatically. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
 	properties: {
-		data: { type: "array", minItems: 1, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
+		data: { type: "array", minItems: 0, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
 	},
 	$defs: {
 		capability: { oneOf: [{ type: "string" }, { type: "object", required: ["id"], additionalProperties: false, properties: { id: { type: "string" }, parameters: { type: "array", items: { type: "string" } } } }] },
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
 			properties: {
-				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
+				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source, description: "Use an existing public canonical model ID, or your provider's own namespace for a new model." }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
 				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
 				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
@@ -67,8 +67,8 @@ export const providerCatalogJsonSchema = {
 							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
 							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
 							display_label: { type: "string" }, display_unit: { type: "string" },
-							conditions: {
-								type: "array", maxItems: 8,
+								conditions: {
+									type: "array", maxItems: 0,
 								items: {
 									type: "object", additionalProperties: false, required: ["path", "op", "value"],
 									properties: {
@@ -106,6 +106,7 @@ export async function validateProviderCatalogPricingMeters(client: any, preview:
 	for (const [modelIndex, model] of preview.allModels.entries()) {
 		const seen = new Set<string>();
 		for (const [priceIndex, price] of model.pricing.entries()) {
+			if (price.conditions.length) issues.push({ path: `data[${modelIndex}].pricing[${priceIndex}].conditions`, message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
 			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
 			const identity = JSON.stringify([price.meterKey, price.conditions]);
 			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
@@ -256,8 +257,8 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const body = asRecord(payload);
 	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
 	if (entries.length === 0) {
-		issues.push({ path: "data", message: "Expected a non-empty data array of models." });
-		return { valid: false, modelCount: 0, models: [], allModels: [], issues, truncated: false };
+		if (!Array.isArray(body?.data)) issues.push({ path: "data", message: "Expected a data array of models." });
+		return { valid: issues.length === 0, modelCount: 0, models: [], allModels: [], issues, truncated: false };
 	}
 	if (entries.length > MAX_MODELS) {
 		issues.push({ path: "data", message: `Catalog contains ${entries.length} models; the limit is ${MAX_MODELS}.` });
@@ -327,12 +328,15 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;
 		const pricing = Array.isArray(model.pricing) ? model.pricing.flatMap((rawPrice, priceIndex) => {
 			const price = asRecord(rawPrice);
+			const pricePath = `data[${index}].pricing[${priceIndex}]`;
 			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit", "conditions"];
-			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Invalid pricing meter." }); return []; }
-			const unitQuantity = Number(price.unit_quantity);
-			const priceNanos = Number(price.price_nanos);
+			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: pricePath, message: "Invalid pricing meter." }); return []; }
+			const unitQuantity = price.unit_quantity;
+			const priceNanos = price.price_nanos;
 			const meterKey = stringValue(price.meter_key).toLowerCase();
-			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !Number.isFinite(unitQuantity) || unitQuantity <= 0 || !Number.isFinite(priceNanos) || priceNanos < 0 || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Pricing meter fields are invalid." }); return []; }
+			if (typeof unitQuantity !== "number" || !Number.isFinite(unitQuantity) || unitQuantity <= 0) { issues.push({ path: `${pricePath}.unit_quantity`, message: "Expected a positive JSON number." }); return []; }
+			if (typeof priceNanos !== "number" || !Number.isFinite(priceNanos) || priceNanos < 0) { issues.push({ path: `${pricePath}.price_nanos`, message: "Expected a non-negative JSON number in nanodollars." }); return []; }
+			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: pricePath, message: "Pricing meter fields are invalid." }); return []; }
 			const conditions = priceConditions(price.conditions, `data[${index}].pricing[${priceIndex}].conditions`, issues);
 			if (!conditions) return [];
 			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit), conditions }];

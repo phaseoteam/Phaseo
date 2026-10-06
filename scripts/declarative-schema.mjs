@@ -62,7 +62,7 @@ if (mode === "smoke") {
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
-		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql"]) {
+		for (const file of ["declarative_schema.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
@@ -76,7 +76,9 @@ if (mode === "smoke") {
 	}
 	process.exit(0);
 }
-run(["db", "schema", "declarative", "sync", "--no-apply", "--no-cache", "--strict-coverage", "-f", mode === "bootstrap" ? "schema_baseline" : "declarative_change", ...(mode === "sync" ? process.argv.slice(3) : [])]);
+const syncArgs = mode === "sync" ? process.argv.slice(3).filter((arg) => arg !== "--") : [];
+const migrationNameArgs = syncArgs.includes("-f") ? [] : ["-f", mode === "bootstrap" ? "schema_baseline" : "declarative_change"];
+run(["db", "schema", "declarative", "sync", "--no-apply", "--no-cache", "--strict-coverage", ...migrationNameArgs, ...syncArgs]);
 const generated = readdirSync(join(temporary, "migrations")).filter((name) => name.endsWith(".sql") && !before.has(name)).sort();
 if (mode === "bootstrap") {
 	if (!generated.length) throw new Error("Empty baseline generated");

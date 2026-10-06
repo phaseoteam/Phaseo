@@ -21,10 +21,16 @@ begin
       and route.metadata ->> 'managed_by' = 'provider_catalog'
       and route.metadata ->> 'release_scheduled' = 'true'
       and route.access_scope = 'internal'
+      and route.status = 'disabled'
+      and route.provider_availability_status = 'coming_soon'
       and route.effective_from is not null
       and route.effective_from <= now()
       and (route.effective_to is null or route.effective_to > now())
       and not route.is_stealth
+      and route.phaseo_status not in ('blocked', 'unsupported')
+      and jsonb_array_length(candidate.pricing) > 0
+      and exists (select 1 from public.v2_models model where model.model_slug = route.model_slug
+        and (not model.hidden or (model.metadata ->> 'provider_catalog_owner' = route.provider_slug and model.released_at is null)))
       and not exists (
         select 1 from public.v2_model_provider_routes stealth_route
         where stealth_route.model_slug = route.model_slug and stealth_route.is_stealth
@@ -68,6 +74,7 @@ begin
   set status = case when route.status = 'active' then 'active' else 'degraded' end, updated_at = now()
   from public.v2_model_provider_routes route
   where route.provider_model_id = capability.provider_model_id
+    and capability.capability_id = public.canonical_routing_capability_id(capability.capability_id)
     and route.provider_model_id = any(activated_route_ids)
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and route.metadata ->> 'release_scheduled' = 'false'
@@ -99,7 +106,7 @@ begin
   from public.v2_model_provider_routes route
   where route.model_slug = model.model_slug
     and route.provider_model_id = any(activated_route_ids)
-    and model.metadata ->> 'created_from_provider_proposal' = 'true'
+    and model.metadata ->> 'provider_catalog_owner' = route.provider_slug
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and route.metadata ->> 'release_scheduled' = 'false'
     and route.metadata ->> 'release_activated_at' is not null;

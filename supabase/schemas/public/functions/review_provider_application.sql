@@ -169,6 +169,9 @@ begin
     set status = 'not_ready', routable = false, routing_enabled = false,
         updated_at = reviewed_at_value
     where provider_slug = p_provider_slug;
+    update public.provider_catalog_sources
+    set status = 'paused', refresh_requested = false, next_poll_at = null, updated_at = reviewed_at_value
+    where provider_slug = p_provider_slug;
   end if;
 
   update public.provider_onboarding_submissions
@@ -178,7 +181,7 @@ begin
   where id = latest_submission.id;
 
   select case p_decision
-    when 'approved' then 'Your provider claim is approved. You can now manage the catalog in Phaseo; public route and model checks still apply.'
+    when 'approved' then 'Your provider claim is approved. Validated catalog updates now apply automatically. Public routing requires configured endpoints, adapters, credentials, and prices.'
     when 'needs_changes' then 'Phaseo requested changes to your provider claim: ' || btrim(p_reason)
     when 'rejected' then 'Phaseo rejected your provider claim: ' || btrim(p_reason)
     else 'Phaseo paused your provider claim: ' || btrim(p_reason)

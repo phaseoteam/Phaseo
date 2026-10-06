@@ -291,7 +291,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		try {
 			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
 		} catch (error) {
-			syncWarning = "Catalog saved. Synchronization will retry in the background.";
+			syncWarning = error instanceof Error ? error.message : "Catalog saved. Synchronization will retry in the background.";
 			console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		}
 		const catalog = await readProviderCatalog(client, parsedSlug.data);

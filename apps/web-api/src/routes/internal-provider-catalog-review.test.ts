@@ -70,7 +70,7 @@ describe("provider application review API", () => {
 				application_type: "new",
 				review_status: "awaiting_approval",
 				technical_ready: false,
-				route_blockers: ["endpoint", "adapter", "credentials", "probe"],
+				route_blockers: ["endpoint", "adapter", "credentials"],
 			}],
 		});
 
@@ -78,7 +78,7 @@ describe("provider application review API", () => {
 			method: "PATCH",
 			headers: { authorization: "Bearer admin-session", "content-type": "application/json" },
 			body: JSON.stringify({ decision: "approved" }),
-		}, env);
+		}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as ExecutionContext);
 		expect(decisionResponse.status).toBe(200);
 		expect(reviewRpcBody).toMatchObject({
 			p_provider_slug: "new-provider",
@@ -90,7 +90,7 @@ describe("provider application review API", () => {
 			const url = input instanceof Request ? input.url : String(input);
 			return url.includes("/rest/v1/provider_catalog_route_candidates");
 		}).length;
-		expect(routeCandidateReadCount).toBe(1);
+		expect(routeCandidateReadCount).toBe(0);
 	});
 
 	it("includes legacy provider claims and shows their staged profile in the review queue", async () => {

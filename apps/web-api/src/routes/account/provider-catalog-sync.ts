@@ -6,7 +6,6 @@ import {
 	type ProviderCatalogPreview,
 	validateProviderCatalogPricingMeters,
 } from "./provider-catalog";
-import { reconcileProviderCatalogClaims } from "./provider-catalog-reconciliation";
 
 export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
@@ -191,9 +190,13 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		}
 
 		const applied = await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
-		if (applied.error) throw applied.error;
-		await renewLease(true);
-		await reconcileProviderCatalogClaims(client, { providerSlug, runId, models: preview.allModels, renewLease });
+		if (applied.error) {
+			console.error("provider_catalog_apply_failed", { providerSlug, errorCode: applied.error.code });
+			if (applied.error.message.includes("provider_catalog_model_unavailable")) throw new Error("A catalog model ID refers to a hidden or unavailable model. Use a public canonical model ID.");
+			if (applied.error.message.includes("provider_catalog_namespace_not_owned")) throw new Error("Unknown model ID outside your provider namespace. Use an existing canonical model ID or your own provider namespace.");
+			if (applied.error.message.includes("provider_catalog_conditional_pricing_not_supported")) throw new Error("Conditional prices are not supported by V1 billing. Provide an effective unconditional price.");
+			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
+		}
 		await renewLease(true);
 		const now = new Date().toISOString();
 		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);

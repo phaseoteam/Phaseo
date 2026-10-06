@@ -5,22 +5,22 @@ import { useLocale, useTranslations } from "next-intl";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, ChevronLeft, ChevronRight, CircleAlert, Clock3, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { fetchMoreProviderApplicationsAction, promoteProviderRouteCandidateAction, recordProviderRouteProbeAction, reviewProviderApplicationAction, reviewProviderCatalogModelAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { fetchMoreProviderApplicationsAction, reviewProviderApplicationAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import type { InternalProviderApplication, InternalProviderApplicationsPage, InternalProviderCatalogReview } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 
-type Props = { initialApplications: InternalProviderApplicationsPage; initialReviews: InternalProviderCatalogReview[] };
-type QueueTab = "providers" | "catalog";
+import { cn } from "@/lib/utils";
+import type { InternalProviderApplication, InternalProviderApplicationsPage } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
+
+type Props = { initialApplications: InternalProviderApplicationsPage };
+
 type ProviderDecision = "approved" | "paused" | "rejected" | "needs_changes";
 type ProviderReasonTarget = { providerSlug: string; decision: Exclude<ProviderDecision, "approved"> };
 type ApprovalBlocker = NonNullable<InternalProviderApplication["route_blockers"]>[number];
 
-const REVIEW_PAGE_SIZE = 20;
+
 const APPLICATION_PAGE_SIZE = 20;
 
 
@@ -65,7 +65,7 @@ function QueuePagination({ page, pageSize, total, onPageChange, kind }: {
 	</div>;
 }
 
-export default function ProviderReviewClient({ initialApplications, initialReviews }: Props) {
+export default function ProviderReviewClient({ initialApplications }: Props) {
  const tx = useTranslations();
 
 	const t = useTranslations("SettingsUI.providerReviewCopy");
@@ -106,20 +106,15 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 				: method?.replaceAll("_", " ") || t("current.notRecorded");
 	return provider.ownership_proof_subject ? `${label} · ${provider.ownership_proof_subject}` : label;
 }
- const [activeQueue, setActiveQueue] = React.useState<QueueTab>("providers");
 	const [applications, setApplications] = React.useState(initialApplications.providers);
 	const [nextApplicationCursor, setNextApplicationCursor] = React.useState(initialApplications.nextCursor);
 	const [loadingMoreApplications, setLoadingMoreApplications] = React.useState(false);
-	const [reviews, setReviews] = React.useState(initialReviews);
 	const [reasons, setReasons] = React.useState<Record<string, string>>({});
 	const [saving, setSaving] = React.useState<string | null>(null);
 	const [providerReasonTarget, setProviderReasonTarget] = React.useState<ProviderReasonTarget | null>(null);
 	const [applicationQuery, setApplicationQuery] = React.useState("");
 	const [showAllApplications, setShowAllApplications] = React.useState(false);
 	const [applicationPage, setApplicationPage] = React.useState(0);
-	const [reviewQuery, setReviewQuery] = React.useState("");
-	const [showAllClaims, setShowAllClaims] = React.useState(false);
-	const [reviewPage, setReviewPage] = React.useState(0);
 
 	const openApplications = applications.filter((provider) => !["approved", "paused", "rejected"].includes(provider.review_status));
 	const filteredApplications = applications.filter((provider) => {
@@ -128,15 +123,6 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 		return !query || `${provider.name} ${provider.provider_slug} ${provider.contact_email ?? ""}`.toLowerCase().includes(query);
 	});
 	const visibleApplications = filteredApplications.slice(applicationPage * APPLICATION_PAGE_SIZE, (applicationPage + 1) * APPLICATION_PAGE_SIZE);
-	const reviewRows = reviews.flatMap((review) => review.models.map((model) => ({ review, model })));
-	const pendingClaimCount = reviewRows.filter(({ model }) => model.decision === "pending").length;
-	const filteredReviewRows = reviewRows.filter(({ review, model }) => {
-		if (!showAllClaims && model.decision !== "pending") return false;
-		const query = reviewQuery.trim().toLowerCase();
-		return !query || `${review.provider?.name ?? ""} ${review.provider_slug} ${model.name} ${model.model_slug} ${model.provider_model_slug}`.toLowerCase().includes(query);
-	});
-	const pageCount = Math.max(1, Math.ceil(filteredReviewRows.length / REVIEW_PAGE_SIZE));
-	const visibleReviewRows = filteredReviewRows.slice(reviewPage * REVIEW_PAGE_SIZE, (reviewPage + 1) * REVIEW_PAGE_SIZE);
 	const displayedApplicationCount = (count: number) => `${count}${nextApplicationCursor ? "+" : ""}`;
 
 	async function loadMoreApplications() {
@@ -199,102 +185,13 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 		return labels[status] ?? status.replaceAll("_", " ");
 	}
 
-	async function decide(runId: string, modelSlug: string, decision: "approved" | "rejected" | "needs_changes") {
-		const key = `${runId}:${modelSlug}`;
-		const reason = reasons[key]?.trim();
-		if (decision !== "approved" && !reason) {
-			toast.error(t("decisionReasonRequired"));
-			return;
-		}
-		setSaving(key);
-		try {
-			const result = await reviewProviderCatalogModelAction({ runId, modelSlug, decision, reason });
-			setReviews((current) => current.map((review) => review.id !== runId ? review : {
-				...review,
-				review_status: result.reviewStatus,
-				review_summary: result.reviewSummary,
-				models: review.models.map((model) => model.model_slug !== modelSlug ? model : {
-					...model,
-					decision,
-					decision_reason: decision === "approved" ? null : reason ?? null,
-					reviewed_at: new Date().toISOString(),
-				}),
-			}));
-			setReviewPage(0);
-			toast.success(decision === "approved" ? t("decisionApproved") : decision === "needs_changes" ? t("changesRequested") : t("decisionRejected"));
-		} catch (error) {
-			toast.error(localizedSettingsError(error, settingsT, "Action failed", t("decisionSaveFailed")));
-		} finally {
-			setSaving(null);
-		}
-	}
-
-	async function probe(runId: string, modelSlug: string, passed: boolean) {
-		const key = `${runId}:${modelSlug}`;
-		const reason = reasons[key]?.trim();
-		if (!passed && !reason) {
-			toast.error(t("probeReasonRequired"));
-			return;
-		}
-		setSaving(key);
-		try {
-			const result = await recordProviderRouteProbeAction({ runId, modelSlug, passed, reason });
-			setReviews((current) => current.map((review) => review.id !== runId ? review : {
-				...review,
-				models: review.models.map((model) => model.model_slug !== modelSlug ? model : {
-					...model,
-					candidate: model.candidate ? {
-						...model.candidate,
-						status: result.candidate.status as NonNullable<typeof model.candidate>["status"],
-						probed_at: result.candidate.probed_at,
-					} : null,
-				}),
-			}));
-			toast.success(passed ? t("probePassedToast") : t("probeFailedToast"));
-		} catch (error) {
-			toast.error(localizedSettingsError(error, settingsT, "Action failed", t("probeSaveFailed")));
-		} finally {
-			setSaving(null);
-		}
-	}
-
-	async function promote(runId: string, modelSlug: string) {
-		const key = `${runId}:${modelSlug}`;
-		setSaving(key);
-		try {
-			await promoteProviderRouteCandidateAction({ runId, modelSlug });
-			setReviews((current) => current.map((review) => review.id !== runId ? review : {
-				...review,
-				models: review.models.map((model) => model.model_slug !== modelSlug ? model : {
-					...model,
-					candidate: model.candidate ? {
-						...model.candidate,
-						status: "promoted",
-						promoted_at: new Date().toISOString(),
-					} : null,
-				}),
-			}));
-			toast.success(t("routePromoted"));
-		} catch (error) {
-			toast.error(localizedSettingsError(error, settingsT, "Action failed", t("routePromotionFailed")));
-		} finally {
-			setSaving(null);
-		}
-	}
-
 	return <div className="space-y-5">
 		<div className="flex items-start gap-3 rounded-xl border border-border/70 bg-muted/20 px-4 py-3">
 			<Clock3 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
 			<div><p className="text-sm font-medium">{t("current.approvalTitle")}</p><p className="mt-0.5 text-sm leading-5 text-muted-foreground">{t("current.approvalHelp")}</p></div>
 		</div>
 
-		<Tabs value={activeQueue} onValueChange={(value) => setActiveQueue(value as QueueTab)} className="w-full">
-			<TabsList className="h-11 w-full sm:w-fit">
-					<TabsTrigger value="providers" className="gap-2 px-3">{t("current.applications")}<span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">{displayedApplicationCount(openApplications.length)}</span></TabsTrigger>
-				<TabsTrigger value="catalog" className="gap-2 px-3">{t("current.modelClaims")}<span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] tabular-nums">{pendingClaimCount}</span></TabsTrigger>
-			</TabsList>
-
-			<TabsContent value="providers" className="mt-4 space-y-4">
+		<section className="space-y-4">
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 					<div><h2 className="text-base font-semibold">{t("current.applications")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("current.applicationsHelp")}</p></div>
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -353,45 +250,6 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 					<QueuePagination page={applicationPage} pageSize={APPLICATION_PAGE_SIZE} total={filteredApplications.length} onPageChange={setApplicationPage} kind="applications" />
 				</div> : <div className="rounded-xl border border-dashed border-border/80 px-6 py-12 text-center"><p className="font-medium">{t("current.noApplications")}</p><p className="mt-1 text-sm text-muted-foreground">{t("current.searchApplicationsHelp")}</p></div>}
 				{nextApplicationCursor ? <div className="flex flex-col items-center gap-2 border-t border-border/70 pt-4"><Button type="button" variant="outline" onClick={() => void loadMoreApplications()} disabled={loadingMoreApplications}>{loadingMoreApplications ? t("current.loadingApplications") : t("current.loadApplications")}</Button><p className="text-xs text-muted-foreground">{t("current.loadedOnly")}</p></div> : null}
-			</TabsContent>
-
-			<TabsContent value="catalog" className="mt-4 space-y-4">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-					<div><h2 className="text-base font-semibold">{t("current.catalogClaims")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("current.catalogClaimsHelp")}</p></div>
-					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-						<div className="relative sm:w-64"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input type="search" value={reviewQuery} onChange={(event) => { setReviewQuery(event.target.value); setReviewPage(0); }} placeholder={t("current.searchModels")} aria-label={t("current.searchModels")} className="pl-9" /></div>
-						<div className="flex items-center rounded-lg border border-border p-1">
-							<Button type="button" size="sm" variant={showAllClaims ? "ghost" : "secondary"} onClick={() => { setShowAllClaims(false); setReviewPage(0); }}>{t("current.pendingCount", { count: pendingClaimCount })}</Button>
-							<Button type="button" size="sm" variant={showAllClaims ? "secondary" : "ghost"} onClick={() => { setShowAllClaims(true); setReviewPage(0); }}>{t("current.allClaimsCount", { count: reviewRows.length })}</Button>
-						</div>
-					</div>
-				</div>
-
-				{visibleReviewRows.length ? <div className="space-y-3">{visibleReviewRows.map(({ review, model }) => {
-					const key = `${review.id}:${model.model_slug}`;
-					const pending = model.decision === "pending";
-					const reasonId = `review-reason-${review.id}-${model.model_slug}`;
-					return <Card key={key} size="sm" className="border-border/70 shadow-none">
-						<CardContent className="p-4">
-							<div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-								<div className="min-w-0 flex-1">
-									<div className="flex flex-wrap items-center gap-2"><p className="font-medium">{model.name}</p><span className={cn("inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize", statusTone(model.decision))}>{statusLabel(model.decision)}</span>{model.candidate ? <span className={cn("inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize", statusTone(model.candidate.status))}>{statusLabel(model.candidate.status)}</span> : null}</div>
-									<p className="mt-1 text-xs text-muted-foreground">{review.provider?.name ?? review.provider_slug} · {t("current.sync", { trigger: review.trigger === "scheduled" ? t("scheduled") : review.trigger === "manual" ? t("manual") : review.trigger === "webhook" ? t("current.webhook") : review.trigger === "initial" ? t("current.initial") : review.trigger === "poll" ? t("current.poll") : review.trigger })} · {formatDate(review.created_at, locale)}</p>
-									<p className="mt-2 truncate font-mono text-xs text-muted-foreground">{model.model_slug} <span aria-hidden="true">→</span> {model.provider_model_slug}</p>
-									{model.capabilities.length ? <div className="mt-2 flex flex-wrap gap-1.5">{model.capabilities.map((capability) => <span key={capability.id} className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{capability.id}</span>)}</div> : null}
-									{model.decision_reason ? <p className="mt-2 text-xs text-rose-700 dark:text-rose-300">{model.decision_reason}</p> : null}
-								</div>
-								<div className="flex shrink-0 flex-wrap gap-2 lg:max-w-[28rem] lg:justify-end">
-									{pending ? <><Button type="button" size="sm" onClick={() => void decide(review.id, model.model_slug, "approved")} disabled={saving === key}><Check className="mr-1.5 size-3.5" /> {tx("SettingsUI.providerReviewCopy.approve" as never)}</Button><Button type="button" size="sm" variant="outline" onClick={() => void decide(review.id, model.model_slug, "needs_changes")} disabled={saving === key}><CircleAlert className="mr-1.5 size-3.5" /> {tx("SettingsUI.providerReviewCopy.requestChanges" as never)}</Button><Button type="button" size="sm" variant="outline" onClick={() => void decide(review.id, model.model_slug, "rejected")} disabled={saving === key}><X className="mr-1.5 size-3.5" /> {tx("SettingsUI.providerReviewCopy.reject" as never)}</Button></> : model.candidate && model.candidate.status !== "promoted" ? <><Button type="button" size="sm" variant="outline" onClick={() => void probe(review.id, model.model_slug, true)} disabled={saving === key}>{tx("SettingsUI.providerReviewCopy.statusProbePassed" as never)}</Button><Button type="button" size="sm" variant="outline" onClick={() => void probe(review.id, model.model_slug, false)} disabled={saving === key}>{tx("SettingsUI.providerReviewCopy.statusProbeFailed" as never)}</Button>{model.candidate.status === "probe_passed" ? <Button type="button" size="sm" onClick={() => void promote(review.id, model.model_slug)} disabled={saving === key}>{tx("SettingsUI.providerReviewCopy.promote" as never)}</Button> : null}</> : null}
-								</div>
-							</div>
-							{pending || model.candidate?.status === "pending_probe" || model.candidate?.status === "probe_failed" ? <div className="mt-3 max-w-xl"><Label htmlFor={reasonId} className="text-xs">{t("current.reviewReason")}</Label><Input id={reasonId} value={reasons[key] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [key]: event.target.value }))} placeholder={pending ? t("current.changesReason") : t("current.probeReason")} className="mt-1.5 text-sm" /></div> : null}
-						</CardContent>
-					</Card>;
-				})}
-					<QueuePagination page={reviewPage} pageSize={REVIEW_PAGE_SIZE} total={filteredReviewRows.length} onPageChange={(nextPage) => setReviewPage(Math.max(0, Math.min(nextPage, pageCount - 1)))} kind="claims" />
-				</div> : <div className="rounded-xl border border-dashed border-border/80 px-6 py-12 text-center"><p className="font-medium">{reviewRows.length ? (showAllClaims ? t("current.noMatchingClaims") : t("current.noPendingClaims")) : t("current.noRevisions")}</p><p className="mt-1 text-sm text-muted-foreground">{reviewRows.length ? t("current.claimsSearchHelp") : t("current.newRevisions")}</p>{reviewRows.length && !showAllClaims ? <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => { setShowAllClaims(true); setReviewPage(0); }}>{t("current.allClaims")}</Button> : null}</div>}
-			</TabsContent>
-		</Tabs>
+			</section>
 	</div>;
 }
