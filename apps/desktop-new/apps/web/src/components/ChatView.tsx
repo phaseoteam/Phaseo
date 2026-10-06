@@ -1,3 +1,4 @@
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 import { ChatCanvas } from "./chat/ChatCanvas";
 import { usageLimitRecoveryBannerItem } from "./chat/UsageLimitRecoveryBanner";
 import {
@@ -2660,6 +2661,7 @@ export default function ChatView(props: ChatViewProps) {
     },
     [navigate, setEnvironmentEnabled],
   );
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const { scratchWorkspaceRootFor, openScratchProject } = useScratchProject();
   const activeProjectIsScratch =
     activeProject !== null &&
@@ -4183,7 +4185,7 @@ export default function ChatView(props: ChatViewProps) {
           providerSubagentModels,
           reportedModelSelection,
         );
-  const mountComposerContextStrip = !activeProjectIsScratch && shouldShowComposerContextStrip({
+  const mountComposerContextStrip = workspaceMode === "code" && !activeProjectIsScratch && shouldShowComposerContextStrip({
     isDraftHeroState,
     persistInActiveThreads: settings.persistComposerContextStrip,
     hasActiveProject: activeProject !== null && !showProviderSubagentBar,
@@ -4191,7 +4193,7 @@ export default function ChatView(props: ChatViewProps) {
     showEnvironmentIndicator: showComposerEnvironmentIndicator,
     hostsRestingComposerControls: routeKind === "server",
   });
-  const showComposerContextStrip = !activeProjectIsScratch && shouldShowComposerContextStrip({
+  const showComposerContextStrip = workspaceMode === "code" && !activeProjectIsScratch && shouldShowComposerContextStrip({
     isDraftHeroState,
     persistInActiveThreads: settings.persistComposerContextStrip,
     hasActiveProject: activeProject !== null && !showProviderSubagentBar,
@@ -10676,7 +10678,7 @@ export default function ChatView(props: ChatViewProps) {
     ) : null
   ) : null;
   const threadDetailsPanelProps: ThreadDetailsPanelProps = {
-    isPersonalChat: activeProjectIsScratch,
+    isPersonalChat: workspaceMode === "chat" || activeProjectIsScratch,
     anchor: threadPanelPopoverAnchorRef,
     handle: threadPanelPopoverHandle,
     onPresentationChange: setThreadPanelPresentation,
@@ -10876,7 +10878,7 @@ export default function ChatView(props: ChatViewProps) {
             activeThreadId={activeThread.id}
             isServerThread={isServerThread}
             activeThreadTitle={activeThread.title}
-            activeProject={activeProjectIsScratch ? null : activeProject ?? null}
+            activeProject={workspaceMode === "chat" || activeProjectIsScratch ? null : activeProject ?? null}
             rightPanelOpen={inlineRightPanelOwnsTitleBar}
             onNewThreadInProject={handleNewThreadInActiveProject}
             {...(activeDraftLogicalProjectKey

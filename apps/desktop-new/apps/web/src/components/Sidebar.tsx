@@ -1,3 +1,4 @@
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 import { ThreadHoverCard, ThreadHoverCardPopup } from "./ThreadHoverCard";
 import { CollapsibleSectionHeader } from "./ui/collapsible-section-header";
 import { setThreadChangeRequestSnapshot } from "./ThreadStatusIndicators";
@@ -2408,6 +2409,7 @@ export default function Sidebar() {
       );
     },
   });
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const newThreadContext = useHandleNewThread();
   const { scratchEnvironmentId, startScratchThread } = useScratchProject();
   const openAddProjectCommandPalette = useCallback(
@@ -4792,11 +4794,16 @@ export default function Sidebar() {
   // New chat is personal; Shift-click explicitly keeps the current project.
   const handleNewThreadClick = useCallback(
     (event?: ReactMouseEvent) => {
+      if (workspaceMode === "code" && !event?.shiftKey) {
+        if (isMobile) setOpenMobile(false);
+        openCommandPalette({ open: "new-thread-in" });
+        return;
+      }
       const personalEnvironment = scratchEnvironmentId(
         newThreadContext.activeThread?.environmentId ??
           newThreadContext.activeDraftThread?.environmentId ?? primaryEnvironmentId,
       );
-      if (!event?.shiftKey && personalEnvironment !== null) {
+      if (workspaceMode === "chat" && !event?.shiftKey && personalEnvironment !== null) {
         if (isMobile) setOpenMobile(false);
         void startScratchThread(personalEnvironment);
         return;
@@ -4817,7 +4824,7 @@ export default function Sidebar() {
       if (isMobile) setOpenMobile(false);
       openCommandPalette({ open: "new-thread-in" });
     },
-    [isMobile, newThreadContext, primaryEnvironmentId, projectGroups.length, scratchEnvironmentId, setOpenMobile, startScratchThread],
+    [isMobile, newThreadContext, primaryEnvironmentId, projectGroups.length, scratchEnvironmentId, setOpenMobile, startScratchThread, workspaceMode],
   );
 
   const newThreadShortcutLabel = shortcutLabelForCommand(keybindings, "chat.new");

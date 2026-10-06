@@ -1,5 +1,6 @@
 /** New chat stays discoverable above the searchable, project-scoped history. */
 import { FolderPlusIcon, SearchIcon, PlusIcon, XIcon } from "lucide-react";
+import { useWorkspaceModeStore } from "../../workspaceModeStore";
 import {
   type ComponentProps,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -57,6 +58,7 @@ export function SidebarThreadHeader({
   activeSearchResultIndex,
   onClearSearch,
 }: SidebarThreadHeaderProps) {
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const resultsVisible = isSearching && searchResultCount > 0;
   // Results shrink as the query narrows, so the active index can outrun the
   // list; pointing aria-activedescendant at a removed option strands the
@@ -146,9 +148,9 @@ export function SidebarThreadHeader({
           {hasProjects ? (
             <>
               {projectScope}
-              <SidebarHeaderIconButton label="Add project" onClick={onNewProject}>
+              {workspaceMode === "code" ? <SidebarHeaderIconButton label="Add project" onClick={onNewProject}>
                 <FolderPlusIcon />
-              </SidebarHeaderIconButton>
+              </SidebarHeaderIconButton> : null}
             </>
           ) : null}
         </div>

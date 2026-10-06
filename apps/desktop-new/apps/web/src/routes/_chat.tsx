@@ -1,3 +1,4 @@
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 import { Outlet, createFileRoute, redirect, useParams } from "@tanstack/react-router";
 import { useAtomValue } from "@effect/atom-react";
 import { useEffect, useMemo } from "react";
@@ -38,6 +39,7 @@ function ChatRouteGlobalShortcuts() {
   const projectGroupingSettings = useClientSettings(selectProjectGroupingSettings);
   const projects = useProjects();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const { scratchEnvironmentId, startScratchThread } = useScratchProject();
   const projectGroupCount = useMemo(
     () =>
@@ -121,10 +123,14 @@ function ChatRouteGlobalShortcuts() {
       if (command === "chat.new") {
         event.preventDefault();
         event.stopPropagation();
+        if (workspaceMode === "code") {
+          openCommandPalette({ open: "new-thread-in" });
+          return;
+        }
         const personalEnvironment = scratchEnvironmentId(
           activeThread?.environmentId ?? activeDraftThread?.environmentId ?? primaryEnvironmentId,
         );
-        if (personalEnvironment !== null) {
+        if (workspaceMode === "chat" && personalEnvironment !== null) {
           void startScratchThread(personalEnvironment);
           return;
         }
@@ -206,6 +212,7 @@ function ChatRouteGlobalShortcuts() {
     scratchEnvironmentId,
     selectedThreadKeysSize,
     startScratchThread,
+    workspaceMode,
     legacySidebarEnabled,
     terminalOpen,
   ]);

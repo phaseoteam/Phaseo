@@ -1,3 +1,4 @@
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 "use client";
 
 import { threadPullRequestLinkMode } from "@t3tools/client-runtime/thread-pull-request-compatibility";
@@ -713,6 +714,7 @@ function OpenCommandPaletteDialog(props: {
   const createProject = useAtomCommand(projectEnvironment.create, {
     reportFailure: false,
   });
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const { scratchEnvironmentId, scratchWorkspaceRootFor, startScratchThread } = useScratchProject();
   const lookupRepository = useAtomQueryRunner(sourceControlEnvironment.repository, {
     reportFailure: false,
@@ -1896,7 +1898,7 @@ function OpenCommandPaletteDialog(props: {
           </>
         ),
         icon: <SquarePenIcon className={ITEM_ICON_CLASS} />,
-        shortcutCommand: "chat.newLocal",
+        shortcutCommand: workspaceMode === "code" ? "chat.new" : "chat.newLocal",
         run: async () => {
           await startNewThreadFromContext({
             activeDraftThread,
@@ -1924,9 +1926,9 @@ function OpenCommandPaletteDialog(props: {
       kind: "action",
       value: "action:new-thread-without-project",
       searchTerms: ["new thread", "no project", "without project", "none", "chat"],
-      title: "New chat",
+      title: workspaceMode === "chat" ? "New chat" : "New personal chat",
       icon: <MessageSquareDashedIcon className={ITEM_ICON_CLASS} />,
-      shortcutCommand: "chat.new",
+      shortcutCommand: workspaceMode === "chat" ? "chat.new" : "chat.newWithoutProject",
       run: () => startScratchThread(scratchTargetEnvironmentId),
     });
   }

@@ -7,6 +7,7 @@ import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
 import { PhaseoWordmark } from "../PhaseoBrand";
+import { WorkspaceModeMenu } from "./WorkspaceModeMenu";
 import {
   resolveEnvironmentIdentificationPillLabel,
   useEnvironmentStageLabel,
@@ -64,6 +65,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
           </div>
         ) : null}
       </div>
+      <WorkspaceModeMenu />
     </div>
   );
 });

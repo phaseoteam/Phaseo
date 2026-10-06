@@ -1,3 +1,4 @@
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 import { RefreshIcon } from "~/components/ui/refresh-icon";
 import { scopeProjectRef } from "@t3tools/client-runtime/environment";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -40,13 +41,14 @@ function ChatIndexRouteView() {
  * their project-based draft flow.
  */
 function IndexDraftLanding() {
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const projects = useProjects();
   const threads = useThreadShells();
   const bootstrapped = useAllEnvironmentShellsBootstrapped();
   const handleNewThread = useNewThreadHandler();
   const { scratchEnvironmentId, openScratchProject } = useScratchProject();
   const primaryEnvironmentId = usePrimaryEnvironmentId();
-  const personalEnvironmentId = bootstrapped ? scratchEnvironmentId(primaryEnvironmentId) : null;
+  const personalEnvironmentId = bootstrapped && workspaceMode === "chat" ? scratchEnvironmentId(primaryEnvironmentId) : null;
   const startingRef = useRef(false);
   const [startState, setStartState] = useState({ failed: false, retryRequest: 0 });
 
