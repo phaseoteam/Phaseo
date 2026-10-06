@@ -20,23 +20,48 @@ declare
   access_scope_value text;
   route_enabled boolean;
   release_due boolean;
+  provider_approved boolean;
+  provider_ready boolean;
+  route_blocked boolean := false;
+  pricing_changed boolean := true;
+  pricing_hash text;
 begin
   select * into candidate from public.provider_catalog_route_candidates
   where run_id = p_run_id and submitted_model_slug = p_submitted_model_slug for update;
   if not found then raise exception 'provider_catalog_candidate_not_found'; end if;
-  if candidate.status <> 'probe_passed' then raise exception 'provider_catalog_probe_required'; end if;
+  select case when p.metadata ? 'self_serve'
+    then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
+    else p.status <> 'disabled' end,
+    coalesce((p.metadata ->> 'adapter_ready')::boolean, false)
+      and coalesce((p.metadata ->> 'credentials_ready')::boolean, false)
+      and nullif(btrim(p.base_url), '') is not null
+    into provider_approved, provider_ready
+  from public.v2_providers p where p.provider_slug = candidate.provider_slug for update;
+  if not coalesce(provider_approved, false) then raise exception 'provider_catalog_provider_not_approved'; end if;
+  if not exists (select 1 from public.provider_catalog_sources s where s.provider_slug = candidate.provider_slug and s.status = 'active') then raise exception 'provider_catalog_source_inactive'; end if;
+  if not exists (select 1 from public.v2_models m where m.model_slug = candidate.canonical_model_slug
+    and (not m.hidden or m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug)) then raise exception 'provider_catalog_model_unavailable'; end if;
+  if candidate.status = 'promoted' then
+    select provider_model_id into provider_model_id_value from public.v2_model_provider_routes
+    where provider_slug = candidate.provider_slug and model_slug = candidate.canonical_model_slug
+      and provider_model_slug = candidate.provider_model_slug order by created_at limit 1;
+    return provider_model_id_value;
+  end if;
+  if candidate.status not in ('pending_probe', 'probe_passed') then raise exception 'provider_catalog_candidate_invalid'; end if;
   if exists (
     select 1 from public.provider_catalog_sync_runs newer
     join public.provider_catalog_sync_runs current_run on current_run.id = candidate.run_id
     where newer.provider_slug = candidate.provider_slug and newer.status = 'applied'
       and newer.created_at > current_run.created_at
   ) then raise exception 'provider_catalog_candidate_superseded'; end if;
-  if jsonb_array_length(candidate.pricing) = 0 then raise exception 'provider_catalog_pricing_required'; end if;
-  if not coalesce((select (metadata ->> 'adapter_ready')::boolean from public.v2_providers where provider_slug = candidate.provider_slug), false) then raise exception 'provider_catalog_adapter_required'; end if;
-  if not coalesce((select (metadata ->> 'credentials_ready')::boolean from public.v2_providers where provider_slug = candidate.provider_slug), false) then raise exception 'provider_catalog_credentials_required'; end if;
-  if not exists (select 1 from public.v2_providers where provider_slug = candidate.provider_slug and nullif(trim(base_url), '') is not null) then raise exception 'provider_catalog_endpoint_required'; end if;
+  if exists (select 1 from jsonb_array_elements(candidate.pricing) p where jsonb_array_length(coalesce(p -> 'conditions', '[]'::jsonb)) > 0) then
+    raise exception 'provider_catalog_conditional_pricing_not_supported';
+  end if;
 
-  select provider_model_id into provider_model_id_value
+  pricing_hash := md5(candidate.pricing::text || coalesce(candidate.available_from::text, ''));
+  select provider_model_id, phaseo_status in ('blocked', 'unsupported'),
+      metadata ->> 'catalog_pricing_hash' is distinct from pricing_hash
+    into provider_model_id_value, route_blocked, pricing_changed
   from public.v2_model_provider_routes
   where provider_slug = candidate.provider_slug
     and model_slug = candidate.canonical_model_slug
@@ -70,7 +95,10 @@ begin
     else 'testing'
   end;
   access_scope_value := case when candidate.availability in ('ready', 'degraded') and release_due then 'public' else 'internal' end;
-  route_enabled := candidate.availability in ('ready', 'degraded') and release_due
+  route_enabled := candidate.availability in ('ready', 'degraded') and release_due and provider_ready and not coalesce(route_blocked, false)
+    and jsonb_array_length(candidate.pricing) > 0
+    and exists (select 1 from public.v2_models m where m.model_slug = candidate.canonical_model_slug
+      and (not m.hidden or m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug))
     and exists (
       select 1 from public.v2_providers p
       where p.provider_slug = candidate.provider_slug
@@ -89,9 +117,9 @@ begin
     and not exists (select 1 from public.v2_model_provider_routes r
       where r.model_slug = candidate.canonical_model_slug and r.is_stealth);
   if not route_enabled then
-    route_status := 'disabled';
-    phaseo_status_value := 'testing';
-    access_scope_value := 'internal';
+    phaseo_status_value := case when route_blocked then 'blocked' when candidate.available_from > now() then 'testing' else 'planned' end;
+    access_scope_value := case when candidate.available_from > now() then 'internal' else 'public' end;
+    if route_blocked then route_status := 'disabled'; end if;
   end if;
 
   insert into public.v2_model_provider_routes (
@@ -108,8 +136,9 @@ begin
     jsonb_build_object(
       'managed_by', 'provider_catalog',
       'source_run_id', candidate.run_id,
+      'catalog_pricing_hash', pricing_hash,
       'deprecated_at', candidate.deprecated_at,
-      'release_scheduled', not release_due and candidate.availability in ('ready', 'degraded'),
+      'release_scheduled', candidate.available_from > now() and candidate.availability in ('ready', 'degraded') and not coalesce(route_blocked, false),
       'release_at', candidate.available_from
     ), now()
   )
@@ -167,19 +196,22 @@ begin
     updated_at = now()
   returning variant_id into variant_id_value;
 
+  if coalesce(pricing_changed, true) then
   update public.v2_pricing_skus
-  set status = 'deprecated', effective_to = now(), updated_at = now()
+  set status = case when effective_from >= now() then 'disabled' else 'deprecated' end,
+      effective_to = case when effective_from < now() then now() else effective_to end, updated_at = now()
   where provider_model_id = provider_model_id_value
     and sku_code = 'provider-catalog-standard' and status = 'active';
   select coalesce(max(version), 0) + 1 into sku_version_value
   from public.v2_pricing_skus
   where provider_model_id = provider_model_id_value and sku_code = 'provider-catalog-standard';
+  if jsonb_array_length(candidate.pricing) > 0 then
   insert into public.v2_pricing_skus (
     provider_model_id, route_variant_id, service_tier_slug, sku_code, version, operation, status, display_name,
     currency, effective_from, metadata
   ) values (
     provider_model_id_value, variant_id_value, 'standard', 'provider-catalog-standard', sku_version_value,
-    'inference', 'active', 'Provider catalog pricing', 'USD', coalesce(candidate.available_from, now()),
+    'inference', 'active', 'Provider catalog pricing', 'USD', greatest(coalesce(candidate.available_from, now()), now()),
     jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id, 'release_scheduled', not release_due)
   ) returning sku_id into sku_id_value;
   for price in select value from jsonb_array_elements(candidate.pricing)
@@ -194,6 +226,8 @@ begin
       jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id)
     );
   end loop;
+  end if;
+  end if;
 
   update public.v2_providers
   set status = case
@@ -207,13 +241,13 @@ begin
       updated_at = now()
   where provider_slug = candidate.provider_slug;
 
-  if route_enabled then
+  if candidate.availability in ('ready', 'degraded') and release_due then
     update public.v2_models
     set hidden = false,
         released_at = coalesce(released_at, coalesce(candidate.available_from, now())),
         updated_at = now()
     where model_slug = candidate.canonical_model_slug
-      and metadata ->> 'created_from_provider_proposal' = 'true'
+      and metadata ->> 'provider_catalog_owner' = candidate.provider_slug
       and not exists (select 1 from public.v2_model_provider_routes r where r.model_slug = candidate.canonical_model_slug and r.is_stealth);
 
     update public.v2_labs lab

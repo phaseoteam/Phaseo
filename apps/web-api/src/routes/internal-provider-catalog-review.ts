@@ -224,7 +224,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/providers/:provider
 		if (result.error.message.includes("self_serve_provider_not_found")) return c.json({ error: "provider_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		return c.json({ error: "provider_review_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
-	if (parsed.data.decision === "approved" && (result.data as any)?.applicationType === "claim") {
+	if (parsed.data.decision === "approved") {
 		c.executionCtx.waitUntil(syncProviderCatalog(c.env, providerSlug, "manual").catch((error) => {
 			console.error("provider_claim_catalog_initial_sync_failed", { providerSlug, errorType: error instanceof Error ? error.name : "UnknownError" });
 		}));

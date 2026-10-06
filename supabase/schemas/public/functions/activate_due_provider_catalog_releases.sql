@@ -25,6 +25,10 @@ begin
       and route.effective_from <= now()
       and (route.effective_to is null or route.effective_to > now())
       and not route.is_stealth
+      and route.phaseo_status not in ('blocked', 'unsupported')
+      and jsonb_array_length(candidate.pricing) > 0
+      and exists (select 1 from public.v2_models model where model.model_slug = route.model_slug
+        and (not model.hidden or model.metadata ->> 'provider_catalog_owner' = route.provider_slug))
       and not exists (
         select 1 from public.v2_model_provider_routes stealth_route
         where stealth_route.model_slug = route.model_slug and stealth_route.is_stealth
@@ -99,7 +103,7 @@ begin
   from public.v2_model_provider_routes route
   where route.model_slug = model.model_slug
     and route.provider_model_id = any(activated_route_ids)
-    and model.metadata ->> 'created_from_provider_proposal' = 'true'
+    and model.metadata ->> 'provider_catalog_owner' = route.provider_slug
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and route.metadata ->> 'release_scheduled' = 'false'
     and route.metadata ->> 'release_activated_at' is not null;

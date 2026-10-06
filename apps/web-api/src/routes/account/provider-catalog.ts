@@ -42,7 +42,7 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
-	description: "Version 1 of the Phaseo provider catalog. Serve this JSON document from a public HTTPS URL, including URLs with query parameters. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are retained for review and cannot be promoted automatically into routing.",
+	description: "Version 1 of the Phaseo provider catalog. Approved providers publish validated catalog changes automatically. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
@@ -67,8 +67,8 @@ export const providerCatalogJsonSchema = {
 							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
 							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
 							display_label: { type: "string" }, display_unit: { type: "string" },
-							conditions: {
-								type: "array", maxItems: 8,
+								conditions: {
+									type: "array", maxItems: 0,
 								items: {
 									type: "object", additionalProperties: false, required: ["path", "op", "value"],
 									properties: {
@@ -106,6 +106,7 @@ export async function validateProviderCatalogPricingMeters(client: any, preview:
 	for (const [modelIndex, model] of preview.allModels.entries()) {
 		const seen = new Set<string>();
 		for (const [priceIndex, price] of model.pricing.entries()) {
+			if (price.conditions.length) issues.push({ path: `data[${modelIndex}].pricing[${priceIndex}].conditions`, message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
 			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
 			const identity = JSON.stringify([price.meterKey, price.conditions]);
 			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
