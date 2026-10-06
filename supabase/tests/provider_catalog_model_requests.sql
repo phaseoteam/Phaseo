@@ -9,6 +9,11 @@ begin
   assert not has_table_privilege('authenticated','public.provider_catalog_model_requests','insert');
   assert not has_function_privilege('authenticated','public.review_provider_catalog_model_request(uuid,text,text,uuid,timestamptz)','execute');
   insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(request_run,'catalog-review-test','webhook');
+  update public.v2_providers set metadata='{"self_serve":{}}' where provider_slug='catalog-review-test';
+  perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
+  assert (select review_status='pending' from public.provider_catalog_sync_runs where id=request_run);
+  assert not exists(select 1 from public.provider_catalog_model_requests where provider_slug='catalog-review-test');
+  update public.v2_providers set metadata='{"self_serve":{"provider_review_status":"approved"}}' where provider_slug='catalog-review-test';
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
   assert not exists(select 1 from public.v2_models where model_slug='catalog-review-test/model');
   assert not exists(select 1 from public.v2_model_provider_routes where provider_slug='catalog-review-test');

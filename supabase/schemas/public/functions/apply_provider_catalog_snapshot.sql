@@ -286,7 +286,7 @@ begin
     and not exists(select 1 from jsonb_array_elements(p_models) submitted where submitted->>'id'=model_slug);
   update public.provider_catalog_sync_runs
   set review_status = case
-        when not provider_approved then 'pending'
+        when provider_approved is not true then 'pending'
         when pending_count>0 then case when applied_count>pending_count+rejected_count+changes_count then 'partially_approved' else 'pending' end
         when changes_count>0 then 'needs_changes'
         when rejected_count>0 then case when applied_count>rejected_count then 'partially_approved' else 'rejected' end
