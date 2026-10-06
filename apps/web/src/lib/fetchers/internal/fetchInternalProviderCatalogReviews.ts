@@ -1,7 +1,7 @@
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchInternalWebApi } from "@/lib/web-api/client";
 
-export type ProviderModelRequest = {id:string;provider_slug:string;model_slug:string;status:string;reason:string|null;updated_at:string;model:{name:string;description:string|null;inputModalities:string[];outputModalities:string[];contextLength?:number|null;maxOutputTokens?:number|null}};
+export type ProviderModelRequest = {id:string;provider_slug:string;model_slug:string;status:string;reason:string|null;updated_at:string;model:{name:string;description?:string|null;inputModalities?:string[];outputModalities?:string[];contextLength?:number|null;maxOutputTokens?:number|null}};
 export async function fetchProviderModelRequests(): Promise<ProviderModelRequest[]> {
 	const context=await getServerAccountContext();
 	const result=await fetchInternalWebApi<{requests:ProviderModelRequest[]}>("/api/internal/provider-catalog/model-requests",context.accessToken);
