@@ -4,7 +4,7 @@ vi.mock("@/pipeline/before/guards", () => ({ guardAuth: mocks.auth }));
 vi.mock("@/runtime/env", async (importOriginal) => ({ ...await importOriginal<typeof import("@/runtime/env")>(), getSupabaseAdmin: () => ({ from: (table: string) => table === "workspaces" ? { select: () => ({ eq: () => ({ maybeSingle: mocks.owner }) }) } : { upsert: mocks.upsert } }) }));
 vi.mock("@/routes/v1/control/route-helpers", () => ({ requireOAuthWorkspaceRole: mocks.role }));
 vi.mock("@/lib/oauth/rateLimit", () => ({ checkOAuthRateLimit: mocks.limit }));
-import { handleDesktopSessionTurn, desktopSessionsRoutes } from "./desktop-sessions";
+import { handleDesktopSessionTurn, handleDesktopIdentity, desktopSessionsRoutes } from "./desktop-sessions";
 const payload = { environment_id: "env-1", session_id: "chat-1", turn_id: "turn-1", provider: "codex", model: "gpt-test", status: "completed", started_at: "2026-10-06T14:00:00Z", completed_at: "2026-10-06T14:00:10Z", input_tokens: null, output_tokens: null, usage_status: "unavailable", desktop_scheme: "t3code" };
 const request = (body: unknown = payload) => new Request("https://api.phaseo.app/desktop/session-turns", { method: "POST", body: JSON.stringify(body) });
 beforeEach(() => {
@@ -76,4 +76,15 @@ it("fails closed when workspace ownership cannot be checked", async () => {
   mocks.owner.mockResolvedValue({ data: null, error: { message: "unavailable" } });
   expect((await handleDesktopSessionTurn(request())).status).toBe(503);
   expect(mocks.upsert).not.toHaveBeenCalled();
+});
+
+it("returns verified identity for opaque desktop keys without writing a report", async () => {
+  const response = await handleDesktopIdentity(new Request("https://api.phaseo.app/desktop/identity", { headers: { authorization: "Bearer opaque-delegated-key" } }));
+  expect(await response.json()).toEqual({ user_id: "user-1", workspace_id: "workspace-1" });
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(mocks.upsert).not.toHaveBeenCalled();
+});
+it("does not disclose identity after membership revocation", async () => {
+  mocks.role.mockResolvedValue(new Response("forbidden", { status: 403 }));
+  expect((await handleDesktopIdentity(request())).status).toBe(403);
 });

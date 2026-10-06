@@ -72,3 +72,20 @@ export async function handleDesktopSessionTurn(req: Request) {
 }
 export const desktopSessionsRoutes = new Hono<Env>();
 desktopSessionsRoutes.post("/session-turns", withRuntime(handleDesktopSessionTurn));
+
+// The desktop stores an opaque delegated gateway key, not a JWT identity.
+export async function handleDesktopIdentity(req: Request) {
+  const auth = await guardAuth(req, { allowOAuthJwt: true, useKvCache: false });
+  if (auth.ok === false) return auth.response;
+  const identity = auth.value;
+  if (identity.authMethod !== "oauth" || identity.oauthClientId !== DESKTOP_CLIENT_ID ||
+      !identity.userId || !identity.oauthScopes?.includes("gateway:access")) return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
+  const workspace = await getSupabaseAdmin().from("workspaces").select("owner_user_id").eq("id", identity.workspaceId).maybeSingle();
+  if (workspace.error) return json({ error: "session_sync_unavailable" }, 503, { "Cache-Control": "no-store" });
+  if (workspace.data?.owner_user_id !== identity.userId) {
+    const roleError = await requireOAuthWorkspaceRole(identity, identity.workspaceId, ["owner", "admin", "member"]);
+    if (roleError) return roleError;
+  }
+  return json({ user_id: identity.userId, workspace_id: identity.workspaceId }, 200, { "Cache-Control": "no-store" });
+}
+desktopSessionsRoutes.get("/identity", withRuntime(handleDesktopIdentity));
