@@ -284,6 +284,7 @@ describe("V2 environment commands", () => {
 
       yield* startThreadTurn({
         commandId: CommandId.make("implement-plan"),
+        workspaceMode: "chat",
         threadId: v2ThreadId,
         message: {
           messageId: MessageId.make("message-implementation"),
@@ -308,6 +309,7 @@ describe("V2 environment commands", () => {
       expect(commands[0]).toMatchObject({
         type: "message.dispatch",
         commandId: "implement-plan",
+        workspaceMode: "chat",
         threadId: v2ThreadId,
         titleSeed: "Implement the plan",
         sourcePlanRef: { threadId: "thread-plan", planId: "plan-1" },
@@ -324,6 +326,7 @@ describe("V2 environment commands", () => {
 
       yield* startThreadTurn({
         commandId: CommandId.make("launch-existing-worktree"),
+        workspaceMode: "chat",
         threadId: v2ThreadId,
         message: {
           messageId: MessageId.make("message-existing-worktree"),
@@ -352,6 +355,7 @@ describe("V2 environment commands", () => {
         threadId: v2ThreadId,
         title: "Continue here",
         generateTitle: true,
+        initialMessage: { workspaceMode: "chat" },
         workspaceStrategy: {
           type: "existing_worktree",
           worktreePath: "/workspace/project-worktrees/feature",

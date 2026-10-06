@@ -163,6 +163,7 @@ interface StartThreadBootstrap {
 }
 
 export interface StartThreadTurnInput extends ThreadCommandInput {
+  readonly workspaceMode?: "chat" | "code";
   readonly manualContinuationOfRunId?: RunId;
   readonly message: {
     readonly messageId: MessageId;
@@ -677,6 +678,7 @@ export const startThreadTurn = Effect.fn("EnvironmentCommands.startThreadTurn")(
       interactionMode: input.interactionMode,
       workspaceStrategy,
       initialMessage: {
+        ...(input.workspaceMode === undefined ? {} : { workspaceMode: input.workspaceMode }),
         messageId: input.message.messageId,
         text: input.message.text,
         ...(context ? { context } : {}),
@@ -693,6 +695,7 @@ export const startThreadTurn = Effect.fn("EnvironmentCommands.startThreadTurn")(
       createdBy: "user",
       creationSource: input.creationSource ?? "web",
       threadId: input.threadId,
+      ...(input.workspaceMode === undefined ? {} : { workspaceMode: input.workspaceMode }),
       messageId: input.message.messageId,
       ...(input.manualContinuationOfRunId === undefined
         ? {}
@@ -757,6 +760,7 @@ export const startThreadTurn = Effect.fn("EnvironmentCommands.startThreadTurn")(
     createdBy: "user",
     creationSource: input.creationSource ?? "web",
     threadId: input.threadId,
+    ...(input.workspaceMode === undefined ? {} : { workspaceMode: input.workspaceMode }),
     messageId: input.message.messageId,
     text: input.message.text,
     ...(context ? { context } : {}),

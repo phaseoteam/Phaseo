@@ -1969,6 +1969,9 @@ const makeWsRpcLayer = (
                     ? {}
                     : {
                         initialMessage: {
+                          ...(input.initialMessage.workspaceMode === undefined
+                            ? {}
+                            : { workspaceMode: input.initialMessage.workspaceMode }),
                           ...(input.initialMessage.messageId === undefined
                             ? {}
                             : { messageId: input.initialMessage.messageId }),

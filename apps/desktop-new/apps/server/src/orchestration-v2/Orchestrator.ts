@@ -457,6 +457,19 @@ function withoutPreparationResult(
   return rest;
 }
 
+function runWorkspaceMode(
+  runs: ReadonlyArray<OrchestrationV2Run>,
+  command: Extract<OrchestrationV2Command, { type: "message.dispatch" }>,
+): Pick<OrchestrationV2Run, "workspaceMode"> {
+  const sourceId =
+    command.restartContinuationOfRunId ??
+    command.usageLimitContinuationOfRunId ??
+    command.manualContinuationOfRunId;
+  const workspaceMode =
+    command.workspaceMode ?? runs.find((run) => run.id === sourceId)?.workspaceMode;
+  return workspaceMode === undefined ? {} : { workspaceMode };
+}
+
 function isBlockingRun(run: OrchestrationV2Run): boolean {
   return (
     run.status === "preparing" ||
@@ -4803,6 +4816,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           modelSelection,
           providerThreadId: queuedProviderThread.id,
           userMessageId: command.messageId,
+          ...runWorkspaceMode(projection.runs, command),
           rootNodeId,
           activeAttemptId: attemptId,
           status: "queued",
@@ -5153,6 +5167,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
           modelSelection,
           providerThreadId,
           userMessageId: command.messageId,
+          ...runWorkspaceMode(projection.runs, command),
           rootNodeId,
           activeAttemptId: attemptId,
           status: dispatchMode.type === "defer_start" ? "preparing" : "starting",
@@ -5845,6 +5860,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
         modelSelection,
         providerThreadId: providerThread.id,
         userMessageId: command.messageId,
+        ...runWorkspaceMode(projection.runs, command),
         rootNodeId,
         activeAttemptId: attemptId,
         status: "starting",

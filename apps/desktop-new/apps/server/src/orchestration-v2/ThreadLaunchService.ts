@@ -59,6 +59,7 @@ export type ThreadLaunchWorkspaceStrategy =
     };
 
 export interface ThreadLaunchInitialMessage {
+  readonly workspaceMode?: "chat" | "code";
   readonly messageId?: MessageId;
   readonly scheduledTaskId?: ScheduledTaskId;
   readonly senderThreadId?: ThreadId;
@@ -805,6 +806,9 @@ const make = Effect.gen(function* () {
               commandId: messageCommandId,
               threadId,
               messageId,
+              ...(input.initialMessage.workspaceMode === undefined
+                ? {}
+                : { workspaceMode: input.initialMessage.workspaceMode }),
               text: input.initialMessage.text,
               ...(input.initialMessage.scheduledTaskId === undefined
                 ? {}
@@ -949,6 +953,7 @@ const make = Effect.gen(function* () {
           ? {}
           : {
               initialMessage: {
+                ...(run.workspaceMode === undefined ? {} : { workspaceMode: run.workspaceMode }),
                 text: message.text,
                 attachments: message.attachments,
                 ...(message.context ? { context: message.context } : {}),

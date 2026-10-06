@@ -4185,22 +4185,28 @@ export default function ChatView(props: ChatViewProps) {
           providerSubagentModels,
           reportedModelSelection,
         );
-  const mountComposerContextStrip = workspaceMode === "code" && !activeProjectIsScratch && shouldShowComposerContextStrip({
-    isDraftHeroState,
-    persistInActiveThreads: settings.persistComposerContextStrip,
-    hasActiveProject: activeProject !== null && !showProviderSubagentBar,
-    isGitRepo,
-    showEnvironmentIndicator: showComposerEnvironmentIndicator,
-    hostsRestingComposerControls: routeKind === "server",
-  });
-  const showComposerContextStrip = workspaceMode === "code" && !activeProjectIsScratch && shouldShowComposerContextStrip({
-    isDraftHeroState,
-    persistInActiveThreads: settings.persistComposerContextStrip,
-    hasActiveProject: activeProject !== null && !showProviderSubagentBar,
-    isGitRepo,
-    showEnvironmentIndicator: showComposerEnvironmentIndicator,
-    hostsRestingComposerControls: routeKind === "server" && restingComposerControlsVisible,
-  });
+  const mountComposerContextStrip =
+    workspaceMode === "code" &&
+    !activeProjectIsScratch &&
+    shouldShowComposerContextStrip({
+      isDraftHeroState,
+      persistInActiveThreads: settings.persistComposerContextStrip,
+      hasActiveProject: activeProject !== null && !showProviderSubagentBar,
+      isGitRepo,
+      showEnvironmentIndicator: showComposerEnvironmentIndicator,
+      hostsRestingComposerControls: routeKind === "server",
+    });
+  const showComposerContextStrip =
+    workspaceMode === "code" &&
+    !activeProjectIsScratch &&
+    shouldShowComposerContextStrip({
+      isDraftHeroState,
+      persistInActiveThreads: settings.persistComposerContextStrip,
+      hasActiveProject: activeProject !== null && !showProviderSubagentBar,
+      isGitRepo,
+      showEnvironmentIndicator: showComposerEnvironmentIndicator,
+      hostsRestingComposerControls: routeKind === "server" && restingComposerControlsVisible,
+    });
   const mountComposerModelStrip =
     routeKind === "server" && !mountComposerContextStrip && !showProviderSubagentBar;
   const showComposerModelStrip = mountComposerModelStrip && restingComposerControlsVisible;
@@ -8239,6 +8245,7 @@ export default function ChatView(props: ChatViewProps) {
           : await startThreadTurn({
               environmentId,
               input: {
+                workspaceMode: useWorkspaceModeStore.getState().mode,
                 threadId,
                 message: { messageId, role: "user", text: "/compact", attachments: [] },
                 modelSelection: context.selectedModelSelection,
@@ -8304,6 +8311,7 @@ export default function ChatView(props: ChatViewProps) {
         const turnResult = await startThreadTurn({
           environmentId,
           input: {
+            workspaceMode: useWorkspaceModeStore.getState().mode,
             threadId,
             manualContinuationOfRunId: resumableRunId,
             message: {
@@ -9108,6 +9116,7 @@ export default function ChatView(props: ChatViewProps) {
               const result = await startThreadTurn({
                 environmentId,
                 input: {
+                  workspaceMode: useWorkspaceModeStore.getState().mode,
                   threadId: targetThreadId,
                   message: {
                     messageId: newMessageId(),
@@ -9483,6 +9492,7 @@ export default function ChatView(props: ChatViewProps) {
       const startPromise = startThreadTurn({
         environmentId,
         input: {
+          workspaceMode: useWorkspaceModeStore.getState().mode,
           threadId: threadIdForSend,
           message: {
             messageId: messageIdForSend,
@@ -10032,6 +10042,7 @@ export default function ChatView(props: ChatViewProps) {
       const startResult = await startThreadTurn({
         environmentId,
         input: {
+          workspaceMode: useWorkspaceModeStore.getState().mode,
           threadId: threadIdForSend,
           message: {
             messageId: messageIdForSend,
@@ -10147,6 +10158,7 @@ export default function ChatView(props: ChatViewProps) {
       const startResult = await startThreadTurn({
         environmentId,
         input: {
+          workspaceMode: useWorkspaceModeStore.getState().mode,
           threadId: nextThreadId,
           message: {
             messageId: newMessageId(),
@@ -10872,13 +10884,17 @@ export default function ChatView(props: ChatViewProps) {
           ) : null}
           {!rightPanelControlsAtRoot && !rightPanelControlsInPanel ? panelLayoutControls : null}
           {inlineRightPanelOwnsTitleBar ? threadPanelHeaderControl : null}
-          <div className="mr-2 shrink-0"><WorkspaceNavigation /></div>
+          <div className="mr-2 shrink-0">
+            <WorkspaceNavigation />
+          </div>
           <ChatHeader
             activeThreadEnvironmentId={activeThread.environmentId}
             activeThreadId={activeThread.id}
             isServerThread={isServerThread}
             activeThreadTitle={activeThread.title}
-            activeProject={workspaceMode === "chat" || activeProjectIsScratch ? null : activeProject ?? null}
+            activeProject={
+              workspaceMode === "chat" || activeProjectIsScratch ? null : (activeProject ?? null)
+            }
             rightPanelOpen={inlineRightPanelOwnsTitleBar}
             onNewThreadInProject={handleNewThreadInActiveProject}
             {...(activeDraftLogicalProjectKey

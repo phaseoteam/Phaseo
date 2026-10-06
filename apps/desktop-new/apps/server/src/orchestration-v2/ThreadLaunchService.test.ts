@@ -402,7 +402,11 @@ it.effect("returns a visible preparing message while provisioning is still block
         message: "Build the feature",
         workspace: { type: "worktree", baseRef: "main" },
       });
-      const launched = yield* launches.launch(input);
+      const launched = yield* launches.launch({
+        ...input,
+        initialMessage: { ...input.initialMessage!, workspaceMode: "chat" },
+      });
+      assert.equal(launched.projection.runs[0]?.workspaceMode, "chat");
       assert.equal(launched.projection.messages[0]?.text, "Build the feature");
       assert.equal(launched.projection.runs[0]?.status, "preparing");
       assert.equal(

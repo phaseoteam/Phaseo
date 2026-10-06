@@ -970,6 +970,164 @@ it.effect("starts the provider when checkpoint baseline capture fails", () =>
   }),
 );
 
+it.effect.each(["chat", "code", undefined] as const)(
+  "applies %s workspace checkpoint policy before and after a turn",
+  (workspaceMode) =>
+    Effect.gen(function* () {
+      const threadId = ThreadId.make("thread:run-execution-baseline-failure");
+      const runId = RunId.make("run:run-execution-baseline-failure");
+      const attemptId = RunAttemptId.make("attempt:run-execution-baseline-failure");
+      const providerThreadId = ProviderThreadId.make(
+        "provider-thread:run-execution-baseline-failure",
+      );
+      const providerInstanceId = ProviderInstanceId.make("codex");
+      const providerSessionId = ProviderSessionId.make("session:run-execution-baseline-failure");
+      const rootNodeId = NodeId.make("node:run-execution-baseline-failure");
+      const checkpointScope = {
+        id: CheckpointScopeId.make("checkpoint-scope:run-execution-baseline-failure"),
+      } as OrchestrationV2CheckpointScope;
+      const providerStarts = yield* Ref.make(0);
+      const terminalWritten = yield* Deferred.make<void>();
+      const baselines = yield* Ref.make(0);
+      const writes = yield* Ref.make<
+        ReadonlyArray<{
+          events: ReadonlyArray<OrchestrationV2DomainEvent>;
+          effects: ReadonlyArray<PendingOrchestrationEffectV2>;
+        }>
+      >([]);
+      const testLayer = RunExecutionService.layer.pipe(
+        Layer.provide(
+          Layer.mergeAll(
+            Layer.mock(CheckpointService.CheckpointServiceV2)({
+              captureBaseline: () => Ref.update(baselines, (count) => count + 1),
+            }),
+            Layer.mock(EventSink.EventSinkV2)({
+              writeWithEffects: (input) =>
+                Ref.update(writes, (current) => [
+                  ...current,
+                  { events: input.events, effects: input.effects },
+                ]).pipe(
+                  Effect.andThen(
+                    input.events.some(
+                      (event) => event.type === "run.updated" && event.payload.completedAt !== null,
+                    )
+                      ? Deferred.succeed(terminalWritten, undefined)
+                      : Effect.void,
+                  ),
+                  Effect.as([]),
+                ),
+            }),
+            IdAllocator.layer,
+            Layer.mock(ProviderEventIngestor.ProviderEventIngestorV2)({
+              ingestNormalized: () => Effect.succeed([]),
+            }),
+            ServerSettings.layerTest(),
+          ),
+        ),
+      );
+
+      yield* Effect.gen(function* () {
+        const runExecution = yield* RunExecutionService.RunExecutionServiceV2;
+        yield* runExecution.startRootRun({
+          commandId: CommandId.make("command:run-execution-baseline-failure"),
+          appThread: { id: threadId } as OrchestrationV2AppThread,
+          providerSessionId,
+          session: {
+            events: Stream.fromArray<ProviderAdapterV2Event>([
+              {
+                type: "provider_turn.updated",
+                driver,
+                threadId,
+                providerTurn: {
+                  id: ProviderTurnId.make("turn:checkpoint-mode"),
+                  providerThreadId,
+                  nodeId: rootNodeId,
+                  runAttemptId: attemptId,
+                  nativeTurnRef: null,
+                  ordinal: 1,
+                  status: "running",
+                  startedAt: yield* DateTime.now,
+                  completedAt: null,
+                },
+              },
+              {
+                type: "turn.terminal",
+                driver,
+                providerThreadId,
+                providerTurnId: ProviderTurnId.make("turn:checkpoint-mode"),
+                runOrdinal: 1,
+                status: "cancelled",
+                failure: null,
+                threadDisposition: "reusable",
+              },
+            ]),
+            startTurn: () => Ref.update(providerStarts, (count) => count + 1),
+          } as unknown as ProviderAdapterV2SessionRuntime,
+          run: {
+            id: runId,
+            threadId,
+            ordinal: 1,
+            providerInstanceId,
+            ...(workspaceMode === undefined ? {} : { workspaceMode }),
+          } as OrchestrationV2Run,
+          rootNode: { id: rootNodeId } as OrchestrationV2ExecutionNode,
+          checkpointScope,
+          providerThread: {
+            id: providerThreadId,
+            driver,
+          } as OrchestrationV2ProviderThread,
+          attempt: {
+            id: attemptId,
+            providerTurnId: null,
+          } as OrchestrationV2RunAttempt,
+          attemptId,
+          providerTurnOrdinal: 1,
+          message: {
+            messageId: MessageId.make("message:run-execution-baseline-failure"),
+            text: "Start the provider without a baseline.",
+            attachments: [],
+            createdBy: "user",
+            creationSource: "web",
+          },
+          modelSelection: { instanceId: providerInstanceId, model: "gpt-5.4" },
+          runtimePolicy: {
+            runtimeMode: "full-access",
+            interactionMode: "default",
+            cwd: process.cwd(),
+            approvalPolicy: "never",
+            sandboxPolicy: {
+              type: "readOnly",
+              access: { type: "fullAccess" },
+              networkAccess: false,
+            },
+          },
+        });
+        yield* Deferred.await(terminalWritten);
+      }).pipe(Effect.provide(testLayer));
+
+      assert.equal(yield* Ref.get(providerStarts), 1);
+      assert.equal(yield* Ref.get(baselines), workspaceMode === "chat" ? 0 : 1);
+      const checkpointEffects = (yield* Ref.get(writes))
+        .flatMap((write) => write.effects)
+        .filter((effect) => effect.request.type === "checkpoint.capture");
+      assert.equal(checkpointEffects.length, workspaceMode === "chat" ? 0 : 1);
+
+      const events = (yield* Ref.get(writes)).flatMap((write) => [...write.events]);
+      const failedEvent = events.find(
+        (event) =>
+          (event.type === "run.updated" ||
+            event.type === "run-attempt.updated" ||
+            event.type === "node.updated") &&
+          event.payload.status === "failed",
+      );
+      assert.isUndefined(failedEvent);
+      const errorItem = events.find(
+        (event) => event.type === "turn-item.updated" && event.payload.type === "error",
+      );
+      assert.isUndefined(errorItem);
+    }),
+);
+
 it.effect.each(["failure", "interruption", "stale-attempt", "start-guard"] as const)(
   "handles %s before the provider turn starts",
   (scenario) =>
