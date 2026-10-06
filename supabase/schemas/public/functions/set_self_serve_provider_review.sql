@@ -62,6 +62,7 @@ begin
     update public.v2_route_capabilities capability set status = 'internal_testing', updated_at = reviewed_at_value
     from public.v2_model_provider_routes route
     where route.provider_slug = p_provider_slug and capability.provider_model_id = route.provider_model_id
+      and capability.capability_id = public.canonical_routing_capability_id(capability.capability_id)
       and capability.metadata ->> 'managed_by' = 'provider_catalog';
   end if;
 

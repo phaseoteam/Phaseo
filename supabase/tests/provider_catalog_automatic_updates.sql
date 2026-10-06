@@ -35,6 +35,13 @@ begin
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/model-b');
   assert (select price_nanos=250000000 from public.v2_pricing_sku_meters meter join public.v2_pricing_skus sku using(sku_id) where sku.provider_model_id=offer_id and sku.status='active');
   assert (select operation='text.generate' from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
+  -- Reproduce a retired protocol alias retained by the existing migration history.
+  -- Restore normalization before exercising any catalog writes.
+  alter table public.v2_route_capabilities disable trigger canonical_routing_capability;
+  insert into public.v2_route_capabilities (provider_model_id,capability_id,status,effective_from,effective_to,updated_at,metadata)
+  values (offer_id,'responses','disabled',now()-interval '3 days',now()-interval '2 days',now()-interval '2 days',
+    jsonb_build_object('managed_by','provider_catalog','source_run_id',run1));
+  alter table public.v2_route_capabilities enable trigger canonical_routing_capability;
 
   -- Re-delivery and an unchanged new snapshot must not create new price versions.
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run1,document);
@@ -178,6 +185,8 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
   assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   assert public.activate_due_provider_catalog_releases()=0;
+  assert (select status='disabled' and updated_at=now()-interval '2 days' from public.v2_route_capabilities
+    where provider_model_id=offer_id and capability_id='responses');
   bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/multi"'),'{0,providerModelSlug}','"multi"');
   bad_document := jsonb_set(bad_document,'{0,capabilities}','[{"id":"responses","parameters":["temperature"]},{"id":"embeddings","parameters":["dimensions"]}]');
   run2 := gen_random_uuid();

@@ -65,6 +65,7 @@ begin
   update public.v2_route_capabilities capability set status = 'disabled', updated_at = now()
   from public.v2_model_provider_routes route
   where capability.provider_model_id = route.provider_model_id and route.provider_slug = p_provider_slug
+    and capability.capability_id = public.canonical_routing_capability_id(capability.capability_id)
     and route.metadata ->> 'managed_by' = 'provider_catalog' and route.status = 'retired';
 
   update public.v2_pricing_skus sku

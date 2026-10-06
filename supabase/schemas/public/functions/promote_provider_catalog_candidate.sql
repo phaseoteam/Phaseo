@@ -167,7 +167,8 @@ begin
     metadata = public.v2_model_provider_routes.metadata || excluded.metadata, updated_at = now();
 
   update public.v2_route_capabilities set status = 'disabled', updated_at = now()
-  where provider_model_id = provider_model_id_value;
+  where provider_model_id = provider_model_id_value
+    and capability_id = public.canonical_routing_capability_id(capability_id);
 
   for capability in
     select jsonb_build_object('id', public.canonical_routing_capability_id(cap.value ->> 'id'),

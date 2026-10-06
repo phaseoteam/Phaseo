@@ -74,6 +74,7 @@ begin
   set status = case when route.status = 'active' then 'active' else 'degraded' end, updated_at = now()
   from public.v2_model_provider_routes route
   where route.provider_model_id = capability.provider_model_id
+    and capability.capability_id = public.canonical_routing_capability_id(capability.capability_id)
     and route.provider_model_id = any(activated_route_ids)
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and route.metadata ->> 'release_scheduled' = 'false'

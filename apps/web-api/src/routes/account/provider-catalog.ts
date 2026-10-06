@@ -54,7 +54,7 @@ export const providerCatalogJsonSchema = {
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
 			properties: {
-				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
+				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source, description: "Use an existing public canonical model ID, or your provider's own namespace for a new model." }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
 				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
 				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
