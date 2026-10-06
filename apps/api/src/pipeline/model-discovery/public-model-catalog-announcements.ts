@@ -501,11 +501,9 @@ export async function runPublicModelAnnouncementCheck(args: {
 						creatorId: model.labSlug,
 						creatorName: model.creatorName,
 						creatorColor: model.creatorColor,
-						changeSummaryLines: [
-							newlyAvailableModelSlugs.has(model.modelSlug)
-								? "Now available in the public Phaseo model catalog."
-								: "Added to the public Phaseo model catalog.",
-						],
+						changeSummaryLines: newlyAvailableModelSlugs.has(model.modelSlug)
+							? []
+							: ["Added to the public Phaseo model catalog."],
 					})),
 					readBindingEnv(["DISCORD_ROLE_ID"]),
 					{
