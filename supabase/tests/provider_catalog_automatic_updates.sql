@@ -18,7 +18,9 @@ declare
   document jsonb := '[{"id":"catalog-contract-test/model-a","name":"Contract model A","providerModelSlug":"upstream-a","inputModalities":["text"],"outputModalities":["text"],"availability":"ready","availableFrom":"2026-01-01T00:00:00Z","capabilities":[{"id":"responses","parameters":["temperature","max_output_tokens"]}],"pricing":[{"meterKey":"input_tokens","modality":"text","direction":"input","unit":"token","unitQuantity":1000000,"priceNanos":250000000,"displayLabel":"Input","displayUnit":"1M tokens","conditions":[]}]},{"id":"catalog-contract-test/model-b","name":"Contract model B","providerModelSlug":"upstream-b","availability":"not_ready","capabilities":[{"id":"responses","parameters":[]}],"pricing":[]}]';
   bad_document jsonb;
   failure text;
+  owner_id uuid := gen_random_uuid();
 begin
+  document := jsonb_set(document,'{0,capabilities}','[{"id":"responses","parameters":["temperature"]},{"id":"chat.completions","parameters":["max_output_tokens"]}]');
   assert not has_function_privilege('authenticated', 'public.apply_provider_catalog_snapshot(text,uuid,jsonb)', 'execute');
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger)
   values (run1,'catalog-contract-test','manual');
@@ -32,6 +34,7 @@ begin
   assert (select not hidden from public.v2_models where model_slug='catalog-contract-test/model-a');
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/model-b');
   assert (select price_nanos=250000000 from public.v2_pricing_sku_meters meter join public.v2_pricing_skus sku using(sku_id) where sku.provider_model_id=offer_id and sku.status='active');
+  assert (select operation='text.generate' from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
 
   -- Re-delivery and an unchanged new snapshot must not create new price versions.
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run1,document);
@@ -87,6 +90,15 @@ begin
   end;
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/model-a');
   update public.v2_models set hidden=false where model_slug='catalog-contract-test/model-a';
+  bad_document := jsonb_set(document,'{0,id}','"unowned-catalog-contract/model"');
+  begin
+    perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+    raise exception 'a foreign publisher namespace was accepted';
+  exception when others then
+    get stacked diagnostics failure = message_text;
+    assert failure like 'provider_catalog_namespace_not_owned:%';
+  end;
+  assert not exists(select 1 from public.v2_labs where lab_slug='unowned-catalog-contract');
 
   -- Omitting an offer retires only this provider's feed-managed routes.
   insert into public.v2_model_provider_routes (provider_model_id,model_slug,provider_slug,provider_model_slug,status,phaseo_status,provider_availability_status)
@@ -97,15 +109,16 @@ begin
   assert (select status='active' from public.v2_model_provider_routes where provider_model_id='catalog-contract-manual');
 
   -- A provider offer can reference a shared model without rewriting its facts.
+  insert into public.v2_labs (lab_slug,name) values ('catalog-other-lab','Other catalog lab');
   insert into public.v2_models (model_slug,lab_slug,name,hidden)
-  values ('catalog-contract-test/shared','catalog-contract-test','Shared canonical name',false);
-  bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/shared"'),'{0,name}','"Provider display name"');
+  values ('catalog-other-lab/shared','catalog-other-lab','Shared canonical name',false);
+  bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-other-lab/shared"'),'{0,name}','"Provider display name"');
   run2 := gen_random_uuid();
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
-  assert (select name='Shared canonical name' from public.v2_models where model_slug='catalog-contract-test/shared');
+  assert (select name='Shared canonical name' from public.v2_models where model_slug='catalog-other-lab/shared');
   assert (select status='retired' from public.v2_model_provider_routes where provider_model_id=offer_id);
-  assert (select routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and model_slug='catalog-contract-test/shared');
+  assert (select routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and model_slug='catalog-other-lab/shared');
 
   -- Scheduled offers stay hidden and activate automatically when their release is due.
   bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/future"'),'{0,providerModelSlug}','"future"');
@@ -165,6 +178,21 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
   assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   assert public.activate_due_provider_catalog_releases()=0;
+  bad_document := jsonb_set(jsonb_set(document,'{0,id}','"catalog-contract-test/multi"'),'{0,providerModelSlug}','"multi"');
+  bad_document := jsonb_set(bad_document,'{0,capabilities}','[{"id":"responses","parameters":["temperature"]},{"id":"embeddings","parameters":["dimensions"]}]');
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select count(*)=2 from public.v2_pricing_skus sku join public.v2_model_provider_routes route using(provider_model_id)
+    where route.provider_slug='catalog-contract-test' and route.provider_model_slug='multi' and route.routing_enabled
+      and sku.status='active' and sku.operation in ('text.generate','text.embed'));
+  assert (select count(*)=2 from public.v2_pricing_sku_meters meter join public.v2_pricing_skus sku using(sku_id)
+    join public.v2_model_provider_routes route using(provider_model_id)
+    where route.provider_slug='catalog-contract-test' and route.provider_model_slug='multi' and route.routing_enabled
+      and sku.status='active' and sku.operation in ('text.generate','text.embed') and meter.price_nanos=200000000);
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select count(*)=2 from public.v2_pricing_skus sku join public.v2_model_provider_routes route using(provider_model_id)
+    where route.provider_slug='catalog-contract-test' and route.provider_model_slug='multi');
   insert into public.v2_providers (provider_slug,name,status)
   values ('catalog-contract-unapproved','Unapproved contract provider','not_ready');
   insert into public.provider_catalog_sources (provider_slug,management_mode)
@@ -175,6 +203,21 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-contract-unapproved',run2,bad_document);
   assert not exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
   assert (select review_status='pending' from public.provider_catalog_sync_runs where id=run2);
+  insert into auth.users (id,email,raw_user_meta_data)
+  values (owner_id,'catalog-contract-owner@example.invalid','{"full_name":"Catalog contract owner"}');
+  update public.provider_catalog_sources set created_by=owner_id where provider_slug='catalog-contract-unapproved';
+  insert into public.provider_onboarding_submissions (provider_slug,submitted_by,provider_name,website_url,application_type,catalog_mode)
+  values ('catalog-contract-unapproved',owner_id,'Unapproved contract provider','https://example.invalid','claim','managed');
+  update public.v2_providers set status='active' where provider_slug='catalog-contract-unapproved';
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-unapproved','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-unapproved',run2,bad_document);
+  assert not exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
+  update public.provider_onboarding_submissions set provider_review_status='approved' where provider_slug='catalog-contract-unapproved';
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-unapproved','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-unapproved',run2,bad_document);
+  assert exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
 end
 $test$;
 

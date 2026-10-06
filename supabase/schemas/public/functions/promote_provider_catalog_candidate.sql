@@ -25,6 +25,8 @@ declare
   route_blocked boolean := false;
   pricing_changed boolean := true;
   pricing_hash text;
+  pricing_operation text;
+  sku_code_value text;
 begin
   select * into candidate from public.provider_catalog_route_candidates
   where run_id = p_run_id and submitted_model_slug = p_submitted_model_slug for update;
@@ -52,6 +54,7 @@ begin
     return provider_model_id_value;
   end if;
   if candidate.status not in ('pending_probe', 'probe_passed') then raise exception 'provider_catalog_candidate_invalid'; end if;
+  if jsonb_array_length(candidate.capabilities) = 0 then raise exception 'provider_catalog_capability_required'; end if;
   if exists (
     select 1 from public.provider_catalog_sync_runs newer
     join public.provider_catalog_sync_runs current_run on current_run.id = candidate.run_id
@@ -62,11 +65,16 @@ begin
     raise exception 'provider_catalog_conditional_pricing_not_supported';
   end if;
 
-  pricing_hash := md5(candidate.pricing::text || coalesce(candidate.available_from::text, ''));
+  pricing_hash := md5(candidate.pricing::text || coalesce(candidate.available_from::text, '') ||
+    coalesce((select string_agg(operation, ',' order by operation) from
+      (select distinct public.canonical_routing_capability_id(value ->> 'id') as operation
+        from jsonb_array_elements(candidate.capabilities)) operations), ''));
   select route.provider_model_id, route.phaseo_status in ('blocked', 'unsupported'),
       route.metadata ->> 'catalog_pricing_hash' is distinct from pricing_hash
-        or not exists (select 1 from public.v2_pricing_skus sku where sku.provider_model_id = route.provider_model_id
-          and sku.sku_code = 'provider-catalog-standard' and sku.status = 'active')
+        or exists (select 1 from jsonb_array_elements(candidate.capabilities) cap where not exists (
+          select 1 from public.v2_pricing_skus sku where sku.provider_model_id = route.provider_model_id
+            and sku.metadata ->> 'managed_by' = 'provider_catalog' and sku.status = 'active'
+            and sku.operation = public.canonical_routing_capability_id(cap ->> 'id')))
     into provider_model_id_value, route_blocked, pricing_changed
   from public.v2_model_provider_routes route
   where route.provider_slug = candidate.provider_slug
@@ -161,7 +169,12 @@ begin
   update public.v2_route_capabilities set status = 'disabled', updated_at = now()
   where provider_model_id = provider_model_id_value;
 
-  for capability in select value from jsonb_array_elements(candidate.capabilities)
+  for capability in
+    select jsonb_build_object('id', public.canonical_routing_capability_id(cap.value ->> 'id'),
+      'parameters', coalesce(jsonb_agg(distinct param.value) filter (where param.value is not null), '[]'::jsonb))
+    from jsonb_array_elements(candidate.capabilities) cap
+    left join lateral jsonb_array_elements_text(coalesce(cap.value -> 'parameters', '[]'::jsonb)) param on true
+    group by public.canonical_routing_capability_id(cap.value ->> 'id')
   loop
     insert into public.v2_route_capabilities (
       provider_model_id, capability_id, status, max_output_tokens, params,
@@ -207,17 +220,23 @@ begin
   set status = case when effective_from >= now() then 'disabled' else 'deprecated' end,
       effective_to = case when effective_from < now() then now() else effective_to end, updated_at = now()
   where provider_model_id = provider_model_id_value
-    and sku_code = 'provider-catalog-standard' and status = 'active';
-  select coalesce(max(version), 0) + 1 into sku_version_value
-  from public.v2_pricing_skus
-  where provider_model_id = provider_model_id_value and sku_code = 'provider-catalog-standard';
+    and status = 'active' and (
+      metadata ->> 'managed_by' = 'provider_catalog'
+      or (coalesce(service_tier_slug, 'standard') = 'standard' and region is null
+        and (operation = 'inference' or operation in (select public.canonical_routing_capability_id(value ->> 'id') from jsonb_array_elements(candidate.capabilities))))
+    );
   if jsonb_array_length(candidate.pricing) > 0 then
+  for pricing_operation in select distinct public.canonical_routing_capability_id(value ->> 'id') from jsonb_array_elements(candidate.capabilities)
+  loop
+  sku_code_value := 'provider-catalog-' || pricing_operation;
+  select coalesce(max(version), 0) + 1 into sku_version_value
+  from public.v2_pricing_skus where provider_model_id = provider_model_id_value and sku_code = sku_code_value;
   insert into public.v2_pricing_skus (
     provider_model_id, route_variant_id, service_tier_slug, sku_code, version, operation, status, display_name,
     currency, effective_from, metadata
   ) values (
-    provider_model_id_value, variant_id_value, 'standard', 'provider-catalog-standard', sku_version_value,
-    'inference', 'active', 'Provider catalog pricing', 'USD', greatest(coalesce(candidate.available_from, now()), now()),
+    provider_model_id_value, variant_id_value, 'standard', sku_code_value, sku_version_value,
+    pricing_operation, 'active', 'Provider catalog pricing', 'USD', greatest(coalesce(candidate.available_from, now()), now()),
     jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id, 'release_scheduled', not release_due)
   ) returning sku_id into sku_id_value;
   for price in select value from jsonb_array_elements(candidate.pricing)
@@ -231,6 +250,7 @@ begin
       (price ->> 'priceNanos')::numeric, price ->> 'displayLabel', price ->> 'displayUnit',
       jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id)
     );
+  end loop;
   end loop;
   end if;
   end if;

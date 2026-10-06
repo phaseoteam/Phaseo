@@ -19,6 +19,7 @@ declare
   canonical_released_at timestamptz;
   match_type_value text;
   provider_approved boolean;
+  provider_lab_slug text;
 begin
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
@@ -26,7 +27,7 @@ begin
       from public.provider_onboarding_submissions sub join public.provider_catalog_sources source
         on source.provider_slug = sub.provider_slug and source.created_by = sub.submitted_by
       where source.provider_slug = p.provider_slug order by sub.created_at desc limit 1),
-      p.status in ('active', 'beta', 'alpha', 'deprecated')) end into provider_approved
+      p.status in ('active', 'beta', 'alpha', 'deprecated')) end, p.lab_slug into provider_approved, provider_lab_slug
   from public.v2_providers p where p.provider_slug = p_provider_slug for update;
   if not found then raise exception 'provider_catalog_provider_not_found'; end if;
   if not exists (select 1 from public.provider_catalog_sync_runs r where r.id = p_run_id and r.provider_slug = p_provider_slug) then
@@ -71,7 +72,7 @@ begin
       effective_to = case when sku.effective_from < now() then now() else sku.effective_to end, updated_at = now()
   from public.v2_model_provider_routes route
   where sku.provider_model_id = route.provider_model_id and sku.status = 'active'
-    and sku.sku_code = 'provider-catalog-standard' and route.provider_slug = p_provider_slug
+    and sku.metadata ->> 'managed_by' = 'provider_catalog' and route.provider_slug = p_provider_slug
     and route.metadata ->> 'managed_by' = 'provider_catalog' and route.status = 'retired';
 
   update public.provider_catalog_models
@@ -213,6 +214,10 @@ begin
       if canonical_slug is null then
         canonical_slug := lower(model_slug_value);
         match_type_value := 'new_model';
+        if split_part(canonical_slug, '/', 1) <> p_provider_slug
+          and split_part(canonical_slug, '/', 1) is distinct from provider_lab_slug then
+          raise exception 'provider_catalog_namespace_not_owned: %', model_slug_value;
+        end if;
         insert into public.v2_labs (lab_slug, name, status, routable, metadata)
         values (split_part(canonical_slug, '/', 1), split_part(canonical_slug, '/', 1), 'disabled', false,
           jsonb_build_object('created_from_provider_proposal', true)) on conflict (lab_slug) do nothing;

@@ -193,6 +193,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		if (applied.error) {
 			console.error("provider_catalog_apply_failed", { providerSlug, errorCode: applied.error.code });
 			if (applied.error.message.includes("provider_catalog_model_unavailable")) throw new Error("A catalog model ID refers to a hidden or unavailable model. Use a public canonical model ID.");
+			if (applied.error.message.includes("provider_catalog_namespace_not_owned")) throw new Error("Unknown model ID outside your provider namespace. Use an existing canonical model ID or your own provider namespace.");
 			if (applied.error.message.includes("provider_catalog_conditional_pricing_not_supported")) throw new Error("Conditional prices are not supported by V1 billing. Provide an effective unconditional price.");
 			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
 		}
