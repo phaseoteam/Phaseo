@@ -970,9 +970,16 @@ it.effect("starts the provider when checkpoint baseline capture fails", () =>
   }),
 );
 
-it.effect.each(["chat", "code", undefined] as const)(
-  "applies %s workspace checkpoint policy before and after a turn",
-  (workspaceMode) =>
+it.effect.each(
+  (["chat", "code", undefined] as const).flatMap((workspaceMode) =>
+    (["completed", "cancelled"] as const).map((terminalStatus) => ({
+      workspaceMode,
+      terminalStatus,
+    })),
+  ),
+)(
+  "applies $workspaceMode workspace checkpoint policy for $terminalStatus turns",
+  ({ workspaceMode, terminalStatus }) =>
     Effect.gen(function* () {
       const threadId = ThreadId.make("thread:run-execution-baseline-failure");
       const runId = RunId.make("run:run-execution-baseline-failure");
@@ -1009,7 +1016,9 @@ it.effect.each(["chat", "code", undefined] as const)(
                 ]).pipe(
                   Effect.andThen(
                     input.events.some(
-                      (event) => event.type === "run.updated" && event.payload.completedAt !== null,
+                      (event) =>
+                        event.type === "run.updated" &&
+                        ["waiting", "completed", "cancelled"].includes(event.payload.status),
                     )
                       ? Deferred.succeed(terminalWritten, undefined)
                       : Effect.void,
@@ -1056,7 +1065,7 @@ it.effect.each(["chat", "code", undefined] as const)(
                 providerThreadId,
                 providerTurnId: ProviderTurnId.make("turn:checkpoint-mode"),
                 runOrdinal: 1,
-                status: "cancelled",
+                status: terminalStatus,
                 failure: null,
                 threadDisposition: "reusable",
               },
@@ -1113,6 +1122,15 @@ it.effect.each(["chat", "code", undefined] as const)(
       assert.equal(checkpointEffects.length, workspaceMode === "chat" ? 0 : 1);
 
       const events = (yield* Ref.get(writes)).flatMap((write) => [...write.events]);
+      const waitingForCheckpoint = terminalStatus === "completed" && workspaceMode !== "chat";
+      for (const eventType of ["run.updated", "node.updated"] as const) {
+        const terminal = events.findLast((event) => event.type === eventType);
+        assert.isDefined(terminal);
+        if (terminal?.type === "run.updated" || terminal?.type === "node.updated") {
+          assert.equal(terminal.payload.status, waitingForCheckpoint ? "waiting" : terminalStatus);
+          assert.equal(terminal.payload.completedAt === null, waitingForCheckpoint);
+        }
+      }
       const failedEvent = events.find(
         (event) =>
           (event.type === "run.updated" ||
