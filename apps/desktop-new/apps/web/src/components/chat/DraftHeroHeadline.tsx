@@ -1,4 +1,5 @@
 import type { DraftId } from "~/composerDraftStore";
+import { useWorkspaceModeStore } from "~/workspaceModeStore";
 import { useComposerDraftStore } from "~/composerDraftStore";
 import { resolveEnvironmentMachineKind, type ScopedProjectRef } from "@t3tools/contracts";
 import { scopedProjectKey, scopeProjectRef } from "@t3tools/client-runtime/environment";
@@ -55,6 +56,7 @@ export function DraftHeroHeadline({
   activeProjectRef,
   activeProjectTitle,
 }: DraftHeroHeadlineProps) {
+  const workspaceMode = useWorkspaceModeStore((state) => state.mode);
   const projects = useProjects();
   const threads = useThreadShells();
   const { environments } = useEnvironments();
@@ -322,7 +324,7 @@ export function DraftHeroHeadline({
   // a complete sentence too. The project picker is a control rendered inline
   // in the h1; without an explicit label its widget state bleeds into the
   // announced phrase.
-  const headingLabel = isScratchDraft
+  const headingLabel = workspaceMode === "chat" || isScratchDraft
     ? "What would you like to do?"
     : hasResolvedProject
       ? `What would you like to do in ${activeProjectDisplayName}?`
@@ -363,7 +365,7 @@ export function DraftHeroHeadline({
         aria-label={headingLabel}
         className="w-full text-center font-semibold text-2xl text-foreground tracking-tight sm:text-3xl"
       >
-        {isScratchDraft ? (
+        {workspaceMode === "chat" || isScratchDraft ? (
           <>What would you like to do?</>
         ) : hasResolvedProject ? (
           <>What would you like to do in {projectSelector}?</>
@@ -375,7 +377,7 @@ export function DraftHeroHeadline({
       </h1>
       {/* Reserved whenever threads can skip a project, so the heading does not
           move. Without a project, the picker moves here to choose one. */}
-      {scratchWorkspaceRoot === null ? null : (
+      {workspaceMode === "chat" || scratchWorkspaceRoot === null ? null : (
         <p className="mt-2 flex h-6 items-center text-sm">
           {isScratchDraft ? projectSelector : orStartWithoutProject}
         </p>

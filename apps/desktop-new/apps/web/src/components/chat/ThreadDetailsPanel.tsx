@@ -114,6 +114,8 @@ export function ThreadDetailsPanel(props: ThreadDetailsPanelProps) {
       : {}),
   };
 
+  if (props.isPersonalChat && props.draftId && !props.versionMismatch) return null;
+
   return (
     <ThreadDetailsCard
       threadRef={{ environmentId: props.environmentId, threadId: props.threadId }}

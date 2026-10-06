@@ -1,7 +1,7 @@
 import { Code2Icon, MessagesSquareIcon, ChevronDownIcon } from "lucide-react";
 import { useWorkspaceModeStore } from "../../workspaceModeStore";
 import { Button } from "../ui/button";
-import { Menu, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuTrigger } from "../ui/menu";
+import { Menu, MenuPopup, MenuRadioGroup, MenuRadioItem, MenuRadioItemIndicator, MenuTrigger } from "../ui/menu";
 
 export function WorkspaceModeMenu() {
   const mode = useWorkspaceModeStore((state) => state.mode);
@@ -16,8 +16,12 @@ export function WorkspaceModeMenu() {
         <MenuRadioGroup value={mode} onValueChange={(value) => {
           if (value === "chat" || value === "code") setMode(value);
         }}>
-          <MenuRadioItem value="chat"><MessagesSquareIcon />Chat</MenuRadioItem>
-          <MenuRadioItem value="code"><Code2Icon />Code</MenuRadioItem>
+          <MenuRadioItem value="chat">
+            <span className="flex items-center gap-2"><MessagesSquareIcon /><span className="flex-1">Chat</span><MenuRadioItemIndicator /></span>
+          </MenuRadioItem>
+          <MenuRadioItem value="code">
+            <span className="flex items-center gap-2"><Code2Icon /><span className="flex-1">Code</span><MenuRadioItemIndicator /></span>
+          </MenuRadioItem>
         </MenuRadioGroup>
       </MenuPopup>
     </Menu>
