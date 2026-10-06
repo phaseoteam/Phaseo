@@ -14,6 +14,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "~/lib/utils";
 import { modelPickerModelKey } from "./modelPickerKeys";
 import { ProviderInstanceIcon } from "./ProviderInstanceIcon";
+import { ModelLabIcon } from "./ModelLabIcon";
 
 export const ModelListRow = memo(function ModelListRow(props: {
   index: number;
@@ -61,6 +62,7 @@ export const ModelListRow = memo(function ModelListRow(props: {
     >
       <div className="min-w-0 flex-1 text-left">
         <div className="flex min-w-0 items-center gap-2">
+          {props.driverKind === "phaseo" ? <ModelLabIcon model={props.model} /> : null}
           <div className="min-w-0 truncate text-xs font-medium leading-snug">
             {props.useTriggerLabel
               ? getTriggerDisplayModelLabel(props.model)
