@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "Vos sessions Desktop",
+		"description": "Les {limit} derniers tours terminés. Les jetons concernent l’agent principal.",
+		"loading": "Chargement des sessions…",
+		"historyUnavailable": "L’historique Desktop est actuellement indisponible.",
+		"empty": "Aucune session Desktop pendant cette période.",
+		"session": "Session",
+		"model": "Modèle",
+		"status": "État",
+		"turns": "Tours",
+		"duration": "Temps de travail",
+		"tokens": "Jetons déclarés",
+		"lastActivity": "Dernière activité",
+		"openChat": "Ouvrir le chat dans Desktop",
+		"unavailable": "Indisponible",
+		"partialTokens": "{count} (partiel)",
+		"seconds": "{seconds} s",
+		"completed": "Terminé",
+		"failed": "Échec",
+		"cancelled": "Annulé",
+		"interrupted": "Interrompu",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "Profil utilisateur",
 		"viewProfile": "Voir le profil",

@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "Ihre Desktop-Sitzungen",
+		"description": "Die letzten {limit} abgeschlossenen Gesprächsrunden. Token zählen für den Hauptagenten.",
+		"loading": "Sitzungen werden geladen…",
+		"historyUnavailable": "Der Desktop-Verlauf ist derzeit nicht verfügbar.",
+		"empty": "Keine Desktop-Sitzungen in diesem Zeitraum.",
+		"session": "Sitzung",
+		"model": "Modell",
+		"status": "Status",
+		"turns": "Gesprächsrunden",
+		"duration": "Arbeitszeit",
+		"tokens": "Gemeldete Token",
+		"lastActivity": "Letzte Aktivität",
+		"openChat": "Chat in Desktop öffnen",
+		"unavailable": "Nicht verfügbar",
+		"partialTokens": "{count} (teilweise)",
+		"seconds": "{seconds} s",
+		"completed": "Abgeschlossen",
+		"failed": "Fehlgeschlagen",
+		"cancelled": "Abgebrochen",
+		"interrupted": "Unterbrochen",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "Benutzerprofil",
 		"viewProfile": "Profil anzeigen",

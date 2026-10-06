@@ -653,11 +653,22 @@ accountSettingsUsageRouter.get("/usage/desktop-sessions", async (c) => {
   if (!context) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
   const from = c.req.query("from"), to = c.req.query("to");
   if (!from || !to || !Number.isFinite(Date.parse(from)) || !Number.isFinite(Date.parse(to)) || Date.parse(from) > Date.parse(to)) return c.json({ error: "invalid_range" }, 400, PRIVATE_NO_STORE_HEADERS);
-  const result = await context.userClient.from("desktop_session_turns")
+  const app = c.req.query("app")?.trim();
+  if (app && app !== "phaseo-desktop") {
+    const apps = await context.client.from("api_apps").select("id")
+      .eq("workspace_id", context.workspaceId).eq("app_key", "https://phaseo.app/desktop");
+    if (apps.error) return c.json({ error: "desktop_history_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+    if (!(apps.data ?? []).some((row) => row.id === app)) return c.json({ turns: [] }, 200, PRIVATE_NO_STORE_HEADERS);
+  }
+  let query = context.userClient.from("desktop_session_turns")
     .select("environment_id,session_id,turn_id,provider,model,status,started_at,completed_at,input_tokens,output_tokens,usage_status,desktop_scheme")
     .eq("workspace_id", context.workspaceId).eq("user_id", context.user.id)
-    .gte("completed_at", new Date(from).toISOString()).lte("completed_at", new Date(to).toISOString())
-    .order("completed_at", { ascending: false }).limit(100);
+    .gte("completed_at", new Date(from).toISOString()).lte("completed_at", new Date(to).toISOString());
+  const model = c.req.query("model")?.trim(), provider = c.req.query("provider")?.trim(), session = c.req.query("session")?.trim();
+  if (model) query = query.eq("model", model);
+  if (provider) query = query.eq("provider", provider);
+  if (session) query = query.eq("session_id", session);
+  const result = await query.order("completed_at", { ascending: false }).limit(100);
   if (result.error) return c.json({ error: "desktop_history_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
   return c.json({ turns: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS);
 });

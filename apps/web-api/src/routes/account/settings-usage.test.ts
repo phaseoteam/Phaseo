@@ -438,3 +438,29 @@ describe("native desktop session history", () => {
     expect((await app.request("https://phaseo.app/api/account/settings/usage/desktop-sessions?workspaceId=workspace-1&from=2026-10-01&to=2026-10-06", {}, env)).status).toBe(401);
   });
 });
+
+it.each(["desktop-app", "other-app"])("applies native history filters for %s", async (appId) => {
+  let history: URL | undefined;
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    if (url.pathname === "/auth/v1/user") return Response.json({ id: "viewer" });
+    if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+    if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+    if (url.pathname.endsWith("api_apps")) {
+      expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1");
+      expect(url.searchParams.get("app_key")).toBe("eq.https://phaseo.app/desktop");
+      return Response.json([{ id: "desktop-app" }]);
+    }
+    if (url.pathname.endsWith("desktop_session_turns")) { history = url; return Response.json([]); }
+    return Response.json([]);
+  }));
+  const response = await app.request(`https://phaseo.app/api/account/settings/usage/desktop-sessions?workspaceId=workspace-1&from=2026-10-01&to=2026-10-06&app=${appId}&session=chat-1&model=model-1&provider=codex`, { headers: { authorization: "Bearer token" } }, env);
+  expect(response.status).toBe(200);
+  if (appId === "other-app") expect(history).toBeUndefined();
+  else {
+    expect(history?.searchParams.get("session_id")).toBe("eq.chat-1");
+    expect(history?.searchParams.get("model")).toBe("eq.model-1");
+    expect(history?.searchParams.get("provider")).toBe("eq.codex");
+    expect(history?.searchParams.get("limit")).toBe("100");
+  }
+});

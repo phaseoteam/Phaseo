@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "Suas sessões de desktop",
+		"description": "Últimos {limit} turnos finalizados. Os tokens correspondem ao agente principal.",
+		"loading": "Carregando sessões…",
+		"historyUnavailable": "O histórico de desktop está indisponível.",
+		"empty": "Nenhuma sessão de desktop neste período.",
+		"session": "Sessão",
+		"model": "Modelo",
+		"status": "Status",
+		"turns": "Turnos",
+		"duration": "Tempo de trabalho",
+		"tokens": "Tokens informados",
+		"lastActivity": "Última atividade",
+		"openChat": "Abrir chat no desktop",
+		"unavailable": "Indisponível",
+		"partialTokens": "{count} (parcial)",
+		"seconds": "{seconds} s",
+		"completed": "Concluído",
+		"failed": "Falhou",
+		"cancelled": "Cancelado",
+		"interrupted": "Interrompido",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "Perfil do usuário",
 		"viewProfile": "Ver perfil",

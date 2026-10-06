@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "Your desktop sessions",
+		"description": "Latest {limit} finished turns. Tokens cover the main agent.",
+		"loading": "Loading sessions…",
+		"historyUnavailable": "Desktop history is currently unavailable.",
+		"empty": "No desktop sessions in this period.",
+		"session": "Session",
+		"model": "Model",
+		"status": "Status",
+		"turns": "Turns",
+		"duration": "Time worked",
+		"tokens": "Reported tokens",
+		"lastActivity": "Last activity",
+		"openChat": "Open chat in desktop",
+		"unavailable": "Unavailable",
+		"partialTokens": "{count} (partial)",
+		"seconds": "{seconds}s",
+		"completed": "Completed",
+		"failed": "Failed",
+		"cancelled": "Cancelled",
+		"interrupted": "Interrupted",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "User profile",
 		"viewProfile": "Show user profile",

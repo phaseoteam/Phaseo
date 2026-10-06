@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "Tus sesiones de escritorio",
+		"description": "Últimos {limit} turnos finalizados. Los tokens corresponden al agente principal.",
+		"loading": "Cargando sesiones…",
+		"historyUnavailable": "El historial de escritorio no está disponible.",
+		"empty": "No hay sesiones de escritorio en este periodo.",
+		"session": "Sesión",
+		"model": "Modelo",
+		"status": "Estado",
+		"turns": "Turnos",
+		"duration": "Tiempo de trabajo",
+		"tokens": "Tokens informados",
+		"lastActivity": "Última actividad",
+		"openChat": "Abrir chat en escritorio",
+		"unavailable": "No disponible",
+		"partialTokens": "{count} (parcial)",
+		"seconds": "{seconds} s",
+		"completed": "Completado",
+		"failed": "Error",
+		"cancelled": "Cancelado",
+		"interrupted": "Interrumpido",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "Perfil de usuario",
 		"viewProfile": "Ver perfil",

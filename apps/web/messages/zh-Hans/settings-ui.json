@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "你的桌面会话",
+		"description": "最近结束的 {limit} 轮对话。令牌用量仅包含主代理。",
+		"loading": "正在加载会话…",
+		"historyUnavailable": "桌面历史记录暂时不可用。",
+		"empty": "此时间段内没有桌面会话。",
+		"session": "会话",
+		"model": "模型",
+		"status": "状态",
+		"turns": "轮数",
+		"duration": "工作时长",
+		"tokens": "已报告的令牌数",
+		"lastActivity": "最近活动",
+		"openChat": "在桌面应用中打开聊天",
+		"unavailable": "不可用",
+		"partialTokens": "{count}（部分）",
+		"seconds": "{seconds}秒",
+		"completed": "已完成",
+		"failed": "失败",
+		"cancelled": "已取消",
+		"interrupted": "已中断",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "用户资料",
 		"viewProfile": "查看用户资料",

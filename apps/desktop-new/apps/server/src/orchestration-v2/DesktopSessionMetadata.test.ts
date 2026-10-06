@@ -49,14 +49,8 @@ it("marks missing usage unavailable and excludes active or gateway runs", () => 
   ).toBeUndefined();
   expect(desktopSessionMetadata(projection, run, "phaseo", "env-1", false)).toBeUndefined();
 });
-it("partitions retries by both user and workspace, across token rotations", () => {
-  const token = (user: string, workspace: string, version: number) =>
-    `header.${Buffer.from(JSON.stringify({ sub: user, workspace_id: workspace, client_id: "phaseo_desktop", version })).toString("base64url")}.signature`;
-  expect(desktopAccountPartition(token("user", "one", 1))).toBe(
-    desktopAccountPartition(token("user", "one", 2)),
-  );
-  expect(desktopAccountPartition(token("user", "one", 1))).not.toBe(
-    desktopAccountPartition(token("user", "two", 1)),
-  );
-  expect(desktopAccountPartition("invalid")).toBeUndefined();
+it("partitions retries by verified user and workspace", () => {
+  expect(desktopAccountPartition("user", "one")).toBe(desktopAccountPartition("user", "one"));
+  expect(desktopAccountPartition("user", "one")).not.toBe(desktopAccountPartition("user", "two"));
+  expect(desktopAccountPartition("user", "one")).not.toBe(desktopAccountPartition("other", "one"));
 });

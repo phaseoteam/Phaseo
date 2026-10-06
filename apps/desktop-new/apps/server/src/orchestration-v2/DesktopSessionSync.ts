@@ -22,23 +22,39 @@ const decodeCredentials = Schema.decodeUnknownEffect(
 );
 const encodePayload = Schema.encodeEffect(Schema.fromJsonString(Schema.Json));
 
-/** Local partitioning only. The gateway validates the token and determines ownership. */
-export function desktopAccountPartition(key: string): string | undefined {
-  try {
-    const claims = JSON.parse(Buffer.from(key.split(".")[1] ?? "", "base64url").toString("utf8"));
-    if (
-      typeof claims.sub !== "string" ||
-      typeof claims.workspace_id !== "string" ||
-      claims.client_id !== "phaseo_desktop"
-    )
-      return undefined;
-    return NodeCrypto.createHash("sha256")
-      .update(JSON.stringify([claims.sub, claims.workspace_id]))
-      .digest("hex");
-  } catch {
-    return undefined;
-  }
+/** Ownership is resolved by the gateway; the queue stores only its stable hash. */
+export function desktopAccountPartition(userId: string, workspaceId: string): string {
+  return NodeCrypto.createHash("sha256")
+    .update(JSON.stringify([userId, workspaceId]))
+    .digest("hex");
 }
+const decodeIdentity = Schema.decodeUnknownEffect(
+  Schema.Struct({ user_id: Schema.NonEmptyString, workspace_id: Schema.NonEmptyString }),
+);
+const fingerprint = (key: string) => NodeCrypto.createHash("sha256").update(key).digest("hex");
+
+export const resolveDesktopAccount = Effect.fn("DesktopSessionSync.resolveAccount")(function* (
+  key: string,
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const credentialId = fingerprint(key);
+  const saved = yield* sql<{
+    account_id: string;
+  }>`SELECT account_id FROM desktop_session_accounts WHERE credential_id = ${credentialId}`;
+  if (saved[0]) return saved[0].account_id;
+  const http = yield* HttpClient.HttpClient;
+  const response = yield* HttpClient.filterStatusOk(http)
+    .execute(
+      HttpClientRequest.get("https://api.phaseo.app/desktop/identity").pipe(
+        HttpClientRequest.setHeader("Authorization", `Bearer ${key}`),
+      ),
+    )
+    .pipe(Effect.timeout("10 seconds"));
+  const identity = yield* response.json.pipe(Effect.flatMap(decodeIdentity));
+  const partition = desktopAccountPartition(identity.user_id, identity.workspace_id);
+  yield* sql`INSERT INTO desktop_session_accounts (credential_id, account_id) VALUES (${credentialId}, ${partition}) ON CONFLICT (credential_id) DO UPDATE SET account_id=excluded.account_id`;
+  return partition;
+});
 
 export const flushDesktopSessionQueue = Effect.fn("DesktopSessionSync.flush")(function* (current: {
   key: string;
@@ -99,8 +115,9 @@ export const layer = Layer.effectDiscard(
           Date.parse(credentials.expiresAt) <= now
         )
           continue;
-        const partition = desktopAccountPartition(credentials.key);
-        if (partition) connected.push({ key: credentials.key, partition });
+        const partition = yield* resolveDesktopAccount(credentials.key).pipe(Effect.option);
+        if (Option.isSome(partition))
+          connected.push({ key: credentials.key, partition: partition.value });
       }
       // Do not guess which workspace owns native sessions when accounts differ.
       return new Set(connected.map((entry) => entry.partition)).size === 1

@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "デスクトップのセッション",
+		"description": "直近の終了した {limit} ターン。トークン数はメインエージェントの使用量です。",
+		"loading": "セッションを読み込み中…",
+		"historyUnavailable": "デスクトップの履歴を現在取得できません。",
+		"empty": "この期間のデスクトップセッションはありません。",
+		"session": "セッション",
+		"model": "モデル",
+		"status": "状態",
+		"turns": "ターン数",
+		"duration": "作業時間",
+		"tokens": "報告されたトークン数",
+		"lastActivity": "最終アクティビティ",
+		"openChat": "デスクトップでチャットを開く",
+		"unavailable": "取得不可",
+		"partialTokens": "{count}（一部）",
+		"seconds": "{seconds}秒",
+		"completed": "完了",
+		"failed": "失敗",
+		"cancelled": "キャンセル",
+		"interrupted": "中断",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "ユーザープロフィール",
 		"viewProfile": "プロフィールを表示",
