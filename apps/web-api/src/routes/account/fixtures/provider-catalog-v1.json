@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": "sample/atlas-1",
+      "name": "Atlas 1",
+      "provider_model_slug": "atlas-1",
+      "input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "context_length": 32768,
+      "max_output_tokens": 4096,
+      "availability": "ready",
+      "available_from": "2026-01-01T00:00:00Z",
+      "capabilities": [{ "id": "responses", "parameters": ["temperature", "max_output_tokens"] }],
+      "pricing": [
+        { "meter_key": "input_tokens", "modality": "text", "direction": "input", "unit": "token", "unit_quantity": 1000000, "price_nanos": 250000000, "display_label": "Input", "display_unit": "1M tokens" },
+        { "meter_key": "output_tokens", "modality": "text", "direction": "output", "unit": "token", "unit_quantity": 1000000, "price_nanos": 750000000, "display_label": "Output", "display_unit": "1M tokens" }
+      ]
+    },
+    {
+      "id": "sample/atlas-2",
+      "name": "Atlas 2",
+      "provider_model_slug": "atlas-2",
+      "availability": "not_ready",
+      "capabilities": [{ "id": "responses", "parameters": ["max_output_tokens"] }],
+      "pricing": []
+    }
+  ]
+}

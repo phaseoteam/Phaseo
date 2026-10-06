@@ -1,11 +1,37 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
+import sampleCatalog from "@/routes/account/fixtures/provider-catalog-v1.json";
 
 const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" };
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public provider routes", () => {
+	it("shows a published feed model with its parameters and prices, while omitting a hidden model", async () => {
+		const [published, hidden] = sampleCatalog.data;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("v2_model_provider_routes")) return Response.json([
+				{ provider_model_id: "sample:atlas-1", provider_model_slug: published.provider_model_slug, model_slug: published.id, status: "active", routing_enabled: true, provider_availability_status: "available", phaseo_status: "enabled", access_scope: "public", input_modalities: published.input_modalities, output_modalities: published.output_modalities, created_at: "2026-01-01T00:00:00Z" },
+				{ provider_model_id: "sample:atlas-2", provider_model_slug: hidden.provider_model_slug, model_slug: hidden.id, status: "active", routing_enabled: true, provider_availability_status: "available", phaseo_status: "enabled", access_scope: "public", created_at: "2026-01-01T00:00:00Z" },
+			]);
+			if (url.includes("v2_route_capabilities")) return Response.json([{ provider_model_id: "sample:atlas-1", capability_id: "responses", params: { temperature: true, max_output_tokens: true }, status: "active" }]);
+			if (url.includes("v2_models")) return Response.json([{ model_slug: published.id, name: published.name, hidden: false, released_at: "2026-01-01T00:00:00Z" }]);
+			if (url.includes("v2_pricing_sku_meters")) return Response.json(published.pricing.map((price) => ({ sku_id: "sku-1", meter_key: price.meter_key, unit: price.unit, unit_quantity: price.unit_quantity, price_nanos: price.price_nanos, meter_order: 1 })));
+			if (url.includes("v2_pricing_skus")) return Response.json([{ sku_id: "sku-1", provider_model_id: "sample:atlas-1", service_tier_slug: "standard", status: "active", effective_from: "2026-01-01T00:00:00Z", effective_to: null }]);
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/sample/models", {}, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ models: [{
+			model_id: published.id,
+			provider_model_slug: published.provider_model_slug,
+			endpoints: ["responses"],
+			supported_params: ["temperature", "max_output_tokens"],
+			input_price_per_1m_usd: 0.25,
+			output_price_per_1m_usd: 0.75,
+		}] });
+	});
 	it("returns the enriched provider index with stable caching", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
+import Ajv from "ajv/dist/2020";
+import addFormats from "ajv-formats";
+import sampleCatalog from "./fixtures/provider-catalog-v1.json";
 import {
 	fetchAndValidateProviderCatalog,
 	normalizeProviderCatalog,
+	providerCatalogJsonSchema,
 	validateProviderCatalogPricingMeters,
 	validateCatalogUrl,
 } from "./provider-catalog";
@@ -11,6 +15,56 @@ import {
 } from "./provider-catalog-sync";
 
 describe("provider catalog onboarding", () => {
+	it("serves a version 1 sample endpoint whose schema and runtime agree", async () => {
+		const ajv = new Ajv({ strict: false });
+		addFormats(ajv);
+		const validate = ajv.compile(providerCatalogJsonSchema);
+		expect(validate(sampleCatalog), JSON.stringify(validate.errors)).toBe(true);
+		const url = "https://sample.example/models?format=phaseo-v1";
+		const result = await fetchAndValidateProviderCatalog(url, async (requestedUrl, init) => {
+			expect(requestedUrl).toBe(url);
+			expect(init?.redirect).toBe("manual");
+			return Response.json(sampleCatalog);
+		});
+		expect(result.preview.valid).toBe(true);
+		expect(result.preview.modelCount).toBe(2);
+		expect(result.preview.allModels[0]).toMatchObject({
+			id: "sample/atlas-1", providerModelSlug: "atlas-1", availability: "ready",
+			capabilities: [{ id: "responses", parameters: ["temperature", "max_output_tokens"] }],
+			pricing: [
+				{ meterKey: "input_tokens", priceNanos: 250_000_000, unitQuantity: 1_000_000 },
+				{ meterKey: "output_tokens", priceNanos: 750_000_000, unitQuantity: 1_000_000 },
+			],
+		});
+		expect(result.preview.allModels[1]).toMatchObject({ id: "sample/atlas-2", availability: "not_ready", pricing: [] });
+	});
+
+	it("rejects pricing values that JSON would otherwise coerce to zero", () => {
+		for (const value of [null, "0", "250000000", false]) {
+			const catalog = structuredClone(sampleCatalog) as { data: Array<{ pricing: Array<Record<string, unknown>> }> };
+			catalog.data[0].pricing[0].price_nanos = value;
+			const preview = normalizeProviderCatalog(catalog);
+			expect(preview.valid).toBe(false);
+			expect(preview.issues).toContainEqual({ path: "data[0].pricing[0].price_nanos", message: "Expected a non-negative JSON number in nanodollars." });
+		}
+		const negative = structuredClone(sampleCatalog);
+		negative.data[0].pricing[0].price_nanos = -1;
+		expect(normalizeProviderCatalog(negative).issues).toContainEqual({
+			path: "data[0].pricing[0].price_nanos",
+			message: "Expected a non-negative JSON number in nanodollars.",
+		});
+	});
+
+	it("reads a promotional effective price from a new feed snapshot", async () => {
+		const url = "https://sample.example/models?format=phaseo-v1";
+		const original = await fetchAndValidateProviderCatalog(url, async () => Response.json(sampleCatalog));
+		const promoted = structuredClone(sampleCatalog);
+		promoted.data[0].pricing[0].price_nanos = 200_000_000;
+		const updated = await fetchAndValidateProviderCatalog(url, async () => Response.json(promoted));
+		expect(original.preview.allModels[0].pricing[0].priceNanos).toBe(250_000_000);
+		expect(updated.preview.allModels[0].pricing[0].priceNanos).toBe(200_000_000);
+		expect(updated.sha256).not.toBe(original.sha256);
+	});
 	it("normalizes a database-shaped catalog into a preview", () => {
 		const preview = normalizeProviderCatalog({
 			data: [{
@@ -142,7 +196,7 @@ describe("provider catalog onboarding", () => {
 		}] });
 
 		expect(preview.valid).toBe(false);
-		expect(preview.issues).toContainEqual({ path: "data[0].pricing[0]", message: "Pricing meter fields are invalid." });
+		expect(preview.issues).toContainEqual({ path: "data[0].pricing[0].unit_quantity", message: "Expected a positive JSON number." });
 	});
 
 	it("rejects duplicate and unregistered pricing meters before submission", async () => {
