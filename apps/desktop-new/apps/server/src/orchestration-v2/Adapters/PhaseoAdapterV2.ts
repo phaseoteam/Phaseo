@@ -6,6 +6,7 @@ import {
   type ServerProviderModel,
 } from "@t3tools/contracts";
 import { resolveSelfInvocation, selfInvocationArgs } from "@t3tools/shared/nodeRuntime";
+import { HostProcessPlatform } from "@t3tools/shared/hostProcess";
 import * as Crypto from "effect/Crypto";
 import * as Effect from "effect/Effect";
 import * as FileSystem from "effect/FileSystem";
@@ -22,6 +23,13 @@ import * as ProviderContinuationRequests from "../ProviderContinuationRequests.t
 import { AcpProviderCapabilitiesV2, makeAcpAdapterV2 } from "./AcpAdapterV2.ts";
 
 const DRIVER = ProviderDriverKind.make("phaseo");
+export function phaseoProcessOwnership(platform: NodeJS.Platform) {
+  return {
+    processGroupPlatform: platform,
+    ownDetachedProcessGroup: platform === "linux" || platform === "darwin",
+    ownDescendantProcessGroups: platform === "linux",
+  };
+}
 const encodeModels = Schema.encodeEffect(
   Schema.fromJsonString(Schema.Array(Schema.Struct({ slug: Schema.String, name: Schema.String }))),
 );
@@ -53,6 +61,7 @@ export const createPhaseoAdapterV2 = Effect.fn("createPhaseoAdapterV2")(function
   const server = yield* ServerConfig.ServerConfig;
   const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
   const invocation = yield* resolveSelfInvocation();
+  const hostPlatform = yield* HostProcessPlatform;
   const continuation = yield* ProviderContinuationRequests.ProviderContinuationRequests;
   return makeAcpAdapterV2({
     instanceId: options.instanceId,
@@ -154,8 +163,7 @@ export const createPhaseoAdapterV2 = Effect.fn("createPhaseoAdapterV2")(function
               },
               resumeMethod: "resume",
               cancelBehavior: "wait-for-prompt",
-              ownDetachedProcessGroup: true,
-              ownDescendantProcessGroups: true,
+              ...phaseoProcessOwnership(hostPlatform),
             }).pipe(Layer.provide(Layer.succeed(ChildProcessSpawner.ChildProcessSpawner, spawner))),
           );
           return yield* Effect.service(AcpSessionRuntime.AcpSessionRuntime).pipe(
