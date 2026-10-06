@@ -26,6 +26,7 @@ begin
   perform public.review_provider_catalog_model_request(request_id,'needs_changes','Clarify model identity',null);
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
   assert (select review_status='needs_changes' and review_summary->>'pending'='0' and review_summary->>'needs_changes'='1' from public.provider_catalog_sync_runs where id=request_run);
+  assert (select decision_reason='Clarify model identity' from public.provider_catalog_sync_models where run_id=request_run and model_slug='catalog-review-test/model');
   perform public.review_provider_catalog_model_request(request_id,'approved',null,null);
   assert exists(select 1 from public.v2_models where model_slug='catalog-review-test/model' and hidden);
   assert (select refresh_requested from public.provider_catalog_sources where provider_slug='catalog-review-test');

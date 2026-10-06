@@ -24,6 +24,7 @@ declare
   rejected_count integer := 0;
   changes_count integer := 0;
   request_status text;
+  request_reason text;
 begin
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
@@ -229,9 +230,9 @@ begin
           source_run_id=excluded.source_run_id,model=excluded.model,updated_at=now(),
           status=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then 'pending' else provider_catalog_model_requests.status end,
           notification_sent_at=case when provider_catalog_model_requests.status in ('withdrawn','approved') or (provider_catalog_model_requests.status in ('rejected','needs_changes') and provider_catalog_model_requests.model is distinct from excluded.model) then null else provider_catalog_model_requests.notification_sent_at end
-        returning status into request_status;
+        returning status,reason into request_status,request_reason;
         update public.provider_catalog_sync_models set decision=case when request_status in ('rejected','needs_changes') then request_status else 'pending' end,
-          match_type='new_model',decision_reason='New canonical model requires administrator approval.'
+          match_type='new_model',decision_reason=coalesce(request_reason,'New canonical model requires administrator approval.')
         where run_id=p_run_id and model_slug=model_slug_value;
         if request_status='rejected' then rejected_count := rejected_count + 1;
         elsif request_status='needs_changes' then changes_count := changes_count + 1;
