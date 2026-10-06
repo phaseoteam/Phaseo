@@ -1961,7 +1961,6 @@ export function buildProviderTablePriceColumns(
                 comparisonKind: tier.comparisonKind ?? null,
                 comparisonDirection: tier.comparisonDirection ?? null,
                 discountEndsAt: tier.discountEndsAt ?? null,
-                endpoint: tier.endpoint ?? null,
                 effFrom: tier.effFrom ?? null, effTo: tier.effTo ?? null,
                 isCurrent: tier.isCurrent,
             })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));

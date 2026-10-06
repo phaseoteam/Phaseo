@@ -606,6 +606,14 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummaryForColumn(sections[1]!, columns[0]!).sortValue).toBe(0.75);
 	});
 
+	test("groups identical prices selected from different duplicate endpoint sources", () => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		sections.textTokens!.in[0]!.endpoint = "image.generate";
+		sections.imageTokens!.in[0]!.endpoint = "text.generate";
+		sections.videoTokens!.in[0]!.endpoint = "image.generate";
+		expect(buildProviderTablePriceColumns([sections])[0]!.label).toBe("Input");
+	});
+
 	test.each([true, false])("compares every context band, not only the cheapest rate (matching: %s)", (matching) => {
 		const provider = matchingInputProvider();
 		for (const modality of ["text", "image", "video"]) {
