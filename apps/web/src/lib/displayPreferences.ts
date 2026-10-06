@@ -302,6 +302,6 @@ export function formatDisplayNumber(
 	return new Intl.NumberFormat(localeFor(preferences), {
 		...options,
 		notation,
-		...(notation === "compact" ? { compactDisplay: "short" as const } : {}),
+		...(notation === "compact" ? { compactDisplay: options?.compactDisplay ?? "short" as const } : {}),
 	}).format(value);
 }

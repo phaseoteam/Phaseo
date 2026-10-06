@@ -63,6 +63,18 @@ describe("display preferences", () => {
 		expect(formatDisplayNumber(1_250_000, preferences, { maximumFractionDigits: 1 })).toBe("1.3M");
 	});
 
+	it("allows spelled-out compact units without changing the default shorthand", () => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "en-GB" as const };
+		expect(formatDisplayNumber(501_000_000_000, preferences, {
+			notation: "compact", compactDisplay: "long", maximumFractionDigits: 2,
+		})).toBe("501 billion");
+		expect(formatDisplayNumber(23_800_000_000_000, preferences, {
+			notation: "compact", compactDisplay: "long", maximumFractionDigits: 2,
+		})).toBe("23.8 trillion");
+		expect(formatDisplayNumber(501_000_000_000, preferences, { notation: "compact" }))
+			.toBe("501bn");
+	});
+
 	it("keeps date-only values on their canonical calendar day", () => {
 		const preferences = {
 			...DEFAULT_DISPLAY_PREFERENCES,
