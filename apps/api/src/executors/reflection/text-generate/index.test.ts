@@ -51,6 +51,18 @@ describe("Reflection text executor", () => {
 			expect(mock.calls).toHaveLength(1);
 		} finally { mock.restore(); }
 	});
+	it("rejects an effort outside the selected model allowlist without clamping", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const requestArgs = args({ reasoning: { effort: "max" } });
+			requestArgs.capabilityParams = { "reasoning.effort": { enum: ["low"] } };
+			requestArgs.ir = normalizeIRForProvider(requestArgs.ir, "reflection", "openai.chat.completions", { capabilityParams: requestArgs.capabilityParams });
+			expect((requestArgs.ir as any).reasoning.effort).toBe("max");
+			const result = await executor(requestArgs);
+			expect(result.upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
 	it.each([{ reasoning: { enabled: false } }, { reasoning: { effort: "none" } }, { reasoning: { effort: "instant" } }, { reasoning: { effort: "minimal" } }, { stop: ["END"] }, { store: true }])("rejects unsupported controls after normalization: %j", async controls => {
 		const mock = installFetchMock([]);
 		try {
