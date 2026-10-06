@@ -769,6 +769,7 @@ describe("AcpAdapterV2", () => {
         runtimePolicy,
       });
 
+      assert.equal(runtimeInput?.threadId, threadId);
       const mcpServer = runtimeInput?.mcpServers[0];
       if (mcpServer === undefined || !("command" in mcpServer)) {
         return yield* Effect.die("ACP runtime must receive the t3-code stdio MCP server");

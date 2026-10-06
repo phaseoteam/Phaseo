@@ -20,6 +20,7 @@ describe("runtime locale message loading", () => {
 		const onError = jest.fn();
 		const translate = createTranslator({ locale, messages, onError } as never);
 		expect(translate("Common.nav.home" as never)).toBe(valueAt(messages.Common, "nav.home"));
+		expect(translate("Site.desktop.metadataTitle" as never)).toBe("Phaseo Desktop");
 		expect(onError).not.toHaveBeenCalled();
 		expect(valueAt(messages.Common, "nav.home")).toBeTruthy();
 		expect(valueAt(messages.Site, "home.title")).toBeTruthy();

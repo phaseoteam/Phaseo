@@ -32,3 +32,9 @@ Phaseo uses the existing desktop PKCE OAuth client and a loopback callback on th
 The Phaseo harness reuses the original desktop Agent SDK runtime for streamed text and reasoning, project tools, approvals, instructions, skills and MCP. T3's ACP adapter manages chat sessions, restart recovery, branching and scoped orchestration tools for child chats and provider delegation. Native SDK subagent tracking and context compaction are not implemented.
 
 Settings → Providers → Phaseo → Harness also offers Codex against Phaseo's Responses endpoint. Existing gateway accounts retain Codex until changed, preserving their previous behavior. It does not use a ChatGPT subscription or inherit its credential. Model-specific tool and reasoning support depends on the selected gateway model. This sign-in flow is intended for the local desktop, not a browser controlling a different machine.
+
+## Gateway attribution
+
+Desktop inference sends `HTTP-Referer: https://phaseo.app/desktop`, `X-App-Id: phaseo-desktop`, and the title/name Phaseo Desktop. App identity is scoped by gateway workspace and normalized referrer URL; the desktop page path keeps it separate from the web application.
+
+Chat inference uses the persisted application chat ID as `X-Session-Id`. The native harness also sends `session_id` in Responses requests, with its durable ACP session ID as the fallback outside T3. Reopening keeps the same ID; a child chat or branch uses its own ID. Codex receives per-thread header overrides on start, resume and fork. One-shot product helpers have application attribution without pretending to belong to a chat.

@@ -25,6 +25,27 @@ it("routes the Codex harness to Phaseo without exposing tokens in arguments or u
   expect(args).toContain('model_provider="phaseo"');
   expect(args).toContain('model_providers.phaseo.base_url="https://api.phaseo.app/v1"');
   expect(args).toContain('model_providers.phaseo.wire_api="responses"');
+  expect(args).toContain(
+    'model_providers.phaseo.http_headers."HTTP-Referer"="https://phaseo.app/desktop"',
+  );
+  expect(args).toContain('model_providers.phaseo.http_headers."X-App-Id"="phaseo-desktop"');
   expect(args.join(" ")).not.toContain("fixture-secret");
   expect(args.join(" ")).not.toContain("evil");
+});
+
+import { codexThreadRuntimeParams } from "../orchestration-v2/Adapters/CodexAdapterV2.ts";
+import { ThreadId } from "@t3tools/contracts";
+
+it("applies per-chat attribution to Codex thread configuration without replacing tool settings", () => {
+  for (const id of ["parent-chat", "child-chat"]) {
+    const params = codexThreadRuntimeParams({
+      threadId: ThreadId.make(id),
+      threadConfig: { "model_providers.phaseo.http_headers.X-Session-Id": id },
+    });
+    expect(params.config["model_providers.phaseo.http_headers.X-Session-Id"]).toBe(id);
+    expect(params.config["tools.update_plan.enabled"]).toBe(true);
+  }
+  expect(codexThreadRuntimeParams({ threadId: null }).config).not.toHaveProperty(
+    "model_providers.phaseo.http_headers.X-Session-Id",
+  );
 });

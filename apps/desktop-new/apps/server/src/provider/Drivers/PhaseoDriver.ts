@@ -284,7 +284,11 @@ export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
           }).pipe(Effect.mapError(adapterError))
         : yield* createCodexAdapterV2(
             { instanceId, displayName, accentColor, environment, enabled, config },
-            { resolveRuntime: resolve },
+            {
+              resolveRuntime: resolve,
+              threadConfig: (threadId) =>
+                threadId ? { "model_providers.phaseo.http_headers.X-Session-Id": threadId } : {},
+            },
           ).pipe(Effect.mapError(adapterError));
       const nativeGeneration = native
         ? makePhaseoTextGeneration(auth.access)

@@ -95,7 +95,7 @@ export const createPhaseoAdapterV2 = Effect.fn("createPhaseoAdapterV2")(function
             ),
           ),
         ),
-      makeRuntime: ({ runtimePolicy: _policy, processEnvironment, ...input }) =>
+      makeRuntime: ({ runtimePolicy: _policy, processEnvironment, threadId, ...input }) =>
         Effect.gen(function* () {
           const runtime = yield* options.resolve.pipe(
             Effect.mapError(
@@ -136,6 +136,7 @@ export const createPhaseoAdapterV2 = Effect.fn("createPhaseoAdapterV2")(function
             PHASEO_HARNESS_HOME: runtime.homePath,
             PHASEO_GATEWAY_TOKEN: runtime.key,
             PHASEO_HARNESS_MODELS: modelsFile,
+            PHASEO_CHAT_ID: threadId ?? "",
             // Electron's Node runtime is also used by T3's scoped MCP bridge.
             ELECTRON_RUN_AS_NODE: "1",
           };

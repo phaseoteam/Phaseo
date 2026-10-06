@@ -1,4 +1,30 @@
 {
+	"desktop": {
+		"metadataTitle": "Phaseo Desktop",
+		"metadataDescription": "Chat, write and build with AI in the Phaseo desktop workspace. Use Phaseo gateway models and your connected coding agents.",
+		"label": "Phaseo Desktop",
+		"status": "In development",
+		"title": "Your models. Your workspace.",
+		"description": "Chat, write and build with AI in one desktop workspace. Bring your projects, choose a connected agent, or use models through the Phaseo gateway.",
+		"exploreModels": "Explore models",
+		"followDevelopment": "Follow development",
+		"availabilityTitle": "A desktop workspace, built in the open.",
+		"availabilityDescription": "Phaseo Desktop is in active development. Public downloads are not available yet. Follow the repository for progress and release updates.",
+		"features": {
+			"models": {
+				"title": "Choose your models",
+				"description": "Sign in to Phaseo and use available gateway models alongside your connected coding agents."
+			},
+			"workspace": {
+				"title": "Keep your work together",
+				"description": "Move between personal chats and projects, with files, a terminal and tools alongside the conversation."
+			},
+			"control": {
+				"title": "Stay in control",
+				"description": "Review tool permissions, branch conversations and delegate work to child chats."
+			}
+		}
+	},
 	"home": {
 		"title": "Phaseo: The Open Gateway for Affordable AI",
 		"description": "Discover models, route across providers, and use an open-source AI gateway designed to keep inference accessible, portable, and transparent.",

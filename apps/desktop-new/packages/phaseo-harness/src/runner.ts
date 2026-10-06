@@ -19,6 +19,8 @@ import { phaseoQuestionTools, answerPhaseoQuestion } from "./legacy/main/phaseoQ
 import { connectPhaseoMcp } from "./legacy/main/phaseoMcp.js";
 import type { McpConnection } from "./legacy/shared/mcp.js";
 
+import { PHASEO_DESKTOP_HEADERS } from "./attribution.js";
+
 export type HarnessResult = AgentRunResult<unknown, string>;
 // Standalone ACP subprocess: Effect host services belong to the parent server.
 // eslint-disable-next-line t3code/no-global-process-runtime
@@ -26,9 +28,14 @@ const runtimePlatform = NodeOS.platform();
 
 export type HarnessCallbacks = AgentCallbacks;
 
-export function phaseoClient(key: string) {
+export function phaseoClient(key: string, sessionId?: string) {
   return createGatewayAgentClient({
-    clientOptions: { apiKey: key, baseUrl: "https://api.phaseo.app/v1" },
+    clientOptions: {
+      apiKey: key,
+      baseUrl: "https://api.phaseo.app/v1",
+      headers: { ...PHASEO_DESKTOP_HEADERS, ...(sessionId ? { "X-Session-Id": sessionId } : {}) },
+    },
+    ...(sessionId ? { requestOptions: { session_id: sessionId } } : {}),
     includeMeta: true,
   });
 }

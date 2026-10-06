@@ -75,7 +75,7 @@ export function createPhaseoAcpAgent(options: {
   stateDirectory: string;
   globalInstructionsRoot: string;
   models: { slug: string; name: string }[];
-  client: AgentModelClient;
+  client: AgentModelClient | ((sessionId: string) => AgentModelClient);
 }) {
   if (!options.models.length) throw new Error("No available Phaseo models.");
   const store = new HarnessSessionStore(NodePath.join(options.stateDirectory, "sessions"));
@@ -519,7 +519,10 @@ export function createPhaseoAcpAgent(options: {
           signal: runSignal,
           callbacks,
           mcpConnections: session.mcp,
-          client: options.client,
+          client:
+            typeof options.client === "function"
+              ? options.client(session.state.id)
+              : options.client,
           onEvent,
           save: async (result) => {
             session.state.result = result;
@@ -584,7 +587,7 @@ export async function runPhaseoHarnessStdio() {
     stateDirectory: directory,
     globalInstructionsRoot: NodePath.join(directory, "..", "..", "..", "instructions"),
     models,
-    client: phaseoClient(key),
+    client: (sessionId) => phaseoClient(key, process.env.PHASEO_CHAT_ID || sessionId),
   });
   const connection = app.connect(
     Acp.ndJsonStream(

@@ -12,7 +12,7 @@ const models = [
   { slug: "lab/second", name: "Second" },
 ];
 const fixture = async (
-  model: AgentModelClient,
+  model: AgentModelClient | ((sessionId: string) => AgentModelClient),
   permission: (
     request: Acp.RequestPermissionRequest,
   ) => Promise<Acp.RequestPermissionResponse> = async () => ({
@@ -191,11 +191,15 @@ describe("Phaseo native harness ACP boundary", () => {
 
   it("restores conversation and SDK state after restarting, and forks history without mutating the parent", async () => {
     const requests: AgentModelRequest[] = [];
-    const f = await fixture({
-      generate: async (request) => {
-        requests.push(request);
-        return { message: { role: "assistant", content: `Reply ${requests.length}` } };
-      },
+    const sessionIds: string[] = [];
+    const f = await fixture((sessionId) => {
+      sessionIds.push(sessionId);
+      return {
+        generate: async (request) => {
+          requests.push(request);
+          return { message: { role: "assistant", content: `Reply ${requests.length}` } };
+        },
+      };
     });
     try {
       await f.prompt("First");
@@ -218,6 +222,8 @@ describe("Phaseo native harness ACP boundary", () => {
         mcpServers: [],
       });
       await f.prompt("Branch", fork.sessionId);
+      expect(sessionIds).toEqual([f.sessionId, f.sessionId, fork.sessionId]);
+      expect(fork.sessionId).not.toBe(f.sessionId);
       const store = new HarnessSessionStore(NodePath.join(f.root, "state", "sessions"));
       const parent = await store.load(f.sessionId);
       expect(parent.messages.some((message) => JSON.stringify(message).includes("Branch"))).toBe(

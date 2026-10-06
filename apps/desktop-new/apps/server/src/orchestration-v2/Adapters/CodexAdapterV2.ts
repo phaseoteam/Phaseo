@@ -1198,6 +1198,7 @@ export class CodexAppServerClientFactory extends Context.Service<
 export const CODEX_THREAD_CONFIG = { "tools.update_plan.enabled": true } as const;
 
 export function codexThreadRuntimeParams(input: {
+  readonly threadConfig?: Readonly<Record<string, Schema.Json>> | undefined;
   readonly threadId: ThreadId | null;
   readonly modelSelection?: { readonly model: string };
   readonly runtimePolicy?: ProviderAdapterV2RuntimePolicy;
@@ -1213,6 +1214,7 @@ export function codexThreadRuntimeParams(input: {
     ...(input.modelSelection === undefined ? {} : { model: input.modelSelection.model }),
     config: {
       ...CODEX_THREAD_CONFIG,
+      ...input.threadConfig,
       ...(mcpSession === undefined
         ? {}
         : {
@@ -1444,7 +1446,7 @@ export type CodexAdapterV2DriverEnv =
 
 export const createCodexAdapterV2 = (
   { instanceId, environment, enabled, config }: ProviderAdapterDriverCreateInput<CodexSettings>,
-  hooks: Pick<CodexAdapterV2Options, "onUsageLimits" | "resolveRuntime"> = {},
+  hooks: Pick<CodexAdapterV2Options, "onUsageLimits" | "resolveRuntime" | "threadConfig"> = {},
 ) =>
   Effect.gen(function* () {
     const clientFactory = yield* CodexAppServerClientFactory;
@@ -1522,6 +1524,8 @@ const layer: Layer.Layer<
 );
 
 export interface CodexAdapterV2Options {
+  /** Provider-owned per-chat request attribution, applied on start, resume and fork. */
+  readonly threadConfig?: (threadId: ThreadId | null) => Readonly<Record<string, Schema.Json>>;
   readonly instanceId: ProviderInstanceId;
   readonly settings: CodexSettings;
   readonly environment: NodeJS.ProcessEnv;
@@ -5410,6 +5414,7 @@ export function makeCodexAdapterV2(adapterOptions: CodexAdapterV2Options): Provi
                   "thread/start",
                   codexThreadRuntimeParams({
                     threadId: threadInput.threadId,
+                    threadConfig: adapterOptions.threadConfig?.(threadInput.threadId),
                     modelSelection: threadInput.modelSelection,
                     runtimePolicy: threadInput.runtimePolicy,
                   }),
@@ -5443,6 +5448,9 @@ export function makeCodexAdapterV2(adapterOptions: CodexAdapterV2Options): Provi
                 excludeTurns: true,
                 ...codexThreadRuntimeParams({
                   threadId: threadInput.threadId ?? threadInput.providerThread.appThreadId,
+                  threadConfig: adapterOptions.threadConfig?.(
+                    threadInput.threadId ?? threadInput.providerThread.appThreadId,
+                  ),
                   ...(threadInput.modelSelection === undefined
                     ? {}
                     : { modelSelection: threadInput.modelSelection }),
@@ -6189,6 +6197,9 @@ export function makeCodexAdapterV2(adapterOptions: CodexAdapterV2Options): Provi
                   excludeTurns: true,
                   ...codexThreadRuntimeParams({
                     threadId: threadInput.providerThread.appThreadId,
+                    threadConfig: adapterOptions.threadConfig?.(
+                      threadInput.providerThread.appThreadId,
+                    ),
                     modelSelection: input.modelSelection,
                     runtimePolicy: input.runtimePolicy,
                   }),
@@ -6238,6 +6249,7 @@ export function makeCodexAdapterV2(adapterOptions: CodexAdapterV2Options): Provi
                       : { lastTurnId: boundary.lastTurnId }),
                     ...codexThreadRuntimeParams({
                       threadId: threadInput.targetThreadId,
+                      threadConfig: adapterOptions.threadConfig?.(threadInput.targetThreadId),
                       ...(threadInput.modelSelection === undefined
                         ? {}
                         : { modelSelection: threadInput.modelSelection }),

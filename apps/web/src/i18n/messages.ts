@@ -115,5 +115,5 @@ export const getPublicMessages = cache(async (locale: PublicLocale): Promise<Sou
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
 		catalogueMessageLoaders[locale](), contentMessageLoaders[locale](), productMessageLoaders[locale](), settingsUiMessageLoaders[locale](),
 	]);
-	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
+	return { ...messages, Common: common, Site: { ...site, desktop: site.desktop ?? englishSiteMessages.desktop }, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
 });

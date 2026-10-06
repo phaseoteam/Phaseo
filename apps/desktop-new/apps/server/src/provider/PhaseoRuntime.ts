@@ -1,3 +1,4 @@
+import { PHASEO_DESKTOP_HEADERS } from "@phaseo/desktop-harness";
 import { CodexSettings } from "@t3tools/contracts";
 import * as Schema from "effect/Schema";
 import { PHASEO_GATEWAY_ENDPOINT } from "./phaseoOAuth.ts";
@@ -11,6 +12,10 @@ const launchArgs = [
   'model_providers.phaseo.wire_api="responses"',
   "model_providers.phaseo.requires_openai_auth=false",
   "model_providers.phaseo.supports_websockets=false",
+  ...Object.entries(PHASEO_DESKTOP_HEADERS).map(
+    ([name, value]) =>
+      `model_providers.phaseo.http_headers.${JSON.stringify(name)}=${JSON.stringify(value)}`,
+  ),
 ]
   .map((value) => `-c '${value}'`)
   .join(" ");
