@@ -182,6 +182,26 @@
 		}
 	},
 	"_strings": {
+		"Request correlation ID, also returned in X-Request-Id.": {
+			"es": "Identificador de correlación de la solicitud, también devuelto en X-Request-Id.",
+			"fr": "Identifiant de corrélation de la requête, également renvoyé dans X-Request-Id.",
+			"de": "Korrelations-ID der Anfrage, die auch in X-Request-Id zurückgegeben wird.",
+			"pt-BR": "Identificador de correlação da solicitação, também retornado em X-Request-Id.",
+			"hi": "अनुरोध का सहसंबंध पहचानकर्ता, जो X-Request-Id में भी लौटाया जाता है।",
+			"ja": "リクエストの相関 ID。X-Request-Id でも返されます。",
+			"zh-Hans": "请求关联 ID，也会在 X-Request-Id 中返回。",
+			"ar": "معرّف ارتباط الطلب، ويُعاد أيضًا في X-Request-Id."
+		},
+		"Safe retry delay in seconds, matching the Retry-After header when present.": {
+			"es": "Tiempo de espera seguro antes de reintentar, en segundos, que coincide con Retry-After cuando está presente.",
+			"fr": "Délai sûr avant une nouvelle tentative, en secondes, correspondant à Retry-After lorsque cet en-tête est présent.",
+			"de": "Sichere Wartezeit bis zum erneuten Versuch in Sekunden, die mit Retry-After übereinstimmt, sofern vorhanden.",
+			"pt-BR": "Tempo de espera seguro antes de tentar novamente, em segundos, correspondente a Retry-After quando presente.",
+			"hi": "दोबारा प्रयास करने से पहले सुरक्षित विलंब, सेकंड में; Retry-After मौजूद होने पर उससे मेल खाता है।",
+			"ja": "再試行までの安全な待機時間（秒）。Retry-After がある場合はその値と一致します。",
+			"zh-Hans": "安全重试等待时间（秒），与存在的 Retry-After 值一致。",
+			"ar": "مدة انتظار آمنة قبل إعادة المحاولة بالثواني، تطابق Retry-After عند وجوده."
+		},
 		"A gateway API for accessing various AI models with OpenAI-compatible endpoints.": {
 			"es": "Una API de pasarela para acceder a diversos modelos de IA mediante endpoints compatibles con OpenAI.",
 			"fr": "Une API de passerelle pour accéder à divers modèles d’IA via des points de terminaison compatibles avec OpenAI.",

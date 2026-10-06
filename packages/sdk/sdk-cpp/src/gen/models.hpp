@@ -969,6 +969,8 @@ struct ErrorResponse {
 	std::string provider_payment_required_provider;
 	std::string provider_payment_required_support_notice;
 	std::string reason;
+	std::string request_id;
+	std::optional<int> retry_after_seconds;
 	std::map<std::string, std::any> routing_diagnostics;
 	std::optional<int> status_code;
 	std::map<std::string, std::any> upstream_error;

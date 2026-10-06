@@ -7,6 +7,28 @@ from pydantic import BaseModel
 from phaseo import AsyncPhaseo, Phaseo, PhaseoHTTPError, JobFailedError, JobTimeoutError, parse_output, check_capabilities, check_parameter_support, batch_results
 from phaseo.testing import MockTransport, job_fixtures
 from phaseo import collect_stream
+from gen.models import ErrorResponse
+
+
+def test_local_free_quota_error_preserves_typed_retry_metadata():
+    assert "request_id" in ErrorResponse.__annotations__
+    assert "retry_after_seconds" in ErrorResponse.__annotations__
+    body: ErrorResponse = {
+        "error": "key_limit_exceeded", "error_origin": "user", "error_type": "user",
+        "request_id": "req_free_quota", "retry_after_seconds": 3600, "reason": "free_requests_per_day",
+    }
+    fixtures = MockTransport([{
+        "method": "POST", "path": "/responses", "status": 429, "json": body,
+        "headers": {"x-request-id": "req_free_quota", "retry-after": "3600"},
+    }])
+    with httpx.Client(transport=fixtures) as http:
+        with Phaseo(api_key="test", base_url="https://example.test", http_client=http) as client:
+            with pytest.raises(PhaseoHTTPError) as error:
+                client.request("POST", "/responses", body={"model": "test/free"})
+            assert error.value.body == body
+            assert error.value.request_id == "req_free_quota"
+            assert error.value.retry_after == 3600
+    fixtures.assert_done()
 
 
 def test_sync_transport_metadata_retries_and_post_safety():

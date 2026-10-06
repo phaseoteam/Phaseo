@@ -1397,13 +1397,17 @@ module Phaseo
     #   @return [String, nil]
     # @!attribute [rw] reason
     #   @return [String, nil]
+    # @!attribute [rw] request_id
+    #   @return [String, nil]
+    # @!attribute [rw] retry_after_seconds
+    #   @return [Integer, nil]
     # @!attribute [rw] routing_diagnostics
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] status_code
     #   @return [Integer, nil]
     # @!attribute [rw] upstream_error
     #   @return [Hash{String => Object}, nil]
-    ErrorResponse = Struct.new(:attempt_count, :description, :details, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :routing_diagnostics, :status_code, :upstream_error, keyword_init: true)
+    ErrorResponse = Struct.new(:attempt_count, :description, :details, :error, :error_origin, :error_type, :failed_providers, :failed_statuses, :failure_sample, :generation_id, :message, :missing_pricing_providers, :ok, :provider_candidate_diagnostics, :provider_enablement, :provider_failure_diagnostics, :provider_payment_required_provider, :provider_payment_required_support_notice, :reason, :request_id, :retry_after_seconds, :routing_diagnostics, :status_code, :upstream_error, keyword_init: true)
     # @!attribute [rw] filterStages
     #   @return [Array<Hash{String => Object}>, nil]
     ErrorRoutingDiagnostics = Struct.new(:filterStages, keyword_init: true)

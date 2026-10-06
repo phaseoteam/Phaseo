@@ -13741,6 +13741,16 @@ components:
         generation_id:
           type: string
           example: G-abc123
+        request_id:
+          type: string
+          description: معرّف ارتباط الطلب، ويُعاد أيضًا في X-Request-Id.
+          example: G-abc123
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: مدة انتظار آمنة قبل إعادة المحاولة بالثواني، تطابق Retry-After عند وجوده.
+          example: 3600
         status_code:
           type: integer
           example: 502

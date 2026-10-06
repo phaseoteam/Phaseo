@@ -20,6 +20,7 @@ import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { extractDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -319,6 +320,7 @@ export function extractErrorDescription(body: any): string | null {
 
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
+    if (body?.error_origin === "user" && body?.error_type === "user") return "user";
     if (stage === "before") {
         const s = Number(status ?? 0);
         const code = (errorCode || "").toLowerCase();
@@ -784,6 +786,14 @@ export async function handleError({
         body?.request_id ??
         body?.requestId ??
         "unknown";
+    if (
+        typeof generationId === "string" && generationId !== "unknown" &&
+        generationId.length <= 256 && /^[\x20-\x7e]+$/.test(generationId)
+    ) {
+        headers.set("X-Request-Id", generationId);
+    }
+    const retryAfter = extractDownstreamRateLimitHeaders(res.headers, { includeQuotaDetails: false })["Retry-After"];
+    if (retryAfter != null) headers.set("Retry-After", retryAfter);
     console.log("Gateway error details", {
         stage,
         endpoint,
@@ -820,6 +830,9 @@ export async function handleError({
         error_origin: errorOrigin,
         description: fallbackDescription,
     };
+    if (generationId !== "unknown") errorPayload.request_id = generationId;
+    if (retryAfter != null) errorPayload.retry_after_seconds = Number(retryAfter);
+    if (errorOrigin === "user" && typeof body?.reason === "string") errorPayload.reason = body.reason;
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
     }
@@ -944,11 +957,11 @@ export async function handleError({
                     gateway_response_sanitized: gatewayErrorPayload,
                     gateway_response_present: true,
                     upstream_request_sanitized: null,
-                    upstream_response_sanitized: sanitizeForAxiom(body ?? null),
-                    upstream_response_present: body != null,
-                    upstream_response_headers: providerResponseHeaders,
-                    upstream_status_code: statusCode,
-                    upstream_status_text: res.statusText ?? null,
+                    upstream_response_sanitized: errorOrigin === "upstream" ? sanitizeForAxiom(body ?? null) : null,
+                    upstream_response_present: errorOrigin === "upstream" && body != null,
+                    upstream_response_headers: errorOrigin === "upstream" ? providerResponseHeaders : null,
+                    upstream_status_code: errorOrigin === "upstream" ? statusCode : null,
+                    upstream_status_text: errorOrigin === "upstream" ? res.statusText ?? null : null,
 					upstream_url: sanitizeUrlForLogging(res.url ?? null),
                     requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
                     param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
@@ -963,7 +976,7 @@ export async function handleError({
                     error_details: sanitizeForAxiom(body ?? null),
                 },
                 gateway_response_sanitized: gatewayErrorPayload,
-                provider_response_sanitized: sanitizeForAxiom(body ?? null),
+                provider_response_sanitized: errorOrigin === "upstream" ? sanitizeForAxiom(body ?? null) : null,
                 internal_reporting: sanitizeForAxiom(upstreamUnsupportedParamSignal ?? null),
             });
         } catch {
@@ -998,14 +1011,23 @@ export async function handleError({
     const providerFromAttempts = (() => {
         const attempts = ctx ? (ctx as any)?.attemptErrors : null;
         if (Array.isArray(attempts) && attempts.length > 0) {
-            const last = attempts[attempts.length - 1];
+            const last = attempts.filter((attempt) =>
+                !["blocked", "no_pricing", "unsupported_executor", "provider_rate_limited"].includes(attempt?.type),
+            ).at(-1);
             if (last && typeof last === "object" && "provider" in last) {
                 return (last as any).provider ?? null;
             }
         }
         return null;
     })();
-    const providerForAudit = providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    // Candidate selection alone is not evidence that a provider was dispatched.
+    // Keep previous attempt identity even when the terminal failure is local.
+    const providerForAudit = providerFromAttempts ??
+        ctx?.providerAttempts?.filter((attempt) =>
+            attempt.outcome !== "blocked" && attempt.outcome !== "no_pricing" &&
+            attempt.outcome !== "unsupported_executor" && attempt.outcome !== "rate_limited",
+        ).at(-1)?.provider ??
+        null;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -1068,7 +1090,7 @@ export async function handleError({
         errorPayload: gatewayErrorPayload,
         requestPayload: replayRequestPayload,
         gatewayResponse: errorPayload,
-        providerResponse: body ?? null,
+        providerResponse: errorOrigin === "upstream" ? body ?? null : null,
         detailMetadata: {
             stage,
             response_timeline: buildResponseTimeline(ctx),
@@ -1163,16 +1185,14 @@ export async function handleError({
         unsupportedParamPath: upstreamUnsupportedParamSignal?.path ?? null,
         errorDetails: body,
         requestPayload: requestPayloadForObservability,
-        providerResponse: body,
-        providerResponseHeaders: headersToRecord(res.headers),
+        providerResponse: errorOrigin === "upstream" ? body : null,
+        providerResponseHeaders: errorOrigin === "upstream" ? headersToRecord(res.headers) : null,
         gatewayResponse: errorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
-
 
 
 

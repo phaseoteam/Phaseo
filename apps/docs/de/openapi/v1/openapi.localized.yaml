@@ -13741,6 +13741,16 @@ components:
         generation_id:
           type: string
           example: G-abc123
+        request_id:
+          type: string
+          description: Korrelations-ID der Anfrage, die auch in X-Request-Id zurückgegeben wird.
+          example: G-abc123
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: Sichere Wartezeit bis zum erneuten Versuch in Sekunden, die mit Retry-After übereinstimmt, sofern vorhanden.
+          example: 3600
         status_code:
           type: integer
           example: 502

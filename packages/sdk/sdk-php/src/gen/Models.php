@@ -1715,6 +1715,10 @@ class ErrorResponse
 	public $provider_payment_required_support_notice;
 	/** @var string|null */
 	public $reason;
+	/** @var string|null */
+	public $request_id;
+	/** @var int|null */
+	public $retry_after_seconds;
 	/** @var array<string, mixed>|null */
 	public $routing_diagnostics;
 	/** @var int|null */

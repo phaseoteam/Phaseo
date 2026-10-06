@@ -13741,6 +13741,16 @@ components:
         generation_id:
           type: string
           example: G-abc123
+        request_id:
+          type: string
+          description: 请求关联 ID，也会在 X-Request-Id 中返回。
+          example: G-abc123
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: 安全重试等待时间（秒），与存在的 Retry-After 值一致。
+          example: 3600
         status_code:
           type: integer
           example: 502
