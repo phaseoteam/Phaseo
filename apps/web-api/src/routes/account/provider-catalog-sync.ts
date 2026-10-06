@@ -153,10 +153,15 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	let runId: string;
 	if (runResult.error) {
 		if (!externalEventId || runResult.error.code !== "23505") throw runResult.error;
-		const existing = await client.from("provider_catalog_sync_runs").select("id,status")
+		const existing = await client.from("provider_catalog_sync_runs").select("id,status,created_at")
 			.eq("provider_slug", providerSlug).eq("external_event_id", externalEventId).maybeSingle();
 		if (existing.error) throw existing.error;
 		if (!existing.data || !["failed", "processing"].includes(existing.data.status)) return { status: "duplicate" };
+		const newer = await client.from("provider_catalog_sync_runs").select("id")
+			.eq("provider_slug", providerSlug).eq("status", "applied")
+			.gt("created_at", existing.data.created_at).limit(1).maybeSingle();
+		if (newer.error) throw newer.error;
+		if (newer.data) return { status: "duplicate" };
 		// The provider lease is already held, so another active sync cannot be
 		// reclaimed here. Recover interrupted receipts; completed deliveries stay deduplicated.
 		const resumed = await client.from("provider_catalog_sync_runs").update({
