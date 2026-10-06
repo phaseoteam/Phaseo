@@ -62,6 +62,7 @@ export default async function OtherInfo({
 	};
 
 	const parameterCount = resolve("parameter_count");
+	const activeParameterCount = resolve("active_parameter_count");
 	const rawLicense = resolve("license");
 	const normalizedLicense = rawLicense?.trim().toLowerCase();
 	const license =
@@ -75,6 +76,11 @@ export default async function OtherInfo({
 			key: "parameters",
 			label: t("parameters"),
 			value: formatCount(parameterCount),
+		},
+		{
+			key: "active_parameters",
+			label: t("activeParameters"),
+			value: formatCount(activeParameterCount),
 		},
 		{
 			key: "license",
@@ -151,7 +157,7 @@ export default async function OtherInfo({
 		<section className="space-y-2">
 			{showHeading ? <h3 className="text-base font-semibold">{t("otherInfo")}</h3> : null}
 			<div className="space-y-2 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:gap-2 xl:space-y-0">
-				{renderGrid(primaryItems, "sm:grid-cols-3")}
+				{renderGrid(primaryItems, formatCount(activeParameterCount) ? "sm:grid-cols-2" : "sm:grid-cols-3")}
 				{secondaryItems.length > 0
 					? renderGrid(secondaryItems, "sm:grid-cols-2")
 					: null}
