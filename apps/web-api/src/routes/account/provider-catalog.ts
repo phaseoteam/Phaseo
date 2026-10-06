@@ -47,7 +47,7 @@ export const providerCatalogJsonSchema = {
 	required: ["data"],
 	additionalProperties: false,
 	properties: {
-		data: { type: "array", minItems: 1, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
+		data: { type: "array", minItems: 0, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
 	},
 	$defs: {
 		capability: { oneOf: [{ type: "string" }, { type: "object", required: ["id"], additionalProperties: false, properties: { id: { type: "string" }, parameters: { type: "array", items: { type: "string" } } } }] },
@@ -257,8 +257,8 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 	const body = asRecord(payload);
 	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
 	if (entries.length === 0) {
-		issues.push({ path: "data", message: "Expected a non-empty data array of models." });
-		return { valid: false, modelCount: 0, models: [], allModels: [], issues, truncated: false };
+		if (!Array.isArray(body?.data)) issues.push({ path: "data", message: "Expected a data array of models." });
+		return { valid: issues.length === 0, modelCount: 0, models: [], allModels: [], issues, truncated: false };
 	}
 	if (entries.length > MAX_MODELS) {
 		issues.push({ path: "data", message: `Catalog contains ${entries.length} models; the limit is ${MAX_MODELS}.` });

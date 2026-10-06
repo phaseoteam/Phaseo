@@ -76,7 +76,9 @@ if (mode === "smoke") {
 	}
 	process.exit(0);
 }
-run(["db", "schema", "declarative", "sync", "--no-apply", "--no-cache", "--strict-coverage", "-f", mode === "bootstrap" ? "schema_baseline" : "declarative_change", ...(mode === "sync" ? process.argv.slice(3) : [])]);
+const syncArgs = mode === "sync" ? process.argv.slice(3).filter((arg) => arg !== "--") : [];
+const migrationNameArgs = syncArgs.includes("-f") ? [] : ["-f", mode === "bootstrap" ? "schema_baseline" : "declarative_change"];
+run(["db", "schema", "declarative", "sync", "--no-apply", "--no-cache", "--strict-coverage", ...migrationNameArgs, ...syncArgs]);
 const generated = readdirSync(join(temporary, "migrations")).filter((name) => name.endsWith(".sql") && !before.has(name)).sort();
 if (mode === "bootstrap") {
 	if (!generated.length) throw new Error("Empty baseline generated");

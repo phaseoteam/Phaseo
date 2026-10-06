@@ -40,7 +40,7 @@ begin
   if not coalesce(provider_approved, false) then raise exception 'provider_catalog_provider_not_approved'; end if;
   if not exists (select 1 from public.provider_catalog_sources s where s.provider_slug = candidate.provider_slug and s.status = 'active') then raise exception 'provider_catalog_source_inactive'; end if;
   if not exists (select 1 from public.v2_models m where m.model_slug = candidate.canonical_model_slug
-    and (not m.hidden or m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug)) then raise exception 'provider_catalog_model_unavailable'; end if;
+    and (not m.hidden or (m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug and m.released_at is null))) then raise exception 'provider_catalog_model_unavailable'; end if;
   if candidate.status = 'promoted' then
     select provider_model_id into provider_model_id_value from public.v2_model_provider_routes
     where provider_slug = candidate.provider_slug and model_slug = candidate.canonical_model_slug
@@ -98,7 +98,7 @@ begin
   route_enabled := candidate.availability in ('ready', 'degraded') and release_due and provider_ready and not coalesce(route_blocked, false)
     and jsonb_array_length(candidate.pricing) > 0
     and exists (select 1 from public.v2_models m where m.model_slug = candidate.canonical_model_slug
-      and (not m.hidden or m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug))
+      and (not m.hidden or (m.metadata ->> 'provider_catalog_owner' = candidate.provider_slug and m.released_at is null)))
     and exists (
       select 1 from public.v2_providers p
       where p.provider_slug = candidate.provider_slug

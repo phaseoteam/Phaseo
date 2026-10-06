@@ -31,12 +31,11 @@ async function adminUser(c: any) {
 
 type ProviderRouteBlocker = "endpoint" | "adapter" | "credentials" | "probe";
 
-function providerRouteBlockers(provider: any, hasPassedProbe: boolean): ProviderRouteBlocker[] {
+function providerRouteBlockers(provider: any): ProviderRouteBlocker[] {
 	const blockers: ProviderRouteBlocker[] = [];
 	if (typeof provider?.base_url !== "string" || !provider.base_url.trim()) blockers.push("endpoint");
 	if (provider?.metadata?.adapter_ready !== true) blockers.push("adapter");
 	if (provider?.metadata?.credentials_ready !== true) blockers.push("credentials");
-	if (!hasPassedProbe) blockers.push("probe");
 	return blockers;
 }
 
@@ -134,13 +133,11 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 	for (const provider of [...selfServeProviders, ...(submittedProvidersResult.data ?? [])]) providersBySlug.set(String(provider.provider_slug), provider);
 	const reviewProviders = [...providersBySlug.values()];
 	const providerSlugs = reviewProviders.map((provider: any) => String(provider.provider_slug));
-	const [candidateResult, sourcesResult, ownershipResult] = await Promise.all([
-		providerSlugs.length ? client.from("provider_catalog_route_candidates").select("provider_slug,status").in("provider_slug", providerSlugs).in("status", ["probe_passed", "promoted"]) : Promise.resolve({ data: [], error: null }),
+	const [sourcesResult, ownershipResult] = await Promise.all([
 		providerSlugs.length ? client.from("provider_catalog_sources").select("provider_slug,management_mode,catalog_url,last_success_at").in("provider_slug", providerSlugs) : Promise.resolve({ data: [], error: null }),
 		providerSlugs.length ? client.from("provider_account_links").select("provider_slug,linked_by,status,proof_method,proof_subject,verified_at").in("provider_slug", providerSlugs).in("status", ["pending", "active"]).order("verified_at", { ascending: false, nullsFirst: false }) : Promise.resolve({ data: [], error: null }),
 	]);
-	if (candidateResult.error || sourcesResult.error || ownershipResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	const passedProviders = new Set((candidateResult.data ?? []).map((candidate: any) => String(candidate.provider_slug)));
+	if (sourcesResult.error || ownershipResult.error) return c.json({ error: "review_data_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const contactUserIds = new Map<string, string>();
 	for (const [slug, submission] of latestSubmissionByProvider) if (submission.submitted_by) contactUserIds.set(slug, String(submission.submitted_by));
 	const catalogSourcesByProvider = new Map((sourcesResult.data ?? []).map((source: any) => [String(source.provider_slug), source]));
@@ -155,7 +152,7 @@ internalProviderCatalogReviewRouter.get("/provider-catalog/providers", async (c)
 		if (!authUser.error && authUser.data.user?.email) authUsers.set(userId, authUser.data.user.email);
 	}));
 	const providers = reviewProviders.map((provider: any) => {
-		const routeBlockers = providerRouteBlockers(provider, passedProviders.has(String(provider.provider_slug)));
+		const routeBlockers = providerRouteBlockers(provider);
 		const latestSubmission = latestSubmissionByProvider.get(String(provider.provider_slug));
 		const catalogSource = catalogSourcesByProvider.get(String(provider.provider_slug));
 		const ownershipLinks = ownershipByProvider.get(String(provider.provider_slug)) ?? [];

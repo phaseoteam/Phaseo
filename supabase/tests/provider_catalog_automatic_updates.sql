@@ -39,6 +39,9 @@ begin
   insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
   assert (select count(*)=1 from public.v2_pricing_skus where provider_model_id=offer_id);
+  document := jsonb_set(document,'{0,name}','"Updated contract model"');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+  assert (select name='Updated contract model' from public.v2_models where model_slug='catalog-contract-test/model-a');
 
   -- A changed price replaces the effective rate and preserves the earlier rate.
   update public.v2_pricing_skus set effective_from=now()-interval '1 minute' where provider_model_id=offer_id;
@@ -74,6 +77,16 @@ begin
   end;
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/hidden');
   assert not exists(select 1 from public.v2_model_provider_routes where model_slug='catalog-contract-test/hidden');
+  update public.v2_models set hidden=true where model_slug='catalog-contract-test/model-a';
+  begin
+    perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+    raise exception 'an administrative hide was overwritten';
+  exception when others then
+    get stacked diagnostics failure = message_text;
+    assert failure like 'provider_catalog_model_unavailable:%';
+  end;
+  assert (select hidden from public.v2_models where model_slug='catalog-contract-test/model-a');
+  update public.v2_models set hidden=false where model_slug='catalog-contract-test/model-a';
 
   -- Omitting an offer retires only this provider's feed-managed routes.
   insert into public.v2_model_provider_routes (provider_model_id,model_slug,provider_slug,provider_model_slug,status,phaseo_status,provider_availability_status)
@@ -81,6 +94,14 @@ begin
   document := jsonb_build_array(document -> 0);
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
   assert (select status='retired' and not routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='upstream-b');
+  assert (select status='active' from public.v2_model_provider_routes where provider_model_id='catalog-contract-manual');
+
+  -- An approved provider can clear its feed without deleting historical records.
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  assert public.apply_provider_catalog_snapshot('catalog-contract-test',run2,'[]')=0;
+  assert (select status='retired' and not routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
+  assert (select count(*)=2 from public.v2_pricing_skus where provider_model_id=offer_id);
   assert (select status='active' from public.v2_model_provider_routes where provider_model_id='catalog-contract-manual');
 
   -- Revoked approval cannot publish changes or create new canonical models.

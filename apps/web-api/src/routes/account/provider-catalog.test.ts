@@ -15,6 +15,10 @@ import {
 } from "./provider-catalog-sync";
 
 describe("provider catalog onboarding", () => {
+	it("accepts an empty snapshot so a provider can remove its final offer", () => {
+		expect(normalizeProviderCatalog({ data: [] })).toMatchObject({ valid: true, modelCount: 0, allModels: [] });
+		expect(normalizeProviderCatalog({ data: null }).valid).toBe(false);
+	});
 	it("serves a version 1 sample endpoint whose schema and runtime agree", async () => {
 		const ajv = new Ajv({ strict: false });
 		addFormats(ajv);
@@ -171,14 +175,16 @@ describe("provider catalog onboarding", () => {
 		expect(model.pricing).toEqual([{ meterKey: "input_tokens", modality: "text", direction: "input", unit: "token", unitQuantity: 1_000_000, priceNanos: 250_000_000, displayLabel: "Input tokens", displayUnit: "1M tokens", conditions: [] }]);
 	});
 
-	it("preserves distinct conditional pricing tiers and rejects malformed conditions", async () => {
+	it("reports unsupported conditional pricing to the provider and rejects malformed conditions", async () => {
 		const price = { meter_key: "output_tokens", modality: "text", direction: "output", unit: "token", unit_quantity: 1_000_000, price_nanos: 100_000_000, display_label: "Output", display_unit: "1M tokens" };
 		const preview = normalizeProviderCatalog({ data: [{ id: "acme/atlas-1", capabilities: ["text.generate"], pricing: [
 			{ ...price, conditions: [{ path: "usage.output_tokens", op: "lte", value: 100_000 }] },
 			{ ...price, price_nanos: 200_000_000, conditions: [{ path: "usage.output_tokens", op: "gt", value: 100_000 }] },
 		] }] });
 		const client = { from: () => ({ select: () => ({ in: () => ({ neq: async () => ({ data: [{ meter_key: "output_tokens" }], error: null }) }) }) }) };
-		expect((await validateProviderCatalogPricingMeters(client, preview)).valid).toBe(true);
+		const validated = await validateProviderCatalogPricingMeters(client, preview);
+		expect(validated.valid).toBe(false);
+		expect(validated.issues[0]).toMatchObject({ path: "data[0].pricing[0].conditions", message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
 		expect(preview.models[0].pricing.map((item) => item.conditions)).toEqual([
 			[{ path: "usage.output_tokens", op: "lte", value: 100_000 }],
 			[{ path: "usage.output_tokens", op: "gt", value: 100_000 }],

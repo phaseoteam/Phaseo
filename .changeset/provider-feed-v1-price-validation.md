@@ -1,5 +1,6 @@
 ---
 "@phaseo/web-api": patch
+"@phaseo/web": patch
 ---
 
-Reject non-numeric provider feed prices instead of coercing them to zero, and publish the version 1 feed example and contract notes.
+Apply validated catalog updates automatically after provider approval, preserving price history and retiring removed provider offers. Remove the manual model approval queue and reject invalid feed prices with useful errors.

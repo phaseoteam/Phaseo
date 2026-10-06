@@ -28,7 +28,7 @@ begin
       and route.phaseo_status not in ('blocked', 'unsupported')
       and jsonb_array_length(candidate.pricing) > 0
       and exists (select 1 from public.v2_models model where model.model_slug = route.model_slug
-        and (not model.hidden or model.metadata ->> 'provider_catalog_owner' = route.provider_slug))
+        and (not model.hidden or (model.metadata ->> 'provider_catalog_owner' = route.provider_slug and model.released_at is null)))
       and not exists (
         select 1 from public.v2_model_provider_routes stealth_route
         where stealth_route.model_slug = route.model_slug and stealth_route.is_stealth
