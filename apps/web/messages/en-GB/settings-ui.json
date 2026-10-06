@@ -4472,7 +4472,7 @@
 			"searchProviders": "Search loaded providers",
 			"openCount": "Open ({count})",
 			"allCount": "All ({count})",
-			"routeReadyHelp": "Endpoint, adapter, credentials, and probe are ready. Each model still needs catalog review.",
+			"routeReadyHelp": "Endpoint, adapter, and credentials are configured. Validated catalog updates apply automatically.",
 			"routeMissingHelp": "Still needed for public routing: {requirements}. Provider approval can proceed now; these checks keep routing disabled.",
 			"endpointSetup": "endpoint setup",
 			"ownershipClaim": "Ownership claim",

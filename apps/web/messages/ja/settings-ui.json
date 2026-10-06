@@ -4472,7 +4472,7 @@
 			"searchProviders": "読み込み済みプロバイダーを検索",
 			"openCount": "未処理（{count}）",
 			"allCount": "すべて ({count})",
-			"routeReadyHelp": "エンドポイント、アダプター、認証情報、疎通テストの準備が完了しています。各モデルのカタログ審査は引き続き必要です。",
+			"routeReadyHelp": "エンドポイント、アダプター、認証情報が設定されています。有効なカタログ更新は自動的に適用されます。",
 			"routeMissingHelp": "公開ルーティングに必要な残りの項目：{requirements}。プロバイダーの承認は進められますが、これらの確認が完了するまでルーティングは無効のままです。",
 			"endpointSetup": "エンドポイントの設定",
 			"ownershipClaim": "所有権の申請",

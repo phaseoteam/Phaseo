@@ -4472,7 +4472,7 @@
 			"searchProviders": "搜索已加载的提供商",
 			"openCount": "待处理（{count}）",
 			"allCount": "全部 ({count})",
-			"routeReadyHelp": "端点、适配器、凭据和探测已就绪。每个模型仍需进行目录审核。",
+			"routeReadyHelp": "端点、适配器和凭据已配置。通过验证的目录更新会自动应用。",
 			"routeMissingHelp": "公开路由仍需：{requirements}。现在可以继续批准提供商；这些检查会让路由保持禁用。",
 			"endpointSetup": "端点配置",
 			"ownershipClaim": "所有权声明",

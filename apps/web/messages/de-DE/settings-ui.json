@@ -4472,7 +4472,7 @@
 			"searchProviders": "Geladene Anbieter suchen",
 			"openCount": "Offen ({count})",
 			"allCount": "Alle ({count})",
-			"routeReadyHelp": "Endpunkt, Adapter, Zugangsdaten und Verbindungstest sind bereit. Jedes Modell benötigt weiterhin eine Katalogprüfung.",
+			"routeReadyHelp": "Endpunkt, Adapter und Zugangsdaten sind konfiguriert. Validierte Katalogupdates werden automatisch angewendet.",
 			"routeMissingHelp": "Für öffentliches Routing fehlt noch: {requirements}. Die Anbietergenehmigung kann jetzt erfolgen; diese Prüfungen halten das Routing deaktiviert.",
 			"endpointSetup": "Endpunkteinrichtung",
 			"ownershipClaim": "Eigentumsanspruch",

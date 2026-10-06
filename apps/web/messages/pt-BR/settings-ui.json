@@ -4472,7 +4472,7 @@
 			"searchProviders": "Buscar provedores carregados",
 			"openCount": "Em aberto ({count})",
 			"allCount": "Todos ({count})",
-			"routeReadyHelp": "O endpoint, o adaptador, as credenciais e o teste estão prontos. Cada modelo ainda precisa de revisão do catálogo.",
+			"routeReadyHelp": "O endpoint, o adaptador e as credenciais estão configurados. Atualizações validadas do catálogo são aplicadas automaticamente.",
 			"routeMissingHelp": "Ainda necessário para o roteamento público: {requirements}. A aprovação do provedor pode prosseguir agora; essas verificações mantêm o roteamento desativado.",
 			"endpointSetup": "configuração do endpoint",
 			"ownershipClaim": "Reivindicação de propriedade",
