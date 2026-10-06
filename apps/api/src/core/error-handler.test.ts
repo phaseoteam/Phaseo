@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import * as runtimeEnv from "@/runtime/env";
+import { guardFreeRouteQuota } from "./customer-rate-limits";
 const emitGatewayRequestEventMock = vi.fn(async () => {});
 vi.mock("@observability/events", () => ({
 	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
@@ -221,6 +223,7 @@ describe("handleError", () => {
 			endpoint: "audio.speech",
 			ctx: {
 				requestId: "G-TEST-1",
+				meta: {},
 				model: "xiaomi/mimo-v2-tts:free",
 				rawBody: {
 					model: "xiaomi/mimo-v2-tts:free",
@@ -322,6 +325,7 @@ describe("handleError", () => {
 			endpoint: "responses",
 			ctx: {
 				requestId: "G-TEST-REPLAY",
+				meta: {},
 				model: "openai/gpt-5.4-nano",
 				body: {
 					model: "openai/gpt-5.4-nano",
@@ -387,6 +391,7 @@ describe("handleError", () => {
 			endpoint: "moderations",
 			ctx: {
 				requestId: "G-TEST-2",
+				meta: {},
 				model: "openai/omni-moderation",
 			} as any,
 			auditFailure: async (args) => {
@@ -617,6 +622,7 @@ describe("handleError", () => {
 			endpoint: "responses",
 			ctx: {
 				requestId: "G-TEST-3",
+				meta: {},
 				model: "google/lyria-3-clip-preview",
 			} as any,
 			auditFailure: async () => { },
@@ -629,3 +635,111 @@ describe("handleError", () => {
 	});
 });
 
+
+describe("execute rate-limit attribution", () => {
+	const quotaBody = {
+		error: "key_limit_exceeded",
+		error_type: "user",
+		error_origin: "user",
+		reason: "free_requests_per_day",
+		description: "Daily free request limit of 50 reached. Resets at midnight UTC.",
+		request_id: "G-FREE-QUOTA",
+	};
+
+	it("preserves a denial from the actual daily free quota guard", async () => {
+		const admit = vi.fn(async () => ({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 }));
+		const bindings = vi.spyOn(runtimeEnv, "getBindingsIfConfigured").mockReturnValue({
+			CUSTOMER_RATE_LIMITS_ENABLED: "true",
+			CUSTOMER_RATE_LIMITS: { getByName: () => ({ admit }) },
+		} as any);
+		try {
+			const denial = await guardFreeRouteQuota({
+				workspaceId: "workspace", userId: "owner", requestId: "G-ACTUAL-QUOTA", admissionId: "admission",
+				pricingCard: { rules: [{ pricing_plan: "free", price_per_unit: "0" }] } as any,
+			});
+			expect(denial?.status).toBe(429);
+			const original = await denial!.clone().json();
+			const audit = vi.fn(async (_args: any) => {});
+			const response = await handleError({ stage: "execute", endpoint: "responses", res: denial!,
+				ctx: { meta: {}, providers: [{ providerId: "undispatched" }] } as any, auditFailure: audit });
+			expect(await response.json()).toMatchObject({
+				request_id: "G-ACTUAL-QUOTA", error: "key_limit_exceeded", reason: "free_requests_per_day",
+				error_type: "user", error_origin: "user", description: original.description, retry_after_seconds: 3600,
+			});
+			expect(response.headers.get("Retry-After")).toBe("3600");
+			expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
+			expect(audit.mock.calls[0][0]).toMatchObject({ provider: null, providerResponse: null });
+			expect(admit).toHaveBeenCalledWith("customer-quota:v1:workspace:owner", "free-day", "admission");
+		} finally {
+			bindings.mockRestore();
+		}
+	});
+
+	it.each([false, true])("preserves local quota denial with prior attempt=%s", async (priorAttempt) => {
+		const attempts = priorAttempt ? [{
+			attempt_number: 1, provider: "attempted-provider", endpoint: "responses",
+			model: "test/model:free", outcome: "upstream_non_2xx", status: 503,
+			duration_ms: 10,
+		}] : [];
+		const attemptErrors = priorAttempt ? [{
+			provider: "attempted-provider", status: 503, upstream_error_message: "Unavailable",
+		}] : [];
+		attempts.push({
+			attempt_number: 2, provider: "undispatched-provider", endpoint: "responses",
+			model: "test/model:free", outcome: "blocked", status: 429, duration_ms: 0,
+		});
+		attemptErrors.push({ provider: "undispatched-provider", status: 429, type: "blocked" } as any);
+		const audit = vi.fn(async (_args: any) => {});
+		const response = await handleError({
+			stage: "execute", endpoint: "responses",
+			res: new Response(JSON.stringify(quotaBody), { status: 429, headers: { "Retry-After": "3600" } }),
+			ctx: { meta: {}, providers: [{ providerId: "unattempted-candidate" }], providerAttempts: attempts, attemptErrors } as any,
+			auditFailure: audit,
+		});
+		const payload = await response.json();
+		expect(payload).toMatchObject({
+			request_id: "G-FREE-QUOTA", generation_id: "G-FREE-QUOTA",
+			error_origin: "user", error_type: "user", status_code: 429,
+			reason: "free_requests_per_day", description: quotaBody.description,
+			retry_after_seconds: 3600,
+		});
+		expect(payload).not.toHaveProperty("provider");
+		expect(payload).not.toHaveProperty("upstream_error");
+		expect(payload).not.toHaveProperty("failed_providers");
+		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
+		expect(response.headers.get("X-Gateway-Error-Origin")).toBe("user");
+		expect(response.headers.get("X-Request-Id")).toBe("G-FREE-QUOTA");
+		expect(response.headers.get("Retry-After")).toBe("3600");
+		const args = audit.mock.calls[0][0] as any;
+		expect(args.provider).toBe(priorAttempt ? "attempted-provider" : null);
+		expect(args.errorCode).toBe("user:key_limit_exceeded");
+		expect(args.providerResponse).toBeNull();
+		expect(args.providerAttempts).toEqual(attempts);
+		const extra = JSON.parse(args.extraJson);
+		expect(extra.transform.upstream_response_present).toBe(false);
+		expect(extra.transform.upstream_status_code).toBeNull();
+		expect(extra.transform.attempt_errors).toEqual(attemptErrors);
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({
+			provider: priorAttempt ? "attempted-provider" : null,
+			errorCode: "user:key_limit_exceeded", errorType: "user",
+			providerResponse: null, providerResponseHeaders: null,
+			internalReason: "free_requests_per_day",
+		}));
+	});
+
+	it("keeps a genuine provider 429 attributed upstream", async () => {
+		const audit = vi.fn(async (_args: any) => {});
+		const body = { error: "upstream_error", description: "Provider rate limit reached." };
+		const response = await handleError({
+			stage: "execute", endpoint: "responses",
+			res: new Response(JSON.stringify(body), { status: 429, headers: { "Retry-After": "15" } }),
+			ctx: { meta: {}, requestId: "G-UPSTREAM", providers: [{ providerId: "provider" }] } as any,
+			auditFailure: audit,
+		});
+		expect(await response.json()).toMatchObject({ error_origin: "upstream", error_type: "system", retry_after_seconds: 15 });
+		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("upstream");
+		expect(response.headers.get("Retry-After")).toBe("15");
+		expect(audit.mock.calls[0][0]).toMatchObject({ provider: "provider", providerResponse: body, errorCode: "upstream:upstream_error" });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ provider: "provider", errorType: "system", providerResponse: body }));
+	});
+});
