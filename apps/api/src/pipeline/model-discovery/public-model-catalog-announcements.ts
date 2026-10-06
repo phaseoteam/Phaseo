@@ -33,6 +33,7 @@ type AnnouncementStateRow = {
 
 type PendingAnnouncement = {
 	modelSlug: string;
+	catalogueStatus: string;
 	modelName: string;
 	labSlug: string;
 	modelUrl: string;
@@ -91,8 +92,8 @@ function isPublicModel(row: PublicModelRow): boolean {
 	return !status || !["draft", "disabled", "retired"].includes(status);
 }
 
-function isAvailableCatalogueStatus(value: string | null | undefined): boolean {
-	return value?.trim().toLowerCase() === "available";
+function isReleasedCatalogueStatus(value: string | null | undefined): boolean {
+	return ["available", "preview"].includes(value?.trim().toLowerCase() ?? "");
 }
 
 function isNewlyAvailable(
@@ -101,9 +102,9 @@ function isNewlyAvailable(
 ): boolean {
 	if (state.status !== "baseline" && state.status !== "announced") return false;
 	return isPublicModel(model)
-		&& isAvailableCatalogueStatus(model.catalogue_status)
+		&& isReleasedCatalogueStatus(model.catalogue_status)
 		&& (
-			!isAvailableCatalogueStatus(state.catalogue_status_snapshot)
+			!isReleasedCatalogueStatus(state.catalogue_status_snapshot)
 			|| state.public_visibility_snapshot === false
 		);
 }
@@ -179,7 +180,7 @@ async function insertNewAnnouncementState(
 		if (!modelSlug) return [];
 		return [{
 			model_slug: modelSlug,
-			status: baseline || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)
+			status: baseline || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)
 				? "baseline"
 				: "pending",
 			catalogue_status_snapshot: model.catalogue_status,
@@ -221,7 +222,6 @@ async function promoteAvailableAnnouncementState(
 			.from("model_discovery_public_announcements")
 			.update({
 				status: "pending",
-				catalogue_status_snapshot: "available",
 				public_visibility_snapshot: true,
 				last_run_id: runId,
 				last_error: null,
@@ -319,22 +319,26 @@ async function markAnnounced(
 ): Promise<void> {
 	if (models.length === 0) return;
 	const supabase = getSupabaseAdmin();
-	const { error } = await supabase
-		.from("model_discovery_public_announcements")
-		.update({
-			status: "announced",
-			catalogue_status_snapshot: "available",
-			last_run_id: runId,
-			announced_at: nowIso,
-			last_attempt_at: nowIso,
-			last_error: null,
-			claim_run_id: null,
-			claim_expires_at: null,
-			updated_at: nowIso,
-		})
-		.in("model_slug", models.map((model) => model.modelSlug))
-		.eq("claim_run_id", runId);
-	if (error) throw new Error(error.message || "Failed to mark public model announcements delivered");
+	for (const catalogueStatus of ["available", "preview"]) {
+		const modelSlugs = models.filter((model) => model.catalogueStatus === catalogueStatus).map((model) => model.modelSlug);
+		if (modelSlugs.length === 0) continue;
+		const { error } = await supabase
+			.from("model_discovery_public_announcements")
+			.update({
+				status: "announced",
+				catalogue_status_snapshot: catalogueStatus,
+				last_run_id: runId,
+				announced_at: nowIso,
+				last_attempt_at: nowIso,
+				last_error: null,
+				claim_run_id: null,
+				claim_expires_at: null,
+				updated_at: nowIso,
+			})
+			.in("model_slug", modelSlugs)
+			.eq("claim_run_id", runId);
+		if (error) throw new Error(error.message || "Failed to mark public model announcements delivered");
+	}
 }
 
 async function markAttemptFailed(
@@ -366,10 +370,11 @@ async function markAttemptFailed(
 
 function toNotification(model: PublicModelRow, stateAttemptCount: number): PendingAnnouncement | null {
 	const modelSlug = normalizeSlug(model.model_slug);
-	if (!modelSlug || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)) return null;
+	if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return null;
 	const labSlug = normalizeSlug(model.lab_slug) ?? modelSlug.split("/")[0] ?? "phaseo";
 	return {
 		modelSlug,
+		catalogueStatus: model.catalogue_status?.trim().toLowerCase() ?? "",
 		modelName: normalizeName(model.name, modelSlug),
 		labSlug,
 		modelUrl: modelUrl(modelSlug),
@@ -415,7 +420,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			if (!modelSlug || stateBySlug.has(modelSlug)) continue;
-			if (isPublicModel(model) && isAvailableCatalogueStatus(model.catalogue_status)) newModels.push(model);
+			if (isPublicModel(model) && isReleasedCatalogueStatus(model.catalogue_status)) newModels.push(model);
 			else skippedModels.push(model);
 		}
 		for (const model of models) {
@@ -444,7 +449,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		);
 		const pendingModels = models.flatMap((model) => {
 			const modelSlug = normalizeSlug(model.model_slug);
-			if (!modelSlug || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)) return [];
+			if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return [];
 			const state = stateBySlug.get(modelSlug);
 			if (state?.status !== "pending" && !newModelSlugs.has(modelSlug)) {
 				return [];

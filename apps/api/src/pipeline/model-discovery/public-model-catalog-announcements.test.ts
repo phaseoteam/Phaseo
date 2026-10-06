@@ -198,10 +198,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 		]);
 	});
 
-	it("promotes a baseline model when it becomes available", async () => {
+	it.each(["available", "preview"])("promotes a baseline model when it becomes %s", async (catalogueStatus) => {
 		const supabase = buildClient(
 			[
-				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" },
+				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active", catalogue_status: catalogueStatus },
 			],
 			[
 				{ model_slug: "openai/gpt-promoted", status: "baseline", attempt_count: 0 },
@@ -219,7 +219,42 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(supabase.upserts).toHaveLength(0);
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
 			expect.objectContaining({ status: "pending", last_run_id: "run-3" }),
-			expect.objectContaining({ status: "announced", claim_run_id: null }),
+			expect.objectContaining({ status: "announced", catalogue_status_snapshot: catalogueStatus, claim_run_id: null }),
 		]);
+	});
+
+	it.each(["new", "pending"])("announces a %s preview release", async (state) => {
+		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview" };
+		const supabase = buildClient([model], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0 },
+			...(state === "pending" ? [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] : []),
+		], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "preview-run", notify: true })).toMatchObject({ notified: 1, pending: 0, error: null });
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "announced", catalogue_status_snapshot: "preview" });
+	});
+
+	it.each([
+		{ hidden: true, status: "active", catalogue_status: "preview" },
+		{ hidden: false, status: "draft", catalogue_status: "preview" },
+		{ hidden: false, status: "active", catalogue_status: "announced" },
+		{ hidden: false, status: "active", catalogue_status: "rumoured" },
+	])("does not announce an unreleased or private model: %j", async (lifecycle) => {
+		const supabase = buildClient([{ model_slug: "mistral/test", name: "Test", lab_slug: "mistral", ...lifecycle }], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0 },
+		]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "skip-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+	});
+
+	it.each(["preview", "available"])("does not repeat an announced preview when its lifecycle is %s", async (catalogueStatus) => {
+		const supabase = buildClient([
+			{ model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: catalogueStatus },
+		], [{ model_slug: "mistral/mistral-large-4.0", status: "announced", attempt_count: 0, catalogue_status_snapshot: "preview", public_visibility_snapshot: true }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "repeat-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 	});
 });
