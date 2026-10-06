@@ -22,7 +22,7 @@ export async function notifyPendingProviderModels(env: Env): Promise<void> {
   const ids = (claimed.data ?? []) as string[];
   if (!ids.length) return;
   try {
-    const response = await fetch(destination.toString(), { method: "POST", redirect: "error", headers: { "content-type": "application/json" }, body: JSON.stringify(providerModelReviewMessage(ids.length,env.PROVIDER_MODEL_REVIEW_SLACK_USER_ID)), signal: AbortSignal.timeout(10_000) });
+    const response = await fetch(destination.toString(), { method: "POST", redirect: "manual", headers: { "content-type": "application/json" }, body: JSON.stringify(providerModelReviewMessage(ids.length,env.PROVIDER_MODEL_REVIEW_SLACK_USER_ID)), signal: AbortSignal.timeout(10_000) });
     if (!response.ok) { console.error("provider_model_notification_delivery_failed", { status: response.status }); return; }
     const marked = await client.from("provider_catalog_model_requests").update({ notification_sent_at: new Date().toISOString(), notification_lease: null }).in("id", ids).eq("notification_lease", lease);
     if (marked.error) console.error("provider_model_notification_ack_failed");

@@ -159,7 +159,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	try {
 		// Consume before reading the document, under the sync lease. Edits arriving
 		// after this point retain their refresh flag for the next pass.
-		const started = await client.rpc("begin_provider_catalog_refresh", { p_provider_slug: providerSlug });
+		const started = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 		if (started.error) throw started.error;
 		const fresh = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).single();
 		if (fresh.error) throw fresh.error;
@@ -172,12 +172,13 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 				lastModified: null,
 				notModified: false as const,
 			}
-			: await fetchAndValidateProviderCatalog(source.catalog_url ?? "", fetch, trigger === "poll" ? { etag: source.etag, lastModified: source.last_modified } : undefined);
+			: await fetchAndValidateProviderCatalog(source.catalog_url ?? "", fetch, trigger === "poll" && started.data !== true ? { etag: source.etag, lastModified: source.last_modified } : undefined);
 		if (!("preview" in catalog)) {
 			const now = new Date().toISOString();
-			const refresh = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 			await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: now }).eq("id", runId);
-			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, next_poll_at: refresh.data === true ? now : nextPollAt(source.poll_interval_seconds, 0), etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			// A review or edit arriving during the fetch keeps its refresh flag and due time.
+			await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 			return { status: "not_modified", runId };
 		}
 		await renewLease(true);

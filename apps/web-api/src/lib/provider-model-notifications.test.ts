@@ -24,7 +24,7 @@ describe("private model review notifications",()=>{
    vi.mocked(getDataClient).mockReturnValue({rpc:vi.fn().mockResolvedValue({data:["request-id"],error:null}),from:()=>({update})} as never);
    const fetchMock=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response("ok"));
    await notifyPendingProviderModels({PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK:"https://hooks.slack.com/services/test"} as never);
-   expect(fetchMock).toHaveBeenCalledWith("https://hooks.slack.com/services/test",expect.objectContaining({redirect:"error",body:JSON.stringify(providerModelReviewMessage(1))}));
+   expect(fetchMock).toHaveBeenCalledWith("https://hooks.slack.com/services/test",expect.objectContaining({redirect:"manual",body:JSON.stringify(providerModelReviewMessage(1))}));
    expect(ack).toHaveBeenCalledWith("notification_lease",expect.any(String));
  });
  it("does not acknowledge errors or log response bodies",async()=>{
@@ -33,5 +33,12 @@ describe("private model review notifications",()=>{
    const log=vi.spyOn(console,"error").mockImplementation(()=>{});
    await notifyPendingProviderModels({PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK:"https://hooks.slack.com/services/test"} as never);
    expect(update).not.toHaveBeenCalled();expect(log).toHaveBeenCalledWith("provider_model_notification_delivery_failed",{status:429});
+ });
+ it("rejects redirects without forwarding the credential or payload",async()=>{
+   const update=vi.fn();vi.mocked(getDataClient).mockReturnValue({rpc:vi.fn().mockResolvedValue({data:["request-id"],error:null}),from:()=>({update})} as never);
+   const request=vi.spyOn(globalThis,"fetch").mockResolvedValue(new Response(null,{status:302,headers:{location:"https://example.invalid/collect"}}));
+   vi.spyOn(console,"error").mockImplementation(()=>{});
+   await notifyPendingProviderModels({PROVIDER_MODEL_REVIEW_SLACK_WEBHOOK:"https://hooks.slack.com/services/test"} as never);
+   expect(request).toHaveBeenCalledTimes(1);expect(update).not.toHaveBeenCalled();
  });
 });
