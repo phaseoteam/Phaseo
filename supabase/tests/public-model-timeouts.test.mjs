@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
+const migration = await read('../migrations/20261006145526_optimize_public_model_timeout_queries.sql');
 await db.exec(`set timezone = 'UTC';
   create role anon; create role authenticated; create role service_role;
   create schema private;
@@ -65,6 +66,26 @@ await db.exec(`set timezone = 'UTC';
        where u.request_event_id=fact.request_event_id group by meter_key) grouped) usage on true;
 `);
 await db.exec(await read('./fixtures/public-model-timeouts-before.sql'));
+// Freeze the overview clock around the New York fall-back independently of
+// today's date; both occurrences of 01:00 must retain the old range behavior.
+const beforeSql=await read('./fixtures/public-model-timeouts-before.sql');
+function overviewDefinition(sql) {
+  const start=sql.toLowerCase().indexOf('create or replace function public.get_model_performance_overview');
+  const opening=sql.indexOf('$function$',start);
+  const closing=sql.indexOf('$function$;',opening+10);
+  return sql.slice(start,closing+11);
+}
+await db.exec(`insert into v2_request_facts(request_event_id,occurred_at,requested_model_input,success,latency_ms)
+  values (md5('dst-first')::uuid,'2026-11-01 05:15:00+00','model-a',true,10),
+    (md5('dst-second')::uuid,'2026-11-01 06:15:00+00','model-a',false,90);
+  begin; set timezone='America/New_York';`);
+const freeze=sql=>overviewDefinition(sql).replaceAll('now()',"'2026-11-03 12:00:00+00'::timestamptz");
+await db.exec(freeze(beforeSql));
+const dstBefore=(await db.query("select * from get_model_performance_overview('model-a')")).rows;
+assert.equal(dstBefore[0].hourly_5d.reduce((sum,bucket)=>sum+bucket.requests,0),2,'DST fixtures are inside the frozen window');
+await db.exec(freeze(await read('../schemas/public/functions/get_model_performance_overview.sql')));
+assert.deepEqual((await db.query("select * from get_model_performance_overview('model-a')")).rows,dstBefore,'both fall-back hours preserve counts and medians');
+await db.exec('rollback; set timezone=\'UTC\';');
 await db.exec(`revoke all on function get_model_performance_overview(text) from public;
   grant execute on function get_model_performance_overview(text) to anon,authenticated,service_role;`);
 const modelCases = ['model-a','model-b','empty','no-release','missing'];
@@ -136,7 +157,6 @@ await db.exec(`create schema cron;
     (23,'provider-health-refresh-queue','keep command','* * * * *',true);
   create function cron.alter_job(bigint,command text) returns void language sql as
     'update cron.job set command = $2 where jobid = $1';`);
-const migration = await read('../migrations/20261006145526_optimize_public_model_timeout_queries.sql');
 const cronBlock = migration.slice(migration.indexOf('do $block$')).replace(
   "exists (select 1 from pg_extension where extname = 'pg_cron')",'true');
 await db.exec(cronBlock);

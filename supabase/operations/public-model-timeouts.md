@@ -10,9 +10,9 @@ establish the infrastructure cause of that restart.
 - Index the exact `coalesce(routed_model_slug, requested_model_slug,
   requested_model_input)` expression used by public model RPCs. Existing indexes
   cover different expressions, leaving model selection as a post-scan filter.
-- Join overview requests to hourly buckets by equality rather than testing each
-  request against every hourly range. Keep medians, empty buckets, time windows
-  and provider calculations unchanged.
+- Keep the overview's original hourly range comparisons, including their
+  behavior across daylight-saving transitions. The expression index reduces
+  the number of requests processed without changing bucket semantics.
 - Read trajectory token quantities directly. Preserve provider-prefixed model
   IDs, release boundaries, explicit totals, zero-total fallback and per-request
   meter aggregation without building and decoding usage JSON.
@@ -38,7 +38,8 @@ node supabase/tests/public-model-timeouts.test.mjs
 ```
 
 The test compares production definitions with the migration at fixed transaction
-time in UTC and Asia/Kolkata. It covers missing models, empty history, exact
+time in UTC and Asia/Kolkata, plus a fixed New York daylight-saving fallback.
+It covers missing models, empty history, exact
 boundaries, routed/requested/input fallback, repeated token meter sequences,
 explicit zero totals, provider IDs, resolver precedence, grants and permission
 denials. It also checks indexed model selection and the cron command through a

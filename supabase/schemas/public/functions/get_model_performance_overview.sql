@@ -1,9 +1,19 @@
-CREATE OR REPLACE FUNCTION public.get_model_performance_overview(p_model_id text)
- RETURNS TABLE(last_24h jsonb, prev_24h jsonb, hourly_24h jsonb, provider_uptime_24h jsonb, hourly_5d jsonb, time_of_day_5d jsonb, cumulative_tokens jsonb)
- LANGUAGE sql
- STABLE
- SET search_path TO 'public', 'pg_temp'
-AS $function$with params as (
+CREATE OR REPLACE FUNCTION public.get_model_performance_overview (
+  p_model_id text
+)
+  RETURNS TABLE (
+    last_24h            jsonb,
+    prev_24h            jsonb,
+    hourly_24h          jsonb,
+    provider_uptime_24h jsonb,
+    hourly_5d           jsonb,
+    time_of_day_5d      jsonb,
+    cumulative_tokens   jsonb
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO 'public', 'pg_temp'
+  AS $function$with params as (
     select p_model_id as model_id
 ),
 anchors as (
@@ -21,7 +31,7 @@ windows as (
 ),
 -- Resolve the request's actual route, not every route belonging to its model.
 requests_all as materialized (
-    select fact.occurred_at as created_at, date_trunc('hour', fact.occurred_at)::timestamp as request_hour, fact.success::boolean as success_bool,
+    select fact.occurred_at as created_at, fact.success::boolean as success_bool,
         fact.latency_ms, fact.throughput, fact.generation_ms, route.provider_slug as provider
     from public.v2_request_facts fact
     left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
@@ -112,7 +122,8 @@ hourly_24h as (
             from windows w
         ) s
         left join requests_last24 r
-            on r.request_hour = s.bucket_start
+            on r.created_at >= s.bucket_start
+           and r.created_at < s.bucket_start + interval '1 hour'
         group by s.bucket_start
     ) buckets
 ),
@@ -192,7 +203,8 @@ hourly_5d as (
             from windows w
         ) s
         left join requests_5d r
-            on r.request_hour = s.bucket_start
+            on r.created_at >= s.bucket_start
+           and r.created_at < s.bucket_start + interval '1 hour'
         group by s.bucket_start
     ) buckets
 ),
