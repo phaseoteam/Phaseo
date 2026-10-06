@@ -3,7 +3,7 @@ insert into public.v2_providers(provider_slug,name,status,metadata) values('cata
 insert into public.provider_catalog_sources(provider_slug,management_mode) values('catalog-review-test','managed');
 do $test$
 declare request_run uuid:=gen_random_uuid(); request_id uuid; lease_id uuid:=gen_random_uuid();
-document jsonb:='[{"id":"catalog-review-test/model","name":"Review model","providerModelSlug":"upstream","inputModalities":["text"],"outputModalities":["text"],"availability":"not_ready","capabilities":[],"pricing":[]}]';
+document jsonb:='[{"id":"catalog-review-test/model","name":"Review model","providerModelSlug":"upstream","inputModalities":["text"],"outputModalities":["text"],"availability":"not_ready","capabilities":[{"id":"responses","parameters":[]}],"pricing":[]}]';
 begin
   assert not has_table_privilege('authenticated','public.provider_catalog_model_requests','insert');
   assert not has_function_privilege('authenticated','public.review_provider_catalog_model_request(uuid,text,text,uuid,timestamptz)','execute');
