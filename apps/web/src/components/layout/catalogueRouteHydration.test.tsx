@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import type { ComponentProps } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { usePathname } from "next/navigation";
 import CatalogueScrollToTop from "./CatalogueScrollToTop";
@@ -9,7 +10,7 @@ jest.mock("next/navigation", () => ({
 	usePathname: jest.fn(),
 }));
 
-function renderRoute(pathname: string, locale: string, children: React.ReactNode) {
+function renderRoute(pathname: string, locale: NonNullable<ComponentProps<typeof NextIntlClientProvider>["locale"]>, children: React.ReactNode) {
 	jest.mocked(usePathname).mockReturnValue(pathname);
 	return renderToStaticMarkup(
 		<NextIntlClientProvider locale={locale} timeZone="UTC" messages={{
@@ -42,7 +43,7 @@ it("keeps non-catalogue pages free of the scroll control", () => {
 	expect(renderRoute("/en-GB/privacy", "en-GB", <CatalogueScrollToTop />)).toBe("");
 });
 
-it.each(["es-ES", "fr-FR", "de-DE"])("recognises catalogue routes in %s", (locale) => {
+it.each(["es-ES", "fr-FR", "de-DE"] as const)("recognises catalogue routes in %s", (locale) => {
 	expect(renderRoute(`/${locale}/models`, locale, <CatalogueScrollToTop />))
 		.toContain('aria-label="Scroll to top"');
 });
