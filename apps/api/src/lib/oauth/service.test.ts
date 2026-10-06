@@ -3,6 +3,7 @@ import { clearRuntime, configureRuntime } from "@/runtime/env";
 import { CAPABILITIES, IDENTITY_SCOPES } from "@/lib/authz/capabilities";
 import {
 	assertRedirectAllowed,
+	isOAuthClientUsable,
 	CLI_DEFAULT_SCOPES,
 	createUserCode,
 	filterAllowedScopes,
@@ -28,6 +29,19 @@ function replaceRuntime(bindings: Record<string, unknown>) {
 }
 
 describe("OAuth service helpers", () => {
+	it("restricts desktop callbacks to its registered public loopback client", () => {
+		const client = { id: "phaseo_desktop", is_first_party: true, registration_source: "first_party", client_type: "public", redirect_uris: ["http://127.0.0.1/callback"] } as any;
+		expect(assertRedirectAllowed(client, "http://127.0.0.1:54321/callback")).toBe(true);
+		for (const redirect of ["http://localhost:54321/callback", "https://127.0.0.1:54321/callback", "http://127.0.0.1:54321/other", "http://user@127.0.0.1:54321/callback", "http://127.0.0.1:54321/callback?x=1", "http://127.0.0.1:54321/callback#x", "https://example.com/callback"]) expect(assertRedirectAllowed(client, redirect)).toBe(false);
+		for (const override of [{ id: "another-client" }, { is_first_party: false }, { registration_source: "database" }, { client_type: "confidential" }, { redirect_uris: [] }]) expect(assertRedirectAllowed({ ...client, ...override }, "http://127.0.0.1:54321/callback")).toBe(false);
+	});
+
+	it("keeps official desktop login available while third-party OAuth is disabled", () => {
+		replaceRuntime({ ...baseBindings, PHASEO_THIRD_PARTY_OAUTH_ENABLED: "false" });
+		expect(isOAuthClientUsable("phaseo_desktop")).toBe(true);
+		expect(isOAuthClientUsable("other-desktop")).toBe(false);
+		replaceRuntime(baseBindings);
+	});
 	beforeAll(() => {
 		configureRuntime(baseBindings as any);
 	});
