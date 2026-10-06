@@ -7,6 +7,7 @@ import {
   GrokSettings,
   OpenCodeSettings,
   PiSettings,
+  PhaseoSettings,
   ProviderDriverKind,
 } from "@t3tools/contracts";
 import type * as Schema from "effect/Schema";
@@ -51,6 +52,12 @@ const PROVIDER_CLIENT_DEFINITIONS: readonly ProviderClientDefinition[] = [
     value: ProviderDriverKind.make("codex"),
     label: "Codex",
     settingsSchema: CodexSettings,
+  },
+  {
+    value: ProviderDriverKind.make("phaseo"),
+    label: "Phaseo",
+    settingsSchema: PhaseoSettings,
+    hasDefaultInstance: false,
   },
   {
     value: ProviderDriverKind.make("claudeAgent"),

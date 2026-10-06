@@ -15,6 +15,7 @@ import {
 } from "../Icons";
 
 import { cn } from "~/lib/utils";
+import { PhaseoIcon } from "../PhaseoIcon";
 import {
   AcpRegistryAgentIcon,
   officialAcpRegistryIconUrlForAgentId,
@@ -22,6 +23,7 @@ import {
 } from "../settings/AcpRegistryIcon";
 
 const PROVIDER_ICON_BY_PROVIDER: Partial<Record<ProviderDriverKind, Icon>> = {
+  [ProviderDriverKind.make("phaseo")]: PhaseoIcon,
   [ProviderDriverKind.make("codex")]: OpenAI,
   [ProviderDriverKind.make("claudeAgent")]: ClaudeAI,
   [ProviderDriverKind.make("opencode")]: OpenCodeIcon,

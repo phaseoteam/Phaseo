@@ -88,6 +88,7 @@ import { ExpandableText } from "./ExpandableText";
 import { ProviderInstanceCard } from "./ProviderInstanceCard";
 import { UsageProviderSettings } from "./UsageProviderSettings";
 import { ProviderSetupSection, readAntigravityAuthMethod } from "./ProviderSetupSection";
+import { PhaseoSetupSection } from "./PhaseoSetupSection";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
 import { CodexSetupSection, CodexManagedRuntimeFields } from "./CodexSetupSection";
 import { readCodexSetupMode } from "./CodexSetupSection.logic";
@@ -1062,7 +1063,15 @@ export function EnvironmentProviderSettings({
           ) : undefined
         }
         setup={
-          mode === "editor" && row.driver === "antigravity" ? (
+          mode === "editor" && row.driver === "phaseo" && liveProvider ? (
+            <PhaseoSetupSection
+              environmentId={environmentId}
+              environmentLabel={environmentLabel}
+              instanceId={row.instanceId}
+              provider={liveProvider}
+              readOnly={readOnly}
+            />
+          ) : mode === "editor" && row.driver === "antigravity" ? (
             <ProviderSetupSection
               environmentId={environmentId}
               environmentLabel={environmentLabel}

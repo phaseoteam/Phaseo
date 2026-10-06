@@ -163,6 +163,8 @@ const mergeProviderModels = (
   previousModels: ReadonlyArray<ServerProvider["models"][number]>,
   nextModels: ReadonlyArray<ServerProvider["models"][number]>,
 ): ReadonlyArray<ServerProvider["models"][number]> => {
+  // Phaseo supplies an authoritative catalog; sign-out must clear its available models.
+  if (provider.driver === "phaseo") return nextModels;
   const shouldRetainMissingModels = shouldRetainMissingProviderModels(provider);
   // Custom rows are derived from settings and every snapshot carries the full
   // current list, so a custom model missing from `nextModels` was removed by

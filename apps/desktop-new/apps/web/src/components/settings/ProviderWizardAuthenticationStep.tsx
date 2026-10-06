@@ -6,6 +6,7 @@ import { EMPTY_SERVER_PROVIDERS, serverEnvironment } from "../../state/server";
 import { Button } from "../ui/button";
 import { WizardFooter, WizardPanel } from "../ui/wizard";
 import { ProviderAuthenticationSection } from "./ProviderAuthenticationSection";
+import { PhaseoSetupSection } from "./PhaseoSetupSection";
 import { SettingsGroup } from "./SettingsGroup";
 import { SettingsRow } from "./settingsLayout";
 
@@ -40,7 +41,15 @@ export function ProviderWizardAuthenticationStep({
     <>
       <WizardPanel className="min-h-72">
         <SettingsGroup variant="plain">
-          {provider && (canAuthenticate || signedIn) ? (
+          {provider?.driver === "phaseo" ? (
+            <PhaseoSetupSection
+              environmentId={environmentId}
+              environmentLabel={environmentLabel}
+              instanceId={instanceId}
+              provider={provider}
+              readOnly={false}
+            />
+          ) : provider && (canAuthenticate || signedIn) ? (
             <ProviderAuthenticationSection
               environmentId={environmentId}
               environmentLabel={environmentLabel}

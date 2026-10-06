@@ -123,6 +123,20 @@ const makeHarness = Effect.fn("providerInstallation.test.makeHarness")(function*
 });
 
 describe("provider installation routing", () => {
+  it.effect(
+    "installs Phaseo's shared Codex runtime without starting a chat or requiring ChatGPT",
+    () =>
+      Effect.gen(function* () {
+        const phaseoId = ProviderInstanceId.make("phaseo-personal");
+        const phaseo = ProviderDriverKind.make("phaseo");
+        const harness = yield* makeHarness({
+          instance: instance(phaseo, phaseoId),
+          settings: { providerInstances: { [phaseoId]: { driver: phaseo, config: {} } } },
+        });
+        yield* harness.router.start({ instanceId: phaseoId });
+        assert.deepEqual(harness.calls, ["codex-start"]);
+      }).pipe(Effect.scoped, Effect.provide(NodeServices.layer)),
+  );
   it.effect("allows explicit installation while the provider is disabled", () =>
     Effect.gen(function* () {
       const harness = yield* makeHarness();

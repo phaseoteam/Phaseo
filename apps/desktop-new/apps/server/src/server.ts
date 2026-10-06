@@ -494,7 +494,11 @@ const ProviderInstallationRefreshLive = Layer.effectDiscard(
         instances.listInstances.pipe(
           Effect.flatMap((entries) =>
             Effect.forEach(
-              entries.filter((instance) => instance.driverKind === state.driver),
+              entries.filter(
+                (instance) =>
+                  instance.driverKind === state.driver ||
+                  (state.driver === "codex" && instance.driverKind === "phaseo"),
+              ),
               (instance) => providers.refreshInstance(instance.instanceId),
               { discard: true },
             ),

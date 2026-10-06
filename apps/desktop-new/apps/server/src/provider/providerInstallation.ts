@@ -23,6 +23,7 @@ import { mergeProviderInstanceEnvironment } from "./ProviderInstanceEnvironment.
 const ANTIGRAVITY = ProviderDriverKind.make("antigravity");
 const hasBinaryPath = Schema.is(Schema.Struct({ binaryPath: Schema.String }));
 const decodeCodexSettings = Schema.decodeUnknownEffect(CodexSettings);
+const phaseoRuntimeSettings = Schema.decodeSync(CodexSettings)({ setupMode: "managed" });
 const decodeAntigravitySettings = Schema.decodeUnknownEffect(AntigravitySettings);
 
 /** Route instance setup to the environment-owned installer without owning the download. */
@@ -56,7 +57,8 @@ export const makeProviderInstallation = Effect.fn("makeProviderInstallation")(fu
     managedOnly = false,
   ) {
     const instance = yield* instances.getInstance(instanceId);
-    const isCodex = instance?.driverKind === ProviderDriverKind.make("codex");
+    const isPhaseo = instance?.driverKind === "phaseo";
+    const isCodex = instance?.driverKind === ProviderDriverKind.make("codex") || isPhaseo;
     if (instance?.driverKind !== ANTIGRAVITY && !isCodex) {
       return yield* new ProviderSetupError({
         instanceId,
@@ -72,13 +74,15 @@ export const makeProviderInstallation = Effect.fn("makeProviderInstallation")(fu
         operation,
         detail: "The provider instance configuration is invalid.",
       });
-    const config = isCodex
-      ? yield* decodeCodexSettings(entries[instanceId]?.config ?? {}).pipe(
-          Effect.mapError(invalidConfig),
-        )
-      : yield* decodeAntigravitySettings(entries[instanceId]?.config ?? {}).pipe(
-          Effect.mapError(invalidConfig),
-        );
+    const config = isPhaseo
+      ? phaseoRuntimeSettings
+      : isCodex
+        ? yield* decodeCodexSettings(entries[instanceId]?.config ?? {}).pipe(
+            Effect.mapError(invalidConfig),
+          )
+        : yield* decodeAntigravitySettings(entries[instanceId]?.config ?? {}).pipe(
+            Effect.mapError(invalidConfig),
+          );
     if (isCodex && (!("setupMode" in config) || config.setupMode !== "managed")) {
       return yield* new ProviderSetupError({
         instanceId,

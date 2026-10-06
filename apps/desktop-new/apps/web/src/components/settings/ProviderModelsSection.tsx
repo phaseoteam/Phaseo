@@ -593,7 +593,7 @@ export function ProviderModelsSection({
         })}
       </div>
 
-      {driverKind === "antigravity" ? null : isAdding ? (
+      {driverKind === "antigravity" || driverKind === "phaseo" ? null : isAdding ? (
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <Input
             id={`provider-instance-${instanceId}-custom-model`}
