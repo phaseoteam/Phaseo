@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION public.enqueue_provider_catalog_event_email()
   RETURNS TRIGGER
   LANGUAGE plpgsql
-  SET search_path TO 'public'
+  SECURITY DEFINER
+  SET search_path TO ''
   AS $function$
 begin
   if new.workspace_id is null then return new; end if;

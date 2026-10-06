@@ -26,5 +26,7 @@ begin
  assert not exists(select 1 from public.email_outbox where user_id='bda9db07-3cd1-4c2e-b17a-35f7ce953e02');
  assert (select count(*)=1 from public.email_outbox where workspace_id='bda9db07-3cd1-4c2e-b17a-35f7ce953e03' and kind='catalog_needs_changes' and to_email='provider-review-owner@example.invalid');
  assert not has_function_privilege('authenticated','public.enqueue_provider_catalog_event_email()','execute');
+ assert not has_table_privilege('service_role','auth.users','select');
+ assert (select prosecdef and 'search_path=""'=any(proconfig) from pg_proc where oid='public.enqueue_provider_catalog_event_email()'::regprocedure);
 end $test$;
 rollback;
