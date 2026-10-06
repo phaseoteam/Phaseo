@@ -7,6 +7,10 @@ describe("private model review notifications",()=>{
  it("sends only a count and the authenticated review link",()=>{
    expect(providerModelReviewMessage(2)).toEqual({text:"2 new model proposals awaiting approval. Review: https://phaseo.app/settings/internal/provider-review",unfurl_links:false,unfurl_media:false});
  });
+ it("mentions only the configured reviewer and rejects mention injection",()=>{
+   expect(providerModelReviewMessage(1,"U0AGDKDBLP6").text).toMatch(/^<@U0AGDKDBLP6> /);
+   expect(providerModelReviewMessage(1,"<!channel>").text).not.toContain("<!channel>");
+ });
  it("does not query or send when unconfigured",async()=>{
    await notifyPendingProviderModels({} as never);expect(getDataClient).not.toHaveBeenCalled();
  });

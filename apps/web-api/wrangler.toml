@@ -14,6 +14,8 @@ enabled = true
 ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 PROFILE_AVATARS_PUBLIC_BASE_URL = "https://avatars.phaseo.app"
+# Recipient ID is not a credential. The channel webhook belongs in Worker secrets.
+PROVIDER_MODEL_REVIEW_SLACK_USER_ID = "U0AGDKDBLP6"
 # Set by deployment environment; kept out of source configuration.
 # STAGING_GATEWAY_BASE_URL = "https://<staging-gateway>/v1"
 
