@@ -83,10 +83,27 @@ function formatUsd(value: string | undefined): string | null {
 }
 
 function parseDecisionResult(value: unknown): DecisionResult | null {
-	if (!isRecord(value) || !isRecord(value.answers)) return null;
+	if (!isRecord(value) || (!isRecord(value.answers) && !Array.isArray(value.answers))) return null;
+	const answerEntries = Array.isArray(value.answers)
+		? value.answers.map((raw, index): [string, unknown] => {
+			if (!isRecord(raw)) return [String(index), raw];
+			if (raw.type === "predicate") return [String(index), { ...raw, type: "noul", noul: raw.probability }];
+			if (!Array.isArray(raw.probabilities)) return [String(index), raw];
+			const options = raw.probabilities.filter(isRecord);
+			const labelForValue = (value: unknown) => typeof value === "string" && options.some(option =>
+				typeof option.value === "boolean" && String(option.value) === value)
+				? JSON.stringify(value) : String(value);
+			return [String(index), {
+				...raw,
+				...(raw.type === "choice" ? { choice: labelForValue(raw.choice) } : {}),
+				probabilities: Object.fromEntries(options.map(option => [labelForValue(option.value), option.probability])),
+				...(raw.type === "score" ? { legend: Object.fromEntries(options.map(option => [String(option.value), option.label])) } : {}),
+			}];
+		})
+		: Object.entries(value.answers);
 
 	const answers = Object.fromEntries(
-		Object.entries(value.answers).flatMap(([key, rawAnswer]) => {
+		answerEntries.flatMap(([key, rawAnswer]) => {
 			if (!isRecord(rawAnswer)) return [];
 			const probabilities = isRecord(rawAnswer.probabilities)
 				? Object.fromEntries(
@@ -115,7 +132,7 @@ function parseDecisionResult(value: unknown): DecisionResult | null {
 					key,
 					{
 						type: asString(rawAnswer.type) ?? "decision",
-						choice: asString(rawAnswer.choice),
+						choice: asString(rawAnswer.choice) ?? asString(rawAnswer.answer),
 						score: asFiniteNumber(rawAnswer.score),
 						noul: asFiniteNumber(rawAnswer.noul),
 						confidence: asFiniteNumber(rawAnswer.confidence),

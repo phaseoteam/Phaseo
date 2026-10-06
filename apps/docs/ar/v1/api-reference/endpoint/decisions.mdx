@@ -6,6 +6,26 @@ openapi: "/ar/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "قيّم أسئلة ذات أنواع محددة بناءً على حالة التطبيق باستخدام نماذج القرار المدعومة."
 ---
 
+استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي `input` على نص أو رسائل مستخدم تتضمن أجزاء `input_image` مضمنة، و`questions` مصفوفة مرتبة من أسئلة `predicate` أو `choice` أو `score`. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة و`safety_identifier` مسار OpenAI. يظل التنسيق القديم باستخدام `state` وخرائط الأسئلة المسماة و`noul` و`criteria` مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 استخدم `POST /v1/decisions` عندما يحتاج تطبيقك إلى إجابات منظّمة يمكن للكود استهلاكها مباشرةً. تشمل النماذج المدعومة TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`) وTogether Tev1 4B Experimental (`together/tev1-4b-experimental`) وRespan Span-01 (`respan/span-01:free` و`respan/span-01`).
 
 يتضمن الطلب:
@@ -78,30 +98,3 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 يمكنك أيضًا توفير سلسلة `data:image/png;base64,...` في `images`. يقبل Clef حتى أربع صور PNG أو JPEG أو WebP، على ألا تتجاوز كل صورة 4 MiB و16 ميغابكسل، وألا يتجاوز إجمالي بيانات الصور بعد فك الترميز 8 MiB وحجم جسم الطلب 13 MiB. الروابط البعيدة غير مدعومة. يتحقق Cloudflare من صيغ الصور وأبعادها. ترفض النماذج التي لا تدعم الصور طلبات الصور.
 
 يقبل Clef ما يصل إلى 64 سؤالًا، بمعرّفات تضم حتى 100 حرف أو رقم أو شرطة سفلية أو نقطة أو شرطة. تتطلب أسئلة الاختيار 2–255 خيارًا، وأسئلة الدرجة 2–10 مستويات. راجع [وثائق Clef](https://developers.cloudflare.com/workers-ai/models/clef/) من Cloudflare.
-
-### GPT-6 Luna
-
-استخدم `openai/gpt-6-luna` بتنسيق Decisions الحالي في Phaseo. يحوّل محوّل OpenAI الحقل `state` إلى بيانات الإدخال، و`noul` إلى شرط منطقي، ومعايير الاختيار إلى خيارات، ومعايير الدرجة إلى مستويات مرتبة. تُسلسل الكائنات والمصفوفات في الحالة أو التعليمات كنص JSON.
-
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "state": "I was charged twice for my order.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Which department should handle this?",
-      "criteria": {
-        "billing": "Payments and refunds",
-        "other": "Everything else"
-      }
-    }
-  }
-}
-```
-
-يقبل Luna الحقل `images` المضمّن نفسه الذي يقبله Clef. يحدّ Phaseo حاليًا جميع طلبات القرار بأربع صور PNG أو JPEG أو WebP و128 سؤالًا مسمّى. لا يقبل Phaseo تنسيق OpenAI الذي يعتمد على المصفوفات.
-
-إذا رفض OpenAI سؤالًا، تكون إجابته `{ "type": "refusal" }` تحت مفتاح السؤال الأصلي. تحقّق من نوع الإجابة قبل استخدام احتمال أو خيار أو درجة.
-
-OpenAI Decisions في النسخة التجريبية العامة. سعر الإدخال القياسي هو $0.10 لكل مليون رمز، دون رسوم منفصلة للإخراج أو التخزين المؤقت؛ تنطبق مضاعفات السياق الطويل. هذه الأسعار خاصة بـDecisions ولا تغيّر أسعار محادثات Luna. راجع [دليل OpenAI Decisions](https://developers.openai.com/api/docs/guides/decisions).

@@ -286,6 +286,25 @@ Se usar o Vercel AI SDK, leia a resposta em `result.text`.
 
 ## 3. Tome uma decisão estruturada
 
+Para novas chamadas, use o formato compatível com OpenAI: `input` contém texto ou mensagens do usuário com partes `input_image` incorporadas, e `questions` é uma lista ordenada de perguntas `predicate`, `choice` ou `score`. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos continuam booleanos. URLs de imagens hospedadas não são aceitas; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e `safety_identifier` exigem uma rota OpenAI. O formato anterior com `state`, perguntas nomeadas, `noul` e `criteria` continua aceito e retorna um mapa de respostas. Together Tev exige esse formato porque retorna rótulos sem probabilidades. Os exemplos anteriores continuam válidos.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
 Use `POST /v1/decisions` quando o aplicativo precisar de respostas tipadas em vez de texto gerado. O Phaseo oferece Jev 1.13 da TypeSafe com o ID `typesafe/jev-1.13.0`. Envie um valor `state` e uma ou mais perguntas nomeadas; cada resposta retorna com o mesmo nome.
 
 <Note>

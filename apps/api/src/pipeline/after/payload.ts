@@ -448,9 +448,9 @@ export function extractFinishReason(payload: any): string | null {
     return null;
 }
 
-export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineContext["endpoint"] }) {
+export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineContext["endpoint"]; body?: any }) {
     if (!usage || typeof usage !== "object") return usage;
-    const shaped = shapeUsageForClient(usage, { endpoint: ctx?.endpoint });
+    const shaped = shapeUsageForClient(usage, { endpoint: ctx?.endpoint, body: ctx?.body });
     const inputTokens = shaped.input_tokens ?? shaped.input_text_tokens ?? shaped.prompt_tokens ?? 0;
     const outputTokens = shaped.output_tokens ?? shaped.output_text_tokens ?? shaped.completion_tokens ?? 0;
     const totalTokens = shaped.total_tokens ?? inputTokens + outputTokens;
@@ -809,7 +809,7 @@ export function formatClientPayload(args: {
         return clean;
     })();
 
-    const usage = presentUsageForClient(payload?.usage, { endpoint: ctx.endpoint });
+    const usage = presentUsageForClient(payload?.usage, { endpoint: ctx.endpoint, body: ctx.body });
 
     if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
         const response = buildAnthropicMessagesPayload(ctx, result, payload, {
@@ -884,7 +884,7 @@ export function formatClientPayload(args: {
 		} = payload ?? {};
 		const body: any = {
 			model: model ?? ctx.model,
-			answers: answers && typeof answers === "object" && !Array.isArray(answers) ? answers : {},
+			answers: answers && typeof answers === "object" ? answers : {},
 			...(requestId ? { request_id: requestId } : {}),
 			...rest,
 			...(usage ? { usage } : {}),
@@ -959,5 +959,3 @@ export function formatClientPayload(args: {
     if (meta) fallback.meta = meta;
     return attachTopLevelPricing(fallback, usage);
 }
-
-

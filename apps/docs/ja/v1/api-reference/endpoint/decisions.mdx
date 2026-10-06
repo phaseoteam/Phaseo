@@ -6,6 +6,26 @@ openapi: "/ja/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "対応する判断モデルを使い、アプリケーションの状態に対して型付きの質問を評価します。"
 ---
 
+新しい呼び出しには OpenAI 互換形式を使います。`input` はテキストまたはインラインの `input_image` を含むユーザーメッセージ、`questions` は `predicate`、`choice`、`score` 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と `safety_identifier` は OpenAI ルートが必要です。従来の `state`、名前付き質問マップ、`noul`、`criteria` 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 アプリケーションでコードから直接利用できる構造化された回答が必要な場合は、`POST /v1/decisions` を使用します。対応モデルには TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`)、Respan Span-01 (`respan/span-01:free` と `respan/span-01`) があります。
 
 リクエストには以下を含めます。
@@ -78,30 +98,3 @@ Jev は 1 回のリクエストで 3 種類の質問を組み合わせられま�
 `images`には`data:image/png;base64,...`の文字列も指定できます。ClefはPNG、JPEG、WebP画像を最大4枚受け付けます。各画像は最大4 MiBかつ1,600万画素、デコード後の画像データの合計は最大8 MiB、リクエスト本文は最大13 MiBです。リモートURLには対応していません。Cloudflareは画像形式と寸法を検証します。画像に対応していないモデルは画像リクエストを拒否します。
 
 Clefは最大64個の質問を受け付けます。IDは英字、数字、アンダースコア、ピリオド、ハイフンからなる最大100文字です。選択式の質問には2〜255個の選択肢、スコア式の質問には2〜10段階が必要です。Cloudflareの[Clefドキュメント](https://developers.cloudflare.com/workers-ai/models/clef/)を参照してください。
-
-### GPT-6 Luna
-
-Phaseoの既存のDecisions形式で`openai/gpt-6-luna`を使用します。OpenAIアダプターは`state`を入力データ、`noul`を述語、選択基準を選択肢、スコア基準を順序付きの段階に変換します。状態や指示に含まれるオブジェクトと配列はJSONテキストにシリアライズされます。
-
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "state": "I was charged twice for my order.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Which department should handle this?",
-      "criteria": {
-        "billing": "Payments and refunds",
-        "other": "Everything else"
-      }
-    }
-  }
-}
-```
-
-LunaはClefと同じ埋め込み画像用の`images`フィールドを受け付けます。Phaseoでは現在、すべての判断リクエストをPNG、JPEG、WebP画像4枚と名前付き質問128個に制限しています。OpenAIの配列ベースのリクエスト形式はPhaseoでは使用できません。
-
-OpenAIが質問への回答を拒否した場合、元の質問キーに対する回答は`{ "type": "refusal" }`になります。確率、選択結果、スコアを利用する前に回答の型を確認してください。
-
-OpenAI Decisionsはパブリックベータです。標準入力料金は100万トークンあたり$0.10で、出力やキャッシュに対する個別の料金はありません。長いコンテキストの料金倍率が適用されます。この料金はDecisions専用で、Lunaのチャット料金は変わりません。[OpenAI Decisionsガイド](https://developers.openai.com/api/docs/guides/decisions)を参照してください。

@@ -486,6 +486,20 @@ export async function doRequestWithIR(
 
 	// 1.5) Filter providers by requested input/output modalities
 	const normalizedCapability = normalizeCapability(ctx.capability);
+	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).decisionContext) {
+		const native = (ir as IRDecisionsRequest).decisionContext!;
+		const requestsImageDetail = typeof native.input !== "string" && native.input.some(message =>
+			typeof message.content !== "string" && message.content.some(part =>
+				part.type === "input_image" && part.detail != null && part.detail !== "auto"));
+		if (native.safety_identifier != null || requestsImageDetail) {
+			candidates = candidates.filter(candidate => candidate.providerId === "openai");
+			if (!candidates.length) return Response.json({
+				error: "unsupported_parameter",
+				model: ctx.model, endpoint: ctx.endpoint, request_id: ctx.requestId,
+				message: "safety_identifier and explicit image detail are supported only on OpenAI Decisions routes.",
+			}, { status: 400 });
+		}
+	}
 	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).images?.length) {
 		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
 		if (!candidates.length) {

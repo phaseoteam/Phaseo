@@ -6,6 +6,13 @@ import {
 } from "./provider-rate-limits";
 
 describe("provider rate-limit configuration", () => {
+	it("reserves one native Decisions call including inline images", () => {
+		const body = { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,AQID" }] }],
+			questions: [{ type: "predicate", instructions: "Red?" }, { type: "predicate", instructions: "Blue?" }] };
+		expect(estimateProviderTokenReservation({
+			capability: "decisions.make", body, providerMaxInputTokens: 1000, providerMaxOutputTokens: 100,
+		})).toBe(1100);
+	});
 	it("normalizes an enabled database row", () => {
 		expect(parseProviderRateLimitConfig({
 			provider_id: "openai",

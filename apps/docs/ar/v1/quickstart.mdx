@@ -286,6 +286,25 @@ console.log(result.text);
 
 ## 3. اتخاذ قرار منظّم
 
+استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي `input` على نص أو رسائل مستخدم تتضمن أجزاء `input_image` مضمنة، و`questions` مصفوفة مرتبة من أسئلة `predicate` أو `choice` أو `score`. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة و`safety_identifier` مسار OpenAI. يظل التنسيق القديم باستخدام `state` وخرائط الأسئلة المسماة و`noul` و`criteria` مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
 استخدم `POST /v1/decisions` عندما يحتاج تطبيقك إلى إجابات ذات أنواع محددة بدل النص المولّد. يوفّر Phaseo نموذج Jev 1.13 من TypeSafe بمعرّف `typesafe/jev-1.13.0`. أرسل قيمة `state` وسؤالًا مسمّى أو أكثر؛ تُعاد كل إجابة بالاسم نفسه.
 
 <Note>

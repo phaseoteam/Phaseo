@@ -39,6 +39,21 @@ beforeEach(() => setupRuntimeFromEnv({ OPENAI_API_KEY: "openai-test" }));
 afterEach(teardownTestRuntime);
 
 describe("OpenAI Luna decisions", () => {
+	it("forwards native evidence, safety identifiers and typed choices without changing the wire shape", async () => {
+		const input = [{ role: "user", type: "message", content: Array(128).fill({ type: "input_image", image_url: "data:image/png;base64,AQID", detail: "original" }) }];
+		const questions = [{ type: "choice", instructions: "Choose", choices: [{ value: true }, { value: "true" }] }];
+		const answers = [{ type: "choice", name: null, choice: true, confidence: 0.8, probabilities: [{ value: true, probability: 0.9 }, { value: "true", probability: 0.1 }] }];
+		const response = { model: "gpt-6-luna", answers, usage: { input_tokens: 100, output_tokens: 0, total_tokens: 100,
+			input_tokens_details: { cached_tokens: 0, cache_write_tokens: 0 }, output_tokens_details: { reasoning_tokens: 0 } } };
+		const mock = installFetchMock([{ match: () => true, response: jsonResponse(response) }]);
+		try {
+			const args = argsFor();
+			args.ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "openai/gpt-6-luna", input, questions, safety_identifier: "user-1" }));
+			const result = await execute(args);
+			expect(mock.calls[0].bodyJson).toEqual({ model: "gpt-6-luna", input, questions, safety_identifier: "user-1" });
+			expect(encodeDecisionsResponse(result.ir as any, args.ir)).toEqual({ ...response, model: "openai/gpt-6-luna" });
+		} finally { mock.restore(); }
+	});
 	it("maps all question types and preserves Phaseo answers and aggregate usage", async () => {
 		const mock = installFetchMock([{ match: url => url === "https://api.openai.com/v1/decisions", response: jsonResponse(payload()) }]);
 		try {

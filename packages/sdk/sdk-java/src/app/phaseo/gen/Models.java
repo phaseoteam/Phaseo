@@ -703,15 +703,46 @@ public final class Models {
 		public Object trace_level;
 	}
 
+	public static class DecisionChoiceAnswer {
+		public Object choice;
+		public Double confidence;
+		public String name;
+		public java.util.List<Object> probabilities;
+		public Object type;
+	}
+
 	public static class DecisionChoiceQuestion {
 		public Object criteria;
 		public Object instructions;
 		public Object type;
 	}
 
+	public static class DecisionCreateRequest {
+	}
+
+	public static class DecisionCreateResponse {
+	}
+
 	public static class DecisionImage {
 		public String base64;
 		public Object content_type;
+	}
+
+	public static class DecisionInputImage {
+		public Object detail;
+		public String image_url;
+		public Object type;
+	}
+
+	public static class DecisionInputMessage {
+		public Object content;
+		public Object role;
+		public Object type;
+	}
+
+	public static class DecisionInputText {
+		public String text;
+		public Object type;
 	}
 
 	public static class DecisionInstructions {
@@ -720,6 +751,31 @@ public final class Models {
 	public static class DecisionNoulQuestion {
 		public Object criteria;
 		public Object instructions;
+		public Object type;
+	}
+
+	public static class DecisionPredicateAnswer {
+		public String name;
+		public Double probability;
+		public Object type;
+	}
+
+	public static class DecisionPredicateQuestion {
+		public String instructions;
+		public String name;
+		public Object type;
+	}
+
+	public static class DecisionRefusalAnswer {
+		public String name;
+		public Object type;
+	}
+
+	public static class DecisionScoreAnswer {
+		public Double confidence;
+		public String name;
+		public java.util.List<Object> probabilities;
+		public Double score;
 		public Object type;
 	}
 
@@ -752,7 +808,9 @@ public final class Models {
 
 	public static class DecisionsUsage {
 		public Integer input_tokens;
+		public Object input_tokens_details;
 		public Integer output_tokens;
+		public Object output_tokens_details;
 		public Integer total_tokens;
 	}
 
@@ -1552,6 +1610,27 @@ public final class Models {
 	public static class KnownModelId {
 	}
 
+	public static class LegacyDecisionsRequest {
+		public Object debug;
+		public Boolean echo_upstream_request;
+		public java.util.List<Object> images;
+		public Boolean meta;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public Object questions;
+		public Object routing;
+		public Object state;
+	}
+
+	public static class LegacyDecisionsResponse {
+		public Object answers;
+		public Object meta;
+		public String model;
+		public String request_id;
+		public Object usage;
+	}
+
 	public static class ListFilesResponse {
 		public java.util.List<Object> data;
 		public String object;
@@ -2071,6 +2150,41 @@ public final class Models {
 	}
 
 	public static class OcrResponse {
+	}
+
+	public static class OpenAIDecisionChoiceQuestion {
+		public java.util.List<Object> choices;
+		public String instructions;
+		public String name;
+		public Object type;
+	}
+
+	public static class OpenAIDecisionScoreQuestion {
+		public String instructions;
+		public java.util.List<Object> levels;
+		public String name;
+		public Object type;
+	}
+
+	public static class OpenAIDecisionsRequest {
+		public Object debug;
+		public Boolean echo_upstream_request;
+		public Object input;
+		public Boolean meta;
+		public Object metadata;
+		public String model;
+		public Object provider;
+		public java.util.List<Object> questions;
+		public Object routing;
+		public String safety_identifier;
+	}
+
+	public static class OpenAIDecisionsResponse {
+		public java.util.List<Object> answers;
+		public Object meta;
+		public String model;
+		public String request_id;
+		public Object usage;
 	}
 
 	public static class OpenAIReasoningConfig {

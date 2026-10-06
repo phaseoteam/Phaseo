@@ -6,6 +6,26 @@ openapi: "/hi/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "समर्थित निर्णय मॉडल से ऐप्लिकेशन की स्थिति पर प्रकारयुक्त प्रश्नों का मूल्यांकन करें।"
 ---
 
+नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: `input` में टेक्स्ट या इनलाइन `input_image` वाले उपयोगकर्ता संदेश होते हैं और `questions` में `predicate`, `choice` या `score` प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और `safety_identifier` के लिए OpenAI रूट आवश्यक है। पुराना `state`, नामित प्रश्न मैप, `noul` और `criteria` प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 जब ऐप्लिकेशन को ऐसे संरचित उत्तर चाहिए जिन्हें कोड सीधे इस्तेमाल कर सके, तो `POST /v1/decisions` इस्तेमाल करें। समर्थित मॉडल में TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) और Respan Span-01 (`respan/span-01:free` तथा `respan/span-01`) शामिल हैं।
 
 अनुरोध में ये शामिल हैं:
@@ -78,30 +98,3 @@ Jev एक अनुरोध में तीनों प्रश्न प�
 आप `images` में `data:image/png;base64,...` स्ट्रिंग भी दे सकते हैं। Clef अधिकतम चार PNG, JPEG या WebP चित्र स्वीकार करता है। हर चित्र अधिकतम 4 MiB और 16 मेगापिक्सल का हो सकता है; डिकोड किए गए चित्र डेटा की कुल सीमा 8 MiB और अनुरोध बॉडी की सीमा 13 MiB है। रिमोट URL समर्थित नहीं हैं। Cloudflare चित्रों के प्रारूप और आयाम जाँचता है। जिन मॉडलों में चित्र समर्थन नहीं है, वे चित्र अनुरोध अस्वीकार करते हैं।
 
 Clef अधिकतम 64 प्रश्न स्वीकार करता है। ID में अधिकतम 100 अक्षर, अंक, अंडरस्कोर, डॉट या हाइफ़न हो सकते हैं। विकल्प वाले प्रश्नों में 2–255 विकल्प और स्कोर वाले प्रश्नों में 2–10 स्तर आवश्यक हैं। Cloudflare के [Clef दस्तावेज़](https://developers.cloudflare.com/workers-ai/models/clef/) देखें।
-
-### GPT-6 Luna
-
-Phaseo के मौजूदा Decisions प्रारूप के साथ `openai/gpt-6-luna` इस्तेमाल करें। OpenAI एडेप्टर `state` को इनपुट डेटा, `noul` को प्रेडिकेट, विकल्प मानदंडों को विकल्पों और स्कोर मानदंडों को क्रमबद्ध स्तरों में बदलता है। स्टेट या निर्देशों में मौजूद ऑब्जेक्ट और ऐरे JSON टेक्स्ट के रूप में क्रमबद्ध होते हैं।
-
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "state": "I was charged twice for my order.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Which department should handle this?",
-      "criteria": {
-        "billing": "Payments and refunds",
-        "other": "Everything else"
-      }
-    }
-  }
-}
-```
-
-Luna, Clef की तरह ही एम्बेड की गई छवियों के लिए `images` फ़ील्ड स्वीकार करता है। Phaseo फ़िलहाल सभी निर्णय अनुरोधों को चार PNG, JPEG या WebP छवियों और 128 नाम वाले प्रश्नों तक सीमित करता है। Phaseo, OpenAI का ऐरे-आधारित अनुरोध प्रारूप स्वीकार नहीं करता।
-
-अगर OpenAI किसी प्रश्न का उत्तर देने से इनकार करता है, तो मूल प्रश्न की कुंजी के अंतर्गत उत्तर `{ "type": "refusal" }` होता है। प्रायिकता, विकल्प या स्कोर इस्तेमाल करने से पहले उत्तर का प्रकार जाँचें।
-
-OpenAI Decisions सार्वजनिक बीटा में है। मानक इनपुट दर प्रति दस लाख टोकन $0.10 है। आउटपुट या कैश के लिए अलग शुल्क नहीं है; लंबे संदर्भ के गुणक लागू होते हैं। ये दरें Decisions की हैं और Luna चैट की कीमतें नहीं बदलतीं। [OpenAI Decisions गाइड](https://developers.openai.com/api/docs/guides/decisions) देखें।

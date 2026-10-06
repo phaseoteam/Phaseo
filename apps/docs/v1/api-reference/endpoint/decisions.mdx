@@ -6,6 +6,26 @@ openapi: "POST /decisions"
 description: "Evaluate typed questions against application state with supported decision models."
 ---
 
+Use the OpenAI-compatible format for new calls: `input` contains text or user messages with inline `input_image` parts, and `questions` is an ordered array of `predicate`, `choice`, or `score` questions. Answers use the same order, with optional names. Boolean choice values remain booleans. Hosted image URLs are unsupported; Luna accepts up to 128 inline images, while other providers impose their own limits. Explicit image detail and `safety_identifier` require an OpenAI route. Existing `state`, named question maps, `noul`, and `criteria` remain supported and return the original answer map. Together Tev requires that legacy format because it returns labels without probabilities. The legacy examples below remain valid.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 Use `POST /v1/decisions` when your application needs structured answers that code can consume directly. Supported models include TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`), and Respan Span-01 (`respan/span-01:free` and `respan/span-01`).
 
 The request contains:
@@ -60,32 +80,6 @@ Jev supports mixing all three question types in one request; Span-01 supports `n
 
 For the upstream question semantics, see TypeSafe's [API reference](https://docs.typesafe.ai/api).
 
-### GPT-6 Luna
-
-Use `openai/gpt-6-luna` with Phaseo's existing Decisions format. The OpenAI adapter maps `state` to input evidence, `noul` to predicates, choice criteria to options, and score criteria to ordered levels. Objects and arrays in state or instructions are serialized as JSON text.
-
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "state": "I was charged twice for my order.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Which department should handle this?",
-      "criteria": {
-        "billing": "Payments and refunds",
-        "other": "Everything else"
-      }
-    }
-  }
-}
-```
-
-Luna accepts the same embedded `images` field as Clef. Phaseo currently limits all decision requests to four PNG, JPEG, or WebP images and 128 named questions. The OpenAI array-based request format is not accepted by Phaseo.
-
-If OpenAI declines a question, its answer is `{ "type": "refusal" }` under the original question key. Check the answer type before using a probability, choice, or score.
-
-OpenAI Decisions is in public beta. Its standard input rate is $0.10 per million tokens, with no separate output or cache charges; long-context multipliers apply. These rates belong to Decisions and do not change Luna chat pricing. See the [OpenAI Decisions guide](https://developers.openai.com/api/docs/guides/decisions).
 
 ### Image decisions with Clef
 

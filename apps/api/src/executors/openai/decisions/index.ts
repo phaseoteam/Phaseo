@@ -1,5 +1,7 @@
 import type { IRDecisionQuestion, IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
 import { DecisionsSchema } from "@core/schemas";
+import { NativeDecisionsBodySchema } from "@core/decisions";
+import { decodeNativeDecisionAnswer } from "@protocols/decisions/decode";
 import { readStreamTextWithLimit, BodyLimitExceededError } from "@core/bounded-stream";
 import type { ExecutorResult, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -91,12 +93,15 @@ export const executor: ProviderExecutor = async args => {
 	if (args.providerId !== "openai" || args.providerModelSlug !== "gpt-6-luna") {
 		return invalid("OpenAI Decisions requires the gpt-6-luna provider route.");
 	}
-	if (!DecisionsSchema.safeParse(ir).success) return invalid("Invalid Phaseo decision request.");
+	if (!(ir.decisionContext ? NativeDecisionsBodySchema.safeParse(ir.decisionContext) : DecisionsSchema.safeParse(ir)).success) {
+		return invalid("Invalid Phaseo decision request.");
+	}
 	const entries = Object.entries(ir.questions);
 	// Undocumented controls must not be silently dropped.
 	const unsupportedControl = [
-		"stream", "service_tier", "reasoning", "reasoning_effort", "safety_identifier",
+		"stream", "service_tier", "reasoning", "reasoning_effort",
 		"max_tokens", "max_output_tokens", "temperature", "top_p", "tools", "tool_choice",
+		...(!ir.decisionContext ? ["safety_identifier"] : []),
 	].find(key => ir.rawRequest?.[key] != null);
 	if (unsupportedControl) {
 		return invalid(`The ${unsupportedControl} control is not supported by the Phaseo OpenAI Decisions contract.`);
@@ -112,7 +117,11 @@ export const executor: ProviderExecutor = async args => {
 			})),
 		],
 	}] : inputText;
-	const body = { model: args.providerModelSlug, input, questions: entries.map(([name, question]) => questionBody(name, question)) };
+	const body = ir.decisionContext ? {
+		model: args.providerModelSlug,
+		input: ir.decisionContext.input, questions: ir.decisionContext.questions,
+		...(ir.decisionContext.safety_identifier === undefined ? {} : { safety_identifier: ir.decisionContext.safety_identifier }),
+	} : { model: args.providerModelSlug, input, questions: entries.map(([name, question]) => questionBody(name, question)) };
 	const keyInfo = resolveOpenAICompatKey({ ...args, forceGatewayKey: args.meta.forceGatewayKey });
 	const serialized = JSON.stringify(body);
 	const upstream = await fetchUpstream(args, openAICompatUrl(args.providerId, "/decisions"), {
@@ -149,7 +158,9 @@ export const executor: ProviderExecutor = async args => {
 	const answers: Record<string, any> = Object.create(null);
 	for (let index = 0; index < entries.length; index++) {
 		const [name, question] = entries[index];
-		const answer = normalizeAnswer(payload.answers[index], name, question);
+		const answer = ir.decisionContext
+			? decodeNativeDecisionAnswer(payload.answers[index], ir.decisionContext.questions[index])
+			: normalizeAnswer(payload.answers[index], name, question);
 		if (!answer) return malformed(payload);
 		answers[name] = answer;
 	}
@@ -160,6 +171,7 @@ export const executor: ProviderExecutor = async args => {
 		!Number.isSafeInteger(inputTokens + outputTokens)) return malformed(payload);
 	const responseIr: IRDecisionsResponse = {
 		model: ir.model, answers, usage: { inputTokens, outputTokens, totalTokens: inputTokens + outputTokens },
+		...(ir.decisionContext ? { nativeAnswers: payload.answers, nativeUsage: payload.usage } : {}),
 	};
 	// Decisions charges for aggregate input only. Keep cache details out of the
 	// pricing meters: the upstream contract explicitly has no separate cache fees.

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypeAlias, Union
+from typing import Any, Callable, Dict, Iterator, Literal, Optional, TypeAlias, Union, overload
 from typing_extensions import NotRequired, TypedDict, Unpack
 
 import httpx
@@ -133,7 +133,16 @@ class _DecisionsResource:
     def __init__(self, parent: "Phaseo"):
         self._parent = parent
 
-    def make(self, params: models.DecisionsRequest) -> models.DecisionsResponse:
+    def create(self, params: models.OpenAIDecisionsRequest) -> models.OpenAIDecisionsResponse:
+        return self._parent.make_decision(params)
+
+    @overload
+    def make(self, params: models.DecisionsRequest) -> models.DecisionsResponse: ...
+
+    @overload
+    def make(self, params: models.OpenAIDecisionsRequest) -> models.OpenAIDecisionsResponse: ...
+
+    def make(self, params: models.DecisionCreateRequest) -> models.DecisionCreateResponse:
         return self._parent.make_decision(params)
 
 
@@ -915,7 +924,13 @@ class Phaseo:
             )
             raise
 
-    def make_decision(self, request: models.DecisionsRequest) -> models.DecisionsResponse:
+    @overload
+    def make_decision(self, request: models.DecisionsRequest) -> models.DecisionsResponse: ...
+
+    @overload
+    def make_decision(self, request: models.OpenAIDecisionsRequest) -> models.OpenAIDecisionsResponse: ...
+
+    def make_decision(self, request: models.DecisionCreateRequest) -> models.DecisionCreateResponse:
         payload = dict(request)
         self._maybe_warn_for_payload(payload)
         started = time.time()

@@ -6,6 +6,26 @@ openapi: "/de/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Bewerte typisierte Fragen anhand des Anwendungszustands mit unterstützten Entscheidungsmodellen."
 ---
 
+Verwende für neue Aufrufe das OpenAI-kompatible Format: `input` enthält Text oder Benutzernachrichten mit eingebetteten `input_image`-Teilen; `questions` ist eine geordnete Liste von `predicate`-, `choice`- oder `score`-Fragen. Antworten behalten Reihenfolge und optionale Namen bei. Boolesche Auswahlwerte bleiben boolesch. Externe Bild-URLs werden nicht unterstützt; Luna akzeptiert bis zu 128 eingebettete Bilder, andere Anbieter haben eigene Grenzen. Explizite Bilddetails und `safety_identifier` erfordern eine OpenAI-Route. Das bisherige Format mit `state`, benannten Fragen, `noul` und `criteria` bleibt unterstützt und liefert eine Antwort-Map. Together Tev benötigt dieses Format, da es Bezeichnungen ohne Wahrscheinlichkeiten liefert. Die bisherigen Beispiele bleiben gültig.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 Verwende `POST /v1/decisions`, wenn deine Anwendung strukturierte Antworten benötigt, die der Code direkt verarbeiten kann. Unterstützte Modelle sind TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) und Respan Span-01 (`respan/span-01:free` und `respan/span-01`).
 
 Die Anfrage enthält:
@@ -78,30 +98,3 @@ Die Fragensemantik des Anbieters ist in der [API-Referenz](https://docs.typesafe
 Sie können auch eine Zeichenfolge `data:image/png;base64,...` in `images` übergeben. Clef akzeptiert bis zu vier PNG-, JPEG- oder WebP-Bilder mit jeweils höchstens 4 MiB und 16 Megapixeln, insgesamt höchstens 8 MiB dekodierten Bilddaten und einem Anfragekörper von 13 MiB. Remote-URLs werden nicht unterstützt. Cloudflare prüft Bildformate und Abmessungen. Modelle ohne Bildunterstützung lehnen Bildanfragen ab.
 
 Clef akzeptiert höchstens 64 Fragen mit IDs aus bis zu 100 Buchstaben, Ziffern, Unterstrichen, Punkten oder Bindestrichen. Auswahlfragen benötigen 2–255 Optionen; Bewertungsfragen benötigen 2–10 Stufen. Siehe die [Clef-Dokumentation](https://developers.cloudflare.com/workers-ai/models/clef/) von Cloudflare.
-
-### GPT-6 Luna
-
-Verwenden Sie `openai/gpt-6-luna` mit dem bestehenden Decisions-Format von Phaseo. Der OpenAI-Adapter wandelt `state` in Eingabedaten, `noul` in Prädikate, Auswahlkriterien in Optionen und Bewertungskriterien in geordnete Stufen um. Objekte und Arrays im Zustand oder in Anweisungen werden als JSON-Text serialisiert.
-
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "state": "I was charged twice for my order.",
-  "questions": {
-    "department": {
-      "type": "choice",
-      "instructions": "Which department should handle this?",
-      "criteria": {
-        "billing": "Payments and refunds",
-        "other": "Everything else"
-      }
-    }
-  }
-}
-```
-
-Luna akzeptiert dasselbe Feld `images` für eingebettete Bilder wie Clef. Phaseo begrenzt derzeit alle Entscheidungsanfragen auf vier PNG-, JPEG- oder WebP-Bilder und 128 benannte Fragen. Das arraybasierte Anfrageformat von OpenAI wird von Phaseo nicht akzeptiert.
-
-Lehnt OpenAI eine Frage ab, lautet die Antwort unter dem ursprünglichen Fragenschlüssel `{ "type": "refusal" }`. Prüfen Sie den Antworttyp, bevor Sie eine Wahrscheinlichkeit, Auswahl oder Bewertung verwenden.
-
-OpenAI Decisions ist in der öffentlichen Beta. Der Standardpreis für Eingaben beträgt $0.10 pro Million Tokens, ohne separate Ausgabe- oder Cachegebühren; Multiplikatoren für lange Kontexte gelten. Diese Preise gelten für Decisions und ändern die Chatpreise von Luna nicht. Siehe den [OpenAI-Decisions-Leitfaden](https://developers.openai.com/api/docs/guides/decisions).

@@ -1986,7 +1986,7 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
 
-	public static Task<Dictionary<string, object>?> MakeDecisionAsync(
+	public static Task<object?> MakeDecisionAsync(
 		Client client,
 		Dictionary<string, string>? path = null,
 		Dictionary<string, string>? query = null,
@@ -1995,7 +1995,7 @@ public static class Operations
 	)
 	{
 		var resolvedPath = "/decisions";
-		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
 
 	public static Task<Dictionary<string, object>?> MergeWorkspaceAppAsync(

@@ -1253,6 +1253,20 @@ class DebugOptions
 	public $trace_level;
 }
 
+class DecisionChoiceAnswer
+{
+	/** @var string|bool */
+	public $choice;
+	/** @var float */
+	public $confidence;
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $probabilities;
+	/** @var string */
+	public $type;
+}
+
 class DecisionChoiceQuestion
 {
 	/** @var array<string, mixed> */
@@ -1263,12 +1277,44 @@ class DecisionChoiceQuestion
 	public $type;
 }
 
+class DecisionCreateRequest { }
+
+class DecisionCreateResponse { }
+
 class DecisionImage
 {
 	/** @var string */
 	public $base64;
 	/** @var string */
 	public $content_type;
+}
+
+class DecisionInputImage
+{
+	/** @var string|null */
+	public $detail;
+	/** @var string */
+	public $image_url;
+	/** @var string */
+	public $type;
+}
+
+class DecisionInputMessage
+{
+	/** @var string|array */
+	public $content;
+	/** @var string */
+	public $role;
+	/** @var string|null */
+	public $type;
+}
+
+class DecisionInputText
+{
+	/** @var string */
+	public $text;
+	/** @var string */
+	public $type;
 }
 
 class DecisionInstructions { }
@@ -1279,6 +1325,48 @@ class DecisionNoulQuestion
 	public $criteria;
 	/** @var string|array<string, mixed>|array */
 	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class DecisionPredicateAnswer
+{
+	/** @var string|null */
+	public $name;
+	/** @var float */
+	public $probability;
+	/** @var string */
+	public $type;
+}
+
+class DecisionPredicateQuestion
+{
+	/** @var string */
+	public $instructions;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class DecisionRefusalAnswer
+{
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class DecisionScoreAnswer
+{
+	/** @var float */
+	public $confidence;
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $probabilities;
+	/** @var float */
+	public $score;
 	/** @var string */
 	public $type;
 }
@@ -1335,8 +1423,12 @@ class DecisionsUsage
 {
 	/** @var int|null */
 	public $input_tokens;
+	/** @var array<string, mixed>|null */
+	public $input_tokens_details;
 	/** @var int|null */
 	public $output_tokens;
+	/** @var array<string, mixed>|null */
+	public $output_tokens_details;
 	/** @var int|null */
 	public $total_tokens;
 }
@@ -2733,6 +2825,44 @@ class KeyInvalidateResponse
 
 class KnownModelId { }
 
+class LegacyDecisionsRequest
+{
+	/** @var array<string, mixed>|null */
+	public $debug;
+	/** @var bool|null */
+	public $echo_upstream_request;
+	/** @var array|null */
+	public $images;
+	/** @var bool|null */
+	public $meta;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $provider;
+	/** @var array<string, mixed> */
+	public $questions;
+	/** @var array<string, mixed>|null */
+	public $routing;
+	/** @var string|array<string, mixed>|array */
+	public $state;
+}
+
+class LegacyDecisionsResponse
+{
+	/** @var array<string, mixed>|null */
+	public $answers;
+	/** @var array<string, mixed>|null */
+	public $meta;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $request_id;
+	/** @var array<string, mixed>|null */
+	public $usage;
+}
+
 class ListFilesResponse
 {
 	/** @var array|null */
@@ -3657,6 +3787,68 @@ class OcrRequest
 
 class OcrResponse
 {
+}
+
+class OpenAIDecisionChoiceQuestion
+{
+	/** @var array */
+	public $choices;
+	/** @var string */
+	public $instructions;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class OpenAIDecisionScoreQuestion
+{
+	/** @var string */
+	public $instructions;
+	/** @var array */
+	public $levels;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class OpenAIDecisionsRequest
+{
+	/** @var array<string, mixed>|null */
+	public $debug;
+	/** @var bool|null */
+	public $echo_upstream_request;
+	/** @var string|array */
+	public $input;
+	/** @var bool|null */
+	public $meta;
+	/** @var array<string, mixed>|null */
+	public $metadata;
+	/** @var string */
+	public $model;
+	/** @var array<string, mixed>|null */
+	public $provider;
+	/** @var array */
+	public $questions;
+	/** @var array<string, mixed>|null */
+	public $routing;
+	/** @var string|null */
+	public $safety_identifier;
+}
+
+class OpenAIDecisionsResponse
+{
+	/** @var array */
+	public $answers;
+	/** @var array<string, mixed>|null */
+	public $meta;
+	/** @var string */
+	public $model;
+	/** @var string|null */
+	public $request_id;
+	/** @var array<string, mixed> */
+	public $usage;
 }
 
 class OpenAIReasoningConfig

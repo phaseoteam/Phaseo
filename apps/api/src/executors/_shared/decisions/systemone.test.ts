@@ -4,6 +4,9 @@ import { resolveProviderExecutor } from "@executors/index";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+import { DecisionsSchema } from "@core/schemas";
+import { decodeDecisionsRequest } from "@protocols/decisions/decode";
+import { encodeDecisionsResponse } from "@protocols/decisions/encode";
 
 const providers = [
 	{ id: "liquid-ai", model: "d1:free", url: "https://api.liquid.ai/decisions/v1/systemone", outputTokens: 0 },
@@ -33,6 +36,33 @@ afterEach(teardownTestRuntime);
 
 describe.each(providers)("$id decisions", provider => {
 	const execute = resolveProviderExecutor(provider.id, "decisions.make")!;
+	it("round-trips the canonical request through the provider wire format", async () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({
+			model: `${provider.id}/${provider.model}`, input: "Evidence",
+			questions: [
+				{ type: "predicate", instructions: "Defect?" },
+				{ type: "choice", name: "same", instructions: "Allowed?", choices: [{ value: true }, { value: "true" }] },
+				{ type: "score", name: "same", instructions: "Severity?", levels: [{ label: "Low" }, { label: "High" }] },
+			],
+		}));
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			answers: {
+				question_0: { type: "noul", noul: 0.9 },
+				question_1: { type: "choice", choice: "1", probabilities: { "0": 0.1, "1": 0.9 }, confidence: 0.8 },
+				question_2: { type: "score", score: 0.9, probabilities: { "0": 0.1, "1": 0.9 }, confidence: 0.8 },
+			}, usage: { input_tokens: 12, output_tokens: provider.outputTokens },
+		}) }]);
+		try {
+			const result = await execute(argsFor(provider, { ir }));
+			expect(mock.calls[0].bodyJson).toMatchObject({ state: "Evidence", questions: ir.questions });
+			const response = encodeDecisionsResponse(result.ir as any, ir);
+			expect(response.answers).toMatchObject([
+				{ type: "predicate", name: null, probability: 0.9 },
+				{ type: "choice", name: "same", choice: "true" },
+				{ type: "score", name: "same", score: 0.9, probabilities: [{ label: "Low" }, { label: "High" }] },
+			]);
+		} finally { mock.restore(); }
+	});
 	it("uses the native URL, preserves typed answers and reconciles actual usage", async () => {
 		const timing = createUpstreamTimingTracker();
 		const mock = installFetchMock([{ match: url => url === provider.url,
