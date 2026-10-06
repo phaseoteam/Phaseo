@@ -67,7 +67,7 @@ function normalizeAnswer(answer: unknown, name: string, question: IRDecisionQues
 		probabilities[key] = option.probability;
 		sum += option.probability;
 	}
-	if (Math.abs(sum - 1) > 0.01) return null;
+	if (Math.abs(sum - 1) > 0.01 + Number.EPSILON * 8) return null;
 	if (question.type === "choice") {
 		return typeof answer.choice === "string" && keys.includes(answer.choice)
 			? { type: "choice", choice: answer.choice, probabilities, confidence: answer.confidence }

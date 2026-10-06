@@ -69,7 +69,7 @@ export function decodeNativeDecisionAnswer(payload: unknown, question: NativeDec
 		if (question.type === "score" && ("label" in option) && option.label !== question.levels[index].label) return null;
 		probabilities[String(index)] = option.probability;
 	}
-	if (Math.abs(Object.values(probabilities).reduce((sum, value) => sum + value, 0) - 1) > 0.01) return null;
+	if (Math.abs(Object.values(probabilities).reduce((sum, value) => sum + value, 0) - 1) > 0.01 + Number.EPSILON * 8) return null;
 	if (answer.type === "choice") {
 		const index = options.findIndex(value => value === answer.choice);
 		return index < 0 ? null : { type: "choice", choice: String(index), confidence: answer.confidence, probabilities };

@@ -982,9 +982,9 @@ paths:
       operationId: makeDecision
       summary: Make structured decisions
       description: >-
-        Evaluates ordered predicate, choice, and score questions against text
-        or inline images using the OpenAI-compatible Decisions format.
-        Legacy state and named question maps remain supported.
+        Evaluates ordered predicate, choice, and score questions against text or
+        inline images using the OpenAI-compatible Decisions format. Legacy state
+        and named question maps remain supported.
       requestBody:
         required: true
         content:
@@ -11051,7 +11051,9 @@ components:
         - $ref: '#/components/schemas/LegacyDecisionsRequest'
     DecisionsRequest:
       deprecated: true
-      description: Legacy SDK model name retained for compatibility. New callers should use OpenAIDecisionsRequest.
+      description: >-
+        Legacy SDK model name retained for compatibility. New callers should use
+        OpenAIDecisionsRequest.
       allOf:
         - $ref: '#/components/schemas/LegacyDecisionsRequest'
     OpenAIDecisionsRequest:
@@ -11393,7 +11395,9 @@ components:
         - $ref: '#/components/schemas/LegacyDecisionsResponse'
     DecisionsResponse:
       deprecated: true
-      description: Legacy SDK response model retained for compatibility. OpenAI-format requests return OpenAIDecisionsResponse.
+      description: >-
+        Legacy SDK response model retained for compatibility. OpenAI-format
+        requests return OpenAIDecisionsResponse.
       allOf:
         - $ref: '#/components/schemas/LegacyDecisionsResponse'
     OpenAIDecisionsResponse:

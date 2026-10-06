@@ -39,6 +39,27 @@ beforeEach(() => setupRuntimeFromEnv({ OPENAI_API_KEY: "openai-test" }));
 afterEach(teardownTestRuntime);
 
 describe("OpenAI Luna decisions", () => {
+	it.each([false, true])("accepts a rounded three-way distribution (native=%s)", async native => {
+		const args = argsFor();
+		const question = { type: "choice", name: "category", instructions: "Choose",
+			choices: [{ value: "a" }, { value: "b" }, { value: "c" }] };
+		args.ir = decodeDecisionsRequest(DecisionsSchema.parse(native
+			? { model: "openai/gpt-6-luna", input: "Evidence", questions: [question] }
+			: { model: "openai/gpt-6-luna", state: "Evidence", questions: { category: {
+				type: "choice", instructions: "Choose", criteria: { a: null, b: null, c: null },
+			} } }));
+		const mock = installFetchMock([{ match: () => true, response: jsonResponse({
+			model: "gpt-6-luna",
+			answers: [{ type: "choice", name: "category", choice: "a", confidence: 0.33,
+				probabilities: ["a", "b", "c"].map(value => ({ value, probability: 0.33 })) }],
+			usage: { input_tokens: 12, output_tokens: 1, total_tokens: 13 },
+		}) }]);
+		try {
+			const result = await execute(args);
+			expect(result.upstream.status).toBe(200);
+			expect(result.ir).toBeDefined();
+		} finally { mock.restore(); }
+	});
 	it("forwards native evidence, safety identifiers and typed choices without changing the wire shape", async () => {
 		const input = [{ role: "user", type: "message", content: Array(128).fill({ type: "input_image", image_url: "data:image/png;base64,AQID", detail: "original" }) }];
 		const questions = [{ type: "choice", instructions: "Choose", choices: [{ value: true }, { value: "true" }] }];

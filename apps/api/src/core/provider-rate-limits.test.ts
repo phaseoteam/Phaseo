@@ -6,6 +6,14 @@ import {
 } from "./provider-rate-limits";
 
 describe("provider rate-limit configuration", () => {
+	it("reserves legacy OpenAI questions as one batch while retaining legacy provider reservations", () => {
+		const args = { capability: "decisions.make", providerMaxInputTokens: 1000, providerMaxOutputTokens: 100,
+			body: { state: "Evidence", images: ["data:image/png;base64,AQID"], questions: {
+				first: { type: "noul", instructions: "Red?" }, second: { type: "noul", instructions: "Blue?" },
+			} } };
+		expect(estimateProviderTokenReservation({ ...args, providerId: "openai" })).toBe(1100);
+		expect(estimateProviderTokenReservation({ ...args, providerId: "typesafe" })).toBe(2 * (1000 + 192 + 100));
+	});
 	it("reserves one native Decisions call including inline images", () => {
 		const body = { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,AQID" }] }],
 			questions: [{ type: "predicate", instructions: "Red?" }, { type: "predicate", instructions: "Blue?" }] };
