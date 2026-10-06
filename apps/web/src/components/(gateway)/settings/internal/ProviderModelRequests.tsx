@@ -18,7 +18,7 @@ export default function ProviderModelRequests({ initialRequests }: {initialReque
     if(decision!=="approved" && !reasons[request.id]?.trim()) {toast.error(t("current.changesReason"));return;}
     setSaving(request.id);
     try {await reviewProviderModelRequestAction({requestId:request.id,decision,reason:reasons[request.id],expectedUpdatedAt:request.updated_at});setRequests(await refreshProviderModelRequestsAction());}
-    catch {toast.error(t("current.updateFailed"));}
+    catch {toast.error(t("current.updateFailed"));try {setRequests(await refreshProviderModelRequestsAction());} catch { /* Keep the existing queue if refreshing fails. */ }}
     finally {setSaving(null);}
   }
   return <section className="space-y-4 border-t border-border pt-6">
@@ -27,8 +27,8 @@ export default function ProviderModelRequests({ initialRequests }: {initialReque
       <div><h3 className="break-words font-medium">{request.model.name}</h3><p className="break-all font-mono text-xs text-muted-foreground">{request.model_slug} · {request.provider_slug}</p></div>
       {request.model.description ? <p className="break-words text-sm">{request.model.description}</p> : null}
       <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
-        <div><dt>{catalogT("inputModalities")}</dt><dd>{request.model.inputModalities.join(", ")}</dd></div>
-        <div><dt>{catalogT("outputModalities")}</dt><dd>{request.model.outputModalities.join(", ")}</dd></div>
+        <div><dt>{catalogT("inputModalities")}</dt><dd>{(request.model.inputModalities ?? []).join(", ")}</dd></div>
+        <div><dt>{catalogT("outputModalities")}</dt><dd>{(request.model.outputModalities ?? []).join(", ")}</dd></div>
         {request.model.contextLength ? <div><dt>{catalogT("contextLength")}</dt><dd>{request.model.contextLength.toLocaleString(locale)}</dd></div>:null}
         {request.model.maxOutputTokens ? <div><dt>{catalogT("maxOutputTokens")}</dt><dd>{request.model.maxOutputTokens.toLocaleString(locale)}</dd></div>:null}
       </dl>

@@ -3,7 +3,7 @@ insert into public.v2_service_tiers(service_tier_slug,display_name) values('stan
 insert into public.v2_providers(provider_slug,name,status,metadata) values('catalog-review-test','Review test','not_ready','{"self_serve":{"provider_review_status":"approved"}}');
 insert into public.provider_catalog_sources(provider_slug,management_mode) values('catalog-review-test','managed');
 do $test$
-declare request_run uuid:=gen_random_uuid(); request_id uuid; lease_id uuid:=gen_random_uuid();
+declare request_run uuid:=gen_random_uuid(); request_id uuid; lease_id uuid:=gen_random_uuid(); review_revision timestamptz:=now()-interval '1 day';
 document jsonb:='[{"id":"catalog-review-test/model","name":"Review model","providerModelSlug":"upstream","inputModalities":["text"],"outputModalities":["text"],"availability":"not_ready","capabilities":[{"id":"responses","parameters":[]}],"pricing":[]}]';
 begin
   assert not has_table_privilege('authenticated','public.provider_catalog_model_requests','insert');
@@ -19,7 +19,9 @@ begin
   assert not exists(select 1 from public.v2_model_provider_routes where provider_slug='catalog-review-test');
   select id into request_id from public.provider_catalog_model_requests where provider_slug='catalog-review-test';
   assert request_id is not null;
+  update public.provider_catalog_model_requests set updated_at=review_revision where id=request_id;
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
+  assert (select updated_at=review_revision from public.provider_catalog_model_requests where id=request_id);
   assert (select count(*)=1 from public.provider_catalog_model_requests where provider_slug='catalog-review-test');
   assert (select count(*)=1 from public.claim_provider_model_notifications(lease_id));
   assert (select count(*)=0 from public.claim_provider_model_notifications(gen_random_uuid()));
@@ -42,5 +44,11 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
   perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,'[]');
   assert (select status='withdrawn' from public.provider_catalog_model_requests where model_slug='catalog-review-test/withdrawn');
+  document:=jsonb_set(document,'{0,id}','"CATALOG-REVIEW-TEST/MixedCase"');
+  perform public.apply_provider_catalog_snapshot('catalog-review-test',request_run,document);
+  select id into request_id from public.provider_catalog_model_requests where model_slug='CATALOG-REVIEW-TEST/MixedCase';
+  perform public.review_provider_catalog_model_request(request_id,'approved',null,null);
+  assert exists(select 1 from public.v2_models where model_slug='catalog-review-test/mixedcase' and lab_slug='catalog-review-test');
+  assert not exists(select 1 from public.v2_labs where lab_slug='CATALOG-REVIEW-TEST');
 end $test$;
 rollback;

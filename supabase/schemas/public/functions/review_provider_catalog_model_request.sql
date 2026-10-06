@@ -12,7 +12,7 @@ begin
   if not exists(select 1 from public.provider_catalog_models where provider_slug=proposal.provider_slug and model_slug=proposal.model_slug and status='active' and source_run_id=proposal.source_run_id) then raise exception 'model_request_superseded'; end if;
   if p_decision='approved' then
     insert into public.v2_labs(lab_slug,name,status,routable,metadata)
-    values(split_part(proposal.model_slug,'/',1),split_part(proposal.model_slug,'/',1),'disabled',false,'{"created_from_provider_proposal":true}') on conflict(lab_slug) do nothing;
+    values(split_part(lower(proposal.model_slug),'/',1),split_part(lower(proposal.model_slug),'/',1),'disabled',false,'{"created_from_provider_proposal":true}') on conflict(lab_slug) do nothing;
     insert into public.v2_models(model_slug,lab_slug,name,description,status,hidden,input_modalities,output_modalities,variant_kind,metadata)
     values(lower(proposal.model_slug),split_part(lower(proposal.model_slug),'/',1),proposal.model->>'name',proposal.model->>'description','active',true,
       array(select jsonb_array_elements_text(proposal.model->'inputModalities')),

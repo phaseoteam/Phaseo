@@ -144,6 +144,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		try {
 			const result = await fetchProviderCatalogAction(slug);
 			if (request !== requestVersion.current) return;
+			setValidationIssues([]);
 			setModels(result.models ?? []);
 			setSelectedIndex((current) => Math.min(current, Math.max((result.models?.length ?? 1) - 1, 0)));
 			setSource(result.source);
@@ -263,6 +264,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			const result = await updateProviderCatalogAction(providerSlug, { mode: "remote" }, source.catalog_version);
 			if (!result.ok) { setValidationIssues([...result.issues]); return; }
 			await invalidateAccountQueries(queryClient);
+			setValidationIssues([]);
 			setModels(result.models ?? []);
 			setSource(result.source);
 			setLatestRun(result.latest_run);

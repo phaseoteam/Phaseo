@@ -10,4 +10,8 @@ describe("new-model review display",()=>{
   expect(html).toContain("approve");expect(html).toContain("requestChanges");expect(html).toContain("reject");
  });
  it("renders the empty queue",()=>{expect(renderToStaticMarkup(<ProviderModelRequests initialRequests={[]}/>)).toContain("current.noPendingClaims");});
+ it("renders older proposals without modality lists",()=>{
+  const html=renderToStaticMarkup(<ProviderModelRequests initialRequests={[{id:"legacy",provider_slug:"sample",model_slug:"sample/legacy",status:"pending",reason:null,updated_at:"2026-10-06T00:00:00Z",model:{name:"Legacy model"}}]}/>);
+  expect(html).toContain("Legacy model");
+ });
 });
