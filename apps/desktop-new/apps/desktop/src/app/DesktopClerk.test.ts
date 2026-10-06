@@ -107,9 +107,12 @@ describe("DesktopClerk", () => {
       ]);
       assert.equal(cleanup.mock.calls.length, 1);
       // The bridge acquires Electron's single-instance lock at creation, and
-      // the lock both lives in and creates the userData directory — so the
+      // the lock both lives in and creates the userData directory â€” so the
       // real path must be set before the bridge exists.
-      assert.deepEqual(events, ["setPath:userData:/tmp/app-data/t3code-dev", "createClerkBridge"]);
+      assert.deepEqual(events, [
+        "setPath:userData:/tmp/app-data/phaseo-desktop-new-dev",
+        "createClerkBridge",
+      ]);
       storageMock.mockClear();
       createClerkBridgeMock.mockClear();
     });
@@ -120,13 +123,13 @@ describe("DesktopClerk", () => {
       name: "packaged Windows",
       isDevelopment: false,
       platform: "win32" as const,
-      userData: "/tmp/app-data/t3code-v2",
+      userData: "/tmp/app-data/phaseo-desktop-new",
     },
     {
       name: "development",
       isDevelopment: true,
       platform: "win32" as const,
-      userData: "/tmp/app-data/t3code-dev",
+      userData: "/tmp/app-data/phaseo-desktop-new-dev",
     },
   ])(
     "creates the bridge before startup can yield to the event loop ($name)",
@@ -383,4 +386,39 @@ it.effect.each(["startup", "open-url"] as const)(
         ),
       );
     }).pipe(Effect.scoped),
+);
+
+it.effect.each(["open-url", "second-instance"] as const)(
+  "opens a desktop chat from %s",
+  (source) => {
+    storageMock.mockReturnValue(storageAdapter);
+    createClerkBridgeMock.mockReturnValue({ cleanup: vi.fn(), isPrimaryInstance: true });
+    const listeners = new Map<string, (...args: unknown[]) => void>();
+    const revealed = Promise.withResolvers<void>();
+    const loadURL = vi.fn(async (_url: string) => undefined);
+    const electronApp = {
+      on: (name: string, listener: (...args: unknown[]) => void) =>
+        Effect.sync(() => {
+          listeners.set(name, listener);
+        }),
+    } as unknown as ElectronApp.ElectronApp["Service"];
+    const electronWindow = {
+      currentMainOrFirst: Effect.succeed(Option.some({ loadURL })),
+      reveal: () => Effect.sync(() => revealed.resolve()),
+    } as unknown as ElectronWindow.ElectronWindow["Service"];
+    return Effect.gen(function* () {
+      const clerk = yield* DesktopClerk.DesktopClerk;
+      yield* clerk.configure;
+      const link = "t3code-dev://app/env-1/chat-1";
+      if (source === "open-url") listeners.get(source)!({ preventDefault: vi.fn() }, link);
+      else listeners.get(source)!({}, ["phaseo", link]);
+      yield* Effect.promise(() => revealed.promise);
+      assert.deepEqual(loadURL.mock.calls, [[link]]);
+    }).pipe(
+      Effect.scoped,
+      Effect.provide(makeDesktopClerkLayer()),
+      Effect.provideService(ElectronApp.ElectronApp, electronApp),
+      Effect.provideService(ElectronWindow.ElectronWindow, electronWindow),
+    );
+  },
 );

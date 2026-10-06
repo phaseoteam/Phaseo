@@ -1,3 +1,4 @@
+import { HostProcessArguments } from "@t3tools/shared/hostProcess";
 import * as NodeServices from "@effect/platform-node/NodeServices";
 import { assert, describe, it } from "@effect/vitest";
 import * as Deferred from "effect/Deferred";
@@ -602,37 +603,45 @@ describe("DesktopWindow", () => {
     );
   });
 
-  it.effect("does not open a development window until the backend is ready", () =>
-    Effect.gen(function* () {
-      const fakeWindow = makeFakeBrowserWindow();
-      const createCount = yield* Ref.make(0);
-      const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
-      const createdWindowOptions: Electron.BrowserWindowConstructorOptions[] = [];
-      const layer = makeTestLayer({
-        window: fakeWindow.window,
-        createCount,
-        mainWindow,
-        createdWindowOptions,
-      });
+  it.effect.each([undefined, "t3code-dev://app/env-1/chat-1"] as const)(
+    "opens startup chat %s after the backend is ready",
+    (startupLink) =>
+      Effect.gen(function* () {
+        const fakeWindow = makeFakeBrowserWindow();
+        const createCount = yield* Ref.make(0);
+        const mainWindow = yield* Ref.make<Option.Option<Electron.BrowserWindow>>(Option.none());
+        const createdWindowOptions: Electron.BrowserWindowConstructorOptions[] = [];
+        const layer = makeTestLayer({
+          window: fakeWindow.window,
+          createCount,
+          mainWindow,
+          createdWindowOptions,
+        });
 
-      yield* Effect.gen(function* () {
-        const desktopWindow = yield* DesktopWindow.DesktopWindow;
-        yield* desktopWindow.activate;
-        assert.equal(yield* Ref.get(createCount), 0);
+        yield* Effect.gen(function* () {
+          const desktopWindow = yield* DesktopWindow.DesktopWindow;
+          yield* desktopWindow.activate;
+          assert.equal(yield* Ref.get(createCount), 0);
 
-        yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
-        assert.equal(yield* Ref.get(createCount), 1);
-        assert.equal(createdWindowOptions[0]?.width, 1100);
-        assert.equal(createdWindowOptions[0]?.height, 780);
-        assert.isUndefined(createdWindowOptions[0]?.x);
-        assert.isUndefined(createdWindowOptions[0]?.y);
-        assert.isTrue(createdWindowOptions[0]?.disableAutoHideCursor);
-        assert.isFalse(createdWindowOptions[0]?.webPreferences?.backgroundThrottling);
-        assert.deepEqual(fakeWindow.setAutoHideCursor.mock.calls, [[false]]);
-        assert.deepEqual(fakeWindow.loadURL.mock.calls[0], ["t3code-dev://app/"]);
-        assert.equal(fakeWindow.openDevTools.mock.calls.length, 1);
-      }).pipe(Effect.provide(layer));
-    }),
+          yield* desktopWindow.handleBackendReady(new URL("http://127.0.0.1:3773"));
+          assert.equal(yield* Ref.get(createCount), 1);
+          assert.equal(createdWindowOptions[0]?.width, 1100);
+          assert.equal(createdWindowOptions[0]?.height, 780);
+          assert.isUndefined(createdWindowOptions[0]?.x);
+          assert.isUndefined(createdWindowOptions[0]?.y);
+          assert.isTrue(createdWindowOptions[0]?.disableAutoHideCursor);
+          assert.isFalse(createdWindowOptions[0]?.webPreferences?.backgroundThrottling);
+          assert.deepEqual(fakeWindow.setAutoHideCursor.mock.calls, [[false]]);
+          assert.deepEqual(fakeWindow.loadURL.mock.calls[0], [startupLink ?? "t3code-dev://app/"]);
+          assert.equal(fakeWindow.openDevTools.mock.calls.length, 1);
+        }).pipe(
+          Effect.provide(layer),
+          Effect.provideService(
+            HostProcessArguments,
+            startupLink ? ["phaseo", startupLink] : ["phaseo"],
+          ),
+        );
+      }),
   );
 
   it.effect(

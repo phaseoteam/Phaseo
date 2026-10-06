@@ -1,3 +1,5 @@
+import { HostProcessArguments } from "@t3tools/shared/hostProcess";
+import { desktopSessionLink } from "../app/DesktopSessionLink.ts";
 import * as Clock from "effect/Clock";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";
@@ -367,7 +369,12 @@ export const make = Effect.gen(function* () {
     DesktopWindowError
   > {
     yield* previewManager.getBrowserSession();
-    const applicationUrl = getDesktopUrl(environment.isDevelopment);
+    const args = yield* HostProcessArguments;
+    const applicationUrl =
+      args.flatMap((value) => {
+        const link = desktopSessionLink(value, environment.isDevelopment);
+        return link ? [link] : [];
+      })[0] ?? getDesktopUrl(environment.isDevelopment);
     const iconPaths = yield* assets.iconPaths;
     const iconOption = getIconOption(iconPaths, environment.platform);
     const shouldUseDarkColors = yield* electronTheme.shouldUseDarkColors;
