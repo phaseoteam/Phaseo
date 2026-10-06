@@ -13741,6 +13741,16 @@ components:
         generation_id:
           type: string
           example: G-abc123
+        request_id:
+          type: string
+          description: リクエストの相関 ID。X-Request-Id でも返されます。
+          example: G-abc123
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: 再試行までの安全な待機時間（秒）。Retry-After がある場合はその値と一致します。
+          example: 3600
         status_code:
           type: integer
           example: 502

@@ -13741,6 +13741,16 @@ components:
         generation_id:
           type: string
           example: G-abc123
+        request_id:
+          type: string
+          description: अनुरोध का सहसंबंध पहचानकर्ता, जो X-Request-Id में भी लौटाया जाता है।
+          example: G-abc123
+        retry_after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          description: दोबारा प्रयास करने से पहले सुरक्षित विलंब, सेकंड में; Retry-After मौजूद होने पर उससे मेल खाता है।
+          example: 3600
         status_code:
           type: integer
           example: 502
