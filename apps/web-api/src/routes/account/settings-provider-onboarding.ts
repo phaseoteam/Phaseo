@@ -397,7 +397,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 		};
 	});
 	const reviewRuns = catalogSlugs.length
-		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false }).limit(20)
+		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).neq("status", "not_modified").order("created_at", { ascending: false }).limit(20)
 		: { data: [], error: null };
 	if (reviewRuns.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const reviewRunIds = (reviewRuns.data ?? []).map((run) => String(run.id));
