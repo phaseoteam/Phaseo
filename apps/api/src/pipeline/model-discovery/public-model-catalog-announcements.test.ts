@@ -53,6 +53,7 @@ type StateRow = {
 	model_slug: string;
 	status: string;
 	attempt_count: number;
+	first_seen_at?: string;
 	catalogue_status_snapshot?: string | null;
 	public_visibility_snapshot?: boolean | null;
 };
@@ -221,6 +222,25 @@ describe("runPublicModelAnnouncementCheck", () => {
 			expect.objectContaining({ status: "pending", last_run_id: "run-3" }),
 			expect.objectContaining({ status: "announced", catalogue_status_snapshot: catalogueStatus, claim_run_id: null }),
 		]);
+	});
+
+	it.each(["preview", "available"])("recovers a legacy preview baseline now marked %s", async (catalogueStatus) => {
+		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: catalogueStatus };
+		const supabase = buildClient([model], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0, first_seen_at: "2026-09-17T00:00:00Z" },
+			{ model_slug: model.model_slug, status: "baseline", attempt_count: 0, first_seen_at: "2026-10-06T00:00:00Z", catalogue_status_snapshot: "preview", public_visibility_snapshot: true },
+		], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "recover-run", notify: true })).toMatchObject({ detected: 1, notified: 1, pending: 0 });
+	});
+
+	it("preserves previews from the original baseline", async () => {
+		const supabase = buildClient([
+			{ model_slug: "mistral/existing", name: "Existing", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview" },
+		], [{ model_slug: "mistral/existing", status: "baseline", attempt_count: 0, first_seen_at: "2026-09-17T00:00:00Z", catalogue_status_snapshot: "preview", public_visibility_snapshot: true }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "baseline-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
 	});
 
 	it.each(["new", "pending"])("announces a %s preview release", async (state) => {

@@ -99,6 +99,7 @@ function isReleasedCatalogueStatus(value: string | null | undefined): boolean {
 function isNewlyAvailable(
 	model: PublicModelRow,
 	state: AnnouncementStateRow,
+	baselineAt?: number,
 ): boolean {
 	if (state.status !== "baseline" && state.status !== "announced") return false;
 	return isPublicModel(model)
@@ -106,6 +107,12 @@ function isNewlyAvailable(
 		&& (
 			!isReleasedCatalogueStatus(state.catalogue_status_snapshot)
 			|| state.public_visibility_snapshot === false
+			// The old scanner baselined previews added after initialization.
+			// Preserve the initial baseline, but recover later skipped releases.
+			|| (state.status === "baseline"
+				&& state.catalogue_status_snapshot === "preview"
+				&& baselineAt !== undefined
+				&& Date.parse(state.first_seen_at ?? "") > baselineAt)
 		);
 }
 
@@ -414,6 +421,8 @@ export async function runPublicModelAnnouncementCheck(args: {
 		}
 
 		const nowIso = new Date().toISOString();
+		const firstSeenTimes = stateRows.map((row) => Date.parse(row.first_seen_at ?? "")).filter(Number.isFinite);
+		const baselineAt = firstSeenTimes.length > 0 ? Math.min(...firstSeenTimes) : undefined;
 		const newModels: PublicModelRow[] = [];
 		const newlyAvailableModels: PublicModelRow[] = [];
 		const skippedModels: PublicModelRow[] = [];
@@ -426,7 +435,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
-			if (state && isNewlyAvailable(model, state)) newlyAvailableModels.push(model);
+			if (state && isNewlyAvailable(model, state, baselineAt)) newlyAvailableModels.push(model);
 		}
 
 		summary.detected = newModels.length + newlyAvailableModels.length;
