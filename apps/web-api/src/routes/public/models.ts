@@ -3,7 +3,7 @@ import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
-import { buildModelsPageFacets, fetchModelsPageCatalogue } from "@/models/page-catalogue";
+import { buildModelsPageFacets, fetchModelsPageCatalogue, fetchPublicModelWeeklyMetrics } from "@/models/page-catalogue";
 import { composeGatewayMetadata, fetchGatewayMetadataSource } from "@/models/gateway-metadata";
 import { fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
 import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISPLAY_NAME } from "@/models/provider-identity";
@@ -825,16 +825,17 @@ publicModelsRouter.get("/", async (c) => {
 		const region = c.req.query("region")?.trim().toLowerCase() || null;
 		const serviceTier = c.req.query("service_tier")?.trim().toLowerCase() || null;
 		if (shape === "page") {
+			const includeMetrics = c.req.query("include_metrics") !== "false";
 			const projection = parseBoundedInt(c.req.query("projection"), 4, 100);
 			const includeVirtual = projection >= 5;
 			// The compact page RPC is backed by the canonical V2 tables and emits
 			// the stable card contract used by both catalogue versions.
 			const [catalogue, freeRouter] = await Promise.all([
-				fetchModelsPageCatalogue(c.env, { region, serviceTier }, catalogueVersion),
-				includeVirtual ? fetchFreeRouterOverview(c.env) : Promise.resolve(null),
+				fetchModelsPageCatalogue(c.env, { region, serviceTier, includeMetrics }, catalogueVersion),
+				includeVirtual ? fetchFreeRouterOverview(c.env, includeMetrics) : Promise.resolve(null),
 			]);
 			const databaseModels = catalogue.models.filter((model) => model.model_id !== "phaseo/free");
-			const allModels = freeRouter ? [buildFreeRouterCatalogueRow(freeRouter), ...databaseModels] : databaseModels;
+			const allModels = freeRouter ? [buildFreeRouterCatalogueRow(freeRouter, includeMetrics), ...databaseModels] : databaseModels;
 			const normalizedSearch = search?.toLowerCase();
 			const filtered = normalizedSearch ? allModels.filter((model) => String(model.name ?? "").toLowerCase().includes(normalizedSearch)) : allModels;
 			const response = withPublicCache(c.json({ models: filtered.slice(offset, offset + limit), facets: buildModelsPageFacets(filtered), pricing_complete: catalogue.pricingComplete, total: filtered.length, limit, offset, catalogue_version: catalogueVersion, shape: "page", projection }), cataloguePolicy(catalogueVersion, includeVirtual));
@@ -932,6 +933,15 @@ publicModelsRouter.get("/", async (c) => {
 	} catch (error) {
 		console.error("[web-api/models] catalogue failed", error);
 		return c.json({ error: "models_unavailable" }, 503);
+	}
+});
+
+publicModelsRouter.get("/weekly-metrics", async (c) => {
+	try {
+		return withPublicCache(c.json({ metrics: await fetchPublicModelWeeklyMetrics(c.env) }), cataloguePolicy("v2"));
+	} catch (error) {
+		console.error("[web-api/models] weekly metrics failed", error);
+		return c.json({ error: "model_metrics_unavailable" }, 503);
 	}
 });
 

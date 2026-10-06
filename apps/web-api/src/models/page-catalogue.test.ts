@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	attachModelsPageVariants,
 	fetchModelsPageCatalogue,
+	fetchPublicModelWeeklyMetrics,
 	buildModelsPageFacets,
 	mergeModelWeeklyMetrics,
 	normalizeModelsPagePricing,
@@ -16,6 +17,36 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchModelsPageCatalogue", () => {
+	it("rejects failed standalone metrics instead of caching an empty success", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			code: "57014", message: "statement timeout",
+		}), { status: 500, headers: { "Content-Type": "application/json" } })));
+		await expect(fetchPublicModelWeeklyMetrics(env)).rejects.toMatchObject({ code: "57014" });
+	});
+	it("returns the catalogue without querying deferred weekly metrics", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_v2_public_model_weekly_metrics")) throw new Error("slow metrics must not be requested");
+			return new Response(JSON.stringify([{ model_id: "test/model", name: "Model" }]));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		expect(result.models.map((row) => row.model_id)).toEqual(["test/model"]);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("excludes hidden model identities from the standalone metrics response", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_v2_public_model_weekly_metrics")) return new Response(JSON.stringify([
+				{ model_slug: "public/model", weekly_usage_quantity: 10 },
+				{ model_slug: "hidden/model", weekly_usage_quantity: 99 },
+			]));
+			const url = new URL(String(input));
+			expect(url.searchParams.get("hidden")).toBe("eq.false");
+			expect(url.searchParams.get("status")).toBe("neq.disabled");
+			return new Response(JSON.stringify([{ model_slug: "public/model" }]));
+		}));
+		expect(await fetchPublicModelWeeklyMetrics(env)).toEqual([{ model_slug: "public/model", weekly_usage_quantity: 10 }]);
+	});
 	it("loads more than 1,000 models with one catalogue RPC", async () => {
 		const rows = Array.from({ length: 2001 }, (_, index) => ({
 			model_id: `test/model-${index}`, name: `Model ${index}`,

@@ -42,8 +42,12 @@ describe("resolveWeeklyUsageDisplay", () => {
 			popularity_tokens_week: 7_200,
 		})).toEqual({
 			label: "Video hours generated",
-			quantity: 0,
+			quantity: null,
 			unitSuffix: "h",
 		});
+	});
+	it("distinguishes missing statistics from measured zero usage", () => {
+		expect(resolveWeeklyUsageDisplay({}).quantity).toBeNull();
+		expect(resolveWeeklyUsageDisplay({ popularity_tokens_week: 0 }).quantity).toBe(0);
 	});
 });

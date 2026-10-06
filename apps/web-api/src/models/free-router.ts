@@ -70,7 +70,7 @@ function parseOverview(value: unknown): FreeRouterOverview | null {
 	};
 }
 
-async function v2Overview(env: Env): Promise<FreeRouterOverview> {
+async function v2Overview(env: Env, includeUsage = true): Promise<FreeRouterOverview> {
 	const client = getDataClient(env);
 	const [modelsResult, providerModelsResult] = await Promise.all([
 		client.from("v2_models").select("model_slug,name,lab_slug,input_modalities,output_modalities,lab:v2_labs!v2_models_lab_slug_fkey(name)").eq("variant_kind", "free").eq("hidden", false),
@@ -100,10 +100,10 @@ async function v2Overview(env: Env): Promise<FreeRouterOverview> {
 	const modelIds = [...eligible.keys()];
 	if (modelIds.length === 0) return EMPTY;
 	const usage = new Map<string, FreeRouterModel["usage"]>();
-	const usageResult = await client.rpc("get_free_router_usage_summary", {
+	const usageResult = includeUsage ? await client.rpc("get_free_router_usage_summary", {
 		p_model_slugs: modelIds,
 		p_since: new Date(nowMs - 30 * 24 * 60 * 60 * 1_000).toISOString(),
-	});
+	}) : { data: [], error: null };
 	if (usageResult.error) throw usageResult.error;
 	for (const row of usageResult.data ?? []) {
 		const modelId = String(row.model_slug ?? "");
@@ -125,11 +125,11 @@ async function v2Overview(env: Env): Promise<FreeRouterOverview> {
 	return { summary: { eligibleModels: models.length, eligibleProviders: providerIds.size, routedRequests30d: models.reduce((sum, model) => sum + model.usage.requests30d, 0), totalCostNanos30d: models.reduce((sum, model) => sum + model.usage.totalCostNanos30d, 0) }, models };
 }
 
-export async function fetchFreeRouterOverview(env: Env): Promise<FreeRouterOverview> {
-	return v2Overview(env);
+export async function fetchFreeRouterOverview(env: Env, includeUsage = true): Promise<FreeRouterOverview> {
+	return v2Overview(env, includeUsage);
 }
 
-export function buildFreeRouterCatalogueRow(overview: FreeRouterOverview): Record<string, unknown> {
+export function buildFreeRouterCatalogueRow(overview: FreeRouterOverview, includeUsage = true): Record<string, unknown> {
 	const input = [...new Set(overview.models.flatMap((model) => model.inputModalities))].sort();
 	const output = [...new Set(overview.models.flatMap((model) => model.outputModalities))].sort();
 	return {
@@ -139,6 +139,6 @@ export function buildFreeRouterCatalogueRow(overview: FreeRouterOverview): Recor
 		gateway_endpoints: ["chat/completions", "responses", "messages"], gateway_input_modalities: input.length ? input : ["text"], gateway_output_modalities: output.length ? output : ["text"],
 		gateway_features: ["routing", "free"], gateway_tiers: ["free"], gateway_provider_names: [], gateway_active_provider_names: [], gateway_execution_regions: [], gateway_provider_details: [], gateway_api_model_ids: ["phaseo/free:text.generate:free"], context_lengths: [], supported_parameters: [],
 		lowest_input_price: 0, lowest_output_price: 0, lowest_standard_input_price: 0, lowest_standard_output_price: 0, lowest_standard_input_price_label: "Input", lowest_standard_input_price_unit: "1M tokens", lowest_standard_output_price_label: "Output", lowest_standard_output_price_unit: "1M tokens", lowest_from_price: 0, lowest_from_price_unit: "1M tokens", pricing_detail_rows: [{ label: "Input", value: "$0 / 1M tokens" }, { label: "Output", value: "$0 / 1M tokens" }],
-		popularity_tokens_week: null, throughput_week: null, latency_week: null, router_requests_30d: overview.summary.routedRequests30d, router_spend_nanos_30d: overview.summary.totalCostNanos30d,
+		popularity_tokens_week: null, throughput_week: null, latency_week: null, router_requests_30d: includeUsage ? overview.summary.routedRequests30d : null, router_spend_nanos_30d: includeUsage ? overview.summary.totalCostNanos30d : null,
 	};
 }
