@@ -1,3 +1,5 @@
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.enqueue_provider_catalog_event_email()
   RETURNS TRIGGER
   LANGUAGE plpgsql
@@ -17,11 +19,3 @@ begin
   return new;
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."enqueue_provider_catalog_event_email"() TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."enqueue_provider_catalog_event_email"() FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."enqueue_provider_catalog_event_email"() TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."enqueue_provider_catalog_event_email"() FROM PUBLIC, "anon", "authenticated";

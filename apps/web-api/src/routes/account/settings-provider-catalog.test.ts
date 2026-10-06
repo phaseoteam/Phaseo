@@ -49,6 +49,14 @@ describe("provider catalog management API", () => {
 		expect(response.status).toBe(401);
 		expect(response.headers.get("cache-control")).toContain("no-store");
 	});
+	it("ignores unchanged polls when reading the latest catalog revision", async () => {
+		stubEditorRead();
+		const response = await app.request("https://phaseo.app/api/account/settings/provider-onboarding/catalog/synthetic", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const urls = vi.mocked(fetch).mock.calls.map(([input]) => new URL(input instanceof Request ? input.url : String(input)));
+		const latest = urls.find(url => url.pathname.endsWith("/provider_catalog_sync_runs"));
+		expect(latest?.searchParams.get("status")).toBe("neq.not_modified");
+	});
 
 	it("keeps the lightweight revision check private and returns the managed document version", async () => {
 		const path = "https://phaseo.app/api/account/settings/provider-onboarding/catalog/synthetic/version";
