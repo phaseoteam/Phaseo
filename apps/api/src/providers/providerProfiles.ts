@@ -37,6 +37,7 @@ export type ProviderProfile = {
 			unsupportedParams?: string[];
 		};
 		normalize?: {
+			preserveReasoningEffort?: boolean;
 			maxTemperature?: number;
 			defaultMaxTokensWhenMissing?: number;
 			serviceTierAliases?: Record<string, string>;
@@ -83,6 +84,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 				unsupportedParams: ["stop", "n", "logprobs", "logit_bias", "modalities", "verbosity", "metadata", "user", "user_id", "top_logprobs", "top_k", "min_p", "repetition_penalty", "web_search_options", "image_config", "audio", "prompt_cache_key", "prompt_cache_retention", "safety_identifier", "reasoning.max_tokens", "reasoning.summary"],
 			},
 			normalize: {
+				preserveReasoningEffort: true,
 				reasoningEffortFallback: ["low", "medium", "high", "xhigh", "max"],
 				serviceTierAliases: { standard: "default" },
 			},

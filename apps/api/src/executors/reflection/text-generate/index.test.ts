@@ -4,6 +4,7 @@ import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-f
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { executor } from "./index";
 import { resolveProviderExecutor } from "@executors/index";
+import { normalizeIRForProvider } from "@pipeline/execute/normalize";
 
 beforeEach(() => setupRuntimeFromEnv({ REFLECTION_API_KEY: "reflection-test-key" }));
 afterEach(teardownTestRuntime);
@@ -27,14 +28,14 @@ describe("Reflection text executor", () => {
 			response: jsonResponse({ id: "reflection_reply", model: "Beam-501B-A23B", choices: [{ index: 0, message: { role: "assistant", content: '{"ok":true}', reasoning_content: "Check the result" }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 8, total_tokens: 18, completion_tokens_details: { reasoning_tokens: 5 } } }),
 		}]);
 		try {
-			const requestArgs = args({ maxTokens: 200, reasoning: { effort: "max" }, tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }], toolChoice: "auto", responseFormat: { type: "json_schema", name: "answer", schema: { type: "object", properties: { ok: { type: "boolean" } } }, strict: true } });
+			const requestArgs = args({ store: false, maxTokens: 200, reasoning: { effort: "max" }, tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }], toolChoice: "auto", responseFormat: { type: "json_schema", name: "answer", schema: { type: "object", properties: { ok: { type: "boolean" } } }, strict: true } });
 			requestArgs.protocol = protocol as ExecutorExecuteArgs["protocol"];
 			const result = await executor(requestArgs);
 			expect(result.kind).toBe("completed");
 			expect(mock.calls).toHaveLength(1);
 			expect(mock.calls[0].headers).toMatchObject({ Authorization: "Bearer reflection-test-key" });
 			const body = mock.calls[0].bodyJson;
-			expect(body).toMatchObject({ model: "Beam-501B-A23B", reasoning_effort: "max", max_completion_tokens: 200, response_format: { type: "json_schema" }, tools: [{ type: "function", function: { name: "lookup" } }] });
+			expect(body).toMatchObject({ model: "Beam-501B-A23B", store: false, reasoning_effort: "max", max_completion_tokens: 200, response_format: { type: "json_schema" }, tools: [{ type: "function", function: { name: "lookup" } }] });
 			expect(body.max_tokens).toBeUndefined();
 			if (result.kind === "completed") {
 				expect((result.ir as any)?.usage?.reasoningTokens).toBe(5);
@@ -50,10 +51,12 @@ describe("Reflection text executor", () => {
 			expect(mock.calls).toHaveLength(1);
 		} finally { mock.restore(); }
 	});
-	it.each([{ reasoning: { enabled: false } }, { reasoning: { effort: "none" } }, { reasoning: { effort: "minimal" } }, { stop: ["END"] }])("rejects unsupported controls before fetching: %j", async controls => {
+	it.each([{ reasoning: { enabled: false } }, { reasoning: { effort: "none" } }, { reasoning: { effort: "instant" } }, { reasoning: { effort: "minimal" } }, { stop: ["END"] }, { store: true }])("rejects unsupported controls after normalization: %j", async controls => {
 		const mock = installFetchMock([]);
 		try {
-			const result = await executor(args(controls));
+			const requestArgs = args(controls);
+			requestArgs.ir = normalizeIRForProvider(requestArgs.ir, "reflection", "openai.chat.completions", { capabilityParams: { "reasoning.effort": { enum: ["low", "medium", "high", "xhigh", "max"] } } });
+			const result = await executor(requestArgs);
 			expect(result.upstream.status).toBe(400);
 			expect(result).toMatchObject({ terminal: true, localClientError: true });
 			expect(mock.calls).toHaveLength(0);

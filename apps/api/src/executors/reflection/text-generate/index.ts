@@ -9,7 +9,7 @@ export const executor: ProviderExecutor = async (args: ExecutorExecuteArgs): Pro
 	const effort = ir.reasoning?.effort;
 	const invalidReasoning = ir.reasoning?.enabled === false ||
 		(effort !== undefined && !REFLECTION_REASONING_EFFORTS.some((value) => value === effort));
-	const param = invalidReasoning ? "reasoning_effort" : ir.stop !== undefined ? "stop" : null;
+	const param = invalidReasoning ? "reasoning_effort" : ir.stop !== undefined ? "stop" : ir.store === true ? "store" : null;
 	if (param) {
 		return {
 			kind: "completed",
@@ -22,7 +22,7 @@ export const executor: ProviderExecutor = async (args: ExecutorExecuteArgs): Pro
 				param,
 				message: invalidReasoning
 					? "Reflection requires reasoning with effort low, medium, high, xhigh, or max."
-					: "Reflection does not enforce stop sequences.",
+					: param === "stop" ? "Reflection does not enforce stop sequences." : "Reflection only accepts store: false.",
 			} }, { status: 400 }),
 		};
 	}

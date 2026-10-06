@@ -4,6 +4,7 @@
 
 import type { IRChatRequest } from "@core/ir";
 import type { Protocol } from "@protocols/detect";
+import { getProviderProfile } from "@providers/providerProfiles";
 import {
 	DEFAULT_ANTHROPIC_MAX_TOKENS,
 	fallbackReasoningEfforts,
@@ -307,7 +308,9 @@ export function normalizeIRForProvider(
                 providerId,
                 modelForReasoning ?? ir.model,
             );
-            reasoning.effort = clampReasoningEffort(reasoning.effort, supported);
+            if (!getProviderProfile(providerId)?.text?.normalize?.preserveReasoningEffort) {
+                reasoning.effort = clampReasoningEffort(reasoning.effort, supported);
+            }
         }
 
         if (typeof reasoning.maxTokens === "number" && Number.isFinite(reasoning.maxTokens)) {
