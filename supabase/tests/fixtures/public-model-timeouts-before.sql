@@ -21,7 +21,7 @@ windows as (
 ),
 -- Resolve the request's actual route, not every route belonging to its model.
 requests_all as materialized (
-    select fact.occurred_at as created_at, date_trunc('hour', fact.occurred_at)::timestamp as request_hour, fact.success::boolean as success_bool,
+    select fact.occurred_at as created_at, fact.success::boolean as success_bool,
         fact.latency_ms, fact.throughput, fact.generation_ms, route.provider_slug as provider
     from public.v2_request_facts fact
     left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
@@ -112,7 +112,8 @@ hourly_24h as (
             from windows w
         ) s
         left join requests_last24 r
-            on r.request_hour = s.bucket_start
+            on r.created_at >= s.bucket_start
+           and r.created_at < s.bucket_start + interval '1 hour'
         group by s.bucket_start
     ) buckets
 ),
@@ -192,7 +193,8 @@ hourly_5d as (
             from windows w
         ) s
         left join requests_5d r
-            on r.request_hour = s.bucket_start
+            on r.created_at >= s.bucket_start
+           and r.created_at < s.bucket_start + interval '1 hour'
         group by s.bucket_start
     ) buckets
 ),
@@ -254,12 +256,189 @@ select
         'total_tokens', (select total_tokens from token_totals)
     ) as cumulative_tokens;$function$;
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_performance_overview"(text) TO PUBLIC, "anon", "authenticated";
+CREATE OR REPLACE FUNCTION public.get_model_token_trajectory(p_model_id text)
+ RETURNS TABLE(release_date timestamp with time zone, deprecation_date timestamp with time zone, points jsonb, token_milestones jsonb, successor_milestones jsonb)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$with model_row as (
+  select model_id, release_date, deprecation_date
+  from private.v2_rpc_models_compat
+  where model_id = p_model_id
+  limit 1
+),
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_performance_overview"(text) TO "service_role";
+-- Build the set of gateway_requests.model_id values to include
+model_ids as (
+  select p_model_id as model_id
+  union
+  select
+    pm.provider_id || '/' || regexp_replace(pm.api_model_id, '^' || pm.provider_id || '/', '')
+  from private.v2_rpc_routes_compat pm
+  where pm.internal_model_id = p_model_id
+),
 
-COMMENT ON FUNCTION "public"."get_model_performance_overview"(text) IS 'Aggregates performance, uptime (hourly), provider uptime, 5d hourly medians, and cumulative tokens in one call. Medians only.';
+anchors as (
+  select
+    mr.release_date,
+    mr.deprecation_date,
+    -- choose today's UTC day (not "greatest" vs release day; that could invert the range)
+    date_trunc('day', now() at time zone 'utc') as today,
+    date_trunc('day', mr.release_date) as start_day
+  from model_row mr
+),
 
-REVOKE ALL ON FUNCTION "public"."get_model_performance_overview"(text) FROM "postgres";
+daily_tokens as (
+  select
+    date_trunc('day', gr.created_at at time zone 'utc') as day,
+    sum(
+      coalesce(
+        nullif((gr.usage ->> 'total_tokens')::numeric, 0),
+        coalesce((gr.usage ->> 'input_tokens')::numeric, 0)
+        + coalesce((gr.usage ->> 'output_tokens')::numeric, 0)
+      )
+    ) as tokens
+  from private.v2_rpc_gateway_requests_compat gr
+  cross join model_row mr
+  where gr.model_id in (select model_id from model_ids)
+    and mr.release_date is not null
+    and gr.created_at >= mr.release_date
+  group by 1
+),
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_performance_overview"(text) TO "postgres";
+point_series as (
+  select
+    gs.day,
+    coalesce(dt.tokens, 0) as tokens,
+    sum(coalesce(dt.tokens, 0)) over (order by gs.day) as cumulative_tokens,
+    floor(extract(epoch from (gs.day - (select release_date from model_row))) / 86400)::int as days_since_release
+  from (
+    select generate_series(
+      (select start_day from anchors),
+      (select today from anchors),
+      interval '1 day'
+    ) as day
+  ) gs
+  left join daily_tokens dt on dt.day = gs.day
+),
+
+points_json as (
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'date', to_char(day, 'YYYY-MM-DD"T"00:00:00.000Z'),
+        'tokens', tokens,
+        'cumulativeTokens', cumulative_tokens,
+        'daysSinceRelease', days_since_release
+      )
+      order by day
+    ),
+    '[]'::jsonb
+  ) as value
+  from point_series
+),
+
+milestones as (
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'threshold', threshold,
+        'reachedOn', reached_on,
+        'daysSinceRelease', days_since_release
+      )
+      order by threshold
+    ),
+    '[]'::jsonb
+  ) as value
+  from (
+    select
+      threshold,
+      (select to_char(ps.day, 'YYYY-MM-DD"T"00:00:00.000Z')
+       from point_series ps
+       where ps.cumulative_tokens >= threshold
+       order by ps.day asc
+       limit 1) as reached_on,
+      (select ps.days_since_release
+       from point_series ps
+       where ps.cumulative_tokens >= threshold
+       order by ps.day asc
+       limit 1) as days_since_release
+    from unnest(array[1000000, 10000000, 100000000, 1000000000]) as threshold
+  ) m
+),
+
+successors as (
+  select coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'modelId', dm.model_id,
+        'name', coalesce(dm.name, dm.model_id),
+        'releaseDate', dm.release_date,
+        'daysSinceRelease',
+          case
+            when mr.release_date is null or dm.release_date is null then null
+            else floor(extract(epoch from (dm.release_date - mr.release_date)) / 86400)::int
+          end
+      )
+    ),
+    '[]'::jsonb
+  ) as value
+  from private.v2_rpc_models_compat dm
+  cross join model_row mr
+  where dm.previous_model_id = p_model_id
+)
+
+select
+  (select release_date from model_row) as release_date,
+  (select deprecation_date from model_row) as deprecation_date,
+  (select value from points_json) as points,
+  (select value from milestones) as token_milestones,
+  (select value from successors) as successor_milestones
+where (select release_date from model_row) is not null;$function$;
+CREATE OR REPLACE FUNCTION public.resolve_public_model_id(p_model_id text, p_provider text DEFAULT NULL::text)
+ RETURNS text
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+with direct_match as (
+  select dm.model_id as canonical_model_id
+  from private.v2_rpc_models_compat dm
+  where dm.model_id = p_model_id
+  limit 1
+),
+alias_match as (
+  select a.api_model_id as canonical_model_id
+  from (select alias_slug, model_slug as api_model_id, enabled as is_enabled, effective_from, effective_to, metadata, created_at, updated_at from public.v2_model_aliases) a
+  where a.alias_slug = p_model_id
+    and coalesce(a.is_enabled, true)
+  limit 1
+),
+provider_match as (
+  select coalesce(nullif(pm.model_id, ''), pm.api_model_id) as canonical_model_id,
+         pm.is_active_gateway,
+         pm.updated_at
+  from private.v2_rpc_routes_compat pm
+  where (p_provider is null or pm.provider_id = p_provider)
+    and (
+      pm.model_id = p_model_id
+      or pm.api_model_id = p_model_id
+      or pm.provider_api_model_id = p_model_id
+      or pm.provider_model_slug = p_model_id
+    )
+  order by pm.is_active_gateway desc, pm.updated_at desc nulls last
+  limit 1
+)
+select canonical_model_id
+from (
+  select 0 as ord, canonical_model_id from direct_match
+  union all
+  select 1 as ord, canonical_model_id from alias_match
+  union all
+  select 2 as ord, canonical_model_id from provider_match
+) candidates
+where canonical_model_id is not null
+  and btrim(canonical_model_id) <> ''
+order by ord
+limit 1;
+$function$;

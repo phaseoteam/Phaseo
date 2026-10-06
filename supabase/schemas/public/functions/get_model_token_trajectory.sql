@@ -1,17 +1,9 @@
-CREATE OR REPLACE FUNCTION public.get_model_token_trajectory (
-  p_model_id text
-)
-  RETURNS TABLE (
-    release_date         timestamp with time zone,
-    deprecation_date     timestamp with time zone,
-    points               jsonb,
-    token_milestones     jsonb,
-    successor_milestones jsonb
-  )
-  LANGUAGE sql
-  STABLE
-  SET search_path TO 'public', 'pg_temp'
-  AS $function$with model_row as (
+CREATE OR REPLACE FUNCTION public.get_model_token_trajectory(p_model_id text)
+ RETURNS TABLE(release_date timestamp with time zone, deprecation_date timestamp with time zone, points jsonb, token_milestones jsonb, successor_milestones jsonb)
+ LANGUAGE sql
+ STABLE
+ SET search_path TO 'public', 'pg_temp'
+AS $function$with model_row as (
   select model_id, release_date, deprecation_date
   from private.v2_rpc_models_compat
   where model_id = p_model_id
@@ -39,20 +31,23 @@ anchors as (
 ),
 
 daily_tokens as (
-  select
-    date_trunc('day', gr.created_at at time zone 'utc') as day,
-    sum(
-      coalesce(
-        nullif((gr.usage ->> 'total_tokens')::numeric, 0),
-        coalesce((gr.usage ->> 'input_tokens')::numeric, 0)
-        + coalesce((gr.usage ->> 'output_tokens')::numeric, 0)
-      )
-    ) as tokens
-  from private.v2_rpc_gateway_requests_compat gr
+  select date_trunc('day', fact.occurred_at at time zone 'utc') as day,
+    sum(coalesce(nullif(tokens.explicit_total, 0),
+      coalesce(tokens.input_tokens, 0) + coalesce(tokens.output_tokens, 0))) as tokens
+  from public.v2_request_facts fact
   cross join model_row mr
-  where gr.model_id in (select model_id from model_ids)
+  left join lateral (
+    select sum(usage.quantity) filter (where usage.meter_key = 'total_tokens') as explicit_total,
+      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens') as input_tokens,
+      sum(usage.quantity) filter (where usage.meter_key = 'output_tokens') as output_tokens
+    from public.v2_request_usage usage
+    where usage.request_event_id = fact.request_event_id
+      and usage.meter_key in ('total_tokens', 'input_tokens', 'output_tokens')
+  ) tokens on true
+  where coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input)
+      in (select model_id from model_ids)
     and mr.release_date is not null
-    and gr.created_at >= mr.release_date
+    and fact.occurred_at >= mr.release_date
   group by 1
 ),
 
