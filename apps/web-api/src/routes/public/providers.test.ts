@@ -15,7 +15,7 @@ describe("public provider routes", () => {
 				{ provider_model_id: "sample:atlas-1", provider_model_slug: published.provider_model_slug, model_slug: published.id, status: "active", routing_enabled: true, provider_availability_status: "available", phaseo_status: "enabled", access_scope: "public", input_modalities: published.input_modalities, output_modalities: published.output_modalities, created_at: "2026-01-01T00:00:00Z" },
 				{ provider_model_id: "sample:atlas-2", provider_model_slug: hidden.provider_model_slug, model_slug: hidden.id, status: "active", routing_enabled: true, provider_availability_status: "available", phaseo_status: "enabled", access_scope: "public", created_at: "2026-01-01T00:00:00Z" },
 			]);
-			if (url.includes("v2_route_capabilities")) return Response.json([{ provider_model_id: "sample:atlas-1", capability_id: "responses", params: { temperature: true, max_output_tokens: true }, status: "active" }]);
+			if (url.includes("v2_route_capabilities")) return Response.json([{ provider_model_id: "sample:atlas-1", capability_id: "text.generate", params: { temperature: true, max_output_tokens: true }, status: "active" }]);
 			if (url.includes("v2_models")) return Response.json([{ model_slug: published.id, name: published.name, hidden: false, released_at: "2026-01-01T00:00:00Z" }]);
 			if (url.includes("v2_pricing_sku_meters")) return Response.json(published.pricing.map((price) => ({ sku_id: "sku-1", meter_key: price.meter_key, unit: price.unit, unit_quantity: price.unit_quantity, price_nanos: price.price_nanos, meter_order: 1 })));
 			if (url.includes("v2_pricing_skus")) return Response.json([{ sku_id: "sku-1", provider_model_id: "sample:atlas-1", service_tier_slug: "standard", status: "active", effective_from: "2026-01-01T00:00:00Z", effective_to: null }]);
@@ -26,7 +26,7 @@ describe("public provider routes", () => {
 		await expect(response.json()).resolves.toMatchObject({ models: [{
 			model_id: published.id,
 			provider_model_slug: published.provider_model_slug,
-			endpoints: ["responses"],
+			endpoints: ["text.generate"],
 			supported_params: ["temperature", "max_output_tokens"],
 			input_price_per_1m_usd: 0.25,
 			output_price_per_1m_usd: 0.75,
