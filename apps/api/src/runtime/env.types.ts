@@ -145,6 +145,8 @@ export type GatewayBindings = {
     IOINTELLIGENCE_API_KEY?: string;
     IOINTELLIGENCE_BASE_URL?: string;
     DEEPSEEK_API_KEY?: string;
+    REFLECTION_API_KEY?: string;
+    REFLECTION_BASE_URL?: string;
     DEEPSEEK_BASE_URL?: string;
     DOUBLEWORD_API_KEY?: string;
     DOUBLEWORD_BASE_URL?: string;

@@ -7,6 +7,10 @@ AMAZON_BEDROCK_API_KEY=replace-with-a-bedrock-api-key
 # never use the production or private operator webhook here.
 # DISCORD_WEBHOOK_NEW_MODELS_PUBLIC_TEST=https://discord.com/api/webhooks/...
 
+# Reflection beta Chat Completions (enable catalogue routing separately).
+# REFLECTION_API_KEY=replace-with-a-reflection-api-key
+# REFLECTION_BASE_URL=https://api.reflection.ai/openai/v1
+
 # Optional SigV4 alternative to AMAZON_BEDROCK_API_KEY.
 # AWS_ACCESS_KEY_ID=replace-with-an-access-key-id
 # AWS_SECRET_ACCESS_KEY=replace-with-a-secret-access-key
