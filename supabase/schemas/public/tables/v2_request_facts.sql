@@ -320,3 +320,6 @@ COMMENT ON TABLE "public"."v2_request_facts" IS 'Queryable observability extensi
 
 CREATE INDEX v2_request_facts_public_ranking_idx ON public.v2_request_facts USING btree (occurred_at)
   INCLUDE (request_event_id, routed_model_slug, requested_model_slug, provider_model_id, app_id, success, tool_call_count);
+
+CREATE INDEX v2_request_facts_resolved_model_time_idx ON public.v2_request_facts USING btree
+  ((COALESCE(routed_model_slug, requested_model_slug, requested_model_input)), occurred_at DESC);

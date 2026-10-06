@@ -1,9 +1,30 @@
-CREATE OR REPLACE FUNCTION public.get_model_token_trajectory(p_model_id text)
- RETURNS TABLE(release_date timestamp with time zone, deprecation_date timestamp with time zone, points jsonb, token_milestones jsonb, successor_milestones jsonb)
- LANGUAGE sql
- STABLE
- SET search_path TO 'public', 'pg_temp'
-AS $function$with model_row as (
+-- Generated in disposable CI run 37482819328, then reviewed for online deployment.
+-- Retain the resolver OID and cleanup active state rather than drop/recreate.
+-- Prebuild the expression index CONCURRENTLY on production before this migration.
+SET LOCAL lock_timeout = '500ms';
+SET LOCAL statement_timeout = '15s';
+SET local check_function_bodies = off;
+
+
+
+-- CREATE OR REPLACE retains dependent objects, ownership and existing grants.
+
+
+
+CREATE OR REPLACE FUNCTION public.get_model_token_trajectory (
+  p_model_id text
+)
+  RETURNS TABLE (
+    release_date         timestamp with time zone,
+    deprecation_date     timestamp with time zone,
+    points               jsonb,
+    token_milestones     jsonb,
+    successor_milestones jsonb
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO 'public', 'pg_temp'
+  AS $function$with model_row as (
   select model_id, release_date, deprecation_date
   from private.v2_rpc_models_compat
   where model_id = p_model_id
@@ -141,12 +162,71 @@ select
   (select value from successors) as successor_milestones
 where (select release_date from model_row) is not null;$function$;
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_token_trajectory"(text) TO PUBLIC, "anon", "authenticated";
+CREATE OR REPLACE FUNCTION public.resolve_public_model_id (
+  p_model_id text,
+  p_provider text DEFAULT NULL::text
+)
+  RETURNS text
+  LANGUAGE plpgsql
+  STABLE
+  SET search_path TO 'public', 'pg_temp'
+  AS $function$
+declare
+  resolved text;
+begin
+  select dm.model_id into resolved
+  from private.v2_rpc_models_compat dm
+  where dm.model_id = p_model_id limit 1;
+  if resolved is not null and btrim(resolved) <> '' then return resolved; end if;
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_token_trajectory"(text) TO "service_role";
+  select a.model_slug into resolved
+  from public.v2_model_aliases a
+  where a.alias_slug = p_model_id and coalesce(a.enabled, true) limit 1;
+  if resolved is not null and btrim(resolved) <> '' then return resolved; end if;
 
-COMMENT ON FUNCTION "public"."get_model_token_trajectory"(text) IS 'Returns token trajectory (daily totals & cumulative), milestones, and successor milestones for a model.';
+  select coalesce(nullif(pm.model_id, ''), pm.api_model_id) into resolved
+  from private.v2_rpc_routes_compat pm
+  where (p_provider is null or pm.provider_id = p_provider)
+    and (pm.model_id = p_model_id or pm.api_model_id = p_model_id
+      or pm.provider_api_model_id = p_model_id or pm.provider_model_slug = p_model_id)
+  order by pm.is_active_gateway desc, pm.updated_at desc nulls last limit 1;
+  if resolved is not null and btrim(resolved) <> '' then return resolved; end if;
+  return null;
+end;
+$function$;
 
-REVOKE ALL ON FUNCTION "public"."get_model_token_trajectory"(text) FROM "postgres";
+CREATE INDEX IF NOT EXISTS v2_request_facts_resolved_model_time_idx ON public.v2_request_facts
+  USING btree (COALESCE(routed_model_slug, requested_model_slug, requested_model_input), occurred_at DESC);
 
-GRANT EXECUTE ON FUNCTION "public"."get_model_token_trajectory"(text) TO "postgres";
+COMMENT ON FUNCTION "public"."resolve_public_model_id"(text, text) IS 'Resolves canonical public model ids from canonical ids, aliases, and provider-facing model identifiers only.';
+
+GRANT EXECUTE ON FUNCTION "public"."resolve_public_model_id"(text, text) TO PUBLIC, "anon", "authenticated";
+
+REVOKE ALL ON FUNCTION "public"."resolve_public_model_id"(text, text) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."resolve_public_model_id"(text, text) TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "public"."resolve_public_model_id"(text, text) TO "service_role";
+
+
+DO $index$
+BEGIN
+  IF NOT (SELECT indisvalid FROM pg_index
+    WHERE indexrelid='public.v2_request_facts_resolved_model_time_idx'::regclass) THEN
+    RAISE EXCEPTION 'Resolved model index is invalid; review the interrupted online build before deployment';
+  END IF;
+END;
+$index$;
+
+do $block$
+declare cleanup_job bigint;
+begin
+  if exists (select 1 from pg_extension where extname = 'pg_cron') then
+    select jobid into cleanup_job from cron.job where jobname = 'prune-byok-request-metadata';
+    if cleanup_job is not null then
+      perform cron.alter_job(cleanup_job,
+        command := 'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select public.prune_byok_request_metadata(90, 500);');
+    end if;
+  end if;
+end;
+$block$;
