@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import ProviderModelRequests from "./ProviderModelRequests";
-jest.mock("next-intl",()=>({useTranslations:()=> (key:string)=>key}));
+jest.mock("next-intl",()=>({useTranslations:()=> (key:string)=>key,useLocale:()=>"en-GB"}));
 jest.mock("@/app/(dashboard)/settings/internal/provider-review/actions",()=>({reviewProviderModelRequestAction:jest.fn(),refreshProviderModelRequestsAction:jest.fn()}));
 describe("new-model review display",()=>{
  it("shows proposal identity, modalities and limits without rendering provider HTML",()=>{

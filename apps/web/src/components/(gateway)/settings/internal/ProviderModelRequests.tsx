@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import type { ProviderModelRequest } from "@/lib/fetchers/internal/fetchInternal
 export default function ProviderModelRequests({ initialRequests }: {initialRequests:ProviderModelRequest[]}) {
   const t=useTranslations("SettingsUI.providerReviewCopy");
   const catalogT=useTranslations("SettingsUI.providerCatalogCopy");
+  const locale=useLocale();
   const [requests,setRequests]=React.useState(initialRequests);
   const [reasons,setReasons]=React.useState<Record<string,string>>({});
   const [saving,setSaving]=React.useState<string|null>(null);
@@ -28,8 +29,8 @@ export default function ProviderModelRequests({ initialRequests }: {initialReque
       <dl className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
         <div><dt>{catalogT("inputModalities")}</dt><dd>{request.model.inputModalities.join(", ")}</dd></div>
         <div><dt>{catalogT("outputModalities")}</dt><dd>{request.model.outputModalities.join(", ")}</dd></div>
-        {request.model.contextLength ? <div><dt>{catalogT("contextLength")}</dt><dd>{request.model.contextLength.toLocaleString()}</dd></div>:null}
-        {request.model.maxOutputTokens ? <div><dt>{catalogT("maxOutputTokens")}</dt><dd>{request.model.maxOutputTokens.toLocaleString()}</dd></div>:null}
+        {request.model.contextLength ? <div><dt>{catalogT("contextLength")}</dt><dd>{request.model.contextLength.toLocaleString(locale)}</dd></div>:null}
+        {request.model.maxOutputTokens ? <div><dt>{catalogT("maxOutputTokens")}</dt><dd>{request.model.maxOutputTokens.toLocaleString(locale)}</dd></div>:null}
       </dl>
       {request.reason ? <p className="text-sm">{request.reason}</p>:null}
       <Input aria-label={t("current.reviewReason")} placeholder={t("current.changesReason")} value={reasons[request.id]??""} onChange={event=>setReasons(current=>({...current,[request.id]:event.target.value}))}/>
