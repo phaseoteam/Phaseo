@@ -1,11 +1,23 @@
 import {
+	getPriceColumnForSort,
 	getProviderServiceTierDisplayName,
 	isTerminalRuntimeStatsRetry,
 	resolveRuntimeStatsPercentileAfterError,
 } from "./ModelPricingClient";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { getProviderTableDiscountBadge } from "./ProviderCard";
-import { buildProviderSections } from "./pricingHelpers";
+import { buildProviderSections, buildProviderTablePriceSummaryForColumn, type ProviderSections } from "./pricingHelpers";
+
+describe("combined input column sorting", () => {
+	it("restores the modalities from the URL sort key and resolves their rate", () => {
+		const column = getPriceColumnForSort("price:input:text+image+video:Per 1M tokens");
+		expect(column).toMatchObject({ direction: "input", modality: "multimodal", groupedModalities: ["text", "image", "video"] });
+		const tier = { per1M: 1.5, price: 1.5, label: "All usage", isCurrent: true };
+		const triple = { in: [tier], out: [], cached: [], write: [] };
+		const sections: ProviderSections = { providerName: "Google", providerId: "google-ai-studio", logoProviderId: "google", textTokens: triple, imageTokens: triple, videoTokens: triple, otherRules: [] };
+		expect(buildProviderTablePriceSummaryForColumn(sections, column!).sortValue).toBe(1.5);
+	});
+});
 
 const discountLabels = {
 	discount: "Discount",
