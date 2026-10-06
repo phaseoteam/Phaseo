@@ -1170,6 +1170,35 @@ describe("public model routes", () => {
 			.toEqual([null]);
 	});
 
+	it("includes stored parameters and training tokens for a limited-access model", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/v2_models?")) return Response.json([{
+				model_slug: "reflection/beam-501b-a23b", name: "Beam", lab_slug: "reflection",
+				status: "draft", catalogue_status: "limited_access", hidden: false,
+				input_modalities: ["text"], output_modalities: ["text"], metadata: { limits: { context: 262144 } },
+			}]);
+			if (url.includes("/v2_labs?")) return Response.json([{ lab_slug: "reflection", name: "Reflection", country_code: "xx" }]);
+			if (url.includes("get_v2_model_identity")) return Response.json({ model_slug: "reflection/beam-501b-a23b", catalogue_status: "limited_access", license: "Apache 2.0 (planned)" });
+			if (url.includes("/v2_model_details?")) return Response.json([
+				{ detail_name: "parameter_count", detail_value: 501000000000 },
+				{ detail_name: "active_parameter_count", detail_value: 23000000000 },
+				{ detail_name: "training_tokens", detail_value: 23800000000000 },
+			]);
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/reflection%2Fbeam-501b-a23b", {}, env);
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { model: { status: string; model_details: unknown[] } };
+		expect(payload.model.status).toBe("Limited Access");
+		expect(payload.model.model_details).toEqual(expect.arrayContaining([
+			{ detail_name: "parameter_count", detail_value: 501000000000 },
+			{ detail_name: "active_parameter_count", detail_value: 23000000000 },
+			{ detail_name: "training_tokens", detail_value: 23800000000000 },
+			{ detail_name: "license", detail_value: "Apache 2.0 (planned)" },
+		]));
+	});
+
 	it("returns the overview shape used by the model page", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
