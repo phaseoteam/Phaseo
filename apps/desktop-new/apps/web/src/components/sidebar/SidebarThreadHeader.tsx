@@ -1,16 +1,5 @@
-/**
- * The sidebar header: one row holding search, project scope and new thread.
- *
- * Search owns the row's text and spans it. Project scope collapses to an icon
- * that sits with new-project and new-thread as a segmented group at the end.
- * The scope icon swaps to the project favicon while a project is selected,
- * so the header still names the scope after the row that showed it is gone.
- *
- * The scope picker itself is passed in: its combobox state lives with the rest
- * of the sidebar's scope logic. `searchFieldRef` lands on the search field so
- * the picker's popup can anchor to that width rather than to its 28px trigger.
- */
-import { FolderPlusIcon, SearchIcon, SquarePenIcon, XIcon } from "lucide-react";
+/** New chat stays discoverable above the searchable, project-scoped history. */
+import { FolderPlusIcon, SearchIcon, PlusIcon, XIcon } from "lucide-react";
 import {
   type ComponentProps,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -74,84 +63,95 @@ export function SidebarThreadHeader({
   // screen reader on nothing.
   const activeResultExists = resultsVisible && activeSearchResultIndex < searchResultCount;
   const newThreadLabel = newThreadShortcutLabel
-    ? `New thread (${newThreadShortcutLabel})`
-    : "New thread";
+    ? `New chat (${newThreadShortcutLabel})`
+    : "New chat";
 
   return (
-    <div className="flex items-center gap-1">
-      <div
-        ref={searchFieldRef}
-        className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium text-sidebar-muted-foreground hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
-      >
-        <SearchIcon className="size-4 shrink-0 text-(--sidebar-icon-color)" />
-        <SidebarInput
-          ref={searchInputRef}
-          nativeInput
-          type="search"
-          value={searchQuery}
-          onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
-          onKeyDown={onSearchKeyDown}
-          placeholder="Search"
-          aria-label="Search threads"
-          role="combobox"
-          aria-autocomplete="list"
-          aria-expanded={resultsVisible}
-          aria-controls={resultsVisible ? "sidebar-thread-search-results" : undefined}
-          aria-activedescendant={
-            activeResultExists
-              ? `sidebar-thread-search-result-${activeSearchResultIndex}`
-              : undefined
+    <div className="space-y-2">
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              aria-label="New chat"
+              disabled={newThreadDisabled}
+              onClick={onNewThread}
+            />
           }
-          className="min-w-0 flex-1"
-        />
-        {isSearching ? (
-          <Button
-            type="button"
-            size="icon-micro"
-            variant="ghost-muted"
-            className="shrink-0"
-            aria-label="Clear thread search"
-            onClick={() => {
-              onClearSearch();
-              searchInputRef.current?.focus();
-            }}
-          >
-            <XIcon className="size-3" />
-          </Button>
-        ) : null}
-      </div>
-      {/* Unfilled like the search field beside it: the buttons carry their own
+        >
+          <PlusIcon />
+          <span>New chat</span>
+        </TooltipTrigger>
+        <TooltipPopup side="top">
+          {showNewThreadInProjectHint ? (
+            <span className="flex flex-col gap-0.5">
+              <span>{newThreadLabel}</span>
+              <span className="text-muted-foreground">
+                New chat in current project: Shift+click
+                {newThreadInProjectShortcutLabel ? ` (${newThreadInProjectShortcutLabel})` : ""}
+              </span>
+            </span>
+          ) : (
+            newThreadLabel
+          )}
+        </TooltipPopup>
+      </Tooltip>
+      <div className="flex items-center gap-1">
+        <div
+          ref={searchFieldRef}
+          className="flex h-8 min-w-0 flex-1 items-center gap-2 rounded-md border border-sidebar-border bg-sidebar-control-surface px-2 py-1.5 text-sm font-normal text-sidebar-muted-foreground focus-within:border-ring hover:bg-sidebar-row-hover hover:text-sidebar-foreground"
+        >
+          <SearchIcon className="size-4 shrink-0 text-(--sidebar-icon-color)" />
+          <SidebarInput
+            ref={searchInputRef}
+            nativeInput
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
+            onKeyDown={onSearchKeyDown}
+            placeholder="Search chats..."
+            aria-label="Search chats"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={resultsVisible}
+            aria-controls={resultsVisible ? "sidebar-thread-search-results" : undefined}
+            aria-activedescendant={
+              activeResultExists
+                ? `sidebar-thread-search-result-${activeSearchResultIndex}`
+                : undefined
+            }
+            className="min-w-0 flex-1"
+          />
+          {isSearching ? (
+            <Button
+              type="button"
+              size="icon-micro"
+              variant="ghost-muted"
+              className="shrink-0"
+              aria-label="Clear chat search"
+              onClick={() => {
+                onClearSearch();
+                searchInputRef.current?.focus();
+              }}
+            >
+              <XIcon className="size-3" />
+            </Button>
+          ) : null}
+        </div>
+        {/* Unfilled like the search field beside it: the buttons carry their own
           hover states, and a background well reads far louder on themed
           palettes than on the base light and dark ones. */}
-      <div className="flex shrink-0 items-center">
-        {hasProjects ? (
-          <>
-            {projectScope}
-            <SidebarHeaderIconButton label="Add project" onClick={onNewProject}>
-              <FolderPlusIcon />
-            </SidebarHeaderIconButton>
-          </>
-        ) : null}
-        <SidebarHeaderIconButton
-          label="New thread"
-          tooltip={
-            showNewThreadInProjectHint ? (
-              <span className="flex flex-col gap-0.5">
-                <span>{newThreadLabel}</span>
-                <span className="text-muted-foreground">
-                  New thread in current project: Shift+click
-                  {newThreadInProjectShortcutLabel ? ` (${newThreadInProjectShortcutLabel})` : ""}
-                </span>
-              </span>
-            ) : (
-              newThreadLabel
-            )
-          }
-          disabled={newThreadDisabled}
-          onClick={onNewThread}
-        >
-          <SquarePenIcon />
-        </SidebarHeaderIconButton>
+        <div className="flex shrink-0 items-center">
+          {hasProjects ? (
+            <>
+              {projectScope}
+              <SidebarHeaderIconButton label="Add project" onClick={onNewProject}>
+                <FolderPlusIcon />
+              </SidebarHeaderIconButton>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

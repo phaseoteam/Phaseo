@@ -6,7 +6,7 @@ import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEnvironmentIdentificationMode } from "../../hooks/useSettings";
 import { cn } from "../../lib/utils";
 import { usePullRequestsSupported } from "../../state/environments";
-import { T3Wordmark } from "../T3Wordmark";
+import { PhaseoWordmark } from "../PhaseoBrand";
 import {
   resolveEnvironmentIdentificationPillLabel,
   resolveSidebarStageBackdropVariant,
@@ -50,7 +50,7 @@ export const SidebarChromeHeader = memo(function SidebarChromeHeader({
     // The titlebar row, not a padded SidebarHeader: it aligns to the window controls.
     <div
       className={cn(
-        "relative flex h-[var(--workspace-topbar-height)] shrink-0 flex-row items-center gap-2 px-3 md:pl-0",
+        "border-b border-sidebar-border/70 relative flex h-[var(--workspace-topbar-height)] shrink-0 flex-row items-center gap-2 px-3 md:pl-0",
         isElectron && "drag-region",
       )}
     >
@@ -110,9 +110,9 @@ export function SidebarBrandWidthProbe({
 function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
   return (
     <Link
-      aria-label="Go to threads"
+      aria-label="Go to chats"
       className={cn(
-        "relative z-10 ml-[var(--workspace-titlebar-content-left)] hidden h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 md:flex",
+        "relative z-10 ml-0 md:ml-[var(--workspace-titlebar-content-left)] flex h-7 w-fit min-w-0 shrink-0 items-center overflow-hidden rounded-md outline-hidden ring-ring focus-visible:ring-2 ",
         onBackdrop ? "text-white" : "text-foreground",
       )}
       to="/"
@@ -124,18 +124,7 @@ function SidebarBrand({ onBackdrop }: { onBackdrop: boolean }) {
 
 function SidebarBrandMark({ onBackdrop }: { onBackdrop: boolean }) {
   return (
-    // Center the visible capitals, without the font's ascender/descender space.
-    <span className="inline-flex min-w-0 items-baseline gap-1 text-sm font-medium tracking-tight">
-      <T3Wordmark aria-label="T3" className="h-[1cap] w-auto shrink-0" />
-      <span
-        className={cn(
-          "truncate [text-box:trim-both_cap_alphabetic]",
-          onBackdrop ? "text-white/70" : "text-muted-foreground",
-        )}
-      >
-        Code
-      </span>
-    </span>
+    <PhaseoWordmark className={cn("text-lg", onBackdrop ? "text-white" : "text-foreground")} />
   );
 }
 

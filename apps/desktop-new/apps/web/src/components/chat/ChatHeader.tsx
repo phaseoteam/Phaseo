@@ -75,6 +75,8 @@ export const ChatHeader = memo(function ChatHeader({
   onNewThreadInProject,
   onOpenProjectSettings,
 }: ChatHeaderProps) {
+  const displayTitle =
+    !isServerThread && activeThreadTitle === "New thread" ? "New chat" : activeThreadTitle;
   const activeProjectName = activeProject?.title;
   const activeProjectCwd = activeProject?.workspaceRoot ?? null;
   const activeThreadRef = useMemo(
@@ -237,7 +239,7 @@ export const ChatHeader = memo(function ChatHeader({
       onContextMenu={handleHeaderContextMenu}
     >
       <WorkspaceBreadcrumb
-        ariaLabel="Thread breadcrumb"
+        ariaLabel="Chat breadcrumb"
         className="flex-1 overflow-clip [overflow-clip-margin:2px]"
       >
         {/* The project always leads the header: knowing which project a
@@ -262,7 +264,7 @@ export const ChatHeader = memo(function ChatHeader({
                     {activeProjectName}
                   </WorkspaceBreadcrumbText>
                 </TooltipTrigger>
-                <TooltipPopup side="top">New thread in {activeProjectName}</TooltipPopup>
+                <TooltipPopup side="top">New chat in {activeProjectName}</TooltipPopup>
               </Tooltip>
             </WorkspaceBreadcrumbItem>
             <WorkspaceBreadcrumbSeparator>
@@ -274,7 +276,7 @@ export const ChatHeader = memo(function ChatHeader({
           {renamingTitle !== null ? (
             <input
               autoFocus
-              aria-label="Thread title"
+              aria-label="Chat title"
               className="min-w-0 flex-1 rounded-sm bg-transparent text-sm font-medium text-foreground outline-none ring-1 ring-ring/50 focus:ring-ring"
               defaultValue={renamingTitle}
               onBlur={(event) => {
@@ -300,17 +302,17 @@ export const ChatHeader = memo(function ChatHeader({
                   <button
                     ref={titleButtonRef}
                     type="button"
-                    aria-label={`Thread actions for ${activeThreadTitle}`}
+                    aria-label={`Chat actions for ${displayTitle}`}
                     aria-haspopup="menu"
                     onClick={openMenuFromTitle}
                     onDoubleClick={handleTitleDoubleClick}
                     onBlur={cancelPendingTitleMenu}
-                    className="group/thread-title inline-flex min-w-0 max-w-full cursor-pointer items-center gap-1 rounded-sm text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group/thread-title px-2 py-1 transition-colors hover:bg-accent inline-flex min-w-0 max-w-full cursor-pointer items-center gap-1 rounded-md text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   />
                 }
               >
                 <h2 className="min-w-0">
-                  <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
+                  <WorkspaceBreadcrumbText>{displayTitle}</WorkspaceBreadcrumbText>
                 </h2>
                 <ChevronDownIcon
                   aria-hidden
@@ -318,16 +320,14 @@ export const ChatHeader = memo(function ChatHeader({
                   className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/thread-title:opacity-100 group-focus-visible/thread-title:opacity-100"
                 />
               </TooltipTrigger>
-              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
+              <TooltipPopup side="top">{displayTitle}</TooltipPopup>
             </Tooltip>
           ) : (
             <Tooltip>
-              <TooltipTrigger
-                render={<h2 aria-label={activeThreadTitle} className="min-w-0 flex-1" />}
-              >
-                <WorkspaceBreadcrumbText>{activeThreadTitle}</WorkspaceBreadcrumbText>
+              <TooltipTrigger render={<h2 aria-label={displayTitle} className="min-w-0 flex-1" />}>
+                <WorkspaceBreadcrumbText>{displayTitle}</WorkspaceBreadcrumbText>
               </TooltipTrigger>
-              <TooltipPopup side="top">{activeThreadTitle}</TooltipPopup>
+              <TooltipPopup side="top">{displayTitle}</TooltipPopup>
             </Tooltip>
           )}
         </WorkspaceBreadcrumbItem>

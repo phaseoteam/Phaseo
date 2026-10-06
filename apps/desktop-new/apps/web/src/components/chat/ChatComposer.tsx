@@ -1069,6 +1069,7 @@ function ComposerCommandMenuLayer(props: { anchor: HTMLElement | null; children:
   );
 }
 import { Button } from "../ui/button";
+import { ComposerAttachmentAction } from "./ComposerAttachmentAction";
 import { Select, SelectItem, SelectPopup, SelectValue } from "../ui/select";
 import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { toastManager } from "../ui/toast";
@@ -1076,7 +1077,6 @@ import {
   FileIcon,
   BotIcon,
   CircleAlertIcon,
-  PaperclipIcon,
   PencilRulerIcon,
   PlayIcon,
   ShieldIcon,
@@ -7381,7 +7381,7 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                                 ? "Enable a provider in Settings to send a message"
                                 : phase === "disconnected"
                                   ? DISCONNECTED_COMPOSER_PLACEHOLDER
-                                  : "Ask anything, @tag files/folders, $use skills, or / for commands"
+                                  : "Message, or / for commands..."
                     }
                     disabled={
                       isConnecting ||
@@ -7454,6 +7454,13 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                     isComposerResting && "hidden",
                   )}
                 >
+                  {showComposerAttachAction && !isComposerResting ? (
+                    <ComposerAttachmentAction
+                      inputRef={attachmentInputRef}
+                      onAttach={addComposerAttachments}
+                      onFocus={focusComposer}
+                    />
+                  ) : null}
                   {composerControlsCollapsed ? null : composerControls}
                 </div>
 
@@ -7466,42 +7473,12 @@ export const ChatComposer = memo(function ChatComposer(props: ChatComposerProps)
                   }
                   className="flex shrink-0 flex-nowrap items-center justify-end gap-2"
                 >
-                  {showComposerAttachAction ? (
-                    <>
-                      <input
-                        ref={attachmentInputRef}
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={(event) => {
-                          const files = Array.from(event.currentTarget.files ?? []);
-                          event.currentTarget.value = "";
-                          // Inserting a chip refocuses the editor after the draft renders;
-                          // focusing synchronously here would report the editor's stale text
-                          // over the prompt that was just written.
-                          void addComposerAttachments(files).then((inserted) => {
-                            if (!inserted) focusComposer();
-                          });
-                        }}
-                      />
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              onPointerDown={(event) => event.preventDefault()}
-                              onClick={() => attachmentInputRef.current?.click()}
-                              aria-label="Attach files"
-                            />
-                          }
-                        >
-                          <PaperclipIcon />
-                        </TooltipTrigger>
-                        <TooltipPopup>Attach files</TooltipPopup>
-                      </Tooltip>
-                    </>
+                  {showComposerAttachAction && isComposerResting ? (
+                    <ComposerAttachmentAction
+                      inputRef={attachmentInputRef}
+                      onAttach={addComposerAttachments}
+                      onFocus={focusComposer}
+                    />
                   ) : null}
                   <ComposerFooterPrimaryActions
                     compact={isComposerResting || isComposerPrimaryActionsCompact}

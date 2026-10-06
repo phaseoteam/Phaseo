@@ -90,31 +90,31 @@ describe("theme files", () => {
     }
   });
 
-  it("keeps stock dark controls in the neutral-black surface hierarchy", () => {
+  it("uses Phaseo web's dark surface hierarchy", () => {
     expectThemeColors(getStandardThemeColors("dark"), {
       canvas: "#0a0a0a",
-      surface: "#111111",
-      surfaceRaised: "#111111",
-      surfaceOverlay: "#111111",
-      toolbarControl: "#111111",
-      secondary: "#111111",
-      muted: "#111111",
-      accentSurface: "#141414",
+      surface: "#171717",
+      surfaceRaised: "#171717",
+      surfaceOverlay: "#171717",
+      toolbarControl: "#171717",
+      secondary: "#27272a",
+      muted: "#262626",
+      accentSurface: "#262626",
     });
   });
 
-  it("keeps the stock sidebar and chat on distinct surfaces in both appearances", () => {
+  it("keeps Phaseo sidebar rows distinct from the chat canvas in both appearances", () => {
     expectThemeColors(getStandardThemeColors("light"), {
-      canvas: "#fcfcfc",
+      canvas: "#ffffff",
       sidebar: "#fafafa",
-      sidebarRowActive: "#ffffff",
-      messageSurface: "#f4f4f5",
+      sidebarRowActive: "#f5f5f5",
+      messageSurface: "#f5f5f5",
     });
     expectThemeColors(getStandardThemeColors("dark"), {
       canvas: "#0a0a0a",
-      sidebar: "#000000",
-      sidebarRowActive: "#1a1b1b",
-      messageSurface: "#141414",
+      sidebar: "#171717",
+      sidebarRowActive: "#262626",
+      messageSurface: "#262626",
     });
   });
 

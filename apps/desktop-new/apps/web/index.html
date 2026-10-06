@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#0a0a0a" />
-    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/phaseo-mark.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <script>
@@ -453,6 +453,8 @@
         object-fit: contain;
       }
 
+      html.dark #boot-shell-logo { filter: invert(1); }
+
       #boot-error {
         display: grid;
         justify-items: center;
@@ -477,13 +479,13 @@
         cursor: pointer;
       }
     </style>
-    <title>T3 Code (Alpha)</title>
+    <title>Phaseo Desktop</title>
   </head>
   <body>
     <div id="root">
       <div id="boot-shell">
-        <div id="boot-shell-card" aria-label="T3 Code splash screen">
-          <img id="boot-shell-logo" src="/apple-touch-icon.png" alt="T3 Code" />
+        <div id="boot-shell-card" aria-label="Phaseo Desktop splash screen">
+          <img id="boot-shell-logo" src="/phaseo-mark.svg" alt="Phaseo" />
         </div>
       </div>
     </div>
