@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "आपके डेस्कटॉप सत्र",
+		"description": "पिछले {limit} समाप्त संवाद चरण। टोकन मुख्य एजेंट के हैं।",
+		"loading": "सत्र लोड हो रहे हैं…",
+		"historyUnavailable": "डेस्कटॉप इतिहास अभी उपलब्ध नहीं है।",
+		"empty": "इस अवधि में कोई डेस्कटॉप सत्र नहीं है।",
+		"session": "सत्र",
+		"model": "मॉडल",
+		"status": "स्थिति",
+		"turns": "संवाद चरण",
+		"duration": "कार्य का समय",
+		"tokens": "रिपोर्ट किए गए टोकन",
+		"lastActivity": "अंतिम गतिविधि",
+		"openChat": "डेस्कटॉप में चैट खोलें",
+		"unavailable": "उपलब्ध नहीं",
+		"partialTokens": "{count} (आंशिक)",
+		"seconds": "{seconds} सेकंड",
+		"completed": "पूरा हुआ",
+		"failed": "विफल",
+		"cancelled": "रद्द",
+		"interrupted": "बाधित",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "उपयोगकर्ता प्रोफ़ाइल",
 		"viewProfile": "प्रोफ़ाइल देखें",

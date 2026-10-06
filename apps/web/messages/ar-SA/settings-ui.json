@@ -1,4 +1,28 @@
 {
+	"desktopSessions": {
+		"title": "جلسات سطح المكتب الخاصة بك",
+		"description": "آخر {limit} دورًا منتهياً. تغطي الرموز الوكيل الرئيسي.",
+		"loading": "جارٍ تحميل الجلسات…",
+		"historyUnavailable": "سجل سطح المكتب غير متاح حاليًا.",
+		"empty": "لا توجد جلسات سطح مكتب في هذه الفترة.",
+		"session": "الجلسة",
+		"model": "النموذج",
+		"status": "الحالة",
+		"turns": "الأدوار",
+		"duration": "وقت العمل",
+		"tokens": "الرموز المبلغ عنها",
+		"lastActivity": "آخر نشاط",
+		"openChat": "فتح المحادثة في تطبيق سطح المكتب",
+		"unavailable": "غير متاح",
+		"partialTokens": "{count} (جزئي)",
+		"seconds": "{seconds} ث",
+		"completed": "مكتمل",
+		"failed": "فشل",
+		"cancelled": "ملغى",
+		"interrupted": "متوقف",
+		"codex": "Codex",
+		"claudeCode": "Claude Code"
+	},
 	"workspaceUser": {
 		"profile": "ملف المستخدم",
 		"viewProfile": "عرض ملف المستخدم",

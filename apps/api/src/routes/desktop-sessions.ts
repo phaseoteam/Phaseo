@@ -5,6 +5,7 @@ import { guardAuth } from "@/pipeline/before/guards";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { json, withRuntime } from "@/routes/utils";
 import { requireOAuthWorkspaceRole } from "@/routes/v1/control/route-helpers";
+import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { DESKTOP_CLIENT_ID } from "@/lib/oauth/service";
 
 export const desktopTurnSchema = z.object({
@@ -32,8 +33,17 @@ export async function handleDesktopSessionTurn(req: Request) {
       !identity.userId || !identity.oauthScopes?.includes("gateway:access")) {
     return json({ error: "forbidden" }, 403);
   }
-  const roleError = await requireOAuthWorkspaceRole(identity, identity.workspaceId, ["owner", "admin", "member"]);
-  if (roleError) return roleError;
+  // Use a stable account bucket across machines and IP addresses.
+  const limitedRequest = new Request(req.url, { headers: { "cf-connecting-ip": "desktop-session-history" } });
+  if (!await checkOAuthRateLimit(limitedRequest, "token", `desktop-session:${identity.workspaceId}:${identity.userId}`)) {
+    return json({ error: "rate_limited" }, 429, { "Retry-After": "60", "Cache-Control": "no-store" });
+  }
+  const workspace = await getSupabaseAdmin().from("workspaces").select("owner_user_id").eq("id", identity.workspaceId).maybeSingle();
+  if (workspace.error) return json({ error: "session_sync_unavailable" }, 503);
+  if (workspace.data?.owner_user_id !== identity.userId) {
+    const roleError = await requireOAuthWorkspaceRole(identity, identity.workspaceId, ["owner", "admin", "member"]);
+    if (roleError) return roleError;
+  }
   if (Number(req.headers.get("content-length")) > 4096) return json({ error: "payload_too_large" }, 413);
   const reader = req.body?.getReader();
   if (!reader) return json({ error: "invalid_request" }, 400);

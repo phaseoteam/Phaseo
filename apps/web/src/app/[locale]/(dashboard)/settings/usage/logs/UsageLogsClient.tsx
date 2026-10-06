@@ -332,7 +332,7 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				providerFilter={sessionProviderFilter}
 				sessionFilter={sessionFilter}
 			/>
-			<DesktopSessionsPanel scope={scope} timeRange={timeRange} />
+			<DesktopSessionsPanel scope={scope} timeRange={timeRange} appFilter={sessionAppFilter} modelFilter={sessionModelFilter} providerFilter={sessionProviderFilter} sessionFilter={sessionFilter} />
 			</div>
 		);
 	} else {
