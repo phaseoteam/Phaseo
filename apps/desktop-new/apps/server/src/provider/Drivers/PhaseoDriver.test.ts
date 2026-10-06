@@ -16,10 +16,10 @@ import * as CodexInstallation from "../CodexInstallation.ts";
 import * as ProviderCredentialStore from "../ProviderCredentialStore.ts";
 import { PhaseoDriver } from "./PhaseoDriver.ts";
 
-// This exercises the assembled driver through the native client boundary, without running an agent.
-it.effect(
-  "discovers gateway models, launches isolated Codex with OAuth and clears models on logout",
-  () => {
+// Both harnesses use the same OAuth/catalog; no fixture starts inference.
+it.effect.each(["codex", "phaseo"] as const)(
+  "%s: discovers gateway models, preserves runtime isolation and clears models on logout",
+  (harness) => {
     const data = new Map<string, Uint8Array>();
     const secrets = ServerSecretStore.ServerSecretStore.of({
       get: (name) => Effect.sync(() => Option.fromUndefinedOr(data.get(name))),
@@ -41,6 +41,8 @@ it.effect(
       source: "managed" as const,
       managedVersionDirectory: null,
     };
+    const resolveInstallation = vi.fn(() => Effect.succeed(executable));
+    const acquireInstallation = vi.fn(() => Effect.succeed(executable));
     const layer = ServerConfig.layerTest(".", { prefix: "phaseo-driver-test-" }).pipe(
       Layer.provideMerge(NodeServices.layer),
       Layer.provideMerge(IdAllocator.layer),
@@ -49,8 +51,8 @@ it.effect(
       Layer.provideMerge(
         Layer.mock(CodexInstallation.CodexInstallation)({
           managedDirectory: "/fixture/managed-codex",
-          resolve: () => Effect.succeed(executable),
-          acquire: () => Effect.succeed(executable),
+          resolve: resolveInstallation,
+          acquire: acquireInstallation,
         }),
       ),
       Layer.provideMerge(
@@ -87,7 +89,7 @@ it.effect(
         accentColor: undefined,
         enabled: true,
         environment: [],
-        config: {},
+        config: { harness },
       });
       const snapshot = yield* provider.snapshot.refresh;
       assert.equal(snapshot.driver, "phaseo");
@@ -103,17 +105,27 @@ it.effect(
         Effect.map(Option.getOrThrow),
       );
       assert.equal(state.methods?.[0]?.name, "Sign in to Phaseo");
-      yield* provider.orchestrationAdapter
-        .openSession({
-          providerSessionId: ProviderSessionId.make("phaseo-session"),
-          threadId: ThreadId.make("phaseo-thread"),
-          runtimePolicy: { runtimeMode: "full-access", interactionMode: "default", cwd: null },
-          modelSelection: { instanceId, model: "lab/model" },
-        })
-        .pipe(Effect.exit);
-      assert.equal(launch?.environment?.PHASEO_GATEWAY_TOKEN, "fixture-secret");
-      assert.include(launch?.settings.launchArgs ?? "", 'model_provider="phaseo"');
-      assert.include(launch?.settings.homePath ?? "", "phaseo-driver-test");
+      if (harness === "codex") {
+        yield* provider.orchestrationAdapter
+          .openSession({
+            providerSessionId: ProviderSessionId.make("phaseo-session"),
+            threadId: ThreadId.make("phaseo-thread"),
+            runtimePolicy: { runtimeMode: "full-access", interactionMode: "default", cwd: null },
+            modelSelection: { instanceId, model: "lab/model" },
+          })
+          .pipe(Effect.exit);
+        assert.equal(launch?.environment?.PHASEO_GATEWAY_TOKEN, "fixture-secret");
+        assert.include(launch?.settings.launchArgs ?? "", 'model_provider="phaseo"');
+        assert.include(launch?.settings.homePath ?? "", "phaseo-driver-test");
+      } else {
+        assert.equal(snapshot.installed, true);
+        assert.equal(snapshot.setup?.canInstall, false);
+        assert.include(snapshot.runtimePaths?.homePath ?? "", "harness");
+        assert.include(provider.continuationIdentity.continuationKey, ":native");
+        assert.equal(resolveInstallation.mock.calls.length, 0);
+        assert.equal(acquireInstallation.mock.calls.length, 0);
+        assert.equal(launch, undefined);
+      }
       yield* provider.auth!.logout(Effect.void);
       const disconnected = yield* provider.snapshot.refresh;
       assert.equal(disconnected.auth.status, "unauthenticated");

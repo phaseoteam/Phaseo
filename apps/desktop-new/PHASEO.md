@@ -4,7 +4,7 @@ This folder is a Git subtree of T3 Code, pinned in PHASEO-FORK.json. Preserve LI
 
 ## Development
 
-Requires Node 24 and pnpm 11 (packageManager pins the exact version). This is an independent nested workspace; do not install its packages into the outer Phaseo workspace.
+Requires Node 24 and pnpm 11 (packageManager pins the exact version). This is an independent nested workspace; do not install its packages into the outer Phaseo workspace. It references the canonical Phaseo SDK packages in ../../packages/sdk. The development launcher and server bundle build compile those SDKs and the bundled harness first.
 
 From apps/desktop-new:
 
@@ -25,8 +25,10 @@ Removed: upstream reference-repo snapshots, marketing/mobile apps, hosted relay 
 
 ## Phaseo gateway
 
-In Settings → Providers, add Phaseo and choose Sign in to Phaseo. Complete the browser authorization and install the agent runtime if prompted. Phaseo models then appear in the chat model selector. Accounts are separate provider instances; disconnecting one stops its sessions and removes its credential.
+In Settings → Providers, add Phaseo and choose Sign in to Phaseo. Complete the browser authorization. New accounts use the bundled Phaseo harness; no external agent installation is needed. Phaseo models then appear in the chat model selector. Accounts are separate provider instances; disconnecting one stops its sessions and removes its credential.
 
 Phaseo uses the existing desktop PKCE OAuth client and a loopback callback on the desktop's machine. Credentials remain on the backend. The catalog includes routable text models, follows all pages, and refreshes in the background every ten minutes while the app is active. The last catalog stays visible during revalidation.
 
-The Codex harness runs against Phaseo's Responses endpoint with its own profile, preserving T3's tool, approval and orchestration flow. It does not use a ChatGPT subscription or inherit its credential. Model-specific tool and reasoning support depends on the selected gateway model. This sign-in flow is intended for the local desktop, not a browser controlling a different machine.
+The Phaseo harness reuses the original desktop Agent SDK runtime for streamed text and reasoning, project tools, approvals, instructions, skills and MCP. T3's ACP adapter manages chat sessions, restart recovery, branching and scoped orchestration tools for child chats and provider delegation. Native SDK subagent tracking and context compaction are not implemented.
+
+Settings → Providers → Phaseo → Harness also offers Codex against Phaseo's Responses endpoint. Existing gateway accounts retain Codex until changed, preserving their previous behavior. It does not use a ChatGPT subscription or inherit its credential. Model-specific tool and reasoning support depends on the selected gateway model. This sign-in flow is intended for the local desktop, not a browser controlling a different machine.

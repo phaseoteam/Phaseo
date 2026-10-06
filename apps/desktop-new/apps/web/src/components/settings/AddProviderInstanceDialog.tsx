@@ -78,6 +78,7 @@ const DEFAULT_DRIVER_KIND = ProviderDriverKind.make("codex");
 const ACP_REGISTRY_DRIVER_KIND = ProviderDriverKind.make("acpRegistry");
 const DEFAULT_DRIVER_OPTION = DRIVER_OPTIONS[0]!;
 const EMPTY_CONFIG_DRAFT: Record<string, unknown> = {};
+const PHASEO_CONFIG_DRAFT: Record<string, unknown> = { harness: "phaseo" };
 /**
  * Validate an instance id against the same slug rules the server applies in
  * `ProviderInstanceId` (see `packages/contracts/src/providerInstance.ts`).
@@ -169,7 +170,8 @@ export function AddProviderInstanceDialog({
   const identityStep = 1;
   const previewLabel = label.trim() || `${driverOption.label} Workspace`;
 
-  const configDraft = configByDriver[driver] ?? EMPTY_CONFIG_DRAFT;
+  const configDraft =
+    configByDriver[driver] ?? (driver === "phaseo" ? PHASEO_CONFIG_DRAFT : EMPTY_CONFIG_DRAFT);
   const manualAgentId = typeof configDraft.agentId === "string" ? configDraft.agentId.trim() : "";
   const acpSelectionError =
     selectedAcp !== null || (isManualAcpConfiguration && manualAgentId.length > 0)
@@ -274,9 +276,7 @@ export function AddProviderInstanceDialog({
     if (instanceIdError !== null || (isAcpRegistry && acpSelectionError !== null)) return;
 
     const config =
-      driver === "codex"
-        ? { ...configByDriver[driver], setupMode: "existing" }
-        : (configByDriver[driver] ?? {});
+      driver === "codex" ? { ...configByDriver[driver], setupMode: "existing" } : configDraft;
     const hasConfig = Object.keys(config).length > 0;
     const normalizedAccentColor = normalizeProviderAccentColor(accentColor);
 

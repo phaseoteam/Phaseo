@@ -2,6 +2,8 @@ packages:
   - apps/*
   - oxlint-plugin-t3code
   - packages/*
+  - ../../packages/sdk/agent-sdk-ts
+  - ../../packages/sdk/sdk-ts
   - scripts
 
 # Successor to onlyBuiltDependencies/ignoredBuiltDependencies (pnpm 11).

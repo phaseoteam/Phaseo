@@ -24,6 +24,11 @@ import type { ChildProcessSpawner } from "effect/unstable/process";
 import type * as BackgroundPolicy from "../../background/BackgroundPolicy.ts";
 import type * as ServerSecretStore from "../../auth/ServerSecretStore.ts";
 import { makeCodexTextGeneration } from "../../textGeneration/CodexTextGeneration.ts";
+import { makePhaseoTextGeneration } from "../../textGeneration/PhaseoTextGeneration.ts";
+import {
+  createPhaseoAdapterV2,
+  type PhaseoAdapterV2Env,
+} from "../../orchestration-v2/Adapters/PhaseoAdapterV2.ts";
 import * as CodexInstallation from "../CodexInstallation.ts";
 import { ProviderDriverError } from "../Errors.ts";
 import { makePhaseoAuth } from "../PhaseoAuth.ts";
@@ -42,6 +47,7 @@ const DRIVER = ProviderDriverKind.make("phaseo");
 const decodeConfig = Schema.decodeSync(CodexSettings);
 type PhaseoDriverEnv =
   | CodexAdapterV2DriverEnv
+  | PhaseoAdapterV2Env
   | BackgroundPolicy.BackgroundPolicy
   | FileSystem.FileSystem
   | Path.Path
@@ -52,13 +58,13 @@ type PhaseoDriverEnv =
   | Crypto.Crypto
   | CodexInstallation.CodexInstallation;
 
-/** Gateway credentials and model discovery are Phaseo-owned; Codex supplies the agent runtime. */
+/** Phaseo owns the gateway and native harness; Codex remains an optional runtime for existing accounts. */
 export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
   driverKind: DRIVER,
   metadata: { displayName: "Phaseo", supportsMultipleInstances: true },
   configSchema: PhaseoSettings,
-  defaultConfig: () => ({}),
-  create: ({ instanceId, displayName, accentColor, environment, enabled }) =>
+  defaultConfig: () => ({ harness: "phaseo" }),
+  create: ({ instanceId, displayName, accentColor, environment, enabled, config: phaseoConfig }) =>
     Effect.gen(function* () {
       const server = yield* ServerConfig.ServerConfig;
       const settings = yield* ServerSettings.ServerSettingsService;
@@ -68,6 +74,8 @@ export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
       const auth = yield* makePhaseoAuth(instanceId);
       const catalog = new PhaseoModelCache();
       const homePath = path.join(server.stateDir, "providers", "phaseo", instanceId);
+      const nativeHomePath = path.join(homePath, "harness");
+      const native = phaseoConfig.harness === "phaseo";
       const continuationIdentity = defaultProviderContinuationIdentity({
         driverKind: DRIVER,
         instanceId,
@@ -138,16 +146,26 @@ export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
         instanceId,
         driver: DRIVER,
         ...(accentColor ? { accentColor } : {}),
-        continuation: { groupKey: continuationIdentity.continuationKey },
-        setup: { canAuthenticate: true, canInstall: true },
-        runtimePaths: { homePath, shadowHomePath: null },
+        continuation: {
+          groupKey: native
+            ? `${continuationIdentity.continuationKey}:native`
+            : continuationIdentity.continuationKey,
+        },
+        setup: { canAuthenticate: true, canInstall: !native },
+        runtimePaths: { homePath: native ? nativeHomePath : homePath, shadowHomePath: null },
       });
       const checkAccount = Effect.gen(function* () {
         const checkedAt = yield* Effect.map(DateTime.now, DateTime.formatIso);
-        const executable = yield* installation.resolve().pipe(Effect.option);
+        const executable = native
+          ? Option.none()
+          : yield* installation.resolve().pipe(Effect.option);
         const credentials = yield* auth.access.pipe(Effect.option);
-        const installed = Option.isSome(executable);
-        const version = Option.isSome(executable) ? executable.value.version : null;
+        const installed = native || Option.isSome(executable);
+        const version = native
+          ? "0.1.0"
+          : Option.isSome(executable)
+            ? executable.value.version
+            : null;
         if (!enabled || Option.isNone(credentials)) {
           catalog.clear();
           return draft(
@@ -241,26 +259,41 @@ export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
         Stream.runForEach(() => snapshot.refresh.pipe(Effect.ignoreCause({ log: true }))),
         Effect.forkScoped,
       );
-      const adapter = yield* createCodexAdapterV2(
-        { instanceId, displayName, accentColor, environment, enabled, config },
-        { resolveRuntime: resolve },
-      ).pipe(
-        Effect.mapError(
-          (cause) =>
-            new ProviderDriverError({
-              driver: DRIVER,
-              instanceId,
-              detail: "Could not prepare the Phaseo agent.",
-              cause,
+      const adapterError = (cause: unknown) =>
+        new ProviderDriverError({
+          driver: DRIVER,
+          instanceId,
+          detail: "Could not prepare the Phaseo agent.",
+          cause,
+        });
+      const adapter = native
+        ? yield* createPhaseoAdapterV2({
+            instanceId,
+            environment: processEnvironment,
+            resolve: Effect.gen(function* () {
+              const credentials = yield* auth.access;
+              const models = (yield* snapshot.getSnapshot).models;
+              if (!models.length)
+                return yield* new ProviderSetupError({
+                  instanceId,
+                  operation: "models",
+                  detail: "Phaseo models are still loading. Try again shortly.",
+                });
+              return { key: credentials.key, homePath: nativeHomePath, models };
             }),
-        ),
-      );
-      const nativeGeneration = yield* makeCodexTextGeneration(
-        config,
-        undefined,
-        snapshot.getSnapshot.pipe(Effect.map((value) => value.models)),
-        resolve,
-      );
+          }).pipe(Effect.mapError(adapterError))
+        : yield* createCodexAdapterV2(
+            { instanceId, displayName, accentColor, environment, enabled, config },
+            { resolveRuntime: resolve },
+          ).pipe(Effect.mapError(adapterError));
+      const nativeGeneration = native
+        ? makePhaseoTextGeneration(auth.access)
+        : yield* makeCodexTextGeneration(
+            config,
+            undefined,
+            snapshot.getSnapshot.pipe(Effect.map((value) => value.models)),
+            resolve,
+          );
       const protect = <A>(operation: string, task: Effect.Effect<A, TextGenerationError>) =>
         auth.controller.withAccess!(task).pipe(
           Effect.scoped,
@@ -288,7 +321,12 @@ export const PhaseoDriver: ProviderDriver<PhaseoSettings, PhaseoDriverEnv> = {
         displayName,
         accentColor,
         enabled,
-        continuationIdentity,
+        continuationIdentity: native
+          ? {
+              ...continuationIdentity,
+              continuationKey: `${continuationIdentity.continuationKey}:native`,
+            }
+          : continuationIdentity,
         snapshot,
         orchestrationAdapter: adapter,
         textGeneration,

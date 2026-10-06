@@ -15,6 +15,14 @@ export function PhaseoSetupSection(props: {
   provider: ServerProvider;
   readOnly: boolean;
 }) {
+  return props.provider.setup?.canInstall === false ? (
+    <ProviderAuthenticationSection {...props} />
+  ) : (
+    <PhaseoCodexSetupSection {...props} />
+  );
+}
+
+function PhaseoCodexSetupSection(props: Parameters<typeof PhaseoSetupSection>[0]) {
   const target = { environmentId: props.environmentId, input: { instanceId: props.instanceId } };
   const query = useEnvironmentQuery(serverEnvironment.providerInstallState(target));
   const start = useAtomCommand(serverEnvironment.startProviderInstall, {

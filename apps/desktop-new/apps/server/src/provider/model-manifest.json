@@ -5,10 +5,10 @@
     {
       "driver": "phaseo",
       "t3CodeRange": ">=0.0.44",
-      "recommendedRange": ">=0.159.0",
+      "recommendedRange": ">=0.1.0",
       "ranges": [
-        { "range": ">=0.156.0", "status": "supported" },
-        { "range": "<0.156.0", "status": "unsupported" }
+        { "range": ">=0.1.0", "status": "supported" },
+        { "range": "<0.1.0", "status": "unsupported" }
       ]
     },
     {
