@@ -1,0 +1,10 @@
+{
+  "key":"baseten:deepseek/deepseek-v4.1-flash:text.generate","api_provider_id":"baseten","provider_slug":"baseten","api_model_id":"deepseek/deepseek-v4.1-flash","capability_id":"text.generate",
+  "rules":[
+    {"meter":"input_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.3,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://www.baseten.co/library/deepseek-v41-flash/"},
+    {"meter":"cached_read_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":0.007,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://www.baseten.co/library/deepseek-v41-flash/"},
+    {"meter":"output_text_tokens","unit":"token","unit_size":1000000,"price_per_unit":1.2,"currency":"USD","pricing_plan":"standard","note":null,"match":[],"priority":100,"effective_from":"2026-09-22T00:00:00Z","region":null,"cache_duration_seconds":null,"conditions":[],"source":"https://www.baseten.co/library/deepseek-v41-flash/"}
+  ],"regions":[],"service_tiers":["standard"],
+  "sources":[{"kind":"pricing","url":"https://www.baseten.co/library/deepseek-v41-flash/","accessed_at":"2026-09-22T00:00:00Z","notes":"Live Model API page lists $0.30 input, $0.007 cached input, and $1.20 output per million tokens."}],
+  "verification":{"status":"verified","checked_at":"2026-09-22T00:00:00Z","notes":"Verified against Baseten's live model page."}
+}

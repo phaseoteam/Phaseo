@@ -128,5 +128,29 @@
       "notes": "Route, EU availability, endpoint, tiers, and limitations verified against Mistral documentation."
     },
     "rate_limits": []
+  },
+  {
+    "api_model_id": "z-ai/glm-5.3",
+    "canonical_model_id": "z-ai/glm-5.3",
+    "provider_api_model_id": "mistral-eu:zai-glm-5-3",
+    "provider_model_slug": "zai-glm-5-3",
+    "internal_model_id": "z-ai/glm-5.3",
+    "is_active_gateway": true,
+    "quantization_scheme": null,
+    "input_modalities": "text",
+    "output_modalities": "text",
+    "context_length": 1000000,
+    "max_output_tokens": 128000,
+    "effective_from": "2026-09-15T00:00:00Z",
+    "effective_to": null,
+    "capabilities": [{"capability_id":"text.generate","status":"active","params":[{"param_id":"max_tokens","provider_min":null,"provider_max":128000,"provider_default":null,"notes":null},{"param_id":"response_format","provider_min":null,"provider_max":null,"provider_default":null,"notes":null},{"param_id":"service_tier","provider_min":null,"provider_max":null,"provider_default":"standard","notes":"Phaseo priority maps to Mistral auto; actual Priority Tier use requires a model-specific enterprise entitlement and can fall back to Standard Tier."},{"param_id":"structured_outputs","provider_min":null,"provider_max":null,"provider_default":null,"notes":null},{"param_id":"temperature","provider_min":null,"provider_max":null,"provider_default":null,"notes":null},{"param_id":"tool_choice","provider_min":null,"provider_max":null,"provider_default":null,"notes":"Regional inference supports function calling but not Mistral's other hosted tools."},{"param_id":"tools","provider_min":null,"provider_max":null,"provider_default":null,"notes":"Regional inference supports function calling but not Mistral's other hosted tools."},{"param_id":"top_p","provider_min":null,"provider_max":null,"provider_default":null,"notes":null}],"reasoning":null,"tool_call":true,"structured_output":true,"temperature":true,"attachment":false,"input_modalities":null,"output_modalities":null,"modes":[]}],
+    "routing_status": "active",
+    "routable": true,
+    "regions": {"execution":["eu"]},
+    "service_tiers": ["standard","priority"],
+    "api": {"formats":["openai.chat.completions"],"endpoint":"/v1/chat/completions","deployment":"regional"},
+    "sources": [{"kind":"docs","url":"https://docs.mistral.ai/models/zai-glm-5-3","accessed_at":"2026-09-22T00:00:00Z","notes":"The GLM 5.3 model card lists global and EU availability and no US regional availability."},{"kind":"docs","url":"https://docs.mistral.ai/inference/regional-inference","accessed_at":"2026-09-22T00:00:00Z","notes":"Documents regional endpoint semantics and limitations."},{"kind":"docs","url":"https://docs.mistral.ai/inference/priority-tier","accessed_at":"2026-09-22T00:00:00Z","notes":"Documents enterprise Priority Tier request and fallback behavior."}],
+    "verification": {"status":"verified","checked_at":"2026-09-22T00:00:00Z","notes":"Route, EU availability, endpoint, tiers, and limitations verified against Mistral documentation."},
+    "rate_limits": []
   }
 ]
