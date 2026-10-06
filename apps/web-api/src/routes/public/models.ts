@@ -654,7 +654,7 @@ function notFound(c: { json: (value: unknown, status: number) => Response }) {
 }
 
 function v2ModelStatus(value: unknown): string {
-	const status = String(value ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+	const status = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
 	if (status === "active" || status === "available") return "Available";
 	if (status === "rumoured") return "Rumoured";
 	if (status === "draft" || status === "announced") return "Announced";
@@ -759,14 +759,18 @@ function v2ModelPageShape(
 	identity: Record<string, unknown> = {},
 	variants: ModelVariantSummary[] = [],
 	modelLinks: Array<Record<string, unknown>> = [],
+	savedDetails: Array<{ detail_name: string; detail_value: unknown }> = [],
 ) {
 	const inputTypes = Array.isArray(row.gateway_input_modalities) ? row.gateway_input_modalities : [];
 	const outputTypes = Array.isArray(row.gateway_output_modalities) ? row.gateway_output_modalities : [];
 	const contextLengths = Array.isArray(row.context_lengths) ? row.context_lengths : [];
-	const modelDetails = contextLengths.length > 0
-		? [{ detail_name: "input_context_length", detail_value: contextLengths[contextLengths.length - 1] }]
-		: [];
-	if (identity.license ?? row.license) modelDetails.push({ detail_name: "license", detail_value: identity.license ?? row.license });
+	const modelDetails = [...savedDetails];
+	if (contextLengths.length > 0 && !modelDetails.some((detail) => detail.detail_name === "input_context_length")) {
+		modelDetails.push({ detail_name: "input_context_length", detail_value: contextLengths[contextLengths.length - 1] });
+	}
+	if ((identity.license ?? row.license) && !modelDetails.some((detail) => detail.detail_name === "license")) {
+		modelDetails.push({ detail_name: "license", detail_value: identity.license ?? row.license });
+	}
 	return {
 		model_id: identity.model_slug ?? row.model_id,
 		name: identity.name ?? row.name,
@@ -1031,7 +1035,7 @@ publicModelsRouter.get("/:modelId", async (c) => {
 		const v2Overview = await fetchTargetedModelOverview(c.env, modelId);
 		if (v2Overview?.model_id) {
 			const canonicalModelId = String(v2Overview.model_id);
-			const [identityResult, aliasesResult, variantsResult, modelLinksResult] = await Promise.allSettled([
+			const [identityResult, aliasesResult, variantsResult, modelLinksResult, modelDetailsResult] = await Promise.allSettled([
 				client.rpc("get_v2_model_identity", { p_model_slug: canonicalModelId }),
 				client.rpc("get_v2_model_aliases", { p_model_slug: canonicalModelId }),
 				fetchModelVariants(c.env, canonicalModelId),
@@ -1040,6 +1044,10 @@ publicModelsRouter.get("/:modelId", async (c) => {
 					.eq("model_slug", canonicalModelId)
 					.order("link_kind", { ascending: true })
 					.order("title", { ascending: true }),
+				client.from("v2_model_details")
+					.select("detail_name,detail_value")
+					.eq("model_slug", canonicalModelId)
+					.order("detail_order", { ascending: true }),
 			]);
 			const identity = identityResult.status === "fulfilled" && !identityResult.value.error
 				? (identityResult.value.data as Record<string, unknown> | null)
@@ -1086,7 +1094,10 @@ publicModelsRouter.get("/:modelId", async (c) => {
 					error: modelLinksResult.status === "rejected" ? modelLinksResult.reason : modelLinksResult.value.error,
 				});
 			}
-			return withPublicCache(c.json({ model: v2ModelPageShape(v2Overview, aliases, identity ?? {}, variants, modelLinks) }), sectionPolicy("overview", modelId));
+			const modelDetails = modelDetailsResult.status === "fulfilled" && !modelDetailsResult.value.error
+				? modelDetailsResult.value.data ?? []
+				: [];
+			return withPublicCache(c.json({ model: v2ModelPageShape(v2Overview, aliases, identity ?? {}, variants, modelLinks, modelDetails) }), sectionPolicy("overview", modelId));
 		}
 		return notFound(c);
 	} catch (error) {
