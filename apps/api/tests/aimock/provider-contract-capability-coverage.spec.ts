@@ -10,6 +10,7 @@ const inheritedContractByProvider: Record<string, string> = {
     baidu: "openai",
     doubleword: "openai",
     modelscope: "openai",
+    reflection: "openai", // Chat wire contract; Reflection-specific controls have executor tests.
     "mistral-eu": "mistral",
     "io-net": "openai",
     streamlake: "openai",
