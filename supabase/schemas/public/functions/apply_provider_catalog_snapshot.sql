@@ -22,7 +22,11 @@ declare
 begin
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
-    else p.status <> 'disabled' end into provider_approved
+    else coalesce((select sub.provider_review_status = 'approved'
+      from public.provider_onboarding_submissions sub join public.provider_catalog_sources source
+        on source.provider_slug = sub.provider_slug and source.created_by = sub.submitted_by
+      where source.provider_slug = p.provider_slug order by sub.created_at desc limit 1),
+      p.status in ('active', 'beta', 'alpha', 'deprecated')) end into provider_approved
   from public.v2_providers p where p.provider_slug = p_provider_slug for update;
   if not found then raise exception 'provider_catalog_provider_not_found'; end if;
   if not exists (select 1 from public.provider_catalog_sync_runs r where r.id = p_run_id and r.provider_slug = p_provider_slug) then

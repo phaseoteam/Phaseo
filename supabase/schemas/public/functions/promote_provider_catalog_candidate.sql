@@ -31,7 +31,11 @@ begin
   if not found then raise exception 'provider_catalog_candidate_not_found'; end if;
   select case when p.metadata ? 'self_serve'
     then p.metadata -> 'self_serve' ->> 'provider_review_status' = 'approved'
-    else p.status <> 'disabled' end,
+    else coalesce((select sub.provider_review_status = 'approved'
+      from public.provider_onboarding_submissions sub join public.provider_catalog_sources source
+        on source.provider_slug = sub.provider_slug and source.created_by = sub.submitted_by
+      where source.provider_slug = p.provider_slug order by sub.created_at desc limit 1),
+      p.status in ('active', 'beta', 'alpha', 'deprecated')) end,
     coalesce((p.metadata ->> 'adapter_ready')::boolean, false)
       and coalesce((p.metadata ->> 'credentials_ready')::boolean, false)
       and nullif(btrim(p.base_url), '') is not null

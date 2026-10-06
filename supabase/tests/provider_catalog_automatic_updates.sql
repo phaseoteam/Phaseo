@@ -165,6 +165,16 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
   assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   assert public.activate_due_provider_catalog_releases()=0;
+  insert into public.v2_providers (provider_slug,name,status)
+  values ('catalog-contract-unapproved','Unapproved contract provider','not_ready');
+  insert into public.provider_catalog_sources (provider_slug,management_mode)
+  values ('catalog-contract-unapproved','managed');
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-unapproved','manual');
+  bad_document := jsonb_set(document,'{0,id}','"catalog-contract-unapproved/model"');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-unapproved',run2,bad_document);
+  assert not exists(select 1 from public.v2_models where model_slug='catalog-contract-unapproved/model');
+  assert (select review_status='pending' from public.provider_catalog_sync_runs where id=run2);
 end
 $test$;
 
