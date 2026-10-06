@@ -1,4 +1,5 @@
 "use client";
+import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
     useCallback,
@@ -587,9 +588,9 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="text-right" title={summary.primary.modality === "multimodal" ? summary.primary.label : undefined}>
+		<div className="text-right">
 			<div className="font-medium tabular-nums text-foreground">
-				{summary.secondary
+				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
 					: summary.primary.formattedPrice}
 			</div>

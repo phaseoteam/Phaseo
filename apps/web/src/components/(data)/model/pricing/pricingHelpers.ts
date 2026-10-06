@@ -32,6 +32,8 @@ export type PriceComparisonDirection = "cheaper" | "pricier" | "same" | null;
 
 export type TokenTier = {
     conditions?: Condition[];
+    timeWindows?: ProviderPricing["pricing_rules"][number]["time_windows"];
+    scheduledBasePer1M?: number | null;
     per1M: number;
     price: number;
     label: string; // range or condition label
@@ -1209,6 +1211,8 @@ export function buildProviderSections(
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
             const tier: TokenTier = {
                 conditions: conds,
+                timeWindows: r.time_windows ?? [],
+                scheduledBasePer1M: perMillionIfTokens(unit, Number(r.price_per_unit), unitSize),
                 per1M: per1M ?? 0,
                 price,
                 label,
@@ -1958,6 +1962,8 @@ export function buildProviderTablePriceColumns(
             return JSON.stringify(tiers.map((tier) => ({
                 per1M: tier.per1M, basePer1M: tier.basePer1M ?? null,
                 label: tier.label, conditions: tier.conditions ?? [],
+                timeWindows: tier.timeWindows ?? [],
+                scheduledBasePer1M: tier.scheduledBasePer1M ?? tier.per1M,
                 comparisonKind: tier.comparisonKind ?? null,
                 comparisonDirection: tier.comparisonDirection ?? null,
                 discountEndsAt: tier.discountEndsAt ?? null,

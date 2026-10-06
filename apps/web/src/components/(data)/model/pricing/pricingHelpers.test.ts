@@ -614,6 +614,18 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceColumns([sections])[0]!.label).toBe("Input");
 	});
 
+	test.each(["identical", "different windows", "different base rates"])("compares complete recurring schedules: %s", (schedule) => {
+		const provider = matchingInputProvider();
+		for (const rule of provider.pricing_rules.filter((rule) => rule.meter.startsWith("input_"))) {
+			rule.time_windows = [{ timezone: "UTC", start_time: "01:00", end_time: schedule === "different windows" && rule.meter === "input_image_tokens" ? "04:00" : "03:00", price_per_unit: 2 }];
+			if (schedule === "different base rates" && rule.meter === "input_image_tokens") rule.price_per_unit = 1;
+		}
+		const sections = buildProviderSections(provider, "standard", new Date("2026-10-06T02:00:00Z"));
+		expect(sections.textTokens!.in[0]!.per1M).toBe(2);
+		expect(sections.imageTokens!.in[0]!.per1M).toBe(2);
+		expect(buildProviderTablePriceColumns([sections]).some((column) => column.groupedModalities)).toBe(schedule === "identical");
+	});
+
 	test.each([true, false])("compares every context band, not only the cheapest rate (matching: %s)", (matching) => {
 		const provider = matchingInputProvider();
 		for (const modality of ["text", "image", "video"]) {
