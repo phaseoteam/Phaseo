@@ -19,10 +19,10 @@ test("renders total and active parameters alongside training tokens and license"
 			{ detail_name: "license", detail_value: "Apache 2.0 (planned)" },
 		],
 	}));
-	expect(html).toContain("501bn");
+	expect(html).toContain("501 billion");
 	expect(html).toContain("activeParameters");
-	expect(html).toContain("23bn");
-	expect(html).toContain("23.8tn");
+	expect(html).toContain("23 billion");
+	expect(html).toContain("23.8 trillion");
 	expect(html).toContain("Apache 2.0 (planned)");
 });
 

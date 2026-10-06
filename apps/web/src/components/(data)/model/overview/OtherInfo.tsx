@@ -57,7 +57,7 @@ export default async function OtherInfo({
 		if (value === "" || value == null || value === 0) return null;
 		const num = Number(value);
 		if (!Number.isFinite(num)) return null;
-		return <DisplayNumber value={num} options={{ notation: "compact", maximumFractionDigits: 2 }} />;
+		return <DisplayNumber value={num} options={{ notation: "compact", compactDisplay: "long", maximumFractionDigits: 2 }} />;
 	};
 
 	const parameterCount = resolve("parameter_count");
