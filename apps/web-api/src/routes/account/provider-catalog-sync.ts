@@ -150,11 +150,23 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		status: "processing",
 		catalog_url: source.catalog_url,
 	}).select("id").single();
+	let runId: string;
 	if (runResult.error) {
-		if (externalEventId && runResult.error.code === "23505") return { status: "duplicate" };
-		throw runResult.error;
-	}
-	const runId = String(runResult.data.id);
+		if (!externalEventId || runResult.error.code !== "23505") throw runResult.error;
+		const existing = await client.from("provider_catalog_sync_runs").select("id,status")
+			.eq("provider_slug", providerSlug).eq("external_event_id", externalEventId).maybeSingle();
+		if (existing.error) throw existing.error;
+		if (!existing.data || !["failed", "processing"].includes(existing.data.status)) return { status: "duplicate" };
+		// The provider lease is already held, so another active sync cannot be
+		// reclaimed here. Recover interrupted receipts; completed deliveries stay deduplicated.
+		const resumed = await client.from("provider_catalog_sync_runs").update({
+			status: "processing", review_status: "pending", started_at: new Date().toISOString(),
+			completed_at: null, error_message: null,
+		}).eq("id", existing.data.id).eq("status", existing.data.status).select("id").maybeSingle();
+		if (resumed.error) throw resumed.error;
+		if (!resumed.data) return { status: "duplicate" };
+		runId = String(resumed.data.id);
+	} else runId = String(runResult.data.id);
 
 	try {
 		// Consume before reading the document, under the sync lease. Edits arriving

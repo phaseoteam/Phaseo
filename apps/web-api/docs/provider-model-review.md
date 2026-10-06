@@ -13,3 +13,6 @@ The notifier accepts only HTTPS `hooks.slack.com/services/` destinations and rej
 ## V1 boundary
 
 Pricing feeds provide exact effective prices, including promotional prices, in nanos with explicit units. Conditional prices and automatic percentage-discount calculations are unsupported. Preserve price history rather than replacing old rates. Existing-model attachment does not grant providers control of another publisher's canonical facts.
+# Webhook retry recovery
+
+Completed webhook event IDs remain deduplicated. Failed or interrupted deliveries can retry with the same signed event ID after Phaseo obtains the provider sync lease. A replay never interrupts an active sync. Rejected catalogs require a new event ID after correcting the feed. Price fingerprints prevent a recovered delivery from creating duplicate price versions.
