@@ -1,4 +1,5 @@
 begin;
+insert into public.v2_service_tiers(service_tier_slug,display_name) values('standard','Standard') on conflict do nothing;
 insert into public.v2_providers(provider_slug,name,status,metadata) values('catalog-review-test','Review test','not_ready','{"self_serve":{"provider_review_status":"approved"}}');
 insert into public.provider_catalog_sources(provider_slug,management_mode) values('catalog-review-test','managed');
 do $test$
