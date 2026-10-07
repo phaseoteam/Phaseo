@@ -606,6 +606,26 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummaryForColumn(sections[1]!, columns[0]!).sortValue).toBe(0.75);
 	});
 
+	test("keeps one Input column across standard and expanded tiers with partial modality coverage", () => {
+		const standard = buildProviderSections(matchingInputProvider(2), "standard");
+		const flex = buildProviderSections(matchingInputProvider(1), "standard");
+		const batch = buildProviderSections(matchingInputProvider(1), "standard");
+		flex.imageTokens = undefined;
+		batch.videoTokens = undefined;
+		const columns = buildProviderTablePriceColumns([standard, flex, batch]);
+		expect(columns.map((column) => column.label)).toEqual(["Input", "Text Output", "Image Output"]);
+		const input = columns[0]!;
+		expect(buildProviderTablePriceSummaryForColumn(standard, input).primary).toMatchObject({
+			formattedPrice: "$2", label: "Text, Image, Video",
+		});
+		expect(buildProviderTablePriceSummaryForColumn(flex, input).primary).toMatchObject({
+			formattedPrice: "$1", label: "Text, Video",
+		});
+		expect(buildProviderTablePriceSummaryForColumn(batch, input).primary).toMatchObject({
+			formattedPrice: "$1", label: "Text, Image",
+		});
+	});
+
 	test("groups identical prices selected from different duplicate endpoint sources", () => {
 		const sections = buildProviderSections(matchingInputProvider(), "standard");
 		sections.textTokens!.in[0]!.endpoint = "image.generate";

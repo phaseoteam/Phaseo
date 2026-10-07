@@ -1518,14 +1518,17 @@ export default function ModelPricingClient({
 		});
 	}, []);
 	const visiblePriceColumns = useMemo(() => {
-		const sectionsByOffering = displayedOfferings.map(({ provider, plan }) =>
+		// Tier expansion controls rows, not the table's pricing column schema.
+		// Include every filtered offering so expanding a provider cannot split Input
+		// or introduce new unit columns and invalidate the active price sort.
+		const sectionsByOffering = visibleOfferings.map(({ provider, plan }) =>
 			buildProviderSections(provider, plan, pricingTimeMs),
 		);
 		return buildProviderTablePriceColumns(sectionsByOffering).map((column) => ({
 			...column,
 			sort: `price:${column.key}` as PriceColumnSortOption,
 		}));
-	}, [displayedOfferings, pricingTimeMs]);
+	}, [visibleOfferings, pricingTimeMs]);
 	const providerTableMinWidth = 696 + visiblePriceColumns.length * 112;
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);
