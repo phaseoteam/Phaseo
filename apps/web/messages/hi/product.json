@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "निर्णय का प्रश्न कॉपी नहीं हो सका।",
 			"expandSidebar": "साइडबार फैलाएँ",
 			"openSettings": "निर्णय सेटिंग्स खोलें",
-			"decisionDescription": "Jev से खाते की स्थिति को स्पष्ट, टाइप किए निर्णय में बदलने को कहें।",
+			"decisionDescription": "{model} से खाते की स्थिति को स्पष्ट, टाइप किए निर्णय में बदलने को कहें।",
 			"outreachLabel": "संपर्क की तैयारी जाँचें",
 			"outreachPrompt": "क्या यह खाता संपर्क के लिए तैयार है?",
 			"collaborationLabel": "सहयोग का संकेत ढूँढें",

@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "判断の質問をコピーできませんでした。",
 			"expandSidebar": "サイドバーを展開",
 			"openSettings": "判断設定を開く",
-			"decisionDescription": "Jevにアカウントの状態を明確な型付き判断に変換してもらいましょう。",
+			"decisionDescription": "{model}にアカウントの状態を明確な型付き判断に変換してもらいましょう。",
 			"outreachLabel": "アプローチの準備状況を確認",
 			"outreachPrompt": "このアカウントはアプローチの準備ができていますか？",
 			"collaborationLabel": "連携の兆候を探す",

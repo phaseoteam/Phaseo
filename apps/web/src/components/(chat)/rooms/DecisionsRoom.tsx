@@ -811,7 +811,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 					{activeRuns.length === 0 ? (
 						<RoomEmptyState
 							title={t("newMainCopy.decisions")}
-							description={t("newMainCopy.decisionDescription")}
+							description={t("newMainCopy.decisionDescription", { model: modelSettings.modelDisplayNameById[model] ?? catalogueModelNameById[model] ?? model.split("/").pop() ?? model })}
 							suggestions={[
 								{
 									label: t("newMainCopy.outreachLabel"),
@@ -941,7 +941,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 														>
 															<Logo
 																id={modelLogoId}
-																alt="TypeSafe"
+																alt={modelLabel}
 																width={18}
 																height={18}
 																className="shrink-0 rounded-none"

@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "无法复制决策问题。",
 			"expandSidebar": "展开侧边栏",
 			"openSettings": "打开决策设置",
-			"decisionDescription": "让 Jev 将账户状态转化为清晰且有类型的决策。",
+			"decisionDescription": "让 {model} 将账户状态转化为清晰且有类型的决策。",
 			"outreachLabel": "检查联系准备情况",
 			"outreachPrompt": "此账户是否已准备好进行联系？",
 			"collaborationLabel": "寻找协作信号",
