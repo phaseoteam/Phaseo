@@ -33,7 +33,9 @@ try {
     await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));
     await db.exec(await read('../schemas/public/tables/v2_request_routing_traces.sql'));
     if (process.env.ROUTING_ARCHIVE_MIGRATION) {
-        await db.exec(await read(`../migrations/${process.env.ROUTING_ARCHIVE_MIGRATION}`));
+        for (const migration of process.env.ROUTING_ARCHIVE_MIGRATION.split(',')) {
+            await db.exec(await read(`../migrations/${migration}`));
+        }
     } else {
         for (const name of ['gateway_routing_archive_source', 'gateway_routing_archive_batch', 'gateway_commit_routing_archive', 'ingest_v2_gateway_request_with_routing']) {
             await db.exec(await read(`../schemas/public/functions/${name}.sql`));
