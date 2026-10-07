@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "Entscheidungsfrage konnte nicht kopiert werden.",
 			"expandSidebar": "Seitenleiste erweitern",
 			"openSettings": "Entscheidungseinstellungen öffnen",
-			"decisionDescription": "Lassen Sie Jev den Kontostatus in eine klare, typisierte Entscheidung umwandeln.",
+			"decisionDescription": "Lassen Sie {model} den Kontostatus in eine klare, typisierte Entscheidung umwandeln.",
 			"outreachLabel": "Kontaktbereitschaft prüfen",
 			"outreachPrompt": "Ist dieses Konto bereit für eine Kontaktaufnahme?",
 			"collaborationLabel": "Kooperationssignal finden",

@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "Não foi possível copiar a pergunta da decisão.",
 			"expandSidebar": "Expandir barra lateral",
 			"openSettings": "Abrir configurações de decisões",
-			"decisionDescription": "Peça ao Jev para transformar o estado da conta em uma decisão clara e tipada.",
+			"decisionDescription": "Peça ao {model} para transformar o estado da conta em uma decisão clara e tipada.",
 			"outreachLabel": "Verificar prontidão para contato",
 			"outreachPrompt": "Esta conta está pronta para contato?",
 			"collaborationLabel": "Encontrar um sinal de colaboração",

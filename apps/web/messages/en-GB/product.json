@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "Unable to copy the decision question.",
 			"expandSidebar": "Expand sidebar",
 			"openSettings": "Open decision settings",
-			"decisionDescription": "Ask Jev to turn account state into a clear, typed decision.",
+			"decisionDescription": "Ask {model} to turn account state into a clear, typed decision.",
 			"outreachLabel": "Check outreach readiness",
 			"outreachPrompt": "Is this account ready for outreach?",
 			"collaborationLabel": "Find a collaboration signal",

@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "تعذر نسخ سؤال القرار.",
 			"expandSidebar": "توسيع الشريط الجانبي",
 			"openSettings": "فتح إعدادات القرارات",
-			"decisionDescription": "اطلب من Jev تحويل حالة الحساب إلى قرار واضح ومحدد النوع.",
+			"decisionDescription": "اطلب من {model} تحويل حالة الحساب إلى قرار واضح ومحدد النوع.",
 			"outreachLabel": "التحقق من الجاهزية للتواصل",
 			"outreachPrompt": "هل هذا الحساب جاهز للتواصل؟",
 			"collaborationLabel": "البحث عن مؤشر تعاون",

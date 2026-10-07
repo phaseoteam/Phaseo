@@ -1407,7 +1407,7 @@
 			"copyQuestionFailed": "Impossible de copier la question de la décision.",
 			"expandSidebar": "Développer la barre latérale",
 			"openSettings": "Ouvrir les paramètres des décisions",
-			"decisionDescription": "Demandez à Jev de transformer l’état du compte en une décision claire et typée.",
+			"decisionDescription": "Demandez à {model} de transformer l’état du compte en une décision claire et typée.",
 			"outreachLabel": "Vérifier la préparation à la prise de contact",
 			"outreachPrompt": "Ce compte est-il prêt pour une prise de contact ?",
 			"collaborationLabel": "Trouver un signal de collaboration",
