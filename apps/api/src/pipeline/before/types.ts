@@ -262,17 +262,17 @@ export type TeamEnrichment = {
     balance_nanos: number;
     balance_usd: number;
     balance_is_low: boolean;
-    total_requests: number;
-    total_spend_nanos: number;
-    total_spend_usd: number;
-    spend_24h_nanos: number;
-    spend_24h_usd: number;
-    spend_7d_nanos: number;
-    spend_7d_usd: number;
-    spend_30d_nanos: number;
-    spend_30d_usd: number;
-    requests_1h: number;
-    requests_24h: number;
+    total_requests: number | null;
+    total_spend_nanos: number | null;
+    total_spend_usd: number | null;
+    spend_24h_nanos: number | null;
+    spend_24h_usd: number | null;
+    spend_7d_nanos: number | null;
+    spend_7d_usd: number | null;
+    spend_30d_nanos: number | null;
+    spend_30d_usd: number | null;
+    requests_1h: number | null;
+    requests_24h: number | null;
 };
 
 export type TeamSettings = {
@@ -305,12 +305,12 @@ export type KeyEnrichment = {
     name: string | null;
     created_at: string;
     key_age_days: number;
-    total_requests: number;
-    total_spend_nanos: number;
-    total_spend_usd: number;
-    requests_today: number;
-    spend_today_nanos: number;
-    spend_today_usd: number;
+    total_requests: number | null;
+    total_spend_nanos: number | null;
+    total_spend_usd: number | null;
+    requests_today: number | null;
+    spend_today_nanos: number | null;
+    spend_today_usd: number | null;
     daily_limit_pct: number | null;
 };
 

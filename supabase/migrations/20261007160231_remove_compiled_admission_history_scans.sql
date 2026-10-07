@@ -1,4 +1,6 @@
-CREATE OR REPLACE FUNCTION private.gateway_context_access (
+SET local check_function_bodies = off;
+
+CREATE OR REPLACE FUNCTION private.gateway_compiled_context_access (
   workspace_id uuid,
   model        text,
   endpoint     text,
@@ -56,7 +58,7 @@ declare
   preset_publisher    text := null;
 
   -- Resolve model from alias if exists
-  resolved_model      text := gateway_context_access.model;
+  resolved_model      text := gateway_compiled_context_access.model;
   base_model          text;
 
   team_enrichment     jsonb;
@@ -81,9 +83,9 @@ declare
   key_total_requests bigint;
   key_total_spend_nanos bigint;
 begin
-  base_model := gateway_context_access.model;
+  base_model := gateway_compiled_context_access.model;
   -- hard requirement: key must be provided
-  if gateway_context_access.api_key_id is null then
+  if gateway_compiled_context_access.api_key_id is null then
     raise exception using errcode = '22023', message = 'missing_api_key', detail = 'api_key_id is required';
   end if;
 
@@ -116,13 +118,13 @@ begin
       ) into preset_data
       from public.presets p
       where p.archived_at is null and lower(coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', ''))) = lower(preset_name)
-        and p.workspace_id = gateway_context_access.workspace_id
+        and p.workspace_id = gateway_compiled_context_access.workspace_id
         and (
           p.visibility in ('public', 'team')
           or p.created_by = (
             select ak.created_by from public.keys ak
-            where ak.id = gateway_context_access.api_key_id
-              and ak.workspace_id = gateway_context_access.workspace_id
+            where ak.id = gateway_compiled_context_access.api_key_id
+              and ak.workspace_id = gateway_compiled_context_access.workspace_id
               and ak.status = 'active'
           )
         )
@@ -154,37 +156,12 @@ begin
     end if;
   end if;
 
-  -- Resolve alias/model indirection:
-  -- 1) explicit alias table (`v2_model_aliases`)
-  -- 2) provider-scoped slug form (`provider/provider_model_slug`)
-  resolved_model := coalesce(
-    (
-      select a.api_model_id
-      from (select alias_slug, model_slug as api_model_id, enabled as is_enabled from public.v2_model_aliases) a
-      where a.alias_slug = base_model
-        and a.is_enabled = true
-        and a.api_model_id is not null
-      limit 1
-    ),
-    (
-      select m.api_model_id
-      from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at from public.v2_model_provider_routes) m
-      where position('/' in base_model) > 0
-        and m.provider_id = split_part(base_model, '/', 1)
-        and m.provider_model_slug = regexp_replace(base_model, '^[^/]+/', '')
-        and m.is_active_gateway
-        and (m.effective_from is null or m.effective_from <= now() at time zone 'utc')
-        and (m.effective_to   is null or (now() at time zone 'utc') < m.effective_to)
-      order by coalesce(m.effective_from, to_timestamp(0)) desc, m.provider_api_model_id
-      limit 1
-    ),
-    base_model
-  );
+  resolved_model := base_model;
 
   -- validate key row, status, and team
   select
     (k.status = 'active'),
-    (k.workspace_id = gateway_context_access.workspace_id),
+    (k.workspace_id = gateway_compiled_context_access.workspace_id),
     k.soft_blocked,
     k.daily_limit_requests,   k.weekly_limit_requests,   k.monthly_limit_requests,
     k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos
@@ -195,7 +172,7 @@ begin
     v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
     v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit
   from public.keys k
-  where k.id = gateway_context_access.api_key_id
+  where k.id = gateway_compiled_context_access.api_key_id
   limit 1;
 
   if v_key_active is null then
@@ -233,7 +210,7 @@ begin
           )
       end
       from public.wallets w
-      where w.workspace_id = gateway_context_access.workspace_id
+      where w.workspace_id = gateway_compiled_context_access.workspace_id
       limit 1
     ), jsonb_build_object('ok', false, 'reason', 'wallet_missing'));
 
@@ -252,8 +229,8 @@ begin
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
   from public.gateway_requests gr
-  where gr.key_id  = gateway_context_access.api_key_id
-    and gr.workspace_id = gateway_context_access.workspace_id
+  where gr.key_id  = gateway_compiled_context_access.api_key_id
+    and gr.workspace_id = gateway_compiled_context_access.workspace_id
     and gr.success is true
     and gr.created_at >= month_start;
   end if;
@@ -370,7 +347,7 @@ begin
     team_reserved_nanos
   from public.workspaces t
   left join public.wallets w on w.workspace_id = t.id
-  where t.id = gateway_context_access.workspace_id
+  where t.id = gateway_compiled_context_access.workspace_id
   limit 1;
 
   -- Historical analytics belong in reporting, not request admission.
@@ -378,7 +355,7 @@ begin
 
   -- Calculate tier using calendar-month qualification + lock-window grace.
   -- Function maintains team tier/counters in database when state changes.
-  team_tier := public.calculate_tier_with_grace(gateway_context_access.workspace_id, team_spend_30d_nanos);
+  team_tier := public.calculate_tier_with_grace(gateway_compiled_context_access.workspace_id, team_spend_30d_nanos);
 
   team_enrichment := jsonb_build_object(
     'tier', team_tier,
@@ -410,7 +387,7 @@ begin
     key_name,
     key_created_at
   from public.keys k
-  where k.id = gateway_context_access.api_key_id
+  where k.id = gateway_compiled_context_access.api_key_id
   limit 1;
 
   -- Lifetime key analytics are not required to authenticate or enforce limits.
@@ -435,7 +412,7 @@ begin
   pricing := '{}'::jsonb;
 
   return jsonb_build_object(
-    'workspace_id', gateway_context_access.workspace_id,
+    'workspace_id', gateway_compiled_context_access.workspace_id,
     'resolved_model', resolved_model,
     'preset', preset_data,
     'key_ok', key_status,
@@ -449,11 +426,3 @@ begin
 end;
 
 $function$;
-
-GRANT EXECUTE ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) TO "service_role";
-
-REVOKE ALL ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) FROM PUBLIC;
-
-REVOKE ALL ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "private"."gateway_context_access"(uuid, text, text, uuid) TO "postgres";

@@ -39,6 +39,7 @@ jobs:
               run: |
                   npm install --prefix "$RUNNER_TEMP/public-model-timeout-tests" --ignore-scripts --no-audit --no-fund --save-exact @electric-sql/pglite@0.5.8
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/public-model-timeouts.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/gateway-admission-history.test.mjs
             - name: Verify declarative schemas against frozen baseline and forward migrations
               if: inputs.generate_migration != true
               run: node scripts/declarative-schema.mjs check
