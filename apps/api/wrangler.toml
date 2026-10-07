@@ -6,6 +6,9 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+# Record the activation boundary in KV after all production writers are verified.
+GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
+GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 # Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.

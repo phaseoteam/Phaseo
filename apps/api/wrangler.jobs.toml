@@ -6,6 +6,7 @@ workers_dev = false
 preview_urls = false
 
 [vars]
+GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
 # Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
 # Keep this only on the primary scheduler; regional Workers share its KV.

@@ -34,12 +34,15 @@ export async function pruneDeletedRoutingArchives() {
 
 export async function backfillRoutingArchives() {
     const env = getBindings();
-    const cutoff = env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF;
+    const configuredCutoff = env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF;
+    const cutoff = configuredCutoff === "activation"
+        ? await env.GATEWAY_CACHE.get("routing-archive-activation/v1")
+        : configuredCutoff;
     if (!cutoff) return { archived: 0, bytes: 0, complete: false };
     if (!Number.isFinite(Date.parse(cutoff))) throw new Error("routing_archive_cutoff_invalid");
     // The SQL batch excludes in-flight requests. A newer cutoff would let the
     // UUID cursor pass temporarily ineligible rows and silently miss them.
-    if (Date.parse(cutoff) > Date.now() - 60 * 60 * 1000) throw new Error("routing_archive_cutoff_too_recent");
+    if (Date.parse(cutoff) > Date.now() - 60 * 60 * 1000) return { archived: 0, bytes: 0, complete: false, waiting: true };
     const bucket = env.GATEWAY_ROUTING_ARCHIVES_BUCKET;
     if (!bucket) throw new Error("routing_archive_bucket_missing");
     const key = `routing-archive-backfill/v1/${new Date(cutoff).toISOString()}`;
