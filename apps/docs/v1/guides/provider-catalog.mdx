@@ -26,6 +26,8 @@ Download the [V1 schema](https://phaseo.app/api/internal/provider-catalog/schema
 
 Do not use provider-specific tier names as normalized IDs. `priority` remains a supported caller alias for Fast; catalogs publish `fast`.
 
+Fast, Ultrafast and Flex selection is supported on text generation requests. Batch runs through the separate Batch API and still requires an installed provider Batch integration; publishing a tier does not install that integration. For uploaded provider-native files, use the declared Batch model ID or submit requests inline so Phaseo can translate it.
+
 Use the same canonical model ID for its service tiers. Different models need separate canonical identities. Tiers inherit the model's capabilities, limits and release schedule. Each tier declares its own upstream model ID, availability and effective pricing.
 
 ```json
@@ -63,7 +65,7 @@ Use the same canonical model ID for its service tiers. Different models need sep
 }
 ```
 
-To add Fast, add another tier object with `"service_tier": "fast"`, its effective prices, and the upstream model ID for that offer. If the provider selects its lane using a native parameter instead, use the same upstream model ID and declare `"upstream_service_tier": "priority"` or `"fast"`. Omit that field when the model ID selects the lane. Standard accepts `default` or `standard`; Flex and Ultrafast accept their corresponding values.
+To add Fast, add another tier object with `"service_tier": "fast"`, its effective prices, and a distinct upstream model ID for that offer. If the provider selects its lane using a native parameter instead, use the same upstream model ID and declare `"upstream_service_tier": "priority"` or `"fast"`. Omit that field when the model ID selects the lane. Standard accepts `default` or `standard`; Flex and Ultrafast accept their corresponding values. Phaseo rejects nonstandard synchronous tiers that have no distinct model ID or native selector.
 
 Every tier needs explicit pricing, including output and any cache/media meters you bill. Zero prices are valid; negative prices, unknown meters, duplicate tiers and conditional rates are rejected. `price_nanos` remains the effective price after promotions. Publish a new snapshot when rates change; Phaseo keeps previous effective prices.
 

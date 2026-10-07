@@ -1,0 +1,23 @@
+---
+title: "Publicar un catálogo de proveedor"
+description: "Feeds V1 y V1.1 con niveles de servicio normalizados."
+icon: "list"
+---
+
+Los proveedores aprobados pueden actualizar ofertas de modelos canónicos públicos. Los modelos nuevos requieren aprobación. Cada catálogo es una instantánea completa: las ofertas eliminadas se desactivan y se conserva su historial de precios.
+
+## Elegir el formato
+
+Los feeds V1 sin versión siguen funcionando. `"schema_version": "1.0"` también indica V1. V1.1 declara `"schema_version": "1.1"` e incluye un array `service_tiers` por modelo. La versión se obtiene del documento, no de los parámetros de la URL.
+
+Cada modelo debe incluir `standard`. Los demás niveles permitidos son `fast`, `ultrafast`, `flex` y `batch`. Cada nivel contiene `service_tier`, `provider_model_slug`, `availability` y `pricing`. Las capacidades, límites y fechas de publicación pertenecen al modelo común.
+
+Fast, Ultrafast y Flex funcionan para generación de texto. Use un identificador de modelo diferente o `upstream_service_tier` para seleccionar el nivel real. Fast acepta `fast` o `priority`; Standard acepta `default` o `standard`. Batch utiliza la API Batch independiente y requiere una integración del proveedor y una capacidad Batch.
+
+## Precios y actualizaciones
+
+Cada nivel necesita precios explícitos para todas las unidades facturadas. `price_nanos` es el precio efectivo después de promociones. Cero es válido; se rechazan precios negativos, unidades desconocidas, niveles duplicados y tarifas condicionales. Publique una nueva instantánea cuando cambien los precios; el historial se conserva.
+
+El sondeo y los webhooks firmados admiten ambas versiones. Seleccione el nivel antes de editarlo en la configuración del proveedor. Los errores de correspondencia se muestran por modelo sin impedir la importación de modelos válidos.
+
+Consulte el ejemplo completo y los esquemas JSON en la [guía del contrato en inglés](/v1/guides/provider-catalog).

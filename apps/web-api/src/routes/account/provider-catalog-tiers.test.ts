@@ -29,6 +29,12 @@ describe("provider catalog V1.1", () => {
 		expect(normalizeProviderCatalog({ schema_version: "1.1", data: [] }).valid).toBe(true);
 		expect(normalizeProviderCatalog({ schema_version: "2.0", data: [] }).issues[0].path).toBe("schema_version");
 	});
+	it("requires an explicit lane selector when tiers share an upstream model ID", () => {
+		const body = document(); body.data[0].service_tiers[1].provider_model_slug = "model";
+		expect(normalizeProviderCatalog(body).valid).toBe(false);
+		Object.assign(body.data[0].service_tiers[1], { upstream_service_tier: "priority" });
+		expect(normalizeProviderCatalog(body).valid).toBe(true);
+	});
 	it("requires Batch API capability and keeps native tier aliases consistent", () => {
 		const ajv = new Ajv({ strict: false }); addFormats(ajv);
 		const validate = ajv.compile(providerCatalogV11JsonSchema);

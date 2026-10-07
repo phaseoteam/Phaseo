@@ -1,0 +1,23 @@
+---
+title: "Anbieterkatalog veröffentlichen"
+description: "V1- und V1.1-Kataloge mit standardisierten Service-Stufen."
+icon: "list"
+---
+
+Genehmigte Anbieter können Angebote für öffentliche kanonische Modelle selbst aktualisieren. Neue Modelle benötigen eine Freigabe. Ein Katalog ist ein vollständiger Snapshot: Entfernte Angebote werden deaktiviert; bisherige Preise bleiben erhalten.
+
+## Format wählen
+
+Bestehende V1-Feeds ohne Versionsfeld bleiben gültig. `"schema_version": "1.0"` bezeichnet ebenfalls V1. V1.1 verwendet `"schema_version": "1.1"` und ein Array `service_tiers` pro Modell. Die Version wird aus dem Dokument gelesen, nicht aus URL-Parametern.
+
+Jedes Modell benötigt `standard`. Weitere zulässige Stufen sind `fast`, `ultrafast`, `flex` und `batch`. Jede Stufe enthält `service_tier`, `provider_model_slug`, `availability` und `pricing`. Fähigkeiten, Limits und Veröffentlichungsdaten gehören zum gemeinsamen Modell.
+
+Fast, Ultrafast und Flex werden für Textgenerierung unterstützt. Eine eigene Modell-ID oder `upstream_service_tier` muss die gewünschte Stufe auswählen. Fast akzeptiert `fast` oder `priority`; Standard akzeptiert `default` oder `standard`. Batch verwendet die separate Batch-API und benötigt eine vorhandene Anbieterintegration sowie eine Batch-Fähigkeit.
+
+## Preise und Aktualisierungen
+
+Jede Stufe benötigt ausdrückliche Preise für alle berechneten Einheiten. `price_nanos` ist der tatsächliche Preis nach Rabatten. Null ist gültig; negative Preise, unbekannte Einheiten, doppelte Stufen und bedingte Tarife werden abgelehnt. Preisänderungen werden als neue Snapshots veröffentlicht und historisiert.
+
+Polling und signierte Webhooks unterstützen beide Versionen. In den Anbietereinstellungen wählen Sie vor einer Änderung die Stufe aus. Ungültige Modellzuordnungen werden einzeln angezeigt und verhindern nicht den Import gültiger Modelle.
+
+Das vollständige Beispiel und beide JSON-Schemata finden Sie im [englischen Vertragsleitfaden](/v1/guides/provider-catalog).

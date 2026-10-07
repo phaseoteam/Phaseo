@@ -19,7 +19,7 @@ import {
 	resolveBatchPricingModelCandidates,
 	resolveBatchPricingProviderCandidates,
 } from "@core/batch-model-aliases";
-import { saveBatchRequestRows, type BatchRequestRowInput } from "@core/batch-requests";
+import { listBatchRequestRows, saveBatchRequestRows, type BatchRequestRowInput } from "@core/batch-requests";
 import {
 	batchText,
 	fetchProviderBatchOutputEntries,
@@ -735,6 +735,15 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 		return { ok: false, reason: "successful_output_count_mismatch" };
 	}
 	const inputEntriesByCustomId = new Map<string, any>();
+	const canonicalModelsByCustomId = new Map<string, string>();
+	for (let offset = 0; ; offset += 1000) {
+		const rows = await listBatchRequestRows({ workspaceId, batchId, limit: 1000, offset });
+		for (const row of rows) {
+			const canonicalModel = normalizeText(row.meta?.canonical_model);
+			if (canonicalModel) canonicalModelsByCustomId.set(row.customId, canonicalModel);
+		}
+		if (rows.length < 1000) break;
+	}
 	if (
 		providerId === OPENAI_BATCH_PROVIDER_ID &&
 		(isVideoBatchEndpoint(meta.endpoint) || isImageBatchEndpoint(meta.endpoint)) &&
@@ -783,7 +792,7 @@ async function computeBatchSettlement(meta: BatchJobMeta, status: string, worksp
 			missingUsageResponses += 1;
 			continue;
 		}
-		const model = normalizeText(body.model) ?? normalizeText(requestBody?.model) ?? normalizeText(meta.model);
+		const model = canonicalModelsByCustomId.get(extractCustomId(entry) ?? "") ?? normalizeText(body.model) ?? normalizeText(requestBody?.model) ?? normalizeText(meta.model);
 		if (!model) return { ok: false, reason: "missing_model" };
 		const priceCard = await resolveBatchPriceCard({
 			providerId,

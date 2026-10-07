@@ -57,6 +57,12 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 			tiers.push({ serviceTier: name as CatalogServiceTier, providerModelSlug: model.providerModelSlug, upstreamServiceTier: tier.upstream_service_tier as string ?? null, availability: model.availability, pricing: model.pricing });
 		}
 		if (!normalizedModel) { issues.push({ path: `data[${index}].service_tiers`, message: "A valid standard tier is required." }); continue; }
+		for (const tier of tiers) {
+			if (!["standard", "batch"].includes(tier.serviceTier) && tier.providerModelSlug === normalizedModel.providerModelSlug && tier.upstreamServiceTier === null) {
+				const tierIndex = service_tiers.findIndex((raw) => raw && typeof raw === "object" && (raw as Record<string, unknown>).service_tier === tier.serviceTier);
+				issues.push({ path: `data[${index}].service_tiers[${tierIndex}].upstream_service_tier`, message: "Select this tier with a distinct upstream model ID or a native service tier parameter." });
+			}
+		}
 		if (seen.has(normalizedModel.id.toLowerCase())) { issues.push({ path: `data[${index}].id`, message: `Duplicate model id: ${normalizedModel.id}.` }); continue; }
 		seen.add(normalizedModel.id.toLowerCase());
 		models.push({ ...normalizedModel, serviceTiers: tiers });

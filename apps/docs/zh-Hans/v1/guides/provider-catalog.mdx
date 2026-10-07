@@ -1,0 +1,23 @@
+---
+title: "发布提供商目录"
+description: "支持标准化服务层级的 V1 和 V1.1 数据源。"
+icon: "list"
+---
+
+获批提供商可以自行更新公开规范模型的报价。新模型需要审批。每份目录都是完整快照：删除的报价会停用，历史价格仍然保留。
+
+## 选择格式
+
+没有版本字段的 V1 数据源继续有效。`"schema_version": "1.0"` 也表示 V1。V1.1 声明 `"schema_version": "1.1"`，并为每个模型提供 `service_tiers` 数组。版本由文档决定，而不是 URL 查询参数。
+
+每个模型必须提供 `standard`。其他允许的层级是 `fast`、`ultrafast`、`flex` 和 `batch`。每个层级包含 `service_tier`、`provider_model_slug`、`availability` 和 `pricing`。功能、限制和发布日期由模型共享。
+
+Fast、Ultrafast 和 Flex 支持文本生成。使用不同的上游模型 ID 或 `upstream_service_tier` 来选择实际层级。Fast 接受 `fast` 或 `priority`；Standard 接受 `default` 或 `standard`。Batch 使用独立的 Batch API，仍然需要提供商 Batch 集成和对应功能。
+
+## 价格与更新
+
+每个层级必须明确列出所有计费单位的价格。`price_nanos` 是优惠后的实际价格。零价格有效；负数价格、未知单位、重复层级和条件价格会被拒绝。价格变化时发布新快照，历史价格会保留。
+
+轮询和签名 Webhook 支持两种版本。在提供商设置中，先选择层级再编辑。模型映射错误会单独显示，不会阻止有效模型导入。
+
+完整示例和 JSON Schema 请参阅[英文契约指南](/v1/guides/provider-catalog)。

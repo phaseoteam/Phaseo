@@ -480,7 +480,7 @@ export async function applyServiceTierRouting(args: {
 		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
 		if (catalogTier) {
 			const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;
-			if (plan === requestedPlan && hasPricingPlan(candidate.pricingCard, requestedPlan)) nextCandidates.push(candidate);
+			if (args.capability === "text.generate" && requestedPlan !== "batch" && plan === requestedPlan && hasPricingPlan(candidate.pricingCard, requestedPlan)) nextCandidates.push(candidate);
 			else droppedProviders.push({ providerId: candidate.providerId, apiModelId: candidate.apiModelId ?? null, providerModelSlug: candidate.providerModelSlug ?? null, reason: "service_tier_not_offered" });
 			continue;
 		}
