@@ -5087,6 +5087,11 @@
 		"copyThroughput": "Vazão"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "Nível de serviço",
+		"addTier": "Adicionar nível de serviço",
+		"upstreamTier": "Parâmetro de nível do provedor",
+		"modelIdSelection": "Selecionar por ID do modelo",
+		"removeTier": "Remover nível",
 		"newModel": "Novo modelo",
 		"custom": "Personalizado",
 		"input": "Entrada",

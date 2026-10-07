@@ -20,7 +20,7 @@ export default function ProviderCatalogTierControls({ model, activeTier, onSelec
 		</select></div>
 		<div className="space-y-2"><Label htmlFor="catalog-add-tier">{t("addTier")}</Label><select id="catalog-add-tier" className={selectClass} value="" onChange={(event) => {
 			if (!event.target.value) return;
-			onChange([...tiers, { service_tier: event.target.value as Tier["service_tier"], provider_model_slug: "", availability: "not_ready", pricing: tiers[0].pricing.map((price) => ({ ...price })) }]);
+			onChange([...tiers, { service_tier: event.target.value as Tier["service_tier"], provider_model_slug: "", availability: "not_ready", pricing: (tiers.find((tier) => tier.service_tier === "standard")?.pricing ?? model.pricing).map((price) => ({ ...price })) }]);
 			onSelect(event.target.value);
 		}}><option value="">{t("addTier")}</option>{names.filter((name) => !tiers.some((tier) => tier.service_tier === name)).map((name) => <option key={name} value={name}>{name}</option>)}</select></div>
 		{model.service_tiers && <div className="space-y-2"><Label htmlFor="catalog-upstream-tier">{t("upstreamTier")}</Label><select id="catalog-upstream-tier" className={selectClass} value={selected.upstream_service_tier ?? ""} onChange={(event) => onChange(tiers.map((tier) => tier.service_tier === selected.service_tier ? { ...tier, upstream_service_tier: event.target.value || null } : tier))}>

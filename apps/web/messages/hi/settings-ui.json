@@ -5087,6 +5087,11 @@
 		"copyThroughput": "आउटपुट दर"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "सेवा स्तर",
+		"addTier": "सेवा स्तर जोड़ें",
+		"upstreamTier": "प्रदाता का स्तर पैरामीटर",
+		"modelIdSelection": "मॉडल ID से चुनें",
+		"removeTier": "स्तर हटाएँ",
 		"newModel": "नया मॉडल",
 		"custom": "कस्टम",
 		"input": "इनपुट",

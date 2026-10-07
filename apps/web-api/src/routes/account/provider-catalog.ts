@@ -67,7 +67,7 @@ export const providerCatalogJsonSchema = {
 						type: "object", additionalProperties: false,
 						required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"],
 						properties: {
-							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
+							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: ["string", "null"] }, unit: { type: "string" },
 							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
 							display_label: { type: "string" }, display_unit: { type: "string" },
 								conditions: {
@@ -100,15 +100,24 @@ export const providerCatalogV11JsonSchema = {
 	$defs: {
 		...providerCatalogJsonSchema.$defs,
 		model: { ...providerCatalogJsonSchema.$defs.model, required: ["id", "capabilities", "service_tiers"], properties: {
-			...tieredModelProperties, service_tiers: { type: "array", minItems: 1, maxItems: 5, items: { $ref: "#/$defs/serviceTier" } },
-		} },
+			...tieredModelProperties, service_tiers: { type: "array", minItems: 1, maxItems: 5, items: { $ref: "#/$defs/serviceTier" },
+				contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: "standard" } } }, minContains: 1, maxContains: 1,
+				allOf: ["fast", "ultrafast", "flex", "batch"].map((name) => ({ contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: name } } }, minContains: 0, maxContains: 1 })),
+			},
+		}, allOf: [{
+			if: { properties: { service_tiers: { contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: "batch" } } } } } },
+			then: { properties: { capabilities: { contains: { anyOf: [{ enum: ["batch", "batch.create"] }, { type: "object", required: ["id"], properties: { id: { enum: ["batch", "batch.create"] } } }] } } } },
+		}] },
 		serviceTier: { type: "object", additionalProperties: false, required: ["service_tier", "provider_model_slug", "pricing"], properties: {
 			service_tier: { enum: ["standard", "fast", "ultrafast", "flex", "batch"] },
 			provider_model_slug: { ...upstreamModelSchema, minLength: 1 },
 			upstream_service_tier: { type: ["string", "null"], enum: [null, "standard", "default", "fast", "priority", "ultrafast", "flex", "batch"] },
 			availability: providerCatalogJsonSchema.$defs.model.properties.availability,
 			pricing: { ...tierPricingSchema, minItems: 1 },
-		} },
+		}, allOf: ["standard", "fast", "ultrafast", "flex", "batch"].map((name) => ({
+			if: { properties: { service_tier: { const: name } } },
+			then: { properties: { upstream_service_tier: { enum: [null, ...(name === "batch" ? [] : name === "standard" ? ["default", "standard"] : name === "fast" ? ["fast", "priority"] : [name])] } } },
+		})) },
 	},
 } as const;
 

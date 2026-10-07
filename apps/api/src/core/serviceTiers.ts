@@ -3,7 +3,8 @@ import type { Endpoint } from "./types";
 export type NormalizedTextServiceTier = "standard" | "fast" | "ultrafast" | "priority" | "flex" | "batch";
 
 export function readProviderCatalogTier(params: Record<string, unknown> | null | undefined): { name: string; upstream: string | null } | null {
-	const value = params?.__provider_catalog_tier;
+	const descriptor = params?.service_tier;
+	const value = descriptor && typeof descriptor === "object" ? (descriptor as Record<string, unknown>).provider_catalog : null;
 	if (!value || typeof value !== "object") return null;
 	const tier = value as Record<string, unknown>;
 	if (!["standard", "fast", "ultrafast", "flex", "batch"].includes(String(tier.name))) return null;

@@ -14,6 +14,28 @@ const CONTACT_ID = "22222222-2222-4222-8222-222222222222";
 describe("provider application review API", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
+	it("preserves submitted service tiers when approving a model revision", async () => {
+		const tiers = [{ serviceTier: "standard", providerModelSlug: "base", pricing: [] }, { serviceTier: "fast", providerModelSlug: "fast", pricing: [] }];
+		let staged: Record<string, unknown> | null = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			const method = input instanceof Request ? input.method : init?.method ?? "GET";
+			if (url.includes("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
+			if (url.includes("/rest/v1/users")) return Response.json([{ role: "admin" }]);
+			if (url.includes("provider_catalog_route_candidates")) { staged = JSON.parse(String(init?.body)); return Response.json([]); }
+			if (url.includes("provider_catalog_sync_model_capabilities")) return Response.json([{ capability_id: "text.generate", parameters: [] }]);
+			if (url.includes("provider_catalog_sync_models") && method === "GET") {
+				return Response.json([{ run_id: CONTACT_ID, provider_slug: "sample", model_slug: "sample/model", provider_model_slug: "base", canonical_model_slug: "sample/model", metadata: { pricing: [], serviceTiers: tiers }, decision: "approved" }]);
+			}
+			if (url.includes("provider_catalog_sync_models") && method === "PATCH") return Response.json({ run_id: CONTACT_ID, model_slug: "sample/model", decision: "approved" });
+			if (url.includes("provider_catalog_review_events") || url.includes("provider_account_links") || url.includes("provider_catalog_sync_runs")) return Response.json([]);
+			throw new Error("Unexpected model approval request");
+		}));
+		const response = await app.request(`https://phaseo.app/api/internal/provider-catalog/reviews/${CONTACT_ID}/models/sample%2Fmodel`, { method: "PATCH", headers: { authorization: "Bearer test", "content-type": "application/json" }, body: JSON.stringify({ decision: "approved" }) }, env);
+		expect(response.status).toBe(200);
+		expect(staged).toMatchObject({ service_tiers: tiers });
+	});
+
 	it("restricts new-model review to admins", async () => {
 		vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL)=>{
 			const url=String(input);

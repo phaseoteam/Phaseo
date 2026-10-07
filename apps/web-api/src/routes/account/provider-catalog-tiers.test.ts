@@ -18,11 +18,29 @@ describe("provider catalog V1.1", () => {
 		expect(parsed.valid).toBe(true);
 		expect(parsed.allModels[0].serviceTiers?.map((tier) => [tier.serviceTier, tier.providerModelSlug, tier.pricing[0].priceNanos])).toEqual([["standard", "model", 100_000_000], ["fast", "model-fast", 200_000_000]]);
 		const ajv = new Ajv({ strict: false }); addFormats(ajv);
-		expect(ajv.compile(providerCatalogV11JsonSchema)(document())).toBe(true);
+		const validate = ajv.compile(providerCatalogV11JsonSchema);
+		expect(validate(document())).toBe(true);
+		const noStandard = document(); noStandard.data[0].service_tiers.shift();
+		expect(validate(noStandard)).toBe(false);
+		const duplicate = document(); duplicate.data[0].service_tiers.push({ ...duplicate.data[0].service_tiers[1], provider_model_slug: "another-fast-id" });
+		expect(validate(duplicate)).toBe(false);
 	});
 	it("accepts an empty V1.1 snapshot and rejects unknown versions", () => {
 		expect(normalizeProviderCatalog({ schema_version: "1.1", data: [] }).valid).toBe(true);
 		expect(normalizeProviderCatalog({ schema_version: "2.0", data: [] }).issues[0].path).toBe("schema_version");
+	});
+	it("requires Batch API capability and keeps native tier aliases consistent", () => {
+		const ajv = new Ajv({ strict: false }); addFormats(ajv);
+		const validate = ajv.compile(providerCatalogV11JsonSchema);
+		const body = document(); body.data[0].service_tiers[1].service_tier = "batch";
+		expect(validate(body)).toBe(false);
+		expect(normalizeProviderCatalog(body).valid).toBe(false);
+		body.data[0].capabilities.push("batch");
+		expect(validate(body)).toBe(true);
+		expect(normalizeProviderCatalog(body).valid).toBe(true);
+		Object.assign(body.data[0].service_tiers[1], { upstream_service_tier: "priority" });
+		expect(validate(body)).toBe(false);
+		expect(normalizeProviderCatalog(body).valid).toBe(false);
 	});
 	it.each(["highspeed", "priority", "default", "made-up"])("rejects provider-specific tier name %s", (name) => {
 		const body = document(); body.data[0].service_tiers[1].service_tier = name;

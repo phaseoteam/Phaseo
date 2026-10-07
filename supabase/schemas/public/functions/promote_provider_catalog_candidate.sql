@@ -209,7 +209,10 @@ begin
       coalesce((select jsonb_object_agg(p.value, true) from jsonb_array_elements_text(coalesce(capability -> 'parameters', '[]'::jsonb)) as p(value)), '{}'::jsonb)
         || case when tier_offer->>'upstreamServiceTier' is not null then '{"service_tier":true}'::jsonb else '{}'::jsonb end
         || case when jsonb_array_length(base_candidate.service_tiers)>0
-          then jsonb_build_object('__provider_catalog_tier', jsonb_build_object('name',tier_name,'upstream',tier_offer->>'upstreamServiceTier'))
+          then jsonb_build_object('service_tier', jsonb_build_object('type','string','enum',
+            case when tier_name='fast' then '["fast","priority"]'::jsonb
+              when tier_name='standard' then '["standard","default"]'::jsonb else jsonb_build_array(tier_name) end,
+            'provider_catalog',jsonb_build_object('name',tier_name,'upstream',tier_offer->>'upstreamServiceTier')))
           else '{}'::jsonb end,
       candidate.available_from, candidate.shutdown_at,
       jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id), now()

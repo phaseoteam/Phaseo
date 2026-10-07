@@ -5087,6 +5087,11 @@
 		"copyThroughput": "吞吐量"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "服务等级",
+		"addTier": "添加服务等级",
+		"upstreamTier": "供应商等级参数",
+		"modelIdSelection": "按模型 ID 选择",
+		"removeTier": "删除等级",
 		"newModel": "新建模型",
 		"custom": "自定义",
 		"input": "输入",

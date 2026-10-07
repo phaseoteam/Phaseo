@@ -5087,6 +5087,11 @@
 		"copyThroughput": "スループット"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "サービス階層",
+		"addTier": "サービス階層を追加",
+		"upstreamTier": "プロバイダーの階層パラメーター",
+		"modelIdSelection": "モデルIDで選択",
+		"removeTier": "階層を削除",
 		"newModel": "新しいモデル",
 		"custom": "カスタム",
 		"input": "入力",

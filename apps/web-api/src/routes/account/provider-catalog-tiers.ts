@@ -59,7 +59,7 @@ export function normalizeTieredProviderCatalog(payload: Record<string, unknown>,
 		if (!normalizedModel) { issues.push({ path: `data[${index}].service_tiers`, message: "A valid standard tier is required." }); continue; }
 		if (seen.has(normalizedModel.id.toLowerCase())) { issues.push({ path: `data[${index}].id`, message: `Duplicate model id: ${normalizedModel.id}.` }); continue; }
 		seen.add(normalizedModel.id.toLowerCase());
-		models.push({ ...normalizedModel, serviceTiers: tiers.sort((a, b) => Number(b.serviceTier === "standard") - Number(a.serviceTier === "standard")) });
+		models.push({ ...normalizedModel, serviceTiers: tiers });
 	}
 	return { valid: issues.length === 0, modelCount: payload.data.length, models: models.slice(0, 100), allModels: models, issues: issues.slice(0, 100), truncated: models.length > 100 };
 }

@@ -5087,6 +5087,11 @@
 		"copyThroughput": "Rendimiento"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "Nivel de servicio",
+		"addTier": "Añadir nivel de servicio",
+		"upstreamTier": "Parámetro de nivel del proveedor",
+		"modelIdSelection": "Seleccionar por ID del modelo",
+		"removeTier": "Eliminar nivel",
 		"newModel": "Nuevo modelo",
 		"custom": "Personalizado",
 		"input": "Entrada",

@@ -5087,6 +5087,11 @@
 		"copyThroughput": "Durchsatz"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "Servicestufe",
+		"addTier": "Servicestufe hinzufügen",
+		"upstreamTier": "Stufenparameter des Anbieters",
+		"modelIdSelection": "Auswahl per Modell-ID",
+		"removeTier": "Stufe entfernen",
 		"newModel": "Neues Modell",
 		"custom": "Benutzerdefiniert",
 		"input": "Eingabe",

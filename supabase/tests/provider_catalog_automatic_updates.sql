@@ -1,7 +1,6 @@
 begin;
 
 insert into public.v2_service_tiers (service_tier_slug, display_name) values ('standard', 'Standard') on conflict do nothing;
-insert into public.v2_service_tiers(service_tier_slug,display_name) values ('fast','Fast'),('ultrafast','Ultrafast'),('flex','Flex'),('batch','Batch') on conflict do nothing;
 insert into public.v2_meter_definitions (meter_key, display_name, modality, direction, unit)
 values ('input_tokens', 'Input tokens', 'text', 'input', 'token') on conflict do nothing;
 insert into public.v2_providers (provider_slug, name, status, base_url, metadata)
@@ -201,7 +200,7 @@ begin
     and sku.service_tier_slug='fast' and sku.status='active' and meter.price_nanos=300000000);
   assert exists(select 1 from public.v2_route_capabilities cap join public.v2_model_provider_routes route using(provider_model_id)
     where route.provider_slug='catalog-contract-test' and route.metadata->>'catalog_service_tier'='fast'
-      and cap.params->'__provider_catalog_tier'->>'upstream'='priority');
+      and cap.params->'service_tier'->'provider_catalog'->>'upstream'='priority');
   -- An unchanged tiered snapshot preserves its effective prices.
   run2 := gen_random_uuid();
   insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run2,'catalog-contract-test','manual');

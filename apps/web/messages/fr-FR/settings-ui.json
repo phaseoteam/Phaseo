@@ -5087,6 +5087,11 @@
 		"copyThroughput": "Débit"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "Palier de service",
+		"addTier": "Ajouter un palier",
+		"upstreamTier": "Paramètre de palier du fournisseur",
+		"modelIdSelection": "Sélection par ID de modèle",
+		"removeTier": "Supprimer le palier",
 		"newModel": "Nouveau modèle",
 		"custom": "Personnalisé",
 		"input": "Entrée",
