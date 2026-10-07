@@ -55,6 +55,8 @@ import { executor as fireworksText } from "./fireworks/text-generate";
 import { executor as groqText } from "./groq/text-generate";
 import { executor as novitaaiText } from "./novitaai/text-generate";
 import { executor as novitaVideo } from "./novita/video-generate";
+import { executor as novitaSpeech } from "./novita/audio-speech";
+import { executor as novitaImages } from "./novita/image-generate";
 import { executor as perplexityText } from "./perplexity/text-generate";
 import { executor as liquidAiText } from "./liquid-ai/text-generate";
 import { executor as liquidAiDecisions } from "./liquid-ai/decisions";
@@ -464,8 +466,8 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	liquid: { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
 	"liquid-ai": { "text.generate": liquidAiText, "decisions.make": liquidAiDecisions },
-	novitaai: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
-	novita: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo },
+	novitaai: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo, "audio.speech": novitaSpeech, "image.generate": novitaImages },
+	novita: { "text.generate": novitaaiText, embeddings: openaiEmbeddings, rerank: openaiRerank, "video.generate": novitaVideo, "audio.speech": novitaSpeech, "image.generate": novitaImages },
 	perplexity: { "text.generate": perplexityText, embeddings: openaiEmbeddings, "decisions.make": perplexityDecisions },
 	relace: { "text.generate": relaceText, rerank: relaceRerank },
 	sambanova: { "text.generate": sambanovaText },
