@@ -650,7 +650,7 @@ describe("buildProviderSections", () => {
 				buildProviderSections(matchingInputProvider(), "standard"),
 				buildProviderSections(provider, "standard"),
 			]);
-			expect(columns.some((column) => column.groupedModalities)).toBe(false);
+			expect(columns.some((column) => column.groupedModalities)).toBe(difference === "missing modality");
 		},
 	);
 
