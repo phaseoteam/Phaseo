@@ -21,6 +21,8 @@ describe("fetchModelsPageCatalogue", () => {
 		const luna = { gateway_output_modalities: ["text"], gateway_endpoints: ["text.generate", "decisions.make"] };
 		expect(buildModelsPageFacets([luna]).outputModalityOptions).toEqual([{ value: "text", count: 1 }, { value: "decisions", count: 1 }]);
 		expect(luna.gateway_output_modalities).toEqual(["text"]);
+		expect(buildModelsPageFacets([luna, { gateway_output_modalities: ["decisions"], gateway_endpoints: ["decisions.make"] }]).outputModalityOptions)
+			.toEqual([{ value: "text", count: 1 }, { value: "decisions", count: 2 }]);
 	});
 	it("rejects failed standalone metrics instead of caching an empty success", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({

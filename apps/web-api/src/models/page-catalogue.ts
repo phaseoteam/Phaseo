@@ -324,7 +324,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		endpointOptions: optionCounts(rows, "gateway_endpoints"),
 		inputModalityOptions: ordered(optionCounts(rows, "gateway_input_modalities", modality), MODALITY_ORDER),
 		outputModalityOptions: ordered(optionCounts(rows.map(row => ({ ...row,
-			gateway_output_modalities: [...strings(row.gateway_output_modalities), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])],
+			gateway_output_modalities: strings([...strings(row.gateway_output_modalities), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])]),
 		})), "gateway_output_modalities", modality), MODALITY_ORDER),
 		featureOptions: ordered(optionCounts(rows, "gateway_features"), FEATURE_ORDER),
 		tierOptions: optionCounts(rows, "gateway_tiers"),
