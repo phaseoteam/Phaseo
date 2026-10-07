@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 
 describe("enrichSuccessPayload model selection", () => {
+	it("keeps native Decisions answer arrays and usage details in the final payload", () => {
+		const answers = [{ type: "predicate", name: null, probability: 0.8 }];
+		const payload = formatClientPayload({
+			ctx: { endpoint: "decisions", body: { questions: [] }, requestId: "req_native", meta: {} } as any,
+			result: { provider: "openai" } as any,
+			includeMeta: false,
+			payload: {
+			model: "openai/gpt-6-luna", answers,
+			usage: { input_tokens: 10, output_tokens: 2, total_tokens: 12,
+				input_tokens_details: { cached_tokens: 3, cache_write_tokens: 4 },
+				output_tokens_details: { reasoning_tokens: 1 } },
+			},
+		});
+		expect(payload.answers).toEqual(answers);
+		expect(payload.usage.input_tokens_details).toMatchObject({ cached_tokens: 3, cache_write_tokens: 4 });
+		expect(payload.usage.output_tokens_details.reasoning_tokens).toBe(1);
+	});
 	it("backfills assistant phase from IR when raw output message omits it", async () => {
 		const ctx: any = {
 			endpoint: "responses",

@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import type { Endpoint } from "./types";
+import { NativeDecisionsBodySchema } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -1558,7 +1559,7 @@ const DecisionQuestionSchema = z.discriminatedUnion("type", [
     }).passthrough(),
 ]);
 
-export const DecisionsSchema = z.object({
+export const LegacyDecisionsSchema = z.object({
     model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: DecisionsStateSchema,
     images: z.array(z.union([
@@ -1583,6 +1584,20 @@ export const DecisionsSchema = z.object({
     routing: ProviderRoutingSchema,
     metadata: z.record(z.string(), z.any()).nullable().optional(),
 }).passthrough();
+export const OpenAIDecisionsSchema = NativeDecisionsBodySchema.safeExtend({
+    meta: z.boolean().optional().default(false),
+    echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
+    provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
+    metadata: z.record(z.string(), z.any()).nullable().optional(),
+}).passthrough();
+export const DecisionsSchema = z.union([OpenAIDecisionsSchema, LegacyDecisionsSchema]).superRefine((body, ctx) => {
+    if ("input" in body && ("state" in body || "images" in body)) {
+        ctx.addIssue({ code: "custom", path: ["input"], message: "Use either input with array questions or state with map questions; do not mix formats." });
+    }
+});
 export type DecisionsRequest = z.infer<typeof DecisionsSchema>;
 
 // Audio Speech schema

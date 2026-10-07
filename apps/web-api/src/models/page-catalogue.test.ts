@@ -16,6 +16,24 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchModelsPageCatalogue", () => {
+	it("keeps dual-capability models visible with unknown prices if pricing enrichment fails", async () => {
+		const row = { model_id: "openai/gpt-6-luna", name: "GPT-6 Luna",
+			gateway_endpoints: ["text.generate", "decisions.make"], lowest_input_price: 0.1, lowest_output_price: 0 };
+		const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_models_page_payload")) return Response.json([row]);
+			if (url.includes("get_v2_public_model_weekly_metrics")) return Response.json([]);
+			return Response.json({ message: "Pricing unavailable" }, { status: 400 });
+		}));
+		try {
+			const result = await fetchModelsPageCatalogue(env);
+			expect(result.models).toHaveLength(1);
+			expect(result.models[0].gateway_endpoints).toEqual(row.gateway_endpoints);
+			expect(result.models[0].lowest_input_price).toBeNull();
+			expect(result.models[0].operation_pricing).toEqual([]);
+		} finally { errorLog.mockRestore(); }
+	});
 	it("loads more than 1,000 models with one catalogue RPC", async () => {
 		const rows = Array.from({ length: 2001 }, (_, index) => ({
 			model_id: `test/model-${index}`, name: `Model ${index}`,

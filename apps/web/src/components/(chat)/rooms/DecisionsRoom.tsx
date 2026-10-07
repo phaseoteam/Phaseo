@@ -27,7 +27,7 @@ import {
 	DecisionComposer,
 	DECISION_VALIDATION_COPY_KEYS,
 	createDefaultDecisionDraft,
-	serializeDecisionDraft,
+	serializeDecisionDraftForModel,
 	validateDecisionDraft,
 	type DecisionDraft,
 } from "@/components/(chat)/DecisionComposer";
@@ -502,7 +502,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			return false;
 		}
 
-		const { state, questions } = serializeDecisionDraft(draft);
+		const request = serializeDecisionDraftForModel(draft, model || DEFAULT_MODEL_ID);
 		const submittedDraft = cloneDraft(draft);
 		const prompt = draft.prompt.trim();
 		const runId = `decision-${crypto.randomUUID()}`;
@@ -541,10 +541,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			conversationTitle,
 			input: prompt,
 			model: runModel,
-			request: {
-				state,
-				questions,
-			},
+			request,
 			draft: submittedDraft,
 			result: null,
 			createdAt,
@@ -562,8 +559,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 		});
 		void evaluateRun(runId, {
 			model: runModel,
-			state,
-			questions,
+			...request,
 		}, pendingRun);
 		return true;
 	}
@@ -594,9 +590,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
 					requestBody: {
-						model: request.model,
-						state: request.state,
-						questions: request.questions,
+						...request,
 						meta: true,
 					},
 					appHeaders: APP_HEADERS,
@@ -678,18 +672,18 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 			cancelEditingRun();
 			return;
 		}
-		const { state, questions } = serializeDecisionDraft(nextDraft);
+		const request = serializeDecisionDraftForModel(nextDraft, run.model);
 		const editedRun: DecisionRun = {
 			...run,
 			input: nextPrompt,
-			request: { state, questions },
+			request,
 			draft: nextDraft,
 		};
 		setEditingRunId(null);
 		setEditingValue("");
 		void evaluateRun(
 			run.id,
-			{ model: run.model, state, questions },
+			{ model: run.model, ...request },
 			editedRun,
 		);
 	}

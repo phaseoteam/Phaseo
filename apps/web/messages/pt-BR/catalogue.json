@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "Geração de vídeo",
 			"endpointImageVariations": "Variações de imagens",
 			"endpointMusicGeneration": "Geração de música",
-			"tierPrivate": "Privados"
+			"tierPrivate": "Privados",
+			"capabilityTextGeneration": "Geração de texto",
+			"modalityDecisions": "Decisões"
 		},
 		"freeRouter": {
 			"title": "Conjunto de modelos gratuitos",

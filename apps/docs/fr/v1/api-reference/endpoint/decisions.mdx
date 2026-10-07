@@ -6,6 +6,26 @@ openapi: "/fr/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Évaluez des questions typées à partir de l’état de l’application avec les modèles de décision pris en charge."
 ---
 
+Pour les nouveaux appels, utilisez le format compatible OpenAI : `input` contient du texte ou des messages utilisateur avec des éléments `input_image` intégrés, et `questions` est une liste ordonnée de questions `predicate`, `choice` ou `score`. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL d’images hébergées ne sont pas prises en charge ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et `safety_identifier` nécessitent une route OpenAI. Le format historique avec `state`, des questions nommées, `noul` et `criteria` reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 Utilisez `POST /v1/decisions` lorsque votre application a besoin de réponses structurées directement exploitables par le code. Les modèles pris en charge incluent TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) et Respan Span-01 (`respan/span-01:free` et `respan/span-01`).
 
 La requête contient :

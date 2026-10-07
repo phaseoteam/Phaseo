@@ -1,3 +1,5 @@
+import { decisionModelCapability } from "@/lib/models/modelCapabilities";
+
 export interface ModelData {
 	id: string;
 	model: string;
@@ -50,6 +52,7 @@ export interface GroupedModelData {
 	tiers: string[];
 	inputPrices: number[];
 	outputPrices: number[];
+	operationPrices: Array<{ capability: "text.generate" | "decisions.make"; inputPrices: number[]; outputPrices: number[] }>;
 	added?: string;
 	retired?: string;
 	popularityTokensWeek: number;
@@ -76,6 +79,9 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 
 	return Array.from(groups, ([key, variants]) => {
 		const first = variants[0];
+		const textVariants = variants.filter(variant => decisionModelCapability(variant.endpoint) === "text.generate");
+		const hasDecisions = variants.some(variant => decisionModelCapability(variant.endpoint) === "decisions.make");
+		const priceVariants = hasDecisions && textVariants.length ? textVariants : variants;
 		const providerMap = new Map<string, ModelProvider>();
 		for (const variant of variants) {
 			const providerKey = variant.provider.id || variant.provider.name;
@@ -131,11 +137,18 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 			),
 			tiers: unique(variants.map(({ tier }) => tier || "standard")),
 			inputPrices: uniqueNumbers(
-				variants.map(({ provider }) => provider.inputPrice),
+				priceVariants.map(({ provider }) => provider.inputPrice),
 			),
 			outputPrices: uniqueNumbers(
-				variants.map(({ provider }) => provider.outputPrice),
+				priceVariants.map(({ provider }) => provider.outputPrice),
 			),
+			operationPrices: (["text.generate", "decisions.make"] as const).flatMap(capability => {
+				const matching = variants.filter(variant => decisionModelCapability(variant.endpoint) === capability);
+				return matching.length ? [{ capability,
+					inputPrices: uniqueNumbers(matching.map(variant => variant.provider.inputPrice)),
+					outputPrices: uniqueNumbers(matching.map(variant => variant.provider.outputPrice)),
+				}] : [];
+			}),
 			added: variants
 				.map(({ added }) => added)
 				.filter(Boolean)

@@ -1,4 +1,5 @@
 import { ReactNode, Suspense } from "react";
+import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import { Link } from "@/i18n/navigation";
 import {
 	fetchFrontendModelHeader,
@@ -135,6 +136,9 @@ export default async function ModelDetailShell({
 	const tx = await getTranslations();
 	const locale = await getLocale();
 	const isFreeRouter = isFreeRouterModelId(modelId);
+	const gatewayMetadataPromise = isFreeRouter
+		? Promise.resolve(null)
+		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const [header, modelOverview] = isFreeRouter
 		? [
 				{
@@ -161,9 +165,6 @@ export default async function ModelDetailShell({
 	if (!header) {
 		notFound();
 	}
-	const gatewayMetadataPromise = isFreeRouter
-		? Promise.resolve(null)
-		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const modelDescription = descriptionOverride !== undefined
 		? descriptionOverride
 		: isFreeRouter
@@ -177,7 +178,11 @@ export default async function ModelDetailShell({
 		? ["overview"]
 		: visibleTabKeys;
 	const canChat = canChatOverride ?? header.status !== "Retired";
-	const isDecisionsModel = !isFreeRouter && matchesDecisionsModel(modelId, modelOverview);
+	const gatewayMetadata = await gatewayMetadataPromise;
+	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
+	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
+		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));
+	const supportsText = capabilities.includes("text.generate") || !isDecisionsModel;
 	if (tab && !scopedVisibleTabKeys.includes(tab)) {
 		redirect(`/models/${modelId}`);
 	}
@@ -251,9 +256,9 @@ export default async function ModelDetailShell({
 						) : null}
 						{canChat ? (
 							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+								<Link href={`${isDecisionsModel && !supportsText ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
-									{isDecisionsModel ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
+									{isDecisionsModel && !supportsText ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
 								</Link>
 							</Button>
 						) : null}
@@ -263,11 +268,10 @@ export default async function ModelDetailShell({
 								{t("detail.actions.compare")}
 							</Link>
 						</Button> : null}
-						{canChat ? isDecisionsModel ? (
-							<Button asChild variant="default" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
-								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}>{t("detail.actions.tryJev")}</Link>
-							</Button>
-						) : <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
+						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+							<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}><Scale className="h-4 w-4" />{t("detail.actions.openDecisions")}</Link>
+						</Button> : null}
+						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
 					</div>
 				</div>
 

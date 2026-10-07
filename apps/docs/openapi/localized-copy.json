@@ -182,6 +182,96 @@
 		}
 	},
 	"_strings": {
+		"OpenAI-compatible input and ordered questions are the preferred format. Legacy state and named question maps remain supported. The response format follows the request format; do not mix the two.": {
+			"es": "Se recomienda el formato OpenAI. El formato anterior sigue admitido. La respuesta sigue la solicitud; no mezcles formatos.",
+			"fr": "Le format OpenAI est recommandé. Le format historique reste disponible. La réponse suit la requête ; ne mélangez pas les formats.",
+			"de": "Das OpenAI-Format wird empfohlen. Das bisherige Format bleibt unterstützt. Die Antwort folgt der Anfrage; Formate nicht mischen.",
+			"pt-BR": "O formato OpenAI é recomendado. O formato anterior permanece aceito. A resposta segue a solicitação; não misture os formatos.",
+			"hi": "OpenAI प्रारूप पसंदीदा है। पुराना प्रारूप समर्थित है। उत्तर अनुरोध जैसा होता है; प्रारूप न मिलाएँ।",
+			"ja": "OpenAI 形式を推奨します。従来形式も対応します。回答はリクエスト形式に従います。混在させないでください。",
+			"zh-Hans": "推荐 OpenAI 格式。原有格式仍受支持。回答遵循请求格式，请勿混用。",
+			"ar": "يوصى بتنسيق OpenAI. يظل التنسيق القديم مدعومًا. تتبع الإجابة الطلب؛ لا تخلط التنسيقات."
+		},
+		"Text evidence or user messages containing text and inline images.": {
+			"es": "Texto o mensajes con imágenes integradas.",
+			"fr": "Texte ou messages avec images intégrées.",
+			"de": "Text oder Nachrichten mit eingebetteten Bildern.",
+			"pt-BR": "Texto ou mensagens com imagens incorporadas.",
+			"hi": "टेक्स्ट या इनलाइन चित्र वाले संदेश।",
+			"ja": "テキストまたはインライン画像付きメッセージ。",
+			"zh-Hans": "文本或带内联图片的消息。",
+			"ar": "نص أو رسائل مع صور مضمنة."
+		},
+		"Opaque end-user identifier. Supported on OpenAI routes only.": {
+			"es": "Identificador opaco del usuario. Solo rutas OpenAI.",
+			"fr": "Identifiant opaque de l’utilisateur. Routes OpenAI uniquement.",
+			"de": "Undurchsichtige Benutzerkennung. Nur OpenAI-Routen.",
+			"pt-BR": "Identificador opaco do usuário. Apenas rotas OpenAI.",
+			"hi": "अपारदर्शी उपयोगकर्ता पहचान। केवल OpenAI रूट।",
+			"ja": "不透明なユーザー識別子。OpenAI ルートのみ。",
+			"zh-Hans": "不透明用户标识符。仅 OpenAI 路由。",
+			"ar": "معرّف مستخدم مبهم. مسارات OpenAI فقط."
+		},
+		"Inline base64 image. Hosted URLs and file IDs are unsupported. A request supports at most 128 images across all messages; individual providers can impose lower limits.": {
+			"es": "Imagen base64 integrada. Sin URL alojadas ni ID de archivos. Máximo 128 imágenes por solicitud; los proveedores pueden imponer límites menores.",
+			"fr": "Image base64 intégrée. Sans URL hébergées ni identifiants de fichiers. Maximum 128 images par requête ; les fournisseurs peuvent imposer des limites inférieures.",
+			"de": "Eingebettetes Base64-Bild. Keine externen URLs oder Datei-IDs. Höchstens 128 Bilder pro Anfrage; Anbieter können niedrigere Grenzen setzen.",
+			"pt-BR": "Imagem base64 incorporada. Sem URLs hospedadas ou IDs de arquivos. Máximo 128 imagens por solicitação; provedores podem impor limites menores.",
+			"hi": "इनलाइन base64 चित्र। होस्ट किए URL और फ़ाइल ID समर्थित नहीं। प्रति अनुरोध अधिकतम 128 चित्र; प्रदाता कम सीमा लगा सकते हैं।",
+			"ja": "インライン base64 画像。外部 URL とファイル ID は非対応。リクエスト全体で最大128枚。プロバイダーの制限が低い場合があります。",
+			"zh-Hans": "内联 base64 图片。不支持托管 URL 或文件 ID。每个请求最多128张图片；提供商可能限制更低。",
+			"ar": "صورة base64 مضمنة. دون روابط مستضافة أو معرّفات ملفات. الحد الأقصى 128 صورة لكل طلب؛ قد يفرض المزود حدودًا أقل."
+		},
+		"Explicit image detail is supported on OpenAI routes only.": {
+			"es": "Detalle explícito de imagen: solo OpenAI.",
+			"fr": "Détail explicite des images : OpenAI uniquement.",
+			"de": "Explizite Bilddetails: nur OpenAI.",
+			"pt-BR": "Detalhes explícitos de imagem: apenas OpenAI.",
+			"hi": "स्पष्ट चित्र विवरण: केवल OpenAI।",
+			"ja": "明示的な画像詳細は OpenAI のみ。",
+			"zh-Hans": "显式图片细节仅支持 OpenAI。",
+			"ar": "تفاصيل الصور الصريحة: OpenAI فقط."
+		},
+		"Values must be distinct; a boolean and a string with the same text are different values.": {
+			"es": "Valores distintos; booleanos y texto equivalente son diferentes.",
+			"fr": "Valeurs distinctes ; booléens et chaînes équivalentes sont différents.",
+			"de": "Eindeutige Werte; boolesche Werte und gleichlautender Text sind verschieden.",
+			"pt-BR": "Valores distintos; booleanos e strings equivalentes são diferentes.",
+			"hi": "अलग मान; बूलियन और समान टेक्स्ट वाली स्ट्रिंग अलग हैं।",
+			"ja": "値は一意。同じ表記の真偽値と文字列は別の値です。",
+			"zh-Hans": "值必须不同；布尔值与相同文本的字符串不同。",
+			"ar": "قيم مختلفة؛ القيمة المنطقية والنص المطابق مختلفان."
+		},
+		"Compatibility format using state, named question maps, and noul questions.": {
+			"es": "Formato compatible con state, preguntas nombradas y noul.",
+			"fr": "Format compatible avec state, questions nommées et noul.",
+			"de": "Kompatibilitätsformat mit state, benannten Fragen und noul.",
+			"pt-BR": "Formato compatível com state, perguntas nomeadas e noul.",
+			"hi": "state, नामित प्रश्न और noul वाला संगतता प्रारूप।",
+			"ja": "state、名前付き質問、noul による互換形式。",
+			"zh-Hans": "使用 state、命名问题和 noul 的兼容格式。",
+			"ar": "تنسيق التوافق مع state والأسئلة المسماة وnoul."
+		},
+		"Ordered answers for input/array requests, or a named map for legacy state/map requests.": {
+			"es": "Respuestas ordenadas para input/lista; mapa nombrado para state/mapa anterior.",
+			"fr": "Réponses ordonnées pour input/tableau ; objet nommé pour state/objet historique.",
+			"de": "Geordnete Antworten für input/Array; benannte Map für bisheriges state/Map.",
+			"pt-BR": "Respostas ordenadas para input/lista; mapa nomeado para state/mapa anterior.",
+			"hi": "input/सूची के लिए क्रमबद्ध उत्तर; पुराने state/मैप के लिए नामित मैप।",
+			"ja": "input/配列は順序付き回答。従来 state/マップは名前付きマップ。",
+			"zh-Hans": "input/数组返回有序回答；原有 state/映射返回命名映射。",
+			"ar": "إجابات مرتبة لـ input/المصفوفة؛ خريطة مسماة لـ state/الخريطة القديمة."
+		},
+		"One answer per question in request order, including unnamed or repeated-name questions.": {
+			"es": "Una respuesta por pregunta en orden, incluso sin nombre o con nombres repetidos.",
+			"fr": "Une réponse par question dans l’ordre, même sans nom ou avec noms répétés.",
+			"de": "Eine Antwort je Frage in Reihenfolge, auch ohne Namen oder mit gleichen Namen.",
+			"pt-BR": "Uma resposta por pergunta na ordem, inclusive sem nome ou com nomes repetidos.",
+			"hi": "क्रम में हर प्रश्न का उत्तर, बिना नाम या दोहराए नाम वाले प्रश्न सहित।",
+			"ja": "名前なしや同名の質問も含め、質問順に1つずつ回答。",
+			"zh-Hans": "按问题顺序一一回答，包括无名称或同名问题。",
+			"ar": "إجابة لكل سؤال بالترتيب، حتى دون أسماء أو بأسماء متكررة."
+		},
 		"A gateway API for accessing various AI models with OpenAI-compatible endpoints.": {
 			"es": "Una API de pasarela para acceder a diversos modelos de IA mediante endpoints compatibles con OpenAI.",
 			"fr": "Une API de passerelle pour accéder à divers modèles d’IA via des points de terminaison compatibles avec OpenAI.",
@@ -9811,14 +9901,14 @@
 			"ar": "اتخاذ قرارات منظّمة"
 		},
 		"description": {
-			"es": "Evalúa preguntas tipadas Noul, Choice y Score sobre un estado estructurado con un modelo de decisión como TypeSafe Jev.",
-			"fr": "Évalue des questions typées Noul, Choice et Score à partir d’un état structuré avec un modèle de décision tel que TypeSafe Jev.",
-			"de": "Bewertet typisierte Noul-, Choice- und Score-Fragen anhand eines strukturierten Zustands mit einem Entscheidungsmodell wie TypeSafe Jev.",
-			"pt-BR": "Avalia perguntas tipadas Noul, Choice e Score sobre um estado estruturado usando um modelo de decisão como TypeSafe Jev.",
-			"ja": "TypeSafe Jev などの判断モデルを使い、構造化された状態に対して Noul、Choice、Score の型付き質問を評価します。",
-			"zh-Hans": "使用 TypeSafe Jev 等决策模型，针对结构化状态评估 Noul、Choice 和 Score 类型的问题。",
-			"hi": "TypeSafe Jev जैसे निर्णय मॉडल से संरचित स्थिति पर Noul, Choice और Score प्रकार के प्रश्नों का मूल्यांकन करता है।",
-			"ar": "يقيّم أسئلة Noul وChoice وScore ذات الأنواع المحددة بناءً على حالة منظّمة باستخدام نموذج قرار مثل TypeSafe Jev."
+			"es": "Para llamadas nuevas, usa el formato compatible con OpenAI: input contiene texto o mensajes de usuario con partes input_image integradas, y questions es una lista ordenada de preguntas predicate, choice o score. Las respuestas mantienen el orden y los nombres opcionales. Los valores booleanos siguen siendo booleanos. No se admiten URL de imágenes alojadas; Luna admite hasta 128 imágenes integradas, con límites propios para otros proveedores. El detalle explícito de imagen y safety_identifier requieren una ruta OpenAI. El formato anterior con state, mapas de preguntas, noul y criteria sigue funcionando y devuelve un mapa de respuestas. Together Tev requiere ese formato porque devuelve etiquetas sin probabilidades. Los ejemplos anteriores siguen siendo válidos.",
+			"fr": "Pour les nouveaux appels, utilisez le format compatible OpenAI : input contient du texte ou des messages utilisateur avec des éléments input_image intégrés, et questions est une liste ordonnée de questions predicate, choice ou score. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL d’images hébergées ne sont pas prises en charge ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et safety_identifier nécessitent une route OpenAI. Le format historique avec state, des questions nommées, noul et criteria reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.",
+			"de": "Verwende für neue Aufrufe das OpenAI-kompatible Format: input enthält Text oder Benutzernachrichten mit eingebetteten input_image-Teilen; questions ist eine geordnete Liste von predicate-, choice- oder score-Fragen. Antworten behalten Reihenfolge und optionale Namen bei. Boolesche Auswahlwerte bleiben boolesch. Externe Bild-URLs werden nicht unterstützt; Luna akzeptiert bis zu 128 eingebettete Bilder, andere Anbieter haben eigene Grenzen. Explizite Bilddetails und safety_identifier erfordern eine OpenAI-Route. Das bisherige Format mit state, benannten Fragen, noul und criteria bleibt unterstützt und liefert eine Antwort-Map. Together Tev benötigt dieses Format, da es Bezeichnungen ohne Wahrscheinlichkeiten liefert. Die bisherigen Beispiele bleiben gültig.",
+			"pt-BR": "Para novas chamadas, use o formato compatível com OpenAI: input contém texto ou mensagens do usuário com partes input_image incorporadas, e questions é uma lista ordenada de perguntas predicate, choice ou score. As respostas mantêm a ordem e os nomes opcionais. Valores booleanos continuam booleanos. URLs de imagens hospedadas não são aceitas; Luna aceita até 128 imagens incorporadas, enquanto outros provedores têm limites próprios. Detalhes explícitos de imagem e safety_identifier exigem uma rota OpenAI. O formato anterior com state, perguntas nomeadas, noul e criteria continua aceito e retorna um mapa de respostas. Together Tev exige esse formato porque retorna rótulos sem probabilidades. Os exemplos anteriores continuam válidos.",
+			"hi": "नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: input में टेक्स्ट या इनलाइन input_image वाले उपयोगकर्ता संदेश होते हैं और questions में predicate, choice या score प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और safety_identifier के लिए OpenAI रूट आवश्यक है। पुराना state, नामित प्रश्न मैप, noul और criteria प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।",
+			"ja": "新しい呼び出しには OpenAI 互換形式を使います。input はテキストまたはインラインの input_image を含むユーザーメッセージ、questions は predicate、choice、score 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と safety_identifier は OpenAI ルートが必要です。従来の state、名前付き質問マップ、noul、criteria 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。",
+			"zh-Hans": "新调用请使用兼容 OpenAI 的格式：input 包含文本或带有内联 input_image 的用户消息，questions 是按顺序排列的 predicate、choice 或 score 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 safety_identifier 需要 OpenAI 路由。原有的 state、命名问题映射、noul 和 criteria 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。",
+			"ar": "استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي input على نص أو رسائل مستخدم تتضمن أجزاء input_image مضمنة، وquestions مصفوفة مرتبة من أسئلة predicate أو choice أو score. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة وsafety_identifier مسار OpenAI. يظل التنسيق القديم باستخدام state وخرائط الأسئلة المسماة وnoul وcriteria مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة."
 		}
 	}
 }

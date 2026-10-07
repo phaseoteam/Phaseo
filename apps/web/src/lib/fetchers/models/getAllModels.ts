@@ -1,6 +1,7 @@
 // lib/fetchers/models/getAllModels.ts
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
+import { decisionModelCapabilities, decisionModelCapability } from "@/lib/models/modelCapabilities";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import type { ModelPageNotice } from "@/lib/fetchers/models/getModelPageNotice";
@@ -38,6 +39,7 @@ export interface ModelCard {
     gateway_provider_count?: number;
     gateway_active_provider_count?: number;
     gateway_endpoints?: string[];
+    operation_pricing?: Array<{ capability: "text.generate" | "decisions.make"; input: number | null; output: number | null }>;
     gateway_input_modalities?: string[];
     gateway_output_modalities?: string[];
     gateway_features?: string[];
@@ -153,6 +155,8 @@ function uniqueStrings(values: unknown[]): string[] {
 export function summarizeMonitorRowsForModel(
     rows: MonitorModelData[],
 ): Partial<ModelCard> {
+    const pricingRows = decisionModelCapabilities(rows.map(row => row.endpoint)).length === 2
+        ? rows.filter(row => decisionModelCapability(row.endpoint) === "text.generate") : rows;
     const providerById = new Map<
         string,
         { id: string; name: string; status: string; is_active: boolean }
@@ -194,10 +198,10 @@ export function summarizeMonitorRowsForModel(
         )
         .slice(0, 6);
 
-    const standardInputRows = rows.filter(
+    const standardInputRows = pricingRows.filter(
         (row) => Number.isFinite(Number(row.provider.standardInputPrice)),
     );
-    const standardOutputRows = rows.filter(
+    const standardOutputRows = pricingRows.filter(
         (row) => Number.isFinite(Number(row.provider.standardOutputPrice)),
     );
     const lowestStandardInputRow = standardInputRows.sort(
@@ -206,7 +210,7 @@ export function summarizeMonitorRowsForModel(
     const lowestStandardOutputRow = standardOutputRows.sort(
         (a, b) => Number(a.provider.standardOutputPrice) - Number(b.provider.standardOutputPrice),
     )[0];
-    const lowestFromPriceRow = rows
+    const lowestFromPriceRow = pricingRows
         .filter((row) => Number.isFinite(Number(row.provider.fromPrice)))
         .sort((a, b) => Number(a.provider.fromPrice) - Number(b.provider.fromPrice))[0];
 
@@ -246,13 +250,13 @@ export function summarizeMonitorRowsForModel(
         supported_parameters: uniqueStrings(
             rows.flatMap((row) => row.supportedParameters ?? []),
         ),
-        lowest_input_price: minimum(rows.map((row) => row.provider.inputPrice)),
-        lowest_output_price: minimum(rows.map((row) => row.provider.outputPrice)),
+        lowest_input_price: minimum(pricingRows.map((row) => row.provider.inputPrice)),
+        lowest_output_price: minimum(pricingRows.map((row) => row.provider.outputPrice)),
         lowest_standard_input_price: minimum(
-            rows.map((row) => row.provider.standardInputPrice),
+            pricingRows.map((row) => row.provider.standardInputPrice),
         ),
         lowest_standard_output_price: minimum(
-            rows.map((row) => row.provider.standardOutputPrice),
+            pricingRows.map((row) => row.provider.standardOutputPrice),
         ),
         lowest_standard_input_price_label:
             lowestStandardInputRow?.provider.standardInputPriceLabel ?? null,
@@ -262,7 +266,7 @@ export function summarizeMonitorRowsForModel(
             lowestStandardOutputRow?.provider.standardOutputPriceLabel ?? null,
         lowest_standard_output_price_unit:
             lowestStandardOutputRow?.provider.standardOutputPriceUnit ?? null,
-        lowest_from_price: minimum(rows.map((row) => row.provider.fromPrice)),
+        lowest_from_price: minimum(pricingRows.map((row) => row.provider.fromPrice)),
         lowest_from_price_unit: lowestFromPriceRow?.provider.fromPriceUnit ?? null,
         pricing_detail_rows: pricingDetailRows,
         popularity_tokens_week: maximum(rows.map((row) => row.weeklyTokensModel)),

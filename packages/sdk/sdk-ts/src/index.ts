@@ -35,6 +35,9 @@ import type {
   ResponsesResponse,
   DecisionsRequest,
   DecisionsResponse,
+  DecisionCreateRequest,
+  OpenAIDecisionsRequest,
+  OpenAIDecisionsResponse,
   SystemOneRequest,
   SystemOneResponse,
   VideoGenerationRequest,
@@ -408,11 +411,16 @@ export type {
   SystemOneRequest,
   SystemOneResponse,
   VideoBillingSummary,
+  DecisionCreateRequest,
+  OpenAIDecisionsRequest,
+  OpenAIDecisionsResponse,
   VideoGenerationRequest,
   VideoGenerationResponse
 };
 
 export type ModelListResponse = Awaited<ReturnType<typeof ops.listModels>>;
+export type DecisionResponseFor<Request extends DecisionCreateRequest> =
+  Request extends OpenAIDecisionsRequest ? OpenAIDecisionsResponse : DecisionsResponse;
 export type BatchListResponse = Awaited<ReturnType<typeof ops.listBatches>>;
 export type BatchModelsResponse = Awaited<ReturnType<typeof ops.listBatchModels>>;
 export type VideoListResponse = {
@@ -584,7 +592,8 @@ export class Phaseo {
   };
 
   readonly decisions = {
-    make: async (req: DecisionsRequest): Promise<DecisionsResponse> => this.makeDecision(req),
+    create: async (req: OpenAIDecisionsRequest): Promise<OpenAIDecisionsResponse> => this.makeDecision(req),
+    make: async <Request extends DecisionCreateRequest>(req: Request): Promise<DecisionResponseFor<Request>> => this.makeDecision(req),
   };
 
   readonly providers = {
@@ -1163,12 +1172,12 @@ export class Phaseo {
     );
   }
 
-  makeDecision(req: DecisionsRequest): Promise<DecisionsResponse> {
+  makeDecision<Request extends DecisionCreateRequest>(req: Request): Promise<DecisionResponseFor<Request>> {
     return this.withLifecycleGuard(
       req,
       () => this.telemetry.wrap(
         "decisions.make",
-        () => ops.makeDecision(this.client, { body: req }) as Promise<DecisionsResponse>,
+        () => ops.makeDecision(this.client, { body: req }) as Promise<DecisionResponseFor<Request>>,
         () => req,
         extractGatewayMetadata,
       ),

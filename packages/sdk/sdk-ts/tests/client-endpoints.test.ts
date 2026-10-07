@@ -2,6 +2,20 @@ import { describe, expect, test, vi } from "vitest";
 import { Phaseo } from "../src/index.js";
 
 describe("Phaseo endpoints discovery helper", () => {
+  test("creates OpenAI-format decisions without rewriting images or boolean choices", async () => {
+    const request = { model: "openai/gpt-6-luna", input: [{ role: "user" as const, content: [
+      { type: "input_image" as const, image_url: "data:image/png;base64,AQID", detail: "original" as const },
+    ] }], questions: [{ type: "choice" as const, instructions: "Eligible?", choices: [{ value: true }, { value: "true" }] }] };
+    const fetchImpl: typeof fetch = vi.fn(async (_input, init) => {
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return jsonResponse({ model: request.model, answers: [{ type: "choice", name: null, choice: true, confidence: 0.8,
+        probabilities: [{ value: true, probability: 0.9 }, { value: "true", probability: 0.1 }] }],
+        usage: { input_tokens: 10, output_tokens: 0, total_tokens: 10 } });
+    });
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl, enableDeprecationWarnings: false });
+    const result = await client.decisions.create(request);
+    expect(result.answers[0]).toMatchObject({ choice: true });
+  });
   test("serializes Clef decision images through the generated operation", async () => {
     const images = ["data:image/png;base64,AQID", { content_type: "image/webp" as const, base64: "AQID" }];
     const fetchImpl: typeof fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {

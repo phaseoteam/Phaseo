@@ -286,6 +286,25 @@ Responses API को सीधे कॉल करने पर असिस्�
 
 ## 3. संरचित निर्णय लें
 
+नई कॉल के लिए OpenAI-संगत प्रारूप इस्तेमाल करें: `input` में टेक्स्ट या इनलाइन `input_image` वाले उपयोगकर्ता संदेश होते हैं और `questions` में `predicate`, `choice` या `score` प्रश्नों की क्रमबद्ध सूची होती है। उत्तर वही क्रम और वैकल्पिक नाम रखते हैं। बूलियन विकल्प बूलियन ही रहते हैं। होस्ट किए गए चित्र URL समर्थित नहीं हैं; Luna अधिकतम 128 इनलाइन चित्र स्वीकार करता है और अन्य प्रदाताओं की अपनी सीमाएँ हैं। स्पष्ट चित्र विवरण और `safety_identifier` के लिए OpenAI रूट आवश्यक है। पुराना `state`, नामित प्रश्न मैप, `noul` और `criteria` प्रारूप समर्थित है और उत्तर मैप लौटाता है। Together Tev को वही प्रारूप चाहिए क्योंकि वह संभावनाओं के बिना लेबल लौटाता है। पुराने उदाहरण मान्य हैं।
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
 ऐप्लिकेशन को जनरेट टेक्स्ट की जगह प्रकारयुक्त उत्तर चाहिए तो `POST /v1/decisions` इस्तेमाल करें। Phaseo TypeSafe का Jev 1.13 मॉडल ID `typesafe/jev-1.13.0` से देता है। `state` मान और एक या अधिक नामित प्रश्न भेजें; हर उत्तर उसी नाम से लौटता है।
 
 <Note>

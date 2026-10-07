@@ -187,8 +187,10 @@ export async function fetchModelPricingSources(
 		const meterMetadata = asRow(meter.metadata) ?? {};
 		return [{
 			rule_id: meter.sku_meter_id,
+			provider_model_id: publicProviderModelId(route),
 			model_key: `${id(route.provider_slug)}:${id(route.model_slug)}:${id(sku.operation) || "inference"}`,
 			capability_id: sku.operation,
+			sku_status: sku.status,
 			pricing_plan: sku.service_tier_slug ?? "standard",
 			meter: meter.meter_key,
 			modality: meter.modality,

@@ -286,6 +286,25 @@ console.log(result.text);
 
 ## 3. 作出结构化决策
 
+新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
 应用需要带类型的答案而非生成文本时，请使用 `POST /v1/decisions`。Phaseo 提供 TypeSafe 的 Jev 1.13，模型 ID 为 `typesafe/jev-1.13.0`。发送 `state` 值和一个或多个具名问题；每个答案都以相同名称返回。
 
 <Note>

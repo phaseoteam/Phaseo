@@ -6,6 +6,26 @@ openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
 
+新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
+
 当应用需要代码可直接使用的结构化答案时，请使用 `POST /v1/decisions`。受支持的模型包括 TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`) 和 Respan Span-01（`respan/span-01:free` 和 `respan/span-01`）。
 
 请求包含：

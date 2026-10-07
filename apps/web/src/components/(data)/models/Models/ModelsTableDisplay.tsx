@@ -745,6 +745,8 @@ export default function ModelsTableDisplay({
 	};
 	const translateEndpoint = (value: string) => {
 		const keys: Record<string, string> = {
+			"text.generate": "capabilityTextGeneration",
+			"decisions.make": "modalityDecisions",
 			responses: "endpointResponses",
 			"chat/completions": "endpointChatCompletions",
 			messages: "endpointMessages",
