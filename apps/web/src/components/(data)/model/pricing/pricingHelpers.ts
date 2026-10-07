@@ -1957,14 +1957,18 @@ export function buildProviderTablePriceColumns(
         ["text", "image", "audio", "video"].includes(column.modality),
     );
     const inputModalities = inputColumns.map((column) => column.modality);
-    const canGroupInputs = inputColumns.length > 1 && sectionsByOffering.every((sections) => {
+    const canGroupInputs = inputColumns.length > 1 && !columns.some((column) =>
+        column.direction === "input" && inputModalities.includes(column.modality) &&
+        column.unitLabel !== "Per 1M tokens",
+    ) && sectionsByOffering.every((sections) => {
         const profiles = inputModalities.map((modality) => {
             const triples = {
                 text: sections.textTokens, image: sections.imageTokens,
                 audio: sections.audioTokens, video: sections.videoTokens,
             };
             const tiers = triples[modality as keyof typeof triples]?.in;
-            if (!tiers?.length || tiers.some((tier) => !Number.isFinite(tier.per1M))) return null;
+            if (!tiers?.length) return null;
+            if (tiers.some((tier) => !Number.isFinite(tier.per1M))) return undefined;
             // Compare complete profiles, not the cheapest displayed or rounded price.
             return JSON.stringify(tiers.map((tier) => ({
                 per1M: tier.per1M, basePer1M: tier.basePer1M ?? null,
@@ -1978,7 +1982,8 @@ export function buildProviderTablePriceColumns(
                 isCurrent: tier.isCurrent,
             })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
         });
-        return profiles.every((profile) => profile !== null && profile === profiles[0]);
+        const knownProfiles = profiles.filter((profile) => profile !== null && profile !== undefined);
+        return !profiles.includes(undefined) && knownProfiles.every((profile) => profile === knownProfiles[0]);
     });
     if (canGroupInputs) {
         const grouped: ProviderTablePriceColumn = {
@@ -2023,7 +2028,7 @@ export function buildProviderTablePriceSummaryForColumn(
     );
     const primary = candidates[0]
         ? column.groupedModalities
-            ? { ...candidates[0], modality: "multimodal" as const, label: column.groupedModalities.map((modality) => modalityLabel(modality)).join(", ") }
+            ? { ...candidates[0], modality: "multimodal" as const, label: [...new Set(candidates.map((candidate) => modalityLabel(candidate.modality)))].join(", ") }
             : candidates[0]
         : null;
     const highest = candidates.at(-1) ?? null;
