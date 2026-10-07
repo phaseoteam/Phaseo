@@ -32,6 +32,14 @@ try {
   const legacyUnlimited = await access('public.gateway_fetch_request_context_without_workspace_budget');
   assert.equal(legacyUnlimited.key_limit_ok.ok, true);
   assert.equal(legacyUnlimited.team_enrichment.total_requests, null);
+  await db.exec('reset role');
+  await db.query('update public.wallets set balance_nanos=100000000 where workspace_id=$1', [workspace]);
+  await db.exec('set role service_role');
+  assert.equal((await access()).credit_ok.reason, 'insufficient_funds');
+  assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).credit_ok.reason, 'insufficient_funds');
+  await db.exec('reset role');
+  await db.query('update public.wallets set balance_nanos=5000000000 where workspace_id=$1', [workspace]);
+  await db.exec('set role service_role');
   await assert.rejects(db.query('select private.gateway_context_access($1,$2,$3,$4)',
     ['10000000-0000-4000-8000-000000000002','lab/model','responses',key]), /api_key_wrong_team/);
   await db.exec('reset role');
@@ -46,6 +54,7 @@ try {
   assert.equal(limited.key_limit_ok.buckets.daily.requests_used, 1);
   assert.equal(limited.key_limit_ok.buckets.daily.cost_used_nanos, 10);
   assert.equal(limited.key_enrichment.requests_today, 1);
+  assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, 'daily_request_limit_reached');
   for (const [column,reason] of [
     ['weekly_limit_requests','weekly_request_limit_reached'],
     ['monthly_limit_requests','monthly_request_limit_reached'],
@@ -59,6 +68,7 @@ try {
     await db.query(`update public.keys set ${column}=1 where id=$1`, [key]);
     await db.exec('set role service_role');
     assert.equal((await access()).key_limit_ok.reason, reason);
+    assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, reason);
   }
   await db.exec('reset role');
   await db.query('update public.keys set soft_blocked=true where id=$1', [key]);
