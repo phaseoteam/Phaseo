@@ -173,6 +173,14 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 	const feedModels = sourceResult.data.feed_models ?? normalizeProviderCatalog(observedDocument).allModels;
 	const effectiveDocument = sourceResult.data.management_mode === "remote"
 		? normalizedCatalogDocument(applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) : null;
+	const routes = await client.from("v2_model_provider_routes").select("model_slug,provider_model_slug,status,routing_enabled,access_scope,phaseo_status").eq("provider_slug", providerSlug);
+	const modelStates = Object.fromEntries((statesResult.data ?? []).map((model: any) => [model.model_slug, model])) as Record<string, any>;
+	for (const model of applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) {
+		const slugs = new Set([model.providerModelSlug, ...(model.serviceTiers ?? []).map((tier) => tier.providerModelSlug)]);
+		const offers = (routes.data ?? []).filter((route: any) => slugs.has(route.provider_model_slug));
+		const current = modelStates[model.id] ?? {};
+		modelStates[model.id] = { ...current, route_projection_status: routes.error ? "unknown" : offers.some((route: any) => route.access_scope === "public" && route.routing_enabled && ["active", "degraded"].includes(route.status)) ? "enabled" : offers.some((route: any) => route.phaseo_status === "blocked") ? "failed" : "not_projected" };
+	}
 	const managedCatalog = sourceResult.data.managed_catalog && typeof sourceResult.data.managed_catalog === "object" && !Array.isArray(sourceResult.data.managed_catalog)
 		? sourceResult.data.managed_catalog
 		: null;
@@ -191,7 +199,7 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 		overrides: sourceResult.data.catalog_overrides ?? {},
 		feed_models: feedModels,
 		activity: eventsResult.data ?? [],
-		model_states: Object.fromEntries((statesResult.data ?? []).map((model: any) => [model.model_slug, model])),
+		model_states: modelStates,
 		catalog: effectiveDocument ?? managedCatalog ?? observedDocument,
 		models: (effectiveDocument ?? managedCatalog) && Array.isArray((effectiveDocument ?? managedCatalog as any).data) ? (effectiveDocument ?? managedCatalog as any).data.map((model: any) => {
 			const standard = model.service_tiers?.find((tier: any) => tier.service_tier === "standard");
@@ -277,16 +285,11 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		if (source.error) throw source.error;
 		if (!source.data) return errorResponse(c, "provider_catalog_source_not_found", 404);
 		if (body?.expectedUpdatedAt !== undefined && !z.string().datetime({ offset: true }).safeParse(body.expectedUpdatedAt).success) return errorResponse(c, "invalid_catalog_version", 400);
-		const updateSource = async (values: Record<string, unknown>) => {
-			let query = client.from("provider_catalog_sources").update(values).eq("provider_slug", parsedSlug.data);
-			if (body?.expectedUpdatedAt) query = query.eq(source.data.managed_updated_at ? "managed_updated_at" : "updated_at", body.expectedUpdatedAt);
-			return query.select("provider_slug").maybeSingle();
-		};
 		if (body?.mode === "remote" || body?.catalog?.mode === "remote") {
 			if (!source.data.catalog_url) return errorResponse(c, "No remote catalog URL configured.", 422);
-			const updated = await updateSource({ management_mode: "remote", managed_catalog: null, managed_updated_by: null, managed_updated_at: null, refresh_requested: true, next_poll_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+			const updated = await client.rpc("restore_provider_catalog_feed", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? source.data.managed_updated_at ?? source.data.updated_at });
+			if (updated.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			if (updated.error) throw updated.error;
-			if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			let syncWarning: string | null = null;
 			try {
 				await syncProviderCatalog(c.env, parsedSlug.data, "manual");

@@ -180,12 +180,12 @@ describe("provider catalog management API", () => {
 	it("compares the document revision rather than the background sync timestamp", async () => {
 		stubEditorRead();
 		const original = vi.mocked(fetch).getMockImplementation()!;
-		let patchUrl = "";
+		let payload: Record<string, unknown> = {};
 		vi.mocked(fetch).mockImplementation(async (input, init) => {
 			const url = input instanceof Request ? input.url : String(input);
-			if (url.includes("provider_catalog_sources") && init?.method === "PATCH") {
-				patchUrl = url;
-				return new Response("[]", { status: 200 });
+			if (url.includes("rpc/restore_provider_catalog_feed") && init?.method === "POST") {
+				payload = JSON.parse(String(init.body));
+				return Response.json({ message: "provider_catalog_version_conflict" }, { status: 409 });
 			}
 			return original(input, init);
 		});
@@ -194,8 +194,9 @@ describe("provider catalog management API", () => {
 			body: JSON.stringify({ catalog: { mode: "remote" }, expectedUpdatedAt: "2026-09-10T12:00:00Z" }),
 		}, env);
 		expect(response.status).toBe(409);
-		expect(new URL(patchUrl).searchParams.get("managed_updated_at")).toBe("eq.2026-09-10T12:00:00Z");
-		expect(new URL(patchUrl).searchParams.has("updated_at")).toBe(false);
+		expect(payload.p_expected_version).toBe("2026-09-10T12:00:00Z");
+		expect(payload.p_actor_id).toBe("provider-user");
+		expect(payload.p_actor_kind).toBe("provider");
 	});
 
 	it("accepts the wrapped remote-mode payload used by the settings action", async () => {
