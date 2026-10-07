@@ -33,8 +33,12 @@ already in flight. See [Cloudflare execution limits](https://developers.cloudfla
    candidate rows, and the same request explanation and accounting values.
 4. After all old writers have drained, enable the historical transfer on the
    active production scheduler by setting `GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF`
-   to a fixed UTC timestamp at least one hour in the past. The job rejects a
-   newer cutoff so the cursor cannot skip temporarily ineligible recent rows.
+   to `activation`. Once global, EU and US writers are verified online, put the
+   current UTC timestamp into KV key `routing-archive-activation/v1`. The job
+   waits until that boundary is one hour old before copying, so requests logged
+   during deployment cannot fall through an early cutoff. An explicit fixed
+   UTC timestamp is also supported for isolated operator-selected snapshots.
+   A newer cutoff waits without advancing the cursor.
    Leave it unset in staging, regional/performance
    Workers, and ordinary deployment configuration. Each scheduler tick
    transfers at most 25 requests sequentially; increase cadence only after

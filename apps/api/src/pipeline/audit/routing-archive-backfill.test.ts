@@ -46,11 +46,24 @@ describe("historical routing transfer", () => {
         expect(await backfillRoutingArchives()).toMatchObject({ archived: 0 });
         expect(mocks.rpc).not.toHaveBeenCalled();
     });
-    it("rejects a cutoff within the in-flight window before scanning or advancing", async () => {
+    it("waits for the in-flight window before scanning or advancing", async () => {
         mocks.env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = new Date().toISOString();
-        await expect(backfillRoutingArchives()).rejects.toThrow("cutoff_too_recent");
+        expect(await backfillRoutingArchives()).toMatchObject({ archived: 0, waiting: true });
         expect(mocks.rpc).not.toHaveBeenCalled();
         expect(kv.put).not.toHaveBeenCalled();
+    });
+    it("does not start activation-mode transfer before the operator verifies all writers", async () => {
+        mocks.env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation";
+        expect(await backfillRoutingArchives()).toMatchObject({ archived: 0, complete: false });
+        expect(mocks.rpc).not.toHaveBeenCalled();
+        expect(kv.put).not.toHaveBeenCalled();
+    });
+    it("uses the verified activation boundary to include requests from the deployment gap", async () => {
+        mocks.env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation";
+        kv.get.mockResolvedValueOnce("2026-10-01T12:00:00Z").mockResolvedValueOnce(null);
+        await backfillRoutingArchives();
+        expect(mocks.rpc.mock.calls[0][1].p_cutoff).toBe("2026-10-01T12:00:00Z");
+        expect(kv.get.mock.calls[0][0]).toBe("routing-archive-activation/v1");
     });
     it("does not rescan after a completed cursor", async () => {
         kv.get.mockResolvedValue({ complete: true });
