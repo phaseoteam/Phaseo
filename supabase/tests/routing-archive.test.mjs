@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -8,7 +9,8 @@ const request = '20000000-0000-4000-8000-000000000001';
 const fact = '30000000-0000-4000-8000-000000000001';
 const created = '2026-09-20T00:00:00Z';
 const sha = 'a'.repeat(64);
-const reference = { version: 1, key: `workspaces/${workspace}/routing/v1/request/${sha}.json`, sha256: sha, bytes: 500 };
+const requestHash = createHash('sha256').update('request').digest('hex');
+const reference = { version: 1, key: `workspaces/${workspace}/routing/v1/${requestHash}/${sha}.json`, sha256: sha, bytes: 500 };
 const source = async () => (await db.query('select public.gateway_routing_archive_source($1,$2) value', [request, created])).rows[0].value;
 const commit = async (hash, pointer = reference) => (await db.query(
     'select public.gateway_commit_routing_archive($1,$2,$3,$4) value', [request, created, hash, pointer],
@@ -96,8 +98,8 @@ try {
     assert.equal((await db.query('select count(*) n from public.v2_request_routing_decisions')).rows[0].n, 1);
     await db.query('delete from public.gateway_requests where id=$1 and created_at=$2', [request, created]);
     await db.exec('set role service_role');
-    assert.equal((await db.query('select object_key from public.gateway_routing_archive_deletions')).rows[0].object_key, reference.key);
-    await assert.rejects(db.query("insert into public.gateway_routing_archive_deletions(object_key) values('untrusted')"), /permission denied/);
+    assert.equal((await db.query('select object_prefix from public.gateway_routing_archive_deletions')).rows[0].object_prefix, reference.key.slice(0, -69));
+    await assert.rejects(db.query("insert into public.gateway_routing_archive_deletions(object_prefix) values('untrusted')"), /permission denied/);
     await db.exec('reset role');
     await db.exec('set role authenticated');
     await assert.rejects(db.query('select * from public.gateway_routing_archive_deletions'), /permission denied/);

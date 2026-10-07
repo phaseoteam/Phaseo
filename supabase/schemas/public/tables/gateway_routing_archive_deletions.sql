@@ -1,5 +1,5 @@
 CREATE TABLE public.gateway_routing_archive_deletions (
-  object_key text PRIMARY KEY,
+  object_prefix text PRIMARY KEY,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 ALTER TABLE public.gateway_routing_archive_deletions ENABLE ROW LEVEL SECURITY;

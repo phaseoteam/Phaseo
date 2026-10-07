@@ -24,7 +24,7 @@ describe("routing archive writes", () => {
         expect(compact).not.toHaveProperty("routing_snapshot");
         expect(compact).not.toHaveProperty("routing_diagnostics");
         const pointer = compact.routing_archive as Record<string, unknown>;
-        expect(pointer.key).toMatch(/^workspaces\/workspace-a\/routing\/v1\/request%2Fa\/[a-f0-9]{64}\.json$/);
+        expect(pointer.key).toMatch(/^workspaces\/workspace-a\/routing\/v1\/[a-f0-9]{64}\/[a-f0-9]{64}\.json$/);
         const body = JSON.parse(new TextDecoder().decode(put.mock.calls[0][1]));
         expect(body.routing_decisions[0]).toMatchObject({ selected: true, provider_slug: "provider-a", score: 0.9 });
         expect(body.routing_trace).toMatchObject({ algorithm_version: "v2", random_seed: 123 });

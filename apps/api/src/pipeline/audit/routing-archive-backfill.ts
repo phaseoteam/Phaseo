@@ -11,14 +11,21 @@ export async function pruneDeletedRoutingArchives() {
     if (!bucket) return 0;
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase.from("gateway_routing_archive_deletions")
-        .select("object_key").order("created_at", { ascending: true }).limit(250);
+        .select("object_prefix").order("created_at", { ascending: true }).limit(25);
     if (error) throw new Error(`routing_archive_deletion_select_failed:${error.code ?? "unknown"}`);
-    const keys = (data ?? []).map(row => row.object_key as string);
-    if (keys.length === 0) return 0;
-    await bucket.delete(keys);
-    const result = await supabase.from("gateway_routing_archive_deletions").delete().in("object_key", keys);
-    if (result.error) throw new Error("routing_archive_deletion_ack_failed");
-    return keys.length;
+    let deleted = 0;
+    for (const row of data ?? []) {
+        const objects = await bucket.list({ prefix: row.object_prefix, limit: 1000 });
+        const keys = objects.objects.map(object => object.key);
+        if (keys.length > 0) await bucket.delete(keys);
+        deleted += keys.length;
+        // Keep the prefix queued until every revision/orphan is gone.
+        if (!objects.truncated) {
+            const result = await supabase.from("gateway_routing_archive_deletions").delete().eq("object_prefix", row.object_prefix);
+            if (result.error) throw new Error("routing_archive_deletion_ack_failed");
+        }
+    }
+    return deleted;
 }
 
 export async function backfillRoutingArchives() {

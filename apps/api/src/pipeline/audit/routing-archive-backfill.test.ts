@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ env: {} as Record<string, unknown>, rpc: vi.fn() }));
-vi.mock("@/runtime/env", () => ({ getBindings: () => mocks.env, getSupabaseAdmin: () => ({ rpc: mocks.rpc }) }));
-import { backfillRoutingArchives } from "./routing-archive-backfill";
+const mocks = vi.hoisted(() => ({ env: {} as Record<string, unknown>, rpc: vi.fn(), from: vi.fn() }));
+vi.mock("@/runtime/env", () => ({ getBindings: () => mocks.env, getSupabaseAdmin: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
+import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "./routing-archive-backfill";
 
 const row = {
     id: "request-row", created_at: "2026-09-20T00:00:00Z", workspace_id: "w", request_id: "r", source_hash: "hash",
@@ -50,5 +50,38 @@ describe("historical routing transfer", () => {
         kv.get.mockResolvedValue({ complete: true });
         expect(await backfillRoutingArchives()).toMatchObject({ complete: true });
         expect(mocks.rpc).not.toHaveBeenCalled();
+    });
+});
+
+describe("routing archive retention", () => {
+    const prefix = "workspaces/w/routing/v1/request-hash/";
+    let list: ReturnType<typeof vi.fn>;
+    let remove: ReturnType<typeof vi.fn>;
+    let acknowledge: ReturnType<typeof vi.fn>;
+    beforeEach(() => {
+        list = vi.fn().mockResolvedValue({ objects: [{ key: `${prefix}current.json` }, { key: `${prefix}orphan.json` }], truncated: false });
+        remove = vi.fn().mockResolvedValue(undefined);
+        acknowledge = vi.fn().mockResolvedValue({ error: null });
+        mocks.env = { GATEWAY_IO_LOGS_BUCKET: { list, delete: remove } };
+        mocks.from.mockReset().mockReturnValue({
+            select: () => ({ order: () => ({ limit: async () => ({ data: [{ object_prefix: prefix }] }) }) }),
+            delete: () => ({ eq: acknowledge }),
+        });
+    });
+    it("removes all revisions and orphan uploads when their request is deleted", async () => {
+        expect(await pruneDeletedRoutingArchives()).toBe(2);
+        expect(list).toHaveBeenCalledWith({ prefix, limit: 1000 });
+        expect(remove).toHaveBeenCalledWith([`${prefix}current.json`, `${prefix}orphan.json`]);
+        expect(acknowledge).toHaveBeenCalledWith("object_prefix", prefix);
+    });
+    it("retains the durable queue entry after an object deletion fails", async () => {
+        remove.mockRejectedValue(new Error("offline"));
+        await expect(pruneDeletedRoutingArchives()).rejects.toThrow("offline");
+        expect(acknowledge).not.toHaveBeenCalled();
+    });
+    it("keeps a paginated prefix queued for the next bounded tick", async () => {
+        list.mockResolvedValue({ objects: [{ key: `${prefix}first.json` }], truncated: true });
+        expect(await pruneDeletedRoutingArchives()).toBe(1);
+        expect(acknowledge).not.toHaveBeenCalled();
     });
 });

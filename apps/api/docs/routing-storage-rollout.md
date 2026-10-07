@@ -9,9 +9,10 @@ reads authorize through the existing user-scoped RPC before accessing R2, check
 workspace/request ownership and checksum, and restore the existing UI fields.
 These objects contain routing metadata, not prompts or completions. Existing
 account deletion purges their `workspaces/<workspace>/` prefix.
-Deleting a request also transactionally queues its referenced object for R2
+Deleting a request also transactionally queues its private request prefix for R2
 deletion. The scheduler retries failures without losing the queue entry, so
-existing BYOK retention and other request deletions also remove archived detail.
+existing BYOK retention and other request deletions also remove archived detail,
+including older revisions and unreferenced uploads under that request prefix.
 
 ## Rollout
 
@@ -70,4 +71,4 @@ explanations already transferred remain in R2. Restoring an older reader would
 require a bounded reverse transfer from verified R2 objects first. Objects use
 immutable content hashes, so retrying or updating a request cannot overwrite
 an explanation referenced by another revision. Failed writes may leave
-unreferenced objects; they remain under the workspace deletion prefix.
+unreferenced objects; request deletion and account deletion remove their prefixes.

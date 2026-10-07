@@ -22,8 +22,8 @@ begin
     or coalesce(p_reference->>'sha256', '') !~ '^[a-f0-9]{64}$'
     or coalesce(p_reference->>'bytes', '') !~ '^[0-9]{1,7}$'
     or (p_reference->>'bytes')::integer not between 1 and 1048576
-    or not starts_with(coalesce(p_reference->>'key', ''), 'workspaces/' || v_request.workspace_id::text || '/routing/v1/')
-    or right(coalesce(p_reference->>'key', ''), 70) is distinct from '/' || (p_reference->>'sha256') || '.json' then
+    or p_reference->>'key' is distinct from 'workspaces/' || v_request.workspace_id::text || '/routing/v1/' ||
+      encode(sha256(convert_to(v_request.request_id, 'UTF8')), 'hex') || '/' || (p_reference->>'sha256') || '.json' then
     raise exception using errcode = '22023', message = 'routing_archive_reference_invalid';
   end if;
   select request_event_id into v_fact_id from public.v2_request_facts

@@ -6,7 +6,9 @@ export async function readRoutingArchive(
     requestId: string,
     pointer: Record<string, unknown>,
 ): Promise<Record<string, unknown> | null> {
-    const prefix = `workspaces/${workspaceId}/routing/v1/${encodeURIComponent(requestId)}/`;
+    const requestDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(requestId));
+    const requestHash = Array.from(new Uint8Array(requestDigest), byte => byte.toString(16).padStart(2, "0")).join("");
+    const prefix = `workspaces/${workspaceId}/routing/v1/${requestHash}/`;
     if (pointer.version !== 1 || typeof pointer.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(pointer.sha256)
         || pointer.key !== `${prefix}${pointer.sha256}.json`
         || typeof pointer.bytes !== "number" || pointer.bytes <= 0 || pointer.bytes > 1024 * 1024) return null;
