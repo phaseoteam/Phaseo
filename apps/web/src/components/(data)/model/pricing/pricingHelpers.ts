@@ -592,6 +592,13 @@ function cacheWriteTtlLabelFromMeter(meter?: string | null): string | null {
     return null;
 }
 
+function cacheWriteScopeLabel(meter: string | null | undefined, conditions: Condition[]): string | null {
+    const ttl = cacheWriteTtlLabelFromMeter(meter);
+    if (!ttl) return null;
+    const range = tokenRangeFromConditions(conditions);
+    return range ? `${ttl} · ${range} input tokens` : ttl;
+}
+
 function modalityLabel(mod: Modality): string | null {
     if (mod === "text") return "Text";
     if (mod === "image") return "Image";
@@ -629,7 +636,7 @@ function buildUpcomingChangeLabels(
     if (unit === "token" && ["text", "image", "audio", "video", "embeddings", "decisions"].includes(mod)) {
         const modLabel = modalityLabel(mod) ?? "Token";
         const scope =
-            cacheWriteTtlLabelFromMeter(rule.meter) ??
+            cacheWriteScopeLabel(rule.meter, conds) ??
             tokenRangeFromConditions(conds) ??
             conciseConditionLabel(conds);
         return {
@@ -1206,7 +1213,7 @@ export function buildProviderSections(
 				mod === "embeddings" ? modalityLabel(parsedMeter.mod) : null;
             const label =
 				embeddingSourceLabel ??
-                cacheWriteTtlLabelFromMeter(r.meter) ??
+                cacheWriteScopeLabel(r.meter, conds) ??
                 range ??
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
             const tier: TokenTier = {

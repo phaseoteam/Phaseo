@@ -42,9 +42,9 @@ describe("irToAnthropicMessages service controls", () => {
 		expect(payload.temperature).toBeUndefined();
 	});
 
-	it("allows thinking to be disabled for Haiku 5.5", () => {
+	it.each(["claude-haiku-5-5", "anthropic/claude-haiku-5.5"])("allows thinking to be disabled for %s", (model) => {
 		const request = createBaseRequest();
-		request.model = "claude-haiku-5-5";
+		request.model = model;
 		request.reasoning = { enabled: false };
 		expect(irToAnthropicMessages(request).thinking).toEqual({ type: "disabled" });
 	});
