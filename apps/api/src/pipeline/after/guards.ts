@@ -32,6 +32,7 @@ export async function guardUpstreamStatus(
 
     if (!statusOk) {
         const stealth = isStealthRequest(ctx);
+        const safeDecisionError = ctx.endpoint === "decisions";
         // Import error helpers dynamically to avoid circular deps
         const {
             safeJson,
@@ -50,7 +51,9 @@ export async function guardUpstreamStatus(
             (typeof body?.message === "string" && body.message.trim()) ||
             null;
         let errCode = upstreamErrorCode;
-        let description = extractErrorDescription(body) ?? `Upstream returned status ${upstreamStatus}`;
+        let description = safeDecisionError
+            ? `The decision provider returned status ${upstreamStatus}.`
+            : extractErrorDescription(body) ?? `Upstream returned status ${upstreamStatus}`;
         let details: Array<Record<string, unknown>> | undefined;
         const unsupportedParamSignal = extractUpstreamUnsupportedParamSignal({
             stage: "execute",
@@ -150,7 +153,7 @@ export async function guardUpstreamStatus(
         if (!stealth && details?.length) {
             responseBody.details = details;
         }
-        if (!stealth && (upstreamErrorCode || upstreamMessage || description || unsupportedParamSignal?.param)) {
+        if (!stealth && !safeDecisionError && (upstreamErrorCode || upstreamMessage || description || unsupportedParamSignal?.param)) {
             responseBody.upstream_error = {
                 code: upstreamErrorCode,
                 message: upstreamMessage,
@@ -159,7 +162,7 @@ export async function guardUpstreamStatus(
             };
             responseBody.failure_sample = failureSample;
         }
-        if (!stealth && providerFailureDiagnostics) {
+        if (!stealth && !safeDecisionError && providerFailureDiagnostics) {
             responseBody.provider_failure_diagnostics = providerFailureDiagnostics;
         }
         if (!stealth && ctx.meta?.debug?.return_upstream_request && result.mappedRequest) {
@@ -188,7 +191,6 @@ export async function guardUpstreamStatus(
 
     return { ok: true, value: undefined };
 }
-
 
 
 

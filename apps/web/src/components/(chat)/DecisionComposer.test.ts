@@ -7,6 +7,7 @@ import {
 	DecisionComposer,
 	createDefaultDecisionDraft,
 	serializeDecisionDraft,
+	serializeDecisionDraftForModel,
 	validateDecisionDraft,
 } from "./DecisionComposer";
 
@@ -16,6 +17,15 @@ function renderToStaticMarkup(children: ReactNode) {
 }
 
 describe("DecisionComposer draft helpers", () => {
+	it("preserves Tev's legacy label-only contract", () => {
+		const draft = createDefaultDecisionDraft("choice");
+		draft.prompt = "Choose a department";
+		draft.choices = [{ id: "a", value: "Billing" }, { id: "b", value: "Other" }];
+		expect(serializeDecisionDraftForModel(draft, "together/tev1-4b-experimental")).toEqual({
+			state: { input: "Choose a department" },
+			questions: { decision: { type: "choice", instructions: "Choose a department", criteria: { billing: "Billing", other: "Other" } } },
+		});
+	});
 	it("starts score mode with one empty level numbered from zero", () => {
 		const draft = createDefaultDecisionDraft("score");
 
@@ -43,13 +53,14 @@ describe("DecisionComposer draft helpers", () => {
 		];
 
 		expect(validateDecisionDraft(draft)).toBeNull();
-		expect(serializeDecisionDraft(draft).questions).toEqual({
-			decision: {
+		expect(serializeDecisionDraft(draft).questions).toEqual([
+			{
 				type: "score",
+				name: "decision",
 				instructions: "How strong is the evidence?",
-				criteria: ["No evidence", "Early signal"],
+				levels: [{ label: "No evidence" }, { label: "Early signal" }],
 			},
-		});
+		]);
 	});
 
 	it("keeps long decision questions vertically scrollable", () => {

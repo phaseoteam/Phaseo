@@ -1,3 +1,6 @@
+/**
+ * Legacy SDK model name retained for compatibility. New callers should use OpenAIDecisionsRequest.
+ */
 export interface DecisionsRequest {
   debug?: {
     enabled?: boolean;

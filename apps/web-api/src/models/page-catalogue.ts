@@ -1,5 +1,7 @@
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
+import { fetchModelPricingSources } from "./pricing";
+import { withDecisionOperationPricing } from "./decision-pricing";
 import { publicProviderDisplayName, STEALTH_PROVIDER_ID } from "@/models/provider-identity";
 
 type Row = Record<string, unknown>;
@@ -404,10 +406,23 @@ export async function fetchModelsPageCatalogue(
 			env, rows.map((row) => String(row.model_id ?? "")).filter(Boolean),
 		))
 		: weeklyMetrics(env);
-	const [databaseRows, modelWeeklyMetrics] = await Promise.all([rowsPromise, metricsPromise]);
+	const pricingPromise = rowsPromise.then(async rows => {
+		const dualModels = rows.filter(row => strings(row.gateway_endpoints).includes("text.generate") &&
+			strings(row.gateway_endpoints).includes("decisions.make"));
+		if (!dualModels.length) return [];
+		try {
+			return withDecisionOperationPricing(dualModels,
+				await fetchModelPricingSources(env, dualModels.map(row => String(row.model_id))));
+		} catch {
+			console.error("models_decision_pricing_failed");
+			return withDecisionOperationPricing(dualModels, { providerRows: [], pricingRows: [] });
+		}
+	});
+	const [databaseRows, modelWeeklyMetrics, dualPricing] = await Promise.all([rowsPromise, metricsPromise, pricingPromise]);
+	const pricingByModel = new Map(dualPricing.map(row => [String(row.model_id), row]));
 	return {
 		models: attachModelsPageVariants(mergeModelWeeklyMetrics(
-		databaseRows
+		databaseRows.map(row => pricingByModel.get(String(row.model_id)) ?? row)
 			.filter((row) => String(row.access_scope ?? "public").trim().toLowerCase() === "public" && String(row.capability_status ?? "").trim().toLowerCase() !== "internal_testing")
 			.map(normalizeModelsPagePricing)
 			.map((row) => query.includeMetrics === false ? {

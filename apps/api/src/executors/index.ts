@@ -141,6 +141,7 @@ import { executor as googleVertexEmbeddings } from "./google-vertex/embeddings";
 
 // Moderations executors (migrated providers only)
 import { executor as openaiModerations } from "./openai/moderations";
+import { executor as openaiDecisions } from "./openai/decisions";
 import { executor as openaiRerank } from "./openai/rerank";
 
 import { executor as openaiVideo } from "./openai/video-generate";
@@ -215,6 +216,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	openai: {
 		"text.generate": openaiText,
+		"decisions.make": openaiDecisions,
 		embeddings: openaiEmbeddings,
 		moderations: openaiModerations,
 		"image.generate": nonTextAdapterExecutor,

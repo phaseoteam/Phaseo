@@ -286,6 +286,25 @@ Vercel AI SDK を使用する場合は、`result.text` から返答を読み取�
 
 ## 3. 構造化された判断を行う
 
+新しい呼び出しには OpenAI 互換形式を使います。`input` はテキストまたはインラインの `input_image` を含むユーザーメッセージ、`questions` は `predicate`、`choice`、`score` 質問の順序付き配列です。回答は同じ順序と任意の名前を保持します。真偽値の選択肢は真偽値のままです。外部画像 URL は使用できません。Luna は最大128枚のインライン画像に対応し、他のプロバイダーには独自の制限があります。明示的な画像詳細と `safety_identifier` は OpenAI ルートが必要です。従来の `state`、名前付き質問マップ、`noul`、`criteria` 形式も使用でき、回答マップを返します。Together Tev は確率なしのラベルを返すため従来形式が必要です。従来の例も有効です。
+
+```json
+{
+  "model": "openai/gpt-6-luna",
+  "input": "I was charged twice for my order.",
+  "questions": [{
+    "type": "choice",
+    "name": "department",
+    "instructions": "Which department should handle this?",
+    "choices": [
+      { "value": "billing", "description": "Payments and refunds" },
+      { "value": "other", "description": "Everything else" }
+    ]
+  }]
+}
+```
+
+
 テキスト生成ではなく型付き回答が必要な場合は`POST /v1/decisions`を使います。PhaseoはTypeSafeのJev 1.13をモデルID `typesafe/jev-1.13.0`で提供します。`state`値と1つ以上の名前付き質問を送り、各回答は同じ名前で返されます。
 
 <Note>

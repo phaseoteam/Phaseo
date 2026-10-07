@@ -119,7 +119,7 @@ function isEmptyDecisionDraft(draft: DecisionDraft): boolean {
 }
 
 export const DECISION_VALIDATION_COPY_KEYS = {
-	"Enter a question for Jev.": "validationQuestion",
+	"Enter a decision question.": "validationQuestion",
 	"Add at least two answers.": "validationTwoAnswers",
 	"Fill in every answer.": "validationEveryAnswer",
 	"Each answer must be different.": "validationDistinctAnswers",
@@ -128,7 +128,7 @@ export const DECISION_VALIDATION_COPY_KEYS = {
 } as const;
 
 export function validateDecisionDraft(draft: DecisionDraft): string | null {
-	if (!draft.prompt.trim()) return "Enter a question for Jev.";
+	if (!draft.prompt.trim()) return "Enter a decision question.";
 	if (draft.mode === "choice") {
 		const choices = draft.choices.map((choice) => choice.value.trim());
 		if (choices.length < 2) return "Add at least two answers.";
@@ -145,74 +145,47 @@ export function validateDecisionDraft(draft: DecisionDraft): string | null {
 	return null;
 }
 
-function keyForChoice(value: string, index: number, usedKeys: Set<string>): string {
-	const baseKey =
-		value
-			.trim()
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "_")
-			.replace(/^_+|_+$/g, "") || `option_${index + 1}`;
-	let key = baseKey;
-	let suffix = 2;
-	while (usedKeys.has(key)) {
-		key = `${baseKey}_${suffix}`;
-		suffix += 1;
+export function serializeDecisionDraft(draft: DecisionDraft): {
+	input: string;
+	questions: Array<Record<string, unknown>>;
+} {
+	const instructions = draft.prompt.trim();
+	const input = draft.context.trim() || instructions;
+	if (draft.mode === "noul") return { input, questions: [{ type: "predicate", name: "decision", instructions }] };
+	if (draft.mode === "choice") {
+		return { input, questions: [{
+			type: "choice", name: "decision", instructions,
+			choices: draft.choices.map(choice => ({ value: choice.value.trim() })),
+		}] };
 	}
-	usedKeys.add(key);
-	return key;
+	return { input, questions: [{
+		type: "score", name: "decision", instructions,
+		levels: draft.scoreLevels.map(level => ({ label: level.value.trim() })),
+	}] };
 }
 
-export function serializeDecisionDraft(draft: DecisionDraft): {
-	state: Record<string, unknown>;
-	questions: Record<string, unknown>;
-} {
-	const prompt = draft.prompt.trim();
-	const state = { input: draft.context.trim() || prompt };
-
-	if (draft.mode === "noul") {
-		return {
-			state,
-			questions: {
-				decision: {
-					type: "noul",
-					instructions: prompt,
-					criteria: {
-						true: "The answer to the question is yes.",
-						false: "The answer to the question is no.",
-					},
-				},
-			},
-		};
-	}
-
-	if (draft.mode === "choice") {
-		const usedKeys = new Set<string>();
-		return {
-			state,
-			questions: {
-				decision: {
-					type: "choice",
-					instructions: prompt,
-					criteria: Object.fromEntries(
-						draft.choices.map((choice, index) => {
-							const value = choice.value.trim();
-							return [keyForChoice(value, index, usedKeys), value];
-						}),
-					),
-				},
-			},
-		};
-	}
-
+// Tev returns a label without the distribution required by the native format.
+// Preserve its existing request/response contract in the playground.
+export function serializeDecisionDraftForModel(draft: DecisionDraft, model: string):
+	| ReturnType<typeof serializeDecisionDraft>
+	| { state: Record<string, unknown>; questions: Record<string, unknown> } {
+	if (model !== "together/tev1-4b-experimental") return serializeDecisionDraft(draft);
+	const native = serializeDecisionDraft(draft);
+	const question = native.questions[0];
+	const choices = draft.choices.map(choice => choice.value.trim());
+	const used = new Set<string>();
+	const criteria = Object.fromEntries(choices.map((value, index) => {
+		const base = value.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || `option_${index + 1}`;
+		let key = base;
+		let suffix = 2;
+		while (used.has(key)) key = `${base}_${suffix++}`;
+		used.add(key);
+		return [key, value];
+	}));
 	return {
-		state,
-		questions: {
-			decision: {
-				type: "score",
-				instructions: prompt,
-				criteria: draft.scoreLevels.map((level) => level.value.trim()),
-			},
-		},
+		state: { input: native.input },
+		questions: { decision: { type: draft.mode, instructions: question.instructions,
+			...(draft.mode === "choice" ? { criteria } : draft.mode === "score" ? { criteria: draft.scoreLevels.map(level => level.value.trim()) } : {}) } },
 	};
 }
 

@@ -171,6 +171,7 @@ function decisionsTokenReservation(args: {
 }
 
 export function estimateProviderTokenReservation(args: {
+	providerId?: string;
 	capability: string;
 	body: unknown;
 	requestedMaxOutputTokens?: number | null;
@@ -182,6 +183,13 @@ export function estimateProviderTokenReservation(args: {
 		: serializedInputTokenUpperBound(args.body);
 	if (inputUpperBound == null) return null;
 
+	if (args.capability === "decisions.make" &&
+		(args.providerId === "openai" || Array.isArray((args.body as any)?.questions))) {
+		// The canonical Decisions format evaluates all questions in one call.
+		const outputUpperBound = positiveSafeInteger(args.providerMaxOutputTokens);
+		if (outputUpperBound == null || inputUpperBound > Number.MAX_SAFE_INTEGER - outputUpperBound) return null;
+		return inputUpperBound + outputUpperBound;
+	}
 	if (args.capability === "decisions.make") return decisionsTokenReservation(args);
 	if (args.capability === "embeddings" || args.capability === "moderations") return inputUpperBound;
 	if (args.capability !== "text.generate") return null;

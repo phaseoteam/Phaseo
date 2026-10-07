@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "Videogenerierung",
 			"endpointImageVariations": "Bildvariationen",
 			"endpointMusicGeneration": "Musikgenerierung",
-			"tierPrivate": "Privat"
+			"tierPrivate": "Privat",
+			"capabilityTextGeneration": "Textgenerierung",
+			"modalityDecisions": "Entscheidungen"
 		},
 		"freeRouter": {
 			"title": "Kostenloser Modellpool",

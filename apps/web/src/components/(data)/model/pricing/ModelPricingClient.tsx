@@ -1,4 +1,5 @@
 "use client";
+import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
     useCallback,
@@ -365,7 +366,7 @@ function getPriceDirectionForSort(
 	return null;
 }
 
-function getPriceColumnForSort(sort: SortOption): ProviderTablePriceColumn | null {
+export function getPriceColumnForSort(sort: SortOption): ProviderTablePriceColumn | null {
     if (!sort.startsWith("price:")) return null;
     const key = sort.slice("price:".length);
     const [direction, modality, ...unitParts] = key.split(":");
@@ -376,10 +377,14 @@ function getPriceColumnForSort(sort: SortOption): ProviderTablePriceColumn | nul
     ) {
         return null;
     }
+    const groupedModalities = modality.includes("+")
+        ? modality.split("+") as ProviderTablePriceColumn["modality"][]
+        : undefined;
     return {
         key,
         direction: direction as ProviderTablePriceDirection,
-        modality: modality as ProviderTablePriceColumn["modality"],
+        modality: groupedModalities ? "multimodal" : modality as ProviderTablePriceColumn["modality"],
+        groupedModalities,
         unitLabel: unitParts.join(":"),
         label: "",
         headerUnitLabel: "",
@@ -585,7 +590,7 @@ function renderTierTablePrice(
 	return summary.primary ? (
 		<div className="text-right">
 			<div className="font-medium tabular-nums text-foreground">
-				{summary.secondary
+				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
 					: summary.primary.formattedPrice}
 			</div>

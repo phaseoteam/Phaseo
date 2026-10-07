@@ -704,15 +704,44 @@ pub struct DebugOptions {
 	pub trace_level: Option<String>,
 }
 
+pub struct DecisionChoiceAnswer {
+	pub choice: String,
+	pub confidence: f64,
+	pub name: Option<String>,
+	pub probabilities: Vec<HashMap<String, String>>,
+	pub r#type: String,
+}
+
 pub struct DecisionChoiceQuestion {
 	pub criteria: HashMap<String, String>,
 	pub instructions: String,
 	pub r#type: String,
 }
 
+pub type DecisionCreateRequest = JsonValue;
+
+pub type DecisionCreateResponse = JsonValue;
+
 pub struct DecisionImage {
 	pub base64: String,
 	pub content_type: String,
+}
+
+pub struct DecisionInputImage {
+	pub detail: Option<Option<String>>,
+	pub image_url: String,
+	pub r#type: String,
+}
+
+pub struct DecisionInputMessage {
+	pub content: String,
+	pub role: String,
+	pub r#type: Option<String>,
+}
+
+pub struct DecisionInputText {
+	pub text: String,
+	pub r#type: String,
 }
 
 pub type DecisionInstructions = JsonValue;
@@ -720,6 +749,31 @@ pub type DecisionInstructions = JsonValue;
 pub struct DecisionNoulQuestion {
 	pub criteria: Option<HashMap<String, String>>,
 	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct DecisionPredicateAnswer {
+	pub name: Option<String>,
+	pub probability: f64,
+	pub r#type: String,
+}
+
+pub struct DecisionPredicateQuestion {
+	pub instructions: String,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct DecisionRefusalAnswer {
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct DecisionScoreAnswer {
+	pub confidence: f64,
+	pub name: Option<String>,
+	pub probabilities: Vec<HashMap<String, String>>,
+	pub score: f64,
 	pub r#type: String,
 }
 
@@ -752,7 +806,9 @@ pub struct DecisionsResponse {
 
 pub struct DecisionsUsage {
 	pub input_tokens: Option<i64>,
+	pub input_tokens_details: Option<HashMap<String, String>>,
 	pub output_tokens: Option<i64>,
+	pub output_tokens_details: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
 }
 
@@ -1546,6 +1602,27 @@ pub struct KeyInvalidateResponse {
 
 pub type KnownModelId = JsonValue;
 
+pub struct LegacyDecisionsRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub images: Option<Vec<String>>,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: HashMap<String, String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub state: String,
+}
+
+pub struct LegacyDecisionsResponse {
+	pub answers: Option<HashMap<String, String>>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: Option<String>,
+	pub request_id: Option<Option<String>>,
+	pub usage: Option<HashMap<String, String>>,
+}
+
 pub struct ListFilesResponse {
 	pub data: Option<Vec<HashMap<String, String>>>,
 	pub object: Option<String>,
@@ -2062,6 +2139,41 @@ pub struct OcrRequest {
 }
 
 pub struct OcrResponse {
+}
+
+pub struct OpenAIDecisionChoiceQuestion {
+	pub choices: Vec<HashMap<String, String>>,
+	pub instructions: String,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct OpenAIDecisionScoreQuestion {
+	pub instructions: String,
+	pub levels: Vec<HashMap<String, String>>,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct OpenAIDecisionsRequest {
+	pub debug: Option<HashMap<String, String>>,
+	pub echo_upstream_request: Option<bool>,
+	pub input: String,
+	pub meta: Option<bool>,
+	pub metadata: Option<HashMap<String, String>>,
+	pub model: String,
+	pub provider: Option<HashMap<String, String>>,
+	pub questions: Vec<String>,
+	pub routing: Option<HashMap<String, String>>,
+	pub safety_identifier: Option<Option<String>>,
+}
+
+pub struct OpenAIDecisionsResponse {
+	pub answers: Vec<String>,
+	pub meta: Option<HashMap<String, String>>,
+	pub model: String,
+	pub request_id: Option<Option<String>>,
+	pub usage: HashMap<String, String>,
 }
 
 pub struct OpenAIReasoningConfig {

@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "إنشاء الفيديو",
 			"endpointImageVariations": "تنويعات الصور",
 			"endpointMusicGeneration": "توليد الموسيقى",
-			"tierPrivate": "خاصة"
+			"tierPrivate": "خاصة",
+			"capabilityTextGeneration": "توليد النص",
+			"modalityDecisions": "القرارات"
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",

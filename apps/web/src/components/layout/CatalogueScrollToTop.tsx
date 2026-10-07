@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/i18n/navigation";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATALOGUE_ROUTE_ROOTS } from "@/lib/publicDataRoutes";

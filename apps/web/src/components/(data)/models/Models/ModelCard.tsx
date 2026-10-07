@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { ModelCapabilityBadges } from "../ModelCapabilityBadges";
+import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
 	useEffect,
@@ -650,6 +652,8 @@ function ModelCardImpl({
 			Math.max(0, providerStatusItems.length - 1) * PROVIDER_ROW_GAP,
 	);
 	const inputModalities = model.gateway_input_modalities ?? [];
+	const capabilities = decisionModelCapabilities(model.gateway_endpoints ?? []);
+	const dualDecisionsModel = capabilities.length === 2;
 	const outputModalities = model.gateway_output_modalities ?? [];
 	const contextLengths = (model.context_lengths ?? []).filter(
 		(value) => Number.isFinite(value) && value > 0,
@@ -1084,10 +1088,19 @@ function ModelCardImpl({
 					</Button>
 				</div>
 
+				<ModelCapabilityBadges endpoints={model.gateway_endpoints ?? []} />
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
-						{priceSummary ? (
+						{dualDecisionsModel ? (model.operation_pricing?.length ? model.operation_pricing.map(operation => (
+							<span key={operation.capability} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
+								<span className="text-muted-foreground">{t(`filtersUi.${operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions"}`)}</span>
+								<span className="font-medium tabular-nums">
+									{t("input")} {formatPrice(operation.input, format.number, { allowZero: true }) ?? "—"} / {t("output")} {formatPrice(operation.output, format.number, { allowZero: true }) ?? "—"} · {tDetail("pricing.perMillionTokens")}
+								</span>
+							</span>
+						)) : <Link href={`${modelHref}/pricing`} className="rounded-md border border-border/60 px-2 py-1 underline underline-offset-2">{t("pricing")}</Link>) : null}
+						{!dualDecisionsModel && priceSummary ? (
 							pricingDetailRows.length > 0 ? (
 								<HoverCard openDelay={120} closeDelay={100}>
 									<HoverCardTrigger asChild>

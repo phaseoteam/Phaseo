@@ -969,20 +969,20 @@ paths:
         - Gateway
       operationId: makeDecision
       summary: اتخاذ قرارات منظّمة
-      description: يقيّم أسئلة Noul وChoice وScore ذات الأنواع المحددة بناءً على حالة منظّمة باستخدام نموذج قرار مثل TypeSafe Jev.
+      description: 'استخدم التنسيق المتوافق مع OpenAI للمكالمات الجديدة: يحتوي input على نص أو رسائل مستخدم تتضمن أجزاء input_image مضمنة، وquestions مصفوفة مرتبة من أسئلة predicate أو choice أو score. تحافظ الإجابات على الترتيب والأسماء الاختيارية، وتبقى قيم الخيارات المنطقية منطقية. روابط الصور المستضافة غير مدعومة؛ يدعم Luna حتى 128 صورة مضمنة وللمزودين الآخرين حدودهم الخاصة. تتطلب تفاصيل الصور الصريحة وsafety_identifier مسار OpenAI. يظل التنسيق القديم باستخدام state وخرائط الأسئلة المسماة وnoul وcriteria مدعومًا ويعيد خريطة إجابات. يتطلب Together Tev هذا التنسيق لأنه يعيد تسميات دون احتمالات. تظل الأمثلة القديمة صالحة.'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DecisionsRequest'
+              $ref: '#/components/schemas/DecisionCreateRequest'
       responses:
         '200':
           description: استجابة القرارات المنظّمة
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DecisionsResponse'
+                $ref: '#/components/schemas/DecisionCreateResponse'
   /audio/speech:
     post:
       x-beta: true
@@ -10657,7 +10657,212 @@ components:
         - type: string
         - type: object
           additionalProperties: true
+    DecisionCreateRequest:
+      description: يوصى بتنسيق OpenAI. يظل التنسيق القديم مدعومًا. تتبع الإجابة الطلب؛ لا تخلط التنسيقات.
+      oneOf:
+        - $ref: '#/components/schemas/OpenAIDecisionsRequest'
+        - $ref: '#/components/schemas/LegacyDecisionsRequest'
     DecisionsRequest:
+      deprecated: true
+      description: Legacy SDK model name retained for compatibility. New callers should use OpenAIDecisionsRequest.
+      allOf:
+        - $ref: '#/components/schemas/LegacyDecisionsRequest'
+    OpenAIDecisionsRequest:
+      type: object
+      required:
+        - model
+        - input
+        - questions
+      properties:
+        model:
+          type: string
+          minLength: 1
+          description: معرّف نموذج Phaseo الأساسي أو الاسم المستعار لنموذج المزود.
+        input:
+          description: نص أو رسائل مع صور مضمنة.
+          oneOf:
+            - type: string
+              maxLength: 10485760
+            - type: array
+              items:
+                $ref: '#/components/schemas/DecisionInputMessage'
+        questions:
+          type: array
+          minItems: 1
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/DecisionPredicateQuestion'
+              - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
+              - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
+        safety_identifier:
+          type: string
+          nullable: true
+          maxLength: 128
+          description: معرّف مستخدم مبهم. مسارات OpenAI فقط.
+        meta:
+          type: boolean
+          default: false
+        echo_upstream_request:
+          type: boolean
+        debug:
+          $ref: '#/components/schemas/DebugOptions'
+        provider:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        routing:
+          $ref: '#/components/schemas/ProviderRoutingOptions'
+        metadata:
+          type: object
+          additionalProperties: true
+    DecisionInputMessage:
+      type: object
+      required:
+        - role
+        - content
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - message
+        role:
+          type: string
+          enum:
+            - user
+        content:
+          oneOf:
+            - type: string
+              maxLength: 10485760
+            - type: array
+              items:
+                oneOf:
+                  - $ref: '#/components/schemas/DecisionInputText'
+                  - $ref: '#/components/schemas/DecisionInputImage'
+    DecisionInputText:
+      type: object
+      required:
+        - type
+        - text
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - input_text
+        text:
+          type: string
+          maxLength: 10485760
+    DecisionInputImage:
+      type: object
+      required:
+        - type
+        - image_url
+      additionalProperties: false
+      description: صورة base64 مضمنة. دون روابط مستضافة أو معرّفات ملفات. الحد الأقصى 128 صورة لكل طلب؛ قد يفرض المزود حدودًا أقل.
+      properties:
+        type:
+          type: string
+          enum:
+            - input_image
+        image_url:
+          type: string
+          maxLength: 1073741824
+          pattern: ^data:image/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$
+        detail:
+          type: string
+          nullable: true
+          enum:
+            - low
+            - high
+            - auto
+            - original
+          description: 'تفاصيل الصور الصريحة: OpenAI فقط.'
+    DecisionPredicateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - predicate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+    OpenAIDecisionChoiceQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - choices
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+        choices:
+          type: array
+          minItems: 1
+          description: قيم مختلفة؛ القيمة المنطقية والنص المطابق مختلفان.
+          items:
+            type: object
+            required:
+              - value
+            additionalProperties: false
+            properties:
+              value:
+                oneOf:
+                  - type: string
+                  - type: boolean
+              description:
+                type: string
+                maxLength: 1048576
+    OpenAIDecisionScoreQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - levels
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+        levels:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - label
+            additionalProperties: false
+            properties:
+              label:
+                type: string
+                maxLength: 1048576
+              description:
+                type: string
+                maxLength: 1048576
+    LegacyDecisionsRequest:
+      description: تنسيق التوافق مع state والأسئلة المسماة وnoul.
       type: object
       required:
         - model
@@ -10780,7 +10985,155 @@ components:
           minItems: 2
           items:
             type: string
+    DecisionCreateResponse:
+      description: إجابات مرتبة لـ input/المصفوفة؛ خريطة مسماة لـ state/الخريطة القديمة.
+      oneOf:
+        - $ref: '#/components/schemas/OpenAIDecisionsResponse'
+        - $ref: '#/components/schemas/LegacyDecisionsResponse'
     DecisionsResponse:
+      deprecated: true
+      description: Legacy SDK response model retained for compatibility. OpenAI-format requests return OpenAIDecisionsResponse.
+      allOf:
+        - $ref: '#/components/schemas/LegacyDecisionsResponse'
+    OpenAIDecisionsResponse:
+      type: object
+      required:
+        - model
+        - answers
+        - usage
+      properties:
+        model:
+          type: string
+        answers:
+          type: array
+          description: إجابة لكل سؤال بالترتيب، حتى دون أسماء أو بأسماء متكررة.
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/DecisionPredicateAnswer'
+              - $ref: '#/components/schemas/DecisionChoiceAnswer'
+              - $ref: '#/components/schemas/DecisionScoreAnswer'
+              - $ref: '#/components/schemas/DecisionRefusalAnswer'
+        usage:
+          $ref: '#/components/schemas/DecisionsUsage'
+        request_id:
+          type: string
+          nullable: true
+        meta:
+          type: object
+          additionalProperties: true
+    DecisionPredicateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - probability
+      properties:
+        type:
+          type: string
+          enum:
+            - predicate
+        name:
+          type: string
+          nullable: true
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
+    DecisionChoiceAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - choice
+        - probabilities
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - choice
+        name:
+          type: string
+          nullable: true
+        choice:
+          oneOf:
+            - type: string
+            - type: boolean
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        probabilities:
+          type: array
+          items:
+            type: object
+            required:
+              - value
+              - probability
+            properties:
+              value:
+                oneOf:
+                  - type: string
+                  - type: boolean
+              probability:
+                type: number
+                minimum: 0
+                maximum: 1
+    DecisionScoreAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - score
+        - probabilities
+        - confidence
+      properties:
+        type:
+          type: string
+          enum:
+            - score
+        name:
+          type: string
+          nullable: true
+        score:
+          type: number
+          minimum: 0
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        probabilities:
+          type: array
+          items:
+            type: object
+            required:
+              - value
+              - label
+              - probability
+            properties:
+              value:
+                type: integer
+                minimum: 0
+              label:
+                type: string
+              probability:
+                type: number
+                minimum: 0
+                maximum: 1
+    DecisionRefusalAnswer:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+          enum:
+            - refusal
+        name:
+          type: string
+          nullable: true
+    LegacyDecisionsResponse:
       type: object
       properties:
         model:
@@ -10808,6 +11161,21 @@ components:
         total_tokens:
           type: integer
           minimum: 0
+        input_tokens_details:
+          type: object
+          properties:
+            cached_tokens:
+              type: integer
+              minimum: 0
+            cache_write_tokens:
+              type: integer
+              minimum: 0
+        output_tokens_details:
+          type: object
+          properties:
+            reasoning_tokens:
+              type: integer
+              minimum: 0
     DecisionInstructions:
       oneOf:
         - type: string

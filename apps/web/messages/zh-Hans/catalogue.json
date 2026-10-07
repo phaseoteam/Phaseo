@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "视频生成",
 			"endpointImageVariations": "图像变体",
 			"endpointMusicGeneration": "音乐生成",
-			"tierPrivate": "私有"
+			"tierPrivate": "私有",
+			"capabilityTextGeneration": "文本生成",
+			"modalityDecisions": "决策"
 		},
 		"freeRouter": {
 			"title": "免费模型池",

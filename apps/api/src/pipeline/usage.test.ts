@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { shapeUsageForClient, stripUsagePricing } from "./usage";
 
 describe("shapeUsageForClient", () => {
+	it("preserves native Decisions cache and reasoning details", () => {
+		const shaped = shapeUsageForClient({
+			input_tokens: 20, output_tokens: 3, total_tokens: 23,
+			input_tokens_details: { cached_tokens: 4, cache_write_tokens: 6 },
+			output_tokens_details: { reasoning_tokens: 2 },
+		}, { endpoint: "decisions", body: { questions: [] } });
+		expect(shaped.input_tokens_details).toMatchObject({ cached_tokens: 4, cache_write_tokens: 6 });
+		expect(shaped.output_tokens_details.reasoning_tokens).toBe(2);
+	});
 	it("preserves the input-image billing meter", () => {
 		const shaped = shapeUsageForClient({ input_image: 2, requests: 1 });
 		expect(shaped.input_image).toBe(2);

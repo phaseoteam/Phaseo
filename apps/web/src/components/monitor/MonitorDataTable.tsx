@@ -68,6 +68,8 @@ import type {
 import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { ModelCapabilityBadges } from "@/components/(data)/models/ModelCapabilityBadges";
+import { decisionModelCapability } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
@@ -1182,12 +1184,11 @@ export function MonitorDataTable({
 	);
 
 	const renderCapabilities = (endpoints: string[]) => {
-		const labels = endpoints.map(formatEndpoint);
-		if (!labels.length) return "-";
+		const labels = endpoints.filter(endpoint => !decisionModelCapability(endpoint)).map(formatEndpoint);
 		return (
-			<span className="block truncate font-mono text-[11px]" title={labels.join(", ")}>
-				{labels.join(", ")}
-			</span>
+			<div className="space-y-1"><ModelCapabilityBadges endpoints={endpoints} />
+				{labels.length ? <span className="block truncate font-mono text-[11px]" title={labels.join(", ")}>{labels.join(", ")}</span> : null}
+			</div>
 		);
 	};
 
@@ -1314,9 +1315,15 @@ export function MonitorDataTable({
 			case "capability":
 				return renderCapabilities(item.endpoints);
 			case "inputPrice":
-				return renderPriceRange(item.inputPrices);
+				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
+					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
+					{renderPriceRange(operation.inputPrices)}
+				</div>)}</div> : renderPriceRange(item.inputPrices);
 			case "outputPrice":
-				return renderPriceRange(item.outputPrices);
+				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
+					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
+					{renderPriceRange(operation.outputPrices)}
+				</div>)}</div> : renderPriceRange(item.outputPrices);
 			case "tier":
 				return renderTiers(item.tiers);
 			case "inputModalities":

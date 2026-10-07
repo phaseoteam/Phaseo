@@ -1375,15 +1375,44 @@ type DebugOptions struct {
 	TraceLevel *string `json:"trace_level,omitempty"`
 }
 
+type DecisionChoiceAnswer struct {
+	Choice interface{} `json:"choice"`
+	Confidence float64 `json:"confidence"`
+	Name *string `json:"name"`
+	Probabilities []map[string]interface{} `json:"probabilities"`
+	Type string `json:"type"`
+}
+
 type DecisionChoiceQuestion struct {
 	Criteria map[string]interface{} `json:"criteria"`
 	Instructions interface{} `json:"instructions"`
 	Type string `json:"type"`
 }
 
+type DecisionCreateRequest = interface{}
+
+type DecisionCreateResponse = interface{}
+
 type DecisionImage struct {
 	Base64 string `json:"base64"`
 	ContentType string `json:"content_type"`
+}
+
+type DecisionInputImage struct {
+	Detail *string `json:"detail,omitempty"`
+	ImageUrl string `json:"image_url"`
+	Type string `json:"type"`
+}
+
+type DecisionInputMessage struct {
+	Content interface{} `json:"content"`
+	Role string `json:"role"`
+	Type *string `json:"type,omitempty"`
+}
+
+type DecisionInputText struct {
+	Text string `json:"text"`
+	Type string `json:"type"`
 }
 
 type DecisionInstructions = interface{}
@@ -1391,6 +1420,31 @@ type DecisionInstructions = interface{}
 type DecisionNoulQuestion struct {
 	Criteria *map[string]interface{} `json:"criteria,omitempty"`
 	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type DecisionPredicateAnswer struct {
+	Name *string `json:"name"`
+	Probability float64 `json:"probability"`
+	Type string `json:"type"`
+}
+
+type DecisionPredicateQuestion struct {
+	Instructions string `json:"instructions"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
+type DecisionRefusalAnswer struct {
+	Name *string `json:"name"`
+	Type string `json:"type"`
+}
+
+type DecisionScoreAnswer struct {
+	Confidence float64 `json:"confidence"`
+	Name *string `json:"name"`
+	Probabilities []map[string]interface{} `json:"probabilities"`
+	Score float64 `json:"score"`
 	Type string `json:"type"`
 }
 
@@ -1423,7 +1477,9 @@ type DecisionsResponse struct {
 
 type DecisionsUsage struct {
 	InputTokens *int `json:"input_tokens,omitempty"`
+	InputTokensDetails *map[string]interface{} `json:"input_tokens_details,omitempty"`
 	OutputTokens *int `json:"output_tokens,omitempty"`
+	OutputTokensDetails *map[string]interface{} `json:"output_tokens_details,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
 }
 
@@ -2946,6 +3002,27 @@ const (
 )
 
 
+type LegacyDecisionsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Images *[]interface{} `json:"images,omitempty"`
+	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Questions map[string]interface{} `json:"questions"`
+	Routing *map[string]interface{} `json:"routing,omitempty"`
+	State interface{} `json:"state"`
+}
+
+type LegacyDecisionsResponse struct {
+	Answers *map[string]interface{} `json:"answers,omitempty"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Model *string `json:"model,omitempty"`
+	RequestId *string `json:"request_id,omitempty"`
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
 type ListFilesResponse struct {
 	Data *[]map[string]interface{} `json:"data,omitempty"`
 	Object *string `json:"object,omitempty"`
@@ -3468,6 +3545,41 @@ type OcrRequest struct {
 }
 
 type OcrResponse struct {
+}
+
+type OpenAIDecisionChoiceQuestion struct {
+	Choices []map[string]interface{} `json:"choices"`
+	Instructions string `json:"instructions"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
+type OpenAIDecisionScoreQuestion struct {
+	Instructions string `json:"instructions"`
+	Levels []map[string]interface{} `json:"levels"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
+type OpenAIDecisionsRequest struct {
+	Debug *map[string]interface{} `json:"debug,omitempty"`
+	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
+	Input interface{} `json:"input"`
+	Meta *bool `json:"meta,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Model string `json:"model"`
+	Provider *map[string]interface{} `json:"provider,omitempty"`
+	Questions []interface{} `json:"questions"`
+	Routing *map[string]interface{} `json:"routing,omitempty"`
+	SafetyIdentifier *string `json:"safety_identifier,omitempty"`
+}
+
+type OpenAIDecisionsResponse struct {
+	Answers []interface{} `json:"answers"`
+	Meta *map[string]interface{} `json:"meta,omitempty"`
+	Model string `json:"model"`
+	RequestId *string `json:"request_id,omitempty"`
+	Usage map[string]interface{} `json:"usage"`
 }
 
 type OpenAIReasoningConfig struct {

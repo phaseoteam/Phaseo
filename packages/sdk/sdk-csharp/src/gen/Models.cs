@@ -1738,6 +1738,25 @@ public sealed class DebugOptions
 
 }
 
+public sealed class DecisionChoiceAnswer
+{
+	[JsonPropertyName("choice")]
+	public object Choice { get; set; }
+
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("probabilities")]
+	public List<Dictionary<string, object>> Probabilities { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionChoiceQuestion
 {
 	[JsonPropertyName("criteria")]
@@ -1751,6 +1770,10 @@ public sealed class DecisionChoiceQuestion
 
 }
 
+public sealed class DecisionCreateRequest { }
+
+public sealed class DecisionCreateResponse { }
+
 public sealed class DecisionImage
 {
 	[JsonPropertyName("base64")]
@@ -1758,6 +1781,42 @@ public sealed class DecisionImage
 
 	[JsonPropertyName("content_type")]
 	public string ContentType { get; set; }
+
+}
+
+public sealed class DecisionInputImage
+{
+	[JsonPropertyName("detail")]
+	public string? Detail { get; set; }
+
+	[JsonPropertyName("image_url")]
+	public string ImageUrl { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionInputMessage
+{
+	[JsonPropertyName("content")]
+	public object Content { get; set; }
+
+	[JsonPropertyName("role")]
+	public string Role { get; set; }
+
+	[JsonPropertyName("type")]
+	public string? Type { get; set; }
+
+}
+
+public sealed class DecisionInputText
+{
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -1770,6 +1829,61 @@ public sealed class DecisionNoulQuestion
 
 	[JsonPropertyName("instructions")]
 	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionPredicateAnswer
+{
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("probability")]
+	public double Probability { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionPredicateQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionRefusalAnswer
+{
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionScoreAnswer
+{
+	[JsonPropertyName("confidence")]
+	public double Confidence { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("probabilities")]
+	public List<Dictionary<string, object>> Probabilities { get; set; }
+
+	[JsonPropertyName("score")]
+	public double Score { get; set; }
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
@@ -1847,8 +1961,14 @@ public sealed class DecisionsUsage
 	[JsonPropertyName("input_tokens")]
 	public long? InputTokens { get; set; }
 
+	[JsonPropertyName("input_tokens_details")]
+	public Dictionary<string, object>? InputTokensDetails { get; set; }
+
 	[JsonPropertyName("output_tokens")]
 	public long? OutputTokens { get; set; }
+
+	[JsonPropertyName("output_tokens_details")]
+	public Dictionary<string, object>? OutputTokensDetails { get; set; }
 
 	[JsonPropertyName("total_tokens")]
 	public long? TotalTokens { get; set; }
@@ -3761,6 +3881,59 @@ public sealed class KeyInvalidateResponse
 
 public sealed class KnownModelId { }
 
+public sealed class LegacyDecisionsRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("images")]
+	public List<object>? Images { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("questions")]
+	public Dictionary<string, object> Questions { get; set; }
+
+	[JsonPropertyName("routing")]
+	public Dictionary<string, object>? Routing { get; set; }
+
+	[JsonPropertyName("state")]
+	public object State { get; set; }
+
+}
+
+public sealed class LegacyDecisionsResponse
+{
+	[JsonPropertyName("answers")]
+	public Dictionary<string, object>? Answers { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object>? Usage { get; set; }
+
+}
+
 public sealed class ListFilesResponse
 {
 	[JsonPropertyName("data")]
@@ -5041,6 +5214,91 @@ public sealed class OcrRequest
 
 public sealed class OcrResponse
 {
+}
+
+public sealed class OpenAIDecisionChoiceQuestion
+{
+	[JsonPropertyName("choices")]
+	public List<Dictionary<string, object>> Choices { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class OpenAIDecisionScoreQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("levels")]
+	public List<Dictionary<string, object>> Levels { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class OpenAIDecisionsRequest
+{
+	[JsonPropertyName("debug")]
+	public Dictionary<string, object>? Debug { get; set; }
+
+	[JsonPropertyName("echo_upstream_request")]
+	public bool? EchoUpstreamRequest { get; set; }
+
+	[JsonPropertyName("input")]
+	public object Input { get; set; }
+
+	[JsonPropertyName("meta")]
+	public bool? Meta { get; set; }
+
+	[JsonPropertyName("metadata")]
+	public Dictionary<string, object>? Metadata { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("provider")]
+	public Dictionary<string, object>? Provider { get; set; }
+
+	[JsonPropertyName("questions")]
+	public List<object> Questions { get; set; }
+
+	[JsonPropertyName("routing")]
+	public Dictionary<string, object>? Routing { get; set; }
+
+	[JsonPropertyName("safety_identifier")]
+	public string? SafetyIdentifier { get; set; }
+
+}
+
+public sealed class OpenAIDecisionsResponse
+{
+	[JsonPropertyName("answers")]
+	public List<object> Answers { get; set; }
+
+	[JsonPropertyName("meta")]
+	public Dictionary<string, object>? Meta { get; set; }
+
+	[JsonPropertyName("model")]
+	public string Model { get; set; }
+
+	[JsonPropertyName("request_id")]
+	public string? RequestId { get; set; }
+
+	[JsonPropertyName("usage")]
+	public Dictionary<string, object> Usage { get; set; }
+
 }
 
 public sealed class OpenAIReasoningConfig

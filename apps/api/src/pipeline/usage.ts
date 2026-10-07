@@ -207,12 +207,18 @@ export function shapeUsageForClient(
     const outputVideo = outputVideoTokens ?? pickNumber(base, "output_video_count");
 
     const inputDetails: Record<string, number> = {};
+    const nativeDecisions = ctx?.endpoint === "decisions" && Array.isArray(ctx.body?.questions);
+    if (nativeDecisions) {
+        inputDetails.cached_tokens = cachedRead ?? 0;
+        inputDetails.cache_write_tokens = pickNumber(base, "input_tokens_details.cache_write_tokens") ?? cachedWrite ?? 0;
+    }
     if (cachedRead !== undefined) inputDetails.cached_tokens = cachedRead;
     if (inputImages !== undefined) inputDetails.input_images = inputImages;
     if (inputAudio !== undefined) inputDetails.input_audio = inputAudio;
     if (inputVideo !== undefined) inputDetails.input_videos = inputVideo;
 
     const outputDetails: Record<string, number> = {};
+    if (nativeDecisions) outputDetails.reasoning_tokens = reasoningTokens ?? 0;
     if (reasoningTokens !== undefined) outputDetails.reasoning_tokens = reasoningTokens;
     if (cachedWrite !== undefined) outputDetails.cached_tokens = cachedWrite;
     if (outputImages !== undefined) outputDetails.output_images = outputImages;

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import { UseModelSheet } from "./UseModelSheet";
 import UnreleasedBadge from "./UnreleasedBadge";
 
@@ -74,6 +75,8 @@ export default function ModelStickyHeader({
 	isDecisionsModel?: boolean;
 }) {
 	const visible = useStickyHeaderVisibility(observeId);
+	const supportsText = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []).includes("text.generate") || !isDecisionsModel;
+	const decisionsOnly = isDecisionsModel && !supportsText;
 	const t = useTranslations("Catalogue.models.detail.actions");
 	const organisationUrl = organisationHref ?? `/organisations/${organisationId}`;
 
@@ -118,9 +121,9 @@ export default function ModelStickyHeader({
 						<div className="flex shrink-0 items-center gap-2">
 							{canChat ? (
 								<Button asChild variant="outline" size="sm" className="hidden h-8 rounded-lg px-2.5 text-[13px] sm:inline-flex">
-									<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
+									<Link href={`${decisionsOnly ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 										<MessageSquare className="h-4 w-4" />
-										{isDecisionsModel ? t("decisions") : t("chat")}
+										{decisionsOnly ? t("decisions") : t("chat")}
 									</Link>
 								</Button>
 							) : null}
@@ -132,7 +135,7 @@ export default function ModelStickyHeader({
 							</Button> : null}
 							{canChat ? (
 								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
-									<Link href={`${isDecisionsModel ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={isDecisionsModel ? t("openDecisionsPlayground") : t("chatAbout")}>
+									<Link href={`${decisionsOnly ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={decisionsOnly ? t("openDecisionsPlayground") : t("chatAbout")}>
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>
@@ -142,8 +145,11 @@ export default function ModelStickyHeader({
 									<Scale className="h-4 w-4" />
 								</Link>
 							</Button> : null}
-							{canChat && !isDecisionsModel ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
-							{canChat && !isDecisionsModel ? (
+							{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="h-8 rounded-lg px-2.5 text-[13px]">
+								<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={t("openDecisionsPlayground")}><Scale className="h-4 w-4" /><span className="hidden sm:inline">{t("decisions")}</span></Link>
+							</Button> : null}
+							{canChat && supportsText ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
+							{canChat && supportsText ? (
 								<UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className="sm:hidden" />
 							) : null}
 						</div>
