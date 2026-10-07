@@ -9,10 +9,18 @@ reads authorize through the existing user-scoped RPC before accessing R2, check
 workspace/request ownership and checksum, and restore the existing UI fields.
 These objects contain routing metadata, not prompts or completions. Existing
 account deletion purges their `workspaces/<workspace>/` prefix.
+The authoritative request is inserted with its SQL routing metadata before
+any upload starts. An R2 success is committed through the ingestion RPC,
+which atomically replaces that metadata with the object reference and skips
+relational candidate inserts. Failed uploads/RPCs preserve SQL explanations;
+failed request inserts never upload. R2 puts have a ten-second application deadline.
 Deleting a request also transactionally queues its private request prefix for R2
 deletion. The scheduler retries failures without losing the queue entry, so
 existing BYOK retention and other request deletions also remove archived detail,
 including older revisions and unreferenced uploads under that request prefix.
+Deletion tombstones remain queued for at least one hour before prefix cleanup,
+longer than the maximum 15-minute scheduled Worker lifetime, to include uploads
+already in flight. See [Cloudflare execution limits](https://developers.cloudflare.com/workers/platform/limits/).
 
 ## Rollout
 

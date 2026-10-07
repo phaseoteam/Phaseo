@@ -92,10 +92,17 @@ try {
     const event = { workspace_id: workspace, request_id: 'request', routing_decisions: [
         { provider: 'provider', decision: 'ranked', score: 0.9, decision_order: 1 },
     ], routing_trace: { algorithm: { version: 'fallback' } } };
+    await db.query(`update public.gateway_requests set detail_metadata=$1`, [{
+        routing_snapshot: [{ score: 0.9 }], routing_diagnostics: { version: 'v2' }, accounting_finalization: { settled: true },
+    }]);
     await db.exec('set role service_role');
     await db.query('select public.ingest_v2_gateway_request_with_routing($1)', [{ ...event, routing_archive: reference }]);
     await db.exec('reset role');
     assert.equal((await db.query('select count(*) n from public.v2_request_routing_decisions')).rows[0].n, 0);
+    const newMetadata = (await db.query('select detail_metadata from public.gateway_requests')).rows[0].detail_metadata;
+    assert.deepEqual(newMetadata.routing_archive, reference);
+    assert.ok(!('routing_snapshot' in newMetadata));
+    assert.deepEqual(newMetadata.accounting_finalization, { settled: true });
     await db.exec('set role service_role');
     await db.query('select public.ingest_v2_gateway_request_with_routing($1)', [event]);
     await db.exec('reset role');
@@ -107,6 +114,9 @@ try {
     await db.exec('reset role');
     await db.exec('set role authenticated');
     await assert.rejects(db.query('select * from public.gateway_routing_archive_deletions'), /permission denied/);
+    await db.exec('reset role');
+    await db.exec('set role service_role');
+    await assert.rejects(db.query('select public.ingest_v2_gateway_request_with_routing($1)', [{ ...event, routing_archive: reference }]), /source_request_missing/);
     await db.exec('reset role');
     console.log('Routing archive SQL permissions, source concurrency, idempotency, fallback and accounting preservation passed.');
 } finally { await db.close(); }

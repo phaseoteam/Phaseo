@@ -96,8 +96,9 @@ describe("audit request detail persistence", () => {
 		const object = new TextDecoder().decode(put.mock.calls[0][1]);
 		expect(object).not.toContain("private prompt");
 		expect(object).not.toContain("private completion");
-		expect(insert.mock.calls[0][0].detail_metadata.routing_archive).toBeTruthy();
-		expect(insert.mock.calls[0][0].detail_metadata).not.toHaveProperty("routing_snapshot");
+		// Raw routing remains durable in SQL until the subsequent RPC commits R2.
+		expect(insert.mock.calls[0][0].detail_metadata.routing_snapshot).toBeTruthy();
+		expect(insert.mock.calls[0][0].detail_metadata).not.toHaveProperty("routing_archive");
 		const event = rpc.mock.calls[0][1].p_event;
 		expect(event.routing_decisions).toEqual([]);
 		expect(event.routing_archive).toBeTruthy();
@@ -105,6 +106,23 @@ describe("audit request detail persistence", () => {
 			expect(event.cost_nanos).toBe(5000);
 			expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }));
 		}
+	});
+
+	it("does not upload when the authoritative request insert fails", async () => {
+		const put = vi.fn();
+		getBindingsMock.mockReturnValue({ GATEWAY_IO_LOGS_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: null, error: { code: "08006", message: "database unavailable" },
+		}) }) }));
+		const rpc = vi.fn();
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		await expect(auditSuccess({
+			requestId: "req_failed_insert", workspaceId: "ws", provider: "openai", model: "model",
+			endpoint: "responses", stream: false, byok: false, totalNanos: 100, currency: "USD",
+			detailMetadata: { routing_snapshot: [{ provider_id: "openai", score: 1 }] },
+		})).rejects.toThrow("database unavailable");
+		expect(put).not.toHaveBeenCalled();
+		expect(rpc).not.toHaveBeenCalled();
 	});
 
 	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {

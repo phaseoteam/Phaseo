@@ -8,6 +8,8 @@ CREATE OR REPLACE FUNCTION public.ingest_v2_gateway_request_with_routing (
   AS $function$
 declare
   v_request_event_id uuid;
+  v_gateway_request_id uuid;
+  v_gateway_request_created_at timestamptz;
   v_attempts jsonb := coalesce(p_event->'attempts', '[]'::jsonb);
   v_routing_decisions jsonb := coalesce(p_event->'routing_decisions', '[]'::jsonb);
   v_routing_trace jsonb := coalesce(p_event->'routing_trace', '{}'::jsonb);
@@ -15,6 +17,17 @@ begin
   perform pg_advisory_xact_lock(hashtextextended(
     (p_event->>'workspace_id') || ':' || (p_event->>'request_id'), 0
   ));
+  if jsonb_typeof(p_event->'routing_archive') = 'object' then
+    select request.id, request.created_at
+      into v_gateway_request_id, v_gateway_request_created_at
+    from public.gateway_requests request
+    where request.workspace_id = (p_event->>'workspace_id')::uuid
+      and request.request_id = p_event->>'request_id'
+    order by request.created_at desc limit 1 for update;
+    if not found then
+      raise exception using errcode = '22023', message = 'routing_archive_source_request_missing';
+    end if;
+  end if;
   if jsonb_typeof(v_routing_decisions) <> 'array'
      or jsonb_array_length(v_routing_decisions) > 128
      or jsonb_typeof(v_routing_trace) <> 'object'
@@ -57,8 +70,12 @@ begin
   where decision.request_event_id = v_request_event_id;
 
   if jsonb_typeof(p_event->'routing_archive') = 'object' then
-    -- The trusted gateway has persisted the complete explanation in R2 before
-    -- inserting the authoritative request and its compact object reference.
+    -- The gateway inserted the request first, then durably uploaded R2. Keep
+    -- its SQL explanation until this reference and normalized facts commit.
+    update public.gateway_requests
+    set detail_metadata = (coalesce(detail_metadata, '{}'::jsonb) - 'routing_snapshot' - 'routing_diagnostics')
+      || jsonb_build_object('routing_archive', p_event->'routing_archive')
+    where id = v_gateway_request_id and created_at = v_gateway_request_created_at;
     delete from public.v2_request_routing_traces
     where request_event_id = v_request_event_id;
     return v_request_event_id;

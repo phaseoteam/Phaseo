@@ -11,7 +11,11 @@ export async function pruneDeletedRoutingArchives() {
     if (!bucket) return 0;
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase.from("gateway_routing_archive_deletions")
-        .select("object_prefix").order("created_at", { ascending: true }).limit(25);
+        .select("object_prefix")
+        // Retain the tombstone longer than the maximum scheduled Worker
+        // lifetime (15 minutes), including uploads started before deletion.
+        .lt("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString())
+        .order("created_at", { ascending: true }).limit(25);
     if (error) throw new Error(`routing_archive_deletion_select_failed:${error.code ?? "unknown"}`);
     let deleted = 0;
     for (const row of data ?? []) {

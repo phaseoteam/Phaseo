@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({ env: {} as Record<string, unknown>, rpc: vi.fn(), from: vi.fn() }));
 vi.mock("@/runtime/env", () => ({ getBindings: () => mocks.env, getSupabaseAdmin: () => ({ rpc: mocks.rpc, from: mocks.from }) }));
 import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "./routing-archive-backfill";
@@ -64,13 +64,20 @@ describe("routing archive retention", () => {
     let list: ReturnType<typeof vi.fn>;
     let remove: ReturnType<typeof vi.fn>;
     let acknowledge: ReturnType<typeof vi.fn>;
+    let queuedAt: number;
+    let eligibleBefore: number;
+    afterEach(() => { vi.useRealTimers(); });
     beforeEach(() => {
         list = vi.fn().mockResolvedValue({ objects: [{ key: `${prefix}current.json` }, { key: `${prefix}orphan.json` }], truncated: false });
         remove = vi.fn().mockResolvedValue(undefined);
         acknowledge = vi.fn().mockResolvedValue({ error: null });
+        queuedAt = Date.now() - 2 * 60 * 60 * 1000;
         mocks.env = { GATEWAY_IO_LOGS_BUCKET: { list, delete: remove } };
         mocks.from.mockReset().mockReturnValue({
-            select: () => ({ order: () => ({ limit: async () => ({ data: [{ object_prefix: prefix }] }) }) }),
+            select: () => ({ lt: (_field: string, value: string) => {
+                eligibleBefore = Date.parse(value);
+                return { order: () => ({ limit: async () => ({ data: queuedAt < eligibleBefore ? [{ object_prefix: prefix }] : [] }) }) };
+            } }),
             delete: () => ({ eq: acknowledge }),
         });
     });
@@ -89,5 +96,19 @@ describe("routing archive retention", () => {
         list.mockResolvedValue({ objects: [{ key: `${prefix}first.json` }], truncated: true });
         expect(await pruneDeletedRoutingArchives()).toBe(1);
         expect(acknowledge).not.toHaveBeenCalled();
+    });
+    it("keeps deletion queued while an upload can finish, then removes the late object", async () => {
+        vi.useFakeTimers();
+        queuedAt = Date.now();
+        list.mockResolvedValue({ objects: [], truncated: false });
+        expect(await pruneDeletedRoutingArchives()).toBe(0);
+        expect(list).not.toHaveBeenCalled();
+        expect(acknowledge).not.toHaveBeenCalled();
+        // The already-started upload completes after the source was deleted.
+        list.mockResolvedValue({ objects: [{ key: `${prefix}late.json` }], truncated: false });
+        await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1);
+        expect(await pruneDeletedRoutingArchives()).toBe(1);
+        expect(remove).toHaveBeenCalledWith([`${prefix}late.json`]);
+        expect(acknowledge).toHaveBeenCalledOnce();
     });
 });

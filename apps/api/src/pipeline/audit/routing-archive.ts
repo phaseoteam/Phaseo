@@ -18,7 +18,18 @@ export async function writeRoutingArchive(
     const requestDigest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(requestId));
     const requestHash = Array.from(new Uint8Array(requestDigest), byte => byte.toString(16).padStart(2, "0")).join("");
     const key = `workspaces/${workspaceId}/routing/v1/${requestHash}/${sha256}.json`;
-    const stored = await bucket.put(key, bytes, { httpMetadata: { contentType: "application/json" } });
+    let deadline: ReturnType<typeof setTimeout> | undefined;
+    let stored: R2Object | null;
+    try {
+        stored = await Promise.race([
+            bucket.put(key, bytes, { httpMetadata: { contentType: "application/json" } }),
+            new Promise<never>((_resolve, reject) => {
+                deadline = setTimeout(() => reject(new Error("routing_archive_write_timeout")), 10_000);
+            }),
+        ]);
+    } finally {
+        clearTimeout(deadline);
+    }
     if (!stored) throw new Error("routing_archive_write_failed");
     return { version: 1, key, sha256, bytes: bytes.byteLength };
 }

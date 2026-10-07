@@ -341,7 +341,6 @@ async function upsertV2RequestFact(args: {
     providerAttempts?: Array<Record<string, unknown>> | null;
     routingSnapshot?: Array<Record<string, unknown>> | null;
     routingDiagnostics?: Record<string, unknown> | null;
-    routingArchive?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
 }) {
 	const serviceTier = resolveAuditServiceTiers(args);
@@ -354,6 +353,14 @@ async function upsertV2RequestFact(args: {
 		}
 		return routed || null;
 	})();
+    // Called only after the authoritative request insert has succeeded.
+    // Keep SQL metadata intact until the R2 reference is committed atomically.
+    const archivedMetadata = await archiveRoutingMetadata({
+        ...args,
+        model: args.routedModel,
+        detailMetadata: { routing_snapshot: args.routingSnapshot, routing_diagnostics: args.routingDiagnostics },
+    });
+    const routingArchive = archivedMetadata.routing_archive ?? null;
     const { normalizedAttempts, rankedDecisions, excludedDecisions, routingTrace } = buildRoutingObservability(args);
     const usageMeters = buildV2RequestUsageMeters({
         usage: args.usage ?? {},
@@ -428,9 +435,9 @@ async function upsertV2RequestFact(args: {
             attempts: normalizedAttempts,
             usage_meters: usageMeters,
             pricing_lines: pricingLines,
-            routing_decisions: args.routingArchive ? [] : [...rankedDecisions, ...excludedDecisions],
-            routing_trace: args.routingArchive ? {} : routingTrace,
-            routing_archive: args.routingArchive ?? null,
+            routing_decisions: routingArchive ? [] : [...rankedDecisions, ...excludedDecisions],
+            routing_trace: routingArchive ? {} : routingTrace,
+            routing_archive: routingArchive ?? null,
             safe_metadata: {
                 provider: args.provider ?? null,
                 response_timeline: args.responseTimeline ?? null,
@@ -769,7 +776,6 @@ export async function auditSuccess(input: {
     const args = protectStealthAuditArgs({ ...input, detailMetadata });
     const releaseRuntime = ensureRuntimeForBackground();
     try {
-        args.detailMetadata = await archiveRoutingMetadata(args);
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
         const structuredOutput = validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse);
@@ -946,7 +952,6 @@ export async function auditSuccess(input: {
                     gatewayResponse: args.gatewayResponse,
                     providerAttempts: args.providerAttempts ?? null,
                     labels: args.labels ?? null,
-                    routingArchive: (args.detailMetadata as any)?.routing_archive ?? null,
                     routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
                         ? (args.detailMetadata as any).routing_snapshot
                         : null,
@@ -1131,7 +1136,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
     const args = protectStealthAuditArgs({ ...input, detailMetadata });
     const releaseRuntime = ensureRuntimeForBackground();
     try {
-        args.detailMetadata = await archiveRoutingMetadata(args);
         if (args.stage === "before") {
             const resolvedAppId = args.workspaceId
                 ? await ensureAppId({
@@ -1247,7 +1251,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             gatewayResponse: args.gatewayResponse,
                             providerAttempts: args.providerAttempts ?? null,
                             labels: args.labels ?? null,
-                            routingArchive: (args.detailMetadata as any)?.routing_archive ?? null,
                             routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
                                 ? (args.detailMetadata as any).routing_snapshot
                                 : null,
@@ -1440,7 +1443,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         gatewayResponse: args.gatewayResponse,
                         providerAttempts: args.providerAttempts ?? null,
                         labels: args.labels ?? null,
-                        routingArchive: (args.detailMetadata as any)?.routing_archive ?? null,
                         routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
                             ? (args.detailMetadata as any).routing_snapshot
                             : null,
