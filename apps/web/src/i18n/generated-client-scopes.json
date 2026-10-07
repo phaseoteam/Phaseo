@@ -700,13 +700,16 @@
     "Site.pricing",
     "Site.profile"
   ],
-  "[\"Catalogue\",\"Common.authFlows\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatSettings\",\"Common.ui.finalSharedCopy\",\"Common.ui.metrics\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingDisplayCopy\",\"Common.ui.pricingEditorCopy\",\"Common.ui.providerCardCopy\",\"Common.ui.publicModelCopy\",\"Common.ui.versionedPricing\",\"Product.gatewayBenchmark.notAvailable\",\"Product.latency.configuration\",\"SettingsUI.apps\",\"SettingsUI.identity\",\"SettingsUI.providerCatalogCopy\",\"SettingsUI.realtimeCopy\"]": [
+  "[\"Catalogue\",\"Common.authFlows\",\"Common.ui.actions\",\"Common.ui.auditCopy\",\"Common.ui.benchmarkChartCopy\",\"Common.ui.benchmarkComparison\",\"Common.ui.chatComposer.default\",\"Common.ui.chatComposer.reasoning\",\"Common.ui.chatComposer.standard\",\"Common.ui.chatSettings\",\"Common.ui.finalSharedCopy\",\"Common.ui.metrics\",\"Common.ui.modelCreation\",\"Common.ui.modelEditor\",\"Common.ui.pricingDisplayCopy\",\"Common.ui.pricingEditorCopy\",\"Common.ui.providerCardCopy\",\"Common.ui.publicModelCopy\",\"Common.ui.requestBuilder.extraHigh\",\"Common.ui.requestBuilder.high\",\"Common.ui.requestBuilder.low\",\"Common.ui.requestBuilder.max\",\"Common.ui.requestBuilder.medium\",\"Common.ui.requestBuilder.minimal\",\"Common.ui.versionedPricing\",\"Product.gatewayBenchmark.notAvailable\",\"Product.latency.configuration\",\"SettingsUI.apps\",\"SettingsUI.identity\",\"SettingsUI.providerCatalogCopy\",\"SettingsUI.realtimeCopy\"]": [
     "Catalogue",
     "Common.authFlows",
     "Common.ui.actions",
     "Common.ui.auditCopy",
     "Common.ui.benchmarkChartCopy",
     "Common.ui.benchmarkComparison",
+    "Common.ui.chatComposer.default",
+    "Common.ui.chatComposer.reasoning",
+    "Common.ui.chatComposer.standard",
     "Common.ui.chatSettings",
     "Common.ui.finalSharedCopy",
     "Common.ui.metrics",
@@ -716,6 +719,12 @@
     "Common.ui.pricingEditorCopy",
     "Common.ui.providerCardCopy",
     "Common.ui.publicModelCopy",
+    "Common.ui.requestBuilder.extraHigh",
+    "Common.ui.requestBuilder.high",
+    "Common.ui.requestBuilder.low",
+    "Common.ui.requestBuilder.max",
+    "Common.ui.requestBuilder.medium",
+    "Common.ui.requestBuilder.minimal",
     "Common.ui.versionedPricing",
     "Product.gatewayBenchmark.notAvailable",
     "Product.latency.configuration",
@@ -775,9 +784,18 @@
     "Product.latency.nA",
     "Site.homeQuickstart.rank"
   ],
-  "[\"Catalogue\",\"Common.ui.privacyEligibility\",\"SettingsUI.strings\"]": [
+  "[\"Catalogue\",\"Common.ui.chatComposer.default\",\"Common.ui.chatComposer.reasoning\",\"Common.ui.chatComposer.standard\",\"Common.ui.privacyEligibility\",\"Common.ui.requestBuilder.extraHigh\",\"Common.ui.requestBuilder.high\",\"Common.ui.requestBuilder.low\",\"Common.ui.requestBuilder.max\",\"Common.ui.requestBuilder.medium\",\"Common.ui.requestBuilder.minimal\",\"SettingsUI.strings\"]": [
     "Catalogue",
+    "Common.ui.chatComposer.default",
+    "Common.ui.chatComposer.reasoning",
+    "Common.ui.chatComposer.standard",
     "Common.ui.privacyEligibility",
+    "Common.ui.requestBuilder.extraHigh",
+    "Common.ui.requestBuilder.high",
+    "Common.ui.requestBuilder.low",
+    "Common.ui.requestBuilder.max",
+    "Common.ui.requestBuilder.medium",
+    "Common.ui.requestBuilder.minimal",
     "SettingsUI.strings"
   ],
   "[\"Catalogue\",\"Common.ui.publicModelCopy\",\"SettingsUI.identity\",\"SettingsUI.realtimeCopy\"]": [
