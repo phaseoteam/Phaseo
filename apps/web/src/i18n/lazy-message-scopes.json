@@ -8,6 +8,7 @@
     "SettingsUI.providerCatalogCopy", "SettingsUI.providerDashboard", "SettingsUI.providerCatalog.title",
     "SettingsUI.identity.availability", "SettingsUI.identity.reviewStatus",
     "SettingsUI.identity.routeStatus",
+    "SettingsUI.identity.unknown",
     "SettingsUI.identity.catalogValidation",
     "SettingsUI.strings.Details", "SettingsUI.strings.phrasePleaseTryAgain",
     "SettingsUI.settingsCopy.settingsSidebar"

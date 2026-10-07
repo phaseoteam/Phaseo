@@ -5849,6 +5849,8 @@
 		"website": "网站",
 		"access": "访问权限",
 		"notSet": "未配置",
-		"notVerified": "未验证"
+		"notVerified": "未验证",
+		"routeBlocked": "此路由已被 Phaseo 暂停。请联系支持团队。",
+		"pendingSync": "已保存的修改等待同步。公开报价仍使用上次成功导入的数据。"
 	}
 }

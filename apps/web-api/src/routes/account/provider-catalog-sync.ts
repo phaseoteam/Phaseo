@@ -196,7 +196,7 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		if (!("preview" in catalog)) {
 			const now = new Date().toISOString();
 			await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: now }).eq("id", runId);
-			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, last_error: null, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
 			// A review or edit arriving during the fetch keeps its refresh flag and due time.
 			await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 			return { status: "not_modified", runId };
@@ -219,6 +219,13 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: source.updated_at })
 			: await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
 		if (applied.error) {
+			if (applied.error.message.includes("provider_catalog_version_conflict")) {
+				// An edit won the race. Preserve it and retry promptly without sending
+				// a misleading failure notification for normal concurrent activity.
+				await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: new Date().toISOString(), validation_summary: { reason: "catalog_changed_during_import" } }).eq("id", runId);
+				await client.from("provider_catalog_sources").update({ refresh_requested: true, next_poll_at: new Date(Date.now() + 60_000).toISOString() }).eq("provider_slug", providerSlug);
+				return { status: "not_modified", runId };
+			}
 			console.error("provider_catalog_apply_failed", { providerSlug, errorCode: applied.error.code });
 			if (applied.error.message.includes("provider_catalog_model_unavailable")) throw new Error("A catalog model ID refers to a hidden or unavailable model. Use a public canonical model ID.");
 			if (applied.error.message.includes("provider_catalog_namespace_not_owned")) throw new Error("Unknown model ID outside your provider namespace. Use an existing canonical model ID or your own provider namespace.");

@@ -5849,6 +5849,8 @@
 		"website": "Website",
 		"access": "Zugriff",
 		"notSet": "Nicht konfiguriert",
-		"notVerified": "Nicht verifiziert"
+		"notVerified": "Nicht verifiziert",
+		"routeBlocked": "Diese Route wurde von Phaseo pausiert. Wenden Sie sich an den Support.",
+		"pendingSync": "Gespeicherte Änderungen warten auf die Synchronisierung. Öffentliche Angebote verwenden noch den letzten erfolgreichen Import."
 	}
 }

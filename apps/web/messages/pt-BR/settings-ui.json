@@ -5849,6 +5849,8 @@
 		"website": "Site",
 		"access": "Acesso",
 		"notSet": "Não configurado",
-		"notVerified": "Não verificado"
+		"notVerified": "Não verificado",
+		"routeBlocked": "Esta rota foi pausada pela Phaseo. Entre em contato com o suporte.",
+		"pendingSync": "As edições salvas aguardam sincronização. As ofertas públicas usam a última importação bem-sucedida."
 	}
 }

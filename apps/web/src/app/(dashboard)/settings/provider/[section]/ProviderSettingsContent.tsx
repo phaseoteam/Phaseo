@@ -21,10 +21,6 @@ function ProviderSettingsView({ section, data }: { section: string; data: Settin
 	if (!data.signedIn) redirect({ href: "/sign-in", locale });
 	if (!data.catalogProviders.length) redirect({ href: "/settings/account/providers", locale });
 	const title = section === "models" ? t("internalMainCopy.yourModels") : section === "review" ? td("profile") : t("internalMainCopy.integrations");
-	const latestReviewRevisions = data.reviewRevisions.filter(
-		(revision, index, revisions) =>
-			index === revisions.findIndex((candidate) => candidate.provider_slug === revision.provider_slug),
-	);
 	return <div className="space-y-6">
 		<SettingsPageHeader title={title} />
 		<div className="divide-y border-y border-border/70">
@@ -34,17 +30,6 @@ function ProviderSettingsView({ section, data }: { section: string; data: Settin
 			</div>)}
 		</div>
 		{section === "models" && <ProviderCatalogManager providers={data.catalogProviders} />}
-		{section === "models" && latestReviewRevisions.map((revision) => {
-			const blockedModels = revision.models.filter((model) => ["needs_changes", "rejected"].includes(model.decision));
-			return blockedModels.length ? <section key={revision.id} className="divide-y rounded-lg border">
-				<h2 className="px-4 py-3 text-sm font-medium">{revision.provider_slug} · {translatedStatus("reviewStatus", "needs_changes")}</h2>
-				{blockedModels.map((model) => <div key={model.model_slug} className="space-y-1 px-4 py-3 text-sm">
-					<p>{model.name}</p>
-					<p className="font-mono text-xs text-muted-foreground">{model.model_slug}</p>
-					{model.decision_reason && <p className="text-destructive">{model.decision_reason}</p>}
-				</div>)}
-			</section> : null;
-		})}
 		{section === "review" && <div className="grid gap-5 lg:grid-cols-2">{data.catalogProviders.map((provider) => {
 			const application = data.submissions.find((submission) => submission.provider_slug === provider.provider_slug);
 			return <section key={provider.provider_slug} className="space-y-4 rounded-xl border p-5"><h2 className="text-lg font-semibold">{provider.name || provider.provider_slug}</h2><dl className="grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">{td("providerId")}</dt><dd className="mt-1 font-mono text-xs">{provider.provider_slug}</dd></div><div><dt className="text-muted-foreground">{td("approval")}</dt><dd className="mt-1">{(provider.provider_approval_status ?? provider.provider_review_status) ? translatedStatus("reviewStatus", (provider.provider_approval_status ?? provider.provider_review_status)!) : td("statusUnavailable")}</dd></div><div><dt className="text-muted-foreground">{td("website")}</dt><dd className="mt-1 break-all">{application?.website_url || td("notSet")}</dd></div><div><dt className="text-muted-foreground">{td("access")}</dt><dd className="mt-1">{provider.role} · {provider.verified_at ? new Date(provider.verified_at).toLocaleDateString(locale) : td("notVerified")}</dd></div></dl></section>;

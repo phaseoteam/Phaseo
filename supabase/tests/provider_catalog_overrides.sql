@@ -23,6 +23,21 @@ begin
   perform public.save_provider_catalog_overrides('catalog-overrides-test','aaaaaaaa-7777-4444-8888-000000000001','provider',version,'[{"model_id":"catalog-overrides-test/model","field":"name","revert":true}]');
   assert (select not (catalog_overrides->'catalog-overrides-test/model' ? 'name') from public.provider_catalog_sources where provider_slug='catalog-overrides-test');
   assert exists(select 1 from public.provider_catalog_edit_events where provider_slug='catalog-overrides-test' and actor_kind='provider' and action='revert' and previous_value='"Corrected"' and value='"Feed name"');
+  begin
+    perform public.apply_provider_catalog_feed_snapshot('catalog-overrides-test',gen_random_uuid(),'[]','[]',version-interval '1 minute');
+    raise exception 'stale feed unexpectedly accepted';
+  exception when raise_exception then
+    if SQLERRM <> 'provider_catalog_version_conflict' then raise; end if;
+  end;
+  assert (select feed_models->0->>'name'='Feed name' from public.provider_catalog_sources where provider_slug='catalog-overrides-test');
+  update public.provider_catalog_sources set management_mode='managed',managed_catalog='{"data":[]}' where provider_slug='catalog-overrides-test';
+  select updated_at into version from public.provider_catalog_sources where provider_slug='catalog-overrides-test';
+  perform public.save_provider_managed_catalog('catalog-overrides-test','aaaaaaaa-7777-4444-8888-000000000001','phaseo',version,'{"data":[]}');
+  assert exists(select 1 from public.provider_catalog_edit_events where provider_slug='catalog-overrides-test' and field='$catalog' and actor_kind='phaseo' and action='override');
+  select managed_updated_at into version from public.provider_catalog_sources where provider_slug='catalog-overrides-test';
+  perform public.restore_provider_catalog_feed('catalog-overrides-test','aaaaaaaa-7777-4444-8888-000000000001','provider',version);
+  assert (select management_mode='remote' and managed_catalog is null from public.provider_catalog_sources where provider_slug='catalog-overrides-test');
+  assert exists(select 1 from public.provider_catalog_edit_events where provider_slug='catalog-overrides-test' and field='$catalog' and actor_kind='provider' and action='revert');
 end;
 $test$;
 rollback;

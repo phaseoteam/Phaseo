@@ -1,9 +1,30 @@
 "use client";
 import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import type { ProviderManagedCatalog } from "@/app/(dashboard)/settings/account/providers/actions";
+import { fetchProviderCatalogEditEventAction, type ProviderManagedCatalog } from "@/app/(dashboard)/settings/account/providers/actions";
 
-export default function ProviderCatalogChanges({ catalog, modelId, disabled, onRevert }: { catalog: ProviderManagedCatalog; modelId: string; disabled: boolean; onRevert: (field: string) => void }) {
+function ActivityEvent({ providerSlug, event, label }: { providerSlug: string; event: ProviderManagedCatalog["activity"][number]; label: string }) {
+	const t = useTranslations("SettingsUI.providerDashboard");
+	const tc = useTranslations("SettingsUI.providerCatalogCopy");
+	const locale = useLocale();
+	const [data, setData] = useState<{ previous_value: unknown; value: unknown } | null>(null);
+	const [error, setError] = useState(false);
+	const [loading, setLoading] = useState(false);
+	async function load() {
+		if (data || loading) return;
+		setLoading(true); setError(false);
+		try { setData(await fetchProviderCatalogEditEventAction(providerSlug, event.id)); }
+		catch { setError(true); }
+		finally { setLoading(false); }
+	}
+	return <details className="py-3" onToggle={(event) => { if (event.currentTarget.open) void load(); }}>
+		<summary className="cursor-pointer">{event.model_slug} · {label} · {t(event.action)} · {event.actor_name || t(event.actor_kind)} · {new Date(event.created_at).toLocaleString(locale)}</summary>
+		{data ? <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{JSON.stringify({ before: data.previous_value, after: data.value }, null, 2)}</pre> : error ? <p role="alert">{t("statusUnavailable")}</p> : loading ? <p role="status">{tc("loading")}</p> : null}
+	</details>;
+}
+
+export default function ProviderCatalogChanges({ catalog, modelId, disabled, onRevert }: { catalog: ProviderManagedCatalog; modelId: string; disabled: boolean; onRevert: (field: string, modelId?: string) => void }) {
 	const t = useTranslations("SettingsUI.providerDashboard");
 	const fields = useTranslations("SettingsUI.providerCatalogCopy");
 	const locale = useLocale();
@@ -14,6 +35,7 @@ export default function ProviderCatalogChanges({ catalog, modelId, disabled, onR
 	const fieldLabels: Record<string, string> = { name: fields("modelName"), description: fields("description"), providerModelSlug: fields("providerModelID"), inputModalities: fields("inputModalities"), outputModalities: fields("outputModalities"), contextLength: fields("contextLength"), maxOutputTokens: fields("maxOutputTokens"), availability: fields("availability"), availableFrom: fields("availableFrom"), deprecatedAt: fields("deprecatedAt"), shutdownAt: fields("shutdownAt"), capabilities: fields("capabilities"), pricing: fields("pricing"), serviceTiers: t("tiers"), $model: t("manual"), $removed: fields("notListed"), $catalog: fields("catalog") };
 	return <div className="space-y-4">
 		{catalog.source.last_success_at ? <p className="text-xs text-muted-foreground">{t("lastSuccess")} · {date(catalog.source.last_success_at)}</p> : null}
+		{Object.entries(catalog.overrides ?? {}).filter(([, edits]) => edits.$removed?.value === true).map(([id, edits]) => <div key={id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm"><span>{id} · {fields("notListed")} · {edits.$removed.actor_name || t(edits.$removed.actor_kind)}</span><Button variant="outline" size="sm" disabled={disabled} onClick={() => onRevert("$removed", id)}>{t("useFeedValue")}</Button></div>)}
 		{Object.entries(overrides).length ? <section className="divide-y rounded-lg border">
 			<h3 className="px-4 py-3 text-sm font-medium">{t("overrides")}</h3>
 			{Object.entries(overrides).map(([field, edit]) => <details key={field} className="px-4 py-3 text-sm">
@@ -27,10 +49,7 @@ export default function ProviderCatalogChanges({ catalog, modelId, disabled, onR
 		</section> : null}
 		<details className="rounded-lg border px-4 py-3 text-sm">
 			<summary className="cursor-pointer font-medium">{t("activity")}</summary>
-			<div className="mt-3 divide-y">{catalog.activity?.length ? catalog.activity.map((event) => <details key={event.id} className="py-3">
-				<summary className="cursor-pointer">{event.model_slug} · {fieldLabels[event.field] ?? event.field} · {t(event.action)} · {event.actor_name || t(event.actor_kind)} · {date(event.created_at)}</summary>
-				<pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">{value({ before: event.previous_value, after: event.value })}</pre>
-			</details>) : <p className="py-3 text-muted-foreground">{t("noEdits")}</p>}</div>
+			<div className="mt-3 divide-y">{catalog.activity?.length ? catalog.activity.map((event) => <ActivityEvent key={event.id} providerSlug={catalog.provider.provider_slug} event={event} label={fieldLabels[event.field] ?? event.field} />) : <p className="py-3 text-muted-foreground">{t("noEdits")}</p>}</div>
 		</details>
 	</div>;
 }

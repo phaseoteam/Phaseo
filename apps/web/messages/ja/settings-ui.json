@@ -5849,6 +5849,8 @@
 		"website": "ウェブサイト",
 		"access": "アクセス",
 		"notSet": "未設定",
-		"notVerified": "未確認"
+		"notVerified": "未確認",
+		"routeBlocked": "このルートは Phaseo によって停止されています。サポートにお問い合わせください。",
+		"pendingSync": "保存した変更は同期待ちです。公開中の提供内容は前回の成功した取り込みを使用しています。"
 	}
 }

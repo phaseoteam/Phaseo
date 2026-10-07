@@ -141,12 +141,12 @@ function catalogDocument(data: Record<string, any>[]) {
 
 async function readProviderCatalog(client: any, providerSlug: string) {
 	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult] = await Promise.all([
-		client.from("v2_providers").select("provider_slug,name,status").eq("provider_slug", providerSlug).maybeSingle(),
-		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
 		client.from("provider_catalog_models").select("model_slug,provider_model_slug,name,description,input_modalities,output_modalities,context_length,max_output_tokens,status,availability,available_from,deprecated_at,shutdown_at,metadata,updated_at").eq("provider_slug", providerSlug).eq("status", "active").order("model_slug", { ascending: true }),
 		client.from("provider_catalog_model_capabilities").select("model_slug,capability_id,parameters,status").eq("provider_slug", providerSlug).eq("status", "active").order("capability_id", { ascending: true }),
 		client.from("provider_catalog_sync_runs").select("id,status,review_status,model_count,created_at,completed_at").eq("provider_slug", providerSlug).neq("status", "not_modified").order("created_at", { ascending: false }).limit(1),
-		client.from("provider_catalog_edit_events").select("id,model_slug,field,actor_id,actor_name,actor_kind,action,previous_value,value,created_at").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(100),
+		client.from("provider_catalog_edit_events").select("id,model_slug,field,actor_id,actor_name,actor_kind,action,created_at").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(100),
 	]);
 	if (providerResult.error || sourceResult.error || modelsResult.error || capabilitiesResult.error || runResult.error) throw new Error("provider_catalog_unavailable");
 	if (!providerResult.data || !sourceResult.data) return null;
@@ -166,20 +166,23 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 		));
 	const observedDocument = catalogDocument(observedModels);
 	const statesResult = runResult.data?.[0]?.id
-		? await client.from("provider_catalog_sync_models").select("model_slug,decision,decision_reason,route_projection_status,route_projection_error").eq("run_id", runResult.data[0].id)
+		? await client.from("provider_catalog_sync_models").select("model_slug,canonical_model_slug,decision,decision_reason,route_projection_status,route_projection_error").eq("run_id", runResult.data[0].id)
 		: { data: [], error: null };
 	if (statesResult.error) throw new Error("provider_catalog_model_status_unavailable");
 	if (eventsResult.error) throw new Error("provider_catalog_activity_unavailable");
 	const feedModels = sourceResult.data.feed_models ?? normalizeProviderCatalog(observedDocument).allModels;
 	const effectiveDocument = sourceResult.data.management_mode === "remote"
 		? normalizedCatalogDocument(applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) : null;
-	const routes = await client.from("v2_model_provider_routes").select("model_slug,provider_model_slug,status,routing_enabled,access_scope,phaseo_status").eq("provider_slug", providerSlug);
+	const routes = await client.from("v2_model_provider_routes").select("model_slug,provider_model_slug,status,routing_enabled,access_scope,phaseo_status,v2_route_capabilities(status,effective_from,effective_to)").eq("provider_slug", providerSlug);
 	const modelStates = Object.fromEntries((statesResult.data ?? []).map((model: any) => [model.model_slug, model])) as Record<string, any>;
 	for (const model of applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) {
 		const slugs = new Set([model.providerModelSlug, ...(model.serviceTiers ?? []).map((tier) => tier.providerModelSlug)]);
-		const offers = (routes.data ?? []).filter((route: any) => slugs.has(route.provider_model_slug));
 		const current = modelStates[model.id] ?? {};
-		modelStates[model.id] = { ...current, route_projection_status: routes.error ? "unknown" : offers.some((route: any) => route.access_scope === "public" && route.routing_enabled && ["active", "degraded"].includes(route.status)) ? "enabled" : offers.some((route: any) => route.phaseo_status === "blocked") ? "failed" : "not_projected" };
+		const offers = (routes.data ?? []).filter((route: any) => slugs.has(route.provider_model_slug) && [model.id, current.canonical_model_slug].includes(route.model_slug));
+		const now = Date.now();
+		const live = providerResult.data.routable && providerResult.data.routing_enabled && offers.some((route: any) => route.access_scope === "public" && route.routing_enabled && ["active", "degraded"].includes(route.status) && route.v2_route_capabilities?.some((capability: any) => ["active", "degraded"].includes(capability.status) && (!capability.effective_from || Date.parse(capability.effective_from) <= now) && (!capability.effective_to || Date.parse(capability.effective_to) > now)));
+		const blocked = offers.some((route: any) => route.phaseo_status === "blocked");
+		modelStates[model.id] = { ...current, route_projection_status: routes.error ? "unknown" : live ? "enabled" : blocked ? "failed" : "not_projected", route_projection_error: !live && blocked ? "provider_route_blocked" : current.route_projection_error };
 	}
 	const managedCatalog = sourceResult.data.managed_catalog && typeof sourceResult.data.managed_catalog === "object" && !Array.isArray(sourceResult.data.managed_catalog)
 		? sourceResult.data.managed_catalog
@@ -195,6 +198,7 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			last_success_at: sourceResult.data.last_success_at,
 			last_error: sourceResult.data.last_error,
 			last_polled_at: sourceResult.data.last_polled_at,
+			refresh_requested: sourceResult.data.refresh_requested ?? false,
 		},
 		overrides: sourceResult.data.catalog_overrides ?? {},
 		feed_models: feedModels,
@@ -210,6 +214,22 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 }
 
 export const accountSettingsProviderCatalogRouter = new Hono<{ Bindings: Env }>();
+
+accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:providerSlug/events/:eventId", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return errorResponse(c, "unauthorized", 401);
+	const slug = providerSlugSchema.safeParse(c.req.param("providerSlug"));
+	const id = z.string().uuid().safeParse(c.req.param("eventId"));
+	if (!slug.success || !id.success) return errorResponse(c, "invalid_catalog_event", 400);
+	const client = getDataClient(c.env);
+	try {
+		if (!await providerAccess(client, user.id, slug.data)) return errorResponse(c, "forbidden", 403);
+		const result = await client.from("provider_catalog_edit_events").select("previous_value,value").eq("provider_slug", slug.data).eq("id", id.data).maybeSingle();
+		if (result.error) throw result.error;
+		if (!result.data) return errorResponse(c, "catalog_event_not_found", 404);
+		return c.json({ ok: true, ...result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch { return errorResponse(c, "provider_catalog_activity_unavailable", 503); }
+});
 
 accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:providerSlug/version", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
