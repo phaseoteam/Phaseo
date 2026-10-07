@@ -376,7 +376,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			? client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,management_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at,webhook_secret_hash").in("provider_slug", catalogSlugs)
 			: Promise.resolve({ data: [], error: null }),
 		catalogSlugs.length
-			? client.from("provider_onboarding_submissions").select("provider_slug,application_type,catalog_mode,provider_review_status,provider_review_reason,submitted_by,created_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false })
+			? client.from("provider_onboarding_submissions").select("provider_slug,website_url,application_type,catalog_mode,provider_review_status,provider_review_reason,submitted_by,created_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false })
 			: Promise.resolve({ data: [], error: null }),
 	]);
 	if (providers.error || catalogApplications.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -425,6 +425,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			return {
 				provider_slug: slug,
 				name: providerState?.name ?? provider.provider_slug,
+				website_url: providerState?.metadata?.website_url ?? providerState?.metadata?.link ?? application?.website_url ?? catalogApplicationsByProvider.get(slug)?.find((row) => row.application_type === "create")?.website_url ?? null,
 				provider_review_status: reviewStatus,
 				provider_approval_status: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : reviewStatus,
 				canManageCatalog: isAdmin || !isProviderAccessBlockedByReview({
