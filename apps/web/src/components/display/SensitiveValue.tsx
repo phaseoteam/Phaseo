@@ -41,8 +41,9 @@ function maskedContent(children: React.ReactNode, label: string): React.ReactNod
 }
 
 export function SensitiveValue(props: SensitiveValueProps) {
-	const { preferences } = useDisplayPreferences();
-	return <SensitiveValueContent key={String(preferences.maskSensitiveData)} {...props} masked={preferences.maskSensitiveData} />;
+	const { preferences, isSensitiveDataReady } = useDisplayPreferences();
+	const masked = !isSensitiveDataReady || preferences.maskSensitiveData;
+	return <SensitiveValueContent key={String(masked)} {...props} masked={masked} />;
 }
 
 function SensitiveValueContent({

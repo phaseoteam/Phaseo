@@ -5,6 +5,10 @@ import { Input } from "@/components/ui/input";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { obfuscatedPlaceholder } from "@/lib/obfuscation";
 
+jest.mock("react", () => ({
+	...jest.requireActual("react"),
+	useState: jest.fn(jest.requireActual("react").useState),
+}));
 jest.mock("@/components/providers/DisplayPreferencesProvider", () => ({
 	useDisplayPreferences: jest.fn(),
 }));
@@ -12,8 +16,9 @@ jest.mock("next-intl", () => ({
 	useTranslations: () => (key: string, values?: { label?: string }) => `${key}${values?.label ? ` ${values.label}` : ""}`,
 }));
 
-function setMasking(enabled: boolean) {
+function setMasking(enabled: boolean, ready = true) {
 	jest.mocked(useDisplayPreferences).mockReturnValue({
+		isSensitiveDataReady: ready,
 		preferences: { maskSensitiveData: enabled },
 	} as ReturnType<typeof useDisplayPreferences>);
 }
@@ -22,6 +27,14 @@ describe("SensitiveValue", () => {
 	const email = "person@example.com";
 	beforeEach(() => setMasking(true));
 	afterEach(() => jest.restoreAllMocks());
+
+	it("keeps server-rendered values scrambled before account preferences load", () => {
+		setMasking(false, false);
+		const html = renderToStaticMarkup(<div data-obfuscate-pii="true"><SensitiveValue inline>{email}</SensitiveValue><SensitiveValue><Input value={email} readOnly /></SensitiveValue></div>);
+		expect(html).not.toContain(email);
+		expect(html).toContain(obfuscatedPlaceholder(email));
+		expect(html).toContain('data-pii-hidden="true"');
+	});
 
 	it("scrambles text before blurring, without the original in hidden markup", () => {
 		const html = renderToStaticMarkup(<SensitiveValue inline label="email address">{email}</SensitiveValue>);
@@ -65,10 +78,9 @@ describe("SensitiveValue", () => {
 	it("restores the original editable input and callback when revealed", () => {
 		const onChange = jest.fn();
 		const frame = SensitiveValue({ children: <Input value={email} type="email" onChange={onChange} /> });
-		const state = jest.spyOn(React, "useState").mockReturnValue([true, jest.fn()]);
+		jest.mocked(React.useState).mockReturnValueOnce([true, jest.fn()]);
 		const renderContent = frame.type as (props: typeof frame.props) => React.ReactElement;
 		const content = renderContent(frame.props);
-		state.mockRestore();
 		const html = renderToStaticMarkup(content);
 		expect(html).toContain(email);
 		expect(html).toContain('type="email"');
