@@ -65,6 +65,10 @@ binding = "GATEWAY_IO_LOGS_BUCKET"
 bucket_name = "phaseo-gateway-io-logs-preview"
 
 [[r2_buckets]]
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
+bucket_name = "phaseo-gateway-io-logs-preview"
+
+[[r2_buckets]]
 binding = "DATA_CONTRIBUTIONS_BUCKET"
 bucket_name = "phaseo-data-contributions-preview"
 

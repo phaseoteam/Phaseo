@@ -32,6 +32,10 @@ pattern = "us.api.phaseo.app"
 custom_domain = true
 
 [observability]
+[[r2_buckets]]
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
+bucket_name = "phaseo-gateway-io-logs"
+
 [observability.logs]
 enabled = true
 head_sampling_rate = 0.1

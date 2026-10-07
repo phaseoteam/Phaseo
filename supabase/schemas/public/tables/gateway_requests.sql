@@ -109,6 +109,10 @@ CREATE TABLE "public"."gateway_requests" (
 ALTER TABLE "public"."gateway_requests"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE TRIGGER gateway_requests_routing_archive_delete
+  BEFORE DELETE ON public.gateway_requests
+  FOR EACH ROW EXECUTE FUNCTION public.enqueue_gateway_routing_archive_deletion();
+
 ALTER TABLE "public"."gateway_requests"
   ALTER COLUMN "auth_method" SET DEFAULT 'api_key'::text;
 

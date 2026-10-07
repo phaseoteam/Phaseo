@@ -33,6 +33,11 @@ binding = "PROFILE_AVATARS_BUCKET"
 bucket_name = "phaseo-profile-avatars"
 preview_bucket_name = "phaseo-profile-avatars-preview"
 
+[[r2_buckets]]
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
+bucket_name = "phaseo-gateway-io-logs"
+preview_bucket_name = "phaseo-gateway-io-logs-preview"
+
 # PR previews deploy this separately named Worker to the account's workers.dev
 # subdomain. It deliberately has no phaseo.app route, so it cannot intercept
 # production traffic.
@@ -48,6 +53,10 @@ SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 [[env.staging.r2_buckets]]
 binding = "PROFILE_AVATARS_BUCKET"
 bucket_name = "phaseo-profile-avatars-preview"
+
+[[env.staging.r2_buckets]]
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
+bucket_name = "phaseo-gateway-io-logs-preview"
 
 # Anonymous provenance checks are intentionally approximate and scoped per
 # Cloudflare location. The upstream OpenAI project remains the spend boundary.

@@ -9,6 +9,9 @@ export type GatewayBindings = {
     GATEWAY_CACHE: KVNamespace;
     ROUTING_HEALTH?: DurableObjectNamespace<import("@core/routing-health-durable-object").RoutingHealthDurableObject>;
 	GATEWAY_IO_LOGS_BUCKET?: R2Bucket;
+	GATEWAY_ROUTING_ARCHIVES_BUCKET?: R2Bucket;
+	GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF?: string;
+	GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED?: string;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;
 	DATA_CONTRIBUTIONS_BUCKET?: R2Bucket;

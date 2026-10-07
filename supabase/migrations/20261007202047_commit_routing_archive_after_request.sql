@@ -1,3 +1,6 @@
+-- phaseo:allow-destructive-migration reason: Replaces routing ingestion with an atomic verified R2-reference commit; DELETE applies only to copied diagnostics when the RPC is called, never during migration, and accounting records remain.
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.ingest_v2_gateway_request_with_routing (
   p_event jsonb
 )
@@ -167,13 +170,3 @@ begin
   return v_request_event_id;
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."ingest_v2_gateway_request_with_routing"(jsonb) TO "service_role";
-
-COMMENT ON FUNCTION "public"."ingest_v2_gateway_request_with_routing"(jsonb) IS 'Atomically ingests request telemetry while preserving exact provider/model route identities.';
-
-REVOKE ALL ON FUNCTION "public"."ingest_v2_gateway_request_with_routing"(jsonb) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."ingest_v2_gateway_request_with_routing"(jsonb) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."ingest_v2_gateway_request_with_routing"(jsonb) FROM PUBLIC, "anon", "authenticated";
