@@ -24,6 +24,7 @@ const state = vi.hoisted(() => ({
 		endpoint: string;
 	}>,
 	requestRows: [] as Array<Record<string, unknown>>,
+	canonicalRows: [] as Array<{ customId: string; meta: Record<string, unknown> }>,
 	fetchCalls: [] as string[],
 	walletCalls: [] as Array<Record<string, unknown>>,
 	keyUsageCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
@@ -39,6 +40,7 @@ function resetState() {
 	state.markCalls = [];
 	state.loadCalls = [];
 	state.requestRows = [];
+	state.canonicalRows = [];
 	state.fetchCalls = [];
 	state.walletCalls = [];
 	state.keyUsageCalls = [];
@@ -86,6 +88,7 @@ vi.mock("@pipeline/pricing/persist", () => ({
 }));
 
 vi.mock("@core/batch-requests", () => ({
+	listBatchRequestRows: vi.fn(async () => state.canonicalRows),
 	saveBatchRequestRows: vi.fn(async (args: { rows: Array<Record<string, unknown>> }) => {
 		state.requestRows.push(...args.rows);
 	}),
@@ -407,7 +410,10 @@ describe("batch-finalization", () => {
 		]);
 	});
 
-	it("prices OpenAI batch rows when OpenAI returns a dated native model id", async () => {
+	it.each([false, true])("prices Batch native IDs with persisted canonical identity: %s", async (persistCanonical) => {
+		if (persistCanonical) state.canonicalRows = ["request-1", "request-2"].map((customId) => ({
+			customId, meta: { canonical_model: "openai/gpt-5.4-nano" },
+		}));
 		state.record = {
 			workspaceId: "ws_batch_test",
 			batchId: "batch_gpt54_nano_123",
@@ -436,7 +442,7 @@ describe("batch-finalization", () => {
 							response: {
 								status_code: 200,
 								body: {
-									model: "gpt-5.4-nano-2026-03-17",
+									model: persistCanonical ? "provider-private-batch-alias" : "gpt-5.4-nano-2026-03-17",
 									usage: { input_tokens: 20, output_tokens: 13, total_tokens: 33 },
 								},
 							},
@@ -446,7 +452,7 @@ describe("batch-finalization", () => {
 							response: {
 								status_code: 200,
 								body: {
-									model: "gpt-5.4-nano-2026-03-17",
+									model: persistCanonical ? "provider-private-batch-alias" : "gpt-5.4-nano-2026-03-17",
 									usage: { input_tokens: 20, output_tokens: 13, total_tokens: 33 },
 								},
 							},

@@ -13,6 +13,7 @@ import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
 import { generatePublicId } from "@pipeline/before/genId";
 import { guardContext } from "@pipeline/before/guards";
+import { readProviderCatalogTier } from "@core/serviceTiers";
 import { parseW3cTraceContext } from "@observability/trace-context";
 import { applyPromptInjectionGuardrails } from "@pipeline/before/promptInjection";
 import { applySensitiveInfoGuardrails } from "@pipeline/before/sensitiveInfo";
@@ -778,6 +779,27 @@ async function validateBatchRequestPolicies(args: {
 		// Persist the policy-resolved canonical ID. Caller-controlled/native
 		// model strings must never drive credential selection or reservation.
 		row.gatewayModel = guarded.resolvedModel ?? gatewayModel;
+		if (policyResult.ok) {
+			const offers = policyResult.providers.filter((provider) => provider.providerId === args.providerId);
+			if (offers.some((provider) => readProviderCatalogTier(provider.capabilityParams))) {
+				const batchOffer = offers.find((provider) =>
+					readProviderCatalogTier(provider.capabilityParams)?.name === "batch" &&
+					provider.pricingCard?.rules.some((rule) => rule.pricing_plan === "batch"),
+				);
+				if (!batchOffer?.providerModelSlug) return err("validation_error", {
+					reason: "batch_service_tier_not_offered", request_id: args.requestId,
+				});
+				if ((row.body as Record<string, unknown>).model !== batchOffer.providerModelSlug) {
+					if (!args.allowMutation) return err("validation_error", {
+						reason: "batch_file_model_translation_required",
+						message: "Submit requests inline so the gateway can select the provider's Batch model ID.",
+						request_id: args.requestId,
+					});
+					row.body = { ...row.body, model: batchOffer.providerModelSlug };
+					row.requestBodyHash = await hashBatchRequestBody(row.body);
+				}
+			}
+		}
 
 		const beforeBody = JSON.stringify(row.body);
 		const promptResult = applyPromptInjectionGuardrails({
@@ -2517,6 +2539,7 @@ async function handleCreate(req: Request) {
 				requestBodyHash: row.requestBodyHash,
 				meta: {
 					input_mode: inputMode.mode,
+					canonical_model: row.gatewayModel,
 				},
 			}));
 			await saveBatchRequestRows({

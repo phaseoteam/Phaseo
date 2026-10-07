@@ -5087,6 +5087,11 @@
 		"copyThroughput": "معدل النقل"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "مستوى الخدمة",
+		"addTier": "إضافة مستوى خدمة",
+		"upstreamTier": "معامل مستوى المزوّد",
+		"modelIdSelection": "الاختيار حسب معرّف النموذج",
+		"removeTier": "إزالة المستوى",
 		"newModel": "نموذج جديد",
 		"custom": "مخصص",
 		"input": "الإدخال",

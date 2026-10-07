@@ -1,3 +1,5 @@
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.promote_provider_catalog_candidate (
   p_run_id               uuid,
   p_submitted_model_slug text
@@ -327,11 +329,3 @@ begin
   return provider_model_id_value;
 end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."promote_provider_catalog_candidate"(uuid, text) TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."promote_provider_catalog_candidate"(uuid, text) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."promote_provider_catalog_candidate"(uuid, text) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."promote_provider_catalog_candidate"(uuid, text) FROM PUBLIC, "anon", "authenticated";

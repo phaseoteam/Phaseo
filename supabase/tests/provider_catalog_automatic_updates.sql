@@ -184,6 +184,37 @@ begin
   assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
   assert (select count(*)=1 from public.v2_pricing_skus where provider_model_id=offer_id and status='active');
 
+  -- V1.1 offers share a canonical identity but isolate upstream IDs and prices.
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run2,'catalog-contract-test','manual');
+  bad_document := jsonb_build_array(document->0);
+  bad_document := jsonb_set(bad_document,'{0,serviceTiers}',jsonb_build_array(
+    jsonb_build_object('serviceTier','standard','providerModelSlug','upstream-a','pricing',document->0->'pricing','availability','ready'),
+    jsonb_build_object('serviceTier','fast','providerModelSlug','upstream-a','upstreamServiceTier','priority','pricing',jsonb_set(document->0->'pricing','{0,priceNanos}','300000000'),'availability','ready'),
+    jsonb_build_object('serviceTier','flex','providerModelSlug','upstream-a-flex','pricing',jsonb_set(document->0->'pricing','{0,priceNanos}','50000000'),'availability','ready')));
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select count(*)=3 from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and model_slug='catalog-contract-test/model-a' and routing_enabled);
+  assert (select count(*)=2 from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='upstream-a' and routing_enabled);
+  assert (select count(*)=1 from public.v2_pricing_sku_meters meter join public.v2_pricing_skus sku using(sku_id)
+    join public.v2_model_provider_routes route using(provider_model_id) where route.provider_slug='catalog-contract-test' and route.metadata->>'catalog_service_tier'='fast'
+    and sku.service_tier_slug='fast' and sku.status='active' and meter.price_nanos=300000000);
+  assert exists(select 1 from public.v2_route_capabilities cap join public.v2_model_provider_routes route using(provider_model_id)
+    where route.provider_slug='catalog-contract-test' and route.metadata->>'catalog_service_tier'='fast'
+      and cap.params->'service_tier'->'provider_catalog'->>'upstream'='priority');
+  -- An unchanged tiered snapshot preserves its effective prices.
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select count(*)=1 from public.v2_pricing_skus sku join public.v2_model_provider_routes route using(provider_model_id)
+    where route.provider_slug='catalog-contract-test' and route.metadata->>'catalog_service_tier'='fast');
+  -- Returning to V1 retires only the removed feed-managed tier offers.
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs(id,provider_slug,trigger) values(run2,'catalog-contract-test','manual');
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+  assert not exists(select 1 from public.v2_model_provider_routes where provider_slug='catalog-contract-test'
+    and metadata->>'catalog_service_tier' in ('fast','flex') and routing_enabled);
+  assert (select routing_enabled from public.v2_model_provider_routes where provider_model_id=offer_id);
+
   -- Revoked approval cannot publish changes or create new canonical models.
   perform public.set_self_serve_provider_review('catalog-contract-test','paused','Contract pause',null);
   assert (select status='paused' from public.provider_catalog_sources where provider_slug='catalog-contract-test');

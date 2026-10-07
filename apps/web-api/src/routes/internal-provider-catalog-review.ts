@@ -304,6 +304,7 @@ internalProviderCatalogReviewRouter.patch("/provider-catalog/reviews/:runId/mode
 				deprecatedAt: existing.data.deprecated_at, shutdownAt: existing.data.shutdown_at,
 				capabilities: (capabilityRows.data ?? []).map((row) => ({ id: String(row.capability_id), parameters: row.parameters ?? [] })),
 				pricing: Array.isArray(existing.data.metadata?.pricing) ? existing.data.metadata.pricing : [],
+				serviceTiers: Array.isArray(existing.data.metadata?.serviceTiers) ? existing.data.metadata.serviceTiers : [],
 			}, String(canonicalModelSlug));
 			await client.from("provider_catalog_sync_models").update({ route_projection_status: "staged", route_projection_error: null }).eq("run_id", runId).eq("model_slug", modelSlug);
 		} catch (error) {

@@ -28,8 +28,9 @@ function normalizePricingServiceTier(body: any, usage: any, card?: PriceCard): s
     const requestedTier = normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
     // Dedicated priority routes cannot downgrade to an unpriced standard SKU.
     // Honor observed downgrades on cards that actually offer standard pricing.
-    if (observedTier === "standard" && (requestedTier === "priority" || requestedTier === "fast") &&
-        card?.rules.some((rule) => rule.pricing_plan === "priority") &&
+    const requestedPlan = requestedTier === "fast" ? "priority" : requestedTier;
+    if (observedTier === "standard" && ["priority", "ultrafast", "flex"].includes(requestedPlan) &&
+        card?.rules.some((rule) => rule.pricing_plan === requestedPlan) &&
         !card.rules.some((rule) => rule.pricing_plan === "standard")) {
         return requestedTier;
     }
@@ -45,6 +46,7 @@ function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
     if (tier === "ultrafast") return "ultrafast";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
+    if (!tier && card.rules.length && card.rules.every((rule) => rule.pricing_plan === "batch")) return "batch";
 
     // Free model variants encode their pricing tier in the model id (for
     // example, `poolside/laguna-s-2.1:free`) and providers do not always echo

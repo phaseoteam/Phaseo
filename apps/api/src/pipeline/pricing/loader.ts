@@ -119,7 +119,7 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
             if (!Number.isFinite(priceNanos)) return [];
             return [{
             id: String(meter.sku_meter_id),
-            pricing_plan: sku.service_tier_slug ?? "standard",
+            pricing_plan: sku.service_tier_slug === "fast" ? "priority" : sku.service_tier_slug ?? "standard",
             meter: meter.meter_key,
             unit: meter.unit,
             unit_size: Number(meter.unit_quantity ?? 1),

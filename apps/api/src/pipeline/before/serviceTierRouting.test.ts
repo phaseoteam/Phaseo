@@ -104,6 +104,26 @@ function makeCandidate(args: {
 }
 
 describe("applyServiceTierRouting", () => {
+    it("selects a declared catalog tier without sibling guessing", async () => {
+        const candidates = ["standard", "fast", "flex"].map((name) => makeCandidate({
+            providerId: "catalog", apiModelId: "acme/model", providerModelSlug: `upstream-${name}`,
+            pricingCard: makeCard({ provider: "catalog", model: "acme/model", plans: [name === "fast" ? "priority" : name as "standard" | "flex"] }),
+            capabilityParams: { service_tier: { provider_catalog: { name, upstream: name === "fast" ? "priority" : null } } },
+        }));
+        for (const [request, index] of [["standard", 0], ["fast", 1], ["priority", 1], ["flex", 2]] as const) {
+            const result = await applyServiceTierRouting({ candidates, body: { service_tier: request }, capability: "text.generate" });
+            expect(result.candidates).toEqual([candidates[index]]);
+        }
+        expect((await applyServiceTierRouting({ candidates, body: { service_tier: "ultrafast" }, capability: "text.generate" })).candidates).toEqual([]);
+    });
+    it("keeps legacy batch routes while requiring the batch offer on tiered catalogs", async () => {
+        const legacy = makeCandidate({ providerId: "legacy", pricingCard: makeCard({ provider: "legacy", model: "model", plans: ["standard"] }) });
+        const standard = { ...legacy, capabilityParams: { service_tier: { provider_catalog: { name: "standard" } } } };
+        const batch = { ...legacy, pricingCard: makeCard({ provider: "legacy", model: "model", plans: ["batch"] }), capabilityParams: { service_tier: { provider_catalog: { name: "batch" } } } };
+        expect((await applyServiceTierRouting({ candidates: [legacy, standard, batch], body: {}, capability: "batch" })).candidates).toEqual([legacy, batch]);
+        expect((await applyServiceTierRouting({ candidates: [batch], body: {}, capability: "text.generate" })).candidates).toEqual([]);
+        expect((await applyServiceTierRouting({ candidates: [batch], body: { service_tier: "batch" }, capability: "text.generate" })).candidates).toEqual([]);
+    });
     it.each(["on-demand", "llm-plus"])("preserves default routing for provider SKU %s", async (plan) => {
         const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
         card.rules = card.rules.map((rule) => ({ ...rule, pricing_plan: plan }));

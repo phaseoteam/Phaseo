@@ -1,0 +1,23 @@
+---
+title: "Publier un catalogue fournisseur"
+description: "Flux V1 et V1.1 avec niveaux de service normalisés."
+icon: "list"
+---
+
+Les fournisseurs approuvés peuvent mettre à jour leurs offres pour les modèles canoniques publics. Les nouveaux modèles nécessitent une approbation. Le catalogue est un instantané complet : les offres supprimées sont désactivées et leur historique tarifaire est conservé.
+
+## Choisir le format
+
+Les flux V1 sans version restent compatibles. `"schema_version": "1.0"` désigne aussi V1. V1.1 déclare `"schema_version": "1.1"` et un tableau `service_tiers` par modèle. La version vient du document, pas des paramètres de l’URL.
+
+Chaque modèle doit proposer `standard`. Les autres niveaux autorisés sont `fast`, `ultrafast`, `flex` et `batch`. Chaque niveau contient `service_tier`, `provider_model_slug`, `availability` et `pricing`. Les capacités, limites et dates de publication sont communes au modèle.
+
+Fast, Ultrafast et Flex sont disponibles pour la génération de texte. Utilisez un identifiant de modèle distinct ou `upstream_service_tier` pour sélectionner le niveau réel. Fast accepte `fast` ou `priority` ; Standard accepte `default` ou `standard`. Batch utilise l’API Batch séparée et nécessite une intégration fournisseur et une capacité Batch.
+
+## Tarifs et mises à jour
+
+Chaque niveau doit déclarer les tarifs de toutes les unités facturées. `price_nanos` représente le prix effectif après promotion. Zéro est valide ; les prix négatifs, unités inconnues, niveaux dupliqués et tarifs conditionnels sont refusés. Publiez un nouvel instantané lorsque les tarifs changent ; l’historique reste disponible.
+
+Le polling et les webhooks signés acceptent les deux versions. Dans les paramètres fournisseur, sélectionnez le niveau avant modification. Les correspondances de modèles invalides sont signalées individuellement sans bloquer les modèles valides.
+
+Consultez l’exemple complet et les deux schémas JSON dans le [guide contractuel anglais](/v1/guides/provider-catalog).

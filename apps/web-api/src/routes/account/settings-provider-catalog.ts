@@ -120,7 +120,22 @@ function catalogModelDocument(model: any, capabilities: Array<{ id: string; para
 		shutdown_at: model.shutdown_at ?? null,
 		capabilities,
 		pricing: pricingDocument(pricing),
+		...(Array.isArray(model.metadata?.serviceTiers) && model.metadata.serviceTiers.length ? {
+			service_tiers: model.metadata.serviceTiers.map((tier: any) => ({
+				service_tier: tier.serviceTier, provider_model_slug: tier.providerModelSlug,
+				upstream_service_tier: tier.upstreamServiceTier, availability: tier.availability,
+				pricing: pricingDocument(tier.pricing),
+			})),
+		} : {}),
 	};
+}
+
+function catalogDocument(data: Record<string, any>[]) {
+	if (!data.some((model) => model.service_tiers?.length)) return { data };
+	return { schema_version: "1.1", data: data.map(({ pricing, provider_model_slug, ...model }) => ({
+		...model,
+		service_tiers: model.service_tiers?.length ? model.service_tiers : [{ service_tier: "standard", provider_model_slug, pricing, availability: model.availability }],
+	})) };
 }
 
 async function readProviderCatalog(client: any, providerSlug: string) {
@@ -142,13 +157,12 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			parameters: Array.isArray(row.parameters) ? row.parameters.map(String) : [],
 		}]);
 	}
-	const observedDocument = {
-		data: (modelsResult.data ?? []).map((model: any) => catalogModelDocument(
+	const observedModels = (modelsResult.data ?? []).map((model: any) => catalogModelDocument(
 			model,
 			capabilitiesByModel.get(String(model.model_slug)) ?? [],
 			model.metadata && typeof model.metadata === "object" ? model.metadata.pricing : [],
-		)),
-	};
+		));
+	const observedDocument = catalogDocument(observedModels);
 	const managedCatalog = sourceResult.data.managed_catalog && typeof sourceResult.data.managed_catalog === "object" && !Array.isArray(sourceResult.data.managed_catalog)
 		? sourceResult.data.managed_catalog
 		: null;
@@ -165,7 +179,10 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			last_polled_at: sourceResult.data.last_polled_at,
 		},
 		catalog: managedCatalog ?? observedDocument,
-		models: managedCatalog && Array.isArray((managedCatalog as any).data) ? (managedCatalog as any).data : observedDocument.data,
+		models: managedCatalog && Array.isArray((managedCatalog as any).data) ? (managedCatalog as any).data.map((model: any) => {
+			const standard = model.service_tiers?.find((tier: any) => tier.service_tier === "standard");
+			return standard ? { ...model, provider_model_slug: standard.provider_model_slug, pricing: standard.pricing } : model;
+		}) : observedModels,
 		latest_run: runResult.data?.[0] ?? null,
 	};
 }
@@ -270,7 +287,8 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		const document = body?.catalog ?? body;
 		const preview = await validateProviderCatalogPricingMeters(client, normalizeProviderCatalog(document));
 		if (!preview.valid) return c.json({ ok: false, error: "catalog_invalid", message: preview.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 5).join("; "), issues: preview.issues }, 422, PRIVATE_NO_STORE_HEADERS);
-		const managedDocument = { data: preview.allModels.map((model) => catalogModelDocument({
+		const managedDocument = catalogDocument(preview.allModels.map((model) => catalogModelDocument({
+			metadata: { serviceTiers: model.serviceTiers },
 			model_slug: model.id,
 			provider_model_slug: model.providerModelSlug,
 			name: model.name,
@@ -283,7 +301,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			available_from: model.availableFrom,
 			deprecated_at: model.deprecatedAt,
 			shutdown_at: model.shutdownAt,
-		}, model.capabilities, model.pricing)) };
+		}, model.capabilities, model.pricing)));
 		const updated = await updateSource({ management_mode: "managed", managed_catalog: managedDocument, managed_updated_by: user.id, managed_updated_at: new Date().toISOString(), refresh_requested: true, next_poll_at: new Date().toISOString(), etag: null, last_modified: null, last_error: null, updated_at: new Date().toISOString() });
 		if (updated.error) throw updated.error;
 		if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);

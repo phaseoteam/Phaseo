@@ -31,6 +31,7 @@ const state = vi.hoisted(() => ({
 	googleApiKey: "test-google-key" as string | null,
 	guardContextFailure: null as Response | null,
 	resolvedModel: null as string | null,
+	catalogOffers: null as any[] | null,
 	credentialModels: [] as string[],
 	policyAllowedProviders: null as string[] | null,
 	batchApiEnabled: true,
@@ -61,6 +62,7 @@ function resetState() {
 	state.googleApiKey = "test-google-key";
 	state.guardContextFailure = null;
 	state.resolvedModel = null;
+	state.catalogOffers = null;
 	state.credentialModels = [];
 	state.policyAllowedProviders = null;
 	state.batchApiEnabled = true;
@@ -99,7 +101,7 @@ vi.mock("@pipeline/before/guards", () => ({
 		? { ok: false, response: state.guardContextFailure }
 		: ({ ok: true, value: {
 			context: { teamSettings: {} },
-			providers: ["openai", "anthropic", "google-ai-studio", "mistral", "moonshotai", "x-ai", "groq", "together"].map((providerId) => ({ providerId })),
+			providers: state.catalogOffers ?? ["openai", "anthropic", "google-ai-studio", "mistral", "moonshotai", "x-ai", "groq", "together"].map((providerId) => ({ providerId })),
 			resolvedModel: state.resolvedModel,
 			candidateDiagnostics: {},
 		} })),
@@ -407,6 +409,34 @@ describe("batchRoutes", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(state.credentialModels).toEqual(["openai/canonical-batch-model"]);
+	});
+	it("selects the catalog Batch model and persists its canonical billing identity", async () => {
+		state.resolvedModel = "openai/canonical-batch-model";
+		state.catalogOffers = [{
+			providerId: "openai", providerModelSlug: "native-batch-only",
+			capabilityParams: { service_tier: { provider_catalog: { name: "batch", upstream: null } } },
+			pricingCard: { rules: [{ pricing_plan: "batch" }] },
+		}];
+		let uploadedText = "";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			if (String(input).endsWith("/files")) {
+				const file = (init?.body as FormData).get("file") as File;
+				uploadedText = await file.text();
+				return jsonResponse({ id: "file_tier", purpose: "batch", status: "uploaded" });
+			}
+			return jsonResponse({ id: "batch_tier", status: "validating", input_file_id: "file_tier" });
+		}));
+		const { batchRoutes } = await import("./batches");
+		const response = await batchRoutes.request("https://example.com/", {
+			method: "POST", headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "openai/canonical-batch-model", requests: [{
+				custom_id: "one", method: "POST", url: "/v1/responses",
+				body: { model: "canonical-batch-model", input: "hello" },
+			}] }),
+		});
+		expect(response.status).toBe(200);
+		expect(JSON.parse(uploadedText.trim()).body.model).toBe("native-batch-only");
+		expect(state.requestRows[0].meta).toMatchObject({ canonical_model: "openai/canonical-batch-model" });
 	});
 	it.each(["openai", "together", "mistral"])("downloads %s success/error files without finalization or webhook effects", async (provider) => {
 		state.batchMeta.set(batchKey("ws_batch_test", "batch_files"), { provider, status: "completed", nativeBatchId: "native", outputFileId: "out", errorFileId: "err" });
