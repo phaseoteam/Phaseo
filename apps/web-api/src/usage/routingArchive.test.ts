@@ -10,7 +10,7 @@ async function fixture(body = { version: 1, workspace_id: "w", request_id: "r", 
     const requestHash = Array.from(new Uint8Array(requestDigest), b => b.toString(16).padStart(2, "0")).join("");
     const pointer = { version: 1, key: `workspaces/w/routing/v1/${requestHash}/${sha256}.json`, sha256, bytes: bytes.byteLength };
     const get = vi.fn().mockResolvedValue({ size: bytes.byteLength, arrayBuffer: async () => bytes.buffer });
-    const env = { GATEWAY_IO_LOGS_BUCKET: { get } } as unknown as Env;
+    const env = { GATEWAY_ROUTING_ARCHIVES_BUCKET: { get } } as unknown as Env;
     return { pointer, env, get };
 }
 

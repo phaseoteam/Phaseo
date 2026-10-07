@@ -52,7 +52,7 @@ export async function archiveRoutingMetadata(args: {
     try {
         const bindings = getBindings();
         if (bindings.GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED !== "true") return metadata;
-        const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
+        const bucket = bindings.GATEWAY_ROUTING_ARCHIVES_BUCKET;
         if (!bucket) return metadata;
         const routing = buildRoutingObservability({
             ...args,

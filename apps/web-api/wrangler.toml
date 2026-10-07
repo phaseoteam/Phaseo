@@ -34,7 +34,7 @@ bucket_name = "phaseo-profile-avatars"
 preview_bucket_name = "phaseo-profile-avatars-preview"
 
 [[r2_buckets]]
-binding = "GATEWAY_IO_LOGS_BUCKET"
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs"
 preview_bucket_name = "phaseo-gateway-io-logs-preview"
 
@@ -55,7 +55,7 @@ binding = "PROFILE_AVATARS_BUCKET"
 bucket_name = "phaseo-profile-avatars-preview"
 
 [[env.staging.r2_buckets]]
-binding = "GATEWAY_IO_LOGS_BUCKET"
+binding = "GATEWAY_ROUTING_ARCHIVES_BUCKET"
 bucket_name = "phaseo-gateway-io-logs-preview"
 
 # Anonymous provenance checks are intentionally approximate and scoped per

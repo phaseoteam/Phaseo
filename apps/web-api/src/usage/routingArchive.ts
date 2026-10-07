@@ -13,7 +13,7 @@ export async function readRoutingArchive(
         || pointer.key !== `${prefix}${pointer.sha256}.json`
         || typeof pointer.bytes !== "number" || pointer.bytes <= 0 || pointer.bytes > 1024 * 1024) return null;
     try {
-        const object = await env.GATEWAY_IO_LOGS_BUCKET?.get(pointer.key as string);
+        const object = await env.GATEWAY_ROUTING_ARCHIVES_BUCKET?.get(pointer.key as string);
         if (!object || object.size !== pointer.bytes) return null;
         const bytes = await object.arrayBuffer();
         const digest = await crypto.subtle.digest("SHA-256", bytes);

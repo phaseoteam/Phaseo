@@ -7,7 +7,7 @@ type ArchiveSource = {
 };
 
 export async function pruneDeletedRoutingArchives() {
-    const bucket = getBindings().GATEWAY_IO_LOGS_BUCKET;
+    const bucket = getBindings().GATEWAY_ROUTING_ARCHIVES_BUCKET;
     if (!bucket) return 0;
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase.from("gateway_routing_archive_deletions")
@@ -40,7 +40,7 @@ export async function backfillRoutingArchives() {
     // The SQL batch excludes in-flight requests. A newer cutoff would let the
     // UUID cursor pass temporarily ineligible rows and silently miss them.
     if (Date.parse(cutoff) > Date.now() - 60 * 60 * 1000) throw new Error("routing_archive_cutoff_too_recent");
-    const bucket = env.GATEWAY_IO_LOGS_BUCKET;
+    const bucket = env.GATEWAY_ROUTING_ARCHIVES_BUCKET;
     if (!bucket) throw new Error("routing_archive_bucket_missing");
     const key = `routing-archive-backfill/v1/${new Date(cutoff).toISOString()}`;
     const cursor = await env.GATEWAY_CACHE.get<{ id: string; created_at: string; complete?: boolean }>(key, "json");

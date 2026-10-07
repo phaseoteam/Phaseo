@@ -40,6 +40,7 @@
 		{ "binding": "GATEWAY_CACHE", "id": "44e6e455fada499c8681d0ff4d2525dd" }
 	],
 	"r2_buckets": [
-		{ "binding": "GATEWAY_IO_LOGS_BUCKET", "bucket_name": "phaseo-gateway-perf-io-logs" }
+		{ "binding": "GATEWAY_IO_LOGS_BUCKET", "bucket_name": "phaseo-gateway-perf-io-logs" },
+		{ "binding": "GATEWAY_ROUTING_ARCHIVES_BUCKET", "bucket_name": "phaseo-gateway-perf-io-logs" }
 	]
 }

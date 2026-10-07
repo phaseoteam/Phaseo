@@ -76,7 +76,7 @@ describe("audit request detail persistence", () => {
 
 	it.each(["success", "execute failure"])("archives routing without changing accounting on %s", async kind => {
 		const put = vi.fn().mockResolvedValue({});
-		getBindingsMock.mockReturnValue({ GATEWAY_IO_LOGS_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
+		getBindingsMock.mockReturnValue({ GATEWAY_ROUTING_ARCHIVES_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: { id: "row", created_at: "2026-10-07T00:00:00Z", workspace_id: "ws" }, error: null,
 		}) }) }));
@@ -110,7 +110,7 @@ describe("audit request detail persistence", () => {
 
 	it("does not upload when the authoritative request insert fails", async () => {
 		const put = vi.fn();
-		getBindingsMock.mockReturnValue({ GATEWAY_IO_LOGS_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
+		getBindingsMock.mockReturnValue({ GATEWAY_ROUTING_ARCHIVES_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: null, error: { code: "08006", message: "database unavailable" },
 		}) }) }));

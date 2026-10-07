@@ -31,8 +31,10 @@ Domain over an existing CNAME.
 All other paths are blocked at Worker middleware. Generation requests are also
 checked for text-only content before provider selection.
 
-The regional configurations intentionally omit cron triggers, R2 buckets,
+The regional configurations intentionally omit cron triggers, payload-log R2 buckets,
 realtime Durable Objects, data-contribution jobs, and asynchronous workers.
+They bind only the private routing-explanation bucket through
+`GATEWAY_ROUTING_ARCHIVES_BUCKET`; this does not enable request/response payload logging.
 
 ## Prepare secrets in Infisical
 

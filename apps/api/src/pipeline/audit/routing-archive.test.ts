@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const bindings = vi.hoisted(() => ({ bucket: undefined as R2Bucket | undefined }));
-vi.mock("@/runtime/env", () => ({ getBindings: () => ({ GATEWAY_IO_LOGS_BUCKET: bindings.bucket, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" }) }));
+vi.mock("@/runtime/env", () => ({ getBindings: () => ({ GATEWAY_ROUTING_ARCHIVES_BUCKET: bindings.bucket, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" }) }));
 import { archiveRoutingMetadata, writeRoutingArchive } from "./routing-archive";
 
 const input = {

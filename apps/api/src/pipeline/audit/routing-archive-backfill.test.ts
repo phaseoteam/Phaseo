@@ -21,7 +21,7 @@ describe("historical routing transfer", () => {
             }),
         };
         kv = { get: vi.fn().mockResolvedValue(null), put: vi.fn().mockResolvedValue(undefined) };
-        mocks.env = { GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF: "2026-10-01T00:00:00Z", GATEWAY_IO_LOGS_BUCKET: bucket, GATEWAY_CACHE: kv };
+        mocks.env = { GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF: "2026-10-01T00:00:00Z", GATEWAY_ROUTING_ARCHIVES_BUCKET: bucket, GATEWAY_CACHE: kv };
         mocks.rpc.mockReset().mockResolvedValueOnce({ data: [row], error: null }).mockResolvedValue({ data: true, error: null });
     });
     it("verifies the object before committing and advances only after success", async () => {
@@ -72,7 +72,7 @@ describe("routing archive retention", () => {
         remove = vi.fn().mockResolvedValue(undefined);
         acknowledge = vi.fn().mockResolvedValue({ error: null });
         queuedAt = Date.now() - 2 * 60 * 60 * 1000;
-        mocks.env = { GATEWAY_IO_LOGS_BUCKET: { list, delete: remove } };
+        mocks.env = { GATEWAY_ROUTING_ARCHIVES_BUCKET: { list, delete: remove } };
         mocks.from.mockReset().mockReturnValue({
             select: () => ({ lt: (_field: string, value: string) => {
                 eligibleBefore = Date.parse(value);
