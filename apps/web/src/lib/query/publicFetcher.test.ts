@@ -25,8 +25,8 @@ describe("publicFetcher", () => {
 			.resolves.toEqual({ ok: true });
 		expect(fetchMock).toHaveBeenCalledWith("https://phaseo.app/api/_web/status", {
 			headers: { Accept: "application/json" },
-			cache: "no-store",
-			signal: undefined,
+			next: { revalidate: 0 },
+			signal: expect.any(AbortSignal),
 			credentials: "omit",
 		});
 	});

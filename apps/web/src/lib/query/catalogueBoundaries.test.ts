@@ -53,7 +53,7 @@ describe("public and authenticated catalogue boundaries", () => {
 		const result = await fetchModelsPageData("/api/_web/models");
 		expect(result.models.map((model) => model.model_id)).toEqual(["public/model"]);
 		expect(network).toHaveBeenCalledTimes(1);
-		expect(network).toHaveBeenCalledWith(expect.stringContaining("/api/_web/models"), expect.objectContaining({ credentials: "omit", cache: "no-store" }));
+		expect(network).toHaveBeenCalledWith(expect.stringContaining("/api/_web/models"), expect.objectContaining({ credentials: "omit", next: { revalidate: 0 } }));
 	});
 
 	it("merges private models only for authenticated loads and pins their workspace", async () => {
@@ -109,7 +109,8 @@ describe("public and authenticated catalogue boundaries", () => {
 		expect(network).toHaveBeenCalledTimes(2);
 		for (const call of (network as jest.Mock).mock.calls) {
 			expect(call[1].signal.aborted).toBe(false);
-			expect(call[1].cache).toBe("no-store");
+			expect(call[1].cache).toBeUndefined();
+			expect(call[1].next).toEqual({ revalidate: 0 });
 			expect(call[1].credentials).toBe("omit");
 		}
 		// Public fetches combine the caller signal with their timeout signal.

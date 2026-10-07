@@ -1,3 +1,5 @@
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.get_public_models_page_payload (
   p_region          text DEFAULT NULL::text,
   p_service_tier    text DEFAULT NULL::text,
@@ -38,11 +40,3 @@ CREATE OR REPLACE FUNCTION public.get_public_models_page_payload (
     where p_organisation_id is null or payload->>'organisation_id' = p_organisation_id
   ) end;
 $function$;
-
-GRANT EXECUTE ON FUNCTION "public"."get_public_models_page_payload"(text, text, text) TO "service_role";
-
-REVOKE ALL ON FUNCTION "public"."get_public_models_page_payload"(text, text, text) FROM "postgres";
-
-GRANT EXECUTE ON FUNCTION "public"."get_public_models_page_payload"(text, text, text) TO "postgres";
-
-REVOKE ALL ON FUNCTION "public"."get_public_models_page_payload"(text, text, text) FROM PUBLIC, "anon", "authenticated";

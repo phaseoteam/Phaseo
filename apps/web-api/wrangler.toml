@@ -9,6 +9,9 @@ preview_urls = false
 # through their Cache-Control headers; account routes remain private/no-store.
 [cache]
 enabled = true
+# Keep warm public responses across releases. Content changes use the existing
+# tagged purge endpoints; account responses remain private/no-store.
+cross_version_cache = true
 
 [vars]
 ENV = "production"

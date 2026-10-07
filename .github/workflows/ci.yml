@@ -1019,9 +1019,10 @@ jobs:
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
               run: |
                   set -euo pipefail
-                  printf '%s' "$DISCORD_WEBHOOK_NEW_MODELS_PUBLIC" | pnpm exec wrangler secret put DISCORD_WEBHOOK_NEW_MODELS_PUBLIC --config wrangler.toml
-                  printf '%s' "$DISCORD_ROLE_ID" | pnpm exec wrangler secret put DISCORD_ROLE_ID --config wrangler.toml
-                  pnpm exec wrangler deploy --config wrangler.toml
+                  secrets_file=$(mktemp)
+                  trap 'rm -f "$secrets_file"' EXIT
+                  node -e 'require("node:fs").writeFileSync(process.argv[1], JSON.stringify({ DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC, DISCORD_ROLE_ID: process.env.DISCORD_ROLE_ID }))' "$secrets_file"
+                  pnpm exec wrangler deploy --config wrangler.toml --secrets-file "$secrets_file"
 
             - name: Deploy MCP Worker to Cloudflare
               if: matrix.target == 'mcp'
