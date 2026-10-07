@@ -122,6 +122,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "ATLAS_CLOUD_BASE_URL",
     "AMBIENT_API_KEY",
     "AMBIENT_BASE_URL",
+    "EMPIRIOLABS_API_KEY",
+    "EMPIRIOLABS_BASE_URL",
     "AVIAN_API_KEY",
     "AVIAN_BASE_URL",
     "BAIDU_QIANFAN_API_KEY",

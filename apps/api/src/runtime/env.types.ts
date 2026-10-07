@@ -109,6 +109,8 @@ export type GatewayBindings = {
     ATLAS_CLOUD_BASE_URL?: string;
     AMBIENT_API_KEY?: string;
     AMBIENT_BASE_URL?: string;
+    EMPIRIOLABS_API_KEY?: string;
+    EMPIRIOLABS_BASE_URL?: string;
     AVIAN_API_KEY?: string;
     AVIAN_BASE_URL?: string;
     BAIDU_QIANFAN_API_KEY?: string;

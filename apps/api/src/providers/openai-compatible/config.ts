@@ -22,6 +22,7 @@ import { INFERENCE_NET_API_KEY_ENVS } from "../inference-net/config";
 import { DOUBLEWORD_API_KEY_ENVS } from "../doubleword/config";
 import { LIQUID_AI_API_KEY_ENVS } from "../liquid-ai/config";
 import { MISTRAL_API_KEY_ENVS } from "../mistral/config";
+import { empirioLabsModelSupportsResponses } from "../empiriolabs/config";
 import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { deepInfraMediaUrl } from "../deepinfra/config";
@@ -339,6 +340,9 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const normalized = normalizeOpenAIModelName(model);
+	if (canonicalProviderId === "empiriolabs") {
+		return empirioLabsModelSupportsResponses(model) ? "responses" : "chat";
+	}
 	// StepFun currently exposes Responses only for step-3.7-flash; its other
 	// text and multimodal models remain on Chat Completions.
 	if (canonicalProviderId === "stepfun") {
@@ -380,6 +384,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 
 export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
 	const canonicalProviderId = normalizeCompatProviderId(providerId);
+	if (canonicalProviderId === "empiriolabs") return empirioLabsModelSupportsResponses(model);
 	if (canonicalProviderId === "deepseek") return resolveOpenAICompatRoute(canonicalProviderId, model) === "responses";
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	if (typeof config.supportsResponses === "boolean") return config.supportsResponses;

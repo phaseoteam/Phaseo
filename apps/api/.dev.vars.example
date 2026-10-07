@@ -11,6 +11,10 @@ AMAZON_BEDROCK_API_KEY=replace-with-a-bedrock-api-key
 # REFLECTION_API_KEY=replace-with-a-reflection-api-key
 # REFLECTION_BASE_URL=https://api.reflection.ai/openai/v1
 
+# EmpirioLabs text inference (enable catalog routing separately).
+# EMPIRIOLABS_API_KEY=replace-with-an-empiriolabs-api-key
+# EMPIRIOLABS_BASE_URL=https://api.empiriolabs.ai
+
 # Optional SigV4 alternative to AMAZON_BEDROCK_API_KEY.
 # AWS_ACCESS_KEY_ID=replace-with-an-access-key-id
 # AWS_SECRET_ACCESS_KEY=replace-with-a-secret-access-key

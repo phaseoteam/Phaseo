@@ -671,6 +671,16 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 		id: "ambient",
 	},
 	{
+		id: "empiriolabs",
+		adapterBackedOverrides: {
+			"image.generate": false, "image.edit": false,
+			"audio.speech": false, "audio.transcription": false,
+			"audio.translations": false, "video.generate": false,
+			ocr: false, parse: false, "music.generate": false,
+		},
+		text: { normalize: { preserveReasoningEffort: true } },
+	},
+	{
 		id: "mancer",
 		textOnly: true,
 		text: {
