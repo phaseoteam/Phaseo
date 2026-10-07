@@ -122,6 +122,7 @@ describe("applyServiceTierRouting", () => {
         const batch = { ...legacy, pricingCard: makeCard({ provider: "legacy", model: "model", plans: ["batch"] }), capabilityParams: { service_tier: { provider_catalog: { name: "batch" } } } };
         expect((await applyServiceTierRouting({ candidates: [legacy, standard, batch], body: {}, capability: "batch" })).candidates).toEqual([legacy, batch]);
         expect((await applyServiceTierRouting({ candidates: [batch], body: {}, capability: "text.generate" })).candidates).toEqual([]);
+        expect((await applyServiceTierRouting({ candidates: [batch], body: { service_tier: "batch" }, capability: "text.generate" })).candidates).toEqual([]);
     });
     it.each(["on-demand", "llm-plus"])("preserves default routing for provider SKU %s", async (plan) => {
         const card = makeCard({ provider: "provider", model: "model", plans: ["standard"] });
