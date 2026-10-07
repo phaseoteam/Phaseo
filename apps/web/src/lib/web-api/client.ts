@@ -62,7 +62,9 @@ export async function fetchPublicWebApi<T>(
 	const timeoutSignal = AbortSignal.timeout(PUBLIC_WEB_API_TIMEOUT_MS);
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
-		cache: "no-store",
+		// Disable Next's data cache without native fetch's no-cache request
+		// headers, which ask upstream shared caches to revalidate.
+		next: { revalidate: 0 },
 		signal: options.signal
 			? AbortSignal.any([options.signal, timeoutSignal])
 			: timeoutSignal,

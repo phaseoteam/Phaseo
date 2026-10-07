@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION public.get_public_models_page_payload (
   LANGUAGE sql
   STABLE
   SET search_path TO 'public'
+  SET work_mem TO '16MB'
   AS $function$
   select case when p_region is null and p_service_tier is null then (
     select coalesce(

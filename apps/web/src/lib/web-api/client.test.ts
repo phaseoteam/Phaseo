@@ -4,6 +4,9 @@ import {
 	fetchOptionalPublicWebApi,
 	fetchPublicWebApi,
 } from "./client";
+import { createServer } from "node:http";
+import { once } from "node:events";
+import type { AddressInfo } from "node:net";
 
 jest.mock("@/lib/fetchers/internal/accountAuthClient", () => ({ getBrowserAccessToken: async () => "session-token" }));
 
@@ -24,6 +27,27 @@ describe("Cloudflare web API client", () => {
 		});
 	});
 	const originalOrigin = process.env.WEB_API_ORIGIN;
+
+	it("does not send cache bypass headers to Cloudflare", async () => {
+		const server = createServer((request, response) => {
+			response.setHeader("Content-Type", "application/json");
+			response.end(JSON.stringify({
+				cacheControl: request.headers["cache-control"] ?? null,
+				pragma: request.headers.pragma ?? null,
+			}));
+		});
+		server.listen(0, "127.0.0.1");
+		await once(server, "listening");
+		process.env.WEB_API_ORIGIN = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+		try {
+			await expect(fetchPublicWebApi("/api/_web/status")).resolves.toEqual({
+				cacheControl: null, pragma: null,
+			});
+		} finally {
+			server.closeAllConnections();
+			await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+		}
+	});
 
 	afterEach(() => {
 		jest.restoreAllMocks();
@@ -49,7 +73,7 @@ describe("Cloudflare web API client", () => {
 			"http://127.0.0.1:8788/api/_web/organisations",
 			{
 				headers: { Accept: "application/json" },
-				cache: "no-store",
+				next: { revalidate: 0 },
 				credentials: "omit",
 				signal: expect.any(AbortSignal),
 			},
