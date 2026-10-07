@@ -75,6 +75,7 @@ import { MARA_OPENAI_COMPAT_CONFIGS } from "../mara/config";
 import { REKA_OPENAI_COMPAT_CONFIGS } from "../reka/config";
 import { UPSTAGE_OPENAI_COMPAT_CONFIGS } from "../upstage/config";
 import { AMBIENT_OPENAI_COMPAT_CONFIGS } from "../ambient/config";
+import { EMPIRIOLABS_OPENAI_COMPAT_CONFIGS } from "../empiriolabs/config";
 import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
 import { SWITCHPOINT_OPENAI_COMPAT_CONFIGS } from "../switchpoint/config";
 import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
@@ -157,6 +158,7 @@ export const OPENAI_COMPAT_CONFIG = {
 	...REKA_OPENAI_COMPAT_CONFIGS,
 	...UPSTAGE_OPENAI_COMPAT_CONFIGS,
 	...AMBIENT_OPENAI_COMPAT_CONFIGS,
+	...EMPIRIOLABS_OPENAI_COMPAT_CONFIGS,
 	...STREAMLAKE_OPENAI_COMPAT_CONFIGS,
 	...SWITCHPOINT_OPENAI_COMPAT_CONFIGS,
 	...WAFER_OPENAI_COMPAT_CONFIGS,

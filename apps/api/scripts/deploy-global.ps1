@@ -19,7 +19,7 @@ $globalSecretNames = @(
     "CLOUDFLARE_ACCOUNT_ID"
 )
 $temporarySecretsFile = $null
-$optionalGlobalSecretNames = @("PERPLEXITY_API_KEY")
+$optionalGlobalSecretNames = @("PERPLEXITY_API_KEY", "EMPIRIOLABS_API_KEY")
 $deployApiToken = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_API_TOKEN")
 $deployAccountId = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_ACCOUNT_ID")
 $previousApiToken = $env:CLOUDFLARE_API_TOKEN
