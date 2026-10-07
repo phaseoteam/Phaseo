@@ -81,6 +81,7 @@ function usesOpenAIResponsesShape(providerId?: string): boolean {
 	return (
 		canonicalProviderId === "openai" ||
 		canonicalProviderId === "openai-eu" ||
+		canonicalProviderId === "empiriolabs" ||
 		canonicalProviderId === "xiaomi" ||
 		canonicalProviderId === "deepseek" ||
 		canonicalProviderId === "meta" ||

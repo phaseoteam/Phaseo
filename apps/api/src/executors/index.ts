@@ -97,6 +97,7 @@ import { executor as longcatText } from "./longcat/text-generate";
 import { executor as mancerText } from "./mancer/text-generate";
 import { executor as ambientText } from "./ambient/text-generate";
 import { executor as empirioLabsText } from "./empiriolabs/text-generate";
+import { executor as empirioLabsDecisions } from "./empiriolabs/decisions";
 import { executor as avianText } from "./avian/text-generate";
 import { executor as morphText } from "./morph/text-generate";
 import { executor as morpheusText } from "./morpheus/text-generate";
@@ -409,7 +410,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	longcat: { "text.generate": longcatText },
 	mancer: { "text.generate": mancerText },
 	ambient: { "text.generate": ambientText },
-	empiriolabs: { "text.generate": empirioLabsText },
+	empiriolabs: { "text.generate": empirioLabsText, "decisions.make": empirioLabsDecisions },
 	avian: { "text.generate": avianText },
 	minimax: { "text.generate": minimaxText, "video.generate": minimaxVideo, "music.generate": minimaxMusic, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor },
 	"minimax-lightning": { "text.generate": minimaxText },
