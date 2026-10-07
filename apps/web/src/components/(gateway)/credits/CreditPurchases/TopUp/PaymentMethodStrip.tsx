@@ -90,7 +90,7 @@ export default function PaymentMethodStrip({
             </div>
 
             <div role="radiogroup" aria-label={text("selectPaymentMethod")} className="grid grid-cols-1 items-start gap-3">
-                {sortedMethods.map((pm: any) => {
+                {sortedMethods.map((pm: any, index) => {
                     const active = value === pm.id;
                     const brand = formatCardBrand(pm.card?.brand);
                     const last4 = pm.card?.last4 ?? "****";
@@ -101,7 +101,7 @@ export default function PaymentMethodStrip({
                             key={pm.id}
                             active={active}
                             onClick={() => onChange(pm.id)}
-							ariaLabel={text("savedCardEnding", { brand, last4 })}
+							ariaLabel={`${brand} ${text("paymentMethod")} ${index + 1}`}
                         >
                             <div className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
@@ -111,13 +111,13 @@ export default function PaymentMethodStrip({
 
                                     <div className="leading-tight">
                                         <div className="text-sm font-medium capitalize text-foreground">
-											<SensitiveValue inline label="card number">****{last4}</SensitiveValue>
+											<SensitiveValue inline reveal={false} label="card number">****{last4}</SensitiveValue>
                                         </div>
                                         <div className="text-xs text-muted-foreground">
                                             {brand}
                                             {pm.card?.exp_month && pm.card?.exp_year
                                                 ? (
-													<SensitiveValue inline label="card expiry">
+													<SensitiveValue inline reveal={false} label="card expiry">
                                                         {" "}
                                                         - {text("expires")}{" "}
                                                         {String(pm.card.exp_month).padStart(2, "0")}/

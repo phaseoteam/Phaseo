@@ -800,7 +800,7 @@ export default function CreditsPurchaseDialog({
 										return (
 											<>
 												{text("payWithSavedCard", { brand })}{" "}
-												<SensitiveValue inline label={t("billingCopy.cardNumber")}>****{last4}</SensitiveValue>
+												<SensitiveValue inline reveal={false} label={t("billingCopy.cardNumber")}>****{last4}</SensitiveValue>
 											</>
 										);
 									})()

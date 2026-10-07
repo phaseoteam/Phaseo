@@ -434,12 +434,10 @@ html[data-font="arabic"] {
 }
 
 @layer utilities {
-	[data-obfuscate-pii="true"] [data-pii="true"]:not([data-pii-revealed="true"]) {
-		filter: blur(0.34rem);
-		-webkit-filter: blur(0.34rem);
+	[data-pii-hidden="true"] {
+		filter: blur(4px);
 		user-select: none;
 		-webkit-user-select: none;
-		transition: filter 160ms ease;
 	}
 
 	html[data-density="compact"] [data-slot="preference-row"] {

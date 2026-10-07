@@ -190,7 +190,7 @@ export function PaymentMethodsManager({
                 </p>
             ) : (
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {paymentMethods.map((pm) => {
+                    {paymentMethods.map((pm, index) => {
                         const isDefault = pm.id === data.defaultPaymentMethodId;
                         const settingDefault = defaultPendingId === pm.id;
                         const removing = removePendingId === pm.id;
@@ -231,7 +231,7 @@ export function PaymentMethodsManager({
 											disabled={busy}
 											className="text-destructive hover:bg-destructive/10 hover:text-destructive"
 											onClick={() => setConfirmRemoveId(pm.id)}
-											aria-label={`${t("strings.Remove" as never)} ${formatCardBrand(pm.brand)} ${t("strings.ending" as never)} ${pm.last4 ?? t("strings.unknown" as never)}`}
+											aria-label={`${t("strings.Remove" as never)} ${formatCardBrand(pm.brand)} ${t("billingCopy.cardNumber")} ${index + 1}`}
 										>
 											{removing ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
 										</Button>
