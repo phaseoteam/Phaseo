@@ -98,6 +98,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
@@ -1292,7 +1293,7 @@ function ModelsDisplayContent({
 					normalizedModalitySet(model.gateway_input_modalities),
 				);
 				const outputModalities = Array.from(
-					normalizedModalitySet(model.gateway_output_modalities),
+					normalizedModalitySet(modelOutputFilterValues(model.gateway_output_modalities ?? [], endpoints)),
 				);
 				const features = Array.from(normalizedSet(model.gateway_features));
 				const tiers = Array.from(normalizedSet(model.gateway_tiers));

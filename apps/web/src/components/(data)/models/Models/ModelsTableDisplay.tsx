@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
@@ -986,7 +987,7 @@ export default function ModelsTableDisplay({
 				if (!key) continue;
 				inputMap.set(key, (inputMap.get(key) ?? 0) + 1);
 			}
-			for (const modality of item.outputModalities ?? []) {
+			for (const modality of modelOutputFilterValues(item.outputModalities ?? [], [item.endpoint])) {
 				const key = normalizeModalityFilterValue(String(modality ?? ""));
 				if (!key) continue;
 				outputMap.set(key, (outputMap.get(key) ?? 0) + 1);

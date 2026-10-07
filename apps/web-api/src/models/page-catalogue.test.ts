@@ -17,6 +17,11 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchModelsPageCatalogue", () => {
+	it("counts a text-and-Decisions model in both filters while preserving its output modalities", () => {
+		const luna = { gateway_output_modalities: ["text"], gateway_endpoints: ["text.generate", "decisions.make"] };
+		expect(buildModelsPageFacets([luna]).outputModalityOptions).toEqual([{ value: "text", count: 1 }, { value: "decisions", count: 1 }]);
+		expect(luna.gateway_output_modalities).toEqual(["text"]);
+	});
 	it("rejects failed standalone metrics instead of caching an empty success", async () => {
 		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
 			code: "57014", message: "statement timeout",

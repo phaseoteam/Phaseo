@@ -1,7 +1,12 @@
-import { decisionModelCapabilities } from "./modelCapabilities";
+import { decisionModelCapabilities, modelOutputFilterValues } from "./modelCapabilities";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 
 describe("models with Text generation and Decisions", () => {
+	it("includes a dual-capability text model in both output filters without duplicating Decisions", () => {
+		expect(modelOutputFilterValues(["text"], ["text.generate", "decisions.make"])).toEqual(["text", "decisions"]);
+		expect(modelOutputFilterValues(["decisions"], ["/v1/decisions"])).toEqual(["decisions"]);
+		expect(modelOutputFilterValues(["text"], ["text.generate"])).toEqual(["text"]);
+	});
 	it("deduplicates protocol aliases without conflating image inputs with capabilities", () => {
 		expect(decisionModelCapabilities(["text.generate", "/v1/responses", "chat/completions", "/decisions", "decisions.make", "image"]))
 			.toEqual(["text.generate", "decisions.make"]);
