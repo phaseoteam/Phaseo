@@ -28,7 +28,7 @@ describe("historical routing transfer", () => {
         expect(await backfillRoutingArchives()).toMatchObject({ archived: 1 });
         expect(bucket.get).toHaveBeenCalledOnce();
         expect(mocks.rpc.mock.calls[1]).toEqual(["gateway_commit_routing_archive", expect.objectContaining({ p_source_hash: "hash" })]);
-        expect(kv.put.mock.calls[0][1]).toEqual(JSON.stringify({ id: row.id, created_at: row.created_at }));
+        expect(JSON.parse(kv.put.mock.calls[0][1])).toEqual({ id: row.id, created_at: row.created_at, complete: false });
     });
     it("never removes SQL copies if object verification fails", async () => {
         bucket.get.mockResolvedValue(null);

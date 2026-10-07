@@ -1248,7 +1248,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             providerAttempts: args.providerAttempts ?? null,
                             labels: args.labels ?? null,
                             routingArchive: (args.detailMetadata as any)?.routing_archive ?? null,
-                    routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
+                            routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
                                 ? (args.detailMetadata as any).routing_snapshot
                                 : null,
                             routingDiagnostics:
@@ -1441,7 +1441,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerAttempts: args.providerAttempts ?? null,
                         labels: args.labels ?? null,
                         routingArchive: (args.detailMetadata as any)?.routing_archive ?? null,
-                    routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
+                        routingSnapshot: Array.isArray((args.detailMetadata as any)?.routing_snapshot)
                             ? (args.detailMetadata as any).routing_snapshot
                             : null,
                         routingDiagnostics:

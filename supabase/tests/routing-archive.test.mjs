@@ -33,6 +33,10 @@ try {
     for (const name of ['gateway_routing_archive_source', 'gateway_routing_archive_batch', 'gateway_commit_routing_archive', 'ingest_v2_gateway_request_with_routing']) {
         await db.exec(await read(`../schemas/public/functions/${name}.sql`));
     }
+    await db.exec(await read('../schemas/public/tables/gateway_routing_archive_deletions.sql'));
+    await db.exec(await read('../schemas/public/functions/enqueue_gateway_routing_archive_deletion.sql'));
+    const gatewayDefinition = await read('../schemas/public/tables/gateway_requests.sql');
+    await db.exec(gatewayDefinition.match(/CREATE TRIGGER gateway_requests_routing_archive_delete[\s\S]*?;/)[0]);
     await db.query(`insert into public.gateway_requests values($1,$2,$3,'request',$4,5000,'{"input_tokens":100}')`,
         [request, created, workspace, { routing_snapshot: [{ score: 0.5 }], routing_diagnostics: { algorithm: 'v2' }, accounting_finalization: { settled: true } }]);
     await db.query(`insert into public.v2_request_facts values($1,$2,$3,$4,'request',5000)`, [fact, request, created, workspace]);
@@ -90,5 +94,13 @@ try {
     await db.query('select public.ingest_v2_gateway_request_with_routing($1)', [event]);
     await db.exec('reset role');
     assert.equal((await db.query('select count(*) n from public.v2_request_routing_decisions')).rows[0].n, 1);
+    await db.query('delete from public.gateway_requests where id=$1 and created_at=$2', [request, created]);
+    await db.exec('set role service_role');
+    assert.equal((await db.query('select object_key from public.gateway_routing_archive_deletions')).rows[0].object_key, reference.key);
+    await assert.rejects(db.query("insert into public.gateway_routing_archive_deletions(object_key) values('untrusted')"), /permission denied/);
+    await db.exec('reset role');
+    await db.exec('set role authenticated');
+    await assert.rejects(db.query('select * from public.gateway_routing_archive_deletions'), /permission denied/);
+    await db.exec('reset role');
     console.log('Routing archive SQL permissions, source concurrency, idempotency, fallback and accounting preservation passed.');
 } finally { await db.close(); }

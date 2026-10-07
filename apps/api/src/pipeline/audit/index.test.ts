@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseAdminMock = vi.fn();
+const getBindingsMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn();
 const isLocalTestingModeEnabledMock = vi.fn();
 const ensureAppIdMock = vi.fn();
@@ -10,6 +11,7 @@ const persistGatewayIoLogMock = vi.fn();
 const persistGatewayUpstreamRequestsMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
+	getBindings: (...args: any[]) => getBindingsMock(...args),
 	getSupabaseAdmin: (...args: any[]) => getSupabaseAdminMock(...args),
 	ensureRuntimeForBackground: (...args: any[]) => ensureRuntimeForBackgroundMock(...args),
 	isLocalTestingModeEnabled: (...args: any[]) => isLocalTestingModeEnabledMock(...args),
@@ -50,6 +52,7 @@ describe("audit service tier attribution", () => {
 
 describe("audit request detail persistence", () => {
 	beforeEach(() => {
+		getBindingsMock.mockReset().mockReturnValue({});
 		getSupabaseAdminMock.mockReset();
 		ensureRuntimeForBackgroundMock.mockReset();
 		isLocalTestingModeEnabledMock.mockReset();
@@ -69,6 +72,39 @@ describe("audit request detail persistence", () => {
 			settings: { enabled: true, retentionDays: 90, includeProviderPayloads: true },
 		});
 		persistGatewayIoLogMock.mockResolvedValue(undefined);
+	});
+
+	it.each(["success", "execute failure"])("archives routing without changing accounting on %s", async kind => {
+		const put = vi.fn().mockResolvedValue({});
+		getBindingsMock.mockReturnValue({ GATEWAY_IO_LOGS_BUCKET: { put }, GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED: "true" });
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-10-07T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const args = {
+			requestId: "req", workspaceId: "ws", provider: "openai", providerModelSlug: "model",
+			model: "model", endpoint: "responses" as const, stream: false, byok: false,
+			usagePriced: { input_tokens: 10 }, totalNanos: 5000, currency: "USD",
+			requestPayload: { input: "private prompt" }, gatewayResponse: { output: "private completion" },
+			detailMetadata: { routing_snapshot: [{ provider_id: "openai", provider_model_slug: "model", score: 0.9 }] },
+		};
+		if (kind === "success") await auditSuccess(args);
+		else await auditFailure({ ...args, stage: "execute", statusCode: 502, errorCode: "upstream_error" });
+		expect(put).toHaveBeenCalledOnce();
+		const object = new TextDecoder().decode(put.mock.calls[0][1]);
+		expect(object).not.toContain("private prompt");
+		expect(object).not.toContain("private completion");
+		expect(insert.mock.calls[0][0].detail_metadata.routing_archive).toBeTruthy();
+		expect(insert.mock.calls[0][0].detail_metadata).not.toHaveProperty("routing_snapshot");
+		const event = rpc.mock.calls[0][1].p_event;
+		expect(event.routing_decisions).toEqual([]);
+		expect(event.routing_archive).toBeTruthy();
+		if (kind === "success") {
+			expect(event.cost_nanos).toBe(5000);
+			expect(event.usage_meters).toContainEqual(expect.objectContaining({ meter_key: "input_tokens", quantity: 10 }));
+		}
 	});
 
 	it.each([false, true])("retries analytics writes without duplicating the request log (stream=%s)", async (stream) => {

@@ -6,6 +6,21 @@ type ArchiveSource = {
     source_hash: string; metadata: unknown; routing_trace: unknown; routing_decisions: unknown[];
 };
 
+export async function pruneDeletedRoutingArchives() {
+    const bucket = getBindings().GATEWAY_IO_LOGS_BUCKET;
+    if (!bucket) return 0;
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.from("gateway_routing_archive_deletions")
+        .select("object_key").order("created_at", { ascending: true }).limit(250);
+    if (error) throw new Error(`routing_archive_deletion_select_failed:${error.code ?? "unknown"}`);
+    const keys = (data ?? []).map(row => row.object_key as string);
+    if (keys.length === 0) return 0;
+    await bucket.delete(keys);
+    const result = await supabase.from("gateway_routing_archive_deletions").delete().in("object_key", keys);
+    if (result.error) throw new Error("routing_archive_deletion_ack_failed");
+    return keys.length;
+}
+
 export async function backfillRoutingArchives() {
     const env = getBindings();
     const cutoff = env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF;
@@ -26,6 +41,7 @@ export async function backfillRoutingArchives() {
     if (error) throw new Error(`routing_archive_batch_failed:${error.code ?? "unknown"}`);
     const rows = (data ?? []) as ArchiveSource[];
     const summary = { archived: 0, bytes: 0, complete: rows.length === 0 };
+    let nextCursor = cursor;
     for (const row of rows) {
         const reference = await writeRoutingArchive(bucket, row.workspace_id, row.request_id, {
             metadata: row.metadata, routing_trace: row.routing_trace, routing_decisions: row.routing_decisions,
@@ -40,10 +56,12 @@ export async function backfillRoutingArchives() {
             p_id: row.id, p_created_at: row.created_at, p_source_hash: row.source_hash, p_reference: reference,
         });
         if (result.error || result.data !== true) throw new Error("routing_archive_source_changed_or_commit_failed");
-        await env.GATEWAY_CACHE.put(key, JSON.stringify({ id: row.id, created_at: row.created_at }));
+        nextCursor = { id: row.id, created_at: row.created_at };
         summary.archived += 1;
         summary.bytes += reference.bytes;
     }
-    if (summary.complete) await env.GATEWAY_CACHE.put(key, JSON.stringify({ ...cursor, complete: true }));
+    // One KV write per tick avoids the one-write-per-second limit on a key.
+    // If a batch fails midway, the next query skips rows already committed.
+    await env.GATEWAY_CACHE.put(key, JSON.stringify({ ...nextCursor, complete: summary.complete }));
     return summary;
 }

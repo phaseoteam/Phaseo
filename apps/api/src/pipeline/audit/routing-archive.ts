@@ -37,7 +37,9 @@ export async function archiveRoutingMetadata(args: {
     const { routing_archive: _untrusted, ...metadata } = args.detailMetadata ?? {};
     if (!args.workspaceId || !Array.isArray(metadata.routing_snapshot)) return metadata;
     try {
-        const bucket = getBindings().GATEWAY_IO_LOGS_BUCKET;
+        const bindings = getBindings();
+        if (bindings.GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED !== "true") return metadata;
+        const bucket = bindings.GATEWAY_IO_LOGS_BUCKET;
         if (!bucket) return metadata;
         const routing = buildRoutingObservability({
             ...args,

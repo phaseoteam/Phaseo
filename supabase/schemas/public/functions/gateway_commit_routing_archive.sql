@@ -26,10 +26,12 @@ begin
     or right(coalesce(p_reference->>'key', ''), 70) is distinct from '/' || (p_reference->>'sha256') || '.json' then
     raise exception using errcode = '22023', message = 'routing_archive_reference_invalid';
   end if;
-  v_source := public.gateway_routing_archive_source(p_id, p_created_at);
-  if v_source is null or v_source->>'source_hash' is distinct from p_source_hash then return false; end if;
   select request_event_id into v_fact_id from public.v2_request_facts
   where gateway_request_id = p_id and gateway_request_created_at = p_created_at for update;
+  perform 1 from public.v2_request_routing_decisions where request_event_id = v_fact_id for update;
+  perform 1 from public.v2_request_routing_traces where request_event_id = v_fact_id for update;
+  v_source := public.gateway_routing_archive_source(p_id, p_created_at);
+  if v_source is null or v_source->>'source_hash' is distinct from p_source_hash then return false; end if;
 
   update public.gateway_requests
   set detail_metadata = (coalesce(detail_metadata, '{}'::jsonb) - 'routing_snapshot' - 'routing_diagnostics')
