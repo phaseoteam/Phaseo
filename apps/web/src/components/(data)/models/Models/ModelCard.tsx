@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ModelCapabilityBadges } from "../ModelCapabilityBadges";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -1088,7 +1087,6 @@ function ModelCardImpl({
 					</Button>
 				</div>
 
-				<ModelCapabilityBadges endpoints={model.gateway_endpoints ?? []} />
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
