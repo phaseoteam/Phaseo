@@ -952,7 +952,7 @@ function ModelCardImpl({
 	const inputModalityDisplay = formatModalities(inputModalities);
 	const outputModalityDisplay = formatModalities(outputModalities);
 	const weeklyUsage = resolveWeeklyUsageDisplay(model);
-	const weeklyUsageValue = `${weeklyUsage.unitSuffix
+	const weeklyUsageValue = weeklyUsage.quantity === null ? "—" : `${weeklyUsage.unitSuffix
 		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
 		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
 	fetchModelsPageData,
 	fetchModelsPageDataV2,
@@ -12,6 +12,7 @@ import { useRefetchOnResume } from "@/lib/query/refetchOnResume";
 import { ModelsPageSkeleton } from "./ModelsPageSkeleton";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
+import { fetchModelWeeklyMetrics, fetchFreeRouterUsage, withModelsUsage } from "@/lib/query/modelsUsage";
 import {
 	ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 	hasAuthenticatedAccountQueryScope,
@@ -31,7 +32,14 @@ type ModelsPageClientProps = {
 	accountQueryScope?: AccountQueryScope | null;
 };
 
-export default function ModelsPageClient({
+export default function ModelsPageClient(props: ModelsPageClientProps) {
+	useEffect(() => { void import("./ModelsDisplay"); }, []);
+	return <Suspense fallback={<ModelsPageSkeleton title={props.title} />}>
+		<ModelsPageDataClient {...props} />
+	</Suspense>;
+}
+
+function ModelsPageDataClient({
 	catalogueVersion = "v1",
 	title,
 	initialProviderPreviews,
@@ -41,9 +49,9 @@ export default function ModelsPageClient({
 	const scope = accountQueryScope ?? ANONYMOUS_ACCOUNT_QUERY_SCOPE;
 	const path =
 		catalogueVersion === "v2"
-			? "/api/_web/models?limit=2000&offset=0&shape=page&projection=6&catalogue_version=v2"
-			: "/api/_web/models?limit=2000&offset=0&shape=page&projection=5";
-	const query = useQuery({
+			? "/api/_web/models?limit=2000&offset=0&shape=page&projection=6&catalogue_version=v2&include_metrics=false"
+			: "/api/_web/models?limit=2000&offset=0&shape=page&projection=5&include_metrics=false";
+	const query = useSuspenseQuery({
 		queryKey: webQueryKeys.account.catalogue({
 			scope,
 			catalogueVersion,
@@ -63,14 +71,25 @@ export default function ModelsPageClient({
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 	});
+	const metrics = useQuery({
+		queryKey: webQueryKeys.public.modelsWeeklyMetrics(),
+		queryFn: ({ signal }) => fetchModelWeeklyMetrics(signal),
+		enabled: Boolean(query.data),
+		...WEB_QUERY_POLICIES.publicNoPolling,
+	});
+	const freeRouter = useQuery({
+		queryKey: webQueryKeys.public.freeRouterUsage(),
+		queryFn: ({ signal }) => fetchFreeRouterUsage(signal),
+		enabled: Boolean(query.data?.models.some((model) => model.model_id === "phaseo/free")),
+		...WEB_QUERY_POLICIES.publicNoPolling,
+	});
+	const displayData = useMemo(() => query.data
+		? withModelsUsage(query.data, metrics.data, freeRouter.data)
+		: undefined, [query.data, metrics.data, freeRouter.data]);
 	useRefetchOnResume(query.refetch, query.isStale, query.error);
-	useEffect(() => {
-		// Load the display code alongside the catalogue request, not after it.
-		void import("./ModelsDisplay");
-	}, []);
 
 	if (query.error && !query.data) throw query.error;
-	if (!query.data) return <ModelsPageSkeleton title={title} />;
+	if (!displayData) return <ModelsPageSkeleton title={title} />;
 
-	return <ModelsDisplay modelsPageData={query.data} />;
+	return <ModelsDisplay modelsPageData={displayData} />;
 }

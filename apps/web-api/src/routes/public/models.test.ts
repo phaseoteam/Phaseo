@@ -13,6 +13,43 @@ afterEach(() => {
 	vi.useRealTimers();
 });
 
+describe("progressive model catalogue", () => {
+	it("returns a usable catalogue and router card without querying usage", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_public_model_weekly_metrics") || url.includes("get_free_router_usage_summary")) throw new Error("usage must not block the catalogue");
+			if (url.includes("get_public_models_page_payload")) return new Response(JSON.stringify([
+				{ model_id: "public/model", name: "Public", popularity_tokens_week: 999 },
+			]));
+			if (url.includes("v2_models?")) return new Response(JSON.stringify([
+				{ model_slug: "public/model:free", name: "Free", lab_slug: "public" },
+			]));
+			return new Response(JSON.stringify([
+				{ model_slug: "public/model:free", provider_slug: "provider", status: "active", routing_enabled: true },
+			]));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("/api/_web/models?shape=page&projection=6&include_metrics=false&limit=2000", {}, env);
+		expect(response.status).toBe(200);
+		const result = await response.json() as { models: Array<Record<string, unknown>> };
+		expect(result.models.find((row) => row.model_id === "public/model")?.popularity_tokens_week).toBeNull();
+		expect(result.models.find((row) => row.model_id === "phaseo/free")).toMatchObject({ gateway_status: "active", router_requests_30d: null });
+	});
+
+	it("serves weekly metrics without recomputing the catalogue", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_models_page_payload")) throw new Error("catalogue must not be recomputed");
+			return new Response(JSON.stringify(url.includes("get_v2_public_model_weekly_metrics")
+				? [{ model_slug: "public/model", weekly_usage_quantity: 42 }]
+				: [{ model_slug: "public/model" }]));
+		}));
+		const response = await app.request("/api/_web/models/weekly-metrics", {}, env);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toEqual({ metrics: [{ model_slug: "public/model", weekly_usage_quantity: 42 }] });
+	});
+});
+
 describe("provider health RPC fallback", () => {
 	it("falls back only when PostgREST reports the tiered RPC itself as missing", () => {
 		expect(isMissingTierHealthRpcError({

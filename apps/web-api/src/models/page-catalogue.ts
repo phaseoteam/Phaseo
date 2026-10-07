@@ -338,6 +338,7 @@ export type ModelsPageQuery = {
 	organisationId?: string | null;
 	region?: string | null;
 	serviceTier?: string | null;
+	includeMetrics?: boolean;
 };
 
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
@@ -353,7 +354,7 @@ async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<
 		: data;
 }
 
-async function weeklyMetrics(env: Env, modelIds?: string[]): Promise<WeeklyMetricRow[]> {
+async function weeklyMetrics(env: Env, modelIds?: string[], throwOnError = false): Promise<WeeklyMetricRow[]> {
 	if (modelIds?.length === 0) return [];
 	const rows: WeeklyMetricRow[] = [];
 	for (let offset = 0; ; offset += 1_000) {
@@ -361,6 +362,7 @@ async function weeklyMetrics(env: Env, modelIds?: string[]): Promise<WeeklyMetri
 		if (modelIds) request = request.in("model_slug", modelIds);
 		const result = await request.range(offset, offset + 999);
 		if (result.error) {
+			if (throwOnError) throw result.error;
 			console.error("models_weekly_metrics_failed", {
 				code: result.error.code,
 				message: result.error.message,
@@ -399,7 +401,7 @@ export async function fetchModelsPageCatalogue(
 	_catalogueVersion: "v1" | "v2" = "v2",
 ): Promise<{ models: Row[]; pricingComplete: boolean }> {
 	const rowsPromise = databasePageRows(env, query);
-	const metricsPromise = query.organisationId
+	const metricsPromise = query.includeMetrics === false ? Promise.resolve([]) : query.organisationId
 		? rowsPromise.then((rows) => weeklyMetrics(
 			env, rows.map((row) => String(row.model_id ?? "")).filter(Boolean),
 		))
@@ -422,9 +424,29 @@ export async function fetchModelsPageCatalogue(
 		models: attachModelsPageVariants(mergeModelWeeklyMetrics(
 		databaseRows.map(row => pricingByModel.get(String(row.model_id)) ?? row)
 			.filter((row) => String(row.access_scope ?? "public").trim().toLowerCase() === "public" && String(row.capability_status ?? "").trim().toLowerCase() !== "internal_testing")
-			.map(normalizeModelsPagePricing),
+			.map(normalizeModelsPagePricing)
+			.map((row) => query.includeMetrics === false ? {
+				...row, popularity_tokens_week: null, weekly_usage_metric: null,
+				weekly_usage_quantity: null, weekly_usage_unit: null,
+				throughput_week: null, latency_week: null,
+			} : row),
 			modelWeeklyMetrics,
 		)),
 		pricingComplete: true,
 	};
+}
+
+/** Publish metrics only for models whose identity is visible in the catalogue. */
+export async function fetchPublicModelWeeklyMetrics(env: Env): Promise<WeeklyMetricRow[]> {
+	const metrics = await weeklyMetrics(env, undefined, true);
+	const visibleIds = new Set<string>();
+	for (let offset = 0; offset < metrics.length; offset += 1_000) {
+		const { data, error } = await getDataClient(env).from("v2_models")
+			.select("model_slug")
+			.in("model_slug", metrics.slice(offset, offset + 1_000).map((row) => row.model_slug))
+			.eq("hidden", false).neq("status", "disabled");
+		if (error) throw error;
+		for (const row of data ?? []) visibleIds.add(row.model_slug);
+	}
+	return metrics.filter((row) => visibleIds.has(row.model_slug));
 }

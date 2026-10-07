@@ -98,7 +98,8 @@ describe("public and authenticated catalogue boundaries", () => {
 	});
 
 	it("omits cookies on public pricing and provider-health requests too", async () => {
-		const signal = new AbortController().signal;
+		const controller = new AbortController();
+		const signal = controller.signal;
 		const network = jest.fn(async () => Response.json({ rules: [], rows: [] }));
 		global.fetch = network;
 		await Promise.all([
@@ -107,9 +108,14 @@ describe("public and authenticated catalogue boundaries", () => {
 		]);
 		expect(network).toHaveBeenCalledTimes(2);
 		for (const call of (network as jest.Mock).mock.calls) {
-			expect(call[1].signal).toBe(signal);
+			expect(call[1].signal.aborted).toBe(false);
 			expect(call[1].cache).toBe("no-store");
 			expect(call[1].credentials).toBe("omit");
+		}
+		// Public fetches combine the caller signal with their timeout signal.
+		controller.abort();
+		for (const call of (network as jest.Mock).mock.calls) {
+			expect(call[1].signal.aborted).toBe(true);
 		}
 	});
 
