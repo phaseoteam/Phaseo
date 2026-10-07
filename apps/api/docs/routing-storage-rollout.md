@@ -25,7 +25,9 @@ including older revisions and unreferenced uploads under that request prefix.
    candidate rows, and the same request explanation and accounting values.
 4. After all old writers have drained, enable the historical transfer on the
    active production scheduler by setting `GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF`
-   to a fixed UTC timestamp. Leave it unset in staging, regional/performance
+   to a fixed UTC timestamp at least one hour in the past. The job rejects a
+   newer cutoff so the cursor cannot skip temporarily ineligible recent rows.
+   Leave it unset in staging, regional/performance
    Workers, and ordinary deployment configuration. Each scheduler tick
    transfers at most 25 requests sequentially; increase cadence only after
    measuring SQL latency and disk IO. The gateway currently owns cron; the

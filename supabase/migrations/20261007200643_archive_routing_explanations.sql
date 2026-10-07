@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: Defines opt-in routing archive RPCs that remove only verified R2-backed diagnostic copies; no DELETE executes during migration and accounting records are preserved.
 SET local check_function_bodies = off;
 
 CREATE TABLE "public"."gateway_routing_archive_deletions" (
