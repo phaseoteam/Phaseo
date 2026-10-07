@@ -4,6 +4,39 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public gateway catalogue", () => {
+	it.each([false, true])("prefers the canonical Luna route unless it starts in the future (future=%s)", async future => {
+		const alias = "openai:openai/chat-latest";
+		const canonical = "openai:openai/gpt-6-luna";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_model_provider_routes")) return Response.json([alias, canonical].map(id => ({
+				provider_api_model_id: id, provider_id: "openai", api_model_id: "openai/gpt-6-luna", model_id: "openai/gpt-6-luna",
+				is_active_gateway: true, effective_from: id === canonical && future ? "2099-01-01T00:00:00Z" : null,
+			})));
+			if (url.includes("v2_route_capabilities")) return Response.json([
+				{ provider_api_model_id: alias, capability_id: "text.generate", status: "active" },
+				{ provider_api_model_id: canonical, capability_id: "text.generate", status: "active" },
+				{ provider_api_model_id: canonical, capability_id: "decisions.make", status: "active", params: { input: true } },
+			]);
+			if (url.includes("v2_pricing_skus")) return Response.json([alias, canonical].map(id => ({
+				sku_id: id, provider_model_id: id, operation: "text.generate", service_tier_slug: "standard", status: "active",
+			})));
+			if (url.includes("v2_pricing_sku_meters")) return Response.json([alias, canonical].map(id => ({
+				sku_id: id, meter_key: "input_text_tokens", unit_quantity: 1_000_000, price_nanos: id === canonical ? 100_000_000 : 5_000_000_000,
+			})));
+			if (url.includes("v2_providers")) return Response.json([{ api_provider_id: "openai", api_provider_name: "OpenAI" }]);
+			if (url.includes("v2_labs")) return Response.json([{ lab_slug: "openai", name: "OpenAI" }]);
+			return Response.json([{ model_id: "openai/gpt-6-luna", name: "GPT-6 Luna", status: "active", organisation_id: "openai" }]);
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/gateway/models?available_only=true", {}, env);
+		expect(response.status).toBe(200);
+		const { models } = await response.json() as { models: Array<Record<string, unknown>> };
+		expect(models).toHaveLength(1);
+		expect(models[0]).toMatchObject({ modelId: "openai/gpt-6-luna", inputPricePerMillion: future ? 5 : 0.1,
+			capabilities: future ? ["text.generate"] : ["text.generate", "decisions.make"],
+		});
+		if (!future) expect(models[0].capabilityParamsById).toMatchObject({ "decisions.make": { input: true } });
+	});
 	it("composes available provider models and capabilities", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => { const url = String(input);
 			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
