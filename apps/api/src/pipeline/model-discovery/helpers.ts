@@ -1193,12 +1193,21 @@ export async function loadLatestConfiguredCoverageState(source?: string): Promis
 	return null;
 }
 
+export async function saveDiscordNotificationFingerprint(runId: string, fingerprint: string): Promise<void> {
+	const { error } = await getSupabaseAdmin()
+		.from("model_discovery_runs")
+		.update({ summary: { notificationFingerprint: fingerprint } })
+		.eq("id", runId);
+	if (error) throw new Error(error.message || "Failed to persist Discord delivery fingerprint");
+}
+
 export async function loadLatestDiscordNotificationFingerprint(source?: string): Promise<string | null> {
 	const supabase = getSupabaseAdmin();
 	let query = supabase
 		.from("model_discovery_runs")
 		.select("summary,status,started_at")
-		.in("status", ["completed", "completed_with_errors"])
+		// A delivered notification remains delivered even if subsequent state writes fail.
+		.in("status", ["running", "failed", "completed", "completed_with_errors"])
 		.order("started_at", { ascending: false });
 	const sourceValue = typeof source === "string" ? source.trim() : "";
 	if (sourceValue) query = query.eq("source", sourceValue);

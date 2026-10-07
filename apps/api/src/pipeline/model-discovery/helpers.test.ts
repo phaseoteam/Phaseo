@@ -9,6 +9,8 @@ import {
 	fetchProviderModels,
 	formatPricingSample,
 	getDiscordProviderFamilyId,
+	loadLatestDiscordNotificationFingerprint,
+	saveDiscordNotificationFingerprint,
 	resolveProviderModelsEndpoint,
 } from "./helpers";
 import {
@@ -847,4 +849,40 @@ describe("assertSafeDiscoverySnapshot", () => {
 	it("accepts normal provider churn", () => {
 		expect(() => assertSafeDiscoverySnapshot("provider", ["a", "b", "c", "d", "e"], ["a", "b", "c", "f"])).not.toThrow();
 	});
+});
+
+describe("Discord delivery receipts", () => {
+	it("retains delivery receipts from runs whose later state writes failed", async () => {
+		setupRuntimeFromEnv({} as any);
+		const fetchMock = installFetchMock([{
+			match: (url) => url.includes("/rest/v1/model_discovery_runs"),
+			response: jsonResponse([{ status: "failed", summary: { notificationFingerprint: "delivered" } }]),
+		}]);
+		try {
+			expect(await loadLatestDiscordNotificationFingerprint("cron")).toBe("delivered");
+			const query = new URL(fetchMock.calls[0].url).searchParams;
+			expect(query.get("status")).toContain("failed");
+			expect(query.get("status")).toContain("running");
+			expect(query.get("source")).toBe("eq.cron");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
+	it("records delivery independently of subsequent snapshot persistence", async () => {
+		setupRuntimeFromEnv({} as any);
+		const fetchMock = installFetchMock([{
+			match: (url) => url.includes("/rest/v1/model_discovery_runs"),
+			response: new Response(null, { status: 204 }),
+		}]);
+		try {
+			await saveDiscordNotificationFingerprint("run-id", "delivered");
+			expect(fetchMock.calls[0].method).toBe("PATCH");
+			expect(fetchMock.calls[0].bodyJson).toEqual({ summary: { notificationFingerprint: "delivered" } });
+			expect(new URL(fetchMock.calls[0].url).searchParams.get("id")).toBe("eq.run-id");
+		} finally {
+			fetchMock.restore();
+		}
+	});
+
 });
