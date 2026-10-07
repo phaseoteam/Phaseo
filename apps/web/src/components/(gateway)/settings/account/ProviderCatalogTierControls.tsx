@@ -25,7 +25,7 @@ export default function ProviderCatalogTierControls({ model, activeTier, onSelec
 		}}><option value="">{t("addTier")}</option>{names.filter((name) => !tiers.some((tier) => tier.service_tier === name)).map((name) => <option key={name} value={name}>{name}</option>)}</select></div>
 		{model.service_tiers && <div className="space-y-2"><Label htmlFor="catalog-upstream-tier">{t("upstreamTier")}</Label><select id="catalog-upstream-tier" className={selectClass} value={selected.upstream_service_tier ?? ""} onChange={(event) => onChange(tiers.map((tier) => tier.service_tier === selected.service_tier ? { ...tier, upstream_service_tier: event.target.value || null } : tier))}>
 			<option value="">{t("modelIdSelection")}</option>
-			{(selected.service_tier === "standard" ? ["default", "standard"] : selected.service_tier === "fast" ? ["fast", "priority"] : [selected.service_tier]).map((name) => <option key={name} value={name}>{name}</option>)}
+			{(selected.service_tier === "batch" ? [] : selected.service_tier === "standard" ? ["default", "standard"] : selected.service_tier === "fast" ? ["fast", "priority"] : [selected.service_tier]).map((name) => <option key={name} value={name}>{name}</option>)}
 		</select></div>}
 		{selected.service_tier !== "standard" && <Button type="button" variant="ghost" onClick={() => { onChange(tiers.filter((tier) => tier !== selected)); onSelect("standard"); }}>{t("removeTier")}</Button>}
 	</div>;
