@@ -1,0 +1,117 @@
+---
+title: "ICYMI: What We Shipped in September 2026"
+shortTitle: "ICYMI: September 2026"
+description: September brought regional routing, private models, Terraform, clearer pricing and request logs, and more capable Chat and SDK workflows.
+publishedAt: 2026-10-08
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-september-2026.svg
+tags:
+  - ICYMI
+  - Monthly Recap
+  - Product
+  - Models
+draft: false
+---
+
+September gave you more control over where requests run, which models your workspace can use, and how you manage the setup. We added regional routing, private models, and a Terraform provider, then made pricing, performance, and request history easier to inspect.
+
+This recap covers the work that shipped from **1 September 2026** through **30 September 2026**, based on merged pull requests and the month's changelog. Model listings and live Gateway routes are different things, and we call that out where it matters.
+
+## What shipped
+
+### Routing gained regions, private models, and another speed tier
+
+Regional text routing landed in September, giving supported requests a regional Gateway path. Provider-level rate limits and token-capacity reservations also landed, alongside work to reduce routing overhead and coordinate provider health.
+
+Workspaces can now add private models. We also added support for opted-in external providers and made BYOK-only routes visible in the catalogue, including support for BYOK-only batch routes. That gives teams more room to use their own deployments and credentials alongside Phaseo's hosted routes.
+
+Service tiers became more explicit. Text requests default to Standard, Chat gained per-request tier selection, and Ultrafast was added across the Gateway and pricing surfaces for supported routes. Provider performance views now respect the selected service tier, so a faster deployment is less likely to be hidden inside an average across different offerings.
+
+We also shipped model deprecation notifications and successor guidance. Choosing a route includes knowing when you will need to replace it.
+
+### Terraform and SDKs covered more of the workflow
+
+The [Phaseo Terraform provider](https://github.com/phaseoteam/Phaseo/pull/2164) landed with acceptance coverage and documentation for its supported surfaces. Teams can now bring more of their Phaseo setup into the same infrastructure workflow as the rest of their application.
+
+The CLI expanded its coding-agent integrations and runners, including safe OpenCode setup and a MiniMax Code runner. September also improved SDK transport consistency, generation, packaging, and workflow parity, and published the Java Agent SDK.
+
+SDKs gained waiting helpers for music, video, and batch jobs, plus live parameter support reports. Long-running jobs should not require every application to invent its own polling loop, and parameter discovery should reflect what a route actually accepts.
+
+MCP work focused on model discovery and accuracy: clearer provider pricing, model release dates, bounded catalogue discovery, and OAuth compatibility improvements. We also prepared the ChatGPT model discovery plugin. Preparation is not the same as a public plugin launch.
+
+### Pricing and request logs became easier to compare
+
+September rebuilt several benchmark views around Artificial Analysis and added Epoch capabilities benchmarks. Model pages gained interactive hourly provider performance, provider cache-rate charts, and better handling of sparse metrics and low-volume providers.
+
+Pricing views received service-tier comparisons, effective-price fixes, provider attribution, and clearer free and BYOK-only variants. Speech character pricing and provider meter metadata now appear where you compare rates, rather than requiring you to infer the billing unit from a model name.
+
+Request logs gained more consistent tables and response timelines. Chat responses link to their request logs, request samples cover more workflows, and end-to-end percentile latency became available through the web API. Realtime Sessions also moved to a table and detail sheet with session billing logs.
+
+The useful question is not just what a model costs on paper. It is what your request cost, how long it took, and which provider and tier handled it. These changes bring those answers closer together.
+
+### Chat expanded beyond text and made requests easier to reproduce
+
+Media and document rooms were enabled in Chat, while Realtime preview expanded to tested OpenAI and Grok models. GPT Live 1 became available in the Realtime room with voice selection, configurable Responses delegation, and optional web search.
+
+Gateway-managed tool responses now stream live, and Chat displays reasoning while a response streams. Model settings follow supported capabilities more closely, including restricting reasoning choices to the efforts a model accepts.
+
+We added a conversation navigation rail, display preferences, custom themes, and model and provider table settings. Saved chats regained code samples, and request samples were redesigned so it is easier to take a working conversation into an application.
+
+Decisions received integrations for TypeSafe Jev, SiliconFlow, Together Tev, Respan Span-01, and Upstage Solar Decide, alongside improvements to its composer, history, pricing, and validation messages.
+
+### Catalogue management moved closer to the people maintaining it
+
+We completed the database catalogue cutover and added catalogue management in the admin UI. Provider self-service catalogue management and an automated model-discovery review workflow followed.
+
+That work also changed how availability becomes public. Model discovery can notify when catalogue models become available, while announcement delivery and role mentions received tighter controls. New records, coming-soon models, and routable deployments need distinct states, especially during a busy release week.
+
+Regional provider names, primary locations, provider navigation, and routing help became clearer. We also cleaned up model identities and retired deprecated provider routes, including CrofAI from active routing.
+
+## Also shipped
+
+- API keys gained search and better organisation and selection.
+- Dynamic routing became a more compact workspace, and webhook endpoint settings were redesigned.
+- Webhook events were split by job type, with fixes to preserve kind-specific subscriptions.
+- Workspace privacy settings and account cache isolation received reliability fixes.
+- SCIM became more compatible with provider-managed user attributes.
+- Auto Top-Up gained an MFA consent flow, and wallet purchases now link to Stripe receipts.
+- Global search gained documentation pages and better result ordering; workspace switching and mobile menus were refined.
+- Batch result downloads became more consistent across providers, with limits on repeated downloads.
+- TinyFish became an optional web search engine.
+- Next.js and other dependencies received security and compatibility updates.
+
+## Model highlights
+
+The month opened with Claude Fable 5.1 and Gemini 3.8 Flash, followed by GPT-6 Astra and Astra Pro. Later Gateway work added support for GPT-6 Luna and Sol, then GPT-6.1 Sol Pro mode and Astra Ultrafast routing.
+
+Image, speech, and realtime coverage expanded too. September's catalogue updates included GPT Image 2.5 Flare and Sunburst, Gemini 3.8 TTS, and ElevenLabs v4 speech models. Claude Sonnet 5.5 arrived near the end of the month with Anthropic and cloud-provider routes.
+
+DeepSeek V4.1 Flash, Mercury 2.5, the Nex N2.5 family, and Xiaomi MiMo routing were part of the month's broader coverage work. The changelog also tracked Suno V6, V6 Wild, and V6 Mini. A catalogue release entry does not guarantee a Phaseo-hosted route; check the model's provider availability before building around it.
+
+Browse the latest release data here:
+
+- [Explore recent updates here](/updates)
+
+## Shipping snapshot
+
+GitHub history shows **442 merged pull requests** between 1 and 30 September. The September changelog records **22 model release entries**, including preview and catalogue-only entries. Most of the product work clustered around routing controls, developer tooling, pricing and observability, Chat workflows, and catalogue management.
+
+## Models released in September 2026
+
+The September changelog includes these model release entries:
+
+- 1 September: Claude Fable 5.1 (`anthropic/claude-fable-5.1`) and Muse Voice Transcribe 1.0 (`meta/muse-voice-transcribe-1.0`)
+- 2 September: Gemini 3.8 Flash (`google/gemini-3.8-flash`), Muse Spark 1.3 (`meta/muse-spark-1.3`), Muse Spark 1.3 Contributor (`meta/muse-spark-1.3-contributor`), and Qwen 3.8 Max 0902 (`qwen/qwen3.8-max-0902`)
+- 3 September: GPT-6 Astra (`openai/gpt-6-astra`), GPT-6 Astra Pro (`openai/gpt-6-astra-pro`), Ling 3.0 Flash Sante (`inclusionai/ling-3.0-flash-sante`), and Ling 3.0 Flash VL (`inclusionai/ling-3.0-flash-vl`)
+- 8 September: GPT Image 2.5 Flare (`openai/gpt-image-2.5-flare`), GPT Image 2.5 Sunburst (`openai/gpt-image-2.5-sunburst`), DeepSeek V4.1 Flash Preview (`deepseek/deepseek-v4.1-flash-preview`), Mercury 2.5 (`inception/mercury-2.5`), Nex N2.5 Max (`nex-agi/nex-n2.5-max`), Nex N2.5 Mini (`nex-agi/nex-n2.5-mini`), and Nex N2.5 Pro (`nex-agi/nex-n2.5-pro`)
+- 9 September: Suno V6 (`suno/suno-v6`), Suno V6 Wild (`suno/suno-v6-wild`), and Suno V6 Mini (`suno/suno-v6-mini`)
+- 10 September: DeepSeek V4.1 Flash (`deepseek/deepseek-v4.1-flash`)
+- 28 September: Claude Sonnet 5.5 (`anthropic/claude-sonnet-5.5`)
+
+## Next up
+
+September added more choices across regions, credentials, service tiers, and workloads. The next step is to make those choices easier to test and operate together, with clearer route capabilities and fewer provider-specific surprises.
+
+If you are revisiting your setup, start with [model availability and pricing](/models), compare the routes that fit your workload, and use request logs to check what happened after the first real request.

@@ -1,0 +1,31 @@
+<svg width="1200" height="675" viewBox="0 0 1200 675" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="675" fill="#060707"/>
+  <defs>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(870 370) rotate(145) scale(700 500)">
+      <stop stop-color="#6AF0D1" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#060707" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="675" fill="url(#glow)"/>
+  <g stroke="#6AF0D1" stroke-opacity=".12">
+    <path d="M0 135H1200M0 270H1200M0 405H1200M0 540H1200"/>
+    <path d="M240 0V675M480 0V675M720 0V675M960 0V675"/>
+  </g>
+  <text x="80" y="103" fill="#6AF0D1" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="5">PHASEO / MONTHLY RECAP</text>
+  <text x="80" y="225" fill="#F4F7F6" font-family="Arial, sans-serif" font-size="96" font-weight="700">ICYMI</text>
+  <text x="84" y="292" fill="#DCE7E2" font-family="Arial, sans-serif" font-size="38">September 2026</text>
+  <g stroke="#6AF0D1" stroke-width="4">
+    <path d="M150 465H405L510 390H810L930 465H1050"/>
+    <path d="M405 465L510 540H810L930 465" stroke-opacity=".45"/>
+  </g>
+  <g fill="#0C1815" stroke="#6AF0D1" stroke-width="3">
+    <circle cx="150" cy="465" r="24"/>
+    <circle cx="405" cy="465" r="24"/>
+    <circle cx="660" cy="390" r="24"/>
+    <circle cx="660" cy="540" r="24"/>
+    <circle cx="930" cy="465" r="24"/>
+    <circle cx="1050" cy="465" r="24"/>
+  </g>
+  <circle cx="660" cy="390" r="9" fill="#6AF0D1"/>
+  <circle cx="660" cy="540" r="9" fill="#F44040"/>
+</svg>
