@@ -21,3 +21,5 @@ Cada nivel necesita precios explícitos para todas las unidades facturadas. `pri
 El sondeo y los webhooks firmados admiten ambas versiones. Seleccione el nivel antes de editarlo en la configuración del proveedor. Los errores de correspondencia se muestran por modelo sin impedir la importación de modelos válidos.
 
 Consulte el ejemplo completo y los esquemas JSON en la [guía del contrato en inglés](/v1/guides/provider-catalog).
+
+En los catálogos API, los cambios del panel son persistentes. Las importaciones actualizan campos sin cambios manuales. **Usar valor del feed** elimina un cambio manual. El panel muestra el valor del feed, el efectivo, quién lo editó y cuándo; la actividad registra ediciones y restauraciones. Los modelos añadidos manualmente siguen siendo ofertas locales. Eliminar un modelo del feed desactiva esa oferta aunque algunos campos tengan cambios. Los catálogos manuales siguen siendo compatibles.

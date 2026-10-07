@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { providerReleaseInstant } from "@/lib/providerReleaseTime";
 import { nanosToUsd, usdToNanos } from "@/lib/providerPricing";
 import ProviderCatalogTierControls from "./ProviderCatalogTierControls";
+import ProviderCatalogChanges from "./ProviderCatalogChanges";
 import {
 	fetchProviderCatalogAction,
 	fetchProviderCatalogVersionAction,
@@ -117,7 +118,9 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 	const [selectedIndex, setSelectedIndex] = React.useState(0);
 	const [activeTier, setActiveTier] = React.useState("standard");
 	const [activePanel, setActivePanel] = React.useState<"details" | "pricing" | "release">("details");
-	const [showModelList, setShowModelList] = React.useState(false);
+	const [showModelList, setShowModelList] = React.useState(true);
+	const [modelSearch, setModelSearch] = React.useState("");
+	const [catalogInfo, setCatalogInfo] = React.useState<ProviderManagedCatalog | null>(null);
 	const [source, setSource] = React.useState<ProviderManagedCatalog["source"] | null>(null);
 	const [latestRun, setLatestRun] = React.useState<ProviderManagedCatalog["latest_run"]>(null);
 	const browserZone = React.useSyncExternalStore(() => () => {}, browserTimeZone, () => "UTC");
@@ -134,11 +137,13 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 	const zoneValid = validTimeZone(chosenZone);
 	const zone = zoneValid ? chosenZone.trim() : "UTC";
 	const catalogVersion = source?.catalog_version;
+	const td = useTranslations("SettingsUI.providerDashboard");
 	const selectedBase = models[selectedIndex];
 	const selectedTier = selectedBase?.service_tiers?.find((tier) => tier.service_tier === activeTier)
 		?? selectedBase?.service_tiers?.find((tier) => tier.service_tier === "standard");
 	const selected = selectedTier ? { ...selectedBase, pricing: selectedTier.pricing as Price[], provider_model_slug: selectedTier.provider_model_slug, availability: selectedTier.availability ?? selectedBase.availability } : selectedBase;
 	const availabilityLabel = (value: string) => t.has(("identity.availability." + value) as never) ? t(("identity.availability." + value) as never) : t("identity.availability.other");
+	const routeStatusLabel = (value?: string) => value === "unknown" ? t("identity.unknown") : value && t.has(("identity.routeStatus." + value) as never) ? t(("identity.routeStatus." + value) as never) : t("providerCatalogCopy.notActive");
 	const reviewStatusLabel = (value: string) => t.has(("identity.reviewStatus." + value) as never) ? t(("identity.reviewStatus." + value) as never) : t("identity.reviewStatus.other");
 
 	async function loadCatalog(slug: string) {
@@ -153,6 +158,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			setModels(result.models ?? []);
 			setSelectedIndex((current) => Math.min(current, Math.max((result.models?.length ?? 1) - 1, 0)));
 			setSource(result.source);
+			setCatalogInfo(result);
 			setLatestRun(result.latest_run);
 			setDirty(false);
 			setStale(false);
@@ -265,6 +271,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			await invalidateAccountQueries(queryClient);
 			setModels(result.models ?? []);
 			setSource(result.source);
+			setCatalogInfo(result);
 			setLatestRun(result.latest_run);
 			setDirty(false);
 			setStale(false);
@@ -274,6 +281,17 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			if (error instanceof Error && /Catalog changed|409/.test(error.message)) setStale(true);
 			toast.error(error instanceof Error && error.message === "provider_price_invalid" ? t("providerCatalogCopy.priceRequired") : error instanceof Error ? localizedProviderCatalogMessage(error.message, t) : t("providerCatalogCopy.saveFailed"));
 		} finally { setSaving(false); }
+	}
+
+	async function revertField(field: string, modelId = selectedBase?.id) {
+		if (!source || !modelId || dirty || saving) return;
+		setSaving(true);
+		try {
+			const result = await updateProviderCatalogAction(providerSlug, { revert: { modelId, field } }, source.catalog_version);
+			if (!result.ok) { setValidationIssues(result.issues); return; }
+			await loadCatalog(providerSlug);
+		} catch (error) { toast.error(error instanceof Error ? error.message : td("revertFailed")); }
+		finally { setSaving(false); }
 	}
 
 	async function switchToRemote() {
@@ -286,6 +304,7 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 			setValidationIssues([]);
 			setModels(result.models ?? []);
 			setSource(result.source);
+			setCatalogInfo(result);
 			setLatestRun(result.latest_run);
 			setDirty(false);
 			setStale(false);
@@ -309,10 +328,12 @@ export default function ProviderCatalogManager({ providers, onDirtyChange }: { p
 		{validationIssues.length ? <ul role="alert" className="space-y-1 text-sm text-destructive">{validationIssues.map((issue,index) => <li key={index}><code>{issue.path}</code>: {issue.message}</li>)}</ul> : null}
 		{!source && !loadError ? <p className="py-10 text-sm text-muted-foreground">{t("providerCatalogCopy.loading")}</p> : null}
 		{source ? <>
+			{source.refresh_requested ? <p role="status" className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">{td("pendingSync")}</p> : null}
 			<div className="flex flex-wrap items-end justify-between gap-4 text-xs text-muted-foreground"><div>{source.management_mode === "managed" ? t("providerCatalogCopy.managedInPhaseo") : t("providerCatalogCopy.remoteImported")}{latestRun ? ` · ${reviewStatusLabel(latestRun.review_status)}` : ""}{source.last_error ? <span className="ml-2 text-amber-600">{t("providerCatalogCopy.lastSync", {error: localizedProviderCatalogMessage(source.last_error, t)})}</span> : null}</div>{source.management_mode === "managed" && source.catalog_url ? <Button size="sm" variant="ghost" onClick={() => void switchToRemote()} disabled={saving}>{t("providerCatalogCopy.useRemote")}</Button> : null}</div>
 			<div className="flex items-center justify-between gap-3 border-y border-border/70 py-2"><button type="button" aria-expanded={showModelList} onClick={() => setShowModelList((current) => !current)} className="flex items-center gap-2 text-sm font-medium hover:text-primary">{t("providerCatalogCopy.models")} <span className="text-muted-foreground">{models.length}</span><ChevronDown className={`size-4 text-muted-foreground transition-transform ${showModelList ? "rotate-180" : ""}`} /></button><Button type="button" size="sm" variant="outline" disabled={saving} onClick={() => { addModel(); setShowModelList(false); }}><Plus className="mr-1.5 size-3.5" />{t("providerCatalogCopy.addModel")}</Button></div>
-			{showModelList ? models.length ? <div className="max-h-52 divide-y divide-border/70 overflow-y-auto border-b border-border/70">{models.map((model, index) => <button key={`${index}:${model.id}`} type="button" aria-pressed={selectedIndex === index} onClick={() => { setSelectedIndex(index); setShowModelList(false); }} className={`flex w-full items-center justify-between gap-4 px-3 py-3 text-left transition-colors hover:bg-muted/30 ${selectedIndex === index ? "bg-muted/50" : ""}`}><span className="min-w-0"><span className="block truncate text-sm font-medium">{model.name || t("providerCatalogCopy.untitled")}</span><span className="block truncate font-mono text-xs text-muted-foreground">{model.id}</span></span><span className="shrink-0 text-xs text-muted-foreground">{model.availability === "not_ready" ? t("providerCatalogCopy.notReady") : model.availability === "ready" && model.available_from ? t("providerCatalogCopy.scheduled") : availabilityLabel(model.availability)}</span></button>)}</div> : <p className="border-b py-10 text-center text-sm text-muted-foreground">{t("providerCatalogCopy.empty")}</p> : null}
+			{showModelList ? <div className="space-y-3"><Input aria-label={td("searchModels")} placeholder={td("searchModels")} value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} /><div className="max-h-80 overflow-auto rounded-lg border"><table className="w-full text-left text-sm"><thead className="sticky top-0 bg-muted"><tr><th className="px-3 py-2">{t("providerCatalogCopy.models")}</th><th className="px-3 py-2">{t("providerCatalogCopy.availability")}</th><th className="px-3 py-2">{td("tiers")}</th><th className="px-3 py-2">{t("providerCatalogCopy.pricing")}</th><th className="px-3 py-2">{t("providerCatalogCopy.route")}</th><th className="px-3 py-2">{td("source")}</th></tr></thead><tbody>{models.map((model, index) => ({ model, index })).filter(({model}) => (model.name + " " + model.id).toLowerCase().includes(modelSearch.toLowerCase())).map(({ model, index }) => <tr key={index} className={selectedIndex === index ? "bg-primary/5" : "border-t"}><td className="px-3 py-3"><button type="button" className="text-left hover:text-primary" aria-pressed={selectedIndex === index} onClick={() => setSelectedIndex(index)}><span className="block font-medium">{model.name}</span><span className="block font-mono text-xs text-muted-foreground">{model.id}</span><span className="block text-xs text-muted-foreground">{model.provider_model_slug}</span></button></td><td className="px-3 py-3">{availabilityLabel(model.availability)}</td><td className="px-3 py-3"><code>{model.service_tiers?.map(tier => tier.service_tier).join(", ") || "standard"}</code></td><td className="px-3 py-3 text-xs">{model.pricing.slice(0, 2).map((price,index) => <span key={index} className="block whitespace-nowrap">{price.display_label} · $ {nanosToUsd(price.price_nanos)} / {price.display_unit}</span>)}</td><td className="px-3 py-3"><span className="block">{routeStatusLabel(catalogInfo?.model_states?.[model.id]?.route_projection_status)}</span>{catalogInfo?.model_states?.[model.id]?.route_projection_error === "provider_route_blocked" ? <span className="mt-1 block max-w-72 text-xs text-destructive">{td("routeBlocked")}</span> : catalogInfo?.model_states?.[model.id]?.decision_reason && catalogInfo.model_states[model.id].decision !== "approved" ? <span className="mt-1 block max-w-72 text-xs text-destructive">{localizedProviderCatalogMessage(catalogInfo.model_states[model.id].decision_reason!, t)}</span> : null}</td><td className="px-3 py-3">{Object.keys(catalogInfo?.overrides?.[model.id] ?? {}).length ? td("overrides") : source.management_mode === "remote" ? td("feed") : td("manual")}</td></tr>)}</tbody></table></div></div> : null}
 			{selectedBase && <ProviderCatalogTierControls model={selectedBase} activeTier={selectedTier?.service_tier ?? 'standard'} onSelect={setActiveTier} onChange={(service_tiers) => editModel({ service_tiers })} />}
+			{catalogInfo ? <ProviderCatalogChanges catalog={catalogInfo} modelId={selectedBase?.id ?? ""} disabled={dirty || saving || stale} onRevert={(field, modelId) => void revertField(field, modelId)} /> : null}
 			{selected ? <div className="pt-2"><div className="flex items-center justify-between gap-3 pb-4"><div className="min-w-0"><h3 className="truncate text-lg font-semibold">{selected.name || t("providerCatalogCopy.untitled")}</h3><p className="truncate font-mono text-xs text-muted-foreground">{selected.id}</p></div><Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive" onClick={removeModel}><Trash2 className="mr-1.5 size-3.5" />{t("providerCatalogCopy.remove")}</Button></div>
 				<div role="tablist" aria-label={t("providerCatalogCopy.editor")} className="flex gap-6 border-b border-border/70">{(["details", "pricing", "release"] as const).map((panel) => <button key={panel} type="button" role="tab" aria-selected={activePanel === panel} onClick={() => setActivePanel(panel)} className={`-mb-px border-b-2 py-3 text-sm capitalize transition-colors ${activePanel === panel ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}>{t(panel === "details" ? "strings.Details" : panel === "pricing" ? "providerCatalogCopy.pricing" : "providerCatalogCopy.release")}</button>)}</div>
 				{activePanel === "details" ? <><Section title={t("providerCatalogCopy.identity")}><div className="grid gap-4 sm:grid-cols-2"><Field label={t("providerCatalogCopy.modelName")} htmlFor="catalog-model-name"><Input id="catalog-model-name" value={selected.name} onChange={(event) => editModel({ name: event.target.value })} /></Field><Field label={t("providerCatalogCopy.availability")} htmlFor="catalog-model-availability"><select id="catalog-model-availability" className={selectClass} value={selected.availability} onChange={(event) => editModel({ availability: event.target.value as EditableModel["availability"] })}><option value="ready">{t("providerCatalogCopy.ready")}</option><option value="not_ready">{t("providerCatalogCopy.notReady")}</option><option value="degraded">{t("providerCatalogCopy.degraded")}</option><option value="deprecated">{t("providerCatalogCopy.deprecated")}</option><option value="retired">{t("providerCatalogCopy.retired")}</option></select></Field><Field label={t("providerCatalogCopy.canonicalId")} htmlFor="catalog-model-id"><Input id="catalog-model-id" className="font-mono" value={selected.id} onChange={(event) => editModel({ id: event.target.value })} placeholder="publisher/model" /></Field><Field label={t("providerCatalogCopy.providerModelID")} htmlFor="catalog-provider-model-id"><Input id="catalog-provider-model-id" className="font-mono" value={selected.provider_model_slug} onChange={(event) => editModel({ provider_model_slug: event.target.value })} /></Field><Field label={t("providerCatalogCopy.description")} htmlFor="catalog-model-description" className="sm:col-span-2"><Textarea id="catalog-model-description" value={selected.description ?? ""} onChange={(event) => editModel({ description: event.target.value || null })} /></Field></div></Section>

@@ -4610,7 +4610,8 @@
 		"search": "Rechercher des paramètres",
 		"searchPlaceholder": "Rechercher des paramètres…",
 		"becomeProvider": "Devenir fournisseur",
-		"empty": "Aucun paramètre trouvé."
+		"empty": "Aucun paramètre trouvé.",
+		"providerProfile": "Profil du fournisseur"
 	},
 	"settingsAvailability": {
 		"title": "Les paramètres sont temporairement indisponibles",
@@ -4842,7 +4843,8 @@
 		"removed": "Supprimé",
 		"reject": "Rejeter",
 		"integrations": "Intégrations",
-		"providerSettings": "Paramètres du fournisseur"
+		"providerSettings": "Paramètres du fournisseur",
+		"providerProfile": "Profil du fournisseur"
 	},
 	"sensitiveValues": {
 		"mask": "Masquer {label}",
@@ -5808,5 +5810,47 @@
 		"nameConflict": "Plusieurs clés portent ce nom.",
 		"openFromTable": "Ouvrez une clé depuis le tableau des clés API.",
 		"limitInvalid": "Les limites doivent être nulles ou positives."
+	},
+	"providerDashboard": {
+		"profile": "Profil du fournisseur",
+		"overrides": "Modifications manuelles",
+		"feedValue": "Dernière valeur du flux",
+		"effectiveValue": "Valeur effective",
+		"useFeedValue": "Utiliser la valeur du flux",
+		"activity": "Activité du catalogue",
+		"noEdits": "Aucune modification manuelle",
+		"phaseo": "Phaseo",
+		"provider": "Fournisseur",
+		"override": "Modifié",
+		"revert": "Rétabli",
+		"searchModels": "Rechercher des modèles",
+		"tiers": "Niveaux de service",
+		"source": "Source",
+		"feed": "Flux API",
+		"manual": "Manuel",
+		"revertFailed": "Impossible de rétablir ce champ",
+		"refreshNow": "Actualiser maintenant",
+		"feedUrl": "URL du flux",
+		"syncStatus": "État de synchronisation",
+		"lastSuccess": "Dernier import réussi",
+		"nextSync": "Prochaine récupération prévue",
+		"never": "Pas encore",
+		"invalidUrl": "URL invalide",
+		"needsAttention": "Intervention requise",
+		"healthy": "À jour",
+		"syncFailed": "La synchronisation a échoué. Les offres existantes restent disponibles.",
+		"webhook": "Webhook signé",
+		"ownerOnly": "Seuls les propriétaires et administrateurs peuvent gérer les webhooks.",
+		"refreshFailed": "Échec de l’actualisation",
+		"refreshed": "Actualisation terminée",
+		"statusUnavailable": "État indisponible",
+		"providerId": "ID fournisseur",
+		"approval": "Approbation du fournisseur",
+		"website": "Site web",
+		"access": "Accès",
+		"notSet": "Non configuré",
+		"notVerified": "Non vérifié",
+		"routeBlocked": "Phaseo a suspendu cette route. Contactez le support.",
+		"pendingSync": "Les modifications enregistrées attendent la synchronisation. Les offres publiques utilisent le dernier import réussi."
 	}
 }

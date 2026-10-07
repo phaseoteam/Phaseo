@@ -21,3 +21,5 @@ Jede Stufe benötigt ausdrückliche Preise für alle berechneten Einheiten. `pri
 Polling und signierte Webhooks unterstützen beide Versionen. In den Anbietereinstellungen wählen Sie vor einer Änderung die Stufe aus. Ungültige Modellzuordnungen werden einzeln angezeigt und verhindern nicht den Import gültiger Modelle.
 
 Das vollständige Beispiel und beide JSON-Schemata finden Sie im [englischen Vertragsleitfaden](/v1/guides/provider-catalog).
+
+Bei API-Katalogen bleiben Änderungen im Dashboard als Anpassungen erhalten. Importe aktualisieren Felder ohne Anpassung. **Feed-Wert verwenden** entfernt eine Anpassung. Das Dashboard zeigt Feed-Wert, wirksamen Wert, Bearbeiter und Zeitpunkt; Änderungen und Rücksetzungen werden protokolliert. Manuell hinzugefügte Modelle bleiben lokale Angebote. Aus dem Feed entfernte Modelle werden deaktiviert, auch wenn einzelne Felder bearbeitet wurden. Rein manuelle Kataloge bleiben unterstützt.

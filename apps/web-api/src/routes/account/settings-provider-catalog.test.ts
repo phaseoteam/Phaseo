@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
+import { normalizeProviderCatalog } from "./provider-catalog";
+import { normalizedCatalogDocument } from "./provider-catalog-overrides";
 
 const env = {
 	ENV: "development" as const,
@@ -91,7 +93,7 @@ describe("provider catalog management API", () => {
 		await expect(response.json()).resolves.toMatchObject({ error: "provider_application_not_approved" });
 		expect(vi.mocked(fetch).mock.calls.some(([input, init]) => {
 			const url = input instanceof Request ? input.url : String(input);
-			return url.includes("/rest/v1/provider_catalog_sources") && (input instanceof Request ? input.method : init?.method) === "PATCH";
+			return url.includes("/rest/v1/rpc/restore_provider_catalog_feed") && (input instanceof Request ? input.method : init?.method) === "POST";
 		})).toBe(false);
 	});
 
@@ -112,7 +114,7 @@ describe("provider catalog management API", () => {
 		await expect(response.json()).resolves.toMatchObject({ error: "provider_application_not_approved" });
 		expect(vi.mocked(fetch).mock.calls.some(([input, init]) => {
 			const url = input instanceof Request ? input.url : String(input);
-			return url.includes("/rest/v1/provider_catalog_sources") && (input instanceof Request ? input.method : init?.method) === "PATCH";
+			return url.includes("/rest/v1/rpc/restore_provider_catalog_feed") && (input instanceof Request ? input.method : init?.method) === "POST";
 		})).toBe(false);
 	});
 
@@ -134,7 +136,7 @@ describe("provider catalog management API", () => {
 		expect(response.status).toBe(200);
 		expect(vi.mocked(fetch).mock.calls.some(([input, init]) => {
 			const url = input instanceof Request ? input.url : String(input);
-			return url.includes("/rest/v1/provider_catalog_sources") && (input instanceof Request ? input.method : init?.method) === "PATCH";
+			return url.includes("/rest/v1/rpc/restore_provider_catalog_feed") && (input instanceof Request ? input.method : init?.method) === "POST";
 		})).toBe(true);
 	});
 
@@ -180,12 +182,12 @@ describe("provider catalog management API", () => {
 	it("compares the document revision rather than the background sync timestamp", async () => {
 		stubEditorRead();
 		const original = vi.mocked(fetch).getMockImplementation()!;
-		let patchUrl = "";
+		let payload: Record<string, unknown> = {};
 		vi.mocked(fetch).mockImplementation(async (input, init) => {
 			const url = input instanceof Request ? input.url : String(input);
-			if (url.includes("provider_catalog_sources") && init?.method === "PATCH") {
-				patchUrl = url;
-				return new Response("[]", { status: 200 });
+			if (url.includes("rpc/restore_provider_catalog_feed") && init?.method === "POST") {
+				payload = JSON.parse(String(init.body));
+				return Response.json({ message: "provider_catalog_version_conflict" }, { status: 409 });
 			}
 			return original(input, init);
 		});
@@ -194,8 +196,9 @@ describe("provider catalog management API", () => {
 			body: JSON.stringify({ catalog: { mode: "remote" }, expectedUpdatedAt: "2026-09-10T12:00:00Z" }),
 		}, env);
 		expect(response.status).toBe(409);
-		expect(new URL(patchUrl).searchParams.get("managed_updated_at")).toBe("eq.2026-09-10T12:00:00Z");
-		expect(new URL(patchUrl).searchParams.has("updated_at")).toBe(false);
+		expect(payload.p_expected_version).toBe("2026-09-10T12:00:00Z");
+		expect(payload.p_actor_id).toBe("provider-user");
+		expect(payload.p_actor_kind).toBe("provider");
 	});
 
 	it("accepts the wrapped remote-mode payload used by the settings action", async () => {
@@ -207,5 +210,26 @@ describe("provider catalog management API", () => {
 		}, env);
 
 		expect(response.status).toBe(200);
+	});
+	it.each(["admin", "user"])("keeps a remote feed enabled and attributes %s edits to the authenticated actor", async (role) => {
+		stubEditorRead({ role });
+		const original = vi.mocked(fetch).getMockImplementation()!;
+		const feed = normalizeProviderCatalog({ data: [{ id: "synthetic/model-a", name: "Feed name", provider_model_slug: "native", availability: "not_ready", capabilities: ["chat.completions"] }] }).allModels;
+		let saved: Record<string, unknown> = {};
+		vi.mocked(fetch).mockImplementation(async (input, init) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/rest/v1/provider_catalog_sources") && (!init?.method || init.method === "GET")) return Response.json([{ provider_slug: "synthetic", management_mode: "remote", status: "active", catalog_url: "https://provider.example/catalog.json", feed_models: feed, catalog_overrides: { "synthetic/model-a": { name: { value: "Pinned", actor_id: "previous-operator", actor_kind: "phaseo", edited_at: "2026-10-07T00:00:00Z" } } }, updated_at: "2026-10-07T00:00:00Z" }]);
+			if (url.includes("/rpc/save_provider_catalog_overrides")) { saved = JSON.parse(String(init?.body)); return new Response(null, { status: 204 }); }
+			return original(input, init);
+		});
+		const response = await app.request("https://phaseo.app/api/account/settings/provider-onboarding/catalog/synthetic", {
+			method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ expectedUpdatedAt: "2026-10-07T00:00:00Z", actor_id: "forged", actor_kind: "phaseo", catalog: normalizedCatalogDocument([{ ...feed[0], name: "Pinned", description: "Editorial correction" }]) }),
+		}, env);
+		expect(response.status).toBe(200);
+		expect(saved.p_actor_id).toBe("provider-user");
+		expect(saved.p_actor_kind).toBe(role === "admin" ? "phaseo" : "provider");
+		expect(saved.p_changes).toEqual([{ model_id: "synthetic/model-a", field: "description", value: "Editorial correction" }]);
+		expect((await response.json()).source.management_mode).toBe("remote");
 	});
 });

@@ -371,6 +371,8 @@ export type SettingsProviderOnboardingInitialData = {
 		name?: string;
 		operatingStatus?: string;
 		provider_review_status?: string | null;
+		provider_approval_status?: string | null;
+		website_url?: string | null;
 		canManageCatalog?: boolean;
 		workspace_id: string;
 		role: string;

@@ -10,6 +10,7 @@ import {
 	type ProviderCatalogPreview,
 } from "./provider-catalog";
 import { syncProviderCatalog } from "./provider-catalog-sync";
+import { applyCatalogOverrides, catalogOverrideChanges, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
 import { isProviderAccessBlockedByReview, latestApplicableProviderReviewApplication } from "./provider-review-access";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
@@ -139,12 +140,13 @@ function catalogDocument(data: Record<string, any>[]) {
 }
 
 async function readProviderCatalog(client: any, providerSlug: string) {
-	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult] = await Promise.all([
-		client.from("v2_providers").select("provider_slug,name,status").eq("provider_slug", providerSlug).maybeSingle(),
-		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at").eq("provider_slug", providerSlug).maybeSingle(),
+	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult] = await Promise.all([
+		client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,catalog_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
 		client.from("provider_catalog_models").select("model_slug,provider_model_slug,name,description,input_modalities,output_modalities,context_length,max_output_tokens,status,availability,available_from,deprecated_at,shutdown_at,metadata,updated_at").eq("provider_slug", providerSlug).eq("status", "active").order("model_slug", { ascending: true }),
 		client.from("provider_catalog_model_capabilities").select("model_slug,capability_id,parameters,status").eq("provider_slug", providerSlug).eq("status", "active").order("capability_id", { ascending: true }),
 		client.from("provider_catalog_sync_runs").select("id,status,review_status,model_count,created_at,completed_at").eq("provider_slug", providerSlug).neq("status", "not_modified").order("created_at", { ascending: false }).limit(1),
+		client.from("provider_catalog_edit_events").select("id,model_slug,field,actor_id,actor_name,actor_kind,action,created_at").eq("provider_slug", providerSlug).order("created_at", { ascending: false }).limit(100),
 	]);
 	if (providerResult.error || sourceResult.error || modelsResult.error || capabilitiesResult.error || runResult.error) throw new Error("provider_catalog_unavailable");
 	if (!providerResult.data || !sourceResult.data) return null;
@@ -163,6 +165,25 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			model.metadata && typeof model.metadata === "object" ? model.metadata.pricing : [],
 		));
 	const observedDocument = catalogDocument(observedModels);
+	const statesResult = runResult.data?.[0]?.id
+		? await client.from("provider_catalog_sync_models").select("model_slug,canonical_model_slug,decision,decision_reason,route_projection_status,route_projection_error").eq("run_id", runResult.data[0].id)
+		: { data: [], error: null };
+	if (statesResult.error) throw new Error("provider_catalog_model_status_unavailable");
+	if (eventsResult.error) throw new Error("provider_catalog_activity_unavailable");
+	const feedModels = sourceResult.data.feed_models ?? normalizeProviderCatalog(observedDocument).allModels;
+	const effectiveDocument = sourceResult.data.management_mode === "remote"
+		? normalizedCatalogDocument(applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) : null;
+	const routes = await client.from("v2_model_provider_routes").select("model_slug,provider_model_slug,status,routing_enabled,access_scope,phaseo_status,v2_route_capabilities(status,effective_from,effective_to)").eq("provider_slug", providerSlug);
+	const modelStates = Object.fromEntries((statesResult.data ?? []).map((model: any) => [model.model_slug, model])) as Record<string, any>;
+	for (const model of applyCatalogOverrides(feedModels, sourceResult.data.catalog_overrides ?? {})) {
+		const slugs = new Set([model.providerModelSlug, ...(model.serviceTiers ?? []).map((tier) => tier.providerModelSlug)]);
+		const current = modelStates[model.id] ?? {};
+		const offers = (routes.data ?? []).filter((route: any) => slugs.has(route.provider_model_slug) && [model.id, current.canonical_model_slug].includes(route.model_slug));
+		const now = Date.now();
+		const live = providerResult.data.routable && providerResult.data.routing_enabled && offers.some((route: any) => route.access_scope === "public" && route.routing_enabled && ["active", "degraded"].includes(route.status) && route.v2_route_capabilities?.some((capability: any) => ["active", "degraded"].includes(capability.status) && (!capability.effective_from || Date.parse(capability.effective_from) <= now) && (!capability.effective_to || Date.parse(capability.effective_to) > now)));
+		const blocked = offers.some((route: any) => route.phaseo_status === "blocked");
+		modelStates[model.id] = { ...current, route_projection_status: routes.error ? "unknown" : live ? "enabled" : blocked ? "failed" : "not_projected", route_projection_error: !live && blocked ? "provider_route_blocked" : current.route_projection_error };
+	}
 	const managedCatalog = sourceResult.data.managed_catalog && typeof sourceResult.data.managed_catalog === "object" && !Array.isArray(sourceResult.data.managed_catalog)
 		? sourceResult.data.managed_catalog
 		: null;
@@ -172,14 +193,19 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			catalog_url: sourceResult.data.catalog_url,
 			management_mode: sourceResult.data.management_mode ?? "remote",
 			managed_updated_at: sourceResult.data.managed_updated_at,
-			catalog_version: sourceResult.data.managed_updated_at ?? sourceResult.data.updated_at,
+			catalog_version: sourceResult.data.management_mode === "remote" ? sourceResult.data.catalog_updated_at ?? sourceResult.data.updated_at : sourceResult.data.managed_updated_at ?? sourceResult.data.updated_at,
 			updated_at: sourceResult.data.updated_at,
 			last_success_at: sourceResult.data.last_success_at,
 			last_error: sourceResult.data.last_error,
 			last_polled_at: sourceResult.data.last_polled_at,
+			refresh_requested: Boolean(sourceResult.data.refresh_requested || (sourceResult.data.overrides_updated_at && (!sourceResult.data.last_success_at || Date.parse(sourceResult.data.overrides_updated_at) > Date.parse(sourceResult.data.last_success_at))) || (sourceResult.data.management_mode === "managed" && sourceResult.data.managed_updated_at && (!sourceResult.data.last_success_at || Date.parse(sourceResult.data.managed_updated_at) > Date.parse(sourceResult.data.last_success_at)))),
 		},
-		catalog: managedCatalog ?? observedDocument,
-		models: managedCatalog && Array.isArray((managedCatalog as any).data) ? (managedCatalog as any).data.map((model: any) => {
+		overrides: sourceResult.data.catalog_overrides ?? {},
+		feed_models: feedModels,
+		activity: eventsResult.data ?? [],
+		model_states: modelStates,
+		catalog: effectiveDocument ?? managedCatalog ?? observedDocument,
+		models: (effectiveDocument ?? managedCatalog) && Array.isArray((effectiveDocument ?? managedCatalog as any).data) ? (effectiveDocument ?? managedCatalog as any).data.map((model: any) => {
 			const standard = model.service_tiers?.find((tier: any) => tier.service_tier === "standard");
 			return standard ? { ...model, provider_model_slug: standard.provider_model_slug, pricing: standard.pricing } : model;
 		}) : observedModels,
@@ -189,6 +215,22 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 
 export const accountSettingsProviderCatalogRouter = new Hono<{ Bindings: Env }>();
 
+accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:providerSlug/events/:eventId", async (c) => {
+	const user = await requireUser(c.req.raw, c.env);
+	if (!user) return errorResponse(c, "unauthorized", 401);
+	const slug = providerSlugSchema.safeParse(c.req.param("providerSlug"));
+	const id = z.string().uuid().safeParse(c.req.param("eventId"));
+	if (!slug.success || !id.success) return errorResponse(c, "invalid_catalog_event", 400);
+	const client = getDataClient(c.env);
+	try {
+		if (!await providerAccess(client, user.id, slug.data)) return errorResponse(c, "forbidden", 403);
+		const result = await client.from("provider_catalog_edit_events").select("previous_value,value").eq("provider_slug", slug.data).eq("id", id.data).maybeSingle();
+		if (result.error) throw result.error;
+		if (!result.data) return errorResponse(c, "catalog_event_not_found", 404);
+		return c.json({ ok: true, ...result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch { return errorResponse(c, "provider_catalog_activity_unavailable", 503); }
+});
+
 accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:providerSlug/version", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return errorResponse(c, "unauthorized", 401);
@@ -197,10 +239,10 @@ accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:provider
 	const client = getDataClient(c.env);
 	try {
 		if (!await providerAccess(client, user.id, parsedSlug.data)) return errorResponse(c, "forbidden", 403);
-		const result = await client.from("provider_catalog_sources").select("managed_updated_at,updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
+		const result = await client.from("provider_catalog_sources").select("management_mode,managed_updated_at,updated_at,catalog_updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
 		if (result.error) throw result.error;
 		if (!result.data) return errorResponse(c, "provider_catalog_source_not_found", 404);
-		return c.json({ ok: true, catalog_version: result.data.managed_updated_at ?? result.data.updated_at }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ ok: true, catalog_version: result.data.management_mode === "remote" ? result.data.catalog_updated_at ?? result.data.updated_at : result.data.managed_updated_at ?? result.data.updated_at }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("provider_catalog_version_read_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		return errorResponse(c, "provider_catalog_unavailable", 503);
@@ -259,20 +301,15 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 				return errorResponse(c, "provider_application_not_approved", 409);
 			}
 		}
-		const source = await client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
+		const source = await client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,feed_models,catalog_overrides").eq("provider_slug", parsedSlug.data).maybeSingle();
 		if (source.error) throw source.error;
 		if (!source.data) return errorResponse(c, "provider_catalog_source_not_found", 404);
 		if (body?.expectedUpdatedAt !== undefined && !z.string().datetime({ offset: true }).safeParse(body.expectedUpdatedAt).success) return errorResponse(c, "invalid_catalog_version", 400);
-		const updateSource = async (values: Record<string, unknown>) => {
-			let query = client.from("provider_catalog_sources").update(values).eq("provider_slug", parsedSlug.data);
-			if (body?.expectedUpdatedAt) query = query.eq(source.data.managed_updated_at ? "managed_updated_at" : "updated_at", body.expectedUpdatedAt);
-			return query.select("provider_slug").maybeSingle();
-		};
 		if (body?.mode === "remote" || body?.catalog?.mode === "remote") {
 			if (!source.data.catalog_url) return errorResponse(c, "No remote catalog URL configured.", 422);
-			const updated = await updateSource({ management_mode: "remote", managed_catalog: null, managed_updated_by: null, managed_updated_at: null, refresh_requested: true, next_poll_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+			const updated = await client.rpc("restore_provider_catalog_feed", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? source.data.managed_updated_at ?? source.data.updated_at });
+			if (updated.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			if (updated.error) throw updated.error;
-			if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			let syncWarning: string | null = null;
 			try {
 				await syncProviderCatalog(c.env, parsedSlug.data, "manual");
@@ -283,10 +320,43 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			const catalog = await readProviderCatalog(client, parsedSlug.data);
 			return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 		}
+		if (body?.catalog?.refresh === true) {
+			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
+			const refreshed = await readProviderCatalog(client, parsedSlug.data);
+			return c.json({ ok: true, ...refreshed }, 200, PRIVATE_NO_STORE_HEADERS);
+		}
 
-		const document = body?.catalog ?? body;
+		const revert = body?.catalog?.revert ?? body?.revert;
+		let document = body?.catalog ?? body;
+		let changes: Array<{ model_id: string; field: string; value?: unknown; revert?: boolean }> | null = null;
+		if (source.data.management_mode === "remote") {
+			const current = await readProviderCatalog(client, parsedSlug.data);
+			if (!current) return errorResponse(c, "provider_catalog_not_found", 404);
+			const feed = current.feed_models;
+			const overrides = current.overrides as CatalogOverrides;
+			if (revert) {
+				if (typeof revert.modelId !== "string" || typeof revert.field !== "string" || !Object.hasOwn(overrides[revert.modelId] ?? {}, revert.field)) return errorResponse(c, "invalid_override_field", 400);
+				const restored = structuredClone(overrides);
+				if (restored[revert.modelId]) delete restored[revert.modelId][revert.field];
+				document = normalizedCatalogDocument(applyCatalogOverrides(feed, restored));
+				changes = [{ model_id: revert.modelId, field: revert.field, revert: true }];
+			} else {
+				const submitted = normalizeProviderCatalog(document);
+				if (submitted.valid) changes = catalogOverrideChanges(feed, overrides, submitted.allModels);
+			}
+		}
 		const preview = await validateProviderCatalogPricingMeters(client, normalizeProviderCatalog(document));
 		if (!preview.valid) return c.json({ ok: false, error: "catalog_invalid", message: preview.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 5).join("; "), issues: preview.issues }, 422, PRIVATE_NO_STORE_HEADERS);
+		if (changes) {
+			const saved = await client.rpc("save_provider_catalog_overrides", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? null, p_changes: changes, p_feed_models: source.data.feed_models ?? (await readProviderCatalog(client, parsedSlug.data))?.feed_models });
+			if (saved.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
+			if (saved.error) throw saved.error;
+			let syncWarning: string | null = null;
+			try { await syncProviderCatalog(c.env, parsedSlug.data, "manual"); }
+			catch { syncWarning = "Catalog saved. Synchronization will retry in the background."; }
+			const catalog = await readProviderCatalog(client, parsedSlug.data);
+			return c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS);
+		}
 		const managedDocument = catalogDocument(preview.allModels.map((model) => catalogModelDocument({
 			metadata: { serviceTiers: model.serviceTiers },
 			model_slug: model.id,
@@ -302,9 +372,9 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			deprecated_at: model.deprecatedAt,
 			shutdown_at: model.shutdownAt,
 		}, model.capabilities, model.pricing)));
-		const updated = await updateSource({ management_mode: "managed", managed_catalog: managedDocument, managed_updated_by: user.id, managed_updated_at: new Date().toISOString(), refresh_requested: true, next_poll_at: new Date().toISOString(), etag: null, last_modified: null, last_error: null, updated_at: new Date().toISOString() });
+		const updated = await client.rpc("save_provider_managed_catalog", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? source.data.managed_updated_at ?? source.data.updated_at, p_document: managedDocument });
+		if (updated.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 		if (updated.error) throw updated.error;
-		if (!updated.data) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 		let syncWarning: string | null = null;
 		try {
 			await syncProviderCatalog(c.env, parsedSlug.data, "manual");

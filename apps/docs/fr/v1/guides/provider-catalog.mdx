@@ -21,3 +21,5 @@ Chaque niveau doit déclarer les tarifs de toutes les unités facturées. `price
 Le polling et les webhooks signés acceptent les deux versions. Dans les paramètres fournisseur, sélectionnez le niveau avant modification. Les correspondances de modèles invalides sont signalées individuellement sans bloquer les modèles valides.
 
 Consultez l’exemple complet et les deux schémas JSON dans le [guide contractuel anglais](/v1/guides/provider-catalog).
+
+Pour les catalogues API, les modifications du tableau de bord sont persistantes. Les imports actualisent les champs sans modification manuelle. **Utiliser la valeur du flux** supprime une modification. Le tableau de bord affiche les valeurs du flux et effectives, l’auteur et la date ; l’activité conserve les modifications et rétablissements. Les modèles ajoutés manuellement restent des offres locales. La suppression d’un modèle du flux désactive son offre même si certains champs ont été modifiés. Les catalogues manuels restent compatibles.
