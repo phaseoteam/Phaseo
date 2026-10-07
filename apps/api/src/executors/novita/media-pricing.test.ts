@@ -2,11 +2,21 @@ import { describe, expect, it } from "vitest";
 import { computeBillSummary } from "@/pipeline/pricing/engine";
 import type { PriceCard } from "@/pipeline/pricing/types";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
+import { computeVideoPricedUsage } from "@core/video-pricing";
 
 function card(rules: PriceCard["rules"]): PriceCard {
 	return { provider: "novita", model: "reviewed-media", endpoint: "video.generate", currency: "USD", effective_from: null, effective_to: null, version: null, rules };
 }
 describe("Novita media pricing contracts", () => {
+	it.each([["turbo", "0.07", 5, 350_000_000], ["turbo", "0.07", 10, 700_000_000], ["master", "0.234", 5, 1_170_000_000], ["master", "0.234", 10, 2_340_000_000]])("preserves published Kling %s clip pricing at %s USD/s for %s seconds", (_model, rate, seconds, expected) => {
+		const pricing = card([{ meter: "output_video_seconds", pricing_plan: "standard", unit: "second", unit_size: 1, price_per_unit: String(rate), currency: "USD", match: [] }]);
+		const priced = computeVideoPricedUsage({ seconds: Number(seconds), card: pricing, model: "reviewed-media", requestOptions: buildVideoPricingRequestOptions({ seconds, audio: false }) });
+		expect((priced.pricing as Record<string, unknown>).total_nanos).toBe(expected);
+	});
+	it.each([["hd", "100", 0.1], ["turbo", "60", 0.06]])("prices MiniMax %s using reported characters", (_model, rate, expected) => {
+		const pricing = card([{ meter: "input_characters", pricing_plan: "standard", unit: "character", unit_size: 1_000_000, price_per_unit: String(rate), currency: "USD", match: [] }]);
+		expect(computeBillSummary({ input_characters: 1000, requests: 1 }, pricing).cost_usd).toBe(expected);
+	});
 	it.each([
 		["std", false, "0.084", 0.42], ["std", true, "0.126", 0.63],
 		["pro", false, "0.112", 0.56], ["pro", true, "0.168", 0.84],

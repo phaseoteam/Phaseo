@@ -3,10 +3,12 @@ import type { ProviderExecutor } from "@executors/types";
 import { resolveProviderKey } from "@providers/keys";
 import { getBindings } from "@/runtime/env";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { executeMiniMaxSpeech, isMiniMaxSpeechModel } from "./minimax";
 
 export const executor: ProviderExecutor = async args => {
 	const ir = args.ir as IRAudioSpeechRequest;
 	const model = args.providerModelSlug || ir.model;
+	if (isMiniMaxSpeechModel(model)) return executeMiniMaxSpeech(args, model);
 	const format = ir.responseFormat ?? ir.format ?? "mp3";
 	const unsupported = model !== "s1" ? "model"
 		: !["mp3", "wav", "pcm", "opus"].includes(format) ? "response_format"

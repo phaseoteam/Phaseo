@@ -3,8 +3,9 @@ import type { IRVideoGenerationRequest } from "@core/ir";
 const MODELS = new Set([
 	"kling-v3.0-std-t2v", "kling-v3.0-std-i2v",
 	"kling-v3.0-pro-t2v", "kling-v3.0-pro-i2v",
+	"kling-v3.0-4k-t2v", "kling-v3.0-4k-i2v",
 ]);
-const TIERS = new Set(["kling-v3.0-std", "kling-v3.0-pro"]);
+const TIERS = new Set(["kling-v3.0-std", "kling-v3.0-pro", "kling-v3.0-4k"]);
 
 export function isKlingModel(model: string): boolean {
 	return MODELS.has(model) || TIERS.has(model);

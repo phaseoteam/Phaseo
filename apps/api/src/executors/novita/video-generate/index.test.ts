@@ -21,7 +21,26 @@ beforeEach(() => {
 	mocks.reserve.mockResolvedValue({ held: true, status: "held", reservationId: "hold", amountNanos: 208000000 });
 });
 describe("Novita native video", () => {
-	it.each(["std", "pro"])("dispatches canonical Kling %s to the appropriate native endpoint", async tier => {
+	it.each(["kling2.5_turbo_pro", "kling2.1_master"])("submits %s through the unified API without dropping job ownership", async model => {
+		for (const image of [undefined, "https://example.com/start.png"]) {
+			mocks.fetch.mockResolvedValue(Response.json({ task_id: "unified-task" }));
+			const result = await execute(args({ model, duration: 10, inputReference: image, providerParams: { guidance_scale: 0.6 } }));
+			expect(result.ir).toMatchObject({ status: "queued", nativeId: "unified-task", seconds: "10" });
+			expect(mocks.fetch.mock.calls.at(-1)?.[1]).toBe("https://api.novita.ai/v3/video/create");
+			expect(JSON.parse(mocks.fetch.mock.calls.at(-1)?.[2].body)).toEqual({ model: `${model}_${image ? "i2v" : "t2v"}`, prompt: "A landscape", duration: "10", guidance_scale: 0.6, ...(image ? { image } : { aspect_ratio: "16:9" }) });
+			expect(mocks.save).toHaveBeenLastCalledWith("ws", "video", expect.objectContaining({ providerTaskId: "unified-task", seconds: 10, audio: false }), "unified-task", "queued");
+		}
+	});
+	it.each([{ duration: 4 }, { generateAudio: true }, { lastFrame: "https://example.com/end.png" }, { seed: 2 }, { providerParams: { guidance_scale: 2 } }, { providerParams: { cfg_scale: 0.5 } }])("rejects incompatible unified controls before reservation", async extra => {
+		expect((await execute(args({ model: "kling2.5_turbo_pro", duration: 5, ...extra }))).upstream.status).toBe(400);
+		expect(mocks.reserve).not.toHaveBeenCalled();
+		expect(mocks.fetch).not.toHaveBeenCalled();
+	});
+	it("does not infer retired unified model routes", async () => {
+		expect((await execute(args({ model: "wan2.6_t2v", duration: 5 }))).upstream.status).toBe(400);
+		expect(mocks.fetch).not.toHaveBeenCalled();
+	});
+	it.each(["std", "pro", "4k"])("dispatches canonical Kling %s to the appropriate native endpoint", async tier => {
 		for (const image of [undefined, "https://example.com/start.png"]) {
 			mocks.fetch.mockResolvedValue(Response.json({ task_id: "native" }));
 			const request = args({ model: `kling/kling-v3.0-${tier}`, inputReference: image });

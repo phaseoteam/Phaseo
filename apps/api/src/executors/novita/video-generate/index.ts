@@ -8,6 +8,7 @@ import { releaseWalletReservation } from "@core/wallet-reservations";
 import { saveVideoJobMeta, setVideoJobStatus } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { buildKlingRequest, isKlingModel, resolveKlingEndpoint } from "./kling";
+import { buildUnifiedKlingRequest, isUnifiedKlingModel } from "./unified";
 
 const emptyBill = { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null };
 
@@ -17,17 +18,23 @@ function failure(status: number, message: string): Extract<ExecutorResult, { kin
 		keySource: null, byokKeyId: null };
 }
 
-// Novita's video API is native /v3/async, not its OpenAI-compatible text API.
+// Novita offers reviewed unified and model-specific native video APIs.
 // Only reviewed model contracts are accepted; never infer a route from user input.
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRVideoGenerationRequest;
 	const model = args.providerModelSlug || ir.model;
+	if (isUnifiedKlingModel(model)) {
+		let request: ReturnType<typeof buildUnifiedKlingRequest>;
+		try { request = buildUnifiedKlingRequest(ir, model); }
+		catch (error) { return failure(400, error instanceof Error ? error.message : "Invalid Novita unified video request."); }
+		return submitVideo(args, ir, model, "/v3/video/create", request.seconds, undefined, request.ratio, false, request.body);
+	}
 	if (isKlingModel(model)) {
 		const endpoint = resolveKlingEndpoint(ir, model);
 		let request: ReturnType<typeof buildKlingRequest>;
 		try { request = buildKlingRequest(ir, endpoint); }
 		catch (error) { return failure(400, error instanceof Error ? error.message : "Invalid Novita Kling request."); }
-		return submitVideo(args, ir, model, endpoint, request.seconds, undefined, request.ratio, request.generateAudio, request.body);
+		return submitVideo(args, ir, model, `/v3/async/${endpoint}`, request.seconds, undefined, request.ratio, request.generateAudio, request.body);
 	}
 	if (!["seedance-v1.5-pro", "seedance-v1.5-pro-t2v", "seedance-v1.5-pro-i2v", "bytedance/seedance-1.5-pro", "bytedance/seedance-1-5-pro"].includes(model)) {
 		return failure(400, "This Novita video model does not have a validated native request contract.");
@@ -57,7 +64,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const body = { ...options, prompt: ir.prompt, duration: seconds, resolution: size, ratio,
 		generate_audio: generateAudio, ...(ir.seed != null ? { seed: ir.seed } : {}),
 		...(image ? { image } : {}), ...(lastImage ? { last_image: lastImage } : {}) };
-	return submitVideo(args, ir, model, `seedance-v1.5-pro-${image ? "i2v" : "t2v"}`, seconds, size, ratio, generateAudio, body);
+	return submitVideo(args, ir, model, `/v3/async/seedance-v1.5-pro-${image ? "i2v" : "t2v"}`, seconds, size, ratio, generateAudio, body);
 }
 
 async function submitVideo(
@@ -86,7 +93,7 @@ async function submitVideo(
 	}
 	let response: Response;
 	try {
-		response = await fetchUpstream(args, `https://api.novita.ai/v3/async/${endpoint}`, {
+		response = await fetchUpstream(args, `https://api.novita.ai${endpoint}`, {
 			method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json" }, body: JSON.stringify(body),
 		});
 	} catch {
