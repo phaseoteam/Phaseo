@@ -222,7 +222,14 @@ begin
         match_type_value := 'new_model';
         if split_part(canonical_slug, '/', 1) <> p_provider_slug
           and split_part(canonical_slug, '/', 1) is distinct from provider_lab_slug then
-          raise exception 'provider_catalog_namespace_not_owned: %', model_slug_value;
+          update public.provider_catalog_sync_models
+          set decision = 'needs_changes', match_type = 'new_model',
+            decision_reason = 'Unknown canonical model ID outside your provider namespace. Use a public canonical model ID or submit a new model in your own namespace.',
+            route_projection_status = 'failed', reviewed_at = now()
+          where run_id = p_run_id and model_slug = model_slug_value;
+          changes_count := changes_count + 1;
+          applied_count := applied_count + 1;
+          continue;
         end if;
         insert into public.provider_catalog_model_requests(provider_slug,model_slug,source_run_id,model)
         values(p_provider_slug,model_slug_value,p_run_id,model)
@@ -246,7 +253,14 @@ begin
       from public.v2_models m where m.model_slug = canonical_slug for update;
       if (canonical_hidden and (canonical_owner is distinct from p_provider_slug or canonical_released_at is not null))
         or exists (select 1 from public.v2_model_provider_routes r where r.model_slug = canonical_slug and r.is_stealth) then
-        raise exception 'provider_catalog_model_unavailable: %', model_slug_value;
+        update public.provider_catalog_sync_models
+        set decision = 'needs_changes', match_type = match_type_value,
+          decision_reason = 'This canonical model is unavailable for public catalog listings. Use a public canonical model ID or contact Phaseo to review the mapping.',
+          route_projection_status = 'failed', reviewed_at = now()
+        where run_id = p_run_id and model_slug = model_slug_value;
+        changes_count := changes_count + 1;
+        applied_count := applied_count + 1;
+        continue;
       end if;
       update public.provider_catalog_model_requests set status='approved',updated_at=now()
       where provider_slug=p_provider_slug and model_slug=model_slug_value and status<>'approved';
@@ -289,7 +303,7 @@ begin
   set review_status = case
         when provider_approved is not true then 'pending'
         when pending_count>0 then case when applied_count>pending_count+rejected_count+changes_count then 'partially_approved' else 'pending' end
-        when changes_count>0 then 'needs_changes'
+        when changes_count>0 then case when applied_count>pending_count+rejected_count+changes_count then 'partially_approved' else 'needs_changes' end
         when rejected_count>0 then case when applied_count>rejected_count then 'partially_approved' else 'rejected' end
         else 'approved' end,
       review_summary = jsonb_build_object('approved', case when provider_approved then applied_count-pending_count-rejected_count-changes_count else 0 end,

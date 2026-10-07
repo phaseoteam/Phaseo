@@ -85,34 +85,35 @@ begin
   -- Existing hidden canonical models cannot be published by a provider.
   insert into public.v2_models (model_slug,lab_slug,name,hidden) values ('catalog-contract-test/hidden','catalog-contract-test','Hidden contract model',true);
   bad_document := jsonb_set(document, '{0,id}', '"catalog-contract-test/hidden"');
-  begin
-    perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
-    raise exception 'hidden model was accepted';
-  exception when others then
-    get stacked diagnostics failure = message_text;
-    assert failure like 'provider_catalog_model_unavailable:%';
-  end;
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select decision='needs_changes' and decision_reason is not null
+    from public.provider_catalog_sync_models where run_id=run2 and model_slug='catalog-contract-test/hidden');
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/hidden');
   assert not exists(select 1 from public.v2_model_provider_routes where model_slug='catalog-contract-test/hidden');
   update public.v2_models set hidden=true where model_slug='catalog-contract-test/model-a';
-  begin
-    perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
-    raise exception 'an administrative hide was overwritten';
-  exception when others then
-    get stacked diagnostics failure = message_text;
-    assert failure like 'provider_catalog_model_unavailable:%';
-  end;
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,document);
+  assert (select decision='needs_changes' from public.provider_catalog_sync_models
+    where run_id=run2 and model_slug='catalog-contract-test/model-a');
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/model-a');
   update public.v2_models set hidden=false where model_slug='catalog-contract-test/model-a';
   bad_document := jsonb_set(document,'{0,id}','"unowned-catalog-contract/model"');
-  begin
-    perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
-    raise exception 'a foreign publisher namespace was accepted';
-  exception when others then
-    get stacked diagnostics failure = message_text;
-    assert failure like 'provider_catalog_namespace_not_owned:%';
-  end;
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select decision='needs_changes' from public.provider_catalog_sync_models
+    where run_id=run2 and model_slug='unowned-catalog-contract/model');
   assert not exists(select 1 from public.v2_labs where lab_slug='unowned-catalog-contract');
+
+  -- One unavailable ID and one unknown namespace do not roll back valid offers.
+  run2 := gen_random_uuid();
+  insert into public.provider_catalog_sync_runs (id,provider_slug,trigger) values (run2,'catalog-contract-test','manual');
+  bad_document := document || jsonb_build_array(
+    jsonb_set(document->0,'{id}','"catalog-contract-test/hidden"'),
+    jsonb_set(document->0,'{id}','"unowned-catalog-contract/model"'));
+  perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
+  assert (select count(*)=2 from public.provider_catalog_sync_models where run_id=run2 and decision='approved');
+  assert (select count(*)=2 from public.provider_catalog_sync_models where run_id=run2 and decision='needs_changes');
+  assert (select review_status='partially_approved' and (review_summary->>'approved')::integer=2
+    and (review_summary->>'needs_changes')::integer=2 from public.provider_catalog_sync_runs where id=run2);
+  assert not exists(select 1 from public.v2_model_provider_routes where model_slug='catalog-contract-test/hidden');
 
   -- Omitting an offer retires only this provider's feed-managed routes.
   insert into public.v2_model_provider_routes (provider_model_id,model_slug,provider_slug,provider_model_slug,status,phaseo_status,provider_availability_status)

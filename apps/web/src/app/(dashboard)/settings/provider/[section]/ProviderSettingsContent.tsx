@@ -35,6 +35,17 @@ function ProviderSettingsView({ section, data }: { section: string; data: Settin
 			</div>)}
 		</div>
 		{section === "models" && <ProviderCatalogManager providers={data.catalogProviders} />}
+		{section === "models" && latestReviewRevisions.map((revision) => {
+			const blockedModels = revision.models.filter((model) => ["needs_changes", "rejected"].includes(model.decision));
+			return blockedModels.length ? <section key={revision.id} className="divide-y rounded-lg border">
+				<h2 className="px-4 py-3 text-sm font-medium">{revision.provider_slug} · {translatedStatus("reviewStatus", "needs_changes")}</h2>
+				{blockedModels.map((model) => <div key={model.model_slug} className="space-y-1 px-4 py-3 text-sm">
+					<p>{model.name}</p>
+					<p className="font-mono text-xs text-muted-foreground">{model.model_slug}</p>
+					{model.decision_reason && <p className="text-destructive">{model.decision_reason}</p>}
+				</div>)}
+			</section> : null;
+		})}
 		{section === "review" && <div className="space-y-4">
 			<p className="text-sm text-muted-foreground">{t("internalMainCopy.scheduleHelp")}</p>
 			{latestReviewRevisions.length ? latestReviewRevisions.map((revision) => <section key={revision.id} className="divide-y rounded-lg border">
