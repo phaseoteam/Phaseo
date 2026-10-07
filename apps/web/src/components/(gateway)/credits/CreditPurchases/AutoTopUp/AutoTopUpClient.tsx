@@ -303,7 +303,7 @@ export default function AutoTopUpClient({
 
 						<div className="leading-tight">
 							<div className="text-sm font-medium capitalize text-foreground">
-								<SensitiveValue inline label="card number">****{pm.card?.last4 ?? ""}</SensitiveValue>
+								<SensitiveValue inline reveal={false} label="card number">****{pm.card?.last4 ?? ""}</SensitiveValue>
 							</div>
 							<div className="text-xs capitalize text-muted-foreground">
 								{pm.card?.brand ?? text("card")}
@@ -567,7 +567,7 @@ export default function AutoTopUpClient({
 																			>
 																				<div className="leading-tight">
 																					<div className="text-sm font-medium">
-																				<SensitiveValue inline className="text-foreground" label="card number">
+																				<SensitiveValue inline reveal={false} className="text-foreground" label="card number">
 																							****{pm.card?.last4}
 																						</SensitiveValue>
 																				<div className="text-xs capitalize text-muted-foreground">

@@ -27,6 +27,7 @@ const STORAGE_KEY = "phaseo-display-preferences-v1";
 
 type DisplayPreferencesContextValue = {
 	isHydrated: boolean;
+	isSensitiveDataReady: boolean;
 	preferences: DisplayPreferences;
 	formattingPreferences: DisplayFormattingPreferences;
 	setPreferences: (preferences: DisplayPreferences) => void;
@@ -39,6 +40,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 		DEFAULT_DISPLAY_PREFERENCES,
 	);
 	const [isHydrated, setIsHydrated] = React.useState(false);
+	const [isSensitiveDataReady, setIsSensitiveDataReady] = React.useState(false);
 	const localMutationVersion = React.useRef(0);
 
 	React.useEffect(() => {
@@ -63,12 +65,16 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 					);
 					if (
 						cancelled ||
-						!data.signedIn ||
 						requestMutationVersion !== localMutationVersion.current
 					) return;
+					if (!data.signedIn) {
+						setIsSensitiveDataReady(true);
+						return;
+					}
 
 					const accountPreferences = normalizeDisplayPreferences(data.preferences);
 					setPreferencesState(accountPreferences);
+					setIsSensitiveDataReady(true);
 					try {
 						window.localStorage.setItem(STORAGE_KEY, JSON.stringify(accountPreferences));
 					} catch {
@@ -76,6 +82,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 					}
 				} catch {
 					// Keep the locally cached preferences when auth or the account API is unavailable.
+					// Sensitive values stay masked until the account preference is known or explicitly changed.
 				}
 			})();
 		}, 0);
@@ -87,6 +94,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 
 	const setPreferences = React.useCallback((next: DisplayPreferences) => {
 		localMutationVersion.current += 1;
+		setIsSensitiveDataReady(true);
 		const normalized = normalizeDisplayPreferences(next);
 		setPreferencesState((current) => {
 			if (JSON.stringify(current) === JSON.stringify(normalized)) return current;
@@ -104,8 +112,8 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 		[preferences, locale],
 	);
 	const value = React.useMemo(
-		() => ({ isHydrated, preferences, formattingPreferences, setPreferences }),
-		[isHydrated, preferences, formattingPreferences, setPreferences],
+		() => ({ isHydrated, isSensitiveDataReady, preferences, formattingPreferences, setPreferences }),
+		[isHydrated, isSensitiveDataReady, preferences, formattingPreferences, setPreferences],
 	);
 
 	React.useEffect(() => {
