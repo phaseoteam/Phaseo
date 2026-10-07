@@ -8,7 +8,7 @@ const token = (value: string) => value.replace(/~/g, "~0").replace(/\//g, "~1");
 const segments = (path: string) => path.split("/").slice(1).map((value) => value.replace(/~1/g, "/").replace(/~0/g, "~"));
 type Change = { model_id: string; field: string; value?: unknown; revert?: boolean };
 
-function standardTier(model: ProviderCatalogModel) {
+function standardTier(model: ProviderCatalogModel): NonNullable<ProviderCatalogModel["serviceTiers"]>[number] {
 	return { serviceTier: "standard" as const, providerModelSlug: model.providerModelSlug, upstreamServiceTier: null, availability: model.availability, pricing: model.pricing };
 }
 
@@ -103,8 +103,8 @@ export function catalogOverrideChanges(feed: ProviderCatalogModel[], overrides: 
 		for (const field of catalogEditableFields.filter((field) => field !== "pricing" && field !== "serviceTiers")) if (!equal(previous[field], model[field])) changes.push({ model_id: model.id, field, value: model[field] ?? null });
 		prices(model.id, previous.pricing, model.pricing, "/pricing");
 		if (previous.serviceTiers?.length || model.serviceTiers?.length) {
-			const before = new Map((previous.serviceTiers?.length ? previous.serviceTiers : [standardTier(previous)]).map((tier) => [tier.serviceTier, tier]));
-			const after = new Map((model.serviceTiers?.length ? model.serviceTiers : [standardTier(model)]).map((tier) => [tier.serviceTier, tier]));
+			const before = new Map((previous.serviceTiers?.length ? previous.serviceTiers : [standardTier(previous)]).map((tier) => [tier.serviceTier, tier] as const));
+			const after = new Map((model.serviceTiers?.length ? model.serviceTiers : [standardTier(model)]).map((tier) => [tier.serviceTier, tier] as const));
 			for (const name of new Set([...before.keys(), ...after.keys()])) {
 				const old = before.get(name), current = after.get(name);
 				const path = `/serviceTiers/${name}`;

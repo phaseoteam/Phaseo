@@ -11,7 +11,7 @@ begin
   select display_name into actor_name from public.users where user_id=p_actor_id;
   insert into public.provider_catalog_edit_events(provider_slug,model_slug,field,actor_id,actor_kind,actor_name,action,previous_value,value)
   values(p_provider_slug,'*','$catalog',p_actor_id,p_actor_kind,actor_name,'revert',source.managed_catalog,source.feed_models);
-  update public.provider_catalog_sources set management_mode='remote',managed_catalog=null,managed_updated_by=null,managed_updated_at=null,refresh_requested=true,next_poll_at=now(),updated_at=now() where provider_slug=p_provider_slug;
+  update public.provider_catalog_sources set management_mode='remote',managed_catalog=null,managed_updated_by=null,managed_updated_at=null,catalog_updated_at=now(),refresh_requested=true,next_poll_at=now(),updated_at=now() where provider_slug=p_provider_slug;
 end;
 $function$;
 REVOKE ALL ON FUNCTION public.restore_provider_catalog_feed(text,uuid,text,timestamptz) FROM PUBLIC, anon, authenticated;

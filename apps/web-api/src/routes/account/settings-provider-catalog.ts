@@ -142,7 +142,7 @@ function catalogDocument(data: Record<string, any>[]) {
 async function readProviderCatalog(client: any, providerSlug: string) {
 	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult] = await Promise.all([
 		client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").eq("provider_slug", providerSlug).maybeSingle(),
-		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
+		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,catalog_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
 		client.from("provider_catalog_models").select("model_slug,provider_model_slug,name,description,input_modalities,output_modalities,context_length,max_output_tokens,status,availability,available_from,deprecated_at,shutdown_at,metadata,updated_at").eq("provider_slug", providerSlug).eq("status", "active").order("model_slug", { ascending: true }),
 		client.from("provider_catalog_model_capabilities").select("model_slug,capability_id,parameters,status").eq("provider_slug", providerSlug).eq("status", "active").order("capability_id", { ascending: true }),
 		client.from("provider_catalog_sync_runs").select("id,status,review_status,model_count,created_at,completed_at").eq("provider_slug", providerSlug).neq("status", "not_modified").order("created_at", { ascending: false }).limit(1),
@@ -193,12 +193,12 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 			catalog_url: sourceResult.data.catalog_url,
 			management_mode: sourceResult.data.management_mode ?? "remote",
 			managed_updated_at: sourceResult.data.managed_updated_at,
-			catalog_version: sourceResult.data.management_mode === "remote" ? sourceResult.data.updated_at : sourceResult.data.managed_updated_at ?? sourceResult.data.updated_at,
+			catalog_version: sourceResult.data.management_mode === "remote" ? sourceResult.data.catalog_updated_at ?? sourceResult.data.updated_at : sourceResult.data.managed_updated_at ?? sourceResult.data.updated_at,
 			updated_at: sourceResult.data.updated_at,
 			last_success_at: sourceResult.data.last_success_at,
 			last_error: sourceResult.data.last_error,
 			last_polled_at: sourceResult.data.last_polled_at,
-			refresh_requested: sourceResult.data.refresh_requested ?? false,
+			refresh_requested: Boolean(sourceResult.data.refresh_requested || (sourceResult.data.overrides_updated_at && (!sourceResult.data.last_success_at || Date.parse(sourceResult.data.overrides_updated_at) > Date.parse(sourceResult.data.last_success_at))) || (sourceResult.data.management_mode === "managed" && sourceResult.data.managed_updated_at && (!sourceResult.data.last_success_at || Date.parse(sourceResult.data.managed_updated_at) > Date.parse(sourceResult.data.last_success_at)))),
 		},
 		overrides: sourceResult.data.catalog_overrides ?? {},
 		feed_models: feedModels,
@@ -239,10 +239,10 @@ accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:provider
 	const client = getDataClient(c.env);
 	try {
 		if (!await providerAccess(client, user.id, parsedSlug.data)) return errorResponse(c, "forbidden", 403);
-		const result = await client.from("provider_catalog_sources").select("management_mode,managed_updated_at,updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
+		const result = await client.from("provider_catalog_sources").select("management_mode,managed_updated_at,updated_at,catalog_updated_at").eq("provider_slug", parsedSlug.data).maybeSingle();
 		if (result.error) throw result.error;
 		if (!result.data) return errorResponse(c, "provider_catalog_source_not_found", 404);
-		return c.json({ ok: true, catalog_version: result.data.management_mode === "remote" ? result.data.updated_at : result.data.managed_updated_at ?? result.data.updated_at }, 200, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ ok: true, catalog_version: result.data.management_mode === "remote" ? result.data.catalog_updated_at ?? result.data.updated_at : result.data.managed_updated_at ?? result.data.updated_at }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("provider_catalog_version_read_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		return errorResponse(c, "provider_catalog_unavailable", 503);

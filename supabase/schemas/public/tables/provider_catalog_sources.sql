@@ -30,6 +30,7 @@ CREATE TABLE "public"."provider_catalog_sources" (
   "feed_models"               jsonb,
   "catalog_overrides"         jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "overrides_updated_at"      timestamp with time zone,
+  "catalog_updated_at"        timestamp with time zone,
   CONSTRAINT "provider_catalog_sources_feed_models_check" CHECK (jsonb_typeof(feed_models) = 'array'),
   CONSTRAINT "provider_catalog_sources_overrides_check" CHECK (jsonb_typeof(catalog_overrides) = 'object'),
   CONSTRAINT "provider_catalog_sources_created_by_fkey" FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL,

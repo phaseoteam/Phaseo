@@ -16,7 +16,7 @@ begin
   if not found or source.management_mode <> 'remote' then raise exception 'provider_catalog_remote_source_required'; end if;
   if p_actor_kind not in ('phaseo','provider') or p_actor_id is null then raise exception 'provider_catalog_actor_required'; end if;
   select display_name into actor_name from public.users where user_id=p_actor_id;
-  if p_expected_version is null or p_expected_version <> source.updated_at then raise exception 'provider_catalog_version_conflict'; end if;
+  if p_expected_version is null or p_expected_version <> coalesce(source.catalog_updated_at,source.updated_at) then raise exception 'provider_catalog_version_conflict'; end if;
   if jsonb_typeof(p_changes) <> 'array' or jsonb_array_length(p_changes) > 16000 then raise exception 'provider_catalog_changes_invalid'; end if;
   source.feed_models := coalesce(source.feed_models,p_feed_models);
   for change in select value from jsonb_array_elements(p_changes) loop
@@ -39,7 +39,7 @@ begin
     values(p_provider_slug,model_id,field_name,p_actor_id,p_actor_kind,actor_name,case when coalesce((change->>'revert')::boolean,false) then 'revert' else 'override' end,coalesce(old_value->'value',feed_value),case when coalesce((change->>'revert')::boolean,false) then feed_value else change->'value' end);
   end loop;
   if jsonb_array_length(p_changes) > 0 then
-    update public.provider_catalog_sources set feed_models=source.feed_models,catalog_overrides=source.catalog_overrides,overrides_updated_at=now(),refresh_requested=true,next_poll_at=now(),updated_at=now() where provider_slug=p_provider_slug;
+    update public.provider_catalog_sources set feed_models=source.feed_models,catalog_overrides=source.catalog_overrides,overrides_updated_at=now(),catalog_updated_at=now(),refresh_requested=true,next_poll_at=now(),updated_at=now() where provider_slug=p_provider_slug;
   end if;
 end;
 $function$;
