@@ -32,13 +32,17 @@ try {
     `);
     await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));
     await db.exec(await read('../schemas/public/tables/v2_request_routing_traces.sql'));
-    for (const name of ['gateway_routing_archive_source', 'gateway_routing_archive_batch', 'gateway_commit_routing_archive', 'ingest_v2_gateway_request_with_routing']) {
-        await db.exec(await read(`../schemas/public/functions/${name}.sql`));
+    if (process.env.ROUTING_ARCHIVE_MIGRATION) {
+        await db.exec(await read(`../migrations/${process.env.ROUTING_ARCHIVE_MIGRATION}`));
+    } else {
+        for (const name of ['gateway_routing_archive_source', 'gateway_routing_archive_batch', 'gateway_commit_routing_archive', 'ingest_v2_gateway_request_with_routing']) {
+            await db.exec(await read(`../schemas/public/functions/${name}.sql`));
+        }
+        await db.exec(await read('../schemas/public/tables/gateway_routing_archive_deletions.sql'));
+        await db.exec(await read('../schemas/public/functions/enqueue_gateway_routing_archive_deletion.sql'));
+        const gatewayDefinition = await read('../schemas/public/tables/gateway_requests.sql');
+        await db.exec(gatewayDefinition.match(/CREATE TRIGGER gateway_requests_routing_archive_delete[\s\S]*?;/)[0]);
     }
-    await db.exec(await read('../schemas/public/tables/gateway_routing_archive_deletions.sql'));
-    await db.exec(await read('../schemas/public/functions/enqueue_gateway_routing_archive_deletion.sql'));
-    const gatewayDefinition = await read('../schemas/public/tables/gateway_requests.sql');
-    await db.exec(gatewayDefinition.match(/CREATE TRIGGER gateway_requests_routing_archive_delete[\s\S]*?;/)[0]);
     await db.query(`insert into public.gateway_requests values($1,$2,$3,'request',$4,5000,'{"input_tokens":100}')`,
         [request, created, workspace, { routing_snapshot: [{ score: 0.5 }], routing_diagnostics: { algorithm: 'v2' }, accounting_finalization: { settled: true } }]);
     await db.query(`insert into public.v2_request_facts values($1,$2,$3,$4,'request',5000)`, [fact, request, created, workspace]);
