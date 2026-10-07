@@ -344,7 +344,7 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
 			{ scope: "provider", items: [
 				{ href: "/settings/provider/models", label: "Your Models", icon: Boxes, match: ["/settings/account/providers"] },
-				{ href: "/settings/provider/review", label: "Provider Review", icon: ClipboardCheck },
+				{ href: "/settings/provider/review", label: "Provider Profile", icon: ClipboardCheck },
 				{ href: "/settings/provider/integrations", label: "Integrations", icon: Webhook },
 			] },
 		];

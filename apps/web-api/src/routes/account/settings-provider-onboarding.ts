@@ -426,6 +426,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 				provider_slug: slug,
 				name: providerState?.name ?? provider.provider_slug,
 				provider_review_status: reviewStatus,
+				provider_approval_status: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : reviewStatus,
 				canManageCatalog: isAdmin || !isProviderAccessBlockedByReview({
 					application,
 					fallbackReviewStatus: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : null,

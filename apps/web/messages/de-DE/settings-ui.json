@@ -4610,7 +4610,8 @@
 		"search": "Einstellungen suchen",
 		"searchPlaceholder": "Einstellungen suchen…",
 		"becomeProvider": "Anbieter werden",
-		"empty": "Keine Einstellungen gefunden."
+		"empty": "Keine Einstellungen gefunden.",
+		"providerProfile": "Anbieterprofil"
 	},
 	"settingsAvailability": {
 		"title": "Die Einstellungen sind vorübergehend nicht verfügbar",
@@ -4842,7 +4843,8 @@
 		"removed": "Entfernt",
 		"reject": "Ablehnen",
 		"integrations": "Integrationen",
-		"providerSettings": "Anbietereinstellungen"
+		"providerSettings": "Anbietereinstellungen",
+		"providerProfile": "Anbieterprofil"
 	},
 	"sensitiveValues": {
 		"mask": "{label} verbergen",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "Mehrere Schlüssel haben diesen Namen.",
 		"openFromTable": "Öffnen Sie einen Schlüssel aus der API-Schlüsseltabelle.",
 		"limitInvalid": "Limits müssen null oder positiv sein."
+	},
+	"providerDashboard": {
+		"profile": "Anbieterprofil",
+		"overrides": "Manuelle Anpassungen",
+		"feedValue": "Aktueller Feed-Wert",
+		"effectiveValue": "Wirksamer Wert",
+		"useFeedValue": "Feed-Wert verwenden",
+		"activity": "Katalogaktivität",
+		"noEdits": "Noch keine manuellen Änderungen",
+		"phaseo": "Phaseo",
+		"provider": "Anbieter",
+		"override": "Bearbeitet",
+		"revert": "Zurückgesetzt",
+		"searchModels": "Modelle suchen",
+		"tiers": "Service-Stufen",
+		"source": "Quelle",
+		"feed": "API-Feed",
+		"manual": "Manuell",
+		"revertFailed": "Feld konnte nicht zurückgesetzt werden",
+		"refreshNow": "Jetzt aktualisieren",
+		"feedUrl": "Feed-URL",
+		"syncStatus": "Synchronisierungsstatus",
+		"lastSuccess": "Letzter erfolgreicher Import",
+		"nextSync": "Nächster geplanter Abruf",
+		"never": "Noch nicht",
+		"invalidUrl": "Ungültige URL",
+		"needsAttention": "Handlungsbedarf",
+		"healthy": "Aktuell",
+		"syncFailed": "Synchronisierung fehlgeschlagen. Bestehende Angebote bleiben verfügbar.",
+		"webhook": "Signierter Webhook",
+		"ownerOnly": "Nur Anbieterinhaber und Administratoren können Webhooks verwalten.",
+		"refreshFailed": "Aktualisierung fehlgeschlagen",
+		"refreshed": "Aktualisierung abgeschlossen",
+		"statusUnavailable": "Status nicht verfügbar",
+		"providerId": "Anbieter-ID",
+		"approval": "Anbieterfreigabe",
+		"website": "Website",
+		"access": "Zugriff",
+		"notSet": "Nicht konfiguriert",
+		"notVerified": "Nicht verifiziert"
 	}
 }

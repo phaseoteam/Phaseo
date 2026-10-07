@@ -4610,7 +4610,8 @@
 		"search": "Buscar configurações",
 		"searchPlaceholder": "Buscar configurações…",
 		"becomeProvider": "Tornar-se um provedor",
-		"empty": "Nenhuma configuração encontrada."
+		"empty": "Nenhuma configuração encontrada.",
+		"providerProfile": "Perfil do provedor"
 	},
 	"settingsAvailability": {
 		"title": "As configurações estão temporariamente indisponíveis",
@@ -4842,7 +4843,8 @@
 		"removed": "Removido",
 		"reject": "Rejeitar",
 		"integrations": "Integrações",
-		"providerSettings": "Configurações do provedor"
+		"providerSettings": "Configurações do provedor",
+		"providerProfile": "Perfil do provedor"
 	},
 	"sensitiveValues": {
 		"mask": "Ocultar {label}",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "Várias chaves têm este nome.",
 		"openFromTable": "Abra uma chave pela tabela de chaves de API.",
 		"limitInvalid": "Os limites devem ser zero ou um número positivo."
+	},
+	"providerDashboard": {
+		"profile": "Perfil do provedor",
+		"overrides": "Alterações manuais",
+		"feedValue": "Último valor do feed",
+		"effectiveValue": "Valor efetivo",
+		"useFeedValue": "Usar valor do feed",
+		"activity": "Atividade do catálogo",
+		"noEdits": "Nenhuma edição manual ainda",
+		"phaseo": "Phaseo",
+		"provider": "Provedor",
+		"override": "Editado",
+		"revert": "Revertido",
+		"searchModels": "Buscar modelos",
+		"tiers": "Níveis de serviço",
+		"source": "Origem",
+		"feed": "Feed API",
+		"manual": "Manual",
+		"revertFailed": "Não foi possível reverter o campo",
+		"refreshNow": "Atualizar agora",
+		"feedUrl": "URL do feed",
+		"syncStatus": "Status da sincronização",
+		"lastSuccess": "Última importação bem-sucedida",
+		"nextSync": "Próxima consulta agendada",
+		"never": "Ainda não",
+		"invalidUrl": "URL inválida",
+		"needsAttention": "Precisa de atenção",
+		"healthy": "Atualizado",
+		"syncFailed": "A sincronização falhou. As ofertas existentes continuam disponíveis.",
+		"webhook": "Webhook assinado",
+		"ownerOnly": "Somente proprietários e administradores podem gerenciar webhooks.",
+		"refreshFailed": "Falha na atualização",
+		"refreshed": "Atualização concluída",
+		"statusUnavailable": "Status indisponível",
+		"providerId": "ID do provedor",
+		"approval": "Aprovação do provedor",
+		"website": "Site",
+		"access": "Acesso",
+		"notSet": "Não configurado",
+		"notVerified": "Não verificado"
 	}
 }

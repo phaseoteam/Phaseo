@@ -4610,7 +4610,8 @@
 		"search": "設定を検索",
 		"searchPlaceholder": "設定を検索…",
 		"becomeProvider": "プロバイダーになる",
-		"empty": "設定が見つかりません。"
+		"empty": "設定が見つかりません。",
+		"providerProfile": "プロバイダープロフィール"
 	},
 	"settingsAvailability": {
 		"title": "設定は一時的に利用できません",
@@ -4842,7 +4843,8 @@
 		"removed": "削除",
 		"reject": "拒否",
 		"integrations": "連携",
-		"providerSettings": "プロバイダー設定"
+		"providerSettings": "プロバイダー設定",
+		"providerProfile": "プロバイダープロフィール"
 	},
 	"sensitiveValues": {
 		"mask": "{label}を隠す",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "同じ名前のキーが複数あります。",
 		"openFromTable": "APIキーの一覧からキーを開いてください。",
 		"limitInvalid": "上限は0または正の数にしてください。"
+	},
+	"providerDashboard": {
+		"profile": "プロバイダープロフィール",
+		"overrides": "手動の変更",
+		"feedValue": "最新のフィード値",
+		"effectiveValue": "適用中の値",
+		"useFeedValue": "フィード値を使用",
+		"activity": "カタログ履歴",
+		"noEdits": "手動編集はまだありません",
+		"phaseo": "Phaseo",
+		"provider": "プロバイダー",
+		"override": "編集済み",
+		"revert": "復元済み",
+		"searchModels": "モデルを検索",
+		"tiers": "サービス階層",
+		"source": "データ元",
+		"feed": "API フィード",
+		"manual": "手動",
+		"revertFailed": "この項目を復元できませんでした",
+		"refreshNow": "今すぐ更新",
+		"feedUrl": "フィード URL",
+		"syncStatus": "同期状態",
+		"lastSuccess": "前回の成功した取り込み",
+		"nextSync": "次回の取得予定",
+		"never": "未実行",
+		"invalidUrl": "無効な URL",
+		"needsAttention": "確認が必要",
+		"healthy": "最新",
+		"syncFailed": "同期に失敗しました。既存の提供内容は利用できます。",
+		"webhook": "署名付き Webhook",
+		"ownerOnly": "Webhook は所有者と管理者のみが管理できます。",
+		"refreshFailed": "更新に失敗しました",
+		"refreshed": "更新が完了しました",
+		"statusUnavailable": "状態を取得できません",
+		"providerId": "プロバイダー ID",
+		"approval": "プロバイダー承認",
+		"website": "ウェブサイト",
+		"access": "アクセス",
+		"notSet": "未設定",
+		"notVerified": "未確認"
 	}
 }

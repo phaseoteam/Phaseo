@@ -4610,7 +4610,8 @@
 		"search": "البحث في الإعدادات",
 		"searchPlaceholder": "البحث في الإعدادات…",
 		"becomeProvider": "كن مزوّدًا",
-		"empty": "لم يتم العثور على إعدادات."
+		"empty": "لم يتم العثور على إعدادات.",
+		"providerProfile": "ملف المزوّد"
 	},
 	"settingsAvailability": {
 		"title": "الإعدادات غير متاحة مؤقتًا",
@@ -4842,7 +4843,8 @@
 		"removed": "مُزال",
 		"reject": "رفض",
 		"integrations": "التكاملات",
-		"providerSettings": "إعدادات المزوّد"
+		"providerSettings": "إعدادات المزوّد",
+		"providerProfile": "ملف المزوّد"
 	},
 	"sensitiveValues": {
 		"mask": "إخفاء {label}",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "عدة مفاتيح تحمل هذا الاسم.",
 		"openFromTable": "افتح مفتاحًا من جدول مفاتيح API.",
 		"limitInvalid": "يجب أن تكون الحدود صفرًا أو عددًا موجبًا."
+	},
+	"providerDashboard": {
+		"profile": "ملف المزوّد",
+		"overrides": "تعديلات يدوية",
+		"feedValue": "أحدث قيمة من التغذية",
+		"effectiveValue": "القيمة الفعلية",
+		"useFeedValue": "استخدام قيمة التغذية",
+		"activity": "نشاط الكتالوج",
+		"noEdits": "لا توجد تعديلات يدوية بعد",
+		"phaseo": "Phaseo",
+		"provider": "المزوّد",
+		"override": "تم التعديل",
+		"revert": "تمت الاستعادة",
+		"searchModels": "البحث عن النماذج",
+		"tiers": "مستويات الخدمة",
+		"source": "المصدر",
+		"feed": "تغذية API",
+		"manual": "يدوي",
+		"revertFailed": "تعذرت استعادة الحقل",
+		"refreshNow": "تحديث الآن",
+		"feedUrl": "عنوان التغذية",
+		"syncStatus": "حالة المزامنة",
+		"lastSuccess": "آخر استيراد ناجح",
+		"nextSync": "الجلب المجدول التالي",
+		"never": "ليس بعد",
+		"invalidUrl": "عنوان غير صالح",
+		"needsAttention": "يحتاج إلى معالجة",
+		"healthy": "محدّث",
+		"syncFailed": "فشلت المزامنة. تظل العروض الحالية متاحة.",
+		"webhook": "خطاف ويب موقّع",
+		"ownerOnly": "يمكن للمالكين والمسؤولين فقط إدارة خطافات الويب.",
+		"refreshFailed": "فشل التحديث",
+		"refreshed": "اكتمل التحديث",
+		"statusUnavailable": "الحالة غير متاحة",
+		"providerId": "معرّف المزوّد",
+		"approval": "اعتماد المزوّد",
+		"website": "الموقع الإلكتروني",
+		"access": "الوصول",
+		"notSet": "غير مُعدّ",
+		"notVerified": "غير موثّق"
 	}
 }

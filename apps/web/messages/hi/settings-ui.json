@@ -4610,7 +4610,8 @@
 		"search": "सेटिंग खोजें",
 		"searchPlaceholder": "सेटिंग खोजें…",
 		"becomeProvider": "प्रदाता बनें",
-		"empty": "कोई सेटिंग नहीं मिली।"
+		"empty": "कोई सेटिंग नहीं मिली।",
+		"providerProfile": "प्रदाता प्रोफ़ाइल"
 	},
 	"settingsAvailability": {
 		"title": "सेटिंग अस्थायी रूप से उपलब्ध नहीं हैं",
@@ -4842,7 +4843,8 @@
 		"removed": "हटाया गया",
 		"reject": "अस्वीकार करना",
 		"integrations": "एकीकरण",
-		"providerSettings": "प्रदाता सेटिंग्स"
+		"providerSettings": "प्रदाता सेटिंग्स",
+		"providerProfile": "प्रदाता प्रोफ़ाइल"
 	},
 	"sensitiveValues": {
 		"mask": "{label} छिपाएँ",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "कई कुंजियों का यह नाम है।",
 		"openFromTable": "API कुंजी तालिका से एक कुंजी खोलें।",
 		"limitInvalid": "सीमाएँ शून्य या सकारात्मक संख्या होनी चाहिए।"
+	},
+	"providerDashboard": {
+		"profile": "प्रदाता प्रोफ़ाइल",
+		"overrides": "मैन्युअल बदलाव",
+		"feedValue": "फ़ीड का नवीनतम मान",
+		"effectiveValue": "लागू मान",
+		"useFeedValue": "फ़ीड का मान उपयोग करें",
+		"activity": "कैटलॉग गतिविधि",
+		"noEdits": "अभी कोई मैन्युअल बदलाव नहीं",
+		"phaseo": "Phaseo",
+		"provider": "प्रदाता",
+		"override": "संपादित",
+		"revert": "बहाल",
+		"searchModels": "मॉडल खोजें",
+		"tiers": "सेवा स्तर",
+		"source": "स्रोत",
+		"feed": "API फ़ीड",
+		"manual": "मैन्युअल",
+		"revertFailed": "फ़ील्ड बहाल नहीं हो सकी",
+		"refreshNow": "अभी रीफ़्रेश करें",
+		"feedUrl": "फ़ीड URL",
+		"syncStatus": "सिंक स्थिति",
+		"lastSuccess": "पिछला सफल आयात",
+		"nextSync": "अगला निर्धारित फ़ेच",
+		"never": "अभी नहीं",
+		"invalidUrl": "अमान्य URL",
+		"needsAttention": "ध्यान आवश्यक",
+		"healthy": "अप टू डेट",
+		"syncFailed": "सिंक विफल हुआ। मौजूदा ऑफ़र उपलब्ध हैं।",
+		"webhook": "हस्ताक्षरित वेबहुक",
+		"ownerOnly": "केवल मालिक और एडमिन वेबहुक प्रबंधित कर सकते हैं।",
+		"refreshFailed": "रीफ़्रेश विफल",
+		"refreshed": "रीफ़्रेश पूरा हुआ",
+		"statusUnavailable": "स्थिति उपलब्ध नहीं",
+		"providerId": "प्रदाता ID",
+		"approval": "प्रदाता की स्वीकृति",
+		"website": "वेबसाइट",
+		"access": "पहुंच",
+		"notSet": "कॉन्फ़िगर नहीं",
+		"notVerified": "सत्यापित नहीं"
 	}
 }

@@ -4610,7 +4610,8 @@
 		"search": "Search settings",
 		"searchPlaceholder": "Search settings…",
 		"becomeProvider": "Become a provider",
-		"empty": "No settings found."
+		"empty": "No settings found.",
+		"providerProfile": "Provider profile"
 	},
 	"settingsAvailability": {
 		"title": "Settings are temporarily unavailable",
@@ -4842,7 +4843,8 @@
 		"removed": "Removed",
 		"reject": "Reject",
 		"integrations": "Integrations",
-		"providerSettings": "Provider settings"
+		"providerSettings": "Provider settings",
+		"providerProfile": "Provider profile"
 	},
 	"sensitiveValues": {
 		"mask": "Mask {label}",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "Multiple keys share this name.",
 		"openFromTable": "Open a key from the API keys table.",
 		"limitInvalid": "Limits must be zero or a positive number."
+	},
+	"providerDashboard": {
+		"profile": "Provider profile",
+		"overrides": "Manual overrides",
+		"feedValue": "Latest feed value",
+		"effectiveValue": "Effective value",
+		"useFeedValue": "Use feed value",
+		"activity": "Catalog activity",
+		"noEdits": "No manual edits yet",
+		"phaseo": "Phaseo",
+		"provider": "Provider",
+		"override": "Edited",
+		"revert": "Reverted",
+		"searchModels": "Search models",
+		"tiers": "Service tiers",
+		"source": "Source",
+		"feed": "API feed",
+		"manual": "Manual",
+		"revertFailed": "Could not revert this field",
+		"refreshNow": "Refresh now",
+		"feedUrl": "Feed URL",
+		"syncStatus": "Sync status",
+		"lastSuccess": "Last successful import",
+		"nextSync": "Next scheduled fetch",
+		"never": "Not yet",
+		"invalidUrl": "Invalid URL",
+		"needsAttention": "Needs attention",
+		"healthy": "Up to date",
+		"syncFailed": "Latest sync failed. Existing offers remain available.",
+		"webhook": "Signed webhook",
+		"ownerOnly": "Only provider owners and admins can manage webhooks.",
+		"refreshFailed": "Refresh failed",
+		"refreshed": "Refresh completed",
+		"statusUnavailable": "Status unavailable",
+		"providerId": "Provider ID",
+		"approval": "Provider approval",
+		"website": "Website",
+		"access": "Access",
+		"notSet": "Not configured",
+		"notVerified": "Not verified"
 	}
 }

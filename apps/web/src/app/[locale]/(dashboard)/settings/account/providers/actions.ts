@@ -73,6 +73,10 @@ export type ProviderManagedCatalog = {
 	source: { catalog_url: string | null; management_mode: "remote" | "managed"; managed_updated_at: string | null; catalog_version: string; updated_at: string; last_success_at: string | null; last_error: string | null; last_polled_at: string | null };
 	catalog: { schema_version?: "1.1"; data: ProviderManagedCatalogModel[] };
 	models: ProviderManagedCatalogModel[];
+	overrides: Record<string, Record<string, { value: unknown; actor_id: string; actor_name?: string | null; actor_kind: "phaseo" | "provider"; edited_at: string }>>;
+	feed_models: Array<Record<string, unknown> & { id: string }>;
+	activity: Array<{ id: string; model_slug: string; field: string; actor_name: string | null; actor_kind: "phaseo" | "provider"; action: "override" | "revert"; previous_value: unknown; value: unknown; created_at: string }>;
+	model_states: Record<string, { decision: string; decision_reason: string | null; route_projection_status: string; route_projection_error: string | null }>;
 	latest_run: { id: string; status: string; review_status: string; model_count: number | null; created_at: string; completed_at: string | null } | null;
 };
 
@@ -105,7 +109,7 @@ export async function fetchProviderCatalogVersionAction(providerSlug: string) {
 	);
 }
 
-export async function updateProviderCatalogAction(providerSlug: string, catalog: { schema_version?: "1.1"; data: unknown[] } | { mode: "remote" }, expectedUpdatedAt: string) {
+export async function updateProviderCatalogAction(providerSlug: string, catalog: { schema_version?: "1.1"; data: unknown[] } | { mode: "remote" } | { refresh: true } | { revert: { modelId: string; field: string } }, expectedUpdatedAt: string) {
 	try { return await fetchAccountWebApi<{ ok: true; sync_warning?: string | null } & ProviderManagedCatalog>(
 		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
 		await accessToken(),

@@ -1,6 +1,7 @@
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { notifyPendingProviderModels } from "@/lib/provider-model-notifications";
+import { applyCatalogOverrides, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
 import {
 	fetchAndValidateProviderCatalog,
 	normalizeProviderCatalog,
@@ -15,6 +16,8 @@ type ProviderCatalogSource = {
 	catalog_url: string | null;
 	management_mode: "remote" | "managed";
 	managed_catalog: unknown;
+	catalog_overrides?: CatalogOverrides;
+	updated_at: string;
 	status: string;
 	poll_interval_seconds: number;
 	consecutive_failures: number;
@@ -26,7 +29,7 @@ type ProviderCatalogSource = {
 	refresh_requested: boolean;
 };
 
-const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
+const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,catalog_overrides,updated_at,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
 const MAX_WEBHOOK_SKEW_SECONDS = 300;
 
 function bytes(value: Uint8Array): ArrayBuffer {
@@ -199,7 +202,11 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "not_modified", runId };
 		}
 		await renewLease(true);
-		const preview = await validateProviderCatalogPricingMeters(client, catalog.preview);
+		const feedModels = catalog.preview.allModels;
+		const effectivePreview = source.management_mode === "remote" && catalog.preview.valid
+			? normalizeProviderCatalog(normalizedCatalogDocument(applyCatalogOverrides(feedModels, source.catalog_overrides ?? {})))
+			: catalog.preview;
+		const preview = await validateProviderCatalogPricingMeters(client, effectivePreview);
 		if (!preview.valid) {
 			await renewLease(true);
 			await client.from("provider_catalog_sync_runs").update({ status: "rejected", review_status: "needs_changes", model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: false, issues: preview.issues }, completed_at: new Date().toISOString(), error_message: "Catalog validation failed." }).eq("id", runId);
@@ -208,7 +215,9 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "rejected", runId, modelCount: preview.modelCount };
 		}
 
-		const applied = await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
+		const applied = source.management_mode === "remote"
+			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: source.updated_at })
+			: await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
 		if (applied.error) {
 			console.error("provider_catalog_apply_failed", { providerSlug, errorCode: applied.error.code });
 			if (applied.error.message.includes("provider_catalog_model_unavailable")) throw new Error("A catalog model ID refers to a hidden or unavailable model. Use a public canonical model ID.");

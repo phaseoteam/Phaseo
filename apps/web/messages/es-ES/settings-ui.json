@@ -4610,7 +4610,8 @@
 		"search": "Buscar ajustes",
 		"searchPlaceholder": "Buscar ajustes…",
 		"becomeProvider": "Convertirse en proveedor",
-		"empty": "No se encontraron ajustes."
+		"empty": "No se encontraron ajustes.",
+		"providerProfile": "Perfil del proveedor"
 	},
 	"settingsAvailability": {
 		"title": "Los ajustes no están disponibles temporalmente",
@@ -4842,7 +4843,8 @@
 		"removed": "Eliminado",
 		"reject": "Rechazar",
 		"integrations": "Integraciones",
-		"providerSettings": "Configuración del proveedor"
+		"providerSettings": "Configuración del proveedor",
+		"providerProfile": "Perfil del proveedor"
 	},
 	"sensitiveValues": {
 		"mask": "Ocultar {label}",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "Varias claves tienen este nombre.",
 		"openFromTable": "Abrir una clave desde la tabla de claves API.",
 		"limitInvalid": "Los límites deben ser cero o un número positivo."
+	},
+	"providerDashboard": {
+		"profile": "Perfil del proveedor",
+		"overrides": "Cambios manuales",
+		"feedValue": "Último valor del feed",
+		"effectiveValue": "Valor efectivo",
+		"useFeedValue": "Usar valor del feed",
+		"activity": "Actividad del catálogo",
+		"noEdits": "Aún no hay cambios manuales",
+		"phaseo": "Phaseo",
+		"provider": "Proveedor",
+		"override": "Editado",
+		"revert": "Restaurado",
+		"searchModels": "Buscar modelos",
+		"tiers": "Niveles de servicio",
+		"source": "Origen",
+		"feed": "Feed API",
+		"manual": "Manual",
+		"revertFailed": "No se pudo restaurar el campo",
+		"refreshNow": "Actualizar ahora",
+		"feedUrl": "URL del feed",
+		"syncStatus": "Estado de sincronización",
+		"lastSuccess": "Última importación correcta",
+		"nextSync": "Próxima consulta programada",
+		"never": "Todavía no",
+		"invalidUrl": "URL no válida",
+		"needsAttention": "Requiere atención",
+		"healthy": "Actualizado",
+		"syncFailed": "La sincronización falló. Las ofertas existentes siguen disponibles.",
+		"webhook": "Webhook firmado",
+		"ownerOnly": "Solo propietarios y administradores pueden gestionar webhooks.",
+		"refreshFailed": "Error al actualizar",
+		"refreshed": "Actualización completada",
+		"statusUnavailable": "Estado no disponible",
+		"providerId": "ID del proveedor",
+		"approval": "Aprobación del proveedor",
+		"website": "Sitio web",
+		"access": "Acceso",
+		"notSet": "Sin configurar",
+		"notVerified": "Sin verificar"
 	}
 }

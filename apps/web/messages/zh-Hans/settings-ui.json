@@ -4610,7 +4610,8 @@
 		"search": "搜索设置",
 		"searchPlaceholder": "搜索设置…",
 		"becomeProvider": "成为提供商",
-		"empty": "未找到设置。"
+		"empty": "未找到设置。",
+		"providerProfile": "提供商资料"
 	},
 	"settingsAvailability": {
 		"title": "设置暂时不可用",
@@ -4842,7 +4843,8 @@
 		"removed": "已移除",
 		"reject": "拒绝",
 		"integrations": "集成",
-		"providerSettings": "提供商设置"
+		"providerSettings": "提供商设置",
+		"providerProfile": "提供商资料"
 	},
 	"sensitiveValues": {
 		"mask": "隐藏{label}",
@@ -5808,5 +5810,45 @@
 		"nameConflict": "多个密钥使用此名称。",
 		"openFromTable": "从 API 密钥表中打开密钥。",
 		"limitInvalid": "限制必须为零或正数。"
+	},
+	"providerDashboard": {
+		"profile": "提供商资料",
+		"overrides": "手动覆盖",
+		"feedValue": "最新数据源值",
+		"effectiveValue": "实际生效值",
+		"useFeedValue": "使用数据源值",
+		"activity": "目录活动",
+		"noEdits": "尚无手动编辑",
+		"phaseo": "Phaseo",
+		"provider": "提供商",
+		"override": "已编辑",
+		"revert": "已恢复",
+		"searchModels": "搜索模型",
+		"tiers": "服务层级",
+		"source": "来源",
+		"feed": "API 数据源",
+		"manual": "手动",
+		"revertFailed": "无法恢复此字段",
+		"refreshNow": "立即刷新",
+		"feedUrl": "数据源 URL",
+		"syncStatus": "同步状态",
+		"lastSuccess": "上次成功导入",
+		"nextSync": "下次计划获取",
+		"never": "尚未执行",
+		"invalidUrl": "无效 URL",
+		"needsAttention": "需要处理",
+		"healthy": "已是最新",
+		"syncFailed": "同步失败。现有报价仍可使用。",
+		"webhook": "签名 Webhook",
+		"ownerOnly": "只有所有者和管理员可以管理 Webhook。",
+		"refreshFailed": "刷新失败",
+		"refreshed": "刷新完成",
+		"statusUnavailable": "状态不可用",
+		"providerId": "提供商 ID",
+		"approval": "提供商审批",
+		"website": "网站",
+		"access": "访问权限",
+		"notSet": "未配置",
+		"notVerified": "未验证"
 	}
 }

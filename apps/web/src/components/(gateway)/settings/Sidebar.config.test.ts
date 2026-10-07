@@ -6,7 +6,7 @@ describe("settings sidebar navigation", () => {
 		expect(groups.map((group) => group.scope)).toEqual(["personal", "provider"]);
 		expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual(["Profile", "Account", "Your Models", "Provider Review", "Integrations"]);
 		expect(getActiveSettingsNav("/settings/provider/models", { providerMode: true })?.group.scope).toBe("provider");
-		expect(getActiveSettingsNav("/settings/provider/review", { providerMode: true })?.item.label).toBe("Provider Review");
+		expect(getActiveSettingsNav("/settings/provider/review", { providerMode: true })?.item.label).toBe("Provider Profile");
 		expect(groups.flatMap((group) => group.items).some((item) => item.children?.some((child) => child.href === "/settings/account/providers"))).toBe(false);
 	});
 	it("keeps personal settings focused on the account", () => {
