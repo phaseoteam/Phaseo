@@ -28,6 +28,22 @@ function row(overrides: Partial<ModelData>): ModelData {
 }
 
 describe("groupModelRows", () => {
+	it("keeps one Luna row with both capabilities and separates their pricing", () => {
+		const groups = groupModelRows([
+			row({ modelId: "openai/gpt-6-luna", endpoint: "text.generate" }),
+			row({ modelId: "openai/gpt-6-luna", endpoint: "decisions.make",
+				provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: 0, features: [] } }),
+		]);
+		expect(groups).toHaveLength(1);
+		expect(groups[0].endpoints).toEqual(["text.generate", "decisions.make"]);
+		expect(groups[0].providers).toHaveLength(1);
+		expect(groups[0].inputPrices).toEqual([1]);
+		expect(groups[0].outputPrices).toEqual([2]);
+		expect(groups[0].operationPrices).toEqual([
+			{ capability: "text.generate", inputPrices: [1], outputPrices: [2] },
+			{ capability: "decisions.make", inputPrices: [0.1], outputPrices: [0] },
+		]);
+	});
 	it("renders one aggregate per canonical model with deduplicated providers", () => {
 		const result = groupModelRows([
 			row({}),

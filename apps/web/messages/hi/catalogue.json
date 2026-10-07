@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "वीडियो जनरेशन",
 			"endpointImageVariations": "छवि विविधताएँ",
 			"endpointMusicGeneration": "संगीत जनरेशन",
-			"tierPrivate": "निजी"
+			"tierPrivate": "निजी",
+			"capabilityTextGeneration": "टेक्स्ट जनरेशन",
+			"modalityDecisions": "निर्णय"
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",

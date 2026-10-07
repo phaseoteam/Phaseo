@@ -249,7 +249,9 @@
 			"endpointVideoGeneration": "動画生成",
 			"endpointImageVariations": "画像バリエーション",
 			"endpointMusicGeneration": "音楽生成",
-			"tierPrivate": "プライベート"
+			"tierPrivate": "プライベート",
+			"capabilityTextGeneration": "テキスト生成",
+			"modalityDecisions": "判断"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",
