@@ -23,6 +23,10 @@ begin
   perform public.save_provider_catalog_overrides('catalog-overrides-test','aaaaaaaa-7777-4444-8888-000000000001','provider',version,'[{"model_id":"catalog-overrides-test/model","field":"name","revert":true}]');
   assert (select not (catalog_overrides->'catalog-overrides-test/model' ? 'name') from public.provider_catalog_sources where provider_slug='catalog-overrides-test');
   assert exists(select 1 from public.provider_catalog_edit_events where provider_slug='catalog-overrides-test' and actor_kind='provider' and action='revert' and previous_value='"Corrected"' and value='"Feed name"');
+  update public.provider_catalog_sources set feed_models=jsonb_set(feed_models,'{0,pricing}','[{"meterKey":"input_text_tokens","priceNanos":100000000,"unitQuantity":1000000,"unit":"token","displayUnit":"1M tokens"}]') where provider_slug='catalog-overrides-test';
+  select updated_at into version from public.provider_catalog_sources where provider_slug='catalog-overrides-test';
+  perform public.save_provider_catalog_overrides('catalog-overrides-test','aaaaaaaa-7777-4444-8888-000000000001','phaseo',version,'[{"model_id":"catalog-overrides-test/model","field":"/pricing/input_text_tokens/$rate","value":{"priceNanos":50000000,"unitQuantity":1000000,"unit":"token","displayUnit":"1M tokens"}}]');
+  assert exists(select 1 from public.provider_catalog_edit_events where provider_slug='catalog-overrides-test' and field='/pricing/input_text_tokens/$rate' and previous_value->>'priceNanos'='100000000' and value->>'priceNanos'='50000000');
   begin
     perform public.apply_provider_catalog_feed_snapshot('catalog-overrides-test',gen_random_uuid(),'[]','[]',version-interval '1 minute');
     raise exception 'stale feed unexpectedly accepted';

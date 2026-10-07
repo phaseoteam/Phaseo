@@ -10,7 +10,7 @@ import {
 	type ProviderCatalogPreview,
 } from "./provider-catalog";
 import { syncProviderCatalog } from "./provider-catalog-sync";
-import { applyCatalogOverrides, catalogOverrideChanges, normalizedCatalogDocument, catalogEditableFields, type CatalogOverrides } from "./provider-catalog-overrides";
+import { applyCatalogOverrides, catalogOverrideChanges, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
 import { isProviderAccessBlockedByReview, latestApplicableProviderReviewApplication } from "./provider-review-access";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
@@ -335,7 +335,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			const feed = current.feed_models;
 			const overrides = current.overrides as CatalogOverrides;
 			if (revert) {
-				if (typeof revert.modelId !== "string" || ![...catalogEditableFields, "$model", "$removed"].includes(revert.field)) return errorResponse(c, "invalid_override_field", 400);
+				if (typeof revert.modelId !== "string" || typeof revert.field !== "string" || !Object.hasOwn(overrides[revert.modelId] ?? {}, revert.field)) return errorResponse(c, "invalid_override_field", 400);
 				const restored = structuredClone(overrides);
 				if (restored[revert.modelId]) delete restored[revert.modelId][revert.field];
 				document = normalizedCatalogDocument(applyCatalogOverrides(feed, restored));

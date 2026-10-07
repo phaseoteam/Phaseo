@@ -10,6 +10,7 @@ declare
   fields jsonb;
   actor_name text;
   feed_value jsonb;
+  feed_model jsonb;
 begin
   select * into source from public.provider_catalog_sources where provider_slug = p_provider_slug for update;
   if not found or source.management_mode <> 'remote' then raise exception 'provider_catalog_remote_source_required'; end if;
@@ -20,10 +21,13 @@ begin
   source.feed_models := coalesce(source.feed_models,p_feed_models);
   for change in select value from jsonb_array_elements(p_changes) loop
     model_id := change->>'model_id'; field_name := change->>'field';
-    if model_id is null or field_name is null or field_name not in ('$model','$removed','name','description','providerModelSlug','inputModalities','outputModalities','contextLength','maxOutputTokens','availability','availableFrom','deprecatedAt','shutdownAt','capabilities','pricing','serviceTiers') then raise exception 'provider_catalog_override_field_invalid'; end if;
+    if model_id is null or field_name is null or (field_name not in ('$model','$removed','name','description','providerModelSlug','inputModalities','outputModalities','contextLength','maxOutputTokens','availability','availableFrom','deprecatedAt','shutdownAt','capabilities','pricing','serviceTiers')
+      and field_name !~ '^/pricing/[^/]+(/(modality|direction|unit|unitQuantity|priceNanos|[$]rate|displayLabel|displayUnit|conditions))?$'
+      and field_name !~ '^/serviceTiers/(standard|fast|ultrafast|flex|batch)(/(providerModelSlug|upstreamServiceTier|availability)|/pricing/[^/]+(/(modality|direction|unit|unitQuantity|priceNanos|[$]rate|displayLabel|displayUnit|conditions))?)?$') then raise exception 'provider_catalog_override_field_invalid'; end if;
     fields := coalesce(source.catalog_overrides->model_id, '{}'::jsonb);
     old_value := fields->field_name;
-    select model->field_name into feed_value from jsonb_array_elements(coalesce(source.feed_models,'[]'::jsonb)) model where model->>'id'=model_id limit 1;
+    select model into feed_model from jsonb_array_elements(coalesce(source.feed_models,'[]'::jsonb)) model where model->>'id'=model_id limit 1;
+    feed_value := public.provider_catalog_field_value(feed_model,field_name);
     if coalesce((change->>'revert')::boolean, false) then
       if old_value is null then continue; end if;
       fields := fields - field_name;
