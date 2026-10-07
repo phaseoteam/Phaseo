@@ -14,6 +14,7 @@ try {
   await db.exec('alter table public.byok_keys add column name text');
   await db.exec(await read('../migrations/20260916121303_gateway_context_bundle.sql'));
   await db.exec(await read('../schemas/private/functions/gateway_context_access.sql'));
+  await db.exec(await read('../schemas/private/functions/gateway_compiled_context_access.sql'));
   await db.exec(await read('../schemas/public/functions/gateway_fetch_request_context_without_workspace_budget.sql'));
   await db.exec(`
     insert into public.workspaces(id,billing_mode,created_at) values ('${workspace}','wallet',now());
@@ -32,6 +33,9 @@ try {
   const legacyUnlimited = await access('public.gateway_fetch_request_context_without_workspace_budget');
   assert.equal(legacyUnlimited.key_limit_ok.ok, true);
   assert.equal(legacyUnlimited.team_enrichment.total_requests, null);
+  const compiledUnlimited = await access('private.gateway_compiled_context_access');
+  assert.equal(compiledUnlimited.key_limit_ok.ok, true);
+  assert.equal(compiledUnlimited.team_enrichment.total_requests, null);
   await db.exec('reset role');
   await db.query('update public.wallets set balance_nanos=100000000 where workspace_id=$1', [workspace]);
   await db.exec('set role service_role');
@@ -69,6 +73,7 @@ try {
     await db.exec('set role service_role');
     assert.equal((await access()).key_limit_ok.reason, reason);
     assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, reason);
+    assert.equal((await access('private.gateway_compiled_context_access')).key_limit_ok.reason, reason);
   }
   await db.exec('reset role');
   await db.query('update public.keys set soft_blocked=true where id=$1', [key]);
