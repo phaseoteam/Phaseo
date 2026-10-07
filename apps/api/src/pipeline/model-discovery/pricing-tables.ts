@@ -36,7 +36,7 @@ export const PRICING_TABLE_SOURCES: PricingTableSource[] = [
 	{ providerId: "deepseek", providerName: "DeepSeek", sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing" },
 	{ providerId: "fireworks", providerName: "Fireworks", sourceUrl: "https://docs.fireworks.ai/serverless/pricing" },
 	{ providerId: "google-ai-studio", providerName: "Google AI Studio", sourceUrl: "https://ai.google.dev/gemini-api/docs/pricing" },
-	{ providerId: "mistral", providerName: "Mistral", sourceUrl: "https://mistral.ai/pricing/", extraction: "price-content" },
+	{ providerId: "mistral", providerName: "Mistral", sourceUrl: "https://docs.mistral.ai/inference/pricing" },
 	{ providerId: "moonshotai", providerName: "Moonshot AI", sourceUrl: "https://platform.kimi.ai/docs/pricing/chat-k26.md", extraction: "mdx" },
 	{ providerId: "openai", providerName: "OpenAI", sourceUrl: "https://developers.openai.com/api/docs/pricing" },
 	{ providerId: "perplexity", providerName: "Perplexity", sourceUrl: "https://docs.perplexity.ai/docs/getting-started/pricing" },
@@ -56,6 +56,14 @@ const MDX_TABLE_PATTERN = /<DocTable\b[\s\S]*?\n\s*\/>/gi;
 const MAX_PRICING_SAMPLES = 6;
 const MAX_STORED_CONTENT_LINES = 120;
 const MAX_STORED_CONTENT_LINE_CHARS = 240;
+
+export function hasPricingSourceChanged(
+	previous: { source_url: string; fingerprint: string } | undefined,
+	current: { sourceUrl: string; fingerprint: string },
+): boolean {
+	// A replacement source needs its own baseline; unrelated pages are not a pricing diff.
+	return Boolean(previous && previous.source_url === current.sourceUrl && previous.fingerprint !== current.fingerprint);
+}
 
 export function pricingContentLines(text: string): string[] {
 	return text

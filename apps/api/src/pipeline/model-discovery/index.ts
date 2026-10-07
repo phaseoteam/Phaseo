@@ -26,6 +26,7 @@ import {
 	shouldRunPricingMonitor,
 	savePricingPageStates,
 	summarizeMissingConfiguredProviderModels,
+	saveDiscordNotificationFingerprint,
 	toBool,
 	toInt,
 } from "./helpers";
@@ -42,7 +43,7 @@ import {
 	syncUpstreamDiscoveryIssues,
 } from "./github-issues";
 import { dispatchProviderCatalogSync, type CatalogSyncDispatchSummary } from "./github-dispatch";
-import { fetchPricingTableSnapshots, type PricingTableSnapshot } from "./pricing-tables";
+import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
 import {
 	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
@@ -887,6 +888,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		&& shouldRunPricingMonitor(args);
 
 	await insertRunStart(runId, args, startedAt.toISOString());
+	let deliveredNotificationFingerprint: string | null = null;
 
 	try {
 		const results: ProviderResult[] = [];
@@ -1039,11 +1041,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				pricingTableMonitor.errors = errors;
 				pricingTableMonitor.sourcesChecked = sources.length;
 				pricingTableMonitor.baselineInitialized = sources.some(
-					(source) => !previousPages.has(canonicalProviderId(source.providerId))
+					(source) => previousPages.get(canonicalProviderId(source.providerId))?.source_url !== source.sourceUrl
 				);
 				pricingTableMonitor.providerChanges = sources.filter((source) => {
 					const previous = previousPages.get(canonicalProviderId(source.providerId));
-					return Boolean(previous) && previous.fingerprint !== source.fingerprint;
+					return hasPricingSourceChanged(previous, source);
 				});
 				pricingTableMonitor.updatesDetected = pricingTableMonitor.providerChanges.length;
 				// State is persisted only after notifications succeed so a delivery
@@ -1165,8 +1167,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					notificationError = notificationSummary.error ?? null;
 					if (!notificationSummary.delivered) notificationFingerprint = null;
 				}
+				if (notificationSummary.delivered && notificationFingerprint) {
+					deliveredNotificationFingerprint = notificationFingerprint;
+					await saveDiscordNotificationFingerprint(runId, notificationFingerprint);
+				}
 			} catch (error) {
-				notificationFingerprint = null;
+				notificationFingerprint = deliveredNotificationFingerprint;
 				notificationError = error instanceof Error ? error.message : String(error);
 				console.error("[model-discovery] Discord notification failed:", notificationError);
 			}
@@ -1415,7 +1421,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				pending: 0,
 				error: reason,
 			},
-			notificationFingerprint: null,
+			notificationFingerprint: deliveredNotificationFingerprint,
 		};
 		try {
 			await updateRunFinish(failedSummary, "failed", { error: reason });

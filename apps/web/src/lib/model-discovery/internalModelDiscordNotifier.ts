@@ -208,7 +208,8 @@ export function formatSingleModelEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
-	const imageUrl = resolveImageUrl(safeModel.imageUrl);
+	const imageUrl = resolveImageUrl(safeModel.imageUrl)
+		?? `${DEFAULT_ASSET_BASE_URL}/og/models/${safeModel.modelId.split("/").map(encodeURIComponent).join("/")}?v=3`;
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,
@@ -233,7 +234,8 @@ function formatPerModelDetailEmbed(
 		`[View Model](${safeModel.modelUrl})`,
 	];
 
-	const imageUrl = resolveImageUrl(safeModel.imageUrl);
+	const imageUrl = resolveImageUrl(safeModel.imageUrl)
+		?? `${DEFAULT_ASSET_BASE_URL}/og/models/${safeModel.modelId.split("/").map(encodeURIComponent).join("/")}?v=3`;
 	return {
 		title: truncateText(buildDisplayTitle(safeModel), 180),
 		url: safeModel.modelUrl,

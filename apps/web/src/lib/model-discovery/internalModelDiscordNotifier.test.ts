@@ -38,6 +38,7 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds[0].description).toContain("[View Model](https://phaseo.app/models/anthropic/claude-mythos-preview)");
 		expect(payload.embeds[0].footer.text).toBe("Phaseo | 10 Apr 2026");
 		expect(payload.embeds[0].color).toBe(0xcc785c);
+		expect(payload.embeds[0].image?.url).toBe("https://phaseo.app/og/models/anthropic/claude-mythos-preview?v=3");
 		expect(payload.avatar_url).toBe("https://phaseo.app/png_logo_light.png");
 	});
 
@@ -57,6 +58,7 @@ describe("internal model discord notifier", () => {
 		expect(payload.embeds).toHaveLength(3);
 		expect(payload.embeds[0].title).toBe("OpenAI: Model 1");
 		expect(payload.embeds[1].title).toBe("OpenAI: Model 2");
+		expect(payload.embeds[1].image?.url).toBe("https://phaseo.app/og/models/openai/model-2?v=3");
 		expect(payload.embeds[2].title).toBe("+13 more models");
 		expect(payload.embeds[2].description).toContain("[View Models](https://phaseo.app/models)");
 	});
