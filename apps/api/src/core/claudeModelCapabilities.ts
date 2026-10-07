@@ -6,6 +6,8 @@ export function usesClaudeAdaptiveThinkingControls(model: string | null | undefi
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
 	return (
+		normalized.includes("claude-haiku-5-5") ||
+		normalized.includes("claude-haiku-5.5") ||
 		normalized.includes("claude-sonnet-5") ||
 		normalized.includes("claude-fable-5") ||
 		normalized.includes("claude-mythos-5") ||
@@ -20,5 +22,9 @@ export function usesClaudeAdaptiveThinkingControls(model: string | null | undefi
 export function supportsAnthropicThinkingDisabled(model: string | null | undefined): boolean {
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
-	return normalized.includes("claude-sonnet-5");
+	return (
+		normalized.includes("claude-sonnet-5") ||
+		normalized.includes("claude-haiku-5-5") ||
+		normalized.includes("claude-haiku-5.5")
+	);
 }
