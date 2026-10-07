@@ -36,6 +36,21 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it.each(["google-vertex", "google-vertex-eu"])("sends Haiku 5.5 adaptive thinking through %s", async (providerId) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const host = providerId === "google-vertex-eu" ? "aiplatform.eu.rep.googleapis.com" : "aiplatform.googleapis.com";
+		const location = providerId === "google-vertex-eu" ? "eu" : "global";
+		const mock = installFetchMock([{ match: url => url === `https://${host}/v1/projects/test-project/locations/${location}/publishers/anthropic/models/claude-haiku-5-5:streamRawPredict`, response: Response.json({ id: "message", content: [{ type: "text", text: "hi" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }) }]);
+		try {
+			const args = buildExecuteArgs();
+			(args.ir as IRChatRequest).reasoning = { effort: "high" };
+			await execute({ ...args, providerId, providerModelSlug: "claude-haiku-5-5" });
+			expect(mock.calls[0].bodyJson).toMatchObject({ anthropic_version: "vertex-2023-10-16", thinking: { type: "adaptive" }, output_config: { effort: "high" } });
+			expect(mock.calls[0].bodyJson).not.toHaveProperty("model");
+		} finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+
 	it("routes managed GPT OSS 20B to its supported region and preserves SSE usage", async () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);

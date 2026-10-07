@@ -1102,6 +1102,42 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	test("retains prompt-length tiers alongside cache write TTLs", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			["lte", "5m", 0.125], ["lte", "1h", 0.2],
+			["gt", "5m", 0.625], ["gt", "1h", 1],
+		].map(([op, ttl, price], index) => ({
+			...provider.pricing_rules[0]!,
+			id: `haiku-cache-${index}`,
+			meter: `cached_write_text_tokens_${ttl}`,
+			price_per_unit: Number(price),
+			unit: "token",
+			unit_size: 1_000_000,
+			match: [{ path: "long_context_input_tokens", op: String(op), value: 100_000 }],
+		}));
+
+		const sections = buildProviderSections(provider, "standard");
+		expect(sections.textTokens?.write).toHaveLength(4);
+		expect(sections.textTokens?.write).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ per1M: 0.125, label: "5 min TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ per1M: 0.2, label: "1 hour TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ per1M: 0.625, label: "5 min TTL · > 100k input tokens" }),
+				expect.objectContaining({ per1M: 1, label: "1 hour TTL · > 100k input tokens" }),
+			]),
+		);
+		provider.pricing_rules = provider.pricing_rules.map((rule) => ({
+			...rule, effective_from: "2030-01-01T00:00:00.000Z",
+		}));
+		expect(buildProviderSections(provider, "standard").upcomingChanges).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ subtitle: "5 min TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ subtitle: "1 hour TTL · > 100k input tokens" }),
+			]),
+		);
+	});
+
 	test("shows off-peak pricing first outside configured UTC windows", () => {
 		const provider = makeProviderPricing();
 		provider.pricing_rules = [{

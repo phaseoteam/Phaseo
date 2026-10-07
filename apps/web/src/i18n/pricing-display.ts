@@ -63,6 +63,9 @@ export function localizedPricingDisplayLabel(value: string | null | undefined, l
 		const quantity = per[1] ? Number(per[1].replace(/,/g, "")) * (per[2]?.toLowerCase() === "m" ? 1_000_000 : per[2]?.toLowerCase() === "k" ? 1_000 : 1) : 1;
 		return t("Common.ui.providerCardCopy.perQuantityUnit" as never, ({ quantity: quantity.toLocaleString(locale, { notation: "compact", maximumFractionDigits: 1 }), unit: unitName(per[3], quantity, t) }) as never);
 	}
+	if (raw.includes(" · ")) return raw.split(" · ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" · ");
+	const inputRange = raw.match(/^(.+?) input tokens$/i);
+	if (inputRange) return `${inputRange[1]} ${localizedPricingDisplayLabel("input", locale, t)} ${localizedPricingDisplayLabel("tokens", locale, t)}`;
 	const ttl = raw.match(/^(.+?)\s+(?:cache\s+)?ttl$/i);
 	if (ttl) {
 		const duration = ttl[1].match(/^(\d+)\s*(m|min|mins|minutes?|h|hrs?|hours?|d|days?)$/i);
@@ -77,7 +80,6 @@ export function localizedPricingDisplayLabel(value: string | null | undefined, l
 	if (tokens) return t("Common.ui.pricingDisplayCopy.modalityTokens" as never, ({ modality: localizedPricingDisplayLabel(tokens[1], locale, t) }) as never);
 	const inputs = raw.match(/^(Text|Image|Audio|Video) Inputs$/i);
 	if (inputs) return t("Common.ui.pricingDisplayCopy.modalityInputs" as never, ({ modality: localizedPricingDisplayLabel(inputs[1], locale, t) }) as never);
-	if (raw.includes(" · ")) return raw.split(" · ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" · ");
 	if (raw.includes(" - ")) return raw.split(" - ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" - ");
 	const condition = raw.match(/^(quality|resolution|size)\s*=\s*(.+)$/i);
 	if (condition) return `${localizedPricingDisplayLabel(condition[1], locale, t)} = ${localizedPricingDisplayLabel(condition[2], locale, t)}`;

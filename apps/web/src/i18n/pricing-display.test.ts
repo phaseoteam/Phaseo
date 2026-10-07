@@ -23,6 +23,11 @@ describe("generated pricing presentation copy", () => {
 			expect(display).not.toContain("Common.ui.");
 			if (locale !== "en-GB") expect(display).not.toMatch(/\b(?:Per|No cache|With audio|No audio|All usage|Generation|Cache Reads|Inputs|cache TTL)\b/);
 		}
+		const tier = localizedPricingDisplayLabel("5 min TTL · ≤ 100K input tokens", locale, t as never);
+		expect(tier).toBe([
+			localizedPricingDisplayLabel("5 min TTL", locale, t as never),
+			`≤ 100K ${localizedPricingDisplayLabel("input", locale, t as never)} ${localizedPricingDisplayLabel("tokens", locale, t as never)}`,
+		].join(" · "));
 		expect(localizedPricingDisplayLabel("custom_meter_id", locale, t as never)).toBe("custom_meter_id");
 	});
 });

@@ -4,8 +4,8 @@
 	"private": true,
 	"scripts": {
 		"dev": "mintlify dev --port 3101 --no-open",
-		"build": "pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && pnpm dlx mint validate",
-		"check:links": "pnpm dlx mint broken-links",
+		"build": "pnpm run openapi:locales:check && pnpm run validate:locales && pnpm run translation:freshness:check && mintlify validate",
+		"check:links": "mintlify broken-links",
 		"openapi:locales": "node scripts/generate-localized-openapi.mjs",
 		"openapi:locales:check": "node scripts/generate-localized-openapi.mjs --check",
 		"translation:freshness:init": "node scripts/translation-freshness.mjs init",

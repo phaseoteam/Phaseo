@@ -897,7 +897,7 @@ export function CacheWriteSection({
 			<div className="space-y-1">
 				{rows.map((t, i) => (
 					<div key={`cache-write-${i}`} className="space-y-0.5">
-						<div className="flex items-baseline gap-1">
+						<div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
 							{renderComparisonPrices(
 								t.per1M,
 								t.basePer1M,

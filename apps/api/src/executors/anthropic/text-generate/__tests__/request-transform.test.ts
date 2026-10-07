@@ -31,6 +31,24 @@ afterEach(() => {
 });
 
 describe("irToAnthropicMessages service controls", () => {
+	it.each(["claude-haiku-5-5", "anthropic/claude-haiku-5.5"])("uses adaptive thinking and effort for %s", (model) => {
+		const request = createBaseRequest();
+		request.model = model;
+		request.reasoning = { effort: "high" };
+		request.temperature = 0.5;
+		const payload = irToAnthropicMessages(request);
+		expect(payload.thinking).toEqual({ type: "adaptive", display: "summarized" });
+		expect(payload.output_config?.effort).toBe("high");
+		expect(payload.temperature).toBeUndefined();
+	});
+
+	it.each(["claude-haiku-5-5", "anthropic/claude-haiku-5.5"])("allows thinking to be disabled for %s", (model) => {
+		const request = createBaseRequest();
+		request.model = model;
+		request.reasoning = { enabled: false };
+		expect(irToAnthropicMessages(request).thinking).toEqual({ type: "disabled" });
+	});
+
 	it("supplies the minimum documented budget for legacy enabled thinking", () => {
 		const request = createBaseRequest();
 		request.reasoning = { enabled: true };
