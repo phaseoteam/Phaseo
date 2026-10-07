@@ -4,13 +4,14 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public gateway catalogue", () => {
-	it.each([false, true])("prefers the canonical Luna route unless it starts in the future (future=%s)", async future => {
-		const alias = "openai:openai/chat-latest";
-		const canonical = "openai:openai/gpt-6-luna";
+	it.each([[false, false], [true, false], [false, true], [true, true]])("prefers canonical Luna unless it starts in the future (future=%s, modern IDs=%s)", async (future, modern) => {
+		const alias = modern ? "openai:openai/gpt-6-luna:chat-latest" : "openai:openai/chat-latest";
+		const canonical = modern ? "openai:openai/gpt-6-luna:gpt-6-luna" : "openai:openai/gpt-6-luna";
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) return Response.json([alias, canonical].map(id => ({
 				provider_api_model_id: id, provider_id: "openai", api_model_id: "openai/gpt-6-luna", model_id: "openai/gpt-6-luna",
+				provider_model_slug: id === canonical ? "gpt-6-luna" : "chat-latest",
 				is_active_gateway: true, effective_from: id === canonical && future ? "2099-01-01T00:00:00Z" : null,
 			})));
 			if (url.includes("v2_route_capabilities")) return Response.json([
