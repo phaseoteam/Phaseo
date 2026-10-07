@@ -239,6 +239,9 @@ begin
     ), jsonb_build_object('ok', false, 'reason', 'wallet_missing'));
 
   -- per-key limits (requests + cost)
+  -- Unlimited keys need no history read. Unknown telemetry stays NULL.
+  if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
+      v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
     count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
     count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
@@ -254,6 +257,7 @@ begin
     and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
     and gr.success is true
     and gr.created_at >= month_start;
+  end if;
 
   if v_soft_blocked then
     within_limits := false;
@@ -370,26 +374,8 @@ begin
   where t.id = gateway_fetch_request_context_without_workspace_budget.workspace_id
   limit 1;
 
-  -- Team spend & request aggregates
-  select
-    count(*),
-    coalesce(sum(gr.cost_nanos), 0)::bigint,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '24 hours'), 0)::bigint,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '7 days'), 0)::bigint,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= now_utc - interval '30 days'), 0)::bigint,
-    count(*) filter (where gr.created_at >= now_utc - interval '1 hour'),
-    count(*) filter (where gr.created_at >= now_utc - interval '24 hours')
-  into
-    team_total_requests,
-    team_total_spend_nanos,
-    team_spend_24h_nanos,
-    team_spend_7d_nanos,
-    team_spend_30d_nanos,
-    team_requests_1h,
-    team_requests_24h
-  from public.gateway_requests gr
-  where gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-    and gr.success is true;
+  -- Historical analytics belong in reporting, not request admission.
+  -- Leave their enrichment fields NULL instead of scanning lifetime logs.
 
   -- Calculate tier using calendar-month qualification + lock-window grace.
   -- Function maintains team tier/counters in database when state changes.
@@ -428,15 +414,7 @@ begin
   where k.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
   limit 1;
 
-  select
-    count(*),
-    coalesce(sum(gr.cost_nanos), 0)::bigint
-  into
-    key_total_requests,
-    key_total_spend_nanos
-  from public.gateway_requests gr
-  where gr.key_id = gateway_fetch_request_context_without_workspace_budget.api_key_id
-    and gr.success is true;
+  -- Lifetime key analytics are not required to authenticate or enforce limits.
 
   key_enrichment := jsonb_build_object(
     'name', key_name,
