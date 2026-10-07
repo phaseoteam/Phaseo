@@ -13,5 +13,5 @@ export function decisionModelCapabilities(endpoints: readonly string[]): Decisio
 }
 
 export function modelOutputFilterValues(modalities: readonly string[], endpoints: readonly string[]): string[] {
-	return [...new Set([...modalities, ...(endpoints.some(endpoint => decisionModelCapability(endpoint) === "decisions.make") ? ["decisions"] : [])])];
+	return [...new Set([...modalities.map(value => value.trim().toLowerCase()).filter(Boolean), ...(endpoints.some(endpoint => decisionModelCapability(endpoint) === "decisions.make") ? ["decisions"] : [])])];
 }

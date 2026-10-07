@@ -5,6 +5,7 @@ describe("models with Text generation and Decisions", () => {
 	it("includes a dual-capability text model in both output filters without duplicating Decisions", () => {
 		expect(modelOutputFilterValues(["text"], ["text.generate", "decisions.make"])).toEqual(["text", "decisions"]);
 		expect(modelOutputFilterValues(["decisions"], ["/v1/decisions"])).toEqual(["decisions"]);
+		expect(modelOutputFilterValues([" Decisions ", "decisions"], ["decisions.make"])).toEqual(["decisions"]);
 		expect(modelOutputFilterValues(["text"], ["text.generate"])).toEqual(["text"]);
 	});
 	it("deduplicates protocol aliases without conflating image inputs with capabilities", () => {
