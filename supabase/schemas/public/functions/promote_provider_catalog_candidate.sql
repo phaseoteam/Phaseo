@@ -8,6 +8,10 @@ CREATE OR REPLACE FUNCTION public.promote_provider_catalog_candidate (
   AS $function$
 declare
   candidate public.provider_catalog_route_candidates%rowtype;
+  base_candidate public.provider_catalog_route_candidates%rowtype;
+  tier_offer jsonb;
+  tier_name text;
+  any_route_enabled boolean := false;
   provider_model_id_value text;
   capability jsonb;
   price jsonb;
@@ -55,6 +59,16 @@ begin
   end if;
   if candidate.status not in ('pending_probe', 'probe_passed') then raise exception 'provider_catalog_candidate_invalid'; end if;
   if jsonb_array_length(candidate.capabilities) = 0 then raise exception 'provider_catalog_capability_required'; end if;
+  base_candidate := candidate;
+  for tier_offer in select value from jsonb_array_elements(case when jsonb_array_length(candidate.service_tiers)>0
+    then candidate.service_tiers else jsonb_build_array(jsonb_build_object('serviceTier','standard','providerModelSlug',candidate.provider_model_slug,'pricing',candidate.pricing,'availability',candidate.availability)) end)
+  loop
+  candidate := base_candidate;
+  tier_name := tier_offer->>'serviceTier';
+  if tier_name not in ('standard','fast','ultrafast','flex','batch') or tier_name is null then raise exception 'provider_catalog_service_tier_invalid'; end if;
+  candidate.provider_model_slug := tier_offer->>'providerModelSlug';
+  candidate.pricing := coalesce(tier_offer->'pricing','[]'::jsonb);
+  candidate.availability := coalesce(tier_offer->>'availability',candidate.availability);
   if exists (
     select 1 from public.provider_catalog_sync_runs newer
     join public.provider_catalog_sync_runs current_run on current_run.id = candidate.run_id
@@ -80,9 +94,11 @@ begin
   where route.provider_slug = candidate.provider_slug
     and route.model_slug = candidate.canonical_model_slug
     and route.provider_model_slug = candidate.provider_model_slug
+    and coalesce(route.metadata->>'catalog_service_tier','standard')=tier_name
   order by route.created_at limit 1;
   if provider_model_id_value is null then
     provider_model_id_value := candidate.provider_slug || ':' || candidate.canonical_model_slug || ':' || candidate.provider_model_slug;
+    if tier_name <> 'standard' then provider_model_id_value := provider_model_id_value || ':tier:' || tier_name; end if;
   end if;
 
   release_due := (candidate.available_from is null or candidate.available_from <= now())
@@ -130,6 +146,7 @@ begin
     )
     and not exists (select 1 from public.v2_model_provider_routes r
       where r.model_slug = candidate.canonical_model_slug and r.is_stealth);
+  any_route_enabled := any_route_enabled or coalesce(route_enabled,false);
   if not route_enabled then
     phaseo_status_value := case when route_blocked then 'blocked' when candidate.available_from > now() then 'testing' else 'planned' end;
     access_scope_value := case when candidate.available_from > now() then 'internal' else 'public' end;
@@ -151,6 +168,8 @@ begin
       'managed_by', 'provider_catalog',
       'source_run_id', candidate.run_id,
       'catalog_pricing_hash', pricing_hash,
+      'catalog_service_tier', tier_name,
+      'catalog_upstream_service_tier', tier_offer->>'upstreamServiceTier',
       'deprecated_at', candidate.deprecated_at,
       'release_scheduled', candidate.available_from > now() and candidate.availability in ('ready', 'degraded') and not coalesce(route_blocked, false),
       'release_at', candidate.available_from
@@ -187,7 +206,11 @@ begin
            when candidate.availability in ('deprecated', 'retired') then 'disabled'
            else 'internal_testing' end,
       candidate.max_output_tokens,
-      coalesce((select jsonb_object_agg(p.value, true) from jsonb_array_elements_text(coalesce(capability -> 'parameters', '[]'::jsonb)) as p(value)), '{}'::jsonb),
+      coalesce((select jsonb_object_agg(p.value, true) from jsonb_array_elements_text(coalesce(capability -> 'parameters', '[]'::jsonb)) as p(value)), '{}'::jsonb)
+        || case when tier_offer->>'upstreamServiceTier' is not null then '{"service_tier":true}'::jsonb else '{}'::jsonb end
+        || case when jsonb_array_length(base_candidate.service_tiers)>0
+          then jsonb_build_object('__provider_catalog_tier', jsonb_build_object('name',tier_name,'upstream',tier_offer->>'upstreamServiceTier'))
+          else '{}'::jsonb end,
       candidate.available_from, candidate.shutdown_at,
       jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id), now()
     )
@@ -202,9 +225,9 @@ begin
     provider_model_id, variant_key, service_tier_slug, status,
     routing_enabled, endpoint_label, metadata, updated_at
   ) values (
-    provider_model_id_value, 'global:standard', 'standard',
+    provider_model_id_value, 'global:' || tier_name, tier_name,
     case when route_enabled then route_status else 'disabled' end,
-    route_enabled, 'Standard',
+    route_enabled, initcap(tier_name),
     jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id), now()
   )
   on conflict (provider_model_id, variant_key) do update set
@@ -236,7 +259,7 @@ begin
     provider_model_id, route_variant_id, service_tier_slug, sku_code, version, operation, status, display_name,
     currency, effective_from, metadata
   ) values (
-    provider_model_id_value, variant_id_value, 'standard', sku_code_value, sku_version_value,
+    provider_model_id_value, variant_id_value, tier_name, sku_code_value, sku_version_value,
     pricing_operation, 'active', 'Provider catalog pricing', 'USD', greatest(coalesce(candidate.available_from, now()), now()),
     jsonb_build_object('managed_by', 'provider_catalog', 'source_run_id', candidate.run_id, 'release_scheduled', not release_due)
   ) returning sku_id into sku_id_value;
@@ -293,6 +316,11 @@ begin
       route_projection_error = null
   where run_id = p_run_id and model_slug = p_submitted_model_slug;
 
+  end loop;
+
+  update public.provider_catalog_sync_models
+  set route_projection_status = case when any_route_enabled then 'enabled' else 'staged' end
+  where run_id=p_run_id and model_slug=p_submitted_model_slug;
   return provider_model_id_value;
 end;
 $function$;

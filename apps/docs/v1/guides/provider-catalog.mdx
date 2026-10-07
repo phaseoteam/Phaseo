@@ -1,0 +1,76 @@
+---
+title: "Publish a provider catalog"
+description: "Publish V1 or V1.1 model feeds with normalized service-tier offers."
+icon: "list"
+---
+
+Approved providers can update offers for existing public canonical models through their catalog feed or provider settings. New canonical models require approval. Each catalog is a complete snapshot: removing an offer retires that feed-managed offer and preserves its pricing history.
+
+## Choose a format
+
+Existing V1 feeds continue to work without changes. An unversioned `{"data": [...]}` document, or one declaring `"schema_version": "1.0"`, uses the existing standard-tier format.
+
+V1.1 declares `"schema_version": "1.1"` and publishes `service_tiers` inside each model. The importer selects the format from the document. URL query parameters such as `?format=phaseo-v1.1` are optional conventions for your endpoint; Phaseo does not infer a version from the URL.
+
+Download the [V1 schema](https://phaseo.app/api/internal/provider-catalog/schema) or [V1.1 schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1). Unsupported versions are rejected explicitly.
+
+## Publish normalized tiers
+
+| Tier | Meaning |
+| --- | --- |
+| `standard` | Normal synchronous execution; required for every model. |
+| `fast` | A faster or priority offer. Provider names such as HighSpeed stay in the upstream model ID. |
+| `ultrafast` | A separate, higher-speed offer when supported. |
+| `flex` | A flexible, lower-priority synchronous offer. |
+| `batch` | Asynchronous execution through the Batch API. Requires a batch capability. |
+
+Do not use provider-specific tier names as normalized IDs. `priority` remains a supported caller alias for Fast; catalogs publish `fast`.
+
+Use the same canonical model ID for its service tiers. Different models need separate canonical identities. Tiers inherit the model's capabilities, limits and release schedule. Each tier declares its own upstream model ID, availability and effective pricing.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+To add Fast, add another tier object with `"service_tier": "fast"`, its effective prices, and the upstream model ID for that offer. If the provider selects its lane using a native parameter instead, use the same upstream model ID and declare `"upstream_service_tier": "priority"` or `"fast"`. Omit that field when the model ID selects the lane. Standard accepts `default` or `standard`; Flex and Ultrafast accept their corresponding values.
+
+Every tier needs explicit pricing, including output and any cache/media meters you bill. Zero prices are valid; negative prices, unknown meters, duplicate tiers and conditional rates are rejected. `price_nanos` remains the effective price after promotions. Publish a new snapshot when rates change; Phaseo keeps previous effective prices.
+
+## Update and verify
+
+Polling and signed catalog-change webhooks accept both versions through the same onboarding and refresh flow. In provider settings, select a tier before editing its upstream ID, availability or prices. Adding another tier changes the saved catalog to V1.1.
+
+The catalog does not add an inference adapter or credentials. A provider and its advertised capabilities must be integrated before routing is enabled. Batch pricing does not make Batch available on synchronous chat endpoints.
+
+An unavailable canonical model or unknown publisher mapping is shown as **Needs changes** without preventing valid models from importing. Check the provider dashboard for model-specific reasons.

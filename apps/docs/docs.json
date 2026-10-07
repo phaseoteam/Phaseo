@@ -71,7 +71,8 @@
                   "v1/guides/regional-routing",
                   "v1/guides/provider-qualified-models",
                   "v1/guides/private-models",
-                  "v1/guides/provider-statuses"
+                  "v1/guides/provider-statuses",
+                  "v1/guides/provider-catalog"
                 ]
               },
               {

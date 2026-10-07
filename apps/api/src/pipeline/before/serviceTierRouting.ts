@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { loadPriceCard } from "@pipeline/pricing";
 import { requiresExplicitServiceTier } from "../pricing/service-tiers";
-import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
+import { normalizeTextServiceTier, readRequestedServiceTier, readProviderCatalogTier } from "@core/serviceTiers";
 import type { PriceCard } from "../pricing/types";
 import { getProviderPricingKey, ROUTABLE_CAPABILITY_STATUSES, isWithinEffectiveWindow } from "./context.shared";
 import type { ProviderCandidate } from "./types";
@@ -433,8 +433,17 @@ export async function applyServiceTierRouting(args: {
 }> {
     const requestedTier = normalizeRequestedServiceTier(args.body);
     const requestedPlan = normalizeRequestedPlan(requestedTier) ?? "standard";
+    if (args.capability === "batch") {
+        const candidates = args.candidates.filter((candidate) => {
+            const tier = readProviderCatalogTier(candidate.capabilityParams);
+            return !tier || (tier.name === "batch" && hasPricingPlan(candidate.pricingCard, "batch"));
+        });
+        return { candidates, diagnostics: { requestedTier: "batch", requestedPlan: "batch", beforeCount: args.candidates.length, afterCount: candidates.length,
+            droppedProviders: args.candidates.filter((candidate) => !candidates.includes(candidate)).map((candidate) => ({ providerId: candidate.providerId, apiModelId: candidate.apiModelId ?? null, providerModelSlug: candidate.providerModelSlug ?? null, reason: "service_tier_batch_required" })), remappedProviders: [] } };
+    }
     if (requestedPlan === "standard") {
 		const candidates = args.candidates.filter((candidate) =>
+			(!readProviderCatalogTier(candidate.capabilityParams) || readProviderCatalogTier(candidate.capabilityParams)?.name === "standard") &&
 			!isTierDedicatedOffer(candidate, "priority") && !isTierSiblingModel(candidate, "priority") &&
 			!isTierDedicatedOffer(candidate, "flex") &&
 			!isTierDedicatedOffer(candidate, "ultrafast") && !isTierSiblingModel(candidate, "ultrafast") &&
@@ -468,6 +477,13 @@ export async function applyServiceTierRouting(args: {
     const remappedProviders: ServiceTierRoutingDiagnostics["remappedProviders"] = [];
 
     for (const candidate of args.candidates) {
+		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
+		if (catalogTier) {
+			const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;
+			if (plan === requestedPlan && hasPricingPlan(candidate.pricingCard, requestedPlan)) nextCandidates.push(candidate);
+			else droppedProviders.push({ providerId: candidate.providerId, apiModelId: candidate.apiModelId ?? null, providerModelSlug: candidate.providerModelSlug ?? null, reason: "service_tier_not_offered" });
+			continue;
+		}
         if (requestedPlan !== "priority" && (isTierDedicatedOffer(candidate, "priority") || isTierSiblingModel(candidate, "priority"))) {
 			droppedProviders.push({
 				providerId: candidate.providerId,

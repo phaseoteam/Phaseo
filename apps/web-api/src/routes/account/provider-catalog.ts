@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeTieredProviderCatalog, type ProviderCatalogTier } from "./provider-catalog-tiers";
 
 const MAX_MODELS = 1_000;
 const MAX_PREVIEW_MODELS = 100;
@@ -19,6 +20,7 @@ export type ProviderCatalogPriceCondition = {
 };
 
 export type ProviderCatalogModelPreview = {
+	serviceTiers?: ProviderCatalogTier[];
 	id: string;
 	name: string;
 	description: string | null;
@@ -47,6 +49,7 @@ export const providerCatalogJsonSchema = {
 	required: ["data"],
 	additionalProperties: false,
 	properties: {
+		schema_version: { const: "1.0" },
 		data: { type: "array", minItems: 0, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
 	},
 	$defs: {
@@ -87,6 +90,28 @@ export const providerCatalogJsonSchema = {
 	},
 } as const;
 
+const { pricing: tierPricingSchema, provider_model_slug: upstreamModelSchema, ...tieredModelProperties } = providerCatalogJsonSchema.$defs.model.properties;
+export const providerCatalogV11JsonSchema = {
+	...providerCatalogJsonSchema,
+	$id: "https://phaseo.app/schemas/provider-catalog.v1.1.json",
+	description: "Version 1.1. Publish normalized standard, fast, ultrafast, flex and batch offers with independent effective prices. Batch uses the separate Batch API.",
+	required: ["schema_version", "data"],
+	properties: { ...providerCatalogJsonSchema.properties, schema_version: { const: "1.1" } },
+	$defs: {
+		...providerCatalogJsonSchema.$defs,
+		model: { ...providerCatalogJsonSchema.$defs.model, required: ["id", "capabilities", "service_tiers"], properties: {
+			...tieredModelProperties, service_tiers: { type: "array", minItems: 1, maxItems: 5, items: { $ref: "#/$defs/serviceTier" } },
+		} },
+		serviceTier: { type: "object", additionalProperties: false, required: ["service_tier", "provider_model_slug", "pricing"], properties: {
+			service_tier: { enum: ["standard", "fast", "ultrafast", "flex", "batch"] },
+			provider_model_slug: { ...upstreamModelSchema, minLength: 1 },
+			upstream_service_tier: { type: ["string", "null"], enum: [null, "standard", "default", "fast", "priority", "ultrafast", "flex", "batch"] },
+			availability: providerCatalogJsonSchema.$defs.model.properties.availability,
+			pricing: { ...tierPricingSchema, minItems: 1 },
+		} },
+	},
+} as const;
+
 export type ProviderCatalogPreview = {
 	valid: boolean;
 	modelCount: number;
@@ -97,17 +122,20 @@ export type ProviderCatalogPreview = {
 };
 
 export async function validateProviderCatalogPricingMeters(client: any, preview: ProviderCatalogPreview): Promise<ProviderCatalogPreview> {
-	const submittedKeys = Array.from(new Set(preview.allModels.flatMap((model) => model.pricing.map((price) => price.meterKey))));
+	const pricingGroups = preview.allModels.flatMap((model, modelIndex) => model.serviceTiers
+		? model.serviceTiers.map((tier, tierIndex) => ({ prices: tier.pricing, path: `data[${modelIndex}].service_tiers[${tierIndex}]` }))
+		: [{ prices: model.pricing, path: `data[${modelIndex}]` }]);
+	const submittedKeys = Array.from(new Set(pricingGroups.flatMap((group) => group.prices.map((price) => price.meterKey))));
 	if (!submittedKeys.length) return preview;
 	const definitions = await client.from("v2_meter_definitions").select("meter_key").in("meter_key", submittedKeys).neq("status", "disabled");
 	if (definitions.error) throw definitions.error;
 	const allowed = new Set((definitions.data ?? []).map((row: { meter_key: string }) => String(row.meter_key)));
 	const issues = [...preview.issues];
-	for (const [modelIndex, model] of preview.allModels.entries()) {
+	for (const group of pricingGroups) {
 		const seen = new Set<string>();
-		for (const [priceIndex, price] of model.pricing.entries()) {
-			if (price.conditions.length) issues.push({ path: `data[${modelIndex}].pricing[${priceIndex}].conditions`, message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
-			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
+		for (const [priceIndex, price] of group.prices.entries()) {
+			if (price.conditions.length) issues.push({ path: `${group.path}.pricing[${priceIndex}].conditions`, message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
+			const path = `${group.path}.pricing[${priceIndex}].meter_key`;
 			const identity = JSON.stringify([price.meterKey, price.conditions]);
 			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
 			else if (!allowed.has(price.meterKey)) issues.push({ path, message: `Unknown pricing meter: ${price.meterKey}.` });
@@ -252,6 +280,10 @@ function parametersForCapability(value: Record<string, unknown>): string[] {
 }
 
 export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPreview {
+	const versioned = asRecord(payload);
+	if (versioned?.schema_version === "1.1") return normalizeTieredProviderCatalog(versioned, normalizeProviderCatalog);
+	if (versioned?.schema_version === "1.0") { const { schema_version: _version, ...legacy } = versioned; return normalizeProviderCatalog(legacy); }
+	if (versioned?.schema_version !== undefined) return { valid: false, modelCount: 0, models: [], allModels: [], issues: [{ path: "schema_version", message: "Unsupported catalog version. Use 1.0 or 1.1." }], truncated: false };
 	const entries = modelEntries(payload);
 	const issues: ProviderCatalogIssue[] = [];
 	const body = asRecord(payload);

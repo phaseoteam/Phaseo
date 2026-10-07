@@ -1,4 +1,5 @@
 type CatalogModel = {
+	serviceTiers?: import("./provider-catalog-tiers").ProviderCatalogTier[];
 	id: string; providerModelSlug: string; inputModalities: string[]; outputModalities: string[];
 	contextLength: number | null; maxOutputTokens: number | null;
 	availability: "ready" | "not_ready" | "degraded" | "deprecated" | "retired";
@@ -15,7 +16,7 @@ export async function stageApprovedProviderRoute(client: any, runId: string, pro
 		output_modalities: model.outputModalities, context_length: model.contextLength,
 		max_output_tokens: model.maxOutputTokens, available_from: model.availableFrom,
 		deprecated_at: model.deprecatedAt, shutdown_at: model.shutdownAt,
-		capabilities: model.capabilities, pricing: model.pricing, status: "pending_probe", updated_at: new Date().toISOString(),
+		capabilities: model.capabilities, pricing: model.pricing, service_tiers: model.serviceTiers ?? [], status: "pending_probe", updated_at: new Date().toISOString(),
 	}, { onConflict: "run_id,submitted_model_slug" });
 	if (result.error) throw result.error;
 }

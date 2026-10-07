@@ -14,6 +14,7 @@ CREATE TABLE "public"."provider_catalog_route_candidates" (
   "shutdown_at"          timestamp with time zone,
   "capabilities"         jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "pricing"              jsonb                    NOT NULL DEFAULT '[]'::jsonb,
+  "service_tiers"        jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "status"               text                     NOT NULL DEFAULT 'pending_probe'::text,
   "probe_summary"        jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "probed_by"            uuid,

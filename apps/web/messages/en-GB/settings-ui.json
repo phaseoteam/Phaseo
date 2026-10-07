@@ -5087,6 +5087,11 @@
 		"copyThroughput": "Throughput"
 	},
 	"providerCatalogCopy": {
+		"serviceTier": "Service tier",
+		"addTier": "Add service tier",
+		"upstreamTier": "Provider tier parameter",
+		"modelIdSelection": "Select by model ID",
+		"removeTier": "Remove tier",
 		"newModel": "New model",
 		"custom": "Custom",
 		"input": "Input",

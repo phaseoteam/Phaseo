@@ -11,6 +11,7 @@ import { dispatchBackground, ensureRuntimeForBackground, getSupabaseAdmin } from
 import { BYOK_KEYS_PER_PROVIDER_LIMIT } from "@/core/byok";
 import { getProviderPricingKey } from "../before/context.shared";
 import { selectVideoProviderOptions } from "@core/video-provider-options";
+import { readProviderCatalogTier } from "@core/serviceTiers";
 
 export type PipelineTiming = {
 	timer: Timer;
@@ -944,9 +945,13 @@ async function attemptProviderWithIR(
 			providerRateLimitReservation = rateLimit.reservation;
 		}
 		let reservationDenial: import("@core/video-reservations").VideoReservationDenial | undefined;
+		const catalogTier = readProviderCatalogTier(candidate.capabilityParams);
+		const executorIr = isTextGenerate && catalogTier
+			? { ...normalizedIr, serviceTier: catalogTier.upstream ?? undefined }
+			: normalizedIr;
 		const buildExecutorArgs = () =>
 			({
-				ir: normalizedIr,
+				ir: executorIr,
 				requestId: ctx.requestId,
 				workspaceId: ctx.workspaceId,
 				providerId: candidate.providerId,

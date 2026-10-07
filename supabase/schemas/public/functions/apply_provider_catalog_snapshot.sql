@@ -55,7 +55,11 @@ begin
     and provider_approved
     and route.metadata ->> 'managed_by' = 'provider_catalog'
     and not exists (select 1 from jsonb_array_elements(p_models) incoming
-      where coalesce(nullif(incoming ->> 'providerModelSlug', ''), incoming ->> 'id') = route.provider_model_slug
+      where (coalesce(nullif(incoming ->> 'providerModelSlug', ''), incoming ->> 'id') = route.provider_model_slug
+          and coalesce(route.metadata->>'catalog_service_tier','standard')='standard'
+        or exists (select 1 from jsonb_array_elements(coalesce(incoming->'serviceTiers','[]'::jsonb)) tier
+          where tier->>'providerModelSlug'=route.provider_model_slug
+            and tier->>'serviceTier'=coalesce(route.metadata->>'catalog_service_tier','standard')))
         and (lower(incoming ->> 'id') = route.model_slug or exists (
           select 1 from public.v2_model_aliases alias where alias.alias_slug = lower(incoming ->> 'id')
             and alias.model_slug = route.model_slug and alias.enabled
@@ -118,7 +122,7 @@ begin
       nullif(model ->> 'availableFrom', '')::timestamptz,
       nullif(model ->> 'deprecatedAt', '')::timestamptz,
       nullif(model ->> 'shutdownAt', '')::timestamptz,
-      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb))
+      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb))
     )
     on conflict (run_id, model_slug) do update set
       provider_model_slug = excluded.provider_model_slug,
@@ -154,7 +158,7 @@ begin
       nullif(model ->> 'deprecatedAt', '')::timestamptz,
       nullif(model ->> 'shutdownAt', '')::timestamptz,
       'active', now(), p_run_id,
-      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb)),
+      jsonb_build_object('pricing', coalesce(model -> 'pricing', '[]'::jsonb), 'serviceTiers', coalesce(model->'serviceTiers','[]'::jsonb)),
       now()
     )
     on conflict (provider_slug, model_slug) do update set
@@ -272,7 +276,7 @@ begin
       insert into public.provider_catalog_route_candidates (
         run_id, provider_slug, submitted_model_slug, canonical_model_slug, provider_model_slug,
         availability, input_modalities, output_modalities, context_length, max_output_tokens,
-        available_from, deprecated_at, shutdown_at, capabilities, pricing
+        available_from, deprecated_at, shutdown_at, capabilities, pricing, service_tiers
       ) values (
         p_run_id, p_provider_slug, model_slug_value, canonical_slug,
         coalesce(nullif(model ->> 'providerModelSlug', ''), model_slug_value),
@@ -282,7 +286,7 @@ begin
         nullif(model ->> 'contextLength', '')::integer, nullif(model ->> 'maxOutputTokens', '')::integer,
         nullif(model ->> 'availableFrom', '')::timestamptz, nullif(model ->> 'deprecatedAt', '')::timestamptz,
         nullif(model ->> 'shutdownAt', '')::timestamptz,
-        coalesce(model -> 'capabilities', '[]'::jsonb), coalesce(model -> 'pricing', '[]'::jsonb)
+        coalesce(model -> 'capabilities', '[]'::jsonb), coalesce(model -> 'pricing', '[]'::jsonb), coalesce(model->'serviceTiers','[]'::jsonb)
       ) on conflict (run_id, submitted_model_slug) do nothing;
       perform public.promote_provider_catalog_candidate(p_run_id, model_slug_value);
       update public.provider_catalog_sync_models

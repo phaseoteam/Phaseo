@@ -51,6 +51,7 @@ export type ProviderCatalogPreview = {
 };
 
 export type ProviderManagedCatalogModel = {
+	service_tiers?: Array<{ service_tier: "standard" | "fast" | "ultrafast" | "flex" | "batch"; provider_model_slug: string; upstream_service_tier?: string | null; availability?: ProviderManagedCatalogModel["availability"]; pricing: ProviderManagedCatalogModel["pricing"] }>;
 	id: string;
 	name: string;
 	description: string | null;
@@ -70,7 +71,7 @@ export type ProviderManagedCatalogModel = {
 export type ProviderManagedCatalog = {
 	provider: { provider_slug: string; name: string; status: string };
 	source: { catalog_url: string | null; management_mode: "remote" | "managed"; managed_updated_at: string | null; catalog_version: string; updated_at: string; last_success_at: string | null; last_error: string | null; last_polled_at: string | null };
-	catalog: { data: ProviderManagedCatalogModel[] };
+	catalog: { schema_version?: "1.1"; data: ProviderManagedCatalogModel[] };
 	models: ProviderManagedCatalogModel[];
 	latest_run: { id: string; status: string; review_status: string; model_count: number | null; created_at: string; completed_at: string | null } | null;
 };
@@ -104,7 +105,7 @@ export async function fetchProviderCatalogVersionAction(providerSlug: string) {
 	);
 }
 
-export async function updateProviderCatalogAction(providerSlug: string, catalog: { data: ProviderManagedCatalogModel[] } | { mode: "remote" }, expectedUpdatedAt: string) {
+export async function updateProviderCatalogAction(providerSlug: string, catalog: { schema_version?: "1.1"; data: unknown[] } | { mode: "remote" }, expectedUpdatedAt: string) {
 	try { return await fetchAccountWebApi<{ ok: true; sync_warning?: string | null } & ProviderManagedCatalog>(
 		`/api/account/settings/provider-onboarding/catalog/${encodeURIComponent(providerSlug)}`,
 		await accessToken(),

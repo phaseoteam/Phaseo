@@ -8,7 +8,7 @@ import {
 	syncProviderCatalog,
 	verifyProviderCatalogWebhookSignature,
 } from "./account/provider-catalog-sync";
-import { providerCatalogJsonSchema } from "./account/provider-catalog";
+import { providerCatalogJsonSchema, providerCatalogV11JsonSchema } from "./account/provider-catalog";
 
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024;
 const PROVIDER_SLUG = /^[a-z0-9][a-z0-9._-]*$/;
@@ -16,7 +16,11 @@ const EVENT_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/;
 
 export const providerCatalogWebhookRouter = new Hono<{ Bindings: Env }>();
 
-providerCatalogWebhookRouter.get("/provider-catalog/schema", (c) => c.json(providerCatalogJsonSchema, 200, { "cache-control": "public, max-age=3600" }));
+providerCatalogWebhookRouter.get("/provider-catalog/schema", (c) => {
+	const version = c.req.query("version") ?? "1.0";
+	if (!["1.0", "1.1"].includes(version)) return c.json({ error: "unsupported_catalog_version" }, 400);
+	return c.json(version === "1.1" ? providerCatalogV11JsonSchema : providerCatalogJsonSchema, 200, { "cache-control": "public, max-age=3600" });
+});
 
 providerCatalogWebhookRouter.get("/provider-catalog/openapi", (c) => c.json({
 	openapi: "3.1.0",
