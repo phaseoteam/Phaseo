@@ -1,2 +1,2 @@
 import { createScopedMessagesTemplate } from "@/components/i18n/ScopedMessages";
-export default createScopedMessagesTemplate(["Catalogue", "SettingsUI.strings", "Common.ui.privacyEligibility"]);
+export default createScopedMessagesTemplate(["Catalogue", "SettingsUI.strings", "Common.ui.privacyEligibility", "Common.ui.chatComposer.default", "Common.ui.chatComposer.reasoning", "Common.ui.chatComposer.standard", "Common.ui.requestBuilder.minimal", "Common.ui.requestBuilder.low", "Common.ui.requestBuilder.medium", "Common.ui.requestBuilder.high", "Common.ui.requestBuilder.extraHigh", "Common.ui.requestBuilder.max"]);

@@ -44,6 +44,12 @@ function fileInfo(file, sourceOverride) {
                     return base + suffix;
     }
     function visit(node) {
+        // Configuration labels live in a lookup table rather than direct t calls.
+        // Include those dependencies wherever the benchmark helper is imported.
+        if (file.endsWith(path.join('i18n', 'benchmark-display.ts')) && ts.isStringLiteral(node)
+            && /^(Common|Catalogue)\./.test(node.text)) {
+            info.keys.push(node.text);
+        }
         if (text.includes('settingsStringKey') && ts.isCallExpression(node)
             && ['s', 'settingsStringKey'].includes(node.expression.getText(tree))
             && node.arguments[0] && ts.isStringLiteral(node.arguments[0])) {
