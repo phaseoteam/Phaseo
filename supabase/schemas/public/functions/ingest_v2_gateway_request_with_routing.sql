@@ -12,6 +12,9 @@ declare
   v_routing_decisions jsonb := coalesce(p_event->'routing_decisions', '[]'::jsonb);
   v_routing_trace jsonb := coalesce(p_event->'routing_trace', '{}'::jsonb);
 begin
+  perform pg_advisory_xact_lock(hashtextextended(
+    (p_event->>'workspace_id') || ':' || (p_event->>'request_id'), 0
+  ));
   if jsonb_typeof(v_routing_decisions) <> 'array'
      or jsonb_array_length(v_routing_decisions) > 128
      or jsonb_typeof(v_routing_trace) <> 'object'
@@ -52,6 +55,14 @@ begin
 
   delete from public.v2_request_routing_decisions decision
   where decision.request_event_id = v_request_event_id;
+
+  if jsonb_typeof(p_event->'routing_archive') = 'object' then
+    -- The trusted gateway has persisted the complete explanation in R2 before
+    -- inserting the authoritative request and its compact object reference.
+    delete from public.v2_request_routing_traces
+    where request_event_id = v_request_event_id;
+    return v_request_event_id;
+  end if;
 
   insert into public.v2_request_routing_decisions (
     request_event_id, decision_order, provider_model_id, provider_slug,

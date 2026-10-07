@@ -1,4 +1,5 @@
 import { collectSessionCounts } from "./sessionCounts";
+import { readRoutingArchive } from "./routingArchive";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "@/env";
@@ -525,6 +526,18 @@ async function attachRoutingObservability(
 		return;
 	}
 	const observability = normalizePlainObject(data);
+	// The reference comes from the authorized RPC result, never request input.
+	const authorizedRequest = normalizePlainObject(observability?.request);
+	const metadata = normalizePlainObject(authorizedRequest?.detail_metadata);
+	const pointer = normalizePlainObject(metadata?.routing_archive);
+	if (authorizedRequest?.workspace_id === workspaceId && authorizedRequest?.request_id === requestId && pointer) {
+		const archive = await readRoutingArchive(current().env, workspaceId, requestId, pointer);
+		if (archive) {
+			observability!.routing_trace = archive.routing_trace;
+			observability!.routing_decisions = archive.routing_decisions;
+			request.detail_metadata = { ...request.detail_metadata, ...normalizePlainObject(archive.metadata) };
+		}
+	}
 	request.routing_trace = normalizePlainObject(observability?.routing_trace);
 	request.routing_decisions = Array.isArray(observability?.routing_decisions)
 		? observability.routing_decisions.filter(

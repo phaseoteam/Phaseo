@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION public.gateway_routing_archive_batch(
+  p_after_id uuid, p_after_created_at timestamptz, p_cutoff timestamptz, p_limit integer DEFAULT 25
+)
+RETURNS SETOF jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO ''
+SET statement_timeout TO '5s'
+AS $function$
+  select public.gateway_routing_archive_source(candidate.id, candidate.created_at)
+  from (
+    select request.id, request.created_at
+    from public.gateway_requests request
+    where (request.id, request.created_at) > (p_after_id, p_after_created_at)
+      and request.created_at < least(p_cutoff, now() - interval '1 hour')
+      and not coalesce(request.detail_metadata ? 'routing_archive', false)
+      and (request.detail_metadata ? 'routing_snapshot' or exists (
+        select 1 from public.v2_request_facts fact
+        join public.v2_request_routing_decisions decision using (request_event_id)
+        where fact.gateway_request_id = request.id and fact.gateway_request_created_at = request.created_at
+      ))
+    order by request.id, request.created_at
+    limit greatest(1, least(p_limit, 100))
+  ) candidate;
+$function$;
+REVOKE ALL ON FUNCTION public.gateway_routing_archive_batch(uuid, timestamptz, timestamptz, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.gateway_routing_archive_batch(uuid, timestamptz, timestamptz, integer) TO service_role;

@@ -29,6 +29,7 @@ import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
 import { publishConfiguredPublicCatalog } from "./public-catalog";
+import { backfillRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -449,6 +450,17 @@ async function handleV2AnalyticsOutboxScheduledEvent(env: GatewayBindings): Prom
 	}
 }
 
+async function handleRoutingArchiveScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF) return;
+	configureRuntime(env);
+	try {
+		const result = await backfillRoutingArchives();
+		if (result.archived > 0) console.log("routing_archive_backfill_completed", result);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleOtelExportScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!toBool(env.OTEL_EXPORT_ENABLED, true)) return;
 	configureRuntime(env);
@@ -554,6 +566,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		}
 	}
 	if (isCoreJobsTick(event)) {
+		try {
+			await handleRoutingArchiveScheduledEvent(env);
+		} catch (error) {
+			console.error("routing_archive_backfill_failed", serializeError(error));
+		}
 		try {
 			await handleGatewayIoRetentionExpiryScheduledEvent(event, env);
 		} catch (error) {
