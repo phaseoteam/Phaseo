@@ -1960,7 +1960,8 @@ export function buildProviderTablePriceColumns(
                 audio: sections.audioTokens, video: sections.videoTokens,
             };
             const tiers = triples[modality as keyof typeof triples]?.in;
-            if (!tiers?.length || tiers.some((tier) => !Number.isFinite(tier.per1M))) return null;
+            if (!tiers?.length) return null;
+            if (tiers.some((tier) => !Number.isFinite(tier.per1M))) return undefined;
             // Compare complete profiles, not the cheapest displayed or rounded price.
             return JSON.stringify(tiers.map((tier) => ({
                 per1M: tier.per1M, basePer1M: tier.basePer1M ?? null,
@@ -1974,8 +1975,8 @@ export function buildProviderTablePriceColumns(
                 isCurrent: tier.isCurrent,
             })).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
         });
-        const knownProfiles = profiles.filter((profile) => profile !== null);
-        return knownProfiles.every((profile) => profile === knownProfiles[0]);
+        const knownProfiles = profiles.filter((profile) => profile !== null && profile !== undefined);
+        return !profiles.includes(undefined) && knownProfiles.every((profile) => profile === knownProfiles[0]);
     });
     if (canGroupInputs) {
         const grouped: ProviderTablePriceColumn = {

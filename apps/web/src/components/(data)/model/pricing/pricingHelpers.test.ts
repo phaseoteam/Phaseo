@@ -634,6 +634,12 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceColumns([sections])[0]!.label).toBe("Input");
 	});
 
+	test.each([Infinity, -Infinity, NaN])("does not group invalid input prices: %s", (price) => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		sections.imageTokens!.in[0]!.per1M = price;
+		expect(buildProviderTablePriceColumns([sections]).some((column) => column.groupedModalities)).toBe(false);
+	});
+
 	test.each(["identical", "different windows", "different base rates"])("compares complete recurring schedules: %s", (schedule) => {
 		const provider = matchingInputProvider();
 		for (const rule of provider.pricing_rules.filter((rule) => rule.meter.startsWith("input_"))) {
