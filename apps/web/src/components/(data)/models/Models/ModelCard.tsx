@@ -1096,7 +1096,7 @@ function ModelCardImpl({
 							<span key={operation.capability} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1">
 								<span className="text-muted-foreground">{t(`filtersUi.${operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions"}`)}</span>
 								<span className="font-medium tabular-nums">
-									{t("input")} {formatPrice(operation.input, format.number, { allowZero: true }) ?? "—"} / {t("output")} {formatPrice(operation.output, format.number, { allowZero: true }) ?? "—"} /M tokens
+									{t("input")} {formatPrice(operation.input, format.number, { allowZero: true }) ?? "—"} / {t("output")} {formatPrice(operation.output, format.number, { allowZero: true }) ?? "—"} · {t("perMillionTokens")}
 								</span>
 							</span>
 						)) : <Link href={`${modelHref}/pricing`} className="rounded-md border border-border/60 px-2 py-1 underline underline-offset-2">{t("pricing")}</Link>) : null}

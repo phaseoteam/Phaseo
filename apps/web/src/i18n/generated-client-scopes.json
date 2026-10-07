@@ -752,6 +752,7 @@
     "Catalogue.models.othersCount",
     "Catalogue.models.output",
     "Catalogue.models.outputImagesFrom",
+    "Catalogue.models.perMillionTokens",
     "Catalogue.models.pricing",
     "Catalogue.models.providers",
     "Catalogue.models.tokenCountDisplay",
