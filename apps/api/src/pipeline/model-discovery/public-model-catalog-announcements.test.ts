@@ -171,6 +171,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 
 		expect(summary).toMatchObject({ detected: 1, notified: 2, pending: 0, error: null });
 		expect(mocks.sendDiscordWebhookPayload).toHaveBeenCalledTimes(1);
+		const announcedModels = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+		for (const model of announcedModels) {
+			expect(model).not.toHaveProperty("changeSummaryLines");
+		}
 		const buildRoleId = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[1];
 		const buildOptions = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[2] as {
 			includeMentions?: boolean;
