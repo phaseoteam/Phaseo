@@ -310,6 +310,16 @@ begin
         'pending', case when provider_approved then pending_count else applied_count end,'rejected',rejected_count,'needs_changes',changes_count)
   where id = p_run_id;
 
+  -- Re-evaluate blocked mappings even when the remote document is unchanged.
+  -- Preserve refreshes already requested by a concurrent edit or review.
+  if changes_count > 0 then
+    update public.provider_catalog_sources
+    set refresh_requested = true,
+      next_poll_at = now() + make_interval(secs => poll_interval_seconds)
+    where provider_slug = p_provider_slug and management_mode = 'remote'
+      and status = 'active' and refresh_requested = false;
+  end if;
+
   return applied_count;
 end;
 $function$;
