@@ -69,7 +69,7 @@ import Link from "next/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { ModelCapabilityBadges } from "@/components/(data)/models/ModelCapabilityBadges";
-import { decisionModelCapability } from "@/lib/models/modelCapabilities";
+import { decisionModelCapability, modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
@@ -616,7 +616,7 @@ export function MonitorDataTable({
 
 			if (selectedOutputModalities.length > 0) {
 				const hasAllOutputModalities = selectedOutputModalities.every((mod) =>
-					item.outputModalities.includes(mod),
+					modelOutputFilterValues(item.outputModalities, [item.endpoint]).includes(mod),
 				);
 				if (!hasAllOutputModalities) return false;
 			}

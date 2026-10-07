@@ -11,3 +11,7 @@ export function decisionModelCapabilities(endpoints: readonly string[]): Decisio
 	const capabilities = new Set(endpoints.map(decisionModelCapability));
 	return (["text.generate", "decisions.make"] as const).filter(value => capabilities.has(value));
 }
+
+export function modelOutputFilterValues(modalities: readonly string[], endpoints: readonly string[]): string[] {
+	return [...new Set([...modalities.map(value => value.trim().toLowerCase()).filter(Boolean), ...(endpoints.some(endpoint => decisionModelCapability(endpoint) === "decisions.make") ? ["decisions"] : [])])];
+}
