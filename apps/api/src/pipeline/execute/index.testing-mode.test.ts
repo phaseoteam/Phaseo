@@ -16,8 +16,11 @@ const loadPriceCardMock = vi.fn();
 const freeQuotaMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
+const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
+const classifyHealthCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 
 vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => runtimeBindings.value,
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
     getSupabaseAdmin: () => ({ from: (table: string) => {
@@ -39,8 +42,9 @@ vi.mock("./providers", () => ({
 
 vi.mock("./health", () => ({
 	admitThroughBreaker: (...args: any[]) => admitThroughBreakerMock(...args),
-	classifyProviderHealthImpact: ({ upstreamStatus }: { upstreamStatus?: number | null } = {}) => {
-		const status = Number(upstreamStatus ?? 0);
+	classifyProviderHealthImpact: (args: { upstreamStatus?: number | null } = {}) => {
+		classifyHealthCalls.push(args);
+		const status = Number(args.upstreamStatus ?? 0);
 		return status >= 200 && status < 300 ? "success" : "failure";
 	},
 	onCallStart: (...args: any[]) => onCallStartMock(...args),
@@ -278,6 +282,50 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				response_kind: "completed",
 			}),
 		]);
+	});
+
+	it("fails over to the next provider when the first stalls before response headers", async () => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		classifyHealthCalls.length = 0;
+		try {
+			const candidates = ["stalled", "healthy"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: "model", capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+				if (String(input).includes("stalled")) {
+					return new Promise<Response>((_resolve, reject) => {
+						init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+					});
+				}
+				return Promise.resolve(new Response("{}", { status: 200 }));
+			});
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true });
+
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(["stalled", "healthy"]);
+			expect(ctx.attemptErrors).toEqual([expect.objectContaining({
+				provider: "stalled",
+				upstream_error_code: "upstream_headers_timeout",
+			})]);
+			// Counted against the provider, unlike a caller cancellation.
+			expect(classifyHealthCalls).toContainEqual(expect.objectContaining({
+				failureOrigin: "provider",
+				errorCode: "upstream_headers_timeout",
+			}));
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
 	});
 
 	it.each([false, true])("retains first dispatch through a transport failure (fallback succeeds: %s)", async (recover) => {
