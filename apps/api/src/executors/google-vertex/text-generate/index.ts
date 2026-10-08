@@ -3,7 +3,7 @@
 // How: IR -> provider-specific Vertex payload -> IR, with protocol conversion handled downstream.
 
 import type { IRChatRequest, IRChatResponse, IRContentPart, IRChoice } from "@core/ir";
-import type { ExecutorExecuteArgs, ExecutorResult, Bill, ExecutorUpstreamTiming } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
@@ -26,13 +26,7 @@ import {
 } from "@executors/google/shared/thinking";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import type { ProviderExecutor } from "../../types";
-import { googleOAuthTokenRequestInit, resolveGoogleOAuthTokenUri } from "../../../providers/google-vertex/token-uri";
-
-type VertexServiceAccount = {
-	client_email: string;
-	private_key: string;
-	token_uri?: string;
-};
+import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
 
 type VertexModelRoute = {
 	family: "anthropic" | "gemini" | "openapi_chat";
@@ -668,125 +662,6 @@ function normalizeGeminiInlineData(part: any): {
 		};
 	}
 	return null;
-}
-
-async function resolveVertexAccessToken(rawKey: string, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
-	const value = rawKey.trim();
-	if (!value) throw vertexError("google-vertex_access_token_missing");
-
-	if (value.startsWith("{")) {
-		try {
-			const parsed = JSON.parse(value) as Record<string, unknown>;
-			if (isVertexServiceAccount(parsed)) {
-				return mintServiceAccountAccessToken(parsed, upstreamTiming);
-			}
-			const token = typeof parsed.access_token === "string" ? parsed.access_token.trim() : "";
-			if (token) return token;
-		} catch {
-			// Continue with plain token handling.
-		}
-	}
-
-	if (value.startsWith("Bearer ")) {
-		return value.slice("Bearer ".length).trim();
-	}
-	return value;
-}
-
-function isVertexServiceAccount(payload: Record<string, unknown>): payload is VertexServiceAccount {
-	return (
-		typeof payload.client_email === "string" &&
-		typeof payload.private_key === "string"
-	);
-}
-
-async function mintServiceAccountAccessToken(sa: VertexServiceAccount, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
-	const tokenUri = resolveGoogleOAuthTokenUri(sa.token_uri);
-	const now = Math.floor(Date.now() / 1000);
-	const header = { alg: "RS256", typ: "JWT" };
-	const claimSet = {
-		iss: sa.client_email,
-		sub: sa.client_email,
-		aud: tokenUri,
-		scope: "https://www.googleapis.com/auth/cloud-platform",
-		iat: now,
-		exp: now + 3600,
-	};
-
-	const encodedHeader = base64UrlEncodeUtf8(JSON.stringify(header));
-	const encodedClaims = base64UrlEncodeUtf8(JSON.stringify(claimSet));
-	const unsignedJwt = `${encodedHeader}.${encodedClaims}`;
-	const signature = await signJwtRs256(unsignedJwt, sa.private_key);
-	const assertion = `${unsignedJwt}.${signature}`;
-
-	const body = new URLSearchParams({
-		grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-		assertion,
-	});
-
-	const init = googleOAuthTokenRequestInit(body);
-	const res = await (upstreamTiming
-		? upstreamTiming.fetch(tokenUri, init, "auth")
-		: fetch(tokenUri, init));
-
-	if (!res.ok) {
-		throw vertexError(`google-vertex_oauth_error_${res.status}`);
-	}
-	const json = await res.json() as { access_token?: string };
-	if (!json?.access_token) {
-		throw vertexError("google-vertex_oauth_access_token_missing");
-	}
-	return json.access_token;
-}
-
-async function signJwtRs256(unsignedJwt: string, privateKeyPem: string): Promise<string> {
-	const pem = privateKeyPem.replace(/\\n/g, "\n");
-	const keyData = pemToArrayBuffer(pem);
-	const key = await crypto.subtle.importKey(
-		"pkcs8",
-		keyData,
-		{
-			name: "RSASSA-PKCS1-v1_5",
-			hash: "SHA-256",
-		},
-		false,
-		["sign"],
-	);
-	const signature = await crypto.subtle.sign(
-		"RSASSA-PKCS1-v1_5",
-		key,
-		new TextEncoder().encode(unsignedJwt),
-	);
-	return base64UrlEncodeBytes(new Uint8Array(signature));
-}
-
-function pemToArrayBuffer(pem: string): ArrayBuffer {
-	const base64 = pem
-		.replace(/-----BEGIN PRIVATE KEY-----/g, "")
-		.replace(/-----END PRIVATE KEY-----/g, "")
-		.replace(/\s+/g, "");
-	const binary = atob(base64);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i += 1) {
-		bytes[i] = binary.charCodeAt(i);
-	}
-	return bytes.buffer;
-}
-
-function base64UrlEncodeUtf8(value: string): string {
-	return base64UrlFromBase64(btoa(value));
-}
-
-function base64UrlEncodeBytes(bytes: Uint8Array): string {
-	let binary = "";
-	for (let i = 0; i < bytes.length; i += 1) {
-		binary += String.fromCharCode(bytes[i]);
-	}
-	return base64UrlFromBase64(btoa(binary));
-}
-
-function base64UrlFromBase64(value: string): string {
-	return value.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
 export const executor: ProviderExecutor = buildTextExecutor({
