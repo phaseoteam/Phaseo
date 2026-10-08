@@ -12,7 +12,7 @@ CREATE TABLE "public"."v2_analytics_outbox" (
   CONSTRAINT "v2_analytics_outbox_pkey" PRIMARY KEY (request_event_id),
   CONSTRAINT "v2_analytics_outbox_status_check" CHECK ((status = ANY (ARRAY['pending'::text, 'processing'::text, 'complete'::text, 'failed'::text]))),
   CONSTRAINT "v2_analytics_outbox_request_event_id_fkey" FOREIGN KEY (request_event_id) REFERENCES public.v2_request_facts(request_event_id) ON DELETE CASCADE,
-  CONSTRAINT "v2_analytics_outbox_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_analytics_outbox_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_analytics_outbox"
@@ -32,3 +32,6 @@ CREATE POLICY "service_role_full_access" ON "public"."v2_analytics_outbox"
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_analytics_outbox" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."v2_analytics_outbox" FROM "anon", "authenticated";
+
+CREATE INDEX v2_analytics_outbox_completed_retention_idx ON public.v2_analytics_outbox USING btree (updated_at, request_event_id)
+  WHERE (status = 'complete'::text);

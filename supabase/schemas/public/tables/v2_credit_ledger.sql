@@ -18,7 +18,7 @@ CREATE TABLE "public"."v2_credit_ledger" (
     CHECK
     ((entry_type = ANY (ARRAY['payment'::text, 'grant'::text, 'refund'::text, 'charge'::text, 'reservation_capture'::text, 'reservation_release'::text, 'adjustment'::text,
     'expiration'::text]))),
-  CONSTRAINT "v2_credit_ledger_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_credit_ledger_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_credit_ledger"

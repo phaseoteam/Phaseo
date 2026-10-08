@@ -22,7 +22,7 @@ CREATE TABLE "public"."gateway_wallet_reservations" (
   CONSTRAINT "gateway_wallet_reservations_request_count_check" CHECK (((request_count IS NULL) OR (request_count > 0))),
   CONSTRAINT "gateway_wallet_reservations_status_check" CHECK ((status = ANY (ARRAY['held'::text, 'reserved'::text, 'captured'::text, 'released'::text]))),
   CONSTRAINT "gateway_wallet_reservations_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL,
-  CONSTRAINT "gateway_wallet_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "gateway_wallet_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."gateway_wallet_reservations"

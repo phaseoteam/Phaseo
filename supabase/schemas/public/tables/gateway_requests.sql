@@ -346,7 +346,7 @@ ALTER TABLE "public"."gateway_requests"
   ADD CONSTRAINT "gateway_requests_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."gateway_requests"
-  ADD CONSTRAINT "gateway_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+  ADD CONSTRAINT "gateway_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT;
 
 CREATE INDEX gateway_requests_auth_method_idx ON ONLY public.gateway_requests USING btree (auth_method)
   WHERE (auth_method = 'oauth'::text);

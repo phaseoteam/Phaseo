@@ -8,7 +8,9 @@ SELECT
   cron.schedule_in_database('provider-health-refresh-queue', '* * * * *', 'set statement_timeout = ''10s''; select private.drain_provider_health_refresh(25);', 'postgres', NULL,
   true);
 
-SELECT cron.schedule_in_database('prune-byok-request-metadata', '17 * * * *', 'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select public.prune_byok_request_metadata(90, 500);', 'postgres', NULL, true);
+SELECT
+  cron.schedule_in_database('prune-completed-analytics-outbox', '* * * * *',
+  'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.prune_completed_analytics_outbox(500);', 'postgres', NULL, true);
 
 SELECT
   cron.schedule_in_database('public-reporting-refresh-queue', '2-59/5 * * * *',

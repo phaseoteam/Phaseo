@@ -27,6 +27,11 @@ CREATE INDEX workspaces_name_trgm_search_idx ON public.workspaces USING gin (nam
 
 CREATE UNIQUE INDEX workspaces_publisher_handle_key ON public.workspaces USING btree (lower(publisher_handle));
 
+CREATE TRIGGER aaa_workspaces_capture_usage_identity
+  AFTER INSERT ON public.workspaces
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_usage_workspace_identity();
+
 CREATE TRIGGER gateway_workspace_publication
   AFTER UPDATE OF tier, billing_mode ON public.workspaces
   FOR EACH ROW
