@@ -106,6 +106,7 @@ import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import {
 	admitManagedProvider,
 	estimateProviderTokenReservation,
@@ -630,7 +631,7 @@ export async function doRequestWithIR(
 		);
 
 		if (result.ok) {
-			if (choice.credential.kind === "byok") {
+			if (choice.credential.kind === "byok" && shouldRecordLastUsed("byok_keys", choice.credential.key.id)) {
 				const usedKeyId = choice.credential.key.id;
 				dispatchProviderHealthBackground(async () => {
 					const { error } = await getSupabaseAdmin()

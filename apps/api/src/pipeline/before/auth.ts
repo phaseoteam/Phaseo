@@ -4,6 +4,7 @@
 
 import { getBindings, getSupabaseAdmin, dispatchBackground, configureRuntime, clearRuntime, getCache } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
+import { shouldRecordLastUsed } from "@/core/last-used-throttle";
 import {
 	resolveActiveKeyPepper,
 	resolveKeyPepperCandidates,
@@ -632,7 +633,7 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 				return { ok: false, reason: "oauth_resource_token_not_valid_for_api" };
 			}
 
-			dispatchAuthenticationUsage(req, async () => {
+			if (hasHashMigration || shouldRecordLastUsed("keys", keyRow.id)) dispatchAuthenticationUsage(req, async () => {
 				configureRuntime(bindings);
 				try {
 					const updatePayload: Record<string, unknown> = { last_used_at: new Date().toISOString() };
@@ -666,7 +667,8 @@ export async function authenticate(req: Request, options: AuthenticateOptions = 
 		}
 
         // Fire-and-forget update of last_used_at timestamp (+ hash migration when needed).
-        dispatchAuthenticationUsage(req, async () => {
+        // last_used_at alone is throttled per isolate; hash migrations always write.
+        if (hasHashMigration || shouldRecordLastUsed("keys", keyRow.id)) dispatchAuthenticationUsage(req, async () => {
             configureRuntime(bindings);
             try {
                 const updatePayload: Record<string, unknown> = {

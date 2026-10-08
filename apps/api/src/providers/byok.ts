@@ -4,6 +4,7 @@
 
 import { dispatchBackground, getSupabaseAdmin, getBindings, configureRuntime, clearRuntime } from "@/runtime/env";
 import { decryptBYOK, bytesToString } from "@pipeline/byok/decrypt";
+import { shouldRecordLastUsed } from "@core/last-used-throttle";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 
 export type ByokResolution = {
@@ -72,7 +73,7 @@ export async function loadByokKey(options: {
             const key = bytesToString(decrypted);
             decrypted.fill(0);
 
-            dispatchBackground(
+            if (shouldRecordLastUsed("byok_keys", data.id)) dispatchBackground(
                 (async () => {
                     configureRuntime(getBindings());
                     try {
