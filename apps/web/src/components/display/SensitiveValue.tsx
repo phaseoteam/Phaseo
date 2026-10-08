@@ -73,11 +73,12 @@ function SensitiveValueContent({
 			<Tag
 				data-pii="true"
 				data-pii-revealed={revealed ? "true" : undefined}
+				inert={hidden || undefined}
 				className={cn(!inline && masked && reveal && "[&_input]:pr-10", contentClassName)}
 			>
 				{hidden ? maskedContent(children, translatedLabel) : children}
-				{hidden && inline ? <span className="sr-only">{translatedLabel}</span> : null}
 			</Tag>
+			{hidden && inline ? <span className="sr-only">{translatedLabel}</span> : null}
 			{masked && reveal ? (
 				<button
 					type="button"

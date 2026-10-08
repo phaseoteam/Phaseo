@@ -42,6 +42,7 @@ describe("SensitiveValue", () => {
 		expect(html).toContain(obfuscatedPlaceholder(email));
 		expect(html).toContain('data-pii-hidden="true"');
 		expect(html).toContain('aria-hidden="true"');
+		expect(html).toContain('inert=""');
 		expect(html).toContain("sensitiveValues.reveal");
 	});
 
@@ -53,12 +54,19 @@ describe("SensitiveValue", () => {
 		expect(html).not.toContain("data-pii-hidden");
 	});
 
+	it("makes focusable descendants inert while keeping the accessible label and reveal button outside", () => {
+		const html = renderToStaticMarkup(<SensitiveValue inline><a href="/settings">{email}</a></SensitiveValue>);
+		expect(html).toMatch(/<span data-pii="true" inert=""[^>]*><a /);
+		expect(html).toContain('</a></span><span class="sr-only">sensitiveValues.value</span><button');
+	});
+
 	it("masks input values without blurring field borders or the reveal button", () => {
 		const html = renderToStaticMarkup(<SensitiveValue label="email address"><Input value={email} type="email" onChange={() => {}} /></SensitiveValue>);
 		expect(html).not.toContain(email);
 		expect(html).toContain(obfuscatedPlaceholder(email));
 		expect(html).toContain('type="text"');
 		expect(html).toContain("readOnly");
+		expect(html).toContain('inert=""');
 		expect(html).toContain("text-shadow");
 		expect(html).not.toContain("data-pii-hidden");
 	});
@@ -85,6 +93,7 @@ describe("SensitiveValue", () => {
 		expect(html).toContain(email);
 		expect(html).toContain('type="email"');
 		expect(html).not.toContain("readOnly");
+		expect(html).not.toContain('inert=""');
 		expect(html).toContain("sensitiveValues.mask");
 	});
 
