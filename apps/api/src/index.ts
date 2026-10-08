@@ -8,7 +8,7 @@ import type { Env } from "@/runtime/types";
 
 import { v1Router } from "@/routes/v1";
 import { lazyRouter } from "@/routes/lazy";
-import type { GatewayBindings } from "@/runtime/env";
+import { runWithRequestScope, type GatewayBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
 import { enforceRegionalSurface } from "@/regional-surface";
@@ -90,7 +90,9 @@ app.onError((error, c) => {
 });
 
 export default {
-	fetch: app.fetch,
+	fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
+		return runWithRequestScope(ctx?.waitUntil?.bind(ctx), () => app.fetch(request, env, ctx));
+	},
 	async scheduled(event: ScheduledController, env: GatewayBindings) {
 		const { handleScheduledEvent } = await import("@/scheduled");
 		await handleScheduledEvent(event, env);

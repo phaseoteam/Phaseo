@@ -3,6 +3,7 @@
 // How: Reads bindings and exposes initialized clients.
 
 // apps/api/src/runtime/env.ts
+import { AsyncLocalStorage } from "node:async_hooks";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@supabase/supabase-js";
 import type { ResponseCacheStore } from "@/core/response-cache";
@@ -29,6 +30,10 @@ type WaitUntilEntry = {
 const waitUntilEntries: WaitUntilEntry[] = [];
 let nextWaitUntilEntryId = 0;
 let waitUntilHandler: ((promise: Promise<unknown>) => void) | null = null;
+// Background work must extend the lifetime of the request that started it:
+// Workers cancel a request's pending I/O once its own context ends, so routing
+// one request's billing/audit through another request's waitUntil can drop it.
+const requestScope = new AsyncLocalStorage<{ waitUntil: (promise: Promise<unknown>) => void }>();
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 function snapshotBindings(env: GatewayBindings): GatewayBindings {
@@ -99,6 +104,15 @@ export function ensureRuntimeForBackground(): () => void {
     return () => clearRuntime();
 }
 
+/** Runs `fn` with `waitUntil` bound as the background dispatcher for everything it starts. */
+export function runWithRequestScope<T>(
+    waitUntil: ((promise: Promise<unknown>) => void) | undefined,
+    fn: () => T,
+): T {
+    if (!waitUntil) return fn();
+    return requestScope.run({ waitUntil }, fn);
+}
+
 export function setWaitUntil(handler?: (promise: Promise<unknown>) => void): () => void {
     if (!handler) {
         return () => { };
@@ -139,7 +153,9 @@ export function isLocalTestingModeEnabled(bindings?: Partial<GatewayBindings> | 
 }
 
 export function dispatchBackground(promise: Promise<unknown>) {
-    const handler = waitUntilHandler;
+    // The process-wide stack is only a fallback for callers outside a request
+    // scope (Durable Objects, scheduled jobs, tests).
+    const handler = requestScope.getStore()?.waitUntil ?? waitUntilHandler;
     if (handler) {
         handler(promise.catch((err) => console.error(err)));
         return;

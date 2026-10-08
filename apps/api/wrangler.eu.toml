@@ -3,7 +3,7 @@
 name = "phaseo-gateway-eu"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
 workers_dev = false
 preview_urls = false
 
