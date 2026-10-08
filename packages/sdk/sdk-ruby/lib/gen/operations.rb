@@ -5,30 +5,36 @@ module Phaseo
     module Operations
       def self.addGuardrailKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/keys/add"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.addGuardrailMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/members/add"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.addWorkspaceMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/members/add"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.applyPresetUpstreamVersion(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/upstream"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.approveWorkspaceJoinRequest(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["request_id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/join-requests/#{URI.encode_uri_component(path["request_id"].to_s)}/approve"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -41,24 +47,28 @@ module Phaseo
 
       def self.cancelBatch(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["batch_id"].to_s)
         resolved_path = "/batches/#{URI.encode_uri_component(path["batch_id"].to_s)}/cancel"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.cancelBatchAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}/cancel"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.cancelVideo(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/videos/#{URI.encode_uri_component(path["video_id"].to_s)}/cancel"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.cancelVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/video/generations/#{URI.encode_uri_component(path["video_id"].to_s)}/cancel"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -251,12 +261,14 @@ module Phaseo
 
       def self.createVideoDownloadUrl(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/videos/#{URI.encode_uri_component(path["video_id"].to_s)}/download_url"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.createVideoDownloadUrlAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/video/generations/#{URI.encode_uri_component(path["video_id"].to_s)}/download_url"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -293,6 +305,7 @@ module Phaseo
 
       def self.createWorkspaceInvite(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/invites"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -311,126 +324,150 @@ module Phaseo
 
       def self.deleteApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/data-contribution/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteDynamicRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/routing/dynamic-routes/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteGuardrail(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/management-keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["client_id"].to_s)
         resolved_path = "/oauth-clients/#{URI.encode_uri_component(path["client_id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteObservabilityDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/observability/destinations/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deletePreset(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deletePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteProviderCredential(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/byok/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteVideo(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/videos/#{URI.encode_uri_component(path["video_id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/video/generations/#{URI.encode_uri_component(path["video_id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceBudget(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceDepartment(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/departments/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["departmentId"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["userId"].to_s)
         resolved_path = "/identity/departments/#{URI.encode_uri_component(path["departmentId"].to_s)}/members/#{URI.encode_uri_component(path["userId"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceGroupMapping(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/group-mappings/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceInvite(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["invite_id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/invites/#{URI.encode_uri_component(path["invite_id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deleteWorkspaceNotificationDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.deployDynamicRouteVersion(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["version"].to_s)
         resolved_path = "/routing/dynamic-routes/#{URI.encode_uri_component(path["id"].to_s)}/versions/#{URI.encode_uri_component(path["version"].to_s)}/deploy"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -443,12 +480,14 @@ module Phaseo
 
       def self.finalizeRealtimeSession(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["session_id"].to_s)
         resolved_path = "/audio/realtime/sessions/#{URI.encode_uri_component(path["session_id"].to_s)}/finalize"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.forkPreset(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/fork"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -479,6 +518,7 @@ module Phaseo
 
       def self.getApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -503,12 +543,14 @@ module Phaseo
 
       def self.getDynamicRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/routing/dynamic-routes/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getGatewayRequestLog(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["requestId"].to_s)
         resolved_path = "/logs/#{URI.encode_uri_component(path["requestId"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -521,6 +563,7 @@ module Phaseo
 
       def self.getGuardrail(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -533,30 +576,35 @@ module Phaseo
 
       def self.getManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/management-keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getMusicGeneration(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["music_id"].to_s)
         resolved_path = "/music/generate/#{URI.encode_uri_component(path["music_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getMusicGenerationAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["music_id"].to_s)
         resolved_path = "/music/generations/#{URI.encode_uri_component(path["music_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["client_id"].to_s)
         resolved_path = "/oauth-clients/#{URI.encode_uri_component(path["client_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getObservabilityDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/observability/destinations/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -569,6 +617,7 @@ module Phaseo
 
       def self.getPreset(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -581,66 +630,77 @@ module Phaseo
 
       def self.getPresetTestRun(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/preset-test-runs/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getPrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getProviderCredential(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/byok/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getProviderDerankStatus(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["provider_id"].to_s)
         resolved_path = "/health/providers/#{URI.encode_uri_component(path["provider_id"].to_s)}/derank"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getVideo(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/videos/#{URI.encode_uri_component(path["video_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getVideoAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/video/generations/#{URI.encode_uri_component(path["video_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getVideoContent(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/videos/#{URI.encode_uri_component(path["video_id"].to_s)}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getVideoContentAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["video_id"].to_s)
         resolved_path = "/video/generations/#{URI.encode_uri_component(path["video_id"].to_s)}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.getWorkspaceBudget(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -677,6 +737,7 @@ module Phaseo
 
       def self.invalidateApiKeyCache(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}/invalidate"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -737,12 +798,14 @@ module Phaseo
 
       def self.listBatchRequests(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["batch_id"].to_s)
         resolved_path = "/batches/#{URI.encode_uri_component(path["batch_id"].to_s)}/requests"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.listBatchRequestsAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}/requests"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -791,12 +854,14 @@ module Phaseo
 
       def self.listGuardrailKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/keys"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.listGuardrailMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/members"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -815,6 +880,8 @@ module Phaseo
 
       def self.listModelEndpoints(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["author"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["slug"].to_s)
         resolved_path = "/models/#{URI.encode_uri_component(path["author"].to_s)}/#{URI.encode_uri_component(path["slug"].to_s)}/endpoints"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -857,6 +924,7 @@ module Phaseo
 
       def self.listPresetVersions(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/versions"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -953,18 +1021,21 @@ module Phaseo
 
       def self.listWorkspaceInvites(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/invites"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.listWorkspaceJoinRequests(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/join-requests"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.listWorkspaceMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/members"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1001,42 +1072,50 @@ module Phaseo
 
       def self.mergeWorkspaceApp(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/apps/#{URI.encode_uri_component(path["id"].to_s)}/merge"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.publishPresetVersion(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}/versions"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.regenerateOAuthClientSecret(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["client_id"].to_s)
         resolved_path = "/oauth-clients/#{URI.encode_uri_component(path["client_id"].to_s)}/regenerate-secret"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.rejectWorkspaceJoinRequest(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["request_id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/join-requests/#{URI.encode_uri_component(path["request_id"].to_s)}/reject"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.removeGuardrailKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/keys/remove"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.removeGuardrailMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/members/remove"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.removeWorkspaceMembers(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/members/remove"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1049,96 +1128,113 @@ module Phaseo
 
       def self.replaceDynamicRouteKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/routing/dynamic-routes/#{URI.encode_uri_component(path["id"].to_s)}/keys"
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.replaceGuardrailKeys(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}/keys"
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatch(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["batch_id"].to_s)
         resolved_path = "/batches/#{URI.encode_uri_component(path["batch_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchFile(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/batches/files/#{URI.encode_uri_component(path["file_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchFileAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/batch/files/#{URI.encode_uri_component(path["file_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchFileContent(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/batches/files/#{URI.encode_uri_component(path["file_id"].to_s)}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchFileContentAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/batch/files/#{URI.encode_uri_component(path["file_id"].to_s)}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchResults(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["batch_id"].to_s)
         resolved_path = "/batches/#{URI.encode_uri_component(path["batch_id"].to_s)}/results"
         client.request_bytes(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveBatchResultsAlias(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/batch/#{URI.encode_uri_component(path["id"].to_s)}/results"
         client.request_bytes(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveFile(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/files/#{URI.encode_uri_component(path["file_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.retrieveFileContent(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["file_id"].to_s)
         resolved_path = "/files/#{URI.encode_uri_component(path["file_id"].to_s)}/content"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.revokeWorkspaceScimToken(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/scim/tokens/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "DELETE", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.rotateApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}/rotate"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.rotateWebhookEndpointSecret(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}/rotate-secret"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.setWorkspaceDepartmentMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["departmentId"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["userId"].to_s)
         resolved_path = "/identity/departments/#{URI.encode_uri_component(path["departmentId"].to_s)}/members/#{URI.encode_uri_component(path["userId"].to_s)}"
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1151,12 +1247,14 @@ module Phaseo
 
       def self.testWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}/test"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.testWorkspaceNotificationDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/notifications/destinations/#{URI.encode_uri_component(path["id"].to_s)}/test"
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1169,12 +1267,14 @@ module Phaseo
 
       def self.updateApiKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateDataContributionClassifier(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/data-contribution/classifiers/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1187,30 +1287,35 @@ module Phaseo
 
       def self.updateDynamicRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/routing/dynamic-routes/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateGuardrail(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/guardrails/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateManagementKey(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/management-keys/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateOAuthClient(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["client_id"].to_s)
         resolved_path = "/oauth-clients/#{URI.encode_uri_component(path["client_id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateObservabilityDestination(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/observability/destinations/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1223,6 +1328,7 @@ module Phaseo
 
       def self.updatePreset(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/presets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
@@ -1235,72 +1341,85 @@ module Phaseo
 
       def self.updatePresetTestRun(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/preset-test-runs/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updatePrivateModel(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/private-models/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateProviderCredential(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/byok/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWebhookEndpoint(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/webhook-endpoints/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspace(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceApp(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/apps/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceBudget(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/budgets/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceDepartment(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/departments/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceDirectoryMember(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/directory/members/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceGroupMapping(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
         resolved_path = "/identity/group-mappings/#{URI.encode_uri_component(path["id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceMemberRole(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["user_id"].to_s)
         resolved_path = "/workspaces/#{URI.encode_uri_component(path["id"].to_s)}/members/#{URI.encode_uri_component(path["user_id"].to_s)}"
         client.request(method: "PATCH", path: resolved_path, query: query, headers: headers, body: body)
       end
 
       def self.updateWorkspaceNotificationRoute(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["eventKind"].to_s)
         resolved_path = "/notifications/routes/#{URI.encode_uri_component(path["eventKind"].to_s)}"
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end

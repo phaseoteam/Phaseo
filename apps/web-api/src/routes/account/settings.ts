@@ -8,6 +8,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
 import { isProviderAccount } from "./provider-account";
 import { accountSettingsPolicyRouter } from "./settings-policy";
+import { accountChatPrivacyReviewRouter } from "./settings-chat-privacy-review";
 import { accountSettingsUsageRouter } from "./settings-usage";
 import { accountSettingsUsageActionsRouter } from "./settings-usage-actions";
 import { accountSettingsTeamsRouter } from "./settings-teams";
@@ -127,6 +128,7 @@ function isPhaseoChatApp(titleValue: unknown, keyValue: unknown): boolean {
 
 export const accountSettingsRouter = new Hono<{ Bindings: Env }>();
 accountSettingsRouter.route("/", accountSettingsPolicyRouter);
+accountSettingsRouter.route("/", accountChatPrivacyReviewRouter);
 accountSettingsRouter.route("/", accountSettingsUsageRouter);
 accountSettingsRouter.route("/", accountSettingsUsageActionsRouter);
 accountSettingsRouter.route("/", accountSettingsTeamsRouter);

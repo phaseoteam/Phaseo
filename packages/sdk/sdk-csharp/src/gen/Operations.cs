@@ -14,6 +14,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/keys/add";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -26,6 +27,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members/add";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -38,6 +40,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members/add";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -50,6 +53,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/upstream";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -62,6 +66,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("request_id", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/join-requests/" + Uri.EscapeDataString(path != null && path.ContainsKey("request_id") ? path["request_id"] : "") + "/approve";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -86,6 +92,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("batch_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/" + Uri.EscapeDataString(path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "") + "/cancel";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -98,6 +105,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/cancel";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -110,6 +118,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/videos/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/cancel";
 		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
@@ -122,6 +131,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/video/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/cancel";
 		return client.SendAsync<object>("POST", resolvedPath, query, headers, body);
 	}
@@ -506,6 +516,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/videos/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/download_url";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -518,6 +529,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/video/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/download_url";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -590,6 +602,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/invites";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -626,6 +639,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -638,6 +652,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/data-contribution/classifiers/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -650,6 +665,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/routing/dynamic-routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -662,6 +678,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -674,6 +691,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/management-keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -686,6 +704,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("client_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/oauth-clients/" + Uri.EscapeDataString(path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -698,6 +717,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/observability/destinations/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -710,6 +730,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -722,6 +743,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/private-models/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -734,6 +756,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/byok/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -746,6 +769,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/videos/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -758,6 +782,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/video/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -770,6 +795,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -782,6 +808,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -794,6 +821,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/budgets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -806,6 +834,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/departments/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -818,6 +847,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("departmentId", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("userId", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/departments/" + Uri.EscapeDataString(path != null && path.ContainsKey("departmentId") ? path["departmentId"] : "") + "/members/" + Uri.EscapeDataString(path != null && path.ContainsKey("userId") ? path["userId"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -830,6 +861,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/group-mappings/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -842,6 +874,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("invite_id", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/invites/" + Uri.EscapeDataString(path != null && path.ContainsKey("invite_id") ? path["invite_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -854,6 +888,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/notifications/destinations/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -866,6 +901,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("version", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/routing/dynamic-routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/versions/" + Uri.EscapeDataString(path != null && path.ContainsKey("version") ? path["version"] : "") + "/deploy";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -890,6 +927,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("session_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/audio/realtime/sessions/" + Uri.EscapeDataString(path != null && path.ContainsKey("session_id") ? path["session_id"] : "") + "/finalize";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -902,6 +940,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/fork";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -962,6 +1001,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1010,6 +1050,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/routing/dynamic-routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1022,6 +1063,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("requestId", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/logs/" + Uri.EscapeDataString(path != null && path.ContainsKey("requestId") ? path["requestId"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1046,6 +1088,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1070,6 +1113,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/management-keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1082,6 +1126,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("music_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/music/generate/" + Uri.EscapeDataString(path != null && path.ContainsKey("music_id") ? path["music_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1094,6 +1139,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("music_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/music/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("music_id") ? path["music_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1106,6 +1152,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("client_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/oauth-clients/" + Uri.EscapeDataString(path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1118,6 +1165,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/observability/destinations/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1142,6 +1190,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1166,6 +1215,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/preset-test-runs/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1178,6 +1228,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/private-models/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1190,6 +1241,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/byok/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1202,6 +1254,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("provider_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/health/providers/" + Uri.EscapeDataString(path != null && path.ContainsKey("provider_id") ? path["provider_id"] : "") + "/derank";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1214,6 +1267,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/videos/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1226,6 +1280,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/video/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1238,6 +1293,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/videos/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/content";
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
@@ -1250,6 +1306,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("video_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/video/generations/" + Uri.EscapeDataString(path != null && path.ContainsKey("video_id") ? path["video_id"] : "") + "/content";
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
@@ -1262,6 +1319,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1274,6 +1332,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1286,6 +1345,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/budgets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1358,6 +1418,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/invalidate";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -1478,6 +1539,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("batch_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/" + Uri.EscapeDataString(path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "") + "/requests";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1490,6 +1552,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/requests";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1586,6 +1649,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/keys";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1598,6 +1662,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1634,6 +1699,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("author", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("slug", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/models/" + Uri.EscapeDataString(path != null && path.ContainsKey("author") ? path["author"] : "") + "/" + Uri.EscapeDataString(path != null && path.ContainsKey("slug") ? path["slug"] : "") + "/endpoints";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1718,6 +1785,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/versions";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1910,6 +1978,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/invites";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1922,6 +1991,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/join-requests";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -1934,6 +2004,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members";
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2006,6 +2077,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/apps/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/merge";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2018,6 +2090,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/versions";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2030,6 +2103,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("client_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/oauth-clients/" + Uri.EscapeDataString(path != null && path.ContainsKey("client_id") ? path["client_id"] : "") + "/regenerate-secret";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2042,6 +2116,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("request_id", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/join-requests/" + Uri.EscapeDataString(path != null && path.ContainsKey("request_id") ? path["request_id"] : "") + "/reject";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2054,6 +2130,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/keys/remove";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2066,6 +2143,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members/remove";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2078,6 +2156,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members/remove";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2102,6 +2181,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/routing/dynamic-routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/keys";
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}
@@ -2114,6 +2194,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/keys";
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}
@@ -2126,6 +2207,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("batch_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/" + Uri.EscapeDataString(path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2138,6 +2220,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2150,6 +2233,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2162,6 +2246,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2174,6 +2259,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "") + "/content";
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
@@ -2186,6 +2272,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "") + "/content";
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
@@ -2198,6 +2285,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("batch_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batches/" + Uri.EscapeDataString(path != null && path.ContainsKey("batch_id") ? path["batch_id"] : "") + "/results";
 		return client.SendTextAsync("GET", resolvedPath, query, headers, body);
 	}
@@ -2210,6 +2298,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/batch/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/results";
 		return client.SendTextAsync("GET", resolvedPath, query, headers, body);
 	}
@@ -2222,6 +2311,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("GET", resolvedPath, query, headers, body);
 	}
@@ -2234,6 +2324,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("file_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/files/" + Uri.EscapeDataString(path != null && path.ContainsKey("file_id") ? path["file_id"] : "") + "/content";
 		return client.SendAsync<object>("GET", resolvedPath, query, headers, body);
 	}
@@ -2246,6 +2337,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/scim/tokens/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("DELETE", resolvedPath, query, headers, body);
 	}
@@ -2258,6 +2350,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/rotate";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2270,6 +2363,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/rotate-secret";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2282,6 +2376,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("departmentId", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("userId", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/departments/" + Uri.EscapeDataString(path != null && path.ContainsKey("departmentId") ? path["departmentId"] : "") + "/members/" + Uri.EscapeDataString(path != null && path.ContainsKey("userId") ? path["userId"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}
@@ -2306,6 +2402,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/test";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2318,6 +2415,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/notifications/destinations/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/test";
 		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
 	}
@@ -2342,6 +2440,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2354,6 +2453,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/data-contribution/classifiers/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2378,6 +2478,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/routing/dynamic-routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2390,6 +2491,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/guardrails/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2402,6 +2504,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/management-keys/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2414,6 +2517,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("client_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/oauth-clients/" + Uri.EscapeDataString(path != null && path.ContainsKey("client_id") ? path["client_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2426,6 +2530,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/observability/destinations/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2450,6 +2555,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/presets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2474,6 +2580,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/preset-test-runs/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2486,6 +2593,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/private-models/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2498,6 +2606,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/byok/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2510,6 +2619,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/webhook-endpoints/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2522,6 +2632,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2534,6 +2645,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/apps/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2546,6 +2658,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/budgets/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2558,6 +2671,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/departments/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2570,6 +2684,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/directory/members/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}
@@ -2582,6 +2697,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/identity/group-mappings/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2594,6 +2710,8 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		if (path != null && path.TryGetValue("user_id", out var segment1) && (segment1 == "." || segment1 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/workspaces/" + Uri.EscapeDataString(path != null && path.ContainsKey("id") ? path["id"] : "") + "/members/" + Uri.EscapeDataString(path != null && path.ContainsKey("user_id") ? path["user_id"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PATCH", resolvedPath, query, headers, body);
 	}
@@ -2606,6 +2724,7 @@ public static class Operations
 		object? body = null
 	)
 	{
+		if (path != null && path.TryGetValue("eventKind", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
 		var resolvedPath = "/notifications/routes/" + Uri.EscapeDataString(path != null && path.ContainsKey("eventKind") ? path["eventKind"] : "");
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}

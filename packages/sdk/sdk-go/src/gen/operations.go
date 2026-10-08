@@ -1,8 +1,10 @@
 package gen
 
 import "net/url"
+import "errors"
 
 func AddGuardrailKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/keys/add"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -18,6 +20,7 @@ func AddGuardrailKeys(client *Client, path map[string]string, query map[string]s
 }
 
 func AddGuardrailMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/members/add"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -33,6 +36,7 @@ func AddGuardrailMembers(client *Client, path map[string]string, query map[strin
 }
 
 func AddWorkspaceMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/members/add"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -48,6 +52,7 @@ func AddWorkspaceMembers(client *Client, path map[string]string, query map[strin
 }
 
 func ApplyPresetUpstreamVersion(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/upstream"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -63,6 +68,8 @@ func ApplyPresetUpstreamVersion(client *Client, path map[string]string, query ma
 }
 
 func ApproveWorkspaceJoinRequest(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["request_id"] == "." || path["request_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/join-requests/" + url.PathEscape(path["request_id"]) + "/approve"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -93,6 +100,7 @@ func CalculatePricing(client *Client, path map[string]string, query map[string]s
 }
 
 func CancelBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["batch_id"] == "." || path["batch_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -108,6 +116,7 @@ func CancelBatch(client *Client, path map[string]string, query map[string]string
 }
 
 func CancelBatchAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/" + url.PathEscape(path["id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -123,6 +132,7 @@ func CancelBatchAlias(client *Client, path map[string]string, query map[string]s
 }
 
 func CancelVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -138,6 +148,7 @@ func CancelVideo(client *Client, path map[string]string, query map[string]string
 }
 
 func CancelVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"]) + "/cancel"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -618,6 +629,7 @@ func CreateVideoAlias(client *Client, path map[string]string, query map[string]s
 }
 
 func CreateVideoDownloadUrl(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"]) + "/download_url"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -633,6 +645,7 @@ func CreateVideoDownloadUrl(client *Client, path map[string]string, query map[st
 }
 
 func CreateVideoDownloadUrlAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"]) + "/download_url"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -723,6 +736,7 @@ func CreateWorkspaceGroupMapping(client *Client, path map[string]string, query m
 }
 
 func CreateWorkspaceInvite(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/invites"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -768,6 +782,7 @@ func CreateWorkspaceScimToken(client *Client, path map[string]string, query map[
 }
 
 func DeleteApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -783,6 +798,7 @@ func DeleteApiKey(client *Client, path map[string]string, query map[string]strin
 }
 
 func DeleteDataContributionClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/data-contribution/classifiers/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -798,6 +814,7 @@ func DeleteDataContributionClassifier(client *Client, path map[string]string, qu
 }
 
 func DeleteDynamicRoute(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/routing/dynamic-routes/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -813,6 +830,7 @@ func DeleteDynamicRoute(client *Client, path map[string]string, query map[string
 }
 
 func DeleteGuardrail(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -828,6 +846,7 @@ func DeleteGuardrail(client *Client, path map[string]string, query map[string]st
 }
 
 func DeleteManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/management-keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -843,6 +862,7 @@ func DeleteManagementKey(client *Client, path map[string]string, query map[strin
 }
 
 func DeleteOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["client_id"] == "." || path["client_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -858,6 +878,7 @@ func DeleteOAuthClient(client *Client, path map[string]string, query map[string]
 }
 
 func DeleteObservabilityDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/observability/destinations/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -873,6 +894,7 @@ func DeleteObservabilityDestination(client *Client, path map[string]string, quer
 }
 
 func DeletePreset(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -888,6 +910,7 @@ func DeletePreset(client *Client, path map[string]string, query map[string]strin
 }
 
 func DeletePrivateModel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/private-models/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -903,6 +926,7 @@ func DeletePrivateModel(client *Client, path map[string]string, query map[string
 }
 
 func DeleteProviderCredential(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/byok/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -918,6 +942,7 @@ func DeleteProviderCredential(client *Client, path map[string]string, query map[
 }
 
 func DeleteVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -933,6 +958,7 @@ func DeleteVideo(client *Client, path map[string]string, query map[string]string
 }
 
 func DeleteVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -948,6 +974,7 @@ func DeleteVideoAlias(client *Client, path map[string]string, query map[string]s
 }
 
 func DeleteWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -963,6 +990,7 @@ func DeleteWebhookEndpoint(client *Client, path map[string]string, query map[str
 }
 
 func DeleteWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -978,6 +1006,7 @@ func DeleteWorkspace(client *Client, path map[string]string, query map[string]st
 }
 
 func DeleteWorkspaceBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -993,6 +1022,7 @@ func DeleteWorkspaceBudget(client *Client, path map[string]string, query map[str
 }
 
 func DeleteWorkspaceDepartment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/departments/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1008,6 +1038,8 @@ func DeleteWorkspaceDepartment(client *Client, path map[string]string, query map
 }
 
 func DeleteWorkspaceDepartmentMember(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["departmentId"] == "." || path["departmentId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["userId"] == "." || path["userId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/departments/" + url.PathEscape(path["departmentId"]) + "/members/" + url.PathEscape(path["userId"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1023,6 +1055,7 @@ func DeleteWorkspaceDepartmentMember(client *Client, path map[string]string, que
 }
 
 func DeleteWorkspaceGroupMapping(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/group-mappings/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1038,6 +1071,8 @@ func DeleteWorkspaceGroupMapping(client *Client, path map[string]string, query m
 }
 
 func DeleteWorkspaceInvite(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["invite_id"] == "." || path["invite_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/invites/" + url.PathEscape(path["invite_id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1053,6 +1088,7 @@ func DeleteWorkspaceInvite(client *Client, path map[string]string, query map[str
 }
 
 func DeleteWorkspaceNotificationDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/notifications/destinations/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1068,6 +1104,8 @@ func DeleteWorkspaceNotificationDestination(client *Client, path map[string]stri
 }
 
 func DeployDynamicRouteVersion(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["version"] == "." || path["version"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/routing/dynamic-routes/" + url.PathEscape(path["id"]) + "/versions/" + url.PathEscape(path["version"]) + "/deploy"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1093,6 +1131,7 @@ func ExportAnalyticsCsv(client *Client, path map[string]string, query map[string
 }
 
 func FinalizeRealtimeSession(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["session_id"] == "." || path["session_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/audio/realtime/sessions/" + url.PathEscape(path["session_id"]) + "/finalize"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1108,6 +1147,7 @@ func FinalizeRealtimeSession(client *Client, path map[string]string, query map[s
 }
 
 func ForkPreset(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/fork"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1183,6 +1223,7 @@ func GetActivityAlias(client *Client, path map[string]string, query map[string]s
 }
 
 func GetApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1243,6 +1284,7 @@ func GetDataContributionSettings(client *Client, path map[string]string, query m
 }
 
 func GetDynamicRoute(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/routing/dynamic-routes/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1258,6 +1300,7 @@ func GetDynamicRoute(client *Client, path map[string]string, query map[string]st
 }
 
 func GetGatewayRequestLog(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["requestId"] == "." || path["requestId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/logs/" + url.PathEscape(path["requestId"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1288,6 +1331,7 @@ func GetGeneration(client *Client, path map[string]string, query map[string]stri
 }
 
 func GetGuardrail(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1318,6 +1362,7 @@ func GetHealth(client *Client, path map[string]string, query map[string]string, 
 }
 
 func GetManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/management-keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1333,6 +1378,7 @@ func GetManagementKey(client *Client, path map[string]string, query map[string]s
 }
 
 func GetMusicGeneration(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["music_id"] == "." || path["music_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/music/generate/" + url.PathEscape(path["music_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1348,6 +1394,7 @@ func GetMusicGeneration(client *Client, path map[string]string, query map[string
 }
 
 func GetMusicGenerationAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["music_id"] == "." || path["music_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/music/generations/" + url.PathEscape(path["music_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1363,6 +1410,7 @@ func GetMusicGenerationAlias(client *Client, path map[string]string, query map[s
 }
 
 func GetOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["client_id"] == "." || path["client_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1378,6 +1426,7 @@ func GetOAuthClient(client *Client, path map[string]string, query map[string]str
 }
 
 func GetObservabilityDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/observability/destinations/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1408,6 +1457,7 @@ func GetObservabilityLoggingPolicy(client *Client, path map[string]string, query
 }
 
 func GetPreset(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1438,6 +1488,7 @@ func GetPresetPublisher(client *Client, path map[string]string, query map[string
 }
 
 func GetPresetTestRun(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/preset-test-runs/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1453,6 +1504,7 @@ func GetPresetTestRun(client *Client, path map[string]string, query map[string]s
 }
 
 func GetPrivateModel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/private-models/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1468,6 +1520,7 @@ func GetPrivateModel(client *Client, path map[string]string, query map[string]st
 }
 
 func GetProviderCredential(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/byok/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1483,6 +1536,7 @@ func GetProviderCredential(client *Client, path map[string]string, query map[str
 }
 
 func GetProviderDerankStatus(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["provider_id"] == "." || path["provider_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/health/providers/" + url.PathEscape(path["provider_id"]) + "/derank"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1498,6 +1552,7 @@ func GetProviderDerankStatus(client *Client, path map[string]string, query map[s
 }
 
 func GetVideo(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1513,6 +1568,7 @@ func GetVideo(client *Client, path map[string]string, query map[string]string, h
 }
 
 func GetVideoAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1528,6 +1584,7 @@ func GetVideoAlias(client *Client, path map[string]string, query map[string]stri
 }
 
 func GetVideoContent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/videos/" + url.PathEscape(path["video_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1543,6 +1600,7 @@ func GetVideoContent(client *Client, path map[string]string, query map[string]st
 }
 
 func GetVideoContentAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["video_id"] == "." || path["video_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/video/generations/" + url.PathEscape(path["video_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1558,6 +1616,7 @@ func GetVideoContentAlias(client *Client, path map[string]string, query map[stri
 }
 
 func GetWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1573,6 +1632,7 @@ func GetWebhookEndpoint(client *Client, path map[string]string, query map[string
 }
 
 func GetWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1588,6 +1648,7 @@ func GetWorkspace(client *Client, path map[string]string, query map[string]strin
 }
 
 func GetWorkspaceBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1678,6 +1739,7 @@ func GetWorkspaceSso(client *Client, path map[string]string, query map[string]st
 }
 
 func InvalidateApiKeyCache(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/keys/" + url.PathEscape(path["id"]) + "/invalidate"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1828,6 +1890,7 @@ func ListBatchModelsAlias(client *Client, path map[string]string, query map[stri
 }
 
 func ListBatchRequests(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["batch_id"] == "." || path["batch_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"]) + "/requests"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1843,6 +1906,7 @@ func ListBatchRequests(client *Client, path map[string]string, query map[string]
 }
 
 func ListBatchRequestsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/" + url.PathEscape(path["id"]) + "/requests"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1963,6 +2027,7 @@ func ListGatewayRequestLogs(client *Client, path map[string]string, query map[st
 }
 
 func ListGuardrailKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/keys"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -1978,6 +2043,7 @@ func ListGuardrailKeys(client *Client, path map[string]string, query map[string]
 }
 
 func ListGuardrailMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/members"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2023,6 +2089,8 @@ func ListManagementKeys(client *Client, path map[string]string, query map[string
 }
 
 func ListModelEndpoints(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["author"] == "." || path["author"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["slug"] == "." || path["slug"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/models/" + url.PathEscape(path["author"]) + "/" + url.PathEscape(path["slug"]) + "/endpoints"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2128,6 +2196,7 @@ func ListPresetTestRuns(client *Client, path map[string]string, query map[string
 }
 
 func ListPresetVersions(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/versions"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2368,6 +2437,7 @@ func ListWorkspaceGroupMappings(client *Client, path map[string]string, query ma
 }
 
 func ListWorkspaceInvites(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/invites"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2383,6 +2453,7 @@ func ListWorkspaceInvites(client *Client, path map[string]string, query map[stri
 }
 
 func ListWorkspaceJoinRequests(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/join-requests"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2398,6 +2469,7 @@ func ListWorkspaceJoinRequests(client *Client, path map[string]string, query map
 }
 
 func ListWorkspaceMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/members"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2488,6 +2560,7 @@ func MakeDecision(client *Client, path map[string]string, query map[string]strin
 }
 
 func MergeWorkspaceApp(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/apps/" + url.PathEscape(path["id"]) + "/merge"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2503,6 +2576,7 @@ func MergeWorkspaceApp(client *Client, path map[string]string, query map[string]
 }
 
 func PublishPresetVersion(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"]) + "/versions"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2518,6 +2592,7 @@ func PublishPresetVersion(client *Client, path map[string]string, query map[stri
 }
 
 func RegenerateOAuthClientSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["client_id"] == "." || path["client_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"]) + "/regenerate-secret"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2533,6 +2608,8 @@ func RegenerateOAuthClientSecret(client *Client, path map[string]string, query m
 }
 
 func RejectWorkspaceJoinRequest(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["request_id"] == "." || path["request_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/join-requests/" + url.PathEscape(path["request_id"]) + "/reject"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2548,6 +2625,7 @@ func RejectWorkspaceJoinRequest(client *Client, path map[string]string, query ma
 }
 
 func RemoveGuardrailKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/keys/remove"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2563,6 +2641,7 @@ func RemoveGuardrailKeys(client *Client, path map[string]string, query map[strin
 }
 
 func RemoveGuardrailMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/members/remove"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2578,6 +2657,7 @@ func RemoveGuardrailMembers(client *Client, path map[string]string, query map[st
 }
 
 func RemoveWorkspaceMembers(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/members/remove"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2608,6 +2688,7 @@ func ReorderProviderCredentials(client *Client, path map[string]string, query ma
 }
 
 func ReplaceDynamicRouteKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/routing/dynamic-routes/" + url.PathEscape(path["id"]) + "/keys"
 	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2623,6 +2704,7 @@ func ReplaceDynamicRouteKeys(client *Client, path map[string]string, query map[s
 }
 
 func ReplaceGuardrailKeys(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"]) + "/keys"
 	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2638,6 +2720,7 @@ func ReplaceGuardrailKeys(client *Client, path map[string]string, query map[stri
 }
 
 func RetrieveBatch(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["batch_id"] == "." || path["batch_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2653,6 +2736,7 @@ func RetrieveBatch(client *Client, path map[string]string, query map[string]stri
 }
 
 func RetrieveBatchAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/" + url.PathEscape(path["id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2668,6 +2752,7 @@ func RetrieveBatchAlias(client *Client, path map[string]string, query map[string
 }
 
 func RetrieveBatchFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/files/" + url.PathEscape(path["file_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2683,6 +2768,7 @@ func RetrieveBatchFile(client *Client, path map[string]string, query map[string]
 }
 
 func RetrieveBatchFileAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/files/" + url.PathEscape(path["file_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2698,6 +2784,7 @@ func RetrieveBatchFileAlias(client *Client, path map[string]string, query map[st
 }
 
 func RetrieveBatchFileContent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/files/" + url.PathEscape(path["file_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2713,6 +2800,7 @@ func RetrieveBatchFileContent(client *Client, path map[string]string, query map[
 }
 
 func RetrieveBatchFileContentAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/files/" + url.PathEscape(path["file_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2728,6 +2816,7 @@ func RetrieveBatchFileContentAlias(client *Client, path map[string]string, query
 }
 
 func RetrieveBatchResults(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (string, error) {
+	if path["batch_id"] == "." || path["batch_id"] == ".." { var zero string; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batches/" + url.PathEscape(path["batch_id"]) + "/results"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2738,6 +2827,7 @@ func RetrieveBatchResults(client *Client, path map[string]string, query map[stri
 }
 
 func RetrieveBatchResultsAlias(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (string, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero string; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/batch/" + url.PathEscape(path["id"]) + "/results"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2748,6 +2838,7 @@ func RetrieveBatchResultsAlias(client *Client, path map[string]string, query map
 }
 
 func RetrieveFile(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/files/" + url.PathEscape(path["file_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2763,6 +2854,7 @@ func RetrieveFile(client *Client, path map[string]string, query map[string]strin
 }
 
 func RetrieveFileContent(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (interface{}, error) {
+	if path["file_id"] == "." || path["file_id"] == ".." { var zero interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/files/" + url.PathEscape(path["file_id"]) + "/content"
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2778,6 +2870,7 @@ func RetrieveFileContent(client *Client, path map[string]string, query map[strin
 }
 
 func RevokeWorkspaceScimToken(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/scim/tokens/" + url.PathEscape(path["id"])
 	data, err := client.Request("DELETE", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2793,6 +2886,7 @@ func RevokeWorkspaceScimToken(client *Client, path map[string]string, query map[
 }
 
 func RotateApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/keys/" + url.PathEscape(path["id"]) + "/rotate"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2808,6 +2902,7 @@ func RotateApiKey(client *Client, path map[string]string, query map[string]strin
 }
 
 func RotateWebhookEndpointSecret(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"]) + "/rotate-secret"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2823,6 +2918,8 @@ func RotateWebhookEndpointSecret(client *Client, path map[string]string, query m
 }
 
 func SetWorkspaceDepartmentMember(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["departmentId"] == "." || path["departmentId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["userId"] == "." || path["userId"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/departments/" + url.PathEscape(path["departmentId"]) + "/members/" + url.PathEscape(path["userId"])
 	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2853,6 +2950,7 @@ func SummarizeGatewayFeedback(client *Client, path map[string]string, query map[
 }
 
 func TestWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"]) + "/test"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2868,6 +2966,7 @@ func TestWebhookEndpoint(client *Client, path map[string]string, query map[strin
 }
 
 func TestWorkspaceNotificationDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/notifications/destinations/" + url.PathEscape(path["id"]) + "/test"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2898,6 +2997,7 @@ func TestWorkspaceNotificationDestinationConfig(client *Client, path map[string]
 }
 
 func UpdateApiKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2913,6 +3013,7 @@ func UpdateApiKey(client *Client, path map[string]string, query map[string]strin
 }
 
 func UpdateDataContributionClassifier(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/data-contribution/classifiers/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2943,6 +3044,7 @@ func UpdateDataContributionConsent(client *Client, path map[string]string, query
 }
 
 func UpdateDynamicRoute(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/routing/dynamic-routes/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2958,6 +3060,7 @@ func UpdateDynamicRoute(client *Client, path map[string]string, query map[string
 }
 
 func UpdateGuardrail(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/guardrails/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2973,6 +3076,7 @@ func UpdateGuardrail(client *Client, path map[string]string, query map[string]st
 }
 
 func UpdateManagementKey(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/management-keys/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -2988,6 +3092,7 @@ func UpdateManagementKey(client *Client, path map[string]string, query map[strin
 }
 
 func UpdateOAuthClient(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["client_id"] == "." || path["client_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/oauth-clients/" + url.PathEscape(path["client_id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3003,6 +3108,7 @@ func UpdateOAuthClient(client *Client, path map[string]string, query map[string]
 }
 
 func UpdateObservabilityDestination(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/observability/destinations/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3033,6 +3139,7 @@ func UpdateObservabilityLoggingPolicy(client *Client, path map[string]string, qu
 }
 
 func UpdatePreset(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/presets/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3063,6 +3170,7 @@ func UpdatePresetPublisher(client *Client, path map[string]string, query map[str
 }
 
 func UpdatePresetTestRun(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/preset-test-runs/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3078,6 +3186,7 @@ func UpdatePresetTestRun(client *Client, path map[string]string, query map[strin
 }
 
 func UpdatePrivateModel(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/private-models/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3093,6 +3202,7 @@ func UpdatePrivateModel(client *Client, path map[string]string, query map[string
 }
 
 func UpdateProviderCredential(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/byok/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3108,6 +3218,7 @@ func UpdateProviderCredential(client *Client, path map[string]string, query map[
 }
 
 func UpdateWebhookEndpoint(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/webhook-endpoints/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3123,6 +3234,7 @@ func UpdateWebhookEndpoint(client *Client, path map[string]string, query map[str
 }
 
 func UpdateWorkspace(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3138,6 +3250,7 @@ func UpdateWorkspace(client *Client, path map[string]string, query map[string]st
 }
 
 func UpdateWorkspaceApp(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/apps/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3153,6 +3266,7 @@ func UpdateWorkspaceApp(client *Client, path map[string]string, query map[string
 }
 
 func UpdateWorkspaceBudget(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/budgets/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3168,6 +3282,7 @@ func UpdateWorkspaceBudget(client *Client, path map[string]string, query map[str
 }
 
 func UpdateWorkspaceDepartment(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/departments/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3183,6 +3298,7 @@ func UpdateWorkspaceDepartment(client *Client, path map[string]string, query map
 }
 
 func UpdateWorkspaceDirectoryMember(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/directory/members/" + url.PathEscape(path["id"])
 	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3198,6 +3314,7 @@ func UpdateWorkspaceDirectoryMember(client *Client, path map[string]string, quer
 }
 
 func UpdateWorkspaceGroupMapping(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/identity/group-mappings/" + url.PathEscape(path["id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3213,6 +3330,8 @@ func UpdateWorkspaceGroupMapping(client *Client, path map[string]string, query m
 }
 
 func UpdateWorkspaceMemberRole(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["id"] == "." || path["id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	if path["user_id"] == "." || path["user_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/workspaces/" + url.PathEscape(path["id"]) + "/members/" + url.PathEscape(path["user_id"])
 	data, err := client.Request("PATCH", resolvedPath, query, headers, body)
 	if err != nil {
@@ -3228,6 +3347,7 @@ func UpdateWorkspaceMemberRole(client *Client, path map[string]string, query map
 }
 
 func UpdateWorkspaceNotificationRoute(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["eventKind"] == "." || path["eventKind"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
 	resolvedPath := "/notifications/routes/" + url.PathEscape(path["eventKind"])
 	data, err := client.Request("PUT", resolvedPath, query, headers, body)
 	if err != nil {

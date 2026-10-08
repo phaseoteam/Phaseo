@@ -256,7 +256,7 @@ begin
   where gr.key_id  = gateway_fetch_request_context_without_workspace_budget.api_key_id
     and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
     and gr.success is true
-    and gr.created_at >= month_start;
+    and gr.created_at >= least(week_start, month_start);
   end if;
 
   if v_soft_blocked then

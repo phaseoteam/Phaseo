@@ -484,8 +484,24 @@ export async function runPublicModelAnnouncementCheck(args: {
 		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString(), ensureRun);
 		if (claimedModels.length === 0) return summary;
 		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
-			const batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
+			let batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
 			try {
+				// Recheck the authoritative public-catalog policy immediately before disclosure.
+				const visibility = await Promise.all(batch.map(async model => {
+					const { data, error } = await getSupabaseAdmin().rpc("catalog_model_is_public", { p_model_slug: model.modelSlug });
+					if (error) throw new Error("Public model visibility check failed");
+					return data === true;
+				}));
+				const privateModels = batch.filter((_, position) => !visibility[position]);
+				if (privateModels.length > 0) {
+					const { error } = await getSupabaseAdmin().from("model_discovery_public_announcements")
+						.update({ status: "skipped", public_visibility_snapshot: false, claim_run_id: null, claim_expires_at: null, updated_at: new Date().toISOString() })
+						.in("model_slug", privateModels.map(model => model.modelSlug)).eq("claim_run_id", args.runId);
+					if (error) throw new Error("Failed to release private model announcement claims");
+					summary.skipped += privateModels.length;
+				}
+				batch = batch.filter((_, position) => visibility[position]);
+				if (batch.length === 0) continue;
 				const payload = buildPublicModelAnnouncementPayload(
 					batch.map((model) => ({
 						modelId: model.modelSlug,

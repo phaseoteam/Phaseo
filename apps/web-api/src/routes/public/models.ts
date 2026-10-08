@@ -12,9 +12,9 @@ import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
 // raw request timestamps, request content, and request identifiers. App
-// attribution remains opt-in and uses a larger cohort of ten requests.
-const PUBLIC_PERFORMANCE_MIN_REQUESTS = 1;
-const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 1;
+// attribution remains opt-in and requires ten requests.
+const PUBLIC_PERFORMANCE_MIN_REQUESTS = 20;
+const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 20;
 const PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS = 10;
 
 function hasPublicPerformanceSample(value: unknown) {

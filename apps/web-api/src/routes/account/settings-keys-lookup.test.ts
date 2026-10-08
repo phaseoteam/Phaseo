@@ -20,6 +20,15 @@ async function hmac(secret: string) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("API key lookup", () => {
+	it("rejects an oversized body without a content-length before any database or auth request", async () => {
+		const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/account/settings/keys/lookup", {
+			method: "POST", headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			body: JSON.stringify({ key: "_".repeat(5000) }),
+		}, env);
+		expect(response.status).toBe(413);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
 	it("returns the matching key id after verifying the full plaintext key", async () => {
 		const kid = "AbCdEf123456";
 		const secret = "a".repeat(40);

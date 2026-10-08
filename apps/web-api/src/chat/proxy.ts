@@ -2,6 +2,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { hasReviewedChatPrivacy } from "./privacyReview";
 
 export type ChatProxyEnvelope = {
 	baseUrl?: string;
@@ -85,6 +86,10 @@ export async function resolveGatewayKeys(request: Request, env: Env, waitUntil: 
 	const fallback = String(profile.data?.default_workspace_id ?? "").trim();
 	const workspaceId = (requested && accessible.has(requested) ? requested : "") || (fallback && accessible.has(fallback) ? fallback : "") || [...accessible][0] || "";
 	if (!workspaceId) return { status: 403, code: "no_workspace_membership", message: "A workspace is required to use chat" };
+	if (!hasReviewedChatPrivacy(user.appMetadata, workspaceId)) return {
+		status: 403, code: "chat_privacy_review_required",
+		message: "Review your workspace privacy settings before using Chat",
+	};
 	const seed = String(env.CHAT_ROUTE_KEY_SEED ?? env.KEY_PEPPER_ACTIVE ?? "").trim();
 	const pepper = String(env.KEY_PEPPER_ACTIVE ?? "").trim();
 	if (!seed || !pepper) return { status: 503, code: "chat_key_configuration_missing", message: "Chat authentication is not configured" };

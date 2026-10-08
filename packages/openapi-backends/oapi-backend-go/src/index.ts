@@ -384,7 +384,7 @@ function renderClient(): string {
 }
 
 function renderOperations(operations: IROperation[]): string {
-	const lines: string[] = ["package gen", "", 'import "net/url"', ""];
+	const lines: string[] = ["package gen", "", 'import "net/url"', 'import "errors"', ""];
 	for (const operation of operations) {
 		lines.push(renderOperation(operation));
 		lines.push("");
@@ -399,6 +399,7 @@ function renderOperation(operation: IROperation): string {
 	const pathTemplate = renderPathTemplate(operation.path, pathParams);
 	return [
 		`func ${exportName(operation.operationId)}(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (${returnType}, error) {`,
+		...pathParams.map(param => `\tif path[${JSON.stringify(param.name)}] == "." || path[${JSON.stringify(param.name)}] == ".." { var zero ${returnType}; return zero, errors.New("Dot segments are not valid path parameters") }`),
 		`\tresolvedPath := ${pathTemplate}`,
 		`\tdata, err := client.Request("${operation.method.toUpperCase()}", resolvedPath, query, headers, body)`,
 		"\tif err != nil {",

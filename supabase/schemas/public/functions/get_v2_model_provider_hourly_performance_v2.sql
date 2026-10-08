@@ -209,10 +209,10 @@ select
   hourly.structured_output_errors,
   hourly.cache_telemetry_requests,
   hourly.cache_hit_requests,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.effective_input_tokens else null end,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.cached_input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.effective_input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.cached_input_tokens else null end,
   case
-    when hourly.cache_telemetry_requests >= 1 and hourly.effective_input_tokens > 0
+    when hourly.cache_telemetry_requests >= 20 and hourly.effective_input_tokens > 0
       then least(100, hourly.cached_input_tokens * 100.0 / hourly.effective_input_tokens)
     else null
   end cached_input_pct
@@ -223,7 +223,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_provider_hourly_performance_v2"(text, text, numeric, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_provider_hourly_performance_v2"(text, text, numeric, text, text) IS 'Hourly provider performance, quality success rates, token counts, and cache telemetry, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_provider_hourly_performance_v2"(text, text, numeric, text, text) IS 'Hourly provider performance, quality success rates, token counts, and cache telemetry, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_provider_hourly_performance_v2"(text, text, numeric, text, text) FROM "postgres";
 

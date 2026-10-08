@@ -344,6 +344,7 @@ function renderOperation(operation: IROperation): string {
 		"\t\tobject? body = null",
 		"\t)",
 		"\t{",
+		...pathParams.map((param, index) => `\t\tif (path != null && path.TryGetValue(${JSON.stringify(param.name)}, out var segment${index}) && (segment${index} == "." || segment${index} == "..")) throw new ArgumentException("Dot segments are not valid path parameters");`),
 		`\t\tvar resolvedPath = ${pathTemplate};`,
 		(successResponse.kind === "text"
 			? `\t\treturn client.SendTextAsync(\"${operation.method.toUpperCase()}\", resolvedPath, query, headers, body);`

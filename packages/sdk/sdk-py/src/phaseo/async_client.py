@@ -400,7 +400,7 @@ class AsyncPhaseo:
         if model_id.count("/") != 1:
             raise ValueError("model_id must use author/slug format")
         author, slug = model_id.split("/", 1)
-        if not author or not slug:
+        if not author or not slug or author in (".", "..") or slug in (".", ".."):
             raise ValueError("model_id must use author/slug format")
         return await self.request(
             "GET",

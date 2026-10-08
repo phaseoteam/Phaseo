@@ -54,7 +54,7 @@ describe("batch-jobs metadata", () => {
 		markAsyncOperationBilledMock.mockResolvedValue(true);
 	});
 
-	it("applies visible-record offsets after filtering internal file rows", async () => {
+	it("pages visible records in one bounded database query", async () => {
 		const record = (internalId: string) => ({
 			workspaceId: "team_1", kind: "batch", internalId, requestId: null, sessionId: null, appId: null,
 			provider: "openai", nativeId: internalId, model: null, status: "completed", meta: {}, billedAt: null,
@@ -62,13 +62,14 @@ describe("batch-jobs metadata", () => {
 			lastReconcileError: null, createdAt: null, updatedAt: null,
 		});
 		listTeamAsyncOperationsMock.mockResolvedValueOnce([
-			record("__file__:input"), record("batch_1"), record("batch_2"), record("batch_3"),
+			record("batch_2"), record("batch_3"),
 		]);
 
 		const records = await listTeamBatchJobs({ workspaceId: "team_1", offset: 1, limit: 2 });
 
 		expect(records.map((item) => item.batchId)).toEqual(["batch_2", "batch_3"]);
-		expect(listTeamAsyncOperationsMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 0, limit: 100 }));
+		expect(listTeamAsyncOperationsMock).toHaveBeenCalledTimes(1);
+		expect(listTeamAsyncOperationsMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 1, limit: 2, excludeBatchFiles: true }));
 	});
 
 	it("stores batch meta with native batch id when provided", async () => {

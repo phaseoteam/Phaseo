@@ -38,7 +38,29 @@ const policy = {
 	},
 };
 
+function headerRoute(name: string, value: string, operator: string) {
+	return { ...policy, config: { schemaVersion: 2, entryNodeId: "condition", nodes: [
+		{ id: "condition", type: "condition", data: { source: "header", path: name, operator, value } },
+		{ id: "matched", type: "model", data: { model: "matched" } },
+		{ id: "safe", type: "model", data: { model: "safe" } },
+	], edges: [
+		{ id: "yes", source: "condition", target: "matched", sourceHandle: "true" },
+		{ id: "no", source: "condition", target: "safe", sourceHandle: "false" },
+	] } };
+}
+
 describe("dynamic route evaluation", () => {
+	it.each(["Authorization", "cookie", "x-phaseo-mcp-secret", "x-control-secret", "cf-access-jwt-assertion", "x-api-key"])(
+		"does not expose credential header %s to routing conditions", (name) => {
+			const route = headerRoute(name, "secret", "starts_with");
+			for (const headers of [new Headers({ [name]: "secret-value", "x-region": "eu" }), { [name]: "secret-value" }]) {
+				expect(evaluateDynamicRoute({ policy: route, endpoint: "responses", model: "openai/gpt-5", body: {}, headers }).action.model).toBe("safe");
+			}
+		});
+	it("retains ordinary custom header routing", () => {
+		const route = headerRoute("x-region", "eu", "equals");
+		expect(evaluateDynamicRoute({ policy: route, endpoint: "responses", model: "openai/gpt-5", body: {}, headers: new Headers({ "x-region": "eu" }) }).action.model).toBe("matched");
+	});
 	it("selects the first matching rule and enforces its provider pool", () => {
 		const evaluated = evaluateDynamicRoute({
 			policy,

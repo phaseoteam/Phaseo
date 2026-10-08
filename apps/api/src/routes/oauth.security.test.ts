@@ -195,6 +195,18 @@ vi.mock("@/lib/oauth/service", () => ({
 }));
 
 describe("OAuth route security", () => {
+	it("blocks direct device approval from an MFA account with an aal1 session", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.getSupabaseActor).mockResolvedValueOnce({ userId: "user_1", mfaRequired: true, assuranceLevel: "aal1" });
+		state.deviceRow = { id: "device_1", client_id: "phaseo_cli", scopes: ["openid"], status: "pending", expires_at: FUTURE_EXPIRES_AT };
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/device/activate", {
+			method: "POST", headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+			body: JSON.stringify({ user_code: "ABCD-EFGH", action: "approve", workspace_id: "workspace_1" }),
+		});
+		expect(response.status).toBe(403);
+		expect(state.updatePayloads).toEqual([]);
+	});
 	beforeEach(() => {
 		state.deviceRow = null;
 		state.authorizationRow = null;

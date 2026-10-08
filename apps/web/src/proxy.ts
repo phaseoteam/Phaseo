@@ -15,6 +15,7 @@ const SESSION_MIDDLEWARE_PAGE_ROOTS = [
 	"/internal",
 	"/chat",
 	"/oauth/consent",
+	"/activate",
 ];
 // Ignore common static assets without excluding dotted model identifiers such as gpt-4.1.
 const STATIC_ASSET_PATH_SUFFIX =

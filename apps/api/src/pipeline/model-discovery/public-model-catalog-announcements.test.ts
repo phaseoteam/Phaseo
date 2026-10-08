@@ -87,12 +87,23 @@ function buildClient(
 			query.eq = vi.fn(async () => ({ error: null }));
 			return query;
 		}),
-		rpc: vi.fn(async () => ({ data: claimedRows, error: null })),
+		rpc: vi.fn(async (name: string) => ({ data: name === "catalog_model_is_public" ? true : claimedRows, error: null })),
 	};
 	return { client, upserts, updates };
 }
 
 describe("runPublicModelAnnouncementCheck", () => {
+	it("checks authoritative visibility after claiming and skips a newly private model", async () => {
+		const model = { model_slug: "private/model", name: "Private", lab_slug: "private", hidden: false, status: "active", catalogue_status: "available" };
+		const supabase = buildClient([model], [{ model_slug: "old/model", status: "announced", attempt_count: 0 }], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		supabase.client.rpc.mockImplementation(async name => ({ data: name === "catalog_model_is_public" ? false : [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] as any, error: null }));
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "private-run", notify: true })).toMatchObject({ notified: 0, error: null });
+		expect(supabase.client.rpc).toHaveBeenCalledWith("catalog_model_is_public", { p_model_slug: model.model_slug });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "skipped", claim_run_id: null });
+	});
 	beforeEach(() => {
 		mocks.bindings = {};
 		mocks.getSupabaseAdmin.mockReset();

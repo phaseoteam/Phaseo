@@ -44,6 +44,11 @@ CREATE INDEX workspace_addon_subscriptions_quote_id_idx ON public.workspace_addo
 
 CREATE INDEX workspace_addon_subscriptions_workspace_status_idx ON public.workspace_addon_subscriptions USING btree (workspace_id, status);
 
+CREATE TRIGGER workspace_enterprise_subscription_capacity
+  BEFORE INSERT OR UPDATE ON public.workspace_addon_subscriptions
+  FOR EACH ROW
+  EXECUTE FUNCTION private.enforce_workspace_enterprise_subscription_capacity();
+
 CREATE TRIGGER workspace_enterprise_member_overage_seed
   AFTER INSERT OR UPDATE OF status, included_members, current_period_start ON public.workspace_addon_subscriptions
   FOR EACH ROW

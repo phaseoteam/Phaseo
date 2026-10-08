@@ -503,33 +503,19 @@ export async function listTeamBatchJobs(args: {
 	statuses?: Array<string | null>;
 }): Promise<BatchJobRecord[]> {
 	if (!args.workspaceId) return [];
-	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.trunc(args.offset!)) : 0;
-	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.trunc(args.limit!)) : 100;
-	const target = offset + limit;
-	const visible: BatchJobRecord[] = [];
-	let storageOffset = 0;
-
-	while (visible.length < target) {
-		const pageLimit = Math.min(500, Math.max(100, target - visible.length));
-		const records = await listTeamAsyncOperations({
-			workspaceId: args.workspaceId,
-			kind: "batch",
-			limit: pageLimit,
-			offset: storageOffset,
-			statuses: args.statuses,
-		});
-		if (records.length === 0) break;
-		storageOffset += records.length;
-		visible.push(
-			...records
-				.map((record) => toBatchJobRecord(record))
-				.filter((record): record is BatchJobRecord => Boolean(record))
-				.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX)),
-		);
-		if (records.length < pageLimit) break;
-	}
-
-	return visible.slice(offset, target);
+	const offset = Number.isFinite(args.offset) ? Math.max(0, Math.min(10_000, Math.trunc(args.offset!))) : 0;
+	const limit = Number.isFinite(args.limit) ? Math.max(1, Math.min(500, Math.trunc(args.limit!))) : 100;
+	const records = await listTeamAsyncOperations({
+		workspaceId: args.workspaceId,
+		kind: "batch",
+		limit,
+		offset,
+		statuses: args.statuses,
+		excludeBatchFiles: true,
+	});
+	return records.map(toBatchJobRecord)
+		.filter((record): record is BatchJobRecord => Boolean(record))
+		.filter((record) => !record.batchId.startsWith(BATCH_FILE_INTERNAL_PREFIX));
 }
 
 export async function setBatchJobStatus(

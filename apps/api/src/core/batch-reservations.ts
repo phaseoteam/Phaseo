@@ -49,6 +49,7 @@ const TEXT_BATCH_ENDPOINTS: Record<string, ReadonlySet<string>> = {
 	groq: new Set(["/v1/chat/completions"]),
 	ovhcloud: new Set(["/v1/chat/completions", "/v1/responses", "/v1/embeddings"]),
 	moonshotai: new Set(["/v1/chat/completions"]),
+	xiaomi: new Set(["/v1/chat/completions", "/v1/responses"]),
 	parasail: new Set(["/v1/chat/completions", "/v1/embeddings"]),
 };
 

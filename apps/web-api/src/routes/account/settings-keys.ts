@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
@@ -34,7 +35,8 @@ async function hmac(env: Env, secret: string) {
 }
 
 function parseGatewayKey(value: unknown) {
-	const parts = String(value ?? "").trim().split("_");
+	if (typeof value !== "string" || value.length > 512) return null;
+	const parts = value.trim().split("_");
 	if (parts.length < 5) return null;
 	const [namespace, version, keyType, kid, ...secretParts] = parts;
 	if ((namespace !== "phaseo" && namespace !== "aistats") || version !== "v1" || keyType !== "sk") return null;
@@ -138,7 +140,9 @@ accountSettingsKeysRouter.get("/keys/:keyId", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
-accountSettingsKeysRouter.post("/keys/lookup", async (c) => {
+accountSettingsKeysRouter.post("/keys/lookup", bodyLimit({ maxSize: 4096,
+	onError: (c) => c.json({ error: "request_body_too_large" }, 413, PRIVATE_NO_STORE_HEADERS),
+}), async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: { workspaceId?: unknown; key?: unknown } = await c.req.json<{ workspaceId?: unknown; key?: unknown }>().catch(() => ({}));

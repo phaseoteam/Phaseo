@@ -304,6 +304,7 @@ function renderOperation(operation: IROperation): string {
 		`function ${operation.operationId}(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)`,
 		"{",
 		"\t$path = $path ?? [];",
+		...pathParams.map(param => `\tif (in_array((string)($path[${JSON.stringify(param.name)}] ?? ""), [".", ".."], true)) throw new \\InvalidArgumentException("Dot segments are not valid path parameters");`),
 		`\t$resolvedPath = ${pathTemplate};`,
 		`\treturn $client->${isJsonl ? "requestRaw" : "request"}("${operation.method.toUpperCase()}", $resolvedPath, $query, $headers, $body);`,
 		"}"

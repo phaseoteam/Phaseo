@@ -909,7 +909,9 @@ async function attemptProviderWithIR(
 				providerMaxOutputTokens: candidate.maxOutputTokens,
 			});
 			const rateLimit = await timing.timer.span(`${attemptPrefix}_provider_rate_limit`, () =>
-				admitManagedProvider(candidate.providerId, reservationTokens),
+				admitManagedProvider(candidate.providerId, reservationTokens, crypto.randomUUID(),
+					candidate.providerId === "together" && normalizedCapability === "decisions.make"
+						? Object.keys((ir as any).questions ?? {}).length : 1),
 			);
 			if (!rateLimit.allowed) {
 				const retryAfter = rateLimit.retryAfterSeconds != null

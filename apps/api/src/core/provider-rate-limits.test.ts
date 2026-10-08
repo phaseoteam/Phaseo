@@ -6,6 +6,15 @@ import {
 } from "./provider-rate-limits";
 
 describe("provider rate-limit configuration", () => {
+	it("reserves every request in a provider fan-out before dispatch", () => {
+		const nowMs = Date.UTC(2026, 8, 3, 12, 30);
+		const config = { providerId: "together", requestsPerMinute: 10, requestsPerDay: 100,
+			tokensPerMinute: null, tokensPerDay: null, headroomBps: 0 };
+		const counters = { minuteWindow: Math.floor(nowMs / 60000), dayWindow: Math.floor(nowMs / 86400000),
+			minuteRequests: 5, dayRequests: 5, minuteTokens: 0, dayTokens: 0 };
+		expect(resolveProviderRateLimitDenial(config, counters, nowMs, 0, 6)?.reason).toBe("requests_per_minute");
+		expect(resolveProviderRateLimitDenial(config, counters, nowMs, 0, 5)).toBeNull();
+	});
 	it("reserves legacy OpenAI questions as one batch while retaining legacy provider reservations", () => {
 		const args = { capability: "decisions.make", providerMaxInputTokens: 1000, providerMaxOutputTokens: 100,
 			body: { state: "Evidence", images: ["data:image/png;base64,AQID"], questions: {

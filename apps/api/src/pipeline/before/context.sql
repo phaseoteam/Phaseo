@@ -238,7 +238,7 @@ begin
   where gr.key_id  = gateway_fetch_request_context.api_key_id
     and gr.workspace_id = gateway_fetch_request_context.workspace_id
     and gr.success is true
-    and gr.created_at >= month_start;
+    and gr.created_at >= least(week_start, month_start);
 
   if v_soft_blocked then
     within_limits := false;

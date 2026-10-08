@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { Env } from "@/runtime/types";
-import { configureRuntime, clearRuntime } from "@/runtime/env";
+import { configureRuntime, clearRuntime, getBindings } from "@/runtime/env";
 import { prepareAuthentication } from "@pipeline/before/auth";
 import { guardCustomerQuota } from "@core/customer-rate-limits";
 import { generatePublicId } from "@pipeline/before/genId";
@@ -23,16 +23,21 @@ async function admitRequest(req: Request): Promise<Response | null> {
 	});
 }
 
+export function admitCustomerRequest(req: Request): Promise<Response | null> {
+	if (getBindings().CUSTOMER_RATE_LIMITS_ENABLED !== "true") return Promise.resolve(null);
+	let admission = admissions.get(req);
+	if (!admission) {
+		admission = admitRequest(req);
+		admissions.set(req, admission);
+	}
+	return admission;
+}
+
 export const customerQuotaMiddleware: MiddlewareHandler<Env> = async (c, next) => {
 	if (c.req.method === "OPTIONS" || c.env.CUSTOMER_RATE_LIMITS_ENABLED !== "true") return next();
 	configureRuntime(c.env);
 	try {
-		let admission = admissions.get(c.req.raw);
-		if (!admission) {
-			admission = admitRequest(c.req.raw);
-			admissions.set(c.req.raw, admission);
-		}
-		const response = await admission;
+		const response = await admitCustomerRequest(c.req.raw);
 		if (response) return response;
 		await next();
 	} finally {
