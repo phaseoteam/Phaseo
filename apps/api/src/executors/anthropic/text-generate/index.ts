@@ -14,7 +14,10 @@ import { resolveProviderKey } from "@providers/keys";
 import { azureHeaders, resolveAzureConfig, resolveAzureCredential } from "@providers/azure/config";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
-import { createAnthropicToResponsesStreamTransformer } from "./stream-transformer";
+import {
+	createAnthropicStreamAccounting,
+	createAnthropicToResponsesStreamTransformer,
+} from "./stream-transformer";
 import { SseParser } from "@core/sse-parser";
 import { resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { mapIrEffortToAnthropic } from "@core/reasoningEffort";
@@ -260,11 +263,13 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                         if (!res.body) {
                                 throw new Error("anthropic_stream_missing_body");
                         }
-						const [clientBody, accountingBody] = res.body.tee();
+						// The transformer records usage/stop reason as frames pass through,
+						// so no tee()'d accounting branch has to buffer the response.
+						const accounting = createAnthropicStreamAccounting();
 
                         const model = args.providerModelSlug || args.ir.model;
-						const responsesStream = clientBody.pipeThrough(
-                                createAnthropicToResponsesStreamTransformer(args.requestId, model),
+						const responsesStream = res.body.pipeThrough(
+                                createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting }),
                         );
                         const normalized = resolveStreamForProtocol(
                                 new Response(responsesStream, {
@@ -273,13 +278,17 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
                                 }),
                                 args,
                                 "responses",
+                                { canonicalResponsesEvents: true },
                         );
 
                         return {
                                 kind: "stream",
                                 stream: normalized,
+								// Only invoked by the after-stage once the client stream has
+								// reached its terminal frame or ended, i.e. after the
+								// transformer has observed the upstream usage events.
 								usageFinalizer: async () => {
-									const final = await collectAnthropicStreamUsage(accountingBody);
+									const final = accounting.snapshot();
 									return {
 										...bill,
 										usage: normalizeTextUsageForPricing(final.usage) ?? undefined,
@@ -332,16 +341,11 @@ export async function collectAnthropicStreamUsage(
 ): Promise<{ usage: Record<string, unknown>; stopReason: string | null }> {
 	const reader = stream.getReader();
 	const parser = new SseParser();
-	let usage: Record<string, unknown> = {};
-	let stopReason: string | null = null;
+	const accounting = createAnthropicStreamAccounting();
 	const consume = (data: string) => {
 		if (!data || data === "[DONE]") return;
 		try {
-			const event = JSON.parse(data);
-			const eventUsage = event?.message?.usage ?? event?.usage;
-			if (eventUsage && typeof eventUsage === "object") usage = { ...usage, ...eventUsage };
-			if (typeof event?.delta?.stop_reason === "string") stopReason = event.delta.stop_reason;
-			if (typeof event?.message?.stop_reason === "string") stopReason = event.message.stop_reason;
+			accounting.observe(JSON.parse(data));
 		} catch {
 			// The client stream remains authoritative and is forwarded unchanged.
 		}
@@ -352,7 +356,7 @@ export async function collectAnthropicStreamUsage(
 		for (const frame of parser.pushBytes(value)) consume(frame.data.trim());
 	}
 	for (const frame of parser.flush()) consume(frame.data.trim());
-	return { usage, stopReason };
+	return accounting.snapshot();
 }
 
 function mapAnthropicStopReason(stopReason: string | null): Bill["finish_reason"] {

@@ -150,6 +150,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					}),
 					args,
 					"responses",
+					{ canonicalResponsesEvents: true },
 				);
 			})();
 			return {

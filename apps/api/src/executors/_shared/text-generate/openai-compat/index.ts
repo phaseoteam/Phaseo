@@ -426,10 +426,22 @@ function normalizeResponsesEvent(event: string | null): string | null {
 	return event;
 }
 
+export type ResolveStreamOptions = {
+	/**
+	 * The body is already a gateway-encoded Responses event stream: every frame
+	 * is `event: <normalized name>\ndata: <JSON.stringify output>\n\n` and no
+	 * frame is a chat chunk (e.g. createAnthropicToResponsesStreamTransformer).
+	 * The chat->responses normaliser is a byte-identical pass for such input, so
+	 * it is skipped instead of parsing and re-stringifying every frame again.
+	 */
+	canonicalResponsesEvents?: boolean;
+};
+
 export function resolveStreamForProtocol(
 	res: Response,
 	args: ExecutorExecuteArgs,
 	route: "responses" | "chat",
+	options?: ResolveStreamOptions,
 ): ReadableStream<Uint8Array> {
 	if (!res.body) {
 		throw new Error("openai_stream_missing_body");
@@ -437,6 +449,7 @@ export function resolveStreamForProtocol(
 
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
+	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
@@ -446,6 +459,7 @@ export function resolveStreamForProtocol(
 	}
 
 	if (protocol === "openai.responses") {
+		if (canonicalResponses) return res.body;
 		return transformChatStreamToResponses(res.body, args, state);
 	}
 
@@ -453,7 +467,9 @@ export function resolveStreamForProtocol(
 		// Always normalize through chat->responses adapter first.
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
-		const responsesStream = transformChatStreamToResponses(res.body, args, state);
+		const responsesStream = canonicalResponses
+			? res.body
+			: transformChatStreamToResponses(res.body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
