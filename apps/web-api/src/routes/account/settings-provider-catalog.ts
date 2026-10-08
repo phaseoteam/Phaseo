@@ -139,7 +139,7 @@ function catalogDocument(data: Record<string, any>[]) {
 	})) };
 }
 
-async function readProviderCatalog(client: any, providerSlug: string) {
+async function readProviderCatalog(client: any, providerSlug: string, canEditDescription = false) {
 	const [providerResult, sourceResult, modelsResult, capabilitiesResult, runResult, eventsResult] = await Promise.all([
 		client.from("v2_providers").select("provider_slug,name,status,routable,routing_enabled").eq("provider_slug", providerSlug).maybeSingle(),
 		client.from("provider_catalog_sources").select("provider_slug,catalog_url,management_mode,managed_catalog,managed_updated_at,updated_at,last_success_at,last_error,last_polled_at,feed_models,catalog_overrides,overrides_updated_at,catalog_updated_at,refresh_requested").eq("provider_slug", providerSlug).maybeSingle(),
@@ -188,6 +188,7 @@ async function readProviderCatalog(client: any, providerSlug: string) {
 		? sourceResult.data.managed_catalog
 		: null;
 	return {
+		permissions: { can_edit_description: canEditDescription },
 		provider: providerResult.data,
 		source: {
 			catalog_url: sourceResult.data.catalog_url,
@@ -256,8 +257,9 @@ accountSettingsProviderCatalogRouter.get("/provider-onboarding/catalog/:provider
 	if (!parsedSlug.success) return errorResponse(c, "invalid_provider_slug", 400);
 	const client = getDataClient(c.env);
 	try {
-		if (!await providerAccess(client, user.id, parsedSlug.data)) return errorResponse(c, "forbidden", 403);
-		const catalog = await readProviderCatalog(client, parsedSlug.data);
+		const access = await providerAccess(client, user.id, parsedSlug.data);
+		if (!access) return errorResponse(c, "forbidden", 403);
+		const catalog = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 		return catalog ? c.json({ ok: true, ...catalog }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 	} catch (error) {
 		console.error("provider_catalog_read_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
@@ -317,20 +319,21 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 				syncWarning = "Catalog saved. Synchronization will retry in the background.";
 				console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 			}
-			const catalog = await readProviderCatalog(client, parsedSlug.data);
+			const catalog = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 		}
 		if (body?.catalog?.refresh === true) {
 			await syncProviderCatalog(c.env, parsedSlug.data, "manual");
-			const refreshed = await readProviderCatalog(client, parsedSlug.data);
+			const refreshed = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			return c.json({ ok: true, ...refreshed }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
 
 		const revert = body?.catalog?.revert ?? body?.revert;
+		if (!access.isAdmin && revert?.field === "description") return errorResponse(c, "forbidden", 403);
 		let document = body?.catalog ?? body;
 		let changes: Array<{ model_id: string; field: string; value?: unknown; revert?: boolean }> | null = null;
 		if (source.data.management_mode === "remote") {
-			const current = await readProviderCatalog(client, parsedSlug.data);
+			const current = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			if (!current) return errorResponse(c, "provider_catalog_not_found", 404);
 			const feed = current.feed_models;
 			const overrides = current.overrides as CatalogOverrides;
@@ -347,14 +350,20 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		}
 		const preview = await validateProviderCatalogPricingMeters(client, normalizeProviderCatalog(document));
 		if (!preview.valid) return c.json({ ok: false, error: "catalog_invalid", message: preview.issues.map((issue) => `${issue.path}: ${issue.message}`).slice(0, 5).join("; "), issues: preview.issues }, 422, PRIVATE_NO_STORE_HEADERS);
+		if (!access.isAdmin) {
+			const current = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
+			if (!current) return errorResponse(c, "provider_catalog_not_found", 404);
+			const descriptions = new Map<string, string | null>(current.models.map((model: any) => [model.id, model.description ?? null]));
+			if (preview.allModels.some((model) => (model.description ?? null) !== (descriptions.get(model.id) ?? null))) return errorResponse(c, "forbidden", 403);
+		}
 		if (changes) {
-			const saved = await client.rpc("save_provider_catalog_overrides", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? null, p_changes: changes, p_feed_models: source.data.feed_models ?? (await readProviderCatalog(client, parsedSlug.data))?.feed_models });
+			const saved = await client.rpc("save_provider_catalog_overrides", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? null, p_changes: changes, p_feed_models: source.data.feed_models ?? (await readProviderCatalog(client, parsedSlug.data, access.isAdmin))?.feed_models });
 			if (saved.error?.message?.includes("version_conflict")) return errorResponse(c, "Catalog changed. Reload before saving again.", 409);
 			if (saved.error) throw saved.error;
 			let syncWarning: string | null = null;
 			try { await syncProviderCatalog(c.env, parsedSlug.data, "manual"); }
 			catch { syncWarning = "Catalog saved. Synchronization will retry in the background."; }
-			const catalog = await readProviderCatalog(client, parsedSlug.data);
+			const catalog = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			return c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS);
 		}
 		const managedDocument = catalogDocument(preview.allModels.map((model) => catalogModelDocument({
@@ -382,7 +391,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 			syncWarning = error instanceof Error ? error.message : "Catalog saved. Synchronization will retry in the background.";
 			console.error("provider_catalog_sync_after_save_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });
 		}
-		const catalog = await readProviderCatalog(client, parsedSlug.data);
+		const catalog = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 		return catalog ? c.json({ ok: true, ...catalog, sync_warning: syncWarning }, 200, PRIVATE_NO_STORE_HEADERS) : errorResponse(c, "provider_catalog_not_found", 404);
 	} catch (error) {
 		console.error("provider_catalog_write_failed", { providerSlug: parsedSlug.data, error: error instanceof Error ? error.message : String(error) });

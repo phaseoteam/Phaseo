@@ -211,7 +211,7 @@ describe("provider catalog management API", () => {
 
 		expect(response.status).toBe(200);
 	});
-	it.each(["admin", "user"])("keeps a remote feed enabled and attributes %s edits to the authenticated actor", async (role) => {
+	it.each(["admin", "user"])("allows description edits only for Phaseo admins (%s)", async (role) => {
 		stubEditorRead({ role });
 		const original = vi.mocked(fetch).getMockImplementation()!;
 		const feed = normalizeProviderCatalog({ data: [{ id: "synthetic/model-a", name: "Feed name", provider_model_slug: "native", availability: "not_ready", capabilities: ["chat.completions"] }] }).allModels;
@@ -226,9 +226,14 @@ describe("provider catalog management API", () => {
 			method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" },
 			body: JSON.stringify({ expectedUpdatedAt: "2026-10-07T00:00:00Z", actor_id: "forged", actor_kind: "phaseo", catalog: normalizedCatalogDocument([{ ...feed[0], name: "Pinned", description: "Editorial correction" }]) }),
 		}, env);
+		if (role !== "admin") {
+			expect(response.status).toBe(403);
+			expect(saved).toEqual({});
+			return;
+		}
 		expect(response.status).toBe(200);
 		expect(saved.p_actor_id).toBe("provider-user");
-		expect(saved.p_actor_kind).toBe(role === "admin" ? "phaseo" : "provider");
+		expect(saved.p_actor_kind).toBe("phaseo");
 		expect(saved.p_changes).toEqual([{ model_id: "synthetic/model-a", field: "description", value: "Editorial correction" }]);
 		expect((await response.json()).source.management_mode).toBe("remote");
 	});
