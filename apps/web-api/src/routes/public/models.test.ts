@@ -918,7 +918,7 @@ describe("public model routes", () => {
 			}
 			if (url.includes("/rpc/get_v2_model_provider_hourly_performance_v2")) {
 				return new Response(JSON.stringify([
-					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20 },
+					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20, cache_telemetry_requests: 19, cached_input_pct: 80 },
 					{ bucket: "2026-07-23T12:00:00Z", provider_id: "unknown", provider_name: "unknown", requests: 1 },
 				]), { status: 200 });
 			}
@@ -998,7 +998,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 0 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: null, cacheTelemetryRequests: 0 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),

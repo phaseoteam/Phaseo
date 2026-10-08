@@ -249,7 +249,7 @@ function renderOperation(operation: IROperation): string {
 	return [
 		`      def self.${operation.operationId}(client, path: nil, query: nil, headers: nil, body: nil)`,
 		"        path ||= {}",
-		...pathParams.map(param => `        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path[${JSON.stringify(param.name)}].to_s)`),
+		...pathParams.map(param => `        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path[${JSON.stringify(sanitizeIdentifier(param.name))}].to_s)`),
 		`        resolved_path = ${pathTemplate}`,
 		`        client.${successResponse?.kind === "text" ? "request_bytes" : "request"}(method: "${operation.method.toUpperCase()}", path: resolved_path, query: query, headers: headers, body: body)`,
 		"      end",

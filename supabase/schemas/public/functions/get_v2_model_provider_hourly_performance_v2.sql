@@ -207,8 +207,8 @@ select
   hourly.tool_call_errors,
   hourly.structured_output_requests,
   hourly.structured_output_errors,
-  hourly.cache_telemetry_requests,
-  hourly.cache_hit_requests,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.cache_telemetry_requests else null end,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.cache_hit_requests else null end,
   case when hourly.cache_telemetry_requests >= 20 then hourly.effective_input_tokens else null end,
   case when hourly.cache_telemetry_requests >= 20 then hourly.cached_input_tokens else null end,
   case

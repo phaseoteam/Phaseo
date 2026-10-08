@@ -384,7 +384,8 @@ function renderClient(): string {
 }
 
 function renderOperations(operations: IROperation[]): string {
-	const lines: string[] = ["package gen", "", 'import "net/url"', 'import "errors"', ""];
+	const hasPathParams = operations.some(operation => operation.params.some(param => param.in === "path"));
+	const lines: string[] = ["package gen", "", ...(hasPathParams ? ['import "net/url"', 'import "errors"'] : []), ""];
 	for (const operation of operations) {
 		lines.push(renderOperation(operation));
 		lines.push("");
