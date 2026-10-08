@@ -336,6 +336,50 @@ describe("stream adapter golden output", () => {
 		}
 	});
 
+	it("forwards already-normalized Responses frames verbatim with client output unchanged", async () => {
+		// Non-canonical upstream JSON: spacing and \u escapes that JSON.stringify
+		// would rewrite, plus a multi-line data frame and a renamed event.
+		const upstreamFrames = [
+			"event: response.created\ndata: { \"type\": \"response.created\", \"response\": { \"id\": \"resp_9\", \"object\": \"response\", \"model\": \"gpt-x\" } }\n\n",
+			"event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\"item_id\":\"m\",\"output_index\":0,\"delta\":\"caf\\u00e9\"}\n\n",
+			"event: response.output_text.delta\ndata: {\"type\":\"response.output_text.delta\",\ndata: \"item_id\":\"m\",\"output_index\":0,\"delta\":\"!\"}\n\n",
+			"event: response.text.delta\ndata: {\"type\":\"response.text.delta\", \"item_id\":\"m\",\"output_index\":0,\"delta\":\"?\"}\n\n",
+			sse("response.completed", responseCompleted),
+		].join("");
+		// What the pre-change transform emitted: every frame re-stringified.
+		const canonicalised = upstreamFrames.split("\n\n").filter(Boolean).map((frame) => {
+			const event = /^event: (.*)$/m.exec(frame)![1];
+			const data = frame.split("\n").filter((line) => line.startsWith("data: ")).map((line) => line.slice(6)).join("\n");
+			const normalized = event === "response.text.delta" ? "response.output_text.delta" : event;
+			return `event: ${normalized}\ndata: ${JSON.stringify(JSON.parse(data))}\n\n`;
+		}).join("");
+
+		const forwarded = await readText(resolveStreamForProtocol(
+			new Response(bodyFrom(upstreamFrames, 9)),
+			baseArgs({ protocol: "openai.responses", endpoint: "responses", providerId: "openai" }),
+			"responses",
+		));
+		// Single-line frames whose event needs no normalisation keep their bytes.
+		expect(forwarded).toContain("data: { \"type\": \"response.created\"");
+		expect(forwarded).toContain("\"delta\":\"caf\\u00e9\"");
+		// Renamed or multi-line frames are re-encoded exactly as before.
+		expect(forwarded).toContain(`event: response.output_text.delta\ndata: ${JSON.stringify({ type: "response.text.delta", item_id: "m", output_index: 0, delta: "?" })}\n\n`);
+		expect(forwarded).toContain(`data: ${JSON.stringify({ type: "response.output_text.delta", item_id: "m", output_index: 0, delta: "!" })}\n\n`);
+
+		const viaPassthrough = async (text: string) => {
+			const response = await passthroughWithPricing({
+				upstream: new Response(bodyFrom(text, 0), { status: 200 }),
+				ctx: { protocol: "openai.responses", endpoint: "responses", requestId: "req_golden", workspaceId: "team_test", model: "test-model", meta: {}, providers: [] } as any,
+				provider: "openai",
+				priceCard: null,
+				rewriteFrame: (frame: any) => ({ ...frame, rewritten: true }),
+			});
+			return readText(response.body!);
+		};
+		// The bytes the client receives are identical to the re-stringifying path.
+		expect(await viaPassthrough(forwarded)).toBe(await viaPassthrough(canonicalised));
+	});
+
 	it.each([
 		["chat", CHAT_FIXTURE],
 		["chat-trailing-frame", CHAT_FIXTURE.replace(/\n\ndata: \[DONE\]\n\n$/, "")],

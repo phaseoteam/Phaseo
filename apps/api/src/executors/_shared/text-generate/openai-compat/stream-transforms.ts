@@ -548,8 +548,16 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							// The payload is not modified here, so when the event name is
+							// already normalized and the data is a single line, forward
+							// the upstream JSON text instead of re-stringifying it. For
+							// compact upstream JSON (and for gateway-encoded streams) the
+							// bytes are identical; every consumer re-parses the frame.
+							const forwardData = normalized === event && frame.dataLines === 1
+								? data
+								: JSON.stringify(payload);
 							controller.enqueue(
-								encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`)
+								encoder.encode(`event: ${normalized}\ndata: ${forwardData}\n\n`)
 							);
 							continue;
 						}
