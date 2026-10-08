@@ -945,9 +945,6 @@ async function execNonStreaming(
         body: JSON.stringify(requestPayload),
     });
 
-    const jsonTest = await res.clone().json().catch(() => null);
-    console.log("OpenAI non-streaming response:", jsonTest);
-
     const bill = createBill(res);
     const json = await res.clone().json().catch(() => null);
     const normalized = json ? mapOpenAIToGatewayChat(args.model, json, args.meta.requestId) : undefined;

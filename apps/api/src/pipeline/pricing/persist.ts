@@ -1,4 +1,5 @@
-import Stripe from "stripe";
+// Type-only: the SDK is loaded on demand so charging does not evaluate it.
+import type Stripe from "stripe";
 // Purpose: Pricing rules, billing, and persistence helpers.
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
@@ -33,10 +34,11 @@ type WorkspaceLowBalanceSettingsRow = {
 
 let workspaceSettingsSupportsLowBalanceEmailColumns: boolean | null = null;
 
-function getStripe(): Stripe {
+async function getStripe(): Promise<Stripe> {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
-    return new Stripe(key, { apiVersion: "2026-04-22.dahlia" as any });
+    const { default: StripeClient } = await import("stripe");
+    return new StripeClient(key, { apiVersion: "2026-04-22.dahlia" as any });
 }
 
 async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
@@ -272,7 +274,7 @@ export async function recordUsageAndCharge(args: {
             // 1. Apply reverse calculation: net = gross / (1 + fee_rate)
             // 2. Use the flat 5% top-up fee
             // 3. Credit wallet with net amount after the fee deduction
-            const stripe = getStripe();
+            const stripe = await getStripe();
             const minTopUpNanos = 1 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
                 console.error("[auto-recharge] Skipped: auto top-up amount below $1", {
