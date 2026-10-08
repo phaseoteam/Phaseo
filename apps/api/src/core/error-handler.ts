@@ -19,6 +19,7 @@ import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -1043,7 +1044,15 @@ export async function handleError({
             ? ctx.providerAttempts
             : null;
     }
-    await runGatewayTelemetryPipelines({
+    // The error response does not depend on audit persistence; deliver it in the
+    // background so clients are not held for database writes and retries.
+    let releaseRuntime: (() => void) | null = null;
+    try {
+        releaseRuntime = ensureRuntimeForBackground();
+    } catch {
+        // Unit fixtures may run without a configured runtime.
+    }
+    const telemetry = runGatewayTelemetryPipelines({
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId,
         writeSupabase: () => auditFailure(auditArgs),
@@ -1119,7 +1128,8 @@ export async function handleError({
         gatewayResponse: errorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
-    });
+    }).finally(() => releaseRuntime?.());
+    dispatchBackground(telemetry);
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
 

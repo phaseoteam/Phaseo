@@ -10,6 +10,7 @@ import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
 import { sanitizeForAxiom } from "@observability/privacy";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
@@ -219,7 +220,15 @@ export async function handleFailureAudit(
         description: errorMessage,
     };
 
-    await runGatewayTelemetryPipelines({
+    // Callers return the error response right after this; persist in the
+    // background so clients are not held for database writes and retries.
+    let releaseRuntime: (() => void) | null = null;
+    try {
+        releaseRuntime = ensureRuntimeForBackground();
+    } catch {
+        // Unit fixtures may run without a configured runtime.
+    }
+    const telemetry = runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
         writeSupabase: shouldPersistGatewayAudit(ctx) ? () => auditFailure({
@@ -362,8 +371,8 @@ export async function handleFailureAudit(
             gatewayResponse: gatewayErrorPayload ?? gatewayFailurePayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
-    });
-
+    }).finally(() => releaseRuntime?.());
+    dispatchBackground(telemetry);
 }
 
 export async function handleSuccessAudit(
