@@ -632,6 +632,7 @@ export async function handleStreamResponse(
 
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
+                    idempotencyKey: ctx.billingRequestId,
                     isByok,
                     baseCostNanos: totalNanosOverride,
                     pricedUsage: usageWithToolMetrics,
@@ -707,6 +708,7 @@ export async function handleStreamResponse(
                 );
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
+                    idempotencyKey: ctx.billingRequestId,
                     isByok,
                     baseCostNanos: 0,
                     pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
@@ -778,6 +780,7 @@ export async function handleStreamResponse(
             });
             const pricedWithByokSubtotal = await applyByokServiceFee({
                 workspaceId: ctx.workspaceId,
+                idempotencyKey: ctx.billingRequestId,
                 isByok,
                 baseCostNanos: totalNanos,
                 pricedUsage: usageWithToolMetrics,
