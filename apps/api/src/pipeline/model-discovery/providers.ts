@@ -315,6 +315,9 @@ const NATIVE_DISCOVERY_PROVIDERS: ProviderConfig[] = [
 const openAICompatProviders = new Map<string, ProviderConfig>();
 for (const config of Object.values(OPENAI_COMPAT_CONFIG)) {
 	if (PROVIDER_ID_ALIASES_TO_SKIP.has(config.providerId)) continue;
+	// Native discovery owns its authentication and endpoint. Do not fetch and
+	// persist the same provider again through its OpenAI-compatible route.
+	if (NATIVE_DISCOVERY_PROVIDERS.some((provider) => provider.providerId === config.providerId)) continue;
 	const provider = buildProviderFromOpenAICompatConfig(config);
 	if (!provider) continue;
 	openAICompatProviders.set(provider.providerId, provider);
