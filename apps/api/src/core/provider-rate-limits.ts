@@ -54,14 +54,15 @@ export function resolveProviderRateLimitDenial(
 	counters: ProviderRateLimitCounters,
 	nowMs: number,
 	reservationTokens = 0,
+	reservationRequests = 1,
 ): ProviderRateLimitAdmission | null {
 	const violations: Array<{ reason: NonNullable<ProviderRateLimitAdmission["reason"]>; resetMs: number }> = [];
 	const minuteResetMs = (counters.minuteWindow + 1) * 60_000;
 	const dayResetMs = (counters.dayWindow + 1) * DAY_MS;
-	if (config.requestsPerMinute != null && counters.minuteRequests >= config.requestsPerMinute) {
+	if (config.requestsPerMinute != null && counters.minuteRequests + reservationRequests > config.requestsPerMinute) {
 		violations.push({ reason: "requests_per_minute", resetMs: minuteResetMs });
 	}
-	if (config.requestsPerDay != null && counters.dayRequests >= config.requestsPerDay) {
+	if (config.requestsPerDay != null && counters.dayRequests + reservationRequests > config.requestsPerDay) {
 		violations.push({ reason: "requests_per_day", resetMs: dayResetMs });
 	}
 	const tokensPerMinute = effectiveTokenLimit(config.tokensPerMinute, config.headroomBps);
@@ -279,7 +280,7 @@ async function loadConfig(providerId: string): Promise<ProviderRateLimitConfig |
 }
 
 type ProviderRateLimitStub = {
-	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number): Promise<ProviderRateLimitAdmission>;
+	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number, reservationRequests?: number): Promise<ProviderRateLimitAdmission>;
 	recordTokens(tokens: number, nowMs?: number): Promise<void>;
 	reconcileTokens(reservation: ProviderTokenReservation, actualTokens: number, nowMs?: number): Promise<void>;
 };
@@ -294,13 +295,14 @@ export async function admitManagedProvider(
 	providerId: string,
 	reservationTokens: number | null,
 	reservationId = crypto.randomUUID(),
+	reservationRequests = 1,
 ): Promise<ProviderRateLimitAdmission> {
 	const fallback: ProviderRateLimitAdmission = { allowed: true, reason: null, retryAfterSeconds: null, reservation: null };
 	try {
 		const config = await loadConfig(providerId);
 		if (!config) return fallback;
 		const stub = getStub(providerId);
-		return stub ? await stub.admit(config, reservationTokens, reservationId) : fallback;
+		return stub ? await stub.admit(config, reservationTokens, reservationId, undefined, reservationRequests) : fallback;
 	} catch (error) {
 		console.error("[gateway] provider rate-limit admission failed open", {
 			provider: providerId,

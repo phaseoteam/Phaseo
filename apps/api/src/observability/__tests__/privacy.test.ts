@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "../privacy";
 
 describe("observability privacy sanitization", () => {
+	it("redacts arbitrary Decisions state and Respan definitions without changing the upstream payload", () => {
+		const payload = { model: "respan/decision", state: { customer: { name: "CANARY-CUSTOMER" } },
+			behaviors: [{ definition: "CANARY-INSTRUCTION", name: "predicate" }], usage: { input_tokens: 12 } };
+		const sanitized = sanitizeJsonStringForAxiom(JSON.stringify(payload)) as any;
+		expect(JSON.stringify(sanitized)).not.toContain("CANARY");
+		expect(sanitized.model).toBe(payload.model);
+		expect(sanitized.usage.input_tokens).toBe(12);
+		expect(payload.state.customer.name).toBe("CANARY-CUSTOMER");
+		expect(payload.behaviors[0].definition).toBe("CANARY-INSTRUCTION");
+	});
 	it("redacts prompt-like request fields while keeping routing params", () => {
 		const sanitized = sanitizeForAxiom({
 			model: "openai/gpt-5-mini",

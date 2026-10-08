@@ -189,9 +189,20 @@ function renderOperations(operations: IROperation[]): string {
 		"#pragma once",
 		"#include <map>",
 		"#include <string>",
+		"#include <stdexcept>",
 		"#include \"client.hpp\"",
 		"",
-		"namespace phaseo::gen {"
+		"namespace phaseo::gen {",
+		"inline std::string path_segment(const std::string& value) {",
+		"\tif (value == \".\" || value == \"..\") throw std::invalid_argument(\"Dot segments are not valid path parameters\");",
+		"\tconst char* hex = \"0123456789ABCDEF\";",
+		"\tstd::string encoded;",
+		"\tfor (unsigned char c : value) {",
+		"\t\tif ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') encoded += c;",
+		"\t\telse { encoded += '%'; encoded += hex[c >> 4]; encoded += hex[c & 15]; }",
+		"\t}",
+		"\treturn encoded;",
+		"}"
 	];
 	for (const operation of operations) {
 		lines.push(renderOperation(operation));
@@ -220,7 +231,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = JSON.stringify(segment.slice(1, -1));
-			return `(path.count(${name}) ? path.at(${name}) : std::string{})`;
+			return `path_segment(path.count(${name}) ? path.at(${name}) : std::string{})`;
 		}
 		return JSON.stringify(segment);
 	});

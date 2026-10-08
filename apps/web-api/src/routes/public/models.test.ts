@@ -66,7 +66,7 @@ describe("provider health RPC fallback", () => {
 		})).toBe(false);
 	});
 
-	it("publishes a redacted one-request stealth aggregate without exact timestamps or error categories", async () => {
+	it("suppresses a one-request stealth aggregate", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) {
@@ -95,14 +95,7 @@ describe("provider health RPC fallback", () => {
 		const payload = await response.json() as any;
 
 		expect(response.status).toBe(200);
-		expect(payload.rows).toEqual([expect.objectContaining({
-			provider_id: "stealth",
-			provider_name: "Stealth",
-			health_requests: 1,
-			uptime_pct: 100,
-		})]);
-		expect(payload.rows[0]).not.toHaveProperty("last_request_at");
-		expect(payload.rows[0]).not.toHaveProperty("error_code_counts");
+		expect(payload.rows).toEqual([]);
 	});
 });
 
@@ -810,7 +803,7 @@ describe("public model routes", () => {
 		}] });
 	});
 
-	it("publishes performance, quality, and cache series for a single-request cohort", async () => {
+	it("suppresses performance, quality, and cache series below the public cohort minimum", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("/rpc/get_v2_model_quality_hourly_v1")) {
@@ -905,21 +898,14 @@ describe("public model routes", () => {
 		const payload = await response.json() as any;
 
 		expect(response.status).toBe(200);
-		expect(payload.minimumSampleSize).toBe(1);
+		expect(payload.minimumSampleSize).toBe(20);
 		expect(payload.metrics.rangeDays).toBe(1);
-		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
-		expect(payload.metrics.hourly).toHaveLength(1);
-		expect(payload.metrics.hourly[0]).toMatchObject({ avgEndToEndMs: 680 });
-		expect(payload.metrics.successSeries).toHaveLength(1);
-		expect(payload.metrics.successSeries[0]).toMatchObject({ overallSuccessPct: 100, requests: 1 });
-		expect(payload.metrics.providerPerformance[0].uptimeBuckets[0]).toMatchObject({ successPct: 100, errorPct: 0, requests: 1, failedRequests: 0 });
-		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ requests: 1, cacheTelemetryRequests: 20 }),
-		]);
-		expect(payload.metrics.qualitySeries).toEqual([
-			expect.objectContaining({ requests: 1, cacheHitRatePct: 60 }),
-			expect.objectContaining({ requests: 2 }),
-		]);
+		expect(payload.metrics.summary).toMatchObject({ totalRequests: 0, successfulRequests: 0, avgLatencyMs: null });
+		expect(payload.metrics.hourly).toEqual([]);
+		expect(payload.metrics.successSeries).toEqual([]);
+		expect(payload.metrics.providerPerformance).toEqual([]);
+		expect(payload.metrics.providerHourly7d).toEqual([]);
+		expect(payload.metrics.qualitySeries).toEqual([]);
 	});
 
 	it("never exposes a synthetic unknown provider in performance data", async () => {
@@ -932,7 +918,7 @@ describe("public model routes", () => {
 			}
 			if (url.includes("/rpc/get_v2_model_provider_hourly_performance_v2")) {
 				return new Response(JSON.stringify([
-					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20 },
+					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20, cache_telemetry_requests: 19, cached_input_pct: 80 },
 					{ bucket: "2026-07-23T12:00:00Z", provider_id: "unknown", provider_name: "unknown", requests: 1 },
 				]), { status: 200 });
 			}
@@ -1012,7 +998,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 0 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: null, cacheTelemetryRequests: 0 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),

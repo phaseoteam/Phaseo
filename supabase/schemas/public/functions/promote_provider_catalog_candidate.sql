@@ -95,10 +95,9 @@ begin
     and route.model_slug = candidate.canonical_model_slug
     and route.provider_model_slug = candidate.provider_model_slug
     and coalesce(route.metadata->>'catalog_service_tier','standard')=tier_name
-  order by route.created_at limit 1;
+  order by route.created_at limit 1 for update of route;
   if provider_model_id_value is null then
-    provider_model_id_value := candidate.provider_slug || ':' || candidate.canonical_model_slug || ':' || candidate.provider_model_slug;
-    if tier_name <> 'standard' then provider_model_id_value := provider_model_id_value || ':tier:' || tier_name; end if;
+    provider_model_id_value := candidate.provider_slug || ':catalog:' || gen_random_uuid()::text;
   end if;
 
   release_due := (candidate.available_from is null or candidate.available_from <= now())
@@ -183,7 +182,13 @@ begin
     input_modalities = excluded.input_modalities, output_modalities = excluded.output_modalities,
     context_length = excluded.context_length, max_output_tokens = excluded.max_output_tokens,
     effective_from = excluded.effective_from, effective_to = excluded.effective_to,
-    metadata = public.v2_model_provider_routes.metadata || excluded.metadata, updated_at = now();
+    metadata = public.v2_model_provider_routes.metadata || excluded.metadata, updated_at = now()
+  where public.v2_model_provider_routes.provider_slug = excluded.provider_slug
+    and public.v2_model_provider_routes.model_slug = excluded.model_slug
+    and public.v2_model_provider_routes.provider_model_slug = excluded.provider_model_slug
+    and coalesce(public.v2_model_provider_routes.metadata->>'catalog_service_tier','standard') = tier_name
+  returning provider_model_id into provider_model_id_value;
+  if provider_model_id_value is null then raise exception 'provider_catalog_route_identity_conflict'; end if;
 
   update public.v2_route_capabilities set status = 'disabled', updated_at = now()
   where provider_model_id = provider_model_id_value

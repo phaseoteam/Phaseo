@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Revisar a privacidade do Chat", "description": "As preferências de privacidade da conta foram removidas quando os controles passaram para os espaços de trabalho. Revise as configurações atuais antes de continuar.",
+		"paidTraining": "Provedores pagos que podem treinar modelos", "freeTraining": "Provedores gratuitos que podem treinar modelos", "publication": "Provedores que publicam prompts", "providerLogging": "Provedores que registram prompts", "zdr": "Sem retenção de dados", "workspaceLogging": "Registro de prompts do espaço", "providers": "Restrições de provedores", "models": "Restrições de modelos",
+		"allowed": "Permitido", "blocked": "Bloqueado", "required": "Obrigatório", "notRequired": "Não obrigatório", "disabled": "Desativado", "enabledDays": "Ativado ({days} dias)", "none": "Nenhuma",
+		"administrators": "Administradores do espaço podem alterar essas configurações. Regras adicionais para chaves e membros podem ser aplicadas.", "accept": "Aceitar e continuar", "settings": "Configurações de privacidade", "saving": "Salvando…", "loading": "Carregando configurações…", "loadError": "Não foi possível carregar as configurações de privacidade. Recarregue a página.", "saveError": "Não foi possível salvar sua confirmação. Tente novamente."
+	},
 	"developerMenu": {
 		"title": "Menu do desenvolvedor",
 		"admin": "Administração",

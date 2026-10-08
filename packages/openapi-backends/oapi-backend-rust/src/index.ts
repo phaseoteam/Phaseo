@@ -161,6 +161,16 @@ function renderOperations(operations: IROperation[]): string {
 		"use std::collections::HashMap;",
 		"use crate::client::{Client, Response, Transport};",
 		"",
+		"fn path_segment(value: &str) -> Result<String, String> {",
+		"\tif value == \".\" || value == \"..\" { return Err(\"Dot segments are not valid path parameters\".into()); }",
+		"\tlet mut encoded = String::new();",
+		"\tfor byte in value.bytes() {",
+		"\t\tif byte.is_ascii_alphanumeric() || b\"-_.~\".contains(&byte) { encoded.push(byte as char); }",
+		"\t\telse { encoded.push_str(&format!(\"%{:02X}\", byte)); }",
+		"\t}",
+		"\tOk(encoded)",
+		"}",
+		"",
 		"pub fn no_query() -> HashMap<String, String> {",
 		"\tHashMap::new()",
 		"}",
@@ -195,7 +205,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = JSON.stringify(segment.slice(1, -1));
 			formatParts.push("{}");
-			args.push(`path.get(${name}).cloned().unwrap_or_default()`);
+			args.push(`path_segment(path.get(${name}).map(String::as_str).unwrap_or_default())?`);
 		} else {
 			const escaped = segment
 				.replace(/\\/g, "\\\\")

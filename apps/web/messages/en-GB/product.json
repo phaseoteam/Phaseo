@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Review Chat privacy", "description": "Account privacy preferences were removed when privacy controls moved to workspaces. Review the current settings before continuing.",
+		"paidTraining": "Paid providers that may train", "freeTraining": "Free providers that may train", "publication": "Providers that publish prompts", "providerLogging": "Providers that log prompts", "zdr": "Zero data retention", "workspaceLogging": "Workspace prompt logging", "providers": "Provider restrictions", "models": "Model restrictions",
+		"allowed": "Allowed", "blocked": "Blocked", "required": "Required", "notRequired": "Not required", "disabled": "Disabled", "enabledDays": "Enabled ({days} days)", "none": "None",
+		"administrators": "Workspace administrators can change these settings. Additional key and member guardrails may apply.", "accept": "Accept settings and continue", "settings": "Privacy settings", "saving": "Saving…", "loading": "Loading privacy settings…", "loadError": "Unable to load privacy settings. Reload to try again.", "saveError": "Unable to save your review. Try again."
+	},
 	"developerMenu": {
 		"title": "Developer menu",
 		"admin": "Admin",

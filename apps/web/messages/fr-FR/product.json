@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Vérifier la confidentialité du Chat", "description": "Les préférences de confidentialité du compte ont été supprimées lors du transfert des contrôles aux espaces de travail. Vérifiez les paramètres actuels avant de continuer.",
+		"paidTraining": "Fournisseurs payants pouvant entraîner leurs modèles", "freeTraining": "Fournisseurs gratuits pouvant entraîner leurs modèles", "publication": "Fournisseurs publiant les prompts", "providerLogging": "Fournisseurs enregistrant les prompts", "zdr": "Aucune conservation des données", "workspaceLogging": "Enregistrement des prompts de l’espace", "providers": "Restrictions de fournisseurs", "models": "Restrictions de modèles",
+		"allowed": "Autorisé", "blocked": "Bloqué", "required": "Requis", "notRequired": "Non requis", "disabled": "Désactivé", "enabledDays": "Activé ({days} jours)", "none": "Aucune",
+		"administrators": "Les administrateurs de l’espace peuvent modifier ces paramètres. Des règles supplémentaires pour les clés et les membres peuvent s’appliquer.", "accept": "Accepter et continuer", "settings": "Paramètres de confidentialité", "saving": "Enregistrement…", "loading": "Chargement des paramètres…", "loadError": "Impossible de charger les paramètres de confidentialité. Rechargez la page.", "saveError": "Impossible d’enregistrer votre confirmation. Réessayez."
+	},
 	"developerMenu": {
 		"title": "Menu développeur",
 		"admin": "Administration",

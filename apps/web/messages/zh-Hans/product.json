@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "查看 Chat 隐私设置", "description": "隐私控制迁移到工作区时，账户隐私偏好已被删除。继续之前，请查看当前设置。",
+		"paidTraining": "可能用于训练的付费提供商", "freeTraining": "可能用于训练的免费提供商", "publication": "公开提示词的提供商", "providerLogging": "记录提示词的提供商", "zdr": "零数据保留", "workspaceLogging": "工作区提示词记录", "providers": "提供商限制", "models": "模型限制",
+		"allowed": "允许", "blocked": "阻止", "required": "必需", "notRequired": "不要求", "disabled": "已禁用", "enabledDays": "已启用（{days} 天）", "none": "无",
+		"administrators": "工作区管理员可以更改这些设置。密钥和成员可能还受到其他规则限制。", "accept": "接受设置并继续", "settings": "隐私设置", "saving": "正在保存…", "loading": "正在加载设置…", "loadError": "无法加载隐私设置。请刷新页面重试。", "saveError": "无法保存您的确认。请重试。"
+	},
 	"developerMenu": {
 		"title": "开发者菜单",
 		"admin": "管理员",

@@ -211,10 +211,10 @@ select
   hourly.structured_schema_mismatch_errors,
   hourly.structured_missing_output_errors,
   hourly.cache_telemetry_requests,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.input_tokens else null end,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.cached_read_tokens else null end,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= 20 then hourly.cached_read_tokens else null end,
   case
-    when hourly.cache_telemetry_requests >= 1 and hourly.input_tokens > 0
+    when hourly.cache_telemetry_requests >= 20 and hourly.input_tokens > 0
       then least(100, coalesce(hourly.cached_read_tokens, 0) * 100.0 / hourly.input_tokens)
     else null
   end cache_read_pct
@@ -224,7 +224,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) IS 'Hourly tool-calling, structured-output, token, and cache aggregates, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) IS 'Hourly tool-calling, structured-output, token, and cache aggregates, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) FROM "postgres";
 

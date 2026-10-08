@@ -17,6 +17,30 @@ const workspacePolicy = {
 };
 
 describe("sensitive info guardrails", () => {
+	it.each([
+		"Contact test@example.com",
+		[{ role: "user", content: [{ type: "input_text", text: "Contact test@example.com" }] }],
+	])("enforces block and redact policies on native Decisions input: %j", (input) => {
+		for (const action of ["block", "redact"] as const) {
+			const body = { input, questions: [{ type: "predicate", instructions: "Support request?" }] };
+			const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "decisions",
+				workspacePolicy: { ...workspacePolicy, sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action }] },
+				requestId: "native_decisions", workspaceId: "ws_123" });
+			expect(result.ok).toBe(action === "redact");
+			if (result.ok) {
+				expect(JSON.stringify(result.body)).not.toContain("test@example.com");
+				expect(JSON.stringify(result.rawBody)).not.toContain("test@example.com");
+				expect(result.body.questions).toEqual(body.questions);
+			}
+		}
+	});
+	it("preserves harmless native Decisions input", () => {
+		const body = { input: "A support request", questions: [{ type: "predicate", instructions: "Support request?" }] };
+		const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "decisions",
+			workspacePolicy, requestId: "safe_decisions", workspaceId: "ws_123" });
+		expect(result.ok).toBe(true);
+		if (result.ok) expect(result.body).toEqual(body);
+	});
 	it("redacts sensitive text inside Gemini contents", () => {
 		const body = { contents: [{ role: "user", parts: [{ text: "Reach me at test@example.com" }] }] };
 		const result = applySensitiveInfoGuardrails({

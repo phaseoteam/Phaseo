@@ -122,7 +122,7 @@ select jsonb_build_object(
       'cached_input_pct', case when input_tokens > 0 then least(100, cached_input_tokens * 100.0 / input_tokens) else null end
     ) order by bucket_start)
     from hourly
-    where requests >= 1 and telemetry_requests > 0
+    where telemetry_requests >= 20
   ), '[]'::jsonb),
   'provider_daily_7d', coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -137,14 +137,14 @@ select jsonb_build_object(
     ) order by daily.usage_day, daily.provider_id)
     from provider_daily daily
     join public.v2_providers provider on provider.provider_slug = daily.provider_id
-    where daily.requests >= 1 and daily.telemetry_requests > 0
+    where daily.telemetry_requests >= 20
   ), '[]'::jsonb)
 );
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) IS 'Token-weighted cached input percentage over time and by provider, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) IS 'Token-weighted cached input percentage over time and by provider, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) FROM "postgres";
 

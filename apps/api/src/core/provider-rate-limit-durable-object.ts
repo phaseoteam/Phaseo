@@ -115,7 +115,11 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 		reservationTokens: number | null,
 		reservationId: string,
 		nowMs = Date.now(),
+		reservationRequests = 1,
 	): Promise<ProviderRateLimitAdmission> {
+		if (!Number.isSafeInteger(reservationRequests) || reservationRequests < 1) {
+			return { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 60, reservation: null };
+		}
 		const row = this.current(nowMs);
 		const hasTokenLimit = config.tokensPerMinute != null || config.tokensPerDay != null;
 		const requestedTokens = hasTokenLimit
@@ -130,11 +134,11 @@ export class ProviderRateLimitDurableObject extends DurableObject<GatewayBinding
 			dayRequests: row.day_requests,
 			minuteTokens: row.minute_tokens,
 			dayTokens: row.day_tokens,
-		}, nowMs, requestedTokens);
+		}, nowMs, requestedTokens, reservationRequests);
 		if (denial) return denial;
 
-		row.minute_requests += 1;
-		row.day_requests += 1;
+		row.minute_requests += reservationRequests;
+		row.day_requests += reservationRequests;
 		row.minute_tokens += requestedTokens;
 		row.day_tokens += requestedTokens;
 		this.persist(row);

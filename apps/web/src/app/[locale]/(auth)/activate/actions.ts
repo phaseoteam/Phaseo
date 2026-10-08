@@ -12,6 +12,12 @@ async function callDeviceActivation(body: Record<string, unknown>) {
 	if (!session?.access_token) {
 		throw new Error("Unauthorized");
 	}
+	if (body.action === "approve") {
+		const { data: assurance, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+		if (error || !assurance || (assurance.nextLevel === "aal2" && assurance.currentLevel !== "aal2")) {
+			throw new Error("Complete two-factor verification before approving this device");
+		}
+	}
 
 	const response = await fetch(`${apiBaseUrl()}/oauth/device/activate`, {
 		method: "POST",
