@@ -1,0 +1,16 @@
+{
+  "cost_cents": 0,
+  "currency": "USD",
+  "usage": {
+    "input_tokens": 25,
+    "input_text_tokens": 25,
+    "output_tokens": 42,
+    "output_text_tokens": 42,
+    "total_tokens": 67,
+    "cached_read_text_tokens": 5,
+    "cached_write_text_tokens": 2,
+    "requests": 1
+  },
+  "upstream_id": "req_upstream_1",
+  "finish_reason": "tool_calls"
+}

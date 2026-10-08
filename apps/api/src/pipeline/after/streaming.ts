@@ -16,6 +16,7 @@ import {
 } from "@protocols/stream/encode";
 import { dispatchBackground } from "@/runtime/env";
 import { getProviderStreamCancellationPolicy } from "./stream-cancellation";
+import { SseParser } from "@core/sse-parser";
 
 /** Pure passthrough for non-stream fallbacks (keeps upstream headers where safe). */
 export function passthrough(upstream: Response): Response {
@@ -75,7 +76,6 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     ctx.meta.streamDisconnectAction = "drain_upstream";
 
     const reader = upstream.body?.getReader();
-    const dec = new TextDecoder();
     const enc = new TextEncoder();
 
     const ts = new TransformStream();
@@ -190,7 +190,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             return;
         }
 
-        let buf = "";
+        const parser = new SseParser();
         let sawTerminalSnapshot = false;
         let lastSeenUsage: any = null;
 
@@ -200,23 +200,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 if (done) break;
                 const chunkReceivedAt = performance.now();
 
-                buf += dec.decode(value, { stream: true });
-
-                // Split on SSE frame boundary
-                const frames = buf.split(/\n\n/);
-                buf = frames.pop() ?? "";
-
-                for (const raw of frames) {
+                for (const frame of parser.pushBytes(value)) {
                     const frameReceivedAt = chunkReceivedAt;
-                    // SSE fields - capture event name and data payload
-                    let dataStr = "";
-                    let eventName: string | null = null;
-                    for (const line of raw.split(/\n/)) {
-                        const l = line.replace(/\r$/, "");
-                        if (l.startsWith("event:")) eventName = l.slice(6).trim();
-                        if (l.startsWith("data:")) dataStr += l.slice(5).trimStart();
-                        // Keep ignoring "id:" etc - we preserve event when present
-                    }
+                    // SSE fields - capture event name and data payload ("id:" etc. ignored)
+                    const dataStr = frame.data;
+                    const eventName = frame.event;
                     if (!dataStr) continue;
 
                     let json: any;
@@ -226,7 +214,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // not JSON - just forward raw block
                         if (!downstreamClosed) {
                             try {
-                                await writer.write(enc.encode(raw + "\n\n"));
+                                await writer.write(enc.encode(frame.raw + "\n\n"));
                             } catch {
                                 downstreamClosed = true;
                             }

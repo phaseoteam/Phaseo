@@ -31,6 +31,7 @@ import {
 	adaptRequestFromUpstreamError,
 	readErrorPayload,
 } from "./retry-policy";
+import { SseParser } from "@core/sse-parser";
 
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
@@ -398,21 +399,6 @@ function createStreamAdapterState(args: ExecutorExecuteArgs): StreamAdapterState
 	};
 }
 
-function parseSseBlock(block: string): { event: string | null; data: string } {
-	const lines = block.split("\n");
-	let event: string | null = null;
-	let data = "";
-	for (const rawLine of lines) {
-		const line = rawLine.replace(/\r$/, "");
-		if (line.startsWith("event:")) {
-			event = line.slice(6).trim();
-		} else if (line.startsWith("data:")) {
-			data += line.slice(5).trimStart();
-		}
-	}
-	return { event, data };
-}
-
 /**
  * Normalize Responses API SSE event names to unified format
  *
@@ -480,9 +466,8 @@ function transformResponsesStreamToAnthropic(
 	args: ExecutorExecuteArgs,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	const emit = (
 		controller: ReadableStreamDefaultController<Uint8Array>,
@@ -676,12 +661,8 @@ function transformResponsesStreamToAnthropic(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
-
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -851,8 +832,7 @@ export async function bufferStreamToIR(
 	}
 
 	const reader = res.body.getReader();
-	const decoder = new TextDecoder();
-	let buf = "";
+	const parser = new SseParser();
 	let finalResponse: any = null;
 	let sawDone = false;
 	const applyStreamPayload = (payload: any) => {
@@ -875,21 +855,8 @@ export async function bufferStreamToIR(
 	while (true) {
 		const { value, done } = await reader.read();
 		if (done) break;
-		buf += decoder.decode(value, { stream: true });
-		const frames = buf.split(/\r?\n\r?\n/);
-		buf = frames.pop() ?? "";
-
-		for (const raw of frames) {
-			const lines = raw.split("\n");
-			let data = "";
-
-			for (const line of lines) {
-				const l = line.replace(/\r$/, "");
-				if (l.startsWith("data:")) {
-					data += l.slice(5).trimStart();
-				}
-			}
-
+		for (const frame of parser.pushBytes(value)) {
+			const data = frame.data;
 			if (!data) continue;
 			if (data === "[DONE]") {
 				sawDone = true;
@@ -915,19 +882,11 @@ export async function bufferStreamToIR(
 			}
 		}
 	}
-	buf += decoder.decode();
-	const trailing = buf.trim();
-	if (trailing.length > 0) {
-		const lines = trailing.split("\n");
-		let data = "";
-
-		for (const line of lines) {
-			const trimmed = line.replace(/\r$/, "");
-			if (trimmed.startsWith("data:")) {
-				data += trimmed.slice(5).trimStart();
-			}
-		}
-
+	// Text after the last frame boundary; a provider that ignored stream=true
+	// returns its whole JSON body here.
+	const trailing = parser.pendingText().trim();
+	for (const frame of parser.flush()) {
+		const data = frame.data;
 		if (data === "[DONE]") {
 			sawDone = true;
 		} else if (data) {
@@ -974,7 +933,7 @@ export async function bufferStreamToIR(
 	}
 
 	if (!finalResponse) {
-		console.error(`Missing final response for provider ${args.providerId}, route: ${route}, buf length: ${buf.length}`);
+		console.error(`Missing final response for provider ${args.providerId}, route: ${route}, buf length: ${trailing.length}`);
 		throw new Error("openai_stream_missing_response");
 	}
 

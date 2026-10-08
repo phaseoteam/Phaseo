@@ -2,6 +2,8 @@
 // Why: Responses API expects specific event names and structure
 // How: Parse Anthropic events and emit normalized Responses API events
 
+import { SseParser } from "@core/sse-parser";
+
 /**
  * Transform Anthropic Messages API streaming to OpenAI Responses API streaming format
  *
@@ -24,9 +26,8 @@ export function createAnthropicToResponsesStreamTransformer(
 	requestId: string,
 	model: string,
 ): TransformStream<Uint8Array, Uint8Array> {
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	// Track state for building output items
 	let messageId: string | null = null;
@@ -59,18 +60,8 @@ export function createAnthropicToResponsesStreamTransformer(
 
 	return new TransformStream<Uint8Array, Uint8Array>({
 		async transform(chunk, controller) {
-			buf += decoder.decode(chunk, { stream: true });
-			const frames = buf.split(/\n\n/);
-			buf = frames.pop() ?? "";
-
-			for (const raw of frames) {
-				// Parse SSE frame
-				const lines = raw.split("\n");
-				let data = "";
-				for (const line of lines) {
-					const l = line.replace(/\r$/, "");
-					if (l.startsWith("data:")) data += l.slice(5).trimStart();
-				}
+			for (const frame of parser.pushBytes(chunk)) {
+				const data = frame.data;
 				if (!data || data === "[DONE]") continue;
 
 				let payload: any;

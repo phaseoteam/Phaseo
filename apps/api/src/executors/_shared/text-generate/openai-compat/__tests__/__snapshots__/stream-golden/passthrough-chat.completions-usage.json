@@ -1,0 +1,14 @@
+{
+  "usageRaw": {
+    "prompt_tokens": 10,
+    "completion_tokens": 20,
+    "total_tokens": 30,
+    "prompt_tokens_details": {
+      "cached_tokens": 4
+    }
+  },
+  "info": {
+    "aborted": false,
+    "sawFinalUsage": true
+  }
+}

@@ -6,6 +6,7 @@ import { getProviderQuirks } from "./quirks";
 import { parseMinimaxInterleavedText } from "./providers/minimax/quirks";
 import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
 import { encodeOpenAIResponsesResponse } from "@protocols/openai-responses/encode";
+import { SseParser } from "@core/sse-parser";
 
 export type StreamAdapterState = {
 	requestId: string;
@@ -23,21 +24,6 @@ function applyStreamQuirks(chunk: any, state: StreamAdapterState, providerId: st
 			// ignore quirk errors to avoid breaking stream
 		}
 	}
-}
-
-function parseSseBlock(block: string): { event: string | null; data: string } {
-	const lines = block.split("\n");
-	let event: string | null = null;
-	let data = "";
-	for (const rawLine of lines) {
-		const line = rawLine.replace(/\r$/, "");
-		if (line.startsWith("event:")) {
-			event = line.slice(6).trim();
-		} else if (line.startsWith("data:")) {
-			data += line.slice(5).trimStart();
-		}
-	}
-	return { event, data };
 }
 
 function normalizeResponsesEvent(event: string | null): string | null {
@@ -151,9 +137,8 @@ export function transformChatStream(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
@@ -161,12 +146,9 @@ export function transformChatStream(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -194,9 +176,8 @@ export function transformResponsesStreamToChat(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	// State tracking for the response
 	let nativeResponseId: string | null = null;
@@ -303,12 +284,9 @@ export function transformResponsesStreamToChat(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -450,9 +428,8 @@ export function transformChatStreamToResponses(
 	state: StreamAdapterState,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	let mode: "unknown" | "responses" | "chat" = "unknown";
 	let createdAt = Math.floor(Date.now() / 1000);
@@ -544,12 +521,9 @@ export function transformChatStreamToResponses(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
 
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
