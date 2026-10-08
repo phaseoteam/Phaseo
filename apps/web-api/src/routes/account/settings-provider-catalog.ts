@@ -12,6 +12,7 @@ import {
 import { syncProviderCatalog } from "./provider-catalog-sync";
 import { applyCatalogOverrides, catalogOverrideChanges, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
 import { isProviderAccessBlockedByReview, latestApplicableProviderReviewApplication } from "./provider-review-access";
+import gatewayParameterOptions from "./provider-catalog-parameters.json";
 
 const providerSlugSchema = z.string().trim().toLowerCase().min(2).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
 const MAX_MANAGED_CATALOG_BYTES = 5 * 1024 * 1024;
@@ -191,8 +192,9 @@ async function readProviderCatalog(client: any, providerSlug: string, canEditDes
 		? sourceResult.data.managed_catalog
 		: null;
 	const parameterDefinitions = await client.from("v2_capability_parameters").select("capability_id,parameter_key").order("capability_id").order("parameter_key");
-	const capabilityOptions: Record<string, string[]> = {};
+	const capabilityOptions: Record<string, string[]> = structuredClone(gatewayParameterOptions);
 	for (const row of parameterDefinitions.data ?? []) (capabilityOptions[row.capability_id] ??= []).push(row.parameter_key);
+	for (const id of Object.keys(capabilityOptions)) capabilityOptions[id] = Array.from(new Set(capabilityOptions[id])).sort();
 	return {
 		permissions: { can_edit_description: canEditDescription, can_edit_model_metadata: canEditDescription },
 		capability_options: capabilityOptions,
