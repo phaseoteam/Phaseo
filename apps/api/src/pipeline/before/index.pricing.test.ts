@@ -212,7 +212,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		}));
 	});
 
-	it.each([false, true])("preserves pricing and carries the credit barrier only for streaming text (stream=%s)", async stream => {
+	it.each([false, true])("preserves pricing and defers the credit cache fill behind the charge barrier for text (stream=%s)", async stream => {
 		guardModelMock.mockReturnValue({ ok: true, value: {
 			body: { model: "openai/gpt-4.1-mini", stream }, model: "openai/gpt-4.1-mini", stream,
 		} });
@@ -247,11 +247,12 @@ describe("beforeRequest pricing loss-prevention", () => {
 		const result = await beforeRequest(req, "responses", new Timer(), null);
 		expect(result.ok).toBe(true);
 		const register = guardContextMock.mock.calls[0][0].onCreditCacheWrite;
-		if (stream && result.ok) {
+		expect(register).toBeTypeOf("function");
+		if (result.ok) {
 			const write = Promise.resolve();
 			register(write);
 			expect(result.ctx.creditCacheWrites).toEqual([write]);
-		} else expect(register).toBeUndefined();
+		}
 	});
 
 	it("captures parsed model metadata before a context guard failure", async () => {
