@@ -20,6 +20,78 @@ describe("prepareServerToolsForTextRequest", () => {
 		});
 	});
 
+	it("does not deep-clone requests without server tools", () => {
+		const cloneSpy = vi.spyOn(globalThis, "structuredClone");
+		try {
+			for (const body of [
+				{ model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hi" }] },
+				{
+					model: "openai/gpt-5-nano",
+					messages: [{ role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }] }],
+					tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object" } } }],
+					tool_choice: "auto",
+				},
+			]) {
+				const snapshot = JSON.parse(JSON.stringify(body));
+				const result = prepareServerToolsForTextRequest(body, "openai.chat.completions");
+				expect(result.ok).toBe(true);
+				if (!result.ok) throw new Error("expected ok");
+				expect(result.body).toBe(body);
+				expect(body).toEqual(snapshot);
+				expect(result.config).toEqual({
+					enabled: false,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: false,
+					webSearchEngine: expect.any(String),
+					webSearchMaxResults: expect.any(Number),
+					webSearchMaxTotalResults: expect.any(Number),
+					webSearchContextSize: "medium",
+					webSearchMaxCharacters: undefined,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webSearchAllowedDomains: [],
+					webSearchExcludedDomains: [],
+					webFetchEnabled: false,
+					webFetchEngine: expect.any(String),
+					webFetchMaxChars: expect.any(Number),
+					webFetchAllowedDomains: [],
+					webFetchBlockedDomains: [],
+					advisorEnabled: false,
+					advisors: {},
+					defaultAdvisorFunctionName: undefined,
+					defaultAdvisorModel: "openai/gpt-5-nano",
+					imageGenerationEnabled: false,
+					imageGeneration: {},
+					applyPatchEnabled: false,
+				});
+			}
+			expect(cloneSpy).not.toHaveBeenCalled();
+		} finally {
+			cloneSpy.mockRestore();
+		}
+	});
+
+	it("returns an empty body for non-object input, as before", () => {
+		const result = prepareServerToolsForTextRequest(null, "openai.responses");
+		expect(result).toMatchObject({ ok: true, body: {}, config: { enabled: false } });
+	});
+
+	it("still works on a copy when server tools are present", () => {
+		const body = {
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "time?" }],
+			tools: [{ type: "gateway:datetime" }, { type: "function", function: { name: "lookup" } }],
+		};
+		const snapshot = JSON.parse(JSON.stringify(body));
+		const result = prepareServerToolsForTextRequest(body, "openai.chat.completions");
+		expect(result.ok).toBe(true);
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.config.enabled).toBe(true);
+		expect(result.body).not.toBe(body);
+		expect(result.body.messages).not.toBe(body.messages);
+		expect(body).toEqual(snapshot);
+	});
+
 	it("passes native web search tools through unchanged", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
