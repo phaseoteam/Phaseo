@@ -123,9 +123,7 @@ describe("handleSuccessAudit web fetch observability", () => {
 			],
 		});
 
-		const extraJson = JSON.parse(call.extraJson);
-		expect(extraJson.transform.web_fetch_observability).toEqual(
-			call.detailMetadata.web_fetch_observability,
-		);
+		// detailMetadata is the persisted copy; no duplicate serialized payload is built.
+		expect(call).not.toHaveProperty("extraJson");
 	});
 });

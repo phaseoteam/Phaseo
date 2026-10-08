@@ -66,6 +66,5 @@ export function protectStealthAuditArgs<T extends Record<string, any>>(args: T):
         providerResponse: null,
         serverToolTrace: null,
 		lifecycleEvents: null,
-        extraJson: null,
     } as T;
 }

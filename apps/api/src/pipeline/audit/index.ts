@@ -753,7 +753,6 @@ export async function auditSuccess(input: {
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
-    extraJson?: string | null;
     errorPayload?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
@@ -1065,7 +1064,6 @@ type AuditFailureBefore = {
     edgeCountry?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
-    extraJson?: string | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
     providerResponse?: unknown;
@@ -1117,7 +1115,6 @@ type AuditFailureExecute = {
     edgeCountry?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
-    extraJson?: string | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
     providerRequest?: unknown;

@@ -9,8 +9,7 @@ import { isStealthRequest } from "../stealth";
 import type { PipelineContext } from "../before/types";
 import { finishStreamingProvider, recordLifecycleEvent, retainedLifecycle } from "../lifecycle";
 import type { RequestResult } from "../execute";
-import { sanitizeForAxiom, sanitizeJsonStringForAxiom, stringifyForAxiom } from "@observability/privacy";
-import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { sanitizeForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
@@ -165,94 +164,6 @@ function extractRoutingContext(ctx: PipelineContext, result?: RequestResult): an
     }
 }
 
-type BuildTransformSnapshotOptions = {
-	gatewayResponse?: unknown;
-	providerResponse?: unknown;
-	errorDetails?: unknown;
-};
-
-function headersToRecord(headers: Headers | null | undefined): Record<string, string> | null {
-	if (!headers) return null;
-	const out: Record<string, string> = {};
-	let count = 0;
-	for (const [key, value] of headers.entries()) {
-		if (!key) continue;
-		out[key] = value;
-		count += 1;
-		if (count >= 128) break;
-	}
-	return Object.keys(out).length > 0 ? out : null;
-}
-
-function buildTransformSnapshot(
-	ctx: PipelineContext,
-	result?: RequestResult,
-	options?: BuildTransformSnapshotOptions,
-) {
-	const attemptErrors = Array.isArray((ctx as any).attemptErrors) ? (ctx as any).attemptErrors : null;
-	const providerAttempts = Array.isArray(ctx.providerAttempts) ? ctx.providerAttempts : null;
-	const routingSnapshot = Array.isArray((ctx as any).routingSnapshot) ? (ctx as any).routingSnapshot : null;
-	const routingDiagnostics = (ctx as any).routingDiagnostics ?? null;
-	const requestedParams = Array.isArray(ctx.requestedParams) ? ctx.requestedParams : null;
-	const pluginExecutions = Array.isArray(ctx.pluginExecutions) ? ctx.pluginExecutions : null;
-	const paramRoutingDiagnostics = ctx.paramRoutingDiagnostics ? sanitizeForAxiom(ctx.paramRoutingDiagnostics) : null;
-	const providerEnablementDiagnostics = ctx.providerEnablementDiagnostics
-		? sanitizeForAxiom(ctx.providerEnablementDiagnostics)
-		: null;
-	const providerCandidateBuildDiagnostics = ctx.providerCandidateBuildDiagnostics
-		? sanitizeForAxiom(ctx.providerCandidateBuildDiagnostics)
-		: null;
-	const sanitizedGatewayRequest = sanitizeForAxiom(ctx.rawBody ?? ctx.body ?? null);
-	const sanitizedUpstreamRequest = sanitizeJsonStringForAxiom(result?.mappedRequest ?? null);
-	const sanitizedGatewayResponse = sanitizeForAxiom(options?.gatewayResponse ?? null);
-	const sanitizedProviderResponse = sanitizeForAxiom(options?.providerResponse ?? result?.rawResponse ?? null);
-	const sanitizedProviderHeaders = sanitizeForAxiom(headersToRecord(result?.upstream?.headers));
-	const sanitizedErrorDetails = sanitizeForAxiom(options?.errorDetails ?? null);
-	const searchObservability = sanitizeForAxiom(
-		extractSearchObservability({
-			body: ctx.body,
-			gatewayResponse: options?.gatewayResponse ?? null,
-			providerResponse: options?.providerResponse ?? result?.rawResponse ?? null,
-			managedSearch: ctx.searchObservability ?? null,
-		}),
-	);
-	const webFetchObservability = sanitizeForAxiom(
-		mergeWebFetchObservability(ctx.webFetchObservability ?? null),
-	);
-
-	return {
-		protocol: ctx.protocol ?? null,
-		endpoint: ctx.endpoint,
-		model: ctx.model,
-		provider: result?.provider ?? null,
-		stream: ctx.stream,
-		request_surface_sanitized: sanitizedGatewayRequest,
-		upstream_request_sanitized: sanitizedUpstreamRequest,
-		upstream_request_present: Boolean(result?.mappedRequest),
-		gateway_response_sanitized: sanitizedGatewayResponse,
-		gateway_response_present: options?.gatewayResponse != null,
-		upstream_response_sanitized: sanitizedProviderResponse,
-		upstream_response_present: (options?.providerResponse ?? result?.rawResponse) != null,
-		upstream_response_headers: sanitizedProviderHeaders,
-		upstream_status_code: result?.upstream?.status ?? null,
-		upstream_status_text: result?.upstream?.statusText ?? null,
-		upstream_url: sanitizeUrlForLogging(result?.upstream?.url),
-		requested_params: requestedParams,
-		plugin_executions: sanitizeForAxiom(pluginExecutions),
-		param_routing_diagnostics: paramRoutingDiagnostics,
-		provider_enablement_diagnostics: providerEnablementDiagnostics,
-		provider_candidate_build_diagnostics: providerCandidateBuildDiagnostics,
-		provider_attempts: sanitizeForAxiom(providerAttempts),
-		attempt_errors: sanitizeForAxiom(attemptErrors),
-		routing_snapshot: sanitizeForAxiom(routingSnapshot),
-		routing_diagnostics: sanitizeForAxiom(routingDiagnostics),
-		response_cache: sanitizeForAxiom(ctx.responseCache ?? null),
-		search_observability: searchObservability,
-		web_fetch_observability: webFetchObservability,
-		error_details: sanitizedErrorDetails,
-	};
-}
-
 function resolveExecuteAdapterMs(ctx: PipelineContext): number | null {
     const nested = (ctx as any)?.timing?.execute?.adapter_ms;
     if (typeof nested === "number" && Number.isFinite(nested)) return nested;
@@ -308,45 +219,6 @@ export async function handleFailureAudit(
         description: errorMessage,
     };
 
-    const extraJson = (() => {
-        try {
-            return stringifyForAxiom({
-                stage: "execute",
-                request: {
-                    method: ctx.meta.requestMethod ?? null,
-                    path: ctx.meta.requestPath ?? ctx.requestPath ?? null,
-                    url: ctx.meta.requestUrl ?? null,
-                    user_agent: ctx.meta.userAgent ?? null,
-                    client_ip: ctx.meta.clientIp ?? null,
-                    cf_ray: ctx.meta.cfRay ?? null,
-                    edge: {
-                        colo: ctx.meta.edgeColo ?? null,
-                        city: ctx.meta.edgeCity ?? null,
-                        country: ctx.meta.edgeCountry ?? null,
-                        continent: ctx.meta.edgeContinent ?? null,
-                        asn: ctx.meta.edgeAsn ?? null,
-                    },
-                },
-                timing: (ctx as any)?.timing ?? null,
-                providers: ctx.providers?.map((p) => ({
-                    provider_id: p.providerId,
-                    base_weight: p.baseWeight,
-                    byok_keys: p.byokMeta?.length ?? 0,
-                    has_pricing: Boolean(p.pricingCard),
-                })),
-                transform: buildTransformSnapshot(ctx, result, {
-                    gatewayResponse: gatewayFailurePayload,
-                    providerResponse: errorDetails ?? result.rawResponse ?? null,
-                    errorDetails,
-                }),
-                error_details: sanitizeForAxiom(errorDetails ?? null),
-                gateway_response_sanitized: sanitizeForAxiom(gatewayFailurePayload),
-            });
-        } catch {
-            return null;
-        }
-    })();
-
     await runGatewayTelemetryPipelines({
         requestId: ctx.requestId,
         workspaceId: ctx.workspaceId,
@@ -399,7 +271,6 @@ export async function handleFailureAudit(
                 sanitizeForAxiom(gatewayErrorPayload ?? gatewayFailurePayload) as
                     | Record<string, unknown>
                     | null,
-            extraJson,
             requestPayload: ctx.rawBody ?? ctx.body ?? null,
             gatewayResponse: accountingContext?.gatewayResponse ?? gatewayErrorPayload ?? gatewayFailurePayload,
             providerRequest: result.mappedRequest ?? null,
@@ -571,45 +442,6 @@ export async function handleSuccessAudit(
     //     nativeResponseId: nativeResponseId ?? null,
     // });
 
-    const extraJson = (() => {
-        try {
-            return stringifyForAxiom({
-                stage: "execute",
-                request: {
-                    method: ctx.meta.requestMethod ?? null,
-                    path: ctx.meta.requestPath ?? ctx.requestPath ?? null,
-                    url: ctx.meta.requestUrl ?? null,
-                    user_agent: ctx.meta.userAgent ?? null,
-                    client_ip: ctx.meta.clientIp ?? null,
-                    cf_ray: ctx.meta.cfRay ?? null,
-                    edge: {
-                        colo: ctx.meta.edgeColo ?? null,
-                        city: ctx.meta.edgeCity ?? null,
-                        country: ctx.meta.edgeCountry ?? null,
-                        continent: ctx.meta.edgeContinent ?? null,
-                        asn: ctx.meta.edgeAsn ?? null,
-                    },
-                },
-                timing: (ctx as any)?.timing ?? null,
-                providers: ctx.providers?.map((p) => ({
-                    provider_id: p.providerId,
-                    base_weight: p.baseWeight,
-                    byok_keys: p.byokMeta?.length ?? 0,
-                    has_pricing: Boolean(p.pricingCard),
-                })),
-                gating: ctx.gating ?? null,
-                usage: sanitizeForAxiom(usageWithMultimodal ?? null),
-                pricing: sanitizeForAxiom((usageWithMultimodal as any)?.pricing ?? null),
-                transform: buildTransformSnapshot(ctx, result, {
-                    gatewayResponse: gatewayResponse ?? null,
-                    providerResponse: result.rawResponse ?? null,
-                }),
-            });
-        } catch {
-            return null;
-        }
-    })();
-
     // Extract enrichment data for wide event logging
     const requestEnrichment = extractRequestEnrichment(ctx);
     const routingContext = extractRoutingContext(ctx, result);
@@ -692,7 +524,6 @@ export async function handleSuccessAudit(
             streamProviderBillingOnCancel: ctx.meta.streamProviderBillingOnCancel ?? "unknown",
             streamDisconnectAction: ctx.meta.streamDisconnectAction ?? "drain_upstream",
             keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
-            extraJson,
             errorPayload: guardrailEnforcementPayload as Record<string, unknown> | null,
             requestPayload: ctx.rawBody ?? ctx.body ?? null,
             gatewayResponse: gatewayResponse ?? null,
