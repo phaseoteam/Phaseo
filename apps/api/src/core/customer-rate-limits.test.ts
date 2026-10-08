@@ -1,21 +1,47 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ bindings: {} as Record<string, unknown>, admit: vi.fn(), getByName: vi.fn() }));
-vi.mock("@/runtime/env", () => ({ getBindingsIfConfigured: () => mocks.bindings }));
+const mocks = vi.hoisted(() => ({
+	bindings: {} as Record<string, unknown>,
+	admit: vi.fn(),
+	getByName: vi.fn(),
+	background: [] as Promise<unknown>[],
+	release: vi.fn(),
+}));
+vi.mock("@/runtime/env", () => ({
+	getBindingsIfConfigured: () => mocks.bindings,
+	dispatchBackground: (promise: Promise<unknown>) => { mocks.background.push(promise); },
+	ensureRuntimeForBackground: () => mocks.release,
+}));
 
-import { customerScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits } from "./customer-rate-limits";
+import {
+	__customerQuotaStateSizeForTests, __resetCustomerQuotaStateForTests,
+	customerScopeKey, guardCustomerQuota, guardFreeRouteQuota, parseCustomerLimits,
+} from "./customer-rate-limits";
 import type { PriceCard } from "@pipeline/pricing/types";
 
 const args = { workspaceId: "workspace", userId: "owner", requestId: "public-request", admissionId: "server-admission" };
+let sequence = 0;
+const minute = (overrides: Record<string, unknown> = {}) =>
+	guardCustomerQuota({ ...args, admissionId: `admission-${++sequence}`, kind: "minute", ...overrides });
 function card(plan: string, price: string) {
 	return { rules: [{ pricing_plan: plan, price_per_unit: price }] } as PriceCard;
 }
+async function settle() {
+	await Promise.all(mocks.background.splice(0));
+}
 
 beforeEach(() => {
+	vi.useFakeTimers();
+	vi.setSystemTime(new Date("2026-10-09T12:00:00Z"));
+	__resetCustomerQuotaStateForTests();
+	mocks.background.length = 0;
+	mocks.release.mockReset();
 	mocks.admit.mockReset().mockResolvedValue({ allowed: true, limit: 25, remaining: 24, retryAfterSeconds: 0 });
 	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit });
 	mocks.bindings = { CUSTOMER_RATE_LIMITS_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
 });
+
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("customer quota integration", () => {
 	it("uses the authenticated owner/workspace, sharing keys but isolating users and workspaces", () => {
@@ -25,36 +51,98 @@ describe("customer quota integration", () => {
 		expect(customerScopeKey({ workspaceId: "workspace" })).toBe("customer-quota:v1:workspace:workspace");
 	});
 
-	it("applies RPD to actual free pricing, including models without a :free suffix", async () => {
-		await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
-		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission");
+	it("admits synchronously without waiting for the counter", async () => {
+		mocks.admit.mockReturnValue(new Promise(() => {}));
+		expect(guardCustomerQuota({ ...args, kind: "minute" })).toBeNull();
+		expect(mocks.background).toHaveLength(1);
+		await Promise.resolve();
+		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "minute", "server-admission",
+			{ requestsPerMinute: 25, freeRequestsPerDay: 1500 });
 	});
 
-	it("does not apply RPD to paid, missing, or zero-price standard pricing", async () => {
-		for (const pricingCard of [card("standard", "0.01"), card("standard", "0"), null]) {
-			expect(await guardFreeRouteQuota({ ...args, pricingCard })).toBeNull();
-		}
-		expect(mocks.admit).not.toHaveBeenCalled();
-	});
-
-	it("returns 429 with the existing retry header and error contract", async () => {
-		mocks.admit.mockResolvedValue({ allowed: false, limit: 25, remaining: 0, retryAfterSeconds: 42 });
-		const response = await guardCustomerQuota({ ...args, kind: "minute" });
+	it("remembers a reported denial until the window frees up, then counts again", async () => {
+		mocks.admit.mockResolvedValueOnce({ allowed: false, limit: 25, remaining: 0, retryAfterSeconds: 42 });
+		expect(minute()).toBeNull();
+		await settle();
+		const response = minute();
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("42");
-		expect(await response?.json()).toMatchObject({ reason: "customer_requests_per_minute", request_id: "public-request" });
+		expect(await response?.json()).toMatchObject({
+			error: "key_limit_exceeded",
+			reason: "customer_requests_per_minute",
+			request_id: "public-request",
+			description: "This user and workspace have reached their limit of 25 requests per minute. Retry after 42 seconds.",
+		});
+		vi.advanceTimersByTime(30_000);
+		expect(minute()?.headers.get("Retry-After")).toBe("12");
+		// Locally rejected requests are not sent to the counter.
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+		// Other users and workspaces are unaffected.
+		expect(minute({ userId: "other" })).toBeNull();
+		vi.advanceTimersByTime(12_000);
+		expect(minute()).toBeNull();
+		await settle();
+		expect(mocks.admit).toHaveBeenCalledTimes(3);
 	});
 
-	it("fails closed on missing bindings or coordinator failure", async () => {
+	it("starts rejecting as soon as the counter reports the last slot used", async () => {
+		mocks.admit.mockResolvedValueOnce({ allowed: true, limit: 25, remaining: 0, retryAfterSeconds: 7 });
+		expect(minute()).toBeNull();
+		await settle();
+		expect(minute()?.status).toBe(429);
+	});
+
+	it("fails open when the counter fails or its binding is missing", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => {});
 		mocks.admit.mockRejectedValue(new Error("unavailable"));
-		expect((await guardCustomerQuota({ ...args, kind: "minute" }))?.status).toBe(503);
+		expect(minute()).toBeNull();
+		await settle();
+		expect(mocks.release).toHaveBeenCalledTimes(1);
+		expect(minute()).toBeNull();
 		delete mocks.bindings.CUSTOMER_RATE_LIMITS;
-		expect((await guardCustomerQuota({ ...args, kind: "minute" }))?.status).toBe(503);
+		expect(minute()).toBeNull();
+		expect(mocks.background).toHaveLength(1);
+	});
+
+	it("bounds remembered denials", async () => {
+		mocks.admit.mockResolvedValue({ allowed: false, limit: 25, remaining: 0, retryAfterSeconds: 60 });
+		for (let index = 0; index < 10_050; index++) minute({ workspaceId: `workspace-${index}` });
+		await settle();
+		expect(__customerQuotaStateSizeForTests().denials).toBe(10_000);
+		// The oldest scopes were evicted and are counted again.
+		expect(minute({ workspaceId: "workspace-0" })).toBeNull();
+		expect(minute({ workspaceId: "workspace-10049" })?.status).toBe(429);
+	});
+
+	it("applies RPD to actual free pricing, including models without a :free suffix", async () => {
+		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
+		await settle();
+		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "free-day", "server-admission", expect.any(Object));
+	});
+
+	it("counts one free admission per request across fallback attempts", async () => {
+		mocks.admit.mockResolvedValue({ allowed: true, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
+		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
+		await settle();
+		// The same request's next attempt is already admitted; other requests are rejected.
+		expect(guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") })).toBeNull();
+		expect(guardFreeRouteQuota({ ...args, admissionId: "other-request", pricingCard: card("free", "0") })?.status).toBe(429);
+		expect(mocks.admit).toHaveBeenCalledTimes(1);
+	});
+
+	it("does not apply RPD to paid, missing, or zero-price standard pricing", () => {
+		for (const pricingCard of [card("standard", "0.01"), card("standard", "0"), null]) {
+			expect(guardFreeRouteQuota({ ...args, pricingCard })).toBeNull();
+		}
+		expect(mocks.background).toHaveLength(0);
 	});
 
 	it.each([1500, 2500])("explains the effective %i free-model limit and recovery options", async (limit) => {
 		mocks.admit.mockResolvedValue({ allowed: false, limit, remaining: 0, retryAfterSeconds: 3600 });
-		const response = await guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		await settle();
+		const response = guardFreeRouteQuota({ ...args, admissionId: "next", pricingCard: card("free", "0") });
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("3600");
 		expect(await response?.json()).toMatchObject({
@@ -63,11 +151,18 @@ describe("customer quota integration", () => {
 		});
 	});
 
-	it("preserves internal tests and supports an explicit rollout/rollback switch", async () => {
-		expect(await guardCustomerQuota({ ...args, kind: "minute", internal: true })).toBeNull();
+	it("keeps minute and free-model denials independent", async () => {
+		mocks.admit.mockResolvedValue({ allowed: false, limit: 1500, remaining: 0, retryAfterSeconds: 3600 });
+		guardFreeRouteQuota({ ...args, pricingCard: card("free", "0") });
+		await settle();
+		expect(minute()).toBeNull();
+	});
+
+	it("preserves internal tests and supports an explicit rollout/rollback switch", () => {
+		expect(guardCustomerQuota({ ...args, kind: "minute", internal: true })).toBeNull();
 		mocks.bindings.CUSTOMER_RATE_LIMITS_ENABLED = "false";
-		expect(await guardCustomerQuota({ ...args, kind: "minute" })).toBeNull();
-		expect(mocks.admit).not.toHaveBeenCalled();
+		expect(guardCustomerQuota({ ...args, kind: "minute" })).toBeNull();
+		expect(mocks.background).toHaveLength(0);
 	});
 
 	it("accepts partial overrides and rejects invalid quota values", () => {
