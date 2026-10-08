@@ -20,6 +20,10 @@ const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
 const publishCatalogueRevisionMock = vi.fn();
+const drainWorkspacePublicationsMock = vi.fn(async () => ({ claimed: 0, completed: 0, failed: 0 }));
+vi.mock("./workspace-publications", () => ({
+	drainWorkspacePublications: () => drainWorkspacePublicationsMock(),
+}));
 vi.mock("@core/catalogue-revision", () => ({
 	publishCatalogueRevision: (...args: unknown[]) => publishCatalogueRevisionMock(...args),
 }));

@@ -29,6 +29,7 @@ import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
 import { publishCatalogueRevision } from "@core/catalogue-revision";
+import { drainWorkspacePublications } from "./workspace-publications";
 import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
@@ -550,6 +551,17 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		} finally {
 			clearRuntime();
 		}
+	}
+	// Leased and idempotent: cached contexts of workspaces changed outside the
+	// gateway control routes are invalidated within about a minute.
+	configureRuntime(env);
+	try {
+		const summary = await drainWorkspacePublications();
+		if (summary.claimed) console.log("workspace_publications_drained", summary);
+	} catch (error) {
+		console.error("workspace_publication_drain_failed", serializeError(error));
+	} finally {
+		clearRuntime();
 	}
 	// Keep release notices independent from the slower provider discovery sweep.
 	try {

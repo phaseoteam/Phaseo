@@ -12,6 +12,7 @@ import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
 import { loadPrivateRouteRow } from "./privateModelCache";
+import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
 import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
@@ -1166,10 +1167,16 @@ export async function fetchGatewayContext(args: {
     let versionToken = "v0";
     if (needsVersionToken) {
         const keyVersionStartedAt = performance.now();
-        versionToken = await keyVersionToken("id", args.apiKeyId, {
-            useL1Cache: true,
-            l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
-        });
+        // Key version and workspace version invalidate independently; both are
+        // isolate-cached for a few seconds and read in parallel.
+        const [keyVersion, workspaceVersion] = await Promise.all([
+            keyVersionToken("id", args.apiKeyId, {
+                useL1Cache: true,
+                l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
+            }),
+            getWorkspacePolicyVersionToken(args.workspaceId),
+        ]);
+        versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
     const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";

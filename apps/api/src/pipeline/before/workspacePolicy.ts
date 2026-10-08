@@ -156,7 +156,12 @@ function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void
 	});
 }
 
-async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+/**
+ * Workspace-wide cache version. Also embedded in request-context cache keys,
+ * so a single bump (control routes or the publication outbox drain)
+ * invalidates every cached context of the workspace.
+ */
+export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
 
