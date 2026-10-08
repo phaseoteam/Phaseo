@@ -7,7 +7,7 @@
 // Uses OpenAI Responses API format upstream for consistency
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -185,6 +185,10 @@ export async function executeOpenAIWire(
 	};
 
 	const maxTransientRetries = policy.transientRetries ?? 0;
+	// With other ranked candidates waiting, a transient failure (and any
+	// Retry-After of up to 10 s) is cheaper to route around than to sit out on
+	// this provider, so return it and let the attempt loop fail over.
+	const failOverInsteadOfRetry = args.hasAlternateCandidates === true;
 
 	const sendPayloadWithRetry = async (
 		targetRoute: "responses" | "chat",
@@ -196,7 +200,11 @@ export async function executeOpenAIWire(
 			try {
 				const result = await sendPayload(targetRoute, payload);
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
-				if (!hasRetryLeft || !shouldRetryOpenAICompatStatus(result.response.status)) {
+				if (
+					!hasRetryLeft ||
+					failOverInsteadOfRetry ||
+					!shouldRetryOpenAICompatStatus(result.response.status)
+				) {
 					return {
 						...result,
 						transientRetryDelayMs: totalRetryDelayMs,
@@ -210,7 +218,9 @@ export async function executeOpenAIWire(
 				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
 			} catch (error) {
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
-				if (!hasRetryLeft) {
+				// A provider that stalled past the headers deadline would likely
+				// stall again; fail over rather than wait a second deadline.
+				if (!hasRetryLeft || (failOverInsteadOfRetry && error instanceof UpstreamHeadersTimeoutError)) {
 					throw error;
 				}
 				totalRetryDelayMs += delayMs;

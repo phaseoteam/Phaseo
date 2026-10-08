@@ -585,6 +585,91 @@ describe("executeOpenAIWire", () => {
 		expect(mock.calls[0]?.headers.Authorization).toBe("Bearer test-baseten-key");
 	});
 
+	it.each([429, 503, 408])("returns a transient %s immediately, without honouring Retry-After, when alternate candidates remain", async (status) => {
+		const args = buildArgs();
+		args.providerId = "baseten";
+		args.hasAlternateCandidates = true;
+		args.ir = { ...args.ir, model: "openai/gpt-oss-120b", stream: false };
+
+		let callCount = 0;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
+			response: () => {
+				callCount += 1;
+				return jsonResponse(
+					{ error: { message: "busy" } },
+					{ status, headers: { "retry-after": "10" } },
+				);
+			},
+		}]);
+
+		const startedAt = Date.now();
+		const result = await executeProviderWire(args);
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(result.upstream.status).toBe(status);
+		expect(callCount).toBe(1);
+		expect(Date.now() - startedAt).toBeLessThan(2_000);
+		expect((result as any).timing?.transientRetryDelayMs).toBe(0);
+	});
+
+	it("still sleeps out Retry-After and retries the same provider when it is the only candidate", async () => {
+		const args = buildArgs();
+		args.providerId = "baseten";
+		args.hasAlternateCandidates = false;
+		args.ir = { ...args.ir, model: "openai/gpt-oss-120b", stream: false };
+
+		let callCount = 0;
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.baseten.example/v1/chat/completions",
+			response: () => {
+				callCount += 1;
+				if (callCount === 1) {
+					return jsonResponse({ error: { message: "busy" } }, { status: 429, headers: { "retry-after": "0.05" } });
+				}
+				return jsonResponse({
+					id: "chatcmpl_single",
+					object: "chat.completion",
+					created: 1735689600,
+					model: "openai/gpt-oss-120b",
+					choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }],
+					usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+				});
+			},
+		}]);
+
+		const result = await executeProviderWire(args);
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(callCount).toBe(2);
+		expect((result as any).timing?.transientRetryDelayMs).toBe(50);
+	});
+
+	it("fails over instead of re-waiting when a provider stalls past the headers deadline", async () => {
+		const { UpstreamHeadersTimeoutError } = await import("@executors/_shared/timing/upstream");
+		const run = async (hasAlternateCandidates: boolean) => {
+			const args = buildArgs();
+			args.providerId = "baseten";
+			args.hasAlternateCandidates = hasAlternateCandidates;
+			args.ir = { ...args.ir, model: "openai/gpt-oss-120b", stream: false };
+			let calls = 0;
+			args.upstreamTiming = {
+				fetch: vi.fn(async () => {
+					calls += 1;
+					throw new UpstreamHeadersTimeoutError(25);
+				}),
+				timingFor: () => undefined,
+			};
+			await expect(executeProviderWire(args)).rejects.toBeInstanceOf(UpstreamHeadersTimeoutError);
+			return calls;
+		};
+		expect(await run(true)).toBe(1);
+		// Single-provider routes keep the existing single transient retry.
+		expect(await run(false)).toBe(2);
+	});
+
 	it("retries transient groq 503 responses once before succeeding", async () => {
 		const args = buildArgs();
 		args.providerId = "groq";

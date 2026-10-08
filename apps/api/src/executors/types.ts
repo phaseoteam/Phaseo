@@ -77,6 +77,12 @@ export type ExecutorExecuteArgs = {
 	byokMeta: ByokKeyMeta[];
 	pricingCard: any;
 	upstreamTiming?: ExecutorUpstreamTiming;
+	/**
+	 * True when the attempt loop has further ranked candidates after this one.
+	 * Executors should then return a transient failure promptly (so routing
+	 * fails over) instead of sleeping and retrying the same provider.
+	 */
+	hasAlternateCandidates?: boolean;
 
 	meta: {
 		debug?: DebugOptions;

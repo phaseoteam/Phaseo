@@ -284,6 +284,26 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it("tells executors whether alternate candidates remain after the current attempt", async () => {
+		const candidates = ["first", "second", "third"].map((providerId) => ({
+			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async () => ({
+			kind: "completed", ir: {}, upstream: new Response("{}", { status: 503 }),
+			bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+		}));
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx({ testingMode: true }), { model: "model", prompt: "test" } as any, createTiming());
+		expect(executor.mock.calls.map(([args]: any[]) => [args.providerId, args.hasAlternateCandidates])).toEqual([
+			["first", true],
+			["second", true],
+			["third", false],
+		]);
+	});
+
 	it("fails over to the next provider when the first stalls before response headers", async () => {
 		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
 		classifyHealthCalls.length = 0;

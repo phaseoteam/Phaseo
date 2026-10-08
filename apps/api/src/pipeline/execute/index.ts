@@ -628,6 +628,7 @@ export async function doRequestWithIR(
 			attempt + 1,
 			choice.credential,
 			choice.phase,
+			attempt < credentialPlan.length - 1,
 		);
 
 		if (result.ok) {
@@ -707,6 +708,7 @@ async function attemptProviderWithIR(
 	attemptNumber: number,
 	credential: { kind: "gateway" } | { kind: "byok"; key: ByokKeyMeta },
 	credentialPhase: CredentialAttemptPhase,
+	hasAlternateCandidates = false,
 ): Promise<{ ok: true; result: IRRequestResult } | { ok: false; skip?: string; stopFallback?: boolean; response?: Response }> {
 	const attemptErrors: Array<Record<string, unknown>> = (ctx.attemptErrors ??= []);
 	const attemptPrefix = `attempt_${attemptNumber}`;
@@ -971,6 +973,7 @@ async function attemptProviderWithIR(
 				byokMeta: credential.kind === "byok" ? [credential.key] : [],
 				pricingCard,
 				upstreamTiming: upstreamTracker.timing,
+				hasAlternateCandidates,
 				meta: {
 					debug: ctx.meta.debug,
 					returnMeta: ctx.meta.returnMeta,
