@@ -901,7 +901,8 @@ async function attemptProviderWithIR(
 					: ir,
 		);
 		if (credential.kind === "gateway" && !ctx.testingMode) {
-			const reservationTokens = estimateProviderTokenReservation({
+			// Estimated only when the provider has a token limit.
+			const reservationTokens = () => estimateProviderTokenReservation({
 				providerId: candidate.providerId,
 				capability: normalizedCapability,
 				body: ctx.rawBody,

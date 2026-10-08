@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	estimateProviderTokenReservation,
 	parseProviderRateLimitConfig,
@@ -154,5 +154,20 @@ describe("provider rate-limit configuration", () => {
 			providerMaxInputTokens: 10_000,
 			providerMaxOutputTokens: 1_000,
 		})).toBeNull();
+	});
+
+	it("uses a known body byte length and measures each body only once", () => {
+		const body = { model: "openai/test", messages: [{ role: "user", content: "héllo" }] };
+		const args = { capability: "text.generate", body, requestedMaxOutputTokens: 100, providerMaxInputTokens: 10_000, providerMaxOutputTokens: 4_096 };
+		expect(estimateProviderTokenReservation({ ...args, bodyBytes: 1_000 })).toBe(1_000 + 16 + 100);
+		const stringify = vi.spyOn(JSON, "stringify");
+		let first: number | null, second: number | null;
+		try {
+			first = estimateProviderTokenReservation(args);
+			second = estimateProviderTokenReservation(args);
+			expect(stringify.mock.calls.filter(([value]) => value === body)).toHaveLength(1);
+		} finally { stringify.mockRestore(); }
+		expect(first).toBe(new TextEncoder().encode(JSON.stringify(body)).byteLength + 16 + 100);
+		expect(second).toBe(first);
 	});
 });
