@@ -1,4 +1,5 @@
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
+import { isPublicLocale } from "@/i18n/locales";
 
 const DEFAULT_WEB_API_ORIGIN = "https://phaseo.app";
 const PUBLIC_WEB_API_TIMEOUT_MS = 15_000;
@@ -160,5 +161,12 @@ export async function fetchChatWebApi(path: `/api/chat/${string}`, init: Request
 		cache: "no-store",
 	});
 	if (sdkRequest && sdkExportStore.get() === sdkRequest) sdkExportStore.set({ ...sdkRequest, status: response.status, requestId: response.headers.get("x-request-id") ?? response.headers.get("x-phaseo-request-id") ?? undefined });
+	if (response.status === 403 && typeof window !== "undefined") {
+		const payload = await response.clone().json().catch(() => null);
+		if (payload?.error === "chat_privacy_review_required") {
+			const locale = window.location.pathname.split("/")[1];
+			window.location.assign(`${isPublicLocale(locale) ? `/${locale}` : ""}/chat`);
+		}
+	}
 	return response;
 }

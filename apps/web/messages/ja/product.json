@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Chatのプライバシーを確認", "description": "プライバシー管理がワークスペースに移行した際に、アカウントの設定が削除されました。続行する前に現在の設定を確認してください。",
+		"paidTraining": "学習に利用する可能性がある有料プロバイダー", "freeTraining": "学習に利用する可能性がある無料プロバイダー", "publication": "プロンプトを公開するプロバイダー", "providerLogging": "プロンプトを記録するプロバイダー", "zdr": "データを保持しない", "workspaceLogging": "ワークスペースのプロンプト記録", "providers": "プロバイダーの制限", "models": "モデルの制限",
+		"allowed": "許可", "blocked": "ブロック", "required": "必須", "notRequired": "必須ではない", "disabled": "無効", "enabledDays": "有効（{days}日）", "none": "なし",
+		"administrators": "ワークスペース管理者は設定を変更できます。キーやメンバーに追加のルールが適用される場合があります。", "accept": "同意して続行", "settings": "プライバシー設定", "saving": "保存中…", "loading": "設定を読み込み中…", "loadError": "プライバシー設定を読み込めません。ページを再読み込みしてください。", "saveError": "確認を保存できません。もう一度お試しください。"
+	},
 	"developerMenu": {
 		"title": "開発者メニュー",
 		"admin": "管理者",

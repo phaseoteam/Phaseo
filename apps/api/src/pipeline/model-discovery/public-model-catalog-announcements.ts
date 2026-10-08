@@ -483,6 +483,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 
 		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString(), ensureRun);
 		if (claimedModels.length === 0) return summary;
+		let recheckSkipped = 0;
 		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
 			let batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
 			try {
@@ -499,6 +500,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 						.in("model_slug", privateModels.map(model => model.modelSlug)).eq("claim_run_id", args.runId);
 					if (error) throw new Error("Failed to release private model announcement claims");
 					summary.skipped += privateModels.length;
+					recheckSkipped += privateModels.length;
 				}
 				batch = batch.filter((_, position) => visibility[position]);
 				if (batch.length === 0) continue;
@@ -537,7 +539,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 			}
 		}
 
-		summary.pending = Math.max(0, pendingModels.length - summary.notified);
+		summary.pending = Math.max(0, pendingModels.length - summary.notified - recheckSkipped);
 		return summary;
 	} catch (error) {
 		summary.error = error instanceof Error ? error.message : String(error);

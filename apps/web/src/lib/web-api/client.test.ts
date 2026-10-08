@@ -11,6 +11,16 @@ import type { AddressInfo } from "node:net";
 jest.mock("@/lib/fetchers/internal/accountAuthClient", () => ({ getBrowserAccessToken: async () => "session-token" }));
 
 describe("Cloudflare web API client", () => {
+	it.each(["/experiments/council", "/fr-FR/experiments/council"])("opens the privacy review from %s when a chat-backed request needs confirmation", async pathname => {
+		const assign = jest.fn();
+		Object.defineProperty(globalThis, "window", { configurable: true, value: { location: { pathname, assign } } });
+		jest.spyOn(global, "fetch").mockResolvedValue(Response.json({ error: "chat_privacy_review_required" }, { status: 403 }));
+		try {
+			const response = await fetchChatWebApi("/api/chat/text");
+			expect(response.status).toBe(403);
+			expect(assign).toHaveBeenCalledWith(pathname.startsWith("/fr-FR") ? "/fr-FR/chat" : "/chat");
+		} finally { Reflect.deleteProperty(globalThis, "window"); }
+	});
 	it("preserves catalog field validation issues",async()=>{
 		const issues=[{path:"data[0].pricing[0].meter_key",message:"Unknown pricing meter: test."}];
 		const mocked=jest.spyOn(global,"fetch").mockResolvedValue(Response.json({error:"catalog_invalid",issues},{status:422}));

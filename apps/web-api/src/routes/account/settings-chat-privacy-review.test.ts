@@ -1,15 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CHAT_PRIVACY_REVIEW_VERSION } from "@/chat/privacyReview";
-const mocks = vi.hoisted(() => ({ context: vi.fn(), save: vi.fn() }));
+const mocks = vi.hoisted(() => ({ context: vi.fn(), save: vi.fn(), workspace: vi.fn() }));
 vi.mock("./context", () => ({ requireAccountWorkspace: mocks.context }));
+vi.mock("@/chat/proxy", () => ({ resolveChatWorkspace: mocks.workspace }));
 import { accountChatPrivacyReviewRouter } from "./settings-chat-privacy-review";
 
 describe("Chat privacy confirmation", () => {
 	beforeEach(() => {
+		mocks.workspace.mockReset().mockResolvedValue({ workspaceId: "workspace1" });
 		mocks.save.mockReset().mockResolvedValue({ error: null });
 		mocks.context.mockReset().mockResolvedValue({ workspaceId: "workspace1", user: {
 			id: "user1", appMetadata: { other: true, chat_privacy_reviews: { workspace2: "old" } },
 		}, client: { auth: { admin: { updateUserById: mocks.save } } } });
+	});
+	it("loads the proxy-resolved workspace rather than a stale or foreign requested workspace", async () => {
+		const query: any = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { privacy_zdr_only: true }, error: null }) };
+		mocks.context.mockResolvedValue({ workspaceId: "workspace1", workspaceName: "Workspace", user: { appMetadata: {} }, client: { from: () => query } });
+		const response = await accountChatPrivacyReviewRouter.request("https://example.com/privacy/review?workspaceId=foreign", {}, {} as any);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ workspaceId: "workspace1", reviewed: false });
+		expect(mocks.context).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "workspace1" }));
 	});
 	function confirm(body: unknown) {
 		return accountChatPrivacyReviewRouter.request("https://example.com/privacy/review", {

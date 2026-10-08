@@ -99,7 +99,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 		supabase.client.rpc.mockImplementation(async name => ({ data: name === "catalog_model_is_public" ? false : [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] as any, error: null }));
 		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
-		expect(await runPublicModelAnnouncementCheck({ runId: "private-run", notify: true })).toMatchObject({ notified: 0, error: null });
+		expect(await runPublicModelAnnouncementCheck({ runId: "private-run", notify: true })).toMatchObject({ notified: 0, pending: 0, skipped: 1, error: null });
 		expect(supabase.client.rpc).toHaveBeenCalledWith("catalog_model_is_public", { p_model_slug: model.model_slug });
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "skipped", claim_run_id: null });

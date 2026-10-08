@@ -4,17 +4,20 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { CHAT_PRIVACY_REVIEW_VERSION, hasReviewedChatPrivacy } from "@/chat/privacyReview";
 import { requireAccountWorkspace } from "./context";
+import { resolveChatWorkspace } from "@/chat/proxy";
 
 export const accountChatPrivacyReviewRouter = new Hono<{ Bindings: Env }>();
 
 accountChatPrivacyReviewRouter.get("/privacy/review", async (c) => {
-	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.query("workspaceId") });
+	const workspace = await resolveChatWorkspace(c.req.raw, c.env);
+	if ("status" in workspace) return c.json({ error: workspace.code }, workspace.status as 401 | 403 | 503, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: workspace.workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("workspace_settings")
 		.select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,model_restriction_model_ids,io_logging_enabled,io_logging_retention_days")
 		.eq("workspace_id", context.workspaceId).maybeSingle();
 	if (result.error) return c.json({ error: "privacy_settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ version: CHAT_PRIVACY_REVIEW_VERSION, workspaceName: context.workspaceName,
+	return c.json({ version: CHAT_PRIVACY_REVIEW_VERSION, workspaceId: context.workspaceId, workspaceName: context.workspaceName,
 		reviewed: hasReviewedChatPrivacy(context.user.appMetadata, context.workspaceId), policy: result.data ?? {} }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
