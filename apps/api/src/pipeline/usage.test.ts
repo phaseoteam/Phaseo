@@ -1,5 +1,38 @@
 import { describe, expect, it } from "vitest";
-import { shapeUsageForClient, stripUsagePricing } from "./usage";
+import { countRequestMediaInputs, shapeUsageForClient, stripUsagePricing } from "./usage";
+
+describe("request media counting", () => {
+	const chatBody = {
+		messages: [
+			{ role: "user", content: "plain" },
+			{ role: "user", content: [{ type: "image_url" }, { type: "input_audio" }, { type: "input_video" }, { type: "image_url" }, null] },
+		],
+	};
+	const responsesBody = {
+		input: [
+			{ type: "message", content: [{ type: "input_image" }, { type: "input_audio" }] },
+			{ type: "input_image" },
+			{ content: [{ type: "input_video" }] },
+		],
+	};
+
+	it("counts chat and responses inputs (responses message parts are counted per pass, as before)", () => {
+		expect(countRequestMediaInputs("chat.completions", chatBody)).toEqual({ images: 2, audio: 1, video: 1 });
+		expect(countRequestMediaInputs("responses", responsesBody)).toEqual({ images: 3, audio: 2, video: 1 });
+		expect(countRequestMediaInputs("messages", chatBody)).toBeNull();
+	});
+
+	it("shapes identically with precomputed counts and never re-walks the body", () => {
+		for (const [endpoint, body] of [["chat.completions", chatBody], ["responses", responsesBody]] as const) {
+			const usage = { input_tokens: 4, output_tokens: 2, input_audio_count: 7 };
+			const expected = shapeUsageForClient(usage, { endpoint, body });
+			const mediaCounts = countRequestMediaInputs(endpoint, body);
+			const untouchable = new Proxy({}, { get: () => { throw new Error("body walked"); } });
+			expect(shapeUsageForClient(usage, { endpoint, body: untouchable, mediaCounts })).toEqual(expected);
+			expect(expected.input_tokens_details).toMatchObject({ input_audio: 7 });
+		}
+	});
+});
 
 describe("shapeUsageForClient", () => {
 	it("preserves native Decisions cache and reasoning details", () => {

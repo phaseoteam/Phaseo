@@ -11,7 +11,12 @@ import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient, stripUsagePricing } from "../usage";
+import {
+    countRequestMediaInputs,
+    shapeUsageForClient,
+    stripUsagePricing,
+    type RequestMediaCounts,
+} from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
 import {
 	classifyProviderHealthImpact,
@@ -192,11 +197,21 @@ export async function handleStreamResponse(
             _provider_id: result.provider,
         };
     };
-    const shapeStreamUsageForClient = (usage: any) =>
-        shapeUsageForClient(withProviderHint(usage), {
+    // Usage is shaped several times per stream (usage frames, the final
+    // snapshot, finalization and re-pricing); walk the request body for media
+    // inputs once per request instead of on every call.
+    let requestMediaCounts: RequestMediaCounts | null | undefined;
+    const shapeStreamUsageForClient = (usage: any) => {
+        if (!usage || typeof usage !== "object") return usage;
+        if (requestMediaCounts === undefined) {
+            requestMediaCounts = countRequestMediaInputs(ctx.endpoint, ctx.body);
+        }
+        return shapeUsageForClient(withProviderHint(usage), {
             endpoint: ctx.endpoint,
             body: ctx.body,
+            mediaCounts: requestMediaCounts,
         });
+    };
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
