@@ -48,6 +48,7 @@ const labelOverrides: Partial<Record<KnownLogoId, string>> = {
 	continue: "Continue",
 	"deepseek-harness": "DeepSeek Harness",
 	digitalocean: "DigitalOcean",
+	empiriolabs: "EmpirioLabs AI",
 	github: "GitHub",
 	inference: "Inference",
 	kilo: "Kilo Code",
@@ -116,6 +117,7 @@ for (const [key, assets] of manifestEntries) {
 // Provider/catalog IDs are not always identical to logo IDs.
 // Keep common aliases here so callers can pass provider IDs directly.
 normalisedAliasMap.set(normalise("novitaai"), "novita");
+normalisedAliasMap.set(normalise("EmpirioLabs AI"), "empiriolabs");
 normalisedAliasMap.set(normalise("cogito-ai"), "cogito");
 normalisedAliasMap.set(normalise("inference-net"), "inference");
 normalisedAliasMap.set(normalise("io-net"), "ionet");

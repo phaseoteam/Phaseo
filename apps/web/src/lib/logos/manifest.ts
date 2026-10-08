@@ -206,6 +206,9 @@ export const logoManifest = {
 		light: "/logos/eleven-labs_light.svg",
 		dark: "/logos/eleven-labs_dark.svg",
 	},
+	empiriolabs: {
+		color: "/logos/empiriolabs.svg",
+	},
 	essentialai: {
 		color: "/logos/essential-ai.svg",
 	},
