@@ -69,7 +69,8 @@ export type ProviderManagedCatalogModel = {
 };
 
 export type ProviderManagedCatalog = {
-	permissions?: { can_edit_description: boolean };
+	permissions?: { can_edit_description: boolean; can_edit_model_metadata?: boolean };
+	capability_options?: Record<string, string[]>;
 	provider: { provider_slug: string; name: string; status: string };
 	source: { refresh_requested?: boolean; catalog_url: string | null; management_mode: "remote" | "managed"; managed_updated_at: string | null; catalog_version: string; updated_at: string; last_success_at: string | null; last_error: string | null; last_polled_at: string | null };
 	catalog: { schema_version?: "1.1"; data: ProviderManagedCatalogModel[] };

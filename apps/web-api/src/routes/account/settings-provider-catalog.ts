@@ -19,6 +19,9 @@ const EMPTY_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000";
 
 type CatalogAccess = { isAdmin: boolean; workspaceId: string | null; linkStatus: string | null; linkedBy: string | null };
 
+const MODEL_METADATA_FIELDS = ["name", "description", "input_modalities", "output_modalities", "context_length", "max_output_tokens", "available_from", "deprecated_at", "shutdown_at"] as const;
+const MODEL_METADATA_OVERRIDE_FIELDS = new Set(["name", "description", "inputModalities", "outputModalities", "contextLength", "maxOutputTokens", "availableFrom", "deprecatedAt", "shutdownAt"]);
+
 function errorResponse(c: any, error: string, status: 400 | 401 | 403 | 404 | 409 | 413 | 422 | 503) {
 	return c.json({ ok: false, error }, status, PRIVATE_NO_STORE_HEADERS);
 }
@@ -187,8 +190,12 @@ async function readProviderCatalog(client: any, providerSlug: string, canEditDes
 	const managedCatalog = sourceResult.data.managed_catalog && typeof sourceResult.data.managed_catalog === "object" && !Array.isArray(sourceResult.data.managed_catalog)
 		? sourceResult.data.managed_catalog
 		: null;
+	const parameterDefinitions = await client.from("v2_capability_parameters").select("capability_id,parameter_key").order("capability_id").order("parameter_key");
+	const capabilityOptions: Record<string, string[]> = {};
+	for (const row of parameterDefinitions.data ?? []) (capabilityOptions[row.capability_id] ??= []).push(row.parameter_key);
 	return {
-		permissions: { can_edit_description: canEditDescription },
+		permissions: { can_edit_description: canEditDescription, can_edit_model_metadata: canEditDescription },
+		capability_options: capabilityOptions,
 		provider: providerResult.data,
 		source: {
 			catalog_url: sourceResult.data.catalog_url,
@@ -329,7 +336,7 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		}
 
 		const revert = body?.catalog?.revert ?? body?.revert;
-		if (!access.isAdmin && revert?.field === "description") return errorResponse(c, "forbidden", 403);
+		if (!access.isAdmin && MODEL_METADATA_OVERRIDE_FIELDS.has(revert?.field)) return errorResponse(c, "forbidden", 403);
 		let document = body?.catalog ?? body;
 		let changes: Array<{ model_id: string; field: string; value?: unknown; revert?: boolean }> | null = null;
 		if (source.data.management_mode === "remote") {
@@ -353,8 +360,12 @@ accountSettingsProviderCatalogRouter.put("/provider-onboarding/catalog/:provider
 		if (!access.isAdmin) {
 			const current = await readProviderCatalog(client, parsedSlug.data, access.isAdmin);
 			if (!current) return errorResponse(c, "provider_catalog_not_found", 404);
-			const descriptions = new Map<string, string | null>(current.models.map((model: any) => [model.id, model.description ?? null]));
-			if (preview.allModels.some((model) => (model.description ?? null) !== (descriptions.get(model.id) ?? null))) return errorResponse(c, "forbidden", 403);
+			const existingModels = new Map<string, any>(current.models.map((model: any) => [model.id, model]));
+			const submittedModels = normalizedCatalogDocument(preview.allModels).data;
+			if (submittedModels.some((model: any) => {
+				const existing = existingModels.get(model.id) ?? { name: model.id, description: null, input_modalities: ["text"], output_modalities: ["text"], context_length: null, max_output_tokens: null, available_from: null, deprecated_at: null, shutdown_at: null };
+				return MODEL_METADATA_FIELDS.some((field) => JSON.stringify(model[field] ?? null) !== JSON.stringify(existing[field] ?? null));
+			})) return errorResponse(c, "forbidden", 403);
 		}
 		if (changes) {
 			const saved = await client.rpc("save_provider_catalog_overrides", { p_provider_slug: parsedSlug.data, p_actor_id: user.id, p_actor_kind: access.isAdmin ? "phaseo" : "provider", p_expected_version: body.expectedUpdatedAt ?? null, p_changes: changes, p_feed_models: source.data.feed_models ?? (await readProviderCatalog(client, parsedSlug.data, access.isAdmin))?.feed_models });
