@@ -4,7 +4,7 @@
 // How: Wraps streaming responses and finalizes usage.
 
 import { passthroughWithPricing, passthrough } from "./streaming";
-import type { UnifiedStreamEvent } from "./stream-events";
+import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
@@ -171,6 +171,7 @@ export async function handleStreamResponse(
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
+    const resolveStreamedToolCallKey = createToolCallKeyResolver();
     const streamedToolCallNames = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolNames = collectRequestedToolNames(ctx.body);
@@ -211,9 +212,7 @@ export async function handleStreamResponse(
 			streamFailed = true;
 		}
         if (event.type === "delta_tool") {
-            const key =
-                event.toolCallId ??
-                `choice:${event.choiceIndex ?? 0}:tool:${event.toolIndex ?? streamedToolCallKeys.size}`;
+            const key = resolveStreamedToolCallKey(event);
             streamedToolCallKeys.add(key);
             cachedOutputToolCallCount = streamedToolCallKeys.size;
             if (event.toolName) {
