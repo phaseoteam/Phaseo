@@ -141,10 +141,34 @@ async function loadWorkspaceLowBalanceSettings(
     return null;
 }
 
+// Runs after every applied charge. Most workspaces have alerts off, so remember
+// that answer briefly; enabled workspaces always read fresh cooldown state.
+const LOW_BALANCE_DISABLED_CACHE_TTL_MS = 60_000;
+const LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES = 20_000;
+const lowBalanceAlertsDisabledUntil = new Map<string, number>();
+
+export function __resetLowBalanceSettingsCacheForTests(): void {
+    lowBalanceAlertsDisabledUntil.clear();
+}
+
+function rememberLowBalanceAlertsDisabled(workspaceId: string): void {
+    lowBalanceAlertsDisabledUntil.delete(workspaceId);
+    lowBalanceAlertsDisabledUntil.set(workspaceId, Date.now() + LOW_BALANCE_DISABLED_CACHE_TTL_MS);
+    while (lowBalanceAlertsDisabledUntil.size > LOW_BALANCE_DISABLED_CACHE_MAX_ENTRIES) {
+        const oldest = lowBalanceAlertsDisabledUntil.keys().next();
+        if (oldest.done) break;
+        lowBalanceAlertsDisabledUntil.delete(oldest.value);
+    }
+}
+
 async function maybeEnqueueLowBalanceAlert(workspaceId: string): Promise<void> {
+    if ((lowBalanceAlertsDisabledUntil.get(workspaceId) ?? 0) > Date.now()) return;
     const supabase = getSupabaseAdmin();
     const typedSettings = await loadWorkspaceLowBalanceSettings(supabase, workspaceId);
-    if (!typedSettings?.low_balance_email_enabled) return;
+    if (!typedSettings?.low_balance_email_enabled) {
+        if (typedSettings) rememberLowBalanceAlertsDisabled(workspaceId);
+        return;
+    }
 
     const thresholdNanos = toFiniteNumber(typedSettings.low_balance_email_threshold_nanos, 0);
     if (thresholdNanos < 0) return;
