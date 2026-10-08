@@ -2,7 +2,6 @@
 
 export type GatewayBindings = {
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
-    GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
     /** Kill switch for the caches.default layer of the tiered read cache ("false" disables it). */
     GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
     SUPABASE_URL: string;

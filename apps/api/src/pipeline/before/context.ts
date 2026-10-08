@@ -1352,7 +1352,9 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
-        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
+        // Catalogue snapshots are served stale-while-revalidate, so only the next
+        // scheduled boundary (not the snapshot's soft expiry) invalidates them.
+        if (contextBundle?.catalog.boundaryAt != null) parsed.publicCatalogExpiresAt = contextBundle.catalog.boundaryAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.

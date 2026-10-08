@@ -10,10 +10,9 @@ preview_urls = false
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+# Also enables the per-minute catalogue revision publisher; catalogue
+# snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
-# Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
-# Keep this only on the primary scheduler; regional Workers share its KV.
-GATEWAY_PUBLIC_CATALOG_TARGETS = '[{"model":"openai/gpt-5.4-mini","endpoint":"responses"},{"model":"openai/gpt-5.4-mini","endpoint":"text.generate"},{"model":"anthropic/claude-haiku-4.5","endpoint":"messages"},{"model":"anthropic/claude-haiku-4.5","endpoint":"text.generate"}]'
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
