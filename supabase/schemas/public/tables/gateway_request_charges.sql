@@ -11,7 +11,7 @@ CREATE TABLE "public"."gateway_request_charges" (
   CONSTRAINT "gateway_request_charges_cost_nanos_check" CHECK ((cost_nanos > 0)),
   CONSTRAINT "gateway_request_charges_pkey" PRIMARY KEY (workspace_id, request_id),
   CONSTRAINT "gateway_request_charges_status_check" CHECK ((status = ANY (ARRAY['applying'::text, 'applied'::text, 'failed'::text]))),
-  CONSTRAINT "gateway_request_charges_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "gateway_request_charges_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."gateway_request_charges"

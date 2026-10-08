@@ -19,7 +19,7 @@ CREATE TABLE "public"."credit_ledger" (
   "before_reserved_nanos"     bigint,
   "after_reserved_nanos"      bigint,
   CONSTRAINT "credit_ledger_pkey" PRIMARY KEY (id),
-  CONSTRAINT "credit_ledger_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "credit_ledger_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."credit_ledger"

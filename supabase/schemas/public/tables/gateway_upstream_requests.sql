@@ -118,7 +118,7 @@ ALTER TABLE "public"."gateway_upstream_requests"
   ADD CONSTRAINT "gateway_upstream_requests_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."gateway_upstream_requests"
-  ADD CONSTRAINT "gateway_upstream_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+  ADD CONSTRAINT "gateway_upstream_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT;
 
 CREATE INDEX gateway_upstream_requests_app_id_idx ON ONLY public.gateway_upstream_requests USING btree (app_id)
   WHERE (app_id IS NOT NULL);

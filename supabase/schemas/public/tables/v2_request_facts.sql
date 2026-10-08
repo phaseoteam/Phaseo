@@ -91,7 +91,7 @@ CREATE TABLE "public"."v2_request_facts" (
     ((((latency_ms IS NULL) OR (latency_ms >= 0)) AND ((time_to_first_token_ms IS NULL) OR (time_to_first_token_ms >= 0)) AND ((generation_ms IS NULL) OR (generation_ms >= 0)) AND
     ((queue_ms IS NULL) OR (queue_ms >= 0)) AND ((upstream_latency_ms IS NULL) OR (upstream_latency_ms >= 0)))),
   CONSTRAINT "v2_request_facts_tool_count_check" CHECK ((tool_call_count >= 0)),
-  CONSTRAINT "v2_request_facts_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_request_facts_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_request_facts"

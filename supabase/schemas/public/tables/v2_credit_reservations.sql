@@ -23,7 +23,7 @@ CREATE TABLE "public"."v2_credit_reservations" (
   CONSTRAINT "v2_credit_reservations_released_check" CHECK ((released_nanos >= 0)),
   CONSTRAINT "v2_credit_reservations_status_check"
     CHECK ((status = ANY (ARRAY['held'::text, 'partially_captured'::text, 'captured'::text, 'partially_released'::text, 'released'::text, 'expired'::text, 'cancelled'::text]))),
-  CONSTRAINT "v2_credit_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_credit_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_credit_reservations"
