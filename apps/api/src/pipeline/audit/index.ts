@@ -7,7 +7,6 @@ import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled
 import { ensureAppId } from "../after/apps";
 import type { Endpoint, RequestLabel } from "@core/types";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
-import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import {
 	buildGatewayRequestUsageColumns,
 	buildV2RequestUsageMeters,
@@ -544,30 +543,6 @@ async function insertGatewayRequestDetails(row: any) {
     }
 }
 
-async function syncInsertedRequestRollup(
-    insertedRow: { id: string; created_at: string; workspace_id: string } | null | undefined,
-    context: string,
-) {
-    if (!insertedRow?.id || !insertedRow?.created_at || !insertedRow?.workspace_id) {
-        return;
-    }
-    try {
-        await syncWorkspaceUsageRollupForRequest({
-            requestRowId: insertedRow.id,
-            requestCreatedAt: insertedRow.created_at,
-            workspaceId: insertedRow.workspace_id,
-            context,
-        });
-    } catch (error) {
-        console.error("[audit] failed to sync workspace usage rollup", {
-            context,
-            requestRowId: insertedRow.id,
-            workspaceId: insertedRow.workspace_id,
-            error: error instanceof Error ? error.message : String(error),
-        });
-    }
-}
-
 async function insertGatewayRequestDetailsNonBlocking(
     row: Record<string, unknown>,
     context: string,
@@ -856,7 +831,6 @@ export async function auditSuccess(input: {
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
-            await syncInsertedRequestRollup(insertedRow, "audit_success");
             await persistGatewayUpstreamRequests({
                 insertedRow,
                 requestId: args.requestId,
@@ -1193,7 +1167,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
                     );
-                    await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
                     await persistGatewayUpstreamRequests({
                         insertedRow,
                         requestId: args.requestId,
@@ -1374,7 +1347,6 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
                 );
-                await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
                 await persistGatewayUpstreamRequests({
                     insertedRow,
                     requestId: args.requestId,
