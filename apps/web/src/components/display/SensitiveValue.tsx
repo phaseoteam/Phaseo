@@ -21,7 +21,7 @@ type SensitiveValueProps = {
 function maskedContent(children: React.ReactNode, label: string): React.ReactNode {
 	return React.Children.map(children, (child) => {
 		if (typeof child === "string" || typeof child === "number") {
-			return <span data-pii-hidden="true" aria-hidden="true">{obfuscatedPlaceholder(String(child))}</span>;
+			return <span inert data-pii-hidden="true" aria-hidden="true">{obfuscatedPlaceholder(String(child))}</span>;
 		}
 		if (!React.isValidElement(child)) return child;
 		if (child.type === Input || child.type === "input") {
@@ -31,6 +31,7 @@ function maskedContent(children: React.ReactNode, label: string): React.ReactNod
 				defaultValue: undefined,
 				type: "text",
 				readOnly: true,
+				inert: true,
 				"aria-label": label,
 				className: cn(input.props.className, "select-none text-transparent [text-shadow:0_0_4px_var(--muted-foreground)]"),
 			});

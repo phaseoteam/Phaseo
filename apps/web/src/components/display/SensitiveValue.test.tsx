@@ -42,6 +42,7 @@ describe("SensitiveValue", () => {
 		expect(html).toContain(obfuscatedPlaceholder(email));
 		expect(html).toContain('data-pii-hidden="true"');
 		expect(html).toContain('aria-hidden="true"');
+		expect(html).toContain('inert=""');
 		expect(html).toContain("sensitiveValues.reveal");
 	});
 
@@ -59,6 +60,7 @@ describe("SensitiveValue", () => {
 		expect(html).toContain(obfuscatedPlaceholder(email));
 		expect(html).toContain('type="text"');
 		expect(html).toContain("readOnly");
+		expect(html).toContain('inert=""');
 		expect(html).toContain("text-shadow");
 		expect(html).not.toContain("data-pii-hidden");
 	});
@@ -85,6 +87,7 @@ describe("SensitiveValue", () => {
 		expect(html).toContain(email);
 		expect(html).toContain('type="email"');
 		expect(html).not.toContain("readOnly");
+		expect(html).not.toContain('inert=""');
 		expect(html).toContain("sensitiveValues.mask");
 	});
 
