@@ -10,6 +10,7 @@ import type { GatewayBindings } from "@/runtime/env.types";
 import { err } from "@pipeline/before/http";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { isFreePriceCard } from "@pipeline/pricing/free";
+import { readCustomerLimits } from "@core/customer-rate-limit-tiers";
 
 export const DEFAULT_CUSTOMER_LIMITS = { requestsPerMinute: 25, freeRequestsPerDay: 1500 };
 export type CustomerLimits = typeof DEFAULT_CUSTOMER_LIMITS;
@@ -93,8 +94,15 @@ function quotaExceeded(args: { requestId: string; kind: CustomerQuotaKind }, lim
 	return response;
 }
 
-async function customerLimitsFor(_bindings: GatewayBindings, _workspaceId: string): Promise<CustomerLimits> {
-	return { ...DEFAULT_CUSTOMER_LIMITS };
+/**
+ * With CUSTOMER_RATE_LIMIT_LADDER_ENABLED off, every scope keeps the legacy
+ * defaults. When on, the workspace's published trust-ladder tier (or active
+ * override) applies, and an unpublished workspace is treated as `new`.
+ */
+async function customerLimitsFor(bindings: GatewayBindings, workspaceId: string): Promise<CustomerLimits> {
+	if (bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED !== "true") return { ...DEFAULT_CUSTOMER_LIMITS };
+	const { requestsPerMinute, freeRequestsPerDay } = await readCustomerLimits(workspaceId, bindings.CUSTOMER_RATE_LIMIT_LADDER);
+	return { requestsPerMinute, freeRequestsPerDay };
 }
 
 function countInBackground(bindings: GatewayBindings, scopeKey: string, args: CustomerScope & {

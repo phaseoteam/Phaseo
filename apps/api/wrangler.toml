@@ -10,6 +10,10 @@ preview_urls = false
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+# Trust-ladder RPM per workspace (off = 25 RPM for everyone). Enable only after
+# the tier publisher reports a complete backfill.
+CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "false"
+CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "false"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"

@@ -31,6 +31,7 @@ import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry"
 import { publishCatalogueRevision } from "@core/catalogue-revision";
 import { drainWorkspacePublications } from "./workspace-publications";
 import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
+import { publishCustomerRateLimitTiers } from "@core/customer-rate-limit-tiers";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -519,6 +520,19 @@ async function handleAccountDeletionScheduledEvent(env: GatewayBindings): Promis
 	}
 }
 
+// Gated separately from CUSTOMER_RATE_LIMIT_LADDER_ENABLED so the KV backfill
+// can complete (summary.complete) before the gateway starts enforcing tiers.
+async function handleCustomerRateLimitTierScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await publishCustomerRateLimitTiers({ ladderRaw: env.CUSTOMER_RATE_LIMIT_LADDER });
+		console.log("customer_rate_limit_tiers_published", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleGatewayIoRetentionExpiryScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -665,6 +679,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleCustomerRateLimitTierScheduledEvent(env);
+		} catch (error) {
+			console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isModelDiscoveryTick(event)) {

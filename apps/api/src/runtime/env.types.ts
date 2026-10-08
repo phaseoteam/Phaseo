@@ -45,6 +45,10 @@ export type GatewayBindings = {
 	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS_ENABLED?: string;
+	/** JSON trust-ladder tuning; see core/customer-rate-limit-ladder.ts. */
+	CUSTOMER_RATE_LIMIT_LADDER?: string;
+	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
+	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;

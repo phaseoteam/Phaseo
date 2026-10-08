@@ -24,6 +24,10 @@ const drainWorkspacePublicationsMock = vi.fn(async () => ({ claimed: 0, complete
 vi.mock("./workspace-publications", () => ({
 	drainWorkspacePublications: () => drainWorkspacePublicationsMock(),
 }));
+const publishCustomerRateLimitTiersMock = vi.fn();
+vi.mock("@core/customer-rate-limit-tiers", () => ({
+	publishCustomerRateLimitTiers: (...args: unknown[]) => publishCustomerRateLimitTiersMock(...args),
+}));
 vi.mock("@core/catalogue-revision", () => ({
 	publishCatalogueRevision: (...args: unknown[]) => publishCatalogueRevisionMock(...args),
 }));
@@ -117,6 +121,7 @@ function scheduledEventAt(iso: string): ScheduledController {
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
 		publishCatalogueRevisionMock.mockReset().mockResolvedValue({ revision: "1", changed: false });
+		publishCustomerRateLimitTiersMock.mockReset().mockResolvedValue({ workspaces: 0, complete: true });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
@@ -200,6 +205,23 @@ describe("handleScheduledEvent", () => {
 			limit: 250,
 		});
 		expect(runAccountDeletionPurgeJobMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("publishes customer rate-limit tiers on core ticks only when its own switch is on", async () => {
+		const tick = scheduledEventAt("2026-06-10T00:05:00.000Z");
+		await handleScheduledEvent(tick, { ENV: "prod", CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true" } as any);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		const env = { ENV: "prod", CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED: "true", CUSTOMER_RATE_LIMIT_LADDER: "{}" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), env);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		// Runs with the ladder itself still disabled, so the backfill precedes enforcement.
+		await handleScheduledEvent(tick, env);
+		expect(publishCustomerRateLimitTiersMock).toHaveBeenCalledWith({ ladderRaw: "{}" });
+		publishCustomerRateLimitTiersMock.mockRejectedValueOnce(new Error("db down"));
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		await expect(handleScheduledEvent(tick, env)).resolves.toBeUndefined();
+		expect(error).toHaveBeenCalledWith("customer_rate_limit_tiers_scheduled_failed", expect.anything());
+		error.mockRestore();
 	});
 
 	it("does not let staging claim the shared account-deletion queue", async () => {

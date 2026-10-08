@@ -8,6 +8,8 @@ preview_urls = false
 [vars]
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
+# Publishes trust-ladder tiers to KV every 5 minutes (see wrangler.toml).
+CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "false"
 # Also enables the per-minute catalogue revision publisher; catalogue
 # snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"

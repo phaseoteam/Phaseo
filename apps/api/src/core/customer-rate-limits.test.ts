@@ -6,7 +6,9 @@ const mocks = vi.hoisted(() => ({
 	getByName: vi.fn(),
 	background: [] as Promise<unknown>[],
 	release: vi.fn(),
+	readLimits: vi.fn(),
 }));
+vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: mocks.readLimits }));
 vi.mock("@/runtime/env", () => ({
 	getBindingsIfConfigured: () => mocks.bindings,
 	dispatchBackground: (promise: Promise<unknown>) => { mocks.background.push(promise); },
@@ -36,6 +38,7 @@ beforeEach(() => {
 	__resetCustomerQuotaStateForTests();
 	mocks.background.length = 0;
 	mocks.release.mockReset();
+	mocks.readLimits.mockReset().mockResolvedValue({ tier: "trusted", requestsPerMinute: 60, freeRequestsPerDay: 1500 });
 	mocks.admit.mockReset().mockResolvedValue({ allowed: true, limit: 25, remaining: 24, retryAfterSeconds: 0 });
 	mocks.getByName.mockReset().mockReturnValue({ admit: mocks.admit });
 	mocks.bindings = { CUSTOMER_RATE_LIMITS_ENABLED: "true", CUSTOMER_RATE_LIMITS: { getByName: mocks.getByName } };
@@ -58,6 +61,19 @@ describe("customer quota integration", () => {
 		await Promise.resolve();
 		expect(mocks.admit).toHaveBeenCalledWith(customerScopeKey(args), "minute", "server-admission",
 			{ requestsPerMinute: 25, freeRequestsPerDay: 1500 });
+	});
+
+	it("passes the workspace's trust-ladder limits only when the ladder is enabled", async () => {
+		minute();
+		await settle();
+		expect(mocks.readLimits).not.toHaveBeenCalled();
+		expect(mocks.admit.mock.calls[0][3]).toEqual({ requestsPerMinute: 25, freeRequestsPerDay: 1500 });
+		mocks.bindings.CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true";
+		mocks.bindings.CUSTOMER_RATE_LIMIT_LADDER = "{}";
+		minute();
+		await settle();
+		expect(mocks.readLimits).toHaveBeenCalledWith("workspace", "{}");
+		expect(mocks.admit.mock.calls[1][3]).toEqual({ requestsPerMinute: 60, freeRequestsPerDay: 1500 });
 	});
 
 	it("remembers a reported denial until the window frees up, then counts again", async () => {
