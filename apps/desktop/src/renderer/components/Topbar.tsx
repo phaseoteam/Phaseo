@@ -1,35 +1,34 @@
-import { ArrowLeft, ArrowRight, Command, Moon, Plus, Sun } from "lucide-react";
+import { shortcutLabel, shortcutKeys } from "../lib/shortcuts";
+import { PanelRight, MessageSquare, Command, Moon, Plus, Sun } from "lucide-react";
 import type { ProductSurface, ThemePreference } from "../types";
 
 type TopbarProps = {
 	surface: ProductSurface;
 	theme: ThemePreference;
 	onThemeChange: (theme: ThemePreference) => void;
+	onNewTask: () => void;
+	onCommands: () => void;
+	onChats: () => void;
+	onTools: () => void;
 };
 
-export function Topbar({ surface, theme, onThemeChange }: TopbarProps) {
+export function Topbar({ surface, theme, onThemeChange, onNewTask, onCommands, onChats, onTools }: TopbarProps) {
 	return (
 		<header className="topbar">
-			<div className="history-controls">
-				<button type="button" aria-label="Back" disabled>
-					<ArrowLeft size={15} />
-				</button>
-				<button type="button" aria-label="Forward" disabled>
-					<ArrowRight size={15} />
-				</button>
-			</div>
+			<button type="button" className="icon-button" aria-label="Chats" onClick={onChats}><MessageSquare size={16} /></button>
 
 			<div className="topbar-context">
 				<span>Phaseo</span>
 				<span className="breadcrumb-separator">/</span>
-				<strong>{surface === "workspace" ? "Workspace" : "Platform"}</strong>
+				<strong>{surface === "workspace" ? "Chats" : "Platform"}</strong>
 			</div>
 
 			<div className="topbar-actions">
-				<button className="command-button" type="button">
+				{surface === "workspace" && <button type="button" className="command-button" onClick={onTools}><PanelRight size={15} />Tools</button>}
+				<button className="command-button" type="button" aria-keyshortcuts={shortcutKeys("K")} onClick={onCommands}>
 					<Command size={14} />
 					<span>Commands</span>
-					<kbd>⌘K</kbd>
+					<kbd>{shortcutLabel("K")}</kbd>
 				</button>
 				<button
 					className="icon-button"
@@ -39,9 +38,9 @@ export function Topbar({ surface, theme, onThemeChange }: TopbarProps) {
 				>
 					{theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
 				</button>
-				<button className="primary-button compact" type="button">
+				<button className="primary-button compact" type="button" onClick={onNewTask}>
 					<Plus size={15} />
-					{surface === "workspace" ? "New mission" : "New API key"}
+					New chat
 				</button>
 			</div>
 		</header>

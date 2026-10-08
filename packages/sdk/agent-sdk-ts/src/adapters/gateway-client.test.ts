@@ -3,6 +3,12 @@ import { AgentGatewayError } from "../errors";
 import { createGatewayAgentClient } from "./gateway-client";
 
 describe("createGatewayAgentClient", () => {
+	it("maps user text and images to Responses multimodal parts", async () => {
+		const create = vi.fn(async () => ({ id: "owned-image", output: [] }));
+		const client = createGatewayAgentClient({ client: { responses: { create } } as any });
+		await client.generate({ agentId: "images", model: "owned", messages: [{ role: "user", content: [{ type: "text", text: "Describe" }, { type: "image_url", image_url: { url: "data:image/png;base64,YWJj" } }] }], tools: [], context: undefined });
+		expect(create.mock.calls[0][0]).toEqual(expect.objectContaining({ input: [{ type: "message", role: "user", content: [{ type: "input_text", text: "Describe" }, { type: "input_image", image_url: "data:image/png;base64,YWJj" }] }] }));
+	});
 	it("passes current Responses fields through while protecting agent-owned fields", async () => {
 		const create = vi.fn(async () => ({ id: "resp_1", output: [] }));
 		const client = createGatewayAgentClient({

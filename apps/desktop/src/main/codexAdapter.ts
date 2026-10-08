@@ -1,0 +1,155 @@
+import { parsePlanSteps } from "../shared/planSteps";
+import type { ChildProcessWithoutNullStreams } from "node:child_process";
+import type { Account, AgentQuestion, QueuedMessage, Task } from "../shared/workspace";
+import { JsonRpc, JsonRpcResponseError } from "./jsonRpc";
+import { spawnNative } from "./nativeProcess";
+import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
+import type { AttachmentContent } from "./attachments";
+import { attachmentPrompt } from "./attachmentPrompt";
+import { AgentInputRejectedError } from "./agentAdapter";
+import { nativeAccountEnvironment } from "./nativeAccountEnvironment";
+import { readCodexModels } from "./modelCatalog";
+import type { McpConnection } from "../shared/mcp";
+import { codexMcpConfig, waitCodexMcp } from "./codexMcp";
+import { respondMcpElicitation } from "./mcpElicitation";
+import { confirmCodexNativeAction } from "./codexNativeActions";
+import type { NativeAction } from "../shared/nativeActions";
+
+type CodexEvent = { threadId?: string; turnId?: string; itemId?: string; delta?: string; item?: { id: string; type: string; text?: string; command?: string; aggregatedOutput?: string; summary?: string[]; content?: string[]; status?: string; [key: string]: unknown }; explanation?: string; plan?: unknown[]; tokenUsage?: unknown; turn?: { id: string; status: string; error?: { message: string } } };
+export class CodexAdapter implements AgentAdapter {
+	private child?: ChildProcessWithoutNullStreams;
+	private rpc?: JsonRpc;
+	private turnId?: string;
+	private threadId?: string;
+	private rejectTurn?: (error: Error) => void;
+	private canceled = false;
+	private compacting = false;
+	private readonly controller = new AbortController();
+	constructor(private readonly mcp: McpConnection[] = []) {}
+	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
+		this.child = await spawnNative("codex", ["app-server", "--stdio"], cwd, "@openai/codex/bin/codex.js", nativeAccountEnvironment(account));
+		if (this.canceled) { this.child.kill(); throw new Error("Task stopped."); }
+		const rpc = this.rpc = new JsonRpc(this.child.stdout, this.child.stdin);
+		this.compacting = !nativeAction && !attachments.length && text.trim() === "/compact";
+		const compactionItems = new Map<string, "running" | "completed">();
+		let compactionFailure: string | undefined;
+		rpc.onClose = error => this.rejectTurn?.(error);
+		this.child.on("error", error => { rpc.close(error); this.rejectTurn?.(error); });
+		this.child.on("exit", () => { rpc.close(); this.rejectTurn?.(new Error("Codex stopped before completing the turn.")); });
+		// Consume diagnostics without sending credentials or arbitrary stderr to the renderer.
+		this.child.stderr.resume();
+		rpc.onRequest = async (method, params) => {
+			if (method === "mcpServer/elicitation/request") {
+				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string };
+				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
+				const result = task.mode === "chat" ? { action: "decline" as const } : await respondMcpElicitation(request, callbacks, this.controller.signal);
+				return { ...result, content: "content" in result ? result.content : null, _meta: null };
+			}
+			if (method === "item/tool/requestUserInput") {
+				if (!callbacks.onQuestion) throw new Error("User questions are unavailable.");
+				const input = params as { threadId: string; questions: AgentQuestion[] };
+				if (input.threadId !== this.threadId) throw new Error("Question belongs to another task.");
+				const answers = await callbacks.onQuestion(input.questions);
+				return { answers: Object.fromEntries(Object.entries(answers).map(([id, values]) => [id, { answers: values }])) };
+			}
+			if (method === "item/commandExecution/requestApproval" || method === "item/fileChange/requestApproval") {
+				const input = params as { threadId?: string; command?: string; reason?: string };
+				if (input.threadId !== this.threadId) throw new Error("Approval belongs to another task.");
+				return { decision: await callbacks.onApproval(method, input.command ?? input.reason ?? "Allow this agent action?") };
+			}
+			throw new Error(`Unsupported Codex request: ${method}`);
+		};
+		try {
+			await rpc.request("initialize", { clientInfo: { name: "phaseo_desktop", title: "Phaseo", version: "0.1.0" }, capabilities: { experimentalApi: true } });
+			rpc.notify("initialized");
+			let effort = task.reasoningEffort;
+			if (effort !== undefined && !this.compacting) {
+				const models = await readCodexModels(rpc); const model = models.find(value => task.model === "default" ? value.default : value.id === task.model);
+				effort ||= model?.defaultReasoningEffort;
+				if (!effort || !model?.reasoningEfforts?.some(value => value.id === effort)) throw new AgentInputRejectedError("The selected model does not support this reasoning effort. Update the task settings.");
+			}
+			const settings = { cwd, model: task.model === "default" ? null : task.model, approvalPolicy: "untrusted", sandbox: task.mode === "code" ? "workspace-write" : "read-only", ...(this.mcp.length ? { config: codexMcpConfig(this.mcp, task) } : {}) };
+			const sourceId = task.nativeSessionId ?? task.nativeForkFrom;
+			const result = await rpc.request<{ thread: { id: string } }>(task.nativeSessionId ? "thread/resume" : task.nativeForkFrom ? "thread/fork" : "thread/start", { ...settings, ...(sourceId ? { threadId: sourceId } : {}) });
+			this.threadId = result.thread.id; callbacks.onSession(result.thread.id);
+			if (nativeAction) {
+				try {
+					await confirmCodexNativeAction(rpc, cwd, nativeAction);
+					if (await callbacks.onApproval(`Run OpenAI skill ${nativeAction.name}`, nativeAction.arguments) !== "accept") throw new Error("OpenAI skill declined.");
+					this.controller.signal.throwIfAborted();
+					await confirmCodexNativeAction(rpc, cwd, nativeAction);
+					this.controller.signal.throwIfAborted();
+				} catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "OpenAI skill admission failed.", { cause: error }); }
+			}
+			try { await waitCodexMcp(rpc, result.thread.id, this.mcp.filter(connection => task.mode !== "chat" && connection.enabled && !connection.archived && (!connection.projectId || connection.projectId === task.projectId)), this.controller.signal); }
+			catch (error) { throw new AgentInputRejectedError(error instanceof Error ? error.message : "MCP setup failed.", { cause: error }); }
+			await new Promise<void>((resolve, reject) => {
+				this.rejectTurn = reject;
+				let acknowledged = !this.compacting;
+				let completed: CodexEvent["turn"];
+				const finish = () => {
+					if (!acknowledged || !completed) return;
+					this.rejectTurn = undefined; this.turnId = undefined;
+					if (completed.status === "completed") resolve();
+					else { compactionFailure = completed.error?.message ?? `Codex turn ${completed.status}.`; reject(new Error(compactionFailure)); }
+				};
+				rpc.onNotification = (method, raw) => {
+					const event = raw as CodexEvent;
+					if (event.threadId !== this.threadId || completed) return;
+					if (method === "turn/started" && event.turn) {
+						if (this.turnId && event.turn.id !== this.turnId) return;
+						this.turnId = event.turn.id;
+					}
+					if (event.turnId && this.turnId && event.turnId !== this.turnId) return;
+					if ((method === "item/started" || method === "item/completed") && event.item?.type === "contextCompaction") {
+						if (!this.turnId || event.turnId !== this.turnId) return;
+						const id = event.item.id;
+						if (compactionItems.get(id) === "completed" || (method === "item/started" && compactionItems.has(id))) return;
+						const status = method === "item/started" ? "running" : "completed";
+						compactionItems.set(id, status);
+						callbacks.onActivity?.({ id, type: "compaction", title: "Context compaction", text: "", status });
+						return;
+					}
+					if (method === "item/agentMessage/delta" && typeof event.delta === "string") callbacks.onDelta(event.itemId ?? "assistant", event.delta);
+					if ((method === "item/reasoning/summaryTextDelta" || method === "item/reasoning/textDelta") && typeof event.delta === "string") callbacks.onActivity?.({ id: event.itemId ?? "reasoning", type: "reasoning", title: "Reasoning", text: event.delta, append: true });
+					if (method === "turn/plan/updated" && (!event.turnId || !this.turnId || event.turnId === this.turnId)) callbacks.onActivity?.({ id: "plan", type: "plan", title: "Plan", text: `${event.explanation ?? ""}\n${JSON.stringify(event.plan, null, 2)}`, steps: parsePlanSteps(event.plan, "codex"), explanation: typeof event.explanation === "string" ? event.explanation : undefined });
+					if (method === "thread/tokenUsage/updated") callbacks.onActivity?.({ id: "usage", type: "usage", title: "Context usage", text: JSON.stringify(event.tokenUsage, null, 2) });
+					if ((method === "item/started" || method === "item/completed") && event.item && event.item.type !== "agentMessage" && event.item.type !== "userMessage") {
+						const item = event.item;
+						const type = item.type === "reasoning" ? "reasoning" : item.type === "plan" ? "plan" : "tool";
+						callbacks.onActivity?.({ id: item.id, type, title: item.command ?? item.type, text: item.type === "reasoning" ? [...(item.summary ?? []), ...(item.content ?? [])].join("\n") : item.text ?? item.aggregatedOutput ?? JSON.stringify(item, null, 2), status: method === "item/started" ? "running" : item.status === "failed" ? "failed" : "completed" });
+					}
+					if (method === "turn/completed" && event.turn) {
+						if ((this.compacting && !this.turnId) || (this.turnId && event.turn.id !== this.turnId)) return;
+						completed = event.turn; finish();
+					}
+				};
+				if (this.compacting) {
+					void rpc.request("thread/compact/start", { threadId: this.threadId }).then(() => { acknowledged = true; finish(); }, error => reject(error instanceof JsonRpcResponseError ? new AgentInputRejectedError(error.message, { cause: error }) : error));
+					return;
+				}
+				void rpc.request<{ turn: { id: string } }>("turn/start", {
+					threadId: this.threadId,
+					effort: effort ?? null,
+					input: [...(nativeAction ? [{ type: "skill", name: nativeAction.name, path: nativeAction.id }] : []), { type: "text", text: attachmentPrompt(nativeAction ? nativeAction.arguments : text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))],
+				}).then(response => { if (this.rejectTurn) this.turnId = response.turn.id; }, reject);
+			});
+		} finally {
+			this.rejectTurn = undefined; this.turnId = undefined; rpc.close(); this.child.kill();
+			for (const [id, status] of compactionItems) if (status === "running") callbacks.onActivity?.({ id, type: "compaction", title: "Compaction completion unconfirmed", text: compactionFailure ?? "The native stream ended without confirming compaction completion.", status: "failed" });
+		}
+	}
+	async steer(message: QueuedMessage, attachments: AttachmentContent[]) {
+		if (this.compacting) throw new AgentInputRejectedError("Context is compacting. Queue this message instead.");
+		if (this.canceled || !this.rpc || !this.threadId || !this.turnId || !this.rejectTurn) throw new AgentInputRejectedError("Codex is not ready for steering. Queue this message instead.");
+		try {
+			await this.rpc.request("turn/steer", { threadId: this.threadId, expectedTurnId: this.turnId, clientUserMessageId: message.id, input: [{ type: "text", text: attachmentPrompt(message.text, attachments), text_elements: [] }, ...attachments.filter(attachment => attachment.kind === "image").map(attachment => ({ type: "localImage", path: attachment.filePath }))] });
+		} catch (error) { if (error instanceof JsonRpcResponseError) throw new AgentInputRejectedError(error.message, { cause: error }); throw error; }
+	}
+	async cancel() {
+		this.canceled = true; this.controller.abort();
+		try {
+			if (this.rpc && this.threadId && this.turnId) await this.rpc.request("turn/interrupt", { threadId: this.threadId, turnId: this.turnId }, 5000);
+		} finally { this.rejectTurn?.(new Error("Task stopped.")); this.child?.kill(); }
+	}
+}

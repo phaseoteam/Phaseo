@@ -1,0 +1,241 @@
+import type { PullRequestThreadsQuery, PullRequestThreadsPage } from "./pullRequestThreads";
+import { nativeActionText, validateNativeAction, type NativeAction, type NativeActionCatalog } from "./nativeActions";
+import type { PromptCommandCatalog, PromptCommandPreview, PromptCommandRequest } from "./promptCommands";
+import type { McpPromptCatalog, McpPromptPreview, McpPromptRequest } from "./mcpPrompts";
+import type { PullRequestContents, PullRequestContentsQuery } from "./pullRequestContents";
+import type { PullRequestFilesPage, PullRequestFilesQuery } from "./pullRequestFiles";
+import type { ProjectPullRequests, PullRequestDetails } from "./pullRequests";
+import type { AgentForm, FormAnswer } from "./agentForms";
+import type { McpCommand, McpConnection } from "./mcp";
+import type { WorkspacePreferences } from "./preferences";
+import type { InstructionDocument, InstructionEdit } from "./instructions";
+import type { Mission, MissionCommand } from "./missions";
+import type { TaskHistoryPage, TaskHistoryQuery } from "./taskHistory";
+import type { ConversationPage, ConversationPageQuery } from "./conversationPage";
+import type { WorkspaceOverview } from "./workspaceOverview";
+import type { EditorInstallation, ProjectOpenRequest } from "./editors";
+import type { PlanStep } from "./planSteps";
+export const harnesses = ["phaseo", "codex", "claude", "opencode", "pi", "cursor", "grok", "antigravity", "acp"] as const;
+export type Harness = typeof harnesses[number];
+export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string } };
+export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string };
+export type AgentConnection = { id: string; name: string; executable: string; arguments: string[]; archived?: boolean };
+export type AgentStatus = { checkedAt: string; name?: string; version?: string; protocolVersion: number; capabilities: string[]; authMethods: string[] };
+export type Attachment = { id: string; taskId: string; name: string; kind: "text" | "image"; mimeType: string; size: number; pages?: number };
+export type Message = { nativeAction?: NativeAction; id: string; role: "user" | "assistant" | "system" | "tool"; text: string; attachments?: Attachment[]; delivery?: "steer"; createdAt: string };
+export type QueuedMessage = { nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
+export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
+export type AgentActivity = { id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number } };
+export type AgentQuestion = { id: string; header: string; question: string; isOther?: boolean; isSecret?: boolean; multiSelect?: boolean; options?: { label: string; description?: string; preview?: string }[] | null };
+export type Task = {
+	conversationCounts?: { messages: number; activities: number };
+	revision?: number;
+	id: string; projectId?: string; title: string; harness: Harness; accountId?: string;
+	agentId?: string;
+	reasoningEffort?: string;
+	nativeModels?: ModelOption[];
+	nativeModes?: ModelOption[];
+	nativeMode?: string;
+	authTerminalId?: string;
+	authInputId?: string;
+	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
+	archived: boolean; messages: Message[]; queue: QueuedMessage[]; nativeSessionId?: string;
+	parentId?: string; nativeForkFrom?: string; createdAt: string; updatedAt: string; error?: string;
+	handoffFrom?: Harness;
+	approvals?: { id: string; method: string; description: string }[];
+	questions?: { id: string; questions: AgentQuestion[] }[];
+	forms?: { id: string; form: AgentForm }[];
+	steering?: SteeringMessage[];
+	activities?: AgentActivity[];
+	inboxReadAt?: string;
+	missionId?: string;
+};
+export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
+export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
+export type ModelOption = { id: string; name: string; description?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string };
+export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
+export type AccountStatus = { checkedAt: string; authenticated: boolean | null; method?: string; identity?: string; plan?: string; ordinaryUsageAllowed?: boolean | null; usage?: { id: string; name: string; primary: UsageWindow | null; secondary: UsageWindow | null; spendControlReached: boolean | null }[]; usageError?: string };
+export type ProjectFile = { name: string; path: string; directory: boolean };
+export type GitFile = { path: string; oldPath?: string; indexStatus: string; worktreeStatus: string };
+export type GitReview = { status: string; files: GitFile[]; diff: string; stagedDiff: string; diffHash: string; stagedDiffHash: string; branch: string };
+export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: string };
+export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
+export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
+export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string };
+export type TerminalSession = { id: string; projectId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
+export type TerminalCommand = { type: "open"; projectId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
+export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
+export type WorkspaceCommand =
+	| { type: "inbox-read"; id: string; revision: string }
+	| { type: "add-account"; name: string; harness: "codex" | "claude" | "phaseo" | "cursor" | "grok"; kind: "native" | "api"; endpoint?: string; apiKey?: string }
+	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
+	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
+	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
+	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; reasoningEffort?: string }
+	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; model?: string; mode?: Task["mode"]; reasoningEffort?: string; nativeMode?: string }
+	| { type: "send"; id: string; text: string; attachments?: string[]; nativeAction?: NativeAction }
+	| { type: "steer"; id: string; text: string; attachments?: string[] }
+	| { type: "steer-queue" | "steer-discard"; id: string; messageId: string }
+	| { type: "cancel"; id: string }
+	| { type: "resume"; id: string }
+	| { type: "fork"; id: string }
+	| { type: "approval"; id: string; approvalId: string; decision: "accept" | "decline" }
+	| { type: "answer"; id: string; requestId: string; answers: Record<string, string[]> }
+	| { type: "form-answer"; id: string; requestId: string; answer: FormAnswer | null }
+	| { type: "queue-remove"; id: string; messageId: string }
+	| { type: "queue-edit"; id: string; messageId: string; text: string }
+	| { type: "queue-move"; id: string; messageId: string; direction: "up" | "down" };
+export type WorkspaceApi = {
+	nativeActions: (taskId: string) => Promise<NativeActionCatalog>;
+	promptCommands: (projectId: string | undefined, request: PromptCommandRequest) => Promise<PromptCommandCatalog | PromptCommandPreview>;
+	mcpPrompts: (taskId: string, request: McpPromptRequest) => Promise<McpPromptCatalog | McpPromptPreview>;
+	mcpPromptAttachments: (taskId: string, messages: McpPromptPreview["messages"]) => Promise<{ text: string; attachments: Attachment[] }>;
+	overview: () => Promise<WorkspaceOverview>;
+	onOverviewChange: (listener: (workspace: WorkspaceOverview) => void) => () => void;
+	task: (id: string) => Promise<Task>;
+	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
+	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
+	missions: () => Promise<Mission[]>;
+	mission: (command: MissionCommand) => Promise<Mission[]>;
+	onMissionsChange: (listener: (missions: Mission[]) => void) => () => void;
+	preferences: () => Promise<{ preferences: WorkspacePreferences; notificationsSupported: boolean }>;
+	savePreferences: (preferences: WorkspacePreferences) => Promise<WorkspacePreferences>;
+	globalInstructions: () => Promise<InstructionDocument>;
+	saveGlobalInstructions: (edit: InstructionEdit) => Promise<InstructionDocument>;
+	onOpenTask: (listener: (taskId?: string) => void) => () => void;
+	get: () => Promise<Workspace>;
+	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
+	chooseProject: () => Promise<WorkspaceOverview>;
+	createWorktree: (projectId: string, branch: string, base: string) => Promise<{ workspace: WorkspaceOverview; projectId: string }>;
+	removeWorktree: (projectId: string) => Promise<WorkspaceOverview>;
+	chooseAttachments: (taskId: string) => Promise<{ attachments: Attachment[]; errors: string[] }>;
+	exportTask: (taskId: string, format: "markdown" | "json") => Promise<boolean>;
+	importTask: (configuration: Extract<WorkspaceCommand, { type: "create-task" }>) => Promise<{ workspace: WorkspaceOverview; taskId: string } | undefined>;
+	attachment: (taskId: string, id: string) => Promise<{ attachment: Attachment; text?: string; dataUrl?: string }>;
+	installations: () => Promise<HarnessInstallation[]>;
+	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
+	cancelHarnessUpdate: () => Promise<void>;
+	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
+	checkAgent: (agentId: string) => Promise<AgentStatus>;
+	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
+	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
+	openLink: (url: string) => Promise<void>;
+	terminals: () => Promise<TerminalSession[]>;
+	terminal: (command: TerminalCommand) => Promise<TerminalSession[]>;
+	onTerminalEvent: (listener: (event: TerminalEvent) => void) => () => void;
+	signIn: (accountId: string) => Promise<WorkspaceOverview>;
+	accountStatus: (harness: "codex" | "claude" | "cursor" | "grok", accountId?: string) => Promise<AccountStatus>;
+	cancelSignIn: (accountId: string) => Promise<void>;
+	listFiles: (projectId: string, directory: string) => Promise<ProjectFile[]>;
+	editors: () => Promise<EditorInstallation[]>;
+	openProject: (projectId: string, request: ProjectOpenRequest) => Promise<void>;
+	readFile: (projectId: string, filename: string) => Promise<string>;
+	readDocument: (projectId: string, filename: string) => Promise<{ text: string; hash: string }>;
+	writeDocument: (projectId: string, filename: string, text: string, expectedHash: string) => Promise<{ hash: string }>;
+	gitReview: (projectId: string) => Promise<GitReview>;
+	pullRequestContents: (projectId: string, query: PullRequestContentsQuery) => Promise<PullRequestContents>;
+	pullRequestFiles: (projectId: string, query: PullRequestFilesQuery) => Promise<PullRequestFilesPage>;
+	pullRequestThreads: (projectId: string, query: PullRequestThreadsQuery) => Promise<PullRequestThreadsPage>;
+	pullRequest: (projectId: string, number: number) => Promise<PullRequestDetails>;
+	pullRequests: (projectId: string, cursor?: string) => Promise<ProjectPullRequests>;
+	gitHunks: (projectId: string, filename: string, staged: boolean) => Promise<GitHunkReview>;
+	gitDiffContents: (projectId: string, request: GitDiffContentsRequest) => Promise<GitDiffContents>;
+	gitCommand: (projectId: string, command: GitCommand) => Promise<GitReview>;
+	gitBranches: (projectId: string) => Promise<string[]>;
+};
+
+export function emptyWorkspace(): Workspace {
+	return { version: 1, projects: [], accounts: [], agents: [], tasks: [], mcpConnections: [] };
+}
+
+function validateApiEndpoint(endpoint: string) {
+	const url = new URL(endpoint);
+	if (url.search || url.hash) throw new Error("Use an endpoint URL without query parameters or fragments.");
+	if (url.username || url.password || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))) throw new Error("Use HTTPS or a local model endpoint.");
+}
+
+export function validateCommand(value: unknown): WorkspaceCommand {
+	if (!value || typeof value !== "object") throw new Error("Invalid workspace command.");
+	const command = value as Record<string, unknown>;
+	const string = (key: string, required = true, max = 1000) => {
+		const input = command[key];
+		if (!required && input === undefined) return;
+		if (typeof input !== "string" || !input.trim() || input.length > max) throw new Error(`Invalid ${key}.`);
+	};
+	if (command.type === "add-agent") {
+		string("name", true, 100); string("executable");
+		if (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000)) throw new Error("Invalid agent arguments.");
+	} else if (command.type === "add-account") {
+		string("name", true, 100);
+		if (!["codex", "claude", "phaseo", "cursor", "grok"].includes(command.harness as string)) throw new Error("Invalid account harness.");
+		if (command.kind === "api" && command.harness === "phaseo") {
+			string("endpoint"); string("apiKey", true, 10000);
+			validateApiEndpoint(command.endpoint as string);
+		} else if (command.kind === "api" && command.harness === "cursor") { string("apiKey", true, 10000); if (command.endpoint !== undefined) throw new Error("Cursor accounts use the official SDK service."); }
+		else if (command.kind !== "native" || command.harness === "phaseo") throw new Error("Invalid account type.");
+	} else if (command.type === "create-task" || command.type === "handoff") {
+		if (command.type === "handoff") string("id");
+		if (!harnesses.includes(command.harness as Harness)) throw new Error("Unknown harness.");
+		if (!["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
+		string("model"); string("projectId", false); string("accountId", false); string("agentId", false);
+		if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
+	} else {
+		string("id");
+		switch (command.type) {
+			case "update-account":
+				string("name", false, 100); string("endpoint", false); string("apiKey", false, 10000);
+				if (command.endpoint !== undefined) validateApiEndpoint(command.endpoint as string);
+				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
+				break;
+			case "update-agent":
+				string("name", false, 100); string("executable", false);
+				if (command.arguments !== undefined && (!Array.isArray(command.arguments) || command.arguments.length > 100 || command.arguments.some(value => typeof value !== "string" || value.includes("\0") || value.length > 10000))) throw new Error("Invalid agent arguments.");
+				if (command.archived !== undefined && typeof command.archived !== "boolean") throw new Error("Invalid archived state.");
+				break;
+			case "update-task":
+				string("title", false, 200);
+				string("model", false);
+				if (command.nativeMode !== undefined && (typeof command.nativeMode !== "string" || command.nativeMode.length > 1000 || [...command.nativeMode].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid native mode.");
+				if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
+				if (command.mode !== undefined && !["chat", "code", "plan"].includes(command.mode as string)) throw new Error("Invalid task mode.");
+				for (const key of ["pinned", "archived"]) if (command[key] !== undefined && typeof command[key] !== "boolean") throw new Error(`Invalid ${key}.`);
+				break;
+			case "send": case "steer":
+				string("text", true, 100000);
+				if (command.nativeAction !== undefined) { if (command.type !== "send") throw new Error("Native actions cannot steer a turn."); const action = validateNativeAction(command.nativeAction); if (nativeActionText(action) !== command.text) throw new Error("Native action does not match this message."); command.nativeAction = action; }
+				if (command.attachments !== undefined && (!Array.isArray(command.attachments) || command.attachments.length > 10 || command.attachments.some(id => typeof id !== "string" || !/^[a-f0-9-]{36}$/.test(id)) || new Set(command.attachments).size !== command.attachments.length)) throw new Error("Invalid attachments.");
+				break;
+			case "cancel": case "resume": case "fork": break;
+			case "approval":
+				string("approvalId");
+				if (command.decision !== "accept" && command.decision !== "decline") throw new Error("Invalid approval decision.");
+				break;
+			case "form-answer": {
+				string("requestId");
+				if (command.answer === null) break;
+				if (!command.answer || typeof command.answer !== "object" || Array.isArray(command.answer)) throw new Error("Invalid form answer.");
+				const entries = Object.entries(command.answer);
+				if (entries.length > 100 || entries.some(([key, value]) => !key || key.length > 1000 || !(typeof value === "boolean" || (typeof value === "number" && Number.isFinite(value)) || (typeof value === "string" && value.length <= 10000) || (Array.isArray(value) && value.length <= 100 && value.every(item => typeof item === "string" && item.length <= 10000))))) throw new Error("Invalid form answer.");
+				break;
+			}
+			case "answer": {
+				string("requestId");
+				if (!command.answers || typeof command.answers !== "object" || Array.isArray(command.answers)) throw new Error("Invalid answers.");
+				const entries = Object.entries(command.answers);
+				if (!entries.length || entries.length > 100 || entries.some(([key, values]) => !key || !Array.isArray(values) || !values.length || values.length > 100 || values.some(value => typeof value !== "string" || !value.trim() || value.length > 10000))) throw new Error("Invalid answers.");
+				break;
+			}
+			case "inbox-read": string("revision", true, 100); break;
+			case "queue-remove": case "steer-queue": case "steer-discard": string("messageId"); break;
+			case "queue-edit": string("messageId"); string("text", true, 100000); break;
+			case "queue-move":
+				string("messageId");
+				if (command.direction !== "up" && command.direction !== "down") throw new Error("Invalid queue direction.");
+				break;
+			default: throw new Error("Unknown workspace command.");
+		}
+	}
+	return value as WorkspaceCommand;
+}

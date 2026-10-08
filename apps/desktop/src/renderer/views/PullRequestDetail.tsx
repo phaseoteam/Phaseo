@@ -1,0 +1,25 @@
+import { PullRequestThreads } from "./PullRequestThreads";
+import { PullRequestFiles } from "./PullRequestFiles";
+import { useEffect, useRef, useState } from "react";
+import type { PullRequest, PullRequestDetails } from "../../shared/pullRequests";
+import { MessageContent } from "../components/MessageContent";
+import { watchLiveRefresh } from "../lib/liveRefresh";
+export const reviewLabels: Record<PullRequest["review"], string> = { approved: "Approved", "changes-requested": "Changes requested", required: "Review required", none: "No review decision" };
+export const checkLabels: Record<PullRequest["checks"], string> = { passing: "Checks passing", pending: "Checks pending", failed: "Checks failed", none: "No checks", unknown: "Checks unavailable" };
+export function PullRequestDetail({ projectId, number, onBack, onOpen, opening }: { projectId: string; number: number; onBack: () => void; onOpen: (request: PullRequest) => void; opening: boolean }) {
+ const api = window.phaseoDesktop?.workspace;
+ const [value, setValue] = useState<PullRequestDetails>();
+ const [loading, setLoading] = useState(true), [error, setError] = useState(""), [attempt, setAttempt] = useState(0);
+ const pending = useRef(true);
+ const [tab,setTab]=useState<"description"|"files"|"threads">("description");
+ useEffect(() => {
+  let active = true; pending.current = true; setLoading(true); setError("");
+  if (!api) { pending.current = false; setLoading(false); setError("Open the desktop application to load this pull request."); return; }
+  void api.pullRequest(projectId,number).then(result => { if(active) setValue(result); },reason => { if(active) setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }).finally(() => { if(active) { pending.current = false; setLoading(false); } });
+  return () => { active = false; };
+ },[api,projectId,number,attempt]);
+ const interval = !value || ["pending","none","unknown"].includes(value.checks) ? 45000 : 60000;
+ useEffect(() => { if(!api || !value || error || tab !== "description") return; return watchLiveRefresh(() => { if(pending.current || opening) return false; pending.current = true; setLoading(true); setAttempt(current => current + 1); return true; },interval); },[api,projectId,number,Boolean(value),error,interval,opening,tab]);
+ function refresh() { if(pending.current) return; pending.current = true; setLoading(true); setAttempt(current => current + 1); }
+ return <section className="proposal-detail" aria-label="Pull-request details" aria-busy={loading}><div className="proposal-detail-actions"><button type="button" onClick={onBack}>Back to pull requests</button><button type="button" disabled={loading || !api} onClick={refresh}>{loading ? "Loading…" : error ? "Retry" : "Refresh details"}</button>{value && <button type="button" disabled={opening} onClick={() => onOpen(value)}>{opening ? "Opening…" : "Open on GitHub"}</button>}</div>{loading && <p role="status">Loading pull-request details…</p>}{error && <p role="alert" className="proposal-error">{error}</p>}{value && <><header><h2>#{value.number} {value.title}</h2><p>{value.repository} · {value.author}</p><div className="proposal-statuses"><span className="status-pill">{value.state === "OPEN" ? value.draft ? "Draft" : "Open" : value.state === "MERGED" ? "Merged" : "Closed"}</span><span>{reviewLabels[value.review]}</span><span>{checkLabels[value.checks]}</span><span>{value.mergeable === "MERGEABLE" ? "No merge conflicts" : value.mergeable === "CONFLICTING" ? "Merge conflicts" : "Conflicts unavailable"}</span></div></header><dl className="proposal-detail-metadata"><div><dt>Branches</dt><dd>{value.head} → {value.base}</dd></div><div><dt>Changes</dt><dd>{value.changedFiles} files · +{value.additions} −{value.deletions}</dd></div><div><dt>Updated</dt><dd>{new Date(value.updatedAt).toLocaleString()}</dd></div><div><dt>Head commit</dt><dd title={value.headOid}>{value.headOid.slice(0,12)}</dd></div></dl><nav className="proposal-detail-actions" aria-label="Pull-request detail tabs"><button type="button" aria-pressed={tab==="description"} onClick={()=>{setTab("description");requestAnimationFrame(()=>document.querySelector(".proposal-detail")?.scrollIntoView({block:"start"}));}}>Description</button><button type="button" aria-pressed={tab==="files"} onClick={()=>{setTab("files");requestAnimationFrame(()=>document.querySelector(".proposal-files")?.scrollIntoView({block:"start"}));}}>Files ({value.changedFiles})</button><button type="button" aria-pressed={tab==="threads"} onClick={()=>setTab("threads")}>Review threads</button></nav>{tab==="threads"?<PullRequestThreads key={`${projectId}:${number}:${value.headOid}:${value.baseOid}`} projectId={projectId} request={value}/>:tab==="files"?<PullRequestFiles key={value.headOid+":"+value.baseOid} projectId={projectId} request={value}/>:<div className="proposal-description">{value.body ? <MessageContent text={value.body} /> : <p>No description.</p>}</div>}</>}</section>;
+}

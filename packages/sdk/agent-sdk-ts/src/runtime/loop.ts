@@ -36,6 +36,7 @@ type RuntimeOptions<TInput, TOutput, TContext> = {
 	rejections?: Array<string | AgentToolDecision>;
 	toolOutputs?: AgentToolOutput[];
 	humanInput?: string;
+	humanMessages?: AgentMessage[];
 };
 
 const EMPTY_USAGE: AgentUsageSummary = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 };
@@ -194,6 +195,7 @@ async function executeOneTool<TContext>(args: {
 	} catch (error) {
 		const message = errorMessage(error);
 		await emit(args.handler, { type: "tool.failed", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.stepIndex, toolCallId: args.call.id, toolName: args.call.name, error: message });
+		if (args.signal?.aborted) throw error;
 		if ((args.tool.onError ?? args.defaultErrorPolicy) === "return-to-model") {
 			if (args.emitItems) await emit(args.handler, { type: "response.item", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), stepIndex: args.stepIndex, item: { type: "error", message, toolCallId: args.call.id, toolName: args.tool.id } });
 			return { message: { role: "tool", name: args.tool.id, toolCallId: args.call.id, content: JSON.stringify({ error: message }), isError: true }, result: { toolCallId: args.call.id, toolName: args.tool.id, error: message }, context: currentContext };
@@ -293,26 +295,76 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 	try {
 		if (resumed) {
 			const previousStatus = run.status;
-			if (run.status === "waiting_for_human" && run.pause?.pendingToolCalls?.length) {
+			let continuationMessages = options.humanMessages !== undefined ? structuredClone(options.humanMessages) : options.humanInput ? [{ role: "user" as const, content: options.humanInput }] : [];
+			if (run.pause?.pendingToolCalls?.length) {
 				const approved = asDecisionMap(options.approveToolCalls ?? options.approvals); const rejected = asDecisionMap(options.rejectToolCalls ?? options.rejections); const outputs = new Map((options.toolOutputs ?? []).map((entry) => [entry.toolCallId, entry.output]));
 				const pending = run.pause.pendingToolCalls;
-				const executions: Array<Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext; call: AgentToolCall; input: unknown }>> = [];
-				for (const entry of pending) {
+				const originalPause = run.pause;
+				continuationMessages = [...(originalPause.continuationMessages ?? []), ...continuationMessages];
+				const originalMessages = [...run.messages];
+				// Persist the serial journal separately so tools and next-turn callbacks
+				// retain their existing view of the live message history.
+				const confirmedMessages: AgentMessage[] = [];
+				const confirmedResults: AgentToolExecutionResult[] = [];
+				const confirmedIds = new Set<string>();
+				const progressPause = () => {
+					const remaining = pending.filter((entry) => !confirmedIds.has(entry.call.id));
+					return remaining.length ? { ...originalPause, pendingToolCalls: remaining, payload: { toolCalls: remaining }, continuationMessages } : null;
+				};
+				const saveProgress = async () => {
+					const pause = progressPause();
+					await persist(options.state, {
+						...run, context: currentContext, status: pause ? "waiting_for_human" : "running", pause,
+						messages: [...originalMessages, ...confirmedMessages, ...(pause ? [] : continuationMessages)],
+					}, steps.map((step) => step.index === run.stepCount - 1 ? { ...step, toolResults: [...(step.toolResults ?? []), ...confirmedResults] } : step),
+					stepResults.map((step) => step.stepIndex === run.stepCount - 1 ? { ...step, toolResults: [...step.toolResults, ...confirmedResults] } : step));
+				};
+				const recordResults = () => {
+					const step = steps.find((item) => item.index === run.stepCount - 1); const result = stepResults.find((item) => item.stepIndex === run.stepCount - 1);
+					if (step) step.toolResults = [...(step.toolResults ?? []), ...confirmedResults];
+					if (result) result.toolResults = [...result.toolResults, ...confirmedResults];
+				};
+				const admitted = pending.map((entry) => {
 					const tool = tools.find((candidate) => candidate.id === entry.call.name);
 					if (!tool) throw new Error(`Tool not found: ${entry.call.name}`);
-					if (rejected.has(entry.call.id)) {
-						const reason = rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human";
-						run.messages.push({ role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: reason }), isError: true });
-						continue;
+					const rejection = rejected.has(entry.call.id) ? rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human" : undefined;
+					if (rejection === undefined) {
+						if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
+						if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
 					}
-					if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
-					if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
-					executions.push(executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming }).then((result) => ({ ...result, call: entry.call, input: entry.call.input })));
+					return { entry, tool, rejection };
+				});
+				let executions;
+				try { executions = await mapConcurrent(admitted, concurrency, async ({ entry, tool, rejection }) => {
+					if (concurrency === 1) {
+						abortIfNeeded(options.signal);
+						if (rejection === undefined) entry.executionStartedAt = nowIso();
+						await saveProgress();
+						abortIfNeeded(options.signal);
+					}
+					const execution = rejection !== undefined
+						? { message: { role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: rejection }), isError: true } as AgentMessage, context: currentContext, nextTurnParams: undefined }
+						: await executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming });
+					if (concurrency === 1) {
+						currentContext = execution.context;
+						confirmedMessages.push(execution.message);
+						confirmedResults.push("result" in execution ? execution.result : { toolCallId: entry.call.id, toolName: tool.id, error: rejection });
+						confirmedIds.add(entry.call.id);
+						await saveProgress();
+					}
+					return { ...execution, rejection, call: entry.call, input: entry.call.input };
+				}); } catch (error) {
+					if (concurrency === 1) { recordResults(); run.messages = [...originalMessages, ...confirmedMessages]; run.pause = progressPause(); if (!run.pause) run.messages.push(...continuationMessages); }
+					throw error;
 				}
-				for (const execution of await Promise.all(executions)) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				if (concurrency === 1) recordResults();
+				try {
+				for (const execution of executions) { run.messages.push(execution.message); if (execution.rejection === undefined) currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				} catch (error) { run.messages = [...originalMessages, ...executions.map((execution) => execution.message), ...continuationMessages]; run.pause = null; throw error; }
 				run.pause = null;
-			} else if (run.status === "waiting_for_human" && !options.humanInput) throw new Error(`Run ${run.id} is waiting for human input`);
-			if (options.humanInput) run.messages.push({ role: "user", content: options.humanInput });
+			} else if (run.status === "waiting_for_human" && !(options.humanMessages !== undefined ? options.humanMessages.length : options.humanInput)) throw new Error(`Run ${run.id} is waiting for human input`);
+			run.messages.push(...continuationMessages);
+			delete run.error; delete run.errorDetails; run.stopReason = null;
 			run.status = "running"; run.updatedAt = nowIso();
 			await emit(options.onEvent, { type: "run.resumed", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, previousStatus });
 		} else run.status = "running";
@@ -372,7 +424,11 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 
 			if (autoCalls.length) {
 				run.status = "waiting_for_tools"; step.status = "executing_tools";
-				const executed = await mapConcurrent(autoCalls, concurrency, async ({ call, tool }) => ({ ...(await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming })), call, input: call.input }));
+				const executed = await mapConcurrent(autoCalls, concurrency, async ({ call, tool }) => {
+					const execution = await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming });
+					if (concurrency === 1) currentContext = execution.context;
+					return { ...execution, call, input: call.input };
+				});
 				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
 				await applyNextTurnParams(nextParams, nextTurn as any, { ...turn, messages: run.messages, context: currentContext });
 			}
@@ -444,7 +500,8 @@ export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefin
 	const run: AgentRunRecord<TInput, TContext, TOutput> = { id: runId, agentId: definition.id, status: "queued", input: options.input, context: options.context, messages: [], pause: null, stopReason: null, usage: { ...EMPTY_USAGE }, createdAt, updatedAt: createdAt, stepCount: 0 };
 	const staticInstructions = typeof definition.instructions === "string" ? definition.instructions : undefined;
 	if (staticInstructions) run.messages.push({ role: "system", content: staticInstructions });
-	run.messages.push({ role: "user", content: toPromptText(options.input) });
+	if (options.messages !== undefined) run.messages.push(...structuredClone(options.messages));
+	else run.messages.push({ role: "user", content: toPromptText(options.input) });
 	const initial = buildResult(run, [], []);
 	await options.state?.save(initial);
 	await emit(options.onEvent, { type: "run.started", runId, agentId: definition.id, timestamp: nowIso(), status: run.status });

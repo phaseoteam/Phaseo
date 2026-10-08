@@ -1,3 +1,4 @@
+import { shortcutLabel } from "../lib/shortcuts";
 import { useEffect, useRef, useState } from "react";
 import {
 	Check,
@@ -47,6 +48,7 @@ function MenuItem({ children, shortcut, disabled, onClick }: {
 
 export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameProps) {
 	const [activeMenu, setActiveMenu] = useState<MenuName | null>(null);
+	const [menuLeft, setMenuLeft] = useState(0);
 	const [aboutOpen, setAboutOpen] = useState(false);
 	const [preferencesOpen, setPreferencesOpen] = useState(false);
 	const [runtime, setRuntime] = useState<DesktopRuntimeInfo>(fallbackRuntime);
@@ -96,7 +98,10 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 	const windowAction = (action: DesktopWindowAction) => void api?.performWindowAction(action);
 	const openExternal = (url: string) => { setActiveMenu(null); void api?.openExternal(url); };
 	const navigate = (destination: "missions" | "projects") => { setActiveMenu(null); onNavigate(destination); };
-	const selectMenu = (menu: MenuName) => setActiveMenu((current) => current === menu ? null : menu);
+	const selectMenu = (menu: MenuName, button: HTMLButtonElement) => {
+		setMenuLeft(button.getBoundingClientRect().left - (rootRef.current?.getBoundingClientRect().left ?? 0));
+		setActiveMenu(current => current === menu ? null : menu);
+	};
 	const checkForUpdates = async () => {
 		setActiveMenu(null);
 		setUpdate({ status: "checking" });
@@ -104,33 +109,33 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 	};
 
 	const menu = activeMenu && (
-		<div className={`desktop-menu desktop-menu-${activeMenu}`} role="menu">
+		<div className="desktop-menu" style={{ left: menuLeft }} role="menu">
 			{activeMenu === "phaseo" && <>
 				<MenuItem onClick={() => { setActiveMenu(null); setAboutOpen(true); }}>About Phaseo</MenuItem>
-				<MenuItem onClick={() => { setActiveMenu(null); setPreferencesOpen(true); }} shortcut="Ctrl+,">Preferences</MenuItem>
+				<MenuItem onClick={() => { setActiveMenu(null); setPreferencesOpen(true); }} shortcut={shortcutLabel(",")}>Preferences</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem onClick={checkForUpdates}>Check for updates…</MenuItem>
 				<div className="desktop-menu-separator" />
-				<MenuItem onClick={() => appAction("quit")} shortcut="Alt+F4">Quit Phaseo</MenuItem>
+				<MenuItem onClick={() => appAction("quit")} shortcut={runtime.platform === "darwin" ? undefined : "Alt+F4"}>Quit Phaseo</MenuItem>
 			</>}
 			{activeMenu === "file" && <>
-				<MenuItem onClick={() => navigate("missions")} shortcut="Ctrl+N">New mission</MenuItem>
-				<MenuItem onClick={() => navigate("projects")} shortcut="Ctrl+Shift+N">New project</MenuItem>
+				<MenuItem onClick={() => navigate("missions")} shortcut={shortcutLabel("N")}>New mission</MenuItem>
+				<MenuItem onClick={() => navigate("projects")} shortcut={shortcutLabel("Shift+N")}>New project</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem disabled>Open repository…</MenuItem>
 			</>}
 			{activeMenu === "edit" && <>
-				<MenuItem onClick={() => appAction("cut")} shortcut="Ctrl+X">Cut</MenuItem>
-				<MenuItem onClick={() => appAction("copy")} shortcut="Ctrl+C">Copy</MenuItem>
-				<MenuItem onClick={() => appAction("paste")} shortcut="Ctrl+V">Paste</MenuItem>
-				<MenuItem onClick={() => appAction("select-all")} shortcut="Ctrl+A">Select all</MenuItem>
+				<MenuItem onClick={() => appAction("cut")} shortcut={shortcutLabel("X")}>Cut</MenuItem>
+				<MenuItem onClick={() => appAction("copy")} shortcut={shortcutLabel("C")}>Copy</MenuItem>
+				<MenuItem onClick={() => appAction("paste")} shortcut={shortcutLabel("V")}>Paste</MenuItem>
+				<MenuItem onClick={() => appAction("select-all")} shortcut={shortcutLabel("A")}>Select all</MenuItem>
 			</>}
 			{activeMenu === "view" && <>
-				<MenuItem onClick={() => appAction("reload")} shortcut="Ctrl+R">Reload</MenuItem>
+				<MenuItem onClick={() => appAction("reload")} shortcut={shortcutLabel("R")}>Reload</MenuItem>
 				<div className="desktop-menu-separator" />
-				<MenuItem onClick={() => appAction("zoom-in")} shortcut="Ctrl++">Zoom in</MenuItem>
-				<MenuItem onClick={() => appAction("zoom-out")} shortcut="Ctrl+-">Zoom out</MenuItem>
-				<MenuItem onClick={() => appAction("zoom-reset")} shortcut="Ctrl+0">Actual size</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-in")} shortcut={shortcutLabel("+")}>Zoom in</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-out")} shortcut={shortcutLabel("-")}>Zoom out</MenuItem>
+				<MenuItem onClick={() => appAction("zoom-reset")} shortcut={shortcutLabel("0")}>Actual size</MenuItem>
 				<div className="desktop-menu-separator" />
 				<MenuItem onClick={() => appAction("toggle-full-screen")} shortcut="F11">Full screen</MenuItem>
 			</>}
@@ -149,7 +154,7 @@ export function DesktopFrame({ theme, onThemeChange, onNavigate }: DesktopFrameP
 				<div className="desktop-frame-brand"><PhaseoMark /><span>Phaseo</span></div>
 				<nav className="desktop-menu-bar" aria-label="Application menu">
 					{(["phaseo", "file", "edit", "view", "help"] as const).map((name) => (
-						<button key={name} type="button" className={activeMenu === name ? "active" : ""} onClick={() => selectMenu(name)}>
+						<button key={name} type="button" aria-haspopup="menu" aria-expanded={activeMenu === name} className={activeMenu === name ? "active" : ""} onClick={event => selectMenu(name, event.currentTarget)}>
 							{name === "phaseo" ? "Phaseo" : name[0].toUpperCase() + name.slice(1)}
 						</button>
 					))}

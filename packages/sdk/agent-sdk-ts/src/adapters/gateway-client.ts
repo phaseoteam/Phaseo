@@ -51,7 +51,7 @@ function toResponsesInput(messages: AgentMessage[]) {
 		const baseMessage = {
 			type: "message",
 			role: message.role,
-			content: coerceTextContent(message.content),
+			content: message.role === "user" && Array.isArray(message.content) ? message.content.map(part => part.type === "text" ? { type: "input_text", text: part.text } : { type: "input_image", image_url: part.image_url.url }) : coerceTextContent(message.content as string),
 		} as Record<string, unknown>;
 
 		if (
