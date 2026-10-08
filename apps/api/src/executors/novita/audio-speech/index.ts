@@ -16,6 +16,7 @@ export const executor: ProviderExecutor = async args => {
 		: ir.instructions !== undefined ? "instructions"
 		: ir.voice !== undefined && typeof ir.voice !== "string" ? "voice"
 		: ir.vendor && Object.values(ir.vendor).some(value => value !== undefined) ? "vendor"
+		: ir.rawRequest?.config && Object.keys(ir.rawRequest.config).length ? "config"
 		: undefined;
 	if (unsupported) return {
 		kind: "completed", localClientError: true,
@@ -29,10 +30,16 @@ export const executor: ProviderExecutor = async args => {
 		...(ir.voice ? { reference_id: ir.voice } : {}),
 		...(ir.speed !== undefined ? { prosody: { speed: ir.speed } } : {}),
 	};
-	const upstream = await fetchUpstream(args, "https://api.novita.ai/v4beta/txt2speech", {
-		method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json", model: "s1" },
-		body: JSON.stringify(body),
-	});
+	let upstream: Response;
+	try {
+		upstream = await fetchUpstream(args, "https://api.novita.ai/v4beta/txt2speech", {
+			method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json", model: "s1" },
+			body: JSON.stringify(body),
+		});
+	} catch {
+		return { kind: "completed", terminal: true, keySource: key.source, byokKeyId: key.byokId,
+			upstream: Response.json({ error: { type: "upstream_error", message: "Novita speech submission outcome is uncertain; do not automatically resubmit." } }, { status: 502 }), bill: { cost_cents: 0, currency: "USD" } };
+	}
 	const bill = { cost_cents: 0, currency: "USD", usage: upstream.ok && upstream.body ? { input_characters: ir.input.length, requests: 1 } : undefined, upstream_id: upstream.headers.get("x-request-id") };
 	const common = { upstream, bill, keySource: key.source, byokKeyId: key.byokId,
 		...(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest ? { mappedRequest: JSON.stringify(body) } : {}),

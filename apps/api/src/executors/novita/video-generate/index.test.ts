@@ -21,6 +21,15 @@ beforeEach(() => {
 	mocks.reserve.mockResolvedValue({ held: true, status: "held", reservationId: "hold", amountNanos: 208000000 });
 });
 describe("Novita native video", () => {
+	it("forwards authentication and reservation denial context", async () => {
+		mocks.fetch.mockResolvedValue(Response.json({ task_id: "native" }));
+		const request = args({ model: "kling-v3.0-std-t2v" });
+		request.apiKeyId = "key-id";
+		request.meta.authMethod = "api_key";
+		request.onReservationDenied = vi.fn();
+		await execute(request);
+		expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ keyId: "key-id", authMethod: "api_key", onReservationDenied: request.onReservationDenied }));
+	});
 	it.each(["kling2.5_turbo_pro", "kling2.1_master"])("submits %s through the unified API without dropping job ownership", async model => {
 		for (const image of [undefined, "https://example.com/start.png"]) {
 			mocks.fetch.mockResolvedValue(Response.json({ task_id: "unified-task" }));

@@ -23,7 +23,7 @@ export const executor: ProviderExecutor = async args => {
 		: size !== "auto" && (!dimensions || Number(dimensions[1]) < 1024 || Number(dimensions[2]) < 1024) ? "size"
 		: ir.quality || ir.style || ir.background || ir.moderation || ir.outputCompression !== undefined || ir.inputFidelity ? "image_controls"
 		: ir.rawRequest?.provider_params && Object.keys(ir.rawRequest.provider_params).length ? "provider_params"
-		: undefined;
+		: ["resolution", "aspect_ratio", "width", "height", "seed", "prompt_optimizer"].find(field => ir.rawRequest?.[field] !== undefined);
 	if (unsupported) return { kind: "completed", localClientError: true,
 		upstream: Response.json({ error: { type: "invalid_request_error", code: "unsupported_parameter", param: unsupported, message: `Novita Ming Image does not support this ${unsupported}.` } }, { status: 400 }),
 		bill: { cost_cents: 0, currency: "USD" },
@@ -31,12 +31,17 @@ export const executor: ProviderExecutor = async args => {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = resolveProviderKey({ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey }, () => bindings.NOVITA_API_KEY);
 	const body = { model, prompt: ir.prompt, size, output_format: format, response_format: responseFormat };
-	const upstream = await fetchUpstream(args, "https://api.novita.ai/openai/v1/images/generations", {
-		method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json" }, body: JSON.stringify(body),
-	});
 	const common = { keySource: key.source, byokKeyId: key.byokId,
 		...(args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest ? { mappedRequest: JSON.stringify(body) } : {}),
 	};
+	let upstream: Response;
+	try {
+		upstream = await fetchUpstream(args, "https://api.novita.ai/openai/v1/images/generations", {
+			method: "POST", headers: { Authorization: `Bearer ${key.key}`, "Content-Type": "application/json" }, body: JSON.stringify(body),
+		});
+	} catch {
+		return { kind: "completed", terminal: true, ...common, upstream: Response.json({ error: { type: "upstream_error", message: "Novita image submission outcome is uncertain; do not automatically resubmit." } }, { status: 502 }), bill: { cost_cents: 0, currency: "USD" } };
+	}
 	if (!upstream.ok) return { kind: "completed", upstream, ...common, bill: { cost_cents: 0, currency: "USD" } };
 	let json: any;
 	try {

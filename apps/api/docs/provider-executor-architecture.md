@@ -139,3 +139,21 @@ Entries can also set `apiVersion`. An entry specifying a different `baseUrl` mus
 OpenAI protocol routes cover chat/Responses, embeddings, image generation/editing, speech, transcription and translation. Claude models use the Foundry Anthropic Messages endpoint. Model-specific availability and pricing still determine catalog activation; a registered endpoint does not imply that every Azure model implements that protocol.
 
 Selecting a resource does not establish data residency by itself. Configure a regional deployment type in Azure when regional processing is required; Global and DataZone deployment types have different processing boundaries.
+
+## Novita media contracts
+
+Novita's dedicated executors implement Kling 3.0 Standard/Pro/4K video, unified
+Kling 2.5 Turbo Pro/2.1 Master video, Fish Audio S1 and MiniMax Speech 2.8 HD/Turbo
+speech, and Ming Image 0.1 Design generation. Catalogue availability is independent
+of executor registration. Only reviewed model IDs and controls are accepted.
+
+Video uses the existing durable job, reservation and reconciliation flow, including
+the caller's authentication context. Ming uses the OpenAI image generations wire
+contract and bounded token-usage responses. MiniMax speech converts bounded
+synchronous hex responses to binary audio and bills the reported character count.
+Uncertain media submissions prevent automatic replay or provider fallback.
+
+Official contracts: [unified video](https://docs.novita.ai/api-reference/reference-unified-video-generation),
+[Ming Image](https://docs.novita.ai/api-reference/model-apis-ming-image-txt2img),
+[Fish speech](https://docs.novita.ai/api-reference/model-apis-fish-audio-text-to-speech),
+and [MiniMax Speech](https://docs.novita.ai/api-reference/model-apis-minimax-speech-2.8-hd).

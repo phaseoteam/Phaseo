@@ -14,6 +14,14 @@ beforeEach(() => {
 	mocks.key.mockReturnValue({ source: "gateway", key: "gateway-key", byokId: null });
 });
 describe("Novita Ming Image", () => {
+	it.each(["resolution", "aspect_ratio", "width", "height", "seed", "prompt_optimizer"])("rejects public %s controls that are not mapped by the IR", async field => {
+		expect((await executor(args({ rawRequest: { [field]: field === "prompt_optimizer" ? false : 1 } }))).upstream.status).toBe(400);
+		expect(mocks.fetch).not.toHaveBeenCalled();
+	});
+	it("prevents replay after an uncertain submission", async () => {
+		mocks.fetch.mockRejectedValue(new Error("connection lost"));
+		expect(await executor(args())).toMatchObject({ terminal: true, upstream: expect.objectContaining({ status: 502 }) });
+	});
 	it.each(["url", "b64_json"])("maps %s output and canonical token meters", async responseFormat => {
 		const image = responseFormat === "url" ? { url: "https://example.com/image.png" } : { b64_json: "aW1hZ2U=" };
 		mocks.fetch.mockResolvedValue(Response.json({ id: "native", created: 123, data: [image], usage: { input_tokens: 12, input_tokens_details: { text_tokens: 12 }, output_tokens: 48, output_tokens_details: { image_tokens: 48 }, total_tokens: 60 } }));

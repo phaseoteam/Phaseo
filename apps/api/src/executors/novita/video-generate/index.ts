@@ -75,6 +75,7 @@ async function submitVideo(
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
 	const key = resolveProviderKey({ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey }, () => bindings.NOVITA_API_KEY);
 	const reservation = await reserveVideoGenerationCredits({ workspaceId: args.workspaceId, videoId: args.requestId,
+		keyId: args.apiKeyId, authMethod: args.meta.authMethod, onReservationDenied: args.onReservationDenied,
 		providerId: args.providerId, model, seconds, pricingCard: args.pricingCard, isByok: key.source === "byok",
 		requestOptions: buildVideoPricingRequestOptions({ size, seconds, audio: generateAudio, aspect_ratio: ratio }) });
 	if (!reservation.held && reservation.status !== "skip_zero_cost") {

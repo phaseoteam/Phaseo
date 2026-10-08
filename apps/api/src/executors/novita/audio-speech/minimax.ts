@@ -22,6 +22,7 @@ export async function executeMiniMaxSpeech(args: ExecutorExecuteArgs, model: str
 	const voice = typeof ir.voice === "string" ? ir.voice.trim() : undefined;
 	if (!MODELS.has(model) || !Object.hasOwn(MIME, format) || !voice || ir.streamFormat === "sse" || ir.instructions !== undefined
 		|| ir.vendor && Object.values(ir.vendor).some(value => value !== undefined)
+		|| ir.rawRequest?.config && Object.keys(ir.rawRequest.config).length
 		|| ir.input.length === 0 || ir.input.length >= 10_000
 		|| ir.speed !== undefined && (!Number.isFinite(ir.speed) || ir.speed < 0.5 || ir.speed > 2)) {
 		return failure(400, "Novita MiniMax Speech requires text under 10,000 characters, a voice ID, mp3/wav/flac/pcm, and speed 0.5–2. SSE, instructions and vendor controls are unsupported.");

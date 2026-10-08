@@ -14,6 +14,14 @@ beforeEach(() => {
 	mocks.key.mockReturnValue({ source: "gateway", key: "gateway-key", byokId: null });
 });
 describe("Novita Fish Audio S1 speech", () => {
+	it("rejects Google configuration retained only in the raw public request", async () => {
+		expect((await executor(args({ rawRequest: { config: { google: { voice: "voice" } } } }))).upstream.status).toBe(400);
+		expect(mocks.fetch).not.toHaveBeenCalled();
+	});
+	it("prevents replay after uncertain speech submission", async () => {
+		mocks.fetch.mockRejectedValue(new Error("connection lost"));
+		expect(await executor(args())).toMatchObject({ terminal: true, upstream: expect.objectContaining({ status: 502 }) });
+	});
 	it("accepts speech decoded by the public API with absent vendor configuration", async () => {
 		mocks.fetch.mockResolvedValue(new Response("audio"));
 		const request = args({ vendor: { elevenlabs: undefined, minimax: undefined } });
