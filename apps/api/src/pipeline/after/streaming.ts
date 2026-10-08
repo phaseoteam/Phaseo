@@ -56,6 +56,26 @@ type PassthroughWithPricingOpts = {
     timingHeader?: string;
 };
 
+/**
+ * Frames whose rewrite (see handleStreamResponse's rewriteFrame) can update
+ * request accounting state: usage pricing, response plugins applied to a
+ * terminal payload, and timing meta attached to terminal/usage frames.
+ */
+function frameMayCarryAccountingState(frame: any): boolean {
+    if (!frame || typeof frame !== "object") return false;
+    return Boolean(
+        frame.usage ||
+        frame.response?.usage ||
+        frame.message?.usage ||
+        frame.object === "response" ||
+        frame.object === "chat.completion" ||
+        frame.response?.object === "response" ||
+        frame.response?.object === "chat.completion" ||
+        frame.type === "message_delta" ||
+        frame.type === "message_stop"
+    );
+}
+
 /** Re-stream SSE while:
  *  - parsing each "data:" block as JSON
  *  - rewriting frames (e.g., inject gateway id/provider/nativeResponseId)
@@ -300,16 +320,35 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         targetProtocol !== detectedProtocol &&
                         events.length > 0;
 
-                    const outboundFrames: Array<{ eventName?: string | null; frame: any }> = shouldReencode
-                        ? events
-                            .map((event) =>
-                                encodeUnifiedStreamEvent(targetProtocol as StreamProtocol, event, {
-                                    requestId: ctx.requestId,
-                                    model: ctx.model,
-                                }),
-                            )
-                            .filter((entry): entry is { eventName?: string | null; frame: Record<string, any> } => Boolean(entry))
-                        : [{ eventName, frame: json }];
+                    // Client gone: the upstream is only drained for billing. Usage,
+                    // terminal state and stream events were extracted above; skip
+                    // re-encoding and rewriting frames that nobody will read, except
+                    // frames whose rewrite has accounting side effects (usage
+                    // pricing, response plugins, timing meta on terminal frames).
+                    const skipOutbound =
+                        downstreamClosed &&
+                        !isFinalSnapshot &&
+                        !usageCandidate &&
+                        !frameMayCarryAccountingState(json) &&
+                        !events.some((event) =>
+                            event.type === "usage" ||
+                            event.type === "stop" ||
+                            event.type === "snapshot" ||
+                            event.type === "error"
+                        );
+
+                    const outboundFrames: Array<{ eventName?: string | null; frame: any }> = skipOutbound
+                        ? []
+                        : shouldReencode
+                            ? events
+                                .map((event) =>
+                                    encodeUnifiedStreamEvent(targetProtocol as StreamProtocol, event, {
+                                        requestId: ctx.requestId,
+                                        model: ctx.model,
+                                    }),
+                                )
+                                .filter((entry): entry is { eventName?: string | null; frame: Record<string, any> } => Boolean(entry))
+                            : [{ eventName, frame: json }];
 
                     let finalUsageAfterWrite: any = null;
                     // Capture terminal state before rewriting the frame, but do not
