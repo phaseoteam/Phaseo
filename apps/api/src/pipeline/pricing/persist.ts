@@ -3,7 +3,11 @@ import Stripe from "stripe";
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
 
-import { invalidateGatewayCreditCache } from "../../core/gateway-credit-cache";
+import {
+    creditWriteBackEnabled,
+    invalidateGatewayCreditCache,
+    writeBackGatewayCreditCache,
+} from "../../core/gateway-credit-cache";
 import { getSupabaseAdmin, ensureRuntimeForBackground } from "../../runtime/env";
 import { enqueueLowBalanceEmail } from "../notifications/low-balance";
 import { enqueueAutoTopUpFailedEmail } from "../notifications/billing-alerts";
@@ -16,6 +20,8 @@ export type ChargeRpcResult = {
     applied?: boolean;
     already_applied?: boolean;
     invalidate_credit_cache?: boolean;
+    /** Exact post-charge available balance, present only for newly applied charges. */
+    available_nanos?: number | null;
 };
 
 type WorkspaceLowBalanceSettingsRow = {
@@ -67,6 +73,7 @@ function normalizeChargeRpcResult(data: any): ChargeRpcResult | null {
         applied: (row as any).applied === true,
         already_applied: (row as any).already_applied === true,
         invalidate_credit_cache: typeof row.invalidate_credit_cache === "boolean" ? row.invalidate_credit_cache : undefined,
+        available_nanos: row.available_nanos == null ? null : Number(row.available_nanos),
     };
 }
 
@@ -236,7 +243,16 @@ export async function recordUsageAndCharge(args: {
         }
         if (chargeResult.invalidate_credit_cache === true ||
             (chargeResult.applied && chargeResult.invalidate_credit_cache !== false)) {
-            await invalidateGatewayCreditCache(args.workspaceId);
+            // Replays never carry a balance, so they always invalidate.
+            const availableNanos = chargeResult.applied && !chargeResult.already_applied &&
+                chargeResult.status === "top_up_not_required" && chargeResult.available_nanos != null
+                ? Number(chargeResult.available_nanos)
+                : Number.NaN;
+            if (creditWriteBackEnabled() && Number.isSafeInteger(availableNanos)) {
+                await writeBackGatewayCreditCache(args.workspaceId, availableNanos);
+            } else {
+                await invalidateGatewayCreditCache(args.workspaceId);
+            }
         }
         if (chargeResult.already_applied) return chargeResult;
 

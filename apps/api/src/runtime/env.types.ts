@@ -4,6 +4,8 @@ export type GatewayBindings = {
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
     /** Kill switch for the caches.default layer of the tiered read cache ("false" disables it). */
     GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
+    /** "true" writes the post-charge balance back to the credit cache instead of deleting it. */
+    GATEWAY_CREDIT_WRITEBACK_ENABLED?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
 	GATEWAY_ROUTING_REGION?: "eu" | "us";

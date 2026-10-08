@@ -1,3 +1,5 @@
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.gateway_charge_with_credit_cache (
   p_workspace_id                  uuid,
   p_request_id                    text,
