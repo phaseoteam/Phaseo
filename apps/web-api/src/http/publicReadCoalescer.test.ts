@@ -34,10 +34,12 @@ describe("public read coalescing", () => {
 		const f = fixture();
 		const requests = [f.app.request("/stats?days=1", {}, env),
 			f.app.request("/stats?days=7", {}, env),
-			f.app.request("/stats?days=1", {}, { ...env, ENV: "staging" })];
+			f.app.request("/stats?days=1", {}, { ...env, ENV: "staging" }),
+			f.app.request("/stats?days=1", {}, { ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "https://fallback-a.supabase.co" }),
+			f.app.request("/stats?days=1", {}, { ENV: "production", NEXT_PUBLIC_SUPABASE_URL: "https://fallback-b.supabase.co" })];
 		f.release();
 		await Promise.all(requests);
-		expect(f.calls()).toBe(3);
+		expect(f.calls()).toBe(5);
 	});
 
 	it.each([{ Authorization: "Bearer private" }, { Cookie: "session=private" }])("does not share credentialed reads %j", async (headers) => {

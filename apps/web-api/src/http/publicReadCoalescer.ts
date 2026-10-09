@@ -13,7 +13,8 @@ export function createPublicReadCoalescer(): MiddlewareHandler<{ Bindings: Env }
 		}
 		const url = new URL(c.req.url);
 		url.searchParams.sort();
-		const key = JSON.stringify([c.env.ENV, c.env.SUPABASE_URL, url.toString()]);
+		const databaseUrl = (c.env.SUPABASE_URL ?? c.env.NEXT_PUBLIC_SUPABASE_URL)?.trim();
+		const key = JSON.stringify([c.env.ENV, databaseUrl, url.toString()]);
 		const existing = pending.get(key);
 		if (existing) {
 			c.res = (await existing).clone();
