@@ -18,8 +18,13 @@ import { publicGatewayRouter } from "./gateway";
 import { publicOgRouter } from "./og";
 import { publicGamesRouter } from "./games";
 import { publicToolsRouter } from "./tools";
+import { createPublicReadCoalescer } from "@/http/publicReadCoalescer";
 
 export const publicRouter = new Hono<{ Bindings: Env }>();
+const coalescePublicReads = createPublicReadCoalescer();
+publicRouter.use("/rankings/*", coalescePublicReads);
+publicRouter.use("/models/*", coalescePublicReads);
+publicRouter.use("/landing/*", coalescePublicReads);
 publicRouter.route("/", publicStatusRouter);
 publicRouter.route("/models", publicModelsRouter);
 publicRouter.route("/", publicReferenceDataRouter);

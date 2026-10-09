@@ -9,12 +9,18 @@ CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox (
 declare
   v_limit integer := greatest(1, least(coalesce(p_limit, 250), 2000));
   v_selected integer := 0;
+  v_coalesced integer := 0;
   v_private_grains integer := 0;
   v_public_daily_grains integer := 0;
   v_public_hourly_grains integer := 0;
   v_rollup_id uuid;
   grain record;
 begin
+  -- Different event batches can rebuild the same summary concurrently.
+  if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.process_v2_analytics_outbox', 0)) then
+    return jsonb_build_object('selected', 0, 'coalesced', 0, 'private_grains', 0,
+      'public_daily_grains', 0, 'public_hourly_grains', 0, 'skipped_locked', true);
+  end if;
   create temporary table if not exists pg_temp.v2_rollup_batch (
     request_event_id uuid primary key,
     workspace_id uuid not null,
@@ -65,15 +71,48 @@ begin
   if v_selected = 0 then
     return jsonb_build_object(
       'selected', 0,
+      'coalesced', 0,
       'private_grains', 0,
       'public_daily_grains', 0,
       'public_hourly_grains', 0
     );
   end if;
 
+  -- The full-grain rebuild also includes other ready events in these same
+  -- workspace/hour identities. Lock them before reading sources: corrections
+  -- then re-enqueue after this transaction, even when an existing pending
+  -- outbox upsert would otherwise have been a no-op. Cap all acknowledgments
+  -- at 2,000; do not enlarge the set of summaries that must be rebuilt.
+  create temporary table if not exists pg_temp.v2_rollup_covered (
+    request_event_id uuid primary key
+  ) on commit drop;
+  truncate table pg_temp.v2_rollup_covered;
+  insert into pg_temp.v2_rollup_covered
+  select outbox.request_event_id
+  from public.v2_analytics_outbox outbox
+  join public.v2_request_facts fact on fact.request_event_id = outbox.request_event_id
+  where outbox.status in ('pending', 'failed') and outbox.available_at <= now()
+    and outbox.occurred_at >= (select date_trunc('hour', min(occurred_at)) from pg_temp.v2_rollup_batch)
+    and outbox.occurred_at < (select date_trunc('hour', max(occurred_at)) + interval '1 hour' from pg_temp.v2_rollup_batch)
+    and not exists (select 1 from pg_temp.v2_rollup_batch batch where batch.request_event_id = outbox.request_event_id)
+    and exists (
+      select 1 from pg_temp.v2_rollup_batch batch
+      where batch.model_slug is not null and batch.workspace_id = fact.workspace_id
+        and date_trunc('hour', batch.occurred_at) = date_trunc('hour', fact.occurred_at)
+        and batch.app_id is not distinct from fact.app_id
+        and batch.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
+        and batch.provider_model_id is not distinct from fact.provider_model_id
+        and batch.cloudflare_colo is not distinct from fact.cloudflare_colo
+    )
+  order by outbox.occurred_at, outbox.request_event_id
+  for update of outbox skip locked
+  limit greatest(0, least(2000, v_limit * 8) - v_selected);
+  get diagnostics v_coalesced = row_count;
+
   update public.v2_analytics_outbox outbox
   set status = 'processing', updated_at = now()
-  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
+  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch)
+     or outbox.request_event_id in (select covered.request_event_id from pg_temp.v2_rollup_covered covered);
 
   for grain in
     select distinct
@@ -362,13 +401,17 @@ begin
 
   update public.v2_analytics_outbox outbox
   set status = 'complete', last_error = null, updated_at = now()
-  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
+  where outbox.status = 'processing' and (
+    outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch)
+    or outbox.request_event_id in (select covered.request_event_id from pg_temp.v2_rollup_covered covered)
+  );
 
 
   delete from private.v2_analytics_previous_grains
   where grain_id in (select grain_id from pg_temp.v2_previous_grain_batch);
   return jsonb_build_object(
     'selected', v_selected,
+    'coalesced', v_coalesced,
     'private_grains', v_private_grains,
     'public_daily_grains', v_public_daily_grains,
     'public_hourly_grains', v_public_hourly_grains
@@ -378,7 +421,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Claims a bounded outbox batch with SKIP LOCKED and idempotently rebuilds only affected private daily, public daily, and public hourly grains.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, and public hourly rebuilds. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 
