@@ -25,7 +25,7 @@ insert into v2_pricing_skus(sku_id,provider_model_id,operation,service_tier_slug
 update v2_pricing_skus set status='disabled' where sku_id in (select md5(tier||'disabled')::uuid from unnest(array['standard','batch','flex','priority']) tier);
 insert into v2_pricing_sku_meters(sku_id,meter_key,unit,unit_quantity,price_nanos,billable,meter_order,metadata) select sku_id,'input_text_tokens','token',1000000,2000000000,true,1,'{}' from v2_pricing_skus;
 `);
-await db.exec(await readFile(new URL('../migrations/20261008101500_expose_scheduled_model_pricing.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../migrations/20261009104951_expose_scheduled_model_pricing.sql',import.meta.url),'utf8'));
 const payload=(await db.query("select * from get_v2_model_pricing_without_stealth_redaction('model')")).rows[0].get_v2_model_pricing_without_stealth_redaction;
 assert.equal(payload.pricing_rules.length,8,'current and approved future rules included; expired, disabled, future drafts and future-only tiers excluded');
 for (const tier of ['standard','batch','flex','priority']) {
