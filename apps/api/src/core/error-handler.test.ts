@@ -3,15 +3,47 @@ const emitGatewayRequestEventMock = vi.fn(async () => {});
 vi.mock("@observability/events", () => ({
 	emitGatewayRequestEvent: (...args: unknown[]) => emitGatewayRequestEventMock(...args),
 }));
+const background = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock("@/runtime/env", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/runtime/env")>()),
+	ensureRuntimeForBackground: () => () => {},
+	dispatchBackground: (promise: Promise<unknown>) => { background.push(promise.catch(() => undefined)); },
+}));
 import {
 	classifyErrorOrigin,
 	classifyErrorType,
 	extractUpstreamUnsupportedParamSignal,
-	handleError,
+	handleError as handleErrorWithoutWaiting,
 } from "./error-handler";
+
+// Audits are delivered in the background; wait for them before asserting.
+async function handleError(...args: Parameters<typeof handleErrorWithoutWaiting>) {
+	const response = await handleErrorWithoutWaiting(...args);
+	await Promise.all(background.splice(0));
+	return response;
+}
 
 beforeEach(() => {
 	emitGatewayRequestEventMock.mockReset();
+	background.length = 0;
+});
+
+describe("background failure audits", () => {
+	it("returns the error response without waiting for audit persistence", async () => {
+		let finishAudit!: () => void;
+		const auditDone = new Promise<void>((resolve) => { finishAudit = resolve; });
+		const response = await handleErrorWithoutWaiting({
+			stage: "before",
+			res: new Response(JSON.stringify({ error: "invalid_request" }), { status: 400 }),
+			endpoint: "chat.completions",
+			auditFailure: () => auditDone,
+		});
+
+		expect(response.status).toBe(400);
+		expect(background).toHaveLength(1);
+		finishAudit();
+		await Promise.all(background.splice(0));
+	});
 });
 
 describe("extractUpstreamUnsupportedParamSignal", () => {

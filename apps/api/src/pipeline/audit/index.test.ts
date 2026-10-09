@@ -568,7 +568,7 @@ describe("audit request detail persistence", () => {
 		}));
 	});
 
-	it("keeps rollup sync independent from detail persistence failures", async () => {
+	it("completes the audit without a separate rollup call when detail persistence fails", async () => {
 		getSupabaseAdminMock.mockReturnValue({
 			rpc: vi.fn(async () => ({ data: "v2_request_event_3", error: null })),
 			from: vi.fn((table: string) => {
@@ -626,12 +626,9 @@ describe("audit request detail persistence", () => {
 			}),
 		).resolves.toBeUndefined();
 
-		expect(syncWorkspaceUsageRollupForRequestMock).toHaveBeenCalledWith({
-			requestRowId: "row_3",
-			requestCreatedAt: "2026-05-05T12:10:00.000Z",
-			workspaceId: "ws_3",
-			context: "audit_success",
-		});
+		// The v2 ingest RPC enqueues the usage rollup itself; a separate sync
+		// before the fact row exists would be a no-op round trip.
+		expect(syncWorkspaceUsageRollupForRequestMock).not.toHaveBeenCalled();
 	});
 
 	it("keeps payload details out of Supabase and R2 when I/O logging is not explicitly enabled", async () => {

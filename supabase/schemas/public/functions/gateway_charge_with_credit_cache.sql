@@ -40,16 +40,19 @@ begin
     null; -- Ordinary textual status; no legacy conversion is needed.
   end;
 
-  if (v_result ->> 'applied')::boolean is true
-     and v_result ->> 'status' = 'top_up_not_required'
-     and p_credit_snapshot_balance_nanos >= 10000000000 then
+  if (v_result ->> 'applied')::boolean is true then
+    -- Read under the debit's wallet row lock: this is the exact post-charge
+    -- available balance, which the gateway can write back to its cache instead
+    -- of deleting the entry and re-reading the wallet on the next request.
     select w.balance_nanos::numeric - coalesce(w.reserved_nanos, 0)::numeric
     into v_available from public.wallets w where w.workspace_id = p_workspace_id;
 
     -- Compare to the request's original snapshot, NOT just this request's cost.
     -- This catches cumulative spending by other requests and includes holds.
     -- Numeric arithmetic avoids bigint multiplication overflow at large balances.
-    if v_available >= 10000000000
+    if v_result ->> 'status' = 'top_up_not_required'
+       and p_credit_snapshot_balance_nanos >= 10000000000
+       and v_available >= 10000000000
        and v_available * 10 > p_credit_snapshot_balance_nanos::numeric * 9 then
       v_invalidate := false;
     end if;
@@ -57,7 +60,10 @@ begin
 
   -- Replays invalidate conservatively: an earlier response/invalidation may
   -- have been lost after the debit committed. Never debit a replay twice.
-  return v_result || jsonb_build_object('invalidate_credit_cache', v_invalidate);
+  return v_result || jsonb_build_object(
+    'invalidate_credit_cache', v_invalidate,
+    'available_nanos', case when v_available is null then null else greatest(v_available, 0)::bigint end
+  );
 end;
 $function$;
 

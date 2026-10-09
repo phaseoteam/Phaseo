@@ -1,0 +1,14 @@
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","reasoning_content":"thinking"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","content":"Hello"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","content":" wörld"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"get_weather","arguments":""}}]},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"function":{"arguments":"{\"city\":"}}]},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"function":{"arguments":"\"Paris\"}"}}]},"finish_reason":null}]}
+
+data: {"id":"req_golden","object":"chat.completion","nativeResponseId":"resp_1","created":1700000000,"model":"test-model","provider":"openai","choices":[{"index":0,"message":{"role":"assistant","content":"Hello wörld","tool_calls":[{"id":"call_1","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}],"reasoning_content":"thinking","reasoning_details":[{"id":"req_golden-reasoning-0-1","index":0,"type":"text","text":"thinking"}]},"finish_reason":"tool_calls"}],"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30,"prompt_tokens":10,"completion_tokens":20,"reasoning_tokens":5,"input_details":{"cached_tokens":3},"output_tokens_details":{"reasoning_tokens":5}}}
+

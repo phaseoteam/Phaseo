@@ -1,0 +1,16 @@
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"reasoning_content":"Thinking ✓"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"content":"Hel"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"content":"lo wörld 👋"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_1","type":"function","function":{"name":"get_weather","arguments":""}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"city\":\"Paris\"}"}}]},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls","message":{"reasoning_content":"Thinking ✓","reasoning_details":[{"id":"req_golden-reasoning-0-1","index":0,"type":"text","text":"Thinking ✓"}]}}]}
+
+data: {"id":"chatcmpl-1","object":"chat.completion.chunk","created":1700000000,"model":"gpt-x","choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30,"prompt_tokens_details":{"cached_tokens":4}}}
+

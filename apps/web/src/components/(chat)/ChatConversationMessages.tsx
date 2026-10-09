@@ -17,6 +17,8 @@ import {
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Streamdown } from "streamdown";
+import { ChatAnswerContent } from "./openui/ChatAnswerContent";
+import { OPENUI_FORMAT } from "./openui/openuiHelpers";
 import { Logo } from "@/components/Logo";
 import {
 	Reasoning,
@@ -357,6 +359,9 @@ const getTraceEventsFromMeta = (
 };
 
 type ChatConversationMessagesProps = {
+	onOpenUIStateChange?: (messageId: string, variantId: string, state: Record<string, unknown>) => void;
+	onOpenUISubmit?: (prompt: string) => boolean | Promise<boolean>;
+	interactiveActionsDisabled?: boolean;
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	lastMessageId: string | null;
@@ -390,6 +395,9 @@ type ChatConversationMessagesProps = {
 };
 
 export function ChatConversationMessages({
+	onOpenUIStateChange,
+	onOpenUISubmit,
+	interactiveActionsDisabled = true,
 	activeThread,
 	isSending,
 	lastMessageId,
@@ -787,6 +795,17 @@ export function ChatConversationMessages({
 			const traceEvents = isUser
 				? []
 				: getTraceEventsFromMeta(activeMeta);
+			const isInteractive = !isUser && activeMeta?.response_format === OPENUI_FORMAT;
+			const renderAnswer = (answer: string) => <ChatAnswerContent
+				key={`${activeVariant.id}:answer`}
+				content={answer}
+				interactive={isInteractive}
+				isStreaming={isPendingAssistant}
+				disabled={interactiveActionsDisabled}
+				initialState={activeVariant.openuiState}
+				onStateChange={(state) => onOpenUIStateChange?.(message.id, activeVariant.id, state)}
+				onSubmit={onOpenUISubmit}
+			/>;
 			const toolCallsById = new Map(
 				toolCalls.map((toolCall) => [toolCall.id, toolCall]),
 			);
@@ -1163,6 +1182,7 @@ export function ChatConversationMessages({
 													/>
 												);
 											}
+											if (isInteractive) return null;
 											const eventText =
 												stripAssistantMediaLinks(event.text);
 											if (!eventText.trim()) return null;
@@ -1198,13 +1218,11 @@ export function ChatConversationMessages({
 												</ReasoningContent>
 											</Reasoning>
 										) : null}
-										{!traceHasResponse &&
+										{(!traceHasResponse || isInteractive) &&
 										!showRequestError &&
 										contentWithoutMediaLinks ? (
 											<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0">
-												<Streamdown plugins={chatMarkdownPlugins}>
-													{normalizeChatMarkdown(contentWithoutMediaLinks)}
-												</Streamdown>
+												{renderAnswer(isInteractive ? content : contentWithoutMediaLinks)}
 											</div>
 										) : null}
 									</div>
@@ -1230,9 +1248,7 @@ export function ChatConversationMessages({
 										) : null}
 										{!showRequestError &&
 										contentWithoutMediaLinks ? (
-											<Streamdown plugins={chatMarkdownPlugins}>
-												{normalizeChatMarkdown(contentWithoutMediaLinks)}
-											</Streamdown>
+											renderAnswer(isInteractive ? content : contentWithoutMediaLinks)
 										) : null}
 									</>
 								)}
@@ -1730,6 +1746,9 @@ export function ChatConversationMessages({
 	}, [
 		activeThread,
 		messages,
+		onOpenUIStateChange,
+		onOpenUISubmit,
+		interactiveActionsDisabled,
 		shouldVirtualizeMessages,
 		messageVirtualizer,
 		virtualItems,

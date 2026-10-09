@@ -366,7 +366,7 @@ describe("public model routes", () => {
 		expect(scopedCall).toBeDefined();
 		expect(JSON.parse(String(scopedCall?.[1]?.body))).toMatchObject({
 			p_region: "ca",
-			p_service_tier: "priority",
+			p_service_tier: null,
 		});
 		expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("get_public_models_page_payload"))).toHaveLength(1);
 	});

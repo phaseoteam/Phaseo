@@ -118,6 +118,29 @@ describe("optimistic sticky routing", () => {
         expect(runtime.putJson.mock.calls[1]?.[2]).toBe(24 * 60 * 60);
     });
 
+    it("rewrites an unchanged pin only after a third of its TTL", async () => {
+        vi.useFakeTimers({ now: Date.parse("2026-10-09T00:00:00Z") });
+        try {
+            runtime.putJson.mockResolvedValue(undefined);
+            const write = (providerId: string) => sticky.writeStickyRouting(
+                "workspace", "responses", "openai/gpt-5", { key: "context:same", source: "context_hash" }, providerId, 1_024,
+            );
+
+            await write("openai");
+            await write("openai");
+            expect(runtime.putJson).toHaveBeenCalledTimes(1);
+
+            await write("anthropic");
+            expect(runtime.putJson).toHaveBeenCalledTimes(2);
+
+            vi.setSystemTime(Date.now() + 5 * 60_000);
+            await write("anthropic");
+            expect(runtime.putJson).toHaveBeenCalledTimes(3);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it("creates affinity from either a cache write or a cache read", () => {
         expect(sticky.extractCacheAffinityTokens({ cached_write_text_tokens: 512 })).toBe(512);
         expect(sticky.extractCacheAffinityTokens({

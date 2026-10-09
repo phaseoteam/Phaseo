@@ -8,13 +8,14 @@ import type { Env } from "@/runtime/types";
 
 import { v1Router } from "@/routes/v1";
 import { lazyRouter } from "@/routes/lazy";
-import type { GatewayBindings } from "@/runtime/env";
+import { runWithRequestScope, type GatewayBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
 import { enforceRegionalSurface } from "@/regional-surface";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { CustomerRateLimitDurableObject } from "@core/customer-rate-limit-durable-object";
+export { SpendLimitDurableObject } from "@core/spend-limit-durable-object";
 export { RoutingHealthDurableObject } from "@core/routing-health-durable-object";
 
 const app = new Hono<Env>();
@@ -90,7 +91,9 @@ app.onError((error, c) => {
 });
 
 export default {
-	fetch: app.fetch,
+	fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
+		return runWithRequestScope(ctx?.waitUntil?.bind(ctx), () => app.fetch(request, env, ctx));
+	},
 	async scheduled(event: ScheduledController, env: GatewayBindings) {
 		const { handleScheduledEvent } = await import("@/scheduled");
 		await handleScheduledEvent(event, env);

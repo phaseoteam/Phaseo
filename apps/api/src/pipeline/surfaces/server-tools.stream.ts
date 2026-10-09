@@ -4,6 +4,7 @@ import type { IRChatResponse, IRContentPart, IRToolCall, IRUsage } from "@core/i
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
+import { SseParser } from "@core/sse-parser";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -356,22 +357,6 @@ type AccumulationState = {
 	sawToolDelta: boolean;
 	sawContentPartDelta: boolean;
 };
-
-function parseSseFrame(raw: string): { eventName: string | null; data: string } {
-	let eventName: string | null = null;
-	let data = "";
-	for (const line of raw.split("\n")) {
-		const trimmed = line.replace(/\r$/, "");
-		if (trimmed.startsWith("event:")) {
-			eventName = trimmed.slice(6).trim() || null;
-			continue;
-		}
-		if (trimmed.startsWith("data:")) {
-			data += trimmed.slice(5).trimStart();
-		}
-	}
-	return { eventName, data };
-}
 
 function mapStopReasonToIr(reason: string | null | undefined): IRChatResponse["choices"][number]["finishReason"] {
 	const normalized = String(reason ?? "").trim().toLowerCase();
@@ -851,8 +836,7 @@ export async function consumeTextProtocolStreamToIR(args: {
 	totalMs: number | null;
 }> {
 	const reader = args.stream.getReader();
-	const decoder = new TextDecoder();
-	let buffer = "";
+	const parser = new SseParser();
 	const materializeStartMs = Date.now();
 	let firstFrameMs: number | null = null;
 	let frameCount = 0;
@@ -874,12 +858,9 @@ export async function consumeTextProtocolStreamToIR(args: {
 	while (true) {
 		const { done, value } = await reader.read();
 		if (done) break;
-		buffer += decoder.decode(value, { stream: true });
-		const frames = buffer.split(/\n\n/);
-		buffer = frames.pop() ?? "";
-
-		for (const raw of frames) {
-			const { eventName, data } = parseSseFrame(raw);
+		for (const frame of parser.pushBytes(value)) {
+			const eventName = frame.event || null;
+			const data = frame.data;
 			if (!data) continue;
 			if (data === "[DONE]") {
 				sawDone = true;
@@ -934,9 +915,9 @@ export async function consumeTextProtocolStreamToIR(args: {
 		}
 	}
 
-	const trailing = buffer.trim();
-	if (trailing.length > 0) {
-		const { eventName, data } = parseSseFrame(trailing);
+	for (const frame of parser.flush()) {
+		const eventName = frame.event || null;
+		const data = frame.data;
 		if (data === "[DONE]") {
 			sawDone = true;
 		} else if (data.length > 0) {

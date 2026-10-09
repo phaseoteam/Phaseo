@@ -7,7 +7,7 @@
 // Uses OpenAI Responses API format upstream for consistency
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
-import { fetchUpstream } from "@executors/_shared/timing/upstream";
+import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
 import { irToOpenAIResponses, openAIResponsesToIR } from "./transform";
 import { irToOpenAIChat, openAIChatToIR } from "./transform-chat";
@@ -31,6 +31,7 @@ import {
 	adaptRequestFromUpstreamError,
 	readErrorPayload,
 } from "./retry-policy";
+import { SseParser } from "@core/sse-parser";
 
 const OPENAI_COMPAT_MAX_ADAPTIVE_RETRIES = 1;
 const OPENAI_COMPAT_MAX_TRANSIENT_RETRIES = 1;
@@ -184,6 +185,10 @@ export async function executeOpenAIWire(
 	};
 
 	const maxTransientRetries = policy.transientRetries ?? 0;
+	// With other ranked candidates waiting, a transient failure (and any
+	// Retry-After of up to 10 s) is cheaper to route around than to sit out on
+	// this provider, so return it and let the attempt loop fail over.
+	const failOverInsteadOfRetry = args.hasAlternateCandidates === true;
 
 	const sendPayloadWithRetry = async (
 		targetRoute: "responses" | "chat",
@@ -195,7 +200,11 @@ export async function executeOpenAIWire(
 			try {
 				const result = await sendPayload(targetRoute, payload);
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
-				if (!hasRetryLeft || !shouldRetryOpenAICompatStatus(result.response.status)) {
+				if (
+					!hasRetryLeft ||
+					failOverInsteadOfRetry ||
+					!shouldRetryOpenAICompatStatus(result.response.status)
+				) {
 					return {
 						...result,
 						transientRetryDelayMs: totalRetryDelayMs,
@@ -209,7 +218,9 @@ export async function executeOpenAIWire(
 				delayMs = Math.min(delayMs * 2, OPENAI_COMPAT_TRANSIENT_RETRY_MAX_DELAY_MS);
 			} catch (error) {
 				const hasRetryLeft = transientAttempt < maxTransientRetries;
-				if (!hasRetryLeft) {
+				// A provider that stalled past the headers deadline would likely
+				// stall again; fail over rather than wait a second deadline.
+				if (!hasRetryLeft || (failOverInsteadOfRetry && error instanceof UpstreamHeadersTimeoutError)) {
 					throw error;
 				}
 				totalRetryDelayMs += delayMs;
@@ -398,21 +409,6 @@ function createStreamAdapterState(args: ExecutorExecuteArgs): StreamAdapterState
 	};
 }
 
-function parseSseBlock(block: string): { event: string | null; data: string } {
-	const lines = block.split("\n");
-	let event: string | null = null;
-	let data = "";
-	for (const rawLine of lines) {
-		const line = rawLine.replace(/\r$/, "");
-		if (line.startsWith("event:")) {
-			event = line.slice(6).trim();
-		} else if (line.startsWith("data:")) {
-			data += line.slice(5).trimStart();
-		}
-	}
-	return { event, data };
-}
-
 /**
  * Normalize Responses API SSE event names to unified format
  *
@@ -440,10 +436,22 @@ function normalizeResponsesEvent(event: string | null): string | null {
 	return event;
 }
 
+export type ResolveStreamOptions = {
+	/**
+	 * The body is already a gateway-encoded Responses event stream: every frame
+	 * is `event: <normalized name>\ndata: <JSON.stringify output>\n\n` and no
+	 * frame is a chat chunk (e.g. createAnthropicToResponsesStreamTransformer).
+	 * The chat->responses normaliser is a byte-identical pass for such input, so
+	 * it is skipped instead of parsing and re-stringifying every frame again.
+	 */
+	canonicalResponsesEvents?: boolean;
+};
+
 export function resolveStreamForProtocol(
 	res: Response,
 	args: ExecutorExecuteArgs,
 	route: "responses" | "chat",
+	options?: ResolveStreamOptions,
 ): ReadableStream<Uint8Array> {
 	if (!res.body) {
 		throw new Error("openai_stream_missing_body");
@@ -451,6 +459,7 @@ export function resolveStreamForProtocol(
 
 	const protocol = args.protocol ?? (args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions");
 	const state = createStreamAdapterState(args);
+	const canonicalResponses = route === "responses" && options?.canonicalResponsesEvents === true;
 
 	if (protocol === "openai.chat.completions") {
 		if (route === "responses") {
@@ -460,6 +469,7 @@ export function resolveStreamForProtocol(
 	}
 
 	if (protocol === "openai.responses") {
+		if (canonicalResponses) return res.body;
 		return transformChatStreamToResponses(res.body, args, state);
 	}
 
@@ -467,7 +477,9 @@ export function resolveStreamForProtocol(
 		// Always normalize through chat->responses adapter first.
 		// This keeps /messages streaming compatible whether upstream emits responses events
 		// or chat-completion chunks on a responses route.
-		const responsesStream = transformChatStreamToResponses(res.body, args, state);
+		const responsesStream = canonicalResponses
+			? res.body
+			: transformChatStreamToResponses(res.body, args, state);
 		return transformResponsesStreamToAnthropic(responsesStream, args);
 	}
 
@@ -480,9 +492,8 @@ function transformResponsesStreamToAnthropic(
 	args: ExecutorExecuteArgs,
 ): ReadableStream<Uint8Array> {
 	const reader = stream.getReader();
-	const decoder = new TextDecoder();
+	const parser = new SseParser();
 	const encoder = new TextEncoder();
-	let buf = "";
 
 	const emit = (
 		controller: ReadableStreamDefaultController<Uint8Array>,
@@ -676,12 +687,8 @@ function transformResponsesStreamToAnthropic(
 				while (true) {
 					const { value, done } = await reader.read();
 					if (done) break;
-					buf += decoder.decode(value, { stream: true });
-					const frames = buf.split(/\n\n/);
-					buf = frames.pop() ?? "";
-
-					for (const raw of frames) {
-						const { event, data } = parseSseBlock(raw);
+					for (const frame of parser.pushBytes(value)) {
+						const { event, data } = frame;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -851,8 +858,7 @@ export async function bufferStreamToIR(
 	}
 
 	const reader = res.body.getReader();
-	const decoder = new TextDecoder();
-	let buf = "";
+	const parser = new SseParser();
 	let finalResponse: any = null;
 	let sawDone = false;
 	const applyStreamPayload = (payload: any) => {
@@ -875,21 +881,8 @@ export async function bufferStreamToIR(
 	while (true) {
 		const { value, done } = await reader.read();
 		if (done) break;
-		buf += decoder.decode(value, { stream: true });
-		const frames = buf.split(/\r?\n\r?\n/);
-		buf = frames.pop() ?? "";
-
-		for (const raw of frames) {
-			const lines = raw.split("\n");
-			let data = "";
-
-			for (const line of lines) {
-				const l = line.replace(/\r$/, "");
-				if (l.startsWith("data:")) {
-					data += l.slice(5).trimStart();
-				}
-			}
-
+		for (const frame of parser.pushBytes(value)) {
+			const data = frame.data;
 			if (!data) continue;
 			if (data === "[DONE]") {
 				sawDone = true;
@@ -915,19 +908,11 @@ export async function bufferStreamToIR(
 			}
 		}
 	}
-	buf += decoder.decode();
-	const trailing = buf.trim();
-	if (trailing.length > 0) {
-		const lines = trailing.split("\n");
-		let data = "";
-
-		for (const line of lines) {
-			const trimmed = line.replace(/\r$/, "");
-			if (trimmed.startsWith("data:")) {
-				data += trimmed.slice(5).trimStart();
-			}
-		}
-
+	// Text after the last frame boundary; a provider that ignored stream=true
+	// returns its whole JSON body here.
+	const trailing = parser.pendingText().trim();
+	for (const frame of parser.flush()) {
+		const data = frame.data;
 		if (data === "[DONE]") {
 			sawDone = true;
 		} else if (data) {
@@ -974,7 +959,7 @@ export async function bufferStreamToIR(
 	}
 
 	if (!finalResponse) {
-		console.error(`Missing final response for provider ${args.providerId}, route: ${route}, buf length: ${buf.length}`);
+		console.error(`Missing final response for provider ${args.providerId}, route: ${route}, buf length: ${trailing.length}`);
 		throw new Error("openai_stream_missing_response");
 	}
 

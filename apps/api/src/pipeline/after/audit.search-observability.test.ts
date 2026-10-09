@@ -147,10 +147,8 @@ describe("handleSuccessAudit search observability", () => {
 			managedSearches: [],
 		});
 
-		const extraJson = JSON.parse(call.extraJson);
-		expect(extraJson.transform.search_observability).toEqual(
-			call.detailMetadata.search_observability,
-		);
+		// detailMetadata is the persisted copy; no duplicate serialized payload is built.
+		expect(call).not.toHaveProperty("extraJson");
 	});
 
 	it("persists managed server-search metadata even without native search tools", async () => {

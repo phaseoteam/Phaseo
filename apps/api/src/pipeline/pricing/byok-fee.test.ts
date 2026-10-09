@@ -8,11 +8,14 @@ const selectMock = vi.fn();
 const fromMock = vi.fn();
 const getSupabaseAdminMock = vi.fn();
 
+const background = vi.hoisted(() => [] as Promise<unknown>[]);
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => getSupabaseAdminMock(),
+	dispatchBackground: (promise: Promise<unknown>) => { background.push(promise); },
 }));
 
 import {
+	__resetByokAllowanceCacheForTests,
 	applyByokServiceFee,
 	BYOK_MONTHLY_FREE_REQUESTS,
 	BYOK_SERVICE_FEE_RATE,
@@ -20,6 +23,8 @@ import {
 
 describe("applyByokServiceFee", () => {
 	beforeEach(() => {
+		__resetByokAllowanceCacheForTests();
+		background.length = 0;
 		rpcMock.mockReset();
 		maybeSingleMock.mockReset();
 		eqSecondMock.mockReset();
@@ -37,6 +42,28 @@ describe("applyByokServiceFee", () => {
 			rpc: rpcMock,
 			from: fromMock,
 		});
+	});
+
+	it("charges the fee without waiting for the counter once the free allowance is used up", async () => {
+		const pricedUsage = () => ({
+			input_tokens: 25,
+			pricing: { total_nanos: 2_000_000_000, total_cents: 200, currency: "USD", lines: [{ dimension: "input_text_tokens", line_nanos: 2_000_000_000 }] },
+		});
+		rpcMock.mockResolvedValueOnce({
+			data: [{ month_start: "2026-02-01T00:00:00.000Z", request_count: BYOK_MONTHLY_FREE_REQUESTS + 5 }],
+			error: null,
+		});
+		const first = await applyByokServiceFee({ workspaceId: "team_bg", idempotencyKey: "bill_1", isByok: true, baseCostNanos: 2_000_000_000, pricedUsage: pricedUsage() });
+		expect(rpcMock).toHaveBeenCalledWith("increment_workspace_byok_monthly_request_count_once", expect.objectContaining({ p_idempotency_key: "bill_1" }));
+		expect(first.byokFeeNanos).toBe(Math.round(2_000_000_000 * BYOK_SERVICE_FEE_RATE));
+
+		let finish!: (value: unknown) => void;
+		rpcMock.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+		const second = await applyByokServiceFee({ workspaceId: "team_bg", idempotencyKey: "bill_2", isByok: true, baseCostNanos: 2_000_000_000, pricedUsage: pricedUsage() });
+		expect(second.byokFeeNanos).toBe(Math.round(2_000_000_000 * BYOK_SERVICE_FEE_RATE));
+		expect(background).toHaveLength(1);
+		finish({ data: [{ month_start: "2026-02-01T00:00:00.000Z", request_count: BYOK_MONTHLY_FREE_REQUESTS + 6 }], error: null });
+		await Promise.all(background);
 	});
 
 	it("returns original pricing for non-BYOK requests", async () => {

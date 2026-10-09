@@ -13,6 +13,7 @@ import {
 	isDataContributionAccessEnabled,
 	isRealtimeVoiceAccessEnabled,
 	isAutoRoutingAccessEnabled,
+	__resetFeatureGateCacheForTests,
 } from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
 
@@ -29,6 +30,20 @@ const auth: AuthSuccess = {
 describe("batch API feature gate", () => {
 	beforeEach(() => {
 		vi.unstubAllGlobals();
+		__resetFeatureGateCacheForTests();
+	});
+
+	it("reuses a recent gate evaluation instead of calling Statsig every time", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ value: true }), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const bindings = { STATSIG_SERVER_KEY: "secret-statsig-key" };
+
+		await expect(isBatchApiAccessEnabled(auth, bindings)).resolves.toBe(true);
+		await expect(isBatchApiAccessEnabled(auth, bindings)).resolves.toBe(true);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		await expect(isBatchApiAccessEnabled({ ...auth, apiKeyId: "other_key" }, bindings)).resolves.toBe(true);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("uses the configured Statsig gate name", () => {

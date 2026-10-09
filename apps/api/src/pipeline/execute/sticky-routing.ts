@@ -451,6 +451,15 @@ export async function writeStickyRouting(
     cachedReadTokens: number
 ): Promise<void> {
     const key = buildStickyRoutingKey(workspaceId, endpoint, model, context.key);
+    // Agent sessions hit the same pin every turn. KV writes cost 10x reads and
+    // allow about one write per second per key, so only rewrite when the pin
+    // changes or the stored entry is a third of the way through its TTL.
+    const existing = stickyL1.get(key)?.value;
+    if (existing?.providerId === providerId && existing.source === context.source) {
+        const writtenAt = Date.parse(existing.createdAt);
+        const refreshAfterMs = (stickyTtlSeconds(existing) * 1_000) / 3;
+        if (Number.isFinite(writtenAt) && Date.now() - writtenAt < refreshAfterMs) return;
+    }
     const payload: StickyRoutingEntry = {
         providerId,
         cachedReadTokens,

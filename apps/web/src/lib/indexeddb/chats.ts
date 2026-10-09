@@ -7,6 +7,7 @@ export type ChatMessageVariant = {
     createdAt: string;
     usage?: Record<string, unknown> | null;
     meta?: Record<string, unknown> | null;
+    openuiState?: Record<string, unknown>;
 };
 
 export type ChatMessage = {
@@ -160,6 +161,7 @@ export type ChatModelSettings = {
 };
 
 export type ChatSettings = ChatModelSettings & {
+    interactiveAnswers?: boolean;
     compareMode?: boolean;
     compareModelIds?: string[];
     modelOverridesById?: Record<string, Partial<ChatModelSettings>>;

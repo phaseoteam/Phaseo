@@ -742,3 +742,30 @@ export function detectStreamProtocol(
 	| null {
 	return normalizeProtocol(args);
 }
+
+/**
+ * Protocols identify one tool call by different fields across its events: chat
+ * sends `id` only on the first chunk, Responses deltas carry `item_id`, and
+ * Anthropic deltas carry a block index. Every identifier seen together is
+ * aliased onto one canonical key so a single call is counted once.
+ */
+export function createToolCallKeyResolver(): (event: Extract<UnifiedStreamEvent, { type: "delta_tool" }>) => string {
+	const aliases = new Map<string, string>();
+	let lastKey: string | null = null;
+	return (event) => {
+		const choice = event.choiceIndex ?? 0;
+		const identifiers = [
+			event.toolCallId ? `id:${event.toolCallId}` : null,
+			event.toolCallKey ? `key:${event.toolCallKey}` : null,
+			typeof event.toolIndex === "number" ? `choice:${choice}:index:${event.toolIndex}` : null,
+		].filter((value): value is string => value !== null);
+		if (!identifiers.length) {
+			lastKey ??= `choice:${choice}:anonymous`;
+			return lastKey;
+		}
+		const canonical = identifiers.map((value) => aliases.get(value)).find(Boolean) ?? identifiers[0];
+		for (const value of identifiers) aliases.set(value, canonical);
+		lastKey = canonical;
+		return canonical;
+	};
+}

@@ -12,7 +12,7 @@ import { admitCustomerRequest, customerQuotaMiddleware } from "./customer-quota"
 
 beforeEach(() => {
 	mocks.authenticate.mockReset().mockResolvedValue({ ok: true, workspaceId: "workspace", userId: "owner" });
-	mocks.quota.mockReset().mockResolvedValue(null);
+	mocks.quota.mockReset().mockReturnValue(null);
 	mocks.configure.mockReset();
 	mocks.clear.mockReset();
 	mocks.handler.mockReset();
@@ -33,7 +33,7 @@ const env = { CUSTOMER_RATE_LIMITS_ENABLED: "true" } as Env["Bindings"];
 
 describe("inference quota admission", () => {
 	it("guards direct nested handler requests and deduplicates only the same Request", async () => {
-		mocks.quota.mockResolvedValue(new Response(null, { status: 429 }));
+		mocks.quota.mockReturnValue(new Response(null, { status: 429 }));
 		const req = new Request("https://phaseo.local/v1/responses", { method: "POST" });
 		expect((await admitCustomerRequest(req))?.status).toBe(429);
 		await admitCustomerRequest(req);
@@ -51,7 +51,7 @@ describe("inference quota admission", () => {
 	});
 
 	it("blocks polling before its route handler and does not affect management routes", async () => {
-		mocks.quota.mockResolvedValue(new Response(null, { status: 429 }));
+		mocks.quota.mockReturnValue(new Response(null, { status: 429 }));
 		const router = app();
 		expect((await router.request("http://localhost/files/abc", {}, env)).status).toBe(429);
 		expect(mocks.handler).not.toHaveBeenCalled();

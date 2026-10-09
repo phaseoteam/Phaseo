@@ -1,0 +1,30 @@
+event: response.created
+data: {"response":{"id":"chatcmpl-1","created_at":1700000000,"model":"gpt-x"}}
+
+event: response.reasoning_text.delta
+data: {"delta":"Thinking ✓","output_index":0,"item_id":"reasoning_req_golden_0"}
+
+event: response.output_text.delta
+data: {"delta":"Hel","output_index":1,"item_id":"msg_req_golden_0"}
+
+event: response.output_text.delta
+data: {"delta":"lo wörld 👋","output_index":1,"item_id":"msg_req_golden_0"}
+
+event: response.output_item.added
+data: {"output_index":2,"item":{"type":"function_call","id":"call_1","call_id":"call_1","name":"get_weather","arguments":"","status":"in_progress"}}
+
+event: response.function_call_arguments.delta
+data: {"item_id":"call_1","output_index":2,"delta":""}
+
+event: response.function_call_arguments.delta
+data: {"item_id":"call_1","output_index":2,"delta":"{\"city\":\"Paris\"}"}
+
+event: response.function_call_arguments.done
+data: {"item_id":"call_1","output_index":2,"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}
+
+event: response.output_item.done
+data: {"output_index":2,"item":{"type":"function_call","id":"call_1","call_id":"call_1","name":"get_weather","arguments":"{\"city\":\"Paris\"}","status":"completed"}}
+
+event: response.completed
+data: {"response":{"id":"req_golden","object":"response","created_at":1700000000,"status":"completed","model":"test-model","output":[{"type":"reasoning","content":[{"type":"output_text","text":"Thinking ✓","annotations":[]}]},{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Hello wörld 👋","annotations":[]}]}],"usage":{"input_tokens":10,"output_tokens":20,"total_tokens":30,"cached_read_tokens_are_subset_of_input":true,"input_tokens_details":{"cached_tokens":4}},"nativeResponseId":"chatcmpl-1"}}
+

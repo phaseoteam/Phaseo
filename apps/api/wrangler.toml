@@ -1,7 +1,7 @@
 name = "phaseo-gateway"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
 workers_dev = false
 preview_urls = false
 
@@ -10,10 +10,14 @@ preview_urls = false
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+# Trust-ladder RPM per workspace (off = 25 RPM for everyone). Enable only after
+# the tier publisher reports a complete backfill.
+CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "false"
+CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "false"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
+# Also enables the per-minute catalogue revision publisher; catalogue
+# snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
-# Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
-# Keep this only on the primary scheduler; regional Workers share its KV.
-GATEWAY_PUBLIC_CATALOG_TARGETS = '[{"model":"openai/gpt-5.4-mini","endpoint":"responses"},{"model":"openai/gpt-5.4-mini","endpoint":"text.generate"},{"model":"anthropic/claude-haiku-4.5","endpoint":"messages"},{"model":"anthropic/claude-haiku-4.5","endpoint":"text.generate"}]'
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -170,3 +174,11 @@ class_name = "CustomerRateLimitDurableObject"
 [[migrations]]
 tag = "v4-customer-rate-limits"
 new_sqlite_classes = ["CustomerRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+
+[[migrations]]
+tag = "v5-spend-limits"
+new_sqlite_classes = ["SpendLimitDurableObject"]

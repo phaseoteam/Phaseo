@@ -30,6 +30,29 @@ describe("emitGatewayRequestEvent", () => {
 		clearRuntime();
 	});
 
+	it("preserves gateway origin and caller responsibility for free-model daily limits", async () => {
+		await emitGatewayRequestEvent({
+			requestId: "req_free_limit",
+			workspaceId: "ws_free_limit",
+			endpoint: "chat.completions",
+			model: "phaseo/free",
+			provider: null,
+			statusCode: 429,
+			success: false,
+			errorCode: "gateway:phaseo_free_model_limit_exceeded",
+			errorType: "user",
+			errorStage: "execute",
+			gatewayResponse: { error_origin: "gateway", error_type: "user" },
+		});
+		expect(sendAxiomWideEventMock.mock.calls[0]?.[0]).toMatchObject({
+			error_origin: "gateway",
+			error_operational_kind: "phaseo_free_model_limit_exceeded",
+			error_action_owner: "caller",
+			error_operationally_actionable: false,
+			error_requires_investigation: false,
+		});
+	});
+
 	it("emits provider attempt chains for successful video generation requests", async () => {
 		const ctx = {
 			endpoint: "video.generation",

@@ -19,9 +19,17 @@ const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
-const publishConfiguredPublicCatalogMock = vi.fn();
-vi.mock("./public-catalog", () => ({
-	publishConfiguredPublicCatalog: (...args: unknown[]) => publishConfiguredPublicCatalogMock(...args),
+const publishCatalogueRevisionMock = vi.fn();
+const drainWorkspacePublicationsMock = vi.fn(async () => ({ claimed: 0, completed: 0, failed: 0 }));
+vi.mock("./workspace-publications", () => ({
+	drainWorkspacePublications: () => drainWorkspacePublicationsMock(),
+}));
+const publishCustomerRateLimitTiersMock = vi.fn();
+vi.mock("@core/customer-rate-limit-tiers", () => ({
+	publishCustomerRateLimitTiers: (...args: unknown[]) => publishCustomerRateLimitTiersMock(...args),
+}));
+vi.mock("@core/catalogue-revision", () => ({
+	publishCatalogueRevision: (...args: unknown[]) => publishCatalogueRevisionMock(...args),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -112,7 +120,8 @@ function scheduledEventAt(iso: string): ScheduledController {
 
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
-		publishConfiguredPublicCatalogMock.mockReset().mockResolvedValue({ targets: 1, published: 1, failed: 0, skipped: 0 });
+		publishCatalogueRevisionMock.mockReset().mockResolvedValue({ revision: "1", changed: false });
+		publishCustomerRateLimitTiersMock.mockReset().mockResolvedValue({ workspaces: 0, complete: true });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
@@ -196,6 +205,23 @@ describe("handleScheduledEvent", () => {
 			limit: 250,
 		});
 		expect(runAccountDeletionPurgeJobMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("publishes customer rate-limit tiers on core ticks only when its own switch is on", async () => {
+		const tick = scheduledEventAt("2026-06-10T00:05:00.000Z");
+		await handleScheduledEvent(tick, { ENV: "prod", CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true" } as any);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		const env = { ENV: "prod", CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED: "true", CUSTOMER_RATE_LIMIT_LADDER: "{}" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), env);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		// Runs with the ladder itself still disabled, so the backfill precedes enforcement.
+		await handleScheduledEvent(tick, env);
+		expect(publishCustomerRateLimitTiersMock).toHaveBeenCalledWith({ ladderRaw: "{}" });
+		publishCustomerRateLimitTiersMock.mockRejectedValueOnce(new Error("db down"));
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		await expect(handleScheduledEvent(tick, env)).resolves.toBeUndefined();
+		expect(error).toHaveBeenCalledWith("customer_rate_limit_tiers_scheduled_failed", expect.anything());
+		error.mockRestore();
 	});
 
 	it("does not let staging claim the shared account-deletion queue", async () => {
@@ -301,14 +327,20 @@ describe("handleScheduledEvent", () => {
 		});
 	});
 
-	it("publishes configured catalogs every two minutes independently of core jobs", async () => {
-		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_CATALOG_TARGETS: "[]" } as any;
+	it("publishes the catalogue revision every minute when the context bundle is enabled", async () => {
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" } as any;
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env);
-		expect(publishConfiguredPublicCatalogMock).not.toHaveBeenCalled();
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:02:00.000Z"), env);
-		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		expect(publishCatalogueRevisionMock).toHaveBeenCalledTimes(2);
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:04:00.000Z"), {} as any);
-		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		expect(publishCatalogueRevisionMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("keeps running core jobs when the catalogue revision publication fails", async () => {
+		publishCatalogueRevisionMock.mockRejectedValueOnce(new Error("rpc down"));
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" } as any;
+		await expect(handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env)).resolves.toBeUndefined();
+		expect(clearRuntimeMock).toHaveBeenCalled();
 	});
 
 	it("runs I/O retention billing on the daily billing tick", async () => {

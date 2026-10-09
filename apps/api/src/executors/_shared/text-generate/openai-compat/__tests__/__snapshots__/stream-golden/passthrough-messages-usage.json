@@ -1,0 +1,9 @@
+{
+  "usageRaw": {
+    "output_tokens": 42
+  },
+  "info": {
+    "aborted": false,
+    "sawFinalUsage": true
+  }
+}

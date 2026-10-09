@@ -1,4 +1,5 @@
-import Stripe from "stripe";
+// Type-only: the SDK is loaded on demand so the charge path does not evaluate it.
+import type Stripe from "stripe";
 
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 
@@ -8,11 +9,12 @@ type OwnerContact = {
 	workspaceName: string;
 };
 
-function stripeClient(): Stripe {
+async function stripeClient(): Promise<Stripe> {
 	const bindings = getBindings();
 	const key = bindings.STRIPE_SECRET_KEY ?? bindings.TEST_STRIPE_SECRET_KEY;
 	if (!key?.trim()) throw new Error("missing_stripe_secret_key");
-	return new Stripe(key, { apiVersion: "2026-04-22.dahlia" as any });
+	const { default: StripeClient } = await import("stripe");
+	return new StripeClient(key, { apiVersion: "2026-04-22.dahlia" as any });
 }
 
 async function resolveOwnerContact(workspaceId: string): Promise<OwnerContact | null> {
@@ -91,7 +93,7 @@ export async function runPaymentMethodExpiryNotificationJob(args: {
 	const now = args.now ?? new Date();
 	const pageSize = Math.max(1, Math.min(500, Math.trunc(args.pageSize ?? 100)));
 	const supabase = getSupabaseAdmin();
-	const stripe = stripeClient();
+	const stripe = await stripeClient();
 	let checked = 0;
 	let enqueued = 0;
 	let failed = 0;
