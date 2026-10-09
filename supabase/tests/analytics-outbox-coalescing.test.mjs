@@ -126,6 +126,13 @@ try {
   assert.deepEqual(await output(after),corrected,'Empty runs do not change rollups');
   const privileges = (await after.query("select has_function_privilege('anon','public.process_v2_analytics_outbox(integer)','execute') anon,has_function_privilege('service_role','public.process_v2_analytics_outbox(integer)','execute') backend")).rows[0];
   assert.deepEqual(privileges,{anon:false,backend:true});
+  await after.exec('begin');
+  await after.query('select process_v2_analytics_outbox(250)');
+  assert.equal((await after.query(`select exists(select 1 from pg_locks where locktype='advisory'
+    and pid=pg_backend_pid() and granted and objsubid=1
+    and classid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0)>>32 & 4294967295)
+    and objid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0) & 4294967295)) held`)).rows[0].held,true);
+  await after.exec('rollback');
   console.log(JSON.stringify({ oldWork,newWork,checks:'All aggregate fields/meters, coalescing cap, workspace boundaries, readiness, public visibility, correction re-enqueue, moved grains, idempotency and grants passed' },null,2));
 } catch (error) {
   console.error(error.message, error.detail ?? '', error.where?.split('\n')[0] ?? '');

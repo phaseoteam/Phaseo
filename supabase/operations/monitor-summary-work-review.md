@@ -84,10 +84,13 @@ request or response shape changed.
 
 ## Remaining deployment preparation
 
-`pnpm db:schema:sync -- -f reduce_monitor_model_lookups` was attempted. It stopped
-because Docker and Podman are unavailable locally. No migration was generated,
-and full schema equivalence and baseline replay have not run locally. Generation
-and validation will use the repository's existing GitHub disposable runtime.
+`pnpm db:schema:sync -- -f reduce_monitor_model_lookups` stopped because Docker
+and Podman are unavailable locally. The existing disposable GitHub runtime
+generated the two-function migration successfully in run 37993699629.
+`20261009213105_reduce_public_statistics_and_rollup_work.sql` preserves function
+identities and grants using `CREATE OR REPLACE`, and limits DDL lock acquisition
+to 500 ms and statement duration to fifteen seconds. The generated dependency
+manifest is retained. Full equivalence and replay run in the pull request checks.
 
 Generate and review the forward migration using the repository's disposable
 runtime, retain the generated dependency manifest, and run `db:schema:check`
