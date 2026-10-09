@@ -552,6 +552,20 @@ accountModelsRouter.get("/catalog/record", async (c) => {
 	}
 });
 
+accountModelsRouter.put("/:modelId/availability", async (c) => {
+	const admin = await requireAdminContext(c.req.raw, c.env);
+	if (!admin.context) return c.json({ error: admin.status === 401 ? "unauthorized" : "forbidden" }, admin.status, PRIVATE_NO_STORE_HEADERS);
+	const parsed = z.object({ available: z.boolean() }).strict().safeParse(await c.req.json().catch(() => null));
+	if (!parsed.success) return c.json({ error: "invalid_model_availability" }, 400, PRIVATE_NO_STORE_HEADERS);
+	const result = await admin.context.client.rpc("set_v2_admin_model_availability", {
+		p_actor_user_id: admin.context.user.id,
+		p_model_slug: c.req.param("modelId"),
+		p_available: parsed.data.available,
+	});
+	if (result.error) return c.json({ error: "model_availability_update_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
+	return c.json(result.data, 200, PRIVATE_NO_STORE_HEADERS);
+});
+
 accountModelsRouter.get("/:modelId/source", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
