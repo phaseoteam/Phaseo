@@ -183,6 +183,9 @@ begin
       definition := regexp_replace(definition,
         '(from|join)([[:space:]]+)(public[.])?' || source_name || '\M',
         '\1\2public.' || target_name, 'gi');
+      definition := regexp_replace(definition,
+        '(delete[[:space:]]+from[[:space:]]+)public[.]' || target_name || '\M',
+        '\1public.' || source_name, 'gi');
     end loop;
     execute definition;
   end loop;

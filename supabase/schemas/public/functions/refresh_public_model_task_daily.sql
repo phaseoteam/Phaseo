@@ -11,7 +11,7 @@ begin
     pg_catalog.hashtext('refresh_public_model_task_daily')
   );
 
-  delete from public.reporting_model_task_daily
+  delete from public.public_model_task_daily
   where usage_date >= coalesce(p_since, current_date - 1);
 
   insert into public.public_model_task_daily (

@@ -26,7 +26,7 @@ begin
       select provider_slug into provider_value from public.v2_model_provider_routes
         where provider_model_id = item.provider_model_id;
       -- Remove old provider-slug rows as well when route metadata was corrected.
-      delete from public.reporting_provider_health_daily
+      delete from public.v2_public_provider_health_daily
         where usage_date = item.usage_date and model_slug = item.model_slug
           and provider_model_id = item.provider_model_id;
       if provider_value is not null then

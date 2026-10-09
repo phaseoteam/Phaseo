@@ -11,7 +11,7 @@ declare
   v_since date := (p_since at time zone 'utc')::date;
   v_until date := ((p_until - interval '1 microsecond') at time zone 'utc')::date;
 begin
-  delete from public.reporting_model_user_usage_daily
+  delete from public.public_model_user_usage_daily
   where day_bucket >= v_since and day_bucket <= v_until;
   insert into public.public_model_user_usage_daily
     (day_bucket, model_id, provider_id, actor_hash, requests, tokens, refreshed_at)

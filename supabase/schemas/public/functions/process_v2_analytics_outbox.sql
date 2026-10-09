@@ -258,7 +258,7 @@ begin
     from pg_temp.v2_rollup_batch batch
     where batch.model_slug is not null
   loop
-    delete from public.reporting_usage_hourly rollup
+    delete from public.v2_public_usage_hourly rollup
     where rollup.bucket_start = grain.bucket_start
       and rollup.app_id is not distinct from grain.app_id
       and rollup.model_slug = grain.model_slug

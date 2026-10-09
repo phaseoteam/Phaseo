@@ -1,5 +1,6 @@
 ---
 "@phaseo/web-api": patch
+"@phaseo/gateway-api": patch
 "@phaseo/web": patch
 ---
 

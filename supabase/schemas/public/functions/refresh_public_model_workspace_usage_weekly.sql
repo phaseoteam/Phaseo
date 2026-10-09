@@ -11,7 +11,7 @@ declare
   v_since_week date := date_trunc('week', p_since at time zone 'utc')::date;
   v_until_week date := date_trunc('week', (p_until - interval '1 microsecond') at time zone 'utc')::date;
 begin
-  delete from public.reporting_model_workspace_usage_weekly
+  delete from public.public_model_workspace_usage_weekly
   where week_start >= v_since_week and week_start <= v_until_week;
   insert into public.public_model_workspace_usage_weekly
     (week_start, model_id, workspace_hash, requests, refreshed_at)
