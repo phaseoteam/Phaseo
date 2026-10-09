@@ -160,6 +160,56 @@ describe("fetchModelsPageCatalogue", () => {
 	});
 });
 
+describe("shared models page rows", () => {
+	function stubCatalogue(revision: () => Response) {
+		const store = new Map<string, string>();
+		vi.stubGlobal("caches", { default: {
+			match: async (key: string) => store.has(key) ? new Response(store.get(key)) : undefined,
+			put: async (key: string, response: Response) => { store.set(key, await response.text()); },
+		} });
+		const payloadCalls: URL[] = [];
+		const payloadBodies: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = new URL(String(input));
+			if (url.pathname.endsWith("/gateway_catalogue_revision")) return revision();
+			payloadCalls.push(url);
+			payloadBodies.push(String(init?.body ?? ""));
+			return new Response(JSON.stringify([
+				{ model_id: "lab-a/model", name: "A", organisation_id: "lab-a" },
+				{ model_id: "lab-b/model", name: "B", organisation_id: "lab-b" },
+			]));
+		}));
+		return { store, payloadCalls, payloadBodies };
+	}
+
+	it("builds the payload once per catalogue revision for every page and organisation", async () => {
+		const { store, payloadCalls } = stubCatalogue(() => new Response("42"));
+		const all = await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		const lab = await fetchModelsPageCatalogue(env, { organisationId: "lab-b", includeMetrics: false });
+		expect(all.models.map((row) => row.model_id)).toEqual(["lab-a/model", "lab-b/model"]);
+		expect(lab.models.map((row) => row.model_id)).toEqual(["lab-b/model"]);
+		expect(payloadCalls).toHaveLength(1);
+		expect([...store.keys()]).toEqual(["https://web-api.internal/models-page-rows/v2/42/"]);
+	});
+
+	it("rebuilds when the catalogue revision changes", async () => {
+		let revision = "42";
+		const { payloadCalls } = stubCatalogue(() => new Response(revision));
+		await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		revision = "43";
+		await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		expect(payloadCalls).toHaveLength(2);
+	});
+
+	it("loads only the organisation without caching when the revision is unavailable", async () => {
+		const { store, payloadCalls, payloadBodies } = stubCatalogue(() => Response.json({ message: "permission denied" }, { status: 403 }));
+		await fetchModelsPageCatalogue(env, { organisationId: "lab-a", includeMetrics: false });
+		expect(store.size).toBe(0);
+		expect(payloadCalls[0].pathname).toMatch(/get_public_models_page_payload$/);
+		expect(JSON.parse(payloadBodies[0])).toMatchObject({ p_organisation_id: "lab-a" });
+	});
+});
+
 describe("buildModelsPageFacets", () => {
 	it("keeps deprecated and retired models out of the not-active bucket", () => {
 		const rows = attachModelsPageVariants([
