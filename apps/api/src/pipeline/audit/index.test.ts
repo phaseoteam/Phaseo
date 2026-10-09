@@ -88,11 +88,13 @@ describe("audit request detail persistence", () => {
 			model: "model", endpoint: "responses" as const, stream: false, byok: false,
 			usagePriced: { input_tokens: 10 }, totalNanos: 5000, currency: "USD",
 			requestPayload: { input: "private prompt" }, gatewayResponse: { output: "private completion" },
-			detailMetadata: { routing_snapshot: [{ provider_id: "openai", provider_model_slug: "model", score: 0.9 }] },
+			detailMetadata: { testing_mode: true, routing_snapshot: [{ provider_id: "openai", provider_model_slug: "model", score: 0.9 }] },
 		};
 		if (kind === "success") await auditSuccess(args);
 		else await auditFailure({ ...args, stage: "execute", statusCode: 502, errorCode: "upstream_error" });
 		expect(put).toHaveBeenCalledOnce();
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event.safe_metadata.testing_mode).toBe(true);
 		const object = new TextDecoder().decode(put.mock.calls[0][1]);
 		expect(object).not.toContain("private prompt");
 		expect(object).not.toContain("private completion");
