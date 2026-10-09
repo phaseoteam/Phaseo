@@ -1,4 +1,8 @@
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
+// Cache only denials: ordinary users avoid repeat reads, while admin grants
+// are verified on every request so revoked access is never cached.
+const nonAdminUntil = new Map<string, number>();
+const NON_ADMIN_CACHE_MS = 30_000;
 
 function normalizeBooleanFlag(value: unknown): boolean {
 	if (typeof value === "boolean") return value;
@@ -36,10 +40,14 @@ export async function resolveTestingMode(args: {
 	if (!args.requested && !args.model) {
 		return { enabled: false, reason: "not_requested" };
 	}
-	if (args.userId) {
+	if (args.userId && (nonAdminUntil.get(args.userId) ?? 0) <= Date.now()) {
 		try {
 			const { data, error } = await getSupabaseAdmin().from("users")
 				.select("role").eq("user_id", args.userId).maybeSingle();
+			if (!error && data && data.role !== "admin") {
+				if (nonAdminUntil.size >= 256) nonAdminUntil.delete(nonAdminUntil.keys().next().value!);
+				nonAdminUntil.set(args.userId, Date.now() + NON_ADMIN_CACHE_MS);
+			}
 			if (!error && data?.role === "admin") {
 				if (args.requested && args.internal) return { enabled: true, reason: "internal" };
 				if (!args.model) return { enabled: false, reason: args.requested ? "requires_internal_token" : "not_requested" };

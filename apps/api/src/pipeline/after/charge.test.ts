@@ -11,7 +11,7 @@ import { recordUsageAndChargeOnce } from "./charge";
 describe("recordUsageAndChargeOnce", () => {
     it.each([false, true])("charges admin internal requests only with verified pricing (%s)", async (priced) => {
         const ctx: any = { requestId: "internal", workspaceId: "admin-workspace", testingMode: true,
-            billableInternalTesting: true, meta: { internalPricingAvailable: priced } };
+            billableInternalTesting: true, internalPricingAvailable: priced, meta: {} };
         await recordUsageAndChargeOnce({ ctx, costNanos: 100, endpoint: "responses" });
         expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(priced ? 1 : 0);
     });

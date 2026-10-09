@@ -23,7 +23,7 @@ it.each([false, true])("resolves pricing for billable admin internal requests wh
     const ctx = { testingMode: true, billableInternalTesting: true, pricing: priced ? { route: card } : {}, meta: {}, model: "test/internal", capability: "text.generate" } as unknown as PipelineContextForTest;
     const result = await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/internal", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1]);
     expect(result).toEqual(priced ? card : null);
-    expect(ctx.meta.internalPricingAvailable).toBe(priced);
+    expect(ctx.internalPricingAvailable).toBe(priced);
 });
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../../..");

@@ -107,7 +107,7 @@ export async function loadProviderPricing(
 ): Promise<PriceCard | null> {
     // Authorized internal tests have no customer charge and may precede pricing.
     if (ctx.testingMode && !ctx.billableInternalTesting) return null;
-    if (ctx.billableInternalTesting) ctx.meta.internalPricingAvailable = false;
+    if (ctx.billableInternalTesting) ctx.internalPricingAvailable = false;
     const apiModelId =
         typeof result.apiModelId === "string" && result.apiModelId.trim().length > 0
             ? result.apiModelId.trim()
@@ -161,7 +161,7 @@ export async function loadProviderPricing(
 
         if (ctx.billableInternalTesting) {
             if (!card?.rules?.length) return null;
-            ctx.meta.internalPricingAvailable = true;
+            ctx.internalPricingAvailable = true;
         }
         return card;
     } catch (err) {

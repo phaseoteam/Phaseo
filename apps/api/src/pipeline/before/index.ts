@@ -478,6 +478,7 @@ export async function beforeRequest(
 		requestId,
 		internal,
 		testingMode: testingModeEnabled,
+		internalOnly: testingMode.reason === "admin",
 		disableCache: debugEnabled,
 		onCreditCacheWrite,
 	});

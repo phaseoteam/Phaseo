@@ -757,4 +757,5 @@ export type PipelineContext = {
     keyId?: string | null;
     testingMode?: boolean;
     billableInternalTesting?: boolean;
+    internalPricingAvailable?: boolean;
 };

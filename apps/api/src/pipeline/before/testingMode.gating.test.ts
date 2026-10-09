@@ -82,6 +82,18 @@ describe("resolveTestingMode gating", () => {
 		expect(await resolveTestingMode({ requested: false, workspaceId: "team_1", userId: "admin-user", model: "test/internal", internal: false }))
 			.toEqual({ enabled: true, reason: "admin" });
 	});
+	it("caches non-admin denials without caching admin grants", async () => {
+		roleLookupMock.mockResolvedValue({ data: { role: "user" }, error: null });
+		const args = { requested: false, workspaceId: "team_1", userId: "cached-member", model: "test/public" };
+		await resolveTestingMode(args);
+		await resolveTestingMode(args);
+		expect(roleLookupMock).toHaveBeenCalledTimes(1);
+		roleLookupMock.mockClear();
+		roleLookupMock.mockResolvedValue({ data: { role: "admin" }, error: null });
+		await resolveTestingMode({ ...args, userId: "uncached-admin" });
+		await resolveTestingMode({ ...args, userId: "uncached-admin" });
+		expect(roleLookupMock).toHaveBeenCalledTimes(2);
+	});
 	it.each([null, "member-user"])("does not automatically grant internal access to %s", async (userId) => {
 		roleLookupMock.mockResolvedValue({ data: { role: "user" }, error: null });
 		expect(await resolveTestingMode({ requested: false, workspaceId: "team_1", userId, model: "test/internal" })).toEqual({ enabled: false, reason: "not_requested" });

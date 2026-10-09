@@ -756,7 +756,7 @@ async function fetchTestingProviderSnapshots(args: {
     const byApiModelResult = await supabase
         .from("v2_model_provider_routes")
         .select(
-            "provider_api_model_id:provider_model_id,provider_id:provider_slug,provider_model_slug,is_active_gateway:routing_enabled,routing_status:status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,metadata"
+            "provider_api_model_id:provider_model_id,provider_id:provider_slug,model_slug,provider_model_slug,is_active_gateway:routing_enabled,routing_status:status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,metadata"
         )
         .in("model_slug", modelCandidates)
         .eq("access_scope", "internal")
@@ -900,6 +900,8 @@ async function fetchTestingProviderSnapshots(args: {
         });
         testingProviders.push({
             providerId,
+            apiModelId: row.model_slug,
+            pricingKey: getProviderPricingKey(providerId, row.model_slug, providerModelSlug),
             providerStatus: "active",
             providerRoutingStatus: "active",
             modelRoutingStatus: normalizeRoutingStatus(row?.routing_status),
@@ -1092,6 +1094,7 @@ export async function fetchGatewayContext(args: {
     endpoint: string;
     apiKeyId: string;
     includeTestingMode?: boolean;
+    internalOnly?: boolean;
     disableCache?: boolean;
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
@@ -1134,7 +1137,7 @@ export async function fetchGatewayContext(args: {
         if (privateResult.ok === false) throw privateResult.error;
         const privateModel = privateResult.value;
         const startedAt = performance.now();
-		if (privateModel) {
+		if (privateModel && !args.internalOnly) {
 			value = {
 				...value,
 				resolvedModel: args.model,
@@ -1182,7 +1185,7 @@ export async function fetchGatewayContext(args: {
         versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
     }
-    const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
+    const testingModeCacheSegment = args.internalOnly ? "internal" : args.includeTestingMode ? "testing" : "default";
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
@@ -1490,12 +1493,15 @@ export async function fetchGatewayContext(args: {
                     model: parsed.resolvedModel ?? args.model,
                     requestedModel: args.model,
                     endpoint: args.endpoint,
-                    existingProviders: parsed.providers ?? [],
+                    existingProviders: args.internalOnly ? [] : parsed.providers ?? [],
                 });
-                if (testingProviders.length) {
+                if (args.internalOnly) {
+                    parsed.providers = testingProviders;
+                } else if (testingProviders.length) {
                     parsed.providers = [...(parsed.providers ?? []), ...testingProviders];
                 }
             } catch {
+                if (args.internalOnly) parsed.providers = [];
                 // Keep public provider list if testing-mode enrichment fails.
             }
         }
