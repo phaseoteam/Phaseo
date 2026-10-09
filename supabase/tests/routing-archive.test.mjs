@@ -61,12 +61,20 @@ try {
             ['00000000-0000-0000-0000-000000000000', '1970-01-01', '2026-10-01']), /permission denied/);
         await db.exec('reset role');
     }
+    // Requests before routing snapshots began are outside the backfill's scan bound.
+    const preSnapshot = '20000000-0000-4000-8000-000000000000';
+    await db.query(`insert into public.gateway_requests values($1,'2026-08-18T23:59:59Z',$2,'old',$3,0,'{}')`,
+        [preSnapshot, workspace, { routing_snapshot: [] }]);
     await db.exec('set role service_role');
     const before = await source();
     assert.equal(before.routing_decisions.length, 1);
     const batch = await db.query('select public.gateway_routing_archive_batch($1,$2,$3,25) value',
         ['00000000-0000-0000-0000-000000000000', '1970-01-01', '2026-10-01']);
-    assert.equal(batch.rows.length, 1);
+    assert.deepEqual(batch.rows.map(row => row.value.id), [request]);
+    await db.exec('reset role');
+    await db.query('delete from public.gateway_requests where id=$1', [preSnapshot]);
+    await db.query('delete from public.gateway_routing_archive_deletions');
+    await db.exec('set role service_role');
     assert.equal(await commit('stale-source'), false);
     await assert.rejects(commit(before.source_hash, { ...reference, key: `workspaces/other/routing/v1/request/${sha}.json` }), /reference_invalid/);
     assert.equal((await source()).routing_decisions.length, 1);
