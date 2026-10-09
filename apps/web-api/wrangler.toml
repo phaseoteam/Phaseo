@@ -13,6 +13,13 @@ enabled = true
 # tagged purge endpoints; account responses remain private/no-store.
 cross_version_cache = true
 
+# Account and uncached routes make several sequential Supabase (eu-west-2)
+# round trips per request. Let Cloudflare run the Worker near the database
+# instead of in the colo that received the request; cached public responses
+# are still served from the edge before the Worker runs.
+[placement]
+mode = "smart"
+
 [vars]
 ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
