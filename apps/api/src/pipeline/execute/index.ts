@@ -826,7 +826,8 @@ async function attemptProviderWithIR(
 
 	// Execute using provider-capability executor
 	let t0 = performance.now();
-	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace);
+	// The headers deadline is only safe when the provider streams (see the tracker).
+	const upstreamTracker = createUpstreamTimingTracker(ctx.gatewayTimingTrace, { applyHeadersDeadline: ctx.stream === true });
 	let providerRateLimitReservation: ProviderTokenReservation | null = null;
 	try {
 		timing.timer.mark("adapter_start");

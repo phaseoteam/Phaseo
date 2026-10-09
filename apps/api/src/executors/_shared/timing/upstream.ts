@@ -85,7 +85,32 @@ export type UpstreamTimingSnapshot = {
 	upstreamMediaCount: number;
 };
 
-export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
+const STREAMING_URL = /:streamGenerateContent|[?&]alt=sse(?:&|$)|invoke-with-response-stream|converse-stream/i;
+const STREAMING_BODY = /"stream"\s*:\s*true/;
+
+/**
+ * True when the provider fetch itself asks for a streamed response: a streaming
+ * endpoint, an SSE Accept header, or `"stream": true` in a JSON string body. A
+ * regex (not a parse) keeps large multimodal bodies cheap; callers combine it with
+ * the client's stream flag, so a nested `"stream": true` alone never arms it.
+ */
+export function isStreamingProviderRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
+	const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+	if (STREAMING_URL.test(url)) return true;
+	const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined));
+	if (headers.get("accept")?.includes("text/event-stream")) return true;
+	return typeof init?.body === "string" && STREAMING_BODY.test(init.body);
+}
+
+/**
+ * `applyHeadersDeadline` enables GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS for provider
+ * fetches that themselves request a stream (see isStreamingProviderRequest). Pass
+ * it only for streaming client requests. A non-streaming provider call sends
+ * headers once generation finishes, including the calls some executors make
+ * to build a synthetic stream, so a deadline would cut off long reasoning or
+ * media generations and fail them over (paying for the same work twice).
+ */
+export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean } = {}): {
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
 	isProviderTransportFailure: (error: unknown) => boolean;
@@ -125,7 +150,7 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
 		}
 		let response: Response;
 		try {
-			response = phase === "provider"
+			response = phase === "provider" && options.applyHeadersDeadline && isStreamingProviderRequest(input, init)
 				? await fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
 				: await globalThis.fetch(input, init);
 		} catch (error) {
@@ -186,7 +211,6 @@ export function fetchUpstream(
 	if (args.upstreamTiming) {
 		return args.upstreamTiming.fetch(input, init, phase);
 	}
-	return phase === "provider"
-		? fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
-		: globalThis.fetch(input, init);
+	// Without a tracker the caller's streaming mode is unknown; never apply the deadline.
+	return globalThis.fetch(input, init);
 }
