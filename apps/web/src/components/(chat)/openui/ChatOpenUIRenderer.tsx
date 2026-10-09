@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   BuiltinActionType,
   Renderer,
@@ -30,6 +31,7 @@ export function ChatOpenUIRenderer({
   onStateChange,
   onSubmit,
 }: ChatOpenUIRendererProps) {
+  const t = useTranslations("Common.ui.openui");
   const [errors, setErrors] = useState<OpenUIError[]>([]);
   const [hasRoot, setHasRoot] = useState(true);
   const lastState = useRef(JSON.stringify(initialState ?? {}));
@@ -56,8 +58,7 @@ export function ChatOpenUIRenderer({
     <div className="not-prose min-w-0 space-y-3" data-openui-answer>
       {failed && (
         <p role="status" className="text-sm text-muted-foreground">
-          This interactive answer could not be fully rendered. Try regenerating
-          the response.
+          {t("failure")}
         </p>
       )}
       <OpenUIActionContext.Provider

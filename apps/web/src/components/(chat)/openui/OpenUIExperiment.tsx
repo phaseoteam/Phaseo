@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { ChatAnswerContent } from "./ChatAnswerContent";
 import {
@@ -10,19 +11,20 @@ import {
 } from "./openuiFixtures";
 
 const examples = [
-  { label: "Comparison", content: OPENUI_FIXTURE, interactive: true },
-  { label: "Negative / zero", content: OPENUI_EDGE_FIXTURE, interactive: true },
-  { label: "Malformed", content: OPENUI_BROKEN_FIXTURE, interactive: true },
+  { label: "comparison", content: OPENUI_FIXTURE, interactive: true },
+  { label: "edge", content: OPENUI_EDGE_FIXTURE, interactive: true },
+  { label: "malformed", content: OPENUI_BROKEN_FIXTURE, interactive: true },
   {
-    label: "Markdown",
+    label: "markdown",
     content:
       "## Ordinary answer\n\nMarkdown still works. **No interactive components needed.**",
     interactive: true,
   },
-];
+] as const;
 const STORAGE_KEY = "phaseo-openui-experiment-fixtures-v1";
 
 export function OpenUIExperiment() {
+  const t = useTranslations("Common.ui.openui");
   const [index, setIndex] = useState(0);
   const [states, setStates] = useState<Record<string, Record<string, unknown>>>(
     () => {
@@ -55,15 +57,14 @@ export function OpenUIExperiment() {
     <main className="mx-auto max-w-3xl space-y-6 px-4 py-10">
       <header>
         <p className="mb-2 text-xs text-muted-foreground">
-          Phaseo · Local experiment
+          {t("localLabel")}
         </p>
-        <h1 className="text-2xl font-semibold">Interactive answers</h1>
+        <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Fixture preview. Form submissions are shown below; they do not call a
-          model. Try live generation in chat.
+          {t("description")}
         </p>
       </header>
-      <nav aria-label="Examples" className="flex flex-wrap gap-2">
+      <nav aria-label={t("examples")} className="flex flex-wrap gap-2">
         {examples.map((item, i) => (
           <Button
             key={item.label}
@@ -76,7 +77,7 @@ export function OpenUIExperiment() {
               setSubmitted("");
             }}
           >
-            {item.label}
+            {t(item.label)}
           </Button>
         ))}
       </nav>
@@ -87,11 +88,11 @@ export function OpenUIExperiment() {
           disabled={isStreaming}
           onClick={() => setStreamed("")}
         >
-          Replay streaming
+          {t("replay")}
         </Button>
         {isStreaming && (
           <Button size="sm" variant="outline" onClick={() => setStreamed(null)}>
-            Stop replay
+            {t("stop")}
           </Button>
         )}
       </div>
@@ -115,13 +116,12 @@ export function OpenUIExperiment() {
       />
       {storageError && (
         <p role="status" className="text-sm text-destructive">
-          Browser storage is unavailable. Form values will last only until this
-          page closes.
+          {t("storage")}
         </p>
       )}
       {submitted && (
         <section aria-live="polite" className="rounded-lg border p-4">
-          <h2 className="mb-2 text-sm font-medium">Submitted user message</h2>
+          <h2 className="mb-2 text-sm font-medium">{t("submitted")}</h2>
           <p className="whitespace-pre-wrap text-sm">{submitted}</p>
         </section>
       )}

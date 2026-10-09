@@ -653,6 +653,24 @@
 		"lastYear": "过去 1 年"
 	},
 	"ui": {
+		"openui": {
+			"title": "交互式回答",
+			"experimentLabel": "交互式回答 · 实验",
+			"localLabel": "Phaseo · 本地实验",
+			"description": "示例预览。提交的表单显示在下方，不会调用模型。请在聊天中尝试生成回答。",
+			"examples": "示例",
+			"replay": "重放流式输出",
+			"stop": "停止重放",
+			"storage": "浏览器存储不可用。表单值仅保留到此页面关闭。",
+			"submitted": "已提交的消息",
+			"loading": "正在加载交互式回答…",
+			"failure": "无法完整显示此交互式回答。请尝试重新生成回答。",
+			"tradeoffs": "不足",
+			"comparison": "比较",
+			"edge": "负值 / 零",
+			"malformed": "格式错误",
+			"markdown": "Markdown"
+		},
 		"modelEditor": {
 			"dialogTitle": "编辑模型",
 			"dialogDescription": "完成更改后，点击保存。",

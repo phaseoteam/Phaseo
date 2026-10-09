@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useId, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   createLibrary,
   defineComponent,
@@ -154,7 +155,8 @@ const Comparison = defineComponent({
   description:
     "Two to four options displayed side by side; use factual descriptions, benefits, and tradeoffs.",
   props: comparisonSchema,
-  component: ({ props }) => {
+  component: function ComparisonComponent({ props }) {
+    const t = useTranslations("Common.ui.openui");
     const data = comparisonSchema.safeParse(props);
     if (!data.success) return null;
     return (
@@ -175,7 +177,7 @@ const Comparison = defineComponent({
               {option.tradeoffs.length > 0 && (
                 <>
                   <p className="mb-1 mt-3 text-xs font-medium text-muted-foreground">
-                    Tradeoffs
+                    {t("tradeoffs")}
                   </p>
                   <ul className="space-y-1 text-sm">
                     {option.tradeoffs.map((tradeoff, j) => (

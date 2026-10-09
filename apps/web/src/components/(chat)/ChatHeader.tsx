@@ -1763,13 +1763,13 @@ export function ChatHeader({
 								size="icon"
 								disabled={!activeThread || interactiveAnswersDisabled}
 								onClick={() => onInteractiveAnswersChange(!activeThread?.settings.interactiveAnswers)}
-								aria-label="Interactive answers"
+								aria-label={tUi("openui.title")}
 								aria-pressed={activeThread?.settings.interactiveAnswers ?? false}
 							>
 								<PanelsTopLeft className="h-4 w-4" />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent>Interactive answers · Experiment</TooltipContent>
+						<TooltipContent>{tUi("openui.experimentLabel")}</TooltipContent>
 					</Tooltip>
 				)}
 				<Tooltip>

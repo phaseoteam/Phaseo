@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useTranslations } from "next-intl";
 import { Streamdown } from "streamdown";
 import { chatMarkdownPlugins, normalizeChatMarkdown } from "../chatMarkdown";
 import { getOpenUISource } from "./openuiHelpers";
@@ -16,11 +17,14 @@ const OpenUIRenderer = dynamic(
   },
   {
     ssr: false,
-    loading: () => (
+    loading: function LoadingInteractiveAnswer() {
+      const t = useTranslations("Common.ui.openui");
+      return (
       <p role="status" className="text-sm text-muted-foreground">
-        Loading interactive answer…
+        {t("loading")}
       </p>
-    ),
+      );
+    },
   },
 );
 
