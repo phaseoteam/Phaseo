@@ -9,6 +9,7 @@
 
 import { getCache } from "@/runtime/env";
 import { awaitShared } from "@core/shared-wait";
+import { normalizeVersion, readSharedVersion, rememberSharedVersion } from "@core/shared-version-cache";
 
 export function getKv() {
     return getCache();
@@ -153,12 +154,13 @@ export async function getKeyVersion(
     const epochAtStart = readKeyVersionEpoch(key);
     const loader = (async () => {
         try {
-            const raw = await getCache().get(key, "text");
-            const parsed = raw ? Number(raw) : 0;
-            const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
+            // Request-path reads share one location-wide copy (see shared-version-cache);
+            // the isolate copy never outlives it.
+            const shared = useL1Cache ? await readSharedVersion(key) : null;
+            const normalized = shared ? shared.value : normalizeVersion(await getCache().get(key, "text"));
             // Skip the write when invalidated or superseded by a replacement read (see above).
-            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart && keyVersionInflight.get(key) === loader) {
-                writeKeyVersionL1(scope, value, normalized, l1TtlMs);
+            if (shared && readKeyVersionEpoch(key) === epochAtStart && keyVersionInflight.get(key) === loader) {
+                writeKeyVersionL1(scope, value, normalized, Math.min(l1TtlMs, shared.expiresAt - Date.now()));
             }
             return normalized;
         } catch {
@@ -183,6 +185,7 @@ export async function setKeyVersion(scope: "kid" | "id", value: string, version:
     keyVersionInflight.delete(key);
     await getCache().put(key, String(next));
     writeKeyVersionL1(scope, value, next, KEY_VERSION_L1_CACHE_TTL_MS);
+    rememberSharedVersion(key, next);
     return next;
 }
 

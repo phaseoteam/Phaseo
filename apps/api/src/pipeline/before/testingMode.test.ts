@@ -5,6 +5,9 @@ const roleLookupMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => getBindingsMock(),
+	getBindingsIfConfigured: () => null,
+	dispatchBackground: () => undefined,
+	getCache: () => ({ get: async () => null, put: async () => undefined }),
 	getSupabaseAdmin: () => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: roleLookupMock }) }) }) }),
 }));
 

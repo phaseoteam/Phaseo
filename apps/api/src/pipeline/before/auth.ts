@@ -19,7 +19,8 @@ const KEY_CACHE_PREFIX = "gateway:key:ip-policy-v1";
 const KEY_CACHE_TTL_SECONDS = 60;
 // Key mutations advance the version token. These short isolate-local windows
 // remove repeated KV reads while bounding revocation propagation.
-const KEY_VERSION_L1_TTL_MS = 5_000;
+// Capped by the shared copy's absolute expiry (see shared-version-cache).
+const KEY_VERSION_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_TTL_MS = 30_000;
 const KEY_LOOKUP_L1_MAX_ENTRIES = 2_000;
 const hmacKeys = new Map<string, CryptoKey>();

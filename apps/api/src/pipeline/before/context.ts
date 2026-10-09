@@ -80,7 +80,8 @@ const PRESET_CACHE_PREFIX = "gateway:preset:v4";
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
-const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
+// Capped by the shared copy's absolute expiry (see shared-version-cache).
+const CONTEXT_KEY_VERSION_L1_TTL_MS = 30_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const MIN_INFERENCE_CREDIT_NANOS = 100_000_000;
 const MIN_ASYNC_CREDIT_NANOS = 1_000_000_000;

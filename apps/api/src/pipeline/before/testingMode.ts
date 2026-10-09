@@ -3,6 +3,33 @@ const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 // are verified on every request so revoked access is never cached.
 const nonAdminUntil = new Map<string, number>();
 const NON_ADMIN_CACHE_MS = 30_000;
+// Whether a model has an internal route is catalogue data, not an access grant:
+// the admin role is still checked live before testing mode is enabled.
+const INTERNAL_ROUTE_FRESH_MS = 60_000;
+
+/** True when the model has an internal route; false (fail closed) on lookup errors. */
+async function modelHasInternalRoute(model: string): Promise<boolean> {
+	try {
+		const value = await tieredRead<boolean>({
+			key: `testing-mode:internal-route:v1:${model}`,
+			l1FreshMs: INTERNAL_ROUTE_FRESH_MS,
+			maxStaleMs: 2 * INTERNAL_ROUTE_FRESH_MS,
+			l2: { freshS: INTERNAL_ROUTE_FRESH_MS / 1000, storeS: (2 * INTERNAL_ROUTE_FRESH_MS) / 1000 },
+			l3: false,
+			loader: async () => {
+				const route = await getSupabaseAdmin().from("v2_model_provider_routes")
+					.select("provider_model_id").eq("model_slug", model)
+					.eq("access_scope", "internal").in("phaseo_status", ["testing", "enabled"])
+					.limit(1).maybeSingle();
+				if (route.error) throw new Error("internal_route_lookup_failed");
+				return Boolean(route.data);
+			},
+		});
+		return value === true;
+	} catch {
+		return false;
+	}
+}
 
 function normalizeBooleanFlag(value: unknown): boolean {
 	if (typeof value === "boolean") return value;
@@ -40,6 +67,13 @@ export async function resolveTestingMode(args: {
 	if (!args.requested && !args.model) {
 		return { enabled: false, reason: "not_requested" };
 	}
+	// An ordinary request can only enter testing mode for a model with an internal
+	// route, so requests to public models skip the role lookup entirely.
+	let internalRoute: boolean | null = null;
+	if (!args.requested) {
+		internalRoute = await modelHasInternalRoute(args.model!);
+		if (!internalRoute) return { enabled: false, reason: "not_requested" };
+	}
 	if (args.userId && (nonAdminUntil.get(args.userId) ?? 0) <= Date.now()) {
 		try {
 			const { data, error } = await getSupabaseAdmin().from("users")
@@ -53,11 +87,8 @@ export async function resolveTestingMode(args: {
 				if (!args.model) return { enabled: false, reason: args.requested ? "requires_internal_token" : "not_requested" };
 				// Only opt ordinary requests into testing for explicitly internal routes.
 				// Public model requests keep their normal routing and provider gates.
-				const route = await getSupabaseAdmin().from("v2_model_provider_routes")
-					.select("provider_model_id").eq("model_slug", args.model)
-					.eq("access_scope", "internal").in("phaseo_status", ["testing", "enabled"])
-					.limit(1).maybeSingle();
-				if (!route.error && route.data) return { enabled: true, reason: "admin" };
+				internalRoute ??= await modelHasInternalRoute(args.model);
+				if (internalRoute) return { enabled: true, reason: "admin" };
 			}
 		} catch {
 			// Internal inference must fail closed when role verification is unavailable.
@@ -106,3 +137,4 @@ export function isPerfGatewayEndpointAllowed(args: {
 	return allowed.includes(args.endpoint);
 }
 import { getSupabaseAdmin } from "@/runtime/env";
+import { tieredRead } from "@core/tiered-cache";
