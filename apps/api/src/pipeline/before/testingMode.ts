@@ -23,28 +23,40 @@ export async function resolveTestingMode(args: {
 	workspaceId: string;
 	userId?: string | null;
 	internal?: boolean;
+	model?: string;
 }): Promise<{
 	enabled: boolean;
 	reason:
 	| "not_requested"
 	| "internal"
+	| "admin"
 	| "requires_admin"
 	| "requires_internal_token";
 }> {
-	if (!args.requested) {
+	if (!args.requested && !args.model) {
 		return { enabled: false, reason: "not_requested" };
 	}
-	if (args.internal) {
-		if (!args.userId) return { enabled: false, reason: "requires_admin" };
+	if (args.userId) {
 		try {
 			const { data, error } = await getSupabaseAdmin().from("users")
 				.select("role").eq("user_id", args.userId).maybeSingle();
-			if (!error && data?.role === "admin") return { enabled: true, reason: "internal" };
+			if (!error && data?.role === "admin") {
+				if (args.requested && args.internal) return { enabled: true, reason: "internal" };
+				if (!args.model) return { enabled: false, reason: args.requested ? "requires_internal_token" : "not_requested" };
+				// Only opt ordinary requests into testing for explicitly internal routes.
+				// Public model requests keep their normal routing and provider gates.
+				const route = await getSupabaseAdmin().from("v2_model_provider_routes")
+					.select("provider_model_id").eq("model_slug", args.model)
+					.eq("access_scope", "internal").in("phaseo_status", ["testing", "enabled"])
+					.limit(1).maybeSingle();
+				if (!route.error && route.data) return { enabled: true, reason: "admin" };
+			}
 		} catch {
 			// Internal inference must fail closed when role verification is unavailable.
 		}
-		return { enabled: false, reason: "requires_admin" };
 	}
+	if (!args.requested) return { enabled: false, reason: "not_requested" };
+	if (args.internal) return { enabled: false, reason: "requires_admin" };
 	return { enabled: false, reason: "requires_internal_token" };
 }
 

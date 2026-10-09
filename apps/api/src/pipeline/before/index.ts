@@ -428,6 +428,7 @@ export async function beforeRequest(
             workspaceId,
             userId,
             internal,
+            model,
         })
     );
     if (testingModeRequested && !testingMode.enabled) {
