@@ -8,6 +8,20 @@ description: "Évaluez des questions typées à partir de l’état de l’appli
 
 Pour les nouveaux appels, utilisez le format compatible OpenAI : `input` contient du texte ou des messages utilisateur avec des éléments `input_image` intégrés, et `questions` est une liste ordonnée de questions `predicate`, `choice` ou `score`. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL d’images hébergées ne sont pas prises en charge ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et `safety_identifier` nécessitent une route OpenAI. Le format historique avec `state`, des questions nommées, `noul` et `criteria` reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.
 
+Mercury Decide (`inception/mercury-decide`) prend en charge les questions `predicate`, `choice` et `score` avec du texte ou du JSON. Chaque question de choix accepte jusqu’à 255 options et chaque question de score jusqu’à 10 niveaux. Les images, le streaming et les appels d’outils ne sont pas pris en charge. L’entrée coûte actuellement 0,02 USD par million de tokens avec la réduction de 50 % d’Inception ; les tokens de sortie sont comptabilisés mais gratuits. Inception n’a pas publié de date de fin. Vérifiez la disponibilité du modèle et les [tarifs actuels](https://docs.inceptionlabs.ai/get-started/models) avant utilisation.
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
 ```json
 {
   "model": "openai/gpt-6-luna",

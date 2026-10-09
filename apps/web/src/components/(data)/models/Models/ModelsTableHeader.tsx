@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { featureLabels } from "@/lib/config/featureLabels";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 
@@ -92,6 +93,7 @@ export default function ModelsTableHeader({
 		free: t("filtersUi.tierFree"),
 		flex: t("filtersUi.tierFlex"),
 		priority: t("filtersUi.tierPriority"),
+		fast: t("filtersUi.tierPriority"),
 	};
 	const formatStatus = (value: string) => {
 		const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
@@ -152,7 +154,7 @@ export default function ModelsTableHeader({
 
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: ["standard"],
-		parse: (value) => (value ? value.split(",") : ["standard"]),
+		parse: (value) => (value ? parseCatalogueTierFilters(value) : ["standard"]),
 		serialize: (value) => value.join(","),
 	});
 	const isDefaultTiers =

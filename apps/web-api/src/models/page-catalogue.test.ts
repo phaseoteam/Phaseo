@@ -189,7 +189,7 @@ describe("shared models page rows", () => {
 		expect(all.models.map((row) => row.model_id)).toEqual(["lab-a/model", "lab-b/model"]);
 		expect(lab.models.map((row) => row.model_id)).toEqual(["lab-b/model"]);
 		expect(payloadCalls).toHaveLength(1);
-		expect([...store.keys()]).toEqual(["https://web-api.internal/models-page-rows/v1/42//"]);
+		expect([...store.keys()]).toEqual(["https://web-api.internal/models-page-rows/v2/42/"]);
 	});
 
 	it("rebuilds when the catalogue revision changes", async () => {

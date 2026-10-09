@@ -1,4 +1,5 @@
 import { getDataClient } from "@/data/supabase";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
@@ -239,6 +240,7 @@ export function attachModelsPageVariants(rows: Row[]): Row[] {
 		const baseId = baseModelId(row);
 		return withoutExternalProviders({
 			...row,
+			gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers),
 			base_model_id: baseId,
 			variant_kind: variantKind(row),
 			variants: variantsByBaseModel.get(baseId) ?? {},
@@ -327,7 +329,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 			gateway_output_modalities: strings([...strings(row.gateway_output_modalities).map(modality), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])]),
 		})), "gateway_output_modalities", modality), MODALITY_ORDER),
 		featureOptions: ordered(optionCounts(rows, "gateway_features"), FEATURE_ORDER),
-		tierOptions: optionCounts(rows, "gateway_tiers"),
+		tierOptions: optionCounts(rows.map((row) => ({ ...row, gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers) })), "gateway_tiers"),
 		supportedParameterOptions: optionCounts(rows, "supported_parameters"),
 		providerOptions: optionCounts(rows, "gateway_provider_names"),
 		regionOptions: optionCounts(rows, "gateway_execution_regions"),
@@ -343,10 +345,11 @@ export type ModelsPageQuery = {
 	includeMetrics?: boolean;
 };
 
-async function loadPageRows(env: Env, region: string | null, serviceTier: string | null, organisationId: string | null): Promise<Row[]> {
+async function loadPageRows(env: Env, region: string | null, organisationId: string | null): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
 		p_region: region,
-		p_service_tier: serviceTier,
+		// Match normalized modes after loading every provider alias in the region.
+		p_service_tier: null,
 		p_organisation_id: organisationId,
 	});
 	if (error) throw error;
@@ -355,9 +358,9 @@ async function loadPageRows(env: Env, region: string | null, serviceTier: string
 }
 
 // The payload costs ~1s of database time and ~6.6MB per build, yet edge
-// responses are keyed by URL, so every offset, search, projection and
-// organisation page rebuilt it. Share one copy per catalogue revision, region
-// and tier across those callers. Revision triggers cover every catalogue table
+// responses are keyed by URL, so every offset, search, projection, tier and
+// organisation page rebuilt it. Share one copy per catalogue revision and
+// region across those callers. Revision triggers cover every catalogue table
 // the payload reads except v2_labs, so the TTL bounds lab edits to the same
 // window as the edge cache.
 const SHARED_ROWS_TTL_SECONDS = 15 * 60;
@@ -369,11 +372,11 @@ async function catalogueRevision(env: Env): Promise<string | null> {
 	return revision && /^\d+$/.test(revision) ? revision : null;
 }
 
-async function sharedPageRows(env: Env, cache: Cache, region: string | null, serviceTier: string | null, organisationId: string | null): Promise<Row[]> {
+async function sharedPageRows(env: Env, cache: Cache, region: string | null, organisationId: string | null): Promise<Row[]> {
 	const revision = await catalogueRevision(env);
 	// Without a revision nothing is cached, so keep the narrow organisation query.
-	if (!revision) return loadPageRows(env, region, serviceTier, organisationId);
-	const key = `https://web-api.internal/models-page-rows/v1/${revision}/${encodeURIComponent(region ?? "")}/${encodeURIComponent(serviceTier ?? "")}`;
+	if (!revision) return loadPageRows(env, region, organisationId);
+	const key = `https://web-api.internal/models-page-rows/v2/${revision}/${encodeURIComponent(region ?? "")}`;
 	const inflight = sharedRowsInflight.get(key);
 	if (inflight) return inflight;
 	const load = (async () => {
@@ -382,7 +385,7 @@ async function sharedPageRows(env: Env, cache: Cache, region: string | null, ser
 			const rows = await cached.json().catch(() => null);
 			if (Array.isArray(rows)) return rows as Row[];
 		}
-		const rows = await loadPageRows(env, region, serviceTier, null);
+		const rows = await loadPageRows(env, region, null);
 		await cache.put(key, new Response(JSON.stringify(rows), {
 			headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${SHARED_ROWS_TTL_SECONDS}` },
 		})).catch(() => {});
@@ -398,14 +401,15 @@ async function sharedPageRows(env: Env, cache: Cache, region: string | null, ser
 
 async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
 	const region = query.region || null;
-	const serviceTier = query.serviceTier || null;
+	const organisationId = query.organisationId || null;
 	const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
 	const data = cache
-		? await sharedPageRows(env, cache, region, serviceTier, query.organisationId || null)
-		: await loadPageRows(env, region, serviceTier, query.organisationId || null);
-	return query.organisationId
-		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
-		: data;
+		? await sharedPageRows(env, cache, region, organisationId)
+		: await loadPageRows(env, region, organisationId);
+	return data.filter((row: Row) =>
+		(!organisationId || String(row.organisation_id ?? "") === organisationId)
+		&& (!query.serviceTier || normalizeCatalogueTiers(row.gateway_tiers).includes(normalizeCatalogueTier(query.serviceTier))),
+	);
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[], throwOnError = false): Promise<WeeklyMetricRow[]> {

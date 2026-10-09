@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
@@ -501,7 +502,7 @@ export async function fetchGatewayMonitorRows(
 			quantization: row.quantization_scheme ?? undefined,
 			supportedParameters: supportedParameters(params),
 			effectiveFrom: row.effective_from ?? undefined,
-			tier: row.is_free_variant ? "free" : String(row.pricing_tier ?? "standard"),
+			tier: row.is_free_variant ? "free" : normalizeCatalogueTier(row.pricing_tier),
 			added: row.model_release_date ?? undefined,
 			retired: row.model_retirement_date ?? undefined,
 			weeklyTokensModel: numberOrNull(row.weekly_tokens_model),
@@ -835,7 +836,8 @@ publicModelsRouter.get("/", async (c) => {
 				includeVirtual ? fetchFreeRouterOverview(c.env, includeMetrics) : Promise.resolve(null),
 			]);
 			const databaseModels = catalogue.models.filter((model) => model.model_id !== "phaseo/free");
-			const allModels = freeRouter ? [buildFreeRouterCatalogueRow(freeRouter, includeMetrics), ...databaseModels] : databaseModels;
+			const allModels = (freeRouter ? [buildFreeRouterCatalogueRow(freeRouter, includeMetrics), ...databaseModels] : databaseModels)
+				.filter((model) => !serviceTier || normalizeCatalogueTiers(model.gateway_tiers).includes(normalizeCatalogueTier(serviceTier)));
 			const normalizedSearch = search?.toLowerCase();
 			const filtered = normalizedSearch ? allModels.filter((model) => String(model.name ?? "").toLowerCase().includes(normalizedSearch)) : allModels;
 			const response = withPublicCache(c.json({ models: filtered.slice(offset, offset + limit), facets: buildModelsPageFacets(filtered), pricing_complete: catalogue.pricingComplete, total: filtered.length, limit, offset, catalogue_version: catalogueVersion, shape: "page", projection }), cataloguePolicy(catalogueVersion, includeVirtual));

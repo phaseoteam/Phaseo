@@ -100,6 +100,7 @@ import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
@@ -1070,6 +1071,7 @@ function ModelsDisplayContent({
 			batch: "tierBatch",
 			flex: "tierFlex",
 			priority: "tierFast",
+			fast: "tierFast",
 		};
 		const key = keys[value.toLowerCase()];
 		return key ? tQuickstart(key as never) : toTitleCase(value);
@@ -1156,7 +1158,7 @@ function ModelsDisplayContent({
 	});
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: [] as string[],
-		parse: parseCsvParam,
+		parse: parseCatalogueTierFilters,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,

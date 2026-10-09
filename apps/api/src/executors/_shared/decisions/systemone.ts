@@ -33,7 +33,7 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion): boolean {
 		answer.score >= 0 && answer.score <= keys.length - 1;
 }
 
-// Liquid and Perplexity use the same typed-question wire contract at different URLs.
+// Providers use the same typed-question wire contract at different URLs.
 export async function executeSystemOne(
 	args: ExecutorExecuteArgs,
 	url: string,
