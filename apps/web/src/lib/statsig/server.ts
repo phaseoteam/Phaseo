@@ -70,6 +70,7 @@ export const getServerStatsigUser = cache(async () => {
 	}
 
 	const context = await getServerAccountContext();
+	if (!context.accessToken) return buildAnonymousStatsigUser(stableID);
 	const auth = await fetchAccountWebApi<InternalAuthStatsigData>("/api/account/auth/statsig", context.accessToken);
 	if (!auth.signedIn || !auth.user?.id) {
 		return buildAnonymousStatsigUser(stableID);

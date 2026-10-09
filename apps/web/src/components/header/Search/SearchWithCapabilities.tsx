@@ -8,7 +8,7 @@ import {
 import { catalogueGamesEnabled } from "@/lib/games/preview";
 import { SearchWrapper } from "@/components/header/Search/SearchWrapper";
 import { connection } from "next/server";
-import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
+import { getHeaderAccountData } from "@/components/header/getHeaderAccountData";
 import { toAccountQueryScope } from "@/lib/query/queryKeys";
 
 export async function SearchWithCapabilities(props: { className?: string }) {
@@ -23,7 +23,7 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 		videoApiFlag().catch(() => false),
 		realtimeVoiceFlag().catch(() => false),
 		catalogueGamesEnabled().catch(() => false),
-		fetchInternalAuthHeaderData({ limit: 1 }).catch(() => null),
+		getHeaderAccountData(),
 	]);
 
 	return (

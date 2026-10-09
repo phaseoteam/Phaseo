@@ -19,6 +19,7 @@ export async function fetchInternalAuthHeaderData(
 		const [supabase, cookieStore] = await Promise.all([createClient({ signal }), cookies()]);
 		const { data } = await supabase.auth.getSession();
 		signal.throwIfAborted();
+		if (!data.session?.access_token) return { isLoggedIn: false, teams: [] };
 		const activeWorkspaceId = String(cookieStore.get("activeWorkspaceId")?.value ?? "").trim();
 		const searchParams = new URLSearchParams();
 		if (options.query?.trim()) searchParams.set("q", options.query.trim());
