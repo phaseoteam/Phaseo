@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareReplayMigration } from "./declarative-replay-history.mjs";
+import { runRollupLockSmoke } from "./rollup-lock-smoke.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = join(root, "supabase");
@@ -65,6 +66,7 @@ if (mode === "smoke") {
 		for (const file of ["declarative_schema.sql", "public_catalogue_payloads.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_model_requests.sql", "provider_catalog_review_notifications.sql", "provider_catalog_overrides.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
+		await runRollupLockSmoke(`supabase_db_${projectId}`);
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
 			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");
 		run(["db", "schema", "declarative", "sync", "--no-apply", "--strict-coverage", "-f", "trial_incremental_change"]);

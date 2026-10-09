@@ -14,6 +14,7 @@ async function fixture(current) {
     await db.exec(await read(`../schemas/private/functions/${name}.sql`));
   }
   await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));
+  if (current) await db.exec(await read('../schemas/public/functions/refresh_v2_analytics_range.sql'));
   for (const table of tables) {
     await db.exec(`alter table ${table}_meters add foreign key (rollup_id) references ${table}(rollup_id) on delete cascade`);
   }
@@ -133,6 +134,10 @@ try {
     and classid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0)>>32 & 4294967295)
     and objid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0) & 4294967295)) held`)).rows[0].held,true);
   await after.exec('rollback');
+  const beforeRefresh = await output(after);
+  await after.query("select refresh_v2_analytics_range(current_date-interval '1 day',current_date,md5('workspace')::uuid)");
+  assert.deepEqual(await output(after),beforeRefresh,'Synchronous range refresh retains exact totals');
+  assert.equal(Number((await after.query("select count(*) n from v2_analytics_outbox where status in ('pending','processing','failed')")).rows[0].n),0);
   console.log(JSON.stringify({ oldWork,newWork,checks:'All aggregate fields/meters, coalescing cap, workspace boundaries, readiness, public visibility, correction re-enqueue, moved grains, idempotency and grants passed' },null,2));
 } catch (error) {
   console.error(error.message, error.detail ?? '', error.where?.split('\n')[0] ?? '');

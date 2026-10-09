@@ -9,6 +9,7 @@ on:
             - 'supabase/baseline/**'
             - 'supabase/tests/**'
             - 'scripts/declarative-schema.mjs'
+            - 'scripts/rollup-lock-smoke.mjs'
             - 'scripts/declarative-replay-history.mjs'
             - 'scripts/declarative-replay-history.test.mjs'
             - '.github/workflows/declarative-schema.yml'
