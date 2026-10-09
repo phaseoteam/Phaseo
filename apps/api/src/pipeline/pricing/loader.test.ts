@@ -25,7 +25,7 @@ describe("joined price-card loader", () => {
         vi.setSystemTime(new Date("2026-09-05T00:00:00Z"));
         rows = [sku()];
         requests.length = 0;
-        respond = async () => Response.json(rows);
+        respond = async () => Response.json([{ provider_model_id: "route-1", skus: rows }]);
         runtime.client = createClient("https://pricing.example.com", "test-key", {
             auth: { persistSession: false, autoRefreshToken: false },
             global: { fetch: async (input) => { requests.push(new URL(String(input))); return respond(); } },
@@ -37,17 +37,19 @@ describe("joined price-card loader", () => {
         const card = await loadPriceCard("poolside", "poolside/laguna-s-2.1:free", "text.generate");
         expect(requests).toHaveLength(1);
         const params = requests[0].searchParams;
-        expect(requests[0].pathname).toBe("/rest/v1/v2_pricing_skus");
-        expect(params.get("select")).toContain("route:v2_model_provider_routes!inner");
-        expect(params.get("route.provider_slug")).toBe("eq.poolside");
-        expect(params.get("route.status")).toBe("in.(active,degraded)");
-        expect(params.get("route.routing_enabled")).toBe("eq.true");
-        expect(params.get("operation")).toBe("eq.text.generate");
-        expect(params.get("status")).toBe("eq.active");
-        expect(params.get("currency")).toBe("eq.USD");
-        expect(params.get("meters.billable")).toBe("eq.true");
-        expect(params.get("effective_from")).toBe("lte.2026-09-05T00:00:00.000Z");
-        expect(params.get("or")).toBe("(effective_to.is.null,effective_to.gt.2026-09-05T00:00:00.000Z)");
+        // Rooted at the route so Postgres filters routes by index before
+        // embedding SKUs and meters.
+        expect(requests[0].pathname).toBe("/rest/v1/v2_model_provider_routes");
+        expect(params.get("select")).toContain("skus:v2_pricing_skus(");
+        expect(params.get("provider_slug")).toBe("eq.poolside");
+        expect(params.get("status")).toBe("in.(active,degraded)");
+        expect(params.get("routing_enabled")).toBe("eq.true");
+        expect(params.get("skus.operation")).toBe("eq.text.generate");
+        expect(params.get("skus.status")).toBe("eq.active");
+        expect(params.get("skus.currency")).toBe("eq.USD");
+        expect(params.get("skus.meters.billable")).toBe("eq.true");
+        expect(params.get("skus.effective_from")).toBe("lte.2026-09-05T00:00:00.000Z");
+        expect(params.get("skus.or")).toBe("(effective_to.is.null,effective_to.gt.2026-09-05T00:00:00.000Z)");
         expect(card?.rules.map((rule) => rule.id)).toEqual(["input_text_tokens", "output_text_tokens"]);
         expect(card?.rules[0]).toMatchObject({ unit_size: 1_000_000, price_per_unit: "1e-7", included_quantity: 2, time_windows: [{ price_per_unit: "0" }] });
         expect(card?.version).toBe("2026-09-01T00:00:00.000Z");
@@ -55,14 +57,14 @@ describe("joined price-card loader", () => {
 
     it("uses only the exact executed provider slug when one is supplied", async () => {
         await loadPriceCard("minimax", "canonical", "text.generate", "speech-hd");
-        expect(requests[0].searchParams.get("route.provider_model_slug")).toBe("eq.speech-hd");
-        expect(requests[0].searchParams.has("route.or")).toBe(false);
+        expect(requests[0].searchParams.get("provider_model_slug")).toBe("eq.speech-hd");
+        expect(requests[0].searchParams.has("or")).toBe(false);
     });
 
     it("quotes reserved characters in canonical/provider-slug alternatives", async () => {
         const model = 'model,or(foo)."quoted"\\bar';
         await loadPriceCard("poolside", model, "text.generate");
-        expect(requests[0].searchParams.get("route.or")).toBe(`(model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)})`);
+        expect(requests[0].searchParams.get("or")).toBe(`(model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)})`);
     });
 
     it("retains window/version metadata from SKUs without billable meters", async () => {
@@ -73,6 +75,17 @@ describe("joined price-card loader", () => {
         vi.advanceTimersByTime(1_001);
         await loadPriceCard("poolside", "free", "text.generate");
         expect(requests).toHaveLength(2);
+    });
+
+    it("merges SKUs across matching routes newest first", async () => {
+        respond = async () => Response.json([
+            { provider_model_id: "route-old", skus: [{ ...sku(), sku_id: "old", provider_model_id: "route-old", effective_from: "2026-07-01T00:00:00Z", meters: [] }] },
+            { provider_model_id: "route-1", skus: rows },
+            { provider_model_id: "route-empty", skus: [] },
+        ]);
+        const card = await loadPriceCard("poolside", "free", "text.generate");
+        expect(card?.effective_from).toBe("2026-07-01T00:00:00.000Z");
+        expect(card?.rules.map((rule) => rule.id)).toEqual(["input_text_tokens", "output_text_tokens"]);
     });
 
     it("shares simultaneous cold loads and caches the result", async () => {
@@ -96,7 +109,7 @@ describe("joined price-card loader", () => {
     it("fails closed on query errors without caching them as missing prices", async () => {
         respond = async () => Response.json({ message: "invalid relationship" }, { status: 400 });
         expect(await loadPriceCard("poolside", "free", "text.generate")).toBeNull();
-        respond = async () => Response.json(rows);
+        respond = async () => Response.json([{ provider_model_id: "route-1", skus: rows }]);
         expect(await loadPriceCard("poolside", "free", "text.generate")).not.toBeNull();
         expect(requests).toHaveLength(2);
     });
