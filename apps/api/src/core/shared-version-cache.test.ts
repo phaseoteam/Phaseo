@@ -6,6 +6,8 @@ const state = vi.hoisted(() => ({
 	located: new Map<string, string>(),
 	background: [] as Promise<unknown>[],
 	bindings: {} as Record<string, string>,
+	/** When set, the next KV read waits for this promise instead of reading the map. */
+	deferredKv: null as Promise<string | null> | null,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -14,12 +16,17 @@ vi.mock("@/runtime/env", () => ({
 	getCache: () => ({
 		get: async (key: string, options: unknown) => {
 			state.kvGets.push({ key, options });
+			if (state.deferredKv) {
+				const deferred = state.deferredKv;
+				state.deferredKv = null;
+				return deferred;
+			}
 			return state.kv.get(key) ?? null;
 		},
 	}),
 }));
 
-import { readSharedVersion, rememberSharedVersion, SHARED_VERSION_TTL_MS } from "./shared-version-cache";
+import { __resetSharedVersionCacheForTests, readSharedVersion, rememberSharedVersion, SHARED_VERSION_TTL_MS } from "./shared-version-cache";
 
 const settle = async () => { await Promise.all(state.background.splice(0)); };
 
@@ -28,6 +35,8 @@ beforeEach(() => {
 	state.kv.clear();
 	state.kvGets.length = 0;
 	state.located.clear();
+	state.deferredKv = null;
+	__resetSharedVersionCacheForTests();
 	state.bindings = {};
 	(globalThis as any).caches = {
 		default: {
@@ -69,6 +78,25 @@ describe("shared version cache", () => {
 		await readSharedVersion("k");
 		await settle();
 		rememberSharedVersion("k", 2);
+		await settle();
+		expect(await readSharedVersion("k")).toMatchObject({ value: 2 });
+		expect(state.kvGets).toHaveLength(1);
+	});
+
+	it.each([
+		["a bump in this isolate", false],
+		["a bump from another isolate in the location", true],
+	])("does not let a read that started before %s put the old counter back", async (_label, otherIsolate) => {
+		let finishKv!: (value: string | null) => void;
+		state.deferredKv = new Promise((resolve) => { finishKv = resolve; });
+		const stale = readSharedVersion("k");
+		await vi.advanceTimersByTimeAsync(0);
+		rememberSharedVersion("k", 2);
+		await settle();
+		// Another isolate's bump leaves this isolate's local bump count untouched.
+		if (otherIsolate) __resetSharedVersionCacheForTests();
+		finishKv("1");
+		expect(await stale).toMatchObject({ value: 1 });
 		await settle();
 		expect(await readSharedVersion("k")).toMatchObject({ value: 2 });
 		expect(state.kvGets).toHaveLength(1);

@@ -57,19 +57,45 @@ async function writeLocation(cache: Cache, kvKey: string, version: SharedVersion
 }
 
 /** Reads a version counter through the location cache, falling back to KV. Throws if KV fails. */
+/**
+ * Counters only increase, so a fill never replaces a higher counter, and a bump in this isolate
+ * cancels fills that started before it. Together they stop a read that began before a revocation
+ * from putting the old counter back over the bump.
+ */
+async function fillLocation(cache: Cache, kvKey: string, version: SharedVersion, epoch: number): Promise<void> {
+	if ((localBumps.get(kvKey) ?? 0) !== epoch) return;
+	const current = await readLocation(cache, kvKey, Date.now());
+	if (current && current.value >= version.value) return;
+	if ((localBumps.get(kvKey) ?? 0) !== epoch) return;
+	await writeLocation(cache, kvKey, version);
+}
+
+/** kvKey -> number of bumps published from this isolate. */
+const localBumps = new Map<string, number>();
+const MAX_TRACKED_BUMPS = 10_000;
+
+export function __resetSharedVersionCacheForTests(): void {
+	localBumps.clear();
+}
+
 export async function readSharedVersion(kvKey: string): Promise<SharedVersion> {
 	const now = Date.now();
+	const epoch = localBumps.get(kvKey) ?? 0;
 	const cache = sharedCache();
 	const located = cache ? await readLocation(cache, kvKey, now) : null;
 	if (located) return located;
 	const raw = await getCache().get(kvKey, { type: "text", cacheTtl: KV_MIN_EDGE_CACHE_TTL_S });
 	const version = { value: normalizeVersion(raw), expiresAt: now + SHARED_VERSION_TTL_MS };
-	if (cache) dispatchBackground(writeLocation(cache, kvKey, version));
+	if (cache) dispatchBackground(fillLocation(cache, kvKey, version, epoch));
 	return version;
 }
 
 /** Publishes a just-written counter to this location so its isolates see the bump at once. */
 export function rememberSharedVersion(kvKey: string, value: number): void {
+	const bumps = (localBumps.get(kvKey) ?? 0) + 1;
+	localBumps.delete(kvKey);
+	localBumps.set(kvKey, bumps);
+	while (localBumps.size > MAX_TRACKED_BUMPS) localBumps.delete(localBumps.keys().next().value!);
 	const cache = sharedCache();
 	if (!cache) return;
 	dispatchBackground(writeLocation(cache, kvKey, { value: normalizeVersion(value), expiresAt: Date.now() + SHARED_VERSION_TTL_MS }));

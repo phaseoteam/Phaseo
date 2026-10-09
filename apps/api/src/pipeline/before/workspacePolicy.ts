@@ -152,6 +152,10 @@ function readWorkspacePolicyVersionL1(workspaceId: string): number | null {
 }
 
 function writeWorkspacePolicyVersionL1(workspaceId: string, value: number, expiresAt?: number): void {
+	// Reads (expiresAt given) never lower a counter: one that started before a bump in this
+	// isolate must not replace the bumped value.
+	const current = workspacePolicyVersionL1.get(workspaceId);
+	if (expiresAt !== undefined && current && current.expiresAt > Date.now() && current.value > value) return;
 	workspacePolicyVersionL1.set(workspaceId, {
 		value,
 		expiresAt: Math.min(Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS), expiresAt ?? Infinity),
