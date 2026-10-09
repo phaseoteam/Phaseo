@@ -30,7 +30,10 @@ vi.mock("@/runtime/env", () => {
 });
 
 import { __resetTieredCacheForTests } from "./tiered-cache";
-import { customerTierManifestKey, publishCustomerRateLimitTiers, readCustomerLimits } from "./customer-rate-limit-tiers";
+import {
+	customerTierManifestKey, KV_OPERATIONS_PER_INVOCATION, MAX_TIER_WRITES_PER_RUN, publishCustomerRateLimitTiers, readCustomerLimits,
+	TIER_MANIFEST_SHARD_COUNT,
+} from "./customer-rate-limit-tiers";
 
 const now = Date.parse("2026-10-09T12:00:00Z");
 const daysAgo = (days: number) => new Date(now - days * 86_400_000).toISOString();
@@ -95,6 +98,19 @@ describe("customer rate-limit tier publisher", () => {
 		mocks.rows = [row(5, { created_at: daysAgo(1), override_requests_per_minute: 400, override_expires_at: daysAgo(1) })];
 		expect(await publish()).toMatchObject({ deleted: 1 });
 		expect(published(5)).toBeUndefined();
+	});
+
+	it("keeps a default run well inside the per-invocation KV operation limit", async () => {
+		mocks.rows = Array.from({ length: 2500 }, (_, n) => row(n));
+		mocks.gets.length = 0;
+		mocks.puts.length = 0;
+		mocks.deletes.length = 0;
+		const summary = await publish();
+		expect(summary).toMatchObject({ written: MAX_TIER_WRITES_PER_RUN, complete: false });
+		const operations = mocks.gets.length + mocks.puts.length + mocks.deletes.length;
+		expect(operations).toBeLessThanOrEqual(MAX_TIER_WRITES_PER_RUN + 2 * TIER_MANIFEST_SHARD_COUNT);
+		// Leave at least half the invocation's KV operations to the other scheduled jobs.
+		expect(operations).toBeLessThanOrEqual(KV_OPERATIONS_PER_INVOCATION / 2);
 	});
 
 	it("pages through every workspace and resumes a capped backfill on the next run", async () => {

@@ -21,10 +21,14 @@ const MANIFEST_SHARDS = "0123456789abcdef".split("");
 const PAGE_SIZE = 1000;
 const WRITE_CONCURRENCY = 25;
 /**
- * KV writes/deletes per run. The scheduled invocation shares its subrequest
- * budget with other jobs, so a large backfill continues over several runs.
+ * KV writes/deletes per run. Workers KV allows 1,000 operations per invocation,
+ * shared with the other scheduled jobs; with the manifest reads and writes a run
+ * uses at most 432. A large backfill continues over several runs.
  */
-export const MAX_TIER_WRITES_PER_RUN = 2000;
+export const MAX_TIER_WRITES_PER_RUN = 400;
+/** Workers KV operations allowed per invocation. */
+export const KV_OPERATIONS_PER_INVOCATION = 1000;
+export const TIER_MANIFEST_SHARD_COUNT = MANIFEST_SHARDS.length;
 
 export const customerTierManifestKey = (shard: string) => `customer-quota:v2-manifest:${shard}`;
 
