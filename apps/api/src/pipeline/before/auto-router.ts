@@ -2,6 +2,8 @@ import type { Endpoint } from "@core/types";
 import type { PriceCard } from "../pricing/types";
 import type { ProviderCandidate } from "./types";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { knownCatalogueRevision } from "@core/catalogue-revision";
+import { tieredRead } from "@core/tiered-cache";
 import { readHealthManyOptimistic } from "../execute/health";
 
 export const AUTO_ROUTER_MODEL_ID = "phaseo/auto";
@@ -238,13 +240,113 @@ export function workspaceAutoRouterConfigFromRow(row: any): AutoRouterWorkspaceC
 }
 
 export async function loadWorkspaceAutoRouterConfig(workspaceId: string): Promise<AutoRouterWorkspaceConfig> {
-	const { data, error } = await getSupabaseAdmin()
-		.from("workspace_settings")
-		.select("auto_routing_allowed_patterns,auto_routing_spend_profile,auto_routing_max_input_price_per_million,auto_routing_max_output_price_per_million,auto_routing_objective,auto_routing_fallbacks_enabled,auto_routing_revision")
-		.eq("workspace_id", workspaceId)
-		.maybeSingle();
-	if (error) throw new Error(error.message || "Failed to load workspace auto-routing configuration");
-	return workspaceAutoRouterConfigFromRow(data);
+	// Settings edits apply within 30 s; a config older than 60 s is never used.
+	const config = await tieredRead<AutoRouterWorkspaceConfig>({
+		key: `auto-router-config:${workspaceId}`,
+		loader: async () => {
+			const { data, error } = await getSupabaseAdmin()
+				.from("workspace_settings")
+				.select("auto_routing_allowed_patterns,auto_routing_spend_profile,auto_routing_max_input_price_per_million,auto_routing_max_output_price_per_million,auto_routing_objective,auto_routing_fallbacks_enabled,auto_routing_revision")
+				.eq("workspace_id", workspaceId)
+				.maybeSingle();
+			if (error) throw new Error(error.message || "Failed to load workspace auto-routing configuration");
+			return workspaceAutoRouterConfigFromRow(data);
+		},
+		l1FreshMs: 30_000,
+		maxStaleMs: 60_000,
+		l2: false,
+		l3: false,
+	});
+	return config ?? workspaceAutoRouterConfigFromRow(null);
+}
+
+type AutoRouterCatalogue = {
+	revision: string | null;
+	routes: Array<{ provider_model_id: string; model_slug: string; effective_from: string | null; effective_to: string | null }>;
+	skus: Array<{ sku_id: string; provider_model_id: string; effective_from: string | null; effective_to: string | null }>;
+	meters: Array<{ sku_id: string; meter_key: string; unit_quantity: unknown; price_nanos: unknown }>;
+};
+
+async function fetchAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
+	const revision = knownCatalogueRevision();
+	const client = getSupabaseAdmin();
+	const routeRows: any[] = [];
+	for (let offset = 0; ; offset += 1_000) {
+		const result = await client.from("v2_model_provider_routes")
+			.select("provider_model_id,model_slug,routing_enabled,status,effective_from,effective_to")
+			.eq("routing_enabled", true)
+			.in("status", ["active", "degraded"])
+			.range(offset, offset + 999);
+		if (result.error) throw new Error(result.error.message || "Failed to load auto-router model routes");
+		routeRows.push(...(result.data ?? []));
+		if ((result.data?.length ?? 0) < 1_000) break;
+	}
+	// Effective windows are applied at read time, so a cached catalogue switches
+	// routes and prices exactly on schedule.
+	const providerModelIds = [...new Set(routeRows.map((row) => String(row.provider_model_id ?? "")).filter(Boolean))];
+	const capabilityResults = await Promise.all(chunks(providerModelIds).map((ids) =>
+		client.from("v2_route_capabilities").select("provider_model_id,capability_id,status").in("provider_model_id", ids)));
+	for (const result of capabilityResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router capabilities");
+	const textProviderModelIds = new Set(capabilityResults.flatMap((result) => result.data ?? [])
+		.filter((row) => AUTO_ROUTER_TEXT_CAPABILITIES.has(String(row.capability_id ?? "").toLowerCase()) && !["disabled", "internal_testing"].includes(String(row.status ?? "").toLowerCase()))
+		.map((row) => String(row.provider_model_id)));
+	const textRoutes = routeRows.filter((row) => textProviderModelIds.has(String(row.provider_model_id)));
+	const textProviderIds = [...new Set(textRoutes.map((row) => String(row.provider_model_id)))];
+	const skuResults = await Promise.all(chunks(textProviderIds).map((ids) =>
+		client.from("v2_pricing_skus")
+			.select("sku_id,provider_model_id,service_tier_slug,status,effective_from,effective_to")
+			.in("provider_model_id", ids)
+			.eq("service_tier_slug", "standard")
+			.neq("status", "disabled")));
+	for (const result of skuResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router pricing SKUs");
+	const skus = skuResults.flatMap((result) => result.data ?? []);
+	const skuIds = skus.map((row) => String(row.sku_id ?? "")).filter(Boolean);
+	const meterResults = await Promise.all(chunks(skuIds).map((ids) =>
+		client.from("v2_pricing_sku_meters").select("sku_id,meter_key,unit_quantity,price_nanos").in("sku_id", ids)));
+	for (const result of meterResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router pricing meters");
+	return {
+		revision,
+		routes: textRoutes.map((row) => ({
+			provider_model_id: String(row.provider_model_id),
+			model_slug: String(row.model_slug ?? ""),
+			effective_from: row.effective_from ?? null,
+			effective_to: row.effective_to ?? null,
+		})),
+		skus: skus.map((row) => ({
+			sku_id: String(row.sku_id ?? ""),
+			provider_model_id: String(row.provider_model_id ?? ""),
+			effective_from: row.effective_from ?? null,
+			effective_to: row.effective_to ?? null,
+		})),
+		meters: meterResults.flatMap((result) => result.data ?? []).map((row) => ({
+			sku_id: String(row.sku_id ?? ""),
+			meter_key: String(row.meter_key ?? ""),
+			unit_quantity: row.unit_quantity,
+			price_nanos: row.price_nanos,
+		})),
+	};
+}
+
+// Catalogue-wide data, identical for every workspace: always served from
+// cache and revalidated in the background when the catalogue revision moves.
+async function readAutoRouterCatalogue(): Promise<AutoRouterCatalogue> {
+	knownCatalogueRevision();
+	const catalogue = await tieredRead<AutoRouterCatalogue>({
+		key: "auto-router-catalogue:v1",
+		loader: fetchAutoRouterCatalogue,
+		l1FreshMs: 60_000,
+		l2: { freshS: 60, storeS: 86_400 },
+		l3: { freshS: 300 },
+		validate: (value): value is AutoRouterCatalogue =>
+			Boolean(value && typeof value === "object" && Array.isArray((value as AutoRouterCatalogue).routes) &&
+				Array.isArray((value as AutoRouterCatalogue).skus) && Array.isArray((value as AutoRouterCatalogue).meters)),
+		isFreshInL3: (value) => {
+			const revision = knownCatalogueRevision();
+			return revision === null ? undefined : value.revision === revision;
+		},
+	});
+	if (!catalogue) throw new Error("Failed to load auto-router catalogue");
+	return catalogue;
 }
 
 function appendText(parts: string[], value: unknown) {
@@ -521,42 +623,12 @@ export async function loadManagedAutoRouterCandidates(
 	body: any,
 	classification = deterministicAutoRouterClassification(body),
 ): Promise<AutoRouterCandidateUniverse> {
-	const client = getSupabaseAdmin();
-	const routeRows: any[] = [];
-	for (let offset = 0; ; offset += 1_000) {
-		const result = await client.from("v2_model_provider_routes")
-			.select("provider_model_id,model_slug,routing_enabled,status,effective_from,effective_to")
-			.eq("routing_enabled", true)
-			.in("status", ["active", "degraded"])
-			.range(offset, offset + 999);
-		if (result.error) throw new Error(result.error.message || "Failed to load auto-router model routes");
-		routeRows.push(...(result.data ?? []));
-		if ((result.data?.length ?? 0) < 1_000) break;
-	}
-	const activeRoutes = routeRows.filter((row) => activeAt(row));
-	const providerModelIds = [...new Set(activeRoutes.map((row) => String(row.provider_model_id ?? "")).filter(Boolean))];
-	const capabilityResults = await Promise.all(chunks(providerModelIds).map((ids) =>
-		client.from("v2_route_capabilities").select("provider_model_id,capability_id,status").in("provider_model_id", ids)));
-	for (const result of capabilityResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router capabilities");
-	const textProviderModelIds = new Set(capabilityResults.flatMap((result) => result.data ?? [])
-		.filter((row) => AUTO_ROUTER_TEXT_CAPABILITIES.has(String(row.capability_id ?? "").toLowerCase()) && !["disabled", "internal_testing"].includes(String(row.status ?? "").toLowerCase()))
-		.map((row) => String(row.provider_model_id)));
-	const textRoutes = activeRoutes.filter((row) => textProviderModelIds.has(String(row.provider_model_id)));
-	const textProviderIds = [...new Set(textRoutes.map((row) => String(row.provider_model_id)))];
-	const skuResults = await Promise.all(chunks(textProviderIds).map((ids) =>
-		client.from("v2_pricing_skus")
-			.select("sku_id,provider_model_id,service_tier_slug,status,effective_from,effective_to")
-			.in("provider_model_id", ids)
-			.eq("service_tier_slug", "standard")
-			.neq("status", "disabled")));
-	for (const result of skuResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router pricing SKUs");
-	const skus = skuResults.flatMap((result) => result.data ?? []).filter((row) => activeAt(row));
-	const skuIds = skus.map((row) => String(row.sku_id ?? "")).filter(Boolean);
-	const meterResults = await Promise.all(chunks(skuIds).map((ids) =>
-		client.from("v2_pricing_sku_meters").select("sku_id,meter_key,unit_quantity,price_nanos").in("sku_id", ids)));
-	for (const result of meterResults) if (result.error) throw new Error(result.error.message || "Failed to load auto-router pricing meters");
+	const catalogue = await readAutoRouterCatalogue();
+	const now = Date.now();
+	const textRoutes = catalogue.routes.filter((row) => activeAt(row, now));
+	const skus = catalogue.skus.filter((row) => activeAt(row, now));
 	const metersBySku = new Map<string, any[]>();
-	for (const meter of meterResults.flatMap((result) => result.data ?? [])) {
+	for (const meter of catalogue.meters) {
 		const skuId = String(meter.sku_id ?? "");
 		metersBySku.set(skuId, [...(metersBySku.get(skuId) ?? []), meter]);
 	}
@@ -743,19 +815,55 @@ export async function selectAutoRouterModel(args: SelectAutoRouterArgs): Promise
 	};
 }
 
+type CachedBenchmarkResults = {
+	revision: string | null;
+	rows: Array<AutoRouterBenchmarkResult & { effective_to: string | null }>;
+};
+
+async function fetchBenchmarkResults(benchmarkIds: string[]): Promise<CachedBenchmarkResults> {
+	const revision = knownCatalogueRevision();
+	const rows: CachedBenchmarkResults["rows"] = [];
+	for (let offset = 0; ; offset += 1_000) {
+		const result = await getSupabaseAdmin()
+			.from("v2_benchmark_results")
+			.select("model_slug,benchmark_id,score_numeric,effective_to")
+			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
+			.in("benchmark_id", benchmarkIds)
+			.eq("is_self_reported", false)
+			.order("model_slug")
+			.order("benchmark_id")
+			.range(offset, offset + 999);
+		if (result.error) throw new Error(result.error.message || "Failed to load auto-router benchmarks");
+		rows.push(...((result.data ?? []) as CachedBenchmarkResults["rows"]));
+		if ((result.data?.length ?? 0) < 1_000) break;
+	}
+	return { revision, rows };
+}
+
 export async function loadAutoRouterBenchmarks(models: string[], benchmarkIds: string[]): Promise<AutoRouterBenchmarkResult[]> {
-	const uniqueModels = [...new Set(models)];
-	const permittedBenchmarkIds = benchmarkIds.filter((id) => !isProhibitedAutoRouterBenchmark(id));
-	if (!uniqueModels.length || !permittedBenchmarkIds.length) return [];
-	const results = await Promise.all(chunks(uniqueModels, 100).map((modelChunk) => getSupabaseAdmin()
-		.from("v2_benchmark_results")
-		.select("model_slug,benchmark_id,score_numeric")
-		.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-		.in("model_slug", modelChunk)
-		.in("benchmark_id", permittedBenchmarkIds)
-		.eq("is_self_reported", false)));
-	for (const result of results) if (result.error) throw new Error(result.error.message || "Failed to load auto-router benchmarks");
-	return results.flatMap((result) => result.data ?? []) as AutoRouterBenchmarkResult[];
+	const uniqueModels = new Set(models);
+	const permittedBenchmarkIds = [...new Set(benchmarkIds.filter((id) => !isProhibitedAutoRouterBenchmark(id)))].sort();
+	if (!uniqueModels.size || !permittedBenchmarkIds.length) return [];
+	// Benchmark results are catalogue data covered by the catalogue revision;
+	// serve them from cache and filter by model and expiry in memory.
+	knownCatalogueRevision();
+	const cached = await tieredRead<CachedBenchmarkResults>({
+		key: `auto-router-benchmarks:v1:${permittedBenchmarkIds.join(",")}`,
+		loader: () => fetchBenchmarkResults(permittedBenchmarkIds),
+		l1FreshMs: 60_000,
+		l2: { freshS: 60, storeS: 86_400 },
+		l3: { freshS: 300 },
+		validate: (value): value is CachedBenchmarkResults =>
+			Boolean(value && typeof value === "object" && Array.isArray((value as CachedBenchmarkResults).rows)),
+		isFreshInL3: (value) => {
+			const revision = knownCatalogueRevision();
+			return revision === null ? undefined : value.revision === revision;
+		},
+	});
+	const now = Date.now();
+	return (cached?.rows ?? [])
+		.filter((row) => uniqueModels.has(row.model_slug) && (!row.effective_to || Date.parse(row.effective_to) > now))
+		.map(({ model_slug, benchmark_id, score_numeric }) => ({ model_slug, benchmark_id, score_numeric }));
 }
 
 function textPricesPerMillionTokens(card: PriceCard | null): { input: number | null; output: number | null } {

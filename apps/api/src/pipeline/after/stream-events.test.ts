@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { extractUnifiedStreamEvents } from "./stream-events";
+import { createToolCallKeyResolver, extractUnifiedStreamEvents } from "./stream-events";
+
+describe("createToolCallKeyResolver", () => {
+	it("counts a chat tool call once when only the first chunk carries the id", () => {
+		const resolve = createToolCallKeyResolver();
+		const keys = new Set([
+			resolve({ type: "delta_tool", toolCallId: "call_1", toolName: "lookup", toolIndex: 0, choiceIndex: 0 }),
+			resolve({ type: "delta_tool", argumentsDelta: "{\"a\":", toolIndex: 0, choiceIndex: 0 }),
+			resolve({ type: "delta_tool", argumentsDelta: "1}", toolIndex: 0, choiceIndex: 0 }),
+			resolve({ type: "delta_tool", toolCallId: "call_2", toolName: "other", toolIndex: 1, choiceIndex: 0 }),
+		]);
+		expect(keys.size).toBe(2);
+	});
+
+	it("aliases Responses item ids and call ids to one tool call", () => {
+		const resolve = createToolCallKeyResolver();
+		const keys = new Set([
+			resolve({ type: "delta_tool", toolCallKey: "fc_1", toolCallId: "call_1", toolName: "lookup" }),
+			resolve({ type: "delta_tool", toolCallKey: "fc_1", argumentsDelta: "{}" }),
+			resolve({ type: "delta_tool", toolCallKey: "fc_1", argumentsDelta: "" }),
+		]);
+		expect(keys.size).toBe(1);
+	});
+
+	it("aliases Anthropic block start ids with index-only argument deltas", () => {
+		const resolve = createToolCallKeyResolver();
+		const keys = new Set([
+			resolve({ type: "delta_tool", toolCallId: "toolu_1", toolName: "lookup", toolIndex: 1, choiceIndex: 0 }),
+			resolve({ type: "delta_tool", argumentsDelta: "{}", toolIndex: 1, choiceIndex: 0 }),
+		]);
+		expect(keys.size).toBe(1);
+	});
+});
 
 describe("extractUnifiedStreamEvents", () => {
 	it("extracts text, reasoning, and tool deltas from chat completion chunks", () => {

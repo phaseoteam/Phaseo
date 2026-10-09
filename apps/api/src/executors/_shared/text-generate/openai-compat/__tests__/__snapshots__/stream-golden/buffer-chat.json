@@ -1,0 +1,87 @@
+{
+  "ir": {
+    "id": "req_golden",
+    "nativeId": "chatcmpl-1",
+    "created": 1700000000,
+    "model": "test-model",
+    "provider": "deepseek",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "reasoning_text",
+              "text": "Thinking ✓"
+            },
+            {
+              "type": "text",
+              "text": "Hello wörld 👋"
+            }
+          ],
+          "toolCalls": [
+            {
+              "id": "call_1",
+              "name": "get_weather",
+              "arguments": "{\"city\":\"Paris\"}",
+              "type": "function"
+            }
+          ]
+        },
+        "finishReason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "inputTokens": 10,
+      "outputTokens": 20,
+      "totalTokens": 30,
+      "cachedInputTokens": 4,
+      "cachedReadTokensAreSubsetOfInput": true,
+      "_ext": {}
+    }
+  },
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 20,
+    "total_tokens": 30,
+    "prompt_tokens_details": {
+      "cached_tokens": 4
+    }
+  },
+  "rawResponse": {
+    "id": "chatcmpl-1",
+    "object": "chat.completion.chunk",
+    "created": 1700000000,
+    "model": "gpt-x",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Hello wörld 👋",
+          "reasoning_content": "Thinking ✓",
+          "tool_calls": [
+            {
+              "id": "call_1",
+              "type": "function",
+              "function": {
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            }
+          ]
+        },
+        "finish_reason": "tool_calls"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 10,
+      "completion_tokens": 20,
+      "total_tokens": 30,
+      "prompt_tokens_details": {
+        "cached_tokens": 4
+      }
+    }
+  }
+}

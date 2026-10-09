@@ -1,0 +1,14 @@
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","reasoning_content":"Let me think ✓"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","content":"Hello"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","content":" wörld 👋"},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"id":"toolu_1","type":"function","function":{"name":"get_weather","arguments":""}}]},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"function":{"arguments":"{\"city\":"}}]},"finish_reason":null}]}
+
+data: {"object":"chat.completion.chunk","nativeResponseId":"req_golden","created":1767323045,"model":"claude-x","provider":"anthropic","choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"function":{"arguments":"\"Paris\"}"}}]},"finish_reason":null}]}
+
+data: {"id":"req_golden","object":"chat.completion","nativeResponseId":"req_golden","created":1767323045,"model":"test-model","provider":"anthropic","choices":[{"index":0,"message":{"role":"assistant","content":"Hello wörld 👋","tool_calls":[{"id":"toolu_1","type":"function","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}],"reasoning_content":"Let me think ✓","reasoning_details":[{"id":"req_golden-reasoning-0-1","index":0,"type":"text","text":"Let me think ✓"}]},"finish_reason":"tool_calls"}],"usage":{"input_tokens":25,"output_tokens":42,"total_tokens":67,"prompt_tokens":25,"completion_tokens":42,"input_details":{"cached_tokens":5}}}
+

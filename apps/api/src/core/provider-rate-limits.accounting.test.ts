@@ -3,14 +3,20 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
 	reconcileTokens: vi.fn(),
 	recordTokens: vi.fn(),
+	acquireLease: vi.fn(),
+	background: [] as Promise<unknown>[],
 }));
 
 vi.mock("@/runtime/env", () => ({
+	getCache: () => ({ get: async () => null, put: async () => undefined }),
+	getBindingsIfConfigured: () => null,
+	dispatchBackground: (promise: Promise<unknown>) => { mocks.background.push(promise); },
 	getBindings: () => ({
 		PROVIDER_RATE_LIMITS: {
 			getByName: () => ({
 				reconcileTokens: mocks.reconcileTokens,
 				recordTokens: mocks.recordTokens,
+				acquireLease: mocks.acquireLease,
 			}),
 		},
 	}),
@@ -34,6 +40,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 
 import {
+	admitManagedProvider,
 	clearProviderRateLimitConfigCacheForTests,
 	recordManagedProviderTokensOnce,
 	releaseManagedProviderReservation,
@@ -60,6 +67,10 @@ describe("provider token reservation accounting", () => {
 		clearProviderRateLimitConfigCacheForTests();
 		mocks.reconcileTokens.mockReset().mockResolvedValue(undefined);
 		mocks.recordTokens.mockReset().mockResolvedValue(undefined);
+		mocks.acquireLease.mockReset().mockImplementation(async (_config: unknown, need: { units: number }) => ({ ok: true, lease: {
+			id: "lease-1", expiresAt: Date.now() + 30_000, requests: null, units: need.units * 10, meta: { minuteWindow: 1, dayWindow: 1 },
+		} }));
+		mocks.background.length = 0;
 	});
 
 	it("reconciles each attempt-scoped reservation exactly once", async () => {
@@ -134,5 +145,32 @@ describe("provider token reservation accounting", () => {
 			upstreamRequestCount: 2,
 		});
 		expect(mocks.reconcileTokens).not.toHaveBeenCalled();
+	});
+
+
+	it("does not block failover on a hung coordinator when releasing or settling", async () => {
+		mocks.reconcileTokens.mockReturnValue(new Promise(() => undefined));
+		await releaseManagedProviderReservation(reservation("reservation-hung-release"));
+		expect(await settleFailedManagedProviderReservation({
+			reservation: reservation("reservation-hung-settle"), status: 500, usageCandidates: [{ total_tokens: 9 }], upstreamRequestCount: 1,
+		})).toBe(true);
+		expect(mocks.reconcileTokens).toHaveBeenCalledTimes(2);
+		expect(mocks.background).toHaveLength(2);
+	});
+
+	it("settles refunds into a held lease without calling the coordinator, and overruns through it", async () => {
+		const admitted = await admitManagedProvider("openai", 500, "reservation-leased");
+		const leased = admitted.reservation!;
+		expect(leased).toMatchObject({ id: "reservation-leased", tokens: 500, leaseId: "lease-1" });
+		await recordManagedProviderTokensOnce({ ctx: context(), providerId: "openai", keySource: "gateway", usage: { total_tokens: 120 }, reservation: leased });
+		await releaseManagedProviderReservation(leased);
+		expect(mocks.reconcileTokens).not.toHaveBeenCalled();
+
+		const second = (await admitManagedProvider("openai", 500, "reservation-overrun")).reservation!;
+		await recordManagedProviderTokensOnce({ ctx: context(), providerId: "openai", keySource: "gateway", usage: { total_tokens: 900 }, reservation: second });
+		expect(mocks.reconcileTokens).toHaveBeenCalledTimes(1);
+		expect(mocks.reconcileTokens).toHaveBeenCalledWith(second, 900);
+		await releaseManagedProviderReservation(second);
+		expect(mocks.reconcileTokens).toHaveBeenCalledTimes(1);
 	});
 });

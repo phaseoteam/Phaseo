@@ -28,8 +28,10 @@ import { pruneExpiredDataContributions } from "@/pipeline/classification/data-co
 import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
-import { publishConfiguredPublicCatalog } from "./public-catalog";
+import { publishCatalogueRevision } from "@core/catalogue-revision";
+import { drainWorkspacePublications } from "./workspace-publications";
 import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
+import { publishCustomerRateLimitTiers } from "@core/customer-rate-limit-tiers";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -518,6 +520,19 @@ async function handleAccountDeletionScheduledEvent(env: GatewayBindings): Promis
 	}
 }
 
+// Gated separately from CUSTOMER_RATE_LIMIT_LADDER_ENABLED so the KV backfill
+// can complete (summary.complete) before the gateway starts enforcing tiers.
+async function handleCustomerRateLimitTierScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await publishCustomerRateLimitTiers({ ladderRaw: env.CUSTOMER_RATE_LIMIT_LADDER });
+		console.log("customer_rate_limit_tiers_published", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleGatewayIoRetentionExpiryScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -538,17 +553,29 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
 	// Run before maintenance jobs so their duration cannot delay publication.
-	// Only the primary deployment configures targets; regional Workers consume KV.
-	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true" && env.GATEWAY_PUBLIC_CATALOG_TARGETS && getScheduledMinuteUtc(event) % 2 === 0) {
+	// Cached catalogue snapshots revalidate in the background once this
+	// revision changes; regional Workers consume the same KV key.
+	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true") {
 		configureRuntime(env);
 		try {
-			const summary = await publishConfiguredPublicCatalog(env.GATEWAY_PUBLIC_CATALOG_TARGETS);
-			console.log("public_catalog_publication_completed", summary);
-		} catch {
-			console.error("public_catalog_publication_invalid_config");
+			const { revision, changed } = await publishCatalogueRevision();
+			if (changed) console.log("catalogue_revision_published", { revision });
+		} catch (error) {
+			console.error("catalogue_revision_publication_failed", serializeError(error));
 		} finally {
 			clearRuntime();
 		}
+	}
+	// Leased and idempotent: cached contexts of workspaces changed outside the
+	// gateway control routes are invalidated within about a minute.
+	configureRuntime(env);
+	try {
+		const summary = await drainWorkspacePublications();
+		if (summary.claimed) console.log("workspace_publications_drained", summary);
+	} catch (error) {
+		console.error("workspace_publication_drain_failed", serializeError(error));
+	} finally {
+		clearRuntime();
 	}
 	// Keep release notices independent from the slower provider discovery sweep.
 	try {
@@ -652,6 +679,11 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
 		} catch (error) {
 			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
+		}
+		try {
+			await handleCustomerRateLimitTierScheduledEvent(env);
+		} catch (error) {
+			console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
 		}
 	}
 	if (isModelDiscoveryTick(event)) {

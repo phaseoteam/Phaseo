@@ -615,6 +615,9 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 	if (args.pre.ctx.stream) {
 		const protocol = detectTextProtocol(args.endpoint, new URL(args.req.url).pathname);
 		const prepared = prepareServerToolsForTextRequest(args.pre.ctx.body, protocol);
+		// The inner pipeline reuses this result rather than preparing (and, with
+		// server tools, deep-cloning the body) a second time.
+		const reuse = { body: args.pre.ctx.body, protocol, prepared };
 		if (prepared.ok && prepared.config.enabled && (
 			protocol === "openai.responses" || protocol === "openai.chat.completions" || protocol === "anthropic.messages"
 		)) {
@@ -622,14 +625,25 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				protocol,
 				requestId: args.pre.ctx.requestId,
 				model: args.pre.ctx.model,
-				run: (sink) => runTextGeneratePipelineInner(args, sink),
+				run: (sink) => runTextGeneratePipelineInner(args, sink, reuse),
 			});
 		}
+		return runTextGeneratePipelineInner(args, undefined, reuse);
 	}
 	return runTextGeneratePipelineInner(args);
 }
 
-async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?: ManagedToolLiveSink): Promise<Response> {
+type PreparedServerToolsReuse = {
+	body: unknown;
+	protocol: ReturnType<typeof detectTextProtocol>;
+	prepared: ReturnType<typeof prepareServerToolsForTextRequest>;
+};
+
+async function runTextGeneratePipelineInner(
+	args: PipelineRunnerArgs,
+	liveSink?: ManagedToolLiveSink,
+	reusePrepared?: PreparedServerToolsReuse,
+): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
 
 	try {
@@ -640,7 +654,10 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		(pre.ctx as any).protocol = protocol; // Store for observability
 		timing.timer.end("protocol_detect");
 
-		const preparedServerTools = prepareServerToolsForTextRequest(pre.ctx.body, protocol);
+		const preparedServerTools =
+			reusePrepared && reusePrepared.body === pre.ctx.body && reusePrepared.protocol === protocol
+				? reusePrepared.prepared
+				: prepareServerToolsForTextRequest(pre.ctx.body, protocol);
 		if (preparedServerTools.ok === false) {
 			const header = timing.timer.header();
 			pre.ctx.timing = timing.timer.snapshot();

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { parseBuffer } from "music-metadata";
 import { AudioTranscriptionSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
@@ -69,6 +68,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         if (!format.rate || !format.bits || !format.channel) throw new Error("stepfun_pcm_format_requires_rate_bits_channel");
         duration = bytes.length / (format.rate * format.channel * format.bits / 8);
     } else {
+        // Loaded on demand: only this provider's transcription path needs it.
+        const { parseBuffer } = await import("music-metadata");
         duration = (await parseBuffer(bytes, { mimeType: file.type, size: bytes.length }, { duration: true, skipCovers: true })).format.duration;
     }
     if (duration == null || !Number.isFinite(duration) || duration <= 0) throw new Error("stepfun_audio_duration_unavailable");

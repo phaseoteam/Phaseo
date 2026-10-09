@@ -81,11 +81,35 @@ export async function signAwsV4Request(args: SignRequestArgs): Promise<Record<st
 	return signed;
 }
 
-async function getAwsSigningKey(secretAccessKey: string, dateStamp: string, region: string, service: string): Promise<Uint8Array> {
+// The derived SigV4 signing key only depends on (secret, day, region, service),
+// so deriving it (four HMAC rounds) per request is wasted work. Keep a small
+// isolate-local cache keyed by a hash of the secret; the key rolls over daily.
+const AWS_SIGNING_KEY_CACHE_MAX_ENTRIES = 64;
+const awsSigningKeyCache = new Map<string, Uint8Array>();
+
+export function clearAwsSigningKeyCache(): void {
+	awsSigningKeyCache.clear();
+}
+
+export function awsSigningKeyCacheSize(): number {
+	return awsSigningKeyCache.size;
+}
+
+export async function getAwsSigningKey(secretAccessKey: string, dateStamp: string, region: string, service: string): Promise<Uint8Array> {
+	const cacheKey = `${await sha256Hex(secretAccessKey)}\n${dateStamp}\n${region}\n${service}`;
+	const cached = awsSigningKeyCache.get(cacheKey);
+	if (cached) return cached;
 	const kDate = await hmacSha256(`AWS4${secretAccessKey}`, dateStamp);
 	const kRegion = await hmacSha256(kDate, region);
 	const kService = await hmacSha256(kRegion, service);
-	return hmacSha256(kService, "aws4_request");
+	const signingKey = await hmacSha256(kService, "aws4_request");
+	awsSigningKeyCache.set(cacheKey, signingKey);
+	while (awsSigningKeyCache.size > AWS_SIGNING_KEY_CACHE_MAX_ENTRIES) {
+		const oldest = awsSigningKeyCache.keys().next().value;
+		if (oldest === undefined) break;
+		awsSigningKeyCache.delete(oldest);
+	}
+	return signingKey;
 }
 
 async function sha256Hex(value: string): Promise<string> {

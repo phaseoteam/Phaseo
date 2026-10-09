@@ -8,6 +8,11 @@ import { requestIdFor } from "@/runtime/request-id";
 
 const admissions = new WeakMap<Request, Promise<Response | null>>();
 
+/**
+ * Authentication is prepared here and reused by the route. The quota check
+ * itself never waits on the counter: it only consults this isolate's
+ * remembered denials and counts the request in the background.
+ */
 async function admitRequest(req: Request): Promise<Response | null> {
 	const auth = await prepareAuthentication(req);
 	// Preserve each route's existing authentication error contract.

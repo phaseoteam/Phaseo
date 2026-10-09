@@ -1,13 +1,14 @@
 name = "phaseo-gateway-staging"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public"]
+compatibility_flags = ["global_fetch_strictly_public", "nodejs_als"]
 workers_dev = true
 preview_urls = false
 routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 
 [vars]
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 ENV = "staging"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
@@ -103,6 +104,14 @@ class_name = "CustomerRateLimitDurableObject"
 [[migrations]]
 tag = "v2-customer-rate-limits"
 new_sqlite_classes = ["CustomerRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+
+[[migrations]]
+tag = "v3-spend-limits"
+new_sqlite_classes = ["SpendLimitDurableObject"]
 
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"

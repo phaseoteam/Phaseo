@@ -30,6 +30,17 @@ type StatsigGateResponse = {
 };
 
 const workspaceOwnerCache = new Map<string, { userId: string | null; expiresAt: number }>();
+const STATSIG_GATE_CACHE_TTL_MS = 60_000;
+const STATSIG_GATE_FAILURE_TTL_MS = 10_000;
+const STATSIG_GATE_CACHE_MAX_ENTRIES = 10_000;
+const statsigGateCache = new Map<string, { value: boolean; expiresAt: number }>();
+const statsigGateInflight = new Map<string, Promise<boolean>>();
+
+export function __resetFeatureGateCacheForTests(): void {
+	statsigGateCache.clear();
+	statsigGateInflight.clear();
+	workspaceOwnerCache.clear();
+}
 
 function normalizeText(value: unknown): string | null {
 	if (typeof value !== "string") return null;
@@ -119,6 +130,44 @@ async function isStatsigGateEnabled(
 	const userId = normalizeText(subject.userId) ?? await resolveWorkspaceOwnerUserId(subject.workspaceId);
 	if (!userId) return false;
 
+	// Gate checks are external HTTP calls made on request and audit paths; reuse
+	// a recent evaluation for the same subject instead of calling every time.
+	const tier = resolveStatsigEnvironmentTier(bindings);
+	const cacheKey = JSON.stringify([
+		gateName, tier, userId, subject.workspaceId, subject.apiKeyId ?? null, subject.apiKeyRef ?? null,
+		subject.apiKeyKid ?? null, subject.internal === true, subject.surface,
+	]);
+	const cached = statsigGateCache.get(cacheKey);
+	if (cached && cached.expiresAt > Date.now()) return cached.value;
+	const pending = statsigGateInflight.get(cacheKey);
+	if (pending) return pending;
+	const evaluation = evaluateStatsigGate(gateName, subject, userId, tier, statsigKey)
+		.then(({ value, definitive }) => {
+			rememberStatsigGate(cacheKey, value, definitive ? STATSIG_GATE_CACHE_TTL_MS : STATSIG_GATE_FAILURE_TTL_MS);
+			return value;
+		})
+		.finally(() => statsigGateInflight.delete(cacheKey));
+	statsigGateInflight.set(cacheKey, evaluation);
+	return evaluation;
+}
+
+function rememberStatsigGate(cacheKey: string, value: boolean, ttlMs: number): void {
+	statsigGateCache.delete(cacheKey);
+	statsigGateCache.set(cacheKey, { value, expiresAt: Date.now() + ttlMs });
+	while (statsigGateCache.size > STATSIG_GATE_CACHE_MAX_ENTRIES) {
+		const oldest = statsigGateCache.keys().next();
+		if (oldest.done) break;
+		statsigGateCache.delete(oldest.value);
+	}
+}
+
+async function evaluateStatsigGate(
+	gateName: string,
+	subject: StatsigGateSubject,
+	userId: string,
+	tier: "production" | "staging" | "development",
+	statsigKey: string,
+): Promise<{ value: boolean; definitive: boolean }> {
 	const user = {
 		userID: userId,
 		customIDs: {
@@ -135,7 +184,7 @@ async function isStatsigGateEnabled(
 			surface: subject.surface,
 		},
 		statsigEnvironment: {
-			tier: resolveStatsigEnvironmentTier(bindings),
+			tier,
 		},
 		statsigMetadata: {
 			sdkType: "ai-stats-gateway-api",
@@ -153,12 +202,12 @@ async function isStatsigGateEnabled(
 			body: JSON.stringify({ gateName, user }),
 			signal: AbortSignal.timeout(2_000),
 		});
-		if (!response.ok) return false;
+		if (!response.ok) return { value: false, definitive: false };
 		const payload = (await response.json().catch(() => null)) as StatsigGateResponse | null;
-		if (!payload || typeof payload !== "object") return false;
-		if (typeof payload.value === "boolean") return payload.value;
+		if (!payload || typeof payload !== "object") return { value: false, definitive: false };
+		if (typeof payload.value === "boolean") return { value: payload.value, definitive: true };
 		const nested = payload.results?.[gateName]?.value;
-		return typeof nested === "boolean" ? nested : false;
+		return typeof nested === "boolean" ? { value: nested, definitive: true } : { value: false, definitive: false };
 	} catch (error) {
 		console.error("gateway_statsig_gate_check_failed", {
 			error,
@@ -166,7 +215,7 @@ async function isStatsigGateEnabled(
 			workspaceId: subject.workspaceId,
 			surface: subject.surface,
 		});
-		return false;
+		return { value: false, definitive: false };
 	}
 }
 

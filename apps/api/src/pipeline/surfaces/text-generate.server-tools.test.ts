@@ -674,6 +674,8 @@ describe("runTextGeneratePipeline server tools", () => {
 		await response.text();
 
 		expect(response.status).toBe(200);
+		// The live-response check and the pipeline share one preparation.
+		expect(prepareServerToolsForTextRequestMock).toHaveBeenCalledTimes(1);
 		expect(buildSyntheticServerToolStreamMock).toHaveBeenCalledWith({
 			protocol: "openai.chat.completions",
 			payload: {

@@ -1,0 +1,226 @@
+{
+  "result": {
+    "ir": {
+      "id": "req_golden",
+      "created": 1767323045,
+      "model": "test-model",
+      "provider": "test-provider",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "reasoning_text",
+                "text": "Let me think ✓"
+              },
+              {
+                "type": "text",
+                "text": "Hello wörld 👋"
+              }
+            ],
+            "toolCalls": [
+              {
+                "id": "toolu_1",
+                "name": "get_weather",
+                "arguments": "{\"city\":\"Paris\"}"
+              }
+            ]
+          },
+          "finishReason": "tool_calls"
+        }
+      ],
+      "usage": {
+        "inputTokens": 0,
+        "outputTokens": 42,
+        "totalTokens": 42
+      }
+    },
+    "rawResponse": {
+      "type": "message_stop"
+    },
+    "usageRaw": {
+      "output_tokens": 42
+    },
+    "frameCount": 16,
+    "sawDone": false,
+    "firstFrameMs": 0,
+    "totalMs": 0
+  },
+  "events": [
+    {
+      "type": "start",
+      "protocol": "anthropic.messages",
+      "payload": {
+        "type": "message_start",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-x",
+          "content": [],
+          "stop_reason": null,
+          "stop_sequence": null,
+          "usage": {
+            "input_tokens": 25,
+            "cache_read_input_tokens": 5,
+            "cache_creation_input_tokens": 2,
+            "output_tokens": 1
+          }
+        }
+      }
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "input_tokens": 25,
+        "cache_read_input_tokens": 5,
+        "cache_creation_input_tokens": 2,
+        "output_tokens": 1
+      },
+      "payload": {
+        "type": "message_start",
+        "message": {
+          "id": "msg_01",
+          "type": "message",
+          "role": "assistant",
+          "model": "claude-x",
+          "content": [],
+          "stop_reason": null,
+          "stop_sequence": null,
+          "usage": {
+            "input_tokens": 25,
+            "cache_read_input_tokens": 5,
+            "cache_creation_input_tokens": 2,
+            "output_tokens": 1
+          }
+        }
+      }
+    },
+    {
+      "type": "delta_text",
+      "channel": "reasoning_text",
+      "text": "Let me think ✓",
+      "choiceIndex": 0,
+      "payload": {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "thinking_delta",
+          "thinking": "Let me think ✓"
+        }
+      }
+    },
+    {
+      "type": "delta_text",
+      "channel": "output_text",
+      "text": "Hello",
+      "choiceIndex": 0,
+      "payload": {
+        "type": "content_block_delta",
+        "index": 1,
+        "delta": {
+          "type": "text_delta",
+          "text": "Hello"
+        }
+      }
+    },
+    {
+      "type": "delta_text",
+      "channel": "output_text",
+      "text": " wörld 👋",
+      "choiceIndex": 0,
+      "payload": {
+        "type": "content_block_delta",
+        "index": 1,
+        "delta": {
+          "type": "text_delta",
+          "text": " wörld 👋"
+        }
+      }
+    },
+    {
+      "type": "delta_tool",
+      "toolCallId": "toolu_1",
+      "toolName": "get_weather",
+      "choiceIndex": 0,
+      "toolIndex": 2,
+      "payload": {
+        "type": "content_block_start",
+        "index": 2,
+        "content_block": {
+          "type": "tool_use",
+          "id": "toolu_1",
+          "name": "get_weather",
+          "input": {}
+        }
+      }
+    },
+    {
+      "type": "delta_tool",
+      "argumentsDelta": "{\"city\":",
+      "choiceIndex": 0,
+      "toolIndex": 2,
+      "payload": {
+        "type": "content_block_delta",
+        "index": 2,
+        "delta": {
+          "type": "input_json_delta",
+          "partial_json": "{\"city\":"
+        }
+      }
+    },
+    {
+      "type": "delta_tool",
+      "argumentsDelta": "\"Paris\"}",
+      "choiceIndex": 0,
+      "toolIndex": 2,
+      "payload": {
+        "type": "content_block_delta",
+        "index": 2,
+        "delta": {
+          "type": "input_json_delta",
+          "partial_json": "\"Paris\"}"
+        }
+      }
+    },
+    {
+      "type": "usage",
+      "usage": {
+        "output_tokens": 42
+      },
+      "payload": {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "tool_use",
+          "stop_sequence": null
+        },
+        "usage": {
+          "output_tokens": 42
+        }
+      }
+    },
+    {
+      "type": "stop",
+      "finishReason": "tool_use",
+      "payload": {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "tool_use",
+          "stop_sequence": null
+        },
+        "usage": {
+          "output_tokens": 42
+        }
+      }
+    },
+    {
+      "type": "stop",
+      "finishReason": "end_turn",
+      "payload": {
+        "type": "message_stop"
+      }
+    }
+  ]
+}

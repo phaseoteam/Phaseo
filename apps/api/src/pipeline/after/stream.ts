@@ -4,14 +4,19 @@
 // How: Wraps streaming responses and finalizes usage.
 
 import { passthroughWithPricing, passthrough } from "./streaming";
-import type { UnifiedStreamEvent } from "./stream-events";
+import { createToolCallKeyResolver, type UnifiedStreamEvent } from "./stream-events";
 import type { PipelineContext } from "../before/types";
 import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
 import { recordUsageAndChargeOnce } from "./charge";
-import { shapeUsageForClient, stripUsagePricing } from "../usage";
+import {
+    countRequestMediaInputs,
+    shapeUsageForClient,
+    stripUsagePricing,
+    type RequestMediaCounts,
+} from "../usage";
 import { normalizeAnthropicUsage, presentUsageForClient, extractFinishReason } from "./payload";
 import {
 	classifyProviderHealthImpact,
@@ -171,6 +176,7 @@ export async function handleStreamResponse(
 	let streamFailed = false;
     let appliedStreamResponsePlugins = false;
     const streamedToolCallKeys = new Set<string>();
+    const resolveStreamedToolCallKey = createToolCallKeyResolver();
     const streamedToolCallNames = new Set<string>();
     const requestedToolCount = countRequestedTools(ctx.body);
     const requestedToolNames = collectRequestedToolNames(ctx.body);
@@ -191,11 +197,21 @@ export async function handleStreamResponse(
             _provider_id: result.provider,
         };
     };
-    const shapeStreamUsageForClient = (usage: any) =>
-        shapeUsageForClient(withProviderHint(usage), {
+    // Usage is shaped several times per stream (usage frames, the final
+    // snapshot, finalization and re-pricing); walk the request body for media
+    // inputs once per request instead of on every call.
+    let requestMediaCounts: RequestMediaCounts | null | undefined;
+    const shapeStreamUsageForClient = (usage: any) => {
+        if (!usage || typeof usage !== "object") return usage;
+        if (requestMediaCounts === undefined) {
+            requestMediaCounts = countRequestMediaInputs(ctx.endpoint, ctx.body);
+        }
+        return shapeUsageForClient(withProviderHint(usage), {
             endpoint: ctx.endpoint,
             body: ctx.body,
+            mediaCounts: requestMediaCounts,
         });
+    };
     if (ctx.meta?.debug) {
         void logDebugEvent("stream.start", {
             requestId: ctx.requestId,
@@ -211,9 +227,7 @@ export async function handleStreamResponse(
 			streamFailed = true;
 		}
         if (event.type === "delta_tool") {
-            const key =
-                event.toolCallId ??
-                `choice:${event.choiceIndex ?? 0}:tool:${event.toolIndex ?? streamedToolCallKeys.size}`;
+            const key = resolveStreamedToolCallKey(event);
             streamedToolCallKeys.add(key);
             cachedOutputToolCallCount = streamedToolCallKeys.size;
             if (event.toolName) {
@@ -633,6 +647,7 @@ export async function handleStreamResponse(
 
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
+                    idempotencyKey: ctx.billingRequestId,
                     isByok,
                     baseCostNanos: totalNanosOverride,
                     pricedUsage: usageWithToolMetrics,
@@ -708,6 +723,7 @@ export async function handleStreamResponse(
                 );
                 const pricedWithByokSubtotal = await applyByokServiceFee({
                     workspaceId: ctx.workspaceId,
+                    idempotencyKey: ctx.billingRequestId,
                     isByok,
                     baseCostNanos: 0,
                     pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
@@ -779,6 +795,7 @@ export async function handleStreamResponse(
             });
             const pricedWithByokSubtotal = await applyByokServiceFee({
                 workspaceId: ctx.workspaceId,
+                idempotencyKey: ctx.billingRequestId,
                 isByok,
                 baseCostNanos: totalNanos,
                 pricedUsage: usageWithToolMetrics,

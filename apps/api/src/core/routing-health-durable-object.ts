@@ -7,22 +7,93 @@ import {
 } from "@pipeline/execute/health-evidence";
 
 type Metadata = { id: number; pool: string; version: number; published: number; published_at: number };
-const DEDUPE_RETENTION_MS = 5 * 60_000;
+// Older reports are rejected outright, so their IDs need not be retained.
+const DEDUPE_RETENTION_MS = HEALTH_REPORT_MAX_AGE_MS + 5_000;
+const MAX_REPORT_IDS = 100_000;
+const MAX_PROVIDERS = 1024;
+/** Workers KV accepts one write per second per key. */
+export const HEALTH_URGENT_PUBLISH_GAP_MS = 1_000;
 
-/** One coordination atom per endpoint/model pool. No reads on the routing path,
- * no sockets/timers, and only a finite cleanup alarm once the pool becomes idle. */
+/**
+ * One coordination atom per endpoint/model pool.
+ *
+ * Observations run once per upstream call, so they touch memory only: report
+ * deduplication, provider evidence, the version counter and the alarm time are
+ * held in the object and loaded from storage once at construction. The alarm
+ * persists dirty evidence and metadata, then publishes the KV snapshot. If the
+ * object is evicted between alarms, at most one publish interval of best-effort
+ * evidence is lost. A breaker state change pulls the alarm forward so outages
+ * propagate without waiting for the regular interval.
+ */
 export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
+    private pool: string | null = null;
+    private version = 0;
+    private published = 0;
+    private publishedAt = 0;
+    /** Highest version whose observation changed a breaker state. */
+    private urgentVersion = 0;
+    private readonly providers = new Map<string, HealthEvidence>();
+    private readonly dirty = new Set<string>();
+    private metadataDirty = false;
+    /** Report ID -> receipt time, in arrival order. Memory only. */
+    private readonly reports = new Map<string, number>();
+    private alarmAt: number | null = null;
+
     constructor(ctx: DurableObjectState, env: GatewayBindings) {
         super(ctx, env);
         ctx.blockConcurrencyWhile(async () => {
-            ctx.storage.sql.exec(`
+            const sql = ctx.storage.sql;
+            sql.exec(`
                 CREATE TABLE IF NOT EXISTS providers (provider TEXT PRIMARY KEY, state TEXT NOT NULL) WITHOUT ROWID;
-                CREATE TABLE IF NOT EXISTS reports (id TEXT PRIMARY KEY, received INTEGER NOT NULL) WITHOUT ROWID;
-                CREATE INDEX IF NOT EXISTS reports_received ON reports(received);
                 CREATE TABLE IF NOT EXISTS metadata (id INTEGER PRIMARY KEY CHECK(id=1), pool TEXT NOT NULL,
                     version INTEGER NOT NULL, published INTEGER NOT NULL, published_at INTEGER NOT NULL);
             `);
+            const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
+            if (meta) {
+                this.pool = meta.pool;
+                this.version = meta.version;
+                this.published = meta.published;
+                this.publishedAt = meta.published_at;
+            }
+            for (const row of sql.exec<{ provider: string; state: string }>("SELECT * FROM providers").toArray()) {
+                this.providers.set(row.provider, JSON.parse(row.state) as HealthEvidence);
+            }
+            // Earlier versions persisted deduplication rows. Adopt any that are
+            // still relevant once, then drop the table for good.
+            const legacy = sql.exec<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table' AND name='reports'").toArray();
+            if (legacy.length) {
+                const cutoff = Date.now() - DEDUPE_RETENTION_MS;
+                for (const row of sql.exec<{ id: string; received: number }>(
+                    "SELECT id, received FROM reports WHERE received>=? ORDER BY received LIMIT ?", cutoff, MAX_REPORT_IDS).toArray()) {
+                    this.reports.set(row.id, row.received);
+                }
+                sql.exec("DROP TABLE reports");
+            }
+            this.alarmAt = await ctx.storage.getAlarm();
+            // Repair scheduling if unpublished state survived without an alarm.
+            if (this.version > this.published) this.schedule(this.nextAlarmTime(Date.now()));
         });
+    }
+
+    private schedule(at: number): void {
+        if (this.alarmAt !== null && this.alarmAt <= at) return;
+        this.alarmAt = at;
+        // Output gates hold the RPC response until this write is durable.
+        void this.ctx.storage.setAlarm(at);
+    }
+
+    private nextAlarmTime(now: number): number {
+        const urgent = this.urgentVersion > this.published;
+        const gap = urgent ? HEALTH_URGENT_PUBLISH_GAP_MS : HEALTH_PUBLISH_INTERVAL_MS;
+        return Math.max(now + (urgent ? 0 : HEALTH_PUBLISH_INTERVAL_MS), this.publishedAt + gap);
+    }
+
+    private pruneReports(now: number): void {
+        const cutoff = now - DEDUPE_RETENTION_MS;
+        for (const [id, received] of this.reports) {
+            if (received >= cutoff && this.reports.size < MAX_REPORT_IDS) break;
+            this.reports.delete(id);
+        }
     }
 
     async observe(event: HealthObservation): Promise<HealthReceipt | null> {
@@ -38,62 +109,70 @@ export class RoutingHealthDurableObject extends DurableObject<GatewayBindings> {
             throw new Error("Invalid health observation");
         }
         if (event.observedAt < now - HEALTH_REPORT_MAX_AGE_MS || event.observedAt > now + 5_000) return null;
-        // Arm publication before acknowledging any durable observation. This
-        // also repairs scheduling after a prior publication exhausted retries.
-        const alarm = await this.ctx.storage.getAlarm();
-        if (alarm === null || alarm > now + HEALTH_PUBLISH_INTERVAL_MS) await this.ctx.storage.setAlarm(now + HEALTH_PUBLISH_INTERVAL_MS);
-        return this.ctx.storage.transactionSync(() => {
-            const sql = this.ctx.storage.sql;
-            const pool = healthPoolName(event.endpoint, event.model);
-            const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
-            if (meta && meta.pool !== pool) throw new Error("Health pool mismatch");
-            const previous = sql.exec<{ state: string }>("SELECT state FROM providers WHERE provider=?", event.provider).toArray()[0];
-            const state = previous ? JSON.parse(previous.state) as HealthEvidence : undefined;
-            if (sql.exec("SELECT id FROM reports WHERE id=?", event.id).toArray().length) return state ? { health: state, version: meta.version } : null;
-            if (!state && sql.exec<{ count: number }>("SELECT count(*) AS count FROM providers").one().count >= 1024) {
-                throw new Error("Health pool provider limit exceeded");
+        const pool = healthPoolName(event.endpoint, event.model);
+        if (this.pool !== null && this.pool !== pool) throw new Error("Health pool mismatch");
+        const previous = this.providers.get(event.provider);
+        // Reports older than the retention window were already rejected above.
+        if (this.reports.has(event.id)) return previous ? { health: previous, version: this.version } : null;
+        if (!previous && this.providers.size >= MAX_PROVIDERS) throw new Error("Health pool provider limit exceeded");
+
+        this.pruneReports(now);
+        const next = reduceHealth(previous, event);
+        this.pool = pool;
+        this.reports.set(event.id, now);
+        this.providers.set(event.provider, next);
+        this.dirty.add(event.provider);
+        this.version++;
+        if ((previous?.breaker ?? "closed") !== next.breaker) this.urgentVersion = this.version;
+        this.schedule(this.nextAlarmTime(now));
+        return { health: next, version: this.version };
+    }
+
+    private persist(): void {
+        if (!this.pool || (!this.dirty.size && !this.metadataDirty)) return;
+        const sql = this.ctx.storage.sql;
+        const providers = [...this.dirty];
+        this.ctx.storage.transactionSync(() => {
+            for (const provider of providers) {
+                sql.exec("INSERT INTO providers VALUES (?,?) ON CONFLICT(provider) DO UPDATE SET state=excluded.state",
+                    provider, JSON.stringify(this.providers.get(provider)));
             }
-            const next = reduceHealth(state, event);
-            sql.exec("INSERT INTO reports VALUES (?,?)", event.id, now);
-            sql.exec("INSERT INTO providers VALUES (?,?) ON CONFLICT(provider) DO UPDATE SET state=excluded.state", event.provider, JSON.stringify(next));
-            sql.exec(`INSERT INTO metadata VALUES (1,?,1,0,0)
-                ON CONFLICT(id) DO UPDATE SET version=version+1`, pool);
-            return { health: next, version: (meta?.version ?? 0) + 1 };
+            sql.exec(`INSERT INTO metadata VALUES (1,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                version=excluded.version, published=excluded.published, published_at=excluded.published_at`,
+                this.pool, this.version, this.published, this.publishedAt);
         });
+        this.dirty.clear();
+        this.metadataDirty = false;
     }
 
     async alarm(): Promise<void> {
-        const sql = this.ctx.storage.sql;
+        this.alarmAt = null;
         const now = Date.now();
-        // Bounded cleanup; retries older than two minutes are rejected even
-        // after their deduplication row is removed.
-        sql.exec("DELETE FROM reports WHERE id IN (SELECT id FROM reports WHERE received<? LIMIT 2000)", now - DEDUPE_RETENTION_MS);
-        const meta = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").toArray()[0];
-        if (!meta) return;
-        if (meta.version > meta.published && now - meta.published_at >= HEALTH_PUBLISH_INTERVAL_MS) {
-            const [endpoint, model] = JSON.parse(meta.pool) as [string, string];
-            const providers = Object.fromEntries(sql.exec<{ provider: string; state: string }>("SELECT * FROM providers")
-                .toArray().map(row => [row.provider, JSON.parse(row.state) as HealthEvidence]));
-            const snapshot: HealthSnapshot = { version: meta.version, publishedAt: now, providers };
+        this.pruneReports(now);
+        if (!this.pool) return;
+        const urgent = this.urgentVersion > this.published;
+        const due = now - this.publishedAt >= (urgent ? HEALTH_URGENT_PUBLISH_GAP_MS : HEALTH_PUBLISH_INTERVAL_MS);
+        if (this.version > this.published && due) {
+            const [endpoint, model] = JSON.parse(this.pool) as [string, string];
+            const version = this.version;
+            const snapshot: HealthSnapshot = { version, publishedAt: now, providers: Object.fromEntries(this.providers) };
+            // Persist before publishing so a published version is always durable.
+            this.persist();
             try {
                 await this.env.GATEWAY_CACHE.put(healthSnapshotKey(endpoint, model), JSON.stringify(snapshot), {
                     expirationTtl: HEALTH_SNAPSHOT_MAX_AGE_MS / 1000,
                 });
             } catch (error) {
-                console.warn("routing_health_publish_failed", { pool: meta.pool });
-                await this.ctx.storage.setAlarm(now + HEALTH_PUBLISH_INTERVAL_MS);
+                console.warn("routing_health_publish_failed", { pool: this.pool });
+                this.schedule(now + HEALTH_PUBLISH_INTERVAL_MS);
                 throw error;
             }
-            // Only this alarm publishes. Reports may arrive during KV I/O;
-            // acknowledging this revision leaves those newer reports dirty.
-            sql.exec("UPDATE metadata SET published=?,published_at=? WHERE id=1", meta.version, now);
+            // Reports may arrive during KV I/O; they remain unpublished.
+            this.published = version;
+            this.publishedAt = now;
+            this.metadataDirty = true;
         }
-        const current = sql.exec<Metadata>("SELECT * FROM metadata WHERE id=1").one();
-        const oldest = sql.exec<{ received: number }>("SELECT received FROM reports ORDER BY received LIMIT 1").toArray()[0];
-        let next = current.version > current.published ? Math.max(Date.now() + 1000, current.published_at + HEALTH_PUBLISH_INTERVAL_MS) : Infinity;
-        // Drain an expired backlog in bounded chunks instead of retaining it
-        // forever when a pool receives more than 2,000 reports per minute.
-        if (oldest) next = Math.min(next, Math.max(Date.now() + 1000, oldest.received + DEDUPE_RETENTION_MS + 1));
-        if (Number.isFinite(next)) await this.ctx.storage.setAlarm(next);
+        this.persist();
+        if (this.version > this.published) this.schedule(Math.max(Date.now() + 1000, this.nextAlarmTime(Date.now())));
     }
 }

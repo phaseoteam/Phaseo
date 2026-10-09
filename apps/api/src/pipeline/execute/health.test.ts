@@ -91,6 +91,11 @@ describe("execute health state", () => {
 		}
 		expect(health.classifyProviderHealthImpact({ errorCode: "rate_limit_exceeded" })).toBe("neutral");
 		expect(health.classifyProviderHealthImpact({ errorCode: "rate_limit_exceeded", failureOrigin: "provider" })).toBe("failure");
+		expect(health.classifyProviderHealthImpact({
+			errorCode: "upstream_headers_timeout",
+			errorMessage: "upstream_headers_timeout: no response headers within 25ms",
+			failureOrigin: "provider",
+		})).toBe("failure");
 		expect(health.classifyProviderHealthImpact({ upstreamStatus: 200, finishReason: "error" })).toBe("failure");
 		expect(health.classifyProviderHealthImpact({ upstreamStatus: 200, midStreamError: true })).toBe("failure");
     });

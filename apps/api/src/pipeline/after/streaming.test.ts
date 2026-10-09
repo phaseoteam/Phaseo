@@ -274,6 +274,84 @@ describe("passthroughWithPricing", () => {
 		}]);
 	});
 
+	it("stops rewriting delta frames after the client disconnects but keeps accounting frames", async () => {
+		const usageCalls: Array<{ usage: any; info: any }> = [];
+		let resolveUsage: (() => void) | null = null;
+		const usageSettled = new Promise<void>((resolve) => {
+			resolveUsage = resolve;
+		});
+		const rewritten: any[] = [];
+		const events: string[] = [];
+		const delta = (content: string) => ({
+			data: {
+				id: "chatcmpl_fast_path",
+				object: "chat.completion.chunk",
+				choices: [{ index: 0, delta: { content }, finish_reason: null }],
+			},
+		});
+		const upstream = makeDelayedSseResponse([
+			delta("first"),
+			delta("second"),
+			delta("third"),
+			{
+				data: {
+					id: "chatcmpl_fast_path",
+					object: "chat.completion.chunk",
+					choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+				},
+			},
+			{
+				data: {
+					id: "chatcmpl_fast_path",
+					object: "chat.completion.chunk",
+					choices: [],
+					usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 },
+				},
+			},
+		], 10);
+		const ctx = baseCtx({ endpoint: "chat.completions", protocol: "openai.chat.completions" });
+
+		const response = await passthroughWithPricing({
+			upstream: upstream.response,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+			rewriteFrame: (frame) => {
+				rewritten.push(frame);
+				return frame;
+			},
+			onStreamEvent: (event) => {
+				events.push(event.type === "delta_text" ? `text:${event.text}` : event.type);
+			},
+			onFinalUsage: (usage, info) => {
+				usageCalls.push({ usage, info });
+				resolveUsage?.();
+			},
+		});
+
+		const reader = response.body!.getReader();
+		const first = await reader.read();
+		expect(new TextDecoder().decode(first.value)).toContain("first");
+		await reader.cancel();
+		await usageSettled;
+
+		expect(ctx.meta.downstreamDisconnected).toBe(true);
+		// Content deltas after the disconnect are not rewritten, but the terminal
+		// and usage frames still are (their rewrite prices usage / runs plugins).
+		const rewrittenContents = rewritten.map((frame) =>
+			frame.usage ? "usage" : frame.choices?.[0]?.finish_reason ?? frame.choices?.[0]?.delta?.content,
+		);
+		expect(rewrittenContents[0]).toBe("first");
+		expect(rewrittenContents).not.toContain("third");
+		expect(rewrittenContents.slice(-2)).toEqual(["stop", "usage"]);
+		// Stream events (tool/finish tracking for billing) are still observed.
+		expect(events).toEqual(expect.arrayContaining(["text:first", "text:second", "text:third", "stop", "usage"]));
+		expect(usageCalls).toEqual([{
+			usage: { prompt_tokens: 4, completion_tokens: 3, total_tokens: 7 },
+			info: { aborted: false, sawFinalUsage: true },
+		}]);
+	});
+
 	it("emits canonical stream events while forwarding SSE", async () => {
 		const seenEvents: string[] = [];
 		const upstream = makeSseResponse([

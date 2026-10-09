@@ -1132,10 +1132,70 @@ function rewriteToolChoice(toolChoice: any, protocol: Protocol, advisorFunctionN
 	return toolChoice;
 }
 
+function disabledServerToolConfig(defaultAdvisorModel: string | undefined): ServerToolConfig {
+	return {
+		enabled: false,
+		datetimeDefaultTimezones: [DEFAULT_TIMEZONE],
+		webSearchEnabled: false,
+		webSearchEngine: DEFAULT_WEB_SEARCH_ENGINE,
+		webSearchMaxResults: DEFAULT_WEB_SEARCH_MAX_RESULTS,
+		webSearchMaxTotalResults: DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS,
+		webSearchContextSize: "medium",
+		webSearchMaxCharacters: undefined,
+		webSearchIncludeText: false,
+		webSearchIncludeHighlights: true,
+		webSearchAllowedDomains: [],
+		webSearchExcludedDomains: [],
+		webFetchEnabled: false,
+		webFetchEngine: DEFAULT_WEB_FETCH_ENGINE,
+		webFetchMaxChars: DEFAULT_WEB_FETCH_MAX_CHARS,
+		webFetchAllowedDomains: [],
+		webFetchBlockedDomains: [],
+		advisorEnabled: false,
+		advisors: {},
+		defaultAdvisorFunctionName: undefined,
+		defaultAdvisorModel,
+		imageGenerationEnabled: false,
+		imageGeneration: {},
+		applyPatchEnabled: false,
+	};
+}
+
+/** Every tool type the preparation loop below rewrites or activates. */
+function isServerToolType(type: unknown): boolean {
+	return (
+		type === DATETIME_SERVER_TOOL_TYPE ||
+		type === LEGACY_DATETIME_SERVER_TOOL_TYPE ||
+		type === WEB_SEARCH_SERVER_TOOL_TYPE ||
+		type === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE ||
+		type === WEB_FETCH_SERVER_TOOL_TYPE ||
+		type === GATEWAY_WEB_FETCH_SERVER_TOOL_TYPE ||
+		type === ADVISOR_SERVER_TOOL_TYPE ||
+		type === SUBAGENT_SERVER_TOOL_TYPE ||
+		type === FUSION_SERVER_TOOL_TYPE ||
+		type === SEARCH_MODELS_SERVER_TOOL_TYPE ||
+		type === IMAGE_GENERATION_SERVER_TOOL_TYPE ||
+		type === APPLY_PATCH_SERVER_TOOL_TYPE
+	);
+}
+
 export function prepareServerToolsForTextRequest(
 	body: any,
 	protocol: Protocol,
 ): PrepareRequestResult {
+	// Without any server-tool entry the loop below leaves the body untouched, so
+	// skip the deep clone of the full request (messages, images, ...) that every
+	// text request used to pay.
+	const requestTools = body && typeof body === "object" && Array.isArray(body.tools) ? body.tools : [];
+	if (!requestTools.some((tool: any) => tool && typeof tool === "object" && isServerToolType(tool.type))) {
+		const requestBody = body && typeof body === "object" ? body : {};
+		return {
+			ok: true,
+			body: requestBody,
+			config: disabledServerToolConfig(toNonEmptyString(requestBody.model) ?? undefined),
+		};
+	}
+
 	const nextBody = cloneBody(body);
 	const tools = Array.isArray(nextBody?.tools) ? nextBody.tools : [];
 	const defaultAdvisorModel = toNonEmptyString(nextBody?.model) ?? undefined;
@@ -1354,32 +1414,7 @@ export function prepareServerToolsForTextRequest(
 		return {
 			ok: true,
 			body: nextBody,
-			config: {
-				enabled: false,
-				datetimeDefaultTimezones: [DEFAULT_TIMEZONE],
-				webSearchEnabled: false,
-				webSearchEngine: DEFAULT_WEB_SEARCH_ENGINE,
-				webSearchMaxResults: DEFAULT_WEB_SEARCH_MAX_RESULTS,
-				webSearchMaxTotalResults: DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS,
-				webSearchContextSize: "medium",
-				webSearchMaxCharacters: undefined,
-				webSearchIncludeText: false,
-				webSearchIncludeHighlights: true,
-				webSearchAllowedDomains: [],
-				webSearchExcludedDomains: [],
-				webFetchEnabled: false,
-				webFetchEngine: DEFAULT_WEB_FETCH_ENGINE,
-				webFetchMaxChars: DEFAULT_WEB_FETCH_MAX_CHARS,
-				webFetchAllowedDomains: [],
-				webFetchBlockedDomains: [],
-				advisorEnabled: false,
-				advisors: {},
-				defaultAdvisorFunctionName: undefined,
-				defaultAdvisorModel,
-				imageGenerationEnabled: false,
-				imageGeneration: {},
-				applyPatchEnabled: false,
-			},
+			config: disabledServerToolConfig(defaultAdvisorModel),
 		};
 	}
 

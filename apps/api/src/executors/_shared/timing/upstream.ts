@@ -8,6 +8,71 @@ import type {
 	UpstreamResponseTiming,
 } from "@executors/types";
 import { observeGatewayStream, type GatewayTimingTrace } from "@pipeline/telemetry/gateway-trace";
+import { getBindingsIfConfigured } from "@/runtime/env";
+
+/**
+ * A provider did not return response headers within
+ * GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS. Unlike a caller AbortError this is a
+ * provider transport failure: health accounting counts it against the provider
+ * and the attempt loop fails over to the next candidate.
+ */
+export class UpstreamHeadersTimeoutError extends Error {
+	readonly code = "upstream_headers_timeout";
+	readonly timeoutMs: number;
+
+	constructor(timeoutMs: number) {
+		super(`upstream_headers_timeout: no response headers within ${timeoutMs}ms`);
+		this.name = "UpstreamHeadersTimeoutError";
+		this.timeoutMs = timeoutMs;
+	}
+}
+
+export function resolveUpstreamHeadersTimeoutMs(): number {
+	let raw: unknown;
+	try {
+		raw = getBindingsIfConfigured()?.GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS;
+	} catch {
+		// Runtime not available (e.g. partially mocked in tests): deadline off.
+		return 0;
+	}
+	if (raw === undefined || raw === null || String(raw).trim() === "") return 0;
+	const value = Number(raw);
+	return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+/**
+ * fetch() with an optional deadline for the response headers. The caller's
+ * signal (init.signal or the Request's own signal) still cancels the request
+ * and, after headers, the body. The timer is cleared as soon as headers arrive,
+ * so the deadline never truncates a streaming body.
+ */
+export async function fetchWithHeadersDeadline(
+	input: RequestInfo | URL,
+	init: RequestInit | undefined,
+	timeoutMs: number,
+): Promise<Response> {
+	if (!(timeoutMs > 0)) return globalThis.fetch(input, init);
+	const callerSignal = init?.signal ?? (input instanceof Request ? input.signal : null);
+	if (callerSignal?.aborted) return globalThis.fetch(input, init);
+
+	const controller = new AbortController();
+	const forwardCallerAbort = () => controller.abort(callerSignal?.reason);
+	callerSignal?.addEventListener("abort", forwardCallerAbort, { once: true });
+	const timeoutError = new UpstreamHeadersTimeoutError(timeoutMs);
+	let timedOut = false;
+	const timer = setTimeout(() => {
+		timedOut = true;
+		controller.abort(timeoutError);
+	}, timeoutMs);
+	try {
+		return await globalThis.fetch(input, { ...init, signal: controller.signal });
+	} catch (error) {
+		if (timedOut && !callerSignal?.aborted) throw timeoutError;
+		throw error;
+	} finally {
+		clearTimeout(timer);
+	}
+}
 
 export type UpstreamTimingSnapshot = {
 	requestBuildMs?: number;
@@ -60,7 +125,9 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
 		}
 		let response: Response;
 		try {
-			response = await globalThis.fetch(input, init);
+			response = phase === "provider"
+				? await fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
+				: await globalThis.fetch(input, init);
 		} catch (error) {
 			// Preserve the original error identity and adapter retry semantics.
 			// Explicit cancellation is not provider downtime.
@@ -119,5 +186,7 @@ export function fetchUpstream(
 	if (args.upstreamTiming) {
 		return args.upstreamTiming.fetch(input, init, phase);
 	}
-	return globalThis.fetch(input, init);
+	return phase === "provider"
+		? fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
+		: globalThis.fetch(input, init);
 }
