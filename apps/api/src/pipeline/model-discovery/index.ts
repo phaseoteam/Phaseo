@@ -357,8 +357,9 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 	if (error) throw new Error(error.message || "Failed to insert model discovery run row");
 }
 
-// A scheduled invocation cannot outlive 15 minutes, so an older run still marked
-// "running" lost its worker before it could record an outcome.
+// A scheduled Worker invocation cannot outlive 15 minutes, so an older scheduled run
+// still marked "running" lost its worker before it could record an outcome. Manual
+// runs (scripts/model-discovery) have no such limit and are left alone.
 const ABANDONED_RUN_AFTER_MS = 30 * 60 * 1000;
 export const ABANDONED_RUN_ERROR = "abandoned: the worker stopped before the run recorded an outcome";
 
@@ -369,6 +370,7 @@ export async function closeAbandonedRuns(now: Date, currentRunId: string): Promi
 			.from("model_discovery_runs")
 			.update({ status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR })
 			.eq("status", "running")
+			.eq("trigger", "scheduled")
 			.lt("started_at", new Date(now.getTime() - ABANDONED_RUN_AFTER_MS).toISOString())
 			.neq("id", currentRunId)
 			.select("id");

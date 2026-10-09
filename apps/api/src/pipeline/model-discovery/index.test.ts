@@ -188,7 +188,7 @@ describe("closeAbandonedRuns", () => {
 		return calls;
 	}
 
-	it("fails runs still marked running after 30 minutes, except the current run", async () => {
+	it("fails scheduled runs still marked running after 30 minutes, except the current run", async () => {
 		const calls = updateMock({ data: [{ id: "old-1" }, { id: "old-2" }], error: null });
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		const now = new Date("2026-10-09T20:00:00Z");
@@ -197,6 +197,8 @@ describe("closeAbandonedRuns", () => {
 			["from", "model_discovery_runs"],
 			["update", { status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR }],
 			["eq", "status", "running"],
+			// Manual runs from scripts/model-discovery may legitimately run longer.
+			["eq", "trigger", "scheduled"],
 			["lt", "started_at", "2026-10-09T19:30:00.000Z"],
 			["neq", "id", "current-run"],
 		]);
