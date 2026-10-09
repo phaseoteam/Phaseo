@@ -1,6 +1,7 @@
 import { normalizeProviderList } from "@/lib/config/providerAliases";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
+import { readSharedVersion, rememberSharedVersion, SHARED_VERSION_TTL_MS } from "@core/shared-version-cache";
 import type { PriceCard } from "../pricing";
 import type {
 	ProviderCandidate,
@@ -74,7 +75,8 @@ const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
 const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy:v2";
 const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
 const WORKSPACE_POLICY_VERSION_PREFIX = "gateway:workspace-policy-version";
-const WORKSPACE_POLICY_VERSION_L1_TTL_MS = 5_000;
+// Capped by the shared copy's absolute expiry (see shared-version-cache).
+const WORKSPACE_POLICY_VERSION_L1_TTL_MS = SHARED_VERSION_TTL_MS;
 
 type WorkspacePolicyL1Entry = {
 	expiresAt: number;
@@ -149,10 +151,14 @@ function readWorkspacePolicyVersionL1(workspaceId: string): number | null {
 	return entry.value;
 }
 
-function writeWorkspacePolicyVersionL1(workspaceId: string, value: number): void {
+function writeWorkspacePolicyVersionL1(workspaceId: string, value: number, expiresAt?: number): void {
+	// Reads (expiresAt given) never lower a counter: one that started before a bump in this
+	// isolate must not replace the bumped value.
+	const current = workspacePolicyVersionL1.get(workspaceId);
+	if (expiresAt !== undefined && current && current.expiresAt > Date.now() && current.value > value) return;
 	workspacePolicyVersionL1.set(workspaceId, {
 		value,
-		expiresAt: Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS),
+		expiresAt: Math.min(Date.now() + ttlWithJitter(WORKSPACE_POLICY_VERSION_L1_TTL_MS), expiresAt ?? Infinity),
 	});
 }
 
@@ -166,11 +172,10 @@ export async function getWorkspacePolicyVersionToken(workspaceId: string): Promi
 	if (cached !== null) return `v${cached}`;
 
 	try {
-		const raw = await getCache().get(workspacePolicyVersionKey(workspaceId), "text");
-		const parsed = raw ? Number(raw) : 0;
-		const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-		writeWorkspacePolicyVersionL1(workspaceId, normalized);
-		return `v${normalized}`;
+		// One location-wide copy; the isolate copy never outlives it (see shared-version-cache).
+		const shared = await readSharedVersion(workspacePolicyVersionKey(workspaceId));
+		writeWorkspacePolicyVersionL1(workspaceId, shared.value, shared.expiresAt);
+		return `v${shared.value}`;
 	} catch {
 		return "v0";
 	}
@@ -188,6 +193,7 @@ export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<n
 	const next = current + 1;
 	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
 	writeWorkspacePolicyVersionL1(workspaceId, next);
+	rememberSharedVersion(workspacePolicyVersionKey(workspaceId), next);
 	return next;
 }
 
@@ -512,7 +518,7 @@ export async function fetchWorkspacePolicy(args: {
 }): Promise<WorkspacePolicy> {
 	const [workspaceVersionToken, apiKeyVersionToken] = await Promise.all([
 		getWorkspacePolicyVersionToken(args.workspaceId),
-		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: 5_000 }),
+		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: SHARED_VERSION_TTL_MS }),
 	]);
 	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
 	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);

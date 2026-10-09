@@ -91,6 +91,13 @@ function videoPricingRows() {
 	];
 }
 
+const VEO_LITE_SKU = {
+	sku_id: "sku-veo-lite", provider_model_id: "pm-veo-lite", service_tier_slug: "standard",
+	operation: "video.generate", status: "active", currency: "USD",
+	effective_from: "2026-01-01T00:00:00Z", effective_to: null, metadata: {}, updated_at: "2026-06-10T00:00:00Z",
+	meters: [{ sku_meter_id: "meter-veo-lite", sku_id: "sku-veo-lite", meter_key: "output_video_seconds", unit: "second", unit_quantity: "1", price_nanos: "30000000", meter_order: 1, metadata: {}, updated_at: "2026-06-10T00:00:00Z" }],
+};
+
 function buildSupabaseAdminMock() {
 	return {
 		from(table: string) {
@@ -101,11 +108,18 @@ function buildSupabaseAdminMock() {
 					provider_model_slug: "veo-3.1-lite-generate-preview",
 				}];
 				return {
-					select() {
+					select(columns?: string) {
+						// The price-card loader roots its query at the route and embeds SKUs and meters.
+						const data = String(columns ?? "").includes("skus:")
+							? [{ provider_model_id: "pm-veo-lite", skus: [VEO_LITE_SKU] }]
+							: rows;
 						const builder: any = {
 							eq() { return builder; },
 							in() { return builder; },
-							then(resolve: (value: unknown) => unknown) { return Promise.resolve({ data: rows, error: null }).then(resolve); },
+							lte() { return builder; },
+							or() { return builder; },
+							order() { return builder; },
+							then(resolve: (value: unknown) => unknown) { return Promise.resolve({ data, error: null }).then(resolve); },
 						};
 						return builder;
 					},
