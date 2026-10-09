@@ -346,8 +346,6 @@ export type GatewayBindings = {
     ENV?: string;
 	ACCOUNT_DELETION_PURGE_ENABLED?: string;
     HF_TOKEN?: string;
-    GITHUB_TOKEN?: string;
-    GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     PHASEO_WEB_BASE_URL?: string;
     PHASEO_OAUTH_PRIVATE_JWK?: string;
@@ -372,7 +370,6 @@ export type GatewayBindings = {
     MODEL_DISCOVERY_SHARD_SIZE?: string;
     MODEL_DISCOVERY_SHARDING_ENABLED?: string;
     MODEL_DISCOVERY_CONCURRENCY?: string;
-    MODEL_DISCOVERY_ISSUE_SYNC_ENABLED?: string;
     MODEL_UPDATES_NOTIFICATIONS_DISABLED?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;

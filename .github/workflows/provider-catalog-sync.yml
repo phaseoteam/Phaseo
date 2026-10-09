@@ -1,8 +1,6 @@
 name: Provider Catalog Sync
 
 on:
-    repository_dispatch:
-        types: [provider-catalog-change]
     workflow_dispatch:
         inputs:
             providers:
@@ -30,15 +28,12 @@ jobs:
               env:
                   EVENT_NAME: ${{ github.event_name }}
                   MANUAL_PROVIDERS: ${{ inputs.providers }}
-                  DISPATCH_PROVIDERS: ${{ toJSON(github.event.client_payload.providers) }}
               shell: bash
               run: |
                   set -euo pipefail
                   providers=""
                   if [[ "$EVENT_NAME" == "workflow_dispatch" && -n "${MANUAL_PROVIDERS:-}" ]]; then
                     providers="$(jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$"; "") | ascii_downcase) | map(select(test("^[a-z0-9][a-z0-9-]*$"))) | unique | join(",")' <<<"$MANUAL_PROVIDERS")"
-                  elif [[ "$EVENT_NAME" == "repository_dispatch" && "${DISPATCH_PROVIDERS:-null}" != "null" ]]; then
-                    providers="$(jq -r 'if type == "array" then map(strings | ascii_downcase) | map(select(test("^[a-z0-9][a-z0-9-]*$"))) | unique | join(",") else "" end' <<<"$DISPATCH_PROVIDERS")"
                   fi
                   echo "providers=$providers" >> "$GITHUB_OUTPUT"
 
