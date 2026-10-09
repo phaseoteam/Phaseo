@@ -20,6 +20,7 @@ import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { extractDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -319,6 +320,7 @@ export function extractErrorDescription(body: any): string | null {
 
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
+    if (errorCode === "phaseo_free_model_limit_exceeded") return "user";
     if (stage === "before") {
         const s = Number(status ?? 0);
         const code = (errorCode || "").toLowerCase();
@@ -664,6 +666,7 @@ export async function handleError({
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
+    applyDownstreamRateLimitHeaders(headers, extractDownstreamRateLimitHeaders(res.headers, { includeQuotaDetails: false }));
     if (timingHeader) {
         headers.set("Server-Timing", timingHeader);
         headers.set("Timing-Allow-Origin", "*");
@@ -689,7 +692,7 @@ export async function handleError({
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
     let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
-    if (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream") {
+    if (errCode !== "phaseo_free_model_limit_exceeded" && (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream")) {
         attribution = "upstream";
     }
     if (upstreamUnsupportedParamSignal) {
@@ -1005,7 +1008,9 @@ export async function handleError({
         }
         return null;
     })();
-    const providerForAudit = providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    const isFreeModelLimit = errCode === "phaseo_free_model_limit_exceeded" && errorOrigin === "gateway";
+    const providerForAudit = isFreeModelLimit ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
@@ -1041,7 +1046,7 @@ export async function handleError({
                 ? body.trace
                 : null),
         statusCode,
-        errorCode: `${attribution}:${errCode}`,
+        errorCode: loggedErrorCode,
         errorMessage: description ?? fallbackDescription,
         before: ctx ? (ctx as any)?.timing?.before ?? null : body?.timing?.before ?? null,
         execute: ctx ? (ctx as any)?.timing?.execute ?? null : null,
@@ -1150,7 +1155,7 @@ export async function handleError({
         keyId: ctx?.meta?.apiKeyId ?? null,
         statusCode,
         success: false,
-        errorCode: `${attribution}:${errCode}`,
+        errorCode: loggedErrorCode,
         errorMessage: description ?? fallbackDescription,
         errorType,
         errorStage: stage,
@@ -1171,8 +1176,6 @@ export async function handleError({
     });
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
-
 
 
 

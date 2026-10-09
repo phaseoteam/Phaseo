@@ -98,6 +98,29 @@ describe("extractUpstreamUnsupportedParamSignal", () => {
 });
 
 describe("handleError", () => {
+	it("logs a Phaseo free-model limit without provider attribution and preserves Retry-After", async () => {
+		let capturedAuditArgs: any = null;
+		const response = await handleError({
+			stage: "execute",
+			endpoint: "chat.completions",
+			res: new Response(JSON.stringify({
+				error: "phaseo_free_model_limit_exceeded",
+				error_type: "user",
+				error_origin: "gateway",
+				description: "Phaseo free-model daily limit reached.",
+			}), { status: 429, headers: { "Retry-After": "3600", "Authorization": "private" } }),
+			ctx: { requestId: "G-FREE-LIMIT", workspaceId: "workspace", model: "phaseo/free", meta: {}, providers: [{ providerId: "gmicloud" }] } as any,
+			auditFailure: async (args) => { capturedAuditArgs = args; },
+		});
+		expect(response.status).toBe(429);
+		expect(response.headers.get("Retry-After")).toBe("3600");
+		expect(response.headers.get("X-Gateway-Error-Attribution")).toBe("user");
+		expect(response.headers.get("Authorization")).toBeNull();
+		expect(await response.json()).toMatchObject({ error: "phaseo_free_model_limit_exceeded", error_origin: "gateway", error_type: "user" });
+		expect(capturedAuditArgs).toMatchObject({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null });
+		expect(emitGatewayRequestEventMock).toHaveBeenCalledWith(expect.objectContaining({ errorCode: "gateway:phaseo_free_model_limit_exceeded", provider: null }));
+	});
+
 	it("preserves guardrail enforcement metadata on blocked before-stage requests", async () => {
 		let capturedAuditArgs: any = null;
 		const blocked = new Response(
@@ -221,6 +244,7 @@ describe("handleError", () => {
 			endpoint: "audio.speech",
 			ctx: {
 				requestId: "G-TEST-1",
+				meta: {},
 				model: "xiaomi/mimo-v2-tts:free",
 				rawBody: {
 					model: "xiaomi/mimo-v2-tts:free",
@@ -322,6 +346,7 @@ describe("handleError", () => {
 			endpoint: "responses",
 			ctx: {
 				requestId: "G-TEST-REPLAY",
+				meta: {},
 				model: "openai/gpt-5.4-nano",
 				body: {
 					model: "openai/gpt-5.4-nano",
@@ -387,6 +412,7 @@ describe("handleError", () => {
 			endpoint: "moderations",
 			ctx: {
 				requestId: "G-TEST-2",
+				meta: {},
 				model: "openai/omni-moderation",
 			} as any,
 			auditFailure: async (args) => {
@@ -617,6 +643,7 @@ describe("handleError", () => {
 			endpoint: "responses",
 			ctx: {
 				requestId: "G-TEST-3",
+				meta: {},
 				model: "google/lyria-3-clip-preview",
 			} as any,
 			auditFailure: async () => { },
@@ -628,4 +655,3 @@ describe("handleError", () => {
 		expect(res.headers.get("X-Gateway-Error-Origin")).toBe("gateway");
 	});
 });
-

@@ -58,8 +58,10 @@ describe("customer quota integration", () => {
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("3600");
 		expect(await response?.json()).toMatchObject({
+			error: "phaseo_free_model_limit_exceeded",
+			error_origin: "gateway",
 			reason: "free_requests_per_day",
-			description: `This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
+			description: `Phaseo free-model daily limit reached. This user and workspace have reached their daily allowance of ${limit} free-model requests, shared across all free models. The allowance resets at 00:00 UTC. Retry after 3600 seconds, choose a paid model, or ask your workspace administrator to request a higher limit.`,
 		});
 	});
 
