@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: Replaces functions only; existing rebuild logic deletes derived rollup rows and truncates temporary batches, but the migration executes no deletion or rebuild and preserves all source and financial records.
 set local lock_timeout = '500ms';
 set local statement_timeout = '15s';
 
