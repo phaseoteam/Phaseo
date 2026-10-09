@@ -42,6 +42,8 @@ represented in its seed batch. This does not add new summary groups to rebuild.
 Acknowledgments are capped at eight times the seed limit and 2,000 overall.
 The original `selected` count is preserved; `coalesced` reports extra covered
 events. Not-yet-available events and other workspace identities remain queued.
+Covered events join the existing temporary batch, preserving the freshness
+watermark without adding any new summary identities or a second temporary queue.
 
 A transaction advisory lock prevents overlapping processors from rebuilding the
 same summaries. Captured outbox row locks let corrections re-enqueue after commit,
@@ -101,6 +103,9 @@ Run 37995224414 generated the range-refresh safeguard in
 `20261009214650_coordinate_analytics_range_refresh.sql`. Replay also runs an
 actual two-session PostgreSQL test proving that scheduled contention skips and
 synchronous contention fails with no enqueueing.
+Run 37997114114 generated the final processor definition in
+`20261009220609_retain_coalesced_rollup_freshness.sql`, including covered events
+in the existing batch so freshness reflects all acknowledged records.
 
 A read-only production sample at 22:39 BST found 5,627 ready events covered by
 the summary identities selected for the first 250 events; all had a model ID.
