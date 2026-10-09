@@ -86,6 +86,7 @@ Einige Fehler enthalten zusätzliche Informationen, die bei der schnelleren Behe
 | `authorization_error` | `403` | Der Schlüssel hat keinen Zugriff auf diese Ressource. |
 | `not_found_error` | `404` | Endpunkt oder Ressource wurde nicht gefunden. |
 | `rate_limit_error` | `429` | Zu viele Anfragen. Versuchen Sie es nach der angegebenen Wartezeit erneut. |
+| `phaseo_free_model_limit_exceeded` | `429` | Das gemeinsame Tageskontingent für kostenlose Phaseo-Modelle ist ausgeschöpft (standardmäßig 1.500 Anfragen). Beachten Sie `Retry-After`, warten Sie bis zur Zurücksetzung um 00:00 UTC oder wählen Sie ein kostenpflichtiges Modell. |
 | `validation_error` | `400` | Ungültige Parameter oder ungültiger Anfrage-Body. |
 | `provider_error` | `502` | Der Upstream-Modellanbieter hat nicht korrekt geantwortet. |
 | `server_error` | `500` | In Phaseo ist ein unerwartetes Problem aufgetreten. |
@@ -268,4 +269,3 @@ Wenn Sie als Agent die Fehlerbehandlung implementieren:
 - Behandeln Sie Debug-Payloads als potenziell vertraulich und schwärzen Sie sie vor der dauerhaften Protokollierung.
 - Bevorzugen Sie deterministische Wiederholungen (begrenzte Versuche mit Jitter) gegenüber Endlosschleifen.
 </Visibility>
-
