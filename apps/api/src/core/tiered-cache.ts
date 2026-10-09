@@ -157,9 +157,15 @@ export async function readLocationCache(key: string): Promise<string | null> {
 	return locationCacheEnabled() ? l2Read(key) : null;
 }
 
-/** Stores a raw value in this location's Workers Cache (L2) in the background. */
-export function writeLocationCache(key: string, raw: string, storeS: number): void {
-	if (locationCacheEnabled()) dispatchBackground(l2Write(key, raw, storeS));
+/**
+ * Stores a raw value in this location's Workers Cache (L2) in the background. The
+ * returned promise settles when the write does, so a later delete can follow it.
+ */
+export function writeLocationCache(key: string, raw: string, storeS: number): Promise<void> {
+	if (!locationCacheEnabled()) return Promise.resolve();
+	const write = l2Write(key, raw, storeS);
+	dispatchBackground(write);
+	return write;
 }
 
 /** Removes a value from this location's Workers Cache (L2). Other locations keep theirs. */
