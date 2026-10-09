@@ -79,8 +79,11 @@ import {
 import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 import { useSearchShortcutLabel } from "./SearchShortcut";
 import { getLocalizedDocsHref } from "@/lib/docs";
+import { fetchAdminStagedModels } from "@/lib/query/stagedModels";
+import { mergeAdminSearchModels } from "./Search.adminModels";
 
 interface Props {
+	isAdmin?: boolean;
 	className?: string;
 	initiallyOpen?: boolean;
 	capabilities?: SearchCapabilities;
@@ -704,6 +707,7 @@ function SearchEmptyState({
 export default function Search({
 	className,
 	initiallyOpen = false,
+	isAdmin = false,
 	capabilities = DEFAULT_SEARCH_CAPABILITIES,
 	accountQueryScope = ANONYMOUS_ACCOUNT_QUERY_SCOPE,
 }: Props) {
@@ -741,7 +745,15 @@ export default function Search({
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,
 	});
-	const searchData = searchQuery.data;
+	const adminModelsQuery = useQuery({
+		queryKey: webQueryKeys.account.adminModelSearch(scope),
+		queryFn: ({ signal }) => fetchAdminStagedModels({ signal }),
+		...WEB_QUERY_POLICIES.privateNoRetry,
+		enabled: open && isAdmin && Boolean(scope.userId),
+	});
+	const searchData = useMemo(() => mergeAdminSearchModels(
+		searchQuery.data, isAdmin && scope.userId ? adminModelsQuery.data ?? [] : [],
+	), [searchQuery.data, adminModelsQuery.data, isAdmin, scope.userId]);
 	const searchDataFetchError = searchQuery.error;
 	const isLoadingSearchData = searchQuery.isLoading;
 	const documentationQuery = useQuery({

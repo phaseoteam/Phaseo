@@ -29,6 +29,7 @@ export async function SearchWithCapabilities(props: { className?: string }) {
 	return (
 		<SearchWrapper
 			{...props}
+			isAdmin={Boolean(authHeader?.user?.id) && authHeader?.userRole === "admin"}
 			capabilities={{ autoRouting, enterprise, webhooks, video, realtime, games }}
 			accountQueryScope={toAccountQueryScope({
 				userId: authHeader?.user?.id,

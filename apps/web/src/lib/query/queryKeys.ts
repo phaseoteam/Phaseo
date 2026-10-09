@@ -126,6 +126,8 @@ const accountKeys = {
 		] as const,
 	workspaceSearch: (scope: AccountQueryScope) =>
 		[...accountScopeKey(scope), "workspace-search"] as const,
+	adminModelSearch: (scope: AccountQueryScope) =>
+		[...accountScopeKey(scope), "admin-model-search"] as const,
 	adminModelPreview: (args: {
 		scope: AccountQueryScope;
 		modelId: string;

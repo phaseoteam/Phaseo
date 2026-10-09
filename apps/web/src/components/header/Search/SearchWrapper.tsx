@@ -16,12 +16,13 @@ const Search = dynamic(() => import("./Search"), {
 });
 
 interface SearchWrapperProps {
+	isAdmin?: boolean;
 	className?: string;
 	capabilities?: SearchCapabilities;
 	accountQueryScope?: AccountQueryScope | null;
 }
 
-export function SearchWrapper({ className, capabilities, accountQueryScope }: SearchWrapperProps) {
+export function SearchWrapper({ className, capabilities, accountQueryScope, isAdmin }: SearchWrapperProps) {
 	const t = useTranslations("Common.search");
 	const [activated, setActivated] = useState(false);
 	const shortcutLabel = useSearchShortcutLabel();
@@ -43,6 +44,7 @@ export function SearchWrapper({ className, capabilities, accountQueryScope }: Se
 				className={className}
 				capabilities={capabilities}
 				accountQueryScope={accountQueryScope}
+				isAdmin={isAdmin}
 				initiallyOpen
 			/>
 		);

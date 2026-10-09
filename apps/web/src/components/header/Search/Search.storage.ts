@@ -19,6 +19,7 @@ function isPersistablePinnedItem(item: PaletteItem): boolean {
 
 function isRecentableItem(item: PaletteItem): boolean {
 	if (item.workspaceId) return Boolean(item.href?.startsWith("/"));
+	if (item.persistable === false) return false;
 	return Boolean(
 		item.href?.startsWith("/") &&
 		!item.external &&
