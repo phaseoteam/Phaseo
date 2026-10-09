@@ -218,7 +218,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
     });
 
-	it("loads pricing lazily for testing-mode candidates and executes", async () => {
+	it.each([false, true])("loads lazy pricing using the selected route scope (%s)", async (pricingInternalOnly) => {
 		const candidate = {
 			providerId: "openai",
 			pricingCard: null,
@@ -247,7 +247,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			byokKeyId: null,
 		});
 		resolveProviderExecutorMock.mockReturnValue(executor);
-		const ctx = createCtx({ testingMode: true });
+		const ctx = createCtx({ testingMode: true, billableInternalTesting: true, pricingInternalOnly });
 
 		const result = await doRequestWithIR(
 			ctx,
@@ -256,7 +256,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		);
 
 		expect((result as any).ok).toBe(true);
-		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini");
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini", pricingInternalOnly);
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
 		expect(onCallEndMock).toHaveBeenCalledWith(

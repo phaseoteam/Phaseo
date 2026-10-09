@@ -2,6 +2,7 @@ import type { ProviderOfferScope } from "@/lib/providers/providerOffers";
 import type { CapabilityParamsById } from "@/lib/chat/roomModelSettings";
 
 export type GatewaySupportedModel = {
+    isInternal?: boolean;
 	modelId: string;
 	internalModelId: string | null;
 	selectorModelId: string;

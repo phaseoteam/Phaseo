@@ -594,6 +594,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "Modelos internos",
 			"title": "Selecionar um modelo",
 			"addModel": "Adicionar modelo",
 			"searchPlaceholder": "Buscar modelos…",

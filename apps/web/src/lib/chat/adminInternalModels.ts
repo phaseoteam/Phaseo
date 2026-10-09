@@ -18,6 +18,7 @@ export function adminSourceToChatModels(source: AdminModelSource, now = Date.now
 		if (!capabilities.length) return [];
 		const provider = route.data_api_providers;
 		return [{
+			isInternal: true,
 			modelId: source.canonicalApiId, selectorModelId: source.canonicalApiId, internalModelId: source.canonicalApiId,
 			providerId: route.provider_id, providerName: provider?.api_provider_name ?? route.provider_id,
 			providerFamilyId: null, providerOfferLabel: null, providerOfferScope: null, providerPromptTrainingPolicy: null,

@@ -594,6 +594,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "आंतरिक मॉडल",
 			"title": "मॉडल चुनें",
 			"addModel": "मॉडल जोड़ें",
 			"searchPlaceholder": "मॉडल खोजें…",

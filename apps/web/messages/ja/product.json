@@ -594,6 +594,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "内部モデル",
 			"title": "モデルを選択",
 			"addModel": "モデルを追加",
 			"searchPlaceholder": "モデルを検索…",
