@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: Remove only derived public reporting rows for staged/internal scopes so a later release cannot expose private history; source facts, private usage, classification totals and billing are retained.
 -- Classify retained legacy history before a staged model can be released.
 -- Change only public reporting eligibility; private usage and billing remain intact.
 -- Classification aggregates outlive their source contributions. Persist a
