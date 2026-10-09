@@ -1228,7 +1228,7 @@ export async function beforeRequest(
             provider.pricingCard.rules.length === 0
         )
         .map((provider) => provider.providerId);
-    if (missingPricingProviders.length) {
+    if (missingPricingProviders.length && !testingModeEnabled) {
         for (const providerId of missingPricingProviders) {
             providerEnablementDropped.push({
                 providerId,

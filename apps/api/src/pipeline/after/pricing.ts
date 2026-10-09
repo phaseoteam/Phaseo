@@ -105,6 +105,8 @@ export async function loadProviderPricing(
     ctx: PipelineContext,
     result: RequestResult
 ): Promise<PriceCard | null> {
+    // Authorized internal tests have no customer charge and may precede pricing.
+    if (ctx.testingMode) return null;
     const apiModelId =
         typeof result.apiModelId === "string" && result.apiModelId.trim().length > 0
             ? result.apiModelId.trim()

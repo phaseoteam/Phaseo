@@ -7,6 +7,15 @@ import { calculatePricing, loadProviderPricing } from "./pricing";
 import { shapeUsageForClient } from "../usage";
 
 const loadPriceCardMock = vi.hoisted(() => vi.fn());
+
+it("does not require a price card for authorized internal testing", async () => {
+    loadPriceCardMock.mockClear();
+    expect(await loadProviderPricing({ testingMode: true } as PipelineContextForTest,
+        { provider: "test", apiModelId: "test/internal" } as Parameters<typeof loadProviderPricing>[1])).toBeNull();
+    expect(loadPriceCardMock).not.toHaveBeenCalled();
+});
+
+type PipelineContextForTest = Parameters<typeof loadProviderPricing>[0];
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../../../..");
 const deepSeekV4ProPricingPath = path.join(
