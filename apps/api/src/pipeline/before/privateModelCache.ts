@@ -1,5 +1,5 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
-import { readLocationCache, writeLocationCache } from "@core/tiered-cache";
+import { deleteLocationCache, readLocationCache, writeLocationCache } from "@core/tiered-cache";
 
 // This is routing metadata, not caller authorization. Credentials stay encrypted.
 export const PRIVATE_ROUTE_MAX_AGE_MS = 60_000;
@@ -113,7 +113,8 @@ export async function loadPrivateRouteRow(args: { workspaceId: string; model: st
 
 export async function invalidatePrivateRoutes(workspaceId: string): Promise<void> {
     entries.delete(workspaceId);
-    // Other locations may retain a copy, but its absolute age is still enforced.
+    // Other locations and isolates may retain a copy, but its absolute age is still enforced.
+    await deleteLocationCache(emptyLocationKey(workspaceId));
     try { await getCache().delete(privateRouteCacheKey(workspaceId)); }
     catch { console.warn("private_route_cache_invalidation_failed", { workspaceId }); }
 }

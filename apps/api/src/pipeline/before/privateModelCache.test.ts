@@ -104,6 +104,27 @@ describe("workspace private route cache", () => {
             delete (globalThis as any).caches;
         }
     });
+    it("invalidation clears this location's shared absence so a first private model is seen at once", async () => {
+        const located = new Map<string, string>();
+        (globalThis as any).caches = { default: {
+            match: async (request: Request) => located.has(request.url) ? new Response(located.get(request.url)) : undefined,
+            put: async (request: Request, response: Response) => { located.set(request.url, await response.text()); },
+            delete: async (request: Request) => located.delete(request.url),
+        } };
+        try {
+            const c = await import("./privateModelCache");
+            expect(await c.loadPrivateRouteRow(args)).toBeNull();
+            await Promise.all(state.background);
+            expect(located.size).toBe(1);
+
+            state.rows = [row()];
+            await c.invalidatePrivateRoutes("a");
+            expect(located.size).toBe(0);
+            expect(await c.loadPrivateRouteRow(args)).toMatchObject({ id: "private-1" });
+        } finally {
+            delete (globalThis as any).caches;
+        }
+    });
     it("honors explicit bypass and does not cache errors", async () => {
         const c = await import("./privateModelCache"); state.error = {};
         await expect(c.loadPrivateRouteRow(args)).rejects.toThrow();
