@@ -124,6 +124,8 @@ export async function loadProviderPricing(
                 result.provider,
                 apiModelId,
                 ctx.capability,
+                result.providerModelSlug,
+                ctx.billableInternalTesting === true,
             );
         }
 		if (!card && apiModelId && !ctx.billableInternalTesting) {
@@ -153,6 +155,8 @@ export async function loadProviderPricing(
 				result.provider,
 				apiModelId ?? card.model ?? getBaseModel(ctx.model),
 				ctx.capability,
+				result.providerModelSlug,
+				ctx.billableInternalTesting === true,
 			);
 			if (!card && apiModelId) {
 				throw new Error(`pricing_card_missing_for_executed_route:${result.provider}:${apiModelId}`);

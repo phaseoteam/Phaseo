@@ -1465,6 +1465,8 @@ export async function fetchGatewayContext(args: {
                                 providerId,
                                 resolvedModelForPricing,
                                 capabilityCandidate,
+                                null,
+                                args.internalOnly === true,
                             );
                             if (card) {
                                 pricingByProvider[providerId] = card;
@@ -1540,6 +1542,8 @@ export async function fetchGatewayContext(args: {
                                 providerId,
                                 resolvedModelForPricing,
                                 capabilityCandidate,
+                                null,
+                                args.internalOnly === true,
                             );
                             if (card) {
                                 pricingByProvider[providerId] = card;
