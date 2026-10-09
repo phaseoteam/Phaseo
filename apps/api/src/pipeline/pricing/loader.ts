@@ -69,28 +69,33 @@ export async function loadPriceCard(provider: string, model: string, endpoint: s
         const nowIso = new Date().toISOString();
         const supabase = getSupabaseAdmin();
         // Existing foreign keys let PostgREST fetch the complete pricing graph
-        // in one round trip. Keep SKUs without meters for window/version parity.
+        // in one round trip. Root it at the route: embedding the route under
+        // SKUs made Postgres build meters for every active SKU before filtering
+        // (~340ms per load on production). Keep SKUs without meters for
+        // window/version parity.
         let query = supabase
-            .from("v2_pricing_skus")
-            .select("sku_id,provider_model_id,service_tier_slug,operation,status,currency,effective_from,effective_to,metadata,updated_at,route:v2_model_provider_routes!inner(provider_model_id),meters:v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata,updated_at)")
-            .eq("route.provider_slug", provider)
-            .in("route.status", ["active", "degraded"])
-            .eq("route.routing_enabled", true)
-            .eq("operation", endpoint)
-            .eq("status", "active")
+            .from("v2_model_provider_routes")
+            .select("provider_model_id,skus:v2_pricing_skus(sku_id,provider_model_id,service_tier_slug,operation,status,currency,effective_from,effective_to,metadata,updated_at,meters:v2_pricing_sku_meters(sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata,updated_at))")
+            .eq("provider_slug", provider)
+            .in("status", ["active", "degraded"])
+            .eq("routing_enabled", true)
+            .eq("skus.operation", endpoint)
+            .eq("skus.status", "active")
             // Wallet debits are USD. Foreign-currency catalog quotes must be
             // converted by an explicit pricing policy before they are executable.
-            .eq("currency", "USD")
-            .lte("effective_from", nowIso)
-            .or(`effective_to.is.null,effective_to.gt.${nowIso}`)
-            .eq("meters.billable", true)
-            .order("effective_from", { ascending: false })
-            .order("meter_order", { referencedTable: "meters", ascending: true });
+            .eq("skus.currency", "USD")
+            .lte("skus.effective_from", nowIso)
+            .or(`effective_to.is.null,effective_to.gt.${nowIso}`, { referencedTable: "skus" })
+            .eq("skus.meters.billable", true)
+            .order("effective_from", { referencedTable: "skus", ascending: false })
+            .order("meter_order", { referencedTable: "skus.meters", ascending: true });
         query = normalizedProviderModelSlug
-            ? query.eq("route.provider_model_slug", normalizedProviderModelSlug)
-            : query.or(`model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)}`, { referencedTable: "route" });
-        const { data: skuRows, error: skuError } = await query;
+            ? query.eq("provider_model_slug", normalizedProviderModelSlug)
+            : query.or(`model_slug.eq.${JSON.stringify(model)},provider_model_slug.eq.${JSON.stringify(model)}`);
+        const { data: routeRows, error: skuError } = await query;
         if (skuError) return null;
+        const skuRows = (routeRows ?? []).flatMap((route: any) => route.skus ?? [])
+            .sort((left: any, right: any) => Date.parse(right.effective_from) - Date.parse(left.effective_from));
         if (!skuRows?.length) {
             remember(null, PRICING_L1_NEGATIVE_TTL_MS);
             return null;
