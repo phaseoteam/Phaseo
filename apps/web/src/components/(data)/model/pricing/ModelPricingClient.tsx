@@ -861,6 +861,7 @@ export default function ModelPricingClient({
 	modelId,
 	providers: initialProviders,
 	refreshPricing = false,
+	internalOnly = false,
     creatorOrgId,
     initialPricingTimeMs,
     runtimeStats = EMPTY_RUNTIME_STATS,
@@ -873,6 +874,7 @@ export default function ModelPricingClient({
     modelId: string;
     providers: ProviderPricing[];
 	refreshPricing?: boolean;
+	internalOnly?: boolean;
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
     runtimeStats?: ProviderRuntimeStatsMap;
@@ -923,12 +925,12 @@ export default function ModelPricingClient({
 			}));
 		},
 		...WEB_QUERY_POLICIES.public,
-		enabled: refreshPricing,
-		initialData: initialProviders.length > 0 ? initialProviders : undefined,
+		enabled: refreshPricing && !internalOnly,
+		initialData: !internalOnly && initialProviders.length > 0 ? initialProviders : undefined,
 		refetchIntervalInBackground: false,
 		placeholderData: keepPreviousData,
 	});
-	const providers = pricingQuery.data ?? initialProviders;
+	const providers = internalOnly ? initialProviders : pricingQuery.data ?? initialProviders;
     const [queryState, updateUrlState] = useQueryStates(
         {
             [PROVIDER_QUERY_KEY]: parseAsString,
@@ -986,6 +988,7 @@ export default function ModelPricingClient({
 		DEFAULT_MODEL_PERCENTILE,
 	);
 	const runtimeStatsQuery = useQuery<ProviderRuntimeStatsMap>({
+		enabled: !internalOnly,
 		queryKey: webQueryKeys.public.modelRuntimeStats({
 			modelId,
 			providerIds,
@@ -1003,7 +1006,7 @@ export default function ModelPricingClient({
 		...WEB_QUERY_POLICIES.public,
 		refetchIntervalInBackground: false,
 		initialData:
-			selectedPercentile === DEFAULT_MODEL_PERCENTILE
+			!internalOnly && selectedPercentile === DEFAULT_MODEL_PERCENTILE
 				? runtimeStats
 				: undefined,
 		initialDataUpdatedAt:

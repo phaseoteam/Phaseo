@@ -61,10 +61,7 @@ import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { isAdminViewer } from "@/lib/auth/getViewerRole";
 import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
-import { toAdminModelPreview } from "@/lib/models/adminModelPreview";
-import AdminHiddenModelPreview from "@/components/(data)/model/AdminHiddenModelPreview";
-import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
-import { toAccountQueryScope } from "@/lib/query/queryKeys";
+import { toAdminModelOverview } from "@/lib/models/adminModelOverview";
 
 const MODEL_PROVIDER_VISIBILITY_TIMEOUT_MS = 1_000;
 
@@ -478,7 +475,7 @@ async function ModelDetailPageBody({
 
 	return (
 		<>
-			<DiscordComponentEmbed
+			{!includeHidden && <DiscordComponentEmbed
 				modelId={modelId}
 				modelName={modelName}
 				organisationName={organisationName}
@@ -492,15 +489,15 @@ async function ModelDetailPageBody({
 					null
 				}
 				organisationLogoUrl={modelOverview.organisation?.logo_url}
-			/>
-			<JsonLdScript
+			/>}
+			{!includeHidden && <JsonLdScript
 				id="model-dataset-schema"
 				data={datasetSchema}
-			/>
-			<JsonLdScript
+			/>}
+			{!includeHidden && <JsonLdScript
 				id="model-breadcrumb-schema"
 				data={breadcrumbSchema}
-			/>
+			/>}
 			<div className="space-y-10">
 					<div className="flex flex-col gap-6 lg:flex-row lg:items-start">
 						<ModelPageToc
@@ -554,7 +551,7 @@ async function ModelDetailPageBody({
 
 export default async function Page({ params }: { params: Promise<ModelRouteParams> }) {
 	const routeParams = await params;
-	const includeHidden = false;
+	let includeHidden = false;
 	const { requestedModelId, canonicalModelId, source } = await resolveModelRouteIds(routeParams, includeHidden);
 	const isAliasRoute = isModelAliasRoute({ requestedModelId, canonicalModelId, source });
 	if (canonicalModelId !== requestedModelId && !isAliasRoute) {
@@ -581,14 +578,14 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	}
 	// Start independent section requests alongside the overview so the header can
 	// stream as soon as its own data arrives, without serializing the lower body.
-	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
-	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
-	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	let benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	let subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	let availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
 	const pricingAbortController = new AbortController();
-	const pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
-	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	let pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
+	let gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const providerPreviewsPromise = fetchServerProviderCatalogPreviewsForModel(modelId).catch(() => []);
-	const modelOverview = await fetchFrontendModelOverview(modelId)
+	let modelOverview = await fetchFrontendModelOverview(modelId)
 		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
 		.catch(() => fetchPrivateModelOverview(modelId));
 	if (!modelOverview) {
@@ -596,15 +593,14 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		if (providerPreview) return <ProviderCatalogPreviewDetail preview={providerPreview} />;
 		if (!(await isAdminViewer().catch(() => false))) notFound();
 		const source = await fetchAdminModelSource(requestedModelId).catch(() => null);
-		const preview = source ? toAdminModelPreview(source) : null;
-		if (!preview) notFound();
-		const accountContext = await getServerAccountContext();
-		return (
-			<AdminHiddenModelPreview
-				initial={preview}
-				accountQueryScope={toAccountQueryScope(accountContext)}
-			/>
-		);
+		modelOverview = source ? toAdminModelOverview(source) : null;
+		if (!modelOverview) notFound();
+		includeHidden = true;
+		benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId, true).catch(() => []);
+		subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId, true).catch(() => []);
+		availabilityPromise = fetchFrontendModelAvailability(modelId, true).catch(() => undefined);
+		pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal, true).catch(() => []);
+		gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId, true).catch(() => null);
 	}
 	const modelHeader = {
 		model_id: modelOverview.model_id,
@@ -618,11 +614,11 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		aliases: modelOverview.aliases ?? [],
 		family_id: modelOverview.family_id ?? undefined,
 		status: modelOverview.status,
-		hidden: false,
+		hidden: includeHidden,
 		is_private: modelOverview.is_private === true,
 	};
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias}>
+		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias} canChat={includeHidden ? false : undefined} canCompare={!includeHidden}>
 			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
 				<ModelDetailPageBody
 					modelId={modelId}

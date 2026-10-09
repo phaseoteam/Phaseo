@@ -324,16 +324,19 @@ function getAppSubtitle(app: { url: string | null }): string | null {
 
 export async function ModelSubscriptionsSection({
 	modelId,
+	includeHidden = false,
 	ownerOrganisationId,
 	ownerOrganisationName,
 }: {
 	modelId: string;
+	includeHidden?: boolean;
 	ownerOrganisationId?: string | null;
 	ownerOrganisationName?: string | null;
 }) {
 	return (
 		<ModelSubscriptions
 			modelId={modelId}
+			includeHidden={includeHidden}
 			ownerOrganisationId={ownerOrganisationId}
 			ownerOrganisationName={ownerOrganisationName}
 			showHeader={false}
@@ -534,7 +537,7 @@ export async function ModelQuickstartSection({
 }) {
 	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
 
-	if (!isGatewayActive) {
+	if (!isGatewayActive && !includeHidden) {
 		return (
 			<Quickstart
 				mode="model-metadata"
@@ -624,12 +627,12 @@ export async function ModelBenchmarksSection({
 	const t = await getTranslations("Catalogue.models.detail");
 	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
 		withOptionalSectionTimeout(
-			fetchFrontendModelBenchmarkHighlights(modelId),
+			fetchFrontendModelBenchmarkHighlights(modelId, includeHidden),
 			[],
 			"benchmark highlights"
 		),
 		withOptionalSectionTimeout(
-			fetchFrontendModelBenchmarkResults(modelId),
+			fetchFrontendModelBenchmarkResults(modelId, includeHidden),
 			[],
 			"benchmark results"
 		),
@@ -650,7 +653,7 @@ export async function ModelBenchmarksSection({
 		),
 		withOptionalSectionTimeout(fetchFrontendBenchmark("epoch-capabilities-index"), null, "Epoch benchmark leaderboard"),
 		withOptionalSectionTimeout(fetchEpochConfidenceIntervals(), {}, "Epoch confidence intervals"),
-		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId), null, "benchmark model identity"),
+		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId, includeHidden), null, "benchmark model identity"),
 	]);
 	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
 	const epochRanking = epochBenchmark ? {
@@ -1428,6 +1431,7 @@ export default async function ModelOverviewSections({
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
+										includeHidden={includeHidden}
 										modelId={modelId}
 										ownerOrganisationId={model?.organisation_id}
 										ownerOrganisationName={model?.organisation?.name}
@@ -1441,7 +1445,7 @@ export default async function ModelOverviewSections({
 		);
 	}
 
-	if (!isGatewayActive) {
+	if (!isGatewayActive && !includeHidden) {
 		return (
 			<div className={MODEL_SECTION_STACK_CLASSNAME}>
 				{showProviders ? (
@@ -1505,6 +1509,7 @@ export default async function ModelOverviewSections({
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
+										includeHidden={includeHidden}
 										modelId={modelId}
 										ownerOrganisationId={model?.organisation_id}
 										ownerOrganisationName={model?.organisation?.name}
@@ -1642,6 +1647,7 @@ export default async function ModelOverviewSections({
 							/>
 							<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 								<ModelSubscriptionsSection
+									includeHidden={includeHidden}
 									modelId={modelId}
 									ownerOrganisationId={model?.organisation_id}
 									ownerOrganisationName={model?.organisation?.name}
