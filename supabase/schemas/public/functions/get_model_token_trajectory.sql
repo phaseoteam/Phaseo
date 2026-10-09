@@ -30,45 +30,12 @@ anchors as (
   from model_row mr
 ),
 
--- Days after the release day come from daily usage rollups, which carry the
--- same token meters as raw request usage keyed by coalesce(routed, requested)
--- model slug. Facts without either slug are failed requests with no usage.
--- The release day itself is read from facts to keep the exact release-time
--- cutoff. Usage meters come from priced SKU meters, none of which is
--- total_tokens, so per-grain and per-request fallbacks agree.
-release_day as (
-  select (mr.release_date at time zone 'utc')::date as day,
-    ((mr.release_date at time zone 'utc')::date + 1)::timestamp at time zone 'utc' as next_day_start
-  from model_row mr
-  where mr.release_date is not null
-),
-
 daily_tokens as (
-  select grain.usage_date::timestamp as day,
-    sum(coalesce(nullif(grain.explicit_total, 0),
-      coalesce(grain.input_tokens, 0) + coalesce(grain.output_tokens, 0))) as tokens
-  from (
-    select rollup.usage_date,
-      sum(meter.quantity) filter (where meter.meter_key = 'total_tokens') as explicit_total,
-      sum(meter.quantity) filter (where meter.meter_key = 'input_tokens') as input_tokens,
-      sum(meter.quantity) filter (where meter.meter_key = 'output_tokens') as output_tokens
-    from public.v2_public_usage_daily rollup
-    cross join release_day rd
-    join public.v2_public_usage_daily_meters meter
-      on meter.rollup_id = rollup.rollup_id
-     and meter.meter_key in ('total_tokens', 'input_tokens', 'output_tokens')
-    where rollup.model_slug in (select model_id from model_ids)
-      and rollup.usage_date > rd.day
-    group by rollup.rollup_id, rollup.usage_date
-  ) grain
-  group by 1
-  union all
   select date_trunc('day', fact.occurred_at at time zone 'utc') as day,
     sum(coalesce(nullif(tokens.explicit_total, 0),
       coalesce(tokens.input_tokens, 0) + coalesce(tokens.output_tokens, 0))) as tokens
   from public.reporting_request_facts fact
   cross join model_row mr
-  cross join release_day rd
   left join lateral (
     select sum(usage.quantity) filter (where usage.meter_key = 'total_tokens') as explicit_total,
       sum(usage.quantity) filter (where usage.meter_key = 'input_tokens') as input_tokens,
@@ -79,8 +46,8 @@ daily_tokens as (
   ) tokens on true
   where coalesce(fact.routed_model_slug, fact.requested_model_slug, fact.requested_model_input)
       in (select model_id from model_ids)
+    and mr.release_date is not null
     and fact.occurred_at >= mr.release_date
-    and fact.occurred_at < rd.next_day_start
   group by 1
 ),
 

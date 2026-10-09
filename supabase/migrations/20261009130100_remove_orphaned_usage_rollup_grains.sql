@@ -3,9 +3,10 @@
 -- model, colo) from request facts. Before private.v2_analytics_previous_grains
 -- (2026-10-03), re-attributing a fact (for example app_id cleared) recomputed
 -- the new grain but left the old one, so those requests were counted twice. On
--- production (2026-10-09) 213 public daily, 288 public hourly and 213 private
--- daily grains matched no fact, all last refreshed between 2026-07-26 and
--- 2026-08-27. Facts reach back to the first rollup day, so a grain with no fact
+-- production (2026-10-09, after 20261009120500) 153 public daily, 206 public
+-- hourly and 213 private daily grains matched no fact, all last refreshed
+-- between 2026-07-26 and 2026-08-27. Grains whose facts exist but are no longer
+-- public-reportable are a reporting-policy question and are left alone here. Facts reach back to the first rollup day, so a grain with no fact
 -- has nothing left to represent. Meters cascade.
 set local statement_timeout = '120s';
 
