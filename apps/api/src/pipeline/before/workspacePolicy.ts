@@ -2,6 +2,7 @@ import { normalizeProviderList } from "@/lib/config/providerAliases";
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { keyVersionToken } from "@/core/kv";
 import { readSharedVersion, rememberSharedVersion, SHARED_VERSION_TTL_MS } from "@core/shared-version-cache";
+import { readLocationCache, writeLocationCache } from "@core/tiered-cache";
 import type { PriceCard } from "../pricing";
 import type {
 	ProviderCandidate,
@@ -524,20 +525,21 @@ export async function fetchWorkspacePolicy(args: {
 	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
 	if (cached) return cached;
 
-	try {
-		const raw = await getCache().get(
-			workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
-			"text",
-		);
-		if (raw) {
+	const kvKey = workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken);
+	// The key embeds both version tokens, so a shared copy can never outlive a change.
+	// A fresh isolate reads the location copy (~1-5 ms) before KV (5-300 ms).
+	for (const layer of ["location", "kv"] as const) {
+		try {
+			const raw = layer === "location" ? await readLocationCache(kvKey) : await getCache().get(kvKey, "text");
+			if (!raw) continue;
 			const parsed = JSON.parse(raw);
-			if (isWorkspacePolicyLike(parsed)) {
-				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
-				return cloneWorkspacePolicy(parsed);
-			}
+			if (!isWorkspacePolicyLike(parsed)) continue;
+			writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
+			if (layer === "kv") writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+			return cloneWorkspacePolicy(parsed);
+		} catch {
+			// Ignore cache read failures and use the next layer or the source of truth.
 		}
-	} catch {
-		// Ignore cache read failures and use the source of truth.
 	}
 
 	const supabase = getSupabaseAdmin();
@@ -659,14 +661,9 @@ export async function fetchWorkspacePolicy(args: {
 		dynamicRoute,
 	});
 	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
-	dispatchBackground(
-		getCache()
-			.put(
-				workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken),
-				JSON.stringify(policy),
-				{ expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS },
-			),
-	);
+	const raw = JSON.stringify(policy);
+	writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+	dispatchBackground(getCache().put(kvKey, raw, { expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }));
 	return policy;
 }
 

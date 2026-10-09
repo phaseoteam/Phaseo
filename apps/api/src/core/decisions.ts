@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { lazySchema } from "./lazy-schema";
 
 export type DecisionValue = string | boolean;
 export type DecisionInputPart =
@@ -18,14 +19,14 @@ export type NativeDecisionRequest = {
 	safety_identifier?: string | null;
 };
 
-const instructions = z.string().max(1048576);
+const instructions = lazySchema(() => z.string().max(1048576));
 const commonQuestion = { name: instructions.optional(), instructions };
-const value = z.union([z.string(), z.boolean()]);
+const value = lazySchema(() => z.union([z.string(), z.boolean()]));
 const mediaUrl = (kind: "audio" | "video") => z.string().max(24 * 1024 * 1024).refine(value => {
 	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
 	try { return new URL(value).protocol === "https:"; } catch { return false; }
 }, "Use an inline base64 data URL or a public HTTPS URL.");
-export const NativeDecisionQuestionSchema = z.discriminatedUnion("type", [
+export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({ ...commonQuestion, type: z.literal("predicate") }).strict(),
 	z.object({
 		...commonQuestion, type: z.literal("choice"),
@@ -35,8 +36,8 @@ export const NativeDecisionQuestionSchema = z.discriminatedUnion("type", [
 		...commonQuestion, type: z.literal("score"),
 		levels: z.array(z.object({ label: instructions, description: instructions.optional() }).strict()).min(1),
 	}).strict(),
-]);
-const inputPart = z.discriminatedUnion("type", [
+]));
+const inputPart = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("input_audio"),
 		input_audio: z.object({
@@ -56,8 +57,8 @@ const inputPart = z.discriminatedUnion("type", [
 		image_url: z.string().max(1073741824).regex(/^data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$/i),
 		detail: z.enum(["low", "high", "auto", "original"]).nullable().optional(),
 	}).strict(),
-]);
-export const NativeDecisionsBodySchema = z.object({
+]));
+export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 	model: z.string().min(1).max(1048576),
 	input: z.union([
 		z.string().max(10485760),
@@ -80,11 +81,11 @@ export const NativeDecisionsBodySchema = z.object({
 	const images = typeof body.input === "string" ? 0 : body.input.reduce((total, message) =>
 		total + (typeof message.content === "string" ? 0 : message.content.filter(part => part.type === "input_image").length), 0);
 	if (images > 128) ctx.addIssue({ code: "custom", path: ["input"], message: "At most 128 images are supported." });
-});
+}));
 
-const probability = z.number().finite().min(0).max(1);
-const answerName = z.string().nullable();
-export const NativeDecisionAnswerSchema = z.discriminatedUnion("type", [
+const probability = lazySchema(() => z.number().finite().min(0).max(1));
+const answerName = lazySchema(() => z.string().nullable());
+export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({ type: z.literal("predicate"), name: answerName, probability }).passthrough(),
 	z.object({
 		type: z.literal("choice"), name: answerName, choice: value, confidence: probability,
@@ -95,4 +96,4 @@ export const NativeDecisionAnswerSchema = z.discriminatedUnion("type", [
 		probabilities: z.array(z.object({ value: z.number().int().min(0), label: z.string(), probability }).passthrough()),
 	}).passthrough(),
 	z.object({ type: z.literal("refusal"), name: answerName }).passthrough(),
-]);
+]));

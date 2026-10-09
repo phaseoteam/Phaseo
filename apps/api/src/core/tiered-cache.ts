@@ -144,6 +144,40 @@ async function l2Write(key: string, raw: string, storeS: number): Promise<void> 
 	}
 }
 
+function locationCacheEnabled(): boolean {
+	return typeof caches !== "undefined" && getBindingsIfConfigured()?.GATEWAY_TIERED_CACHE_L2_ENABLED !== "false";
+}
+
+/**
+ * Reads a raw value from this location's Workers Cache (L2) for callers that manage
+ * their own isolate and KV layers. Other locations cannot be purged, so the key must
+ * embed a version token or the value must carry its own short absolute age bound.
+ */
+export async function readLocationCache(key: string): Promise<string | null> {
+	return locationCacheEnabled() ? l2Read(key) : null;
+}
+
+/**
+ * Stores a raw value in this location's Workers Cache (L2) in the background. The
+ * returned promise settles when the write does, so a later delete can follow it.
+ */
+export function writeLocationCache(key: string, raw: string, storeS: number): Promise<void> {
+	if (!locationCacheEnabled()) return Promise.resolve();
+	const write = l2Write(key, raw, storeS);
+	dispatchBackground(write);
+	return write;
+}
+
+/** Removes a value from this location's Workers Cache (L2). Other locations keep theirs. */
+export async function deleteLocationCache(key: string): Promise<void> {
+	if (typeof caches === "undefined") return;
+	try {
+		await (caches as unknown as { default: Cache }).default.delete(await l2Request(key));
+	} catch {
+		// The Workers Cache is best effort.
+	}
+}
+
 async function l3Read(key: string): Promise<string | null> {
 	try {
 		return await getCache().get(key, "text");

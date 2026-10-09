@@ -1,4 +1,5 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { deleteLocationCache, readLocationCache, writeLocationCache } from "@core/tiered-cache";
 
 // This is routing metadata, not caller authorization. Credentials stay encrypted.
 export const PRIVATE_ROUTE_MAX_AGE_MS = 60_000;
@@ -28,13 +29,42 @@ function fresh(snapshot: Snapshot, workspaceId: string): boolean {
             typeof row.id === "string" && typeof row.model_id === "string" && typeof row.enc_value === "string");
 }
 
+// Most workspaces have no private models. That empty snapshot holds no credentials,
+// so it alone is shared per location (Workers Cache): a fresh isolate then skips the
+// KV read. Snapshots with rows carry encrypted credentials and stay in isolate memory
+// and KV. The same absolute 60 s age bound applies to every copy.
+const emptyLocationKey = (workspaceId: string) => `${privateRouteCacheKey(workspaceId)}:empty`;
+// Writes still in flight, so invalidation deletes after them rather than being undone.
+const locationWrites = new Map<string, Promise<void>>();
+
+function rememberIfEmpty(snapshot: Snapshot, entry: Entry): void {
+    if (snapshot.rows.length !== 0 || entries.get(snapshot.workspaceId) !== entry) return;
+    const remainingS = Math.floor((PRIVATE_ROUTE_MAX_AGE_MS - (Date.now() - snapshot.checkedAt)) / 1000);
+    if (remainingS <= 0) return;
+    const write = writeLocationCache(emptyLocationKey(snapshot.workspaceId), JSON.stringify(snapshot), remainingS);
+    locationWrites.set(snapshot.workspaceId, write);
+    void write.finally(() => {
+        if (locationWrites.get(snapshot.workspaceId) === write) locationWrites.delete(snapshot.workspaceId);
+    });
+}
+
 async function readSnapshot(workspaceId: string, entry: Entry): Promise<Snapshot | null> {
     const cache = getCache();
+    try {
+        const raw = await readLocationCache(emptyLocationKey(workspaceId));
+        if (raw && raw.length <= MAX_BYTES) {
+            const value = JSON.parse(raw) as Snapshot;
+            if (fresh(value, workspaceId) && value.rows.length === 0) return value;
+        }
+    } catch { /* Fall through to KV. */ }
     try {
         const raw = await cache.get(privateRouteCacheKey(workspaceId), { type: "text", cacheTtl: 30 });
         if (raw && raw.length <= MAX_BYTES) {
             const value = JSON.parse(raw) as Snapshot;
-            if (fresh(value, workspaceId)) return value;
+            if (fresh(value, workspaceId)) {
+                rememberIfEmpty(value, entry);
+                return value;
+            }
         }
     } catch { /* A cache failure requires an authoritative read, never an absent result. */ }
     const checkedAt = Date.now();
@@ -53,6 +83,7 @@ async function readSnapshot(workspaceId: string, entry: Entry): Promise<Snapshot
     if (entries.get(workspaceId) === entry) {
         dispatchBackground(cache.put(privateRouteCacheKey(workspaceId), raw, { expirationTtl: 60 })
             .catch(() => undefined));
+        rememberIfEmpty(snapshot, entry);
     }
     return snapshot;
 }
@@ -89,7 +120,10 @@ export async function loadPrivateRouteRow(args: { workspaceId: string; model: st
 
 export async function invalidatePrivateRoutes(workspaceId: string): Promise<void> {
     entries.delete(workspaceId);
-    // Other locations may retain a copy, but its absolute age is still enforced.
+    // Other locations and isolates may retain a copy, but its absolute age is still enforced.
     try { await getCache().delete(privateRouteCacheKey(workspaceId)); }
     catch { console.warn("private_route_cache_invalidation_failed", { workspaceId }); }
+    // This isolate's own pending write must land first, or it would restore the absence.
+    await locationWrites.get(workspaceId)?.catch(() => undefined);
+    await deleteLocationCache(emptyLocationKey(workspaceId));
 }

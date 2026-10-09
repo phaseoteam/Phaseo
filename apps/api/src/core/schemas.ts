@@ -3,6 +3,7 @@
 // How: Exposes reusable building blocks for the gateway.
 
 import { z } from "zod";
+import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
 import { NativeDecisionsBodySchema } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
@@ -13,7 +14,7 @@ import {
 	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
 } from "./nativeTools";
 
-const ProviderRoutingSchema = z.object({
+const ProviderRoutingSchema = lazySchema(() => z.object({
     // Existing gateway routing hints
     mode: z.string().nullable().optional(),
     order: z.array(z.string()).optional(),
@@ -60,9 +61,9 @@ const ProviderRoutingSchema = z.object({
     diagnostics: z.boolean().nullable().optional(),
     return_diagnostics: z.boolean().nullable().optional(),
     returnDiagnostics: z.boolean().nullable().optional(),
-}).passthrough().optional();
+}).passthrough().optional());
 
-const DebugOptionsSchema = z.object({
+const DebugOptionsSchema = lazySchema(() => z.object({
     enabled: z.boolean().optional(),
     echo_upstream_body: z.boolean().optional(),
     return_upstream_request: z.boolean().optional(),
@@ -72,20 +73,20 @@ const DebugOptionsSchema = z.object({
     trace: z.boolean().optional(),
     trace_level: z.enum(["summary", "full"]).optional(),
     traceLevel: z.enum(["summary", "full"]).optional(),
-}).optional();
+}).optional());
 
-const BetaOptionsSchema = z.object({
+const BetaOptionsSchema = lazySchema(() => z.object({
     openai_websocket_mode: z.boolean().optional(),
     openaiWebsocketMode: z.boolean().optional(),
     openai: z.object({
         websocket_mode: z.boolean().optional(),
         websocketMode: z.boolean().optional(),
     }).optional(),
-}).passthrough().optional();
+}).passthrough().optional());
 
-const ServiceTierSchema = z.enum(["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]);
+const ServiceTierSchema = lazySchema(() => z.enum(["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]));
 
-const ImageConfigSchema = z.object({
+const ImageConfigSchema = lazySchema(() => z.object({
     aspect_ratio: z.string().optional(),
     image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
     font_inputs: z.array(
@@ -105,9 +106,9 @@ const ImageConfigSchema = z.object({
         z.array(z.any()),
         z.record(z.string(), z.any()),
     ]),
-).optional();
+).optional());
 
-const ResponseFormatSchema = z.union([
+const ResponseFormatSchema = lazySchema(() => z.union([
     z.string(),
     z.object({
         type: z.string(),
@@ -121,27 +122,27 @@ const ResponseFormatSchema = z.union([
             schema_: z.any().optional(),
         }).optional(),
 	}).passthrough(),
-]);
+]));
 
-const OpenAIContextManagementEntrySchema = z.object({
+const OpenAIContextManagementEntrySchema = lazySchema(() => z.object({
 	type: z.literal("compaction"),
 	compact_threshold: z.number().optional(),
-}).passthrough();
+}).passthrough());
 
-const OpenAIContextManagementSchema = z.array(OpenAIContextManagementEntrySchema);
+const OpenAIContextManagementSchema = lazySchema(() => z.array(OpenAIContextManagementEntrySchema));
 
-const OpenAIPromptCacheOptionsSchema = z.object({
+const OpenAIPromptCacheOptionsSchema = lazySchema(() => z.object({
 	mode: z.enum(["implicit", "explicit"]).optional(),
 	ttl: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const CacheControlSchema = z.object({
+const CacheControlSchema = lazySchema(() => z.object({
     type: z.string().optional(),
     ttl: z.string().optional(),
     scope: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const OpenAIProviderOptionsSchema = z.object({
+const OpenAIProviderOptionsSchema = lazySchema(() => z.object({
 	// Retain the historical object form for the gateway extension while the
 	// first-class OpenAI field follows the official array contract.
 	context_management: z.union([
@@ -150,28 +151,28 @@ const OpenAIProviderOptionsSchema = z.object({
 	]).optional(),
 	prompt_cache_retention: z.string().optional(),
 	prompt_cache_options: OpenAIPromptCacheOptionsSchema.optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicProviderOptionsSchema = z.object({
+const AnthropicProviderOptionsSchema = lazySchema(() => z.object({
 	cache_control: CacheControlSchema.optional(),
-}).passthrough();
+}).passthrough());
 
-const GoogleProviderOptionsSchema = z.object({
+const GoogleProviderOptionsSchema = lazySchema(() => z.object({
 	cache_control: CacheControlSchema.optional(),
 	cached_content: z.string().optional(),
 	cache_ttl: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const DeepInfraProviderOptionsSchema = z.object({
+const DeepInfraProviderOptionsSchema = lazySchema(() => z.object({
 	fail_fast: z.boolean().optional(),
 	min_p: z.number().min(0).max(1).optional(),
 	stop_token_ids: z.array(z.number().int()).max(16).optional(),
 	chat_template_kwargs: z.record(z.string(), z.any()).optional(),
 	continue_final_message: z.boolean().optional(),
 	ignore_eos: z.boolean().optional(),
-}).passthrough();
+}).passthrough());
 
-const FireworksProviderOptionsSchema = z.object({
+const FireworksProviderOptionsSchema = lazySchema(() => z.object({
 	min_p: z.number().min(0).max(1).optional(),
 	typical_p: z.number().min(0).max(1).optional(),
 	prompt_cache_isolation_key: z.string().optional(),
@@ -187,22 +188,22 @@ const FireworksProviderOptionsSchema = z.object({
 	return_token_ids: z.boolean().optional(),
 	prompt_truncate_len: z.number().int().positive().optional(),
 	safe_tokenization: z.boolean().optional(),
-}).passthrough();
+}).passthrough());
 
-const GMICloudProviderOptionsSchema = z.object({
+const GMICloudProviderOptionsSchema = lazySchema(() => z.object({
 	ignore_eos: z.boolean().optional(),
 	context_length_exceeded_behavior: z.enum(["truncate", "error"]).optional(),
-}).passthrough();
+}).passthrough());
 
 
-const ResponsesProviderOptionsSchema = z.object({
+const ResponsesProviderOptionsSchema = lazySchema(() => z.object({
 	openai: OpenAIProviderOptionsSchema.optional(),
 	anthropic: AnthropicProviderOptionsSchema.optional(),
 	google: GoogleProviderOptionsSchema.optional(),
 	deepinfra: DeepInfraProviderOptionsSchema.optional(),
 	fireworks: FireworksProviderOptionsSchema.optional(),
 	gmicloud: GMICloudProviderOptionsSchema.optional(),
-}).passthrough();
+}).passthrough());
 
 const OPENAI_ASSISTANT_PHASE_VALUES = new Set(["commentary", "final_answer"]);
 
@@ -245,17 +246,17 @@ function isFileLike(value: unknown): boolean {
     return typeof candidate.arrayBuffer === "function" && typeof candidate.stream === "function";
 }
 
-const UploadFileSchema = z.custom<File | Blob>(isFileLike, {
+const UploadFileSchema = lazySchema(() => z.custom<File | Blob>(isFileLike, {
     message: "file is required",
-});
+}));
 
 // Batch schema
-const BatchWebhookSchema = z.object({
+const BatchWebhookSchema = lazySchema(() => z.object({
     endpoint_id: z.string().min(1),
     events: z.array(z.string().min(1)).optional(),
-}).strict();
+}).strict());
 
-const BatchRequestItemSchema = z.object({
+const BatchRequestItemSchema = lazySchema(() => z.object({
     custom_id: z.string().min(1).optional(),
     customId: z.string().min(1).optional(),
     method: z.string().min(1).optional(),
@@ -264,9 +265,9 @@ const BatchRequestItemSchema = z.object({
     request: z.record(z.string(), z.any()).optional(),
 }).refine((value) => Boolean(value.body || value.request), {
     message: "batch request requires body or request",
-});
+}));
 
-export const BatchSchema = z.object({
+export const BatchSchema = lazySchema(() => z.object({
     input_file_id: z.string().min(1).optional(),
     requests: z.array(BatchRequestItemSchema).min(1).optional(),
     endpoint: z.string().min(1),
@@ -288,11 +289,11 @@ export const BatchSchema = z.object({
     routing: ProviderRoutingSchema,
 }).refine((value) => Boolean(value.input_file_id) !== Boolean(value.requests), {
     message: "Provide exactly one of input_file_id or requests.",
-});
+}));
 export type BatchRequest = z.infer<typeof BatchSchema>;
 
 // Responses schema (OAI Responses API)
-export const ResponsesSchema = z.object({
+export const ResponsesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]),
     session_id: z.string().trim().min(1).max(256).optional(),
@@ -350,16 +351,16 @@ export const ResponsesSchema = z.object({
         next.safety_identifier = null;
     }
     return next;
-});
+}));
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
 // Embeddings schema
-const EmbeddingsInputTextPartSchema = z.object({
+const EmbeddingsInputTextPartSchema = lazySchema(() => z.object({
 	type: z.enum(["text", "input_text"]),
 	text: z.string(),
-}).passthrough();
+}).passthrough());
 
-const EmbeddingsInputImagePartSchema = z.object({
+const EmbeddingsInputImagePartSchema = lazySchema(() => z.object({
 	type: z.enum(["image_url", "input_image", "image"]),
 	image_url: z.union([
 		z.string().min(1),
@@ -375,9 +376,9 @@ const EmbeddingsInputImagePartSchema = z.object({
 	]).optional(),
 }).passthrough().refine((value) => value.image_url != null || value.url != null, {
 	message: "image input parts require image_url or url",
-});
+}));
 
-const EmbeddingsInputAudioPartSchema = z.object({
+const EmbeddingsInputAudioPartSchema = lazySchema(() => z.object({
 	type: z.literal("input_audio"),
 	input_audio: z.object({
 		data: z.string().optional(),
@@ -386,9 +387,9 @@ const EmbeddingsInputAudioPartSchema = z.object({
 	}).passthrough().refine((value) => value.data != null || value.url != null, {
 		message: "input_audio.data or input_audio.url is required",
 	}),
-}).passthrough();
+}).passthrough());
 
-const EmbeddingsInputVideoPartSchema = z.object({
+const EmbeddingsInputVideoPartSchema = lazySchema(() => z.object({
 	type: z.enum(["input_video", "video_url"]),
 	video_url: z.union([
 		z.string().min(1),
@@ -404,44 +405,44 @@ const EmbeddingsInputVideoPartSchema = z.object({
 	]).optional(),
 }).passthrough().refine((value) => value.video_url != null || value.url != null, {
 	message: "video input parts require video_url or url",
-});
+}));
 
-const EmbeddingsInputPartSchema = z.union([
+const EmbeddingsInputPartSchema = lazySchema(() => z.union([
 	EmbeddingsInputTextPartSchema,
 	EmbeddingsInputImagePartSchema,
 	EmbeddingsInputAudioPartSchema,
 	EmbeddingsInputVideoPartSchema,
-]);
+]));
 
-const EmbeddingsMultimodalContentSchema = z.array(EmbeddingsInputPartSchema).min(1);
+const EmbeddingsMultimodalContentSchema = lazySchema(() => z.array(EmbeddingsInputPartSchema).min(1));
 
-const EmbeddingsInputObjectSchema = z.object({
+const EmbeddingsInputObjectSchema = lazySchema(() => z.object({
 	content: EmbeddingsMultimodalContentSchema,
-}).passthrough();
-const EmbeddingsStructuredInputSchema = z.record(z.string(), z.any()).refine(
+}).passthrough());
+const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.any()).refine(
 	(value) => Object.keys(value).length > 0 && typeof value.type !== "string",
 	{ message: "structured embedding input must not be empty" },
-);
+));
 
-const EmbeddingsInputStringSchema = z.string().min(1);
-const EmbeddingsInputTokenArraySchema = z.array(z.number().int()).max(2048);
+const EmbeddingsInputStringSchema = lazySchema(() => z.string().min(1));
+const EmbeddingsInputTokenArraySchema = lazySchema(() => z.array(z.number().int()).max(2048));
 
-const EmbeddingsInputItemSchema = z.union([
+const EmbeddingsInputItemSchema = lazySchema(() => z.union([
 	EmbeddingsInputStringSchema,
 	EmbeddingsInputTokenArraySchema,
 	EmbeddingsInputObjectSchema,
 	EmbeddingsStructuredInputSchema,
-]);
+]));
 
-const EmbeddingsInputSchema = z.union([
+const EmbeddingsInputSchema = lazySchema(() => z.union([
 	EmbeddingsInputStringSchema,
 	EmbeddingsInputTokenArraySchema,
 	EmbeddingsInputObjectSchema,
 	EmbeddingsStructuredInputSchema,
 	z.array(EmbeddingsInputItemSchema).max(2048),
-]);
+]));
 
-const EmbeddingsProviderOptionsSchema = z.object({
+const EmbeddingsProviderOptionsSchema = lazySchema(() => z.object({
     google: z.object({
         task_type: z.string().regex(/^[A-Z_]+$/).optional(),
         title: z.string().optional(),
@@ -460,9 +461,9 @@ const EmbeddingsProviderOptionsSchema = z.object({
 		return_logits: z.array(z.number().int()).optional(),
 		normalize: z.boolean().optional(),
 	}).optional(),
-}).optional();
+}).optional());
 
-export const EmbeddingsSchema = z.object({
+export const EmbeddingsSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: EmbeddingsInputSchema,
     session_id: z.string().trim().min(1).max(256).optional(),
@@ -487,24 +488,24 @@ export const EmbeddingsSchema = z.object({
     };
     delete next.embedding_options;
     return next;
-});
+}));
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 
 // Chat Completions schema
-const TextPartSchema = z.object({
+const TextPartSchema = lazySchema(() => z.object({
     type: z.literal("text"),
     text: z.string(),
-});
+}));
 
-const ImageUrlPartSchema = z.object({
+const ImageUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("image_url"),
     image_url: z.object({
         url: z.string().min(1),
 		detail: z.enum(["auto", "low", "high", "original"]).optional(),
     }),
-});
+}));
 
-const InputAudioPartSchema = z.object({
+const InputAudioPartSchema = lazySchema(() => z.object({
     type: z.literal("input_audio"),
     input_audio: z.object({
         data: z.string().optional(),
@@ -513,39 +514,39 @@ const InputAudioPartSchema = z.object({
     }).refine((value) => value.data != null || value.url != null, {
         message: "input_audio.data or input_audio.url is required",
     }),
-});
+}));
 
-const AudioUrlPartSchema = z.object({
+const AudioUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("audio_url"),
     audio_url: z.object({
         url: z.string().min(1),
     }),
-});
+}));
 
-const InputVideoPartSchema = z.object({
+const InputVideoPartSchema = lazySchema(() => z.object({
     type: z.literal("input_video"),
     video_url: z.object({
         url: z.string().url(),
     }),
-});
+}));
 
-const VideoUrlPartSchema = z.object({
+const VideoUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("video_url"),
     video_url: z.object({
         url: z.string().url(),
     }),
-});
+}));
 
-const ToolCallPartSchema = z.object({
+const ToolCallPartSchema = lazySchema(() => z.object({
     type: z.literal("tool_call"),
     id: z.string(),
     function: z.object({
         name: z.string(),
         arguments: z.string(),
     }),
-});
+}));
 
-const MessageContentPartSchema = z.union([
+const MessageContentPartSchema = lazySchema(() => z.union([
     TextPartSchema,
     ImageUrlPartSchema,
     InputAudioPartSchema,
@@ -553,14 +554,14 @@ const MessageContentPartSchema = z.union([
     InputVideoPartSchema,
     VideoUrlPartSchema,
     ToolCallPartSchema,
-]);
+]));
 
-const MessageContentSchema = z.union([
+const MessageContentSchema = lazySchema(() => z.union([
     z.string(),
     z.array(MessageContentPartSchema),
-]);
+]));
 
-const ToolCallSchema = z.object({
+const ToolCallSchema = lazySchema(() => z.object({
     id: z.string(),
     type: z.literal("function"),
     function: z.object({
@@ -569,9 +570,9 @@ const ToolCallSchema = z.object({
         description: z.string().optional(),
         parameters: z.any().optional(),
     }),
-});
+}));
 
-const FunctionToolSchema = z.object({
+const FunctionToolSchema = lazySchema(() => z.object({
 	type: z.literal("function"),
 	async: z.boolean().optional(),
 	function: z.object({
@@ -580,9 +581,9 @@ const FunctionToolSchema = z.object({
 		parameters: z.any().optional(),
 		strict: z.boolean().nullable().optional(),
 	}),
-});
+}));
 
-const OpenAICustomToolSchema = z.object({
+const OpenAICustomToolSchema = lazySchema(() => z.object({
 	type: z.literal("custom"),
 	async: z.boolean().optional(),
 	custom: z.object({
@@ -590,17 +591,17 @@ const OpenAICustomToolSchema = z.object({
 		description: z.string().optional(),
 		format: z.record(z.string(), z.any()).optional(),
 	}).passthrough(),
-}).passthrough();
+}).passthrough());
 
-const GatewayDatetimeToolSchema = z.object({
+const GatewayDatetimeToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:datetime", "gateway:datetime"]),
 	parameters: z.object({
 		timezone: z.string().min(1).optional(),
 		timezones: z.array(z.string().min(1)).max(5).optional(),
 	}).optional(),
-});
+}));
 
-const GatewayWebSearchToolSchema = z.object({
+const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
@@ -634,9 +635,9 @@ const GatewayWebSearchToolSchema = z.object({
 	user_location: z.record(z.string(), z.any()).optional(),
 	language: z.string().optional(),
 	page: z.number().int().min(0).max(10).optional(),
-});
+}));
 
-const GatewayWebFetchToolSchema = z.object({
+const GatewayWebFetchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
@@ -655,9 +656,9 @@ const GatewayWebFetchToolSchema = z.object({
 	allowed_domains: z.array(z.string().min(1)).optional(),
 	blocked_domains: z.array(z.string().min(1)).optional(),
 	excluded_domains: z.array(z.string().min(1)).optional(),
-});
+}));
 
-const GatewayAdvisorToolSchema = z.object({
+const GatewayAdvisorToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:advisor"),
 	parameters: z.object({
 		name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
@@ -679,9 +680,9 @@ const GatewayAdvisorToolSchema = z.object({
 	max_completion_tokens: z.number().int().min(1024).optional(),
 	reasoning: z.record(z.string(), z.unknown()).optional(),
 	temperature: z.number().min(0).max(2).optional(),
-});
+}));
 
-const GatewaySubagentToolSchema = z.object({
+const GatewaySubagentToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:subagent"),
 	parameters: z.object({
 		model: z.string().min(1).optional(),
@@ -699,9 +700,9 @@ const GatewaySubagentToolSchema = z.object({
 	max_completion_tokens: z.number().int().min(1024).optional(),
 	reasoning: z.record(z.string(), z.unknown()).optional(),
 	temperature: z.number().min(0).max(2).optional(),
-});
+}));
 
-const GatewayFusionToolSchema = z.object({
+const GatewayFusionToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:fusion"),
 	parameters: z.object({
 		analysis_models: z.array(z.string().min(1)).min(2).max(8).optional(),
@@ -710,16 +711,16 @@ const GatewayFusionToolSchema = z.object({
 		max_uses: z.number().int().positive().max(4).optional(),
 		max_completion_tokens: z.number().int().min(1024).optional(),
 	}).optional(),
-});
+}));
 
-const GatewaySearchModelsToolSchema = z.object({
+const GatewaySearchModelsToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:search_models"),
 	parameters: z.object({
 		max_results: z.number().int().min(1).max(20).optional(),
 	}).optional(),
-});
+}));
 
-const GatewayImageGenerationToolSchema = z.object({
+const GatewayImageGenerationToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:image_generation"),
 	parameters: z.object({
 		prompt: z.string().min(1).optional(),
@@ -743,21 +744,21 @@ const GatewayImageGenerationToolSchema = z.object({
 	moderation: z.string().min(1).optional(),
 	prompt: z.string().min(1).optional(),
 	description: z.string().min(1).optional(),
-});
+}));
 
-const GatewayApplyPatchToolSchema = z.object({
+const GatewayApplyPatchToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:apply_patch"),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "phaseo"]).optional(),
 	}).optional(),
 	engine: z.enum(["auto", "native", "phaseo"]).optional(),
-});
+}));
 
-const OpenAINativeWebSearchToolSchema = z.object({
+const OpenAINativeWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeWebSearchToolSchema = z.object({
+const AnthropicNativeWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES),
 	name: z.string().optional(),
 	max_uses: z.number().int().positive().optional(),
@@ -770,18 +771,18 @@ const AnthropicNativeWebSearchToolSchema = z.object({
 		country: z.string().optional(),
 		timezone: z.string().optional(),
 	}).passthrough().optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeWebFetchToolSchema = z.object({
+const AnthropicNativeWebFetchToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES),
 	name: z.string().optional(),
 	max_uses: z.number().int().positive().optional(),
 	max_content_tokens: z.number().int().positive().optional(),
 	allowed_domains: z.array(z.string().min(1)).optional(),
 	blocked_domains: z.array(z.string().min(1)).optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeAdvisorToolSchema = z.object({
+const AnthropicNativeAdvisorToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES),
 	name: z.literal("advisor").optional(),
 	model: z.string().min(1),
@@ -791,9 +792,9 @@ const AnthropicNativeAdvisorToolSchema = z.object({
 		type: z.literal("ephemeral"),
 		ttl: z.enum(["5m", "1h"]),
 	}).optional(),
-}).passthrough();
+}).passthrough());
 
-export const ChatCompletionsSchema = z.object({
+export const ChatCompletionsSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
     messages: z.array(
@@ -920,18 +921,18 @@ export const ChatCompletionsSchema = z.object({
     routing: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     return obj;
-});
+}));
 
 export type ChatCompletionsRequest = z.infer<typeof ChatCompletionsSchema>;
 
 // Anthropic Messages schema
-const AnthropicTextContentSchema = z.object({
+const AnthropicTextContentSchema = lazySchema(() => z.object({
     type: z.literal("text"),
     text: z.string(),
     cache_control: CacheControlSchema.optional(),
-});
+}));
 
-const AnthropicImageContentSchema = z.object({
+const AnthropicImageContentSchema = lazySchema(() => z.object({
     type: z.literal("image"),
     cache_control: CacheControlSchema.optional(),
     source: z.object({
@@ -940,36 +941,36 @@ const AnthropicImageContentSchema = z.object({
         data: z.string().optional(),
         url: z.string().optional(),
     }),
-});
+}));
 
-const AnthropicToolUseContentSchema = z.object({
+const AnthropicToolUseContentSchema = lazySchema(() => z.object({
     type: z.literal("tool_use"),
     id: z.string(),
     name: z.string(),
     input: z.record(z.string(), z.any()),
-});
+}));
 
-const AnthropicToolResultContentSchema = z.object({
+const AnthropicToolResultContentSchema = lazySchema(() => z.object({
     type: z.literal("tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]),
     cache_control: CacheControlSchema.optional(),
-});
+}));
 
-const AnthropicServerToolUseContentSchema = z.object({
+const AnthropicServerToolUseContentSchema = lazySchema(() => z.object({
     type: z.literal("server_tool_use"),
     id: z.string(),
     name: z.string(),
     input: z.record(z.string(), z.any()).optional(),
-});
+}));
 
-const AnthropicAdvisorToolResultContentSchema = z.object({
+const AnthropicAdvisorToolResultContentSchema = lazySchema(() => z.object({
     type: z.literal("advisor_tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]).optional(),
-});
+}));
 
-const AnthropicContentBlockSchema = z.union([
+const AnthropicContentBlockSchema = lazySchema(() => z.union([
     AnthropicTextContentSchema,
     AnthropicImageContentSchema,
     AnthropicToolUseContentSchema,
@@ -979,35 +980,35 @@ const AnthropicContentBlockSchema = z.union([
 	// Preserve current and future Anthropic-native blocks such as document,
 	// thinking, redacted_thinking, search results, and server-tool results.
 	z.object({ type: z.string().min(1) }).passthrough(),
-]);
+]));
 
-const AnthropicMessageContentSchema = z.union([
+const AnthropicMessageContentSchema = lazySchema(() => z.union([
     z.string(),
     z.array(AnthropicContentBlockSchema),
-]);
+]));
 
-const AnthropicToolSchema = z.object({
+const AnthropicToolSchema = lazySchema(() => z.object({
     name: z.string(),
     description: z.string().optional(),
     input_schema: z.record(z.string(), z.any()),
     cache_control: CacheControlSchema.optional(),
 	strict: z.boolean().optional(),
 	async: z.boolean().optional(),
-});
+}));
 
-const AnthropicNativeToolSchema = z.object({
+const AnthropicNativeToolSchema = lazySchema(() => z.object({
 	type: z.string().min(1),
 	name: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicToolChoiceSchema = z.union([
+const AnthropicToolChoiceSchema = lazySchema(() => z.union([
     z.object({ type: z.literal("auto") }),
     z.object({ type: z.literal("any") }),
 	z.object({ type: z.literal("none") }),
     z.object({ type: z.literal("tool"), name: z.string() }),
-]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough());
+]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough()));
 
-export const AnthropicMessagesSchema = z.object({
+export const AnthropicMessagesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
     messages: z.array(
@@ -1077,7 +1078,7 @@ export const AnthropicMessagesSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-}).passthrough();
+}).passthrough());
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
 
@@ -1205,7 +1206,7 @@ function validateGptImage2Size(
 }
 
 // Images Generation schema
-export const ImagesGenerationSchema = z.object({
+export const ImagesGenerationSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     prompt: z.string().min(1),
     size: z.string().optional(),
@@ -1260,23 +1261,23 @@ export const ImagesGenerationSchema = z.object({
     }
 
     validateGptImage2Size(request, model, ctx);
-});
+}));
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
 // Images Edit schema (OpenAI compatible)
-const ImageEditUploadSchema = z.custom<string | Blob>(
+const ImageEditUploadSchema = lazySchema(() => z.custom<string | Blob>(
     (value) => typeof value === "string"
         ? value.trim().length > 0
         : typeof Blob !== "undefined" && value instanceof Blob && value.size > 0,
     "Expected a non-empty image upload, URL, or base64 value",
-);
+));
 
 const ImageEditOptionalInteger = (minimum: number, maximum: number) => z.preprocess(
     (value) => value === null || value === "" || value === undefined ? undefined : value,
     z.coerce.number().int().min(minimum).max(maximum).optional(),
 );
 
-const ImageEditOptionalBoolean = z.preprocess(
+const ImageEditOptionalBoolean = lazySchema(() => z.preprocess(
     (value) => value === null || value === "" || value === undefined
         ? undefined
         : typeof value === "string"
@@ -1287,9 +1288,9 @@ const ImageEditOptionalBoolean = z.preprocess(
                     : value
             : value,
     z.boolean().optional(),
-);
+));
 
-export const ImagesEditSchema = z.object({
+export const ImagesEditSchema = lazySchema(() => z.object({
     model: z.string().min(1).optional().default("openai/gpt-image-1.5"),
     image: z.union([
         ImageEditUploadSchema,
@@ -1431,11 +1432,11 @@ export const ImagesEditSchema = z.object({
             message: "partial_images requires stream=true",
         });
     }
-});
+}));
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
 
 // Moderations schema
-export const ModerationsSchema = z.object({
+export const ModerationsSchema = lazySchema(() => z.object({
     // OpenAI makes `model` optional and defaults it to omni-moderation-latest.
     // Use the gateway's canonical model id so omitted-model requests can still
     // pass through model discovery before the executor maps the provider slug.
@@ -1481,16 +1482,16 @@ export const ModerationsSchema = z.object({
 			content: z.any(),
 		}).passthrough())),
     ]),
-});
+}));
 export type ModerationsRequest = z.infer<typeof ModerationsSchema>;
 
 // Rerank schema
-const RerankDocumentSchema = z.union([
+const RerankDocumentSchema = lazySchema(() => z.union([
     z.string(),
     z.record(z.string(), z.any()),
-]);
+]));
 
-export const RerankSchema = z.object({
+export const RerankSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     query: z.string().min(1),
     documents: z.array(RerankDocumentSchema).min(1),
@@ -1518,24 +1519,24 @@ export const RerankSchema = z.object({
         next.top_n = next.top_k;
     }
     return next;
-});
+}));
 export type RerankRequest = z.infer<typeof RerankSchema>;
 
 // Decisions evaluate typed questions against arbitrary state and return
 // structured answers with calibrated probabilities/confidence.
-const DecisionsStateSchema = z.union([
+const DecisionsStateSchema = lazySchema(() => z.union([
     z.string().min(1).max(1_000_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
-]);
+]));
 
-const DecisionInstructionsSchema = z.union([
+const DecisionInstructionsSchema = lazySchema(() => z.union([
     z.string().min(1).max(50_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
-]);
+]));
 
-const DecisionQuestionSchema = z.discriminatedUnion("type", [
+const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
     z.object({
         type: z.literal("noul"),
         instructions: DecisionInstructionsSchema,
@@ -1557,9 +1558,9 @@ const DecisionQuestionSchema = z.discriminatedUnion("type", [
         instructions: DecisionInstructionsSchema,
         criteria: z.array(z.string().min(1)).min(2),
     }).passthrough(),
-]);
+]));
 
-export const LegacyDecisionsSchema = z.object({
+export const LegacyDecisionsSchema = lazySchema(() => z.object({
     model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: DecisionsStateSchema,
     images: z.array(z.union([
@@ -1583,8 +1584,8 @@ export const LegacyDecisionsSchema = z.object({
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
     metadata: z.record(z.string(), z.any()).nullable().optional(),
-}).passthrough();
-export const OpenAIDecisionsSchema = NativeDecisionsBodySchema.safeExtend({
+}).passthrough());
+export const OpenAIDecisionsSchema = lazySchema(() => NativeDecisionsBodySchema.safeExtend({
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
@@ -1592,16 +1593,16 @@ export const OpenAIDecisionsSchema = NativeDecisionsBodySchema.safeExtend({
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
     metadata: z.record(z.string(), z.any()).nullable().optional(),
-}).passthrough();
-export const DecisionsSchema = z.union([OpenAIDecisionsSchema, LegacyDecisionsSchema]).superRefine((body, ctx) => {
+}).passthrough());
+export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, LegacyDecisionsSchema]).superRefine((body, ctx) => {
     if ("input" in body && ("state" in body || "images" in body)) {
         ctx.addIssue({ code: "custom", path: ["input"], message: "Use either input with array questions or state with map questions; do not mix formats." });
     }
-});
+}));
 export type DecisionsRequest = z.infer<typeof DecisionsSchema>;
 
 // Audio Speech schema
-const ElevenLabsSpeechConfigSchema = z.object({
+const ElevenLabsSpeechConfigSchema = lazySchema(() => z.object({
     output_format: z.string().optional(),
     language_code: z.string().optional(),
     voice_settings: z.record(z.string(), z.any()).optional(),
@@ -1613,9 +1614,9 @@ const ElevenLabsSpeechConfigSchema = z.object({
     voiceId: z.string().optional(),
     voice_name: z.string().optional(),
     voiceName: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-export const AudioSpeechSchema = z.object({
+export const AudioSpeechSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: z.string().min(1).max(40000),
 	session_id: z.string().trim().min(1).max(256).optional(),
@@ -1668,11 +1669,11 @@ export const AudioSpeechSchema = z.object({
 	} else if (!isElevenLabs && !isMiniMax && !isXAi && body.input.length > 4096) {
 		ctx.addIssue({ code: "custom", path: ["input"], message: "Speech input must be at most 4096 characters for this provider" });
 	}
-});
+}));
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
 
 // Audio Transcription schema
-export const AudioTranscriptionSchema = z.object({
+export const AudioTranscriptionSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     file: UploadFileSchema.optional(),
     file_url: z.string().url().max(2083).nullable().optional(),
@@ -1810,7 +1811,7 @@ export const AudioTranscriptionSchema = z.object({
             ctx.addIssue({ code: "custom", path: ["known_speaker_references", index], message: "Known speaker references must be base64 data URLs" });
         }
     }
-});
+}));
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
 
 // Audio Translation schema
@@ -1834,7 +1835,7 @@ function hasSupportedOpenAITranslationFormat(file: File | Blob): boolean {
     );
 }
 
-export const AudioTranslationSchema = z.object({
+export const AudioTranslationSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     file: UploadFileSchema
         .refine((file) => file.size <= OPENAI_TRANSLATION_MAX_FILE_BYTES, {
@@ -1852,13 +1853,13 @@ export const AudioTranslationSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-});
+}));
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
-const VideoReferenceTypeSchema = z.enum(["asset", "style", "character", "location", "generic"]).or(z.string());
-const VideoInputReferenceRoleSchema = z.enum(["first_frame", "last_frame", "reference", "source", "mask"]);
+const VideoReferenceTypeSchema = lazySchema(() => z.enum(["asset", "style", "character", "location", "generic"]).or(z.string()));
+const VideoInputReferenceRoleSchema = lazySchema(() => z.enum(["first_frame", "last_frame", "reference", "source", "mask"]));
 
-const VideoImageInputReferenceSchema = z.object({
+const VideoImageInputReferenceSchema = lazySchema(() => z.object({
 	type: z.literal("image_url"),
 	role: VideoInputReferenceRoleSchema.optional(),
 	reference_type: VideoReferenceTypeSchema.optional(),
@@ -1867,9 +1868,9 @@ const VideoImageInputReferenceSchema = z.object({
 			message: "video input references must use https",
 		}),
 	}),
-}).strict();
+}).strict());
 
-const VideoMediaInputReferenceSchema = z.object({
+const VideoMediaInputReferenceSchema = lazySchema(() => z.object({
 	type: z.enum(["video_url", "audio_url"]),
 	role: VideoInputReferenceRoleSchema.optional(),
 	reference_type: VideoReferenceTypeSchema.optional(),
@@ -1878,18 +1879,18 @@ const VideoMediaInputReferenceSchema = z.object({
 			message: "video input references must use https",
 		}),
 	}),
-}).strict();
+}).strict());
 
-const VideoInputReferenceSchema = z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]);
-const VideoFrameImageSchema = VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
+const VideoInputReferenceSchema = lazySchema(() => z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]));
+const VideoFrameImageSchema = lazySchema(() => VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
 	frame_type: z.enum(["first_frame", "last_frame"]),
-});
+}));
 
-const VideoOutputConfigSchema = z.object({
+const VideoOutputConfigSchema = lazySchema(() => z.object({
 	access: z.enum(["bytes", "signed_url", "both"]).default("both"),
-}).default({ access: "both" });
+}).default({ access: "both" }));
 
-const VideoWebhookSchema = z.object({
+const VideoWebhookSchema = lazySchema(() => z.object({
 	endpoint_id: z.string().min(1),
 	events: z.array(z.string().min(1)).optional(),
 }).strict().transform((value, ctx) => {
@@ -1902,7 +1903,7 @@ const VideoWebhookSchema = z.object({
 		return z.NEVER;
 	}
 	return parsed;
-});
+}));
 
 const VIDEO_PROVIDER_CONTROLLED_KEYS = new Set([
 	"imageurl", "imageurls", "videourl", "videourls", "audiourl", "audiourls",
@@ -1979,12 +1980,12 @@ function rejectVideoProviderControlledFields(
 	}
 }
 
-const VideoProviderParamsSchema = z.record(z.string(), z.any()).superRefine((value, ctx) => {
+const VideoProviderParamsSchema = lazySchema(() => z.record(z.string(), z.any()).superRefine((value, ctx) => {
 	rejectVideoProviderControlledFields(value, ctx);
-});
+}));
 
 // Video Generation schema
-export const VideoGenerationSchema = z.object({
+export const VideoGenerationSchema = lazySchema(() => z.object({
 	model: z.string().min(1).default("sora-2"),
 	prompt: z.string().max(32_000).default(""),
 	seconds: z.enum(["4", "8", "12", "16", "20"]).optional(),
@@ -2053,11 +2054,11 @@ export const VideoGenerationSchema = z.object({
 			path: ["size"],
 		});
 	}
-});
+}));
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 
 // OCR schema
-const MistralOcrAnnotationFormatSchema = z.object({
+const MistralOcrAnnotationFormatSchema = lazySchema(() => z.object({
     type: z.literal("json_schema"),
     json_schema: z.object({
         name: z.string().min(1),
@@ -2065,9 +2066,9 @@ const MistralOcrAnnotationFormatSchema = z.object({
         schema: z.record(z.string(), z.any()),
         strict: z.boolean().optional(),
     }).strict(),
-}).strict();
+}).strict());
 
-const MistralOcrDocumentSchema = z.discriminatedUnion("type", [
+const MistralOcrDocumentSchema = lazySchema(() => z.discriminatedUnion("type", [
     z.object({
         type: z.literal("file"),
         file_id: z.string().uuid(),
@@ -2087,9 +2088,9 @@ const MistralOcrDocumentSchema = z.discriminatedUnion("type", [
             }).strict(),
         ]),
     }).strict(),
-]);
+]));
 
-export const OcrSchema = z.object({
+export const OcrSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     // Legacy shorthand retained for compatibility; `document` mirrors Mistral's native API.
     image: z.string().min(1).optional(),
@@ -2126,15 +2127,15 @@ export const OcrSchema = z.object({
             message: "document_annotation_prompt requires document_annotation_format",
         });
     }
-});
+}));
 export type OcrRequest = z.infer<typeof OcrSchema>;
 
-const ParseImageUrlSchema = z.string().min(1).refine(
+const ParseImageUrlSchema = lazySchema(() => z.string().min(1).refine(
     (value) => /^https?:\/\//.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(value),
     { message: "image_url must be an http(s) URL or a base64 image data URI" },
-);
+));
 
-export const ParseSchema = z.object({
+export const ParseSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     document: z.object({
         type: z.literal("image_url"),
@@ -2146,11 +2147,11 @@ export const ParseSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-}).strict();
+}).strict());
 export type ParseRequest = z.infer<typeof ParseSchema>;
 
 // Music Generate schema
-export const MusicGenerateSchema = z.object({
+export const MusicGenerateSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     prompt: z.string().optional(),
     duration: z.number().int().positive().optional(),
@@ -2203,11 +2204,11 @@ export const MusicGenerateSchema = z.object({
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
-});
+}));
 export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;
 
 // Generation response schema
-export const GenerationResponseSchema = z.object({
+export const GenerationResponseSchema = lazySchema(() => z.object({
     request_id: z.string(),
     workspace_id: z.string(),
     app_id: z.string().nullable(),
@@ -2233,7 +2234,7 @@ export const GenerationResponseSchema = z.object({
     pricing_lines: z.array(z.any()),
     key_id: z.string(),
     throughput: z.number().nullable(),
-});
+}));
 export type GenerationResponse = z.infer<typeof GenerationResponseSchema>;
 
 // Function to get schema for a given endpoint
