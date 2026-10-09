@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { normalizeCatalogueTier } from "@/models/catalogue-tiers";
 import { PUBLIC_MODEL_CATALOGUE_CACHE } from "@/cache/catalogue";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
@@ -501,7 +502,7 @@ export async function fetchGatewayMonitorRows(
 			quantization: row.quantization_scheme ?? undefined,
 			supportedParameters: supportedParameters(params),
 			effectiveFrom: row.effective_from ?? undefined,
-			tier: row.is_free_variant ? "free" : String(row.pricing_tier ?? "standard"),
+			tier: row.is_free_variant ? "free" : normalizeCatalogueTier(row.pricing_tier),
 			added: row.model_release_date ?? undefined,
 			retired: row.model_retirement_date ?? undefined,
 			weeklyTokensModel: numberOrNull(row.weekly_tokens_model),

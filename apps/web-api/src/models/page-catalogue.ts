@@ -1,4 +1,5 @@
 import { getDataClient } from "@/data/supabase";
+import { normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
@@ -239,6 +240,7 @@ export function attachModelsPageVariants(rows: Row[]): Row[] {
 		const baseId = baseModelId(row);
 		return withoutExternalProviders({
 			...row,
+			gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers),
 			base_model_id: baseId,
 			variant_kind: variantKind(row),
 			variants: variantsByBaseModel.get(baseId) ?? {},
@@ -327,7 +329,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 			gateway_output_modalities: strings([...strings(row.gateway_output_modalities).map(modality), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])]),
 		})), "gateway_output_modalities", modality), MODALITY_ORDER),
 		featureOptions: ordered(optionCounts(rows, "gateway_features"), FEATURE_ORDER),
-		tierOptions: optionCounts(rows, "gateway_tiers"),
+		tierOptions: optionCounts(rows.map((row) => ({ ...row, gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers) })), "gateway_tiers"),
 		supportedParameterOptions: optionCounts(rows, "supported_parameters"),
 		providerOptions: optionCounts(rows, "gateway_provider_names"),
 		regionOptions: optionCounts(rows, "gateway_execution_regions"),
