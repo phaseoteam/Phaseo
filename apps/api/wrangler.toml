@@ -18,7 +18,7 @@ CUSTOMER_RATE_LIMITS_ENABLED = "true"
 GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
 # Trust-ladder RPM per workspace (off = 25 RPM for everyone). Enable only after
 # the tier publisher reports a complete backfill.
-CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "false"
+CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
 CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "true"
 GATEWAY_SPEND_LIMIT_DO_MODE = "off"
 # Also enables the per-minute catalogue revision publisher; catalogue
