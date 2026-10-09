@@ -11,7 +11,7 @@ describe("Clef Omni media", () => {
 		vi.mocked(fetchPublicMedia).mockResolvedValue({ bytes: new Uint8Array([1, 2, 3]), contentType: "video/mp4", url: "https://media.example/clip.mp4" });
 		expect(await prepareClefOmniMedia({ ...ir, videos: ["https://media.example/clip.mp4"] }, args))
 			.toEqual({ videos: ["data:video/mp4;base64,AQID"] });
-		expect(fetchPublicMedia).toHaveBeenCalledWith({ url: "https://media.example/clip.mp4", maxBytes: 16 * 1024 * 1024, upstreamTiming: undefined });
+		expect(fetchPublicMedia).toHaveBeenCalledWith({ url: "https://media.example/clip.mp4", maxBytes: 16 * 1024 * 1024, allowHttp: false, upstreamTiming: undefined });
 	});
 	it("fails closed when the public fetcher rejects a private URL or redirect", async () => {
 		vi.mocked(fetchPublicMedia).mockRejectedValue(new Error("remote_media_url_rejected_private_host"));

@@ -52,7 +52,14 @@ export const executor: ProviderExecutor = async args => {
 	}
 	let media: Awaited<ReturnType<typeof prepareClefOmniMedia>> = {};
 	if (omni) {
-		try { media = await prepareClefOmniMedia(ir, args); } catch {
+		try { media = await prepareClefOmniMedia(ir, args); } catch (error) {
+			const code = error instanceof Error ? error.message : "";
+			if (code.startsWith("remote_media_url_rejected") || code === "remote_media_redirect_rejected") {
+				return invalidRequest(args, "Media URLs and redirect targets must use public HTTPS addresses.");
+			}
+			if (code.startsWith("remote_media_fetch_failed") || (error instanceof Error && error.name === "AbortError")) {
+				return invalidRequest(args, "Unable to retrieve remote media. Check that the media server is available and responds within the download timeout.");
+			}
 			return invalidRequest(args, "Clef Omni accepts up to four WAV/MP3 audio clips (8 MiB each) and two MP4/WebM videos, with at most 16 MiB combined audio/video. Use valid base64 or public HTTPS URLs with the matching Content-Type.");
 		}
 	}

@@ -10679,7 +10679,7 @@ components:
           minLength: 1
           description: मानक Phaseo मॉडल आईडी या प्रदाता मॉडल उपनाम।
         input:
-          description: टेक्स्ट या इनलाइन चित्र वाले संदेश।
+          description: टेक्स्ट या इनलाइन चित्र वाले संदेश। ऑडियो और वीडियो समर्थित मॉडल के लिए Phaseo विस्तार हैं; OpenAI निर्णय रूट ये विस्तार समर्थित नहीं करते।
           oneOf:
             - type: string
               maxLength: 10485760
@@ -10752,36 +10752,34 @@ components:
           enum:
             - input_audio
         input_audio:
-          oneOf:
-            - type: object
-              additionalProperties: false
-              required:
-                - data
-                - format
-              properties:
-                data:
-                  type: string
-                  maxLength: 12582912
-                  pattern: ^[A-Za-z0-9+/]+={0,2}$
-                format:
-                  type: string
-                  enum:
-                    - wav
-                    - mp3
-            - type: object
-              additionalProperties: false
-              required:
-                - url
-              properties:
-                url:
-                  type: string
-                  maxLength: 25165824
-                  pattern: ^(https://|data:audio/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
-                format:
-                  type: string
-                  enum:
-                    - wav
-                    - mp3
+          $ref: '#/components/schemas/DecisionAudioSource'
+    DecisionAudioSource:
+      type: object
+      additionalProperties: false
+      anyOf:
+        - required:
+            - data
+            - format
+        - required:
+            - url
+      not:
+        required:
+          - data
+          - url
+      properties:
+        data:
+          type: string
+          maxLength: 12582912
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
+        format:
+          type: string
+          enum:
+            - wav
+            - mp3
+        url:
+          type: string
+          maxLength: 25165824
+          pattern: ^(https://|data:audio/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$)
     DecisionInputVideo:
       type: object
       required:

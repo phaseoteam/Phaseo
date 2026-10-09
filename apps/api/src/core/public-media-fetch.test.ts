@@ -4,6 +4,13 @@ import { fetchPublicMedia } from "./public-media-fetch";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchPublicMedia", () => {
+	it("rejects an HTTPS downgrade before fetching the redirect target", async () => {
+		const fetchMock = vi.fn(async () => new Response(null, { status: 302, headers: { location: "http://public.example/media" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		await expect(fetchPublicMedia({ url: "https://public.example/media", maxBytes: 10, allowHttp: false }))
+			.rejects.toThrow("remote_media_url_rejected");
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
 	it("preserves public HTTP media inputs", async () => {
 		const fetchMock = vi.fn(async () => new Response("ok", { status: 200 }));
 		vi.stubGlobal("fetch", fetchMock);

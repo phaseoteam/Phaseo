@@ -16,11 +16,12 @@ export async function fetchPublicMedia(args: {
 	maxBytes: number;
 	headers?: HeadersInit;
 	timeoutMs?: number;
+	allowHttp?: boolean;
 	upstreamTiming?: ExecutorUpstreamTiming;
 }): Promise<PublicMediaResponse> {
 	let currentUrl = args.url;
 	for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-		const validated = await validateWebhookEndpointUrlForDelivery(currentUrl, { allowHttp: true });
+		const validated = await validateWebhookEndpointUrlForDelivery(currentUrl, { allowHttp: args.allowHttp ?? true });
 		if (validated.ok === false) throw new Error(`remote_media_url_rejected_${validated.reason}`);
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), args.timeoutMs ?? DEFAULT_TIMEOUT_MS);

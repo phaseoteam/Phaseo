@@ -27,15 +27,11 @@ export type DecisionCreateRequest =
                       type: "input_image";
                     }
                   | {
-                      input_audio:
-                        | {
-                            data: string;
-                            format: "wav" | "mp3";
-                          }
-                        | {
-                            format?: "wav" | "mp3";
-                            url: string;
-                          };
+                      input_audio: {
+                        data?: string;
+                        format?: "wav" | "mp3";
+                        url?: string;
+                      };
                       type: "input_audio";
                     }
                   | {

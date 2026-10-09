@@ -1253,6 +1253,16 @@ class DebugOptions
 	public $trace_level;
 }
 
+class DecisionAudioSource
+{
+	/** @var string|null */
+	public $data;
+	/** @var string|null */
+	public $format;
+	/** @var string|null */
+	public $url;
+}
+
 class DecisionChoiceAnswer
 {
 	/** @var string|bool */

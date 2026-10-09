@@ -1040,6 +1040,13 @@ module Phaseo
     # @!attribute [rw] trace_level
     #   @return [String, nil]
     DebugOptions = Struct.new(:enabled, :return_upstream_request, :return_upstream_response, :trace, :trace_level, keyword_init: true)
+    # @!attribute [rw] data
+    #   @return [String, nil]
+    # @!attribute [rw] format
+    #   @return [String, nil]
+    # @!attribute [rw] url
+    #   @return [String, nil]
+    DecisionAudioSource = Struct.new(:data, :format, :url, keyword_init: true)
     # @!attribute [rw] choice
     #   @return [String, Boolean]
     # @!attribute [rw] confidence

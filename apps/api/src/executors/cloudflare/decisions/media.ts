@@ -10,6 +10,7 @@ const contentTypes = {
 };
 
 async function embedMedia(value: string, kind: "audio" | "video", maxBytes: number, args: ExecutorExecuteArgs) {
+	if (maxBytes <= 0) throw new Error("invalid_media_size");
 	let base64: string;
 	let contentType: string;
 	if (/^data:/i.test(value)) {
@@ -19,7 +20,7 @@ async function embedMedia(value: string, kind: "audio" | "video", maxBytes: numb
 		base64 = match[2];
 	} else {
 		if (new URL(value).protocol !== "https:") throw new Error("invalid_media_url");
-		const media = await fetchPublicMedia({ url: value, maxBytes, upstreamTiming: args.upstreamTiming });
+		const media = await fetchPublicMedia({ url: value, maxBytes, allowHttp: false, upstreamTiming: args.upstreamTiming });
 		contentType = media.contentType?.split(";")[0].trim().toLowerCase() ?? "";
 		base64 = imageBytesToBase64(media.bytes);
 	}

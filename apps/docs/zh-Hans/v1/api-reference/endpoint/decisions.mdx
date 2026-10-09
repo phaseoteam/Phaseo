@@ -117,6 +117,8 @@ Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或
 
 `cloudflare/clef-omni` 支持文本、图像、音频和视频，使用相同的有序问题和答案。音频和视频是 Phaseo 对 OpenAI 风格输入协议的扩展；OpenAI 决策路由目前仅支持文本和图像。使用前请检查模型可用性。
 
+此示例需要可用的 Omni 路由和 Phaseo API 密钥。发送前请将音频占位数据和视频 URL 替换为自己的媒体。
+
 ```json
 {
   "model": "cloudflare/clef-omni",
@@ -134,6 +136,6 @@ Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或
 
 使用 `input_audio.data` 时指定 `format: "wav"` 或 `"mp3"`，或通过 `input_audio.url` 提供公共 HTTPS URL 或音频数据 URL。`input_video.video_url` 接受包含公共 HTTPS URL 或 MP4/WebM 数据 URL 的字符串或 `{ "url": "..." }`。远程服务器必须返回对应的 Content-Type。Phaseo 在大小限制及私有地址和重定向检查下获取媒体，再嵌入 Cloudflare 请求；不会向媒体服务器发送提供商凭据。
 
-Omni 最多接受四段音频（每段 8 MiB、300 秒）和两段视频（每段 16 MiB、60 秒），音频与视频解码后合计不超过 16 MiB。图像仍受上述限制。Phaseo 将完整请求体限制为 37 MiB。Cloudflare 验证编码、图像尺寸和时长，并以每秒两帧采样视频。当每段视频都包含音轨时，会使用音轨。
+Omni 最多接受四段音频（每段 8 MiB、300 秒）和两段视频（每段 16 MiB、60 秒），音频与视频解码后合计不超过 16 MiB。每张图像及图像合计的限制仍适用；Omni 的请求体限制取代 Clef/Flash 的 13 MiB 限制。Phaseo 将完整请求体限制为 37 MiB。Cloudflare 验证编码、图像尺寸和时长，并以每秒两帧采样视频。当每段视频都包含音轨时，会使用音轨。
 
 官方上下文为 64,000 个令牌，合计每百万输入令牌费用为 $0.15。媒体令牌计入上下文和费用，输出免费。Phaseo 按 Cloudflare 报告的输入用量结算，不另收音频或视频费用。 [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

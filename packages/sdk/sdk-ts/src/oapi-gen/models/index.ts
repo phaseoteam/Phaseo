@@ -70,6 +70,7 @@ export type { DataContributionOverviewResponse } from "./DataContributionOvervie
 export type { DataModel } from "./DataModel.js";
 export type { DataModelOrganisation } from "./DataModelOrganisation.js";
 export type { DebugOptions } from "./DebugOptions.js";
+export type { DecisionAudioSource } from "./DecisionAudioSource.js";
 export type { DecisionChoiceAnswer } from "./DecisionChoiceAnswer.js";
 export type { DecisionChoiceQuestion } from "./DecisionChoiceQuestion.js";
 export type { DecisionCreateRequest } from "./DecisionCreateRequest.js";

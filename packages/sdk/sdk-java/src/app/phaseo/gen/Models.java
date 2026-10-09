@@ -703,6 +703,12 @@ public final class Models {
 		public Object trace_level;
 	}
 
+	public static class DecisionAudioSource {
+		public String data;
+		public Object format;
+		public String url;
+	}
+
 	public static class DecisionChoiceAnswer {
 		public Object choice;
 		public Double confidence;

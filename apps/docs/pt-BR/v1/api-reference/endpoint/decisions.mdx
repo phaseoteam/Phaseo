@@ -117,6 +117,8 @@ O Clef aceita no máximo 64 perguntas, com IDs de até 100 letras, dígitos, sub
 
 `cloudflare/clef-omni` aceita texto, imagens, áudio e vídeo com as mesmas perguntas ordenadas e respostas. Áudio e vídeo são extensões do Phaseo ao contrato de entrada da OpenAI; as rotas de decisões da OpenAI aceitam apenas texto e imagens. Verifique a disponibilidade do modelo antes de usar.
 
+Este exemplo requer uma rota Omni disponível e uma chave API do Phaseo. Substitua os dados de áudio ilustrativos e a URL de vídeo pela sua mídia antes de enviar.
+
 ```json
 {
   "model": "cloudflare/clef-omni",
@@ -134,6 +136,6 @@ O Clef aceita no máximo 64 perguntas, com IDs de até 100 letras, dígitos, sub
 
 Use `input_audio.data` com `format: "wav"` ou `"mp3"`, ou `input_audio.url` com uma URL HTTPS pública ou de dados de áudio. `input_video.video_url` aceita uma string ou `{ "url": "..." }` com uma URL HTTPS pública ou de dados MP4/WebM. O servidor deve retornar o Content-Type correspondente. Phaseo busca os arquivos com limites de tamanho e verificações de endereços privados e redirecionamentos, e os incorpora para Cloudflare sem enviar credenciais do provedor ao servidor de mídia.
 
-Omni aceita até quatro áudios (8 MiB e 300 segundos cada) e dois vídeos (16 MiB e 60 segundos cada), com limite conjunto de 16 MiB decodificados. Os limites de imagens acima continuam válidos. Phaseo limita o corpo completo a 37 MiB. Cloudflare valida codificação, dimensões e duração, e amostra o vídeo em dois quadros por segundo. A trilha sonora é usada quando todos os vídeos têm uma.
+Omni aceita até quatro áudios (8 MiB e 300 segundos cada) e dois vídeos (16 MiB e 60 segundos cada), com limite conjunto de 16 MiB decodificados. Os limites por imagem e de dados de imagens combinados continuam válidos; o limite do corpo Omni substitui os 13 MiB de Clef/Flash. Phaseo limita o corpo completo a 37 MiB. Cloudflare valida codificação, dimensões e duração, e amostra o vídeo em dois quadros por segundo. A trilha sonora é usada quando todos os vídeos têm uma.
 
 O contexto documentado é de 64.000 tokens; o preço é US$ 0,15 por milhão de tokens de entrada agregados. Tokens de mídia contam para contexto e cobrança; a saída é gratuita. Phaseo usa o consumo de entrada informado pela Cloudflare sem cobranças adicionais de áudio ou vídeo. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

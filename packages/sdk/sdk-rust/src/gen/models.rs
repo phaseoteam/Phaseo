@@ -704,6 +704,12 @@ pub struct DebugOptions {
 	pub trace_level: Option<String>,
 }
 
+pub struct DecisionAudioSource {
+	pub data: Option<String>,
+	pub format: Option<String>,
+	pub url: Option<String>,
+}
+
 pub struct DecisionChoiceAnswer {
 	pub choice: String,
 	pub confidence: f64,
@@ -728,7 +734,7 @@ pub struct DecisionImage {
 }
 
 pub struct DecisionInputAudio {
-	pub input_audio: String,
+	pub input_audio: HashMap<String, String>,
 	pub r#type: String,
 }
 

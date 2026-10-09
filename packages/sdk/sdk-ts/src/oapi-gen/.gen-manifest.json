@@ -75,6 +75,7 @@
     "models/DataModel.ts",
     "models/DataModelOrganisation.ts",
     "models/DebugOptions.ts",
+    "models/DecisionAudioSource.ts",
     "models/DecisionChoiceAnswer.ts",
     "models/DecisionChoiceQuestion.ts",
     "models/DecisionCreateRequest.ts",

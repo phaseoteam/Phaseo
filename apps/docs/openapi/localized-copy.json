@@ -216,15 +216,15 @@
 			"zh-Hans": "推荐 OpenAI 格式。原有格式仍受支持。回答遵循请求格式，请勿混用。",
 			"ar": "يوصى بتنسيق OpenAI. يظل التنسيق القديم مدعومًا. تتبع الإجابة الطلب؛ لا تخلط التنسيقات."
 		},
-		"Text evidence or user messages containing text and inline images.": {
-			"es": "Texto o mensajes con imágenes integradas.",
-			"fr": "Texte ou messages avec images intégrées.",
-			"de": "Text oder Nachrichten mit eingebetteten Bildern.",
-			"pt-BR": "Texto ou mensagens com imagens incorporadas.",
-			"hi": "टेक्स्ट या इनलाइन चित्र वाले संदेश।",
-			"ja": "テキストまたはインライン画像付きメッセージ。",
-			"zh-Hans": "文本或带内联图片的消息。",
-			"ar": "نص أو رسائل مع صور مضمنة."
+		"Text evidence or user messages containing text and inline images. Audio and video are Phaseo extensions for supporting models; OpenAI Decisions routes do not support these extensions.": {
+			"es": "Texto o mensajes con imágenes integradas. Audio y vídeo son extensiones de Phaseo para modelos compatibles; las rutas de decisiones OpenAI no las admiten.",
+			"fr": "Texte ou messages avec images intégrées. Audio et vidéo sont des extensions Phaseo pour les modèles compatibles ; les routes de décisions OpenAI ne les prennent pas en charge.",
+			"de": "Text oder Nachrichten mit eingebetteten Bildern. Audio und Video sind Phaseo-Erweiterungen für unterstützende Modelle; OpenAI-Entscheidungsrouten unterstützen diese nicht.",
+			"pt-BR": "Texto ou mensagens com imagens incorporadas. Áudio e vídeo são extensões do Phaseo para modelos compatíveis; as rotas de decisões OpenAI não as aceitam.",
+			"hi": "टेक्स्ट या इनलाइन चित्र वाले संदेश। ऑडियो और वीडियो समर्थित मॉडल के लिए Phaseo विस्तार हैं; OpenAI निर्णय रूट ये विस्तार समर्थित नहीं करते।",
+			"ja": "テキストまたはインライン画像付きメッセージ。音声と動画は対応モデル向けの Phaseo 拡張であり、OpenAI の判断ルートでは利用できません。",
+			"zh-Hans": "文本或带内联图片的消息。音频和视频是面向兼容模型的 Phaseo 扩展；OpenAI 决策路由不支持这些扩展。",
+			"ar": "نص أو رسائل مع صور مضمنة. الصوت والفيديو امتدادان من Phaseo للنماذج المتوافقة؛ لا تدعمهما مسارات قرارات OpenAI."
 		},
 		"Opaque end-user identifier. Supported on OpenAI routes only.": {
 			"es": "Identificador opaco del usuario. Solo rutas OpenAI.",
