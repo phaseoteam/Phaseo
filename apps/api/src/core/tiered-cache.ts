@@ -11,6 +11,7 @@
 // - Secrets, credentials and wallet balances must use `l2: false, l3: false`.
 
 import { dispatchBackground, getBindingsIfConfigured, getCache } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 
 type Envelope<T> = {
 	/** Cached value; `null` is a negative-cache entry. */
@@ -61,11 +62,16 @@ export type TieredCacheOptions<T> = {
 const L1_MAX_ENTRIES = 10_000;
 const L1_MAX_BYTES = 32 * 1024 * 1024;
 const L2_KEY_ORIGIN = "https://gateway-cache.internal/v1/";
+// A concurrent miss joins another request's load for at most this long, then loads itself.
+const SHARED_LOAD_WAIT_MS = 1_500;
 
 const l1 = new Map<string, L1Entry>();
 let l1Bytes = 0;
 const inflight = new Map<string, Promise<unknown>>();
-const refreshing = new Set<string>();
+// Refresh key -> start time. A refresh whose request was cancelled never settles, so
+// entries older than the waitUntil budget no longer block new refreshes.
+const refreshing = new Map<string, number>();
+const STALE_REFRESH_MS = 30_000;
 const epochs = new Map<string, number>();
 
 export function __resetTieredCacheForTests(): void {
@@ -192,8 +198,11 @@ export type TieredResult<T> = { value: T | null; source: TieredSource };
 async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promise<TieredResult<T>> {
 	const { key } = options;
 	const epoch = epochOf(key);
+	// A load superseded by invalidation or by a replacement load must not write any layer,
+	// or a slow, older result could overwrite the newer one.
+	const current = () => epochOf(key) === epoch;
 	const fill = (envelope: Envelope<unknown>, raw: string) => {
-		if (epochOf(key) === epoch) l1Set(key, envelope, raw.length);
+		if (current()) l1Set(key, envelope, raw.length);
 	};
 
 	if (level <= 2 && l2Enabled(options)) {
@@ -213,7 +222,7 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 		const envelope = parseEnvelope(raw, options);
 		if (raw && envelope && servable(options, envelope)) {
 			fill(envelope, raw);
-			if (l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
+			if (current() && l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
 			if (staleInL3({ ...options, l3: options.l3 }, envelope)) {
 				scheduleRefresh(options, 4);
 			}
@@ -225,7 +234,7 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 	const envelope: Envelope<T> = { v: value ?? null, at: Date.now() };
 	const raw = JSON.stringify(envelope);
 	fill(envelope, raw);
-	const shared = options.isShareable ? options.isShareable(envelope.v) : true;
+	const shared = current() && (options.isShareable ? options.isShareable(envelope.v) : true);
 	if (shared && l2Enabled(options)) dispatchBackground(l2Write(key, raw, options.l2.storeS));
 	if (shared && options.l3) {
 		const expirationS = envelope.v === null
@@ -238,8 +247,10 @@ async function readFrom<T>(options: TieredCacheOptions<T>, level: Level): Promis
 
 function scheduleRefresh<T>(options: TieredCacheOptions<T>, level: Level): void {
 	const refreshKey = `${level}:${options.key}`;
-	if (refreshing.has(refreshKey)) return;
-	refreshing.add(refreshKey);
+	const startedAt = refreshing.get(refreshKey);
+	if (startedAt !== undefined && Date.now() - startedAt < STALE_REFRESH_MS) return;
+	const marker = Date.now();
+	refreshing.set(refreshKey, marker);
 	dispatchBackground(
 		readFrom(options, level)
 			.catch((error) => {
@@ -249,7 +260,7 @@ function scheduleRefresh<T>(options: TieredCacheOptions<T>, level: Level): void 
 					error: error instanceof Error ? error.message : String(error),
 				});
 			})
-			.finally(() => refreshing.delete(refreshKey)),
+			.finally(() => { if (refreshing.get(refreshKey) === marker) refreshing.delete(refreshKey); }),
 	);
 }
 
@@ -276,7 +287,13 @@ export async function tieredReadDetailed<T>(options: TieredCacheOptions<T>): Pro
 	}
 
 	const pending = inflight.get(options.key) as Promise<TieredResult<T>> | undefined;
-	if (pending) return pending;
+	if (pending) {
+		// The load may belong to another request; never wait on it unboundedly.
+		const shared = await awaitShared(pending, SHARED_LOAD_WAIT_MS);
+		if (shared.settled) return shared.value;
+		// Supersede the unsettled load so it cannot overwrite this one if it finishes later.
+		epochs.set(options.key, epochOf(options.key) + 1);
+	}
 	const load = readFrom(options, 2).finally(() => {
 		if (inflight.get(options.key) === load) inflight.delete(options.key);
 	});
