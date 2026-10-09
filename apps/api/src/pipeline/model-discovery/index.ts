@@ -357,6 +357,31 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 	if (error) throw new Error(error.message || "Failed to insert model discovery run row");
 }
 
+// A scheduled invocation cannot outlive 15 minutes, so an older run still marked
+// "running" lost its worker before it could record an outcome.
+const ABANDONED_RUN_AFTER_MS = 30 * 60 * 1000;
+export const ABANDONED_RUN_ERROR = "abandoned: the worker stopped before the run recorded an outcome";
+
+/** Closes runs whose worker died mid-run; best effort, never blocks discovery. */
+export async function closeAbandonedRuns(now: Date, currentRunId: string): Promise<number> {
+	try {
+		const { data, error } = await getSupabaseAdmin()
+			.from("model_discovery_runs")
+			.update({ status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR })
+			.eq("status", "running")
+			.lt("started_at", new Date(now.getTime() - ABANDONED_RUN_AFTER_MS).toISOString())
+			.neq("id", currentRunId)
+			.select("id");
+		if (error) throw new Error(error.message || "Failed to close abandoned model discovery runs");
+		const closed = Array.isArray(data) ? data.length : 0;
+		if (closed > 0) console.warn("[model-discovery] Closed abandoned runs:", closed);
+		return closed;
+	} catch (error) {
+		console.warn("[model-discovery] Could not close abandoned runs:", error instanceof Error ? error.message : String(error));
+		return 0;
+	}
+}
+
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
 	// Persist only state that later runs read back (fingerprints, cursors,
 	// coverage baselines) plus counters for triage. Per-provider result arrays
@@ -897,6 +922,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		&& shouldRunPricingMonitor(args);
 
 	await insertRunStart(runId, args, startedAt.toISOString());
+	await closeAbandonedRuns(startedAt, runId);
 	let deliveredNotificationFingerprint: string | null = null;
 
 	try {
