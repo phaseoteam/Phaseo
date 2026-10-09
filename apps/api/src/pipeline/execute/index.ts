@@ -99,7 +99,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { createUpstreamTimingTracker } from "@executors/_shared/timing/upstream";
 import { getReasoningEffortAllowlist, normalizeIRForProvider } from "./normalize";
 import { normalizeCapability } from "@/executors";
-import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities } from "./modalities";
+import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
@@ -502,8 +502,8 @@ export async function doRequestWithIR(
 			}, { status: 400 });
 		}
 	}
-	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).images?.length) {
-		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
+	if (normalizedCapability === "decisions.make") {
+		candidates = filterDecisionCandidatesByModalities(candidates, ir as IRDecisionsRequest);
 		if (!candidates.length) {
 			return err("unsupported_modalities", { model: ctx.model, endpoint: ctx.endpoint,
 				request_id: ctx.requestId, reason: "unsupported_modalities" });

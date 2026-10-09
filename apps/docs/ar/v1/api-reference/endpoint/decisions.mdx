@@ -96,7 +96,7 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 
 ### قرارات الصور باستخدام Clef
 
-يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. لكل منهما نافذة سياق من 65,536 رمزًا. تبلغ تكلفة الإدخال 0.24 دولار أمريكي لكل مليون رمز في Clef و0.09 دولار أمريكي في Clef Flash.
+يدعم `cloudflare/clef` و`cloudflare/clef-flash` أنواع الأسئلة الثلاثة والصور المضمّنة عبر Cloudflare Workers AI. سياق Clef هو 65,536 رمزًا وسياق Clef Flash هو 24,576 رمزًا. تكلفة مليون رمز إدخال هي $0.24 لـ Clef و$0.038 لـ Clef Flash.
 
 ```json
 {
@@ -112,3 +112,28 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 يمكنك أيضًا توفير سلسلة `data:image/png;base64,...` في `images`. يقبل Clef حتى أربع صور PNG أو JPEG أو WebP، على ألا تتجاوز كل صورة 4 MiB و16 ميغابكسل، وألا يتجاوز إجمالي بيانات الصور بعد فك الترميز 8 MiB وحجم جسم الطلب 13 MiB. الروابط البعيدة غير مدعومة. يتحقق Cloudflare من صيغ الصور وأبعادها. ترفض النماذج التي لا تدعم الصور طلبات الصور.
 
 يقبل Clef ما يصل إلى 64 سؤالًا، بمعرّفات تضم حتى 100 حرف أو رقم أو شرطة سفلية أو نقطة أو شرطة. تتطلب أسئلة الاختيار 2–255 خيارًا، وأسئلة الدرجة 2–10 مستويات. راجع [وثائق Clef](https://developers.cloudflare.com/workers-ai/models/clef/) من Cloudflare.
+
+### قرارات الصوت والفيديو مع Clef Omni
+
+يقبل `cloudflare/clef-omni` النصوص والصور والصوت والفيديو بنفس الأسئلة المرتبة والإجابات. الصوت والفيديو امتدادان من Phaseo لعقد الإدخال بأسلوب OpenAI؛ تدعم مسارات قرارات OpenAI حاليًا النصوص والصور فقط. تحقّق من توفر النموذج قبل الاستخدام.
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+استخدم `input_audio.data` مع `format: "wav"` أو `"mp3"`، أو `input_audio.url` مع رابط HTTPS عام أو رابط بيانات صوتية. يقبل `input_video.video_url` سلسلة أو `{ "url": "..." }` تتضمن رابط HTTPS عامًا أو رابط بيانات MP4/WebM. يجب أن يعيد الخادم Content-Type المطابق. يجلب Phaseo الوسائط مع حدود للحجم وفحوص للعناوين الخاصة وإعادة التوجيه ثم يضمّنها لـ Cloudflare؛ ولا يرسل بيانات اعتماد المزوّد إلى خادم الوسائط.
+
+يقبل Omni حتى أربعة مقاطع صوتية (8 MiB و300 ثانية لكل مقطع) وفيديوهين (16 MiB و60 ثانية لكل فيديو)، بحد إجمالي 16 MiB للصوت والفيديو بعد فك الترميز. تبقى حدود الصور المذكورة أعلاه سارية. يحد Phaseo جسم الطلب الكامل بـ37 MiB. تتحقق Cloudflare من الترميز وأبعاد الصور والمدة وتأخذ إطارين من الفيديو كل ثانية. يُستخدم المسار الصوتي إذا احتوت عليه جميع الفيديوهات.
+
+السياق الموثّق هو 64,000 رمز، والتكلفة $0.15 لكل مليون رمز إدخال إجمالي. تُحتسب رموز الوسائط ضمن السياق والفوترة؛ والإخراج مجاني. يسوّي Phaseo التكلفة حسب استخدام الإدخال الذي تبلغ عنه Cloudflare دون رسوم إضافية للصوت أو الفيديو. [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

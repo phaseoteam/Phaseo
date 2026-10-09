@@ -53,6 +53,30 @@
 			}
 		},
 		"schemas": {
+			"DecisionInputAudio": {
+				"/description": {
+					"es": "Extensión de Phaseo para modelos de decisiones con audio, como Clef Omni. Proporciona exactamente uno: datos base64 con formato o una URL HTTPS pública o de datos de audio. Los modelos de decisiones de OpenAI no admiten esta extensión.",
+					"fr": "Extension Phaseo pour les modèles de décisions audio comme Clef Omni. Fournissez soit des données base64 avec leur format, soit une URL HTTPS publique ou de données audio. Les modèles de décisions OpenAI ne prennent pas en charge cette extension.",
+					"de": "Phaseo-Erweiterung für Entscheidungsmodelle mit Audio wie Clef Omni. Genau eine Quelle angeben: Base64-Daten mit Format oder eine öffentliche HTTPS-URL beziehungsweise Audio-Daten-URL. OpenAI-Entscheidungsmodelle unterstützen diese Erweiterung nicht.",
+					"pt-BR": "Extensão do Phaseo para modelos de decisão com áudio, como Clef Omni. Forneça exatamente uma fonte: dados base64 com formato ou uma URL HTTPS pública ou de dados de áudio. Modelos de decisão da OpenAI não oferecem suporte a esta extensão.",
+					"hi": "Clef Omni जैसे ऑडियो समर्थित निर्णय मॉडल के लिए Phaseo विस्तार। केवल एक स्रोत दें: फ़ॉर्मैट सहित base64 डेटा या सार्वजनिक HTTPS अथवा ऑडियो डेटा URL। OpenAI निर्णय मॉडल यह विस्तार समर्थित नहीं करते।",
+					"ja": "Clef Omni など音声対応の判断モデル向け Phaseo 拡張です。形式付き base64 データ、公開 HTTPS URL、音声データ URL のいずれか一つを指定します。OpenAI の判断モデルはこの拡張に対応していません。",
+					"zh-Hans": "适用于 Clef Omni 等支持音频的决策模型的 Phaseo 扩展。仅提供一种来源：带格式的 base64 数据、公共 HTTPS URL 或内联音频数据 URL。OpenAI 决策模型不支持此扩展。",
+					"ar": "امتداد Phaseo لنماذج القرارات التي تدعم الصوت مثل Clef Omni. قدّم مصدرًا واحدًا فقط: بيانات base64 مع التنسيق، أو رابط HTTPS عام، أو رابط بيانات صوتية. نماذج قرارات OpenAI لا تدعم هذا الامتداد."
+				}
+			},
+			"DecisionInputVideo": {
+				"/description": {
+					"es": "Extensión de Phaseo para modelos de decisiones con vídeo, como Clef Omni. Proporciona una URL HTTPS pública o de datos de vídeo. Los modelos de decisiones de OpenAI no admiten esta extensión.",
+					"fr": "Extension Phaseo pour les modèles de décisions vidéo comme Clef Omni. Fournissez une URL HTTPS publique ou de données vidéo. Les modèles de décisions OpenAI ne prennent pas en charge cette extension.",
+					"de": "Phaseo-Erweiterung für Entscheidungsmodelle mit Video wie Clef Omni. Eine öffentliche HTTPS-URL oder Video-Daten-URL angeben. OpenAI-Entscheidungsmodelle unterstützen diese Erweiterung nicht.",
+					"pt-BR": "Extensão do Phaseo para modelos de decisão com vídeo, como Clef Omni. Forneça uma URL HTTPS pública ou de dados de vídeo. Modelos de decisão da OpenAI não oferecem suporte a esta extensão.",
+					"hi": "Clef Omni जैसे वीडियो समर्थित निर्णय मॉडल के लिए Phaseo विस्तार। सार्वजनिक HTTPS URL या वीडियो डेटा URL दें। OpenAI निर्णय मॉडल यह विस्तार समर्थित नहीं करते।",
+					"ja": "Clef Omni など動画対応の判断モデル向け Phaseo 拡張です。公開 HTTPS URL または動画データ URL を指定します。OpenAI の判断モデルはこの拡張に対応していません。",
+					"zh-Hans": "适用于 Clef Omni 等支持视频的决策模型的 Phaseo 扩展。提供公共 HTTPS URL 或内联视频数据 URL。OpenAI 决策模型不支持此扩展。",
+					"ar": "امتداد Phaseo لنماذج القرارات التي تدعم الفيديو مثل Clef Omni. قدّم رابط HTTPS عامًا أو رابط بيانات فيديو. نماذج قرارات OpenAI لا تدعم هذا الامتداد."
+				}
+			},
 			"ProviderRoutingOptions": {
 				"/description": {
 					"es": "Preferencias de enrutamiento de proveedores para la selección de la pasarela.",

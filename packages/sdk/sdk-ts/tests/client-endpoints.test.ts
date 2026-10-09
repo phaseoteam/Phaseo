@@ -2,6 +2,20 @@ import { describe, expect, test, vi } from "vitest";
 import { Phaseo } from "../src/index.js";
 
 describe("Phaseo endpoints discovery helper", () => {
+  test("serializes Omni audio/video through the native Decisions resource", async () => {
+    const request = { model: "cloudflare/clef-omni", input: [{ role: "user" as const, content: [
+      { type: "input_audio" as const, input_audio: { data: "AQID", format: "wav" as const } },
+      { type: "input_video" as const, video_url: { url: "https://media.example/clip.mp4" } },
+    ] }], questions: [{ type: "predicate" as const, instructions: "Safe?" }] };
+    const fetchImpl: typeof fetch = vi.fn(async (input, init) => {
+      expect(String(input)).toBe("https://example.test/decisions");
+      expect(JSON.parse(String(init?.body))).toEqual(request);
+      return jsonResponse({ model: request.model, answers: [{ type: "predicate", name: null, probability: 0.9 }],
+        usage: { input_tokens: 1000, output_tokens: 0, total_tokens: 1000 } });
+    });
+    const client = new Phaseo({ apiKey: "sk_test_123", baseUrl: "https://example.test", fetchImpl, enableDeprecationWarnings: false });
+    expect((await client.decisions.create(request)).answers[0]).toMatchObject({ probability: 0.9 });
+  });
   test("creates OpenAI-format decisions without rewriting images or boolean choices", async () => {
     const request = { model: "openai/gpt-6-luna", input: [{ role: "user" as const, content: [
       { type: "input_image" as const, image_url: "data:image/png;base64,AQID", detail: "original" as const },

@@ -96,7 +96,7 @@ Jev は 1 回のリクエストで 3 種類の質問を組み合わせられま�
 
 ### Clefによる画像の判断
 
-`cloudflare/clef`と`cloudflare/clef-flash`は、Cloudflare Workers AIを通じて3種類すべての質問と埋め込み画像に対応します。それぞれ65,536トークンのコンテキストウィンドウを備えています。入力料金は100万トークンあたりClefで0.24 USD、Clef Flashで0.09 USDです。
+`cloudflare/clef` と `cloudflare/clef-flash` は Cloudflare Workers AI 経由で3種類の質問と埋め込み画像に対応します。コンテキストは Clef が65,536トークン、Clef Flash が24,576トークンです。入力100万トークンあたり Clef は$0.24、Clef Flash は$0.038です。
 
 ```json
 {
@@ -112,3 +112,28 @@ Jev は 1 回のリクエストで 3 種類の質問を組み合わせられま�
 `images`には`data:image/png;base64,...`の文字列も指定できます。ClefはPNG、JPEG、WebP画像を最大4枚受け付けます。各画像は最大4 MiBかつ1,600万画素、デコード後の画像データの合計は最大8 MiB、リクエスト本文は最大13 MiBです。リモートURLには対応していません。Cloudflareは画像形式と寸法を検証します。画像に対応していないモデルは画像リクエストを拒否します。
 
 Clefは最大64個の質問を受け付けます。IDは英字、数字、アンダースコア、ピリオド、ハイフンからなる最大100文字です。選択式の質問には2〜255個の選択肢、スコア式の質問には2〜10段階が必要です。Cloudflareの[Clefドキュメント](https://developers.cloudflare.com/workers-ai/models/clef/)を参照してください。
+
+### Clef Omni の音声と動画
+
+`cloudflare/clef-omni` は同じ順序付き質問と回答でテキスト、画像、音声、動画を処理します。音声と動画は OpenAI 形式の入力契約に対する Phaseo 拡張です。OpenAI の判断ルートは現在テキストと画像のみ対応しています。使用前にモデルの提供状況を確認してください。
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+`input_audio.data` には `format: "wav"` または `"mp3"` を指定するか、`input_audio.url` に公開 HTTPS URL または音声データ URL を指定します。`input_video.video_url` は公開 HTTPS URL または MP4/WebM データ URL を含む文字列または `{ "url": "..." }` を受け付けます。サーバーは対応する Content-Type を返す必要があります。Phaseo はサイズ制限、プライベートアドレスとリダイレクトの確認を行って取得し、Cloudflare 向けに埋め込みます。プロバイダーの認証情報はメディアサーバーに送信しません。
+
+Omni は音声最大4件（各8 MiB、300秒）と動画最大2件（各16 MiB、60秒）に対応し、音声と動画のデコード後の合計は16 MiBまでです。画像には上記の制限が適用されます。Phaseo はリクエスト本文全体を37 MiBに制限します。Cloudflare はエンコーディング、画像寸法、再生時間を検証し、動画を毎秒2フレームでサンプリングします。すべての動画に音声トラックがある場合に利用します。
+
+公開されたコンテキストは64,000トークンで、入力合計100万トークンあたり$0.15です。メディアのトークンはコンテキストと課金に含まれ、出力は無料です。Phaseo は Cloudflare が報告する入力使用量に基づいて精算し、音声や動画の追加料金は加算しません。 [Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).

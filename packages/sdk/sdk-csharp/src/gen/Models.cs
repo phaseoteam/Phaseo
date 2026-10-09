@@ -1784,6 +1784,16 @@ public sealed class DecisionImage
 
 }
 
+public sealed class DecisionInputAudio
+{
+	[JsonPropertyName("input_audio")]
+	public object InputAudio { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionInputImage
 {
 	[JsonPropertyName("detail")]
@@ -1817,6 +1827,16 @@ public sealed class DecisionInputText
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
+
+}
+
+public sealed class DecisionInputVideo
+{
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("video_url")]
+	public object VideoUrl { get; set; }
 
 }
 

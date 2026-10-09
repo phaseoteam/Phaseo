@@ -726,6 +726,11 @@ struct DecisionImage {
 	std::any content_type;
 };
 
+struct DecisionInputAudio {
+	std::any input_audio;
+	std::any type;
+};
+
 struct DecisionInputImage {
 	std::optional<std::any> detail;
 	std::string image_url;
@@ -741,6 +746,11 @@ struct DecisionInputMessage {
 struct DecisionInputText {
 	std::string text;
 	std::any type;
+};
+
+struct DecisionInputVideo {
+	std::any type;
+	std::any video_url;
 };
 
 using DecisionInstructions = std::any;

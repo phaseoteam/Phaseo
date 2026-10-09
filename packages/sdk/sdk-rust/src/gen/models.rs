@@ -727,6 +727,11 @@ pub struct DecisionImage {
 	pub content_type: String,
 }
 
+pub struct DecisionInputAudio {
+	pub input_audio: String,
+	pub r#type: String,
+}
+
 pub struct DecisionInputImage {
 	pub detail: Option<Option<String>>,
 	pub image_url: String,
@@ -742,6 +747,11 @@ pub struct DecisionInputMessage {
 pub struct DecisionInputText {
 	pub text: String,
 	pub r#type: String,
+}
+
+pub struct DecisionInputVideo {
+	pub r#type: String,
+	pub video_url: String,
 }
 
 pub type DecisionInstructions = JsonValue;
