@@ -287,7 +287,9 @@ export async function executeOpenAIWire(
 		finish_reason: null,
 	};
 	if (!res.ok) {
-		console.error(`Upstream error for provider ${args.providerId}: ${res.status} ${res.statusText}`);
+		// The model slug tells a retired or renamed route (404) from a rejected request (400)
+		// without logging the provider's error body, which can echo customer content.
+		console.error(`Upstream error for provider ${args.providerId}: ${res.status} ${res.statusText} (model ${modelForRouting}, route ${route})`);
 		return {
 			kind: "completed",
 			ir: undefined,

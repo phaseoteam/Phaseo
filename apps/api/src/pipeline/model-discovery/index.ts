@@ -767,7 +767,20 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 	return { byProvider: map, providerApiSnapshotReadyByProvider };
 }
 
-async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
+// Postgres rejects an INSERT ... ON CONFLICT DO UPDATE that touches one key twice, which would
+// abort persistence for every provider in the run. Keep the first row per key; rows arrive in
+// provider order, so the winner is deterministic.
+export function dedupeSeenModelRows(rows: SeenModelUpsertRow[]): SeenModelUpsertRow[] {
+	const byKey = new Map<string, SeenModelUpsertRow>();
+	for (const row of rows) {
+		const key = JSON.stringify([row.provider_id, row.model_id]);
+		if (!byKey.has(key)) byKey.set(key, row);
+	}
+	return Array.from(byKey.values());
+}
+
+async function upsertCurrentModels(allRows: SeenModelUpsertRow[]): Promise<void> {
+	const rows = dedupeSeenModelRows(allRows);
 	if (rows.length === 0) return;
 	const supabase = getSupabaseAdmin();
 
