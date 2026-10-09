@@ -16,6 +16,9 @@ CUSTOMER_RATE_LIMITS_ENABLED = "true"
 # post-charge balance instead if it is at least $1, no higher than the cached
 # balance, and not throttled; otherwise the cache is still invalidated.
 GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
+# Fail over when a streaming provider sends no response headers within 60 s.
+# Never applied to non-streaming requests, whose headers wait for the generation.
+GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS = "60000"
 # Trust-ladder RPM per workspace (off = 25 RPM for everyone). Enable only after
 # the tier publisher reports a complete backfill.
 CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"

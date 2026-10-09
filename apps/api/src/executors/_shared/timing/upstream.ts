@@ -85,7 +85,13 @@ export type UpstreamTimingSnapshot = {
 	upstreamMediaCount: number;
 };
 
-export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
+/**
+ * `applyHeadersDeadline` enables GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS for provider
+ * fetches. Pass it only for streaming requests: a non-streaming provider sends
+ * headers once generation finishes, so a deadline would cut off long reasoning or
+ * media generations and fail them over (paying for the same work twice).
+ */
+export function createUpstreamTimingTracker(trace?: GatewayTimingTrace, options: { applyHeadersDeadline?: boolean } = {}): {
 	timing: ExecutorUpstreamTiming;
 	snapshot: () => UpstreamTimingSnapshot;
 	isProviderTransportFailure: (error: unknown) => boolean;
@@ -125,7 +131,7 @@ export function createUpstreamTimingTracker(trace?: GatewayTimingTrace): {
 		}
 		let response: Response;
 		try {
-			response = phase === "provider"
+			response = phase === "provider" && options.applyHeadersDeadline
 				? await fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
 				: await globalThis.fetch(input, init);
 		} catch (error) {
@@ -186,7 +192,6 @@ export function fetchUpstream(
 	if (args.upstreamTiming) {
 		return args.upstreamTiming.fetch(input, init, phase);
 	}
-	return phase === "provider"
-		? fetchWithHeadersDeadline(input, init, resolveUpstreamHeadersTimeoutMs())
-		: globalThis.fetch(input, init);
+	// Without a tracker the caller's streaming mode is unknown; never apply the deadline.
+	return globalThis.fetch(input, init);
 }

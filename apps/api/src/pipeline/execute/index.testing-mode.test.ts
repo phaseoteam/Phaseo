@@ -327,7 +327,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
 			});
 			resolveProviderExecutorMock.mockReturnValue(executor);
-			const ctx = createCtx({ testingMode: true });
+			const ctx = createCtx({ testingMode: true, stream: true });
 
 			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
 
@@ -342,6 +342,37 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				failureOrigin: "provider",
 				errorCode: "upstream_headers_timeout",
 			}));
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
+	it("lets a slow non-streaming provider finish instead of failing over", async () => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		try {
+			const candidates = ["slow", "other"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: "model", capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			// Non-streaming providers send headers only once the whole generation is done.
+			vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 80));
+				return new Response("{}", { status: 200 });
+			});
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: false });
+
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(["slow"]);
 		} finally {
 			runtimeBindings.value = null;
 			vi.restoreAllMocks();
