@@ -1,4 +1,4 @@
--- Include future pricing for discount comparisons; billing still applies its own time filters.
+-- Expose approved scheduled rates only for tiers with current pricing.
 CREATE OR REPLACE FUNCTION public.get_v2_model_pricing_without_stealth_redaction (
   p_model_slug   text,
   p_region       text DEFAULT NULL::text,
@@ -154,7 +154,21 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_pricing_without_stealth_redaction
             where provider_slug = model.provider_slug
           )
           and sku.status <> 'disabled'
-          -- Include scheduled rates for promotional comparisons and upcoming changes.
+          and (
+            sku.effective_from <= now()
+            or (
+              sku.status = 'active'
+              and exists (
+                select 1 from public.v2_pricing_skus current_sku
+                where current_sku.provider_model_id = sku.provider_model_id
+                  and current_sku.operation = sku.operation
+                  and current_sku.service_tier_slug is not distinct from sku.service_tier_slug
+                  and current_sku.status <> 'disabled'
+                  and current_sku.effective_from <= now()
+                  and (current_sku.effective_to is null or current_sku.effective_to > now())
+              )
+            )
+          )
           and (sku.effective_to is null or sku.effective_to > now())
           and (p_service_tier is null or sku.service_tier_slug = lower(p_service_tier))
       ), '[]'::jsonb) as pricing_rules

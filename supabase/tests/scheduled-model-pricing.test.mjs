@@ -18,13 +18,16 @@ insert into v2_pricing_skus(sku_id,provider_model_id,operation,service_tier_slug
 select md5(tier||period)::uuid,'route','text.generate',tier,'USD','draft',
 case when period='future' then now()+interval '1 day' else now()-interval '1 day' end,
 case when period='current' then now()+interval '1 day' when period='expired' then now()-interval '1 hour' else null end,'{}'
-from unnest(array['standard','batch','flex','priority']) tier cross join unnest(array['current','future','expired','disabled']) period;
+from unnest(array['standard','batch','flex','priority']) tier cross join unnest(array['current','future','expired','disabled','future-draft']) period;
+update v2_pricing_skus set effective_from=now()+interval '1 day',effective_to=null where sku_id in (select md5(tier||'future-draft')::uuid from unnest(array['standard','batch','flex','priority']) tier);
+update v2_pricing_skus set status='active' where sku_id in (select md5(tier||'future')::uuid from unnest(array['standard','batch','flex','priority']) tier);
+insert into v2_pricing_skus(sku_id,provider_model_id,operation,service_tier_slug,currency,status,effective_from,metadata) values(md5('future-only')::uuid,'route','text.generate','future-only','USD','active',now()+interval '1 day','{}');
 update v2_pricing_skus set status='disabled' where sku_id in (select md5(tier||'disabled')::uuid from unnest(array['standard','batch','flex','priority']) tier);
 insert into v2_pricing_sku_meters(sku_id,meter_key,unit,unit_quantity,price_nanos,billable,meter_order,metadata) select sku_id,'input_text_tokens','token',1000000,2000000000,true,1,'{}' from v2_pricing_skus;
 `);
 await db.exec(await readFile(new URL('../migrations/20261008101500_expose_scheduled_model_pricing.sql',import.meta.url),'utf8'));
 const payload=(await db.query("select * from get_v2_model_pricing_without_stealth_redaction('model')")).rows[0].get_v2_model_pricing_without_stealth_redaction;
-assert.equal(payload.pricing_rules.length,8,'current and future rules included; expired and disabled excluded');
+assert.equal(payload.pricing_rules.length,8,'current and approved future rules included; expired, disabled, future drafts and future-only tiers excluded');
 for (const tier of ['standard','batch','flex','priority']) {
   assert.equal(payload.pricing_rules.filter(r=>r.pricing_plan===tier).length,2);
   const filtered=(await db.query('select * from get_v2_model_pricing_without_stealth_redaction($1,null,$2)',['model',tier])).rows[0].get_v2_model_pricing_without_stealth_redaction;
