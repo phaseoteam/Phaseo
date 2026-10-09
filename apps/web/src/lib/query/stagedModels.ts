@@ -13,7 +13,7 @@ export async function fetchAdminStagedModels(options: {
 	const token = options.accessToken === undefined ? await getBrowserAccessToken() : options.accessToken;
 	try {
 		const payload = await fetchAccountWebApi<{ models: Array<Record<string, any>> }>(
-			"/api/account/models/audit/source?includeHidden=true", token, { signal: options.signal },
+			"/api/account/models/hidden", token, { signal: options.signal },
 		);
 		return payload.models.filter((row) => row.hidden === true).map((row) => {
 			const organisation = Array.isArray(row.organisation) ? row.organisation[0] : row.organisation;

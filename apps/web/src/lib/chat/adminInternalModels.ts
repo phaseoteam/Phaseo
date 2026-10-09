@@ -30,3 +30,31 @@ export function adminSourceToChatModels(source: AdminModelSource, now = Date.now
 		}];
 	});
 }
+
+export type AdminHiddenModelsPayload = {
+	models: Array<Record<string, any>>;
+	providerRows?: Array<Record<string, any>>;
+};
+
+/**
+ * Builds admin chat entries from the batched hidden-model payload. Each model
+ * owns its own routes plus its `-fast` and `-flex` variants, as in the
+ * per-model admin source.
+ */
+export function adminHiddenModelsToChatModels(payload: AdminHiddenModelsPayload, now = Date.now()): GatewaySupportedModel[] {
+	const routesByModel = new Map<string, Array<Record<string, any>>>();
+	for (const route of payload.providerRows ?? []) {
+		const routeModelId = String(route.model_id ?? "");
+		routesByModel.set(routeModelId, [...(routesByModel.get(routeModelId) ?? []), route]);
+	}
+	return payload.models.flatMap((row) => {
+		const modelId = String(row.model_id ?? "");
+		if (!modelId) return [];
+		const providerRows = [modelId, `${modelId}-fast`, `${modelId}-flex`].flatMap((variant) => routesByModel.get(variant) ?? []);
+		const model = {
+			hidden: row.hidden, status: row.status, catalogue_status: row.catalogue_status, name: row.name,
+			lab_slug: row.lab_slug, lab: row.organisation, released_at: row.release_date, announced_at: row.announced_at,
+		};
+		return adminSourceToChatModels({ requestedModelId: modelId, canonicalApiId: modelId, internalModelId: modelId, model, providerRows, pricingRules: [], subscriptionPlans: [], aliases: [] }, now);
+	});
+}

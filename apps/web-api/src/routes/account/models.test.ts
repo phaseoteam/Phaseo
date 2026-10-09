@@ -49,6 +49,7 @@ describe("account model source routes", () => {
 	it.each([
 		"/api/account/models/catalog/list?resource=models&attention=hidden",
 		"/api/account/models/audit/source",
+		"/api/account/models/hidden",
 		"/api/account/models/provider-audit/source",
 		"/api/account/models/catalog/overview",
 		"/api/account/models/openai%2Fgpt-test/source",
@@ -60,8 +61,62 @@ describe("account model source routes", () => {
 		expect(response.headers.get("vary")).toBe("Authorization, Cookie");
 	});
 
+	it("lists only hidden models without loading routes unless requested", async () => {
+		const requests: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			requests.push(url);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("/rest/v1/users")) return Response.json({ role: "admin" });
+			if (url.includes("/rest/v1/v2_models")) return Response.json([{ model_id: "test/staged", hidden: true }]);
+			return Response.json([]);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/models/hidden",
+			{ headers: { authorization: "Bearer session-token" } },
+			{ ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" },
+		);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		expect(await response.json()).toEqual({ models: [{ model_id: "test/staged", hidden: true }] });
+		const query = new URL(requests.find((url) => url.includes("/rest/v1/v2_models"))!);
+		expect(query.searchParams.get("hidden")).toBe("eq.true");
+		expect(requests.some((url) => url.includes("/rest/v1/v2_model_provider_routes"))).toBe(false);
+		expect(requests.some((url) => url.includes("/rest/v1/v2_benchmark_results"))).toBe(false);
+	});
+
+	it("batches hidden model routes into a bounded number of chunked lookups", async () => {
+		const routeQueries: URL[] = [];
+		const models = Array.from({ length: 30 }, (_, index) => ({ model_id: `test/m${index}`, hidden: true }));
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.includes("/rest/v1/users")) return Response.json({ role: "admin" });
+			if (url.includes("/rest/v1/v2_models")) return Response.json(models);
+			if (url.includes("/rest/v1/v2_model_provider_routes")) {
+				routeQueries.push(new URL(url));
+				return Response.json([{ provider_model_id: "route-1", provider_slug: "test", model_slug: "test/m0", status: "active", access_scope: "internal" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/models/hidden?includeRoutes=true",
+			{ headers: { authorization: "Bearer session-token" } },
+			{ ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" },
+		);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { models: unknown[]; providerRows: Array<{ provider_api_model_id: string; access_scope: string }> };
+		expect(body.models).toHaveLength(30);
+		expect(routeQueries).toHaveLength(2);
+		expect(routeQueries[0].searchParams.get("model_slug")).toContain("test/m24-flex");
+		expect(routeQueries[0].searchParams.get("model_slug")).not.toContain("test/m25");
+		expect(body.providerRows).toHaveLength(1);
+		expect(body.providerRows[0]).toMatchObject({ access_scope: "internal" });
+	});
+
 	it.each([
 		"/api/account/models/audit/source",
+		"/api/account/models/hidden",
 		"/api/account/models/catalog/overview",
 		"/api/account/models/openai%2Fgpt-test/pricing-editor",
 	])("rejects authenticated non-admin access to %s", async (path) => {
