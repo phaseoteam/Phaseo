@@ -1,6 +1,7 @@
 -- get_v2_model_quality_hourly_v1 probed every gateway_requests partition per
--- fact for its legacy usage fallback; bounding the probe to the fact's day lets
--- it prune to one.
+-- fact for its legacy usage fallback. Linked facts now read their request by
+-- primary key (gateway_request_id, gateway_request_created_at), which prunes to
+-- one partition; unlinked facts keep the nearest-request lookup.
 SET local check_function_bodies = off;
 
 CREATE OR REPLACE FUNCTION public.get_v2_model_quality_hourly_v1 (
@@ -53,6 +54,8 @@ scoped_facts as (
     fact.request_event_id,
     fact.workspace_id,
     fact.request_id,
+    fact.gateway_request_id,
+    fact.gateway_request_created_at,
     fact.occurred_at,
     fact.stream,
     fact.cloudflare_colo,
@@ -103,19 +106,34 @@ usage_by_request as (
     from public.v2_request_usage usage
     where usage.request_event_id = fact.request_event_id
   ) meters on true
+  -- Linked facts read their authoritative request by primary key, which prunes
+  -- to one partition; only unlinked facts fall back to the nearest request.
   left join lateral (
-    select
-      request.request_id,
-      request.usage_input_tokens,
-      request.usage_cached_read_tokens
-    from public.gateway_requests request
-    where request.workspace_id = fact.workspace_id
-      and request.request_id = fact.request_id
-      -- The matching request is written within minutes of its fact. The bound
-      -- lets each probe prune to one partition instead of searching all.
-      and request.created_at >= fact.occurred_at - interval '1 day'
-      and request.created_at < fact.occurred_at + interval '1 day'
-    order by abs(extract(epoch from request.created_at - fact.occurred_at))
+    (
+      select
+        request.request_id,
+        request.usage_input_tokens,
+        request.usage_cached_read_tokens
+      from public.gateway_requests request
+      where fact.gateway_request_id is not null
+        and request.id = fact.gateway_request_id
+        and request.created_at = fact.gateway_request_created_at
+        and request.workspace_id = fact.workspace_id
+        and request.request_id = fact.request_id
+    )
+    union all
+    (
+      select
+        request.request_id,
+        request.usage_input_tokens,
+        request.usage_cached_read_tokens
+      from public.gateway_requests request
+      where fact.gateway_request_id is null
+        and request.workspace_id = fact.workspace_id
+        and request.request_id = fact.request_id
+      order by abs(extract(epoch from request.created_at - fact.occurred_at))
+      limit 1
+    )
     limit 1
   ) legacy on true
 ),
