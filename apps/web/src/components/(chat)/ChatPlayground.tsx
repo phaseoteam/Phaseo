@@ -1,6 +1,8 @@
 "use client";
 
 import { chatLocalStorage } from "@/lib/chat/userStorage";
+import { getOpenUIContext, OPENUI_FORMAT, updateOpenUIState } from "./openui/openuiHelpers";
+import { loadOpenUILibrary } from "./openui/loadOpenUI";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -1174,13 +1176,24 @@ function ChatPlaygroundContent({
 				content: string;
 			}>;
 			const selectedModelId = requestModelId ?? thread.modelId;
-			const compareMeta = compareGroupId
-				? { compare_group_id: compareGroupId }
-				: null;
+			const compareMeta = (compareGroupId || thread.settings.interactiveAnswers) ? {
+				...(compareGroupId ? { compare_group_id: compareGroupId } : {}),
+				...(thread.settings.interactiveAnswers ? { response_format: OPENUI_FORMAT } : {}),
+			} : null;
 			const personalizationPrompt =
 				buildPersonalizationPrompt(personalization);
 			const systemPrompt = thread.settings.systemPrompt?.trim() ?? "";
-			const mergedSystemPrompt = [systemPrompt, personalizationPrompt]
+			let interactivePrompt = "";
+			if (thread.settings.interactiveAnswers) {
+				try {
+					interactivePrompt = (await loadOpenUILibrary()).getOpenUIPrompt();
+				} catch {
+					setError("Interactive answers could not load. Disable the experiment and retry.");
+					if (manageSendingState) setIsSending(false);
+					return;
+				}
+			}
+			const mergedSystemPrompt = [systemPrompt, personalizationPrompt, interactivePrompt]
 				.filter(Boolean)
 				.join("\n\n");
 			if (mergedSystemPrompt) {
@@ -1192,7 +1205,7 @@ function ChatPlaygroundContent({
 			payloadMessages.push(
 				...contextMessages.map((msg) => ({
 					role: msg.role,
-					content: msg.content,
+					content: getOpenUIContext(msg),
 				})),
 			);
 
@@ -3427,6 +3440,12 @@ function ChatPlaygroundContent({
 			],
 	);
 
+	const handleOpenUIStateChange = useCallback((messageId: string, variantId: string, state: Record<string, unknown>) => {
+		if (!activeThread || isSending) return;
+		const nextThread = applyMessageUpdate(activeThread, messageId, (message) => updateOpenUIState(message, variantId, state));
+		void updateThreadState(nextThread, !temporaryMode);
+	}, [activeThread, isSending, applyMessageUpdate, updateThreadState, temporaryMode]);
+
 	const updateActiveModel = useCallback(
 		(modelId: string) => {
 			const requiredCapability = getPrimaryCapabilityForModel(modelId);
@@ -4602,6 +4621,8 @@ function ChatPlaygroundContent({
 					onUpdateModel={updateActiveModel}
 					temporaryMode={temporaryMode}
 					onToggleTemporaryMode={toggleTemporaryMode}
+					onInteractiveAnswersChange={(enabled) => updateActiveSettings({ interactiveAnswers: enabled })}
+					interactiveAnswersDisabled={isSending}
 					onOpenModelSettings={() =>
 						openModelSettingsForModel(activeThread?.modelId ?? null)
 					}
@@ -4642,6 +4663,7 @@ function ChatPlaygroundContent({
 					requireAudioInput={composerRequiresAudioInput}
 				/>
 				<ChatConversation
+					onOpenUIStateChange={handleOpenUIStateChange}
 					activeThread={activeThread}
 					isSending={isSending}
 					temporaryMode={temporaryMode}

@@ -79,6 +79,7 @@ function formatRecordingFilename(date = new Date()) {
 }
 
 type ChatConversationProps = {
+	onOpenUIStateChange?: (messageId: string, variantId: string, state: Record<string, unknown>) => void;
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	isAuthenticated: boolean;
@@ -131,6 +132,7 @@ function shouldFocusComposerAfterThreadChange() {
 }
 
 export function ChatConversation({
+	onOpenUIStateChange,
 	activeThread,
 	isSending,
 	isAuthenticated,
@@ -977,6 +979,9 @@ export function ChatConversation({
 							className={`mx-auto flex min-w-0 w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
 						>
 							<ChatConversationMessages
+								onOpenUIStateChange={onOpenUIStateChange}
+								interactiveActionsDisabled={isSending || !isAuthenticated}
+								onOpenUISubmit={(content) => { void onSend({ content, attachments: [], webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs }); }}
 								activeThread={activeThread}
 								isSending={isSending}
 								lastMessageId={lastMessageId}

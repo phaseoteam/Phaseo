@@ -113,6 +113,7 @@ import {
 	Database,
 	PanelLeftClose,
 	PanelLeftOpen,
+	PanelsTopLeft,
 	Keyboard,
 	List,
 	MessageCircleDashed,
@@ -302,6 +303,8 @@ type ChatHeaderProps = {
 	onUpdateModel: (modelId: string) => void;
 	temporaryMode: boolean;
 	onToggleTemporaryMode: () => void;
+	onInteractiveAnswersChange?: (enabled: boolean) => void;
+	interactiveAnswersDisabled?: boolean;
 	onOpenModelSettings: () => void;
 	settingsOpen: boolean;
 	onSettingsOpenChange: (open: boolean) => void;
@@ -352,6 +355,8 @@ export function ChatHeader({
 	onUpdateModel,
 	temporaryMode,
 	onToggleTemporaryMode,
+	onInteractiveAnswersChange,
+	interactiveAnswersDisabled = false,
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
@@ -1750,6 +1755,23 @@ export function ChatHeader({
 					</DropdownMenu>
 				) : null}
 				<RoomSdkExport request={sdkRequest} />
+				{onInteractiveAnswersChange && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={activeThread?.settings.interactiveAnswers ? "secondary" : "ghost"}
+								size="icon"
+								disabled={!activeThread || interactiveAnswersDisabled}
+								onClick={() => onInteractiveAnswersChange(!activeThread?.settings.interactiveAnswers)}
+								aria-label="Interactive answers"
+								aria-pressed={activeThread?.settings.interactiveAnswers ?? false}
+							>
+								<PanelsTopLeft className="h-4 w-4" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>Interactive answers · Experiment</TooltipContent>
+					</Tooltip>
+				)}
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button
