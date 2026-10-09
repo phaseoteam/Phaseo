@@ -5,6 +5,7 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.config";
 import type { Endpoint } from "@core/types";
+import { awaitShared } from "@core/shared-wait";
 import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
@@ -143,6 +144,8 @@ const breakerField = (provider: string) => `${provider}::breaker`;
 const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
+// Waits on another request's health load or update lock are bounded to this long.
+const SHARED_HEALTH_WAIT_MS = 2_000;
 // KV requires expirationTtl >= 60 seconds. Retain sparse recovery probes long
 // enough to accumulate a batch; each recorded probe refreshes this TTL.
 const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.MAX_OPEN_SECS;
@@ -163,7 +166,9 @@ let healthStateEpoch = 0;
 async function withKeyUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const queue = keyUpdateQueues.get(key);
     if (queue) {
-        await new Promise<void>((resolve) => queue.push(resolve));
+        // The holder may be another request whose I/O is cancelled when it ends; health
+        // state is best-effort, so proceed concurrently rather than wait forever.
+        await awaitShared(new Promise<void>((resolve) => queue.push(resolve)), SHARED_HEALTH_WAIT_MS);
     } else {
         keyUpdateQueues.set(key, []);
     }
@@ -382,7 +387,9 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
 
     const inflight = l1StateInflight.get(key);
     if (inflight) {
-        return { ...(await inflight) };
+        // The load may belong to another request; never wait on it unboundedly.
+        const shared = await awaitShared(inflight, SHARED_HEALTH_WAIT_MS);
+        if (shared.settled) return { ...shared.value };
     }
 
     const loader = (async () => {

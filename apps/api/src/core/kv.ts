@@ -8,6 +8,7 @@
 // - No c.env at module scope
 
 import { getCache } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
 
 export function getKv() {
     return getCache();
@@ -15,6 +16,7 @@ export function getKv() {
 
 const KEY_VERSION_PREFIX = "gateway:keyver";
 const KEY_VERSION_L1_CACHE_TTL_MS = 1000;
+const KEY_VERSION_SHARED_WAIT_MS = 1_000;
 const KEY_VERSION_L1_CACHE_MAX_ENTRIES = 2000;
 type KeyVersionL1Entry = {
     version: number;
@@ -142,7 +144,11 @@ export async function getKeyVersion(
             return cached;
         }
         const inflight = keyVersionInflight.get(key);
-        if (inflight) return inflight;
+        if (inflight) {
+            // The read may belong to another request; never wait on it unboundedly.
+            const shared = await awaitShared(inflight, KEY_VERSION_SHARED_WAIT_MS);
+            if (shared.settled) return shared.value;
+        }
     }
     const epochAtStart = readKeyVersionEpoch(key);
     const loader = (async () => {
