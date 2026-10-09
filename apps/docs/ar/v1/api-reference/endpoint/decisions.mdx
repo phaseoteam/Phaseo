@@ -10,6 +10,8 @@ description: "قيّم أسئلة ذات أنواع محددة بناءً على
 
 يدعم Mercury Decide (`inception/mercury-decide`) أسئلة `predicate` و`choice` و`score` باستخدام نص أو JSON. الحد الأقصى هو 255 خيارًا لكل سؤال اختيار و10 مستويات لكل سؤال تقييم. لا يدعم الصور أو البث أو استدعاء الأدوات. يبلغ سعر الإدخال حاليًا 0.02 دولار لكل مليون رمز ضمن خصم Inception بنسبة 50%؛ تُبلّغ رموز الإخراج دون رسوم. لم تُعلن Inception موعد انتهاء العرض. تحقّق من توفر النموذج و[الأسعار الحالية](https://docs.inceptionlabs.ai/get-started/models) قبل الاستخدام.
 
+يستخدم Microsoft Decision (`microsoft/microsoft-decision-1`) نشرًا في Azure Foundry، ويدعم أسئلة `predicate` و`choice` و`score` للنص أو JSON. حد الإدخال هو 32,768 رمزًا. سعر الإدخال 0.042 دولار أمريكي لكل مليون رمز، والإخراج مجاني. لا يدعم الوسائط أو البث أو الأدوات أو `safety_identifier` أو `service_tier`. تحقق من توفر النموذج قبل استدعائه. راجع [دليل Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
 ```json
 {
   "model": "inception/mercury-decide",

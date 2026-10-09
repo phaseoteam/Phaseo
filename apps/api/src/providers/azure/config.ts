@@ -55,7 +55,7 @@ export function resolveAzureKey(args: ProviderExecuteArgs): ResolvedKey {
 
 export type AzureCredential = ResolvedKey & { authType: "api-key" | "entra" };
 
-export function resolveAzureCredential(args: ProviderExecuteArgs): AzureCredential {
+export function resolveAzureCredential(args: Pick<ProviderExecuteArgs, "providerId" | "byokMeta" | "model" | "providerModelSlug"> & { forceGatewayKey?: boolean }): AzureCredential {
 	const config = resolveAzureConfig(args);
 	const apiKey = resolveProviderKey(args, () => config.apiKey, { allowEmptyFallback: true });
 	if (apiKey.key) return { ...apiKey, authType: "api-key" };
@@ -104,5 +104,14 @@ export function azureMaiUrl(path: string, baseUrl: string): string {
     const url = new URL(azureResourceBaseUrl(baseUrl));
     if (url.hostname.endsWith(".openai.azure.com")) url.hostname = url.hostname.replace(/\.openai\.azure\.com$/, ".services.ai.azure.com");
     url.pathname = `${url.pathname.replace(/\/mai\/v1\/?$/, "").replace(/\/$/, "")}/mai/v1/${path.replace(/^\/+/, "")}`;
+    return url.toString();
+}
+
+export function azureDecisionsUrl(baseUrl: string): string {
+    const url = new URL(azureResourceBaseUrl(baseUrl));
+    if (url.hostname.endsWith(".openai.azure.com")) url.hostname = url.hostname.replace(/\.openai\.azure\.com$/, ".services.ai.azure.com");
+    url.pathname = "/providers/microsoft/v1/systemone";
+    url.search = "";
+    url.hash = "";
     return url.toString();
 }

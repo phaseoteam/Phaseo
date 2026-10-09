@@ -19,6 +19,7 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { executor as openaiText } from "./openai/text-generate";
 import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
+import { executor as azureDecisions } from "./azure/decisions";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
 import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as googleMusic } from "./google/music-generate";
@@ -267,6 +268,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	azure: {
 		"text.generate": azureText,
+		"decisions.make": azureDecisions,
 		embeddings: openaiEmbeddings,
 		"image.generate": nonTextAdapterExecutor,
 		"image.edit": nonTextAdapterExecutor,

@@ -10,6 +10,8 @@ description: "対応する判断モデルを使い、アプリケーションの
 
 Mercury Decide (`inception/mercury-decide`) は、テキストまたは JSON を使う `predicate`、`choice`、`score` の質問に対応します。選択式の質問は最大255個の選択肢、スコアの質問は最大10段階です。画像、ストリーミング、ツール呼び出しには対応しません。Inception の50%割引により、入力は現在100万トークンあたり0.02米ドルです。出力トークンは報告されますが無料です。割引の終了日は公表されていません。利用前にモデルの提供状況と[最新の料金](https://docs.inceptionlabs.ai/get-started/models)を確認してください。
 
+Microsoft Decision（`microsoft/microsoft-decision-1`）は Azure Foundry のデプロイを使用し、テキストまたは JSON に対する `predicate`、`choice`、`score` の質問をサポートします。入力の上限は 32,768 トークンです。入力料金は 100 万トークンあたり 0.042 米ドルで、出力は無料です。メディア、ストリーミング、ツール、`safety_identifier`、`service_tier` はサポートされません。モデルの利用可否を確認してください。[Microsoft のガイド](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)を参照してください。
+
 ```json
 {
   "model": "inception/mercury-decide",

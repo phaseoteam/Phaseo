@@ -10,6 +10,8 @@ description: "使用受支持的决策模型，针对应用状态评估带类型
 
 Mercury Decide (`inception/mercury-decide`) 支持使用文本或 JSON 的 `predicate`、`choice` 和 `score` 问题。每个选择题最多支持 255 个选项，每个评分题最多支持 10 个等级。不支持图片、流式响应或工具调用。Inception 当前提供五折优惠，输入价格为每百万 token 0.02 美元；输出 token 会计入用量，但免费。Inception 尚未公布优惠结束日期。使用前请检查模型可用性和[当前价格](https://docs.inceptionlabs.ai/get-started/models)。
 
+Microsoft Decision（`microsoft/microsoft-decision-1`）使用 Azure Foundry 部署，支持针对文本或 JSON 的 `predicate`、`choice` 和 `score` 问题。输入上限为 32,768 个 token。输入价格为每百万 token 0.042 美元，输出免费。不支持媒体、流式输出、工具、`safety_identifier` 或 `service_tier`。调用前请确认模型可用性。参阅 [Microsoft 指南](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)。
+
 ```json
 {
   "model": "inception/mercury-decide",
