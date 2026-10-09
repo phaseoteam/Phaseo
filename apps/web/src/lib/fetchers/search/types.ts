@@ -1,4 +1,5 @@
 export interface SearchableModel {
+	persistable?: boolean;
 	id: string;
 	title: string;
 	subtitle: string | null;
