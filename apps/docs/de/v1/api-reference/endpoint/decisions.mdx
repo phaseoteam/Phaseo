@@ -10,6 +10,8 @@ Verwende für neue Aufrufe das OpenAI-kompatible Format: `input` enthält Text o
 
 Mercury Decide (`inception/mercury-decide`) unterstützt `predicate`-, `choice`- und `score`-Fragen mit Text oder JSON. Auswahlfragen erlauben bis zu 255 Optionen, Bewertungsfragen bis zu 10 Stufen. Bilder, Streaming und Tool-Aufrufe werden nicht unterstützt. Eingaben kosten derzeit 0,02 USD pro Million Tokens mit Inceptions 50%-Rabatt; Ausgabetokens werden erfasst, bleiben aber kostenlos. Inception hat kein Enddatum veröffentlicht. Prüfen Sie vor der Nutzung die Modellverfügbarkeit und die [aktuellen Preise](https://docs.inceptionlabs.ai/get-started/models).
 
+Microsoft Decision (`microsoft/microsoft-decision-1`) nutzt eine Azure-Foundry-Bereitstellung und unterstützt `predicate`, `choice` und `score` mit Text oder JSON. Das Eingabelimit beträgt 32.768 Tokens. Eingaben kosten 0,042 USD pro Million Tokens; Ausgaben sind kostenlos. Medien, Streaming, Tools, `safety_identifier` und `service_tier` werden nicht unterstützt. Prüfen Sie die Modellverfügbarkeit. Weitere Informationen: [Microsoft-Anleitung](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
 ```json
 {
   "model": "inception/mercury-decide",

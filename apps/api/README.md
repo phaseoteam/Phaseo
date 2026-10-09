@@ -14,6 +14,8 @@ The gateway lets developers access models from OpenAI, Anthropic, Google, Mistra
 - Supports model metadata, pricing, benchmarks, and provider coverage.
 - Exposes OpenAI-compatible endpoints plus Phaseo-specific controls.
 
+For Microsoft Decision deployment and credential mapping, see [Azure decisions](docs/azure-decisions.md).
+
 ## Architecture
 
 - Runtime: Cloudflare Workers

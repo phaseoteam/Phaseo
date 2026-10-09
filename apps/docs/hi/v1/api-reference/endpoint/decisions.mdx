@@ -10,6 +10,8 @@ description: "समर्थित निर्णय मॉडल से ऐ�
 
 Mercury Decide (`inception/mercury-decide`) टेक्स्ट या JSON के साथ `predicate`, `choice` और `score` प्रश्नों का समर्थन करता है। प्रत्येक चयन प्रश्न में अधिकतम 255 विकल्प और प्रत्येक स्कोर प्रश्न में अधिकतम 10 स्तर हो सकते हैं। चित्र, स्ट्रीमिंग और टूल कॉल समर्थित नहीं हैं। Inception की 50% छूट के तहत इनपुट की वर्तमान कीमत प्रति दस लाख टोकन 0.02 USD है; आउटपुट टोकन रिपोर्ट किए जाते हैं, लेकिन निःशुल्क हैं। Inception ने छूट समाप्त होने की तारीख नहीं बताई है। उपयोग से पहले मॉडल की उपलब्धता और [वर्तमान कीमतें](https://docs.inceptionlabs.ai/get-started/models) जाँचें।
 
+Microsoft Decision (`microsoft/microsoft-decision-1`) Azure Foundry डिप्लॉयमेंट का उपयोग करता है और टेक्स्ट या JSON के लिए `predicate`, `choice` और `score` प्रश्नों का समर्थन करता है। इनपुट सीमा 32,768 टोकन है। इनपुट की कीमत प्रति दस लाख टोकन 0.042 अमेरिकी डॉलर है; आउटपुट मुफ़्त है। मीडिया, स्ट्रीमिंग, टूल, `safety_identifier` और `service_tier` समर्थित नहीं हैं। कॉल करने से पहले मॉडल की उपलब्धता जाँचें। [Microsoft की गाइड](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision) देखें।
+
 ```json
 {
   "model": "inception/mercury-decide",
