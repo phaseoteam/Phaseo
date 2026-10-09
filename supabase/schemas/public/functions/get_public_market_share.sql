@@ -36,7 +36,7 @@ with meters as (
     meter.rollup_id,
     jsonb_object_agg(meter.meter_key, meter.quantity) as values
   from public.v2_public_usage_daily_meters meter
-  join public.v2_public_usage_daily scoped on scoped.rollup_id = meter.rollup_id
+  join public.reporting_usage_daily scoped on scoped.rollup_id = meter.rollup_id
   where scoped.usage_date >= v_since
   group by meter.rollup_id
 )
@@ -51,7 +51,7 @@ select
     (meters.values->>'input_text_tokens')::numeric + (meters.values->>'output_text_tokens')::numeric,
     0
   )::bigint as total_tokens
-from public.v2_public_usage_daily usage
+from public.reporting_usage_daily usage
 left join public.v2_model_provider_routes route
   on route.provider_model_id = usage.provider_model_id
 left join meters on meters.rollup_id = usage.rollup_id
@@ -97,7 +97,7 @@ with meters as (
     meter.rollup_id,
     jsonb_object_agg(meter.meter_key, meter.quantity) as values
   from public.v2_public_usage_daily_meters meter
-  join public.v2_public_usage_daily scoped on scoped.rollup_id = meter.rollup_id
+  join public.reporting_usage_daily scoped on scoped.rollup_id = meter.rollup_id
   where scoped.usage_date >= v_since
   group by meter.rollup_id
 )
@@ -112,7 +112,7 @@ select
     (meters.values->>'input_text_tokens')::numeric + (meters.values->>'output_text_tokens')::numeric,
     0
   )::bigint as total_tokens
-from public.v2_public_usage_daily usage
+from public.reporting_usage_daily usage
 left join public.v2_model_provider_routes route
   on route.provider_model_id = usage.provider_model_id
 left join meters on meters.rollup_id = usage.rollup_id

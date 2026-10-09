@@ -11,7 +11,7 @@ declare
   v_since date := (p_since at time zone 'utc')::date;
   v_until date := ((p_until - interval '1 microsecond') at time zone 'utc')::date;
 begin
-  delete from public.public_model_user_usage_daily
+  delete from public.reporting_model_user_usage_daily
   where day_bucket >= v_since and day_bucket <= v_until;
   insert into public.public_model_user_usage_daily
     (day_bucket, model_id, provider_id, actor_hash, requests, tokens, refreshed_at)
@@ -31,7 +31,7 @@ begin
       public.gateway_usage_nonnegative_bigint(coalesce(
         public.gateway_usage_total_tokens(usage.payload), usage.total_tokens, 0
       )) as total_tokens
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
     left join public.gateway_requests request
       on request.id = fact.gateway_request_id and request.created_at = fact.gateway_request_created_at

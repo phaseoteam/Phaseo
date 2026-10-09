@@ -11,7 +11,7 @@ begin
     pg_catalog.hashtext('refresh_public_model_task_daily')
   );
 
-  delete from public.public_model_task_daily
+  delete from public.reporting_model_task_daily
   where usage_date >= coalesce(p_since, current_date - 1);
 
   insert into public.public_model_task_daily (
@@ -29,7 +29,7 @@ begin
     sum(daily.input_tokens) as input_tokens,
     sum(daily.output_tokens) as output_tokens,
     now()
-  from public.request_classification_daily daily
+  from public.reporting_classification_daily daily
   join public.workspace_classifiers classifier on classifier.id = daily.classifier_id
   where daily.usage_date >= coalesce(p_since, current_date - 1)
     and classifier.kind = 'phaseo_task'

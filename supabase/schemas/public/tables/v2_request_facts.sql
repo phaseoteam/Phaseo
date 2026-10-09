@@ -1,4 +1,5 @@
 CREATE TABLE "public"."v2_request_facts" (
+  "public_reporting_allowed" boolean NOT NULL DEFAULT false,
   "request_event_id"            uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "workspace_id"                uuid                     NOT NULL,
   "request_id"                  text                     NOT NULL,
@@ -323,3 +324,6 @@ CREATE INDEX v2_request_facts_public_ranking_idx ON public.v2_request_facts USIN
 
 CREATE INDEX v2_request_facts_resolved_model_time_idx ON public.v2_request_facts USING btree
   ((COALESCE(routed_model_slug, requested_model_slug, requested_model_input)), occurred_at DESC);
+
+create trigger set_public_reporting_scope before insert or update on public.v2_request_facts
+for each row execute function private.set_request_public_reporting_scope();

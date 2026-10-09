@@ -563,7 +563,8 @@ accountModelsRouter.put("/:modelId/availability", async (c) => {
 		p_available: parsed.data.available,
 	});
 	if (result.error) return c.json({ error: "model_availability_update_failed", message: result.error.message }, 409, PRIVATE_NO_STORE_HEADERS);
-	return c.json(result.data, 200, PRIVATE_NO_STORE_HEADERS);
+	const cache = await purgeModelCatalogueCache(c);
+	return c.json({ ...result.data, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountModelsRouter.get("/:modelId/source", async (c) => {

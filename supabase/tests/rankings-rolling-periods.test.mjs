@@ -51,6 +51,9 @@ await db.exec(`
 for (const migration of ['20261005130000_rolling_ranking_totals', '20261005130100_rolling_app_and_market_totals']) {
   await db.exec(await readFile(new URL(`../migrations/${migration}.sql`, import.meta.url), 'utf8'));
 }
+await db.exec(`create view public.reporting_request_facts as select * from public.v2_request_facts;
+  create view public.reporting_usage_daily as select * from public.v2_public_usage_daily;
+  grant select on public.reporting_request_facts, public.reporting_usage_daily to service_role;`);
 await db.exec(await readFile(new URL('../schemas/public/functions/get_public_ranking_usage_window.sql', import.meta.url), 'utf8'));
 for (const [metric, meters, value] of [
   ['tokens',{total_tokens:10,input_tokens:20,output_tokens:30},10],

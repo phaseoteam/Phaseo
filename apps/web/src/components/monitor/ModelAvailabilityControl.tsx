@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { setAdminModelAvailability } from "@/lib/fetchers/internal/adminModelEditorClient";
@@ -14,7 +14,6 @@ export function ModelAvailabilityControl({ modelId, hidden, onChanged }: {
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [available, setAvailable] = useState(!hidden);
-	useEffect(() => setAvailable(!hidden), [hidden]);
 
 	async function update() {
 		setPending(true);

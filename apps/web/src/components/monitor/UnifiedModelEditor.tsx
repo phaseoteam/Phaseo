@@ -312,7 +312,7 @@ export function UnifiedModelEditor({
 
 						{/* BASIC INFO */}
 						<TabsContent value="basic" className="space-y-4">
-							<ModelAvailabilityControl modelId={model.modelId} hidden={model.hidden} onChanged={(available) => {
+							<ModelAvailabilityControl key={`${model.modelId}:${model.hidden}`} modelId={model.modelId} hidden={model.hidden} onChanged={(available) => {
 								setHidden(!available);
 								setStatus(available ? "active" : "draft");
 							}} />

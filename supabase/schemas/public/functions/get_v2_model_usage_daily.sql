@@ -52,7 +52,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_usage_daily (
       case when usage.generation_count > 0 then usage.generation_sum_ms::numeric / usage.generation_count else null end as avg_generation_ms,
       case when usage.throughput_count > 0 then usage.throughput_sum::numeric / usage.throughput_count else null end as avg_throughput,
       usage.rollup_id
-    from public.v2_public_usage_daily usage
+    from public.reporting_usage_daily usage
     left join public.v2_model_provider_routes route on route.provider_model_id = usage.provider_model_id
     where usage.model_slug = lower(trim(p_model_slug))
       and (p_since is null or usage.usage_date >= p_since)

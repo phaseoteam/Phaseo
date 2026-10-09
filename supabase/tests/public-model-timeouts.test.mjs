@@ -65,6 +65,7 @@ await db.exec(`set timezone = 'UTC';
       (select meter_key,sum(quantity) quantity from v2_request_usage u
        where u.request_event_id=fact.request_event_id group by meter_key) grouped) usage on true;
 `);
+await db.exec('create view public.reporting_request_facts as select * from public.v2_request_facts');
 await db.exec(await read('./fixtures/public-model-timeouts-before.sql'));
 // Freeze the overview clock around the New York fall-back independently of
 // today's date; both occurrences of 01:00 must retain the old range behavior.

@@ -30,7 +30,7 @@ begin
     route.provider_slug,
     public.resolve_v2_effective_pricing_plan(fact.service_tier_slug, sku.service_tier_slug)
   into target_model, target_date, target_provider, target_plan
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
   left join public.v2_pricing_skus sku on sku.sku_id = source_line.sku_id
   where fact.request_event_id = source_line.request_event_id;

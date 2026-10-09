@@ -159,6 +159,11 @@ begin
       'get_v2_model_performance_metrics_unsuppressed', 'get_v2_model_provider_health_metrics_unfiltered',
       'get_v2_model_usage_daily', 'get_v2_model_effective_pricing_daily', 'get_v2_model_provider_health',
       'get_v2_public_model_weekly_metrics', 'get_v2_public_model_weekly_metrics_base',
+      'get_free_router_usage_summary', 'get_model_token_trajectory', 'get_v2_model_cached_input_metrics',
+      'get_v2_model_provider_30m_performance_v1', 'get_v2_model_provider_hourly_performance_v1',
+      'get_v2_model_provider_hourly_performance_v2', 'get_v2_model_provider_percentile_series',
+      'get_v2_model_provider_percentile_series_v2_unsuppressed', 'get_v2_model_provider_tier_health_metrics',
+      'get_v2_model_quality_hourly_v1',
       'refresh_public_model_task_daily', 'refresh_public_model_user_usage_daily', 'refresh_public_model_workspace_usage_weekly'
     ])
   loop
@@ -233,8 +238,8 @@ declare target text; definition text;
 begin
   foreach target in array array['v2_web_public_usage_daily', 'v2_web_public_usage_hourly', 'v2_rpc_gateway_model_usage_daily'] loop
     definition := pg_get_viewdef(('public.' || target)::regclass, true);
-    definition := regexp_replace(definition, '(from|join)([[:space:]]+)(public[.])?v2_public_usage_daily\M', '\1\2public.reporting_usage_daily', 'gi');
-    definition := regexp_replace(definition, '(from|join)([[:space:]]+)(public[.])?v2_public_usage_hourly\M', '\1\2public.reporting_usage_hourly', 'gi');
+    definition := regexp_replace(definition, '(public[.])?v2_public_usage_daily\M', 'public.reporting_usage_daily', 'gi');
+    definition := regexp_replace(definition, '(public[.])?v2_public_usage_hourly\M', 'public.reporting_usage_hourly', 'gi');
     execute 'create or replace view public.' || quote_ident(target) || ' with (security_invoker = true) as ' || definition;
   end loop;
 end;

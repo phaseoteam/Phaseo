@@ -1,4 +1,5 @@
 CREATE TABLE "public"."data_contributions" (
+  "public_reporting_allowed" boolean NOT NULL DEFAULT false,
   "id"                         uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "workspace_id"               uuid                     NOT NULL,
   "request_id"                 text                     NOT NULL,
@@ -77,3 +78,6 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 COMMENT ON TABLE "public"."data_contributions" IS 'Service-only metadata and work queue. Prompt/completion content lives only in the dedicated R2 bucket.';
 
 REVOKE ALL ON TABLE "public"."data_contributions" FROM "anon", "authenticated";
+
+create trigger set_public_reporting_scope before insert or update on public.data_contributions
+for each row execute function private.set_contribution_public_reporting_scope();

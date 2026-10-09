@@ -72,7 +72,7 @@ scoped_facts as (
     fact.structured_output_attempted,
     fact.structured_output_succeeded,
     route.provider_slug provider_id
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join visible_model
     on visible_model.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
   left join public.v2_model_provider_routes route

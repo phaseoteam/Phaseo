@@ -26,7 +26,7 @@ begin
       select provider_slug into provider_value from public.v2_model_provider_routes
         where provider_model_id = item.provider_model_id;
       -- Remove old provider-slug rows as well when route metadata was corrected.
-      delete from public.v2_public_provider_health_daily
+      delete from public.reporting_provider_health_daily
         where usage_date = item.usage_date and model_slug = item.model_slug
           and provider_model_id = item.provider_model_id;
       if provider_value is not null then
@@ -40,7 +40,7 @@ begin
           count(*), count(*) filter (where attempt.success), count(*) filter (where not attempt.success),
           count(*) filter (where attempt.attempt_number > 1),
           coalesce(sum(attempt.latency_ms), 0), count(attempt.latency_ms), clock_timestamp()
-        from public.v2_request_facts fact
+        from public.reporting_request_facts fact
         join public.v2_request_attempts attempt on attempt.request_event_id = fact.request_event_id
         where fact.occurred_at >= item.usage_date::timestamptz
           and fact.occurred_at < (item.usage_date + 1)::timestamptz

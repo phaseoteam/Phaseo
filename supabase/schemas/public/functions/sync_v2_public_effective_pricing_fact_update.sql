@@ -68,6 +68,7 @@ begin
     source_fact := new;
     source_service_tier := new_service_tier;
   end if;
+  if not source_fact.public_reporting_allowed then return new; end if;
   target_model := coalesce(source_fact.routed_model_slug, source_fact.requested_model_slug);
   target_date := source_fact.occurred_at::date;
   select route.provider_slug into target_provider

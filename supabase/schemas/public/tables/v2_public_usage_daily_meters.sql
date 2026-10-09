@@ -26,3 +26,8 @@ CREATE POLICY "v2_public_usage_daily_meters_public_select" ON "public"."v2_publi
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_public_usage_daily_meters" TO "anon", "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."v2_public_usage_daily_meters"."meter_key" IS 'Includes modality-specific meters such as tokens, images, characters, requests, and media seconds.';
+
+create policy public_usage_meter_visibility on public.v2_public_usage_daily_meters as restrictive
+for select to anon, authenticated using (exists (
+  select 1 from public.v2_public_usage_daily usage where usage.rollup_id = v2_public_usage_daily_meters.rollup_id
+));

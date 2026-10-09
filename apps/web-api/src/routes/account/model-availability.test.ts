@@ -43,7 +43,7 @@ describe("admin model availability", () => {
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 		expect(calls.find(({ url }) => url.includes("/rpc/set_v2_admin_model_availability"))?.body).toEqual({ p_actor_user_id: actor, p_model_slug: "example/staged", p_available: available });
-		await expect(response.json()).resolves.toEqual({ model_slug: "example/staged", available });
+		await expect(response.json()).resolves.toMatchObject({ model_slug: "example/staged", available });
 	});
 	it.each([{ available: "true" }, {}, { available: true, p_actor_user_id: "forged" }])("rejects malformed or forged input %j", async (body) => {
 		const calls = mockBackend();
