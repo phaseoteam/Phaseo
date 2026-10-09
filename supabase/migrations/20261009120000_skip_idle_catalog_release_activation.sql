@@ -1,3 +1,8 @@
+-- activate_due_provider_catalog_releases runs every minute (web-api cron and
+-- pg_cron). Its updates fired the statement-level routing_catalogue_changed
+-- triggers even when nothing was due, bumping the catalogue revision ~6 times a
+-- minute on production (2026-10-09) and forcing gateway catalogue revalidation.
+-- Return before any update when no release is due.
 CREATE OR REPLACE FUNCTION public.activate_due_provider_catalog_releases()
   RETURNS integer
   LANGUAGE plpgsql

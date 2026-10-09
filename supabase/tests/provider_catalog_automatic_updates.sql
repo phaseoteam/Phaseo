@@ -27,6 +27,7 @@ declare
   failure text;
   owner_id uuid := gen_random_uuid();
   sku_count_before_clear integer;
+  revision_before bigint;
 begin
   document := jsonb_set(document,'{0,capabilities}','[{"id":"responses","parameters":["temperature"]},{"id":"chat.completions","parameters":["max_output_tokens"]}]');
   assert not has_function_privilege('authenticated', 'public.apply_provider_catalog_snapshot(text,uuid,jsonb)', 'execute');
@@ -151,7 +152,11 @@ begin
   perform public.apply_provider_catalog_snapshot('catalog-contract-test',run2,bad_document);
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/future');
   assert (select not routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='future');
+  -- The minute scheduler must not publish a catalogue revision when nothing is due.
+  insert into private.routing_catalogue_revision(singleton) values (true) on conflict do nothing;
+  select revision into revision_before from private.routing_catalogue_revision where singleton;
   assert public.activate_due_provider_catalog_releases()=0;
+  assert (select revision from private.routing_catalogue_revision where singleton) = revision_before;
   update public.v2_model_provider_routes set effective_from=now()-interval '1 minute'
   where provider_slug='catalog-contract-test' and provider_model_slug='future';
   update public.v2_pricing_skus set effective_from=now()-interval '1 minute'
