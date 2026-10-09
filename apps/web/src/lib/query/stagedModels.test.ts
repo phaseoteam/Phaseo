@@ -13,6 +13,17 @@ describe("staged catalogue access", () => {
 		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ error: "forbidden" }), { status: 403 }));
 		expect(await fetchAdminStagedModels({ accessToken: "user-token" })).toEqual([]);
 	});
+	it("preserves the public catalogue when the staged overlay is unavailable", async () => {
+		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ error: "unavailable" }), { status: 503 }));
+		expect(await fetchAdminStagedModels({ accessToken: "admin-token" })).toEqual([]);
+		global.fetch = jest.fn().mockRejectedValue(new Error("network unavailable"));
+		expect(await fetchAdminStagedModels({ accessToken: "admin-token" })).toEqual([]);
+	});
+	it("propagates cancellation", async () => {
+		const error = new DOMException("Cancelled", "AbortError");
+		global.fetch = jest.fn().mockRejectedValue(error);
+		await expect(fetchAdminStagedModels({ accessToken: "admin-token" })).rejects.toBe(error);
+	});
 	it("loads hidden rows through the authenticated no-store admin endpoint", async () => {
 		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({ models: [
 			{ model_id: "test/staged", name: "Staged", hidden: true, organisation: { lab_slug: "test", name: "Test lab" } },

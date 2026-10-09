@@ -159,7 +159,7 @@ export default async function ModelPricing({
 	const tModel = await getTranslations("Catalogue.models.detail");
 	const tActions = await getTranslations("Common.ui.actions");
 	const [providers, identity, showAdminPricingControls, gatewayMetadata] = await Promise.all([
-		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId),
+		providersOverride ? Promise.resolve(providersOverride) : fetchFrontendModelPricing(modelId, undefined, includeHidden),
 		modelStatus !== undefined
 			? Promise.resolve({
 					status: modelStatus,
@@ -293,7 +293,8 @@ export default async function ModelPricing({
 				<ModelPricingClient
 					modelId={modelId}
 					providers={[]}
-					refreshPricing={!providersOverride}
+					refreshPricing={!providersOverride && !includeHidden}
+					internalOnly={includeHidden}
 					creatorOrgId={identity.organisationId}
 					initialPricingTimeMs={now.getTime()}
 					runtimeStats={runtimeStats}
@@ -358,7 +359,8 @@ export default async function ModelPricing({
 			<ModelPricingClient
 				modelId={modelId}
 				providers={providersForDisplay}
-				refreshPricing={!providersOverride}
+				refreshPricing={!providersOverride && !includeHidden}
+				internalOnly={includeHidden}
 				creatorOrgId={identity.organisationId}
 				initialPricingTimeMs={now.getTime()}
 				runtimeStats={runtimeStats}

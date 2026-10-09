@@ -4,6 +4,8 @@ import type {
 	RangeKey,
 } from "@/lib/fetchers/apps/types";
 import { connection } from "next/server";
+import { fetchAdminModelBenchmarks } from "@/lib/fetchers/internal/fetchAdminModelBenchmarks";
+import getModelSubscriptionPlans from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import type { ProfileSnapshot } from "@/lib/fetchers/profile/types";
 import type {
@@ -365,8 +367,9 @@ export async function fetchFrontendModelPendingApiReleaseState(
 export async function fetchFrontendModelPricing(
 	modelId: string,
 	signal?: AbortSignal,
+	includeHidden = false,
 ): Promise<ProviderPricing[]> {
-	return getModelPricing(modelId, false, false, signal);
+	return getModelPricing(modelId, includeHidden, includeHidden, signal);
 }
 
 export async function fetchFrontendModelPricingHistory(
@@ -381,7 +384,9 @@ export async function fetchFrontendModelPricingHistory(
 
 export async function fetchFrontendModelSubscriptionPlans(
 	modelId: string,
+	includeHidden = false,
 ): Promise<SubscriptionPlan[]> {
+	if (includeHidden) return getModelSubscriptionPlans(modelId, true);
 	const payload = await fetchOptionalPublicWebApi<{
 		subscription_plans: SubscriptionPlan[];
 	}>(`/api/_web/models/${encodeURIComponent(modelId)}/subscription-plans`);
@@ -390,13 +395,19 @@ export async function fetchFrontendModelSubscriptionPlans(
 
 export async function fetchFrontendModelGatewayMetadata(
 	modelId: string,
+	includeHidden = false,
 ): Promise<ModelGatewayMetadata> {
-	return getModelGatewayMetadata(modelId, false);
+	return getModelGatewayMetadata(modelId, includeHidden, includeHidden);
 }
 
 export async function fetchFrontendModelAvailability(
 	modelId: string,
+	includeHidden = false,
 ): Promise<{ isGatewayActive: boolean; activeProviderCount: number }> {
+	if (includeHidden) {
+		const metadata = await getModelGatewayMetadata(modelId, true, true);
+		return { isGatewayActive: metadata.activeProviders.length > 0, activeProviderCount: metadata.activeProviders.length };
+	}
 	return (await fetchPublicWebApi<{
 		availability: { isGatewayActive: boolean; activeProviderCount: number };
 	}>(`/api/_web/models/${encodeURIComponent(modelId)}/availability`)).availability;
@@ -529,14 +540,18 @@ export async function fetchFrontendModelProviderRoutingHealth(args: {
 
 export async function fetchFrontendModelBenchmarkHighlights(
 	modelId: string,
+	includeHidden = false,
 ): Promise<ModelBenchmarkHighlight[]> {
+	if (includeHidden) return (await fetchAdminModelBenchmarks(modelId)).map((row) => ({ benchmarkId: row.benchmark_id, benchmarkName: row.benchmark.name, totalModels: null, rank: null, score: row.score, scoreDisplay: row.score_display, isPercentage: row.is_percentage, isSelfReported: row.is_self_reported, otherInfo: row.other_info, sourceLink: row.source_link }));
 	const payload = await fetchOptionalPublicWebApi<{ highlights: ModelBenchmarkHighlight[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
 	return payload?.highlights ?? [];
 }
 
 export async function fetchFrontendModelBenchmarkResults(
 	modelId: string,
+	includeHidden = false,
 ): Promise<ModelBenchmarkResult[]> {
+	if (includeHidden) return fetchAdminModelBenchmarks(modelId);
 	const payload = await fetchOptionalPublicWebApi<{ results: ModelBenchmarkResult[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
 	return payload?.results ?? [];
 }

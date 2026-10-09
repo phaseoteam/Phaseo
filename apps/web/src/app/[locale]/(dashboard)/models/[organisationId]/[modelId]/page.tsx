@@ -578,12 +578,12 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 	}
 	// Start independent section requests alongside the overview so the header can
 	// stream as soon as its own data arrives, without serializing the lower body.
-	const benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
-	const subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
-	const availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
+	let benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId).catch(() => []);
+	let subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId).catch(() => []);
+	let availabilityPromise = fetchFrontendModelAvailability(modelId).catch(() => undefined);
 	const pricingAbortController = new AbortController();
-	const pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
-	const gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	let pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal).catch(() => []);
+	let gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
 	const providerPreviewsPromise = fetchServerProviderCatalogPreviewsForModel(modelId).catch(() => []);
 	let modelOverview = await fetchFrontendModelOverview(modelId)
 		.then(async (model) => model ?? await fetchPrivateModelOverview(modelId))
@@ -596,6 +596,11 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		modelOverview = source ? toAdminModelOverview(source) : null;
 		if (!modelOverview) notFound();
 		includeHidden = true;
+		benchmarkPromise = fetchFrontendModelBenchmarkHighlights(modelId, true).catch(() => []);
+		subscriptionPromise = fetchFrontendModelSubscriptionPlans(modelId, true).catch(() => []);
+		availabilityPromise = fetchFrontendModelAvailability(modelId, true).catch(() => undefined);
+		pricingPromise = fetchFrontendModelPricing(modelId, pricingAbortController.signal, true).catch(() => []);
+		gatewayMetadataPromise = fetchFrontendModelGatewayMetadata(modelId, true).catch(() => null);
 	}
 	const modelHeader = {
 		model_id: modelOverview.model_id,
@@ -613,7 +618,7 @@ export default async function Page({ params }: { params: Promise<ModelRouteParam
 		is_private: modelOverview.is_private === true,
 	};
 	return (
-		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias} canChat={includeHidden ? false : undefined} canCompare={!includeHidden} statusBanner={includeHidden ? <div className="mb-6 rounded-lg border p-4 text-sm">Internal · Admin only</div> : undefined}>
+		<ModelDetailShell modelId={modelId} tab="overview" includeHidden={includeHidden} header={modelHeader} modelOverview={modelOverview} requestedAlias={requestedAlias} canChat={includeHidden ? false : undefined} canCompare={!includeHidden}>
 			<Suspense fallback={<ModelOverviewSectionsSkeleton />}>
 				<ModelDetailPageBody
 					modelId={modelId}

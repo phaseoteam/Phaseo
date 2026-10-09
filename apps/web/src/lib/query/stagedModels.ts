@@ -1,6 +1,6 @@
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { mapRawToModelCard } from "@/lib/fetchers/models/getAllModels";
-import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
+import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { ModelsPageModel } from "@/components/(data)/models/Models/modelsDisplay.types";
 
 // The existing account endpoint checks the admin role and sends no-store
@@ -25,7 +25,7 @@ export async function fetchAdminStagedModels(options: {
 			});
 		});
 	} catch (error) {
-		if (error instanceof WebApiError && (error.status === 401 || error.status === 403)) return [];
-		throw error;
+		if (options.signal?.aborted || (typeof error === "object" && error !== null && "name" in error && error.name === "AbortError")) throw error;
+		return [];
 	}
 }

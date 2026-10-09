@@ -6,13 +6,15 @@ export default async function ModelSubscriptions({
 	ownerOrganisationId,
 	ownerOrganisationName,
 	showHeader = true,
+	includeHidden = false,
 }: {
 	modelId: string;
 	ownerOrganisationId?: string | null;
 	ownerOrganisationName?: string | null;
 	showHeader?: boolean;
+	includeHidden?: boolean;
 }) {
-	const subscriptionPlans = await fetchFrontendModelSubscriptionPlans(modelId).catch(
+	const subscriptionPlans = await fetchFrontendModelSubscriptionPlans(modelId, includeHidden).catch(
 		() => [],
 	);
 

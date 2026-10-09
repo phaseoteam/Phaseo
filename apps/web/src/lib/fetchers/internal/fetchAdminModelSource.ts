@@ -1,5 +1,6 @@
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { getServerAccountContext } from "./serverAccountContext";
+import { cache } from "react";
 
 export type AdminModelSource = {
 	requestedModelId: string;
@@ -14,11 +15,11 @@ export type AdminModelSource = {
 	details?: Array<{ detail_name: string; detail_value: string | number | null }>;
 };
 
-export async function fetchAdminModelSource(modelId: string): Promise<AdminModelSource> {
+export const fetchAdminModelSource = cache(async (modelId: string): Promise<AdminModelSource> => {
 	const { accessToken } = await getServerAccountContext();
 	if (!accessToken) throw new Error("Authentication required");
 	return (await fetchAccountWebApi<{ source: AdminModelSource }>(
 		`/api/account/models/${encodeURIComponent(modelId)}/source`,
 		accessToken,
 	)).source;
-}
+});

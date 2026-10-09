@@ -57,7 +57,7 @@ export default async function ModelPricingInsightsSection({
 	hasSubmittedProviderPrices?: boolean;
 }) {
 	const providers = await withOptionalPricingTimeout(
-		fetchFrontendModelPricing(modelId),
+		fetchFrontendModelPricing(modelId, undefined, includeHidden),
 		[],
 		"pricing providers"
 	);
