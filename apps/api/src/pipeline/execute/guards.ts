@@ -462,6 +462,16 @@ export async function guardAllFailed(
             Number(stage?.afterCount ?? 0) === 0
         )
         : null;
+    // Regional gateways (eu./us.api) and residency hints only allow providers that process
+    // data in the required region. When none remains, nothing was attempted: this is a
+    // property of the model and region, not a provider failure.
+    const residencyStage = attemptErrors.length === 0 && Array.isArray(routingDiagnostics?.filterStages)
+        ? routingDiagnostics.filterStages.find((stage: any) =>
+            stage?.stage === "residency_gate" &&
+            Number(stage?.beforeCount ?? 0) > 0 &&
+            Number(stage?.afterCount ?? 0) === 0
+        )
+        : null;
 	const allProviderCapacityLimited = attemptErrors.length > 0 && attemptErrors.every(
 		(entry) => entry?.type === "provider_rate_limited",
 	);
@@ -513,6 +523,50 @@ export async function guardAllFailed(
                 request_id: ctx.requestId,
                 request_country: ctx.meta?.edgeCountry ?? null,
                 request_subdivision: ctx.meta?.edgeRegionCode ?? null,
+                routing_diagnostics: routingDiagnostics,
+            }),
+        };
+    }
+    if (residencyStage) {
+        captureTimingSnapshot(ctx, timing);
+        const requested = routingDiagnostics?.requestedRouting ?? {};
+        const region = typeof requested.requiredExecutionRegion === "string"
+            ? requested.requiredExecutionRegion
+            : typeof requested.requiredDataRegion === "string" ? requested.requiredDataRegion : null;
+        const description = region
+            ? `This model has no provider that processes requests in the ${region.toUpperCase()} region.`
+            : "This model has no provider that meets the request's data residency requirements.";
+        const action = region
+            ? "Choose a model available in this region, or use https://api.phaseo.app for global routing."
+            : "Relax the residency requirements or choose another model.";
+        if (isStealthRequest(ctx)) {
+            return {
+                ok: false,
+                response: json({
+                    error: "model_region_unavailable",
+                    status_code: 403,
+                    error_origin: "gateway",
+                    responsibility: "user",
+                    retryable: false,
+                    description,
+                    action,
+                    request_id: ctx.requestId,
+                    model: ctx.model,
+                    endpoint: ctx.endpoint,
+                    required_region: region,
+                }, 403),
+            };
+        }
+        return {
+            ok: false,
+            response: err("model_region_unavailable", {
+                reason: region ? "no_provider_in_required_region" : "no_provider_meets_residency_requirements",
+                description,
+                action,
+                model: ctx.model,
+                endpoint: ctx.endpoint,
+                request_id: ctx.requestId,
+                required_region: region,
                 routing_diagnostics: routingDiagnostics,
             }),
         };

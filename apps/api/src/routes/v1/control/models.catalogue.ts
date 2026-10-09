@@ -3,6 +3,7 @@
 // How: Pulls model metadata, providers, capabilities, and pricing summaries.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+import { tieredRead } from "@core/tiered-cache";
 import type { Endpoint } from "@core/types";
 import {
     normalizeCapabilityStatus,
@@ -1122,7 +1123,49 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>): strin
     return best?.provider ?? null;
 }
 
+// Building the catalogue costs about ten queries (~4 s). The catalogue revision changes
+// several times a minute, so keying on it would rarely hit; instead the list is served
+// stale-while-revalidate: fresh for a minute, then served while one background rebuild
+// refreshes it, and only rebuilt before serving once it is an hour old. It holds public
+// catalogue data only (workspace-private models are fetched separately).
+const CATALOGUE_LIST_FRESH_S = 60;
+const CATALOGUE_LIST_MAX_STALE_S = 60 * 60;
+
+function catalogueFilterKey(filter: CatalogueFilters): string {
+    const normalized: Record<string, unknown> = {};
+    for (const [name, value] of Object.entries(filter).sort(([a], [b]) => a.localeCompare(b))) {
+        if (value === undefined || value === null || value === false) continue;
+        if (Array.isArray(value)) {
+            if (!value.length) continue;
+            normalized[name] = Array.from(new Set(value.map(String))).sort();
+            continue;
+        }
+        normalized[name] = value;
+    }
+    return JSON.stringify(normalized);
+}
+
+async function sha256Hex(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Public catalogue for `filter`, served from cache. Returns a copy callers may mutate. */
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
+    const key = `catalogue-list:v1:${await sha256Hex(catalogueFilterKey(filter))}`;
+    const models = await tieredRead<CatalogueModel[]>({
+        key,
+        loader: () => loadCatalogue(filter),
+        l1FreshMs: CATALOGUE_LIST_FRESH_S * 1000,
+        maxStaleMs: CATALOGUE_LIST_MAX_STALE_S * 1000,
+        l2: { freshS: CATALOGUE_LIST_FRESH_S, storeS: CATALOGUE_LIST_MAX_STALE_S },
+        l3: { freshS: CATALOGUE_LIST_FRESH_S, expirationS: CATALOGUE_LIST_MAX_STALE_S },
+        validate: (value): value is CatalogueModel[] => Array.isArray(value),
+    });
+    return structuredClone(models ?? []);
+}
+
+async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
     const supabase = getSupabaseAdmin();
     const availabilityMode = filter.availability ?? "active";
     const includeNonRoutable = availabilityMode === "all";

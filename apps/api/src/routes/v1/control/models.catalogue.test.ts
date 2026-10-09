@@ -4,6 +4,10 @@ const getSupabaseAdminMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
     getSupabaseAdmin: getSupabaseAdminMock,
+    // The catalogue list is cached; tests read through an empty, write-ignoring cache.
+    getCache: () => ({ get: async () => null, put: async () => undefined }),
+    getBindingsIfConfigured: () => null,
+    dispatchBackground: () => undefined,
 }));
 
 type QueryResult = {
@@ -255,8 +259,9 @@ describe("publicCatalogueProviderRoute", () => {
 });
 
 describe("fetchCatalogue", () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.clearAllMocks();
+        (await import("@core/tiered-cache")).__resetTieredCacheForTests();
     });
 
     it("never returns the internal provider or upstream model for a stealth route", async () => {

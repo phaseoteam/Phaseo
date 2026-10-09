@@ -509,6 +509,56 @@ describe("guardAllFailed", () => {
 		});
 	});
 
+	it.each([
+		[{ requiredExecutionRegion: "us", requiredDataRegion: "us" }, "no_provider_in_required_region", "US region"],
+		[{ requiredExecutionRegion: null, requiredDataRegion: null }, "no_provider_meets_residency_requirements", "data residency"],
+	])("returns a 403, not a provider failure, when residency removes every route (%j)", async (requestedRouting, reason, phrase) => {
+		const ctx: any = {
+			model: "openai/gpt-6-luna",
+			endpoint: "chat.completions",
+			requestId: "req_residency_blocked",
+			meta: {},
+			attemptErrors: [],
+			routingDiagnostics: {
+				requestedRouting,
+				filterStages: [{
+					stage: "residency_gate",
+					beforeCount: 2,
+					afterCount: 0,
+					droppedProviders: [{ providerId: "openai", reason: "execution_region_mismatch" }],
+				}],
+			},
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(403);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({ error: "model_region_unavailable", reason });
+		// No upstream evidence, so the error handler attributes it to the user, not a provider.
+		expect(payload.failed_providers ?? null).toBeNull();
+		expect(String(payload.description)).toContain(phrase);
+	});
+
+	it("still reports real provider failures after the residency gate kept some routes", async () => {
+		const ctx: any = {
+			model: "anthropic/claude-haiku-5.5",
+			endpoint: "chat.completions",
+			requestId: "req_residency_kept",
+			meta: {},
+			attemptErrors: [{ provider: "anthropic", status: 500, type: "upstream_error" }],
+			routingDiagnostics: {
+				requestedRouting: { requiredExecutionRegion: "us" },
+				filterStages: [{ stage: "residency_gate", beforeCount: 2, afterCount: 1, droppedProviders: [] }],
+			},
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		if (result.ok) throw new Error("expected failure");
+		expect((await result.response.json()).error).not.toBe("model_region_unavailable");
+	});
+
 	it("hides route diagnostics when a stealth model is region unavailable", async () => {
 		const ctx: any = {
 			model: "stealth/test-model-20260827",
