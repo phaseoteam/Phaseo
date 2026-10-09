@@ -21,9 +21,24 @@ it("loads the exact internal route with admin scope and enables wallet billing",
     loadPriceCardMock.mockClear();
     const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
     loadPriceCardMock.mockResolvedValue(card);
-    const ctx = { testingMode: true, billableInternalTesting: true, pricing: {}, meta: {}, model: "test/internal", capability: "text.generate" } as unknown as PipelineContextForTest;
+    const ctx = { testingMode: true, billableInternalTesting: true, pricingInternalOnly: true, pricing: {}, meta: {}, model: "test/internal", capability: "text.generate" } as unknown as PipelineContextForTest;
     expect(await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/internal", providerModelSlug: "preview", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1])).toBe(card);
     expect(loadPriceCardMock).toHaveBeenCalledWith("test", "test/internal", "text.generate", "preview", true);
+    expect(ctx.internalPricingAvailable).toBe(true);
+});
+
+it.each([false, true])("uses public pricing after an admin dynamic route replacement (expired card: %s)", async (expired) => {
+    loadPriceCardMock.mockClear();
+    const card = { currency: "USD", rules: [{ meter: "input_text_tokens" }] };
+    loadPriceCardMock.mockResolvedValue(card);
+    const ctx = {
+        testingMode: true, billableInternalTesting: true, pricingInternalOnly: false,
+        pricing: expired ? { route: { ...card, effective_to: "2026-01-01T00:00:00Z" } } : {},
+        meta: { upstreamStartMs: Date.parse("2026-10-09T00:00:00Z") },
+        model: "test/public", capability: "text.generate",
+    } as unknown as PipelineContextForTest;
+    expect(await loadProviderPricing(ctx, { provider: "test", apiModelId: "test/public", providerModelSlug: "public", pricingKey: "route" } as Parameters<typeof loadProviderPricing>[1])).toBe(card);
+    expect(loadPriceCardMock).toHaveBeenCalledWith("test", "test/public", "text.generate", "public", false);
     expect(ctx.internalPricingAvailable).toBe(true);
 });
 
