@@ -1,9 +1,14 @@
 -- One admin action publishes the prepared routes and model atomically.
 -- Staging preserves internal testing access; it never enables a disabled route.
-create or replace function public.set_v2_admin_model_availability(
-  p_actor_user_id uuid, p_model_slug text, p_available boolean
+CREATE OR REPLACE FUNCTION public.set_v2_admin_model_availability (
+  p_actor_user_id uuid,
+  p_model_slug    text,
+  p_available     boolean
 )
-returns jsonb language plpgsql security invoker set search_path = '' as $$
+  RETURNS jsonb
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
 declare
   model_row public.v2_models%rowtype;
   route_ids text[];
@@ -72,7 +77,7 @@ begin
       actor_user_id = excluded.actor_user_id, updated_at = now();
   return jsonb_build_object('model_slug', p_model_slug, 'available', p_available, 'routes', to_jsonb(route_ids));
 end;
-$$;
+$function$;
 revoke all on function public.set_v2_admin_model_availability(uuid,text,boolean) from public, anon, authenticated;
 grant execute on function public.set_v2_admin_model_availability(uuid,text,boolean) to service_role;
 

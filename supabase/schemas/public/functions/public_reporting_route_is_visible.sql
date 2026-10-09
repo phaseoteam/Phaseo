@@ -1,8 +1,14 @@
-create or replace function public.public_reporting_route_is_visible(
-  p_model_slug text, p_provider_model_id text default null,
-  p_provider_slug text default null, p_occurred_at timestamptz default now()
+CREATE OR REPLACE FUNCTION public.public_reporting_route_is_visible (
+  p_model_slug        text,
+  p_provider_model_id text                     DEFAULT NULL::text,
+  p_provider_slug     text                     DEFAULT NULL::text,
+  p_occurred_at       timestamp with time zone DEFAULT now()
 )
-returns boolean language sql stable security invoker set search_path = '' as $$
+  RETURNS boolean
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
   select exists (
     select 1 from public.v2_models model
     join public.v2_model_provider_routes route on route.model_slug = model.model_slug
@@ -21,6 +27,6 @@ returns boolean language sql stable security invoker set search_path = '' as $$
       and (route.effective_from is null or route.effective_from <= p_occurred_at)
       and (route.effective_to is null or route.effective_to > p_occurred_at)
   );
-$$;
+$function$;
 revoke all on function public.public_reporting_route_is_visible(text,text,text,timestamptz) from public;
 grant execute on function public.public_reporting_route_is_visible(text,text,text,timestamptz) to anon, authenticated, service_role;
