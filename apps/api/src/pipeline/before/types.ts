@@ -191,6 +191,7 @@ export type RouteAvailabilityPolicy = import("@/lib/config/routeAvailability").R
  * Returned from the RPC call for gateway context
  */
 export type GatewayProviderSnapshot = {
+    accessScope?: "public" | "internal";
     providerId: string;
 	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
@@ -359,6 +360,7 @@ export type GatewayContextData = {
  * Includes the adapter, weight, BYOK metadata, and pricing info
  */
 export type ProviderCandidate = {
+    accessScope?: "public" | "internal";
     providerId: string;
 	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;

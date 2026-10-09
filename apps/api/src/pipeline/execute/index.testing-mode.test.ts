@@ -220,6 +220,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 
 	it.each([false, true])("loads lazy pricing using the selected route scope (%s)", async (pricingInternalOnly) => {
 		const candidate = {
+			accessScope: pricingInternalOnly ? "internal" : "public",
 			providerId: "openai",
 			pricingCard: null,
 			byokMeta: [],
@@ -247,7 +248,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			byokKeyId: null,
 		});
 		resolveProviderExecutorMock.mockReturnValue(executor);
-		const ctx = createCtx({ testingMode: true, billableInternalTesting: true, pricingInternalOnly });
+		const ctx = createCtx({ testingMode: true, billableInternalTesting: true, pricingInternalOnly: !pricingInternalOnly });
 
 		const result = await doRequestWithIR(
 			ctx,
