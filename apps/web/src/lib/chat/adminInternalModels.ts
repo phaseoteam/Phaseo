@@ -7,11 +7,14 @@ export function adminSourceToChatModels(source: AdminModelSource, now = Date.now
 	const inWindow = (row: Record<string, any>) => !row.effective_to || Date.parse(row.effective_to) > now;
 	const lab = Array.isArray(model.lab) ? model.lab[0] : model.lab;
 	return source.providerRows.flatMap((route) => {
+		// The admin source redacts stealth routes to a synthetic provider that
+		// cannot be used as a gateway provider lock.
+		if (route.provider_id === "stealth") return [];
 		if (route.access_scope !== "internal" || !["testing", "enabled"].includes(route.phaseo_status) ||
-			!["active", "degraded"].includes(route.routing_status) ||
+			route.routing_status !== "active" ||
 			!["available", "preview", "limited_access", "coming_soon"].includes(route.provider_availability_status) || !inWindow(route)) return [];
 		const capabilities = (route.data_api_provider_model_capabilities ?? []).filter((cap: Record<string, any>) =>
-			cap.capability_id === "text.generate" && ["active", "degraded", "internal_testing"].includes(cap.status) && inWindow(cap));
+			cap.capability_id === "text.generate" && ["active", "internal_testing"].includes(cap.status) && inWindow(cap));
 		if (!capabilities.length) return [];
 		const provider = route.data_api_providers;
 		return [{

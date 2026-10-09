@@ -12,8 +12,10 @@ it("makes a hidden internal text route selectable without claiming a price", () 
 });
 it.each([
 	{ access_scope: "public" }, { phaseo_status: "disabled" }, { routing_status: "disabled" },
+	{ routing_status: "degraded" }, { provider_id: "stealth" },
 	{ provider_availability_status: "removed" }, { effective_to: "2020-01-01" },
 	{ data_api_provider_model_capabilities: [{ capability_id: "text.generate", status: "disabled" }] },
+	{ data_api_provider_model_capabilities: [{ capability_id: "text.generate", status: "degraded" }] },
 	{ data_api_provider_model_capabilities: [] },
 ])("rejects ineligible internal routes %j", (override) => {
 	expect(adminSourceToChatModels({ ...source, providerRows: [{ ...source.providerRows[0], ...override }] })).toEqual([]);
