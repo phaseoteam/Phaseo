@@ -1,3 +1,9 @@
+-- get_v2_model_quality_hourly_v1 probed every gateway_requests partition per
+-- fact for its legacy usage fallback. Linked facts now read their request by
+-- primary key (gateway_request_id, gateway_request_created_at), which prunes to
+-- one partition; unlinked facts keep the nearest-request lookup.
+SET local check_function_bodies = off;
+
 CREATE OR REPLACE FUNCTION public.get_v2_model_quality_hourly_v1 (
   p_model_slug      text,
   p_cloudflare_colo text DEFAULT NULL::text,
