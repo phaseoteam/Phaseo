@@ -144,6 +144,24 @@ async function l2Write(key: string, raw: string, storeS: number): Promise<void> 
 	}
 }
 
+function locationCacheEnabled(): boolean {
+	return typeof caches !== "undefined" && getBindingsIfConfigured()?.GATEWAY_TIERED_CACHE_L2_ENABLED !== "false";
+}
+
+/**
+ * Reads a raw value from this location's Workers Cache (L2) for callers that manage
+ * their own isolate and KV layers. The key must embed a version token: entries are
+ * never deleted, only superseded.
+ */
+export async function readLocationCache(key: string): Promise<string | null> {
+	return locationCacheEnabled() ? l2Read(key) : null;
+}
+
+/** Stores a raw value in this location's Workers Cache (L2) in the background. */
+export function writeLocationCache(key: string, raw: string, storeS: number): void {
+	if (locationCacheEnabled()) dispatchBackground(l2Write(key, raw, storeS));
+}
+
 async function l3Read(key: string): Promise<string | null> {
 	try {
 		return await getCache().get(key, "text");

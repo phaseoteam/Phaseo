@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
     reads: vi.fn(), writes: vi.fn(), exact: vi.fn(), background: [] as Promise<unknown>[],
 }));
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
     dispatchBackground: (p: Promise<unknown>) => state.background.push(p),
     getCache: () => ({
         get: async (k: string) => state.store.get(k) ?? null,
@@ -78,6 +79,30 @@ describe("workspace private route cache", () => {
         const pending = c.loadPrivateRouteRow(args);
         await c.invalidatePrivateRoutes("a"); state.rows = [];
         expect(await pending).toBeNull();
+    });
+    it("shares only the empty snapshot through the location cache, never encrypted rows", async () => {
+        const located = new Map<string, string>();
+        (globalThis as any).caches = { default: {
+            match: async (request: Request) => located.has(request.url) ? new Response(located.get(request.url)) : undefined,
+            put: async (request: Request, response: Response) => { located.set(request.url, await response.text()); },
+        } };
+        try {
+            const c = await import("./privateModelCache");
+            await c.loadPrivateRouteRow(args); await Promise.all(state.background);
+            expect([...located.values()]).toHaveLength(1);
+            expect(JSON.parse([...located.values()][0]).rows).toEqual([]);
+            // A fresh isolate with an empty KV still finds the shared absence without the database.
+            state.store.clear(); vi.resetModules();
+            expect(await (await import("./privateModelCache")).loadPrivateRouteRow(args)).toBeNull();
+            expect(state.reads).toHaveBeenCalledTimes(1);
+
+            located.clear(); state.store.clear(); state.rows = [row()]; vi.resetModules();
+            await (await import("./privateModelCache")).loadPrivateRouteRow({ ...args, workspaceId: "a" });
+            await Promise.all(state.background);
+            expect([...located.values()].some((value) => value.includes("ciphertext"))).toBe(false);
+        } finally {
+            delete (globalThis as any).caches;
+        }
     });
     it("honors explicit bypass and does not cache errors", async () => {
         const c = await import("./privateModelCache"); state.error = {};

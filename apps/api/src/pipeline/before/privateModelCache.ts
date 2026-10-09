@@ -1,4 +1,5 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
+import { readLocationCache, writeLocationCache } from "@core/tiered-cache";
 
 // This is routing metadata, not caller authorization. Credentials stay encrypted.
 export const PRIVATE_ROUTE_MAX_AGE_MS = 60_000;
@@ -28,13 +29,35 @@ function fresh(snapshot: Snapshot, workspaceId: string): boolean {
             typeof row.id === "string" && typeof row.model_id === "string" && typeof row.enc_value === "string");
 }
 
+// Most workspaces have no private models. That empty snapshot holds no credentials,
+// so it alone is shared per location (Workers Cache): a fresh isolate then skips the
+// KV read. Snapshots with rows carry encrypted credentials and stay in isolate memory
+// and KV. The same absolute 60 s age bound applies to every copy.
+const emptyLocationKey = (workspaceId: string) => `${privateRouteCacheKey(workspaceId)}:empty`;
+
+function rememberIfEmpty(snapshot: Snapshot): void {
+    if (snapshot.rows.length !== 0) return;
+    const remainingS = Math.floor((PRIVATE_ROUTE_MAX_AGE_MS - (Date.now() - snapshot.checkedAt)) / 1000);
+    if (remainingS > 0) writeLocationCache(emptyLocationKey(snapshot.workspaceId), JSON.stringify(snapshot), remainingS);
+}
+
 async function readSnapshot(workspaceId: string, entry: Entry): Promise<Snapshot | null> {
     const cache = getCache();
+    try {
+        const raw = await readLocationCache(emptyLocationKey(workspaceId));
+        if (raw && raw.length <= MAX_BYTES) {
+            const value = JSON.parse(raw) as Snapshot;
+            if (fresh(value, workspaceId) && value.rows.length === 0) return value;
+        }
+    } catch { /* Fall through to KV. */ }
     try {
         const raw = await cache.get(privateRouteCacheKey(workspaceId), { type: "text", cacheTtl: 30 });
         if (raw && raw.length <= MAX_BYTES) {
             const value = JSON.parse(raw) as Snapshot;
-            if (fresh(value, workspaceId)) return value;
+            if (fresh(value, workspaceId)) {
+                rememberIfEmpty(value);
+                return value;
+            }
         }
     } catch { /* A cache failure requires an authoritative read, never an absent result. */ }
     const checkedAt = Date.now();
@@ -53,6 +76,7 @@ async function readSnapshot(workspaceId: string, entry: Entry): Promise<Snapshot
     if (entries.get(workspaceId) === entry) {
         dispatchBackground(cache.put(privateRouteCacheKey(workspaceId), raw, { expirationTtl: 60 })
             .catch(() => undefined));
+        rememberIfEmpty(snapshot);
     }
     return snapshot;
 }
