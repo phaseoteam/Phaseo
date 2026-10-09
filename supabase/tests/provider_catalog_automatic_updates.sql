@@ -153,6 +153,7 @@ begin
   assert (select hidden from public.v2_models where model_slug='catalog-contract-test/future');
   assert (select not routing_enabled from public.v2_model_provider_routes where provider_slug='catalog-contract-test' and provider_model_slug='future');
   -- The minute scheduler must not publish a catalogue revision when nothing is due.
+  insert into private.routing_catalogue_revision(singleton) values (true) on conflict do nothing;
   select revision into revision_before from private.routing_catalogue_revision where singleton;
   assert public.activate_due_provider_catalog_releases()=0;
   assert (select revision from private.routing_catalogue_revision where singleton) = revision_before;
