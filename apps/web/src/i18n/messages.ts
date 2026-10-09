@@ -1,5 +1,4 @@
 import "server-only";
-import { cache } from "react";
 
 import {
 	englishAuthMessages,
@@ -110,10 +109,25 @@ const publicMessageLoaders: Record<PublicLocale, PublicMessageLoader> = {
 	"ar-SA": async () => (await import("../../messages/ar-SA/auth.json")).default,
 };
 
-export const getPublicMessages = cache(async (locale: PublicLocale): Promise<SourceMessages> => {
+// These bundled dictionaries change only on deployment. Keep one assembled
+// tree per locale instead of merging and normalizing it on every RSC request.
+const loadedMessages = new Map<PublicLocale, Promise<SourceMessages>>();
+
+async function loadPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
 	const [messages, common, site, catalogue, content, product, settingsUI] = await Promise.all([
 		publicMessageLoaders[locale](), commonMessageLoaders[locale](), siteMessageLoaders[locale](),
 		catalogueMessageLoaders[locale](), contentMessageLoaders[locale](), productMessageLoaders[locale](), settingsUiMessageLoaders[locale](),
 	]);
 	return { ...messages, Common: common, Site: site, Catalogue: catalogue, Content: content, Product: product, SettingsUI: nestDottedMessageKeys(settingsUI) } as SourceMessages;
-});
+}
+
+export function getPublicMessages(locale: PublicLocale): Promise<SourceMessages> {
+	const existing = loadedMessages.get(locale);
+	if (existing) return existing;
+	const pending = loadPublicMessages(locale).catch((error: unknown) => {
+		loadedMessages.delete(locale);
+		throw error;
+	});
+	loadedMessages.set(locale, pending);
+	return pending;
+}
