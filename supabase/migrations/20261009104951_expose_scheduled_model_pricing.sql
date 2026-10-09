@@ -1,3 +1,4 @@
+-- Expose approved scheduled rates only for tiers with current pricing.
 CREATE OR REPLACE FUNCTION public.get_v2_model_pricing_without_stealth_redaction (
   p_model_slug   text,
   p_region       text DEFAULT NULL::text,
