@@ -92,6 +92,7 @@ import { executor as gmicloudAudioSpeech } from "./gmicloud/audio-speech";
 import { executor as gmicloudImage } from "./gmicloud/image-generate";
 import { executor as hyperbolicText } from "./hyperbolic/text-generate";
 import { executor as inceptionText } from "./inception/text-generate";
+import { executor as inceptionDecisions } from "./inception/decisions";
 import { executor as infermaticText } from "./infermatic/text-generate";
 import { executor as inflectionText } from "./inflection/text-generate";
 import { executor as ionrouterText } from "./ionrouter/text-generate";
@@ -405,7 +406,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"image.edit": gmicloudImage,
 	},
 	hyperbolic: { "text.generate": hyperbolicText },
-	inception: { "text.generate": inceptionText },
+	inception: { "text.generate": inceptionText, "decisions.make": inceptionDecisions },
 	infermatic: { "text.generate": infermaticText },
 	inflection: { "text.generate": inflectionText },
 	ionrouter: { "text.generate": ionrouterText },
